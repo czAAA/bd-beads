@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, reactive, ref, useId } from 'vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import EditableLine from '../project/EditableLine.vue'
 import ExportSection from './ExportSection.vue'
@@ -22,7 +22,8 @@ import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { useLabelsThatFit } from '../../composables/ui/useLabelsThatFit'
 import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
 import { usePanelSection } from '../../composables/shell/usePanelSection'
-import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
+import { FEWEST_SIDE, FRAME_EDGES, MAX_TYPED_SIDE, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { seenSize } from '../../domain/frameOrientation'
 import { frameAllows, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
 import type { Layer } from '../../domain/grid'
@@ -114,39 +115,89 @@ const cells = FRAME_EDGES.map((edge) => {
   return { edge, out: controlAction(`frame-edge-${edge}-out`), in: controlAction(`frame-edge-${edge}-in`), shrink: hold.handlers(-1), grow: hold.handlers(1) }
 })
 /** The width and height fields hold the Frame's size as values, selected on focus so typing replaces it (ticket 0854);
- * what is typed (`null` while untouched) stands in for it. They take whole numbers from 1 up; Enter or leaving both takes
+ * what is typed (`null` while untouched) stands in for it. They take whole numbers (ticket 0978); Enter or leaving both takes
  * them, an empty one keeps its side (its placeholder still reads the size), Escape puts the size back. */
+type SizeSide = 'width' | 'height'
 const typedWidth = ref<string | null>(null)
 const typedHeight = ref<string | null>(null)
 const sizeEdited = computed(() => typedWidth.value !== null || typedHeight.value !== null)
 const counted = computed(() => (frame.value ? seenSize(frame.value) : { columns: 0, rows: 0 }))
 const shownWidth = computed(() => typedWidth.value ?? String(counted.value.columns))
 const shownHeight = computed(() => typedHeight.value ?? String(counted.value.rows))
+
+/** A side's range line (ticket 0978) under the fields, shown when a key is refused or a typed number brought into range,
+ * gone with that side's next valid entry: the field's error (forms-and-states), its count its key, so a refusal that comes
+ * again puts it in afresh and a screen reader reads it again (ticket 0995). 0 is no line. */
+const refusals = reactive<Record<SizeSide, number>>({ width: 0, height: 0 })
+const rangeIds = { width: useId(), height: useId() }
+const rangeLines = computed(() => ({
+  width: fillBlanks(t.value.frame.widthRange, { min: FEWEST_SIDE, max: MAX_TYPED_SIDE }),
+  height: fillBlanks(t.value.frame.heightRange, { min: FEWEST_SIDE, max: MAX_TYPED_SIDE }),
+}))
+const refuse = (side: SizeSide): void => void refusals[side]++
+const inRange = (number: number): boolean => number >= FEWEST_SIDE && number <= MAX_TYPED_SIDE
+/** After a refused "." or ",", the digits typed straight after it are its fraction, refused too, so "12.5" is 12, never
+ * 125; a caret moved, a deletion or a press ends it. */
+const afterPoint = ref<SizeSide | null>(null)
+
 function clearSize(): void {
   typedWidth.value = null
   typedHeight.value = null
+  afterPoint.value = null
+}
+/** Escape puts the size back, and its range line goes with it. */
+function putSizeBack(): void {
+  clearSize()
+  refusals.width = refusals.height = 0
 }
 function commitSize(): void {
-  const columns = Number(typedWidth.value ?? '') || counted.value.columns
-  const rows = Number(typedHeight.value ?? '') || counted.value.rows
+  const [typedColumns, typedRows] = [Number(typedWidth.value ?? ''), Number(typedHeight.value ?? '')]
+  if (typedColumns && !inRange(typedColumns)) refuse('width')
+  if (typedRows && !inRange(typedRows)) refuse('height')
+  const columns = typedColumns || counted.value.columns
+  const rows = typedRows || counted.value.rows
   // The size it already has is no step: re-centring it would shift a Frame whose rows alternate by a pair.
   if (sizeEdited.value && columns && rows && (columns !== counted.value.columns || rows !== counted.value.rows)) emit('resize', columns, rows)
   clearSize()
 }
-/** Keeps digits only, as typed or pasted, and no leading zero. */
-const onlyDigits = (text: string): string => text.replace(/\D/g, '').replace(/^0+/, '').slice(0, 3)
-function setSize(side: 'width' | 'height', text: string): void {
-  if (side === 'width') typedWidth.value = onlyDigits(text)
-  else typedHeight.value = onlyDigits(text)
+const MAX_DIGITS = String(MAX_TYPED_SIDE).length
+/** Keeps the whole number, as typed or pasted: digits only, up to a "." or "," (a pasted "12.5" is 12), no leading zero. */
+const onlyDigits = (text: string): string =>
+  text
+    .split(/[.,]/)[0]!
+    .replace(/\D/g, '')
+    .replace(/^0+/, '')
+    .slice(0, MAX_DIGITS)
+function setSize(side: SizeSide, text: string): void {
+  const kept = onlyDigits(text)
+  if (side === 'width') typedWidth.value = kept
+  else typedHeight.value = kept
+  if (kept !== text) refuse(side)
+  else if (inRange(Number(kept))) refusals[side] = 0
 }
 /** A refused character leaves the state as it was, so the field is put back to the state by hand. */
 function cleanSizeInput(event: Event): void {
   const input = event.target as HTMLInputElement
   input.value = onlyDigits(input.value)
 }
+/** Refuses at the key what a size can't hold (ticket 0978): ".", ",", "-", a letter, a digit past three or a fraction's
+ * digit, saying the range. A paste, whose text comes with the input event, is cleaned there. */
+function onSizeBeforeInput(event: InputEvent, side: SizeSide): void {
+  const text = event.data
+  if (!event.inputType.startsWith('insert') || text === null) return
+  const input = event.target as HTMLInputElement
+  const left = input.value.length - ((input.selectionEnd ?? 0) - (input.selectionStart ?? 0))
+  if (/^\d+$/.test(text) && afterPoint.value !== side && left + text.length <= MAX_DIGITS) return
+  if (/[.,]/.test(text)) afterPoint.value = side
+  event.preventDefault()
+  refuse(side)
+}
+/** The keys that move the caret or delete, which end a refused point's fraction (a phone's "Unidentified" key does not). */
+const CARET_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Backspace', 'Delete', 'Tab'])
 function onSizeKey(event: KeyboardEvent): void {
   event.stopPropagation()
   if (event.key === 'Enter') commitSize()
+  else if (CARET_KEYS.has(event.key)) afterPoint.value = null
 }
 /** Focus moving from one field to the other is no end of editing. */
 function onSizeFocusOut(event: FocusEvent): void {
@@ -268,7 +319,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
             class="frame-panel__size"
             :class="{ 'frame-panel__size--locked': sizeHeld }"
             :data-handles-escape="sizeEdited || undefined"
-            @panel-escape="clearSize"
+            @panel-escape="putSizeBack"
             @focusout="onSizeFocusOut"
           >
             <TextField
@@ -283,10 +334,14 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
               :placeholder="String(counted.columns)"
               :disabled="sizeHeld"
               class="frame-panel__field"
+              :invalid="refusals.width > 0"
+              :aria-describedby="refusals.width ? rangeIds.width : undefined"
               data-testid="frame-panel-width"
               @update:model-value="setSize('width', String($event))"
+              @beforeinput="onSizeBeforeInput($event, 'width')"
               @input="cleanSizeInput"
               @keydown="onSizeKey"
+              @pointerdown="afterPoint = null"
             />
             <span class="frame-panel__times" aria-hidden="true">×</span>
             <TextField
@@ -301,13 +356,23 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
               :placeholder="String(counted.rows)"
               :disabled="sizeHeld"
               class="frame-panel__field"
+              :invalid="refusals.height > 0"
+              :aria-describedby="refusals.height ? rangeIds.height : undefined"
               data-testid="frame-panel-height"
               @update:model-value="setSize('height', String($event))"
+              @beforeinput="onSizeBeforeInput($event, 'height')"
               @input="cleanSizeInput"
               @keydown="onSizeKey"
+              @pointerdown="afterPoint = null"
             />
             <span class="frame-panel__unit">{{ t.frame.sizeUnit }}</span>
           </component>
+          <template v-for="side in (['width', 'height'] as const)" :key="side">
+            <p v-if="refusals[side]" :id="rangeIds[side]" :key="refusals[side]" class="frame-panel__range" role="alert" :data-testid="`frame-${side}-range`">
+              <AppIcon name="warning" :size="14" />
+              <span>{{ rangeLines[side] }}</span>
+            </p>
+          </template>
 
           <MarkedDoneLine v-if="locked" class="frame-panel__line" testid="frame-size-locked" @reset-progress="emit('reset-progress')" />
           <p v-else-if="turned" class="frame-panel__line" data-testid="frame-size-turned">{{ t.frame.sizeTurnedLine }}</p>
@@ -446,6 +511,16 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   gap: var(--space-4);
 }
 
+/* With the browser's text so large that the shell is under 17.5rem wide (a phone from 125%, ticket 0941; 315px at the
+ * default size, so never at 320px), the title's total and tools, and the estimate's size, go under their label rather
+ * than run over it. */
+@container shell (max-width: 17.5rem) {
+  .frame-panel__title,
+  .frame-panel__estimate {
+    flex-wrap: wrap;
+  }
+}
+
 .frame-panel__title :deep(.frame-panel__remove) {
   color: var(--danger);
 }
@@ -478,6 +553,17 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   align-items: center;
   gap: var(--space-8);
   min-width: 0;
+}
+
+/* A side's range under the fields (ticket 0978): the TextField card's error line. */
+.frame-panel__range {
+  display: flex;
+  gap: var(--space-6);
+  align-items: center;
+  margin: 0;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--danger);
 }
 
 .frame-panel__size--locked {

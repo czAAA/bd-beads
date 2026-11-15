@@ -123,4 +123,20 @@ const sliders = computed(() =>
 .convert-lighting-sliders :deep(.convert-lighting-sliders__reset[aria-disabled='true']) {
   color: var(--faint);
 }
+
+/* Touch (ticket 0962): the track is the slider's `touch-target` tall, and the head too, so the reset's `touch-target`
+ * pad stays in the head, clear of the track; the ends' words, drawn over the track's foot, let a press through to it. */
+@media (pointer: coarse) {
+  .convert-lighting-sliders__slider :deep(.vs-head) {
+    min-height: var(--touch-target);
+  }
+
+  .convert-lighting-sliders__slider :deep(.vs-range) {
+    height: var(--touch-target);
+  }
+
+  .convert-lighting-sliders__slider :deep(.vs-ends) {
+    pointer-events: none;
+  }
+}
 </style>

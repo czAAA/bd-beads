@@ -1,8 +1,9 @@
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type {} from '@vitest/browser-playwright'
-import { cdp } from 'vitest/browser'
+import { cdp, userEvent } from 'vitest/browser'
 import { createProject } from '../../domain/createProject'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { en } from '../../i18n/en'
 import { mountAt } from '../../testUtils/browserFit'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
@@ -96,5 +97,29 @@ describe('FramePanel edge steppers on a coarse pointer (ticket 0933)', () => {
       }
     }
     expect(wrong).toEqual([])
+  })
+})
+
+// Typed on the real keyboard, a size takes whole numbers only: the point and what follows it are refused at the key, so
+// "12.5" is 12, never 125; a fourth digit is refused, and the range shows under the field (ticket 0978).
+describe('FramePanel size fields typed (ticket 0978)', () => {
+  it('takes "12.5" as 12 and "5000" as 500, saying the range, which goes with the next valid entry', async () => {
+    const sizes: [number, number][] = []
+    const panel = defineComponent({ setup: () => () => h('div', { style: { width: '360px' } }, [h(FramePanel, { project, onResize: (columns: number, rows: number) => sizes.push([columns, rows]) })]) })
+    const { root } = await mountAt(panel, {}, { locale: 'en', width: 390 })
+    const width = root.querySelector<HTMLInputElement>('[data-testid="frame-panel-width"]')!
+    const range = () => root.querySelector('[data-testid="frame-width-range"]')
+    width.focus()
+    width.select()
+    await userEvent.keyboard('12.5{Enter}')
+    expect(sizes).toEqual([[12, 6]])
+    expect(range()?.textContent?.trim()).toBe(fillBlanks(en.frame.widthRange, { min: 4, max: 999 }))
+    width.select()
+    await userEvent.keyboard('-5000')
+    expect(width.value).toBe('500')
+    expect(range()).not.toBeNull()
+    width.select()
+    await userEvent.keyboard('40')
+    await expect.poll(() => range()).toBeNull()
   })
 })

@@ -309,20 +309,73 @@ function step(axis: MirrorAxis, by: number) {
   white-space: nowrap;
 }
 
+/* Mouse and pen (ticket 0962): a segment, an Axis chip's icon cell and a count button each answer at least `hit-min`
+ * tall, over the switch's or the chip's own border, and the icon cell is `hit-min` wide, so no target is under 24px. */
+@media not (pointer: coarse) {
+  .mirror-bar__segment,
+  .mirror-bar__step,
+  .mirror-bar__chip :deep(.mirror-bar__chip-button) {
+    position: relative;
+  }
+
+  .mirror-bar__segment::before,
+  .mirror-bar__step::before,
+  .mirror-bar__chip :deep(.mirror-bar__chip-button::before) {
+    content: '';
+    position: absolute;
+    top: 50%;
+    inset-inline: 0;
+    height: max(100%, var(--hit-min));
+    transform: translateY(-50%);
+  }
+
+  .mirror-bar__chip :deep(.mirror-bar__chip-button) {
+    width: var(--mirror-bar-control);
+  }
+}
+
+/* Touch (ticket 0962): every control answers across `touch-target`, its hit area its own width and `touch-target` tall,
+ * so no two lie over each other: a segment at least `touch-target` wide, an Axis chip's icon cell and each count button
+ * `touch-target` wide, 4px between the chips. */
 @media (pointer: coarse) {
   .mirror-bar__mode,
   .mirror-bar__chip {
     height: var(--mirror-bar-control-touch);
   }
 
+  .mirror-bar__chips {
+    gap: var(--space-4);
+  }
+
+  .mirror-bar__segment {
+    min-width: var(--touch-target);
+  }
+
   .mirror-bar__chip :deep(.mirror-bar__chip-button) {
-    width: calc(var(--mirror-bar-control-touch) - 2px);
+    width: var(--touch-target);
     height: calc(var(--mirror-bar-control-touch) - 2px);
   }
 
   .mirror-bar__step {
-    width: var(--mirror-bar-control-touch);
+    width: var(--touch-target);
     height: calc(var(--mirror-bar-control-touch) - 2px);
+  }
+
+  .mirror-bar__segment,
+  .mirror-bar__step {
+    position: relative;
+  }
+
+  .mirror-bar__segment::before,
+  .mirror-bar__step::before,
+  .mirror-bar__chip :deep(.mirror-bar__chip-button::before) {
+    content: '';
+    position: absolute;
+    top: 50%;
+    inset-inline: 0;
+    width: auto;
+    height: var(--touch-target);
+    transform: translateY(-50%);
   }
 }
 </style>
