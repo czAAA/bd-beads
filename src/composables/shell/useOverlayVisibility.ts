@@ -10,21 +10,21 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
 
   /** The button the Export panel hangs from (ticket 0657): the Canvas strip's or the margin sheet's own. */
   const exportOpener = ref<ExportOpener>('strip-export')
-  /** The row the Export panel opens on (ticket 0843): the Project panel's Picture or Printable chart; none from a button. */
+  /** The row the Export panel opens on: Picture from the Progress bar's Fit a Frame and export a picture (ticket 0847);
+   * none from a button or the Project panel's Export row (ticket 0956). */
   const exportChoice = ref<ExportChoice>()
 
-  /** A strip button's panel; the Project panel's Picture and Printable chart open Export as the strip's button does, on
-   * their choice (ticket 0843). */
-  function onSelectPanel(sheet: OpenPanel, choice?: ExportChoice) {
-    if (sheet === 'export') return onOpenExport('strip-export', choice)
+  /** A strip button's panel; the Project panel's Export row opens Export as the strip's button does (ticket 0956). */
+  function onSelectPanel(sheet: OpenPanel) {
+    if (sheet === 'export') return onOpenExport('strip-export')
     openPanel.value = openPanel.value === sheet ? null : sheet
   }
 
   /** Export from the strip or from the margin sheet: the same panel, hung from the button pressed. Pressing the
    * button it hangs from again closes it; the other one moves it there. */
-  function onOpenExport(from: ExportOpener, choice?: ExportChoice) {
+  function onOpenExport(from: ExportOpener) {
     if (openPanel.value === 'export' && exportOpener.value === from) openPanel.value = null
-    else showExport(from, choice)
+    else showExport(from)
   }
 
   /** Export opened, never closed, by what leads to it from no Frame (ticket 0847): the Progress bar's Fit a Frame and

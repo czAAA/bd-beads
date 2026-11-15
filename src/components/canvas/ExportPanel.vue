@@ -14,7 +14,7 @@ const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
   exporting?: ExportChoice
-  /** The row it opens on, focused (ticket 0843): the Project panel's Picture or Printable chart asked for it. */
+  /** The row it opens on, focused (ticket 0847): Picture, from the Progress bar's Fit a Frame and export a picture. */
   opensOn?: ExportChoice
 }>()
 
