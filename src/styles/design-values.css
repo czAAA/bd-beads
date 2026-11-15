@@ -119,6 +119,9 @@
   --picture-drop-height: 220px; /* ConvertImage card: its height. */
   --focus-ring-lit: var(--surface); /* KeyboardFocus card (ticket 0857): the ring on a lit (ink-filled) control, the surface color, so it shows against the fill. */
   --focus-offset-lit: calc(var(--focus-offset) - var(--focus-width)); /* KeyboardFocus card (ticket 0857): that ring inside the control's ink edge, which stays. */
+  --focus-ring-on-accent: var(--on-accent); /* KeyboardFocus card (ticket 0938): the ring on an accent fill (a primary button, an on switch), the fill's own label color. */
+  --focus-ring-on-danger: var(--on-danger); /* KeyboardFocus card (ticket 0938): the ring on the danger button, its label color. */
+  --focus-ring-band: var(--surface); /* KeyboardFocus card (ticket 0938): on a swatch, whose fill is any color, the band inside the ring, so one of the two shows. */
 }
 
 :root,

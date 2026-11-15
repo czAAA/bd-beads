@@ -131,6 +131,28 @@ const tooltip = computed(() => {
   outline-offset: var(--focus-offset);
 }
 
+/* A swatch's fill is any color, so its ring is two-tone: `focus-ring` at the edge, a `focus-ring-band` band inside it,
+ * one of the two showing on any fill (KeyboardFocus card, ticket 0938). The rings outside the chip stay. */
+.swatch__chip:focus-visible {
+  --swatch-focus-band: inset 0 0 0 calc(2 * var(--focus-width)) var(--focus-ring-band);
+
+  box-shadow: var(--swatch-focus-band);
+}
+
+.swatch__chip--recent:focus-visible {
+  box-shadow:
+    var(--swatch-focus-band),
+    0 0 0 2px var(--swatch-gap, var(--panel)),
+    0 0 0 3px var(--field-line);
+}
+
+.swatch__chip--selected:focus-visible {
+  box-shadow:
+    var(--swatch-focus-band),
+    0 0 0 2px var(--swatch-gap, var(--panel)),
+    0 0 0 4px var(--ring);
+}
+
 /* The × of Edit palette (ticket 531): a picture centered on the chip; the press goes to the chip under it. */
 .swatch__remove {
   position: absolute;

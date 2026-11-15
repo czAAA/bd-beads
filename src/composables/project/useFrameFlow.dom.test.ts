@@ -106,6 +106,45 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ ...sizedRect, rows: 6, columns: 7 })
   })
 
+  describe('a corner keeps where it was pressed (ticket 0977)', () => {
+    const wide = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 24, height: 14, unit: 'beads' } })
+    // The corner is drawn on the line past the last bead, so a press on it lands on the bead beyond.
+    const corner = { row: 14, column: 24 }
+
+    it('changes nothing by a press alone', () => {
+      const { deps, press, drag, release } = setupEditing(wide)
+      press({ kind: 'handle', edges: ['bottom', 'right'] }, corner)
+      drag(corner)
+      release()
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+    })
+
+    it('resizes by as many beads as it is dragged: 3 columns and 2 rows in give 21 by 12', () => {
+      const { deps, press, drag, release } = setupEditing(wide)
+      press({ kind: 'handle', edges: ['bottom', 'right'] }, corner)
+      drag({ row: corner.row - 2, column: corner.column - 3 })
+      release()
+      expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 12, columns: 21 })
+    })
+
+    it('moves a side handle by the beads dragged across it, whichever row it was pressed on', () => {
+      const { deps, press, drag, release } = setupEditing(wide)
+      press({ kind: 'handle', edges: ['right'] }, { row: 7, column: 24 })
+      drag({ row: 9, column: 22 })
+      release()
+      expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 14, columns: 22 })
+    })
+  })
+
+  it('keeps where the top-left corner was pressed too, inside its first bead (ticket 0977)', () => {
+    const wide = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 24, height: 14, unit: 'beads' } })
+    const { deps, press, drag, release } = setupEditing(wide)
+    press({ kind: 'handle', edges: ['top', 'left'] }, { row: -1, column: -1 })
+    drag({ row: 1, column: 2 })
+    release()
+    expect(lastFrame(deps)).toEqual({ row: 2, column: 3, rows: 12, columns: 21 })
+  })
+
   it('drops what a shrinking handle drag gives up once, on release, as one Undo step (ticket 513)', () => {
     const own = withColors({}, [{ row: 0, column: 0, color: '#e63746' }, { row: 2, column: 3, color: '#2a9d8f' }])
     const start = withLayer(sized, 'frame', { beads: own })
