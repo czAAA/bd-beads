@@ -12,6 +12,13 @@ export function recordingContext() {
       calls.push({ name, args, fillStyle: state.fillStyle, strokeStyle: state.strokeStyle, globalAlpha: state.globalAlpha })
     }
 
+  // Node and jsdom have no Path2D (ticket 1006): a stand-in writes a path's rounded rectangles down with the draw's.
+  class RecordedPath2D {
+    roundRect = record('roundRect')
+    addPath = record('addPath')
+  }
+  Object.assign(globalThis, { Path2D: RecordedPath2D })
+
   const context = {
     save: () => stack.push({ ...state }),
     restore: () => Object.assign(state, stack.pop()),
