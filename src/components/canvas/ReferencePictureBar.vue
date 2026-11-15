@@ -2,8 +2,9 @@
 import { computed, ref } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
+import { barOutOfView } from '../../composables/tools/selectionBarPlacement'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
-import { pictureBarAway, pictureBarPlace, type ScreenBox } from '../../composables/canvas/pictureBarPlacement'
+import { pictureBarPlace, type ScreenBox } from '../../composables/canvas/pictureBarPlacement'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { imageInputAccept } from '../../domain/imageConversion'
 import { movedBy, OPACITY_STEPS, type OpacityStep, type ReferencePlace } from '../../domain/referenceImage'
@@ -60,7 +61,7 @@ const at = computed(() => pictureBarPlace(props.picture, { width: width.value, h
 /** Where the bar stands, hidden once it has gone out of view with its picture (ticket 1011). */
 const placedStyle = computed(() => {
   const size = { width: width.value, height: props.barHeight }
-  return { left: `${at.value.left}px`, top: `${at.value.top}px`, ...(pictureBarAway(at.value, size, props.view.viewport) ? { visibility: 'hidden' as const } : {}) }
+  return { left: `${at.value.left}px`, top: `${at.value.top}px`, ...(barOutOfView(at.value, size, props.view.viewport) ? { visibility: 'hidden' as const } : {}) }
 })
 
 const moveAction = controlAction('move-reference-image')

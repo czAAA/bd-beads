@@ -3,9 +3,9 @@ import { flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createProject } from '../../domain/createProject'
 import { ImageConversionError } from '../../domain/imageConversion'
-import type { Rect } from '../../domain/canvas'
 import type { Project } from '../../domain/project'
 import { newReferenceImage, withReferenceImage, type ReferencePicture } from '../../domain/referenceImage'
+import type { Region, SurfaceView } from '../../rendering/surfaceView'
 import { editHarness } from '../../testUtils/editHarness'
 import { memoryPictureStore } from '../../testUtils/pictureStore'
 import { useDialogs } from '../shell/useDialogs'
@@ -31,8 +31,8 @@ function setup(project: Project | undefined = framed(), { refuses = false, prepa
       return { blob: new Blob([picked.name]), picture: prepared }
     }),
     decode: vi.fn(async () => ({ image: {} as CanvasImageSource, url: 'blob:picture', release: vi.fn() })),
-    inView: vi.fn((): Rect | undefined => undefined),
-    centreOn: vi.fn(),
+    inView: () => undefined,
+    bringIntoView: vi.fn<(locate: (surface: SurfaceView) => Region | undefined) => void>(),
     announce: vi.fn(),
     openProjectPanel: vi.fn(),
     closePanel: vi.fn(),
@@ -97,20 +97,15 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('brings a picture shown out of view into the middle of the view, and leaves one already in view where it is (ticket 1011)', async () => {
+  it('brings the picture into view as it is shown, not as it is hidden (ticket 1011)', async () => {
     const { flow, deps } = setup()
     await flow.pick(file(), 'panel')
     flow.toggleShown()
-    deps.inView.mockReturnValue({ row: 0, column: 0, rows: 4, columns: 4 })
+    expect(deps.bringIntoView).not.toHaveBeenCalled()
     flow.toggleShown()
-    expect(deps.centreOn).not.toHaveBeenCalled()
-    flow.toggleShown()
-    deps.inView.mockReturnValue({ row: 10, column: 10, rows: 4, columns: 4 })
-    flow.toggleShown()
-    // The picture, 80 × 40 grid px in the middle of the 80 × 80 Canvas, covers its two middle rows.
-    expect(deps.centreOn).toHaveBeenCalledExactlyOnceWith({ row: 1, column: 0, rows: 2, columns: 4 })
-    flow.toggleShown()
-    expect(deps.centreOn).toHaveBeenCalledOnce()
+    // At 200%, the grid's first point at (10, 20): the 80 × 40 picture centred on (40, 40) lies at (10, 60), 160 × 80.
+    const surface = { gridToPoint: (x: number, y: number) => ({ x: x * 2 + 10, y: y * 2 + 20 }) } as SurfaceView
+    expect(deps.bringIntoView.mock.calls[0][0](surface)).toEqual({ x: 10, y: 60, width: 160, height: 80 })
   })
 
   it('lays the picture over the beads for the session, not saved nor an Undo step, back under in another Project (ticket 1009)', async () => {

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { convertPopoverPlace, pictureBarAway, pictureBarPlace, pictureBounds } from './pictureBarPlacement'
+import { convertPopoverPlace, pictureBarPlace, pictureBounds } from './pictureBarPlacement'
 
 const viewport = { width: 1000, height: 700 }
 const bar = { width: 160, height: 40 }
@@ -35,12 +35,12 @@ describe('the picture bar and the Convert to beads popover on the canvas box (Re
     expect(pictureBarPlace({ left: 300, top: 900, width: 200, height: 100 }, bar, viewport)).toEqual({ left: 320, top: 846 })
     // Off the top: 14px inside the bottom edge, the last of the picture it can stand on.
     expect(pictureBarPlace({ left: 300, top: -300, width: 200, height: 280 }, bar, viewport)).toEqual({ left: 320, top: -74 })
+    // A picture narrower than 48px keeps the bar over half its width.
+    expect(pictureBarPlace({ left: 1100, top: 200, width: 30, height: 100 }, bar, viewport)).toEqual({ left: 955, top: 146 })
   })
 
-  it('tells a bar wholly outside the canvas box, which is hidden', () => {
-    expect(pictureBarAway({ left: 964, top: 146 }, bar, viewport)).toBe(false)
-    expect(pictureBarAway({ left: 1000, top: 146 }, bar, viewport)).toBe(true)
-    expect(pictureBarAway({ left: 320, top: -40 }, bar, viewport)).toBe(true)
+  it('keeps 14px inside the top edge of a picture too short to hold the bar above its bottom edge (ticket 1011)', () => {
+    expect(pictureBarPlace({ left: 300, top: 10, width: 200, height: 50 }, bar, viewport)).toEqual({ left: 320, top: 24 })
   })
 
   it('stands inside the picture\'s top edge with no room above its sheet either', () => {

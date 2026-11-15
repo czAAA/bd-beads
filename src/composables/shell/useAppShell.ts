@@ -728,7 +728,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     prepare: services.preparePicture,
     decode: services.drawablePicture,
     inView: () => canvasOnScreen(),
-    centreOn,
+    bringIntoView,
     announce,
     // The refusal is told in the reference image section, so a folded one opens for it.
     openProjectPanel: () => {
