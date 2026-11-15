@@ -37,6 +37,11 @@ describe('printText (tickets 162, 164)', () => {
     expect(text.gramsNote).toBe('≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares.')
   })
 
+  it('names the chart cross "empty" for the key of page 1 only when the Schema has empty positions (ticket 0963)', () => {
+    expect(printText(delicaProject(4799), en, 'en', at).empty).toBe('empty')
+    expect(printText(delicaProject(4800), en, 'en', at).empty).toBeUndefined()
+  })
+
   it('buys tubes per color from its grams, a color under a gram is one, and the Total adds the rows (ticket 0581)', () => {
     const red = delicaProject(4800)
     const project = paintAt(red, [{ row: 59, column: 79 }, { row: 59, column: 78 }], '#2255aa')
@@ -129,8 +134,8 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(chart.title).toBe('Row by row')
     expect(chart.notes).toEqual([en.print.wordChart.firstTop, en.print.wordChart.sides, en.print.wordChart.runNote])
     expect(chart.rows).toEqual([
-      { label: '1', first: 1, last: 1, marker: 'L', runs: '2C, 1*' },
-      { label: '2', first: 2, last: 2, marker: 'R', runs: '1C, 2*' },
+      { label: '1', first: 1, last: 1, marker: 'L', runs: '2C, 1×' },
+      { label: '2', first: 2, last: 2, marker: 'R', runs: '1C, 2×' },
     ])
   })
 
@@ -138,7 +143,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const base = createProject({ technique: 'peyote', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 2, unit: 'beads' } })
     const chart = printText(letters(paintAt(base, [{ row: 0, column: 0 }], '#e63746')), ru, 'ru', at, ROW_BY_ROW).wordChart!
 
-    expect(chart.rows[0]).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C, 3*' })
+    expect(chart.rows[0]).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C, 3×' })
     expect(chart.notes).toContain(ru.print.wordChart.evenCount)
     expect(chart.empty).toBe(ru.print.wordChart.empty)
   })
@@ -152,7 +157,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, en.print.wordChart.runNote, en.print.wordChart.pairNote])
-    expect(chart.rows[0]).toEqual({ label: '1', first: 1, last: 1, runs: 'Part 1, round 1: 1*, 2C, 1*' })
+    expect(chart.rows[0]).toEqual({ label: '1', first: 1, last: 1, runs: 'Part 1, round 1: 1×, 2C, 1×' })
     expect(chart.rows[10]).toEqual({ label: '11', first: 11, last: 11, runs: 'Zip 1–2' })
   })
 
@@ -167,10 +172,10 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(cells.length).toBe(3)
     const chart = printText(letters(paintAt(placed.project, cells, '#e63746')), en, 'en', at, ROW_BY_ROW).wordChart!
     expect(chart.notes).toEqual([en.print.wordChart.firstCentre, en.print.wordChart.runNote, en.print.wordChart.pairNote])
-    expect(chart.rows[0]!.runs).toBe('Round 1: 4*')
-    expect(chart.rows[1]!.runs).toBe('Round 2: (2*)\u00a0| (2*)\u00a0| (2*)\u00a0| (2*)')
+    expect(chart.rows[0]!.runs).toBe('Round 1: 4×')
+    expect(chart.rows[1]!.runs).toBe('Round 2: (2×)\u00a0| (2×)\u00a0| (2×)\u00a0| (2×)')
     // A side's mark keeps to the side it ends; a pair of two colors is never split between lines.
-    expect(chart.rows[2]!.runs).toBe('Round 3: (1*\u00a01C), 1C\u00a0| (1C\u00a01*), 1*\u00a0| (2*), 1*\u00a0| (2*), 1*')
+    expect(chart.rows[2]!.runs).toBe('Round 3: (1×\u00a01C), 1C\u00a0| (1C\u00a01×), 1×\u00a0| (2×), 1×\u00a0| (2×), 1×')
   })
 
   it('starts a Fringe earring\'s Word chart at its top\'s base row and names each strand (ticket 0597)', () => {
@@ -181,7 +186,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.firstBase, en.print.wordChart.runNote])
-    expect(chart.rows[2]).toEqual({ label: '3', first: 3, last: 3, runs: 'Strand 1: 2*' })
+    expect(chart.rows[2]).toEqual({ label: '3', first: 3, last: 3, runs: 'Strand 1: 2×' })
   })
 
   it('writes a Kite\'s rows back and forth, each marked with its end, its middle pair in brackets (ticket 0874)', () => {
@@ -195,11 +200,11 @@ describe('printText Word chart (ticket 0574)', () => {
 
     expect(chart.notes).toEqual([en.print.wordChart.firstPoint, en.print.wordChart.sides, en.print.wordChart.runNote, en.print.wordChart.middlePairNote])
     expect(chart.rows.map(({ marker, runs }) => `(${marker}) ${runs}`)).toEqual([
-      '(L) Row 1: (2*)',
-      '(R) Row 2: (2*)',
-      '(L) Row 3: 1*, (1*\u00a01C), 1C',
-      '(R) Row 4: 1*, (2*), 1*',
-      '(L) Row 5: 2*, (2*), 2*',
+      '(L) Row 1: (2×)',
+      '(R) Row 2: (2×)',
+      '(L) Row 3: 1×, (1×\u00a01C), 1C',
+      '(R) Row 4: 1×, (2×), 1×',
+      '(L) Row 5: 2×, (2×), 2×',
     ])
   })
 
