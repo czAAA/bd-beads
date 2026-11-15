@@ -211,7 +211,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
+  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
@@ -1083,6 +1083,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       bindCanvasScroll,
       zoom,
       scroll,
+      /** Whether the view has had its first fit, so the Frame's sheet is first shown where it stays (ticket 0991). */
+      viewPlaced,
       /** The Canvas's orientation as shown: live while two fingers twist it (ticket 0672). */
       canvasOrientation,
       /** Whether two fingers twist the Canvas, or it eases onto a quarter turn after them (ticket 0709). */

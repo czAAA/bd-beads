@@ -32,6 +32,15 @@ function setup(project: Project | undefined, size = { width: 1000, height: 800 }
 }
 
 describe('useCanvasView', () => {
+  it('is placed only once the area is measured, so nothing is laid at its stand-in view first (ticket 0991)', async () => {
+    const { view, viewport } = setup(projectOf(20, 10), { width: 0, height: 0 })
+    view.fit()
+    expect(view.placed.value).toBe(false)
+    viewport.value = { width: 1000, height: 800 }
+    await nextTick()
+    expect(view.placed.value).toBe(true)
+  })
+
   it('fits the Frame whole in the viewport, never zooming in past 100%, with the Frame in the middle', async () => {
     const { view } = setup(projectOf(20, 10))
     view.fit()

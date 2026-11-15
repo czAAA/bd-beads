@@ -139,10 +139,10 @@ describe("What's inside: everything the ghost presses is seen whole (ticket 0820
       await withMotion(true)
       const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
       await page.viewport(width, height)
+      // Welcome comes first (ticket 0830): the tour plays once the page is turned to What's inside, its demo there.
+      await turnToSection(mounted.root, 'inside')
       const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
       const ghost = watchTheGhost(editor)
-      // Welcome comes first (ticket 0830): the tour plays once the page is turned to What's inside.
-      await turnToSection(mounted.root, 'inside')
       const playing = () => mounted.root.querySelector('[data-testid="inside-chapters"] [aria-current="step"]')?.getAttribute('data-testid')
       try {
         await expect.poll(playing, { timeout: 8000 }).toBe('inside-chapter-draw')
