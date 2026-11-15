@@ -23,11 +23,16 @@ const props = defineProps<{
   techniques?: readonly Technique[]
   /** The Technique alone, without its settings: for a shape no Drop changes (ticket 0872). */
   withoutSettings?: boolean
+  /** An Info button beside Technique saying what it decides (New Project, ticket 0951). */
+  explained?: boolean
 }>()
 const technique = defineModel<Technique>('technique', { required: true })
 const emit = defineEmits<{ 'set-setting': [id: string, value: number] }>()
 
 const { t } = useI18n()
+const info = computed(() =>
+  props.explained ? { label: t.value.form.techniqueInfoLabel, body: t.value.form.techniqueInfo, testid: `${props.testid}-technique-info` } : undefined,
+)
 const options = computed(() => (props.techniques ?? TECHNIQUES).map((value) => ({ value, label: techniqueName(t.value, value) })))
 const steppers = computed(() =>
   (props.withoutSettings ? [] : describeWeave({ technique: technique.value }).settings).map((setting) => ({
@@ -46,6 +51,7 @@ const steppers = computed(() =>
       :options="options"
       :disabled="disabled"
       :disabled-body="disabled ? techniqueDisabledBody : undefined"
+      :info="info"
       :data-testid="`${testid}-technique`"
     />
     <SettingStepper
