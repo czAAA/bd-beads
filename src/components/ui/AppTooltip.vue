@@ -261,8 +261,8 @@ function onClick(event: MouseEvent) {
 }
 
 /** Only a tip a click opened is a layer: a hover or focus tip must not take Escape or a press from the menu behind
- * it. */
-useOverlayLayer({ isOpen: () => open.value && pinned.value, root: () => triggerEl.value, close: hide })
+ * it. A press outside closes it and still does what it does (ticket 0955), as the Homepage's chips did. */
+useOverlayLayer({ isOpen: () => open.value && pinned.value, root: () => triggerEl.value, close: hide, outside: 'through' })
 
 function onPointerLeave(event: PointerEvent) {
   if (!overTrigger(event.clientX, event.clientY)) pressedUntilLeave = false

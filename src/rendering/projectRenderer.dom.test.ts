@@ -8,6 +8,7 @@ import { MIRROR_OFF, withMirror } from '../domain/mirror'
 import type { Grid, Project } from '../domain/project'
 import type { Technique, Weave } from '../domain/weave'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, flatLook, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
+import { LIFT_REACH_PX } from './liftedPiece'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
@@ -503,6 +504,22 @@ describe('drawing only some rows again', () => {
     const key = (b: BeadShape) => `${b.x},${b.y},${b.color}`
     // Rows 1 to 4: the band with the row either side, whose shifted columns' beads hang into it.
     expect(some.map(key)).toEqual(all.filter(({ y }) => y >= 20 && y < 100).map(key))
+  })
+
+  it('clears and cuts a band on the Canvas out to where its Lifted piece reaches, so the contour above its first row is drawn again (ticket 1004)', () => {
+    const project = projectOf('loom', 4, 30)
+    const band = (theme: typeof DARK_THEME) => {
+      const { context, named } = recordingContext()
+      renderInSpace(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, theme, drawBead: noBead, rows: { first: 15, last: 15 } })
+      const [x, y, width, height] = named('clearRect')[0]!.args as number[]
+      return { x, y, width, height }
+    }
+
+    const flat = band({ ...DARK_THEME, liftedPiece: false })
+    const lifted = band(DARK_THEME)
+
+    expect(lifted.y).toBeLessThanOrEqual(flat.y! - LIFT_REACH_PX)
+    expect(lifted.y! + lifted.height!).toBeGreaterThanOrEqual(flat.y! + flat.height! + LIFT_REACH_PX)
   })
 
   it('starts a brick stitch band at the top of its first row, and no more of the rows above', () => {

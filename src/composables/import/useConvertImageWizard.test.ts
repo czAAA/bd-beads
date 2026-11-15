@@ -92,7 +92,7 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
     expect(wizard.found.value).toHaveLength(3)
   })
 
-  it('counts the bead colors after the match, and Make empty takes a bead color whole (ticket 0863)', async () => {
+  it('counts the bead colors after the match, and Leave a color out takes a bead color whole (ticket 0863)', async () => {
     // Two blues the Default Palette both matches to its Blue, and a red.
     const data = new Uint8ClampedArray(30 * 4)
     for (let x = 0; x < 30; x += 1) data.set(x < 10 ? [47, 111, 219, 255] : x < 20 ? [40, 100, 230, 255] : [230, 55, 70, 255], x * 4)

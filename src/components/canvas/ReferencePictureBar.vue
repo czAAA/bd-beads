@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
+import { barOutOfView } from '../../composables/tools/selectionBarPlacement'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { pictureBarPlace, type ScreenBox } from '../../composables/canvas/pictureBarPlacement'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -57,6 +58,11 @@ const words = computed(() => t.value.referenceImage)
 const barEl = ref<HTMLElement>()
 const { width } = useElementSize(barEl, { box: 'border-box' })
 const at = computed(() => pictureBarPlace(props.picture, { width: width.value, height: props.barHeight }, props.view.viewport, props.sheet))
+/** Where the bar stands, hidden once it has gone out of view with its picture (ticket 1011). */
+const placedStyle = computed(() => {
+  const size = { width: width.value, height: props.barHeight }
+  return { left: `${at.value.left}px`, top: `${at.value.top}px`, ...(barOutOfView(at.value, size, props.view.viewport) ? { visibility: 'hidden' as const } : {}) }
+})
 
 const moveAction = controlAction('move-reference-image')
 const roving = useRovingFocus(barEl, { selector: '.picture-bar__item', axis: () => 'horizontal', managesTabIndex: true })
@@ -130,7 +136,7 @@ function onFile(event: Event) {
     ref="barEl"
     class="picture-bar"
     :class="{ 'picture-bar--moving': press }"
-    :style="{ left: `${at.left}px`, top: `${at.top}px` }"
+    :style="placedStyle"
     role="toolbar"
     :aria-label="words.name"
     data-testid="picture-bar"

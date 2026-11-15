@@ -45,6 +45,11 @@ export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
  * rulers (ticket 0850). */
 const SHEET_FIT_MARGIN_PX: Size = { width: FIT_MARGIN_PX.width - RULER_GUTTER_PX, height: FIT_MARGIN_PX.height - RULER_GUTTER_PX }
 
+/** The largest a Frame's bead is drawn at the fit level, bead to bead (ticket 0964, CanvasStrip card): Fit zooms a
+ * small Frame's sheet past 100% until it fills the room or its beads reach this; with no Frame it stops at 100%.
+ * @internal Its test works out the fit zoom with it. */
+export const LARGEST_FIT_BEAD_PX = 48
+
 /** What a view fits to and centres on, a block of the Canvas's positions, and the room left clear round it. */
 interface FitTarget {
   box: Rect
@@ -136,6 +141,15 @@ export function useCanvasView(
     return area.width > 0 && area.height > 0 ? { area, corner: { x: clear.left, y: clear.top } } : { area: viewport.value, corner: { x: 0, y: 0 } }
   }
 
+  /** The zoom a Frame's fit goes up to (ticket 0964): where its bead's longer step is LARGEST_FIT_BEAD_PX, and never
+   * under 100%, so a Frame of large beads fits as it did. */
+  function frameFitCeiling(surface: SurfaceView): number {
+    const { column, row } = surface.beadStep('frame')
+    const stepAtFull = Math.max(Math.hypot(column.x, column.y), Math.hypot(row.x, row.y)) / zoom.value
+    // To a whole percent, so the step worked out at another zoom doesn't round the ceiling down a percent.
+    return Math.max(1, Math.round((LARGEST_FIT_BEAD_PX / stepAtFull) * 100) / 100)
+  }
+
   function measured(): boolean {
     return viewport.value.width > 0 && viewport.value.height > 0
   }
@@ -163,7 +177,9 @@ export function useCanvasView(
     } else {
       opening = undefined
       const { area, corner } = fitRoom()
-      zoom.value = clampZoom(target ? surfaceOf(project, scroll.value, area).zoomToFit(target.box, target.margin, 'canvas') : 1)
+      const surface = surfaceOf(project, scroll.value, area)
+      const most = footprintOf(project) ? frameFitCeiling(surface) : 1
+      zoom.value = clampZoom(target ? surface.zoomToFit(target.box, target.margin, 'canvas', most) : 1)
       const centred = surfaceOf(project, scroll.value, area).scrollToCentre(target?.box, 'canvas')
       scroll.value = { x: centred.x - corner.x, y: centred.y - corner.y }
     }

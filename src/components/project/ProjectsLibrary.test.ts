@@ -73,6 +73,18 @@ describe('ProjectsLibrary (ticket 0553)', () => {
     expect(wrapper.emitted('exportAll')).toHaveLength(1)
   })
 
+  it('offers Delete all only where asked, under Save all and above the rule, never at the foot of the list (ticket 0984)', async () => {
+    expect(mountLibrary().find('[data-testid="menu-delete-all"]').exists()).toBe(false)
+    const wrapper = mountLibrary({ deletesAll: true })
+    const row = wrapper.get('[data-testid="menu-delete-all"]')
+    const rule = wrapper.get('.projects-library__rule')
+    expect(wrapper.get('[data-testid="menu-export-all"]').element.compareDocumentPosition(row.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(row.element.compareDocumentPosition(rule.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await row.trigger('click')
+    expect(wrapper.emitted('deleteAll')).toHaveLength(1)
+    expect(mountLibrary({ projects: [], deletesAll: true }).get('[data-testid="menu-delete-all"]').attributes('aria-disabled')).toBe('true')
+  })
+
   it('says there are none yet, and cannot export', () => {
     const wrapper = mountLibrary({ projects: [] })
     expect(wrapper.get('[data-testid="project-list-empty"]').text()).toContain(en.projects.emptyTitle)
