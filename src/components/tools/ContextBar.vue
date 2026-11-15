@@ -173,7 +173,7 @@ const items = computed<BarItem[]>(() => {
 
 // The bar's spacing in px, in step with its CSS: `--space-2` between items and at each side, and a 1px divider with
 // `--selbar-divider-margin` (3px) either side. The fit maths reserves a side padding and a divider per end of the
-// readout.
+// readout. The gap and the side padding are read from the bar where it is drawn, since touch spaces it wider (ticket 0962).
 const BAR_ITEM_GAP_PX = 2
 const BAR_SIDE_PADDING_PX = 2
 const BAR_DIVIDER_PX = 1 + 2 * 3
@@ -191,8 +191,11 @@ const readout = useElementSize(readoutEl)
 const capacity = computed(() => {
   const viewport = props.anchor?.viewport.width
   if (!viewport || !readout.width.value || !bar.height.value) return Infinity
-  const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * (BAR_SIDE_PADDING_PX + BAR_DIVIDER_PX)
-  return Math.max(1, Math.floor(room / (bar.height.value + BAR_ITEM_GAP_PX)) - (sheetArea.value ? 1 : 0))
+  const style = rootEl.value ? getComputedStyle(rootEl.value) : undefined
+  const gap = Number.parseFloat(style?.columnGap ?? '') || BAR_ITEM_GAP_PX
+  const side = Number.parseFloat(style?.paddingLeft ?? '') || BAR_SIDE_PADDING_PX
+  const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * (side + BAR_DIVIDER_PX)
+  return Math.max(1, Math.floor(room / (bar.height.value + gap)) - (sheetArea.value ? 1 : 0))
 })
 const overflowing = computed(() => items.value.length > capacity.value)
 const shown = computed(() => (overflowing.value ? items.value.slice(0, Math.max(0, capacity.value - 1)) : items.value))
@@ -342,9 +345,13 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
   box-shadow: none;
 }
 
+/* Touch (ticket 0962): the items stand `touch-target` apart, so each button's `touch-target` hit area lies over no
+ * other's, and the ends' pads stay inside the bar, so they never make the Mirror bar scroll. */
 @media (pointer: coarse) {
   .context-bar {
+    gap: calc(var(--touch-target) - var(--selbar-height-touch));
     height: var(--selbar-height-touch);
+    padding: 0 calc((var(--touch-target) - var(--selbar-height-touch)) / 2);
   }
 }
 

@@ -408,6 +408,23 @@ watch(layout, async () => {
   padding: 0 var(--space-10);
 }
 
+/* Touch (ticket 0962): a chapter is `panel-row-touch` tall in the band and in the list, its whole row its hit area, since
+ * the chapters touch (responsive.md's panel-row exception); Pause's and Open editor's pads lie over none of them. */
+@media (pointer: coarse) {
+  .inside__chapter {
+    min-height: var(--panel-row-touch);
+  }
+
+  /* In the band Pause and Open editor from here may wrap under the chapters: their pads end where the line starts. */
+  .inside--band .inside__guide {
+    row-gap: calc((var(--touch-target) - var(--control-height-small)) / 2);
+  }
+
+  .inside--beside .inside__chapter {
+    height: var(--panel-row-touch);
+  }
+}
+
 .inside__chapter:hover {
   color: var(--ink);
   background: var(--hover-fill);

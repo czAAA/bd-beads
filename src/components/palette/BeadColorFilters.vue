@@ -227,6 +227,8 @@ const finishRoving = useRovingFocus(finishRow, { axis: () => 'vertical', manages
   color: var(--muted);
 }
 
+/* Touch: a family is the Palette's chip size, its own hit area, kept apart by the 6px gap (responsive.md); a Finish line
+ * is `touch-target` tall (ticket 0962), the lines touching, each its own hit area. */
 @media (pointer: coarse) {
   .bead-color-filters__family {
     width: var(--swatch-touch-min);
@@ -234,7 +236,7 @@ const finishRoving = useRovingFocus(finishRow, { axis: () => 'vertical', manages
   }
 
   .bead-color-filters__finish {
-    height: var(--swatch-touch-min);
+    height: var(--touch-target);
   }
 }
 </style>

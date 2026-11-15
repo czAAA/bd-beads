@@ -577,7 +577,7 @@ export const zh: Translations = {
     highlightButton: '行高亮',
     resetButton: '重置进度',
     resetConfirmTitle: '重置进度？',
-    resetConfirmMessage: '所有已标记完成的行都会清除，并从第一行重新开始。珠子保持原位。',
+    resetConfirmMessage: '所有已标记完成的行都会清除，并从第一行重新开始。珠子保持原位。“撤销”不会恢复这些标记，“跳到行”可以。',
     resetConfirmCancel: '取消',
     positionLabel: '行',
     previousButton: '退回一行',
@@ -912,9 +912,9 @@ export const zh: Translations = {
   },
   deleteAll: {
     button: '清空',
-    confirmTitle: '清空？',
-    confirmMessage: '每个格子都会被清空，行进度也会关闭。此操作可以撤销。',
-    confirmButton: '清空',
+    confirmTitle: '清空所有珠子？',
+    confirmMessage: '此项目的所有珠子都会被移除，行进度也会关闭。“撤销”可以恢复它们。',
+    confirmButton: '清空所有珠子',
     cancelButton: '取消',
   },
   removeLine: {

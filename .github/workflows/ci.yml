@@ -77,7 +77,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run --project browser --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      - run: npx vitest run --project browser --project browser-touch --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           BD_BROWSER_TESTS: '1'
 

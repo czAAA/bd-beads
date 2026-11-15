@@ -2,8 +2,11 @@
    else is in tokens.css, controls.css, contrast.css and scoped styles. */
 :root {
   /* The root's own type size and line height: nothing in tokens.css sets these (they're the page's base, not a
-     component's), so they still live here. e2e/support/app.ts pins --line-height-base for the visual checks. */
-  --font-size-base: 18px;
+     component's), so they still live here. e2e/support/app.ts pins --line-height-base for the visual checks.
+     The size is in percent of the browser's text size, never px, so that setting reaches every `rem` of the chrome
+     (WCAG 1.4.4, ticket 0941): 112.5% is 18px at the default 16px. The canvas, rulers and printed pages draw in px
+     and keep their size; Page zoom stays locked (ADR 0034). */
+  --font-size-base: 112.5%;
   --line-height-base: 145%;
 
   font: var(--font-size-base) / var(--line-height-base) var(--font-sans);

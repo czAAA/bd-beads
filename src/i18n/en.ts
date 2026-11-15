@@ -581,7 +581,7 @@ export const en: Translations = {
     highlightButton: 'Row highlight',
     resetButton: 'Reset progress',
     resetConfirmTitle: 'Reset progress?',
-    resetConfirmMessage: 'Every row marked done is cleared and you start again from the first row. The beads stay.',
+    resetConfirmMessage: 'Every row marked done is cleared and you start again from the first row. The beads stay. Undo does not bring the marks back; Go to row does.',
     resetConfirmCancel: 'Cancel',
     positionLabel: 'Row',
     previousButton: 'Back a row',
@@ -919,9 +919,9 @@ export const en: Translations = {
   },
   deleteAll: {
     button: 'Clear',
-    confirmTitle: 'Clear?',
-    confirmMessage: 'Every cell will be emptied and Row progress turned off. This can be undone.',
-    confirmButton: 'Clear',
+    confirmTitle: 'Clear all beads?',
+    confirmMessage: 'Every bead of this Project is removed and Row progress is turned off. Undo brings them back.',
+    confirmButton: 'Clear all beads',
     cancelButton: 'Cancel',
   },
   removeLine: {

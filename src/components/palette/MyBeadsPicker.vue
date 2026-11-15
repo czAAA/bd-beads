@@ -380,7 +380,9 @@ defineExpose({ onPaste })
   margin: 0;
   padding: var(--space-10) var(--space-12);
   font: var(--type-small);
+  line-height: var(--my-beads-empty-leading);
   color: var(--body);
+  text-wrap: balance;
   background: var(--surface);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);

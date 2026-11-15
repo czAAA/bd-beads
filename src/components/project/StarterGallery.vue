@@ -141,6 +141,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
   font: var(--type-meta);
   font-family: var(--font-sans);
   color: var(--muted);
+  text-wrap: balance;
 }
 
 /* Two columns at every width (StarterGallery card, Grid); a row's cards take its tallest caption's height. */

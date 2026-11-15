@@ -589,7 +589,7 @@ export const uk: Translations = {
     highlightButton: 'Підсвітка ряду',
     resetButton: 'Скинути прогрес',
     resetConfirmTitle: 'Скинути прогрес?',
-    resetConfirmMessage: 'Усі ряди, позначені як готові, зникнуть, і ви почнете з першого ряду. Бісеринки залишаться.',
+    resetConfirmMessage: 'Усі ряди, позначені як готові, зникнуть, і ви почнете з першого ряду. Бісеринки залишаться. «Скасувати» не поверне позначки, а «Перейти до ряду» поверне.',
     resetConfirmCancel: 'Скасувати',
     positionLabel: 'Ряд',
     previousButton: 'Назад на ряд',
@@ -931,9 +931,9 @@ export const uk: Translations = {
   },
   deleteAll: {
     button: 'Очистити',
-    confirmTitle: 'Очистити?',
-    confirmMessage: 'Усі клітинки стануть порожніми, а прогрес за рядами вимкнеться. Цю дію можна скасувати.',
-    confirmButton: 'Очистити',
+    confirmTitle: 'Очистити всі бісерини?',
+    confirmMessage: 'Усі бісерини цього проєкту буде прибрано, а прогрес за рядами вимкнеться. «Скасувати» поверне їх.',
+    confirmButton: 'Очистити всі бісерини',
     cancelButton: 'Скасувати',
   },
   removeLine: {

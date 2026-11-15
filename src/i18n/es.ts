@@ -586,7 +586,7 @@ export const es: Translations = {
     highlightButton: 'Resaltar fila',
     resetButton: 'Reiniciar progreso',
     resetConfirmTitle: '¿Reiniciar el progreso?',
-    resetConfirmMessage: 'Se borran todas las filas marcadas como terminadas y empiezas de nuevo desde la primera. Las cuentas se quedan.',
+    resetConfirmMessage: 'Se borran todas las filas marcadas como terminadas y empiezas de nuevo desde la primera. Las cuentas se quedan. «Deshacer» no recupera las marcas; «Ir a la fila» sí.',
     resetConfirmCancel: 'Cancelar',
     positionLabel: 'Fila',
     previousButton: 'Atrás una fila',
@@ -926,9 +926,9 @@ export const es: Translations = {
   },
   deleteAll: {
     button: 'Vaciar',
-    confirmTitle: '¿Vaciar?',
-    confirmMessage: 'Se vaciarán todas las celdas y se desactivará el progreso por filas. Se puede deshacer.',
-    confirmButton: 'Vaciar',
+    confirmTitle: '¿Vaciar todas las cuentas?',
+    confirmMessage: 'Se quitan todas las cuentas de este proyecto y se desactiva el progreso por filas. «Deshacer» las recupera.',
+    confirmButton: 'Vaciar todas las cuentas',
     cancelButton: 'Cancelar',
   },
   removeLine: {

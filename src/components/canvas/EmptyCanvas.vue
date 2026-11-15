@@ -105,5 +105,6 @@ const boardStyle = computed(() => {
   font: var(--type-meta);
   font-family: var(--font-sans);
   color: var(--muted);
+  text-wrap: balance;
 }
 </style>
