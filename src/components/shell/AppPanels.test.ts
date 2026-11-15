@@ -30,6 +30,8 @@ const other = () => (withLayers(moth(), { id: 'other', name: 'Other' }))
 
 beforeEach(() => {
   saveProjects([moth()])
+  // This Project starts folded (ticket 0971): these tests press its rows.
+  localStorage.setItem('openbeads:panel-sections-opened', 'project:this')
 })
 
 afterEach(() => vi.restoreAllMocks())

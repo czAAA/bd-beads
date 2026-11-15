@@ -3,7 +3,7 @@ import { CanvasDrawing } from './canvasDrawing'
 import { drawChartParts, K } from './chartVector'
 import { listHeader, TABLE_COLUMN_GAP, TITLE_MAKER_ROW, TITLE_NAME_ROW, titleRows, type ColorsSlice } from './coverLayout'
 import { NEEDED_COLUMNS, NEEDED_HEADING, type PageOneLayout } from './pageOneLayout'
-import { blankPage, drawBoard, drawMark, drawParts, drawRulers, font, MONO, partLabel, pt, SANS, SERIF, text, wrap } from './printPages'
+import { blankPage, drawBoard, drawEmptySwatch, drawMark, drawParts, drawRulers, font, MONO, partLabel, pt, SANS, SERIF, text, wrap } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { displayedGrid, mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
@@ -90,14 +90,23 @@ function rule(context: CanvasRenderingContext2D, x: number, y: number, width: nu
   context.stroke()
 }
 
+/** Page 1's key item for an empty position (ticket 0963), at the right end of Beads needed's heading: the chart's cross on
+ * an empty swatch, then "empty", as the Row by row key ends. */
+function drawEmptyItem(context: CanvasRenderingContext2D, empty: string, right: number, top: number): void {
+  const named = text(context, empty, right, top + mm(3.5), font('400', 7.5, SANS), PRINT_COLORS.ink, 'right')
+  const size = mm(3)
+  drawEmptySwatch(context, right - named - mm(1.6) - size, top + mm(3.5) - pt(2.8) - size / 2, size, pt(0.5))
+}
+
 /** Beads needed, one table printed once (ticket 0914): the colors of `slice` in two columns reading down, each a letter
  * swatch, color name, code, beads, grams and to buy; on the page it ends on, the Total with beads, grams and tubes and the
- * grams note. An unknown Bead has no grams, no tubes and no note. */
-function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, letters: SwatchLetters, slice: ColorsSlice, top: number): void {
+ * grams note. An unknown Bead has no grams, no tubes and no note. With `empty` its heading names the chart's cross. */
+function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, letters: SwatchLetters, slice: ColorsSlice, top: number, empty?: string): void {
   const { labels } = words
   const x = PRINT_MARGIN
   const width = page.width - PRINT_MARGIN * 2
   text(context, labels.beadsNeeded, x, top + mm(3.5), font('600', 8.5, SANS), PRINT_COLORS.ink)
+  if (empty) drawEmptyItem(context, empty, x + width, top)
   rule(context, x, top + NEEDED_HEADING - mm(1), width, PRINT_COLORS.ink, RULE)
 
   if (words.colors.length === 0) {
@@ -184,7 +193,7 @@ export function drawPageOne(project: Project, words: PrintText, layout: PageOneL
     }
     drawing = pdf?.toString()
   }
-  drawNeeded(context, page, words, project.paletteLetters ?? {}, layout.needed, layout.needed.y)
+  drawNeeded(context, page, words, project.paletteLetters ?? {}, layout.needed, layout.needed.y, words.empty)
   drawFooter(context, page, words, 1, plan.pageCount)
   return { canvas, ...(drawing === undefined ? {} : { drawing }) }
 }

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { contrastRatio, fromHex, luma } from '../domain/color'
 import { recordingContext } from '../testUtils/recordingContext'
-import { blendOver, DARK_THEME, drawFlatBead, fadeOver, flatLook, LIGHT_THEME, ownRim, parseColor, PRINT_THEME, PROJECT_THEMES, type BeadShape } from './beadLook'
+import { blendOver, DARK_THEME, drawFlatBead, fadeOver, flatLook, isOpenWeave, LIGHT_THEME, ownRim, parseColor, PRINT_THEME, PROJECT_THEMES, type BeadShape } from './beadLook'
 
 // The own-color rim and satin light (ticket 1003, BeadBoard card, Canvas look): how one bead is drawn on screen in light
 // and dark. The flat bead of exports and high contrast is in projectRenderer.dom.test.ts.
@@ -48,6 +48,26 @@ describe('the own-color rim', () => {
     expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([[ownRim('#f2c94c'), 40, 20, 20, 20]])
     expect(named('roundRect').map((call) => call.args)).toEqual([[40.5, 20.5, 19, 19, 1.25]])
     expect(named('fill')[0]!.fillStyle).toBe('#f2c94c')
+  })
+
+  it('is not filled round a round bead (Open weave, ticket 1010): its body and light alone, with the ground showing round it', () => {
+    const { context, named } = recordingContext()
+
+    // A TOHO Round 11/0 in a 20 wide cell: a half circle for a corner, longer than it is wide.
+    drawFlatBead(context, bead({ width: 20, height: 28, cornerRadius: 10, color: '#e63746' }))
+
+    expect(named('fillRect')).toHaveLength(0)
+    expect(named('roundRect').map((call) => call.args)).toEqual([[40.5, 20.5, 19, 27, 9.5]])
+    expect(named('fill')[0]!.fillStyle).toBe('#e63746')
+    expect(named('createRadialGradient')).toHaveLength(1)
+  })
+
+  it('keeps the rim round a bead whose corner is not a half circle: a Delica\'s and a cube\'s', () => {
+    for (const cornerRadius of [0, 2, 6]) {
+      const { context, named } = recordingContext()
+      drawFlatBead(context, bead({ width: 20, height: 28, cornerRadius, color: '#e63747' }))
+      expect(named('fillRect').map((call) => call.args)).toEqual([[40, 20, 20, 28]])
+    }
   })
 
   it('keeps the Technique\'s corner on the body, less the inset', () => {
@@ -168,5 +188,15 @@ describe('the own-color bead as a bitmap', () => {
 
     expect(main.named('drawImage')[0]!.args.slice(1)).toEqual([40, 20, 20, 30])
     expect([created[0]!.width, created[0]!.height]).toEqual([40, 60])
+  })
+})
+
+describe('the rule that picks Open weave (ticket 1010)', () => {
+  it('reads the bead\'s corner against its width, not its name', () => {
+    expect(isOpenWeave(10, 20)).toBe(true)
+    expect(isOpenWeave(12, 20)).toBe(true)
+    expect(isOpenWeave(9.9, 20)).toBe(false)
+    expect(isOpenWeave(0, 20)).toBe(false)
+    expect(isOpenWeave(0, 0)).toBe(false)
   })
 })

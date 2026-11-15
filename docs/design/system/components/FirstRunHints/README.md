@@ -6,7 +6,7 @@ What an empty Project says: the next step, how to place a bead, and under it one
 
 - **Whenever the open Project has no beads and no Frame, not even an empty one (ticket 0774)**, on every empty Project (not only the first one, nothing remembered on the device), in every theme. The same rule as the CanvasHint, which shows with it.
 - **It goes with the first bead**, fading out over `--duration-fast` (at once under reduced motion). It comes back whenever the Project is emptied again (Clear all beads, or the last bead erased).
-- After the first bead the only hint left is the Progress bar's existing no-Frame line, "Select to set a Frame" (ProgressBar card).
+- After the first bead the only hint left is the Progress bar's no-Frame line, "Mark the piece to export and count: drag with Select." (ProgressBar card, ticket 0944).
 - Not with no Project open (EmptyCanvas card), not inside Convert image, never on exports. There is no dismiss button.
 - **The first thing a newcomer sees (ticket 0866):** Make your first Project makes "Project 1" at once and opens on its Canvas with no panel open, so the welcome, the CanvasHint and the Tool pill are the whole first screen.
 

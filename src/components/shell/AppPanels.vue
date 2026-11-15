@@ -80,6 +80,7 @@ const {
   onRemoveFrame,
   onFrameKey,
   onCloseFramePanel,
+  onFramePanelPlaced,
   toolPillPosition,
   menuOpensOnForm,
   phoneSavedProjectsOpen,
@@ -115,6 +116,7 @@ const chosenStarter = ref<StarterId>()
     :sub-title="t.starters.title"
     :start-in-sub="frameOpensOnStarters"
     @close="onCloseFramePanel"
+    @placed="onFramePanelPlaced"
   >
     <FramePanel
       :project="activeProject"

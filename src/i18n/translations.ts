@@ -299,6 +299,8 @@ export interface Translations {
       duplicatedToast: string
       /** Said under 1024px, where the strip shows no name, when a Project opens from the library (ticket 0986). */
       openedToast: string
+      /** After Delete of the open Project (ticket 0983): `{name}` is the deleted one, `{open}` the one open now. */
+      deletedToast: string
     }
   }
   /** The header's theme control (ticket 139). */
@@ -330,8 +332,8 @@ export interface Translations {
     pieces: PluralForms
     /** "1 unnamed": the Pieces with no name, after the named ones. */
     unnamedPieces: string
-    /** "Frame 24 × 30 beads", with {width} and {height}. */
-    frameSize: string
+    /** "24 × 30 beads": a framed Project's size, on its library row (ticket 0982), with {width} and {height}. */
+    rowSize: string
     /** A row's Piece count over the size gate, never counted (ticket 0716). */
     tooBigToCount: string
     /** The Tooltip of a row's count still being worked out in idle time (ticket 0716). */
@@ -340,6 +342,8 @@ export interface Translations {
     beads: PluralForms
     /** A sealed Project's row: "made {created} · saved {saved}", dates in the app's language (ticket 0716). */
     sealedDates: string
+    /** "saved Nov 12": a library row's last save, the date short in the app's language (ticket 0982). */
+    savedOn: string
   }
   /** The Starter gallery and its setup (tickets 0596, 0597; StarterGallery card). */
   starters: {
@@ -1067,11 +1071,6 @@ export interface Translations {
     announceFrameRotated: string
     /** Export without a Frame opens a dialog with this title. */
     countNeedsFrame: string
-    /** The Progress bar's hint with no Frame: [Select icon] {progressSelectToSet} [Frame icon] {progressFrameWord}.
-     * Two pieces so each language can order and inflect them: the second ends the sentence (a noun in the
-     * accusative where the language has one). */
-    progressSelectToSet: string
-    progressFrameWord: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
     /** The Progress bar's button with no Frame (ticket 0847): fits a Frame and opens Export on Picture. */
@@ -1082,6 +1081,9 @@ export interface Translations {
     qualityHighCaption: string
     /** The line under the Export quality stops: the slider sets the picture only (ticket 0957). */
     qualityNote: string
+    /** The Progress bar's line with no Frame, after its Select and Frame chips: what a Frame gives, then how to set one
+     * (ticket 0944). The line is a button that picks the Select tool. */
+    progressMarkPiece: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */

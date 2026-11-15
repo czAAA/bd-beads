@@ -14,7 +14,7 @@ import LoadingState from '../ui/LoadingState.vue'
 import FileButton from '../ui/form/FileButton.vue'
 
 // The preview with no picture yet (ConvertImage card DS-1, ticket 0896): the drop zone holding every way in, Choose file,
-// Paste and (on touch) Take photo, with what pictures work behind an Info button and a refused file's Message between
+// Paste and (on touch) Take photo, the two equal choices in one secondary look (ticket 0970), with what pictures work behind an Info button and a refused file's Message between
 // the lines and the buttons. A picture being read shows the Loading card's beads after 300 ms, with its file and size.
 const emit = defineEmits<{ paste: [] }>()
 
@@ -70,6 +70,7 @@ const readingDetail = computed(() => {
           v-if="touch"
           :label="words.takePhoto"
           icon="camera"
+          secondary
           :accept="accept"
           capture="environment"
           data-testid="convert-take-photo"

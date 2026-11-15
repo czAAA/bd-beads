@@ -44,3 +44,16 @@ for (const [name, width, height] of WIDTHS) {
     await context.close()
   })
 }
+
+test('on the iPad the open Project panel leaves the Tool pill at its default place free (ticket 0971)', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'dark', viewport: { width: 1366, height: 1024 }, reducedMotion: 'reduce', hasTouch: true })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom' })])
+  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  await page.getByTestId('strip-project').click()
+  await settle(page)
+  const panel = (await page.getByTestId('panel-dropdown').boundingBox())!
+  const pill = (await page.getByTestId('tool-pill').boundingBox())!
+  expect(panel.y + panel.height).toBeLessThanOrEqual(pill.y)
+  await context.close()
+})

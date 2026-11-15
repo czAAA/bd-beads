@@ -63,6 +63,7 @@ import { useRemoveColorFlow } from '../palette/useRemoveColorFlow'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
 import { useRowInView } from '../canvas/useRowInView'
+import { useFrameBesidePanel } from '../canvas/useFrameBesidePanel'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
 import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
@@ -136,6 +137,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
     names: projectNames,
     replaceProject,
     removeProject,
+    removed: removedProject,
+    restoreRemoved,
+    forgetRemoved,
     removeAllProjects,
     flushPendingSave,
     saveNow,
@@ -216,7 +220,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, visibleCentre, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
+  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, visibleCentre, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
@@ -224,8 +228,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
       opening: openingAddress.project && openingAddress.view ? { project: openingAddress.project, view: openingAddress.view } : undefined,
     })
 
-  /** Every Project in the library, sealed ones too: what a Project's records beside the library are kept for. */
-  const libraryIds = () => [...projects.value.map((project) => project.id), ...sealed.value.map((project) => project.id)]
+  /** Every Project in the library, sealed ones too, and the one Delete holds for Undo (ticket 0983): what a Project's
+   * records beside the library are kept for. */
+  const libraryIds = () => [
+    ...projects.value.map((project) => project.id),
+    ...sealed.value.map((project) => project.id),
+    ...(removedProject.value ? [removedProject.value.project.id] : []),
+  ]
 
   /** Beads since last file (ticket 0796): Edit, Undo and Redo count, any Project file save puts it back to 0. */
   const sinceFile = useBeadsSinceFile({ currentProject, libraryIds, store: services.sinceFiles })
@@ -705,6 +714,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     visibleCentre,
     dialogs,
   })
+  /** The Frame kept clear of the Frame panel while it is open (ticket 0971). */
+  const frameBesidePanel = useFrameBesidePanel({ currentProject, bringIntoView, putBack, panelOpen: () => frameFlow.barShown.value, area: areaOnScreen })
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0054). */
   const editFrame = frameFlow.toggleHandles
 
@@ -886,8 +897,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const deleteProject = useDeleteProjectFlow({
     findProject: entryOf,
     removeProject,
+    restoreRemoved,
+    forgetRemoved,
     saveProjectFile: exportFlow.onSaveFileOf,
     openProjectId: () => activeProjectId.value,
+    openProjectName: () => activeProject.value && projectNameOf(activeProject.value),
+    showToast,
+    toastShowing: (id) => toasts.value.some((toast) => toast.id === id),
+    messages,
     dialogs,
   })
   const onRequestDeleteOpen = () => {
@@ -1299,6 +1316,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** The Frame panel opens on its settings (ticket 0935): the Frame stays toast's Open Frame. */
       frameOpensOnSettings: frameFlow.opensOnSettings,
       onCloseFramePanel: frameFlow.closeBar,
+      onFramePanelPlaced: frameBesidePanel.panelPlaced,
       onStepFrameEdge: frameFlow.stepEdge,
       onResizeFrame: frameFlow.resizeTo,
       onRotateFrame: rotateFrameFlow.onRotateFrame,

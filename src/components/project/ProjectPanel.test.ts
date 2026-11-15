@@ -19,6 +19,8 @@ afterEach(() => {
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
+  // This Project starts folded (ticket 0971): these tests look at its rows.
+  localStorage.setItem('openbeads:panel-sections-opened', 'project:this')
 })
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
@@ -229,6 +231,13 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     await wrapper.get('[data-testid="save-project-file"]').trigger('click')
     expect(['duplicate', 'clear', 'delete', 'save-project-file'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1, 1, 1])
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
+  })
+
+  it('starts This Project folded, so the panel is short enough to leave the Tool pill clear (ticket 0971)', () => {
+    localStorage.removeItem('openbeads:panel-sections-opened')
+    const wrapper = mountPanel()
+    expect(wrapper.get('[data-testid="project-this"] .panel-section__header').attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="project-delete"]').exists()).toBe(false)
   })
 
   it('folds a section shut and shows its summary', async () => {

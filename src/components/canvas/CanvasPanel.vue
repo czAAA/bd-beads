@@ -673,6 +673,7 @@ const drawingStyle = computed(() => {
           @set-row-direction="onSetRowDirection"
           @toggle-row-highlight="toggleRowHighlight"
           @fit-and-export="onFitAndExport"
+          @select-tool="onSelectTool"
           @go-to-row="onGoToRow"
           @show-row="onShowRow"
         />

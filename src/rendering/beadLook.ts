@@ -1,4 +1,5 @@
 import { BLACK, contrastRatio, fromHex, luma, mix, toHex, WHITE, type Rgb } from '../domain/color'
+import { hasHalfCircleCorner } from '../domain/weave'
 import { autoMarginColor, marginLookOn, type MarginLook } from './marginLook'
 import { cachedSprite, type Sprite } from './sprites'
 
@@ -458,14 +459,23 @@ function rgbaText({ r, g, b }: Rgb, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
+/** Whether a bead of this corner and width is a round one, drawn in Open weave (ticket 1010, BeadBoard card, Canvas
+ * look): its corner is a half circle. Read from the shape, never from a Bead's name. */
+export function isOpenWeave(cornerRadius: number, width: number): boolean {
+  return width > 0 && hasHalfCircleCorner(cornerRadius / width)
+}
+
 // A bead in its own-color rim (ticket 1003): the whole cell in the rim, so no Canvas shows between two beads; the body a
-// gap in, flat, with the Technique's corner; and one soft light in the body's middle, gone before any edge.
+// gap in, flat, with the Technique's corner; and one soft light in the body's middle, gone before any edge. A round
+// bead is in Open weave instead (ticket 1010): no rim and nothing round the body, so what lies under the cell shows.
 function drawOwnColorBead(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius }: BeadShape, { rim, fill, satin }: BeadInk): void {
   const bodyWidth = width - GAP_PX * 2
   const bodyHeight = height - GAP_PX * 2
   const radius = Math.min(Math.max(OWN_BODY_LEAST_RADIUS, cornerRadius - GAP_PX), bodyWidth / 2, bodyHeight / 2)
-  context.fillStyle = rim
-  context.fillRect(x, y, width, height)
+  if (!isOpenWeave(cornerRadius, width)) {
+    context.fillStyle = rim
+    context.fillRect(x, y, width, height)
+  }
   context.fillStyle = fill
   fillShape(context, x + GAP_PX, y + GAP_PX, bodyWidth, bodyHeight, radius)
   if (!satin) return

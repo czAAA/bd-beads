@@ -35,7 +35,7 @@ export interface PinchStep {
 export type TwistPhase = 'turning' | 'settling'
 
 /** The rulers' gutter round drawn beads (CanvasStrip and BeadBoard cards). */
-const RULER_GUTTER_PX = 28
+export const RULER_GUTTER_PX = 28
 
 /** Room left clear round the drawn beads at the fit level: the ruler gutter and a little air.
  * @internal Its test works out the fit zoom with it. */
@@ -52,8 +52,8 @@ interface FitTarget {
 }
 
 /** What a view fits to: the Frame with its keep-out margin, its Margin sheet, when there is one (ticket 0850, so the
- * sheet's title block is in view), otherwise the box round every bead, otherwise nothing.
- * @internal Its test checks what a view fits to on its own. */
+ * sheet's title block is in view), otherwise the box round every bead, otherwise nothing; what the Frame panel keeps
+ * clear of itself too (ticket 0971). */
 export function fitBox(project: Project): FitTarget | undefined {
   // The sheet is laid on the Canvas round the Frame's footprint, which takes a turned Frame as it lies (ticket 0667).
   const footprint = footprintOf(project)
@@ -66,6 +66,15 @@ export function fitBox(project: Project): FitTarget | undefined {
 function layerOfBox(project: Project, box: Rect): ViewLayer {
   const frame = laidFrame(project)
   return frame && sameFrame(box, frame) ? 'frame' : 'canvas'
+}
+
+/** A move `bringIntoView` made (ticket 0971): from and to which scroll, at which zoom, and whether the view was at its
+ * fit before it, so `putBack` can take it back. */
+export interface ViewMove {
+  from: Scroll
+  to: Scroll
+  zoom: number
+  atFit: boolean
 }
 
 /** What the view does beyond looking: keeping the angle a twist settles on (ticket 0672). */
@@ -102,8 +111,9 @@ export function useCanvasView(
   let snapTimer: ReturnType<typeof setTimeout> | undefined
   /** The orientation this view just handed the Project, which it already shows: no refit for it. */
   let settledAt: number | undefined
-  /** The frame of the glide `bringIntoView` plays, until it lands or the view is moved some other way. */
+  /** The frame of the glide `bringIntoView` plays, until it lands or the view is moved some other way, and where to. */
   let glide: number | undefined
+  let gliding: Scroll | undefined
 
   /** The Canvas's orientation as shown: the twist's while one runs, else the Project's. */
   const orientation = computed(() => twisting.value ?? orientationOf(currentProject()) ?? 0)
@@ -117,10 +127,11 @@ export function useCanvasView(
     return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project), rotation: nearestQuarterTurn(orientation.value), zoom: zoom.value, scroll: at, viewport: area })
   }
 
-  /** The part of the viewport a fit uses (ticket 0850): all of it less what lies over its edges, while that leaves any;
-   * and where its top-left corner is. */
-  function fitRoom(): { area: Size; corner: Scroll } {
-    const clear = options.covered?.() ?? NO_INSETS
+  /** The part of the viewport a fit uses (ticket 0850): all of it less what lies over its edges (and `also`, what else
+   * lies over them for this once), while that leaves any; and where its top-left corner is. */
+  function fitRoom(also: Insets = NO_INSETS): { area: Size; corner: Scroll } {
+    const pill = options.covered?.() ?? NO_INSETS
+    const clear = { top: Math.max(pill.top, also.top), right: Math.max(pill.right, also.right), bottom: Math.max(pill.bottom, also.bottom), left: Math.max(pill.left, also.left) }
     const area = { width: viewport.value.width - clear.left - clear.right, height: viewport.value.height - clear.top - clear.bottom }
     return area.width > 0 && area.height > 0 ? { area, corner: { x: clear.left, y: clear.top } } : { area: viewport.value, corner: { x: 0, y: 0 } }
   }
@@ -187,38 +198,60 @@ export function useCanvasView(
   function stopGlide(): void {
     if (glide !== undefined) cancelAnimationFrame(glide)
     glide = undefined
+    gliding = undefined
   }
 
-  /** Pans the shortest way that brings a part of the drawing into the room the Tool pill leaves, the zoom untouched
-   * (ticket 0934): eased over the base duration, a jump under reduced motion or when `jump` asks. `locate` finds it in
-   * the view as it stands; one already in the room, or none, moves nothing, and the view keeps following the fit. */
-  function bringIntoView(locate: (surface: SurfaceView) => Region | undefined, { jump = false } = {}): void {
-    const project = currentProject()
-    const found = project && measured() ? locate(surfaceOf(project)) : undefined
-    if (!found) return
-    const { area, corner } = fitRoom()
-    const { offset, screenBox, unturned } = leaning.value
-    const move = shortestPan(screenBox({ ...found, x: found.x + offset.x, y: found.y + offset.y }), { ...corner, ...area })
-    if (move.x === 0 && move.y === 0) return
+  /** Moves the view to a scroll, eased over the base duration, or at once under reduced motion or when `jump` asks. */
+  function glideTo(to: Scroll, jump: boolean): void {
     stopGlide()
-    const across = unturned(move)
     const from = scroll.value
-    const to = { x: from.x - across.x, y: from.y - across.y }
-    isAtFit.value = false
     const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
     if (jump || still || typeof requestAnimationFrame !== 'function') {
       scroll.value = to
       return
     }
+    gliding = to
     // The first frame's own time starts it: rAF's clock is not always performance.now()'s.
     let start: number | undefined
     const step = (time: number) => {
       start ??= time
       const eased = easeStandard(Math.min(1, (time - start) / INTO_VIEW_MS))
-      scroll.value = { x: from.x + (to.x - from.x) * eased, y: from.y + (to.y - from.y) * eased }
-      glide = eased < 1 ? requestAnimationFrame(step) : undefined
+      // It lands on `to` itself, so `putBack` finds the view where the move left it.
+      scroll.value = eased < 1 ? { x: from.x + (to.x - from.x) * eased, y: from.y + (to.y - from.y) * eased } : to
+      if (eased < 1) glide = requestAnimationFrame(step)
+      else glide = gliding = undefined
     }
     glide = requestAnimationFrame(step)
+  }
+
+  /** Pans the shortest way that brings a part of the drawing into the room the Tool pill (and `clear`, the Frame panel,
+   * ticket 0971) leaves, zoom untouched (ticket 0934), gliding or a jump; `locate` finds it in the view as it stands. One
+   * already in the room, or none, moves nothing and the view keeps following the fit. Returns the move, for `putBack`. */
+  function bringIntoView(locate: (surface: SurfaceView) => Region | undefined, { jump = false, clear = NO_INSETS }: { jump?: boolean; clear?: Insets } = {}): ViewMove | undefined {
+    const project = currentProject()
+    const found = project && measured() ? locate(surfaceOf(project)) : undefined
+    if (!found) return undefined
+    const { area, corner } = fitRoom(clear)
+    const { offset, screenBox, unturned } = leaning.value
+    const move = shortestPan(screenBox({ ...found, x: found.x + offset.x, y: found.y + offset.y }), { ...corner, ...area })
+    if (move.x === 0 && move.y === 0) return undefined
+    const across = unturned(move)
+    const from = scroll.value
+    const to = { x: from.x - across.x, y: from.y - across.y }
+    const made = { from, to, zoom: zoom.value, atFit: isAtFit.value }
+    isAtFit.value = false
+    glideTo(to, jump)
+    return made
+  }
+
+  /** Takes back a move `bringIntoView` made (ticket 0971), the same way it came, while the view is still where it took
+   * it (or on its way there); a view the person has moved or zoomed since stays where they left it. */
+  function putBack(move: ViewMove): void {
+    const there = scroll.value.x === move.to.x && scroll.value.y === move.to.y
+    const onTheWay = gliding !== undefined && gliding.x === move.to.x && gliding.y === move.to.y
+    if (zoom.value !== move.zoom || !(there || onTheWay)) return
+    glideTo(move.from, false)
+    isAtFit.value = move.atFit
   }
 
   /** The Canvas position nearest a point of the screen, or nothing until the area is measured. */
@@ -377,6 +410,7 @@ export function useCanvasView(
     scrollBy,
     centreOn,
     bringIntoView,
+    putBack,
     visibleCentre,
     canvasOnScreen,
     cellAt,

@@ -59,9 +59,8 @@
   --tooltip-wide: 16rem;
   /* A project's thumbnail, and the 20px Remove × beside it in the Projects library */
   --thumbnail-size: 2.25rem;
-  /* MenuPanel card: the Projects library row's 28px thumbnail and 14px frame slot, and a PanelPicker's menu width */
+  /* ReferenceImage card: the picture row's 28px thumbnail; MenuPanel card: a PanelPicker's menu width */
   --panel-thumbnail-size: 1.75rem;
-  --panel-mark-size: 0.875rem;
   --picker-menu-width: 11.5rem;
   --thumbnail-remove: 1.25rem;
   /* SegmentedControl card: a small option; Stepper card: the value's width and its 15px figures */

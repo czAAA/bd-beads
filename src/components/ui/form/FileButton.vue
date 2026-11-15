@@ -4,18 +4,18 @@ import AppIcon from '../AppIcon.vue'
 import type { IconName } from '../icons'
 
 /** A button that opens the system file picker (ticket 149; `accent` fills it like a primary button, ticket 568; `small`
- * is the in-box button's 28px, ticket 0649): desktop can also drop a file on it (`drop-file`); the <input> keeps the
- * attributes and change listener. */
+ * is the in-box button's 28px, ticket 0649; `secondary` is the Button card's Secondary, for one that is no drop target,
+ * ticket 0970): desktop can also drop a file on it (`drop-file`); the <input> keeps the attributes and change listener. */
 defineOptions({ inheritAttrs: false })
-defineProps<{ label: string; icon?: IconName; disabled?: boolean; disabledReason?: string; limits?: string; accent?: boolean; small?: boolean }>()
+defineProps<{ label: string; icon?: IconName; disabled?: boolean; disabledReason?: string; limits?: string; accent?: boolean; small?: boolean; secondary?: boolean }>()
 const emit = defineEmits<{ 'drop-file': [file: File] }>()
 
 const dragging = ref(false)
 
-function onDrop(event: DragEvent, disabled: boolean | undefined) {
+function onDrop(event: DragEvent, refused: boolean | undefined) {
   dragging.value = false
   const file = event.dataTransfer?.files[0]
-  if (file && !disabled) emit('drop-file', file)
+  if (file && !refused) emit('drop-file', file)
 }
 </script>
 
@@ -23,10 +23,16 @@ function onDrop(event: DragEvent, disabled: boolean | undefined) {
   <div class="file-button">
     <label
       class="file-button__target"
-      :class="{ 'file-button__target--disabled': disabled, 'file-button__target--over': dragging, 'file-button__target--accent': accent, 'file-button__target--small': small }"
-      @dragover.prevent="dragging = !disabled"
+      :class="{
+        'file-button__target--disabled': disabled,
+        'file-button__target--over': dragging,
+        'file-button__target--accent': accent,
+        'file-button__target--small': small,
+        'file-button__target--secondary': secondary,
+      }"
+      @dragover.prevent="dragging = !disabled && !secondary"
       @dragleave="dragging = false"
-      @drop.prevent="onDrop($event, disabled)"
+      @drop.prevent="onDrop($event, disabled || secondary)"
     >
       <input class="file-button__input" type="file" :disabled="disabled" v-bind="$attrs" />
       <AppIcon v-if="icon" :name="icon" :size="small ? 14 : 16" />
@@ -87,6 +93,31 @@ function onDrop(event: DragEvent, disabled: boolean | undefined) {
   font: var(--type-tab);
   border-style: solid;
   border-color: var(--in-box-line);
+}
+
+/* The Button card's Secondary (AppButton's default): a file button that is no drop target has no dashed edge. */
+.file-button__target--secondary {
+  background: var(--button);
+  border: 1px solid var(--button-line);
+}
+
+@media (hover: hover) {
+  .file-button__target--secondary:hover:not(.file-button__target--disabled) {
+    background: var(--hover-fill);
+    border-color: var(--button-line);
+  }
+}
+
+.file-button__target--secondary:active:not(.file-button__target--disabled) {
+  background: var(--press-fill);
+  transform: scale(var(--press-scale));
+  transition: transform var(--duration-instant) var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-button__target--secondary:active:not(.file-button__target--disabled) {
+    transform: none;
+  }
 }
 
 .file-button__target--disabled {
