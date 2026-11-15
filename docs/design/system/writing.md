@@ -58,6 +58,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
 | Clear | Очистить; confirm Очистить? | Empties the cells; the Schema stays. Not «Очистить всё», which was Delete all |
 | Save Project | Сохранить проект | The SaveBox button; the name field's Save stays Сохранить |
+| in this browser | в этом браузере | Where Projects are kept, said one way everywhere (ticket 0992): Saved in this browser, Kept by this browser, removed from this browser, Couldn't save in this browser. Never "local browser" or "this device" for where the work lives |
 | Delete all | Очистить всё | Empties the cells; the Schema stays |
 | Mirror | Отражение | Estimated size / Примерный размер |
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
@@ -146,7 +147,7 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | Counts | 1 424 | 1 424 | Group thousands from four digits (`Intl.NumberFormat`, ticket 368). English, Russian, Ukrainian, Belarusian and Polish use a no-break space (the rule DESIGN.md set); Spanish writes 1.424 and Chinese 1,424. |
 | Decimals | 9.6 | 9,6 | The language's own decimal sign (a comma in Russian, Ukrainian, Belarusian, Spanish and Polish; a period in English and Chinese); at most one decimal for sizes. |
 | Grid size | 60×80 | 60×80 | Beads across × down with ×, no spaces. |
-| Measured size | 9.6 × 10.4 cm | 9,6 × 10,4 см | × with spaces, one unit for both sides, cm from 10 mm up (as the app does). The "64×48 mm" in older mockups follows this rule from now on. |
+| Measured size | 9.6 × 10.4 cm | 9,6 × 10,4 см | × with spaces, one unit for both sides, cm from 10 mm up (as the app does). The same size reads in the same unit in a panel and on the Canvas: the Frame panel's Estimated size too (ticket 0992). Only Replace bead? stays in mm, as it sets two Beads' sizes side by side (ticket 0687). The "64×48 mm" in older mockups follows this rule from now on. |
 | Units | 12 mm · 10 MB | 12 мм · 10 МБ | A no-break space between number and unit. |
 | Weight | ≈ 24 g · 3.9 g | ≈ 24 г · 3,9 г | Grams rounded up to 0.1, trailing .0 dropped, with ≈ where it is an estimate. |
 | Percent | 62% | 62 % | Russian puts a no-break space before %. |
@@ -158,8 +159,8 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 
 | Where | Now | Proposed | Why |
 | --- | --- | --- | --- |
-| en storage.saveFailedMessage | Couldn't save on this device, then a dash: your latest change… | Couldn't save on this device. Your latest change is only on screen. | No em dashes |
-| ru storage.saveFailedMessage | Не удалось сохранить на этом устройстве, затем тире: последние изменения… | Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. | No em dashes |
+| en storage.saveFailedMessage | Couldn't save on this device, then a dash: your latest change… | Couldn't save in this browser. Your latest change is only on screen. | No em dashes |
+| ru storage.saveFailedMessage | Не удалось сохранить на этом устройстве, затем тире: последние изменения… | Не удалось сохранить в этом браузере. Последние изменения есть только на экране. | No em dashes |
 | en convertImage.errors.tooLarge, tooManyPixels | That file is too big, then a dash: at most {maxSizeMb} MB. | That file is too big: at most {maxSizeMb} MB. (tooManyPixels the same way) | No em dashes |
 | ru convertImage.errors.tooLarge, tooManyPixels | Файл слишком большой, затем тире: не больше {maxSizeMb} МБ. | Файл слишком большой: не больше {maxSizeMb} МБ. (tooManyPixels так же) | No em dashes |
 | ru size.estimateWarning | Эти размеры, затем тире: оценка. | Эти размеры приблизительные. | No em dashes |
@@ -379,8 +380,8 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 | Save Project · Export · PNG · PDF · Project file | Сохранить проект · Экспорт · PNG · PDF · Файл проекта |
 | Name on exports · Your name · Printed on this Project's PDF and PNG exports. | Имя на экспорте · Ваше имя · Печатается на PDF и PNG этого проекта. |
 | Duplicate · Duplicate Project · Name · Everything is copied, including Row progress. The copy opens; the original stays as it is now. · Suggested: the current name and the next free number. | Дублировать · Дублировать проект · Название · Копируется всё, включая прогресс по рядам. Откроется копия, а оригинал останется таким, как сейчас. · Предложено: текущее название и следующий свободный номер. |
-| Delete all Projects? · Every Project is removed from this device. This can't be undone. Export all first if you want to keep copies. · Clear this Project | Удалить все проекты? · Все проекты будут удалены с этого устройства. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии. · Очистить этот проект |
-| Delete this Project · Delete “{name}”? · “{name}” and its Row progress are removed from this device. This can't be undone. Save its Project file first if you want to keep it. · Save Project file · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены с этого устройства. Это нельзя отменить. Если хотите оставить его себе, сначала сохраните файл проекта. · Сохранить файл проекта · Удалить проект |
+| Delete all Projects? · Every Project is removed from this browser. This can't be undone. Export all first if you want to keep copies. · Clear this Project | Удалить все проекты? · Все проекты будут удалены из этого браузера. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии. · Очистить этот проект |
+| Delete this Project · Delete “{name}”? · “{name}” and its Row progress are removed from this browser. This can't be undone. Save its Project file first if you want to keep it. · Save Project file · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены из этого браузера. Это нельзя отменить. Если хотите оставить его себе, сначала сохраните файл проекта. · Сохранить файл проекта · Удалить проект |
 | A Project needs a name. · Enter saves · Escape cancels | У проекта должно быть название. · Enter сохраняет · Esc отменяет |
 | The Canvas stays white in high contrast. | В режиме высокой контрастности холст остаётся белым. |
 
@@ -465,11 +466,11 @@ Russian here is a proposal for review, like the section below.
 | English | Русский |
 |---|---|
 | Projects library · Open Project file · Save all Projects to a Project file · Delete all Projects | Библиотека проектов · Открыть файл проекта · Сохранить всё в файл проекта · Удалить все проекты |
-| No Projects yet · Projects you make are kept on this device. Open a Project file to bring one in. | Проектов пока нет · Проекты хранятся на этом устройстве. Откройте файл проекта, чтобы добавить проект. |
+| No Projects yet · Projects you make are kept in this browser. Open a Project file to bring one in. | Проектов пока нет · Проекты хранятся в этом браузере. Откройте файл проекта, чтобы добавить проект. |
 | {n} pieces · {n} unnamed · Frame {w} × {h} beads | Частей: {n} · без названия: {n} · Рамка {w} × {h} бисеринок |
 | Writing hand · Right · Left · Buy me a coffee | Рабочая рука · Правая · Левая · Угостить кофе |
 | Project · name: · maker: · Add your name for exports · Change the maker's name | проект · название: · автор: · Добавьте имя для экспорта · Изменить имя автора |
-| Saved in local browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
+| Saved in this browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в этом браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
 | Brand · Type · Size | Бренд · Тип · Размер |
 | Project file · Picture · Printable chart · Clear all beads · Delete Project | Файл проекта · Картинка · Схема для печати · Очистить все бисеринки · Удалить проект |
 | Frame · Name this Frame · Rename Frame · Frame from template · Fit a Frame to the drawing · A Frame sets the size, the exports and the bead count. | рамка · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бисеринок. |
@@ -925,7 +926,7 @@ The Project's one picture to bead over (ReferenceImage card). Russian and Ukrain
 | Preparing the picture… | Готовим картинку… | Готуємо зображення… | Przygotowujemy obraz… |
 | Fit to Canvas · Fit (phone) · Done | Вписать в холст · Вписать · Готово | Вписати в полотно · Вписати · Готово | Dopasuj do płótna · Dopasuj · Gotowe |
 | Resize from the top-left corner (and the other three) · Turn · Turned {n}° | Изменить размер за левый верхний угол · Повернуть · Повёрнуто на {n}° | Змінити розмір за лівий верхній кут · Повернути · Повернуто на {n}° | Zmień rozmiar z lewego górnego rogu · Obróć · Obrócono o {n}° |
-| Reference image not saved on this device | Подложка не сохранена на этом устройстве | Підкладку не збережено на цьому пристрої | Obraz pomocniczy nie jest zapisany na tym urządzeniu |
+| Reference image not saved in this browser | Подложка не сохранена в этом браузере | Підкладку не збережено в цьому браузері | Obraz pomocniczy nie jest zapisany w tej przeglądarce |
 | not a picture · over {maxSizeMb} MB · over {maxMegapixels} megapixels · it couldn't be read (the refusal's reasons) | это не картинка · больше {maxSizeMb} МБ · больше {maxMegapixels} мегапикселей · его не удалось прочитать | це не зображення · більше {maxSizeMb} МБ · більше {maxMegapixels} мегапікселів · його не вдалося прочитати | to nie jest obraz · ponad {maxSizeMb} MB · ponad {maxMegapixels} megapikseli · nie udało się go odczytać |
 | browsers can't read HEIC pictures · SVG pictures can't be used | картинки HEIC браузер не читает · картинки SVG не подходят | зображення HEIC браузер не читає · зображення SVG не підходять | przeglądarki nie odczytują obrazów HEIC · obrazów SVG nie można użyć |
 | Reference image, {opacity}%, turned {angle}° (Adjust, to a screen reader) · Moved · Resized | Подложка, {opacity}%, повёрнута на {angle}° · Сдвинуто · Размер изменён | Підкладка, {opacity}%, повернута на {angle}° · Зсунуто · Розмір змінено | Obraz pomocniczy, {opacity}%, obrócony o {angle}° · Przesunięto · Zmieniono rozmiar |
@@ -951,7 +952,7 @@ Belarusian, Spanish and Chinese, written with the build (ticket 0790):
 | Fit to Canvas · Fit · Done | Упісаць у палатно · Упісаць · Гатова | Ajustar al lienzo · Ajustar · Listo | 适合画布 · 适合 · 完成 |
 | Resize from the top-left corner · Turn · Turned {n}° | Змяніць памер за левы верхні кут · Павярнуць · Павернута на {n}° | Cambiar el tamaño desde la esquina superior izquierda · Girar · Girada {n}° | 从左上角调整大小 · 旋转 · 已旋转 {n}° |
 | Reference image, {opacity}%, turned {angle}° · Moved · Resized | Падкладка, {opacity}%, павернута на {angle}° · Зрушана · Памер зменены | Imagen de referencia, {opacity}%, girada {angle}° · Movida · Tamaño cambiado | 参考图，{opacity}%，旋转 {angle}° · 已移动 · 已调整大小 |
-| Reference image not saved on this device | Падкладка не захавана на гэтай прыладзе | Imagen de referencia no guardada en este dispositivo | 参考图未保存在此设备上 |
+| Reference image not saved in this browser | Падкладка не захавана ў гэтым браўзеры | Imagen de referencia no guardada en este navegador | 参考图未保存在此浏览器中 |
 
 ### The picture bar, Set Frame around the picture and Convert to beads (ticket 0883)
 
@@ -1081,7 +1082,7 @@ The file that holds a Project has one name, **Project file**: "Save Project file
 | Saved: {file} (the one saved-file toast; it replaces PNG ready, PDF ready and File ready) | Сохранено: {file} | Збережено: {file} | Захавана: {file} | 已保存：{file} | Guardado: {file} | Zapisano: {file} |
 | Ready to save: {file} · Save (a share that needs a fresh tap) | Готов к сохранению: {file} · Сохранить | Готовий до збереження: {file} · Зберегти | Гатовы да захавання: {file} · Захаваць | 可以保存：{file} · 保存 | Listo para guardar: {file} · Guardar | Gotowy do zapisania: {file} · Zapisz |
 | Make one with New Project, open one from the Projects library, or open a Project file. (empty Canvas) | Создайте его кнопкой «Новый проект», откройте проект из библиотеки проектов или из файла проекта. | Створіть його кнопкою «Новий проєкт», відкрийте проєкт із бібліотеки проєктів або з файлу проєкту. | Стварыце яго кнопкай «Новы праект», адкрыйце праект з бібліятэкі праектаў або з файла праекта. | 用“新建项目”创建一个，从项目库打开一个，或打开项目文件。 | Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o abre un archivo de proyecto. | Utwórz projekt przyciskiem Nowy projekt, otwórz projekt z biblioteki projektów albo z pliku projektu. |
-| Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it. (notice; its button is Save Project file) | Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. Освободите место в браузере или сохраните файл проекта, чтобы не потерять изменения. | Не вдалося зберегти на цьому пристрої. Останні зміни є лише на екрані. Звільніть місце в браузері або збережіть файл проєкту, щоб не втратити зміни. | Не атрымалася захаваць на гэтай прыладзе. Апошнія змены ёсць толькі на экране. Вызваліце месца ў браўзеры або захавайце файл праекта, каб не страціць змены. | 无法保存到此设备。你最近的修改只在屏幕上。请释放浏览器空间，或保存项目文件以保留修改。 | No se pudo guardar en este dispositivo. Tu último cambio solo está en pantalla. Libera espacio en el navegador o guarda un archivo de proyecto para conservarlo. | Nie udało się zapisać na tym urządzeniu. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo zapisz plik projektu, żeby jej nie stracić. |
+| Couldn't save in this browser. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it. (notice; its button is Save Project file) | Не удалось сохранить в этом браузере. Последние изменения есть только на экране. Освободите место в браузере или сохраните файл проекта, чтобы не потерять изменения. | Не вдалося зберегти в цьому браузері. Останні зміни є лише на екрані. Звільніть місце в браузері або збережіть файл проєкту, щоб не втратити зміни. | Не атрымалася захаваць у гэтым браўзеры. Апошнія змены ёсць толькі на экране. Вызваліце месца ў браўзеры або захавайце файл праекта, каб не страціць змены. | 无法保存到此浏览器。你最近的修改只在屏幕上。请释放浏览器空间，或保存项目文件以保留修改。 | No se pudo guardar en este navegador. Tu último cambio solo está en pantalla. Libera espacio en el navegador o guarda un archivo de proyecto para conservarlo. | Nie udało się zapisać w tej przeglądarce. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo zapisz plik projektu, żeby jej nie stracić. |
 | … Save all Projects to a Project file first if you want to keep copies. (Delete all Projects?) | … Сначала нажмите «Сохранить всё в файл проекта», если хотите сохранить копии. | … Спершу натисніть «Зберегти все у файл проєкту», якщо хочете зберегти копії. | … Спачатку націсніце «Захаваць усё ў файл праекта», калі хочаце захаваць копіі. | …如需保留副本，请先点击“将所有项目保存到项目文件”。 | … Antes, pulsa «Guardar todo en un archivo de proyecto» si quieres conservar copias. | … Najpierw kliknij „Zapisz wszystko w pliku projektu”, jeśli chcesz zachować kopie. |
 
 ## Help lines by device copy (ticket 0846)
