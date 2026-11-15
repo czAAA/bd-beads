@@ -183,6 +183,9 @@ export async function openConvertPopover(page: Page, popover: 'bead' | 'size' | 
  * runs on the doubling scale, so the thumb's place is worked out from the value as the slider places it. */
 export async function setConvertWidth(page: Page, beads: number): Promise<void> {
   const range = page.getByTestId('convert-width-range')
+  // The slider's bounds are set once the picture is read: a place worked out before them is NaN.
+  await expect(range).toHaveAttribute('aria-valuemax', /^[1-9]\d*$/)
+  await expect(range).toHaveAttribute('aria-valuemin', /^[1-9]\d*$/)
   const place = await range.evaluate((input, value) => {
     const min = Number(input.getAttribute('aria-valuemin'))
     const max = Number(input.getAttribute('aria-valuemax'))

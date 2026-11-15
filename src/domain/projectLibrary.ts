@@ -14,15 +14,21 @@ export function summarizeProject(project: Project): string {
 }
 
 /** The Frame's size as the Project looks, "24×14"; none without a Frame: a canvas with none has no size to state (ADR 0026). */
-export function projectFrameSize(project: Project): string | undefined {
+function projectFrameSize(project: Project): string | undefined {
+  const size = shownFrameSize(project)
+  return size && `${size.width}×${size.height}`
+}
+
+/** The Frame's width and height in beads as the Project looks (the rotated view's swapped); none without a Frame. */
+export function shownFrameSize(project: Project): { width: number; height: number } | undefined {
   if (!frameOf(project)) return undefined
   const { columns, rows } = shownDimensions(project)
   const [width, height] = rotationSwapsAxes(quarterTurnOf(project)) ? [rows, columns] : [columns, rows]
-  return `${width}×${height}`
+  return { width, height }
 }
 
-/** When a Project was last saved, for ordering the library: its updatedAt when it predates savedAt (ticket 145). */
-function lastSaved(project: Pick<Project, 'savedAt' | 'updatedAt'>): number {
+/** When a Project was last saved, for ordering the library and its rows' dates: its updatedAt when it predates savedAt (ticket 145). */
+export function lastSaved(project: Pick<Project, 'savedAt' | 'updatedAt'>): number {
   return project.savedAt ?? project.updatedAt
 }
 

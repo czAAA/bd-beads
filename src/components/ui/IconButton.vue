@@ -215,8 +215,8 @@ function swallowClick(event: MouseEvent) {
   outline-offset: var(--focus-offset-lit);
 }
 
-/* A Tool pill tile (ToolPill card): 40px, radius-lg, a 22px icon in `muted`; the active tool sits on `panel` with
- * its icon in `accent`. */
+/* A Tool pill tile (ToolPill card): 40px, radius-lg, a 22px icon in `muted`; a pressed tile (the active tool, Mirror,
+ * Paste) sits on `panel` inside an inset `ink` outline, its icon in `accent-strong` (ticket 0926). */
 .icon-btn-wrap--pill {
   flex: none;
 }
@@ -234,11 +234,17 @@ function swallowClick(event: MouseEvent) {
 .icon-btn--pill.icon-btn--selected {
   color: var(--ink);
   background: var(--panel);
+  box-shadow: var(--pill-tile-pressed-edge);
+}
+
+/* Its focus ring sits just outside the tile, so it does not hide in the outline. */
+.icon-btn--pill.icon-btn--selected:focus-visible {
+  outline-offset: var(--pill-tile-focus-offset);
 }
 
 .icon-btn--pill.icon-btn--accent,
 .icon-btn--pill.icon-btn--accent.icon-btn--selected {
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 
 /* The hotkey corner: the top-right of the tile, `meta-tiny`, `muted`, `accent-strong` on the active tile. */
@@ -330,7 +336,7 @@ function swallowClick(event: MouseEvent) {
   }
 
   .icon-btn--pill.icon-btn--accent:hover:not([aria-disabled='true']) {
-    color: var(--accent);
+    color: var(--accent-strong);
   }
 
   .icon-btn--pill.icon-btn--selected:hover:not([aria-disabled='true']) {
