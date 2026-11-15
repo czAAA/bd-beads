@@ -1,15 +1,14 @@
 # QualitySlider
 
-**Export quality** is a three-stop discrete slider under the Picture and Printable chart buttons in the Frame panel's export section. It sets the **PNG** only (ADR 0076): the PDF's chart pages are vector and its other pages a fixed 300 dpi. Each export button shows the size of what it will give in its value slot ("PDF ≈ 3.2 MB · 9 pages").
+**Export quality** is a three-stop discrete slider right under the Picture button, the file it changes, in the Export panel and the Frame panel's export section (ticket 0957). It sets the **PNG** only (ADR 0076): the PDF's chart pages are vector and its other pages a fixed 300 dpi. Each export button shows the size of what it will give in its value slot ("PDF ≈ 3.2 MB · 9 pages").
 
 Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai canvas "Printed chart pages", option A).
 
 ## Where it sits
 
-- In the Export panel (`panel-width-small`, 360px; ExportPanel card, ticket 0652) under the same two buttons, as the same component.
-- In the Frame panel (`panel-width`, 520px), in the **export** PanelSection, in this order: the Picture row, the Printable chart row, then the slider, `space-8` under the last button and inside the section's padding. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
-- The slider's head line: "Export quality" (Inter 500 13, `ink`) and, right-aligned, the chosen stop's word in `meta-small` (`muted`).
-- Under the stops, `space-8` below them: one `meta-small` line in `muted`, "For the picture. The printable chart is drawn in lines and stays sharp at any zoom." (writing.md).
+- In the Export panel (`panel-width-small`, 360px; ExportPanel card, ticket 0652) and the Frame panel (`panel-width`, 520px, in the **export** PanelSection), as the same component, in this order (ticket 0957): the Picture row, the slider `space-8` under it, then `space-8` under the slider's last line the Printable chart row with its two switches. Each option stands under the file it changes. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
+- The slider's head line: "Export quality" in `control` (Inter 500 14), `ink`: the same type as the switch rows' names under Printable chart (ticket 0957), its Info button right after it, and, right-aligned, the chosen stop's word (Inter 400 12, `muted`).
+- Under the stops, `space-8` below them: one line (Inter 400 12) in `muted`, "For the picture. The printable chart is drawn in lines and stays sharp at any zoom." (writing.md).
 
 ## The size line (ticket 0588)
 
@@ -22,21 +21,21 @@ Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai c
 
 ## Stops
 
-| Stop | Picture (PNG) |
-| --- | --- |
-| Low (saves memory) | 150 DPI |
-| **Medium** (default) | 300 DPI |
-| High | 450 DPI |
+| Stop | Caption | Picture (PNG) |
+| --- | --- | --- |
+| Low | small file | 150 DPI |
+| **Medium** (default) | for print | 300 DPI |
+| High | sharpest | 450 DPI |
 
-The stops carry no size: the Picture button's value slot is the one place the PNG's size is shown, and it follows the chosen stop.
+Each stop is captioned in a crafter's words (ticket 0957); "300 DPI" means nothing to most people. The DPI figures are in the head's Info note ("What each quality gives"): "Low draws the picture at 150 DPI: a small file, and one a phone can always make. Medium is 300 DPI, for print. High is 450 DPI, the sharpest.", filled with the DPI this device draws each stop at. The stops carry no size: the Picture button's value slot is the one place the PNG's size is shown, and it follows the chosen stop.
 
 The PDF is not on the slider: its picture pages (the overview on page 1, list pages, Word chart) and the text picture under each chart page are 300 dpi (`print-dpi`), or 150 where a device cannot allocate a 300 dpi page. The choice is remembered per device; `print-png-bead` (60px) is the Medium PNG value.
 
 ## Parts
 
-- A native `<input type="range" min="0" max="2" step="1">`, so touch drag, arrow keys, Home and End work by default (one tab stop). Accessible name "Export quality"; `aria-valuetext` reads the stop's word and its DPI, e.g. "Medium, 300 DPI".
+- A native `<input type="range" min="0" max="2" step="1">`, so touch drag, arrow keys, Home and End work by default (one tab stop). Accessible name "Export quality"; `aria-valuetext` reads the stop's word and its caption, e.g. "Medium, for print".
 - Track `slider-track` (4px, `radius-full`) in `track`; the filled part up to the thumb in `accent`. Thumb `slider-thumb` (20px) in `ink` with a 2px `canvas` ring. The input is `touch-target` (44px) tall, so the hit area meets 44px; the stops row is pulled up under it.
-- Under the track, one button per stop (`role="radio"` in a `radiogroup`, mirroring the range value), each at least `touch-target` tall and centred under its thumb position, so a tap on a label moves the thumb. Each holds the word (Inter 500 13), then `150 DPI` (DM Mono 12, `muted`).
+- Under the track, one button per stop (`role="radio"` in a `radiogroup`, mirroring the range value), each at least `touch-target` tall and centred under its thumb position, so a tap on a label moves the thumb. Each holds the word (Inter 500 13), then its caption (Inter 400 12, `muted`), which wraps in its column.
 - Stops are the only ticks; no extra tick marks are drawn.
 
 ## States
@@ -48,18 +47,18 @@ The PDF is not on the slider: its picture pages (the overview on page 1, list pa
 | Focus-visible | `focus-ring` (`ink`, ADR 0075), `focus-width`, 2px *outside* the thumb (inside it the ring would vanish into the `ink` thumb); a stop button gets the ring just inside its edge (`focus-offset`), like every control. |
 | Dragging | Thumb `accent-strong`, scaled by `slider-thumb-scale` (1.15); the value snaps from stop to stop, with nothing in between. |
 | Disabled | While an export runs: thumb `faint`, filled part `accent-disabled-bg`, labels `faint`, no hover. The export buttons are disabled with it (SaveStates card). |
-| Unavailable | A PNG page the device cannot allocate (450 DPI on some phones and tablets, found by trying, ticket 0572) is not offered: High is drawn at 300 DPI, its stop shows `300 DPI`, and one `meta-small` line under the note says "High is 300 DPI in the picture on this device." The slider keeps three stops. |
+| Unavailable | A PNG page the device cannot allocate (450 DPI on some phones and tablets, found by trying, ticket 0572) is not offered: High is drawn at 300 DPI, the Info note gives 300 DPI for High, and one `meta-small` line under the note says "High is 300 DPI in the picture on this device." The slider keeps three stops. |
 
 ## Layout and text
 
-- Fits the 520px panel and a 320px viewport (the panel is narrower than `panel-width` on a phone): at 288px the three columns are about 96px each; nothing is a fixed width. A word never breaks inside itself (`overflow-wrap: break-word` only for a word wider than its column); the figures (`DM Mono`) never wrap, while the words and lines wrap under the stops. A long translated word ("Estimaciones", "Низкое") makes its column taller, never wider.
-- Seven languages (be, ru, uk, pl, es, zh, en): the words are Low, Medium, High (each with "saves memory" in the head's Tooltip, not in the column), "Export quality", and the note. "PNG" and "PDF" stay in Latin letters; "≈", "MB", "files" and "pages" follow the language.
+- Fits the 520px panel and a 320px viewport (the panel is narrower than `panel-width` on a phone): at 288px the three columns are about 96px each; nothing is a fixed width. A word never breaks inside itself (`overflow-wrap: break-word` only for a word wider than its column); the words, captions and lines wrap under the stops. A long translated word ("Estimaciones", "Низкое") makes its column taller, never wider.
+- Seven languages (be, ru, uk, pl, es, zh, en): the words are Low, Medium, High, their captions, "Export quality", the Info note and the line under the stops. "PNG" and "PDF" stay in Latin letters; "≈", "MB", "files" and "pages" follow the language.
 - Light, dark and contrast themes: the track gets a 1px `panel-line` inset in contrast; the filled part and thumb keep 3:1 against the track in all three.
 
 ## Acceptance
 
 - [ ] The slider changes the PNG only. A PDF made at Low, Medium and High is the same file, apart from its date.
-- [ ] The stops show the word and the DPI, with no size. `aria-valuetext` reads the word and the DPI.
+- [ ] The stops show the word and its caption in words, with no size and no DPI; the DPI figures are in the Info note. `aria-valuetext` reads the word and the caption.
 - [ ] Picture's value slot reads "PNG ≈ {size} · {n} files" and Printable chart's reads "PDF ≈ {size} · {n} pages", with the counts equal to the files and pages the buttons give.
 - [ ] Sizes are rounded up to 0.1 MB, "< 0.1 MB" under 0.1 MB, and whole MB from 10 MB. Nothing ever shows a floor of "1 MB".
 - [ ] The note "For the picture. The printable chart is drawn in lines and stays sharp at any zoom." sits under the stops. In the Unavailable state the High line follows it.

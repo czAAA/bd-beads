@@ -960,7 +960,6 @@ export interface Translations {
     exportSizeValue: string
     exportFiles: PluralForms
     exportPages: PluralForms
-    qualityDpi: string
     qualityPdfCapped: string
     /** The Letters switch in the Frame panel (ticket 0573), its explanation and the name of the info button that holds it (ticket 0651). */
     lettersLabel: string
@@ -982,6 +981,7 @@ export interface Translations {
      * Switch and the title block's Technique pencil. */
     margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; changeSetting: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string }
     qualityHintLabel: string
+    /** The Export quality Info note: each stop's DPI, {low}, {medium} and {high} (ticket 0957). */
     qualityHint: string
     estimateInfo: string
     sizeLockedLine: string
@@ -1053,6 +1053,12 @@ export interface Translations {
     rotateCoveredMessage: string
     /** The Progress bar's button with no Frame (ticket 0847): fits a Frame and opens Export on Picture. */
     fitAndExport: string
+    /** Each Export quality stop's caption in a crafter's words (ticket 0957); the DPI is in `qualityHint`. */
+    qualityLowCaption: string
+    qualityMediumCaption: string
+    qualityHighCaption: string
+    /** The line under the Export quality stops: the slider sets the picture only (ticket 0957). */
+    qualityNote: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */
