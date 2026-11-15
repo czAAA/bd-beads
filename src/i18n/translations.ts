@@ -1084,6 +1084,8 @@ export interface Translations {
     /** The Progress bar's line with no Frame, after its Select and Frame chips: what a Frame gives, then how to set one
      * (ticket 0944). The line is a button that picks the Select tool. */
     progressMarkPiece: string
+    /** The Drag a Frame notice on touch (ticket 0954): a finger has no Escape key, and picking a tool cancels. */
+    selectFrameTouchHint: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */
