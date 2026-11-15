@@ -5,15 +5,16 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import TextField from '../ui/form/TextField.vue'
 
-// Go to row (ProgressBar card, ticket 0849, F-04-14): hung above the Progress bar's counter, a field for the row the
-// weaver is on, "Row [12] of 40", and Go; Enter goes too. Escape or a press outside closes it and nothing moves. Show row
-// beside its name brings the current row back into view, the pointer where it is (ticket 0934).
+// Go to row (ProgressBar card, ticket 0849, F-04-14): hung above the counter, "Row [12] of 40" and Go (Enter too); Escape
+// or a press outside moves nothing. Show row brings the current row back into view, the pointer where it is (ticket
+// 0934); on peyote an Info button beside its name says what a pass is (ticket 0972).
 const props = defineProps<{
   /** The counter it hangs from: its own press toggles the popover. */
   anchor: HTMLElement | undefined
-  /** Its name: Go to row, or Go to column. */
+  /** Its name: Go to row, Go to column, or Go to pass where it counts passes. */
   title: string
   /** What the number counts: Row, Column, or Pass where a line takes two (peyote). */
   unit: string
@@ -22,6 +23,8 @@ const props = defineProps<{
   total: number
   /** Show row's label: Show row, or Show column. */
   showLabel: string
+  /** On peyote, the Info button's name and the sentence that says what a pass is (ticket 0972); none elsewhere. */
+  info?: { label: string; body: string }
 }>()
 const emit = defineEmits<{
   close: []
@@ -81,7 +84,10 @@ onMounted(async () => {
 <template>
   <div ref="rootEl" class="go-to-row anchored-popup" popover="manual" :style="anchored.style.value" role="dialog" :aria-label="title" data-testid="go-to-row">
     <div class="go-to-row__head">
-      <span class="go-to-row__title">{{ title }}</span>
+      <span class="go-to-row__name">
+        <span class="go-to-row__title">{{ title }}</span>
+        <InfoButton v-if="info" :label="info.label" :body="info.body" data-testid="go-to-row-info" />
+      </span>
       <AppButton variant="text" size="sm" data-testid="go-to-row-show" @click="show">{{ showLabel }}</AppButton>
     </div>
     <form class="go-to-row__form" novalidate @submit.prevent="go">
@@ -124,12 +130,18 @@ onMounted(async () => {
   box-shadow: var(--elevation-3);
 }
 
-/* Its name, with Show row at the far end as a quiet text button (ticket 0934). */
+/* Its name (with its Info button on peyote), with Show row at the far end as a quiet text button (ticket 0934). */
 .go-to-row__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-12);
+}
+
+.go-to-row__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .go-to-row__title {

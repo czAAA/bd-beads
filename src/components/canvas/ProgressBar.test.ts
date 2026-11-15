@@ -90,10 +90,12 @@ describe('ProgressBar', () => {
     expect(track.classes()).not.toContain('progress-track--following')
   })
 
-  it('shows a compact "current/total" counter and Previous/Next as the bar of steps\' quiet 32px pair (tickets 188, 411, 0788)', async () => {
+  it('names the counter\'s step, with a short "current/total" for a narrow bar, and Back a row / Row done as the bar of steps\' quiet 32px pair (tickets 188, 411, 0788, 0972)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 
-    expect(wrapper.find('[data-testid="progress-bar-compact-position"]').text()).toBe('5/20')
+    const counter = wrapper.get('[data-testid="progress-bar-compact-position"]')
+    expect(counter.get('.row-progress__count-step').text()).toBe('Ряд 5 из 20')
+    expect(counter.get('.row-progress__count-short').text()).toBe('5/20')
 
     const previous = wrapper.find('[data-testid="progress-bar-previous"]')
     const next = wrapper.find('[data-testid="progress-bar-next"]')
@@ -134,7 +136,7 @@ describe('ProgressBar', () => {
   it('shows the last row as the current one on it, and Pattern done with a check once every pass is done (tickets 411, 0849)', () => {
     const project = makeProject()
     const last = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows - 1) } })
-    expect(last.find('[data-testid="progress-bar-compact-position"]').text()).toBe('20/20')
+    expect(last.find('[data-testid="progress-bar-compact-position"] .row-progress__count-short').text()).toBe('20/20')
 
     const done = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows) } })
     const counter = done.get('[data-testid="progress-bar-compact-position"]')
@@ -308,12 +310,25 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
 })
 
 describe('ProgressBar counter (ticket 0849)', () => {
-  it('adds the rulers\' row on peyote and says in its Tooltip that it counts passes (F-04-03)', () => {
+  it('names the pass and adds the rulers\' row on peyote, and says in its Tooltip that it counts passes (F-04-03, ticket 0972)', () => {
     const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 14, unit: 'beads' } })
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(peyote, 2) } })
 
-    expect(wrapper.get('[data-testid="progress-bar-compact-position"]').text().replace(/\s+/g, ' ')).toBe('3/27 · ряд 2')
+    const counter = wrapper.get('[data-testid="progress-bar-compact-position"]')
+    expect(counter.get('.row-progress__count-step').text()).toBe('Проход 3 из 27')
+    expect(counter.get('.row-progress__line').text()).toBe('· ряд 2')
     expect(wrapper.text()).toContain('проходов: 27, рядов: 14')
+  })
+
+  it('calls Go to row Go to pass on peyote, the noun of its field, with the passes sentence behind an Info button (ticket 0972)', async () => {
+    const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 14, unit: 'beads' } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(peyote, 2) }, attachTo: document.body })
+    await wrapper.get('[data-testid="progress-bar-compact-position"]').trigger('click')
+    const popover = wrapper.get('[data-testid="go-to-row"]')
+    expect(popover.get('.go-to-row__title').text()).toBe(ru.rowProgress.goToPass)
+    expect(popover.get('.go-to-row__line').text()).toContain(ru.rowProgress.passLabel)
+    expect(popover.get('[data-testid="go-to-row-info"]').attributes('aria-label')).toBe(ru.rowProgress.passesInfoName)
+    wrapper.unmount()
   })
 
   it('names the track after a column while rows run down the columns (F-04-05)', () => {

@@ -310,7 +310,7 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     const wrapper = await mountOpen(sheetProject())
     await wrapper.get('[data-testid="margin-progress-next"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="progress-bar-compact-position"]').text()).toBe('2/2')
+    expect(wrapper.get('[data-testid="progress-bar-compact-position"] .row-progress__count-short').text()).toBe('2/2')
   })
 
   it('opens the Export panel from its Export button, hung from that button', async () => {
