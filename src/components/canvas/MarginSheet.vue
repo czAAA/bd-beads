@@ -10,7 +10,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { rowProgressOf, rowProgressPosition, rowProgressStarted } from '../../domain/rowProgress'
+import { rowProgressOf, rowProgressPosition, rowProgressStarted, type ShownWay } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
@@ -66,7 +66,8 @@ const emit = defineEmits<{
   key: [event: KeyboardEvent]
   'move-row': [delta: number]
   'reset-progress': []
-  'toggle-row-direction': []
+  /** A way chosen from Turn row direction's list (ticket 0973). */
+  'set-row-direction': [way: ShownWay]
   'toggle-row-highlight': []
   rename: [name: string]
   'set-technique': [technique: Technique]
@@ -346,7 +347,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           testid="margin-progress"
           @move-row="emit('move-row', $event)"
           @reset-progress="emit('reset-progress')"
-          @toggle-row-direction="emit('toggle-row-direction')"
+          @set-row-direction="emit('set-row-direction', $event)"
           @toggle-row-highlight="emit('toggle-row-highlight')"
         />
       </div>

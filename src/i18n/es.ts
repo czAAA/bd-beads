@@ -634,6 +634,7 @@ export const es: Translations = {
     showColumn: 'Mostrar columna',
     goToPass: 'Ir a la pasada',
     passesInfoName: 'Qué es una pasada',
+    showRowMarks: 'Mostrar marcas de fila',
   },
   quantities: {
     heading: 'Cuentas necesarias',
