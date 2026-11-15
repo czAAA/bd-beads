@@ -1,7 +1,7 @@
 import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, frameOf, newLayerId, withLayer } from './layerRecord'
+import { beadIdOfLayer, frameOf, newLayerId, withCanvas, withLayer } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -10,8 +10,9 @@ import { gridFromSize, type StatedSize } from './projectSize'
 import { INITIAL_ROW_PROGRESS } from './rowProgress'
 import { DEFAULT_TECHNIQUE, startOrientation, type Technique, type TechniqueSettings } from './weave'
 
-// Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture. A peyote Canvas
-// starts turned a quarter, so its staggered columns lie as staggered rows, the way a weaver pictures it.
+// Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture. A new peyote
+// Canvas starts turned a quarter, so its staggered columns lie as staggered rows, the way a weaver pictures it; one made
+// from a picture starts upright, the way the converter showed it (ticket 0965).
 
 export interface CreateProjectInput {
   /** User-chosen name; blank or omitted defaults to the bead's label. New Project never sends it blank: it names an
@@ -82,11 +83,11 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
   palette?: { ids: PaletteIds; codes: PaletteCodes }
 }
 
-/** Creates a Project from a picture (ticket 58): an ordinary new Project with its cells painted. Conversion only
- * creates, never edits an open Project (ADR 0010). The grid is fitted to the stated dimensions (missing cells empty,
- * surplus dropped), so they never disagree. */
+/** Creates a Project from a picture (ticket 58): a new Project with its cells painted and its Canvas upright, as the
+ * preview showed it (ticket 0965). Conversion never edits an open Project (ADR 0010). The grid is fitted to the stated
+ * dimensions (missing cells empty, surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
-  const project = createProject(input)
+  const project = withCanvas(createProject(input), { orientation: 0 })
   const frame = frameOf(project)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>
