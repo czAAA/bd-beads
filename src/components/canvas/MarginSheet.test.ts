@@ -248,6 +248,26 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(styleOf(far, 'margin-band')).toContain('transform: scale(1)')
   })
 
+  it('is roomy from 104px of band on screen, drawn at 1 there, and the two-row block under it (ticket 1015)', async () => {
+    // At 130% the band is 104px: the roomy block, the sheet's scale by 72 / 104, so 1; its inset is still the sheet's.
+    const roomy = mountSheet({ anchor: anchorAt(1.3) })
+    expect(control(roomy, 'margin-title').attributes('data-form')).toBe('roomy')
+    expect(control(roomy, 'margin-title-block').attributes('data-form')).toBe('roomy')
+    const drawn = Number.parseFloat(styleOf(roomy, 'margin-title').split('scale(')[1]!)
+    expect(drawn).toBeCloseTo(1, 5)
+    expect(Number.parseFloat(styleOf(roomy, 'margin-title').split('bottom: ')[1]!)).toBeCloseTo((10 * 104) / 72, 5)
+    // The band's row keeps the sheet's own scale.
+    expect(Number.parseFloat(styleOf(roomy, 'margin-band').split('scale(')[1]!)).toBeCloseTo(104 / 72, 5)
+    // At 125% the band is 100px: the block would reach the Frame's line, so it stays in two rows.
+    expect(control(mountSheet({ anchor: anchorAt(1.25) }), 'margin-title').attributes('data-form')).toBe('full')
+  })
+
+  it('passes on the roomy block\'s Replace Bead question (ticket 1015)', async () => {
+    const wrapper = mountSheet({ anchor: anchorAt(1.5) })
+    wrapper.getComponent({ name: 'MarginTitleBlock' }).vm.$emit('replace-bead', 'miyuki/delica/11-0')
+    expect(wrapper.emitted('replace-bead')).toEqual([['miyuki/delica/11-0']])
+  })
+
   it('is compact under 68px: Row highlight, the counter, the track and Row done, the tools, and the title block in one row with its legend', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.6), project: moveToRow(framed(), 2) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')

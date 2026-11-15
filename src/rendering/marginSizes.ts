@@ -21,6 +21,9 @@ export const MARGIN_PX = {
     /** The folded row, 24px, between the sheet's edge and the Frame's line; under it the sheet is bare. */
     folded: 31,
   },
+  /** The band on screen from which the title block is roomy (ticket 1015): its 79px, 10px in at the sheet's scale, stay
+   * clear of the Frame's line, and the block is drawn at 1 there. */
+  roomy: 104,
   /** The band's row down from the sheet's top and in from its sides, and the inner border's inset. */
   place: { full: { top: 14, side: 14, border: 10 }, compact: { top: 8, side: 10, border: 6 } },
   /** The sheet's outer corners. */

@@ -167,6 +167,26 @@ for (const touch of [false, true]) {
   }
 }
 
+// From 130% a loom Frame's band is 104px and its title block roomy (ticket 1015): the Bead with Change, whose pickers
+// ask the Frame panel's own question.
+test('the roomy title block names the Bead, and a pick from Change asks "Replace bead?"', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 40 })])
+  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  await setZoom(page, 150)
+  await expect(page.getByTestId('margin-title')).toHaveAttribute('data-form', 'roomy')
+
+  await page.getByTestId('margin-bead-change').click()
+  const pickers = page.getByTestId('margin-bead-popover')
+  await expect(pickers).toBeVisible()
+  await pickers.getByTestId('bead-brand').getByRole('button').first().click()
+  await pickers.locator('[role="menuitemradio"][aria-checked="false"]').first().click()
+  await expect(page.getByTestId('replace-bead-modal')).toBeVisible()
+  await expect(pickers).toHaveCount(0)
+  await context.close()
+})
+
 // The current pass is marked on its number in the full form and by a tick inside the Frame's line in the compact one
 // (ticket 0685): with the passes running down the columns, its mark stands in the top band with the tools, but never
 // under one, wherever along the Frame the pass is.

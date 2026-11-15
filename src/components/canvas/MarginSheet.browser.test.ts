@@ -157,12 +157,33 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
         // At 60% the sheet is compact, its title block one row without the Drop cell.
         if (80 * at < MARGIN_PX.band.full) continue
         expect(root.querySelector('[data-testid="margin-brick-drop-short"]'), `${at}`).not.toBeNull()
-        // The full block's pencils stand on one line, the Technique's picker too.
-        const pencils = ['margin-frame-name-edit', 'margin-technique-picker', 'margin-brick-drop-edit', 'margin-maker-edit']
+        // The full block's pencils stand on one line, the Technique's picker too; roomy, the name has a line of its own.
+        const roomy = root.querySelector('[data-testid="margin-title"]')!.getAttribute('data-form') === 'roomy'
+        const pencils = [...(roomy ? [] : ['margin-frame-name-edit']), 'margin-technique-picker', 'margin-brick-drop-edit', 'margin-maker-edit']
           .map((id) => root.querySelector(`[data-testid="${id}"] svg`)!.getBoundingClientRect())
           .map((icon) => icon.top + icon.height / 2)
         expect(Math.max(...pencils) - Math.min(...pencils), `${at}`).toBeLessThan(0.5)
       }
+    })
+
+    it(`is roomy from 130%, its block clear of the Frame's line, and in two rows where the sheet is too narrow for it, in ${locale} (ticket 1015)`, async () => {
+      zoom.value = 1
+      columns.value = 40
+      const { root } = await mountAt(Host, {}, { locale, width: 1280 })
+      const titleForm = () => root.querySelector('[data-testid="margin-title"]')?.getAttribute('data-form')
+      for (const [at, form] of [[1.25, 'full'], [1.3, 'roomy'], [1.5, 'roomy']] as const) {
+        zoom.value = at
+        await settled(root)
+        expect(titleForm(), `${at}`).toBe(form)
+        expect(problems(root), `${at}`).toEqual([])
+      }
+      // The Bead's Change is a button of the least size the sheet draws, and opens the pickers over the sheet.
+      const change = root.querySelector<HTMLElement>('[data-testid="margin-bead-change"]')!
+      expect(change.getBoundingClientRect().height).toBeGreaterThanOrEqual(MARGIN_PX.legible.button)
+      columns.value = 3
+      await settled(root)
+      expect(titleForm()).not.toBe('roomy')
+      expect(problems(root)).toEqual([])
     })
 
     it(`fits at every zoom from 25% to 150%, and on a narrow Frame, stepping down a form where the sheet is too narrow, in ${locale}`, async () => {

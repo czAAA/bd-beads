@@ -1275,6 +1275,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onRenameFrame: frameFlow.rename,
       onSetFrameTechnique: frameFlow.setTechnique,
       onSetFrameSetting: (id: string, value: number) => frameFlow.setWeaveSetting('frame', id, value),
+      onRequestFrameBead: (beadId: string) => replaceBead.onRequestReplaceBead('frame', beadId),
       onSaveMakerName: exportFlow.onSaveMakerName,
       onSetLetters: exportFlow.onSetLetters,
       exportOpener: overlays.exportOpener,

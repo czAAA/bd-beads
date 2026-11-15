@@ -75,6 +75,8 @@ const emit = defineEmits<{
   /** A setting of the Frame's Technique, by its id (ticket 0698). */
   'set-setting': [id: string, value: number]
   'save-maker-name': [name: string]
+  /** Replace Bead asked from the roomy title block's Change (ticket 1015): the Frame panel's own question. */
+  'replace-bead': [beadId: string]
   'set-letters': [on: boolean]
 }>()
 
@@ -146,8 +148,10 @@ const ROW_FITS: Record<MarginForm, readonly RowFit[]> = {
   bare: [],
 }
 // The legend is the first the title block gives up: `brief` is the compact row without it (ticket 0698).
-type TitleForm = 'full' | 'compact' | 'brief' | 'tab'
+type TitleForm = 'roomy' | 'full' | 'compact' | 'brief' | 'tab'
 const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['full', 'compact', 'brief', 'tab'], compact: ['compact', 'brief', 'tab'], folded: ['tab'], bare: [] }
+/** The roomy block (ticket 1015) is tried first where the band on screen holds it clear of the Frame's line. */
+const titleForms = computed<readonly TitleForm[]>(() => (props.anchor.band >= MARGIN_PX.roomy ? ['roomy', ...TITLE_FORMS[form.value]] : TITLE_FORMS[form.value]))
 
 /** The places of the sheet's form, in screen px at its scale. */
 const place = computed(() => {
@@ -178,7 +182,7 @@ const titleRoom = computed(() =>
     : props.anchor.sheet.width - 2 * titleSide.value,
 )
 const title = useFittingForm({
-  forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? TITLE_FORMS[form.value].filter((shown) => shown === 'tab') : TITLE_FORMS[form.value]) : []),
+  forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? titleForms.value.filter((shown) => shown === 'tab') : titleForms.value) : []),
   room: () => titleRoom.value / scale.value,
   measure: () => (titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
   observed: () => [titleEl.value?.firstElementChild],
@@ -188,6 +192,9 @@ const title = useFittingForm({
     return JSON.stringify([locale.value, name, props.project.makerName, technique, techniqueSettings, columns, rows])
   },
 })
+/** What the title block is drawn at: the sheet's scale, or for the roomy block that scale by its own band over the
+ * drafting sheet's, so it is 1 where it first shows and its words never under the sheet's least (ticket 1015). */
+const titleScale = computed(() => scale.value * (title.value === 'roomy' ? MARGIN_PX.scale.band / MARGIN_PX.roomy : 1))
 /** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
 const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
 /** The title block's inset from its corner, along the sheet's side and its top or bottom edge: the inner border's, or
@@ -201,8 +208,9 @@ const titleStyle = computed(() => {
   return {
     [left ? 'left' : 'right']: `${titleInset.value.side}px`,
     [top ? 'top' : 'bottom']: `${titleInset.value.edge}px`,
-    maxWidth: `${titleRoom.value / scale.value}px`,
-    ...scaledFrom([left ? 0 : '100%', top ? 0 : '100%'].join(' ')),
+    maxWidth: `${titleRoom.value / titleScale.value}px`,
+    transform: `scale(${titleScale.value})`,
+    transformOrigin: [left ? 0 : '100%', top ? 0 : '100%'].join(' '),
   }
 })
 
@@ -210,7 +218,7 @@ const titleStyle = computed(() => {
  * none where it sits at the bottom (ticket 0728). */
 const titleTaken = computed(() => {
   if (!corner.value.top || !title.value || titleSize.width.value === 0) return 0
-  return titleInset.value.side + (titleSize.width.value + MARGIN_PX.gap) * scale.value - place.value.side
+  return titleInset.value.side + titleSize.width.value * titleScale.value + MARGIN_PX.gap * scale.value - place.value.side
 })
 
 const bandEl = ref<HTMLElement>()
@@ -255,7 +263,7 @@ const bandBox = computed<BarBox>(() => {
 })
 const titleBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
-  const { width, height } = { width: titleSize.width.value * scale.value, height: titleSize.height.value * scale.value }
+  const { width, height } = { width: titleSize.width.value * titleScale.value, height: titleSize.height.value * titleScale.value }
   const { side, edge } = titleInset.value
   const { top, left } = corner.value
   return { left: sheet.left + (left ? side : sheet.width - side - width), top: sheet.top + (top ? edge : sheet.height - edge - height), width, height }
@@ -455,6 +463,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         @set-technique="emit('set-technique', $event)"
         @set-setting="(id, value) => emit('set-setting', id, value)"
         @save-maker-name="emit('save-maker-name', $event)"
+        @replace-bead="emit('replace-bead', $event)"
         @set-letters="emit('set-letters', $event)"
         @fold="fold.fold()"
       />
