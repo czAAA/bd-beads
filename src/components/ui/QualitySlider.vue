@@ -10,16 +10,18 @@ const props = defineProps<{
   stops: readonly {
     id: string
     word: string
-    /** Read after the word by a screen reader, e.g. the dpi. */
+    /** Read after the word by a screen reader, e.g. its caption. */
     spoken?: string
-    /** The size under the word; with `from` it reads "from → detail" (the stop was reduced for this Frame). */
+    /** The caption under the word ("small file"); with `from` it reads "from → detail" (the stop was reduced for this Frame). */
     detail?: string
     from?: string
   }[]
-  /** The info button beside the label: what the lowest stop is for ("Low saves memory"). */
+  /** The info button beside the label: what each stop gives. */
   hint?: { label: string; body: string }
   /** The info button beside the head while any stop is reduced: its accessible name and Tooltip. */
   reduced?: { label: string; body: string }
+  /** The line under the stops: what the slider sets ("For the picture. …"). */
+  note?: string
   /** The id of the chosen stop. */
   modelValue: string
   /** An export is running: the slider keeps its place but takes no input. */
@@ -46,7 +48,7 @@ function pick(next: number): void {
         <InfoButton v-if="hint" :label="hint.label" :body="hint.body" data-testid="quality-hint" />
       </span>
       <InfoButton v-if="reduced && stops.some((stop) => stop.from)" class="qs-info" :label="reduced.label" :body="reduced.body" data-testid="quality-reduced-info" />
-      <span data-testid="quality-chosen">{{ chosen?.word }}</span>
+      <span class="qs-chosen" data-testid="quality-chosen">{{ chosen?.word }}</span>
     </p>
     <input
       class="qs-range"
@@ -81,13 +83,14 @@ function pick(next: number): void {
         </small>
       </button>
     </div>
+    <p v-if="note" class="qs-note" data-testid="quality-note">{{ note }}</p>
   </div>
 </template>
 
 <style scoped>
   .qs { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-8) 0 0; font: 400 12px/16px var(--font-sans); color: var(--body); }
-  .qs-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-8); margin: 0; font: 500 13px/18px var(--font-sans); color: var(--ink); }
-  .qs-head span { font: 400 12px/16px var(--font-sans); color: var(--muted); }
+  .qs-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-8); margin: 0; font: var(--type-control); color: var(--ink); }
+  .qs-chosen { font: 400 12px/16px var(--font-sans); color: var(--muted); }
   .qs-range { -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box; height: var(--touch-target); margin: 0 calc(100% / (2 * var(--qs-n)) - var(--slider-thumb) / 2); width: calc(100% - 100% / var(--qs-n) + var(--slider-thumb)); background: transparent; cursor: pointer; --qs-line: calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * var(--qs-at)); }
   .qs-range::-webkit-slider-runnable-track { height: var(--slider-track); border-radius: var(--radius-full); background: linear-gradient(var(--accent), var(--accent)) 0 / var(--qs-line) 100% no-repeat, var(--track); }
   .qs-range::-moz-range-track { height: var(--slider-track); border-radius: var(--radius-full); background: var(--track); }
@@ -113,7 +116,8 @@ function pick(next: number): void {
   .qs-stop b { font: 500 13px/18px var(--font-sans); color: var(--body); }
   .qs-stop[aria-checked="true"] b { color: var(--ink); }
   .qs-stop:disabled { cursor: default; background: none; }
-  .qs-stop small { font: 400 12px/16px var(--font-mono); color: var(--muted); white-space: nowrap; }
+  .qs-stop small { font: 400 12px/16px var(--font-sans); color: var(--muted); }
+  .qs-note { margin: var(--space-4) 0 0; font: 400 12px/16px var(--font-sans); color: var(--muted); }
   .qs-stop .qs-was { color: var(--accent-strong); }
   .qs-label { display: inline-flex; align-items: center; gap: var(--space-4); margin-right: auto; }
   .qs-info { margin-right: 0; }

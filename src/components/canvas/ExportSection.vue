@@ -18,9 +18,9 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 
-// The export rows (tickets 568, 576, 0588, 0652, 0916; ExportPanel and QualitySlider cards): Picture, Printable chart and
-// its Large beads and Row by row, then Export quality. One component for the Frame panel's Export section and the Export
-// panel; the slot holds what a panel adds under the slider (the Frame panel's Letters).
+// The export rows (tickets 568, 576, 0588, 0652, 0916, 0957; ExportPanel and QualitySlider cards), each under the file it
+// changes: Picture with Export quality, then Printable chart with Large beads and Row by row. One component for the Frame
+// panel's Export section and the Export panel; the slot holds what a panel adds under the switches (the Frame panel's Letters).
 const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
@@ -35,6 +35,7 @@ const emit = defineEmits<{
 }>()
 
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
+const QUALITY_CAPTIONS = { low: 'qualityLowCaption', medium: 'qualityMediumCaption', high: 'qualityHighCaption' } as const
 const { t, locale } = useI18n()
 const frame = computed(() => frameOf(props.project))
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
@@ -69,13 +70,11 @@ function exportValue(format: 'PNG' | 'PDF', estimate: SizeEstimate | undefined):
 }
 const pngValue = computed(() => exportValue('PNG', exportFactsNow.value && printCode.value?.estimatePng(exportFactsNow.value, pngDpiFor(quality.value))))
 const pdfValue = computed(() => exportValue('PDF', exportFactsNow.value && printCode.value?.estimatePdf(exportFactsNow.value, pdfPageDpi())))
-/** Each stop's words and its dpi (tickets 571, 572, 0583). */
+/** Each stop's word and its caption in a crafter's words (tickets 571, 0957); the dpi is in the Info note. */
 const qualityStops = computed(() => {
   return EXPORT_QUALITIES.map((id) => {
     const word = t.value.frame[QUALITY_WORDS[id]]
-    if (!frame.value) return { id, word }
-    const dpi = pngDpiFor(id)
-    const detail = fillBlanks(t.value.frame.qualityDpi, { n: dpi })
+    const detail = t.value.frame[QUALITY_CAPTIONS[id]]
     return { id, word, detail, spoken: `${word}, ${detail}` }
   })
 })
@@ -84,38 +83,44 @@ const highPngDpi = computed(() => {
   const dpi = pngDpiFor('high')
   return dpi < PNG_DPI_BY_QUALITY.high ? dpi : undefined
 })
-const qualityHint = computed(() => ({ label: t.value.frame.qualityHintLabel, body: t.value.frame.qualityHint }))
+/** The Info note: the dpi each stop draws the picture at on this device (ticket 0957). */
+const qualityHint = computed(() => ({
+  label: t.value.frame.qualityHintLabel,
+  body: fillBlanks(t.value.frame.qualityHint, { low: pngDpiFor('low'), medium: pngDpiFor('medium'), high: pngDpiFor('high') }),
+}))
 const exportBusy = computed(() => !!props.exporting)
 const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng, { name: projectNameOf(props.project) }))
 </script>
 
 <template>
   <PanelItem icon="image" :value="pngValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'png' || undefined" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
+  <div class="export-section__quality">
+    <QualitySlider
+      :label="t.frame.exportQuality"
+      :stops="qualityStops"
+      :hint="qualityHint"
+      :note="t.frame.qualityNote"
+      :model-value="quality"
+      :disabled="exportBusy"
+      @update:model-value="quality = parseExportQuality($event) ?? quality"
+    />
+    <p v-if="highPngDpi" class="export-section__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
+  </div>
   <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'pdf' || undefined" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
   <PanelSwitchRow v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
   <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
-  <QualitySlider
-    class="export-section__quality"
-    :label="t.frame.exportQuality"
-    :stops="qualityStops"
-    :hint="qualityHint"
-    :model-value="quality"
-    :disabled="exportBusy"
-    @update:model-value="quality = parseExportQuality($event) ?? quality"
-  />
-  <p v-if="highPngDpi" class="export-section__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
   <slot />
   <LoadingState v-if="exporting" class="export-section__loading" compact :text="exportingText" />
 </template>
 
 <style scoped>
 .export-section__quality {
-  padding: 0 var(--space-10);
+  padding: 0 var(--space-10) var(--space-8);
 }
 
 .export-section__line {
   margin: 0;
-  padding: var(--space-4) var(--space-10);
+  padding: var(--space-4) 0 0;
   font: var(--type-meta-small);
   color: var(--muted);
 }
