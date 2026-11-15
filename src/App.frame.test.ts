@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { frameWeave } from './domain/layerWeave'
 import { weaveSettings } from './domain/weave'
 import { flushPromises, mount } from '@vue/test-utils'
@@ -14,6 +14,7 @@ import { pickColor, pressBar, selectAll } from './testUtils/pill'
 import { frameOf } from './domain/layerRecord'
 import { rowProgressOf } from './domain/rowProgress'
 import { frameSheetOf, withLayers } from './testUtils/layerFields'
+import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
 
 /** Edit Frame's wiring (tickets 233, 417, ADRs 0026, 0046, 0054): each control reaches the flow once. Its rules live in
  * `useFrameFlow`, `FramePanel` and `changeFrame`'s tests, one level each (ticket 0599, docs/testing.md). */
@@ -244,6 +245,36 @@ describe('A Frame from the panel with no Frame', () => {
     expect(wrapper.find('[data-testid="export-panel"] [data-testid="export-png"]').exists()).toBe(true)
   })
 
+  async function selectFrameNotice(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
+    await wrapper.get('[data-testid="strip-export"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="export-select-frame"]').trigger('click')
+    await flushPromises()
+    return wrapper.get('[data-testid="select-frame"]').text()
+  }
+
+  it('with a keyboard, the Drag a Frame notice says Escape cancels (ticket 0954)', async () => {
+    const wrapper = await mountOpen()
+    expect(await selectFrameNotice(wrapper)).toContain('Drag over the Canvas to select the Frame. Escape cancels.')
+    wrapper.unmount()
+  })
+
+  it('on touch, the Drag a Frame notice names no key: a tool cancels, as picking one does (ticket 0954)', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const wrapper = await mountOpen()
+    try {
+      const notice = await selectFrameNotice(wrapper)
+      expect(notice).toContain('Drag over the Canvas to select the Frame. Pick a tool to cancel.')
+      expect(notice).not.toContain('Escape')
+      await wrapper.get('[data-testid="pill-tool-paint"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="select-frame"]').exists()).toBe(false)
+    } finally {
+      wrapper.unmount()
+      vi.unstubAllGlobals()
+    }
+  })
+
 })
 
 describe('Painting a Custom frame', () => {
@@ -265,6 +296,14 @@ describe('Painting a Custom frame', () => {
 
 describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
   const savedProgress = () => rowProgressOf(loadProjects()[0])
+
+  it('picks the Select tool from the bar\'s no-Frame line, as its pill tile does (ticket 0944)', async () => {
+    const wrapper = await mountOpen()
+    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('false')
+
+    await wrapper.get('[data-testid="progress-bar-needs-frame"]').trigger('click')
+    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('true')
+  })
 
   it('turns on with the first Frame, fitted from the Progress bar, which opens Export on Picture; one Undo takes both back (ticket 0847)', async () => {
     const wrapper = await mountOpen()

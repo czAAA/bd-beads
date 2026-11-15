@@ -121,6 +121,20 @@ describe('the Tool pill', () => {
     }
   })
 
+  it('on touch, a tile\'s first tap reaches the toast that says its name, and the tool is chosen (ticket 0927)', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    try {
+      wrapper.get('[data-testid="pill-tool-fill"]').element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
+      await flushPromises()
+      expect(wrapper.find('[data-testid="pill-tile-name"]').exists()).toBe(true)
+      expect(toolState(wrapper, 'fill').pressed).toBe(true)
+    } finally {
+      wrapper.unmount()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('Mirror mode (ADR 0082): its drag is the Mirror\'s, so the clipboard stays and Paste with it', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     await pickColor(wrapper, 'red')

@@ -38,21 +38,22 @@ const actions = { change: controlAction('remap-color'), empty: controlAction('em
 const rowEl = ref<HTMLElement>()
 const changeButton = ref<InstanceType<typeof IconButton>>()
 
-/** The two lines a color reads as (FoundColorRow card): its label (code and name, or hex; ticket 0760) over where it is from. */
-function linesOf(target: TargetColor): { color: LabelledColor; source: string } {
+/** The two lines a color reads as (FoundColorRow card): its label (code and name, or hex; ticket 0760) over where it is from.
+ * A Bead color has no second line: its code says it is a bead, and the line under Colors says the beads are real (ticket 0966). */
+function linesOf(target: TargetColor): { color: LabelledColor; source?: string } {
   const color = { hex: target.hex, ...(target.colorId ? { id: target.colorId } : {}), ...(target.code ? { code: target.code } : {}), ...(target.family ? { family: target.family } : {}), ...(target.finish ? { finish: target.finish } : {}) }
-  if (target.code) return { color, source: words.value.beadColors }
+  if (target.code) return { color }
   if (target.colorId && !isAddedColorId(target.colorId)) return { color, source: words.value.defaultPalette }
   return { color, source: t.value.palette.customColorLabel }
 }
 
 const state = computed(() => props.row.choice?.kind)
-const lines = computed<{ color?: LabelledColor; source: string }>(() => {
+const lines = computed<{ color?: LabelledColor; source?: string }>(() => {
   const result = props.row.result
   if (!result) return { source: words.value.noBead }
   const own = linesOf(result)
-  if (state.value === 'exact') return { ...own, source: `${words.value.keptExact} · ${own.source}` }
-  if (state.value === 'remap') return { ...own, source: `${words.value.remapped} · ${own.source}` }
+  if (state.value === 'exact') return { ...own, source: [words.value.keptExact, own.source].filter(Boolean).join(' · ') }
+  if (state.value === 'remap') return { ...own, source: [words.value.remapped, own.source].filter(Boolean).join(' · ') }
   return own
 })
 
@@ -157,7 +158,7 @@ useRevealWhenOpen(rowEl, () => props.open)
         <span class="found-color__lines">
           <ColorLabel v-if="lines.color" class="found-color__name" :color="lines.color" :catalog="wizard.catalog.value" data-testid="found-color-name" />
           <span v-else class="found-color__name" data-testid="found-color-name">{{ words.empty }}</span>
-          <span class="found-color__source" data-testid="found-color-source">{{ lines.source }}</span>
+          <span v-if="lines.source" class="found-color__source" data-testid="found-color-source">{{ lines.source }}</span>
         </span>
       </span>
       <span class="found-color__count">{{ groupThousands(row.count, locale) }}</span>

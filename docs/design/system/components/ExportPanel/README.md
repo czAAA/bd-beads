@@ -33,14 +33,14 @@ The Frame panel's export section, the same component, under the title line:
 No export buttons and no slider. Under the title line:
 
 - One `meta-small` `muted` line: "Set a Frame around the drawing you want to export."
-- **Select a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568). Once the Frame is set the notice about dragging closes and this panel opens again, hung from the strip's button, on Picture and Printable chart (ticket 0847). Escape or another tool cancels and the notice closes too; the panel stays shut.
-- **Fit a Frame to the drawing** (`fit`): disabled with "Nothing is drawn yet to fit a Frame to." while nothing is drawn.
+- **Fit a Frame to the drawing** (`frame`; ticket 0944): first once something is drawn, as it is the one-tap way. While nothing is drawn it comes second, disabled with "Nothing is drawn yet to fit a Frame to.". It never carries `fit`, which is the zoom's Fit alone.
+- **Drag a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568). Once the Frame is set the notice about dragging closes and this panel opens again, hung from the strip's button, on Picture and Printable chart (ticket 0847). Escape or another tool cancels and the notice closes too; the panel stays shut. The notice reads "Drag over the Canvas to select the Frame. Escape cancels."; on touch, where there is no Escape key, it ends "Pick a tool to cancel." instead (ticket 0954), as the paste notice does.
 
-The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Select a Frame closes it until the drag has set the Frame, then brings it back (ticket 0847), so both ways end at the export rows.
+The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Drag a Frame closes it until the drag has set the Frame, then brings it back (ticket 0847), so both ways end at the export rows.
 
 ## Copy
 
-Every string is the Frame panel's: Export, Picture, Printable chart, Export quality, Set a Frame around the drawing you want to export., Select a Frame, Fit a Frame to the drawing. The two switches' names, Info button names and bodies are in `writing.md` (Print choices copy, ticket 0916), in both panels.
+Every string is the Frame panel's: Export, Picture, Printable chart, Export quality, Set a Frame around the drawing you want to export., Drag a Frame, Fit a Frame to the drawing. The two switches' names, Info button names and bodies are in `writing.md` (Print choices copy, ticket 0916), in both panels.
 
 ## Acceptance
 
@@ -49,7 +49,7 @@ Every string is the Frame panel's: Export, Picture, Printable chart, Export qual
 - [ ] With a Frame: Picture with Export quality under it, then Printable chart with Large beads and Row by row under it, all working as in the Frame panel.
 - [ ] Printable chart says how many pages the PDF will have, and the count changes at once with Large beads, Row by row, the Frame and the colors.
 - [ ] Large beads and Row by row are off at first and remembered on the device; Letters adds or removes no page.
-- [ ] With no Frame: the line, Select a Frame and Fit a Frame to the drawing; no export buttons.
+- [ ] With no Frame: the line, then Fit a Frame to the drawing (`frame`) and Drag a Frame, Fit first once something is drawn; no export buttons.
 - [ ] The Frame panel's export section and this panel render one shared component.
 
 **From the Progress bar too (ticket 0847; ProgressBar card):** with beads and no Frame, its Fit a Frame and export a picture fits the Frame and opens this panel hung from the strip's button, focused on Picture.

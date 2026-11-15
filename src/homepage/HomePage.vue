@@ -72,7 +72,7 @@ const emit = defineEmits<{
 }>()
 
 /** What the Homepage's Saved Projects needs of the library (ticket 0716). */
-type HomepageLibrary = Pick<ProjectLibrary, 'projects' | 'sealed' | 'removeProject' | 'addProjects' | 'entryOf'>
+type HomepageLibrary = Pick<ProjectLibrary, 'projects' | 'sealed' | 'removeProject' | 'restoreRemoved' | 'forgetRemoved' | 'addProjects' | 'entryOf'>
 
 const { t, locale } = provideI18n()
 watchEffect(() => {
@@ -300,6 +300,13 @@ function onSectionScroll(id: string, event: Event) {
 const deleteProject = useDeleteProjectFlow({
   findProject: (id) => library.value?.entryOf(id),
   removeProject: (id) => library.value?.removeProject(id),
+  restoreRemoved: () => library.value?.restoreRemoved(),
+  forgetRemoved: () => library.value?.forgetRemoved(),
+  // The Homepage opens no Project: its toast says only which one was deleted.
+  openProjectName: () => undefined,
+  showToast,
+  toastShowing: (id) => toasts.value.some((toast) => toast.id === id),
+  messages: () => t.value,
   saveProjectFile: (id) => {
     const project = library.value?.projects.value.find((each) => each.id === id) ?? library.value?.sealed.value.find((each) => each.id === id)
     if (project) emit('saveProjectFile', project)

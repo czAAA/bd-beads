@@ -82,6 +82,39 @@ describe('opening the editor (ticket 0716)', () => {
     expect(wrapper.find('[data-testid="project-list"]').exists()).toBe(true)
   })
 
+  it('says after Delete which Project is open now, and its Undo brings the deleted one back with its records (ticket 0983)', async () => {
+    const bracelet = project('Summer bracelet', 2000)
+    const cuff = project('Loom cuff', 1000)
+    storeLibrary([bracelet, cuff])
+    localStorage.setItem('openbeads:since-file', JSON.stringify({ [bracelet.id]: { beads: 170 } }))
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+
+    await openPanel(wrapper, 'strip-project')
+    await wrapper.get('[data-testid="project-delete"]').trigger('click')
+    await wrapper.get('[data-testid="delete-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+
+    const toast = wrapper.get('[data-testid="project-deleted"]')
+    expect(document.title).toContain('Loom cuff')
+    // Held while the toast shows: its Beads since last file stay beside the library.
+    expect(localStorage.getItem('openbeads:since-file')).toContain(bracelet.id)
+
+    await toast.get('[data-testid="toast-action"]').trigger('click')
+    await flushPromises()
+    expect(document.title).toContain('Summer bracelet')
+    expect(localStorage.getItem('openbeads:since-file')).toContain(bracelet.id)
+
+    // Deleted again, and the toast goes: the Project is gone from the device, its records with it.
+    await openPanel(wrapper, 'strip-project')
+    await wrapper.get('[data-testid="project-delete"]').trigger('click')
+    await wrapper.get('[data-testid="delete-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
+    await wrapper.get('[data-testid="project-deleted"] [data-testid="message-close"]').trigger('click')
+    await flushPromises()
+    expect(localStorage.getItem('openbeads:since-file')).not.toContain(bracelet.id)
+    wrapper.unmount()
+  })
+
   it('never opens a Project over the size gate at load, and warns before opening it from Saved Projects', async () => {
     const small = project('Small', 1000)
     storeLibrary([small], [storedHugeProject({ id: 'huge', name: 'Black fill', savedAt: 2000 })])

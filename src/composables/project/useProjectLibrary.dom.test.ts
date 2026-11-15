@@ -190,6 +190,57 @@ describe('useProjectLibrary', () => {
     expect(library.activeProjectId.value).toBe(second.id)
   })
 
+  it('holds a removed Project in memory, and Undo puts it back as it was and opens it again (ticket 0983)', () => {
+    const library = useProjectLibrary()
+    const first = makeProject({ updatedAt: 1000 })
+    const second = makeProject({ updatedAt: 2000 })
+    library.addProject(first)
+    library.addProject(second)
+    const removed = library.activeProject.value!
+
+    library.removeProject(second.id)
+    expect(library.removed.value).toEqual({ project: removed, wasOpen: true })
+    expect(loadProjects().map((project) => project.id)).toEqual([first.id])
+
+    library.restoreRemoved()
+    expect(library.removed.value).toBeUndefined()
+    expect(library.projects.value.map((project) => project.id)).toEqual([second.id, first.id])
+    expect(library.activeProject.value).toBe(removed)
+    expect(loadProjects().map((project) => project.id)).toEqual([second.id, first.id])
+  })
+
+  it('restores a removed Project that was not open without opening it', () => {
+    const library = useProjectLibrary()
+    const first = makeProject({ updatedAt: 1000 })
+    const second = makeProject({ updatedAt: 2000 })
+    library.addProject(first)
+    library.addProject(second)
+
+    library.removeProject(first.id)
+    library.restoreRemoved()
+
+    expect(library.activeProjectId.value).toBe(second.id)
+    expect(library.projects.value).toHaveLength(2)
+  })
+
+  it('restores nothing once the hold is let go, or once every Project is removed', () => {
+    const library = useProjectLibrary()
+    const first = makeProject({ updatedAt: 1000 })
+    const second = makeProject({ updatedAt: 2000 })
+    library.addProject(first)
+    library.addProject(second)
+
+    library.removeProject(first.id)
+    library.forgetRemoved()
+    library.restoreRemoved()
+    expect(loadProjects().map((project) => project.id)).toEqual([second.id])
+
+    library.removeProject(second.id)
+    library.removeAllProjects()
+    library.restoreRemoved()
+    expect(loadProjects()).toEqual([])
+  })
+
   it('adds imported Projects and persists them', () => {
     const library = useProjectLibrary()
     const imported = [makeProject({ updatedAt: 1000 }), makeProject({ updatedAt: 2000 })]
@@ -449,6 +500,19 @@ describe('Projects kept sealed when the library opens (ticket 0716)', () => {
     expect(library.sealed.value).toEqual([])
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: { id: string }[] }
     expect(stored.patterns.map((project) => project.id)).toEqual([small.id])
+  })
+
+  it('restores a removed sealed Project still sealed (ticket 0983)', () => {
+    const small = makeProject()
+    storeLibrary([small], [storedHugeProject()])
+    const library = useProjectLibrary()
+
+    library.removeProject('huge')
+    library.restoreRemoved()
+
+    expect(library.sealed.value.map((project) => project.id)).toEqual(['huge'])
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: { id: string }[] }
+    expect(stored.patterns.map((project) => project.id).sort()).toEqual(['huge', small.id].sort())
   })
 
   it('writes a sealed Project back with every save of the others', () => {

@@ -264,8 +264,9 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'pencil',
     name: (t) => t.frame.editFrame,
     body: (t) => t.tooltips.editFrame,
-    enabled: hasFrame,
-    disabledBody: (t) => t.tooltips.setFrameFirst,
+    // A Frame with a row done holds still: the pencil stays, saying why (ticket 0975).
+    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.frameSizeLocked : t.tooltips.setFrameFirst),
     group: 'canvas',
     chords: [],
     needsProject: true,
@@ -655,7 +656,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('input-mode', (t) => t.panels.menu.input, 'canvas', { icon: 'pen-mode' }),
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
   // The Convert image wizard's own controls (ticket 0650): its zoom is the Canvas's, its Close the shared one.
-  // Its floating bar (ticket 0896): Background, Make empty and Compare; Undo and Redo stand in Background's popover.
+  // Its floating bar (ticket 0896): Background, Leave a color out and Compare; Undo and Redo stand in Background's popover.
   unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),
   // The Background tool (ticket 0787): a tap or a drag keeps or removes the patch of background under it.
   unkeyed('convert-background', (t) => t.convertImage.wizard.backgroundTool, 'edit', { icon: 'erase', body: (t) => t.tooltips.backgroundTool }),
@@ -706,4 +707,9 @@ export function controlAction(id: string): ControlAction {
   const action = CONTROLS.find((control) => control.id === id)
   if (!action) throw new Error(`No control "${id}" in the registry`)
   return action
+}
+
+/** A Tool pill tile's action (ADR 0084): a tool's own, the Mirror's or Paste's. */
+export function pillTileAction(tile: PillTile): ControlAction {
+  return controlAction(tile === 'mirror' ? 'mirror' : `tool-${tile}`)
 }
