@@ -134,6 +134,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
     names: projectNames,
     replaceProject,
     removeProject,
+    removed: removedProject,
+    restoreRemoved,
+    forgetRemoved,
     removeAllProjects,
     flushPendingSave,
     saveNow,
@@ -222,8 +225,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
       opening: openingAddress.project && openingAddress.view ? { project: openingAddress.project, view: openingAddress.view } : undefined,
     })
 
-  /** Every Project in the library, sealed ones too: what a Project's records beside the library are kept for. */
-  const libraryIds = () => [...projects.value.map((project) => project.id), ...sealed.value.map((project) => project.id)]
+  /** Every Project in the library, sealed ones too, and the one Delete holds for Undo (ticket 0983): what a Project's
+   * records beside the library are kept for. */
+  const libraryIds = () => [
+    ...projects.value.map((project) => project.id),
+    ...sealed.value.map((project) => project.id),
+    ...(removedProject.value ? [removedProject.value.project.id] : []),
+  ]
 
   /** Beads since last file (ticket 0796): Edit, Undo and Redo count, any Project file save puts it back to 0. */
   const sinceFile = useBeadsSinceFile({ currentProject, libraryIds, store: services.sinceFiles })
@@ -881,8 +889,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const deleteProject = useDeleteProjectFlow({
     findProject: entryOf,
     removeProject,
+    restoreRemoved,
+    forgetRemoved,
     saveProjectFile: exportFlow.onSaveFileOf,
     openProjectId: () => activeProjectId.value,
+    openProjectName: () => activeProject.value && projectNameOf(activeProject.value),
+    showToast,
+    toastShowing: (id) => toasts.value.some((toast) => toast.id === id),
+    messages,
     dialogs,
   })
   const onRequestDeleteOpen = () => {

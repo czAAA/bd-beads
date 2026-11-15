@@ -295,6 +295,8 @@ export interface Translations {
       duplicatedToast: string
       /** Said under 1024px, where the strip shows no name, when a Project opens from the library (ticket 0986). */
       openedToast: string
+      /** After Delete of the open Project (ticket 0983): `{name}` is the deleted one, `{open}` the one open now. */
+      deletedToast: string
     }
   }
   /** The header's theme control (ticket 139). */

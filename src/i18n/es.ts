@@ -176,7 +176,7 @@ export const es: Translations = {
       duplicateHint: 'Sugerido: el nombre actual y el siguiente número libre.',
       deleteThis: 'Eliminar proyecto',
       deleteTitle: '¿Eliminar «{name}»?',
-      deleteMessage: '«{name}» y su progreso por filas se quitan de este navegador. No se puede deshacer. Si quieres conservarlo, guarda antes su archivo de proyecto.',
+      deleteMessage: '«{name}» y su progreso por filas se quitan de este navegador. Si quieres conservarlo, guarda antes su archivo de proyecto.',
       deleteConfirm: 'Eliminar proyecto',
       cancel: 'Cancelar',
       save: 'Guardar',
@@ -196,6 +196,7 @@ export const es: Translations = {
       beadSize: 'Tamaño',
       duplicatedToast: 'Ahora estás en “{copy}”. “{original}” se queda como estaba.',
       openedToast: 'Ahora estás en “{name}”.',
+      deletedToast: 'Se eliminó «{name}». Ahora estás en «{open}».',
     },
   },
   theme: {
