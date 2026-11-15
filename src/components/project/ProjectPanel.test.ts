@@ -29,27 +29,29 @@ function mountPanel(props: Record<string, unknown> = {}) {
 }
 
 describe('ProjectPanel (tickets 443, 554, 0670)', () => {
-  it('has the head, then the Canvas\'s Layer settings, the reference image, export and this project sections, in that order', () => {
+  it('has the head, then the Canvas\'s Layer settings, the reference image and this project sections, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'project-export-png', 'project-export-pdf', 'save-project-file', 'project-duplicate', 'project-clear', 'project-delete']
+    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'save-project-file', 'project-duplicate', 'project-export', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas, outside the Frame', 'reference image', 'Export', 'This Project'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas, outside the Frame', 'reference image', 'This Project'])
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
     expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}.openbeads`)
   })
 
-  it('offers Picture and Printable chart in its export section, each asking to open Export on that choice (ticket 0843)', async () => {
+  it('leads to export in one Export row with the › mark, and names no picture or chart of its own (ticket 0956)', async () => {
     const wrapper = mountPanel()
-    expect(wrapper.get('[data-testid="project-export-png"]').text()).toBe(`${en.frame.exportPicture}.png`)
-    expect(wrapper.get('[data-testid="project-export-pdf"]').text()).toBe(`${en.frame.exportChart}.pdf`)
+    const row = wrapper.get('[data-testid="project-export"]')
+    expect(row.text()).toBe(en.panels.project.exportHeading)
+    expect(row.find('.panel-item__mark--sub').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain(en.frame.exportPicture)
+    expect(wrapper.text()).not.toContain(en.frame.exportChart)
 
-    await wrapper.get('[data-testid="project-export-png"]').trigger('click')
-    await wrapper.get('[data-testid="project-export-pdf"]').trigger('click')
-    expect(wrapper.emitted('export')).toEqual([['png'], ['pdf']])
+    await row.trigger('click')
+    expect(wrapper.emitted('export')).toEqual([[]])
   })
 
   it('names the last saved file on the Save row, and offers Save as only where the browser can link a file (ADR 0090)', async () => {
