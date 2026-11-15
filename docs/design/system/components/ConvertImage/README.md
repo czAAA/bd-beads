@@ -77,7 +77,7 @@ When fewer colors come out than asked, the result's second line at the column's 
 - "Edit My beads" turns the Colors popover into its **My beads view**, with a back arrow ("Back to Colors"). It is not a popover or panel of its own.
 - The view's head: "My beads" with (i) "What My beads is", "40 codes", and "color catalog · miyuki delica".
 - Then:
-  - the empty state "No codes yet. Tick the codes you own, or paste a list of them.";
+  - the empty state "No codes yet. Tick the codes you own, or paste a list of them." (`small` on `body`'s 20px line height, balanced; ticket 0996);
   - the switch "All codes | My beads" with counts;
   - the BeadColors search and Filters, and the count line;
   - the rows, each one button that ticks the code (a 20 tick box at its right, `aria-pressed`). A discontinued code stays greyed: "· discontinued, never matched".

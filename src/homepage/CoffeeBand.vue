@@ -247,6 +247,7 @@ a.coffee__cup:hover .coffee-cup {
   margin: 0;
   font: var(--type-body);
   color: var(--body);
+  text-wrap: pretty;
 }
 
 /* What stands under the story, past a 1px `panel-rule` hairline. */
