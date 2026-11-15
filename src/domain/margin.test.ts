@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
-import { inMargin, MARGIN, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
+import { beadsShown, inMargin, MARGIN, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject } from './createProject'
 import { withFrame } from './frame'
 import type { GridPosition } from './grid'
@@ -110,5 +110,29 @@ describe('the margin of a Frame that draws shorter than the rows it names (ADR 0
 
   it('never calls a Frame bead margin, whatever its position says', () => {
     expect(mayPlace(woven, { row: 40, column: 3, layer: 'frame' })).toBe(true)
+  })
+})
+
+describe('the Canvas beads that show (ticket 1012)', () => {
+  const beads = withColors({}, [
+    { row: 0, column: 0, color: '#f00' },
+    { row: 12, column: 12, color: '#0f0' },
+    { row: 6, column: 6, color: '#00f' },
+    { row: 5, column: 6, color: '#00f' },
+    { row: 12, column: 25, color: '#0f0' },
+  ])
+
+  it('leave out the beads under the Frame and its margin, and keep the rest', () => {
+    expect(beadsShown(beads, frame)).toEqual({ 0: { 0: '#f00' }, 5: { 6: '#00f' }, 12: { 25: '#0f0' } })
+  })
+
+  it('are the beads themselves with no Frame or nothing under it, so a count kept on them stays', () => {
+    expect(beadsShown(beads, undefined)).toBe(beads)
+    expect(beadsShown(beads, { row: 40, column: 40, rows: 2, columns: 2 })).toBe(beads)
+  })
+
+  it('are worked out once for the same beads and Frame, and again for another Frame', () => {
+    expect(beadsShown(beads, frame)).toBe(beadsShown(beads, { ...frame }))
+    expect(beadsShown(beads, { ...frame, column: 30 })).not.toBe(beadsShown(beads, frame))
   })
 })

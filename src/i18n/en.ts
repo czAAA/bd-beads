@@ -1280,7 +1280,7 @@ export const en: Translations = {
     list: (names) => `${names.join(', ')}.`,
     paint: 'Tap or drag to place beads in the chosen color.',
     fill: 'Tap an area to fill it with the chosen color.',
-    rulers: 'Rulers number your beads and the Frame.',
+    rulers: 'Rulers number your beads.',
     rowDirection: 'Turn the way the rows run: top to bottom, left to right, bottom to top or right to left.',
     rowHighlight: 'Show or hide the marks on the current row and the rows marked done.',
     fitAndExport: 'Fit the Frame around every bead, then open Export on Picture.',

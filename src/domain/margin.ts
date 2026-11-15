@@ -1,5 +1,5 @@
 import { footprintOf } from './footprint'
-import { forEachChangedPosition, frameContains, withColors, type BeadChange, type Rect } from './canvas'
+import { forEachChangedPosition, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
 import { sameBeads } from './layerBeads'
@@ -18,6 +18,31 @@ export const MARGIN = 4
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
 export function withMargin(frame: Rect, margin: number = MARGIN): Rect {
   return { row: frame.row - margin, column: frame.column - margin, rows: frame.rows + 2 * margin, columns: frame.columns + 2 * margin }
+}
+
+const shownMemo = new WeakMap<BeadMap, { key: string; shown: BeadMap }>()
+
+/** The Canvas beads that show (ticket 1012): those the Frame and its margin do not cover, neither drawn nor counted.
+ * `beads` itself where nothing is covered; else a copy kept per `beads` and Frame, sharing the rows it leaves be. Only
+ * the covered rows are read, so it costs the cover, not the layer. */
+export function beadsShown(beads: BeadMap, footprint: Rect | undefined): BeadMap {
+  if (!footprint) return beads
+  const covered = withMargin(footprint)
+  const key = `${covered.row},${covered.column},${covered.rows},${covered.columns}`
+  const known = shownMemo.get(beads)
+  if (known?.key === key) return known.shown
+  let shown = beads
+  for (let row = covered.row; row < covered.row + covered.rows; row += 1) {
+    const stored = beads[row]
+    if (!stored) continue
+    const kept = Object.keys(stored).filter((column) => !frameContains(covered, { row, column: Number(column) }))
+    if (kept.length === Object.keys(stored).length) continue
+    if (shown === beads) shown = { ...beads }
+    if (kept.length === 0) delete shown[row]
+    else shown[row] = Object.fromEntries(kept.map((column) => [column, stored[Number(column)]!]))
+  }
+  shownMemo.set(beads, { key, shown })
+  return shown
 }
 
 /** Whether a bead may be placed at a position: not in a row the weaver has finished (ticket 33), and not in the
