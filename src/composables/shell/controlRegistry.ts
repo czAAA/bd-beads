@@ -264,8 +264,9 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'pencil',
     name: (t) => t.frame.editFrame,
     body: (t) => t.tooltips.editFrame,
-    enabled: hasFrame,
-    disabledBody: (t) => t.tooltips.setFrameFirst,
+    // A Frame with a row done holds still: the pencil stays, saying why (ticket 0975).
+    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.frameSizeLocked : t.tooltips.setFrameFirst),
     group: 'canvas',
     chords: [],
     needsProject: true,
