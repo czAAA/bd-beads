@@ -368,6 +368,85 @@ describe('useCanvasView', () => {
     })
   })
 
+  describe('making room beside a panel and taking it back (ticket 0971)', () => {
+    const frameOf20 = (surface: SurfaceView) => surface.beadBox({ row: 0, column: 0, rows: 10, columns: 20 }, 'canvas')
+
+    it('brings the part into the room left beside what else lies over the drawing this once', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      const zoom = view.zoom.value
+      // A panel over the left 560px: the Frame, 400px wide, moves just clear of it.
+      view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 560 } })
+      const shown = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom, scroll: view.scroll.value }).beadBox({ row: 0, column: 0, rows: 10, columns: 20 })
+      expect(shown.x).toBeCloseTo(560, 6)
+    })
+
+    it('puts the view back where it was, still following the fit', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      const from = view.scroll.value
+      const move = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 560 } })!
+      expect(view.isAtFit.value).toBe(false)
+      vi.stubGlobal('matchMedia', () => ({ matches: true }))
+      try {
+        view.putBack(move)
+      } finally {
+        vi.unstubAllGlobals()
+      }
+      expect(view.scroll.value).toEqual(from)
+      expect(view.isAtFit.value).toBe(true)
+    })
+
+    it('leaves a view the person moved or zoomed since where they left it', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      const move = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 560 } })!
+      view.panBy(30, 0)
+      const moved = view.scroll.value
+      view.putBack(move)
+      expect(view.scroll.value).toEqual(moved)
+      expect(view.isAtFit.value).toBe(false)
+
+      const again = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 700 } })!
+      view.setZoom(0.5)
+      const zoomed = view.scroll.value
+      view.putBack(again)
+      expect(view.scroll.value).toEqual(zoomed)
+    })
+
+    it('turns back mid-glide when closed before the move has landed', () => {
+      let asked = new Map<number, FrameRequestCallback>()
+      let next = 0
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => (asked.set(++next, callback), next))
+      vi.stubGlobal('cancelAnimationFrame', (id: number) => asked.delete(id))
+      const frame = (time: number) => {
+        const due = asked
+        asked = new Map()
+        for (const callback of due.values()) callback(time)
+      }
+      try {
+        const { view } = setup(projectOf(20, 10))
+        view.fit()
+        const from = view.scroll.value
+        const move = view.bringIntoView(frameOf20, { clear: { ...NO_INSETS, left: 560 } })!
+        frame(1000)
+        frame(1000 + INTO_VIEW_MS / 2)
+        view.putBack(move)
+        frame(2000)
+        frame(2000 + INTO_VIEW_MS)
+        expect(view.scroll.value).toEqual(from)
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('makes no move, and returns none, for a part already clear', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      expect(view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 100 } })).toBeUndefined()
+    })
+  })
+
   describe('a two-finger twist (tickets 0672, 0709)', () => {
     it('turns the view live about the fingers, keeping the bead under them, and leaves the Project as it is until they lift', () => {
       const { current, view } = setup(projectOf(20, 10))
