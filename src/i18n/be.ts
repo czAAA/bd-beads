@@ -589,7 +589,7 @@ export const be: Translations = {
     highlightButton: 'Падсветка рада',
     resetButton: 'Скінуць прагрэс',
     resetConfirmTitle: 'Скінуць прагрэс?',
-    resetConfirmMessage: 'Усе рады, пазначаныя як гатовыя, знікнуць, і вы пачнеце з першага рада. Бісерыны застануцца.',
+    resetConfirmMessage: 'Усе рады, пазначаныя як гатовыя, знікнуць, і вы пачнеце з першага рада. Бісерыны застануцца. «Адмяніць» не верне адзнакі, а «Перайсці да рада» верне.',
     resetConfirmCancel: 'Скасаваць',
     positionLabel: 'Рад',
     previousButton: 'Назад на рад',
@@ -931,9 +931,9 @@ export const be: Translations = {
   },
   deleteAll: {
     button: 'Ачысціць',
-    confirmTitle: 'Ачысціць?',
-    confirmMessage: 'Усе ячэйкі стануць пустымі, а прагрэс па радках выключыцца. Гэта дзеянне можна адмяніць.',
-    confirmButton: 'Ачысціць',
+    confirmTitle: 'Ачысціць усе бісерыны?',
+    confirmMessage: 'Усе бісерыны гэтага праекта будуць прыбраныя, а прагрэс па радах выключыцца. «Адмяніць» верне іх.',
+    confirmButton: 'Ачысціць усе бісерыны',
     cancelButton: 'Скасаваць',
   },
   removeLine: {
