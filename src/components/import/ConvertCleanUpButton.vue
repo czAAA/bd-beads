@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 
 // The Clean up button under Colors (ConvertImage card DS-3, ticket 0906): what the helper did, in a line or two, and
-// its popover in one press. Its name is the lines it shows, then "Clean up" for a screen reader (ticket 0940).
+// its popover in one press. Its first line starts with its name, "Clean up · off", so what is off is seen and said
+// (ticket 0966); its accessible name is the lines it shows.
 defineEmits<{ toggle: [] }>()
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
@@ -24,6 +26,8 @@ const lines = computed(() => {
     second: joined > 0 ? plural(locale.value, joined, words.value.smallJoined) : undefined,
   }
 })
+/** The first line with the button's name before it (ticket 0966): "Clean up · off for pixel art". */
+const named = computed(() => fillBlanks(words.value.named, { line: lines.value.first }))
 </script>
 
 <template>
@@ -39,12 +43,10 @@ const lines = computed(() => {
   >
     <AppIcon name="clean-up" :size="18" class="convert-clean-up-button__icon" />
     <span class="convert-clean-up-button__lines">
-      <span class="convert-clean-up-button__first" data-testid="convert-clean-up-first">{{ lines.first }}</span>
+      <span class="convert-clean-up-button__first" data-testid="convert-clean-up-first">{{ named }}</span>
       {{ ' ' }}
       <span v-if="lines.second" class="convert-clean-up-button__second" data-testid="convert-clean-up-second">{{ lines.second }}</span>
     </span>
-    {{ ' ' }}
-    <span class="convert-clean-up-button__what">{{ words.title }}</span>
     <AppIcon name="chevron-down" :size="16" class="convert-clean-up-button__chevron" />
   </button>
 </template>
@@ -116,15 +118,5 @@ const lines = computed(() => {
 .convert-clean-up-button__second {
   font: var(--type-meta-small);
   color: var(--muted);
-}
-
-/* Heard, not seen: what the button is, after the words it shows. */
-.convert-clean-up-button__what {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 </style>

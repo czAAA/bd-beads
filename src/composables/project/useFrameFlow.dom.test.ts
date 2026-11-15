@@ -295,13 +295,13 @@ describe('useFrameFlow', () => {
     it('says one row was added on top', () => {
       const { deps, setTo } = setup(woven('brick'))
       setTo({ row: 3, column: 0, rows: 4, columns: 4 })
-      expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added an empty row on top: a Frame must start on an unshifted row.', 'info')
+      expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added an empty row on top so the Frame starts on a full row.', 'info')
     })
 
     it('counts several rows added on top', () => {
       const { deps, setTo } = setup(withLayers(woven('brick'), { techniqueSettings: { brickDrop: 4 } }))
       setTo({ row: 11, column: 0, rows: 4, columns: 4 })
-      expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added 3 empty rows on top: a Frame must start on an unshifted row.', 'info')
+      expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added 3 empty rows on top so the Frame starts on a full row.', 'info')
     })
 
     it('says nothing when the Frame is refused', () => {

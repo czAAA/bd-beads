@@ -147,9 +147,10 @@ describe('the control registry', () => {
     expect(controlAction('strip-menu').body?.(en)).toBe('New Project, Convert image, Projects library, Language, Theme.')
   })
 
-  it('writes the zoom chords without a separator before the sign: Ctrl/Cmd+ and Ctrl/Cmd−', () => {
-    expect(actionKey(controlAction('zoom-in'))).toBe('Ctrl/Cmd+')
-    expect(actionKey(controlAction('zoom-out'))).toBe('Ctrl/Cmd−')
-    expect(actionKey(controlAction('zoom-fit'))).toBe('Ctrl/Cmd+0')
+  it('writes the zoom chords for the keyboard, without a separator before the sign: Ctrl+ and Ctrl−, ⌘+ and ⌘−', () => {
+    expect(actionKey(controlAction('zoom-in'), 'other')).toBe('Ctrl+')
+    expect(actionKey(controlAction('zoom-out'), 'other')).toBe('Ctrl−')
+    expect(actionKey(controlAction('zoom-fit'), 'apple')).toBe('⌘0')
   })
+
 })

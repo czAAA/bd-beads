@@ -31,10 +31,15 @@ export function colorLabel(t: Translations, color: LabelledColor, catalog?: Colo
     const family = color.family ?? entry?.family[0]
     const finish = color.finish ?? entry?.finish
     if (!family || !finish) return { text: color.code, hex }
-    const familyWords = colorName(t, { id: familyColorId(family), hex: '' }) || family
-    const name = fillBlanks(t.palette.catalogColorName, { finish: t.palette.beadColors.finishes[finish], family: familyWords })
-    return { text: `${color.code} ${name}`, hex }
+    return { text: `${color.code} ${catalogColorName(t, family, finish)}`, hex }
   }
   if (color.id && !isAddedColorId(color.id)) return { text: colorName(t, { id: color.id, hex: color.hex }), hex }
   return { text: hex }
+}
+
+/** A catalog code's name after its code, its Finish and its color family ("Opaque Black"): the same words wherever a
+ * code is listed, so a bead reads the same in Color by color and in My beads (ticket 0966). */
+export function catalogColorName(t: Translations, family: string, finish: Finish): string {
+  const familyWords = colorName(t, { id: familyColorId(family), hex: '' }) || family
+  return fillBlanks(t.palette.catalogColorName, { finish: t.palette.beadColors.finishes[finish], family: familyWords })
 }

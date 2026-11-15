@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "When a Project didn't open last time, the first press on Save Project file or Remove in its notice works, also while the Menu is open",
+    "ru": "Если проект не открылся в прошлый раз, первое нажатие на «Сохранить файл проекта» или «Удалить» в уведомлении срабатывает, даже когда открыто меню",
+    "uk": "Якщо проєкт не відкрився минулого разу, перше натискання на «Зберегти файл проєкту» або «Видалити» у сповіщенні спрацьовує, навіть коли відкрите меню",
+    "be": "Калі праект не адкрыўся ў мінулы раз, першае націсканне на «Захаваць файл праекта» або «Выдаліць» у паведамленні спрацоўвае, нават калі адкрытае меню",
+    "zh": "上次没能打开的项目，提示里的“保存项目文件”或“移除”按第一下就生效，菜单开着时也一样",
+    "es": "Cuando un proyecto no se abrió la última vez, el primer toque en Guardar archivo de proyecto o Quitar en su aviso funciona, también con el menú abierto",
+    "pl": "Gdy projekt nie otworzył się ostatnim razem, pierwsze naciśnięcie Zapisz plik projektu lub Usuń w powiadomieniu działa, także przy otwartym menu"
+  }
+}

@@ -193,7 +193,9 @@ describe('Convert image, the quiet converter', () => {
         // foot, the lighting row in view.
         const lightingRow = rect(root, 'convert-lighting').height + LIGHTING_ROW_GAP_PX
         const nameLine = rect(root, 'convert-file-name').height + NAME_LINE_GAP_PX
-        if (locale !== 'longest') expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX + lightingRow + nameLine)
+        // The line under Colors says the beads are real and their colors approximate on a second line (ticket 0966).
+        const matchedLine = rect(root, 'convert-matched').height / 2
+        if (locale !== 'longest') expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? matchedLine : FOOT_BOTTOM_PADDING_PX + lightingRow + nameLine + matchedLine)
         expect(rect(root, 'convert-lighting-switch').bottom).toBeLessThanOrEqual(column.getBoundingClientRect().bottom)
         expect(rect(root, 'convert-image-create').bottom).toBeLessThanOrEqual(height)
         // The bar's buttons stand whole inside it.
@@ -317,7 +319,7 @@ describe('Convert image, the quiet converter', () => {
     })
   }
 
-  it('holds Background, Make empty and Beads | Picture in the bar under 1024 px, whole in the longest wording', async () => {
+  it('holds Background, Leave a color out and Beads | Picture in the bar under 1024 px, whole in the longest wording', async () => {
     const mounted = await mountAt(ConvertPageHost, props, { locale: 'longest', width: 1024 })
     await page.viewport(1024, 1366)
     await pictureSet(mounted.root)
