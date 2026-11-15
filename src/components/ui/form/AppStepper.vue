@@ -295,4 +295,32 @@ watch(
 :root[data-theme='contrast'] .stepper {
   border-width: 2px;
 }
+
+/* Touch (ticket 0962): − and + are `touch-target` wide, so their `touch-target` pads end at their own edges, and the
+ * number's button fills its cell, which is its hit area, `touch-target` tall; no pad lies over another. */
+@media (pointer: coarse) {
+  .stepper__button {
+    min-width: var(--touch-target);
+  }
+
+  .stepper__value {
+    padding: 0;
+  }
+
+  .stepper__value-button {
+    position: relative;
+    align-self: stretch;
+    justify-self: stretch;
+    padding: 0 var(--space-6);
+  }
+
+  .stepper__value-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    inset-inline: 0;
+    height: max(100%, var(--touch-target));
+    transform: translateY(-50%);
+  }
+}
 </style>
