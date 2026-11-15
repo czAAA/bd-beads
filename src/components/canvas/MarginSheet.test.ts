@@ -76,7 +76,6 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(names).toEqual([
       'Turn row direction',
       'Reset progress',
-      'Row highlight',
       'Back a row',
       'Row done',
       'Move Frame',

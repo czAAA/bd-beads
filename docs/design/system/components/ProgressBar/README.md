@@ -46,7 +46,7 @@ Row done and Back a row show text and follow Row direction: top to bottom they r
 - **Until a picture is set** every step after the first is shut (`aria-disabled`, `faint`) and Next is disabled with "Add a picture first".
 - No Pattern done burst. On a phone the names are `meta-tiny`, wrapped, the first starting at the track's start and the last ending at its end (there is no room for the inset), and Back and the forward button take a second row, half the bar each, until the phone layout of ticket 0778 is designed.
 
-**In the margin too (ticket 0655; MarginSheet card):** the Frame's margin sheet carries the same Row progress component in its top band, compact: Turn row direction, Reset progress, Row highlight, the counter and a 64px track, Back a row (icon only) and Row done. It is one component in two places tracking the same progress: a press in either moves the one pointer, and both show it. The bar stays.
+**In the margin too (ticket 0655; MarginSheet card):** the Frame's margin sheet carries the same Row progress component in its top band, compact: Turn row direction (its list holding Show row marks), Reset progress, the counter and a 64px track, Back a row (icon only) and Row done, in a box: the bar's Row done is the one filled one on screen (ticket 0981). It is one component in two places tracking the same progress: a press in either moves the one pointer, and both show it. The bar stays.
 
 Hand-written from DESIGN.md §5.11 and the v16 sign-off; static rendition.
 
