@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Delete all Projects says how many it deletes, saves them all to a Project file first with one press, and sits away from the last Project in the list",
+    "ru": "«Удалить все проекты» говорит, сколько проектов удалит, одним нажатием сначала сохраняет их все в файл проекта и стоит в стороне от последнего проекта в списке",
+    "uk": "«Видалити всі проєкти» каже, скільки проєктів видалить, одним натисканням спершу зберігає їх усі у файл проєкту й стоїть окремо від останнього проєкту в списку",
+    "be": "«Выдаліць усе праекты» кажа, колькі праектаў выдаліць, адным націсканнем спачатку захоўвае іх усе ў файл праекта і стаіць убаку ад апошняга праекта ў спісе",
+    "zh": "“删除所有项目”会说明要删除多少个项目，一键即可先把它们全部保存到项目文件，并且不再紧挨着列表中的最后一个项目",
+    "es": "Eliminar todos los proyectos dice cuántos elimina, los guarda todos antes en un archivo de proyecto con una pulsación y ya no está justo debajo del último proyecto de la lista",
+    "pl": "Usuń wszystkie projekty mówi, ile projektów usunie, jednym kliknięciem najpierw zapisuje je wszystkie w pliku projektu i nie stoi już tuż pod ostatnim projektem na liście"
+  }
+}

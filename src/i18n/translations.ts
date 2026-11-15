@@ -237,7 +237,8 @@ export interface Translations {
       themeLight: string
       themeDark: string
       tooltipDeleteAll: string
-      deleteAllTitle: string
+      /** Delete all Projects? with the count (ticket 0984). */
+      deleteAllTitle: PluralForms
       deleteAllMessage: string
       deleteAllConfirm: string
       /** The Help row and the Language row's link that open the Feedback sheet (ticket 0700). */

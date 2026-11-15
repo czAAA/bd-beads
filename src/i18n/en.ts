@@ -140,7 +140,7 @@ export const en: Translations = {
       themeLight: 'Light',
       themeDark: 'Dark',
       tooltipDeleteAll: 'Remove every Project from this browser.',
-      deleteAllTitle: 'Delete all Projects?',
+      deleteAllTitle: { one: 'Delete {count} Project?', other: 'Delete all {count} Projects?' },
       deleteAllMessage: "Every Project is removed from this browser. This can't be undone. Save all Projects to a Project file first if you want to keep copies.",
       deleteAllConfirm: 'Delete all Projects',
       sendFeedback: 'Send feedback',
