@@ -39,6 +39,6 @@ Specs are not tickets: a spec is kept in `docs/specs/` (`NNNN-<slug>.md`), never
 
 ## Workflow
 
-- **Creating an issue**: `bd-tickets` skill writes a new `.scratch/NNNN-slug.md`, then commits it to `bd-beads-docs` `main` and pushes at once (`git -C ../bd-beads-docs add -A && git -C ../bd-beads-docs commit -m "ticket NN: ..." && git -C ../bd-beads-docs push`)
+- **Creating an issue**: `bd-tickets` skill writes a new `.scratch/NNNN-slug.md`, then commits it to `bd-beads-docs` `main` and pushes at once (`git -C ../bd-beads-docs add -A && git -C ../bd-beads-docs commit -m "ticket NNNN: ..." && git -C ../bd-beads-docs push`)
 - **Triaging**: `bd-triage` skill reads and updates a ticket's `**Status:**` line, set to one of the triage labels
 - **Resolving**: close the issue by moving it to `.scratch/.archive/`, then commit and push in the docs repo, once the PR that completes it is ready for review. The archive is part of the work, but it is not part of the code PR

@@ -48,7 +48,7 @@ Each database has its own folder: `worker/migrations/core/` (empty until ticket 
 
 **Add, then remove.** A migration only adds: a new table, a new nullable column. A column or table is dropped in a later deploy, once no deployed code reads it. A deploy that fails after its migration then leaves the running code working on the new schema. `wrangler rollback` brings back old code but never undoes a migration; D1 Time Travel does (`docs/operations.md`, restore).
 
-The tests apply every migration before each Worker starts (`docs/testing.md`), so a broken one fails the suite.
+The tests apply every migration before each Worker starts (`docs/testing/worker.md`), so a broken one fails the suite.
 
 ## Variables and secrets
 

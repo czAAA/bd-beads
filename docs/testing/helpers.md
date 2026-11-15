@@ -1,0 +1,40 @@
+# Shared test helpers (`src/testUtils/`)
+
+Part of the testing docs; the rules every test follows are in [`docs/testing.md`](../testing.md).
+
+- `chooseLanguage.ts`: `chooseLanguage(wrapper, 'ru')` opens the Language picker's menu and picks that language (ticket 368).
+- `choosePanelOption.ts`: `choosePanelOption(wrapper, testid, value)` picks a value in a Menu PanelPicker; `panelOptionShown` reads the value it shows (ticket 0553).
+- `seedProject.ts`: `seedProject` saves a Project, `mountWithProject` mounts the App on it (no form driving), `createProjectViaForm` for the one test that is about the form.
+- `editHarness.ts`: a real Edit and Undo history over one in-memory Project, for flow tests (ADR 0036). The Project is a ref, so a flow's computeds follow each Edit.
+- `shellHost.ts`: `mountShellParts(...parts)` mounts parts of the shell (AppPanels, AppDialogs) under the app's real wiring and nothing else, and hands back its contexts, `openPanel(panel)` and the dialog registry (ticket 0618).
+- `paletteHost.ts`: `mountWithPalette(component, ids, props)` mounts a Palette control under the real Palette and Edit, as the app shell provides them, with spies for asking to remove one color or all (ticket 0601).
+- `hitAreas.ts`: `hitAreaProblems(controls, least)` measures with `elementFromPoint` where each control answers, through its centre and at its drawn corners, and names any under `least` px or under a neighbour's pad; `byTestid(root, ids)`; `expectTouchScreen()` guards that a touch file runs on a touch screen (ticket 0962). `contextBarHosts.ts`: the Selection and Mirror bars with room to stand whole, for those tests.
+- `marginSheetHost.ts`: `marginSheetHost(zoom)`, the margin sheet round a 30-column Frame at a zoom, for browser tests (the fit cases, a picker opening in its title block; ticket 0681).
+- `beads.ts`: press, hover and read beads on a mounted surface (`pressBead`, `hoverBead`, `beadColor`, `beadColors`, `rowProgressView`, `rulerNumbers`, …).
+- `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it. Node and jsdom have no `Path2D` either: `src/unitSetup.ts` (a setup file of the `unit` and `page` projects) gives every test an empty one, and `recordingContext` replaces it with one that writes its `roundRect` and `addPath` calls down with the context's.
+- `countingBeads.ts`: a set of beads behind a counter of the rows and beads read, so a test counts the work an edit does instead of timing it (ticket 0674).
+- `hugeProject.ts`: `storedHugeProject` builds a Project over the size gate straight in its stored form, so no test holds millions of beads, and `storeLibrary` stores it with ordinary Projects as a reload would find them (ticket 0716).
+- `fakeMatchMedia.ts`, `fakeResizeObserver.ts`, `surfaceLayout.ts`: media queries, element sizes and layout a test controls.
+- `storageWrites.ts`: count localStorage writes, or make one fail.
+- `sharedPage.ts`: what the setup resets before each `page` file, and its never-repeating clock.
+- `rotated.ts`: a ready-made rotated Project.
+- `squareBead.ts`: `squareBead(bead)` is the Bead with a square, unrounded cell, for a test of what a Bead's width alone decides (reading one Bead's beads through millimetres in another), where a real outline would leave a gap at every corner (ticket 0724).
+- `convertPicture.ts`: `flatColorsPicture` for the Convert image wizard to read, `pictureSet` to wait until it has (ticket 0654).
+- `frameGrid.ts`: `frameGrid` reads a Project's beads as a dense grid of rows and columns, the shape an expectation is written in, and `withFrameGrid` puts one back (ticket 0609).
+- `layerFields.ts`: a Project's layers set and read in one go (ticket 0664): `withLayers(project, change)` sets the Canvas layer's `technique`, `beads`, `name`, `pieceNames` and `orientation`, the Bead and Letters of every layer, the Frame layer's sheet as `frame` (`undefined` removes it), its `rowProgress`, and the Project's own fields; `bareProject(change)` makes a bare one from them; `layersView` reads one back as such a change for a `toMatchObject`; `frameSheetOf` is the Frame layer's sheet without the layer's id, Bead and Row progress.
+- `projectLocks.ts`: `sharedProjectLocks()`, the tabs' locks on a Project in memory, shared by every library a test opens, so two libraries over one storage act as two tabs (ticket 0834).
+- `pictureStore.ts`: `memoryPictureStore()` keeps reference images' pictures in memory, for a test of what the app keeps on the device; `{ refuses: true }` is a device that won't keep any (ticket 0790, ADR 0089).
+- `legacyFile.ts`: Projects as builds before ticket 0664 held them: `legacyRecordOf` is the flat record an older store or file held (the Canvas's orientation as `rotation`), `legacyFile(projects, version)` writes Projects as a file of version 4 to 11 did, for a test of reading one.
+- `samplerPictures.ts`: the Convert image sampler's reference suite (ticket 0888): synthetic pictures (`pixelArtPicture` on a mark or between, `ringPicture`, `strokePicture`, crisp or anti-aliased, `photoPicture`, `furPicture`, `transparentPicture`), `convertAt` to open one in the wizard at a Width, `previewBeads` and `centrePixelBeads` to read its beads at rest or by their centre pixels, and the measures (`loneBeads`, `beadGroups`, `enclosedBy`, `meanDistanceFromArea`), for a ticket that tunes on the same pictures (0889).
+
+## The `page` setup
+
+`src/testSetup.ts` runs before every `page` test file: it empties the module cache and re-arms auto-unmount, which the library only lets be armed once. `testUtils/sharedPage.ts`'s `resetSharedPage` empties what the last file left on the page: the body, styles, `<html>`'s `class`, `style` and `lang`, the title, both storages, and puts back the default `matchMedia` (a desk with a mouse, so key chips show) over any a file assigned. So each file starts in English and with the default key-hint state, as if it ran first (ticket 0608). It also fetches every language before the file runs: the app fetches only the one in use and each other one when it is chosen (ticket 0616), but a test mounts in any of them at once (`src/browserSetup.ts` does the same).
+
+The setup also makes `Date.now` never read the same twice: Vue drops an event stamped no later than its listener was attached, so in a warm worker a click made in the same millisecond as the mount was lost whenever a capture listener saw it first.
+
+## The one layout's helpers
+
+`src/testUtils/pill.ts` holds the helpers: `openPanel` (a strip button toggles, so it opens a sheet only when it is not the one showing), `pickTool` (a Tool pill tile), `selectAll` (Select, then Ctrl+A: there is no Select all button), `openColorPopover` and `pickColor` (through the colour popover), `toolState` (reads a Tool tile), `panelRead` (reads one element of the Project panel, then closes it), `chooseCustomColor`, `openNewProject`, `openSavedProjects`, `copySelection` (the Context bar's Copy), `rotate`, `deleteAll` and `chooseAppLanguage` (through the Menu panel). `createProjectViaForm` in `testUtils/seedProject.ts` raises the New Project panel itself.
+
+The visual check's helpers (`e2e/support/app.ts`, `e2e/visual/scenarios.ts`) and the perf specs (`e2e/perf/perf.spec.ts`, `e2e/perf/memory.spec.ts`, `e2e/perf/canvases.spec.ts`, `e2e/perf/fillReach.spec.ts`) drive the same pill and sheets: opening a sheet before a control that sits in one (`openStripPanel`, for the strip's Menu and Project), picking a Tool with its pill tile (`selectTool`), opening the colour popover (`openColorPopover`), Copy by its chord (`copySelection`), and reading or stepping the zoom in the Canvas strip's cluster (`currentZoomPercent`, `setZoom`). The perf specs are not part of CI; run them by hand with `npm run perf`.

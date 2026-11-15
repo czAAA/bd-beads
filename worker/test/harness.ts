@@ -7,7 +7,7 @@ import { Miniflare, type Request as MiniflareRequest } from 'miniflare'
 import { unstable_readConfig, unstable_splitSqlQuery } from 'wrangler'
 
 /** Runs the Worker in workerd via Miniflare 4 with local D1 and R2, configured from the repo's `wrangler.jsonc`.
- * Miniflare is used directly: `@cloudflare/vitest-pool-workers` supports Vitest 4 only (docs/testing.md). Tests drive
+ * Miniflare is used directly: `@cloudflare/vitest-pool-workers` supports Vitest 4 only (docs/testing/worker.md). Tests drive
  * it black-box over HTTP and `scheduled()`, seeing outbound calls in `outbound`, answered by `reply`. */
 const root = resolve(import.meta.dirname, '../..')
 

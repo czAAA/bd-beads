@@ -29,7 +29,7 @@ The app can be installed from the browser (Chrome's install button, "Add to Home
 
 | Command | What it checks |
 | --- | --- |
-| `npm test` | Unit and component tests (Vitest, jsdom), and the backend Worker's tests (`worker/test/`, in Node against workerd; `docs/testing.md`). Includes the stored-data compatibility test, `src/domain/compatibility.test.ts`, which opens libraries and Project files in every format the app has written (version 1 and 2 libraries, single-Project and whole-library files, a Project past the old 10,000-cell cap) from the literal fixtures in `src/domain/fixtures/` |
+| `npm test` | Unit and component tests (Vitest, jsdom), and the backend Worker's tests (`worker/test/`, in Node against workerd; `docs/testing/worker.md`). Includes the stored-data compatibility test, `src/domain/compatibility.test.ts`, which opens libraries and Project files in every format the app has written (version 1 and 2 libraries, single-Project and whole-library files, a Project past the old 10,000-cell cap) from the literal fixtures in `src/domain/fixtures/` |
 | `npm run typecheck` | Type-checks the app, the build config, the browser checks and the Worker |
 | `npm run lint` | ESLint |
 | `npm run visual` | The visual check (below). Run on every pull request by CI (below) |
@@ -46,7 +46,7 @@ The first run needs the browser: `npx playwright install chromium`. The referenc
 
 ### CI
 
-CI is the gate (`docs/testing.md`, CI). Every pull request to `main` runs typecheck and lint, the unit tests and the visual check on GitHub, and branch protection requires the aggregate checks "Typecheck and lint", "Unit tests passed" and "Visual check passed". A PR that changes only Markdown skips them. A failed visual run uploads its report as an artifact. While working, run only the tests related to your change (`npx vitest related --run <files>`); a full unit run peaks near 1.5 GB of RAM, so leave the full suite to CI.
+CI is the gate (`docs/testing/ci.md`). Every pull request to `main` runs typecheck and lint, the unit tests and the visual check on GitHub, and branch protection requires the aggregate checks "Typecheck and lint", "Unit tests passed" and "Visual check passed". A PR that changes only Markdown skips them. A failed visual run uploads its report as an artifact. While working, run only the tests related to your change (`npx vitest related --run <files>`); a full unit run peaks near 1.5 GB of RAM, so leave the full suite to CI.
 
 ### Performance check
 

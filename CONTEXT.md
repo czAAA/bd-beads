@@ -29,7 +29,7 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 - **App page**: what fills the canvas box between the Canvas strip and the Progress bar, in place of the Canvas — the editor, the Homepage or Convert image (ADR 0085, ADR 0086, ticket 0756). A page may register a leave guard that a leaving Menu action awaits (avoid: screen, view, layout)
 - **Visual language**: how the app looks — light, dark and high contrast themes, tokens, layout, components, copy and artwork — is set by the design system in `docs/design/system/` (owned by the repo, baseline v19), entered through [DESIGN.md](DESIGN.md); see ADR 0021 and ADR 0030. The App shell layout below is the redesigned one (ticket 141); the redesign tickets restyle its parts
 - **App shell layout**: how the screen is arranged — the **Tool pill layout** at every width: the canvas box is the screen (flush with every edge, the safe-area inset where larger), the Tool pill floating over its drawing area, the slim Canvas strip on top, and Menu, Project and the Frame panel as dropdowns from it (ADR 0046). The full arrangement is in [docs/layout.md](docs/layout.md)
-- **Text fit check**: the browser check, part of `npm run visual`, that no text or Tooltip is cut off or pokes out of its box in any language at any supported width; how it works and how to extend it is in [docs/testing.md](docs/testing.md#text-fit-check)
+- **Text fit check**: the browser check, part of `npm run visual`, that no text or Tooltip is cut off or pokes out of its box in any language at any supported width; how it works and how to extend it is in [docs/testing/text-fit.md](docs/testing/text-fit.md)
 
 ## Language
 
@@ -65,8 +65,8 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | `i18n/` | One typed dictionary per language (English, Russian, Ukrainian, Belarusian, Chinese, Spanish, Polish), plurals, the language switch | `translations.ts`, `en.ts`, `ru.ts`, `uk.ts`, `be.ts`, `zh.ts`, `es.ts`, `pl.ts` |
 | `theme/` | Light, dark and high contrast, following the device | `theme.ts` |
 | `styles/` | Tokens and shared CSS, from the design system | `tokens.css`, `design-values.css` |
-| `homepage/` | The Homepage a new visitor lands on (its own entry, `homepage/index.html`) | `HomePage.vue`, `homepageRoute.ts` |
+| `homepage/` | The Homepage a new visitor lands on (its own entry, `homepage/index.html`); how it is built: [docs/homepage.md](docs/homepage.md) | `HomePage.vue`, `homepageRoute.ts` |
 | `pwa/` | The offline shell's service worker, which `vite.pwa.ts` writes into the build as `sw.js` with the list of built files (ADR 0045); its page-side half is `services/offlineShell.ts` | `serviceWorker.js` |
-| `testUtils/` | Shared test helpers ([docs/testing.md](docs/testing.md)) | `seedProject.ts`, `editHarness.ts` |
+| `testUtils/` | Shared test helpers ([docs/testing/helpers.md](docs/testing/helpers.md)) | `seedProject.ts`, `editHarness.ts` |
 
 Entry files: `src/main.ts` (picks the Homepage or the editor, mounts `App.vue`), `src/App.vue` (pure composition, ADR 0020). Browser checks live in `e2e/`. Where things sit on screen: [docs/layout.md](docs/layout.md).
