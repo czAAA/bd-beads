@@ -27,12 +27,13 @@ export const PANELS: Record<PanelId, PanelDescriptor> = {
   // The Frame panel opens from the strip's Frame button alone; the edit pencil on the Frame shows its handles and is no opener.
   frame: { id: 'frame', title: (t) => t.frame.title, anchor: 'strip-frame', menu: false, skipsFields: true, openers: ['strip-frame'] },
   // The Export panel (ticket 0652): small, and hung from the strip's last button, so it lines up with its right edge.
+  // It opens on its first row, Picture (ticket 0939); its Quality slider raises no keyboard.
   export: {
     id: 'export',
     title: (t) => t.panels.project.exportHeading,
     anchor: 'strip-export',
     menu: false,
-    skipsFields: true,
+    skipsFields: false,
     width: 'var(--panel-width-small)',
     align: 'end',
     // The margin sheet's Export button opens it too, hung from that button (ticket 0657).
