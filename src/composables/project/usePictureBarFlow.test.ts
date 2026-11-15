@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
+import { beadCopy, DEFAULT_BEAD } from '../../domain/beads'
 import type { PixelData } from '../../domain/imageConversion'
 import { beadsOfLayer } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
@@ -57,11 +58,49 @@ describe('usePictureBarFlow (ReferenceImage card, ticket 0883)', () => {
     expect(deps.setFrameAround).toHaveBeenCalledWith({ row: 0, column: 0, rows: 4, columns: 6 })
   })
 
-  it('opens Convert to beads at Exact and every color, previewing the beads without changing the Project', async () => {
-    const { flow, harness } = setup()
+  it('opens Convert to beads on the Bead\'s palette and 12 colors, as Convert image does (ticket 0969)', async () => {
+    const { flow, deps } = setup()
     flow.open()
     await flushPromises()
+    expect(flow.source.value).toBe('bead-colors')
+    expect(deps.loadCatalog).toHaveBeenCalled()
+    expect(flow.colors.value).toBe(2)
+  })
+
+  it('opens on 12 colors for a picture with more', async () => {
+    const { flow, deps } = setup()
+    deps.decodePixels.mockResolvedValue({ width: 6, height: 4, data: Array.from({ length: 24 }, (_pixel, at) => [at * 10, 0, 255 - at * 10, 255]).flat() })
+    flow.open()
+    await flushPromises()
+    expect(flow.colorsMax.value).toBe(24)
+    expect(flow.colors.value).toBe(12)
+  })
+
+  it('opens on the Default Palette for a Bead with no Color catalog', async () => {
+    const { flow } = setup(bareProject({ technique: 'loom', beadId: 'brand/gone/1', bead: { ...beadCopy(DEFAULT_BEAD), id: 'brand/gone/1' } }))
+    flow.open()
+    await flushPromises()
+    expect(flow.hasCatalog.value).toBe(false)
+    expect(flow.source.value).toBe('default')
+  })
+
+  it('keeps the match and color count chosen for the next opening; Exact is one choice away', async () => {
+    const { flow } = setup()
+    flow.open()
+    await flushPromises()
+    flow.setSource('exact')
+    flow.setColors(1)
+    flow.close()
+    flow.open()
     expect(flow.source.value).toBe('exact')
+    expect(flow.colors.value).toBe(1)
+  })
+
+  it('previews Exact\'s beads without changing the Project', async () => {
+    const { flow, harness } = setup()
+    flow.open()
+    flow.setSource('exact')
+    await flushPromises()
     expect(flow.colors.value).toBe(2)
     expect(flow.conversion.value?.changes).toHaveLength(24)
     expect(flow.replacedLabel.value).toBe('Replaces 1 bead already there.')
@@ -73,6 +112,7 @@ describe('usePictureBarFlow (ReferenceImage card, ticket 0883)', () => {
   it('converts as one Undo step, hides the picture, and the toast\'s Undo takes the beads back and shows it again', async () => {
     const { flow, harness, deps } = setup()
     flow.open()
+    flow.setSource('exact')
     await flushPromises()
     flow.convert()
     expect(beadsOfLayer(harness.project, 'canvas')[3]).toMatchObject({ 0: '#ff0000', 2: '#ff0000', 3: '#0000ff' })
@@ -117,7 +157,7 @@ describe('usePictureBarFlow (ReferenceImage card, ticket 0883)', () => {
     flow.open()
     await flushPromises()
     flow.allSettings()
-    expect(deps.openAllSettings).toHaveBeenCalledWith(expect.objectContaining({ box: { row: 0, column: 0, rows: 4, columns: 6 }, source: 'exact', colors: 2, hideAfter: true }))
+    expect(deps.openAllSettings).toHaveBeenCalledWith(expect.objectContaining({ box: { row: 0, column: 0, rows: 4, columns: 6 }, source: 'bead-colors', colors: 2, hideAfter: true }))
     expect(flow.converting.value).toBe(false)
   })
 
