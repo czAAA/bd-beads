@@ -54,6 +54,9 @@ const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent
 async function mountWithExport(project = framed()) {
   const wrapper = mountBar(project)
   await wrapper.get('[data-testid="frame-export"] .panel-section__header').trigger('click')
+  // The File size estimates' print code comes after the rows (ticket 0991).
+  await vi.dynamicImportSettled()
+  await flushPromises()
   return wrapper
 }
 

@@ -86,6 +86,29 @@ for (const [situation, breakIt] of failures) {
     await expect(page.getByTestId('homepage')).toBeVisible()
     await expect(page.getByRole('heading').first()).toBeVisible()
   })
+
+  // The demo editor and the print code come after the page (ticket 0991), from the offline copy like every other file.
+  test(`What's inside plays its demo ${situation} (ticket 0991)`, async ({ page, context }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await openAndInstall(page)
+    await breakIt(context, host)
+
+    await page.goto(new URL('homepage/', host.url).href)
+    await page.locator('[data-testid="section-step"][data-step="inside"]').click()
+    await expect(page.getByTestId('inside-editor')).toBeVisible()
+    await expect(page.getByTestId('inside-editor').getByTestId('project-surface')).toBeVisible()
+  })
+
+  test(`exports a PDF ${situation} (ticket 0991)`, async ({ page, context }) => {
+    await openAndInstall(page)
+    await breakIt(context, host)
+
+    await reloadsIntoTheApp(page)
+    await openStripPanel(page, 'strip-frame')
+    await page.locator('[data-testid="frame-export"] .panel-section__header').click()
+    const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('export-pdf').click()])
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/)
+  })
 }
 
 test('is installable: a manifest with icons, standalone, and no installability error', async ({ page, context }) => {
