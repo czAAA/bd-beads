@@ -72,6 +72,26 @@ test.describe('on touch', () => {
     }
   })
 
+  test("each picker button of the New Project form answers across 44 px (ticket 0951)", async ({ page }) => {
+    await openApp(page, [])
+    await openNewProjectForm(page)
+    const form = page.locator('#new-project-form')
+    const pickers = ['new-project-technique', 'bead-brand', 'bead-type', 'bead-size'] as const
+    for (const picker of pickers) {
+      const box = (await form.getByTestId(picker).locator('button[aria-haspopup]').boundingBox())!
+      const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+      const half = TOUCH_TARGET / 2 - 1
+      // The button itself, not its picker's row around it (which `hitAt` would also count as the picker's).
+      for (const dy of [-half, 0, half]) {
+        const hit = await page.evaluate(({ x, y }) => {
+          const button = document.elementFromPoint(x, y)?.closest('button[aria-haspopup]')
+          return button?.closest('[data-testid]')?.getAttribute('data-testid') ?? 'nothing'
+        }, { x: centre.x, y: centre.y + dy })
+        expect(hit, `${picker} at dy ${dy}`).toBe(picker)
+      }
+    }
+  })
+
   test("the library row's × answers over a 44 px square clear of the row's own", async ({ page }) => {
     await openLibrary(page)
     const row = page.getByTestId('project-item').first()
