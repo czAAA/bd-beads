@@ -1480,4 +1480,12 @@ export const ru: Translations = {
     feedbackEmail: 'Ваша эл. почта',
     tooLong: 'Не больше {max} символов.',
   },
+  beadCursor: {
+    place: 'Ряд {row}, столбец {column}, {color}',
+    painted: 'Покрашено: {color}',
+    filled: 'Залито: {color}',
+    erased: 'Стёрто',
+    selected: 'Выделено {columns} на {rows}',
+    empty: 'пусто',
+  },
 }

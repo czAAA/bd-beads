@@ -19,8 +19,8 @@ export function isTypingInFormField(target: EventTarget | null): boolean {
   )
 }
 
-// Binds one window `keydown` listener firing the first entry whose `matches` and `guard` pass; on the window since the
-// canvas takes no focus (ticket 24). Shortcuts without `allowWhileTyping` are suppressed in form fields, leaving e.g.
+// Binds one window `keydown` listener firing the first entry whose `matches` and `guard` pass; on the window, whatever has
+// focus (ticket 24). Shortcuts without `allowWhileTyping` are suppressed in form fields, leaving e.g.
 // native text-undo to the field. A boxed shell (ticket 0797) takes only the keys pressed while the focus is in its box.
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   const scope = useShellScope()

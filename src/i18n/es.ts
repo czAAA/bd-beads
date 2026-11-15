@@ -1477,4 +1477,12 @@ export const es: Translations = {
     feedbackEmail: 'Tu correo',
     tooLong: 'Usa {max} caracteres o menos.',
   },
+  beadCursor: {
+    place: 'Fila {row}, columna {column}, {color}',
+    painted: 'Pintado de {color}',
+    filled: 'Rellenado de {color}',
+    erased: 'Borrado',
+    selected: 'Seleccionado {columns} por {rows}',
+    empty: 'vacío',
+  },
 }

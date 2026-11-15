@@ -118,6 +118,11 @@ const {
   onCellsPrimaryMove,
   onCellHover,
   onHoverEnd,
+  beadCursor,
+  onPatternKeyboardFocus,
+  onPatternBlur,
+  onPatternKey,
+  onPatternKeyUp,
   onRotate,
   onRotateCanvas,
   onSelectAll,
@@ -488,6 +493,11 @@ const drawingStyle = computed(() => {
                 :fill-refusals="fillRefusals"
                 :label="projectLabel"
                 :reference="pictureBar.converting.value ? undefined : referenceImage.drawn.value"
+                :cursor="beadCursor"
+                @keyboard-focus="onPatternKeyboardFocus"
+                @cursor-blur="onPatternBlur"
+                @cursor-key="onPatternKey"
+                @cursor-key-up="onPatternKeyUp"
                 @surface-view="surfaceView = $event"
                 @cell-primary-down="onCellPrimaryDown"
                 @cell-primary-move="onCellPrimaryMove"

@@ -1815,4 +1815,17 @@ export interface Translations {
     /** Under a name edited in place that is longer than the limit, with {max}. */
     tooLong: string
   }
+  /** The keyboard's bead cursor on the Pattern (ticket 0942, ADR 0093): each move and tap, said once. */
+  beadCursor: {
+    /** A move: {row} and {column} as the rulers count them, {color} the bead's. */
+    place: string
+    /** A tap that changed beads, with the paint color's {color}. */
+    painted: string
+    filled: string
+    erased: string
+    /** A Shift + arrow step: the Selection's {columns} and {rows}. */
+    selected: string
+    /** A bead with no color, in `place`. */
+    empty: string
+  }
 }

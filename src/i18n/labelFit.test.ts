@@ -89,6 +89,7 @@ const CHECKED_ELSEWHERE: Record<string, string> = {
   inputMode: 'input mode names are registry Tooltips and menu rows, tried by tooltips.browser.test.ts',
   techniques: 'read through techniqueName(), which this search does not follow, by NewProjectForm and the Project panel, which panelsFit.browser.test.ts mounts',
   weaveSettings: 'read through weaveSettingWords(), which this search does not follow, by SettingStepper, which panelsFit.browser.test.ts mounts in the Project panel for brick stitch',
+  beadCursor: 'the bead cursor\'s words are only spoken, through the visually hidden announcer (ticket 0942): they take no room on screen',
 }
 
 describe('every text has a room that is checked', () => {
