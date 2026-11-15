@@ -785,6 +785,8 @@ export interface Translations {
     passesInfoName: string
     /** Turn row direction's list (ticket 0973): its Switch that shows and hides the ring and the number pill, Row highlight. */
     showRowMarks: string
+    /** Go to row's line under its field when the number typed doesn't exist, the field's description (ticket 0980). */
+    goToRange: string
   }
   quantities: {
     heading: string

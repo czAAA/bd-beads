@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, onMounted, ref, useId, useTemplateRef } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import InfoButton from '../ui/InfoButton.vue'
 import TextField from '../ui/form/TextField.vue'
 
-// Go to row (ProgressBar card, ticket 0849, F-04-14): hung above the counter, "Row [12] of 40" and Go (Enter too); Escape
-// or a press outside moves nothing. Show row brings the current row back into view, the pointer where it is (ticket
-// 0934); on peyote an Info button beside its name says what a pass is (ticket 0972).
+// Go to row (ProgressBar card, tickets 0849, 0934, 0972, 0980): "Row [12] of 40" and Go (Enter too), Escape or a press
+// outside moves nothing; Show row brings the current row into view; on peyote an Info button says what a pass is. A number
+// that doesn't exist draws the field in danger with "1 to 40" under it, which is its description.
 const props = defineProps<{
   /** The counter it hangs from: its own press toggles the popover. */
   anchor: HTMLElement | undefined
@@ -40,6 +41,7 @@ const anchorEl = ref<HTMLElement>()
 const field = useTemplateRef<InstanceType<typeof TextField>>('field')
 const anchored = useAnchoredPosition(anchorEl, rootEl, () => 'start', () => 'above')
 const draft = ref(String(props.current))
+const rangeId = useId()
 
 /** The number typed, whole and from 1 to the total; none for anything else, which Go refuses. */
 const typed = computed(() => {
@@ -47,6 +49,8 @@ const typed = computed(() => {
   const number = /^\d+$/.test(text) ? Number(text) : NaN
   return number >= 1 && number <= props.total ? number : undefined
 })
+/** No such row: the field is drawn in danger, says which rows exist, and Go is off (ticket 0980). */
+const refused = computed(() => typed.value === undefined)
 
 function close() {
   emit('close')
@@ -96,20 +100,24 @@ onMounted(async () => {
         <TextField
           ref="field"
           v-model="draft"
-          class="go-to-row__field"
           compact
           select-on-focus
           type="text"
           inputmode="numeric"
           pattern="[0-9]*"
           autocomplete="off"
-          :invalid="typed === undefined"
+          :invalid="refused"
+          :aria-describedby="refused ? rangeId : undefined"
           data-testid="go-to-row-field"
         />
         <span class="go-to-row__of">{{ fillBlanks(t.rowProgress.ofSteps, { total }) }}</span>
       </label>
-      <AppButton variant="primary" size="sm" type="submit" :disabled="typed === undefined" data-testid="go-to-row-go">{{ t.rowProgress.goButton }}</AppButton>
+      <AppButton variant="primary" size="sm" type="submit" :disabled="refused" data-testid="go-to-row-go">{{ t.rowProgress.goButton }}</AppButton>
     </form>
+    <p v-if="refused" :id="rangeId" class="go-to-row__range" data-testid="go-to-row-range">
+      <AppIcon name="warning" :size="14" />
+      <span>{{ fillBlanks(t.rowProgress.goToRange, { total }) }}</span>
+    </p>
   </div>
 </template>
 
@@ -166,12 +174,26 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.go-to-row__field {
-  width: var(--go-to-row-field);
+/* The field's own frame, which TextField's root is: its class would land on the <input> (ticket 0980). It gives way
+   only on a 320px screen in a long language, where the popover would leave the screen. */
+.go-to-row__line > .text-field {
+  flex: 0 1 var(--go-to-row-field);
+  min-width: 0;
 }
 
 .go-to-row__of {
   font: var(--type-meta);
   color: var(--box-muted);
+}
+
+/* The rows that exist, under a number that doesn't: the TextField card's error line (ticket 0980). */
+.go-to-row__range {
+  display: flex;
+  gap: var(--space-6);
+  align-items: center;
+  margin: 0;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--danger);
 }
 </style>

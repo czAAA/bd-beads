@@ -639,6 +639,7 @@ export const be: Translations = {
     goToPass: 'Перайсці да прахода',
     passesInfoName: 'Што такое праход',
     showRowMarks: 'Паказваць адзнакі радоў',
+    goToRange: 'ад 1 да {total}',
   },
   quantities: {
     heading: 'Патрэбна бісеру',

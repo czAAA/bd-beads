@@ -110,10 +110,6 @@ defineExpose({ focus })
   text-align: center;
 }
 
-.text-field--invalid {
-  border-color: var(--danger);
-}
-
 /* A textarea grows with its rows and can be pulled taller (TextField card, ticket 0700). */
 .text-field--multiline {
   height: auto;
@@ -147,6 +143,12 @@ defineExpose({ focus })
 .text-field--disabled {
   background: var(--surface);
   border-color: var(--line);
+}
+
+/* An error wins over the compact frame and the focused border: the value refused stays red while it is typed (ticket 0980). */
+.text-field.text-field--invalid,
+.text-field--invalid:focus-within {
+  border-color: var(--danger);
 }
 
 .text-field__input {

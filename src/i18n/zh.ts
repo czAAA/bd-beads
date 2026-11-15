@@ -626,6 +626,7 @@ export const zh: Translations = {
     goToPass: '跳到趟',
     passesInfoName: '什么是趟',
     showRowMarks: '显示行标记',
+    goToRange: '1 到 {total}',
   },
   quantities: {
     heading: '所需珠子',

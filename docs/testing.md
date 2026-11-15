@@ -57,7 +57,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `paletteHost.ts`: `mountWithPalette(component, ids, props)` mounts a Palette control under the real Palette and Edit, as the app shell provides them, with spies for asking to remove one color or all (ticket 0601).
 - `marginSheetHost.ts`: `marginSheetHost(zoom)`, the margin sheet round a 30-column Frame at a zoom, for browser tests (the fit cases, a picker opening in its title block; ticket 0681).
 - `beads.ts`: press, hover and read beads on a mounted surface (`pressBead`, `hoverBead`, `beadColor`, `beadColors`, `rowProgressView`, `rulerNumbers`, …).
-- `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it.
+- `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it. Node and jsdom have no `Path2D` either: `src/unitSetup.ts` (a setup file of the `unit` and `page` projects) gives every test an empty one, and `recordingContext` replaces it with one that writes its `roundRect` and `addPath` calls down with the context's.
 - `countingBeads.ts`: a set of beads behind a counter of the rows and beads read, so a test counts the work an edit does instead of timing it (ticket 0674).
 - `hugeProject.ts`: `storedHugeProject` builds a Project over the size gate straight in its stored form, so no test holds millions of beads, and `storeLibrary` stores it with ordinary Projects as a reload would find them (ticket 0716).
 - `fakeMatchMedia.ts`, `fakeResizeObserver.ts`, `surfaceLayout.ts`: media queries, element sizes and layout a test controls.
