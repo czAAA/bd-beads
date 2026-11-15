@@ -10,7 +10,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { rowProgressOf, rowProgressPosition, rowProgressStarted, type ShownWay } from '../../domain/rowProgress'
+import { rowProgressOf, rowProgressPosition, type ShownWay } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
@@ -94,8 +94,9 @@ const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
 /** The name the tab reads and is named by, or "Name this Frame". */
 const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
-/** A Custom frame's shape comes from its settings, and a Frame with a pass done holds still: no Edit Frame then. */
-const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgressStarted(props.project))
+/** A Custom frame's shape comes from its settings: no Edit Frame then. A Frame with a row done holds still, its Edit
+ * Frame kept in place, disabled, saying why (ticket 0975). */
+const editable = computed(() => frameAllows(frame.value, 'resize'))
 
 const canvas = useCanvasBackground(() => props.project)
 // The margin's popups follow their cells as the canvas is panned or zoomed (ticket 0736).
