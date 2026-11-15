@@ -12,6 +12,7 @@ import { frameOutsetPx } from '../../rendering/rulerScale'
 import { frameOf } from '../../domain/layerRecord'
 import { MARGIN_PX } from '../../rendering/marginSizes'
 import { withLayers } from '../../testUtils/layerFields'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => {
   localStorage.clear()
@@ -336,6 +337,48 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(wrapper.text()).toContain('Rows are marked done. Reset progress to change the size.')
     await edit.trigger('click')
     expect(wrapper.emitted('toggle-edit')).toBeUndefined()
+  })
+})
+
+describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+  const toolNames = (wrapper: ReturnType<typeof mountSheet>) =>
+    control(wrapper, 'margin-band').findAll('.margin-sheet__tools button').map((button) => button.attributes('aria-label'))
+
+  it('keeps Edit Frame and the Frame tools button on the band, full, compact and folded', () => {
+    for (const zoom of [1, 0.6, 0.45]) expect(toolNames(mountSheet({ anchor: anchorAt(zoom) })), `${zoom}`).toEqual(['Edit Frame', 'Frame tools'])
+  })
+
+  it('lists Mirror, Rotate, Export, Margin color and Remove Frame in the Frame tools menu with their names, each running its own action', async () => {
+    const wrapper = mountSheet()
+    const items = async () => {
+      await control(wrapper, 'margin-frame-tools').trigger('click')
+      await nextTick()
+      return wrapper.findAll('[role^="menuitem"]')
+    }
+    expect((await items()).map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Export', 'Margin color', 'Remove Frame'])
+    for (const id of ['mirror', 'rotate', 'export', 'remove']) {
+      if (!wrapper.find('[role^="menuitem"]').exists()) await items()
+      await control(wrapper, `margin-frame-tools-${id}`).trigger('click')
+    }
+    expect(wrapper.emitted('mirror')).toHaveLength(1)
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    expect(wrapper.emitted('export')).toEqual([['margin-frame-tools']])
+    expect(wrapper.emitted('remove')).toHaveLength(1)
+    await items()
+    await control(wrapper, 'margin-frame-tools-color').trigger('click')
+    await nextTick()
+    expect(document.querySelector('[data-testid="margin-color-popover"]')).not.toBeNull()
+  })
+
+  it('keeps Edit Frame on the band once a row is done, disabled', () => {
+    const wrapper = mountSheet({ project: moveToRow(framed(), 1) })
+    expect(control(wrapper, 'frame-edit-toggle').attributes('aria-disabled')).toBe('true')
   })
 })
 
