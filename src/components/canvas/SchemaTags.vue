@@ -10,7 +10,7 @@ import { frameAllows } from '../../domain/frameShape'
 import type { GridPosition } from '../../domain/grid'
 import { frameOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
-import { formatSizeInMm } from '../../domain/projectSize'
+import { formatSizeMm } from '../../domain/projectSize'
 import { schemaDetails } from '../../domain/schemaTags'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
@@ -95,7 +95,7 @@ const card = computed(() => {
   if (!tag || !details) return undefined
   const at = cardPlacement(tag.placed, props.anchors.viewport, cardHeight.value)
   const size = fillBlanks(t.value.schemaTag.sizeBeads, { columns: details.columns, rows: details.rows })
-  const estimate = details.sizeMm && formatSizeInMm(details.sizeMm, t.value.form.unitMm, locale.value)
+  const estimate = details.sizeMm && formatSizeMm(details.sizeMm, { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)
   return {
     ...tag,
     at,

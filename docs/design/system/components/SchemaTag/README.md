@@ -13,7 +13,7 @@ The name of an unframed Schema (a named Piece on the Canvas, ADR 0050) as a lugg
 - **The paper tag:** `--schema-card-width` (236px) wide, `elevated` fill, a 1px `line-strong` edge, `radius-lg` corners except the top-right one, which is **cut** at 45° by `--schema-card-cut` (20px), with an 8px **hole** (`--schema-card-hole`, a 1px `line-strong` ring, the canvas showing through) centred 18px in from the top and right. Flat, with hairlines: no shadow. Padding 12 14 14, rows 8px apart:
   1. `schema` (`meta-tiny`, `muted`, lowercased by style).
   2. The **name**, Inter 600 14/20 (`title`'s weight at 14), up to two lines, then an ellipsis; its right edge stops 46px short of the tag's, clear of the hole. The full name is the paper tag's accessible name.
-  3. Two `meta-small` lines in `muted`: the size, "11 × 11 beads · ≈ 18 × 14 mm" (the Piece's rectangle in beads, and its Estimated size with the Canvas's Bead, as the Frame panel works it out), then up to five overlapping 10px swatches (`radius-xs`, 4px overlap, the Palette's order) and "96 beads · 3 colors" (the Schema's beads and its colors, counted as Beads needed counts them).
+  3. Two `meta-small` lines in `muted`: the size, "11 × 11 beads · ≈ 1.8 × 1.4 cm" (the Piece's rectangle in beads, and its Estimated size with the Canvas's Bead, as the Frame panel works it out and in its unit, cm from 10 mm up, ticket 0992), then up to five overlapping 10px swatches (`radius-xs`, 4px overlap, the Palette's order) and "96 beads · 3 colors" (the Schema's beads and its colors, counted as Beads needed counts them).
   4. The actions, pushed to the bottom, 8px apart: **Rename** (`pencil`; the secondary Button at 28px) opens the same name editor Name Piece opens, filled with this name, for this Schema; **Frame** (`frame`; the primary Button at 28px, the region's one accent) frames this Schema as the Context bar's Frame does with the Piece selected: the same snap, refusals, Message and one Undo step; then the close button (`close`, 28px, no fill, `muted`, at the far right), named "Close".
 - **Closing:** the close button, Escape, a press outside the paper tag (on the canvas, it also does what the tool does there), or the Schema being framed, erased or losing its name. Focus returns to the tag when the close button or Escape closed it.
 - **Live:** while open, the details follow the Schema: painting into it or erasing part of it updates the size and counts; a rename updates the name, and the tag's ellipsis and Tooltip follow its length.
@@ -39,7 +39,7 @@ The tag and border are drawn by the page (HTML over the canvas), not by the canv
 
 ## Copy
 
-"{name}, show details", "Click for the size and colors.", `schema`, "{w} × {h} beads · ≈ {x} × {y} mm", "{n} beads · {n} colors", Rename, Frame, Close, and the Tab stop's name "Schema names": `writing.md`, Schema tag copy (ticket 0721).
+"{name}, show details", "Click for the size and colors.", `schema`, "{w} × {h} beads · ≈ {measure}", "{n} beads · {n} colors", Rename, Frame, Close, and the Tab stop's name "Schema names": `writing.md`, Schema tag copy (ticket 0721).
 
 ## As built
 

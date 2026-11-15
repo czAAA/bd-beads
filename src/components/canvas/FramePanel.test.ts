@@ -239,9 +239,9 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('.panel-section__summary').text()).toMatch(/^5 × 6 · ≈ /)
   })
 
-  it('gives the Estimated size in mm however large the Frame, as Replace Bead does (ticket 0687)', () => {
+  it('gives the Estimated size in the unit the margin gives it, cm from 10 mm up (ticket 0992)', () => {
     const wrapper = mountBar(framed({ row: 0, column: 0, rows: 30, columns: 40, beads: {} }))
-    expect(wrapper.get('[data-testid="frame-estimate"] .frame-panel__estimate-value').text()).toBe('≈ 60 × 45 mm')
+    expect(wrapper.get('[data-testid="frame-estimate"] .frame-panel__estimate-value').text()).toBe('≈ 6.0 × 4.5 cm')
   })
 
   it('asks for the Picture and the Printable chart, and waits while one is being made (ticket 555)', async () => {
