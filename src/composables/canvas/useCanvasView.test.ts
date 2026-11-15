@@ -5,10 +5,10 @@ import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { orientationOf } from '../../domain/layerRecord'
 import { rotateCanvas, turnCanvasTo } from '../../domain/rotate'
-import { SNAP_MS } from '../../rendering/gestureView'
+import { INTO_VIEW_MS, SNAP_MS } from '../../rendering/gestureView'
 import { FIT_MARGIN_PX, fitBox, useCanvasView, type CanvasViewOptions } from './useCanvasView'
 import { NO_INSETS } from '../../domain/toolPill'
-import { surfaceView } from '../../rendering/surfaceView'
+import { surfaceView, type SurfaceView } from '../../rendering/surfaceView'
 import { OPEN_SPACE } from '../../rendering/space'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
@@ -282,6 +282,90 @@ describe('useCanvasView', () => {
 
     expect(view.zoom.value).toBe(1)
     expect(view.scroll.value).toEqual({ x: 2020 - 500, y: 2020 - 400 })
+  })
+
+  describe('bringing a part of the drawing into view (ticket 0934)', () => {
+    /** A block of the Canvas's beads, found in the view as it stands. */
+    const beads = (row: number, rows = 1) => (surface: SurfaceView) => surface.beadBox({ row, column: 0, rows, columns: 4 }, 'canvas')
+
+    it('pans the shortest way that brings it in, the zoom untouched, and leaves the fit', () => {
+      const { view } = setup(projectOf(20, 10), { width: 1000, height: 800 }, { ...NO_INSETS, bottom: 64 })
+      view.fit()
+      view.setZoom(2)
+      const zoom = view.zoom.value
+      view.bringIntoView(beads(100), { jump: true })
+
+      // The row lands on the bottom of the room the Tool pill leaves, no further.
+      const shown = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom, scroll: view.scroll.value }).beadBox({ row: 100, column: 0, rows: 1, columns: 4 })
+      expect(view.zoom.value).toBe(zoom)
+      expect(shown.y + shown.height).toBeCloseTo(800 - 64, 6)
+      expect(view.isAtFit.value).toBe(false)
+    })
+
+    it('does not move for a part already in view, and still follows the fit', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      const at = view.scroll.value
+      view.bringIntoView(beads(4))
+      expect(view.scroll.value).toEqual(at)
+      expect(view.isAtFit.value).toBe(true)
+    })
+
+    it('glides there over the base duration, and a move of the person\'s own stops it where it is', () => {
+      // Frames run by hand: each `frame(time)` plays what was asked for, at that frame time.
+      let asked = new Map<number, FrameRequestCallback>()
+      let next = 0
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => (asked.set(++next, callback), next))
+      vi.stubGlobal('cancelAnimationFrame', (id: number) => asked.delete(id))
+      const frame = (time: number) => {
+        const due = asked
+        asked = new Map()
+        for (const callback of due.values()) callback(time)
+      }
+      try {
+        const { view } = setup(projectOf(20, 10))
+        view.fit()
+        const from = view.scroll.value
+        view.bringIntoView(beads(100))
+        expect(view.scroll.value).toEqual(from)
+        frame(1000)
+        frame(1000 + INTO_VIEW_MS / 2)
+        const halfway = view.scroll.value.y
+        expect(halfway).toBeGreaterThan(from.y)
+        frame(1000 + INTO_VIEW_MS)
+        const landed = view.scroll.value
+        expect(landed.y).toBeGreaterThan(halfway)
+        expect(asked.size).toBe(0)
+
+        view.fit()
+        view.bringIntoView(beads(100))
+        frame(2000)
+        frame(2000 + INTO_VIEW_MS / 2)
+        view.panBy(0, 10)
+        const stopped = view.scroll.value
+        frame(2000 + INTO_VIEW_MS)
+        expect(view.scroll.value).toEqual(stopped)
+        expect(stopped.y).toBeLessThan(landed.y)
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('jumps under reduced motion', () => {
+      const requestFrame = vi.fn()
+      vi.stubGlobal('requestAnimationFrame', requestFrame)
+      vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)' }))
+      try {
+        const { view } = setup(projectOf(20, 10))
+        view.fit()
+        const from = view.scroll.value
+        view.bringIntoView(beads(100))
+        expect(view.scroll.value.y).toBeGreaterThan(from.y)
+        expect(requestFrame).not.toHaveBeenCalled()
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
   })
 
   describe('a two-finger twist (tickets 0672, 0709)', () => {

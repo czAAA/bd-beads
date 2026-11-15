@@ -85,6 +85,27 @@ describe('useRowOps', () => {
     expect(still.deps.replaceProject).not.toHaveBeenCalled()
   })
 
+  it('brings the row it reaches into view and says it in the counter\'s words, once per move (ticket 0934)', () => {
+    const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 10, columns: 3, beads: {} } })
+    const announce = vi.fn()
+    const showRow = vi.fn()
+    const at = (row: number) => useRowOps({ currentProject: () => moveToRow(framed, row), replaceProject: vi.fn(), showToast: vi.fn(), messages: () => en, announce, showRow })
+
+    at(5).onMoveRow(1)
+    expect(announce).toHaveBeenLastCalledWith('Row 7 of 10')
+    at(5).onMoveRow(-1)
+    at(0).onGoToRow(3)
+    at(9).onMoveRow(1)
+    expect(announce).toHaveBeenLastCalledWith(en.rowProgress.patternDone)
+    expect(announce).toHaveBeenCalledTimes(4)
+    expect(showRow).toHaveBeenCalledTimes(4)
+
+    // A move that goes nowhere says nothing and pans nothing.
+    at(0).onMoveRow(-1)
+    expect(announce).toHaveBeenCalledTimes(4)
+    expect(showRow).toHaveBeenCalledTimes(4)
+  })
+
   it('moves the Row progress pointer by the given step', () => {
     const { deps, onMoveRow } = setup(tracking)
     onMoveRow(1)

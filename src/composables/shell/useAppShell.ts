@@ -62,6 +62,7 @@ import { useSafeStart } from '../project/useSafeStart'
 import { useRemoveColorFlow } from '../palette/useRemoveColorFlow'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
+import { useRowInView } from '../canvas/useRowInView'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
 import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
@@ -211,7 +212,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
+  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, visibleCentre, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
@@ -846,8 +847,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
+  /** The row the weaver is on kept in view (ticket 0934): after each row move, Go to row's Show row and an opening. */
+  const { showRow } = useRowInView({ currentProject, bringIntoView, placed: viewPlaced, isAtFit })
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
-  const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs })
+  const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs, announce, showRow })
 
   /** The deferred save's safety net (see useSaveOnPageHide). */
   if (!demo) useSaveOnPageHide(flushPendingSave)
@@ -1196,6 +1199,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onMoveRow: rowOps.onMoveRow,
       onResetProgress: rowOps.onResetProgress,
       onGoToRow: rowOps.onGoToRow,
+      onShowRow: () => showRow(),
       // The margin sheet's tools and title block (ticket 0657): the flows the Frame and Project panels ask too
       onRotateFrame: rotateFrameFlow.onRotateFrame,
       onRenameFrame: frameFlow.rename,

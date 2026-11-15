@@ -25,7 +25,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   /** What the Tool pill takes from the edge it docks to (ticket 0850), kept while it is away (the Adjust bar's turn). */
   const toolPillCover = ref<Insets>(NO_INSETS)
 
-  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening })
+  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, visibleCentre, canvasOnScreen, isAtFit, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening })
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
    * threaded down as a second prop. */
@@ -60,8 +60,12 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     panBy,
     scrollBy,
     centreOn,
+    /** Pans the shortest way that brings a part of the drawing into view, zoom untouched (ticket 0934). */
+    bringIntoView,
     visibleCentre,
     canvasOnScreen,
+    /** Whether the view still follows the fit, not a place the person moved it to. */
+    isAtFit,
     orientation,
     twistPhase,
     pinchStep,
