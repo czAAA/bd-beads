@@ -33,13 +33,13 @@ async function opened(picture: PixelData) {
 }
 
 describe('Clean up on the converter page (ticket 0906, DS-3)', () => {
-  it('says what it cleaned on its button under Colors, named by those words and then Clean up (ticket 0940)', async () => {
+  it('says what it cleaned on its button under Colors, its name first, named by the words it shows (tickets 0940, 0966)', async () => {
     const { wrapper, wizard } = await opened(photoPicture())
     const button = wrapper.get('[data-testid="convert-clean-up-button"]')
     const cleaned = wizard.cleanUp.cleaned.value
-    expect(button.get('[data-testid="convert-clean-up-first"]').text()).toBe(`${cleaned} stray beads cleaned`)
+    expect(button.get('[data-testid="convert-clean-up-first"]').text()).toBe(`Clean up · ${cleaned} stray beads cleaned`)
     expect(button.attributes('aria-label')).toBeUndefined()
-    expect(button.text().replace(/\s+/g, ' ')).toBe(`${cleaned} stray beads cleaned ${button.get('[data-testid="convert-clean-up-second"]').text()} Clean up`)
+    expect(button.text().replace(/\s+/g, ' ')).toBe(`Clean up · ${cleaned} stray beads cleaned ${button.get('[data-testid="convert-clean-up-second"]').text()}`)
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 
@@ -56,14 +56,14 @@ describe('Clean up on the converter page (ticket 0906, DS-3)', () => {
     await popover.get('[data-testid="convert-clean-up-switch"]').trigger('click')
     const lone = wizard.cleanUp.lone.value
     expect(popover.get('[data-testid="convert-clean-up-count"]').text()).toBe(`${lone} stray beads left`)
-    expect(wrapper.get('[data-testid="convert-clean-up-first"]').text()).toBe('Off')
+    expect(wrapper.get('[data-testid="convert-clean-up-first"]').text()).toBe('Clean up · off')
     expect(wrapper.get('[data-testid="convert-clean-up-second"]').text()).toBe(`${lone} stray beads left`)
     expect(popover.get('[data-value="light"]').attributes('aria-disabled')).toBe('true')
     await popover.get('[data-value="light"]').trigger('click')
     expect(wizard.cleanUp.strength.value).toBe('strong')
   })
 
-  it('steps Small colors join, its lowest step showing "off"', async () => {
+  it('steps Drop colors used by few beads, its lowest step showing "off"', async () => {
     const { wrapper, wizard } = await opened(photoPicture())
     await wrapper.get('[data-testid="convert-clean-up-button"]').trigger('click')
     expect(wrapper.get('[data-testid="convert-small-colors-value"]').text()).toBe('10')
@@ -75,7 +75,7 @@ describe('Clean up on the converter page (ticket 0906, DS-3)', () => {
 
   it('says why it is off for pixel art, on the button and in the popover', async () => {
     const { wrapper } = await opened(pixelArtPicture(48))
-    expect(wrapper.get('[data-testid="convert-clean-up-first"]').text()).toBe('Off for pixel art')
+    expect(wrapper.get('[data-testid="convert-clean-up-first"]').text()).toBe('Clean up · off for pixel art')
     expect(wrapper.get('[data-testid="convert-clean-up-second"]').text()).toBe('every pixel stays a bead')
     await wrapper.get('[data-testid="convert-clean-up-button"]').trigger('click')
     expect(wrapper.get('[data-testid="convert-clean-up-pixel-art"]').text()).toBe('pixel art · every pixel stays a bead')

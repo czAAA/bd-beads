@@ -11,6 +11,8 @@ import FeedbackSheet from './FeedbackSheet.vue'
 import { projectNameOf } from '../../domain/layerRecord'
 import { inMillions } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
+import { plural } from '../../i18n/plural'
+import { controlAction } from '../../composables/shell/controlRegistry'
 
 // The app's dialogs (ticket 0618): the registry shows one at a time, named by `open`; each flow holds what its dialog
 // asks about and answers it.
@@ -65,6 +67,8 @@ const {
   onSaveFileBeforeDelete,
   onConfirmDeleteAllProjects,
   onCancelDeleteAllProjects,
+  deleteAllCount,
+  onSaveAllBeforeDeleteAll,
   naming,
   onSavePieceName,
   onCancelPieceName,
@@ -78,6 +82,8 @@ const {
   onCancelLeaveConverter,
 } = useDialogsContext()
 const { locale } = useI18n()
+/** Delete all Projects?'s side action: the library's Save all, under its one name (ticket 0984). */
+const exportAll = controlAction('export-all')
 
 /** The import question's message: a failed save comes first, then a name that was taken, then what came in (ticket
  * 0860). */
@@ -294,12 +300,14 @@ const importMessage = computed(() => {
   <ConfirmModal
     v-if="open === 'delete-all-projects'"
     data-testid="delete-all-projects-modal"
-    :title="t.panels.menu.deleteAllTitle"
+    :title="plural(locale, deleteAllCount, t.panels.menu.deleteAllTitle)"
     :message="t.panels.menu.deleteAllMessage"
     :confirm-label="t.panels.menu.deleteAllConfirm"
     :cancel-label="t.panels.project.cancel"
+    :extra-label="exportAll.name(t)"
     @confirm="onConfirmDeleteAllProjects"
     @cancel="onCancelDeleteAllProjects"
+    @extra="onSaveAllBeforeDeleteAll"
   />
 
   <NamePieceModal v-if="open === 'name-piece' && naming" :name="naming.name" @save="onSavePieceName" @cancel="onCancelPieceName" />

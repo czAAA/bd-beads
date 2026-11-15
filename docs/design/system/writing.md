@@ -1288,3 +1288,23 @@ On the iPad most buttons are icons, and only a half-second hold shows a name. Th
 | What the buttons do (Menu › Help) | Что делают кнопки | Що роблять кнопки | Што робяць кнопкі | 按钮的作用 | Qué hace cada botón | Co robią przyciski |
 
 English follows the audit's proposal (UX-006); the other languages are proposals for review with the build.
+
+## The converter in a first-timer's words (ticket 0966)
+
+The converter's labels say the result, not the mechanism (ConvertImage and FoundColorRow cards). The line under Colors says the beads are real and their colors approximate; the Clean up button's first line starts with its name; a Bead color reads "code name" in Color by color and in My beads alike ("DB10" over "Opaque Black"), and Color by color's rows no longer repeat "Bead colors". "Delica 11/0 · Peyote", the crafter's own shop words, stays. Strings the table does not list keep their words.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| real beads · {bead} · approximate colors (line under Colors) | настоящий бисер · {bead} · цвета примерные | справжній бісер · {bead} · кольори приблизні | сапраўдны бісер · {bead} · колеры прыблізныя | 真实珠子 · {bead} · 颜色为近似 | cuentas reales · {bead} · colores aproximados | prawdziwe koraliki · {bead} · kolory przybliżone |
+| Clean up · {line} (the button's first line) | Очистка · {line} | Очищення · {line} | Ачыстка · {line} | 清理 · {line} | Limpieza · {line} | Czyszczenie · {line} |
+| off · off for pixel art | выключено · выключено для пиксель-арта | вимкнено · вимкнено для піксель-арту | выключана · выключана для піксель-арту | 已关闭 · 像素画不清理 | desactivado · desactivado para pixel art | wyłączone · wyłączone dla pixel artu |
+| beads from (was match to) | бисер из | бісер з | бісер з | 珠子来自 | cuentas de | koraliki z |
+| The picture's own colors (not beads) (was Exact); Picture's own on Convert to beads | Собственные цвета изображения (не бисер); Свои цвета | Власні кольори зображення (не бісер); Власні кольори | Уласныя колеры выявы (не бісер); Уласныя колеры | 图片自身的颜色（不是珠子）; 图片原色 | Los colores propios de la imagen (no cuentas); Colores propios | Własne kolory obrazu (nie koraliki); Własne kolory |
+| {count} bead colors in size {size} (was codes in {size}: {count}) | цветов бисера размера {size}: {count} | кольорів бісеру розміру {size}: {count} | колераў бісеру памеру {size}: {count} | {size} 尺寸的珠子颜色：{count} | colores de cuenta en tamaño {size}: {count} | kolorów koralików w rozmiarze {size}: {count} |
+| Leave a color out (was Make empty) | Убрать цвет | Прибрати колір | Прыбраць колер | 去掉一种颜色 | Dejar fuera un color | Pomiń kolor |
+| tap a color to leave it out, tap it again to put it back | нажмите на цвет, чтобы убрать его, и ещё раз, чтобы вернуть | торкніться кольору, щоб прибрати його, і ще раз, щоб повернути | націсніце на колер, каб прыбраць яго, і яшчэ раз, каб вярнуць | 点按一种颜色将其去掉，再点一次放回 | toca un color para dejarlo fuera y otra vez para recuperarlo | dotknij koloru, by go pominąć, i jeszcze raz, by go przywrócić |
+| How much to take (was Tolerance), ends "only the background" and "more colors" | Сколько брать · только фон | Скільки брати · лише тло | Колькі браць · толькі фон | 取多少 · 仅背景 | Cuánto tomar · solo el fondo | Ile brać · tylko tło |
+| Drop colors used by few beads (was Small colors join); {count} colors dropped | Убрать редкие цвета; Убрано цветов: {count} | Прибрати рідкісні кольори; Прибрано кольорів: {count} | Прыбраць рэдкія колеры; Прыбрана колераў: {count} | 去掉珠子很少的颜色; 已去掉 {count} 种颜色 | Quitar colores de pocas cuentas; {count} colores quitados | Usuń kolory z niewielu koralików; Usunięto kolorów: {count} |
+| A drawing, a logo, pixel art or a photo of one thing on a plain ground works best. (first sentence of What pictures work) | Лучше всего подходит рисунок, логотип, пиксель-арт или фото одного предмета на ровном фоне. | Найкраще підходить малюнок, логотип, піксель-арт або фото одного предмета на рівному тлі. | Найлепш падыходзіць малюнак, лагатып, піксель-арт або фота аднаго прадмета на роўным фоне. | 最适合的是图画、标志、像素画，或纯色背景上单个物体的照片。 | Funciona mejor un dibujo, un logotipo, pixel art o una foto de una sola cosa sobre un fondo liso. | Najlepiej sprawdza się rysunek, logo, pixel art albo zdjęcie jednej rzeczy na gładkim tle. |
+
+English follows the audit's proposals (UX-050, UX-053, UX-054, UX-082); the other languages are proposals for review with the build. "Drop" here is the plain verb, not a Technique's Drop.
