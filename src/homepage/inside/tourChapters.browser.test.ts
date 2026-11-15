@@ -28,8 +28,8 @@ describe("What's inside: a chapter pressed leaves no question open (ticket 0924)
       await withMotion(true)
       const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
       await page.viewport(1440, 900)
-      const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
       await turnToSection(mounted.root, 'inside')
+      const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
       const lit = () => mounted.root.querySelector('[data-testid="inside-chapters"] [aria-current="step"]')?.getAttribute('data-testid')
       await expect.poll(lit, { timeout: 8000 }).toBe('inside-chapter-draw')
       const warn = vi.spyOn(console, 'warn')

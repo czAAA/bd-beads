@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import ExportPanel from './ExportPanel.vue'
 import { createProject } from '../../domain/createProject'
 import { withColors } from '../../domain/canvas'
@@ -8,6 +8,7 @@ import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
 import { withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { withProjectName } from '../../domain/projectName'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -28,12 +29,26 @@ function empty(): Project {
 const drawn = (): Project => (withLayers(empty(), { beads: withColors({}, [{ row: 1, column: 1, color: '#ff0000' }]) }))
 const framed = (): Project => (withLayers(empty(), { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom', beads: {} } }))
 
-const mountPanel = (project: Project) => mount(ExportPanel, { props: { project }, attachTo: document.body })
-const has = (wrapper: ReturnType<typeof mountPanel>, testId: string) => wrapper.find(`[data-testid="${testId}"]`).exists()
+/** The panel with its File size estimates there: the print code they are worked out with comes after (ticket 0991). */
+async function mountPanel(project: Project) {
+  const wrapper = mount(ExportPanel, { props: { project }, attachTo: document.body })
+  await vi.dynamicImportSettled()
+  await flushPromises()
+  return wrapper
+}
+type Panel = Awaited<ReturnType<typeof mountPanel>>
+const has = (wrapper: Panel, testId: string) => wrapper.find(`[data-testid="${testId}"]`).exists()
 
 describe('ExportPanel (ticket 0652)', () => {
+  it('names the open Project on the title line, with or without a Frame (ticket 0986)', async () => {
+    for (const project of [framed(), empty()]) {
+      const wrapper = await mountPanel(withProjectName(project, 'Loom cuff'))
+      expect(wrapper.get('.export-panel__title [data-testid="export-panel-project"]').text()).toBe('· Loom cuff')
+    }
+  })
+
   it('holds Picture, Printable chart and Export quality with a Frame, and passes each export on', async () => {
-    const wrapper = mountPanel(framed())
+    const wrapper = await mountPanel(framed())
 
     expect(wrapper.get('[data-testid="export-png"]').text()).toMatch(/^Picture.*PNG/)
     expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/^Printable chart.*PDF/)
@@ -46,8 +61,16 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(wrapper.emitted('export-pdf')).toHaveLength(1)
   })
 
+  it('puts each option under the file it changes: Export quality under Picture, the two switches under Printable chart (ticket 0957)', async () => {
+    const wrapper = await mountPanel(framed())
+    const ids = ['export-png', 'quality-slider', 'export-pdf', 'export-large-beads', 'export-row-by-row']
+    const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ids.includes(id!))
+
+    expect(order).toEqual(ids)
+  })
+
   it('says to set a frame with none, offers Select a Frame and Fit, and shows no export rows', async () => {
-    const wrapper = mountPanel(drawn())
+    const wrapper = await mountPanel(drawn())
 
     expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
     expect(['export-png', 'export-pdf', 'quality-range'].filter((id) => has(wrapper, id))).toEqual([])
@@ -59,7 +82,7 @@ describe('ExportPanel (ticket 0652)', () => {
   })
 
   it('has Fit off, with its reason, while nothing is drawn', async () => {
-    const wrapper = mountPanel(empty())
+    const wrapper = await mountPanel(empty())
     const fit = wrapper.get('[data-testid="export-fit"]')
 
     expect(fit.attributes('aria-disabled')).toBe('true')
@@ -69,11 +92,11 @@ describe('ExportPanel (ticket 0652)', () => {
 })
 
 describe('ExportPanel print choices (ticket 0916)', () => {
-  const pages = (wrapper: ReturnType<typeof mountPanel>) => /· (\d+) pages?$/.exec(wrapper.get('[data-testid="export-pdf"]').text())?.[1]
+  const pages = (wrapper: Panel) => /· (\d+) pages?$/.exec(wrapper.get('[data-testid="export-pdf"]').text())?.[1]
   const big = (): Project => withLayers(empty(), { frame: { row: 0, column: 0, rows: 100, columns: 100, technique: 'loom', beads: {} } })
 
-  it('offers Large beads and Row by row, both off, each with what it does behind its Info button', () => {
-    const wrapper = mountPanel(framed())
+  it('offers Large beads and Row by row, both off, each with what it does behind its Info button', async () => {
+    const wrapper = await mountPanel(framed())
 
     for (const [id, label] of [['export-large-beads', en.frame.largeBeadsInfoLabel], ['export-row-by-row', en.frame.rowByRowInfoLabel]] as const) {
       expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-checked')).toBe('false')
@@ -82,7 +105,7 @@ describe('ExportPanel print choices (ticket 0916)', () => {
   })
 
   it('counts the PDF\'s pages on the Printable chart row, following each switch at once', async () => {
-    const wrapper = mountPanel(big())
+    const wrapper = await mountPanel(big())
     expect(pages(wrapper)).toBe('1')
 
     await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
@@ -94,13 +117,13 @@ describe('ExportPanel print choices (ticket 0916)', () => {
   })
 
   it('remembers both switches on the device', async () => {
-    const wrapper = mountPanel(framed())
+    const wrapper = await mountPanel(framed())
     await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
     await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
     expect([localStorage.getItem('openbeads:print-large-beads'), localStorage.getItem('openbeads:print-row-by-row')]).toEqual(['on', 'on'])
     wrapper.unmount()
 
-    const again = mountPanel(framed())
+    const again = await mountPanel(framed())
     expect(again.get('[data-testid="export-large-beads"]').attributes('aria-checked')).toBe('true')
     expect(again.get('[data-testid="export-row-by-row"]').attributes('aria-checked')).toBe('true')
   })

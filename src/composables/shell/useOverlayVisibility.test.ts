@@ -36,14 +36,12 @@ describe('useOverlayVisibility', () => {
     expect(openPanel.value).toBeNull()
   })
 
-  it('opens Export on the Project panel\'s choice, as the strip\'s button does, and on none from a button (ticket 0843)', () => {
-    const { openPanel, exportOpener, exportChoice, onSelectPanel } = setup()
+  it('opens Export from the Project panel as the strip\'s button does, on no row (tickets 0843, 0956)', () => {
+    const { openPanel, exportOpener, exportChoice, onSelectPanel, showExport } = setup()
+    showExport('strip-export', 'png')
     openPanel.value = 'project'
-    onSelectPanel('export', 'pdf')
-    expect([openPanel.value, exportOpener.value, exportChoice.value]).toEqual(['export', 'strip-export', 'pdf'])
     onSelectPanel('export')
-    onSelectPanel('export')
-    expect([openPanel.value, exportChoice.value]).toEqual(['export', undefined])
+    expect([openPanel.value, exportOpener.value, exportChoice.value]).toEqual(['export', 'strip-export', undefined])
   })
 
   it('shows Export from what leads to it with no Frame, never closing it (ticket 0847)', () => {

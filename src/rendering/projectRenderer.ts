@@ -27,8 +27,8 @@ import { marginForm, marginScale } from './marginForm'
 import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
-import { drawTile, markLookOf } from './tonalTiles'
-import { drawGapEasing } from './gridFocus'
+import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
+import { canvasLiftCells, drawLift, liftCollector, liftRows, paintedOnly } from './liftedPiece'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
   frameOriginPx,
@@ -128,12 +128,10 @@ export interface RenderInput {
   /** Draw the empty Canvas's Position marks (the default). The stand-in a pan shows leaves them to the empty-canvas
    * look under it, which draws them sharp (ticket 0732). */
   positionMarks?: boolean
-  /** The reference image (ticket 0790): drawn over every layer's Background and under every bead, the Frame's empty
-   * beads see-through over it. Only the editor's surface hands one in, so no export, thumbnail or example prints it. */
+  /** The reference image (ticket 0790): drawn over every layer's Background and tonal tiles and under every bead
+   * (ticket 1008); where outlines are drawn instead (high contrast, the draft look) they lie over it and the Frame's
+   * empty beads are see-through. Only the editor's surface hands one in, so no export, thumbnail or example prints it. */
   reference?: DrawnReference
-  /** Grid focus (ticket 1002): the work's boxes in grid px, which the gap between tonal tiles stays full round and is
-   * calmer far from. Only the editor's surface hands them in, so no export, thumbnail or example eases its grid. */
-  gridFocus?: readonly Region[]
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
@@ -206,30 +204,47 @@ function stripIn(context: DrawingContext, area: { left: number; right: number; t
   }
 }
 
-/** The Frame's box on the Canvas (tickets 458, 0666): filled in the Frame's own Background where it differs from the
- * Canvas's, a Custom frame's Off-shape included, then marked round its positions (ticket 458), in the Frame's look.
- * Tonal tiles are the Frame's own, drawn with its beads (ticket 1001). */
-function drawFrameGround(
-  context: DrawingContext,
-  { project, area, zoom, pixelRatio, canvasLook, frameLook, reference, tiles }: { project: DrawnProject; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; canvasLook: ProjectTheme; frameLook: ProjectTheme; reference?: DrawnReference; tiles: boolean },
-): void {
+/** The Frame's box on the Canvas in grid px, half a gap past its outer beads: left, top, right, bottom. */
+function frameGroundBox(project: DrawnProject): readonly [number, number, number, number] {
   const footprint = frameFootprintPx(project)!
   const edge = BEAD_GAP_PX / 2
+  return [footprint.x - edge, footprint.y - edge, footprint.x + footprint.width + edge, footprint.y + footprint.height + edge]
+}
+
+/** Far enough past any Canvas, in grid px, for the clip round the Frame's box to hold the whole picture. */
+const HUGE_PX = 1e7
+
+/** Draws the reference image cut to a box, `inside` it or `outside` it, so the Canvas and the Frame each lay it once. */
+function drawReferenceCut(context: DrawingContext, reference: DrawnReference, box: readonly [number, number, number, number] | undefined, where: 'inside' | 'outside'): void {
+  if (!box) {
+    if (where === 'outside') drawReference(context, reference)
+    return
+  }
+  const [left, top, right, bottom] = box
+  context.save()
+  context.beginPath()
+  if (where === 'outside') context.rect(-HUGE_PX, -HUGE_PX, 2 * HUGE_PX, 2 * HUGE_PX)
+  context.rect(left, top, right - left, bottom - top)
+  context.clip('evenodd')
+  drawReference(context, reference)
+  context.restore()
+}
+
+/** The Frame's box on the Canvas (tickets 458, 0666), `box` from frameGroundBox: filled in the Frame's own Background
+ * where it differs from the Canvas's, a Custom frame's Off-shape included, then marked round its positions (ticket 458),
+ * in the Frame's look. Tonal tiles are the Frame's own, drawn with its beads (ticket 1001). */
+function drawFrameGround(
+  context: DrawingContext,
+  { project, box, area, zoom, pixelRatio, canvasLook, frameLook, reference, tiles }: { project: DrawnProject; box: readonly [number, number, number, number]; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; canvasLook: ProjectTheme; frameLook: ProjectTheme; reference?: DrawnReference; tiles: boolean },
+): void {
   const strip = stripIn(context, area)
-  const box = [footprint.x - edge, footprint.y - edge, footprint.x + footprint.width + edge, footprint.y + footprint.height + edge] as const
   if (frameLook.canvas !== canvasLook.canvas) {
     context.fillStyle = frameLook.canvas
     strip(...box)
-    // The reference image lies over the Frame's own Background too (ticket 0790), cut to its box.
-    if (reference) {
-      context.save()
-      context.beginPath()
-      context.rect(box[0], box[1], box[2] - box[0], box[3] - box[1])
-      context.clip()
-      drawReference(context, reference)
-      context.restore()
-    }
   }
+  // The reference image lies over the Frame's own Background too (ticket 0790), cut to its box; over its tonal tiles
+  // when it has them, so the Frame draws it after them (ticket 1008).
+  if (reference && !markLookOf(frameLook, tiles).tiles) drawReferenceCut(context, reference, box, 'inside')
   // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
   const mark = markLookOf(frameLook, tiles)
   const pattern = !mark.tiles && geometryDrawnAlone(project).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...mark })
@@ -307,9 +322,12 @@ interface LayerDraw {
   lit: (color: string) => string
   /** How opaque an empty Frame bead's fill is over the reference image (ticket 0790); undefined with none shown. */
   seeThrough: number | undefined
-  /** Whether empty positions may be tonal tiles (ticket 1001): on the open Canvas in the full look, with no reference
-   * image shown. Elsewhere they keep the outline and the empty bead. */
+  /** Whether empty positions may be tonal tiles (ticket 1001): on the open Canvas in the full look, a reference image
+   * shown or not (it lies over them, ticket 1008). Elsewhere they keep the outline and the empty bead. */
   tiles: boolean
+  /** Whether painted beads lie on a Lifted piece where the look has one (ticket 1004): on the open Canvas in the full
+   * look. */
+  lift: boolean
 }
 
 /** The Frame's cells, bead or empty bead, where its Layer geometry places them, from the context's origin (ticket 492).
@@ -318,6 +336,16 @@ interface LayerDraw {
 function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }): void {
   const { project, area, rows: band } = draw
   const geometry = geometryDrawnAlone(project)
+  if (draw.lift && draw.look.liftedPiece) {
+    // The Lifted piece (ticket 1004): the empty positions first, noting the painted beads' cells (with the rows whose
+    // pieces reach a band), then the pieces under the painted beads, then those beads.
+    const collect = liftCollector(draw.drawBead, !geometry.grid)
+    const weave = frameWeave(project)
+    drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: liftRows(band, cellSizePx(weave.technique, weave.cell).height) }, space, origin)
+    drawLift(context, collect.cells, draw.look.canvas, draw.zoom * draw.pixelRatio)
+    drawFrameLayer(context, { ...draw, lift: false, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined }, space, origin)
+    return
+  }
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, into which a shifted column's beads hang; beads that keep no rows are all drawn.
   const inView = () => geometry.positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
@@ -691,40 +719,62 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
   const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
   const drawn = space.open ? reference : undefined
+  const under = drawn?.over ? undefined : drawn
   const seeThrough = drawn && EMPTY_BEAD_OPACITY[drawn.opacity]
-  const tiles = space.open && !draft && !drawn
-  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit, seeThrough, tiles }
+  const tiles = space.open && !draft
+  const lift = space.open && !draft
+  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit, seeThrough, tiles, lift }
 
   if (space.open) {
-    // The reference image over the Canvas's Background and under its Position marks and every bead (ticket 0790).
-    if (drawn) drawReference(context, drawn)
-    if (positionMarks && tiles && input.gridFocus && theme.tonalTiles) {
-      drawGapEasing(context, { boxes: input.gridFocus, toRegion: gridToRegion(extent, region, zoom, rotation), pixelRatio, width: region.width, height: region.height, background: theme.canvas })
+    // The reference image over the Canvas's Background and under every bead (ticket 0790): over its tonal tiles, so
+    // showing it leaves the grid as it is (ticket 1008), under the outlines drawn instead. The Frame lays its own.
+    const overTiles = positionMarks && markLookOf(theme, tiles).tiles
+    const frameBox = frame ? frameGroundBox(project) : undefined
+    if (under && !overTiles) drawReferenceCut(context, under, frameBox, 'outside')
+    if (positionMarks && tiles && theme.tonalTiles) {
+      // The calm gap between tonal tiles, laid flat under them over the whole surface (ticket 1001).
+      context.fillStyle = gapColorOf(theme.canvas)
+      context.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top)
     }
     if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
+    if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
+    if (lift && look.liftedPiece) drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio)
     drawCanvasLayer(context, draw, space)
-    if (frame) {
+    if (frame && frameBox) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)
-      drawFrameGround(context, { project, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: drawn, tiles })
+      drawFrameGround(context, { project, box: frameBox, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: under, tiles })
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
       // The Frame is drawn in its own px, its Bead's size over the Canvas's (ticket 0665), from its first position's
       // corner. The band's rows are the Canvas's; the Frame's own are counted from its first (alike layers only).
       const scale = frameScale(project)
-      if (scale === 1) {
-        drawFrameLayer(context, { ...draw, look: frameLook, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
-      } else {
+      const frameDraw = (part: LayerDraw) => {
+        if (scale === 1) {
+          drawFrameLayer(context, { ...part, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
+          return
+        }
         const seen = { left: (area.left - origin.x) / scale, right: (area.right - origin.x) / scale, top: (area.top - origin.y) / scale, bottom: (area.bottom - origin.y) / scale }
         context.save()
         context.translate(origin.x, origin.y)
         context.scale(scale, scale)
-        drawFrameLayer(context, { ...draw, look: frameLook, zoom: zoom * scale, area: seen, rows: undefined }, sheet, { x: 0, y: 0 })
+        drawFrameLayer(context, { ...part, zoom: zoom * scale, area: seen, rows: undefined }, sheet, { x: 0, y: 0 })
         context.restore()
+      }
+      const frameDrawn: LayerDraw = { ...draw, look: frameLook }
+      if (under && markLookOf(frameLook, tiles).tiles) {
+        // Its tonal tiles, the reference image over them, then its painted beads (ticket 1008).
+        frameDraw({ ...frameDrawn, lift: false, drawBead: () => {}, letters: undefined })
+        drawReferenceCut(context, under, frameBox, 'inside')
+        frameDraw({ ...frameDrawn, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined })
+      } else {
+        frameDraw(frameDrawn)
       }
     }
   } else if (space.hasFrame) {
     drawFrameLayer(context, { ...draw, look: frameLook }, space, { x: 0, y: 0 })
   }
+  // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
+  if (drawn?.over) drawReference(context, drawn)
 
   if (band) {
     context.restore()

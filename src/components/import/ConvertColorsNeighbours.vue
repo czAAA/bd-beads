@@ -168,7 +168,7 @@ onMounted(() => {
   position: absolute;
   top: calc(var(--convert-neighbours-top, var(--space-16)) - var(--space-8));
   right: calc(var(--convert-column-width) + var(--space-12));
-  z-index: 6;
+  z-index: var(--convert-layer-popover);
   display: flex;
   flex-direction: column;
   gap: var(--space-10);

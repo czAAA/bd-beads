@@ -1,5 +1,5 @@
-import { starterProject, type Starter, type StarterProjectChoice } from '../../domain/starters'
-import { NEW_PROJECT_DEFAULTS, createProject, type CreateProjectInput } from '../../domain/createProject'
+import { FIRST_PROJECT_START, starterProject, type Starter, type StarterProjectChoice } from '../../domain/starters'
+import { createProject, type CreateProjectInput } from '../../domain/createProject'
 import { fillBlanks } from '../../domain/fillBlanks'
 import type { Project } from '../../domain/project'
 import { freeName } from '../../domain/projectName'
@@ -25,9 +25,10 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
     deps.addProject(createProject({ ...payload, name: payload.name?.trim() || unnamedName() }))
   }
 
-  /** The first Project (ticket 0866): Create Project on the form's presets, made without showing the form. */
+  /** The first Project (tickets 0866, 0945): Create Project in peyote on Delica 11/0, the piece the Homepage shows, made
+   * without showing the form. */
   function onCreateFirstProject() {
-    onCreateProject(NEW_PROJECT_DEFAULTS)
+    onCreateProject(FIRST_PROJECT_START)
   }
 
   /** Create Project in a Starter's setup (tickets 0596, 0671): a new Project with the Starter's Frame, its design or

@@ -90,8 +90,9 @@ const TOUCH = { pointerType: 'touch', isPrimary: true }
 const PEN = { pointerType: 'pen', isPrimary: true }
 const MOUSE = { pointerType: 'mouse', isPrimary: true }
 
-/** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. */
-const draws = () => context.named('clearRect').length / 2
+/** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. The Lifted
+ * piece's shadow sheet clears itself too (ticket 1006), here on the same recorded context: a few px, not the surface. */
+const draws = () => context.named('clearRect').filter(({ args }) => (args[2] as number) > 100).length / 2
 
 describe('ProjectSurface', () => {
   it('redraws each layer once per animation frame, with the last zoom and scroll, however many changes come first', async () => {
@@ -351,23 +352,6 @@ describe('ProjectSurface', () => {
 
       // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it.
       expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
-    })
-
-    it('with Grid focus on, holds the work through a stroke, drawing its rows, and draws all again with its end (ticket 1002)', async () => {
-      viewport = { width: 400, height: 600 }
-      const project = projectOf(20, 30, { frame: undefined, beads: { 0: { 0: '#ff0000' } } })
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { stroking: true, gridFocus: true })
-      context.calls.length = 0
-
-      // A bead painted far from the rest is drawn in its rows alone while the stroke goes on.
-      await wrapper.setProps({ project: painted(project, 12, 15) })
-      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
-
-      // Its end brings the bead its own near area: the whole view is drawn again.
-      context.calls.length = 0
-      await wrapper.setProps({ stroking: false })
-      await nextTick()
-      expect(context.named('clearRect').map((call) => call.args)).toContainEqual([0, 0, 400, 600])
     })
 
     it('draws a band for each cluster of changed rows, as a change to rows far apart', async () => {

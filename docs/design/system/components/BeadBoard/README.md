@@ -25,7 +25,7 @@ Hand-written from DESIGN.md §4.4 and §7 and the v16 sign-off (open canvas mock
 
 ## Canvas look (approved 2026-11-14; tickets 1001 to 1004)
 
-Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003), the tonal tiles (ticket 1001) and Grid focus (ticket 1002), which are. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
+Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003), the tonal tiles (ticket 1001), the calm gap (ticket 1007) and the Lifted piece (ticket 1004), which are. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
 
 ### Tonal tiles (ticket 1001)
 
@@ -35,16 +35,13 @@ Approved in the Canvas look study and **not yet in the app**, save the own-color
 - **Why one step:** the step between the Background and its grid sets how loud the grid is, and nothing else does. Measured as the spread of lightness over an empty patch (RMS of L*), today's ten backgrounds run from 2.1 to 4.1 because each has a hand-picked grid color; with the rule every one is 2.2 to 2.3. 6.5 is about 1.2:1. It is one constant, so it can be tuned on a real screen.
 - **Inside the Frame, the same tiles.** An empty position of the Frame is a tile by the same rule from the Frame's own Background, in place of the full `bead-empty` bead. The keep-out margin still has none; a Custom frame's Off-shape and Seams are as before.
 - **Under the drawing and on the Homepage:** the empty canvas laid under the editor's drawing (ticket 0717) and the Homepage's ground are the same tiles, since they are the same Position marks.
-- Never saved, never in exports. The draft look keeps the outline and each Background's own empty bead (CanvasBackground card), and so does the Canvas while a reference image shows (ReferenceImage card), which a filled tile would hide.
+- Never saved, never in exports. The draft look keeps the outline and each Background's own empty bead (CanvasBackground card). A shown reference image lies over the tiles, on the Canvas and in the Frame, and leaves them as they are (ReferenceImage card, ticket 1008): the grid's look and color never change with it.
 
-### Grid focus (ticket 1002; CanvasStrip card)
+### The calm gap (ticket 1007; replaces Grid focus, ticket 1002)
 
-- With Grid focus on, the gap between tiles has its full step near the work and is calmer far from it. The tiles never change, so the Canvas keeps one tone from edge to edge: only the gap moves toward the tile's color.
-- **Near:** within about 3 beads of the work, the full gap. **Far:** from about 7 beads out, the gap is 42% of the way to the tile's color, which leaves about 3.8 L* (1.11:1): Night `#262626`, Studio `#f2f2f2`. Between the two it eases smoothly. It never reaches the tile's color, so the grid shows everywhere. In px at 100% zoom: the work's box grown by 96px, its edge softened over 36px either way; both follow the zoom.
-- **The work** is the Frame's margin sheet, and each Piece area on the Canvas, corners rounded. It follows what is painted: a new bead far from the rest brings its own near area at the next draw.
-- With no bead and no Frame there is no work, and the grid is full everywhere. Off, the grid is full everywhere.
-- The empty canvas laid under the drawing uses the far gap while Grid focus is on.
-- **As built:** the easing is a field of the far gap, sampled coarsely and drawn up to the screen smoothly under the tiles, never a canvas `filter` (iPad Safari has none); made once a view, so a band redrawn after an edit reuses it. Through a stroke the work is held, and its end draws the view again with the new bead's own near area. Only the editor's drawing has it: no export, thumbnail or example.
+- The gap between tiles is one calm color everywhere on the Canvas: the Background moved 42% of the way to the tile's color, which leaves about 3.8 L* (1.11:1) between gap and tile: Night `#262626`, Studio `#f2f2f2`. It never reaches the tile's color, so the grid shows everywhere. The tiles never change, so the Canvas keeps one tone from edge to edge.
+- It does not depend on the work, a toggle or a key: Grid focus (a button, `G`, and a gap eased by distance from the work) was removed.
+- The empty canvas laid under the drawing uses the same gap. Only the editor's drawing and the Homepage's ground have it: no export, thumbnail or example, and not high contrast, the draft look or a reference image.
 
 ### Beads: own-color rim and satin light (ticket 1003)
 
@@ -64,3 +61,4 @@ Approved in the Canvas look study and **not yet in the app**, save the own-color
 - **It replaces the Piece area's rectangle.** The 1px rectangle (Pieces, above) is not drawn. The Piece area still decides whose rulers show and where they sit (Rulers card).
 - **Only with the own-color rim.** Under today's bead the piece ground shows in the gap between beads and makes it stronger (7.2:1 to 8.9:1 for yellow in dark), so ticket 1004 follows ticket 1003.
 - **How it is drawn:** without the canvas `filter` property, which iPad Safari lacks; the shadow is made another way to the same look. It is part of the drawing, so a pan or pinch moves it with the picture, and the draft look has none.
+- **As built (ticket 1004):** the shadow is the canvas's own shadow (`shadowBlur`, twice the blur's spread, and `shadowOffsetY`, both in device px at the zoom), cast by the ground's shape, so it falls down the screen however the Project is turned. The shape is each bead's cell grown past its body and rounded, a row's touching beads as one (a column's in peyote), filled whole, so the shapes of neighbouring beads make one outline; a hole of one bead keeps its own line. (Ticket 1006, cost only: the ground's and the contour's shapes are built once per redraw. The shadows are blurred on a sheet that only grows, up to four device px per sheet px, both on one sheet; at low zoom, where the close shadow's blur is too small to draw smaller, the soft one keeps a small sheet and the close one falls straight on the screen. The look is the same.) The empty positions inside the Frame are drawn first, then the pieces, then the painted beads. Over a reference image the piece is drawn too, its ground hiding the picture next to the beads. In the draft look a Piece keeps its rectangle, as it has no contour there. No Piece is walked to draw it, and a redraw of a band of rows takes in the rows whose pieces reach it.

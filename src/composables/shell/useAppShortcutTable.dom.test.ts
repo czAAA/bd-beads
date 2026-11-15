@@ -26,7 +26,6 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onSelectColor: vi.fn(),
     onClearSelection: vi.fn(),
     onToggleRulers: vi.fn(),
-    onToggleGridFocus: vi.fn(),
     onToggleReferenceImage: vi.fn(),
     onEditFrame: vi.fn(),
     onToggleFramePanel: vi.fn(),
@@ -231,17 +230,6 @@ describe('useAppShortcutTable', () => {
     project = bareProject({ beads: { 0: { 0: '#ff0000' } } })
     press({ key: 'r' })
     expect(deps.onToggleRulers).toHaveBeenCalledTimes(1)
-    wrapper.unmount()
-  })
-
-  it('G does nothing with no bead and no Frame, and toggles Grid focus once there is work (ticket 1002)', () => {
-    let project = bareProject({ beads: {} })
-    const { deps, wrapper } = mountTable({ activeProject: () => project })
-    press({ key: 'g' })
-    expect(deps.onToggleGridFocus).not.toHaveBeenCalled()
-    project = bareProject({ beads: { 0: { 0: '#ff0000' } } })
-    press({ key: 'g' })
-    expect(deps.onToggleGridFocus).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })
 

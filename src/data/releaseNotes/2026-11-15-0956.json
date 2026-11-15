@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "The Project panel leads to export in one Export row, and Save Project file stands first under This Project, apart from the exports; Picture saves a picture wherever it is pressed",
+    "ru": "Панель проекта ведёт к экспорту одной строкой «Экспорт», а «Сохранить файл проекта» стоит первым в разделе «Этот проект», отдельно от экспорта; «Картинка» сохраняет картинку, где бы её ни нажали",
+    "uk": "Панель проєкту веде до експорту одним рядком «Експорт», а «Зберегти файл проєкту» стоїть першим у розділі «Цей проєкт», окремо від експорту; «Картинка» зберігає картинку, де б її не натиснули",
+    "be": "Панэль праекта вядзе да экспарту адным радком «Экспарт», а «Захаваць файл праекта» стаіць першым у раздзеле «Гэты праект», асобна ад экспарту; «Карцінка» захоўвае карцінку, дзе б яе ні націснулі",
+    "zh": "项目面板用一行“导出”通往导出，“保存项目文件”排在“此项目”的第一位，与导出分开；无论在哪里按“图片”，都会直接保存图片",
+    "es": "El panel del proyecto lleva a exportar con una sola fila, Exportar, y Guardar archivo de proyecto va primero en Este proyecto, aparte de las exportaciones; Imagen guarda una imagen dondequiera que se pulse",
+    "pl": "Panel projektu prowadzi do eksportu jednym wierszem „Eksport”, a „Zapisz plik projektu” stoi pierwszy w sekcji „Ten projekt”, osobno od eksportu; „Obraz” zapisuje obraz, gdziekolwiek go naciśniesz"
+  }
+}

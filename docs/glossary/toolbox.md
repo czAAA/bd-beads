@@ -39,7 +39,7 @@ A level inside a panel (Menu panel, Project panel, Frame panel), stacked over it
 _Avoid_: New Project panel, New Project modal (gone)
 
 **New Project**:
-The Menu's accent-coloured row and the Subpanel it opens (spec 0478). It opens with the title **Open canvas** and its subtitle ("Draw on open canvas, set frame to export picture or pdf when needed"), then the form that makes a Canvas (Name, Maker's name, Bead, Technique, each the same shared section the Project panel uses), and last the primary Create Project and, each after "or", the secondary Convert image and **Pick a starter** (ticket 0866). Name left empty, the Project is "Project 1", then the next free number, never the Bead's name (ticket 0866). The Homepage's Make your first Project skips the form while the library has no Project: it makes one on the form's presets through the same Create Project and opens on the Canvas with no panel open. Pick a starter pushes the Starter gallery one level deeper: its categories, then a category's options, then a Starter's **Starter setup**. On New Project the Technique section applies a change straight to the draft, with no confirmation.
+The Menu's accent-coloured row and the Subpanel it opens (spec 0478). It opens with the title **Open canvas** and its subtitle ("Draw on open canvas, set frame to export picture or pdf when needed"), then the form that makes a Canvas (Name, Maker's name, Bead, Technique, each the same shared section the Project panel uses), and last the primary Create Project and, each after "or", the secondary Convert image and **Pick a starter** (ticket 0866). Name left empty, the Project is "Project 1", then the next free number, never the Bead's name (ticket 0866). The Homepage's Make your first Project skips the form while the library has no Project: it makes one through the same Create Project, in peyote on Miyuki Delica 11/0 like the Starters and the piece the Homepage shows rather than on the form's presets (ticket 0945), and opens on the Canvas with no panel open. Pick a starter pushes the Starter gallery one level deeper: its categories, then a category's options, then a Starter's **Starter setup**. On New Project the Technique section applies a change straight to the draft, with no confirmation.
 _Avoid_: New Pattern, new project sheet
 
 **Starter**:
@@ -55,7 +55,7 @@ The setup in step 2 of the Starter gallery, once an option is tapped (ticket 059
 _Avoid_: Template setup, Starter form, Starter dialog
 
 **Project panel**:
-The Project panel: the modal dropdown the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Export, Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
+The Project panel: the modal dropdown the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Export (since ticket 0956 one row to the Export panel; Save Project file stands first under this Project, apart from it), Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
 _Avoid_: Project sheet, Pattern sheet, Tool sheet (gone)
 
 **Canvas strip**:

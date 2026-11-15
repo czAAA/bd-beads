@@ -5,6 +5,7 @@ import { BEAD_CATALOG } from './beads'
 import { addedColorId, defaultPalette } from './palette'
 import { frameGrid } from '../testUtils/frameGrid'
 import { backgroundOf, canvasOf, frameOf } from './layerRecord'
+import { rotateCanvas } from './rotate'
 import { rowProgressOf } from './rowProgress'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -211,6 +212,12 @@ describe('createProjectFromImage', () => {
       ...overrides,
     })
   }
+
+  it('opens upright, the way the converter showed it, whatever the Technique (ticket 0965)', () => {
+    const orientations = (['peyote', 'loom', 'brick'] as const).map((technique) => canvasOf(fromImage({ technique })).orientation)
+    expect(orientations).toEqual([0, 0, 0])
+    expect(canvasOf(rotateCanvas(fromImage({ technique: 'peyote' }))).orientation).toBe(90)
+  })
 
   it('creates an ordinary Project that arrives already painted', () => {
     const project = fromImage()

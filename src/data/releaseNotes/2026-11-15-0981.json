@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Only the Progress bar's Row done is filled; the Frame margin's is a quieter button that does the same",
+    "ru": "Залита только кнопка «Ряд готов» в полосе прогресса; на полях рамки это более спокойная кнопка, которая делает то же самое",
+    "uk": "Залита лише кнопка «Ряд готовий» у смузі прогресу; на полях рамки це спокійніша кнопка, яка робить те саме",
+    "be": "Заліта толькі кнопка «Рад гатовы» ў паласе прагрэсу; на палях рамкі гэта спакайнейшая кнопка, якая робіць тое ж самае",
+    "zh": "只有进度栏里的“行已完成”是填充色；画框边距上的那个改为更低调的按钮，作用相同",
+    "es": "Solo Fila terminada de la barra de progreso va rellena; la del margen del Marco es un botón más discreto que hace lo mismo",
+    "pl": "Wypełniony jest tylko przycisk Rząd gotowy na pasku postępu; na marginesie Ramki to spokojniejszy przycisk, który robi to samo"
+  }
+}

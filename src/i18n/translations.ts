@@ -293,6 +293,8 @@ export interface Translations {
       beadSize: string
       /** After Duplicate (ticket 0860): `{copy}` is the Project now open, `{original}` the one it was copied from. */
       duplicatedToast: string
+      /** Said under 1024px, where the strip shows no name, when a Project opens from the library (ticket 0986). */
+      openedToast: string
     }
   }
   /** The header's theme control (ticket 139). */
@@ -435,8 +437,6 @@ export interface Translations {
       storage: string
       paintMouse: string
     }
-    /** The Grid focus toggle's name (CanvasStrip card, ticket 1002). */
-    gridFocusLabel: string
   }
   shell: {
     /** Under 'No Project open yet': what to do (EmptyCanvas card). */
@@ -460,6 +460,12 @@ export interface Translations {
     openElsewhere: string
     /** The browser's yes, said back once at the first Project file (tickets 0839, 0936); a no says nothing. */
     keptToast: string
+    /** The notice's action while the open Project is open in another tab (ticket 0937): takes it over here. */
+    workHere: string
+    /** The Project panel's save state there (ticket 0937): nothing drawn here is saved. */
+    notSavedHere: string
+    /** Why the Tool pill's tools are off there (ticket 0937). */
+    toolsOff: string
   }
   /** The header's own addition at the iPad mini tier (ticket 168): the More button (OverflowMenu card). */
   header: {
@@ -736,7 +742,7 @@ export interface Translations {
     stepClose: string
     ofSteps: string
     stepOfSteps: string
-    /** The toast when rows marked done take a drawing back (ticket 0848), naming Row not done, or Column not done. */
+    /** The toast when rows marked done take a drawing back (ticket 0848), naming Back a row, or Back a column (ticket 0972). */
     markedDoneToast: string
     columnMarkedDoneToast: string
     /** The counter's Tooltip where a line takes two passes (peyote, ticket 0849): what it counts, passes, not rows. */
@@ -766,6 +772,20 @@ export interface Translations {
     directionKeptToast: string
     /** The Go to row Tooltip on a Kaleidocycle (ticket 0876): the triangles here are this face's, `{then}` its usual sentence. */
     faceBody: string
+    /** The counter, and what the announcer says after Back a row, Row done and Go to row (tickets 0934, 0972): "Row 7
+     * of 10" (`unit` is Row, Column or Pass), and on peyote that `step` with the rulers' row, "Pass 3 of 27, row 2". */
+    announcePosition: string
+    announcePass: string
+    announceColumnPass: string
+    /** Go to row's button that brings the current row back into view after the beader panned away (ticket 0934). */
+    showRow: string
+    showColumn: string
+    /** Go to row's name where it counts passes, on peyote and a Custom frame (ticket 0972): one noun with the counter. */
+    goToPass: string
+    /** The name of Go to row's Info button that holds the passes sentence on peyote (ticket 0972). */
+    passesInfoName: string
+    /** Turn row direction's list (ticket 0973): its Switch that shows and hides the ring and the number pill, Row highlight. */
+    showRowMarks: string
   }
   quantities: {
     heading: string
@@ -789,6 +809,12 @@ export interface Translations {
     pieceLines: Record<'triangles' | 'edgeBeads' | 'hingeBeads' | 'tips' | 'hingePins', string>
     /** Under the table on a Star (ticket 0875): the counts are the whole star, front and back. */
     frontBackNote: string
+    /** Under the rows when a color has no catalog code (ticket 0974): they are Palette colors, not beads to buy. */
+    paletteNote: string
+    /** Why, behind the header's Info button (ticket 0974), after the weight's line when there is one. */
+    paletteInfo: string
+    /** The header Info button's name once it says why too (ticket 0974); `weightInfoLabel` while it explains the weight only. */
+    infoLabel: string
   }
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {
@@ -949,7 +975,6 @@ export interface Translations {
     exportSizeValue: string
     exportFiles: PluralForms
     exportPages: PluralForms
-    qualityDpi: string
     qualityPdfCapped: string
     /** The Letters switch in the Frame panel (ticket 0573), its explanation and the name of the info button that holds it (ticket 0651). */
     lettersLabel: string
@@ -971,6 +996,7 @@ export interface Translations {
      * Switch and the title block's Technique pencil. */
     margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; changeSetting: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string }
     qualityHintLabel: string
+    /** The Export quality Info note: each stop's DPI, {low}, {medium} and {high} (ticket 0957). */
     qualityHint: string
     estimateInfo: string
     sizeLockedLine: string
@@ -1042,6 +1068,12 @@ export interface Translations {
     rotateCoveredMessage: string
     /** The Progress bar's button with no Frame (ticket 0847): fits a Frame and opens Export on Picture. */
     fitAndExport: string
+    /** Each Export quality stop's caption in a crafter's words (ticket 0957); the DPI is in `qualityHint`. */
+    qualityLowCaption: string
+    qualityMediumCaption: string
+    qualityHighCaption: string
+    /** The line under the Export quality stops: the slider sets the picture only (ticket 0957). */
+    qualityNote: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */
@@ -1099,7 +1131,7 @@ export interface Translations {
     confirmButton: string
     cancelButton: string
   }
-  // Convert image (CONTEXT.md, ADR 0010). Strings holding `{formats}`, `{maxSizeMb}` or `{maxMegapixels}` are
+  // Convert image (CONTEXT.md, ADR 0010). Strings holding `{formats}` or `{maxSizeMb}` are
   // filled by formatImageLimits (domain/imageConversion.ts) from the validation constants, so never write the numbers
   // here.
   convertImage: {
@@ -1388,6 +1420,16 @@ export interface Translations {
         atZero: string
         moved: string
       }
+      /** Fewer colors found than asked (ticket 0928): the Colors slider's value with both numbers, and the result's
+       * colors where the picture has no more to give in the colors matched to. */
+      fewerFound: {
+        asked: string
+        allGiven: string
+      }
+      /** The chip over the beads while the background is found and the Background popover is closed (ticket 0930): what
+       * was found, then Remove what was found and Turn off. */
+      backgroundChip: string
+      backgroundTurnOff: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
@@ -1520,15 +1562,21 @@ export interface Translations {
     pasteToolTouch: string
     /** Why the Rulers toggle is held while the Canvas is empty (ticket 0921). */
     noBeadsToNumber: string
-    /** Grid focus's second Tooltip line, and why it is held with no bead and no Frame (ticket 1002). */
-    gridFocus: string
-    noWorkToFocus: string
+    /** The Frame button's Tooltip with Beads needed's total, while there is one (ticket 0932). */
+    framePanelBeads: string
   }
   /** A layer's Layer settings (ADR 0079, ticket 0670): the Frame panel's section heading, and the Background row's label
    * in every layer's. */
   layerSettings: {
     frameHeading: string
     background: string
+    /** The Project panel's Canvas section header while a Frame is on the Canvas (ticket 0935), as label style writes it. */
+    canvasOutsideFrame: string
+    /** The toast after a change of the Canvas's Technique or Bead leaves the Frame on another (ticket 0935); its two
+     * text actions, the Frame panel's own change and the Frame panel on its settings. */
+    frameStays: string
+    changeFrameToo: string
+    openFrame: string
   }
   /** An unframed Schema's name as a tag, opening into a paper tag (SchemaTag card, ticket 0721; `writing.md`,
    * Schema tag copy). */
@@ -1680,6 +1728,8 @@ export interface Translations {
       moveBody: string
       more: string
       close: string
+      /** Picture over the beads (ticket 1009): its name and Tooltip body. */
+      over: { name: string; body: string }
       replace: string
       remove: string
       sizeBeads: string

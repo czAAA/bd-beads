@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Turn row direction lists the four ways in words with the current one checked, so a tap changes nothing until you choose; Show row marks is in that list",
+    "ru": "«Повернуть направление рядов» показывает четыре направления словами с отмеченным текущим, так что нажатие ничего не меняет, пока вы не выберете; «Показывать отметки рядов» теперь в этом списке",
+    "uk": "«Повернути напрям рядів» показує чотири напрями словами з позначеним поточним, тож натискання нічого не змінює, доки ви не оберете; «Показувати позначки рядів» тепер у цьому списку",
+    "be": "«Павярнуць кірунак радоў» паказвае чатыры кірункі словамі з пазначаным бягучым, так што націск нічога не мяняе, пакуль вы не выберыце; «Паказваць адзнакі радоў» цяпер у гэтым спісе",
+    "zh": "“切换行方向”会用文字列出四个方向并勾选当前方向，点一下不会改变任何东西，直到你做出选择；“显示行标记”也在这个列表里",
+    "es": "Cambiar dirección de las filas muestra las cuatro direcciones en palabras con la actual marcada, así que un toque no cambia nada hasta que eliges; Mostrar marcas de fila está en esa lista",
+    "pl": "Zmień kierunek rzędów pokazuje cztery kierunki słowami z zaznaczonym bieżącym, więc dotknięcie niczego nie zmienia, dopóki nie wybierzesz; Pokazuj oznaczenia rzędów jest na tej liście"
+  }
+}

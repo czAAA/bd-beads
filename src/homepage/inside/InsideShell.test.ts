@@ -80,6 +80,7 @@ describe("What's inside's demo editor (ticket 0797)", () => {
     await nextTick()
     wired.canvas.onToggleFramePanel()
     await flushPromises()
+    await wrapper.get('[data-testid="frame-export"] .panel-section__header').trigger('click')
     await wrapper.get('[data-testid="quality-stop-high"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="strip-frame"]').trigger('click')
@@ -192,6 +193,13 @@ describe("What's inside's demo editor (ticket 0797)", () => {
       expect(taken?.project).toBe(wired().canvas.activeProject.value)
       expect(taken?.picture).toBeUndefined()
     })
+  })
+
+  it("answers none of the ghost's presses: its clicks are the controls' own, never trusted (ticket 0950)", async () => {
+    const wrapper = mount(InsideEditor, { attachTo: document.body })
+    mounted.push(wrapper)
+    await wrapper.get('[data-testid="inside-editor"]').trigger('click')
+    expect(wrapper.emitted('pressed')).toBeUndefined()
   })
 
   it('is a region named "What\'s inside: the editor", its ghost hidden from screen readers', () => {

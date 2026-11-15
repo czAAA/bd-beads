@@ -139,14 +139,26 @@ function focusUnlessKeyboard(control: HTMLElement | null | undefined) {
   ;(control && !wouldRaiseKeyboard(control) ? control : panelEl.value)?.focus({ preventScroll: true })
 }
 
-/** Focus on opening: the row the panel was opened on (the Export panel's Picture or Printable chart, ticket 0843), else
- * the subpanel's first field (not its Back arrow), else the panel's first control. */
+/** Focus on opening: the row the panel was opened on (the Export panel's Picture or Printable chart, ticket 0843), or
+ * the first control of the section it was (the Frame panel's settings, ticket 0935), scrolled to the body's top where it
+ * lies below it; else the subpanel's first field (not its Back arrow), else the panel's first control. */
 function focusEntry() {
   const chosen = panelEl.value?.querySelector<HTMLElement>('[data-panel-entry]:not([aria-disabled="true"])')
-  if (chosen) return void chosen.focus({ preventScroll: true })
+  if (chosen) {
+    revealInBody(chosen)
+    return void (chosen.matches(FOCUSABLE) ? chosen : chosen.querySelector<HTMLElement>(FOCUSABLE))?.focus({ preventScroll: true })
+  }
   const first = inSub.value ? subBodyEl.value?.querySelector<HTMLElement>(FOCUSABLE) : focusables()[0]
   if (props.skipsFields) return void panelEl.value?.focus({ preventScroll: true })
   focusUnlessKeyboard(first ?? focusables()[0])
+}
+
+/** Scrolls the panel's body, and only it, until the entry's top meets the body's, where the entry lies below the fold. */
+function revealInBody(entry: HTMLElement) {
+  const body = subBodyEl.value
+  if (!body) return
+  const below = entry.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom
+  if (below > 0) body.scrollTop += entry.getBoundingClientRect().top - body.getBoundingClientRect().top
 }
 
 /** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab is

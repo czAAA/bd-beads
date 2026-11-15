@@ -30,8 +30,8 @@
     "worker/src/body.ts!",
     "worker/src/blobs.ts!"
   ],
-  // `src/testSetup.ts` is the `page` tests' setup file, which the production run does not know as one.
-  "project": ["src/**/*.{ts,vue}!", "!src/testSetup.ts!", "e2e/**/*.ts", "worker/src/**/*.ts!", "worker/**/*.ts", "*.ts"],
+  // `src/testSetup.ts` and `src/unitSetup.ts` are the tests' setup files, which the production run does not know as one.
+  "project": ["src/**/*.{ts,vue}!", "!src/testSetup.ts!", "!src/unitSetup.ts!", "e2e/**/*.ts", "worker/src/**/*.ts!", "worker/**/*.ts", "*.ts"],
   "rules": {
     // Deliberate aliases: the three per-Technique slow-framing thresholds (imageFraming.ts), DEFAULT_THEME (beadLook.ts).
     "duplicates": "off"

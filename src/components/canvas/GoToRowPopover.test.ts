@@ -10,7 +10,7 @@ beforeEach(() => {
 function open() {
   const anchor = document.createElement('button')
   document.body.append(anchor)
-  return mount(GoToRowPopover, { props: { anchor, title: 'Go to row', unit: 'Row', current: 5, total: 40 }, attachTo: document.body })
+  return mount(GoToRowPopover, { props: { anchor, title: 'Go to row', unit: 'Row', current: 5, total: 40, showLabel: 'Show row' }, attachTo: document.body })
 }
 
 describe('Go to row (ticket 0849)', () => {
@@ -30,6 +30,15 @@ describe('Go to row (ticket 0849)', () => {
     const wrapper = open()
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await wrapper.vm.$nextTick()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('go')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('has Show row, which asks for the current row in view and closes, moving no pointer (ticket 0934)', async () => {
+    const wrapper = open()
+    await wrapper.get('[data-testid="go-to-row-show"]').trigger('click')
+    expect(wrapper.emitted('show')).toHaveLength(1)
     expect(wrapper.emitted('close')).toHaveLength(1)
     expect(wrapper.emitted('go')).toBeUndefined()
     wrapper.unmount()

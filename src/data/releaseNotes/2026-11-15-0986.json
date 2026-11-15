@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "On a phone, opening a Project from the library says its name, and the Frame and Export panels name it too; the tab's title names it at every width",
+    "ru": "На телефоне при открытии проекта из библиотеки появляется его название, панели рамки и экспорта тоже его называют, а заголовок вкладки называет его на любом экране",
+    "uk": "На телефоні під час відкриття проєкту з бібліотеки з'являється його назва, панелі рамки та експорту теж її показують, а заголовок вкладки називає його на будь-якому екрані",
+    "be": "На тэлефоне пры адкрыцці праекта з бібліятэкі з'яўляецца яго назва, панэлі рамкі і экспарту таксама яе паказваюць, а загаловак укладкі называе яго на любым экране",
+    "zh": "在手机上从项目库打开项目时会显示它的名称，框和导出面板也会显示名称；标签页标题在任何宽度下都会写出项目名称",
+    "es": "En el teléfono, al abrir un proyecto desde la biblioteca se muestra su nombre, y los paneles de marco y exportación también lo nombran; el título de la pestaña lo nombra en cualquier ancho",
+    "pl": "Na telefonie otwarcie projektu z biblioteki pokazuje jego nazwę, a panele ramki i eksportu też ją podają; tytuł karty podaje ją przy każdej szerokości"
+  }
+}

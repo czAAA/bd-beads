@@ -25,6 +25,7 @@ const {
   activeProject,
   saveFailed,
   unsaved,
+  openElsewhere,
   settledProject,
   onNewProjectDraft,
   unnamedProjectName,
@@ -71,6 +72,7 @@ const {
   exportOpener,
   framePanelShown,
   frameOpensOnStarters,
+  frameOpensOnSettings,
   onStepFrameEdge,
   onResizeFrame,
   onRenameFrame,
@@ -117,6 +119,7 @@ const chosenStarter = ref<StarterId>()
       :project="activeProject"
       :settled-project="settledProject"
       :exporting="exporting"
+      :opens-on-settings="frameOpensOnSettings"
       @step="onStepFrameEdge"
       @resize="onResizeFrame"
       @rotate="onRotateFrame"
@@ -205,6 +208,7 @@ const chosenStarter = ref<StarterId>()
       :project="activeProject"
       :save-failed="saveFailed"
       :unsaved="unsaved"
+      :open-elsewhere="openElsewhere"
       :reference="referencePanel"
       :last-file-name="lastFileName"
       :can-save-as="canSaveAs"
@@ -220,7 +224,7 @@ const chosenStarter = ref<StarterId>()
       @save="saveNow"
       @save-project-file="onSaveProjectFile"
       @save-project-file-as="onSaveProjectFileAs"
-      @export="onSelectPanel('export', $event)"
+      @export="onSelectPanel('export')"
       @save-maker-name="onSaveMakerName"
       @duplicate="onRequestDuplicate"
       @clear="onRequestDeleteAll"

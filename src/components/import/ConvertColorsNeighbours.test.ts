@@ -74,7 +74,8 @@ describe('The number of colors with one fewer and one more (ticket 0904)', () =>
     await field.setValue('64')
     await field.trigger('keydown', { key: 'Enter' })
     expect(wizard.maxColors.value).toBe(64)
-    expect(wrapper.get('[data-testid="convert-colors-slider-value"]').text()).toBe('64 colors')
+    // Clean up joins the stripes' small colors, so fewer are found than asked (ticket 0928).
+    expect(wrapper.get('[data-testid="convert-colors-slider-value"]').text()).toMatch(/^64 asked · \d+ found$/)
     expect(captions(wrapper)).toEqual(['63 colors', '64 colors', '65 colors'])
 
     await field.trigger('keydown', { key: 'ArrowUp' })

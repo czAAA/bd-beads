@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "The Homepage shows up sooner on a first visit, and its first screen and the Frame’s margin sheet hold still as a page opens",
+    "ru": "При первом визите главная страница появляется быстрее, а её первый экран и поля рамки не прыгают, пока страница открывается",
+    "uk": "Під час першого візиту головна сторінка з’являється швидше, а її перший екран і поля рамки не стрибають, поки сторінка відкривається",
+    "be": "Пры першым візіце галоўная старонка з’яўляецца хутчэй, а яе першы экран і палі рамкі не скачуць, пакуль старонка адкрываецца",
+    "zh": "首次访问时首页显示得更快，页面打开时首屏和边框的边距纸也不再跳动",
+    "es": "En la primera visita, la página de inicio aparece antes, y su primera pantalla y la hoja del margen del marco no se mueven mientras se abre la página",
+    "pl": "Przy pierwszej wizycie strona główna pojawia się szybciej, a jej pierwszy ekran i arkusz marginesu ramki nie skaczą podczas otwierania strony"
+  }
+}

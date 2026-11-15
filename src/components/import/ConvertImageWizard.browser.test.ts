@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { fitProblems, mountAt } from '../../testUtils/browserFit'
 import ConvertPageHost from '../../testUtils/ConvertPageHost.vue'
@@ -169,6 +169,8 @@ describe('the preview’s overlays on the canvas', () => {
 const FOOT_BOTTOM_PADDING_PX = 20
 /** What Auto-fix lighting's row stands under the picture row by (DS-3: the section's 8 and 2), ticket 0907. */
 const LIGHTING_ROW_GAP_PX = 10
+/** What the file's name stands under the label by (the head's 2), on its own line since ticket 0929. */
+const NAME_LINE_GAP_PX = 2
 
 describe('Convert image, the quiet converter', () => {
   const find = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!
@@ -187,9 +189,11 @@ describe('Convert image, the quiet converter', () => {
         const root = mounted.root
         const column = find(root, 'convert-column')
         // At 1180 × 820 the column overruns by the foot's padding (0897) and Auto-fix lighting's row with its 10 (0907), in
-        // the longest words Clean up's button wraps too (0906): it scrolls above the pinned foot, the lighting row in view.
+        // the longest words Clean up's button wraps too (0906), and the file's name line (0929): it scrolls above the pinned
+        // foot, the lighting row in view.
         const lightingRow = rect(root, 'convert-lighting').height + LIGHTING_ROW_GAP_PX
-        if (locale !== 'longest') expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX + lightingRow)
+        const nameLine = rect(root, 'convert-file-name').height + NAME_LINE_GAP_PX
+        if (locale !== 'longest') expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX + lightingRow + nameLine)
         expect(rect(root, 'convert-lighting-switch').bottom).toBeLessThanOrEqual(column.getBoundingClientRect().bottom)
         expect(rect(root, 'convert-image-create').bottom).toBeLessThanOrEqual(height)
         // The bar's buttons stand whole inside it.
@@ -287,6 +291,32 @@ describe('Convert image, the quiet converter', () => {
     }
   }
 
+  // The Colors popover stands over the preview's right (ticket 0967): the beads fit into the room left of it and go back
+  // to the size they had on close (the glide itself: useRefitGlide.dom.test.ts).
+  for (const [width, height] of [
+    [1366, 1024],
+    [1470, 956],
+  ] as const) {
+    it(`leaves every bead in view beside the Colors popover at ${width} × ${height}, and puts them back on close`, async () => {
+      const mounted = await mountAt(ConvertPageHost, props, { locale: 'en', width })
+      await page.viewport(width, height)
+      await pictureSet(mounted.root)
+      await settleForMeasuring()
+      const root = mounted.root
+      const before = rect(root, 'convert-image-canvas')
+      find(root, 'convert-colors-more').click()
+      await settleForMeasuring()
+      const beads = rect(root, 'convert-image-canvas')
+      expect(beads.right).toBeLessThanOrEqual(rect(root, 'convert-colors-popover').left)
+      expect(beads.width).toBeLessThan(before.width)
+
+      find(root, 'convert-colors-more').click()
+      await settleForMeasuring()
+      const after = rect(root, 'convert-image-canvas')
+      expect([after.left, after.top, after.width, after.height]).toEqual([before.left, before.top, before.width, before.height])
+    })
+  }
+
   it('holds Background, Make empty and Beads | Picture in the bar under 1024 px, whole in the longest wording', async () => {
     const mounted = await mountAt(ConvertPageHost, props, { locale: 'longest', width: 1024 })
     await page.viewport(1024, 1366)
@@ -341,4 +371,78 @@ describe('Convert image, the quiet converter', () => {
     expect([paste.top, paste.height]).toEqual([file.top, file.height])
     expect(await fitProblems('Convert image page (no picture)', 'longest', 1180)).toEqual([])
   })
+})
+
+// The picture's file name has a line of its own (ticket 0929): one too long for it is cut in the middle, whole in its
+// Tooltip, and the size beside the thumbnail never breaks inside its number.
+describe('the Convert image picture row', () => {
+  const big = async () => ({ width: 2400, height: 1800, data: new Uint8ClampedArray(2400 * 1800 * 4) })
+  const mountWith = async (fileName: string, width: number) => {
+    const file = new File(['x'], fileName, { type: 'image/png' })
+    const mounted = await mountAt(ConvertPageHost, { ...props, start: { ...props.start, file }, decodeImage: big }, { locale: 'en', width })
+    await pictureSet(mounted.root)
+    await settleForMeasuring()
+    return mounted.root.querySelector<HTMLElement>('[data-testid="convert-file-name"]')!
+  }
+  const oneLine = (el: HTMLElement) => expect(el.getBoundingClientRect().height, el.textContent ?? '').toBeLessThanOrEqual(parseFloat(getComputedStyle(el).lineHeight) + 0.5)
+
+  for (const width of [1366, 1470]) {
+    it(`keeps a camera's 27-character name whole on one line at ${width}px, with the size whole beside the thumbnail`, async () => {
+      const name = await mountWith('IMG_20261113_142233_HDR.png', width)
+      expect(name.textContent).toBe('IMG_20261113_142233_HDR.png')
+      oneLine(name)
+      expect(name.closest('.app-tooltip')).toBeNull()
+      const size = document.querySelector<HTMLElement>('[data-testid="convert-picture-size"]')!
+      expect(size.textContent).toBe('2400×1800 px')
+      oneLine(size)
+      expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width)
+    })
+
+    it(`cuts a name too long for its line in the middle at ${width}px, whole in its Tooltip`, async () => {
+      const whole = 'IMG_20261113_142233_HDR_holiday_by_the_sea_with_grandma.png'
+      const name = await mountWith(whole, width)
+      oneLine(name)
+      expect(name.textContent).toMatch(/^IMG_.+….+\.png$/)
+      const line = name.closest<HTMLElement>('.convert-picture__name-line')!
+      expect(line.scrollWidth).toBeLessThanOrEqual(line.clientWidth)
+      expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width)
+
+      const trigger = name.closest<HTMLElement>('.app-tooltip')!
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }))
+      await vi.waitFor(() => expect(trigger.querySelector('[data-testid="tooltip"]')!.textContent).toBe(whole))
+    })
+  }
+})
+
+// The background still found once its popover closes (ticket 0930): Escape leaves Background pressed and the chip whole
+// over the beads, inside their half, in the longest wording and on a phone.
+describe('the Convert image background chip', () => {
+  for (const [width, height] of [
+    [1366, 1024],
+    [390, 844],
+  ] as const) {
+    for (const locale of ['en', 'longest'] as const) {
+      it(`stands whole over the beads after Escape at ${width} × ${height} in ${locale}`, async () => {
+        const mounted = await mountAt(ConvertPageHost, props, { locale, width })
+        await page.viewport(width, height)
+        await pictureSet(mounted.root)
+        const find = (testid: string) => mounted.root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)
+        find('convert-tool-background')!.click()
+        await settleForMeasuring()
+        expect(find('convert-background-chip')).toBeNull()
+        await userEvent.keyboard('{Escape}')
+        await settleForMeasuring()
+
+        expect(find('convert-background-popover')).toBeNull()
+        expect(find('convert-tool-background')!.getAttribute('aria-pressed')).toBe('true')
+        const chip = find('convert-background-chip')!.getBoundingClientRect()
+        const half = find('convert-half-beads')!.getBoundingClientRect()
+        expect(chip.left).toBeGreaterThanOrEqual(half.left)
+        expect(chip.right).toBeLessThanOrEqual(half.right)
+        expect(chip.top).toBeGreaterThanOrEqual(half.top)
+        expect(chip.left + chip.width / 2).toBeCloseTo(half.left + half.width / 2, 0)
+        expect(await fitProblems('Convert image page, background chip', locale, width)).toEqual([])
+      })
+    }
+  }
 })

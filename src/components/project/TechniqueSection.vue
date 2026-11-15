@@ -43,7 +43,6 @@ const steppers = computed(() =>
     <PanelPicker
       v-model="technique"
       :label="t.form.techniqueLabel"
-      icon="pattern"
       :options="options"
       :disabled="disabled"
       :disabled-body="disabled ? techniqueDisabledBody : undefined"

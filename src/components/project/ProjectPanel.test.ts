@@ -9,6 +9,7 @@ import { en } from '../../i18n/en'
 import { frameOf } from '../../domain/layerRecord'
 import { TECHNIQUES } from '../../domain/weave'
 import { withLayers } from '../../testUtils/layerFields'
+import { withFrame } from '../../domain/frame'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -28,27 +29,29 @@ function mountPanel(props: Record<string, unknown> = {}) {
 }
 
 describe('ProjectPanel (tickets 443, 554, 0670)', () => {
-  it('has the head, then the Canvas\'s Layer settings, the reference image, export and this project sections, in that order', () => {
+  it('has the head, then the Canvas\'s Layer settings, the reference image and this project sections, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'project-export-png', 'project-export-pdf', 'save-project-file', 'project-duplicate', 'project-clear', 'project-delete']
+    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'save-project-file', 'project-duplicate', 'project-export', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas', 'reference image', 'Export', 'This Project'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas, outside the Frame', 'reference image', 'This Project'])
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
     expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}.openbeads`)
   })
 
-  it('offers Picture and Printable chart in its export section, each asking to open Export on that choice (ticket 0843)', async () => {
+  it('leads to export in one Export row with the › mark, and names no picture or chart of its own (ticket 0956)', async () => {
     const wrapper = mountPanel()
-    expect(wrapper.get('[data-testid="project-export-png"]').text()).toBe(`${en.frame.exportPicture}.png`)
-    expect(wrapper.get('[data-testid="project-export-pdf"]').text()).toBe(`${en.frame.exportChart}.pdf`)
+    const row = wrapper.get('[data-testid="project-export"]')
+    expect(row.text()).toBe(en.panels.project.exportHeading)
+    expect(row.find('.panel-item__mark--sub').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain(en.frame.exportPicture)
+    expect(wrapper.text()).not.toContain(en.frame.exportChart)
 
-    await wrapper.get('[data-testid="project-export-png"]').trigger('click')
-    await wrapper.get('[data-testid="project-export-pdf"]').trigger('click')
-    expect(wrapper.emitted('export')).toEqual([['png'], ['pdf']])
+    await row.trigger('click')
+    expect(wrapper.emitted('export')).toEqual([[]])
   })
 
   it('names the last saved file on the Save row, and offers Save as only where the browser can link a file (ADR 0090)', async () => {
@@ -82,10 +85,17 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.emitted('set-background')).toEqual([['canvas', 3]])
   })
 
-  it('shows the Canvas\'s own Weave under a Frame woven otherwise (ticket 0670)', () => {
+  it('shows the Canvas\'s own Weave under a Frame woven otherwise, and none of the Frame\'s (tickets 0670, 0935)', () => {
     const framed = withLayers(project, { frame: { ...frameOf(project)!, technique: 'peyote' as const } })
     const wrapper = mountPanel({ project: framed })
     expect(wrapper.get('[data-testid="canvas-technique"] button').attributes('aria-label')).toBe('Technique: Loom')
+    expect(wrapper.get('[data-testid="canvas-section"]').text()).not.toContain('Peyote')
+  })
+
+  it('heads the Canvas section Canvas, outside the Frame with a Frame on the Canvas, and Canvas with none (ticket 0935)', () => {
+    const label = (wrapper: ReturnType<typeof mountPanel>) => wrapper.get('.panel-section__label').text()
+    expect(label(mountPanel())).toBe(en.layerSettings.canvasOutsideFrame)
+    expect(label(mountPanel({ project: withFrame(project, undefined) }))).toBe(en.panels.project.canvas)
   })
 
   it('changes the Canvas\'s Technique while a Frame exists, every one offered, even once a Row progress pass is done', async () => {
@@ -119,9 +129,15 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.emitted('save')).toHaveLength(1)
   })
 
-  it('says the reference image is not saved on this device while the device won\'t keep its picture (ticket 0790)', () => {
+  it('says the reference image is not saved in this browser while the device won\'t keep its picture (ticket 0790)', () => {
     const wrapper = mountPanel({ reference: { preparing: false, notSaved: true } })
     expect(wrapper.get('[data-testid="save-state"]').text()).toBe(en.referenceImage.notSaved)
+    expect(wrapper.get('[data-testid="save-state"]').classes()).toContain('project-head__state--unsaved')
+  })
+
+  it('says nothing is saved here while the Project is open in another tab, never Saved in this browser (ticket 0937)', () => {
+    const wrapper = mountPanel({ openElsewhere: true })
+    expect(wrapper.get('[data-testid="save-state"]').text()).toBe(en.storage.notSavedHere)
     expect(wrapper.get('[data-testid="save-state"]').classes()).toContain('project-head__state--unsaved')
   })
 

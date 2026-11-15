@@ -16,7 +16,7 @@ import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
 import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { changeFrame } from '../domain/changeFrame'
-import { TILE_INSET_PX, tileColorOf } from './tonalTiles'
+import { gapColorOf, TILE_INSET_PX, tileColorOf } from './tonalTiles'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 /** Where the Frame starts: peyote's must be an even column, as its columns alternate (ticket 0734). */
@@ -171,7 +171,8 @@ describe('the Frame on its own background (ticket 0666)', () => {
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads: withColors({}, [{ row: 0, column: 0, color: '#e63746' }]) } })
     const { calls, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
     expect(beads.map(({ color }) => color)).toEqual(['#e63746'])
-    expect(canvasBlits(calls)).toBe(11)
+    // Eleven tiles, and the Lifted piece's shadows (ticket 1004).
+    expect(canvasBlits(calls)).toBe(12)
   })
 
   it('draws the Frame\'s empty beads and marks in its look where tiles are not drawn (high contrast, exports)', () => {
@@ -187,7 +188,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
   it('fills nothing more where the Frame is on the Canvas\'s background, and on its own fills its board', () => {
     const project = framedProject('loom')
     const alike = render(project, true, { region: whole, theme: canvasLook, frameTheme: { ...canvasLook } })
-    expect(alike.named('fillRect').filter((call) => typeof call.fillStyle === 'string')).toHaveLength(0)
+    expect(alike.named('fillRect').filter((call) => typeof call.fillStyle === 'string' && call.fillStyle !== gapColorOf(canvasLook.canvas))).toHaveLength(0)
 
     const alone = render(project, false, { theme: canvasLook, frameTheme: frameLook })
     expect(alone.named('fillRect').some((call) => call.fillStyle === frameLook.background && call.args[2] === view.width)).toBe(true)

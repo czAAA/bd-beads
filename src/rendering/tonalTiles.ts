@@ -1,4 +1,4 @@
-import { BLACK_WHITE_BALANCE, channelsOf, fromCielab, relativeLuminance, toCielab, toHex } from '../domain/color'
+import { BLACK_WHITE_BALANCE, channelsOf, fromCielab, mix, relativeLuminance, toCielab, toHex } from '../domain/color'
 import type { DrawingContext, ProjectTheme } from './beadLook'
 import { drawsDraft } from './draftRenderer'
 import { cachedSprite } from './sprites'
@@ -19,7 +19,12 @@ export const TILE_INSET_PX = 0.75
 /** The least a tile's corner is rounded, in grid px, a square Technique's included. */
 const TILE_LEAST_CORNER_PX = 1.5
 
+/** How far toward the tile's color the gap goes: about 3.8 L* left of the tile's 6.5, 1.11:1, so the grid is calm
+ * everywhere on the Canvas. */
+const GAP_TOWARD_TILE = 0.42
+
 const tileColors = new Map<string, string>()
+const gapColors = new Map<string, string>()
 
 /** The tile on a Background: the color moved TILE_STEP_L toward ink with its hue kept, lighter on a dark Background
  * and darker on a light one, by the rule that picks the look a Custom color is drawn in (canvasBackgrounds.ts).
@@ -36,6 +41,17 @@ export function tileColorOf(background: string): string {
   return tile
 }
 
+/** The gap between tiles on a Background: the Background moved GAP_TOWARD_TILE of the way to its tile (Night `#202020`
+ * gives `#262626`, Studio `#fafafa` gives `#f2f2f2`). Never the tile, so the grid shows everywhere. */
+export function gapColorOf(background: string): string {
+  let gap = gapColors.get(background)
+  if (gap === undefined) {
+    gap = toHex(mix(channelsOf(background), channelsOf(tileColorOf(background)), GAP_TOWARD_TILE))
+    gapColors.set(background, gap)
+  }
+  return gap
+}
+
 /** How a layer's empty positions are marked: tonal tiles in `color`, or the Position mark outline. */
 export interface MarkLook {
   color: string
@@ -43,7 +59,7 @@ export interface MarkLook {
 }
 
 /** The marks a theme draws its empty positions in: tiles from its own Background where it draws them and `shown`
- * allows (the editor's Canvas in the full look, with no reference image a filled tile would hide), else the outline in
+ * allows (the editor's Canvas in the full look, a reference image or none: it lies over them, ticket 1008), else the outline in
  * `positionMark`, as high contrast, the draft look and every export keep. */
 export function markLookOf(theme: ProjectTheme, shown = true): MarkLook {
   const tiles = theme.tonalTiles && shown
@@ -51,9 +67,9 @@ export function markLookOf(theme: ProjectTheme, shown = true): MarkLook {
 }
 
 /** The marks a page laid under or beside the drawing repeats (the empty Canvas under it, the Homepage's ground): the
- * ones the renderer draws at `deviceScale`, the outline in the draft look and over a reference image. */
-export function markLookAt(theme: ProjectTheme, deviceScale: number, overPicture = false): MarkLook {
-  return markLookOf(theme, !drawsDraft(deviceScale) && !overPicture)
+ * ones the renderer draws at `deviceScale`, the outline in the draft look. */
+export function markLookAt(theme: ProjectTheme, deviceScale: number): MarkLook {
+  return markLookOf(theme, !drawsDraft(deviceScale))
 }
 
 /** One position's cell and the corner its Technique rounds a bead by, in grid px. */

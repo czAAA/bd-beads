@@ -40,6 +40,7 @@ const Area = defineComponent({
           convertBody: fillBlanks(words.value.convert.body, { size: '26×18' }),
           // Unpressed, so its Tooltip, held back while the popover is open, is measured too.
           converting: false,
+          over: false,
         }),
         h(ConvertToBeadsPopover, {
           picture,
@@ -73,13 +74,12 @@ const Toast = defineComponent({
 })
 
 describe.each([
-  ['Picture bar opened, previews and Convert to beads popover', Area, (root: HTMLElement) => root.querySelector<HTMLElement>('[data-testid="picture-bar-more"]')?.click()],
-  ['Convert to beads toast', Toast, undefined],
-] as const)('%s text fit', (name, component, act) => {
+  ['Picture bar, previews and Convert to beads popover', Area],
+  ['Convert to beads toast', Toast],
+] as const)('%s text fit', (name, component) => {
   for (const locale of FIT_LOCALES) {
     it(`fits its box in ${locale} at ${DESKTOP_WIDTHS.join(', ')}px`, async () => {
       const mounted = await mountAt(component, {}, { locale, width: DESKTOP_WIDTHS[0] })
-      act?.(mounted.root)
       await settleForMeasuring()
       const found = await problemsAcrossWidths(DESKTOP_WIDTHS, async (width) => [
         ...(width === DESKTOP_WIDTHS[1] ? (await tooltipProblems(mounted.root, waysIn(locale))).map((problem) => `hover text: ${problem}`) : []),

@@ -31,7 +31,7 @@ describe("the Welcome section's words (ticket 0830)", () => {
       ['image', 'Start from a picture'],
       ['turn-row-direction', 'Count and weave'],
     ])
-    expect(promises[0]!.text).toBe('No account, no trial. Your work stays on this device.')
+    expect(promises[0]!.text).toBe('No account, no trial. Your work stays in this browser.')
   })
 
   it('never qualifies free with "for now" or "later"', () => {

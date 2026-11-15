@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import { pressBead, rowProgressView } from './testUtils/beads'
 import { loadProjects } from './services/libraryStore'
@@ -26,10 +27,11 @@ async function click(wrapper: ReturnType<typeof mount>, index: number) {
 const loadedProject = () => loadProjects()[0]!
 
 describe('App row progress', () => {
-  it('turns the row direction from the Progress bar, and the canvas overlay follows the steps down the columns', async () => {
+  it('turns the row direction from the Progress bar\'s list, and the canvas overlay follows the steps down the columns (ticket 0973)', async () => {
     const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
 
     await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-direction-right"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
@@ -39,13 +41,15 @@ describe('App row progress', () => {
   it('keeps Row highlight in the device, not the Project: read at start, saved when turned, handed to the bar and the canvas (ticket 474)', async () => {
     localStorage.setItem('openbeads:row-highlight', 'off')
     const wrapper = await mountWithProject(15, 30)
-    const highlight = () => wrapper.get('[data-testid="progress-bar-highlight"]').attributes('aria-checked')
+    // Show row marks, in Turn row direction's list (ticket 0973).
+    await wrapper.get('[data-testid="progress-bar-direction"]').trigger('click')
+    const highlight = () => wrapper.get('[data-testid="progress-bar-row-marks"]').attributes('aria-checked')
     const rowMarks = () => wrapper.findComponent(ProjectSurface).props('rowMarks')
 
     expect(highlight()).toBe('false')
     expect(rowMarks()).toBe(false)
 
-    await wrapper.get('[data-testid="progress-bar-highlight"]').trigger('click')
+    await wrapper.get('[data-testid="progress-bar-row-marks"]').trigger('click')
 
     expect(localStorage.getItem('openbeads:row-highlight')).toBe('on')
     expect(highlight()).toBe('true')
@@ -64,6 +68,13 @@ describe('App row progress', () => {
 
     await wrapper.find('[data-testid="strip-undo"]').trigger('click')
     expect(rowPress()).toBeUndefined()
+  })
+
+  it('says each row move aloud through the announcer (ticket 0934)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await nextTick()
+    expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Ряд 2 из 20')
   })
 })
 

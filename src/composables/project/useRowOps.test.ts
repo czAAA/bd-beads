@@ -60,6 +60,19 @@ describe('useRowOps', () => {
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
   })
 
+  it('turns the rows the way chosen from Turn row direction\'s list, with its toast, and the way they run already turns nothing (ticket 0973)', () => {
+    const showToast = vi.fn()
+    const replaceProject = vi.fn()
+    const deps = { currentProject: () => tracking, replaceProject, showToast, messages: () => en }
+    useRowOps(deps).onSetRowDirection('up')
+    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toMatchObject({ direction: 'rows', reversed: true })
+    expect(showToast).toHaveBeenCalledWith('row-direction', en.rowProgress.directionToastRowsReversed, 'success')
+
+    useRowOps(deps).onSetRowDirection('down')
+    expect(replaceProject).toHaveBeenCalledTimes(1)
+    expect(showToast).toHaveBeenCalledTimes(1)
+  })
+
   it('says the rows marked done the way it left are kept, so they do not look lost (ticket 0849, F-04-04)', () => {
     const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 3, beads: {} } })
     const showToast = vi.fn()
@@ -83,6 +96,27 @@ describe('useRowOps', () => {
     const still = setup(moveToRow(framed, 5))
     still.onGoToRow(5)
     expect(still.deps.replaceProject).not.toHaveBeenCalled()
+  })
+
+  it('brings the row it reaches into view and says it in the counter\'s words, once per move (ticket 0934)', () => {
+    const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 10, columns: 3, beads: {} } })
+    const announce = vi.fn()
+    const showRow = vi.fn()
+    const at = (row: number) => useRowOps({ currentProject: () => moveToRow(framed, row), replaceProject: vi.fn(), showToast: vi.fn(), messages: () => en, announce, showRow })
+
+    at(5).onMoveRow(1)
+    expect(announce).toHaveBeenLastCalledWith('Row 7 of 10')
+    at(5).onMoveRow(-1)
+    at(0).onGoToRow(3)
+    at(9).onMoveRow(1)
+    expect(announce).toHaveBeenLastCalledWith(en.rowProgress.patternDone)
+    expect(announce).toHaveBeenCalledTimes(4)
+    expect(showRow).toHaveBeenCalledTimes(4)
+
+    // A move that goes nowhere says nothing and pans nothing.
+    at(0).onMoveRow(-1)
+    expect(announce).toHaveBeenCalledTimes(4)
+    expect(showRow).toHaveBeenCalledTimes(4)
   })
 
   it('moves the Row progress pointer by the given step', () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Project } from '../../domain/project'
+import type { ShownWay } from '../../domain/rowProgress'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
@@ -26,10 +27,13 @@ const emit = defineEmits<{
   'move-row': [delta: number]
   /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
   'reset-progress': []
-  'toggle-row-direction': []
+  /** A way chosen from Turn row direction's list (ticket 0973). */
+  'set-row-direction': [way: ShownWay]
   'toggle-row-highlight': []
   /** Go to row, from the counter (ticket 0849): the pass to point at, from 0. */
   'go-to-row': [pass: number]
+  /** Go to row's Show row (ticket 0934): bring the current row back into view. */
+  'show-row': []
   /** The bar's own way to a Frame and a picture, shown while there is none to count rows on (ticket 0847, O-03): Fit
    * to drawing, then Export opened on Picture. */
   'fit-and-export': []
@@ -72,9 +76,10 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
       testid="progress-bar"
       @move-row="emit('move-row', $event)"
       @reset-progress="emit('reset-progress')"
-      @toggle-row-direction="emit('toggle-row-direction')"
+      @set-row-direction="emit('set-row-direction', $event)"
       @toggle-row-highlight="emit('toggle-row-highlight')"
       @go-to-row="emit('go-to-row', $event)"
+      @show-row="emit('show-row')"
     />
     </slot>
   </div>
@@ -115,7 +120,7 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
   border-radius: 0 0 var(--canvas-box-radius) var(--canvas-box-radius);
 }
 
-/* Phone widths (ticket 411): Row not done and Row done take a second row (RowProgressControls), so the bar wraps and is taller:
+/* Phone widths (ticket 411): Back a row and Row done take a second row (RowProgressControls), so the bar wraps and is taller:
  * --progress-height (controls.css), which things above follow. */
 @media (max-width: 30rem) {
   .progress-bar {

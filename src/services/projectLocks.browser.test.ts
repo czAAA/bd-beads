@@ -8,8 +8,8 @@ describe('webProjectLocks', () => {
   /** A claim whose answers are written down. */
   function claim(id: string) {
     const heard: boolean[] = []
-    const letGo = locks.claim(id, (held) => heard.push(held))
-    return { heard, letGo }
+    const { letGo, takeOver } = locks.claim(id, (held) => heard.push(held))
+    return { heard, letGo, takeOver }
   }
 
   it('gives a Project to the first tab, tells the second it is taken, and hands it over when the first lets go', async () => {
@@ -58,5 +58,41 @@ describe('webProjectLocks', () => {
     await expect.poll(() => next.heard).toEqual([true])
     expect(gaveUp.heard).toEqual([false])
     next.letGo()
+  })
+
+  it('takes a Project over from the tab that has it, which waits for it back (ticket 0937)', async () => {
+    const first = claim('locks-f')
+    await expect.poll(() => first.heard).toEqual([true])
+    const second = claim('locks-f')
+    await expect.poll(() => second.heard).toEqual([false])
+
+    second.takeOver()
+
+    await expect.poll(() => [first.heard, second.heard]).toEqual([
+      [true, false],
+      [false, true],
+    ])
+    second.letGo()
+    await expect.poll(() => first.heard).toEqual([true, false, true])
+    first.letGo()
+  })
+
+  it('takes a Project back over from the tab that took it', async () => {
+    const first = claim('locks-g')
+    await expect.poll(() => first.heard).toEqual([true])
+    const second = claim('locks-g')
+    await expect.poll(() => second.heard).toEqual([false])
+    second.takeOver()
+    await expect.poll(() => first.heard).toEqual([true, false])
+
+    first.takeOver()
+
+    await expect.poll(() => [first.heard, second.heard]).toEqual([
+      [true, false, true],
+      [false, true, false],
+    ])
+    first.letGo()
+    await expect.poll(() => second.heard).toEqual([false, true, false, true])
+    second.letGo()
   })
 })

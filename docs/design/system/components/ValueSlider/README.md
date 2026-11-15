@@ -46,3 +46,5 @@ Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · s
 Hand-written and repo-owned; static rendition.
 
 - As built (ticket 0908): `origin`, for a slider whose middle changes nothing (the converter's Brightness, Contrast and Saturation, −50 … +50): the filled part runs from the origin to the thumb, either way, and there is none at it; the consumer marks the origin with a mark. `shiftStep`: Shift and an arrow step by it.
+
+- As built (ticket 0928): `reach`, the last value that changes anything (the converter's Colors: the last count that changes the beads). With the thumb past it, the filled part is `accent` from the min to the reach and `line-strong` from the reach to the thumb, so the travel that changes nothing reads as such; at or past the thumb, or left out, the fill is as ever. Not with `origin`.

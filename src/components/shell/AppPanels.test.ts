@@ -201,6 +201,23 @@ describe('Project', () => {
     expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' } })
   })
 
+  it('says the Frame stays after the Canvas takes another Technique; its actions reach the Frame panel\'s change and open it on its settings (ticket 0935)', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('project')
+    await choose(mounted, 'canvas-technique', 'brick')
+    const toast = () => mounted.canvas.toasts.value.find((each) => each.id === 'frame-stays')
+    expect(toast()).toBeDefined()
+    toast()!.action!.run()
+    await flushPromises()
+    expect(layerOf(loadProjects()[0]!, 'frame')).toMatchObject({ weave: { technique: 'brick' } })
+
+    await choose(mounted, 'canvas-technique', 'peyote')
+    toast()!.secondAction!.run()
+    await flushPromises()
+    expect(mounted.panels.framePanelShown.value).toBe(true)
+    expect(mounted.wrapper.find('[data-panel-entry] [data-testid="frame-layer-settings"]').exists()).toBe(true)
+  })
+
   it('removes the reference image after a confirmation, saved with no Undo step (ticket 0790)', async () => {
     saveProjects([withReferenceImage(moth(), newReferenceImage({ name: 'rose.webp', type: 'image/webp', width: 40, height: 20, bytes: 9 }, { x: 0, y: 0, width: 100, height: 100 }))])
     const mounted = mountPanels()
@@ -368,16 +385,16 @@ describe('Backgrounds (ticket 0666)', () => {
 })
 
 describe('The Export panel', () => {
-  it('opens from the Project panel\'s Picture and Printable chart, focused on the row chosen (ticket 0843)', async () => {
+  it('opens from the Project panel\'s Export row, which closes Project and saves nothing (ticket 0956)', async () => {
+    vi.mocked(downloadFile).mockClear()
     const mounted = mountPanels()
-    for (const [row, chosen] of [['project-export-png', 'export-png'], ['project-export-pdf', 'export-pdf']]) {
-      await mounted.openPanel('project')
-      await click(mounted, row)
-      await nextTick()
+    await mounted.openPanel('project')
+    await click(mounted, 'project-export')
+    await nextTick()
 
-      expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
-      expect(document.activeElement?.getAttribute('data-testid')).toBe(chosen)
-    }
+    expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
+    expect(mounted.wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
+    expect(downloadFile).not.toHaveBeenCalled()
   })
 
   it('fits a frame to the drawing from the no-Frame view, then shows the exports (ticket 0652)', async () => {

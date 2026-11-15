@@ -288,11 +288,15 @@ const beadIt: AreaWalk = {
       await settle(page)
     })
     await walk.step('progress-highlight-toggled', async () => {
-      await page.getByTestId('progress-bar-highlight').click()
+      // Show row marks, in Turn row direction's list (ticket 0973).
+      await page.getByTestId('progress-bar-direction').click()
+      await page.getByTestId('progress-bar-row-marks').click()
+      await escape(page)
       await settle(page)
     })
     await walk.step('progress-direction-switched', async () => {
       await page.getByTestId('progress-bar-direction').click()
+      await page.getByTestId('progress-bar-direction-right').click()
       await settle(page)
     })
     await walk.step('progress-reset-asked', async () => {

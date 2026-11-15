@@ -10,7 +10,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { rowProgressOf, rowProgressPosition, rowProgressStarted } from '../../domain/rowProgress'
+import { rowProgressOf, rowProgressPosition, rowProgressStarted, type ShownWay } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
@@ -50,6 +50,8 @@ const props = defineProps<{
   mirrorOnFrame?: boolean
   /** The band has no Row not done: the Homepage demo's sheet, its one exception (MarginSheet card, ticket 0797). */
   withoutNotDone?: boolean
+  /** The canvas view is not yet set for its area (ticket 0991): the sheet's place is a stand-in until it is. */
+  placing?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -64,7 +66,8 @@ const emit = defineEmits<{
   key: [event: KeyboardEvent]
   'move-row': [delta: number]
   'reset-progress': []
-  'toggle-row-direction': []
+  /** A way chosen from Turn row direction's list (ticket 0973). */
+  'set-row-direction': [way: ShownWay]
   'toggle-row-highlight': []
   rename: [name: string]
   'set-technique': [technique: Technique]
@@ -97,6 +100,19 @@ const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgre
 const canvas = useCanvasBackground(() => props.project)
 // The margin's popups follow their cells as the canvas is panned or zoomed (ticket 0736).
 const fold = useTitleBlockFold()
+/** Unseen until the canvas view is set and two frames after (ticket 0991): the sheet would show at the view's stand-in
+ * first, and the band's row and the title block then measure themselves and step down to the forms that fit, which can
+ * take a frame, so the sheet is first seen where it stays, in the forms it keeps. */
+const arriving = ref(true)
+watch(
+  () => props.placing,
+  (placing) => {
+    if (placing) return
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(() => (arriving.value = false)))
+    else arriving.value = false
+  },
+  { immediate: true },
+)
 /** The sheet's place, and its lines in the tint that reads on the margin color it is drawn in. */
 const sheetStyle = computed(() => {
   const { sheet, tilt, viewport } = props.anchor
@@ -306,7 +322,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 <template>
   <div
     class="margin-sheet"
-    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare' }]"
+    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare', 'margin-sheet--arriving': arriving }]"
     :style="sheetStyle"
     data-testid="margin-sheet"
   >
@@ -331,7 +347,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           testid="margin-progress"
           @move-row="emit('move-row', $event)"
           @reset-progress="emit('reset-progress')"
-          @toggle-row-direction="emit('toggle-row-direction')"
+          @set-row-direction="emit('set-row-direction', $event)"
           @toggle-row-highlight="emit('toggle-row-highlight')"
         />
       </div>
@@ -468,6 +484,10 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   color: var(--ink);
   border-radius: var(--radius-lg);
   pointer-events: none;
+}
+
+.margin-sheet--arriving {
+  visibility: hidden;
 }
 
 .margin-sheet--editing {

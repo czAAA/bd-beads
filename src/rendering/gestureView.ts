@@ -60,6 +60,9 @@ export const SETTLE_MS = 120
  * sharp redraw waits the rest). */
 export const SNAP_MS = 200
 
+/** How long a pan that brings something into view takes, in ms (ticket 0934): the same base duration, eased standard. */
+export const INTO_VIEW_MS = SNAP_MS
+
 /** How many beads a redraw has to draw: those in and outside the Frame, at most what fits the surface, each counted as
  * `cost` square beads (a rounded one is three, `draftCost`). An estimate. */
 export function beadsToDraw(stored: number, frameBeads: number, surface: { width: number; height: number }, zoom: number, cost = 1): number {

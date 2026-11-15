@@ -22,6 +22,7 @@ const {
   dialogOpen,
   page,
   openElsewhere,
+  onWorkHere,
 } = useShellFrame()
 </script>
 
@@ -55,9 +56,13 @@ const {
           </AppButton>
         </template>
       </AppMessage>
-      <!-- Two tabs (ticket 0834): the first to open a Project keeps it; this one shows its beads and saves none of its own. -->
-      <AppMessage v-if="openElsewhere" tone="warning" placement="notice" :closable="false">
+      <!-- Two tabs (ticket 0834): the first to open a Project keeps it; this one shows its beads and saves none of its own,
+           its Canvas read-only, until Work here instead takes the Project over (ticket 0937). -->
+      <AppMessage v-if="openElsewhere" tone="warning" placement="notice" :closable="false" data-testid="open-elsewhere">
         <span data-testid="open-elsewhere-message">{{ t.storage.openElsewhere }}</span>
+        <template #actions>
+          <AppButton variant="in-box" size="sm" data-testid="open-elsewhere-work-here" @click="onWorkHere">{{ t.storage.workHere }}</AppButton>
+        </template>
       </AppMessage>
     </div>
 

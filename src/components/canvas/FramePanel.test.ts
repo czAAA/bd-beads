@@ -5,6 +5,7 @@ import FramePanel from './FramePanel.vue'
 import { rotateFrame } from '../../domain/rotate'
 import PanelHost from '../shell/PanelHost.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
@@ -17,6 +18,8 @@ import { pngDpiFor } from '../../rendering/exportDpi'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { withProjectName } from '../../domain/projectName'
+import { usePanelSection } from '../../composables/shell/usePanelSection'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -47,6 +50,16 @@ function mountPanel(project = framed()) {
   )
 }
 const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent(PanelHost).emitted('close')
+
+/** The bar with its Export row unfolded, as it opens closed (ticket 0932). */
+async function mountWithExport(project = framed()) {
+  const wrapper = mountBar(project)
+  await wrapper.get('[data-testid="frame-export"] .panel-section__header').trigger('click')
+  // The File size estimates' print code comes after the rows (ticket 0991).
+  await vi.dynamicImportSettled()
+  await flushPromises()
+  return wrapper
+}
 
 
 describe('FramePanel (ticket 473)', () => {
@@ -225,18 +238,18 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-estimate"]').text()).toContain('≈')
     expect(wrapper.get('[data-testid="frame-estimate-info"]').attributes('aria-label')).toBe(en.size.estimateLabel)
     expect(wrapper.text()).toContain(en.frame.estimateInfo)
-    await wrapper.findAll('.panel-section__header')[1]!.trigger('click')
+    await wrapper.findAll('.panel-section__header')[2]!.trigger('click')
     expect(wrapper.findAll('[data-testid="frame-estimate"]')).toHaveLength(0)
     expect(wrapper.get('.panel-section__summary').text()).toMatch(/^5 × 6 · ≈ /)
   })
 
-  it('gives the Estimated size in mm however large the Frame, as Replace Bead does (ticket 0687)', () => {
+  it('gives the Estimated size in the unit the margin gives it, cm from 10 mm up (ticket 0992)', () => {
     const wrapper = mountBar(framed({ row: 0, column: 0, rows: 30, columns: 40, beads: {} }))
-    expect(wrapper.get('[data-testid="frame-estimate"] .frame-panel__estimate-value').text()).toBe('≈ 60 × 45 mm')
+    expect(wrapper.get('[data-testid="frame-estimate"] .frame-panel__estimate-value').text()).toBe('≈ 6.0 × 4.5 cm')
   })
 
   it('asks for the Picture and the Printable chart, and waits while one is being made (ticket 555)', async () => {
-    const wrapper = mountBar()
+    const wrapper = await mountWithExport()
     await wrapper.get('[data-testid="export-png"]').trigger('click')
     await wrapper.get('[data-testid="export-pdf"]').trigger('click')
     expect(wrapper.emitted('export-png')).toHaveLength(1)
@@ -246,7 +259,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('shows what each export gives in its value slot: the size and its count (ticket 0588)', async () => {
-    const wrapper = mountBar()
+    const wrapper = await mountWithExport()
     expect(wrapper.get('[data-testid="export-png"]').text()).toMatch(/PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
     expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 1 page$/)
     // The PNG line follows the chosen stop; the PDF's does not.
@@ -258,7 +271,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('offers Export quality with Medium chosen, remembers a pick on the device and waits while exporting (ticket 576)', async () => {
-    const wrapper = mountBar()
+    const wrapper = await mountWithExport()
     const range = wrapper.get<HTMLInputElement>('[data-testid="quality-range"]')
     expect(range.attributes('aria-label')).toBe(en.frame.exportQuality)
     expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityMedium)
@@ -272,31 +285,29 @@ describe('FramePanel (ticket 473)', () => {
     expect(range.element.disabled).toBe(true)
     expect(wrapper.get('[data-testid="quality-stop-high"]').attributes('disabled')).toBeDefined()
     wrapper.unmount()
-    expect(mountBar().get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
+    expect((await mountWithExport()).get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
   })
 
-  it('shows each stop’s dpi, with no size under it (tickets 571, 0583)', () => {
-    const small = mountBar()
-    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('150 DPI')
-    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
-    expect(small.get('[data-testid="quality-stop-medium"]').text()).toBe('Medium300 DPI')
+  it('captions each stop in words, keeps the dpi for the Info note and says the slider is for the picture (tickets 0583, 0957)', async () => {
+    const small = await mountWithExport()
+    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe(en.frame.qualityLowCaption)
+    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe(en.frame.qualityHighCaption)
+    expect(small.get('[data-testid="quality-stop-medium"]').text()).toBe(en.frame.qualityMedium + en.frame.qualityMediumCaption)
     expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
-    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toBe('Medium, 300 DPI')
-
-    // A Frame too large for any bead size to be reduced: the page is the same size, so there is no reduced stop.
-    const large = mountBar(withLayers(framed(), { frame: { ...frameOf(framed())!, columns: 200, rows: 200 } }))
-    expect(large.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
-    expect(large.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
+    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toBe(`${en.frame.qualityMedium}, ${en.frame.qualityMediumCaption}`)
+    expect(small.get('[data-testid="quality-note"]').text()).toBe(en.frame.qualityNote)
+    expect(small.get('[role="radiogroup"]').text()).not.toContain('DPI')
   })
 
-  it('says what High is when this device cannot draw a 450 dpi page, and shows that dpi on the stop (ticket 572)', () => {
-    expect(mountBar().find('[data-testid="quality-pdf-capped"]').exists()).toBe(false)
+  it('says what High is when this device cannot draw a 450 dpi page, and gives that dpi in the Info note (tickets 572, 0957)', async () => {
+    expect((await mountWithExport()).find('[data-testid="quality-pdf-capped"]').exists()).toBe(false)
     vi.mocked(pngDpiFor).mockImplementation((quality) => ({ low: 150, medium: 300, high: 300 })[quality])
     try {
-      const wrapper = mountBar()
+      const wrapper = await mountWithExport()
       expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(fillBlanks(en.frame.qualityPdfCapped, { n: 300 }))
-      expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe('300 DPI')
+      expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe(en.frame.qualityHighCaption)
+      expect(wrapper.getComponent(InfoButton).props('body')).toBe(fillBlanks(en.frame.qualityHint, { low: 150, medium: 300, high: 300 }))
     } finally {
       vi.mocked(pngDpiFor).mockImplementation((quality) => PNG_DPI_BY_QUALITY[quality])
     }
@@ -306,19 +317,45 @@ describe('FramePanel (ticket 473)', () => {
     expect(mountBar().find('[data-testid="frame-coffee"]').exists()).toBe(false)
   })
 
-  it('leads with Export, then the size, Beads needed right after it, its Layer settings, and ends with the margin (tickets 555, 568, 0656, 0670, 0852)', () => {
+  it('runs the name, Export, Beads needed, the size, its Layer settings, then the margin (tickets 0656, 0670, 0932)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
     expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([
       en.panels.project.exportHeading,
-      en.frame.sizeHeading,
       en.quantities.heading,
+      en.frame.sizeHeading,
       en.layerSettings.frameHeading,
       en.frame.margin.heading,
     ])
+    const order = ['frame-name-row', 'frame-export', 'bead-quantities']
+    expect(wrapper.findAll('[data-testid]').map((node) => node.attributes('data-testid')).filter((id) => order.includes(id!))).toEqual(order)
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
-    expect(sections.at(2)!.attributes('data-testid')).toBe('bead-quantities')
     expect(sections.at(-1)!.attributes('data-testid')).toBe('margin-section')
+  })
+
+  it('opens Export closed every time, and a press unfolds it (ticket 0932)', async () => {
+    const wrapper = mountBar()
+    const header = (id: string) => wrapper.get(`[data-testid="${id}"] .panel-section__header`)
+    expect(header('frame-export').attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
+    await header('frame-export').trigger('click')
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(true)
+    wrapper.unmount()
+    const again = mountBar()
+    expect(again.get('[data-testid="frame-export"] .panel-section__header').attributes('aria-expanded')).toBe('false')
+  })
+
+  it('shows Beads needed\'s total on the title line once a bead is painted, as the section counts it (ticket 0932)', () => {
+    expect(mountBar().find('[data-testid="frame-panel-total"]').exists()).toBe(false)
+    const painted = mountBar(framed({ row: 2, column: 3, rows: 6, columns: 5, beads: { 2: { 3: '#ff0000', 4: '#ff0000' } } }))
+    expect(painted.get('[data-testid="frame-panel-total"]').text()).toBe(painted.get('[data-testid="quantity-total"]').text())
+    expect(painted.get('[data-testid="frame-panel-total"]').text()).toMatch(/^2 · ≈ /)
+  })
+
+  it("names the open Project on the title line, as typed, for where the strip shows no name (ticket 0986)", () => {
+    const named = mountBar(withProjectName(framed(), 'Loom cuff'))
+    expect(named.get('.frame-panel__title [data-testid="frame-panel-project"]').text()).toBe('· Loom cuff')
+    expect(mountBar(withProjectName(withFrameSheet(framed(), undefined), 'Loom cuff')).get('[data-testid="frame-panel-project"]').text()).toBe('· Loom cuff')
   })
 
   it('sets the Frame in its Layer settings: each ask names the Frame, and its summary is its Technique and Bead (ticket 0670)', async () => {
@@ -410,7 +447,7 @@ describe('FramePanel (ticket 473)', () => {
 
 describe('FramePanel Letters (ticket 0573)', () => {
   it('has a Letters switch, off by default, explained in an info button (ticket 0651), and asks to turn it on', async () => {
-    const panel = mountBar()
+    const panel = await mountWithExport()
     const letters = panel.get('[data-testid="frame-letters"]')
     expect(letters.attributes('aria-checked')).toBe('false')
     expect(panel.find('[data-testid="frame-letters-line"]').exists()).toBe(false)
@@ -420,7 +457,7 @@ describe('FramePanel Letters (ticket 0573)', () => {
   })
 
   it('shows it on when the Project has Letters on, and has no switch without a Frame', async () => {
-    expect(mountBar(withLayers(framed(), { letters: true })).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
+    expect((await mountWithExport(withLayers(framed(), { letters: true }))).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
     const bare = withFrameSheet(framed(), undefined)
     expect(mountBar(bare).find('[data-testid="frame-letters"]').exists()).toBe(false)
   })
@@ -471,5 +508,39 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
     expect(wrapper.get('[data-testid="frame-setting-rounds-value"]').text()).toBe('4')
     await wrapper.get('[data-testid="frame-setting-rounds-more"]').trigger('click')
     expect(wrapper.emitted('set-settings')).toEqual([[{ rounds: 5 }]])
+  })
+})
+
+describe('FramePanel opened on its settings (ticket 0935)', () => {
+  function mountOnSettings(opensOnSettings: boolean) {
+    return mount(
+      { render: () => h(PanelHost, { open: 'frame', only: ['frame'] }, { default: () => h(FramePanel, { project: framed(), opensOnSettings }) }) },
+      { attachTo: document.body },
+    )
+  }
+  const settingsHeader = () => document.querySelector<HTMLElement>('[data-panel-entry] .panel-section__header')
+
+  /** The settings section folded on this device, as a weaver may leave it. */
+  function foldSettings() {
+    const section = usePanelSection(() => 'frame:settings')
+    if (section.open.value) section.toggle()
+    expect(section.open.value).toBe(false)
+  }
+
+  it('unfolds its settings, folded on this device, and focuses their header, as Open Frame asks', async () => {
+    foldSettings()
+    const wrapper = mountOnSettings(true)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="frame-layer-settings"]').exists()).toBe(true)
+    expect(document.activeElement).toBe(settingsHeader())
+    expect(settingsHeader()?.textContent).toContain(en.layerSettings.frameHeading)
+  })
+
+  it('opens at its top from the strip, its settings left as this device keeps them', async () => {
+    foldSettings()
+    const wrapper = mountOnSettings(false)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="frame-layer-settings"]').exists()).toBe(false)
+    expect(settingsHeader()).toBeNull()
   })
 })

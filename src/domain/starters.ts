@@ -4,7 +4,7 @@ import { changeFrame, type FrameChange, type FrameChangeResult } from './changeF
 import { laidSize } from './frameOrientation'
 import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings, type QuarterTurns } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
-import { createProject } from './createProject'
+import { createProject, type CreateProjectInput } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
 import { sameWeave, weaveOf } from './layerWeave'
 import { quarterTurnOf, withBackground, withCanvas, withLayer } from './layerRecord'
@@ -42,6 +42,10 @@ export const BAND_EASE_MM: Readonly<Record<BandFit, number>> = { snug: 10, comfo
 
 /** The Bead the designs are made for and the cards are drawn and counted with (StarterGallery card): Delica 11/0. */
 export const STARTER_BEAD_ID = 'miyuki/delica/11-0'
+
+/** What the Homepage's first Project starts on (ticket 0945): peyote on the Starters' Bead, the piece the Homepage and
+ * the tour show, in place of New Project's presets, which the form keeps. */
+export const FIRST_PROJECT_START: Readonly<CreateProjectInput> = { technique: 'peyote', beadId: STARTER_BEAD_ID }
 
 /** What a Band leaves for its clasp, in mm (StarterGallery card). */
 export const BAND_CLASP_MM = 15

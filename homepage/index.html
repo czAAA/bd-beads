@@ -13,6 +13,13 @@
     <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Homepage · openbeads</title>
+    <!-- The first screen's fonts, asked for with the page rather than once its code has drawn the text (ticket 0991), so
+         the Welcome is set in them from its first paint and its heading keeps its two lines. -->
+    <link rel="preload" href="/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
     <!-- Before first paint: the theme and the language, exactly as the editor's index.html does, so neither flashes. -->
     <script>
       (function () {

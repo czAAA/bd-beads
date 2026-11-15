@@ -56,6 +56,8 @@ const {
   deletedProjectName,
   openMenuOnSavedProjects,
   activeProject,
+  settledProject,
+  openElsewhere,
   projectLabel,
   toasts,
   dismissToast,
@@ -67,6 +69,7 @@ const {
   bindCanvasScroll,
   zoom,
   scroll,
+  viewPlaced,
   canvasOrientation,
   twistPhase,
   selectionRefusals,
@@ -75,8 +78,6 @@ const {
   showRulers,
   stroking,
   toggleRulers,
-  gridFocus,
-  toggleGridFocus,
   referenceImage,
   pictureBar,
   rowHighlight,
@@ -143,9 +144,10 @@ const {
   onSelectTool,
   onSelectColor,
   onSelectCustomColor,
-  onToggleRowDirection,
+  onSetRowDirection,
   onMoveRow,
   onGoToRow,
+  onShowRow,
   canRemoveSelectedLine,
   onRemoveSelectedLine,
   locale,
@@ -408,8 +410,8 @@ const drawingStyle = computed(() => {
         :demo="demo"
         :expand="demoExpand"
         :project="onEditor ? activeProject : undefined"
+        :settled-project="onEditor ? settledProject : undefined"
         :rulers="showRulers"
-        :grid-focus="gridFocus"
         :reference-image="onEditor && activeProject ? referenceState : undefined"
         :frame-open="framePanelOpen"
         :can-undo="canUndo"
@@ -423,7 +425,6 @@ const drawingStyle = computed(() => {
         @toggle-frame="onToggleFramePanel"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
-        @toggle-grid-focus="toggleGridFocus"
         @toggle-reference-image="referenceImage.toggleShown"
         @pick-reference-image="referenceImage.pick($event, 'strip')"
         @undo="onUndo"
@@ -472,7 +473,6 @@ const drawingStyle = computed(() => {
                 :orientation="canvasOrientation"
                 :twist="twistPhase"
                 :show-rulers="showRulers"
-                :grid-focus="gridFocus && !demo"
                 :stroking="stroking"
                 :row-marks="rowHighlight"
                 :row-press="rowPress"
@@ -557,12 +557,14 @@ const drawingStyle = computed(() => {
                 :convert-body="barTooltips.convert"
                 :convert-off="barTooltips.convertOff"
                 :converting="pictureBar.converting.value"
+                :over="referenceImage.over.value"
                 @preview="referenceImage.preview"
                 @commit="referenceImage.commit"
                 @frame-preview="framePreviewOn = $event"
                 @frame="pictureBar.frameAround"
                 @convert="pictureBar.converting.value ? pictureBar.close() : pictureBar.open()"
                 @opacity="referenceImage.setOpacity"
+                @over="referenceImage.setOver"
                 @replace="referenceImage.pick($event, 'bar')"
                 @remove="referenceImage.requestRemove"
               />
@@ -624,6 +626,7 @@ const drawingStyle = computed(() => {
             :recents-in-pill="recentsInPill"
             :selected-color-id="selectedColorId"
             :custom-color="customColor"
+            :off-body="openElsewhere ? t.storage.toolsOff : undefined"
             @select-tool="onSelectTool"
             @paste-mode="onPasteMode"
             @mirror-tile="onMirrorTile"
@@ -665,10 +668,11 @@ const drawingStyle = computed(() => {
           :row-press="rowPress"
           @move-row="onMoveRow"
           @reset-progress="onResetProgress"
-          @toggle-row-direction="onToggleRowDirection"
+          @set-row-direction="onSetRowDirection"
           @toggle-row-highlight="toggleRowHighlight"
           @fit-and-export="onFitAndExport"
           @go-to-row="onGoToRow"
+          @show-row="onShowRow"
         />
 
         <!--
@@ -745,6 +749,7 @@ const drawingStyle = computed(() => {
             :selection="selectionAnchor?.box"
             :mirror-on-frame="mirrorOnFrame"
             :without-not-done="demo"
+            :placing="!viewPlaced"
             @mirror="onMirrorWholeFrame"
             @rotate="onRotateFrame"
             @toggle-edit="onEditFrame"
@@ -754,7 +759,7 @@ const drawingStyle = computed(() => {
             @key="onFrameKey"
             @move-row="onMoveRow"
             @reset-progress="onResetProgress"
-            @toggle-row-direction="onToggleRowDirection"
+            @set-row-direction="onSetRowDirection"
             @toggle-row-highlight="toggleRowHighlight"
             @rename="onRenameFrame"
             @set-technique="onSetFrameTechnique"

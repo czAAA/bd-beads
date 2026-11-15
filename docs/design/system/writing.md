@@ -54,10 +54,11 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Bead / beads | бисеринка / бисер | One bead is бисеринка everywhere, never бусина («4 бисеринки», «Бисеринок»); the material and amounts are бисер (ticket 0864) |
 | Technique | техника плетения | Loom / ткачество, Peyote / мозаичное плетение, Brick stitch / кирпичное плетение |
 | Palette | палитра |  |
-| Row progress | прогресс по рядам | Row done / Ряд готов; Row not done / Ряд не готов; never a bare «Готово», which reads as closing something. Where a pair has no room in the Progress bar it becomes Следующий / Предыдущий (ticket 0864) |
+| Row progress | прогресс по рядам | Row done / Ряд готов; Back a row / Назад на ряд (ticket 0972, was Row not done / Ряд не готов); never a bare «Готово», which reads as closing something. Where a pair has no room in the Progress bar it becomes Следующий / Предыдущий (ticket 0864) |
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
 | Clear | Очистить; confirm Очистить? | Empties the cells; the Schema stays. Not «Очистить всё», which was Delete all |
 | Save Project | Сохранить проект | The SaveBox button; the name field's Save stays Сохранить |
+| in this browser | в этом браузере | Where Projects are kept, said one way everywhere (ticket 0992): Saved in this browser, Kept by this browser, removed from this browser, Couldn't save in this browser. Never "local browser" or "this device" for where the work lives |
 | Delete all | Очистить всё | Empties the cells; the Schema stays |
 | Mirror | Отражение | Estimated size / Примерный размер |
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
@@ -88,7 +89,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | Canvas · Hand · Rulers | Полотно · Рука · Лінійки | Палатно · Рука · Лінейкі |
 | Mirror | Відображення | Адлюстраванне |
 | Convert image | Конвертувати зображення | Канвертаваць выяву |
-| Row done · Row not done | Ряд готовий · Ряд не готовий; by columns Наступний · Попередній, as «Стовпець не готовий» has no room at 320px (ticket 0864) | Рад гатовы · Рад не гатовы; Слупок гатовы · Слупок не гатовы |
+| Row done · Back a row | Ряд готовий · Назад на ряд; by columns Наступний · Назад на стовпець (ticket 0972) | Рад гатовы · Назад на рад; Слупок гатовы · Назад на слупок |
 | The Frame's edges | Зверху · Знизу · Зліва · Справа | Верх · Ніз · Злева · Справа |
 
 | English | Chinese | Spanish | Polish |
@@ -146,7 +147,7 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | Counts | 1 424 | 1 424 | Group thousands from four digits (`Intl.NumberFormat`, ticket 368). English, Russian, Ukrainian, Belarusian and Polish use a no-break space (the rule DESIGN.md set); Spanish writes 1.424 and Chinese 1,424. |
 | Decimals | 9.6 | 9,6 | The language's own decimal sign (a comma in Russian, Ukrainian, Belarusian, Spanish and Polish; a period in English and Chinese); at most one decimal for sizes. |
 | Grid size | 60×80 | 60×80 | Beads across × down with ×, no spaces. |
-| Measured size | 9.6 × 10.4 cm | 9,6 × 10,4 см | × with spaces, one unit for both sides, cm from 10 mm up (as the app does). The "64×48 mm" in older mockups follows this rule from now on. |
+| Measured size | 9.6 × 10.4 cm | 9,6 × 10,4 см | × with spaces, one unit for both sides, cm from 10 mm up (as the app does). The same size reads in the same unit in a panel and on the Canvas: the Frame panel's Estimated size too (ticket 0992). Only Replace bead? stays in mm, as it sets two Beads' sizes side by side (ticket 0687). The "64×48 mm" in older mockups follows this rule from now on. |
 | Units | 12 mm · 10 MB | 12 мм · 10 МБ | A no-break space between number and unit. |
 | Weight | ≈ 24 g · 3.9 g | ≈ 24 г · 3,9 г | Grams rounded up to 0.1, trailing .0 dropped, with ≈ where it is an estimate. |
 | Percent | 62% | 62 % | Russian puts a no-break space before %. |
@@ -158,13 +159,13 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 
 | Where | Now | Proposed | Why |
 | --- | --- | --- | --- |
-| en storage.saveFailedMessage | Couldn't save on this device, then a dash: your latest change… | Couldn't save on this device. Your latest change is only on screen. | No em dashes |
-| ru storage.saveFailedMessage | Не удалось сохранить на этом устройстве, затем тире: последние изменения… | Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. | No em dashes |
+| en storage.saveFailedMessage | Couldn't save on this device, then a dash: your latest change… | Couldn't save in this browser. Your latest change is only on screen. | No em dashes |
+| ru storage.saveFailedMessage | Не удалось сохранить на этом устройстве, затем тире: последние изменения… | Не удалось сохранить в этом браузере. Последние изменения есть только на экране. | No em dashes |
 | en convertImage.errors.tooLarge, tooManyPixels | That file is too big, then a dash: at most {maxSizeMb} MB. | That file is too big: at most {maxSizeMb} MB. (tooManyPixels the same way) | No em dashes |
 | ru convertImage.errors.tooLarge, tooManyPixels | Файл слишком большой, затем тире: не больше {maxSizeMb} МБ. | Файл слишком большой: не больше {maxSizeMb} МБ. (tooManyPixels так же) | No em dashes |
 | ru size.estimateWarning | Эти размеры, затем тире: оценка. | Эти размеры приблизительные. | No em dashes |
-| en rowProgress.previousButton | Previous row | Row not done | DESIGN.md: never "Previous row" |
-| ru rowProgress.previousButton | Предыдущий ряд | Ряд не готов | The same rule, pairs with «Ряд готов» |
+| en rowProgress.previousButton | Previous row | Row not done, then Back a row (ticket 0972) | DESIGN.md: never "Previous row" |
+| ru rowProgress.previousButton | Предыдущий ряд | Ряд не готов, then Назад на ряд (ticket 0972) | The same rule, pairs with «Ряд готов» |
 | ru transfer.pdfCountHeading | Бисер | Бисеринок | Matches the Beads needed box |
 | Beads needed counts, PDF | 1424 | 1 424 | Group thousands |
 | formatSizeMm (ru) | 9.6 × 10.4 см | 9,6 × 10,4 см | Russian decimal comma |
@@ -379,8 +380,8 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 | Save Project · Export · PNG · PDF · Project file | Сохранить проект · Экспорт · PNG · PDF · Файл проекта |
 | Name on exports · Your name · Printed on this Project's PDF and PNG exports. | Имя на экспорте · Ваше имя · Печатается на PDF и PNG этого проекта. |
 | Duplicate · Duplicate Project · Name · Everything is copied, including Row progress. The copy opens; the original stays as it is now. · Suggested: the current name and the next free number. | Дублировать · Дублировать проект · Название · Копируется всё, включая прогресс по рядам. Откроется копия, а оригинал останется таким, как сейчас. · Предложено: текущее название и следующий свободный номер. |
-| Delete all Projects? · Every Project is removed from this device. This can't be undone. Export all first if you want to keep copies. · Clear this Project | Удалить все проекты? · Все проекты будут удалены с этого устройства. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии. · Очистить этот проект |
-| Delete this Project · Delete “{name}”? · “{name}” and its Row progress are removed from this device. This can't be undone. Save its Project file first if you want to keep it. · Save Project file · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены с этого устройства. Это нельзя отменить. Если хотите оставить его себе, сначала сохраните файл проекта. · Сохранить файл проекта · Удалить проект |
+| Delete all Projects? · Every Project is removed from this browser. This can't be undone. Export all first if you want to keep copies. · Clear this Project | Удалить все проекты? · Все проекты будут удалены из этого браузера. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии. · Очистить этот проект |
+| Delete this Project · Delete “{name}”? · “{name}” and its Row progress are removed from this browser. This can't be undone. Save its Project file first if you want to keep it. · Save Project file · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены из этого браузера. Это нельзя отменить. Если хотите оставить его себе, сначала сохраните файл проекта. · Сохранить файл проекта · Удалить проект |
 | A Project needs a name. · Enter saves · Escape cancels | У проекта должно быть название. · Enter сохраняет · Esc отменяет |
 | The Canvas stays white in high contrast. | В режиме высокой контрастности холст остаётся белым. |
 
@@ -465,11 +466,11 @@ Russian here is a proposal for review, like the section below.
 | English | Русский |
 |---|---|
 | Projects library · Open Project file · Save all Projects to a Project file · Delete all Projects | Библиотека проектов · Открыть файл проекта · Сохранить всё в файл проекта · Удалить все проекты |
-| No Projects yet · Projects you make are kept on this device. Open a Project file to bring one in. | Проектов пока нет · Проекты хранятся на этом устройстве. Откройте файл проекта, чтобы добавить проект. |
+| No Projects yet · Projects you make are kept in this browser. Open a Project file to bring one in. | Проектов пока нет · Проекты хранятся в этом браузере. Откройте файл проекта, чтобы добавить проект. |
 | {n} pieces · {n} unnamed · Frame {w} × {h} beads | Частей: {n} · без названия: {n} · Рамка {w} × {h} бисеринок |
 | Writing hand · Right · Left · Buy me a coffee | Рабочая рука · Правая · Левая · Угостить кофе |
 | Project · name: · maker: · Add your name for exports · Change the maker's name | проект · название: · автор: · Добавьте имя для экспорта · Изменить имя автора |
-| Saved in local browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
+| Saved in this browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в этом браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
 | Brand · Type · Size | Бренд · Тип · Размер |
 | Project file · Picture · Printable chart · Clear all beads · Delete Project | Файл проекта · Картинка · Схема для печати · Очистить все бисеринки · Удалить проект |
 | Frame · Name this Frame · Rename Frame · Frame from template · Fit a Frame to the drawing · A Frame sets the size, the exports and the bead count. | рамка · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бисеринок. |
@@ -498,10 +499,10 @@ The popup of spec 0645 (ConvertImage, ValueSlider and FoundColorRow cards; ticke
 | rail: picture · bead · size · colors · review | изображение · бисер · размер · цвета · итог | зображення · бісер · розмір · кольори · підсумок | obraz · koralik · rozmiar · kolory · podsumowanie |
 | Add a picture first | Сначала добавьте изображение | Спочатку додайте зображення | Najpierw dodaj obraz |
 | Choose file · Paste · Take photo · Turn 90° · Flip · replace | Выбрать файл · Вставить · Сфотографировать · Повернуть на 90° · Отразить · заменить | Вибрати файл · Вставити · Сфотографувати · Повернути на 90° · Віддзеркалити · замінити | Wybierz plik · Wklej · Zrób zdjęcie · Obróć o 90° · Odbij · zamień |
-| Drop a picture anywhere on the app, choose a file or paste one with ⌘V (Ctrl+V off Apple devices). PNG, JPEG, GIF, or WebP, up to 10 MB and 16 megapixels. | Перетащите изображение в любое место приложения, выберите файл или вставьте его через ⌘V / Ctrl+V. PNG, JPEG, GIF или WebP, до 10 МБ и 16 мегапикселей. | Перетягніть зображення будь-куди в застосунок, виберіть файл або вставте його через ⌘V / Ctrl+V. PNG, JPEG, GIF або WebP, до 10 МБ і 16 мегапікселів. | Upuść obraz w dowolnym miejscu aplikacji, wybierz plik albo wklej go przez ⌘V / Ctrl+V. PNG, JPEG, GIF lub WebP, do 10 MB i 16 megapikseli. |
-| (touch) Choose a file, paste a picture or take a photo. PNG, JPEG, GIF, or WebP, up to 10 MB and 16 megapixels. | Выберите файл, вставьте изображение или сфотографируйте. PNG, JPEG, GIF или WebP, до 10 МБ и 16 мегапикселей. | Виберіть файл, вставте зображення або сфотографуйте. PNG, JPEG, GIF або WebP, до 10 МБ і 16 мегапікселів. | Wybierz plik, wklej obraz albo zrób zdjęcie. PNG, JPEG, GIF lub WebP, do 10 MB i 16 megapikseli. |
+| Drop a picture anywhere on the app, choose a file or paste one with ⌘V (Ctrl+V off Apple devices). PNG, JPEG, GIF, or WebP, up to 50 MB. | Перетащите изображение в любое место приложения, выберите файл или вставьте его через ⌘V / Ctrl+V. PNG, JPEG, GIF или WebP, до 50 МБ. | Перетягніть зображення будь-куди в застосунок, виберіть файл або вставте його через ⌘V / Ctrl+V. PNG, JPEG, GIF або WebP, до 50 МБ. | Upuść obraz w dowolnym miejscu aplikacji, wybierz plik albo wklej go przez ⌘V / Ctrl+V. PNG, JPEG, GIF lub WebP, do 50 MB. |
+| (touch) Choose a file, paste a picture or take a photo. PNG, JPEG, GIF, or WebP, up to 50 MB. | Выберите файл, вставьте изображение или сфотографируйте. PNG, JPEG, GIF или WebP, до 50 МБ. | Виберіть файл, вставте зображення або сфотографуйте. PNG, JPEG, GIF або WebP, до 50 МБ. | Wybierz plik, wklej obraz albo zrób zdjęcie. PNG, JPEG, GIF lub WebP, do 50 MB. |
 | Drop a picture here · or paste one with ⌘V (Ctrl+V off Apple devices) | Перетащите изображение сюда · или вставьте его через ⌘V / Ctrl+V | Перетягніть зображення сюди · або вставте його через ⌘V / Ctrl+V | Upuść obraz tutaj · albo wklej go przez ⌘V / Ctrl+V |
-| Drop to use this picture · Drop to convert image · PNG, JPEG, GIF, or WebP · up to 10 MB | Отпустите, чтобы взять это изображение · Отпустите, чтобы конвертировать изображение · PNG, JPEG, GIF или WebP · до 10 МБ | Відпустіть, щоб узяти це зображення · Відпустіть, щоб конвертувати зображення · PNG, JPEG, GIF або WebP · до 10 МБ | Upuść, aby użyć tego obrazu · Upuść, aby skonwertować obraz · PNG, JPEG, GIF lub WebP · do 10 MB |
+| Drop to use this picture · Drop to convert image · PNG, JPEG, GIF, or WebP · up to 50 MB | Отпустите, чтобы взять это изображение · Отпустите, чтобы конвертировать изображение · PNG, JPEG, GIF или WebP · до 50 МБ | Відпустіть, щоб узяти це зображення · Відпустіть, щоб конвертувати зображення · PNG, JPEG, GIF або WebP · до 50 МБ | Upuść, aby użyć tego obrazu · Upuść, aby skonwertować obraz · PNG, JPEG, GIF lub WebP · do 50 MB |
 | convert · Whole picture · A part (ticket 0863; it was weave) | конвертировать · Всё изображение · Часть | конвертувати · Усе зображення · Частину | konwertuj · Cały obraz · Część |
 | Drag on the preview to draw the part to weave, drag inside it to move it, or pull its handles to adjust it. | Проведите по превью, чтобы выбрать часть для плетения; тяните внутри неё, чтобы сдвинуть, или за маркеры, чтобы изменить. | Проведіть по прев’ю, щоб вибрати частину для плетіння; тягніть усередині неї, щоб посунути, або за маркери, щоб змінити. | Przeciągnij po podglądzie, aby narysować część do wyplatania; przeciągnij wewnątrz niej, aby ją przesunąć, albo za uchwyty, aby ją zmienić. |
 | Colors follow the part. Width and height stay as set, and drop only when the part has fewer pixels than they allow. | Цвета берутся по части. Ширина и высота остаются прежними и уменьшаются, только если в части меньше пикселей, чем они допускают. | Кольори беруться за частиною. Ширина й висота лишаються попередніми й зменшуються, лише якщо в частині менше пікселів, ніж вони дозволяють. | Kolory idą za częścią. Szerokość i wysokość zostają, jakie były, i maleją tylko wtedy, gdy część ma mniej pikseli, niż pozwalają. |
@@ -589,7 +590,7 @@ The converter in a beginner's words (ConvertImage and FoundColorRow cards; UX au
 | Each color is one bead color. Max {n}: every color the picture has. (the Colors hint under Exact; the capped one ends as before) | Каждый цвет станет одним цветом бисера. Макс. {n}: все цвета изображения. | Кожен колір стане одним кольором бісеру. Макс. {n}: усі кольори зображення. | Кожны колер стане адным колерам бісеру. Макс. {n}: усе колеры выявы. | 每种颜色就是一种珠子颜色。最大 {n}：图片的全部颜色。 | Cada color es un color de cuenta. Máx. {n}: todos los colores de la imagen. | Każdy kolor to jeden kolor koralików. Maks. {n}: wszystkie kolory obrazu. |
 | This file can't be converted. Use {formats}. | Этот файл нельзя сконвертировать. Подойдут {formats}. | Цей файл не можна сконвертувати. Підійдуть {formats}. | Гэты файл нельга сканвертаваць. Падыдуць {formats}. | 该文件无法转换。请使用 {formats}。 | Este archivo no se puede convertir. Usa {formats}. | Tego pliku nie można przekonwertować. Użyj {formats}. |
 | SVG files can't be converted. Save it as PNG first. | Файлы SVG нельзя сконвертировать. Сначала сохраните картинку в PNG. | Файли SVG не можна сконвертувати. Спочатку збережіть зображення в PNG. | Файлы SVG нельга сканвертаваць. Спачатку захавайце выяву ў PNG. | SVG 文件无法转换。请先另存为 PNG。 | Los archivos SVG no se pueden convertir. Guárdalo antes como PNG. | Plików SVG nie można przekonwertować. Najpierw zapisz go jako PNG. |
-| Browsers can't read HEIC pictures. Save it as PNG or JPEG and try again. · That picture couldn't be read. The file may be damaged. (English only: "can't", "couldn't") | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| Browsers can't read HEIC pictures. Save it as PNG or JPEG and try again. · That picture couldn't be read. Open it in a photo app, save it as PNG or JPEG and try again. (English only: "can't", "couldn't") | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
 
 "{n} colors" in the Colors step's summary, Color by color's summary and the preview's name counts the bead colors after the match, one per row of Color by color, so it is the count Beads needed lists; the Colors slider's own value is still what it asks for.
 
@@ -707,7 +708,7 @@ Left out under 600 px wide, in every language (no new words): the strip's "Conve
 
 ## Margin sheet copy (ticket 0655)
 
-The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
+The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Back a row, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|
@@ -916,7 +917,7 @@ The Project's one picture to bead over (ReferenceImage card). Russian and Ukrain
 | Add a reference image (Tooltip) · Add reference image (Project row) | Добавить подложку | Додати підкладку | Dodaj obraz pomocniczy |
 | Show reference image · Hide reference image | Показать подложку · Скрыть подложку | Показати підкладку · Сховати підкладку | Pokaż obraz pomocniczy · Ukryj obraz pomocniczy |
 | reference image (section) · shown · hidden (its summary) | подложка · видна · скрыта | підкладка · видно · сховано | obraz pomocniczy · widoczny · ukryty |
-| PNG, JPEG, GIF or WebP, up to 10 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit. | PNG, JPEG, GIF или WebP, до 10 МБ. Хранится с этим проектом и в его файле .openbeads, не печатается. Большие картинки уменьшаются. | PNG, JPEG, GIF або WebP, до 10 МБ. Зберігається з цим проєктом і в його файлі .openbeads, не друкується. Великі зображення зменшуються. | PNG, JPEG, GIF lub WebP, do 10 MB. Zapisany z tym projektem i w jego pliku .openbeads, nigdy nie drukowany. Duże obrazy są zmniejszane. |
+| PNG, JPEG, GIF or WebP, up to 50 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit. | PNG, JPEG, GIF или WebP, до 50 МБ. Хранится с этим проектом и в его файле .openbeads, не печатается. Большие картинки уменьшаются. | PNG, JPEG, GIF або WebP, до 50 МБ. Зберігається з цим проєктом і в його файлі .openbeads, не друкується. Великі зображення зменшуються. | PNG, JPEG, GIF lub WebP, do 50 MB. Zapisany z tym projektem i w jego pliku .openbeads, nigdy nie drukowany. Duże obrazy są zmniejszane. |
 | Opacity | Непрозрачность | Непрозорість | Krycie |
 | Adjust on Canvas · move · resize · turn | Настроить на полотне · сдвиг · размер · поворот | Налаштувати на полотні · зсув · розмір · поворот | Dopasuj na płótnie · przesuń · rozmiar · obróć |
 | Replace image · Remove image (Replace image also on the Adjust bar, ticket 0799; on a phone the name of its icon button) | Заменить картинку · Убрать картинку | Замінити зображення · Прибрати зображення | Zamień obraz · Usuń obraz |
@@ -925,8 +926,8 @@ The Project's one picture to bead over (ReferenceImage card). Russian and Ukrain
 | Preparing the picture… | Готовим картинку… | Готуємо зображення… | Przygotowujemy obraz… |
 | Fit to Canvas · Fit (phone) · Done | Вписать в холст · Вписать · Готово | Вписати в полотно · Вписати · Готово | Dopasuj do płótna · Dopasuj · Gotowe |
 | Resize from the top-left corner (and the other three) · Turn · Turned {n}° | Изменить размер за левый верхний угол · Повернуть · Повёрнуто на {n}° | Змінити розмір за лівий верхній кут · Повернути · Повернуто на {n}° | Zmień rozmiar z lewego górnego rogu · Obróć · Obrócono o {n}° |
-| Reference image not saved on this device | Подложка не сохранена на этом устройстве | Підкладку не збережено на цьому пристрої | Obraz pomocniczy nie jest zapisany na tym urządzeniu |
-| not a picture · over {maxSizeMb} MB · over {maxMegapixels} megapixels · it couldn't be read (the refusal's reasons) | это не картинка · больше {maxSizeMb} МБ · больше {maxMegapixels} мегапикселей · его не удалось прочитать | це не зображення · більше {maxSizeMb} МБ · більше {maxMegapixels} мегапікселів · його не вдалося прочитати | to nie jest obraz · ponad {maxSizeMb} MB · ponad {maxMegapixels} megapikseli · nie udało się go odczytać |
+| Reference image not saved in this browser | Подложка не сохранена в этом браузере | Підкладку не збережено в цьому браузері | Obraz pomocniczy nie jest zapisany w tej przeglądarce |
+| not a picture · over {maxSizeMb} MB · too big for this device to open · it couldn't be read (the refusal's reasons) | это не картинка · больше {maxSizeMb} МБ · оно слишком большое для этого устройства · его не удалось прочитать | це не зображення · більше {maxSizeMb} МБ · воно завелике для цього пристрою · його не вдалося прочитати | to nie jest obraz · ponad {maxSizeMb} MB · jest za duży dla tego urządzenia · nie udało się go odczytać |
 | browsers can't read HEIC pictures · SVG pictures can't be used | картинки HEIC браузер не читает · картинки SVG не подходят | зображення HEIC браузер не читає · зображення SVG не підходять | przeglądarki nie odczytują obrazów HEIC · obrazów SVG nie można użyć |
 | Reference image, {opacity}%, turned {angle}° (Adjust, to a screen reader) · Moved · Resized | Подложка, {opacity}%, повёрнута на {angle}° · Сдвинуто · Размер изменён | Підкладка, {opacity}%, повернута на {angle}° · Зсунуто · Розмір змінено | Obraz pomocniczy, {opacity}%, obrócony o {angle}° · Przesunięto · Zmieniono rozmiar |
 | {count} KB (the stored size) | {count} КБ | {count} КБ | {count} KB |
@@ -939,19 +940,19 @@ Belarusian, Spanish and Chinese, written with the build (ticket 0790):
 | Add a reference image · Add reference image | Дадаць падкладку | Añadir una imagen de referencia · Añadir imagen de referencia | 添加参考图 |
 | Show reference image · Hide reference image | Паказаць падкладку · Схаваць падкладку | Mostrar la imagen de referencia · Ocultar la imagen de referencia | 显示参考图 · 隐藏参考图 |
 | reference image · shown · hidden | падкладка · бачная · схаваная | imagen de referencia · visible · oculta | 参考图 · 显示中 · 已隐藏 |
-| PNG, JPEG, GIF or WebP, up to 10 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit. | PNG, JPEG, GIF або WebP, да 10 МБ. Захоўваецца з гэтым праектам і ў яго файле .openbeads, не друкуецца. Вялікія выявы памяншаюцца. | PNG, JPEG, GIF o WebP, hasta 10 MB. Se guarda con este proyecto y en su archivo .openbeads, nunca se imprime. Las imágenes grandes se reducen. | PNG、JPEG、GIF 或 WebP，最大 10 MB。随此项目保存，也存在其 .openbeads 文件中，不会打印。较大的图片会被缩小。 |
+| PNG, JPEG, GIF or WebP, up to 50 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit. | PNG, JPEG, GIF або WebP, да 50 МБ. Захоўваецца з гэтым праектам і ў яго файле .openbeads, не друкуецца. Вялікія выявы памяншаюцца. | PNG, JPEG, GIF o WebP, hasta 50 MB. Se guarda con este proyecto y en su archivo .openbeads, nunca se imprime. Las imágenes grandes se reducen. | PNG、JPEG、GIF 或 WebP，最大 50 MB。随此项目保存，也存在其 .openbeads 文件中，不会打印。较大的图片会被缩小。 |
 | Opacity | Непразрыстасць | Opacidad | 不透明度 |
 | Adjust on Canvas · move · resize · turn | Наладзіць на палатне · зрух · памер · паварот | Ajustar en el lienzo · mover · tamaño · girar | 在画布上调整 · 移动 · 缩放 · 旋转 |
 | Replace image · Remove image | Замяніць выяву · Прыбраць выяву | Reemplazar imagen · Quitar imagen | 替换图片 · 移除图片 |
 | Remove the reference image? · The picture is taken off this Project. Your beads stay as they are. · Remove | Прыбраць падкладку? · Выява будзе прыбрана з праекта. Бісерыны застануцца як ёсць. · Прыбраць | ¿Quitar la imagen de referencia? · La imagen se quita de este proyecto. Tus cuentas quedan como están. · Quitar | 移除参考图？ · 图片将从此项目中移除。你的珠子保持不变。 · 移除 |
 | This file can't be used: {reason} | Гэты файл не падыходзіць: {reason} | Este archivo no se puede usar: {reason} | 此文件无法使用：{reason} |
-| not a picture · over {maxSizeMb} MB · over {maxMegapixels} megapixels · it couldn't be read | гэта не выява · больш за {maxSizeMb} МБ · больш за {maxMegapixels} мегапікселяў · яго не ўдалося прачытаць | no es una imagen · más de {maxSizeMb} MB · más de {maxMegapixels} megapíxeles · no se pudo leer | 不是图片 · 超过 {maxSizeMb} MB · 超过 {maxMegapixels} 百万像素 · 无法读取 |
+| not a picture · over {maxSizeMb} MB · too big for this device to open · it couldn't be read | гэта не выява · больш за {maxSizeMb} МБ · яна занадта вялікая для гэтай прылады · яго не ўдалося прачытаць | no es una imagen · más de {maxSizeMb} MB · es demasiado grande para este dispositivo · no se pudo leer | 不是图片 · 超过 {maxSizeMb} MB · 图片太大，此设备无法打开 · 无法读取 |
 | browsers can't read HEIC pictures · SVG pictures can't be used | выявы HEIC браўзер не чытае · выявы SVG не падыходзяць | los navegadores no leen imágenes HEIC · las imágenes SVG no se pueden usar | 浏览器无法读取 HEIC 图片 · SVG 图片无法使用 |
 | Preparing the picture… | Рыхтуем выяву… | Preparando la imagen… | 正在准备图片… |
 | Fit to Canvas · Fit · Done | Упісаць у палатно · Упісаць · Гатова | Ajustar al lienzo · Ajustar · Listo | 适合画布 · 适合 · 完成 |
 | Resize from the top-left corner · Turn · Turned {n}° | Змяніць памер за левы верхні кут · Павярнуць · Павернута на {n}° | Cambiar el tamaño desde la esquina superior izquierda · Girar · Girada {n}° | 从左上角调整大小 · 旋转 · 已旋转 {n}° |
 | Reference image, {opacity}%, turned {angle}° · Moved · Resized | Падкладка, {opacity}%, павернута на {angle}° · Зрушана · Памер зменены | Imagen de referencia, {opacity}%, girada {angle}° · Movida · Tamaño cambiado | 参考图，{opacity}%，旋转 {angle}° · 已移动 · 已调整大小 |
-| Reference image not saved on this device | Падкладка не захавана на гэтай прыладзе | Imagen de referencia no guardada en este dispositivo | 参考图未保存在此设备上 |
+| Reference image not saved in this browser | Падкладка не захавана ў гэтым браўзеры | Imagen de referencia no guardada en este navegador | 参考图未保存在此浏览器中 |
 
 ### The picture bar, Set Frame around the picture and Convert to beads (ticket 0883)
 
@@ -960,7 +961,8 @@ The picture bar on the reference image and its two actions (ReferenceImage card)
 | English | Русский | Українська | Polski |
 |---|---|---|---|
 | Move the picture · Drag to move the reference image. (the Move grip's name and Tooltip) | Сдвинуть картинку · Перетащите, чтобы сдвинуть подложку. | Зсунути зображення · Перетягніть, щоб зсунути підкладку. | Przesuń obraz · Przeciągnij, aby przesunąć obraz pomocniczy. |
-| More for the picture · Close (··· and its pressed face) | Ещё для картинки · Закрыть | Ще для зображення · Закрити | Więcej dla obrazu · Zamknij |
+| More for the picture · Close (Convert image's ··· and the Convert to beads popover's ×; the picture bar's ··· was retired by ticket 1009) | Ещё для картинки · Закрыть | Ще для зображення · Закрити | Więcej dla obrazu · Zamknij |
+| Picture over the beads · Lays the picture over your beads at its opacity, to compare them. Press again to put it back under. (the bar's toggle, name and Tooltip, ticket 1009) | Картинка поверх бисера · Кладёт картинку поверх бисера с её непрозрачностью, чтобы сравнить. Нажмите снова, чтобы вернуть её под бисер. | Зображення над бісером · Кладе зображення над бісером з його непрозорістю, щоб порівняти. Натисніть знову, щоб повернути його під бісер. | Obraz nad koralikami · Kładzie obraz nad koralikami z jego kryciem, by je porównać. Naciśnij ponownie, by wrócił pod spód. |
 | Replace · Remove (the bar's short labels) | Заменить · Убрать | Замінити · Прибрати | Zamień · Usuń |
 | Set Frame around the picture (name and Tooltip) | Рамка вокруг картинки | Рамка навколо зображення | Ramka wokół obrazu |
 | A {size} Frame where the picture lies. Replaces the Frame you have. · A {size} Frame where the picture lies. | Рамка {size} там, где лежит картинка. Заменит вашу рамку. · Рамка {size} там, где лежит картинка. | Рамка {size} там, де лежить зображення. Замінить вашу рамку. · Рамка {size} там, де лежить зображення. | Ramka {size} tam, gdzie leży obraz. Zastąpi Twoją ramkę. · Ramka {size} tam, gdzie leży obraz. |
@@ -983,6 +985,7 @@ The picture bar on the reference image and its two actions (ReferenceImage card)
 |---|---|---|---|
 | Move the picture · Drag to move the reference image. | Зрушыць выяву · Перацягніце, каб зрушыць падкладку. | Mover la imagen · Arrastra para mover la imagen de referencia. | 移动图片 · 拖动以移动参考图。 |
 | More for the picture · Close | Яшчэ для выявы · Закрыць | Más opciones de la imagen · Cerrar | 图片的更多操作 · 关闭 |
+| Picture over the beads · Lays the picture over your beads at its opacity, to compare them. Press again to put it back under. | Выява над бісерам · Кладзе выяву над бісерам з яе непразрыстасцю, каб параўнаць. Націсніце зноў, каб вярнуць яе пад бісер. | Imagen sobre las cuentas · Pone la imagen sobre tus cuentas con su opacidad, para compararlas. Pulsa de nuevo para volver a ponerla debajo. | 图片置于珠子上方 · 按其不透明度把图片放在珠子上方，便于对照。再按一次放回下方。 |
 | Replace · Remove | Замяніць · Прыбраць | Reemplazar · Quitar | 替换 · 移除 |
 | Set Frame around the picture | Рамка вакол выявы | Marco alrededor de la imagen | 给图片加画框 |
 | A {size} Frame where the picture lies. Replaces the Frame you have. · A {size} Frame where the picture lies. | Рамка {size} там, дзе ляжыць выява. Заменіць вашу рамку. · Рамка {size} там, дзе ляжыць выява. | Un marco de {size} donde está la imagen. Sustituye tu marco actual. · Un marco de {size} donde está la imagen. | 在图片所在处放一个 {size} 的画框。会替换你现有的画框。 · 在图片所在处放一个 {size} 的画框。 |
@@ -1079,7 +1082,7 @@ The file that holds a Project has one name, **Project file**: "Save Project file
 | Saved: {file} (the one saved-file toast; it replaces PNG ready, PDF ready and File ready) | Сохранено: {file} | Збережено: {file} | Захавана: {file} | 已保存：{file} | Guardado: {file} | Zapisano: {file} |
 | Ready to save: {file} · Save (a share that needs a fresh tap) | Готов к сохранению: {file} · Сохранить | Готовий до збереження: {file} · Зберегти | Гатовы да захавання: {file} · Захаваць | 可以保存：{file} · 保存 | Listo para guardar: {file} · Guardar | Gotowy do zapisania: {file} · Zapisz |
 | Make one with New Project, open one from the Projects library, or open a Project file. (empty Canvas) | Создайте его кнопкой «Новый проект», откройте проект из библиотеки проектов или из файла проекта. | Створіть його кнопкою «Новий проєкт», відкрийте проєкт із бібліотеки проєктів або з файлу проєкту. | Стварыце яго кнопкай «Новы праект», адкрыйце праект з бібліятэкі праектаў або з файла праекта. | 用“新建项目”创建一个，从项目库打开一个，或打开项目文件。 | Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o abre un archivo de proyecto. | Utwórz projekt przyciskiem Nowy projekt, otwórz projekt z biblioteki projektów albo z pliku projektu. |
-| Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it. (notice; its button is Save Project file) | Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. Освободите место в браузере или сохраните файл проекта, чтобы не потерять изменения. | Не вдалося зберегти на цьому пристрої. Останні зміни є лише на екрані. Звільніть місце в браузері або збережіть файл проєкту, щоб не втратити зміни. | Не атрымалася захаваць на гэтай прыладзе. Апошнія змены ёсць толькі на экране. Вызваліце месца ў браўзеры або захавайце файл праекта, каб не страціць змены. | 无法保存到此设备。你最近的修改只在屏幕上。请释放浏览器空间，或保存项目文件以保留修改。 | No se pudo guardar en este dispositivo. Tu último cambio solo está en pantalla. Libera espacio en el navegador o guarda un archivo de proyecto para conservarlo. | Nie udało się zapisać na tym urządzeniu. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo zapisz plik projektu, żeby jej nie stracić. |
+| Couldn't save in this browser. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it. (notice; its button is Save Project file) | Не удалось сохранить в этом браузере. Последние изменения есть только на экране. Освободите место в браузере или сохраните файл проекта, чтобы не потерять изменения. | Не вдалося зберегти в цьому браузері. Останні зміни є лише на екрані. Звільніть місце в браузері або збережіть файл проєкту, щоб не втратити зміни. | Не атрымалася захаваць у гэтым браўзеры. Апошнія змены ёсць толькі на экране. Вызваліце месца ў браўзеры або захавайце файл праекта, каб не страціць змены. | 无法保存到此浏览器。你最近的修改只在屏幕上。请释放浏览器空间，或保存项目文件以保留修改。 | No se pudo guardar en este navegador. Tu último cambio solo está en pantalla. Libera espacio en el navegador o guarda un archivo de proyecto para conservarlo. | Nie udało się zapisać w tej przeglądarce. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo zapisz plik projektu, żeby jej nie stracić. |
 | … Save all Projects to a Project file first if you want to keep copies. (Delete all Projects?) | … Сначала нажмите «Сохранить всё в файл проекта», если хотите сохранить копии. | … Спершу натисніть «Зберегти все у файл проєкту», якщо хочете зберегти копії. | … Спачатку націсніце «Захаваць усё ў файл праекта», калі хочаце захаваць копіі. | …如需保留副本，请先点击“将所有项目保存到项目文件”。 | … Antes, pulsa «Guardar todo en un archivo de proyecto» si quieres conservar copias. | … Najpierw kliknij „Zapisz wszystko w pliku projektu”, jeśli chcesz zachować kopie. |
 
 ## Help lines by device copy (ticket 0846)
@@ -1109,6 +1112,7 @@ Opening, duplicating and switching Projects say what happened and ask only when 
 | Now in “{copy}”. “{original}” stays as it was. (the toast after Duplicate) | Теперь открыт «{copy}». «{original}» остался как был. | Тепер відкрито «{copy}». «{original}» залишився як був. | Цяпер адкрыты «{copy}». «{original}» застаўся як быў. | 现在打开的是“{copy}”。“{original}”保持原样。 | Ahora estás en “{copy}”. “{original}” se queda como estaba. | Teraz otwarty jest „{copy}”. „{original}” zostaje bez zmian. |
 | Everything is copied, including Row progress. The copy opens; the original stays as it is now. (Duplicate's note) | Копируется всё, включая прогресс по рядам. Откроется копия, а оригинал останется таким, как сейчас. | Копіюється все, зокрема прогрес за рядами. Відкриється копія, а оригінал залишиться таким, як зараз. | Капіруецца ўсё, у тым ліку прагрэс па радах. Адкрыецца копія, а арыгінал застанецца такім, як зараз. | 所有内容都会被复制，包括行进度。复制后打开副本，原项目保持现状。 | Se copia todo, incluido el progreso por filas. Se abre la copia; el original se queda como está ahora. | Kopiowane jest wszystko, także postęp rzędów. Otworzy się kopia, a oryginał zostanie taki, jak teraz. |
 | Copy this Project and open the copy. (Duplicate's Tooltip) | Скопировать проект и открыть копию. | Скопіювати проєкт і відкрити копію. | Скапіраваць праект і адкрыць копію. | 复制此项目并打开副本。 | Copia este proyecto y abre la copia. | Skopiuj ten projekt i otwórz kopię. |
+| Now in “{name}”. (the toast after a pick in the Projects library under 1024px, where the strip shows no name, ticket 0986) | Теперь открыт «{name}». | Тепер відкрито «{name}». | Цяпер адкрыты «{name}». | 现在打开的是“{name}”。 | Ahora estás en “{name}”. | Teraz otwarty jest „{name}”. |
 
 ## Unnamed Project copy (ticket 0866)
 
@@ -1174,6 +1178,18 @@ The Printable chart's two switches in the Export panel and the Frame panel's exp
 | Adds pages that write out each row as counts of letters, with a box to tick as you finish it. (its Info button's body) | Добавляет страницы, где каждый ряд расписан буквами и числами, с квадратиком, чтобы отметить готовый ряд. | Додає сторінки, де кожен рядок розписано літерами й числами, з квадратиком, щоб позначити готовий рядок. | Дадае старонкі, дзе кожны рад распісаны літарамі і лічбамі, з квадрацікам, каб адзначыць гатовы рад. | 添加几页，把每一行写成字母和数量，并附一个方框，完成后打勾。 | Añade páginas que escriben cada fila con letras y números, con una casilla para marcarla al terminarla. | Dodaje strony, na których każdy rząd jest rozpisany literami i liczbami, z polem do odhaczenia gotowego rzędu. |
 | Show each color's letter on its beads, so colors can be told apart on screen. Printed charts always have the letters. (Letters' Info body; replaces "Print each color's letter on its beads, …") | Показывать букву цвета на каждой бисеринке, чтобы цвета различались на экране. На печатной схеме буквы есть всегда. | Показувати літеру кольору на кожній намистині, щоб кольори розрізнялися на екрані. На друкованій схемі літери є завжди. | Паказваць літару колеру на кожнай бісерынцы, каб колеры адрозніваліся на экране. На друкаванай схеме літары ёсць заўсёды. | 在每颗珠子上显示颜色字母，方便在屏幕上区分颜色。打印的图样总是带有字母。 | Muestra la letra de cada color en sus cuentas, para distinguir los colores en pantalla. Los esquemas impresos siempre llevan las letras. | Pokazuj literę koloru na każdym koraliku, by kolory dało się odróżnić na ekranie. Drukowany schemat zawsze ma litery. |
 
+## Export options by file copy (ticket 0957)
+
+Export quality stands under Picture and the two switches under Printable chart (ExportPanel card). The stops are captioned in a crafter's words, the DPI figures move into the head's Info note, and the line under the stops says the slider is for the picture. Large beads' Info body says it changes the picture too. "Low saves memory: …" is gone, and so is "{n} DPI" under each stop. English is the ticket's; the other languages are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| small file · for print · sharpest (the stops' captions, under Low, Medium, High) | малый файл · для печати · самое чёткое | малий файл · для друку · найчіткіша | малы файл · для друку · найвыразнейшая | 文件小 · 适合打印 · 最清晰 | archivo pequeño · para imprimir · la más nítida | mały plik · do druku · najostrzejsza |
+| What each quality gives (the Info button's name; replaces "What the lowest quality is for") | Что даёт каждое качество | Що дає кожна якість | Што дае кожная якасць | 各档质量的效果 | Qué da cada calidad | Co daje każda jakość |
+| Low draws the picture at {low} DPI: a small file, and one a phone can always make. Medium is {medium} DPI, for print. High is {high} DPI, the sharpest. (its Info body) | Низкое рисует картинку в {low} DPI: файл маленький, и телефон всегда с ним справится. Среднее: {medium} DPI, для печати. Высокое: {high} DPI, самое чёткое. | Низька малює картинку в {low} DPI: файл малий, і телефон завжди з ним впорається. Середня: {medium} DPI, для друку. Висока: {high} DPI, найчіткіша. | Нізкая малюе карцінку ў {low} DPI: файл малы, і тэлефон заўсёды з ім справіцца. Сярэдняя: {medium} DPI, для друку. Высокая: {high} DPI, найвыразнейшая. | 低：图片按 {low} DPI 绘制，文件小，手机总能生成。中：{medium} DPI，适合打印。高：{high} DPI，最清晰。 | Baja dibuja la imagen a {low} DPI: un archivo pequeño, que un móvil siempre puede crear. Media es {medium} DPI, para imprimir. Alta es {high} DPI, la más nítida. | Niska rysuje obraz w {low} DPI: mały plik, który telefon zawsze utworzy. Średnia to {medium} DPI, do druku. Wysoka to {high} DPI, najostrzejsza. |
+| For the picture. The printable chart is drawn in lines and stays sharp at any zoom. (under the stops) | Для картинки. Схема для печати нарисована линиями и остаётся чёткой при любом увеличении. | Для картинки. Схему для друку намальовано лініями, і вона лишається чіткою за будь-якого збільшення. | Для карцінкі. Схема для друку намалявана лініямі і застаецца выразнай пры любым павелічэнні. | 用于图片。可打印图表由线条绘制，任意放大都清晰。 | Para la imagen. El gráfico para imprimir se dibuja con líneas y se ve nítido con cualquier zoom. | Dla obrazu. Wykres do druku jest rysowany liniami i pozostaje ostry przy każdym powiększeniu. |
+| It changes the picture too: the picture is the chart’s first page. (appended to Large beads' Info body) | Меняет и картинку: она и есть первая страница схемы. | Змінює й картинку: вона і є першою сторінкою схеми. | Мяняе і карцінку: яна і ёсць першая старонка схемы. | 图片也会随之改变：图片就是图样的第一页。 | También cambia la imagen: la imagen es la primera página del gráfico. | Zmienia też obraz: obraz to pierwsza strona wykresu. |
+
 ## Converter settings as a label and a value (ticket 0894)
 
 Under a converter control stand only a result or an error (ConvertImage card). What a setting does is read once, so it sits behind the setting's Info button, its body the sentence it replaces, unchanged; what the preview shows needs no words. The Info buttons' names are DS-1's (Quiet converter copy, above), built here ahead of ticket 0896:
@@ -1193,20 +1209,59 @@ Under a converter control stand only a result or an error (ConvertImage card). W
 
 Gone strings are removed from every language. "To fix what was found, pick Background …" stays until ticket 0896 removes it with the step pane.
 
-## Grid focus copy (ticket 1002)
+## Grid focus copy (ticket 1002): gone
 
-The Canvas strip's Grid focus toggle (CanvasStrip card; BeadBoard card, Grid focus). Approved 2026-11-14, in the app since ticket 1002. "Grid" is the glossary's Grid; in Russian «сетка», a word the app's copy has not used before, so the Russian is a draft for the owner to check. The other languages were written with the build, as draft words to be checked by a speaker of each (below).
+Ticket 1007 removed Grid focus: its name, Tooltip line and disabled reason are gone from every language.
 
-| English | Русский |
-|---|---|
-| Grid focus (strip button name, shortcuts row) | Фокус сетки |
-| Keeps the grid clear around your work and calmer everywhere else. (Tooltip) | Сетка чёткая вокруг вашей работы и спокойнее на остальном холсте. |
-| There is no work to focus on yet. (disabled reason) | Пока нет работы, вокруг которой держать фокус. |
+## Frame stays copy (ticket 0935)
 
-Draft words (ticket 1002), to be checked by a speaker of each:
+The Project panel's canvas section says which layer it sets while a Frame is on the Canvas, and the toast after a change there that leaves the Frame on another Technique or Bead (Message card). `{canvas}` and `{frame}` are a Technique's name or a Bead's label.
 
-| English | Українська | Беларуская | 中文 | Español | Polski |
-|---|---|---|---|---|---|
-| Grid focus | Фокус сітки | Фокус сеткі | 网格聚焦 | Foco de cuadrícula | Fokus siatki |
-| Keeps the grid clear around your work and calmer everywhere else. | Сітка чітка навколо вашої роботи й спокійніша на решті полотна. | Сетка выразная вакол вашай працы і спакайнейшая на астатнім палатне. | 让作品周围的网格保持清晰，其他地方更安静。 | Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto. | Siatka jest wyraźna wokół twojej pracy i spokojniejsza wszędzie indziej. |
-| There is no work to focus on yet. | Поки немає роботи, навколо якої тримати фокус. | Пакуль няма працы, вакол якой трымаць фокус. | 还没有可以聚焦的作品。 | Todavía no hay trabajo en el que centrarse. | Nie ma jeszcze pracy, na której można się skupić. |
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Canvas, outside the Frame (section header) | Холст вне рамки | Полотно поза рамкою | Палатно па-за рамкай | 画布（边框之外） | Lienzo, fuera del marco | Płótno poza ramką |
+| The Canvas is {canvas} now. The Frame stays {frame}. (toast) | Холст теперь: {canvas}. Рамка остаётся: {frame}. | Полотно тепер: {canvas}. Рамка лишається: {frame}. | Палатно цяпер: {canvas}. Рамка застаецца: {frame}. | 画布现在是{canvas}，边框仍是{frame}。 | El lienzo ahora es {canvas}. El marco sigue en {frame}. | Płótno to teraz: {canvas}. Ramka zostaje: {frame}. |
+| Change the Frame too (its first action) | Изменить и рамку | Змінити й рамку | Змяніць і рамку | 边框也一起改 | Cambiar también el marco | Zmień też ramkę |
+| Open Frame (its second action) | Открыть рамку | Відкрити рамку | Адкрыць рамку | 打开边框 | Abrir marco | Otwórz ramkę |
+
+English follows the audit's proposal (UX-018); the other languages are proposals for review with the build.
+
+## Row in view copy (ticket 0934)
+
+After Row done, Back a row and Go to row the announcer says where the weaving is, in the counter's own words, once per move (ScreenReaders card): `{unit}` is Row or Column, a Custom frame says its pass as the counter does ("Round 3 of 9"), and the last pass done says Pattern done. Show row sits beside Go to row's name (ProgressBar card).
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| {unit} {current} of {total} (announced) | {unit} {current} из {total} | {unit} {current} з {total} | {unit} {current} з {total} | 第 {current} {unit}，共 {total} {unit} | {unit} {current} de {total} | {unit} {current} z {total} |
+| Pass {current} of {total}, row {line} (announced, peyote) | Проход {current} из {total}, ряд {line} | Прохід {current} з {total}, ряд {line} | Праход {current} з {total}, рад {line} | 第 {current} 趟，共 {total} 趟，第 {line} 行 | Pasada {current} de {total}, fila {line} | Przejście {current} z {total}, rząd {line} |
+| Pass {current} of {total}, column {line} | Проход {current} из {total}, столбец {line} | Прохід {current} з {total}, стовпець {line} | Праход {current} з {total}, слупок {line} | 第 {current} 趟，共 {total} 趟，第 {line} 列 | Pasada {current} de {total}, columna {line} | Przejście {current} z {total}, kolumna {line} |
+| Show row (Go to row's button) | Показать ряд | Показати ряд | Паказаць рад | 显示当前行 | Mostrar fila | Pokaż rząd |
+| Show column | Показать столбец | Показати стовпець | Паказаць слупок | 显示当前列 | Mostrar columna | Pokaż kolumnę |
+
+English follows the audit's proposal (UX-015, UX-017); the other languages are proposals for review with the build.
+
+## Background still found copy (ticket 0930)
+
+The chip over the beads while the background is found and not yet removed, with the Background popover closed (ConvertImage card). Its middle button is the popover's own "Remove what was found"; `{n}` is the share of the picture found.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Background found · {n}% of the picture (chip) | Фон найден · {n}% изображения | Тло знайдено · {n}% зображення | Фон знойдзены · {n}% выявы | 已找到背景 · 图片的 {n}% | Fondo encontrado · {n} % de la imagen | Znaleziono tło · {n}% obrazu |
+| Turn off (its last button) | Выключить | Вимкнути | Выключыць | 关闭 | Desactivar | Wyłącz |
+
+English follows the audit's proposal (UX-012); the other languages are proposals for review with the build.
+
+## The Progress bar's words (ticket 0972)
+
+The counter names its step in the announcer's words: `{unit} {current} of {total}` above ("Row 7 of 10", "Pass 3 of 27" on peyote, with "· row 2" after it); the announcer reads the same step with the rulers' row, `{step}, row {line}`. Where the number counts passes, Go to row is Go to pass, the noun of its field, and an Info button beside its name holds the passes sentence. The back step says where it goes.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Back a row | Назад на ряд | Назад на ряд | Назад на рад | 退回一行 | Atrás una fila | Rząd wstecz |
+| Back a column | Назад на столбец | Назад на стовпець | Назад на слупок | 退回一列 | Atrás una columna | Kolumna wstecz |
+| This row is marked done. Press Back a row to change it. | Этот ряд отмечен как готовый. Нажмите «Назад на ряд», чтобы изменить его. | Цей ряд позначено як готовий. Натисніть «Назад на ряд», щоб змінити його. | Гэты рад пазначаны як гатовы. Націсніце «Назад на рад», каб змяніць яго. | 这一行已标记为完成。按“退回一行”即可更改。 | Esta fila está marcada como terminada. Pulsa «Atrás una fila» para cambiarla. | Ten rząd jest oznaczony jako gotowy. Naciśnij „Rząd wstecz”, aby go zmienić. |
+| {step}, row {line} (announced, peyote) | {step}, ряд {line} | {step}, ряд {line} | {step}, рад {line} | {step}，第 {line} 行 | {step}, fila {line} | {step}, rząd {line} |
+| Go to pass | Перейти к проходу | Перейти до проходу | Перайсці да прахода | 跳到趟 | Ir a la pasada | Przejdź do przejścia |
+| What a pass is (Info button) | Что такое проход | Що таке прохід | Што такое праход | 什么是趟 | Qué es una pasada | Czym jest przejście |
+
+English follows the audit (UX-059, UX-062, UX-063); whether a peyote beader says "pass" or "row" for a step is open for a beader's answer.

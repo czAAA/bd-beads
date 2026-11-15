@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { useConvertSizeReadings } from '../../composables/import/useConvertSizeReadings'
+import { beadLabel } from '../../domain/beads'
 import { estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
@@ -29,19 +30,33 @@ const beadsNeeded = computed(() => {
   return fillBlanks(words.value.resultBeadsNeeded, { count, grams: formatGrams(grams, t.value.quantities.gramsUnit, locale.value) })
 })
 
+/** Where fewer colors come out than asked and no list or Finish is the reason, the colors matched to that the picture
+ * has no more to give in (ticket 0928): the Bead, the Default Palette or My beads; none for Exact, whose colors are the
+ * picture's own. */
+const givenIn = computed(() => {
+  const source = wizard.source.value
+  if (source === 'bead-colors') return beadLabel(wizard.bead.value)
+  if (source === 'default') return words.value.defaultPalette
+  if (source === 'my-beads') return words.value.myBeads.name
+  return undefined
+})
+
 /** The result: the size, the colors (a kept part's, with the whole it was kept from), the beads needed. */
 const lines = computed(() => {
   const shown = result.value?.kept ?? result.value
   if (!ready.value || !shown) return undefined
   // Too few codes in the Finishes on (ticket 0901), or a My beads list shorter than the count asked (ticket 0902), says
-  // why fewer come out.
+  // why fewer come out; with neither, that the picture has no more to give (ticket 0928).
   const used = wizard.usedColorCount.value
   const finish = words.value.finish
+  const count = plural(locale.value, used, words.value.colorsCount)
   const colors = wizard.finishesShort.value
-    ? fillBlanks(finish.colorsShort, { colors: plural(locale.value, used, words.value.colorsCount), codes: plural(locale.value, wizard.codesLeft.value, finish.codesLeft) })
+    ? fillBlanks(finish.colorsShort, { colors: count, codes: plural(locale.value, wizard.codesLeft.value, finish.codesLeft) })
     : wizard.myBeadsShort.value
     ? fillBlanks(pluralForm(locale.value, used, words.value.myBeads.fewerColors), { codes: groupThousands(wizard.myBeadsTargets.value.length, locale.value) }, { count: groupThousands(used, locale.value) })
-    : plural(locale.value, used, words.value.colorsCount)
+    : wizard.foundColorCount.value < wizard.maxColors.value && givenIn.value
+    ? fillBlanks(words.value.fewerFound.allGiven, { colors: count, bead: givenIn.value })
+    : count
   const kept = result.value?.kept && fillBlanks(words.value.resultKeptFrom, { columns: wizard.dimensions.value.columns, rows: wizard.dimensions.value.rows })
   return {
     grid: shown.grid,
@@ -109,7 +124,7 @@ const buttonLabel = computed(() => (wizard.addsToCanvas ? t.value.convertImage.a
 .convert-foot {
   position: sticky;
   bottom: 0;
-  z-index: 1;
+  z-index: var(--convert-layer-pinned);
   display: flex;
   flex-direction: column;
   gap: var(--space-12);

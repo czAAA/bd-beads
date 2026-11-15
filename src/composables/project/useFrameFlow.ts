@@ -128,6 +128,18 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (frameOf(deps.currentProject())) handlesOn.value = !handlesOn.value
   }
 
+  /** The Frame panel opens on its settings (ticket 0935), as the Frame stays toast's Open Frame asks; cleared once it
+   * closes, so the strip's Frame button opens it at its top. */
+  const opensOnSettings = ref(false)
+  watch(barOpen, (open) => open || (opensOnSettings.value = false), { flush: 'sync' })
+
+  /** Opens the Frame panel with its settings in view (ticket 0935). */
+  function openOnSettings(): void {
+    if (!deps.currentProject()) return
+    opensOnSettings.value = true
+    barOpen.value = true
+  }
+
   /** The strip's Frame button: opens or closes the Frame panel, with or without a Frame (ticket 555). Once Row progress
    * has started the panel still opens, for the size and Remove Frame. */
   function toggleBar(): void {
@@ -463,6 +475,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     handlesOn,
     toggleHandles,
     toggleBar,
+    opensOnSettings,
+    openOnSettings,
     closeBar,
     press,
     drag,

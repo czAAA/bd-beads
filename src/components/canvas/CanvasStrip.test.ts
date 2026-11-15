@@ -1,6 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import { beforeEach, describe, expect, it } from 'vitest'
 import CanvasStrip from './CanvasStrip.vue'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
@@ -19,16 +18,16 @@ describe('CanvasStrip', () => {
 
   const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
 
-  it('holds Menu, Project, Frame (with or without one, ticket 555), Rotate canvas, Rulers, Grid focus, Undo, Redo, then the zoom (out, in, Fit) and Export, and passes each press on (tickets 425, 431, 0652)', async () => {
+  it('holds Menu, Project, Frame (with or without one, ticket 555), Rotate canvas, Rulers, Undo, Redo, then the zoom (out, in, Fit) and Export, and passes each press on (tickets 425, 431, 0652)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
 
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-coffee', 'strip-rotate-canvas', 'strip-rulers', 'strip-grid-focus', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset', 'strip-export'])
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-coffee', 'strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset', 'strip-export'])
     expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="canvas-strip-zoom"]').attributes('data-zoom-percent')).toBe('125')
 
-    for (const id of ['strip-rotate-canvas', 'strip-rulers', 'strip-grid-focus', 'strip-undo', 'strip-redo', 'zoom-in', 'zoom-out', 'zoom-reset']) await wrapper.get(`[data-testid="${id}"]`).trigger('click')
-    expect(Object.keys(wrapper.emitted())).toEqual(expect.arrayContaining(['rotate-canvas', 'toggle-rulers', 'toggle-grid-focus', 'undo', 'redo', 'zoom-in', 'zoom-out', 'reset']))
+    for (const id of ['strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-in', 'zoom-out', 'zoom-reset']) await wrapper.get(`[data-testid="${id}"]`).trigger('click')
+    expect(Object.keys(wrapper.emitted())).toEqual(expect.arrayContaining(['rotate-canvas', 'toggle-rulers', 'undo', 'redo', 'zoom-in', 'zoom-out', 'reset']))
   })
 
   it('has a Buy me a coffee link to the Coffee link, in a new tab with noopener (ticket 560)', () => {
@@ -205,44 +204,6 @@ describe('CanvasStrip Rulers (ticket 0921)', () => {
   })
 })
 
-describe('CanvasStrip Grid focus (ticket 1002)', () => {
-  const empty = bareProject({ beads: {}, technique: 'loom' })
-  const held = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
-  const gridFocusButton = (wrapper: ReturnType<typeof mount>) => wrapper.get('[data-testid="strip-grid-focus"]')
-  afterEach(() => delete document.documentElement.dataset.theme)
-
-  it('stands right after Rulers, and is held and plain with no bead and no Frame, with the reason in its Tooltip', async () => {
-    const wrapper = mount(CanvasStrip, { props: { project: empty, gridFocus: true } })
-    const button = gridFocusButton(wrapper)
-    const order = wrapper.findAll('[data-testid^="strip-"]').map((element) => element.attributes('data-testid'))
-    expect(order.indexOf('strip-grid-focus')).toBe(order.indexOf('strip-rulers') + 1)
-    expect(button.attributes('aria-disabled')).toBe('true')
-    expect(button.attributes('aria-pressed')).toBe('false')
-    expect(wrapper.text()).toContain(en.tooltips.noWorkToFocus)
-    await button.trigger('click')
-    expect(wrapper.emitted('toggle-grid-focus')).toBeUndefined()
-  })
-
-  it('is pressed while on, with its name, Tooltip line and key, and passes a press on', async () => {
-    const wrapper = mount(CanvasStrip, { props: { project: held, gridFocus: true } })
-    expect(gridFocusButton(wrapper).attributes('aria-pressed')).toBe('true')
-    expect(gridFocusButton(wrapper).attributes('aria-label')).toBe(en.canvas.gridFocusLabel)
-    expect(wrapper.text()).toContain(en.tooltips.gridFocus)
-    await gridFocusButton(wrapper).trigger('click')
-    expect(wrapper.emitted('toggle-grid-focus')).toHaveLength(1)
-    await wrapper.setProps({ gridFocus: false })
-    expect(gridFocusButton(wrapper).attributes('aria-pressed')).toBe('false')
-  })
-
-  it('is not shown in the Homepage\'s demo, nor in high contrast, where the grid is not tiles', async () => {
-    expect(mount(CanvasStrip, { props: { project: held, gridFocus: true, demo: true } }).find('[data-testid="strip-grid-focus"]').exists()).toBe(false)
-    document.documentElement.dataset.theme = 'contrast'
-    await nextTick()
-    await nextTick()
-    expect(mount(CanvasStrip, { props: { project: held, gridFocus: true } }).find('[data-testid="strip-grid-focus"]').exists()).toBe(false)
-  })
-})
-
 describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
   const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
   const props = { project, canUndo: true, canRedo: true, zoomPercent: 125 }
@@ -277,8 +238,8 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     const rulers = wrapper.get('[data-testid="strip-rulers"]')
     ;(rulers.element as HTMLElement).focus()
     await rulers.trigger('keydown', { key: 'ArrowRight' })
-    expect(document.activeElement).toBe(wrapper.get('[data-testid="strip-grid-focus"]').element)
-    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-grid-focus'])
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="strip-undo"]').element)
+    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-undo'])
     const reset = wrapper.get('[data-testid="zoom-reset"]')
     ;(reset.element as HTMLElement).focus()
     await reset.trigger('keydown', { key: 'ArrowRight' })
@@ -314,10 +275,10 @@ describe('CanvasStrip\'s Reference image button (ReferenceImage card, ticket 079
   const project = bareProject({ technique: 'loom' })
   const button = (referenceImage: 'none' | 'shown' | 'hidden') => mount(CanvasStrip, { props: { project, rulers: true, referenceImage } })
 
-  it('stands right after Rulers and Grid focus, named Reference image', () => {
+  it('stands right after Rulers, named Reference image', () => {
     const wrapper = button('none')
     const order = wrapper.findAll('[data-testid^="strip-"]').map((element) => element.attributes('data-testid'))
-    expect(order.indexOf('strip-reference-image')).toBe(order.indexOf('strip-grid-focus') + 1)
+    expect(order.indexOf('strip-reference-image')).toBe(order.indexOf('strip-rulers') + 1)
     expect(wrapper.get('[data-testid="strip-reference-image"]').attributes('aria-label')).toBe(en.referenceImage.name)
   })
 
@@ -420,5 +381,18 @@ describe('CanvasStrip save ring (ticket 0922, SaveReminder card)', () => {
     expect(wrapper.emitted('save-project-file')).toBeUndefined()
     expect(wrapper.emitted('select-panel')).toBeUndefined()
     wrapper.unmount()
+  })
+})
+
+describe('CanvasStrip Frame button (ticket 0932)', () => {
+  const framedWith = (beads: Record<number, Record<number, string>>) =>
+    bareProject({ technique: 'loom', frame: { row: 0, column: 0, rows: 4, columns: 4, technique: 'loom', beads } })
+
+  it('says Beads needed’s total in its Tooltip, counted on the settled Project, and the plain line while nothing is painted', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project: framedWith({}) } })
+    expect(wrapper.text()).toContain(en.tooltips.framePanel)
+    await wrapper.setProps({ settledProject: framedWith({ 1: { 1: '#ff0000', 2: '#00ff00' }, 2: { 1: '#ff0000' } }) })
+    expect(wrapper.text()).not.toContain(en.tooltips.framePanel)
+    expect(wrapper.text()).toMatch(/Open Beads needed \(3( · ≈ [^)]+)?\), the Frame’s size, Rotate and Remove\./)
   })
 })

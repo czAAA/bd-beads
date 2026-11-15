@@ -1,8 +1,9 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
-import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, toggleRowDirection } from '../../domain/rowProgress'
+import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, toggleRowDirection, turnRowDirectionTo, type ShownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
+import { rowProgressAnnouncement } from '../../i18n/rowProgressWords'
 import type { Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
@@ -16,6 +17,10 @@ export interface RowOpsDeps {
   messages: () => Translations
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
+  /** The announcer: each move of the row pointer is said in the counter's words (ticket 0934). */
+  announce?: (text: string) => void
+  /** Pans the Canvas the shortest way that brings the current row into view (ticket 0934). */
+  showRow?: () => void
 }
 
 /** A press of Row done or Row not done that moved the pointer (ticket 0730): what the Pattern's motion plays from.
@@ -46,17 +51,16 @@ export function useRowOps(deps: RowOpsDeps) {
   // Remove Frame and leaving the Project stop it too, however they come about.
   watch([() => deps.currentProject()?.id, () => frameOf(deps.currentProject()) !== undefined], stopRowMotion)
 
-  /** Flips row progress between rows and columns (ticket 32): its own toggle, separate from Rotate, and not an undo
-   * step. */
-  function onToggleRowDirection() {
+  /** Writes the Project with its rows turned another way, and says so: not an undo step (ticket 32). */
+  function turnTo(turn: (project: Project) => Project) {
     const project = deps.currentProject()
     if (project) {
-      const turned = toggleRowDirection(project)
-      // A Technique woven in rows only has nothing to turn (ticket 487).
+      const turned = turn(project)
+      // A Technique woven in rows only has nothing to turn (ticket 487), and the way the rows run already turns nothing.
       if (turned === project) return
       stopRowMotion()
       deps.replaceProject(turned)
-      // Said once per change, whether the button or its key turned it (ticket 411).
+      // Said once per change, whether the list or the key turned it (ticket 411).
       const t = deps.messages().rowProgress
       const { direction, reversed } = rowProgressOf(turned)
       const toast = {
@@ -69,7 +73,18 @@ export function useRowOps(deps: RowOpsDeps) {
     }
   }
 
-  /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or Go to row's jump. */
+  /** The `D` key: the rows on to the next of the four ways (ticket 0589). */
+  function onToggleRowDirection() {
+    turnTo(toggleRowDirection)
+  }
+
+  /** A way chosen from Turn row direction's list (ticket 0973, UX-060): the rows run that way, its own count back. */
+  function onSetRowDirection(way: ShownWay) {
+    turnTo((project) => turnRowDirectionTo(project, way))
+  }
+
+  /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or Go to row's jump. The row it
+   * reaches is brought into view and said aloud (ticket 0934). */
   function moveTo(pass: (from: number) => number, pressed: boolean) {
     const project = deps.currentProject()
     if (!project) return
@@ -81,6 +96,8 @@ export function useRowOps(deps: RowOpsDeps) {
     if (pressed) rowPress.value = { id: ++presses, done: to > from, from, to, patternDone: to === total }
     else stopRowMotion()
     deps.replaceProject(moved)
+    deps.showRow?.()
+    deps.announce?.(rowProgressAnnouncement(deps.messages().rowProgress, moved))
   }
 
   /** Steps the row pointer forward as a row is finished, or back to revisit an earlier one. */
@@ -123,5 +140,5 @@ export function useRowOps(deps: RowOpsDeps) {
     deps.showToast('marked-done', rowProgressOf(project).direction === 'columns' ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
   }
 
-  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onMoveRow, onGoToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
+  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onSetRowDirection, onMoveRow, onGoToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
 }

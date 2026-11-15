@@ -23,6 +23,18 @@ function paint(project: Project, at: { row: number; column: number }, color: str
 }
 
 describe('useEdit', () => {
+  it('changes nothing, takes no Undo step and counts no bead while the Project is open in another tab (ticket 0937)', () => {
+    const ctx = editHarness(base, { readOnly: () => true })
+    expect(ctx.edit('drawing', (project) => paint(project, inside(0, 0)))).toEqual({ kind: 'unchanged' })
+    ctx.editing.beginStroke()
+    ctx.editing.strokeStep((project) => paint(project, inside(1, 0)))
+    ctx.editing.endStroke()
+
+    expect(ctx.replaceProject).not.toHaveBeenCalled()
+    expect(ctx.history.canUndo.value).toBe(false)
+    expect(ctx.counted.beads).toBe(0)
+  })
+
   describe('a drawing edit', () => {
     it('lands on the Project, and Undo brings it back', () => {
       const ctx = editHarness(base)

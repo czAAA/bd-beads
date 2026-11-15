@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect, type Component } from 'vue'
 import AppButton from '../../components/ui/AppButton.vue'
 import AppIcon from '../../components/ui/AppIcon.vue'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
@@ -7,11 +7,12 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import type { DemoSnapshot } from '../demoCopy'
 import GroupedList from '../GroupedList.vue'
-import InsideEditor from './InsideEditor.vue'
+import type InsideEditor from './InsideEditor.vue'
+import { afterPaint } from '../afterPaint'
 import { TourStopped } from './hand'
 import { INSIDE_ROWS, insideChapters, type InsideChapter } from './insideCopy'
 import { scrollToShow } from './tabScroll'
-import { TOUR_SCRIPTS } from './tourScripts'
+import type { TOUR_SCRIPTS } from './tourScripts'
 import { useInsideTour } from './useInsideTour'
 
 // What's inside (Homepage card, tickets 0797, 0825, 0830, 0879): the heading, chapters, caption, Pause and Open editor
@@ -35,6 +36,26 @@ const { t, locale } = useI18n()
 const chapters = computed(() => insideChapters(t.value, locale.value))
 const rows = computed(() => chapters.value.flatMap((chapter) => chapter.rows))
 const editor = shallowRef<InstanceType<typeof InsideEditor>>()
+
+/** The demo editor and its tour (ticket 0991): asked for once What's inside first shows or the Welcome has painted,
+ * never with the page, so the first screen waits on neither; on a phone, which has no editor, never. */
+const demo = shallowRef<{ editor: Component; scripts: typeof TOUR_SCRIPTS }>()
+const demoWanted = ref(props.shown)
+watch(() => props.shown, (shown) => void (shown && (demoWanted.value = true)))
+onMounted(() => afterPaint(() => (demoWanted.value = true)))
+let demoAsked = false
+watchEffect(() => {
+  if (!demoWanted.value || !props.withEditor || demoAsked) return
+  demoAsked = true
+  Promise.all([import('./InsideEditor.vue'), import('./tourScripts')]).then(
+    ([view, scripts]) => (demo.value = { editor: view.default, scripts: scripts.TOUR_SCRIPTS }),
+    // Not arrived (offline before the offline copy had it): asked again the next time What's inside shows.
+    () => {
+      demoAsked = false
+      demoWanted.value = false
+    },
+  )
+})
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
 /** Whether the page is in view at all: the tour pauses with it. */
@@ -48,7 +69,7 @@ const tour = useInsideTour({
   fresh: async () => editor.value?.fresh(),
   hand: (instant, signal) => editor.value!.hand(instant, signal),
   play: async (row, hand) => {
-    await TOUR_SCRIPTS[row](hand)
+    await demo.value!.scripts[row](hand)
     editor.value?.giveFocusBack()
   },
   hideGhost: () => editor.value?.hideGhost(),
@@ -103,6 +124,19 @@ async function openFromHere() {
   emit('openFromHere', await taken)
 }
 
+/** Open editor from here, which a press in the demo lights and focuses (ticket 0950). */
+const openEl = shallowRef<InstanceType<typeof AppButton>>()
+/** Whether a press in the demo has lit Open editor from here: once a visit, and it stays lit. */
+const answered = ref(false)
+
+/** A press in the demo, which is only to watch (ticket 0950): the tour plays on and nothing is drawn, but the first one
+ * lights Open editor from here, the way to try it, and puts the focus on it. */
+function onPressed() {
+  if (answered.value) return
+  answered.value = true
+  ;(openEl.value?.$el as HTMLElement | undefined)?.focus()
+}
+
 /** Expand or Collapse: the demo's size changes at once. */
 function toggleExpand() {
   expanded.value = !expanded.value
@@ -153,7 +187,16 @@ watch(layout, async () => {
               tour.paused.value ? t.homepage.inside.play : t.homepage.inside.pause
             }}</span>
           </AppButton>
-          <AppButton class="inside__control" size="sm" data-testid="inside-open-from-here" @click="openFromHere">{{ t.homepage.inside.openFromHere }}</AppButton>
+          <AppButton
+            ref="openEl"
+            class="inside__control"
+            :class="{ 'inside__control--answer': answered }"
+            :variant="answered ? 'primary' : 'secondary'"
+            size="sm"
+            data-testid="inside-open-from-here"
+            @click="openFromHere"
+            >{{ t.homepage.inside.openFromHere }}</AppButton
+          >
         </div>
         <!-- Every row's caption in one cell, the one shown on top: it keeps the tallest's height, so nothing moves and
              the editor never changes size as the tour plays. Not a live region: it would speak every few seconds. -->
@@ -174,7 +217,9 @@ watch(layout, async () => {
           </p>
         </div>
       </div>
-      <InsideEditor ref="editor" class="inside__editor" :expand="expand" @toggle-expand="toggleExpand" />
+      <component :is="demo.editor" v-if="demo" ref="editor" class="inside__editor" :expand="expand" @toggle-expand="toggleExpand" @pressed="onPressed" />
+      <!-- The editor's frame while it is on its way, so nothing moves when it arrives. -->
+      <div v-else class="inside__editor" data-testid="inside-editor-waiting" />
     </template>
 
     <template v-else>
@@ -260,6 +305,17 @@ watch(layout, async () => {
 /* `--control-height-small`, 28px, under AppButton's own small height. */
 .inside .inside__control {
   height: var(--control-height-small);
+}
+
+/* Lit by a press in the demo (ticket 0950): one calm fade to the accent look, none under reduced motion. */
+.inside .inside__control--answer {
+  transition-duration: var(--duration-base);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inside .inside__control--answer {
+    transition: none;
+  }
 }
 
 /* Pause and Play in one cell, the one not read hidden: the button keeps the wider word's width. */

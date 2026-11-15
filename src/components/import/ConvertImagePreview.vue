@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watchPostEffect } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch, watchPostEffect } from 'vue'
 import { NARROW_CONVERTER, useConvertCompare, type CompareView } from '../../composables/import/useConvertCompare'
 import { useConvertImageWizardState, type ConvertTool } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
@@ -8,6 +8,7 @@ import { useActionKeys } from '../../composables/shell/useActionKeys'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { useRefitGlide } from '../../composables/ui/useRefitGlide'
 import { clamp } from '../../domain/clamp'
 import { foundRuns } from '../../domain/convertBackground'
 import { CROP_HANDLES, type CropHandle } from '../../domain/convertSize'
@@ -28,6 +29,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppHandle from '../ui/AppHandle.vue'
 import IconButton from '../ui/IconButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import ConvertBackgroundChip from './ConvertBackgroundChip.vue'
 import ConvertDropZone from './ConvertDropZone.vue'
 
 // Convert image's preview (ConvertImage card DS-1, DS-3; tickets 0747, 0780, 0787, 0896, 0898, 0909): the beads with
@@ -96,6 +98,29 @@ const ROOM = computed(() => {
     bottom: coarse.value ? px('--convert-fit-bottom-touch', 96) : px('--convert-fit-bottom', 90),
   }
 })
+
+/** The px a tall popover (Colors) covers at the preview's right while it is open beside the column: the beads fit into
+ * the room left of it and go back on close, gliding there (ticket 0967). Not with Compare's two halves, which it would
+ * squeeze to nothing, nor under 1024 px or in portrait, where the popover opens in the column. */
+const covered = ref(0)
+const { width: paneWidth, height: paneHeight } = useElementSize(paneEl)
+const glide = useRefitGlide(() => [...(paneEl.value?.querySelectorAll<HTMLElement>('.convert-preview__box') ?? [])])
+function coveredNow(): number {
+  const pane = paneEl.value
+  if (!pane || narrow.value || sideBySide.value) return 0
+  const popover = pane.closest('.convert-page')?.querySelector('.convert-popover--tall')
+  return popover ? Math.max(0, pane.getBoundingClientRect().right - popover.getBoundingClientRect().left) : 0
+}
+watch(
+  [() => wizard.popover.value, narrow, sideBySide],
+  () => {
+    const next = coveredNow()
+    if (next !== covered.value) void glide(() => (covered.value = next))
+  },
+  { flush: 'post' },
+)
+watch([paneWidth, paneHeight], () => (covered.value = coveredNow()))
+
 /** The view's own zoom steps, a multiple of the fit. */
 const VIEW_ZOOMS = [1, 1.5, 2, 3, 4, 6, 8]
 const viewZoom = ref(1)
@@ -110,7 +135,7 @@ const space = computed(() => project.value && spaceOf(project.value, false))
 const fitScale = computed(() => {
   const extent = space.value?.extent
   if (!extent || extent.width === 0 || extent.height === 0) return 1
-  const width = Math.max(1, viewportWidth.value - ROOM.value.side * 2)
+  const width = Math.max(1, viewportWidth.value - ROOM.value.side * 2 - covered.value)
   const height = Math.max(1, viewportHeight.value - ROOM.value.top - ROOM.value.bottom)
   return Math.min(width / extent.width, height / extent.height)
 })
@@ -128,9 +153,9 @@ const displayed = computed(() => {
 })
 const boxStyle = computed(() => ({ width: `${displayed.value.width}px`, height: `${displayed.value.height}px` }))
 const stageStyle = computed(() => ({
-  width: `${Math.max(viewportWidth.value, displayed.value.width + ROOM.value.side * 2)}px`,
+  width: `${Math.max(viewportWidth.value, displayed.value.width + ROOM.value.side * 2 + covered.value)}px`,
   height: `${Math.max(viewportHeight.value, displayed.value.height + ROOM.value.top + ROOM.value.bottom)}px`,
-  padding: `${ROOM.value.top}px ${ROOM.value.side}px ${ROOM.value.bottom}px`,
+  padding: `${ROOM.value.top}px ${ROOM.value.side + covered.value}px ${ROOM.value.bottom}px ${ROOM.value.side}px`,
 }))
 
 /** The Frame's beads in the box, in px: the line goes round them and everything else is dimmed. */
@@ -641,6 +666,15 @@ function chipFor(half: Half) {
   return sideBySide.value ? words.value.compareChipBeads : undefined
 }
 
+/** The background found and not yet removed still marks the beads once its popover is closed (ticket 0930): the
+ * Background button stays drawn on, and a chip over the beads names the state with its ways on. */
+const backgroundOn = computed(() => wizard.popover.value === 'background' || wizard.background.value === 'find')
+const backgroundChip = computed(
+  () => wizard.background.value === 'find' && wizard.popover.value !== 'background' && !compare.held.value && !compare.pictureAlone.value,
+)
+/** The background's chip stands on the beads' half only. */
+const backgroundChipOn = (half: Half) => half === 'beads' && backgroundChip.value
+
 onBeforeUnmount(() => {
   endDrag()
   endMark()
@@ -723,11 +757,14 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
-          <span
-            v-if="chipFor(half)"
-            class="convert-preview__chip"
-            :class="{ 'convert-preview__chip--compare': chipFor(half) !== words.bandMakeEmpty }"
-            :data-half="half" data-testid="convert-chip">{{ chipFor(half) }}</span>
+          <div v-if="chipFor(half) || backgroundChipOn(half)" class="convert-preview__chips">
+            <span
+              v-if="chipFor(half)"
+              class="convert-preview__chip"
+              :class="{ 'convert-preview__chip--compare': chipFor(half) !== words.bandMakeEmpty }"
+              :data-half="half" data-testid="convert-chip">{{ chipFor(half) }}</span>
+            <ConvertBackgroundChip v-if="backgroundChipOn(half)" />
+          </div>
         </div>
       </div>
 
@@ -739,7 +776,7 @@ onBeforeUnmount(() => {
             variant="plain"
             :icon-size="16"
             :action="actions.background"
-            :selected="wizard.popover.value === 'background'"
+            :selected="backgroundOn"
             aria-haspopup="dialog"
             :aria-expanded="wizard.popover.value === 'background'"
             data-testid="convert-tool-background"
@@ -751,7 +788,7 @@ onBeforeUnmount(() => {
           <AppButton
             variant="text"
             :action="actions.background"
-            :selected="wizard.popover.value === 'background'"
+            :selected="backgroundOn"
             aria-haspopup="dialog"
             :aria-expanded="wizard.popover.value === 'background'"
             data-testid="convert-tool-background"
@@ -920,11 +957,11 @@ onBeforeUnmount(() => {
 /* The crop's handles are the shared handle (Handle card), over the clipped picture; a corner wins where it and an
    edge's reach meet, as on the Canvas. */
 .convert-preview__handle {
-  z-index: 2;
+  z-index: var(--convert-layer-handle);
 }
 
 .convert-preview__handle--corner {
-  z-index: 3;
+  z-index: calc(var(--convert-layer-handle) + 1);
 }
 
 /* Under a finger the held corner's disc is 44 across (DS-1). */
@@ -937,7 +974,7 @@ onBeforeUnmount(() => {
 /* The kept chip, centred on the crop's top edge with its bottom 14 above it (DS-1). */
 .convert-preview__kept-chip {
   position: absolute;
-  z-index: 4;
+  z-index: var(--convert-layer-chip);
   display: flex;
   align-items: center;
   gap: var(--space-8);
@@ -974,7 +1011,7 @@ onBeforeUnmount(() => {
 /* The size chip, 26 right of the handle held, in the Tooltip's look (DS-1). */
 .convert-preview__size-chip {
   position: absolute;
-  z-index: 4;
+  z-index: var(--convert-layer-chip);
   display: flex;
   flex-direction: column;
   padding: var(--space-6) var(--space-10);
@@ -1000,7 +1037,7 @@ onBeforeUnmount(() => {
 
 .convert-preview__ring {
   position: absolute;
-  z-index: 2;
+  z-index: var(--convert-layer-handle);
   pointer-events: none;
   box-shadow:
     inset 0 0 0 2px var(--ink),
@@ -1014,7 +1051,7 @@ onBeforeUnmount(() => {
   right: var(--space-8);
   bottom: var(--convert-tools-lift);
   left: var(--space-8);
-  z-index: 3;
+  z-index: var(--convert-layer-tools);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1055,17 +1092,29 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* A chip while a tool or Compare shows something, centred 14 below its half's top (DS-1, DS-3); Compare's never wrap,
-   Make empty's line may on a phone. */
-.convert-preview__chip {
+/* The chips while a tool or Compare shows something, centred 14 below their half's top (DS-1, DS-3), one under the
+   other: the half's line, then the background still found (ticket 0930). Only the background's takes a press. */
+.convert-preview__chips {
   position: absolute;
   top: var(--space-14);
   left: 50%;
-  z-index: 3;
+  z-index: var(--convert-layer-tools);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
+  width: max-content;
+  max-width: calc(100% - var(--space-32));
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* Compare's never wrap, Make empty's line may on a phone. */
+.convert-preview__chip {
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
-  max-width: calc(100% - var(--space-32));
+  max-width: 100%;
   min-height: var(--convert-chip-height);
   padding: var(--space-4) var(--space-12);
   font: var(--type-meta);
@@ -1076,7 +1125,6 @@ onBeforeUnmount(() => {
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
   box-shadow: var(--elevation-3);
-  transform: translateX(-50%);
 }
 
 :root[data-theme='dark'] .convert-preview__chip {
@@ -1098,7 +1146,7 @@ onBeforeUnmount(() => {
 /* Under a finger that holds Compare or Picture, a 44 disc in accent at 18% (DS-3). */
 .convert-preview__press {
   position: absolute;
-  z-index: 4;
+  z-index: var(--convert-layer-chip);
   width: calc(var(--handle-reach-touch) * 2);
   height: calc(var(--handle-reach-touch) * 2);
   pointer-events: none;

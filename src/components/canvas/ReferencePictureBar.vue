@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
-import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { pictureBarPlace, type ScreenBox } from '../../composables/canvas/pictureBarPlacement'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -15,9 +14,9 @@ import FileButton from '../ui/form/FileButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import IconButton from '../ui/IconButton.vue'
 
-// The picture bar (ReferenceImage card, ticket 0883): a pill over the shown reference image's top edge, level, in screen
-// px: the Move grip, Set Frame around the picture, Convert to beads and ···, which opens Opacity, Replace and Remove in
-// place. One `toolbar` Tab stop; the grip's drag and arrows move the picture, saved on release with no Undo step.
+// The picture bar (ReferenceImage card, tickets 0883, 1009): a pill over the shown reference image's top edge, in screen
+// px: the Move grip, Set Frame around the picture, Convert to beads, Picture over the beads, Opacity, Replace and Remove,
+// all shown. One `toolbar` Tab stop; the grip's drag and arrows move the picture, saved on release with no Undo step.
 const props = defineProps<{
   place: ReferencePlace
   /** The picture's box on screen, the bar's height and where it stands (pictureBarPlacement). */
@@ -35,6 +34,8 @@ const props = defineProps<{
   convertBody: string
   convertOff?: string
   converting: boolean
+  /** The picture lies over the beads, to compare them against it (ticket 1009). */
+  over: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,6 +47,7 @@ const emit = defineEmits<{
   frame: []
   convert: []
   opacity: [opacity: OpacityStep]
+  over: [on: boolean]
   replace: [file: File]
   remove: []
 }>()
@@ -57,11 +59,6 @@ const { width } = useElementSize(barEl, { box: 'border-box' })
 const at = computed(() => pictureBarPlace(props.picture, { width: width.value, height: props.barHeight }, props.view.viewport, props.sheet))
 
 const moveAction = controlAction('move-reference-image')
-/** ··· has opened Opacity, Replace and Remove. */
-const opened = ref(false)
-const fold = () => (opened.value = false)
-useOverlayLayer({ isOpen: () => opened.value, root: () => barEl.value, close: fold, outside: 'through' })
-
 const roving = useRovingFocus(barEl, { selector: '.picture-bar__item', axis: () => 'horizontal', managesTabIndex: true })
 
 const opacityOptions = computed(() => OPACITY_STEPS.map((step) => ({ value: String(step) as `${OpacityStep}`, label: fillBlanks(words.value.percent, { count: step }) })))
@@ -125,7 +122,6 @@ function onFile(event: Event) {
   const file = input.files?.[0]
   if (file) emit('replace', file)
   input.value = ''
-  fold()
 }
 </script>
 
@@ -190,31 +186,28 @@ function onFile(event: Event) {
       variant="plain"
       shape="round"
       class="picture-bar__item"
-      :icon="opened ? 'close' : 'more'"
-      :label="opened ? words.bar.close : words.bar.more"
-      tooltip
-      :pressed="opened"
-      data-testid="picture-bar-more"
-      @click="opened = !opened"
+      icon="picture-over-beads"
+      :label="words.bar.over.name"
+      :tooltip="{ body: words.bar.over.body }"
+      :pressed="over"
+      data-testid="picture-bar-over"
+      @click="emit('over', !over)"
     />
-    <template v-if="opened">
-      <span class="picture-bar__divider" aria-hidden="true" />
-      <SegmentedControl
-        class="picture-bar__opacity"
-        :model-value="String(opacity) as `${OpacityStep}`"
-        :options="opacityOptions"
-        small
-        :aria-label="words.opacity"
-        data-testid="picture-bar-opacity"
-        @update:model-value="emit('opacity', Number($event) as OpacityStep)"
-      />
-      <span class="picture-bar__divider" aria-hidden="true" />
-      <AppButton variant="text" icon="image" class="picture-bar__item picture-bar__text" data-testid="picture-bar-replace" @click="choose">{{ words.bar.replace }}</AppButton>
-      <span ref="pickerEl" hidden>
-        <FileButton :label="words.replace" :accept="accept" tabindex="-1" data-testid="picture-bar-replace-input" @change="onFile" />
-      </span>
-      <AppButton variant="text" icon="delete" class="picture-bar__item picture-bar__text picture-bar__remove" data-testid="picture-bar-remove" @click="fold(), emit('remove')">{{ words.bar.remove }}</AppButton>
-    </template>
+    <SegmentedControl
+      class="picture-bar__opacity"
+      :model-value="String(opacity) as `${OpacityStep}`"
+      :options="opacityOptions"
+      small
+      :aria-label="words.opacity"
+      data-testid="picture-bar-opacity"
+      @update:model-value="emit('opacity', Number($event) as OpacityStep)"
+    />
+    <span class="picture-bar__divider" aria-hidden="true" />
+    <AppButton variant="text" icon="image" class="picture-bar__item picture-bar__text" data-testid="picture-bar-replace" @click="choose">{{ words.bar.replace }}</AppButton>
+    <span ref="pickerEl" hidden>
+      <FileButton :label="words.replace" :accept="accept" tabindex="-1" data-testid="picture-bar-replace-input" @change="onFile" />
+    </span>
+    <AppButton variant="text" icon="delete" class="picture-bar__item picture-bar__text picture-bar__remove" data-testid="picture-bar-remove" @click="emit('remove')">{{ words.bar.remove }}</AppButton>
   </div>
 </template>
 
