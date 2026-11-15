@@ -637,6 +637,7 @@ export const ru: Translations = {
     showColumn: 'Показать столбец',
     goToPass: 'Перейти к проходу',
     passesInfoName: 'Что такое проход',
+    showRowMarks: 'Показывать отметки рядов',
   },
   quantities: {
     heading: 'Нужно бисера',

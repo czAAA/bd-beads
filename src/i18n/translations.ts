@@ -783,6 +783,8 @@ export interface Translations {
     goToPass: string
     /** The name of Go to row's Info button that holds the passes sentence on peyote (ticket 0972). */
     passesInfoName: string
+    /** Turn row direction's list (ticket 0973): its Switch that shows and hides the ring and the number pill, Row highlight. */
+    showRowMarks: string
   }
   quantities: {
     heading: string

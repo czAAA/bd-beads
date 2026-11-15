@@ -1195,7 +1195,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onFrameDrag: frameFlow.drag,
       onFrameRelease: frameFlow.release,
       onFrameCancel: frameFlow.cancel,
-      onToggleRowDirection: rowOps.onToggleRowDirection,
+      onSetRowDirection: rowOps.onSetRowDirection,
       onMoveRow: rowOps.onMoveRow,
       onResetProgress: rowOps.onResetProgress,
       onGoToRow: rowOps.onGoToRow,

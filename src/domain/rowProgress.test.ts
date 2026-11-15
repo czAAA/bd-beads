@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
+import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, shownWay, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
 import { withFrame } from './frame'
@@ -169,6 +169,34 @@ describe('row direction', () => {
       ['columns', true],
       ['rows', false],
     ])
+  })
+
+  describe('turned straight to a way chosen from the list (ticket 0973, UX-060)', () => {
+    it('points the rows that way, and choosing the way left puts its count back as it was', () => {
+      const onRowSix = moveToRow(tallProject(), 6)
+      const upward = turnRowDirectionTo(onRowSix, 'up')
+
+      expect(shownWay(rowProgressOf(upward))).toBe('up')
+      expect(rowProgressPosition(upward)).toEqual({ current: 0, total: 20 })
+      expect(rowProgressPosition(turnRowDirectionTo(upward, 'down'))).toEqual({ current: 6, total: 20 })
+      expect(shownWay(rowProgressOf(turnRowDirectionTo(onRowSix, 'right')))).toBe('right')
+      expect(shownWay(rowProgressOf(turnRowDirectionTo(onRowSix, 'left')))).toBe('left')
+    })
+
+    it('leaves the Project as it is for the way the rows run already', () => {
+      const project = tallProject()
+      expect(turnRowDirectionTo(project, 'down')).toBe(project)
+    })
+
+    it('reads the way as the Frame lies on a turned Frame', () => {
+      const project = tallProject()
+      const turned = withFrameSheet(project, { ...frameOf(project)!, quarterTurns: 1 })
+      expect(shownWay(rowProgressOf(turned), 1)).toBe('left')
+
+      const chosen = turnRowDirectionTo(turned, 'down')
+      expect(shownWay(rowProgressOf(chosen), 1)).toBe('down')
+      expect(turnRowDirectionTo(turned, 'left')).toBe(turned)
+    })
   })
 
   it('weaves a bottom to top row from the Frame\'s last line, with its own pointer', () => {
