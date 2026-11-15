@@ -5,6 +5,7 @@ import FramePanel from './FramePanel.vue'
 import { rotateFrame } from '../../domain/rotate'
 import PanelHost from '../shell/PanelHost.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
@@ -287,28 +288,26 @@ describe('FramePanel (ticket 473)', () => {
     expect((await mountWithExport()).get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
   })
 
-  it('shows each stop’s dpi, with no size under it (tickets 571, 0583)', async () => {
+  it('captions each stop in words, keeps the dpi for the Info note and says the slider is for the picture (tickets 0583, 0957)', async () => {
     const small = await mountWithExport()
-    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('150 DPI')
-    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
-    expect(small.get('[data-testid="quality-stop-medium"]').text()).toBe('Medium300 DPI')
+    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe(en.frame.qualityLowCaption)
+    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe(en.frame.qualityHighCaption)
+    expect(small.get('[data-testid="quality-stop-medium"]').text()).toBe(en.frame.qualityMedium + en.frame.qualityMediumCaption)
     expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
-    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toBe('Medium, 300 DPI')
-
-    // A Frame too large for any bead size to be reduced: the page is the same size, so there is no reduced stop.
-    const large = await mountWithExport(withLayers(framed(), { frame: { ...frameOf(framed())!, columns: 200, rows: 200 } }))
-    expect(large.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
-    expect(large.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
+    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toBe(`${en.frame.qualityMedium}, ${en.frame.qualityMediumCaption}`)
+    expect(small.get('[data-testid="quality-note"]').text()).toBe(en.frame.qualityNote)
+    expect(small.get('[role="radiogroup"]').text()).not.toContain('DPI')
   })
 
-  it('says what High is when this device cannot draw a 450 dpi page, and shows that dpi on the stop (ticket 572)', async () => {
+  it('says what High is when this device cannot draw a 450 dpi page, and gives that dpi in the Info note (tickets 572, 0957)', async () => {
     expect((await mountWithExport()).find('[data-testid="quality-pdf-capped"]').exists()).toBe(false)
     vi.mocked(pngDpiFor).mockImplementation((quality) => ({ low: 150, medium: 300, high: 300 })[quality])
     try {
       const wrapper = await mountWithExport()
       expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(fillBlanks(en.frame.qualityPdfCapped, { n: 300 }))
-      expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe('300 DPI')
+      expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe(en.frame.qualityHighCaption)
+      expect(wrapper.getComponent(InfoButton).props('body')).toBe(fillBlanks(en.frame.qualityHint, { low: 150, medium: 300, high: 300 }))
     } finally {
       vi.mocked(pngDpiFor).mockImplementation((quality) => PNG_DPI_BY_QUALITY[quality])
     }

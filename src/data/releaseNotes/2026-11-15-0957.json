@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "In Export, each option stands under the file it changes, and Export quality names its stops in words: small file, for print, sharpest",
+    "ru": "В экспорте каждая настройка стоит под файлом, который она меняет, а у качества экспорта ступени названы словами: малый файл, для печати, самое чёткое",
+    "uk": "В експорті кожне налаштування стоїть під файлом, який воно змінює, а в якості експорту щаблі названо словами: малий файл, для друку, найчіткіша",
+    "be": "У экспарце кожная налада стаіць пад файлам, які яна мяняе, а ў якасці экспарту прыступкі названы словамі: малы файл, для друку, найвыразнейшая",
+    "zh": "导出中每个选项都放在它所改变的文件下面，导出质量的各档也改用文字说明：文件小、适合打印、最清晰",
+    "es": "En Exportar, cada opción está bajo el archivo que cambia, y la calidad de exportación nombra sus niveles con palabras: archivo pequeño, para imprimir, la más nítida",
+    "pl": "W eksporcie każda opcja stoi pod plikiem, który zmienia, a jakość eksportu nazywa swoje stopnie słowami: mały plik, do druku, najostrzejsza"
+  }
+}
