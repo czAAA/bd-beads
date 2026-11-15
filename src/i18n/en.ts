@@ -1206,6 +1206,8 @@ export const en: Translations = {
     keyHints: 'Show key hints',
     keyHintsOn: 'On',
     keyHintsOff: 'Off',
+    pasteTool: 'Paste tool',
+    pasteClipboard: 'Paste from clipboard',
   },
   tooltips: {
     select: 'Then copy and paste, or remove.',
@@ -1214,7 +1216,7 @@ export const en: Translations = {
     selectAll: 'Select every bead at once.',
     hand: 'Drag to move around the Canvas.',
     editFrame: 'Show or hide the handles on the Frame.',
-    framePanel: 'Open the Frame’s size, Rotate and Remove.',
+    framePanel: 'Open Export, Beads needed, the Frame’s size, Rotate and Remove.',
     frameEdgeOut: 'Grow the Frame by one bead on this side.',
     frameEdgeIn: 'Shrink the Frame by one bead on this side.',
     frameEdgeInDisabled: 'The Frame can’t get any smaller on this side.',
@@ -1279,7 +1281,7 @@ export const en: Translations = {
     fitAndExport: 'Fit the Frame around every bead, then open Export on Picture.',
     pasteToolTouch: 'Tap where the copy goes.',
     noBeadsToNumber: 'There are no beads to number.',
-    framePanelBeads: 'Open Beads needed ({total}), the Frame’s size, Rotate and Remove.',
+    framePanelBeads: 'Open Export, Beads needed ({total}), the Frame’s size, Rotate and Remove.',
   },
   layerSettings: {
     frameHeading: 'Settings',

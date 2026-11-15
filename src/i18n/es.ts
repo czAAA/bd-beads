@@ -1219,6 +1219,8 @@ export const es: Translations = {
     keyHints: 'Mostrar atajos de teclado',
     keyHintsOn: 'Sí',
     keyHintsOff: 'No',
+    pasteTool: 'Herramienta Pegar',
+    pasteClipboard: 'Pegar del portapapeles',
   },
   tooltips: {
     select: 'Luego copia y pega, o quita.',
@@ -1227,7 +1229,7 @@ export const es: Translations = {
     selectAll: 'Selecciona todas las cuentas a la vez.',
     hand: 'Arrastra para moverte por el lienzo.',
     editFrame: 'Muestra u oculta los tiradores del marco.',
-    framePanel: 'Abre el tamaño del marco, girar y quitar.',
+    framePanel: 'Abre Exportar, Cuentas necesarias, el tamaño del marco, girar y quitar.',
     frameEdgeOut: 'Amplía el marco una cuenta por este lado.',
     frameEdgeIn: 'Reduce el marco una cuenta por este lado.',
     frameEdgeInDisabled: 'El marco ya no se puede reducir más por este lado.',
@@ -1292,7 +1294,7 @@ export const es: Translations = {
     fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
     pasteToolTouch: 'Toca donde va la copia.',
     noBeadsToNumber: 'No hay cuentas que numerar.',
-    framePanelBeads: 'Abre Cuentas necesarias ({total}), el tamaño del marco, girar y quitar.',
+    framePanelBeads: 'Abre Exportar, Cuentas necesarias ({total}), el tamaño del marco, girar y quitar.',
   },
   layerSettings: {
     frameHeading: 'Ajustes',

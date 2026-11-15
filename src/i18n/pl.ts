@@ -1222,6 +1222,8 @@ export const pl: Translations = {
     keyHints: 'Pokazuj podpowiedzi klawiszy',
     keyHintsOn: 'Wł.',
     keyHintsOff: 'Wył.',
+    pasteTool: 'Narzędzie Wklej',
+    pasteClipboard: 'Wklej ze schowka',
   },
   tooltips: {
     select: 'Potem skopiuj i wklej albo usuń.',
@@ -1230,7 +1232,7 @@ export const pl: Translations = {
     selectAll: 'Zaznacza wszystkie koraliki naraz.',
     hand: 'Przeciągnij, aby przesuwać się po płótnie.',
     editFrame: 'Pokaż lub ukryj uchwyty ramki.',
-    framePanel: 'Otwórz rozmiar ramki, obrót i usuwanie.',
+    framePanel: 'Otwórz eksport, „Potrzebne koraliki”, rozmiar ramki, obrót i usuwanie.',
     frameEdgeOut: 'Powiększ ramkę o jeden koralik z tej strony.',
     frameEdgeIn: 'Zmniejsz ramkę o jeden koralik z tej strony.',
     frameEdgeInDisabled: 'Z tej strony ramki nie można już zmniejszyć.',
@@ -1295,7 +1297,7 @@ export const pl: Translations = {
     fitAndExport: 'Dopasuj ramkę do wszystkich koralików i otwórz eksport obrazu.',
     pasteToolTouch: 'Dotknij miejsca, gdzie ma trafić kopia.',
     noBeadsToNumber: 'Nie ma koralików do ponumerowania.',
-    framePanelBeads: 'Otwórz „Potrzebne koraliki” ({total}), rozmiar ramki, obrót i usuwanie.',
+    framePanelBeads: 'Otwórz eksport, „Potrzebne koraliki” ({total}), rozmiar ramki, obrót i usuwanie.',
   },
   layerSettings: {
     frameHeading: 'Ustawienia',
