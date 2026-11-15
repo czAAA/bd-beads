@@ -291,6 +291,32 @@ describe('Convert image, the quiet converter', () => {
     }
   }
 
+  // The Colors popover stands over the preview's right (ticket 0967): the beads fit into the room left of it and go back
+  // to the size they had on close (the glide itself: useRefitGlide.dom.test.ts).
+  for (const [width, height] of [
+    [1366, 1024],
+    [1470, 956],
+  ] as const) {
+    it(`leaves every bead in view beside the Colors popover at ${width} × ${height}, and puts them back on close`, async () => {
+      const mounted = await mountAt(ConvertPageHost, props, { locale: 'en', width })
+      await page.viewport(width, height)
+      await pictureSet(mounted.root)
+      await settleForMeasuring()
+      const root = mounted.root
+      const before = rect(root, 'convert-image-canvas')
+      find(root, 'convert-colors-more').click()
+      await settleForMeasuring()
+      const beads = rect(root, 'convert-image-canvas')
+      expect(beads.right).toBeLessThanOrEqual(rect(root, 'convert-colors-popover').left)
+      expect(beads.width).toBeLessThan(before.width)
+
+      find(root, 'convert-colors-more').click()
+      await settleForMeasuring()
+      const after = rect(root, 'convert-image-canvas')
+      expect([after.left, after.top, after.width, after.height]).toEqual([before.left, before.top, before.width, before.height])
+    })
+  }
+
   it('holds Background, Make empty and Beads | Picture in the bar under 1024 px, whole in the longest wording', async () => {
     const mounted = await mountAt(ConvertPageHost, props, { locale: 'longest', width: 1024 })
     await page.viewport(1024, 1366)

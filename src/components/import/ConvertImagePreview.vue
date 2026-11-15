@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watchPostEffect } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch, watchPostEffect } from 'vue'
 import { NARROW_CONVERTER, useConvertCompare, type CompareView } from '../../composables/import/useConvertCompare'
 import { useConvertImageWizardState, type ConvertTool } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
@@ -8,6 +8,7 @@ import { useActionKeys } from '../../composables/shell/useActionKeys'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { useRefitGlide } from '../../composables/ui/useRefitGlide'
 import { clamp } from '../../domain/clamp'
 import { foundRuns } from '../../domain/convertBackground'
 import { CROP_HANDLES, type CropHandle } from '../../domain/convertSize'
@@ -97,6 +98,29 @@ const ROOM = computed(() => {
     bottom: coarse.value ? px('--convert-fit-bottom-touch', 96) : px('--convert-fit-bottom', 90),
   }
 })
+
+/** The px a tall popover (Colors) covers at the preview's right while it is open beside the column: the beads fit into
+ * the room left of it and go back on close, gliding there (ticket 0967). Not with Compare's two halves, which it would
+ * squeeze to nothing, nor under 1024 px or in portrait, where the popover opens in the column. */
+const covered = ref(0)
+const { width: paneWidth, height: paneHeight } = useElementSize(paneEl)
+const glide = useRefitGlide(() => [...(paneEl.value?.querySelectorAll<HTMLElement>('.convert-preview__box') ?? [])])
+function coveredNow(): number {
+  const pane = paneEl.value
+  if (!pane || narrow.value || sideBySide.value) return 0
+  const popover = pane.closest('.convert-page')?.querySelector('.convert-popover--tall')
+  return popover ? Math.max(0, pane.getBoundingClientRect().right - popover.getBoundingClientRect().left) : 0
+}
+watch(
+  [() => wizard.popover.value, narrow, sideBySide],
+  () => {
+    const next = coveredNow()
+    if (next !== covered.value) void glide(() => (covered.value = next))
+  },
+  { flush: 'post' },
+)
+watch([paneWidth, paneHeight], () => (covered.value = coveredNow()))
+
 /** The view's own zoom steps, a multiple of the fit. */
 const VIEW_ZOOMS = [1, 1.5, 2, 3, 4, 6, 8]
 const viewZoom = ref(1)
@@ -111,7 +135,7 @@ const space = computed(() => project.value && spaceOf(project.value, false))
 const fitScale = computed(() => {
   const extent = space.value?.extent
   if (!extent || extent.width === 0 || extent.height === 0) return 1
-  const width = Math.max(1, viewportWidth.value - ROOM.value.side * 2)
+  const width = Math.max(1, viewportWidth.value - ROOM.value.side * 2 - covered.value)
   const height = Math.max(1, viewportHeight.value - ROOM.value.top - ROOM.value.bottom)
   return Math.min(width / extent.width, height / extent.height)
 })
@@ -129,9 +153,9 @@ const displayed = computed(() => {
 })
 const boxStyle = computed(() => ({ width: `${displayed.value.width}px`, height: `${displayed.value.height}px` }))
 const stageStyle = computed(() => ({
-  width: `${Math.max(viewportWidth.value, displayed.value.width + ROOM.value.side * 2)}px`,
+  width: `${Math.max(viewportWidth.value, displayed.value.width + ROOM.value.side * 2 + covered.value)}px`,
   height: `${Math.max(viewportHeight.value, displayed.value.height + ROOM.value.top + ROOM.value.bottom)}px`,
-  padding: `${ROOM.value.top}px ${ROOM.value.side}px ${ROOM.value.bottom}px`,
+  padding: `${ROOM.value.top}px ${ROOM.value.side + covered.value}px ${ROOM.value.bottom}px ${ROOM.value.side}px`,
 }))
 
 /** The Frame's beads in the box, in px: the line goes round them and everything else is dimmed. */
