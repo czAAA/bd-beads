@@ -37,8 +37,9 @@ const {
       about the whole Project library, not the open Project, and has to be visible whether or not one is open.
       It is a danger Message (ticket 76), announced the moment it appears, and it stays up until a save gets through
       (see useProjectLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
+      A press on it is not a press outside an open panel (ticket 0985): its buttons act on the first press.
     -->
-    <div v-if="saveFailed || missedProject || openElsewhere" class="app-shell__notices" data-testid="app-notices">
+    <div v-if="saveFailed || missedProject || openElsewhere" class="app-shell__notices" data-notice-row data-testid="app-notices">
       <!-- Safe start (ticket 0716): the Project that didn't open last time stays shut, named here with a way out. -->
       <AppMessage v-if="missedProject" tone="warning" placement="notice" data-testid="missed-project" @close="onDismissMissed">
         <span data-testid="missed-project-message">{{ fillBlanks(t.opening.didNotOpen, { name: missedProject.name }) }}</span>
