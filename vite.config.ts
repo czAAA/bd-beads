@@ -14,6 +14,9 @@ const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/homepage/**/*.test.ts', 
  * installed and skip themselves where it is not (the Pi); `BD_BROWSER_TESTS=1` makes a missing Chromium an error, `=0`
  * skips them. */
 const BROWSER_TESTS = '**/*.browser.test.ts'
+/** The browser tests that need a touch screen (ticket 0962): `*.touch.browser.test.ts`, in a page of their own with
+ * Playwright's `hasTouch`, as turning touch emulation off again left the shared page with no pointer at all on CI. */
+const TOUCH_BROWSER_TESTS = '**/*.touch.browser.test.ts'
 const browserTestsOn = (): boolean => {
   const mode = process.env.BD_BROWSER_TESTS
   if (mode === '0') return false
@@ -100,9 +103,21 @@ export default defineConfig(({ mode }) => ({
               test: {
                 name: 'browser',
                 include: [BROWSER_TESTS],
+                exclude: [...configDefaults.exclude, TOUCH_BROWSER_TESTS],
                 setupFiles: ['./src/browserSetup.ts'],
                 browser: { enabled: true, headless: true, screenshotFailures: false, // Reduced motion, as the e2e has it: animated drawings are measured where they end up.
                   provider: playwright({ contextOptions: { reducedMotion: 'reduce' } }), instances: [{ browser: 'chromium' as const }] },
+              },
+            },
+            {
+              // The same on a touch screen (ticket 0962): `(pointer: coarse)` matches, as on an iPad.
+              extends: true as const,
+              test: {
+                name: 'browser-touch',
+                include: [TOUCH_BROWSER_TESTS],
+                setupFiles: ['./src/browserSetup.ts'],
+                browser: { enabled: true, headless: true, screenshotFailures: false,
+                  provider: playwright({ contextOptions: { reducedMotion: 'reduce', hasTouch: true } }), instances: [{ browser: 'chromium' as const }] },
               },
             },
           ]

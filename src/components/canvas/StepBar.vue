@@ -280,6 +280,23 @@ onMounted(() => {
   cursor: default;
 }
 
+/* Touch (ticket 0962): a step answers across `touch-target`, its dot and name where they were; the bar has room under.
+ * Where the names are hidden (below), a hidden name takes no room, so no step's hit area lies over the next one's. */
+@media (pointer: coarse) {
+  .step-dot {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+
+  .step-dots--tight .step-dot:not(.step-dot--current) > span {
+    position: absolute;
+    top: calc(2 * var(--space-10)); /* where it stood in the column: the dot's centre 10 down, the name 10 under it */
+    left: 50%;
+    margin: 0;
+    transform: translateX(-50%);
+  }
+}
+
 /* Where the names would run into each other only the current step's shows (ticket 0830); the others keep their dots,
  * and each shows its name, over the current one's, while pointed at or focused. */
 .step-dots--tight .step-dot:not(.step-dot--current) > span {
