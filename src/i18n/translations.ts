@@ -653,6 +653,8 @@ export interface Translations {
       label: string
       search: string
       approximate: string
+      /** The same note for a catalog with measured colors (ticket 0886): they were read from the maker's photographs. */
+      photoColors: string
       inPalette: string
       takenNote: string
       discontinued: string
@@ -1264,6 +1266,8 @@ export interface Translations {
       /** Match to's first option: the Bead's palette, `{bead}` its maker, name and shape; and the Note under it. */
       beadPalette: string
       beadPaletteNote: string
+      /** The Bead palette's note for a catalog with measured colors (ticket 0886), as beadPaletteNote. */
+      beadPaletteNotePhotos: string
       defaultPalette: string
       exact: string
       codesInSize: PluralForms

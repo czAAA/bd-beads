@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseColorCatalog } from './colorCatalog'
+import { hasMeasuredColors, parseColorCatalog } from './colorCatalog'
 import { BEAD_CATALOG } from './beads'
 
 const row = { code: 'DB1', family: ['Gray'], finish: 'metallic', wording: 'Opaque · Metallic', sizes: ['11/0'] }
@@ -40,5 +40,13 @@ describe('a Form factor names its catalog', () => {
     const toho = BEAD_CATALOG.filter((bead) => bead.brand.id === 'toho')
     expect(toho.map((bead) => bead.formFactor.id)).toEqual(expect.arrayContaining(['cube', 'round']))
     expect(new Set(toho.map((bead) => bead.formFactor.colorCatalog))).toEqual(new Set(['toho']))
+  })
+})
+
+describe('hasMeasuredColors (ticket 0886)', () => {
+  it('is true once any code carries a hex, false for a catalog of generated swatches or none loaded', () => {
+    const generated = parseColorCatalog({ id: 'x', codes: [row] }, 'x')
+    const measured = parseColorCatalog({ id: 'x', codes: [row, { ...row, code: 'DB2', hex: '#223a70' }] }, 'x')
+    expect([hasMeasuredColors(generated), hasMeasuredColors(measured), hasMeasuredColors(undefined)]).toEqual([false, true, false])
   })
 })

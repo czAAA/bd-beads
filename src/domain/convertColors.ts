@@ -20,6 +20,8 @@ export interface TargetColor {
   family?: string
   finish?: CatalogSwatch['finish']
   colorId?: string
+  /** A Bead color whose hex is generated from its family and Finish, not read (tickets 0905, 0886): its swatch is marked. */
+  approximate?: true
 }
 
 /** What the maker chose for a found color (FoundColorRow card): its own picture color, another color, or no bead. */
@@ -42,7 +44,7 @@ export interface FoundColor {
 export function beadColorTargets(catalog: ColorCatalog, size: string, builtIns: readonly PaletteColor[]): TargetColor[] {
   return catalogSwatches(catalog, size, [], builtIns)
     .filter((swatch) => !swatch.discontinued)
-    .map(({ hex, code, family, finish }) => ({ hex, code, family, finish }))
+    .map(({ hex, code, family, finish, approximate }) => ({ hex, code, family, finish, ...(approximate ? { approximate: true as const } : {}) }))
 }
 
 /** The colors a source matches to: the Bead colors given (the Bead's, or My beads' of them), the built-in colors, or
