@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
-import { beadsDiffer, replaceCandidates, type Bead } from '../../domain/beads'
+import { beadChoices, type Bead } from '../../domain/beads'
 import type { FrameSheet } from '../../domain/canvas'
 import { FRINGE_STYLES, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import type { Layer } from '../../domain/grid'
@@ -62,9 +62,8 @@ const shapeSettings = computed(() => (props.frame ? settingValuesOf(props.frame)
 /** A Fringe earring's Fringe style, the setup's names (ticket 0597); none for any other Frame. */
 const fringeStyle = computed(() => props.frame && fringeStyleOf(props.frame))
 const fringeOptions = computed(() => FRINGE_STYLES.map((value) => ({ value, label: t.value.starters.picks.fringeStyle.options[value] })))
-const candidates = computed(() => replaceCandidates(props.bead))
-/** The layer's own copy has gone out of date (ticket 534): the catalog's Bead of its id is a candidate, and the copy shows "(as saved)". */
-const outdated = computed(() => candidates.value.some((bead) => bead.id === props.bead?.id && beadsDiffer(bead, props.bead)))
+/** What the Bead could switch to, and whether its own copy has gone out of date (ticket 534). */
+const choices = computed(() => beadChoices(props.bead))
 </script>
 
 <template>
@@ -122,7 +121,7 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
         <span :id="beadLabelId">{{ t.panels.project.bead }}</span>
         <InfoButton v-if="explained" :label="t.form.beadInfoLabel" :body="t.form.beadPicker.hint" :data-testid="`${testid}-bead-info`" />
       </span>
-      <BeadSection :bead="bead" :candidates="candidates" :outdated="outdated" @pick="emit('pick-bead', $event)" />
+      <BeadSection :bead="bead" :candidates="choices.candidates" :outdated="choices.outdated" @pick="emit('pick-bead', $event)" />
     </div>
 
     <div v-if="background !== undefined" class="layer-settings__group" role="group" :aria-labelledby="backgroundLabelId">

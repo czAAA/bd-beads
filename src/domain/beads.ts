@@ -255,10 +255,12 @@ export function colorCatalogOf(beadId: string | undefined): string | undefined {
   return beadId === undefined ? undefined : findBead(beadId)?.formFactor.colorCatalog
 }
 
-/** What a layer's Bead could switch to (tickets 48, 534, 0670): everything offered but its own, and the catalog's current
- * Bead of its id when its copy has gone out of date (ADR 0072). */
-export function replaceCandidates(own: Bead | undefined): Bead[] {
-  return offeredBeads().filter((bead) => bead.id !== own?.id || beadsDiffer(own, bead))
+/** What a layer's Bead pickers offer in place of its own Bead (tickets 48, 534, 0670): everything offered but its own,
+ * with the catalog's current Bead of its id when its copy has gone out of date (ADR 0072), which is then `outdated` and
+ * shows "(as saved)". One rule for Layer settings and the margin's title block (ticket 1015). */
+export function beadChoices(own: Bead | undefined): { candidates: Bead[]; outdated: boolean } {
+  const candidates = offeredBeads().filter((bead) => bead.id !== own?.id || beadsDiffer(own, bead))
+  return { candidates, outdated: candidates.some((bead) => bead.id === own?.id) }
 }
 
 /** Whether two Beads of one id differ in anything that changes how a Project looks or weighs: footprint, correction,

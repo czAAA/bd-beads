@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, colorCatalogOf, findBead, formFactorName, gramsPerBead, offeredBeads, replaceCandidates } from './beads'
+import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, colorCatalogOf, findBead, formFactorName, gramsPerBead, beadChoices, offeredBeads } from './beads'
 
 beforeEach(() => {
   localStorage.clear()
@@ -138,8 +138,9 @@ describe('beadAfterPick (ticket 554)', () => {
   })
 })
 
-describe('replaceCandidates (tickets 48, 534, 0670)', () => {
+describe('beadChoices (tickets 48, 534, 0670, 1015)', () => {
   const current = findBead('toho/cube/1.5mm')!
+  const replaceCandidates = (own: Parameters<typeof beadChoices>[0]) => beadChoices(own).candidates
 
   it('offers every catalog Bead but the layer\'s own, all of them for none', () => {
     expect(replaceCandidates(current).map((bead) => bead.id)).not.toContain(current.id)
@@ -150,6 +151,12 @@ describe('replaceCandidates (tickets 48, 534, 0670)', () => {
   it('offers the catalog\'s current Bead of the same id when the copy differs, not when only a name does', () => {
     expect(replaceCandidates({ ...current, widthMm: current.widthMm + 0.2 }).map((bead) => bead.id)).toContain(current.id)
     expect(replaceCandidates({ ...current, brand: { ...current.brand, name: 'Other name' } }).map((bead) => bead.id)).not.toContain(current.id)
+  })
+
+  it('says the copy is out of date only when the catalog\'s Bead of its id differs from it', () => {
+    expect(beadChoices({ ...current, widthMm: current.widthMm + 0.2 }).outdated).toBe(true)
+    expect(beadChoices(current).outdated).toBe(false)
+    expect(beadChoices(undefined).outdated).toBe(false)
   })
 
   it('offers everything for a Bead the catalog does not offer', () => {

@@ -716,6 +716,8 @@ Left out under 600 px wide, in every language (no new words): the strip's "Conve
 
 The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Back a row, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
 
+The roomy title block (ticket 1015) adds no copy: its Bead, Change, the Bead pickers, "Sets size, weight and colors." and the key's "{count} beads" are the strings Layer settings, the Bead picker and the printed chart already use, and its pick asks the existing "Replace bead?".
+
 | English | Русский | Українська | Polski |
 |---|---|---|---|
 | margin (the Frame panel's section) · auto (its summary) | поля · авто | поля · авто | margines · auto |

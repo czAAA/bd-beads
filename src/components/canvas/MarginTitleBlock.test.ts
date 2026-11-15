@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import MarginTitleBlock from './MarginTitleBlock.vue'
+import { beadChoices, findBead } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { createPalette, defaultPaletteIds } from '../../domain/palette'
 import { moveToRow } from '../../domain/rowProgress'
@@ -175,5 +176,66 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     expect(toggle.attributes('aria-checked')).toBe('false')
     await toggle.trigger('click')
     expect(wrapper.emitted('set-letters')).toEqual([[true]])
+  })
+
+  describe('roomy, where the band has room (ticket 1015)', () => {
+    const mountRoomy = (project: Project) => mount(MarginTitleBlock, { props: { project, form: 'roomy' }, attachTo: document.body })
+
+    it('keeps everything the two-row block has: the name, Technique, its settings, the maker, the sizes, Letters and fold', async () => {
+      const wrapper = mountRoomy(framed({ makerName: 'Ada', frame: { ...frameOf(framed())!, technique: 'brick', techniqueSettings: { brickDrop: 2 } } }))
+      expect(wrapper.get('[data-testid="margin-title-block"]').attributes('data-form')).toBe('roomy')
+      expect(text(wrapper, 'margin-frame-name')).toBe('Name this Frame')
+      expect(text(wrapper, 'margin-technique')).toBe('Brick stitch')
+      expect(text(wrapper, 'margin-brick-drop-short')).toBe('2-drop')
+      expect(text(wrapper, 'margin-maker')).toBe('Ada')
+      expect(text(wrapper, 'margin-size')).toBe('40 × 11')
+      expect(text(wrapper, 'margin-estimate')).toContain('cm')
+      await choosePanelOption(wrapper, 'margin-technique-picker', 'peyote')
+      expect(wrapper.emitted('set-technique')).toEqual([['peyote']])
+      await wrapper.get('[data-testid="margin-letters"]').trigger('click')
+      expect(wrapper.emitted('set-letters')).toEqual([[true]])
+      await wrapper.get('[data-testid="margin-title-fold"]').trigger('click')
+      expect(wrapper.emitted('fold')).toHaveLength(1)
+    })
+
+    it('names the Frame\'s Bead, and Change opens the Frame panel\'s Bead pickers, a pick asking to Replace Bead', async () => {
+      const wrapper = mountRoomy(framed())
+      const own = findBead('toho/cube/1.5mm')!
+      expect(text(wrapper, 'margin-bead-name')).toBe('TOHO Cube 1.5mm')
+      const change = wrapper.get('[data-testid="margin-bead-change"]')
+      expect(change.text()).toBe('Change')
+      expect(change.attributes('aria-expanded')).toBe('false')
+      await change.trigger('click')
+      expect(change.attributes('aria-expanded')).toBe('true')
+      expect(wrapper.get('[data-testid="margin-bead-popover"]').text()).toContain('Sets size, weight and colors.')
+
+      const other = beadChoices(own).candidates.find((bead) => bead.brand.id !== own.brand.id)!
+      await choosePanelOption(wrapper, 'bead-brand', other.brand.id)
+      const asked = wrapper.emitted('replace-bead')!
+      expect(asked).toHaveLength(1)
+      expect(findBead(asked[0]![0] as string)!.brand.id).toBe(other.brand.id)
+      // The pick closes the pickers: the confirmation is the shell's.
+      expect(wrapper.find('[data-testid="margin-bead-popover"]').exists()).toBe(false)
+    })
+
+    it('closes the Bead pickers on Escape, asking nothing', async () => {
+      const wrapper = mountRoomy(framed())
+      await wrapper.get('[data-testid="margin-bead-change"]').trigger('click')
+      await wrapper.get('[data-testid="margin-bead-popover"]').trigger('keydown', { key: 'Escape' })
+      expect(wrapper.find('[data-testid="margin-bead-popover"]').exists()).toBe(false)
+      expect(wrapper.emitted('replace-bead')).toBeUndefined()
+    })
+
+    it('keys each color with its Swatch letter and its bead count, read out together, at most 8, then "+n"', () => {
+      const twice = paintAt(painted(3), [{ row: 1, column: 0 }], createPalette(defaultPaletteIds()).colors[0]!.hex)
+      const wrapper = mountRoomy(twice)
+      expect(wrapper.findAll('.margin-title__disc').map((disc) => disc.text())).toEqual(['A', 'B', 'C'])
+      expect(wrapper.findAll('[data-testid="margin-legend-count"]').map((count) => count.text())).toEqual(['2', '1', '1'])
+      expect(wrapper.get('[data-testid="margin-legend"]').attributes('aria-label')).toMatch(/^A .+ 2 beads, B .+ 1 bead, C .+ 1 bead$/)
+
+      const many = mountRoomy(painted(10))
+      expect(many.findAll('.margin-title__disc')).toHaveLength(8)
+      expect(text(many, 'margin-legend-more')).toBe('+2')
+    })
   })
 })

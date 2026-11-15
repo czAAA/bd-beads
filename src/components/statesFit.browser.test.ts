@@ -15,6 +15,7 @@ import PictureDropOverlay from './import/PictureDropOverlay.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
 import FirstRunHints from './canvas/FirstRunHints.vue'
+import MarginBeadCell from './canvas/MarginBeadCell.vue'
 import MarginColorPopover from './canvas/MarginColorPopover.vue'
 import ProgressBar from './canvas/ProgressBar.vue'
 import GoToRowPopover from './canvas/GoToRowPopover.vue'
@@ -180,6 +181,11 @@ const openMyBeads = async (root: HTMLElement) => {
 
 const framed = withLayers(empty, { frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } })
 
+/** The roomy title block's Bead and its Change, in the app shell its pickers open in (ticket 1015). */
+const MarginBeadCellHost = defineComponent({
+  setup: () => () => h('div', { class: 'app-shell', style: { position: 'fixed', left: '8px', bottom: '8px' } }, [h(MarginBeadCell, { bead: cubeBead })]),
+})
+
 /** The Margin color popover, hung from a button at the screen's right edge as the sheet's tools are. */
 const MarginColorPopoverHost = defineComponent({
   setup() {
@@ -254,6 +260,9 @@ const CASES: FitCase[] = [
   ['CanvasHint', CanvasHint, {}],
   ['FirstRunHints', FirstRunHints, {}],
   ['MarginSheet', marginSheetHost(1), {}],
+  // The roomy title block and its Bead pickers, opened from Change (ticket 1015).
+  ['MarginSheet (roomy)', marginSheetHost(1.5), {}],
+  ['MarginBeadCell (Bead pickers)', MarginBeadCellHost as Component, {}, (root: HTMLElement) => press(root, 'margin-bead-change')],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],
   ['MarginSheet (bare)', marginSheetHost(0.25), {}],

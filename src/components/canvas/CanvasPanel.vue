@@ -170,6 +170,7 @@ const {
   onRotateFrame,
   onRenameFrame,
   onSetFrameTechnique,
+  onRequestFrameBead,
   onSetFrameSetting,
   onSaveMakerName,
   onSetLetters,
@@ -779,6 +780,7 @@ const drawingStyle = computed(() => {
             @set-technique="onSetFrameTechnique"
             @set-setting="onSetFrameSetting"
             @save-maker-name="onSaveMakerName"
+            @replace-bead="onRequestFrameBead"
             @set-letters="onSetLetters"
           />
         </div>

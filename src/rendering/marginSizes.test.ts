@@ -24,6 +24,7 @@ const MIRROR: Record<string, { token: string } | { css: string } | { none: strin
   'band.full': { css: '--margin-band-full' },
   'band.compact': { css: '--margin-band-compact' },
   'band.folded': { css: '--margin-band-folded' },
+  roomy: { css: '--margin-band-roomy' },
   'place.full.top': { css: '--margin-band-inset' },
   'place.full.side': { css: '--margin-band-inset' },
   'place.full.border': { css: '--margin-border-inset' },
