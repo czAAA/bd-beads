@@ -48,8 +48,9 @@ const rootEl = ref<HTMLElement>()
 const roving = useRovingFocus(rootEl, { axis: () => 'horizontal', managesTabIndex: true })
 
 const fitAndExport = controlAction('fit-and-export')
-/** The Select tile's action (ticket 0944): the no-Frame line names, keys and runs as the tile does. */
-const selectTile = controlAction('tool-select')
+/** The Select tile's action (ticket 0944): the no-Frame line is named and keyed as the tile is, and its press is the
+ * tile's own pick. Its chips stand for the icon, so the action's own is left off. */
+const selectTile = { ...controlAction('tool-select'), icon: undefined }
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */

@@ -42,7 +42,7 @@ const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
     <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" :opens-on="opensOn" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
     <template v-else>
       <p class="export-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
-      <!-- The one-tap way first once something is drawn (ticket 0944); `frame`, as `fit` is the zoom's Fit. -->
+      <!-- The one-tap way first once something is drawn (ticket 0944); `frame`, as `fit` is the zoom's. -->
       <PanelItem v-if="!nothingToFit" icon="frame" stays data-testid="export-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
       <PanelItem icon="select" data-testid="export-select-frame" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
       <PanelItem v-if="nothingToFit" icon="frame" stays disabled :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="export-fit">{{ t.frame.fitAFrame }}</PanelItem>
