@@ -7,6 +7,8 @@ import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
 import { withLayers } from '../../testUtils/layerFields'
 import { frameOf } from '../../domain/layerRecord'
+import { editHarness } from '../../testUtils/editHarness'
+import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } })
 const tracking = base
@@ -153,6 +155,28 @@ describe('useRowOps', () => {
     onConfirmResetProgress()
     expect(resetProgressConfirmOpen.value).toBe(false)
     expect(replaced(deps)).toEqual(resetRowProgress(started))
+  })
+
+  it('Reset progress is not undone by Undo, and Go to row brings the marks back, as its question says (ticket 0979)', () => {
+    const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 5, columns: 3, beads: {} } })
+    const harness = editHarness(framed)
+    const painted = (project: Project) => withFrameGrid(project, frameGrid(project).map((row) => row.map((cell) => ({ ...cell, color: '#ff0000' }))))
+    harness.edit('drawing', painted)
+    const rows = useRowOps({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, showToast: vi.fn(), messages: () => en })
+    rows.onMoveRow(1)
+    rows.onMoveRow(1)
+    const marked = rowProgressOf(harness.project)
+    rows.onResetProgress()
+    rows.onConfirmResetProgress()
+    expect(frameGrid(harness.project).flat().every((cell) => cell.color === '#ff0000')).toBe(true)
+
+    // Undo takes back the last Edit, the beads drawn before the rows were marked; it brings no marks back.
+    harness.history.onUndo()
+    expect(rowProgressOf(harness.project).currentRow).toBe(0)
+    expect(harness.history.canUndo.value).toBe(false)
+
+    rows.onGoToRow(marked.currentRow)
+    expect(rowProgressOf(harness.project)).toEqual(marked)
   })
 
   describe('the press the Pattern\'s motion plays from (ticket 0730)', () => {

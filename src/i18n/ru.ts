@@ -588,7 +588,7 @@ export const ru: Translations = {
     highlightButton: 'Подсветка ряда',
     resetButton: 'Сбросить прогресс',
     resetConfirmTitle: 'Сбросить прогресс?',
-    resetConfirmMessage: 'Все ряды, отмеченные как готовые, сотрутся, и вы начнёте с первого ряда. Бисеринки останутся.',
+    resetConfirmMessage: 'Все ряды, отмеченные как готовые, сотрутся, и вы начнёте с первого ряда. Бисеринки останутся. «Отменить» не вернёт отметки, а «Перейти к ряду» вернёт.',
     resetConfirmCancel: 'Отмена',
     positionLabel: 'Ряд',
     previousButton: 'Назад на ряд',
@@ -930,9 +930,9 @@ export const ru: Translations = {
   },
   deleteAll: {
     button: 'Очистить',
-    confirmTitle: 'Очистить?',
-    confirmMessage: 'Все ячейки станут пустыми, а прогресс по рядам выключится. Это действие можно отменить.',
-    confirmButton: 'Очистить',
+    confirmTitle: 'Очистить все бисеринки?',
+    confirmMessage: 'Все бисеринки этого проекта будут убраны, а прогресс по рядам выключится. «Отменить» вернёт их.',
+    confirmButton: 'Очистить все бисеринки',
     cancelButton: 'Отмена',
   },
   removeLine: {

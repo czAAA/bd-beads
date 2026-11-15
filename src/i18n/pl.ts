@@ -588,7 +588,7 @@ export const pl: Translations = {
     highlightButton: 'Podświetlenie rzędu',
     resetButton: 'Zresetuj postęp',
     resetConfirmTitle: 'Zresetować postęp?',
-    resetConfirmMessage: 'Wszystkie rzędy oznaczone jako gotowe zostaną wyczyszczone i zaczniesz od pierwszego rzędu. Koraliki zostaną.',
+    resetConfirmMessage: 'Wszystkie rzędy oznaczone jako gotowe zostaną wyczyszczone i zaczniesz od pierwszego rzędu. Koraliki zostaną. „Cofnij” nie przywróci oznaczeń, a „Przejdź do rzędu” tak.',
     resetConfirmCancel: 'Anuluj',
     positionLabel: 'Rząd',
     previousButton: 'Rząd wstecz',
@@ -930,9 +930,9 @@ export const pl: Translations = {
   },
   deleteAll: {
     button: 'Wyczyść',
-    confirmTitle: 'Wyczyścić?',
-    confirmMessage: 'Wszystkie pola zostaną opróżnione, a postęp rzędów wyłączony. Można to cofnąć.',
-    confirmButton: 'Wyczyść',
+    confirmTitle: 'Wyczyścić wszystkie koraliki?',
+    confirmMessage: 'Wszystkie koraliki tego projektu zostaną usunięte, a postęp rzędów wyłączony. „Cofnij” je przywróci.',
+    confirmButton: 'Wyczyść wszystkie koraliki',
     cancelButton: 'Anuluj',
   },
   removeLine: {
