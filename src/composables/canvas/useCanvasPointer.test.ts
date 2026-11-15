@@ -7,6 +7,8 @@ import { stampCells } from '../../domain/selection'
 import { useCanvasPointer } from './useCanvasPointer'
 import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
 import { frameOf } from '../../domain/layerRecord'
+import { onLayer } from '../../domain/layers'
+import { paintCells } from '../../domain/drawing'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 
@@ -84,6 +86,29 @@ describe('useCanvasPointer', () => {
       expect(previewCells.value).toEqual([{ row: 1, column: 2 }])
       onHoverEnd()
       expect(previewCells.value).toEqual([])
+    })
+
+    it('under the Eraser marks the hovered bead as one that would go, and shows nothing on an empty position (ticket 1014)', () => {
+      const { row, column } = frameOf(base)!
+      const project = onLayer(base, 'frame', (view) => paintCells(view, [{ row: 1, column: 2 }], '#e63746'))
+      const { previewCells, onCellHover } = setup({ project, tool: 'erase' })
+      onCellHover(row + 1, column + 2)
+      expect(previewCells.value).toEqual([{ row: row + 1, column: column + 2, erases: true }])
+      onCellHover(row + 1, column + 3)
+      expect(previewCells.value).toEqual([])
+    })
+
+    it('under the Eraser and Mirror marks only the counterparts that hold a bead (ticket 1014)', () => {
+      const { row, column } = frameOf(base)!
+      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
+      const project = onLayer(base, 'frame', (view) => paintCells(view, [{ row: 3, column: 0 }, { row: 0, column: 3 }], '#e63746'))
+      const { previewCells, onCellHover } = setup({ project, tool: 'erase', mirror })
+      onCellHover(row + 3, column, 'frame')
+      expect(previewCells.value).toHaveLength(2)
+      expect(previewCells.value).toEqual(expect.arrayContaining([
+        { row: row + 3, column, layer: 'frame', erases: true },
+        { row, column: column + 3, layer: 'frame', erases: true },
+      ]))
     })
 
     it('shows every counterpart of the hovered Frame bead under Mirror, those in finished rows left out (ticket 0703)', () => {

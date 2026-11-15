@@ -1,6 +1,7 @@
 import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Layer } from '../../domain/layers'
+import { beadColorAt } from '../../domain/layerBeads'
 import { finishedRowsOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { pasteAimAtBead, type PasteStamp } from '../../domain/selection'
@@ -58,7 +59,12 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (tool === 'select') {
       return deps.pastePreviewCells(project, hovered)
     }
-    return mirroredOnCanvas(project, deps.mirror(), [hovered])
+    const cells = mirroredOnCanvas(project, deps.mirror(), [hovered])
+    if (tool !== 'erase') {
+      return cells
+    }
+    // The Eraser previews only what it would remove (ticket 1014): an empty position shows nothing.
+    return cells.filter((cell) => beadColorAt(project, cell.row, cell.column, cell.layer) !== null).map((cell) => ({ ...cell, erases: true as const }))
   }
 
   // The hover preview: the block Paste would stamp (ticket 31), or the cell Paint/Fill would touch (tickets 22/23). Beads in rows already woven are left out (ticket 33).

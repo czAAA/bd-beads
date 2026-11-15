@@ -61,6 +61,8 @@ export interface GridPosition {
 // preview multi-color for a pasted block (ticket 31); without it the cell takes the preview's color.
 export interface PreviewCell extends GridPosition {
   color?: string
+  /** The Eraser's preview (ticket 1014): this bead would go, so it is shown fading toward its empty position. */
+  erases?: true
 }
 
 /** The Zoom floor (ADR 0033): the same on every screen.

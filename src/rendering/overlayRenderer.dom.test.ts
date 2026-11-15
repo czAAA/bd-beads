@@ -17,6 +17,7 @@ import { beadRoundness, type Technique } from '../domain/weave'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay as renderOverlayWith } from './overlayRenderer'
 import { AREA_SHEET_OUTSET } from './frameHandles'
+import { tileColorOf } from './tonalTiles'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx, surfaceView } from './surfaceView'
@@ -292,6 +293,26 @@ describe('renderOverlay', () => {
       })
 
       expect(named('fillRect').map((call) => call.fillStyle)).toEqual(['#2f6fed', '#e63746'])
+    })
+
+    it('fades a bead the Eraser would remove toward its empty position, with no outline (ticket 1014)', () => {
+      const project = projectOf('loom', 4, 3, noProgress)
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 2, erases: true }], color: '#e63746' } })
+
+      expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([[tileColorOf(DEFAULT_THEME.canvas), 0.6, 40.5, 20.5, 19, 19]])
+      expect(named('fill')).toHaveLength(0)
+    })
+
+    it('fades it toward the empty bead of the Frame\'s own theme where that draws no tiles (ticket 1014)', () => {
+      const project = projectOf('loom', 4, 3, noProgress)
+      const { context, named } = recordingContext()
+      const frameTheme = { ...flatLook(DEFAULT_THEME), tonalTiles: false, emptyBead: '#b3afa8' }
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, frameTheme, preview: { cells: [{ row: 1, column: 2, erases: true }], color: null } })
+
+      expect(named('fillRect').map((call) => call.fillStyle)).toEqual(['#b3afa8'])
     })
 
     it('outlines the bead in the dark ink when there is no color to show', () => {

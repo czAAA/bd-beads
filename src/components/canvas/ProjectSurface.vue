@@ -372,7 +372,7 @@ const showFinished = computed(() => pointer.showFinished.value || rowMotion.fini
 useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference: toRef(() => props.reference) })
 watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flush: 'post' })
 useSurfaceOverlay({
-  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
+  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, frameTheme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, hotAreaHandle: pointer.hotAreaHandle, marginOpacity: marginCue.opacity,
   rowMotion: rowMotion.rowMotion,
 })

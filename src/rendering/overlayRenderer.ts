@@ -5,6 +5,7 @@ import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, type BeadCell } from '../domain/weave'
 import { rowOrderOf } from '../domain/frameShape'
 import type { LayerGeometry } from '../domain/layerGeometry'
+import type { Layer } from '../domain/layers'
 import { colorAt, frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
 import { currentPass, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
@@ -21,6 +22,7 @@ import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 import { drawDraftBeads, drawsDraft } from './draftRenderer'
+import { markLookAt } from './tonalTiles'
 import { beadsOfLayer, frameOf, quarterTurnOf } from '../domain/layerRecord'
 import { isMirrorOn, mirrorLines, shapeOwnAxes, type MirrorSetting } from '../domain/mirror'
 import type { LayoutPoint, LayoutSymmetry } from '../domain/frameLayout'
@@ -89,6 +91,8 @@ export interface OverlayInput {
   zoom: number
   pixelRatio?: number
   theme?: ProjectTheme
+  /** The theme the Frame's own Background draws it in, as for renderProject; the Canvas's `theme` without one. */
+  frameTheme?: ProjectTheme
   /** The hover preview to draw over the beads. */
   preview?: HoverPreview
   /** The marker that stands for the pointer over the beads (ticket 353), with the OS pointer hidden. */
@@ -313,7 +317,7 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 
 // The hover preview on each bead it names, inside the rim: its color at a faint opacity over what the bead holds (a
 // pasted block in each bead's own colors), or with no color a 2px dark-ink outline. A color fills the bead's own shape.
-function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme, inArea: InArea): void {
+function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme, inArea: InArea, emptied?: string): void {
   const { technique } = weave
   const inset = BEAD_GAP_PX / 2
   const roundness = beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset
@@ -328,16 +332,30 @@ function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells:
     const y = box.y + inset
     const width = box.width - BEAD_GAP_PX
     const height = box.height - BEAD_GAP_PX
-    drawPreviewBead(context, { x, y, width, height, radius: roundness }, cell.color ?? preview.color, theme, inArea(cell))
+    drawPreviewBead(context, { x, y, width, height, radius: roundness }, previewColorOf(cell, preview, emptied), theme, inArea(cell))
   }
 }
 
 /** One bead of the hover preview: its color faintly, or the neutral outline with none; inside the Mirror's Area a
- * `mirror` outline round it either way (ticket 0806), so the counterparts read as the Mirror's. */
+ * `mirror` outline round it either way (ticket 0806), so the counterparts read as the Mirror's. A bead the Eraser
+ * would remove (ticket 1014) comes with its empty position's color, so it fades toward it. */
 function drawPreviewBead(context: DrawingContext, bead: BeadRect, color: string | null, theme: ProjectTheme, inArea: boolean): void {
   if (color) fillFaintly(context, { ...bead, radius: Math.max(0, bead.radius) }, color)
   if (inArea) outlineBead(context, bead, theme.mirror, MIRROR_PREVIEW_OUTLINE_PX)
   else if (!color) outlineBead(context, bead, theme.outline, PREVIEW_OUTLINE_PX)
+}
+
+/** The color one bead of the hover preview shows: a bead the Eraser would remove its empty position's (`emptied`,
+ * ticket 1014), else its own or the preview's. */
+function previewColorOf(cell: PreviewCell, preview: HoverPreview, emptied: string | undefined): string | null {
+  return cell.erases && emptied ? emptied : (cell.color ?? preview.color)
+}
+
+/** What a position shows once its bead is gone (ticket 1014): its tonal tile, or where none is drawn (a theme without
+ * them, the draft look) the Canvas itself and, in the Frame, the empty bead. */
+function emptiedColorOf(theme: ProjectTheme, layer: Layer, deviceScale: number): string {
+  const mark = markLookAt(theme, deviceScale)
+  return mark.tiles ? mark.color : layer === 'frame' ? theme.emptyBead : theme.canvas
 }
 
 /** How small a bead is on the screen, in device px, below which a pasted block's preview is drawn in the draft look
@@ -358,7 +376,7 @@ function drawStampPreview(context: DrawingContext, weave: Weave, space: Space, c
 
 /** The hover preview on beads that lie at their panels' angles (ticket 0592): the same look, each bead turned to its
  * angle at the place the Layer geometry gives it. */
-function drawTurnedPreview(context: DrawingContext, geometry: LayerGeometry, roundness: number, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme, inArea: InArea): void {
+function drawTurnedPreview(context: DrawingContext, geometry: LayerGeometry, roundness: number, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme, inArea: InArea, emptied?: string): void {
   for (const cell of cells) {
     const place = geometry.place(cell)
     if (!place) {
@@ -369,7 +387,7 @@ function drawTurnedPreview(context: DrawingContext, geometry: LayerGeometry, rou
     context.save()
     context.translate(box.x + box.width / 2, box.y + box.height / 2)
     context.rotate(place.angle)
-    drawPreviewBead(context, bead, cell.color ?? preview.color, theme, inArea(cell))
+    drawPreviewBead(context, bead, previewColorOf(cell, preview, emptied), theme, inArea(cell))
     context.restore()
   }
 }
@@ -774,7 +792,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, areaSheet, rowMotion } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, frameTheme = theme, space = spaceOf(project, false), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, areaSheet, rowMotion } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -819,7 +837,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // over that, and the marker lifted above its row.
   if (space.open) {
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, selectionColor, canvasView, { row: 0, column: 0 }, theme)
-    if (preview && canvasCells.length) drawPreview(context, canvasWeaveOf, space, canvasCells, preview, theme, inCanvasArea)
+    if (preview && canvasCells.length) drawPreview(context, canvasWeaveOf, space, canvasCells, preview, theme, inCanvasArea, emptiedColorOf(theme, 'canvas', zoom * pixelRatio))
     if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio, inCanvasArea)
     if (canvasArea) {
       drawAreaRect(context, canvasWeaveOf, space, canvasArea, theme.mirror, canvasView, { row: 0, column: 0 }, theme)
@@ -870,9 +888,10 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const sheetStamp = preview?.stamp ? onSheetStamp(preview.stamp) : []
     const inFrameArea = wholeFrame ? ALL_IN_AREA : NOWHERE
     if (preview && sheetCells.length + sheetStamp.length > 0) {
-      if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, theme, inFrameArea)
+      const emptied = emptiedColorOf(frameTheme, 'frame', zoom * scale * pixelRatio)
+      if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, theme, inFrameArea, emptied)
       else {
-        if (sheetCells.length) drawPreview(context, sheetWeave, sheetSpace, sheetCells, preview, theme, inFrameArea)
+        if (sheetCells.length) drawPreview(context, sheetWeave, sheetSpace, sheetCells, preview, theme, inFrameArea, emptied)
         if (sheetStamp.length) drawStampPreview(context, sheetWeave, sheetSpace, sheetStamp, preview, theme, zoom * scale * pixelRatio, inFrameArea)
       }
     }
