@@ -3,7 +3,7 @@ import AppButton from '../ui/AppButton.vue'
 import type { ControlActionLike } from '../ui/controlAction'
 import type { IconName } from '../ui/icons'
 
-// The Progress bar's back and forward pair (ProgressBar card, ticket 0788): Row not done and Row done in the editor, Back
+// The Progress bar's back and forward pair (ProgressBar card, ticket 0788): Back a row and Row done in the editor, Back
 // and Next on the Homepage and Convert image. One component, so the pair is the same size on every page: the quiet 32px
 // `text` button back, the 32px forward (primary; secondary on the Homepage); on a phone a second row, half the bar each.
 type Move = {

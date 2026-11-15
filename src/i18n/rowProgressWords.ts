@@ -19,17 +19,42 @@ export function customPassWords(words: Translations['rowProgress'], project: Lay
   return { label: orderStepLabel(words, step), of }
 }
 
-/** What the announcer says after a move of the row pointer (ticket 0934; ScreenReaders card), in the counter's own
- * words: "Row 7 of 10", "Column 4 of 16", "Pass 3 of 27, row 2" on peyote, "Round 3 of 9" on a Custom frame, and
- * "Pattern done" once every pass is. The one place these words are put together, for every move that says them. */
-export function rowProgressAnnouncement(words: Translations['rowProgress'], project: Layered): string {
+/** The Progress bar's counter in words (ticket 0972): `step` names it, "Row 7 of 10", "Column 4 of 16", "Pass 3 of 27"
+ * on peyote with the rulers' `line` "· row 2" after it, a Custom frame's "Round 3 of 9", or Pattern done once every pass
+ * is; `short` is "7/10" for a narrow bar; `spoken` is what the announcer says, the same words read as one sentence. */
+export interface RowProgressCount {
+  step: string
+  line?: string
+  short: string
+  spoken: string
+}
+
+/** The one place the counter's words are put together, for the bar's counter and for every move the announcer says
+ * (tickets 0934, 0972; ScreenReaders card). */
+export function rowProgressCount(words: Translations['rowProgress'], project: Layered): RowProgressCount {
   const { current, total } = rowProgressPosition(project)
-  if (current >= total) return words.patternDone
+  if (current >= total) return { step: words.patternDone, short: words.patternDone, spoken: words.patternDone }
   const shown = current + 1
+  const short = `${shown}/${total}`
   const custom = customPassWords(words, project, shown)
-  if (custom) return `${custom.label} ${custom.of}`
+  if (custom) {
+    const step = `${custom.label} ${custom.of}`
+    return { step, short, spoken: step }
+  }
   const columns = rowProgressOf(project).direction === 'columns'
   const line = passLine(project)
-  if (line) return fillBlanks(columns ? words.announceColumnPass : words.announcePass, { current: shown, total, line: line.line })
-  return fillBlanks(words.announcePosition, { unit: columns ? words.columnLabel : words.positionLabel, current: shown, total })
+  const unit = line ? words.passLabel : columns ? words.columnLabel : words.positionLabel
+  const step = fillBlanks(words.announcePosition, { unit, current: shown, total })
+  if (!line) return { step, short, spoken: step }
+  return {
+    step,
+    line: fillBlanks(columns ? words.columnPassLine : words.passLine, { line: line.line }),
+    short,
+    spoken: fillBlanks(columns ? words.announceColumnPass : words.announcePass, { step, line: line.line }),
+  }
+}
+
+/** What the announcer says after a move of the row pointer (ticket 0934; ScreenReaders card): the counter's words. */
+export function rowProgressAnnouncement(words: Translations['rowProgress'], project: Layered): string {
+  return rowProgressCount(words, project).spoken
 }

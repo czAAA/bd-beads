@@ -54,7 +54,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Bead / beads | бисеринка / бисер | One bead is бисеринка everywhere, never бусина («4 бисеринки», «Бисеринок»); the material and amounts are бисер (ticket 0864) |
 | Technique | техника плетения | Loom / ткачество, Peyote / мозаичное плетение, Brick stitch / кирпичное плетение |
 | Palette | палитра |  |
-| Row progress | прогресс по рядам | Row done / Ряд готов; Row not done / Ряд не готов; never a bare «Готово», which reads as closing something. Where a pair has no room in the Progress bar it becomes Следующий / Предыдущий (ticket 0864) |
+| Row progress | прогресс по рядам | Row done / Ряд готов; Back a row / Назад на ряд (ticket 0972, was Row not done / Ряд не готов); never a bare «Готово», which reads as closing something. Where a pair has no room in the Progress bar it becomes Следующий / Предыдущий (ticket 0864) |
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
 | Clear | Очистить; confirm Очистить? | Empties the cells; the Schema stays. Not «Очистить всё», which was Delete all |
 | Save Project | Сохранить проект | The SaveBox button; the name field's Save stays Сохранить |
@@ -89,7 +89,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | Canvas · Hand · Rulers | Полотно · Рука · Лінійки | Палатно · Рука · Лінейкі |
 | Mirror | Відображення | Адлюстраванне |
 | Convert image | Конвертувати зображення | Канвертаваць выяву |
-| Row done · Row not done | Ряд готовий · Ряд не готовий; by columns Наступний · Попередній, as «Стовпець не готовий» has no room at 320px (ticket 0864) | Рад гатовы · Рад не гатовы; Слупок гатовы · Слупок не гатовы |
+| Row done · Back a row | Ряд готовий · Назад на ряд; by columns Наступний · Назад на стовпець (ticket 0972) | Рад гатовы · Назад на рад; Слупок гатовы · Назад на слупок |
 | The Frame's edges | Зверху · Знизу · Зліва · Справа | Верх · Ніз · Злева · Справа |
 
 | English | Chinese | Spanish | Polish |
@@ -164,8 +164,8 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | en convertImage.errors.tooLarge, tooManyPixels | That file is too big, then a dash: at most {maxSizeMb} MB. | That file is too big: at most {maxSizeMb} MB. (tooManyPixels the same way) | No em dashes |
 | ru convertImage.errors.tooLarge, tooManyPixels | Файл слишком большой, затем тире: не больше {maxSizeMb} МБ. | Файл слишком большой: не больше {maxSizeMb} МБ. (tooManyPixels так же) | No em dashes |
 | ru size.estimateWarning | Эти размеры, затем тире: оценка. | Эти размеры приблизительные. | No em dashes |
-| en rowProgress.previousButton | Previous row | Row not done | DESIGN.md: never "Previous row" |
-| ru rowProgress.previousButton | Предыдущий ряд | Ряд не готов | The same rule, pairs with «Ряд готов» |
+| en rowProgress.previousButton | Previous row | Row not done, then Back a row (ticket 0972) | DESIGN.md: never "Previous row" |
+| ru rowProgress.previousButton | Предыдущий ряд | Ряд не готов, then Назад на ряд (ticket 0972) | The same rule, pairs with «Ряд готов» |
 | ru transfer.pdfCountHeading | Бисер | Бисеринок | Matches the Beads needed box |
 | Beads needed counts, PDF | 1424 | 1 424 | Group thousands |
 | formatSizeMm (ru) | 9.6 × 10.4 см | 9,6 × 10,4 см | Russian decimal comma |
@@ -708,7 +708,7 @@ Left out under 600 px wide, in every language (no new words): the strip's "Conve
 
 ## Margin sheet copy (ticket 0655)
 
-The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
+The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Back a row, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|
@@ -1228,7 +1228,7 @@ English follows the audit's proposal (UX-018); the other languages are proposals
 
 ## Row in view copy (ticket 0934)
 
-After Row done, Row not done and Go to row the announcer says where the weaving is, in the counter's own words, once per move (ScreenReaders card): `{unit}` is Row or Column, a Custom frame says its pass as the counter does ("Round 3 of 9"), and the last pass done says Pattern done. Show row sits beside Go to row's name (ProgressBar card).
+After Row done, Back a row and Go to row the announcer says where the weaving is, in the counter's own words, once per move (ScreenReaders card): `{unit}` is Row or Column, a Custom frame says its pass as the counter does ("Round 3 of 9"), and the last pass done says Pattern done. Show row sits beside Go to row's name (ProgressBar card).
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
@@ -1250,3 +1250,18 @@ The chip over the beads while the background is found and not yet removed, with 
 | Turn off (its last button) | Выключить | Вимкнути | Выключыць | 关闭 | Desactivar | Wyłącz |
 
 English follows the audit's proposal (UX-012); the other languages are proposals for review with the build.
+
+## The Progress bar's words (ticket 0972)
+
+The counter names its step in the announcer's words: `{unit} {current} of {total}` above ("Row 7 of 10", "Pass 3 of 27" on peyote, with "· row 2" after it); the announcer reads the same step with the rulers' row, `{step}, row {line}`. Where the number counts passes, Go to row is Go to pass, the noun of its field, and an Info button beside its name holds the passes sentence. The back step says where it goes.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Back a row | Назад на ряд | Назад на ряд | Назад на рад | 退回一行 | Atrás una fila | Rząd wstecz |
+| Back a column | Назад на столбец | Назад на стовпець | Назад на слупок | 退回一列 | Atrás una columna | Kolumna wstecz |
+| This row is marked done. Press Back a row to change it. | Этот ряд отмечен как готовый. Нажмите «Назад на ряд», чтобы изменить его. | Цей ряд позначено як готовий. Натисніть «Назад на ряд», щоб змінити його. | Гэты рад пазначаны як гатовы. Націсніце «Назад на рад», каб змяніць яго. | 这一行已标记为完成。按“退回一行”即可更改。 | Esta fila está marcada como terminada. Pulsa «Atrás una fila» para cambiarla. | Ten rząd jest oznaczony jako gotowy. Naciśnij „Rząd wstecz”, aby go zmienić. |
+| {step}, row {line} (announced, peyote) | {step}, ряд {line} | {step}, ряд {line} | {step}, рад {line} | {step}，第 {line} 行 | {step}, fila {line} | {step}, rząd {line} |
+| Go to pass | Перейти к проходу | Перейти до проходу | Перайсці да прахода | 跳到趟 | Ir a la pasada | Przejdź do przejścia |
+| What a pass is (Info button) | Что такое проход | Що таке прохід | Што такое праход | 什么是趟 | Qué es una pasada | Czym jest przejście |
+
+English follows the audit (UX-059, UX-062, UX-063); whether a peyote beader says "pass" or "row" for a step is open for a beader's answer.
