@@ -84,7 +84,7 @@ Where the build differs from the sections above, and why:
 
 - The `reference-image` icon (the `image` picture with a dashed edge), plain look, right after the Rulers toggle, before Undo (CanvasStrip card). Name "Reference image". Shown only with a Project open; at every width, scrolling with the tools on a phone.
 - **No picture yet:** not a toggle (no `aria-pressed`). A press opens the file picker (the Convert image picker's formats); a picked picture is fitted and opens in Adjust. Tooltip "Add a reference image", with no key chip: `I` only shows and hides a picture. A file the picker refuses opens the Project panel on the reference image section, with the refusal line there (below), so every refusal reads in one place.
-- **With a picture:** a toggle, `aria-pressed`, the Rulers look (pressed: `ink` fill, `canvas` icon). Tooltip "Hide reference image" while shown, "Show reference image" while hidden, with the key chip `I` (control registry). Showing a picture that is not wholly in view scrolls the view to centre it, the zoom kept (ticket 1011); one already in view stays where it is.
+- **With a picture:** a toggle, `aria-pressed`, the Rulers look (pressed: `ink` fill, `canvas` icon). Tooltip "Hide reference image" while shown, "Show reference image" while hidden, with the key chip `I` (control registry). Showing a picture that is not wholly in view pans the view the shortest way to bring it into the room the Tool pill leaves, the zoom kept, as Show row does (ticket 1011); one already in view stays where it is.
 - Shown or hidden is saved with the Project; a new picture is shown.
 
 ## Project panel section
