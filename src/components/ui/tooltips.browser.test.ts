@@ -15,7 +15,7 @@ import { withLayers } from '../../testUtils/layerFields'
 
 // The registry actions' Tooltips stay on screen at its left and right edges, in English and "longest" (tickets 552, 0607):
 // one capped-width component, so each shape of bubble is tried on the action whose text is widest, and each way of
-// opening once (docs/testing.md, Tooltips).
+// opening once (docs/testing/text-fit.md, Tooltips).
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 /** Row progress begun on a Frame, which holds the Frame still: the reason many actions give for being off. */
 const locked = withLayers(project, { frame: { row: 0, column: 0, rows: 6, columns: 5, technique: 'loom' as const, beads: {} }, rowProgress: { ...rowProgressOf(project), currentRow: 1 } })

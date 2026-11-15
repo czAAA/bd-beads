@@ -1,5 +1,5 @@
 // Ticket 0804, macOS only: the Frame tools menu's place on every frame in real Safari (`safaridriver`, Safari >
-// Develop > "Allow Remote Automation"). Serve a build on :4173 (`npx vite preview`), then run this; docs/testing.md.
+// Develop > "Allow Remote Automation"). Serve a build on :4173 (`npx vite preview`), then run this; docs/testing/browser-checks.md.
 import { spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'

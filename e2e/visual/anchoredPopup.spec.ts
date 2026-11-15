@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { openApp, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** A popup hung from a button opens straight under it (ticket 0804). Playwright's WebKit never showed the Safari bug (the menu painted at the window's corner, then jumped), so this pins the place in Chromium; `docs/testing.md` has the manual real-Safari script. */
+/** A popup hung from a button opens straight under it (ticket 0804). Playwright's WebKit never showed the Safari bug (the menu painted at the window's corner, then jumped), so this pins the place in Chromium; `docs/testing/browser-checks.md` has the manual real-Safari script. */
 
 /** The Frame tools menu, hung from the band's "…" with an item of its own to wait for. */
 const FRAME_TOOLS = { button: 'margin-frame-tools', item: 'margin-frame-tools-mirror' }

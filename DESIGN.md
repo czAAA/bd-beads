@@ -70,45 +70,9 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 
 One layout (ticket 412): the app has one layout at every width (ADR 0046; ticket 439 replaced the Dock with the floating Tool pill). The header, left column and Toolbox that old §4, §4.1, §4.2 and §5.7 describe are gone; `responsive.md` and the `ToolPill`, `ToolSheet` and `CanvasStrip` cards say where their controls live now. The `Dock` card is kept as the record of the bar the Tool pill replaced. The `Toolbox` card is kept as the record of the v18 rail.
 
-### 3.1 Old section numbers
-
-Tickets written before the v13 rewrite cite `DESIGN.md §N`. They now resolve here:
-
-| Old § | Topic | Now |
-|---|---|---|
-| §1 | Principles | §1 above; design system README, Principles |
-| §2 | Themes | README, Themes; `ThemeToggle`, `HighContrastTheme` cards; §4.1 below |
-| §3, §3.1 | Color tokens | `tokens.json` → `color` |
-| §3.2 | Typography, font stacks | `tokens.json` → `type`; README, Type; §4.3 below for bundling |
-| §3.3 | Spacing | `tokens.json` → `spacing`, `layout` |
-| §3.4 | Radii | `tokens.json` → `radius` |
-| §3.5 | Elevation | `tokens.json` → `shadow`; `accessibility.md`, Stacking order |
-| §3.6 | Contrast | `accessibility.md`, Contrast; `ContrastAudit` card |
-| §4 | Layout | README, Layout; `responsive.md`; `ScreenSizes` card |
-| §4.1 | Header | `Header`, `BeadPill`, `OverflowMenu` cards |
-| §4.2 | Left column | `Toolbox`, `SaveBox`, `BeadsNeeded`, `SavedPatterns` cards |
-| §4.3 | Canvas box | `CanvasStrip`, `BeadBoard`, `ProgressBar` cards |
-| §5 | Components | the component cards |
-| §5.1 | Buttons and selects | `Button`, `InteractionStates` cards; `interaction-and-motion.md` |
-| §5.2 | Bead pill, language switcher | `BeadPill`, `Header` cards |
-| §5.3 | Theme toggle | `ThemeToggle` card |
-| §5.4 | Tool tabs | `ToolTabs` card |
-| §5.5 | Palette swatches | `PaletteSwatches`, `ColorPickers` cards |
-| §5.6 | Disclosure row | `DisclosureRow`, `FrameControls` cards |
-| §5.7 | Tool group | `Toolbox` card |
-| §5.8 | Expandable panel | `BeadsNeeded`, `SavedPatternsExpanded` cards |
-| §5.9 | Saved Pattern thumbnail | `SavedPatterns` card |
-| §5.10 | Save box | `SaveBox`, `SaveStates`, `Menu`, `NameOnExports` cards |
-| §5.11 | Progress bar | `ProgressBar`, `SwitchAndFileButton` cards |
-| §5.12 | Message | `Message`, `ImportResult` cards; `forms-and-states.md` |
-| §5.13 | Modal, menu, tooltip | `Modal`, `ConfirmDialogs`, `Menu`, `ShortcutsHelp` cards |
-| §6.1 | Icons | README, Iconography; `assets/Icons/` |
-| §6.2 | Logo | README, Logo; `assets/Logos/` |
-| §6.3 | Favicon | README, Favicon; `favicon/` |
-| §7 | Bead drawing | `BeadBoard`, `BeadHover` cards; §4.2 below |
-| §8 | Copy | `writing.md` |
-| §9 | What changes | §5 below |
-| §10 | Design system files | §3 and §6 below |
+Old section numbers: tickets written before the v13 rewrite, and the "Hand-written from DESIGN.md §N" line of some
+component cards, cite sections of the old file (§5.1 to §5.13, §7 to §10). The component cards and the files above
+replaced those sections; `git log -- DESIGN.md` has the old text and the table that mapped them.
 
 ---
 
@@ -199,41 +163,7 @@ checks them against `tokens.json`. The splash in `index.html` is held to the sam
 
 ### 4.7 The Homepage's scroll story
 
-The Homepage card describes the page (ticket 0739); how the app builds it:
-
-- The page (`position: fixed`, `overflow: hidden`) never scrolls: the stage holds the canvas box in its middle, and
-  the section shown is a ref that every way of turning sets (ticket 0801). `homepage/useSectionInput.ts` turns wheel,
-  trackpad, swipe and keys into turns, a section taller than its room scrolling inside itself first; the wheel's
-  gestures are `homepage/wheelTurn.ts`, the keys `homepage/sectionKeys.ts`. It was a snapping scroller with a sticky
-  stage until ticket 0801, but Chrome re-snaps a snap container whenever layout inside it changes, and What's inside's
-  playing editor changes it many times a second, so scrolls were pulled back; don't bring native snapping back.
-- Its bottom bar is the editor's `ProgressBar` with the sections in its slot, and `ProgressTrack`, the track and spark
-  Row progress draws, with Pattern done's burst at its end: one component, not a copy.
-- The free list grows with the plans section's own scroll (tickets 0742, 0801). The section scrolls on by the room the
-  whole list needs (an absolute spacer, `.homepage__free-room`, so the growing list doesn't change the scroll range),
-  its content scrolling up natively, and the list is as tall as
-  `homepage/freeGrowth.ts` says, measured by `useFreeGrowth` from the section, the list and the tile in the section's
-  own px (the zoom and the section's turn scale divided out). The rows come from `homepage/freeList.ts`: the
-  Techniques from `TECHNIQUES`, the brands from the offered Beads' catalogs, the codes counted from the catalog files
-  at build time (`__COLOR_CATALOG_CODES__`, so the Homepage fetches no catalog), the Starters from `categories.json`.
-- The two X1 marks are `AppLogo`, the design system's own file.
-- Welcome is the first of four sections (ticket 0830; `homepage/sections.ts` lists them, and the bar counts what it
-  lists). `WelcomeTile` takes its counts from the app (`homepage/appCounts.ts`: the catalogs' codes and the Starters,
-  as the free list counts them) and its piece from the Project renderer (`WelcomePiece`, the tour's peacock cuff from
-  `inside/demoProjects.ts`, drawn in the theme shown), so neither is a number or a picture kept by hand. The feather
-  is data (`inside/peacock.ts`, ticket 0831): the ring's eye, the cuff, the reference picture (`peacockPicture.ts`) and
-  the strokes and Fills that trace it (`peacockTrace.ts`) all come from the one formula, so they cannot drift apart. The way into
-  the editor is the page's one primary button: `StepBar`'s `nextVariant` makes the Homepage's Next secondary, and
-  Convert image's stays primary.
-- What's inside is a real editor (`inside/InsideShell`, the app's shell given its own stores), played by a tour
-  (`inside/useInsideTour.ts`: 13 rows, `inside/tourScripts.ts`) and shown as four chapters (`inside/insideCopy.ts`).
-  A row pressed applies the rows before it at once, so every chapter starts on what the ones before it made. The list
-  stands beside the demo from a 1000px homepage box (`LIST_FROM` in `HomePage.vue`, by the zoomed width) and is a band
-  over it under that. Expand is the page's control drawn in the demo's own Canvas strip: the shell passes it through
-  (`demo.expand` in `useAppShell`), and `composables/ui/shellScope.ts` (`pagesOwn`) keeps a press on it from taking the
-  editor over or closing its popovers.
-- The step names are measured, not counted (`StepBar`): where two would come closer than 6px only the current one
-  shows, the others on hover or focus.
+The Homepage card describes the page (ticket 0739); how the app builds it is in [`docs/homepage.md`](docs/homepage.md).
 
 ### 4.8 Decisions
 
@@ -248,30 +178,8 @@ The Homepage card describes the page (ticket 0739); how the app builds it:
 
 ## 5. What changes from today's app
 
-A map for the implementation tickets (136–168, and 75–83).
-
-| Area | Today | Design system v14 | Ticket |
-|---|---|---|---|
-| Tokens | ticket 02's palette (`--color-ink #1d3658`, 3px outlines, Segoe UI) | role-named tokens, three themes | 136 |
-| Themes | light only | light, dark, high contrast; four-way control, device default | 136, 139, 160 |
-| Fonts | system UI | Inter, DM Mono, Instrument Serif, bundled | 136 |
-| Icons | Icons v1, 23 icons inline in components | Icons v2 with the bead signature, one `Icon` component | 137 |
-| Logo, favicon | a QR-style bead grid favicon, a generic bead glyph | the X1 mark, theme-aware favicon with `.ico`, PNG and Apple touch fallbacks | 138 |
-| Bead drawing | white background, paper rim, grey dimmed rows | the board, per-theme `ProjectTheme`, light rows fade toward the board | 140 |
-| Layout | Toolbox rail or New Pattern form on the left; panels below the canvas; the page scrolls | one 358px left column of four boxes scrolling on its own; the canvas box fills the rest | 141 |
-| Header | ticket 02 header | brand, currently editing, Bead pill, Replace bead, imports, New Pattern, EN / RU, theme, shortcuts | 142 |
-| Canvas box | zoom cluster in the panel's corner | strip with zoom, board | 143 |
-| Row progress | toggles in the Toolbox; bar placed by Pattern shape, hidden while off | one Progress bar along the canvas box's bottom, always shown | 144 |
-| Saved Patterns | a list of every Pattern | 5 most recently saved as round thumbnails, expandable; needs a last-saved order | 145, 147 |
-| Beads needed | a list with a total | expandable panel, total in the title, a grams column (needs beads per gram in the catalog) | 146, and the grams feature ticket |
-| Save and export | in the Toolbox's Edit group | a save box with Export ▾ menu | 148 |
-| New Pattern form, Convert image | ticket 02 look | restyled Toolbox-like panel | 149, 150 |
-| Panels and pickers, messages, modals | ticket 02 look | Modal, Menu, Message cards | 151, 76 |
-| Toolbox | groups with a 4-per-row grid | tool tabs, swatches, Edit row, Frame disclosure row | 75 |
-| States, a11y | partial | interaction states, empty/loading/error, keyboard painting, screen readers, forced colors | 157–160 |
-| Exports | today's PDF and PNG | page 1, chart pages, wide and long Patterns, name on exports | 161–164 |
-| Copy | today's strings | `writing.md` audit | 165 |
-| Responsive | desktop only | five tiers, touch input | 79, 83, 166–168 |
+Removed: this was the map for the redesign's implementation tickets, which are all closed; `git log -- DESIGN.md`
+has it. The number is kept so that §6 keeps its citations.
 
 ---
 
