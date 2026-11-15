@@ -165,8 +165,8 @@ defineExpose({ freeWindow, freeTile })
   gap: var(--space-8);
   margin: 0;
   font: var(--type-body);
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
+  font-size: var(--plan-why-size);
+  line-height: var(--plan-why-line);
   color: var(--muted);
 }
 
@@ -214,7 +214,7 @@ defineExpose({ freeWindow, freeTile })
   text-align: left;
   background: var(--canvas);
   border: 1px solid var(--line);
-  border-radius: 1rem;
+  border-radius: var(--plan-radius);
 }
 
 @container homepage (min-width: 1024px) {
@@ -282,7 +282,7 @@ defineExpose({ freeWindow, freeTile })
   width: 0.625rem;
   height: 0.625rem;
   background: var(--ink);
-  border-radius: 2.5px;
+  border-radius: var(--plan-bead-radius);
 }
 
 .plan__thread {
@@ -294,8 +294,8 @@ defineExpose({ freeWindow, freeTile })
 .plan__name {
   margin: 0;
   font: var(--type-serif-heading);
-  font-size: 1.875rem;
-  line-height: 2rem;
+  font-size: var(--plan-name-size);
+  line-height: var(--plan-name-line);
   letter-spacing: var(--tracking-serif-heading);
   color: var(--ink);
 }
@@ -309,9 +309,9 @@ defineExpose({ freeWindow, freeTile })
 
 .plan__price b {
   font: var(--type-body);
-  font-size: 1rem;
+  font-size: var(--plan-price-size);
   font-weight: 600;
-  line-height: 1.5rem;
+  line-height: var(--plan-price-line);
   color: var(--ink);
 }
 
@@ -436,8 +436,8 @@ defineExpose({ freeWindow, freeTile })
 
 .plans--phone .plan--off .plan__name {
   grid-area: 1 / 1;
-  font-size: 1.5rem;
-  line-height: 1.75rem;
+  font-size: var(--plan-name-size-phone);
+  line-height: var(--plan-name-line-phone);
 }
 
 .plans--phone .plan--off .plan__price {

@@ -70,7 +70,7 @@ onMounted(async () => {
 <style scoped>
 .convert-popover {
   position: absolute;
-  z-index: 6;
+  z-index: var(--convert-layer-popover);
   box-sizing: border-box;
   max-height: calc(100% - var(--space-32));
   overflow-y: auto;
