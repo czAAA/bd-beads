@@ -24,7 +24,7 @@ async function opened(...pictures: PixelData[]) {
 }
 
 describe('Clean up in the Convert image wizard (ticket 0906)', () => {
-  it('opens on at Medium for a photo, with Small colors join at 10, and cleans its lone beads', async () => {
+  it('opens on at Medium for a photo, with Drop colors used by few beads at 10, and cleans its lone beads', async () => {
     const wizard = await convertAt(photoPicture(), 60)
     const { cleanUp } = wizard
     expect(cleanUp.on.value).toBe(true)
@@ -93,7 +93,7 @@ describe('Clean up in the Convert image wizard (ticket 0906)', () => {
     expect(wizard.beadColors.value).not.toContain(shown)
   })
 
-  it('steps Small colors join from off to 50', async () => {
+  it('steps Drop colors used by few beads from off to 50', async () => {
     const wizard = await convertAt(photoPicture(), 60)
     wizard.cleanUp.setLeastBeads(0)
     expect(wizard.cleanUp.leastBeads.value).toBe(1)
