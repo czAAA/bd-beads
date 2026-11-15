@@ -192,6 +192,23 @@ export function toggleRowDirection(project: Project): Project {
   return withRowProgress(project, { ...rowProgressOf(project), ...next })
 }
 
+/** The four ways Turn row direction lists, in the order a press of its `D` key steps through them (ticket 0973). */
+export const ROW_WAYS: readonly ShownWay[] = ['down', 'right', 'up', 'left']
+
+/** Points the weaver's rows the way they are to run as the Frame lies (ticket 0973, UX-060): each way keeps its own
+ * pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
+ * Row order is worked one way only. */
+export function turnRowDirectionTo(project: Project, way: ShownWay): Project {
+  if (!frameRowOrder(project).turns) return project
+  const quarterTurns = frameOf(project)?.quarterTurns ?? 0
+  const own = CLOCKWISE[(CLOCKWISE.indexOf(way) - (quarterTurns % 4) + 4) % 4]!
+  const rowProgress = rowProgressOf(project)
+  if (shownWay(rowProgress) === own) return project
+  const direction = own === 'down' || own === 'up' ? 'rows' : 'columns'
+  const reversed = own === 'up' || own === 'left' ? true : undefined
+  return withRowProgress(project, { ...rowProgress, direction, reversed })
+}
+
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
  * rows the Frame has. */
 export function rowProgressPosition(project: Layered): { current: number; total: number } {

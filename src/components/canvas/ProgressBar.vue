@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Project } from '../../domain/project'
+import type { ShownWay } from '../../domain/rowProgress'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
@@ -26,7 +27,8 @@ const emit = defineEmits<{
   'move-row': [delta: number]
   /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
   'reset-progress': []
-  'toggle-row-direction': []
+  /** A way chosen from Turn row direction's list (ticket 0973). */
+  'set-row-direction': [way: ShownWay]
   'toggle-row-highlight': []
   /** Go to row, from the counter (ticket 0849): the pass to point at, from 0. */
   'go-to-row': [pass: number]
@@ -74,7 +76,7 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
       testid="progress-bar"
       @move-row="emit('move-row', $event)"
       @reset-progress="emit('reset-progress')"
-      @toggle-row-direction="emit('toggle-row-direction')"
+      @set-row-direction="emit('set-row-direction', $event)"
       @toggle-row-highlight="emit('toggle-row-highlight')"
       @go-to-row="emit('go-to-row', $event)"
       @show-row="emit('show-row')"

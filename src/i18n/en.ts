@@ -629,6 +629,7 @@ export const en: Translations = {
     showColumn: 'Show column',
     goToPass: 'Go to pass',
     passesInfoName: 'What a pass is',
+    showRowMarks: 'Show row marks',
   },
   quantities: {
     heading: 'Beads needed',

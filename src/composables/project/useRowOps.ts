@@ -1,7 +1,7 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
-import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, toggleRowDirection } from '../../domain/rowProgress'
+import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, toggleRowDirection, turnRowDirectionTo, type ShownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { rowProgressAnnouncement } from '../../i18n/rowProgressWords'
 import type { Translations } from '../../i18n/translations'
@@ -51,17 +51,16 @@ export function useRowOps(deps: RowOpsDeps) {
   // Remove Frame and leaving the Project stop it too, however they come about.
   watch([() => deps.currentProject()?.id, () => frameOf(deps.currentProject()) !== undefined], stopRowMotion)
 
-  /** Flips row progress between rows and columns (ticket 32): its own toggle, separate from Rotate, and not an undo
-   * step. */
-  function onToggleRowDirection() {
+  /** Writes the Project with its rows turned another way, and says so: not an undo step (ticket 32). */
+  function turnTo(turn: (project: Project) => Project) {
     const project = deps.currentProject()
     if (project) {
-      const turned = toggleRowDirection(project)
-      // A Technique woven in rows only has nothing to turn (ticket 487).
+      const turned = turn(project)
+      // A Technique woven in rows only has nothing to turn (ticket 487), and the way the rows run already turns nothing.
       if (turned === project) return
       stopRowMotion()
       deps.replaceProject(turned)
-      // Said once per change, whether the button or its key turned it (ticket 411).
+      // Said once per change, whether the list or the key turned it (ticket 411).
       const t = deps.messages().rowProgress
       const { direction, reversed } = rowProgressOf(turned)
       const toast = {
@@ -72,6 +71,16 @@ export function useRowOps(deps: RowOpsDeps) {
       const kept = rowProgressPosition(project).current > 0 ? (rowProgressOf(project).direction === 'columns' ? t.columnsKeptToast : t.rowsKeptToast) : undefined
       deps.showToast('row-direction', kept ? fillBlanks(t.directionKeptToast, { toast, kept }) : toast, 'success')
     }
+  }
+
+  /** The `D` key: the rows on to the next of the four ways (ticket 0589). */
+  function onToggleRowDirection() {
+    turnTo(toggleRowDirection)
+  }
+
+  /** A way chosen from Turn row direction's list (ticket 0973, UX-060): the rows run that way, its own count back. */
+  function onSetRowDirection(way: ShownWay) {
+    turnTo((project) => turnRowDirectionTo(project, way))
   }
 
   /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or Go to row's jump. The row it
@@ -131,5 +140,5 @@ export function useRowOps(deps: RowOpsDeps) {
     deps.showToast('marked-done', rowProgressOf(project).direction === 'columns' ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
   }
 
-  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onMoveRow, onGoToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
+  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onSetRowDirection, onMoveRow, onGoToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
 }

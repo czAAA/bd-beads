@@ -252,6 +252,8 @@ const CASES: FitCase[] = [
   ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
   // Go to row, opened from the Progress bar's counter (ticket 0849).
   ['Go to row', ProgressBar, { project: framed }, (root: HTMLElement) => press(root, 'progress-bar-compact-position')],
+  // Turn row direction's list, with Show row marks (ticket 0973).
+  ['Turn row direction\'s list', ProgressBar, { project: framed }, (root: HTMLElement) => press(root, 'progress-bar-direction')],
   // Go to pass on peyote, with its Info button beside the name (ticket 0972).
   ['Go to pass', GoToPassHost as Component, {}],
   [

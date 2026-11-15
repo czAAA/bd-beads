@@ -144,7 +144,7 @@ const {
   onSelectTool,
   onSelectColor,
   onSelectCustomColor,
-  onToggleRowDirection,
+  onSetRowDirection,
   onMoveRow,
   onGoToRow,
   onShowRow,
@@ -668,7 +668,7 @@ const drawingStyle = computed(() => {
           :row-press="rowPress"
           @move-row="onMoveRow"
           @reset-progress="onResetProgress"
-          @toggle-row-direction="onToggleRowDirection"
+          @set-row-direction="onSetRowDirection"
           @toggle-row-highlight="toggleRowHighlight"
           @fit-and-export="onFitAndExport"
           @go-to-row="onGoToRow"
@@ -759,7 +759,7 @@ const drawingStyle = computed(() => {
             @key="onFrameKey"
             @move-row="onMoveRow"
             @reset-progress="onResetProgress"
-            @toggle-row-direction="onToggleRowDirection"
+            @set-row-direction="onSetRowDirection"
             @toggle-row-highlight="toggleRowHighlight"
             @rename="onRenameFrame"
             @set-technique="onSetFrameTechnique"
