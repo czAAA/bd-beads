@@ -20,7 +20,7 @@ export async function turnToSection(root: Element, id: 'welcome' | 'inside' | 'c
 }
 
 /** Waits for What's inside's demo editor, which comes after the page (ticket 0991), where it has one. */
-async function demoArrived(root: Element): Promise<void> {
+export async function demoArrived(root: Element): Promise<void> {
   const started = performance.now()
   while (root.querySelector('[data-testid="inside-editor-waiting"]')) {
     if (performance.now() - started > 15_000) throw new Error("What's inside's demo editor did not come")

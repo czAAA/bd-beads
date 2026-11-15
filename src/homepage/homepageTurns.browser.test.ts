@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { mountAt, type Mounted } from '../testUtils/browserFit'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
+import { demoArrived } from '../testUtils/homepageSection'
 import HomePage from './HomePage.vue'
 
 // The Homepage turning both ways in a real browser (ticket 0801): with motion on and What's inside's editor playing, as
@@ -58,6 +59,8 @@ describe('The Homepage turns both ways (ticket 0801)', () => {
     // The free list grows only on the three plans, shown once Projects are saved (ticket 0947).
     mounted.unmount()
     mounted = await mountAt(HomePage, { projectCount: 3, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
+    // The demo's own strip comes after the page (ticket 0991): the wheel is aimed once both are there.
+    await demoArrived(mounted.root)
     const strip = testid('canvas-strip')
     for (const to of ['inside', 'coffee', 'plans']) {
       await userEvent.wheel(strip, { delta: { y: 100 } })
