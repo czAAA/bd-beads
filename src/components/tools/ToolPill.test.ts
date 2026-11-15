@@ -180,7 +180,8 @@ describe('ToolPill (ticket 439)', () => {
     tile.element.click()
     expect(wrapper.emitted('update:popoverOpen')).toEqual([[true]])
     await wrapper.setProps({ popoverOpen: true })
-    await nextTick()
+    // Focus goes in once the popover is placed (ticket 0961).
+    await flushPromises()
     expect(tileTip().props('suppressed')).toBe(true)
     expect(document.activeElement?.getAttribute('data-testid')).toBe('palette-swatch')
     wrapper.unmount()
@@ -227,10 +228,10 @@ describe('ToolPill (ticket 439)', () => {
   })
 
   it('drops the recents while the tools would have to scroll, and brings them back with room (ticket 0837)', async () => {
-    // The tools have 300px of room and need `needed`.
+    // The tools have 300px of room and their tiles run `needed`, first tile's start to last tile's end.
     let needed = 500
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(300)
-    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => needed)
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, 0, needed, 40))
     const wrapper = mount(ToolPill, { props: { ...base, recentsInPill: ['#111111', '#222222', '#333333'] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)

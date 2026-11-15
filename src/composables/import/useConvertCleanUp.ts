@@ -22,7 +22,7 @@ function colorLookup(found: readonly FoundColor[], at: ReducedColors) {
   return (hex: string) => results.get(at.byHex.get(hex) ?? hex)
 }
 
-/** Clean up (ConvertImage card DS-3, ticket 0906): Clean up stray beads with its strength and Small colors join's number,
+/** Clean up (ConvertImage card DS-3, ticket 0906): Clean up stray beads with its strength and Drop colors used by few beads's number,
  * between the reduction and the beads. A photo opens with it on at Medium and the number at 10, flat art (ticket 0889)
  * with both off; what the person sets is kept until a new picture (`reset`). No Undo: each control shows its state. */
 export function useConvertCleanUp({ kind, raw, reduced: sampled, weave, match }: ConvertCleanUpDeps) {
@@ -81,7 +81,7 @@ export function useConvertCleanUp({ kind, raw, reduced: sampled, weave, match }:
     /** How many beads it changed, and how many stand alone without it. */
     cleaned: computed(() => cleanedBeads.value?.cleaned ?? 0),
     lone,
-    /** How many colors Small colors join joined, and their beads. */
+    /** How many colors Drop colors used by few beads joined, and their beads. */
     joined,
   }
 }

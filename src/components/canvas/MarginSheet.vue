@@ -599,6 +599,11 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   background: var(--accent);
 }
 
+/* Its focus ring takes on-accent on that fill (KeyboardFocus card, ticket 0938). */
+.margin-sheet__tools :deep(.icon-btn.margin-sheet__mirror--on:focus-visible) {
+  outline-color: var(--focus-ring-on-accent);
+}
+
 /* Remove Frame is `ink` on the paper and `danger` on hover. */
 .margin-sheet__tools :deep(.margin-sheet__remove:hover) {
   color: var(--danger);

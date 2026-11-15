@@ -95,6 +95,11 @@ function toggle() {
   outline-offset: var(--focus-offset);
 }
 
+/* On, the track is the accent: the ring takes on-accent, as the knob does (KeyboardFocus card, ticket 0938). */
+.app-switch[aria-checked='true']:focus-visible {
+  outline-color: var(--focus-ring-on-accent);
+}
+
 .app-switch-wrap {
   display: inline-flex;
   flex: none;

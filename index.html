@@ -8,7 +8,8 @@
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <!-- The browser's bar around the installed app: the page background (`surface`) of the light or dark setting (tokens.json). -->
+    <!-- The browser's bar around the installed app: the page background (`surface`) of the light or dark setting (tokens.json);
+         the script below and src/theme/theme.ts set both to the chosen theme's (ticket 0998). -->
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
     <!-- viewport-fit=cover (ticket 166; responsive.md "Screen edges and height") lets env(safe-area-inset-*) read real insets. -->
@@ -43,6 +44,11 @@
                 : 'light'
         root.dataset.theme = theme
         root.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
+        // The browser's bar on this theme's `surface` (tokens.json, ticket 0998), so a picked theme beats the metas'
+        // device-keyed media; theme.ts keeps it after. The values are held in step by src/theme/theme.dom.test.ts.
+        var surface = { light: '#fafafa', dark: '#1a1a1a', contrast: '#f0f0f0' }[theme]
+        var bars = document.querySelectorAll('meta[name="theme-color"]')
+        for (var b = 0; b < bars.length; b++) bars[b].content = surface
         root.lang = locale === 'ru' ? 'ru' : 'en'
       })()
     </script>

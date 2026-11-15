@@ -1,17 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
+import type { SealedProject } from '../../domain/sealedProject'
 import { useProjectManageFlow } from './useProjectManageFlow'
 import { canvasOf } from '../../domain/layerRecord'
 import { en } from '../../i18n/en'
 
 const make = (name: string) => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name, size: { width: 3, height: 3, unit: 'beads' } })
 
-function setup(projects: Project[]) {
+function setup(projects: Project[], sealed: SealedProject[] = []) {
   const library = { projects, open: projects[0] as Project | undefined }
   const deps = {
     currentProject: () => library.open,
     projects: () => library.projects,
+    sealed: () => sealed,
     replaceProject: vi.fn((project: Project) => void (library.projects = library.projects.map((p) => (p.id === project.id ? project : p)))),
     addProject: vi.fn((project: Project) => void (library.projects = [project, ...library.projects])),
     removeAllProjects: vi.fn(() => void (library.projects = [])),
@@ -75,5 +77,11 @@ describe('useProjectManageFlow', () => {
     const { flow } = setup([])
     flow.onRequestDeleteAllProjects()
     expect(flow.deletingAll.value).toBe(false)
+  })
+
+  it('asks to delete all when only sealed Projects are saved, as Delete all removes them too (ticket 0984)', () => {
+    const { flow } = setup([], [{ id: 'huge' } as SealedProject])
+    flow.onRequestDeleteAllProjects()
+    expect(flow.deletingAll.value).toBe(true)
   })
 })

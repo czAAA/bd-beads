@@ -49,7 +49,7 @@ describe('SaveReminder (ticket 0796)', () => {
     const wrapper = mountRing({ lastFileAt: Date.now() })
     const tooltip = wrapper.getComponent(AppTooltip)
 
-    expect(tooltip.props()).toMatchObject({ name: 'Save Project file', hotkey: 'Ctrl/Cmd+S', body: en.saveReminder.body, meta: ['Beads since last file: 64', 'Last file: today'] })
+    expect(tooltip.props()).toMatchObject({ name: 'Save Project file', hotkey: 'Ctrl+S', body: en.saveReminder.body, meta: ['Beads since last file: 64', 'Last file: today'] })
     await wrapper.setProps({ lastFileAt: undefined })
     expect((tooltip.props() as TooltipProps).meta).toEqual(['Beads since last file: 64', 'No Project file yet'])
   })
