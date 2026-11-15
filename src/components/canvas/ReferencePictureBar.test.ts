@@ -31,6 +31,15 @@ describe('ReferencePictureBar (ReferenceImage card, ticket 0883)', () => {
     wrapper.unmount()
   })
 
+  it('is hidden once its picture is panned wholly out of the canvas box, so Tab never reaches it (ticket 1011)', async () => {
+    const wrapper = mountBar()
+    const bar = () => wrapper.get('[data-testid="picture-bar"]').attributes('style') ?? ''
+    expect(bar()).not.toContain('hidden')
+    await wrapper.setProps({ picture: { left: 600, top: 100, width: 80, height: 40 } })
+    expect(bar()).toContain('visibility: hidden')
+    wrapper.unmount()
+  })
+
   it('moves the picture with the Move grip, drawn as it goes and saved once on release, and a bead with an arrow', async () => {
     const wrapper = mountBar()
     const grip = wrapper.get('[data-testid="picture-bar-move"]')

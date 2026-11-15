@@ -1,6 +1,7 @@
 import { computed, readonly, ref, shallowRef, watch } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import { ImageConversionError, type ImageRejection } from '../../domain/imageConversion'
+import { canvasWeave } from '../../domain/layerWeave'
 import { touch, type Project } from '../../domain/project'
 import {
   fittedPlace,
@@ -14,6 +15,8 @@ import {
   type ReferencePlace,
   type WidthLimits,
 } from '../../domain/referenceImage'
+import { insideBounds } from '../../domain/weaveGeometry'
+import { pictureCover } from '../../rendering/referenceCover'
 import { referenceBoxPx, referenceWidthLimits, type DrawnReference } from '../../rendering/referenceImage'
 import type { PictureStore } from '../../services/pictureStore'
 import type { DrawablePicture, PreparedPicture } from '../../services/referencePicture'
@@ -32,6 +35,8 @@ export interface ReferenceImageFlowDeps {
   decode: (blob: Blob) => Promise<DrawablePicture>
   /** The Canvas positions in view: what a picture is fitted inside on an empty Canvas without a Frame. */
   inView: () => Rect | undefined
+  /** Brings a block of beads into the middle of the view, the zoom kept: a picture shown out of view (ticket 1011). */
+  centreOn: (box: Rect) => void
   announce: (text: string) => void
   /** Opens the Project panel, where a refusal of a file picked from the strip button is told. */
   openProjectPanel: () => void
@@ -187,12 +192,24 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     await opened
   }
 
-  /** The strip button and `I`: shows or hides the picture. */
+  /** The strip button and `I`: shows or hides the picture; one shown while it is not wholly in view is brought to the
+   * middle of the view (ticket 1011). */
   function toggleShown(): void {
     const project = deps.currentProject()
     if (!project?.referenceImage) return
     if (project.referenceImage.shown) adjusting.value = false
     save(project, { ...project.referenceImage, shown: !project.referenceImage.shown })
+    if (!project.referenceImage.shown) bringIntoView(project, project.referenceImage)
+  }
+
+  /** Centres the view on the beads the picture covers, unless they are all in view already. */
+  function bringIntoView(project: Project, { picture, place }: ReferenceImage): void {
+    const view = deps.inView()
+    if (!view) return
+    const { box } = pictureCover(canvasWeave(project), place, referenceHeight({ picture, place }))
+    if (!box) return
+    const last = { row: box.row + box.rows - 1, column: box.column + box.columns - 1 }
+    if (!insideBounds(view, box) || !insideBounds(view, last)) deps.centreOn(box)
   }
 
   /** Shows or hides the picture: Convert to beads hides it after, and its toast's Undo shows it again (ticket 0883). */

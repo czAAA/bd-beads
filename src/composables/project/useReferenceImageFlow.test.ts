@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createProject } from '../../domain/createProject'
 import { ImageConversionError } from '../../domain/imageConversion'
+import type { Rect } from '../../domain/canvas'
 import type { Project } from '../../domain/project'
 import { newReferenceImage, withReferenceImage, type ReferencePicture } from '../../domain/referenceImage'
 import { editHarness } from '../../testUtils/editHarness'
@@ -30,7 +31,8 @@ function setup(project: Project | undefined = framed(), { refuses = false, prepa
       return { blob: new Blob([picked.name]), picture: prepared }
     }),
     decode: vi.fn(async () => ({ image: {} as CanvasImageSource, url: 'blob:picture', release: vi.fn() })),
-    inView: () => undefined,
+    inView: vi.fn((): Rect | undefined => undefined),
+    centreOn: vi.fn(),
     announce: vi.fn(),
     openProjectPanel: vi.fn(),
     closePanel: vi.fn(),
@@ -93,6 +95,22 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
     flow.setOpacity(100)
     expect(harness.project.referenceImage).toMatchObject({ opacity: 100, shown: false })
     expect(harness.history.canUndo.value).toBe(false)
+  })
+
+  it('brings a picture shown out of view into the middle of the view, and leaves one already in view where it is (ticket 1011)', async () => {
+    const { flow, deps } = setup()
+    await flow.pick(file(), 'panel')
+    flow.toggleShown()
+    deps.inView.mockReturnValue({ row: 0, column: 0, rows: 4, columns: 4 })
+    flow.toggleShown()
+    expect(deps.centreOn).not.toHaveBeenCalled()
+    flow.toggleShown()
+    deps.inView.mockReturnValue({ row: 10, column: 10, rows: 4, columns: 4 })
+    flow.toggleShown()
+    // The picture, 80 × 40 grid px in the middle of the 80 × 80 Canvas, covers its two middle rows.
+    expect(deps.centreOn).toHaveBeenCalledExactlyOnceWith({ row: 1, column: 0, rows: 2, columns: 4 })
+    flow.toggleShown()
+    expect(deps.centreOn).toHaveBeenCalledOnce()
   })
 
   it('lays the picture over the beads for the session, not saved nor an Undo step, back under in another Project (ticket 1009)', async () => {
