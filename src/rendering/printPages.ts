@@ -163,6 +163,25 @@ function crossWhereEmpty(lineWidth: number): BeadDrawer {
   }
 }
 
+/** A key's "empty" swatch (ticket 0963): a bead's swatch with no fill, its `line-strong` edge `edge` wide, carrying the
+ * small `faint` cross an empty position carries on the chart, so the key shows the very sign it names. */
+export function drawEmptySwatch(context: CanvasRenderingContext2D, x: number, y: number, size: number, edge: number): void {
+  context.beginPath()
+  context.roundRect(x, y, size, size, size * 0.28)
+  context.strokeStyle = PRINT_COLORS.lineStrong
+  context.lineWidth = edge
+  context.stroke()
+  context.beginPath()
+  for (const [x1, y1, x2, y2] of emptyCrossArms(x + size / 2, y + size / 2, size)) {
+    context.moveTo(x1, y1)
+    context.lineTo(x2, y2)
+  }
+  context.strokeStyle = PRINT_COLORS.faint
+  context.lineWidth = CROSS_LINE
+  context.lineCap = 'butt'
+  context.stroke()
+}
+
 /** The pale rounded board and the beads of `region` on it, without letters: page 1's overview (ticket 0914). An empty
  * position is the bare board under a faint cross (tickets 0587, 0719, 0818). */
 export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board): void {

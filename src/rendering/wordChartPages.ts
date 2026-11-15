@@ -1,6 +1,6 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
-import { drawMark, font, MONO, SANS, SERIF, text, wrap } from './printPages'
+import { drawEmptySwatch, drawMark, font, MONO, SANS, SERIF, text, wrap } from './printPages'
 import { mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintedWordRow, type PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
@@ -172,12 +172,7 @@ function drawKey(context: CanvasRenderingContext2D, words: PrintText, layout: La
   })
   if (chart.empty) {
     const at = place(layout.keyColors.length)
-    context.strokeStyle = PRINT_COLORS.lineStrong
-    context.lineWidth = mm(0.1)
-    context.beginPath()
-    context.roundRect(at.x, at.top, SWATCH, SWATCH, SWATCH * 0.28)
-    context.stroke()
-    text(context, '*', at.x + SWATCH / 2, at.top + SWATCH * 0.8, font('400', 8, SANS), PRINT_COLORS.muted, 'center')
+    drawEmptySwatch(context, at.x, at.top, SWATCH, mm(0.1))
     text(context, chart.empty, at.name, at.baseline, font('400', 7, SANS), PRINT_COLORS.ink, 'left', nameRoom)
   }
 
