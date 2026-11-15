@@ -25,6 +25,8 @@ const props = defineProps<{
   source: ColorSource
   /** The Bead's name, for its palette's choice, with a Color catalog. */
   beadName?: string
+  /** The Bead's catalog has colors read from the maker's photographs (ticket 0886): the palette's note says so. */
+  photoColors?: boolean
   colors: number
   colorsMax: number
   /** The bead colors the conversion uses, most beads first. */
@@ -60,7 +62,7 @@ const sourceOptions = computed(() => [
 ])
 /** Convert image's own Note for the choice in hand. */
 const sourceNote = computed(() => {
-  if (props.source === 'bead-colors') return fillBlanks(wizard.value.beadPaletteNote, { bead: props.beadName ?? '' })
+  if (props.source === 'bead-colors') return fillBlanks(props.photoColors ? wizard.value.beadPaletteNotePhotos : wizard.value.beadPaletteNote, { bead: props.beadName ?? '' })
   return props.source === 'default' ? wizard.value.defaultPaletteNote : wizard.value.exactNote
 })
 const countText = computed(() => fillBlanks(words.value.colorsCount, { count: props.colors, max: props.colorsMax }))

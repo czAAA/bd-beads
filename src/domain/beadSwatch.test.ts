@@ -50,6 +50,12 @@ describe('catalogSwatches', () => {
     expect(list.map((entry) => [entry.taken, entry.discontinued])).toEqual([[true, false], [false, true]])
   })
 
+  it('marks two codes whose read colors are the same as taken once the Palette holds either, as two generated swatches are (ticket 0886)', () => {
+    const twins = catalog([code({ hex: '#223a70' }), code({ code: 'DB2', family: ['Black'], finish: 'silver-lined', hex: '#223a70' }), code({ code: 'DB3', hex: '#223a71' })])
+    expect(catalogSwatches(twins, '11/0', [], families).map((entry) => entry.taken)).toEqual([false, false, false])
+    expect(catalogSwatches(twins, '11/0', ['#223a70'], families).map((entry) => [entry.code, entry.taken])).toEqual([['DB1', true], ['DB2', true], ['DB3', false]])
+  })
+
   it('takes the first family that has a color, and leaves out a code with none', () => {
     const list = catalogSwatches(catalog([code({ family: ['Mix', 'Red'] }), code({ code: 'DB2', family: ['Mix'] })]), '11/0', [], families)
     expect(list.map((entry) => [entry.code, entry.family])).toEqual([['DB1', 'Red']])

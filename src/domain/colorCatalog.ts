@@ -83,3 +83,9 @@ export function parseColorCatalog(raw: unknown, expectedId: string): ColorCatalo
 export function catalogEntry(catalog: ColorCatalog, code: string): ColorCatalog['codes'][number] | undefined {
   return catalog.codes.find((entry) => entry.code === code)
 }
+
+/** Whether any code of the catalog carries a measured color (tickets 0885, 0886): the app then says where they were read
+ * from; a catalog with none keeps the words for generated swatches. */
+export function hasMeasuredColors(catalog: ColorCatalog | undefined): boolean {
+  return !!catalog?.codes.some((entry) => entry.hex !== undefined)
+}

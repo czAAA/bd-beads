@@ -27,6 +27,13 @@ describe('BeadColorsEntry (ticket 0746)', () => {
     expect(open.text()).toContain(en.palette.beadColors.takenNote)
   })
 
+  it('says the colors were read from MIYUKI’s photographs instead, for a catalog with measured colors (ticket 0886)', () => {
+    const open = mount(BeadColorsEntry, { props: { bead: delica, open: true, testid: 'entry', photoColors: true } })
+    expect(open.text()).toContain(en.palette.beadColors.photoColors)
+    expect(open.text()).not.toContain(en.palette.beadColors.approximate)
+    expect(open.text()).toContain("MIYUKI's photographs")
+  })
+
   it('reports its open state and emits toggle', async () => {
     const wrapper = entry(true)
     const button = wrapper.get('[data-testid="entry"]')

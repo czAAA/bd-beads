@@ -48,6 +48,17 @@ describe('ConvertToBeadsPopover (ReferenceImage card, ticket 0883)', () => {
     withCatalog.unmount()
   })
 
+  it('notes that the Bead palette’s colors were read from MIYUKI’s photographs when its catalog has them (ticket 0886)', async () => {
+    const note = async (props: Record<string, unknown>) => {
+      const wrapper = mountPopover({ beadName: 'Miyuki Delica 11/0', source: 'bead-colors', ...props })
+      const text = wrapper.get('.convert-popover__note').text()
+      wrapper.unmount()
+      return text
+    }
+    expect(await note({})).toContain('colors are approximate')
+    expect(await note({ photoColors: true })).toBe("The codes are real Miyuki Delica 11/0 beads. Their colors were read from MIYUKI's photographs: close to the real beads, not exact.")
+  })
+
   it('says what it replaces, and asks for Convert, All settings and close', async () => {
     const wrapper = mountPopover({ replacedLabel: 'Replaces 3 beads already there.' })
     expect(wrapper.get('[data-testid="convert-to-beads-replaces"]').text()).toBe('Replaces 3 beads already there.')

@@ -68,7 +68,7 @@ describe('useBeadColors', () => {
     await load()
     expect(state.value).toBe('ready')
     expect(swatches.value.length).toBeGreaterThan(100)
-    expect(swatches.value.find((entry) => entry.code === 'DB1')).toMatchObject({ approximate: true })
+    expect(swatches.value.find((entry) => entry.code === 'DB1')).toMatchObject({ approximate: false })
   })
 
   it('adds a code’s color as one Edit that Undo takes back, shows it as taken, and says a second add knew it', async () => {

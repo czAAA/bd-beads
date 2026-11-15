@@ -51,6 +51,41 @@ describe('Bead colors as a source', () => {
   })
 })
 
+describe('Bead colors read from photographs (ticket 0886)', () => {
+  /** Codes as the Delica catalog lists them: Silver-lined "Black" and "Brown" families that a generated swatch turns dark
+   * grey and brown, with the colors read from their photographs (a navy, a purple, a sky blue) set on three of them. */
+  const entry = (code: string, family: string, finish: 'silver-lined' | 'opaque' | 'transparent', hex?: string) => ({
+    code, family: [family], finish, wording: '', sizes: ['11/0'], ...(hex ? { hex } : {}),
+  })
+  const read: ColorCatalog = {
+    id: 'test-read',
+    codes: [
+      entry('DB2394', 'Black', 'silver-lined', '#1b2a63'),
+      entry('DB7', 'Brown', 'opaque', '#5b3a8c'),
+      entry('DB214', 'Blue', 'transparent', '#5fa4d8'),
+      entry('DB10', 'Black', 'opaque', '#101010'),
+      entry('DB723', 'Red', 'opaque', '#c8202a'),
+    ],
+  }
+  const familyOf = (catalog: ColorCatalog, pictureHex: string) => {
+    const [found] = matchFoundColors(reducedPicture({ [pictureHex]: 5 }), beadColorTargets(catalog, '11/0', BUILT_IN_COLORS), choices())
+    return found!.match
+  }
+
+  it('turns a navy into the navy code, a purple into the purple one and a turban blue into the blue one', () => {
+    expect(familyOf(read, '#1c2c66')).toMatchObject({ code: 'DB2394', hex: '#1b2a63' })
+    expect(familyOf(read, '#5c3c8e')).toMatchObject({ code: 'DB7', hex: '#5b3a8c' })
+    expect(familyOf(read, '#60a6d6')).toMatchObject({ code: 'DB214', family: 'Blue' })
+  })
+
+  it('marks only a code with no read color as approximate, so its swatch is drawn dashed beside the read ones', () => {
+    const mixed: ColorCatalog = { id: 'mixed', codes: [read.codes[0]!, { ...read.codes[3]!, hex: undefined }] }
+    const [measured, generated] = beadColorTargets(mixed, '11/0', BUILT_IN_COLORS)
+    expect(measured).toEqual({ hex: '#1b2a63', code: 'DB2394', family: 'Black', finish: 'silver-lined' })
+    expect(generated).toMatchObject({ code: 'DB10', approximate: true })
+  })
+})
+
 describe('matchFoundColors', () => {
   it('snaps every found color to the Default Palette, most beads first', () => {
     const found = matchFoundColors(reduced({ '#0000ff': 1, '#ff0000': 4 }), defaults, choices())

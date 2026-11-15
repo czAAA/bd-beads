@@ -314,7 +314,7 @@ describe('ConvertImageWizard setup', () => {
 
     // The three notes share one Info, each led by its choice's name (ticket 0896).
     expect(note()).toBe(
-      `Miyuki Delica 11/0 palette: The codes are real Miyuki Delica 11/0 beads. Their colors are approximate, made from the color family and the finish. ${words.defaultPalette}: ${words.defaultPaletteNote} ${words.exact}: ${words.exactNote} ${words.finish.note}`,
+      `Miyuki Delica 11/0 palette: ${fillBlanks(words.beadPaletteNotePhotos, { bead: 'Miyuki Delica 11/0' })} ${words.defaultPalette}: ${words.defaultPaletteNote} ${words.exact}: ${words.exactNote} ${words.finish.note}`,
     )
     expect(hint()).toBe(fillBlanks(words.colorsHint, { n: '2' }))
     expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0')
@@ -323,6 +323,24 @@ describe('ConvertImageWizard setup', () => {
     await matchTo(wrapper, 'exact')
     expect(hint()).toBe(fillBlanks(words.colorsHintExact, { n: '2' }))
     expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe(words.matchedExact)
+  })
+
+  it('says the Bead palette’s colors are approximate while its catalog has no measured color, and were read from the maker’s photographs once it has (ticket 0886)', async () => {
+    const generated: ColorCatalog = { id: 'miyuki-delica', codes: catalog.codes.map((entry) => ({ ...entry, hex: undefined })) }
+    const { wrapper } = open({ draft: delica, loadCatalog: async () => generated })
+    await chooseFile(wrapper, picture())
+    await show(wrapper, 'colors')
+    const words = en.convertImage.wizard
+
+    expect(infoBody(wrapper, 'convert-color-source-info')).toContain(fillBlanks(words.beadPaletteNote, { bead: 'Miyuki Delica 11/0' }))
+    expect(infoBody(wrapper, 'convert-color-source-info')).not.toContain('photographs')
+    // The "becomes" swatch is dashed for a generated code only (ticket 0905), plain for one whose color was read.
+    expect(wrapper.find('.found-color__swatch--approximate').exists()).toBe(true)
+    const measured = open({ draft: delica })
+    await chooseFile(measured.wrapper, picture())
+    await show(measured.wrapper, 'colors')
+    expect(measured.wrapper.find('.found-color__swatch--approximate').exists()).toBe(false)
+    expect(measured.wrapper.find('.found-color__swatch').exists()).toBe(true)
   })
 
   it('matches the found colors to the Bead’s colors at first, and heads their table From picture, Becomes, Beads, Change, Empty (tickets 0758, 0863)', async () => {

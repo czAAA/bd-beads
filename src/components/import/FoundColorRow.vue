@@ -118,7 +118,7 @@ const beadColors: BeadColors = {
   load: async () => {},
   add: (hex: string, code?: string) => {
     const swatch = wizard.catalogRemapSwatches.value.find((entry) => entry.code === code)
-    choose({ hex, ...(code ? { code } : {}), ...(swatch ? { family: swatch.family, finish: swatch.finish } : {}) })
+    choose({ hex, ...(code ? { code } : {}), ...(swatch ? { family: swatch.family, finish: swatch.finish, ...(swatch.approximate ? { approximate: true as const } : {}) } : {}) })
     return 'added'
   },
 }
@@ -150,7 +150,7 @@ useRevealWhenOpen(rowEl, () => props.open)
       <span class="found-color__becomes">
         <span
           class="found-color__swatch"
-          :class="{ 'found-color__swatch--empty': !row.result, 'found-color__swatch--approximate': !!row.result?.code }"
+          :class="{ 'found-color__swatch--empty': !row.result, 'found-color__swatch--approximate': !!row.result?.approximate }"
           :style="row.result ? { backgroundColor: row.result.hex } : undefined"
           aria-hidden="true"
         />
