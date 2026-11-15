@@ -1215,7 +1215,7 @@ export const zh: Translations = {
     selectAll: '一次选中所有珠子。',
     hand: '拖动以在画布上移动。',
     editFrame: '显示或隐藏边框的控点。',
-    framePanel: '打开导出、所需珠子、边框的大小、旋转和移除。',
+    framePanel: '边框标出你要导出和编织的部分。打开导出、所需珠子、边框的大小、旋转和移除。',
     frameEdgeOut: '在这一侧把边框扩大一颗珠子。',
     frameEdgeIn: '在这一侧把边框缩小一颗珠子。',
     frameEdgeInDisabled: '这一侧的边框已无法再缩小。',
@@ -1280,7 +1280,7 @@ export const zh: Translations = {
     fitAndExport: '让边框贴合所有珠子，然后打开图片导出。',
     pasteToolTouch: '点按要放置副本的位置。',
     noBeadsToNumber: '没有可编号的珠子。',
-    framePanelBeads: '打开导出、所需珠子（{total}）、边框的大小、旋转和移除。',
+    framePanelBeads: '边框标出你要导出和编织的部分。打开导出、所需珠子（{total}）、边框的大小、旋转和移除。',
   },
   layerSettings: {
     frameHeading: '设置',

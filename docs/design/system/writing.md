@@ -6,7 +6,7 @@ How the app talks in English and Russian: the voice, sentence patterns, one glos
 
 - Plain and short: say what happened or what to do, in the fewest words that are still a full thought. No "please", no "oops", no exclamation marks, no emoji, no blame ("Enter a height.", not "You forgot the height!").
 - Name things with the app's nouns (the glossary below) and the button's own words: "Export Pattern", not "use the export feature".
-- English is US English: color, gray, canceled. Sentence case everywhere; product nouns keep their capital (Pattern, Bead, Palette, Technique, Row progress).
+- English is US English: color, gray, canceled. Sentence case everywhere; product nouns keep their capital (Bead, Palette, Technique, Row progress); the crafter's word "pattern" stays lower case (ticket 0989).
 - Russian: product nouns are lowercase like any noun (схема, бисер, палитра); a button quoted in a sentence goes in «ёлочки»; ё is always written (сохранённые, всё).
 - Labels and meta are lowercased by style, never in the string (as today).
 - **No em dashes**, in either language: use a colon, a comma, brackets or two sentences. Russian rewrites the sentence instead of the dash between subject and predicate ("Эти размеры приблизительные.", not a dash before "оценка").
@@ -47,10 +47,13 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 
 ## Glossary
 
+The one glossary of the words the app shows, in every language: CONTEXT.md and the Glossary card point here (ticket 0989). A line a stranger reads before they have a Frame uses the crafter's word, pattern; the model's nouns (Piece, Schema, Frame) are for the places where they act.
+
 | English | Russian | Note |
 | --- | --- | --- |
 | Project | проект | Saved Projects / Сохранённые проекты; New Project / Новый проект |
-| Schema | схема | The beads inside the Frame; Schema rotated / Схема повёрнута (ADR 0050) |
+| pattern | схема | The crafter's word, lower case, for what they are making, in lines read before there is a Frame: Turn a picture into a bead pattern. (ticket 0989) |
+| Schema | схема | A Piece that has a Frame or a name (ADR 0050). Shown in English only in the Schema tag and the Piece-naming hint, which define it (ticket 0989) |
 | Bead / beads | бисеринка / бисер | One bead is бисеринка everywhere, never бусина («4 бисеринки», «Бисеринок»); the material and amounts are бисер (ticket 0864) |
 | Technique | техника плетения | Loom / ткачество, Peyote / мозаичное плетение, Brick stitch / кирпичное плетение |
 | Palette | палитра |  |
@@ -61,7 +64,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | in this browser | в этом браузере | Where Projects are kept, said one way everywhere (ticket 0992): Saved in this browser, Kept by this browser, removed from this browser, Couldn't save in this browser. Never "local browser" or "this device" for where the work lives |
 | Delete all | Очистить всё | Empties the cells; the Schema stays |
 | Mirror | Отражение | Estimated size / Примерный размер |
-| Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
+| Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place). Defined in the Frame button's Tooltip: The Frame marks the part you export and weave. (ticket 0989) |
 | Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
 | Folded beads | свёрнутые бисерины | The Frame's own beads beyond its edge, out of sight (ADR 0066); proposed, ticket 0641 |
 | Canvas · Hand · Rulers | Холст · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers; the Canvas is холст everywhere, never полотно (ticket 0864) |
@@ -257,7 +260,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | Project editing · Paint, fill, erase, select, copy, paste, undo. | Правка проекта · Кисть, заливка, ластик, выделение, копирование, вставка, отмена. |
 | Mirror · Draw one side, the other follows. | Отражение · Рисуете одну сторону, вторая повторяет. |
 | Reference image · A picture under the beads: draw a new piece over it. | Подложка · Картинка под бисером: рисуйте по ней новую работу. |
-| Convert image · A picture into a Schema, in up to {max} colors. | Из картинки · Превращает картинку в схему, до {max} цветов. |
+| Convert image · A picture into a bead pattern, in up to {max} colors. | Из картинки · Превращает картинку в схему, до {max} цветов. |
 | Colors built in · {brands}, and a Palette of your own. | Цвета внутри · {brands} и ваша собственная палитра. |
 | Letters · Each color its letter, on the beads and on the chart. | Буквы · У каждого цвета своя буква, на бисере и на схеме. |
 | Starters · From the Frame panel: a ready design becomes your Frame. | Стартеры · Из панели «Рамка»: готовый дизайн становится вашей рамкой. |
@@ -304,7 +307,7 @@ The free list (ticket 0740), one row each, in this order. It names the app's fea
 | As many Projects as you like | Сколько угодно проектов |
 | Turn a picture into beads | Картинка превращается в бисер |
 | One Frame per Project, for the piece you'll weave | Одна рамка в проекте, для того, что будете плести |
-| Many Schemas in one Project | Много схем в одном проекте |
+| Many patterns in one Project | Много схем в одном проекте |
 | Row progress: mark rows done as you weave | Прогресс по рядам: отмечайте готовые ряды, пока плетёте |
 | The whole editor: paint, fill, erase, select, copy, paste, undo | Весь редактор: кисть, заливка, ластик, выделение, копирование, вставка, отмена |
 | PDF, ready to print | PDF, готовый к печати |
@@ -312,7 +315,7 @@ The free list (ticket 0740), one row each, in this order. It names the app's fea
 | Beads needed, counted per color, in grams too | Нужно бисера: по каждому цвету и в граммах |
 | {brands} colors built in, {codes} of them | Цвета {brands} уже внутри, {codes} штук |
 | Your Projects as an .openbeads file | Ваши проекты в файле .openbeads |
-| Word chart: the Schema written out row by row | Ряд за рядом: схема, расписанная словами |
+| Word chart: the pattern written out row by row | Ряд за рядом: схема, расписанная словами |
 | Mirror: draw one side, the other follows | Отражение: рисуете одну сторону, вторая повторяет |
 | {n} Starters for {categories} (a counted word) | {n} стартер / стартера / стартеров: {categories} |
 | More on the way (muted, with a plus) | Скоро будет больше |
@@ -516,7 +519,7 @@ The popup of spec 0645 (ConvertImage, ValueSlider and FoundColorRow cards; ticke
 | Colors · {n} colors · Each color is a bead to buy. Max {n}: every color the picture has. | Цвета · цветов: {n} · Каждый цвет — это бисер, который нужно купить. Макс. {n}: все цвета изображения. | Кольори · кольорів: {n} · Кожен колір — це бісер, який треба купити. Макс. {n}: усі кольори зображення. | Kolory · kolorów: {n} · Każdy kolor to koraliki do kupienia. Maks. {n}: wszystkie kolory obrazu. |
 | Color by color · {n} colors · {n} empty | Цвет за цветом · цветов: {n} · пустых: {n} | Колір за кольором · кольорів: {n} · порожніх: {n} | Kolor po kolorze · kolorów: {n} · pustych: {n} |
 | Crop: top edge · Crop: top-left corner (each edge and corner, named for it) | Обрезка: верхний край · Обрезка: верхний левый угол | Обрізання: верхній край · Обрізання: верхній лівий кут | Kadrowanie: górna krawędź · Kadrowanie: lewy górny róg |
-| Large Schema: more than 300 beads on a side. Converting and drawing take longer. | Большая схема: больше 300 бисерин по стороне. Конвертация и отрисовка займут больше времени. | Велика схема: понад 300 бісерин на бік. Конвертація й малювання триватимуть довше. | Duży schemat: ponad 300 koralików na bok. Konwersja i rysowanie potrwają dłużej. |
+| Large pattern: more than 300 beads on a side. Converting and drawing take longer. | Большая схема: больше 300 бисерин по стороне. Конвертация и отрисовка займут больше времени. | Велика схема: понад 300 бісерин на бік. Конвертація й малювання триватимуть довше. | Duży schemat: ponad 300 koralików na bok. Konwersja i rysowanie potrwają dłużej. |
 | 1 px = {n} × {n} beads (an enlarging mark's result) | 1 px = {n} × {n} бисерин | 1 px = {n} × {n} бісерин | 1 px = {n} × {n} koralików |
 | result · {w}×{h} beads · 1 bead = {n} × {n} px · 1 bead ≈ {x} × {y} px · {n} colors | получится · {w}×{h} бисерин · 1 бисерина = {n} × {n} px · 1 бисерина ≈ {x} × {y} px · цветов: {n} | вийде · {w}×{h} бісерин · 1 бісерина = {n} × {n} px · 1 бісерина ≈ {x} × {y} px · кольорів: {n} | wynik · {w}×{h} koralików · 1 koralik = {n} × {n} px · 1 koralik ≈ {x} × {y} px · kolorów: {n} |
 | match to · {Bead} palette (the Bead as the Bead colors entry names it, no finish) · Default Palette · Exact | подбирать из · Палитра {Bead} · Палитра по умолчанию · Точные | підбирати з · Палітра {Bead} · Типова палітра · Точні | dopasuj do · Paleta {Bead} · Domyślna paleta · Dokładne |
