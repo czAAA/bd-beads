@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useFittingForm } from '../../composables/canvas/useFittingForm'
 import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -29,6 +29,7 @@ import { frameNameLine } from './marginFrameName'
 import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { frameOf } from '../../domain/layerRecord'
+import { useRotateCopy, type RotateCopyPlace } from './useRotateCopy'
 
 // The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658, 0728): Row progress, the Move bar and the
 // tools in its top band, the title block in the Frame's own bottom-right corner, laid over the sheet the canvas draws. The
@@ -97,8 +98,8 @@ const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
 /** The name the tab reads and is named by, or "Name this Frame". */
 const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
-/** A Custom frame's shape comes from its settings: no Edit Frame then. A Frame with a row done holds still, its Edit
- * Frame kept in place, disabled, saying why (ticket 0975). */
+/** Edit Frame, on a turned Frame too (ticket 1016), so no tool shifts as it turns. A Frame with a row done holds still,
+ * its Edit Frame kept in place, disabled, saying why (ticket 0975). */
 const editable = computed(() => frameAllows(frame.value, 'resize'))
 
 const canvas = useCanvasBackground(() => props.project)
@@ -320,6 +321,79 @@ const colorButton = computed(() =>
 const colorHangsFrom = computed(() => (!row.value ? 'none' : colorShown.value ? 'button' : 'menu'))
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
+const sheetEl = ref<HTMLElement>()
+/** The pointer press on the band's Rotate Frame or its menu item, if the next Rotate Frame came from one: a press from
+ * the keyboard leaves no copy, as focus goes with the band (ticket 1016). */
+let rotatePress: { button?: DOMRect; at: { x: number; y: number }; touch: boolean } | undefined
+function notePress(event: PointerEvent): void {
+  const pressed = event.target instanceof Element ? event.target.closest('[data-rotate-frame]') : null
+  const button = pressed?.getAttribute('data-rotate-frame') === 'band' ? pressed.getBoundingClientRect() : undefined
+  rotatePress = pressed ? { button, at: { x: event.clientX, y: event.clientY }, touch: event.pointerType === 'touch' } : undefined
+}
+
+/** The Rotate Frame copy that waits where it was pressed (ticket 1016, MarginSheet card). */
+const rotateCopy = useRotateCopy()
+/** A screen point as a place in the sheet's parent, which the copy keeps however the sheet moves. */
+function inParent(x: number, y: number): { left: number; top: number } {
+  const box = sheetEl.value?.getBoundingClientRect()
+  return { left: x - (box?.left ?? 0) + props.anchor.sheet.left, top: y - (box?.top ?? 0) + props.anchor.sheet.top }
+}
+/** Rotate Frame from the band's button or its menu item: a pointer's press leaves the copy over the button, or a full
+ * size one centred where the item was pressed. */
+function rotateFromBand(): void {
+  const press = rotatePress
+  rotatePress = undefined
+  emit('rotate')
+  if (!press) return
+  const place: RotateCopyPlace = press.button
+    ? { ...inParent(press.button.left, press.button.top), scale: scale.value, small: small.value }
+    : { ...inParent(press.at.x - MARGIN_PX.tool / 2, press.at.y - MARGIN_PX.tool / 2), scale: 1, small: false }
+  rotateCopy.pressed(place, press.touch)
+}
+/** A press on the copy turns the Frame again, as the band's own button does. */
+let copyTouch = false
+function noteCopyPress(event: PointerEvent): void {
+  copyTouch = event.pointerType === 'touch'
+}
+function rotateFromCopy(): void {
+  emit('rotate')
+  rotateCopy.pressed(undefined, copyTouch)
+}
+const copyStyle = computed(() => {
+  const place = rotateCopy.place.value
+  if (!place) return {}
+  return { left: `${place.left - props.anchor.sheet.left}px`, top: `${place.top - props.anchor.sheet.top}px`, '--copy-scale': place.scale }
+})
+/** How near, in px, the band's own button must come back to the copy to stand under it: the same place, less rounding. */
+const SAME_PLACE_PX = 1
+// Turned back, the band's own Rotate Frame is under the copy again: it takes over.
+watch(
+  () => props.anchor,
+  () => {
+    const place = rotateCopy.place.value
+    const own = toolsEl.value?.querySelector('[data-rotate-frame="band"]')?.getBoundingClientRect()
+    if (!place || !own) return
+    const at = inParent(own.left, own.top)
+    if (Math.abs(at.left - place.left) < SAME_PLACE_PX && Math.abs(at.top - place.top) < SAME_PLACE_PX) rotateCopy.handOver()
+  },
+  { flush: 'post' },
+)
+watch(frame, (now) => now || rotateCopy.drop())
+// A pointer that left before the copy was drawn under it never enters or leaves it: each move tells it where it is.
+const copyEl = ref<HTMLElement>()
+function onPointerMove(event: PointerEvent): void {
+  const box = copyEl.value?.getBoundingClientRect()
+  if (!box) return
+  const over = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom
+  if (over) rotateCopy.enter(event)
+  else rotateCopy.leave(event)
+}
+watch(
+  () => !!rotateCopy.place.value,
+  (shown) => (shown ? window.addEventListener('pointermove', onPointerMove, { passive: true }) : window.removeEventListener('pointermove', onPointerMove)),
+)
+onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
+
 /** Mirror the whole Frame's name: "Mirror off" while it is on (MarginSheet card). */
 const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOff : undefined))
 
@@ -328,7 +402,7 @@ const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOf
 const menuItems = computed(() =>
   [
     rotatable.value && { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
-    rotatable.value && { id: 'rotate', action: actions.rotate, run: () => emit('rotate') },
+    rotatable.value && { id: 'rotate', action: actions.rotate, run: rotateFromBand },
     editable.value && !editShown.value && { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
     { id: 'export', action: actions.export, run: () => emit('export', 'margin-frame-tools') },
     !colorShown.value && { id: 'color', action: actions.color, run: () => (colorOpen.value = true) },
@@ -340,6 +414,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 
 <template>
   <div
+    ref="sheetEl"
     class="margin-sheet"
     :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare', 'margin-sheet--arriving': arriving }]"
     :style="sheetStyle"
@@ -371,7 +446,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         />
       </div>
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
-      <div ref="toolsEl" class="margin-sheet__tools" @keydown="toolsRoving.onKeydown" @focusin="toolsRoving.onFocusin">
+      <div ref="toolsEl" class="margin-sheet__tools" @keydown="toolsRoving.onKeydown" @focusin="toolsRoving.onFocusin" @pointerdown.capture="notePress">
         <template v-if="iconsShown">
           <IconButton
             v-if="rotatable"
@@ -385,7 +460,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
             data-testid="margin-mirror-frame"
             @click="emit('mirror')"
           />
-          <IconButton v-if="rotatable" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" @click="emit('rotate')" />
+          <IconButton v-if="rotatable" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" data-rotate-frame="band" @click="rotateFromBand" />
         </template>
         <IconButton
           v-if="editShown"
@@ -434,6 +509,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
             :disabled-body="itemDisabled(item.action) ? item.action.disabledBody?.(t, deps) : undefined"
             :checked="'checked' in item ? item.checked : undefined"
             :data-testid="`margin-frame-tools-${item.id}`"
+            :data-rotate-frame="item.id === 'rotate' ? 'menu' : undefined"
             @select="item.run()"
           >
             {{ item.action.name(t) }}
@@ -497,6 +573,32 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       <span v-else class="margin-sheet__tab" data-testid="margin-title-tab">
         <span class="margin-sheet__tab-name">{{ tabName }}</span>
       </span>
+    </div>
+
+    <!-- Rotate Frame's copy, lifted off the paper where it was pressed (ticket 1016): no Tab stop and hidden from a
+         screen reader, so Rotate Frame is there once; the band's own button is the keyboard's. -->
+    <div
+      v-if="rotateCopy.place.value"
+      ref="copyEl"
+      class="margin-sheet__rotate-copy"
+      :class="{ 'margin-sheet__rotate-copy--leaving': rotateCopy.leaving.value, 'margin-sheet__rotate-copy--small': rotateCopy.place.value.small }"
+      :style="copyStyle"
+      data-testid="margin-rotate-copy"
+      aria-hidden="true"
+      @pointerenter="rotateCopy.enter"
+      @pointerleave="rotateCopy.leave"
+    >
+      <IconButton
+        variant="plain"
+        class="margin-sheet__tool"
+        :icon-size="rotateCopy.place.value.small ? MARGIN_PX.icon.compact : MARGIN_PX.icon.full"
+        :action="actions.rotate"
+        :deps="deps"
+        tabindex="-1"
+        @pointerdown="noteCopyPress"
+        @mousedown.prevent
+        @click="rotateFromCopy"
+      />
     </div>
 
     <MarginColorPopover v-if="colorOpen && colorButton" :project="project" :anchor="colorButton" @close="colorOpen = false" />
@@ -644,6 +746,42 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   .margin-sheet__handle {
     transform: translate(-50%, calc(-100% - (var(--touch-target) - var(--margin-tab)) / 2 - var(--space-16)));
   }
+}
+
+/* Rotate Frame's copy (MarginSheet card, ticket 1016): the band's button lifted off the paper on an `elevated` pill with
+ * `elevation-3`, at the scale the band drew it, its button where the band's was; it fades on leaving. */
+.margin-sheet__rotate-copy {
+  position: absolute;
+  display: flex;
+  margin: calc(-1 * (var(--space-4) + 1px));
+  padding: var(--space-4);
+  background: var(--elevated);
+  border: 1px solid var(--overlay-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-3);
+  transform: scale(var(--copy-scale));
+  transform-origin: calc(var(--space-4) + 1px) calc(var(--space-4) + 1px);
+  pointer-events: auto;
+  transition: opacity var(--rotate-copy-fade) var(--ease-in);
+}
+
+.margin-sheet__rotate-copy--leaving {
+  opacity: 0;
+}
+
+.margin-sheet__rotate-copy :deep(.icon-btn) {
+  width: var(--margin-tool);
+  height: var(--margin-tool);
+  border-radius: var(--radius-md);
+}
+
+.margin-sheet__rotate-copy--small :deep(.icon-btn) {
+  width: var(--margin-tool-compact);
+  height: var(--margin-tool-compact);
+}
+
+.margin-sheet__rotate-copy :deep(.icon-btn:hover) {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
 /* The title block, anchored to the inner border's corner at the Frame's own bottom-right; folded, the tab in the middle

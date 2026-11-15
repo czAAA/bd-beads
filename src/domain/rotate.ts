@@ -6,7 +6,7 @@ import { normalizedOrientation, turnedOrientation } from './canvasOrientation'
 import { snapColumn, snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
-import { canvasDistance, frameWeave } from './layerWeave'
+import { canvasDistance, canvasWeave, frameWeave } from './layerWeave'
 import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, touchFrameSheet, withCanvas, withLayer } from './layerRecord'
 import { touch, type Project } from './project'
 import { turnedCustomFrame } from './changeFrame'
@@ -193,7 +193,11 @@ export function rotateFrame(project: Project): Project | undefined {
     return canvasDistance(project, own, Math.floor(rows / 2), Math.floor(columns / 2))
   }
   const [was, now] = [half(frame), half(turned)]
-  return touchFrameSheet(project, { ...turned, row: frame.row + was.row - now.row, column: frame.column + was.column - now.column })
+  const [row, column] = [frame.row + was.row - now.row, frame.column + was.column - now.column]
+  // Upright again it starts where a Frame may (ticket 1016): a resize while turned can leave it between.
+  const canvas = canvasWeave(project)
+  const at = turns ? { row, column } : { row: snapRow(canvas, row), column: snapColumn(canvas, column) }
+  return touchFrameSheet(project, { ...turned, ...at })
 }
 
 /** Rotate canvas (ticket 471): the picture a quarter turn clockwise further from whatever angle it is at (ticket

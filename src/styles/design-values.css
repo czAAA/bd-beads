@@ -448,6 +448,11 @@
   /* CanvasStrip card, the phone strip (ticket 0843). */
   --strip-fade: 1.5rem; /* The fade on the edge where the strip's scrolling controls are cut, 24px. */
   --strip-project-name-max: 12rem; /* CanvasStrip card (ticket 0858): the Project button's name is cut at 192px. */
+  /* Rotate Frame motion (ticket 1016; interaction-and-motion.md, Rotate Frame; MarginSheet card) */
+  --frame-turn-duration: 150ms; /* The Frame is seen turning a quarter about its middle, on --ease-standard. */
+  --rotate-copy-wait: 200ms; /* MarginSheet card: the Rotate copy stays this long after the pointer leaves it... */
+  --rotate-copy-fade: 150ms; /* ...then fades out on --ease-in. */
+  --rotate-copy-tap-hold: 1600ms; /* MarginSheet card: on touch, the copy leaves this long after the last tap. */
   /* Row progress motion (ticket 0729; interaction-and-motion.md, Row progress) */
   --row-glint-duration: 380ms; /* BeadBoard card: each bead of the finished pass washes in --row-glint and back. */
   --row-glint-step: 24ms; /* BeadBoard card: the gap between one bead's glint and the next, in the Row direction. */

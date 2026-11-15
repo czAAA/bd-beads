@@ -42,6 +42,18 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
+  it('counts each press, so the Frame is seen turning on a press and never on an Undo (ticket 1016)', () => {
+    const { harness, onRotateFrame, frameTurns } = setup()
+    onRotateFrame()
+    onRotateFrame()
+    expect(frameTurns.value).toBe(2)
+    harness.history.onUndo()
+    expect(frameTurns.value).toBe(2)
+    const none = setup(withLayers(base, { frame: undefined }))
+    none.onRotateFrame()
+    expect(none.frameTurns.value).toBe(0)
+  })
+
   it('resets what was built against the old Frame, as any change of the Frame does', () => {
     const { harness, onRotateFrame } = setup()
     onRotateFrame()

@@ -5,6 +5,8 @@ import type { FrameShapeId } from '../../domain/frameShape'
 import { createProject } from '../../domain/createProject'
 import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
 import { withFrame } from '../../domain/frame'
+import { laidFrame, seenSize } from '../../domain/frameOrientation'
+import { rotateFrame } from '../../domain/rotate'
 import type { Project } from '../../domain/project'
 import { starterById, starterDesign } from '../../domain/starters'
 import { en } from '../../i18n/en'
@@ -698,6 +700,44 @@ describe('useFrameFlow', () => {
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('useFrameFlow on a turned Frame (ticket 1016)', () => {
+  /** A loom Frame of 4 rows and 6 columns turned a quarter: it lies 4 wide and 6 tall at (19, 21), its own top on the
+   * right as seen. */
+  const turned = rotateFrame(withLayers(sized, { beads: {}, frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: {} } }))!
+  const seen = (flow: ReturnType<typeof setup>) => laidFrame(flow.deps.harness.project)
+
+  it('drags the seen edge a handle stands on, the opposite edge staying, as one announced Undo step', () => {
+    const flow = setupEditing(turned)
+    expect(flow.settingFrame.value).toBe(true)
+    flow.press({ kind: 'handle', edges: ['right'] }, { row: 22, column: 24 })
+    flow.drag({ row: 22, column: 26 })
+    expect(laidFrame(flow.draftProject.value!)).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
+    flow.release()
+    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
+    expect(flow.deps.announce).toHaveBeenCalledWith('Frame set, width 6, height 6')
+    flow.deps.harness.history.onUndo()
+    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
+  })
+
+  it('steps an edge as seen from the Frame panel, and takes a Width and Height typed as seen', () => {
+    const flow = setup(turned)
+    flow.stepEdge('right', 1)
+    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 5 })
+    flow.stepEdge('top', -1)
+    expect(seen(flow)).toEqual({ row: 20, column: 21, rows: 5, columns: 5 })
+    flow.resizeTo(7, 9)
+    expect(seenSize(frameOf(flow.deps.harness.project)!)).toEqual({ columns: 7, rows: 9 })
+  })
+
+  it('grows from its bottom-right as seen with Shift and the arrows', () => {
+    const flow = setupEditing(turned)
+    flow.onKey(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }))
+    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 5 })
+    flow.onKey(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true }))
+    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 7, columns: 5 })
   })
 })
 

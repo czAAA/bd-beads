@@ -14,12 +14,13 @@ import type { GridPosition, Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal, framedAround } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
-import { changedSetting, frameAllows, settingsOf, settingValuesOf, sizeSettingOf, type FrameSettings } from '../../domain/frameShape'
+import { changedSetting, frameAllows, settingValuesOf, settingsOf, sizeSettingOf, turnedGrid, type FrameSettings } from '../../domain/frameShape'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice, type StarterLayerSettings } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
 import { frameOf, heldWeave, layerOf } from '../../domain/layerRecord'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
+import { laidFrame, ownEdge, ownSize, seenSize, turnedWithEdges } from '../../domain/frameOrientation'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave } from '../../domain/weaveSwitch'
 import type { Project } from '../../domain/project'
@@ -68,7 +69,7 @@ function gripOf(frame: Rect, edges: readonly FrameEdge[], press: GridPosition): 
 
 type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Rect }
-  | { kind: 'resize'; edges: FrameEdge[]; start: Rect; grip: GridPosition }
+  | { kind: 'resize'; edges: FrameEdge[]; start: FrameSheet; grip: GridPosition }
 
 // Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054): the edit pencil shows the handles and the strip's Frame
 // button opens the Frame panel; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
@@ -183,7 +184,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const id = values.find(({ name, value }) => was?.find((each) => each.name === name)?.value !== value)?.name ?? sizeSettingOf(frame)?.id
     const setting = values.find(({ name }) => name === id)
     if (setting) return fillBlanks(t.frame.sizeSettings[setting.name].announce, { count: String(setting.value) })
-    return fillBlanks(t.frame.announceSet, { width: frame.columns, height: frame.rows })
+    const { columns, rows } = seenSize(frame)
+    return fillBlanks(t.frame.announceSet, { width: columns, height: rows })
   }
 
   /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step.
@@ -270,7 +272,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!frame) return
     // The Move handle always works; a resize handle only while the edit toggle is on.
     if (target.kind === 'move') gesture = { kind: 'move', origin: cell, start: frame }
-    else if (target.kind === 'handle' && settingFrame.value) gesture = { kind: 'resize', edges: target.edges, start: frame, grip: gripOf(frame, target.edges, cell) }
+    // A turned Frame's handles stand on the rectangle it lies in (ticket 1016), so the grip is measured there.
+    else if (target.kind === 'handle' && settingFrame.value) gesture = { kind: 'resize', edges: target.edges, start: frame, grip: gripOf(laidFrame(project!)!, target.edges, cell) }
   }
 
   function drag(cell: GridPosition): void {
@@ -278,8 +281,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!project || !gesture) return
     dragged = true
     if (gesture.kind === 'resize') {
-      const { grip } = gesture
-      draft.value = { frame: frameWithEdges(frameWeave(project), gesture.start, gesture.edges, { row: cell.row - grip.row, column: cell.column - grip.column }) }
+      const { grip, start } = gesture
+      const at = { row: cell.row - grip.row, column: cell.column - grip.column }
+      const weave = frameWeave(project)
+      draft.value = { frame: turnedGrid(start) ? turnedWithEdges({ ...start, ...weave }, gesture.edges, at) : frameWithEdges(weave, start, gesture.edges, at) }
     } else {
       const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
       // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left
@@ -313,20 +318,22 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (outcome.kind === 'applied') deps.announce(deps.messages().frame.announceMoved)
   }
 
-  /** An edge stepper's press (ticket 417): one edge a bead out (1) or in (-1), one Undo step; a step that would
-   * empty the Frame is none. */
+  /** An edge stepper's press (ticket 417): one edge as seen a bead out (1) or in (-1), one Undo step; a step that would
+   * empty the Frame is none. On a turned Frame it is the own edge lying there that steps (ticket 1016). */
   function stepEdge(edge: FrameEdge, step: 1 | -1): void {
     const project = deps.currentProject()
     if (!project || !frameOf(project) || locked.value) return
-    const next = frameWithEdgeStep(frameWeave(project), frameOf(project)!, edge, step)
+    const next = frameWithEdgeStep(frameWeave(project), frameOf(project)!, ownEdge(frameOf(project)!, edge), step)
     if (next !== frameOf(project)) commit(next)
   }
 
-  /** The size typed into the Frame panel (ticket 473): both sides grow or shrink evenly about the Frame, one Undo step. */
+  /** The size typed into the Frame panel (ticket 473): both sides grow or shrink evenly about the Frame, one Undo step.
+   * Width and Height are as seen, a turned Frame's own swapped (ticket 1016). */
   function resizeTo(columns: number, rows: number): void {
     const project = deps.currentProject()
     if (!project || !frameOf(project) || locked.value) return
-    const next = frameResizedAround(frameWeave(project), frameOf(project)!, columns, rows)
+    const own = ownSize(frameOf(project)!, { columns, rows })
+    const next = frameResizedAround(frameWeave(project), frameOf(project)!, own.columns, own.rows)
     if (!sameFrame(next, frameOf(project))) commit(next)
   }
 
@@ -458,10 +465,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!step || !frameOf(project)) return false
     if (event.shiftKey) {
-      if (settingFrame.value) {
-        const frame = frameOf(project)!
-        commit(frameWithSize(frame, frame.columns + step[1], frame.rows + step[0]))
-      }
+      const frame = frameOf(project)!
+      // A turned Frame grows from its bottom-right as seen: the own edges lying there (ticket 1016).
+      if (settingFrame.value && turnedGrid(frame)) {
+        stepEdge(step[0] ? 'bottom' : 'right', (step[0] || step[1]) as 1 | -1)
+      } else if (settingFrame.value) commit(frameWithSize(frame, frame.columns + step[1], frame.rows + step[0]))
     } else {
       moveBy(step[0], step[1])
     }

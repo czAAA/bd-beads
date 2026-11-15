@@ -733,6 +733,7 @@ body {
 
 /* Row progress motion (ticket 0729; interaction-and-motion.md, Row progress): the glint, the track spark and Pattern done. */
 :root{
+  --frame-turn-duration:150ms;--rotate-copy-wait:200ms;--rotate-copy-fade:150ms;--rotate-copy-tap-hold:1600ms;
   --row-glint-duration:380ms;--row-glint-step:24ms;--row-glint-span:480ms;--row-glint-peak:.55;--row-dim-delay:520ms;
   --spark-size:10px;--spark-size-compact:8px;--spark-tail:70px;--spark-tail-compact:24px;--spark-flare:2.2;--spark-flare-duration:520ms;
   --pattern-done-delay:450ms;--pattern-done-burst-2:420ms;--pattern-done-burst-3:760ms;
@@ -1026,6 +1027,9 @@ body {
 .bb-margin-tool { width: var(--margin-tool); height: var(--margin-tool); border: 0; border-radius: var(--radius-md, 8px); background: transparent; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 .bb-margin-tool:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
 .bb-margin-tool[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
+/* Rotate Frame's copy (ticket 1016): the band's button lifted off the paper where it was pressed; fades on leaving. */
+.bb-margin-rotate-copy { position: absolute; display: flex; margin: calc(-1 * (var(--space-4, 4px) + 1px)); padding: var(--space-4, 4px); background: var(--elevated); border: 1px solid var(--overlay-line); border-radius: var(--radius-lg, 12px); box-shadow: var(--elevation-3); transition: opacity var(--rotate-copy-fade) var(--ease-in); }
+.bb-margin-rotate-copy.is-leaving { opacity: 0; }
 .bb-margin-title { position: absolute; right: var(--margin-border-inset); bottom: var(--margin-border-inset); display: grid; grid-template-rows: repeat(2, var(--margin-title-row)); background: var(--margin-title); border: 1px solid var(--margin-line); border-radius: 0 0 var(--radius-sm, 6px) 0; }
 .bb-margin-title > * { display: flex; align-items: center; gap: 4px; padding: 0 6px 0 8px; border-right: 1px solid var(--margin-line); border-bottom: 1px solid var(--margin-line); white-space: nowrap; min-width: 0; }
 [data-theme="contrast"] .bb-frame-margin { border-width: 2px; }

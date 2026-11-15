@@ -254,13 +254,17 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.emitted('reset-progress')).toHaveLength(1)
   })
 
-  it('shows a turned Frame\'s size as seen, off until it is upright, and keeps Rotate Frame (ticket 0667)', () => {
+  it('shows a turned Frame\'s size as seen and resizes it as seen, with Rotate Frame kept (tickets 0667, 1016)', async () => {
     const wrapper = mountBar(rotateFrame(framed())!)
-    expect((wrapper.get('[data-testid="frame-panel-width"]').element as HTMLInputElement).value).toBe('6')
+    const width = wrapper.get('[data-testid="frame-panel-width"]')
+    expect((width.element as HTMLInputElement).value).toBe('6')
     expect((wrapper.get('[data-testid="frame-panel-height"]').element as HTMLInputElement).value).toBe('5')
-    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="frame-size-turned"]').text()).toBe(en.frame.sizeTurnedLine)
+    expect(width.attributes('disabled')).toBeUndefined()
+    await width.setValue('8')
+    await width.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('resize')).toEqual([[8, 5]])
+    await wrapper.get('[data-testid="frame-edge-top-out"]').trigger('click')
+    expect(wrapper.emitted('step')).toEqual([['top', 1]])
     expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
   })
 
