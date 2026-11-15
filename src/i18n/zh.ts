@@ -1170,6 +1170,7 @@ export const zh: Translations = {
       backgroundChip: '已找到背景 · 图片的 {n}%',
       backgroundTurnOff: '关闭',
       exactShort: '图片原色',
+      resultLabel: '结果',
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',
@@ -1271,7 +1272,7 @@ export const zh: Translations = {
     list: (names) => `${names.join('、')}。`,
     paint: '点按或拖动，放上所选颜色的珠子。',
     fill: '点按一个区域，用所选颜色填充它。',
-    rulers: '标尺为你的珠子和边框编号。',
+    rulers: '标尺为你的珠子编号。',
     rowDirection: '切换行的方向：从上到下、从左到右、从下到上或从右到左。',
     rowHighlight: '显示或隐藏当前行和已标记完成的行上的标记。',
     fitAndExport: '让边框贴合所有珠子，然后打开图片导出。',

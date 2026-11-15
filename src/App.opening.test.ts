@@ -162,7 +162,7 @@ describe('opening the editor (ticket 0716)', () => {
     await flushPromises()
 
     expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Project 1')
-    expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-expanded')).toBe('true')
     expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe('Starter')
     expect(wrapper.find('[data-testid="starter-category-shapes"]').exists()).toBe(true)
     expect(location.search).toBe('')

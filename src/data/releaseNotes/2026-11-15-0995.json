@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "A screen reader finds the Homepage's headings and the converter's sections, hears whether Menu and Project are open, and hears a field's error again",
+    "ru": "Экранный диктор находит заголовки главной страницы и разделы конвертера, слышит, открыты ли Меню и Проект, и снова слышит ошибку поля",
+    "uk": "Екранний диктор знаходить заголовки головної сторінки й розділи конвертера, чує, чи відкриті Меню та Проєкт, і знову чує помилку поля",
+    "be": "Экранны дыктар знаходзіць загалоўкі галоўнай старонкі і раздзелы канвертара, чуе, ці адкрытыя Меню і Праект, і зноў чуе памылку поля",
+    "zh": "读屏软件能找到主页的标题和转换器的各个部分，能听到菜单和项目是否已打开，还会再次读出输入框的错误",
+    "es": "Un lector de pantalla encuentra los títulos de la página de inicio y las secciones del conversor, oye si Menú y Proyecto están abiertos y vuelve a oír el error de un campo",
+    "pl": "Czytnik ekranu znajduje nagłówki strony głównej i sekcje konwertera, słyszy, czy Menu i Projekt są otwarte, i znów słyszy błąd pola"
+  }
+}

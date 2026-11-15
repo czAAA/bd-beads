@@ -212,7 +212,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('Shift+R rotates and plain R still toggles the rulers', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => framedProject })
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({ beads: { 9: { 9: '#ff0000' } }, frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }) })
     press({ key: 'R', shiftKey: true })
     expect(deps.onRotate).toHaveBeenCalledTimes(1)
     expect(deps.onToggleRulers).not.toHaveBeenCalled()

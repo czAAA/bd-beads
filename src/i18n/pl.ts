@@ -1195,6 +1195,7 @@ export const pl: Translations = {
       backgroundChip: 'Znaleziono tło · {n}% obrazu',
       backgroundTurnOff: 'Wyłącz',
       exactShort: 'Własne kolory',
+      resultLabel: 'wynik',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',
@@ -1296,7 +1297,7 @@ export const pl: Translations = {
     list: (names) => `${names.join(', ')}.`,
     paint: 'Dotknij lub przeciągnij, aby kłaść koraliki wybranego koloru.',
     fill: 'Dotknij obszaru, aby wypełnić go wybranym kolorem.',
-    rulers: 'Linijki numerują twoje koraliki i ramkę.',
+    rulers: 'Linijki numerują twoje koraliki.',
     rowDirection: 'Zmienia kierunek rzędów: z góry na dół, od lewej do prawej, z dołu do góry lub od prawej do lewej.',
     rowHighlight: 'Pokazuje lub ukrywa oznaczenia na bieżącym rzędzie i na rzędach oznaczonych jako gotowe.',
     fitAndExport: 'Dopasuj ramkę do wszystkich koralików i otwórz eksport obrazu.',

@@ -8,9 +8,9 @@ import FieldCounter from '../ui/form/FieldCounter.vue'
 import FormField from '../ui/form/FormField.vue'
 import TextField from '../ui/form/TextField.vue'
 
-// Duplicate Project (ProjectPanel and ConfirmDialogs cards, ticket 443): asks for the copy's name (the current name and
-// the next free number suggested); the copy keeps everything, Row progress included. Enter or Duplicate makes it; an
-// empty name is refused. The name takes New Project's and Rename's one limit and counter (ticket 0854).
+// Duplicate Project (ProjectPanel and ConfirmDialogs cards, ticket 443): asks for the copy's name, the suggestion selected
+// (ticket 0988); the copy keeps everything, Row progress included. Enter or Duplicate makes it; an empty name is refused.
+// The name takes New Project's and Rename's one limit and counter (ticket 0854).
 const props = defineProps<{ suggested: string }>()
 const emit = defineEmits<{ confirm: [name: string]; cancel: [] }>()
 const { t } = useI18n()
@@ -42,6 +42,7 @@ function submit() {
           :maxlength="MAX_PROJECT_NAME"
           :placeholder="t.fields.projectName"
           :invalid="tried && empty"
+          select-on-focus
           data-autofocus
           data-testid="duplicate-name-input"
         />

@@ -34,7 +34,8 @@ const savedProjects = controlAction('saved-projects')
   <section class="welcome" aria-labelledby="homepage-welcome" data-testid="homepage-welcome">
     <div class="welcome__tile">
       <!-- A sentence, balanced over as many lines as the tile's width asks: `data-wrap-ok` tells the fit check so. -->
-      <h2 id="homepage-welcome" class="welcome__heading" data-wrap-ok>{{ t.homepage.welcome.heading }}</h2>
+      <!-- The page's one h1 (ticket 0995): the sections under it are h2s. -->
+      <h1 id="homepage-welcome" class="welcome__heading" data-wrap-ok>{{ t.homepage.welcome.heading }}</h1>
       <p class="welcome__line">{{ t.homepage.welcome.line }}</p>
       <div v-if="!phone" class="welcome__ways">
         <span class="welcome__way-in">

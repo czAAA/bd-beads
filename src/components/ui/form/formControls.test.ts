@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import FieldCounter from './FieldCounter.vue'
 import FileButton from './FileButton.vue'
 import FormField from './FormField.vue'
@@ -25,6 +25,51 @@ describe('FormField', () => {
     const error = wrapper.find('[role="alert"]')
     expect(error.text()).toBe('Enter a height.')
     expect(error.find('[data-icon="warning"]').exists()).toBe(true)
+  })
+
+  /** A form of one FormField round a TextField, refused by its parent when sent empty. */
+  function refusingForm(props: { hint?: string } = {}) {
+    return mount(
+      defineComponent({
+        components: { FormField, TextField },
+        setup: () => {
+          const tried = ref(false)
+          const value = ref('')
+          return { tried, value, props }
+        },
+        template: `<form @submit.prevent="tried = true">
+          <FormField label="Height" label-for="h" :hint="props.hint" :error="tried && !value ? 'Enter a height.' : undefined">
+            <TextField id="h" v-model="value" :invalid="tried && !value" />
+            <TextField id="other" />
+          </FormField>
+        </form>`,
+      }),
+      { attachTo: document.body },
+    )
+  }
+
+  it('points the TextField it labels at its hint and, while shown, its error (ticket 0995)', async () => {
+    const wrapper = refusingForm({ hint: 'In beads' })
+    const described = () => (wrapper.get('#h').attributes('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent?.trim())
+    expect(described()).toEqual(['In beads'])
+    await wrapper.get('form').trigger('submit')
+    expect(described()).toEqual(['In beads', 'Enter a height.'])
+    expect(wrapper.get('#other').attributes('aria-describedby')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('reads its error again each time its form is refused while it shows, and once when it first shows (ticket 0995)', async () => {
+    const wrapper = refusingForm()
+    await wrapper.get('form').trigger('submit')
+    const first = wrapper.get('[role="alert"]').element
+    await nextTick()
+    expect(wrapper.get('[role="alert"]').element, 'not put in twice when it first shows').toBe(first)
+
+    await wrapper.get('form').trigger('submit')
+    const again = wrapper.get('[role="alert"]').element
+    expect(again, 'put in afresh, so a screen reader reads it again').not.toBe(first)
+    expect(again.textContent?.trim()).toBe('Enter a height.')
+    wrapper.unmount()
   })
 })
 

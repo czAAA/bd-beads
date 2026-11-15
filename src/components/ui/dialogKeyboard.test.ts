@@ -36,3 +36,11 @@ describe.each(Object.entries(dialogs))('%s dialog focus (ticket 516)', (_name, o
     expect(document.activeElement).toBe(wrapper.find('[role="dialog"]').element)
   })
 })
+
+describe('Duplicate project dialog (ConfirmDialogs card, ticket 0988)', () => {
+  it('opens with its suggested name selected, so typing replaces it', () => {
+    const wrapper = dialogs['Duplicate project']()
+    const field = wrapper.find<HTMLInputElement>('[data-autofocus]').element
+    expect([field.selectionStart, field.selectionEnd]).toEqual([0, 'Copy'.length])
+  })
+})

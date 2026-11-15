@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, provide, ref, useId } from 'vue'
 import AppIcon from '../AppIcon.vue'
+import { FORM_FIELD } from './formFieldContext'
 
 /** A form field's frame (ticket 149): label, optional note, hint and error; `labelFor` names the control, a group
- * takes `labelId` instead. */
-defineProps<{
+ * takes `labelId` instead. The TextField it labels is described by the hint and error (ticket 0995). */
+const props = defineProps<{
   label: string
   labelFor?: string
   labelId?: string
@@ -14,10 +16,30 @@ defineProps<{
   error?: string
   errorTestid?: string
 }>()
+
+const hintId = useId()
+const errorId = useId()
+provide(FORM_FIELD, {
+  controlId: () => props.labelFor,
+  describedBy: () => [props.hint ? hintId : undefined, props.error ? errorId : undefined].filter(Boolean).join(' ') || undefined,
+})
+
+// An error still shown when its form is sent again is put in afresh, so a screen reader reads it again (ticket 0995).
+const root = ref<HTMLElement>()
+const errorTurn = ref(0)
+let form: HTMLFormElement | null = null
+function onSubmit() {
+  if (props.error) errorTurn.value++
+}
+onMounted(() => {
+  form = root.value?.closest('form') ?? null
+  form?.addEventListener('submit', onSubmit)
+})
+onBeforeUnmount(() => form?.removeEventListener('submit', onSubmit))
 </script>
 
 <template>
-  <div class="form-field">
+  <div ref="root" class="form-field">
     <div class="form-field__label-row">
       <label v-if="labelFor" :id="labelId" class="form-field__label" :for="labelFor">{{ label }}</label>
       <span v-else :id="labelId" class="form-field__label">{{ label }}</span>
@@ -26,8 +48,8 @@ defineProps<{
       </span>
     </div>
     <slot />
-    <p v-if="hint" class="form-field__hint">{{ hint }}</p>
-    <p v-if="error" class="form-field__error" role="alert" :data-testid="errorTestid">
+    <p v-if="hint" :id="hintId" class="form-field__hint">{{ hint }}</p>
+    <p v-if="error" :id="errorId" :key="errorTurn" class="form-field__error" role="alert" :data-testid="errorTestid">
       <AppIcon name="warning" :size="14" />
       <span>{{ error }}</span>
     </p>
