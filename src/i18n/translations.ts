@@ -741,7 +741,7 @@ export interface Translations {
     stepClose: string
     ofSteps: string
     stepOfSteps: string
-    /** The toast when rows marked done take a drawing back (ticket 0848), naming Row not done, or Column not done. */
+    /** The toast when rows marked done take a drawing back (ticket 0848), naming Back a row, or Back a column (ticket 0972). */
     markedDoneToast: string
     columnMarkedDoneToast: string
     /** The counter's Tooltip where a line takes two passes (peyote, ticket 0849): what it counts, passes, not rows. */
@@ -771,14 +771,18 @@ export interface Translations {
     directionKeptToast: string
     /** The Go to row Tooltip on a Kaleidocycle (ticket 0876): the triangles here are this face's, `{then}` its usual sentence. */
     faceBody: string
-    /** What the announcer says after Row done, Row not done and Go to row (ticket 0934), in the counter's words: "Row 7
-     * of 10" (`unit` is Row or Column), and on peyote the pass with the rulers' row, "Pass 3 of 27, row 2". */
+    /** The counter, and what the announcer says after Back a row, Row done and Go to row (tickets 0934, 0972): "Row 7
+     * of 10" (`unit` is Row, Column or Pass), and on peyote that `step` with the rulers' row, "Pass 3 of 27, row 2". */
     announcePosition: string
     announcePass: string
     announceColumnPass: string
     /** Go to row's button that brings the current row back into view after the beader panned away (ticket 0934). */
     showRow: string
     showColumn: string
+    /** Go to row's name where it counts passes, on peyote and a Custom frame (ticket 0972): one noun with the counter. */
+    goToPass: string
+    /** The name of Go to row's Info button that holds the passes sentence on peyote (ticket 0972). */
+    passesInfoName: string
   }
   quantities: {
     heading: string

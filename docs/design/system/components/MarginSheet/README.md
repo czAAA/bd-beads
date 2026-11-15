@@ -28,7 +28,7 @@ The Frame's keep-out margin drawn as a sheet of drafting paper: its own backgrou
 
 Left to right, 14px in from the sheet's top-left corner (10px compact), 4px apart:
 
-1. **Row progress:** the Progress bar's controls, the same component in a compact form, tracking the same progress (ProgressBar card): Turn row direction, Reset progress, the Row highlight Switch, a 1px divider, the counter ("5/11", `control`), a 64px track, a divider, Row not done (icon only, `arrow-up`, its name and Tooltip the label it has in the bar) and **Row done** (the bar's primary button at 26px, label and trailing arrow). Pressing either moves the one pointer, in the margin and in the Progress bar alike. With no Frame there is no sheet. Its 64px track carries the Progress bar's spark at the compact size, an 8px dot with a 24px tail (ticket 0729).
+1. **Row progress:** the Progress bar's controls, the same component in a compact form, tracking the same progress (ProgressBar card): Turn row direction, Reset progress, the Row highlight Switch, a 1px divider, the counter ("5/11", `control`), a 64px track, a divider, Back a row (icon only, `arrow-up`, its name and Tooltip the label it has in the bar) and **Row done** (the bar's primary button at 26px, label and trailing arrow). Pressing either moves the one pointer, in the margin and in the Progress bar alike. With no Frame there is no sheet. Its 64px track carries the Progress bar's spark at the compact size, an 8px dot with a 24px tail (ticket 0729).
 2. **Move bar**, centred on the top band: the Frame card's Move handle (40 × 6 `ink` pill in a 56 × 28 hit area, `grab`), now on the paper instead of in the gutter. Same name, Tooltip, keys and Tab stop.
 3. **Tools**, at the right, 28px icon buttons (`radius-md`, no fill, hover `ink` at 10%): **Mirror the whole Frame** (`mirror`, ticket 0750; below), **Rotate Frame** (`rotate`), **Edit Frame** (`pencil`; on: `ink` fill, `canvas` icon), **Export** (`export`, the Canvas strip's Export: opens the Export panel under this button, ExportPanel card), **Margin color** (`palette`), a divider, **Remove Frame** (`delete`, `ink` on the paper, `danger` on hover and in its confirmation). Each keeps the name, Tooltip, confirmation and disabled reasons it has in the Frame card.
 
@@ -36,7 +36,7 @@ Left to right, 14px in from the sheet's top-left corner (10px compact), 4px apar
 
 The edit pencil, Remove Frame chip and Move handle no longer stand in the gutter: nothing of the Frame is drawn outside its sheet except the size Tooltip.
 
-The one exception: on the Homepage's What's inside, the demo Frame's band has no Row not done; the Progress bar under it keeps its own (Homepage card, ticket 0797).
+The one exception: on the Homepage's What's inside, the demo Frame's band has no Back a row; the Progress bar under it keeps its own (Homepage card, ticket 0797).
 
 ### Mirror the whole Frame (ticket 0750, ADR 0082)
 
@@ -94,7 +94,7 @@ On a coarse pointer every control on the sheet has a 44px hit area, centred on i
 
 ## Copy
 
-Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin, Fold the title block, Show the title block, Change Technique, Frame tools, and the line "The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it." (`writing.md`, Margin sheet copy). Everything else is existing copy: Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Custom color.
+Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin, Fold the title block, Show the title block, Change Technique, Frame tools, and the line "The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it." (`writing.md`, Margin sheet copy). Everything else is existing copy: Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Back a row, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Custom color.
 
 ## As built (ticket 0657)
 
