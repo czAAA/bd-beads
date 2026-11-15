@@ -32,6 +32,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 - Nothing is hover-only on a coarse pointer: the Remove × on Saved Pattern thumbnails is always visible, tooltips become long-press (whose release presses nothing) and an Info button's note opens on a tap (ticket 0844, InteractionStates card), there is no hover paint preview.
 - Hotkey chips follow the device (ticket 438): shown with a hovering fine pointer or once a real keyboard key is seen, otherwise hidden; the switch in Keyboard shortcuts overrides it. Keyboard shortcuts itself is in the phone menu on every device.
 - A stroke on the drawing surface never scrolls the page: `touch-action: none` on the surface.
+- No two hit areas lie over each other (ticket 0962): where controls sit closer than `touch-target`, they are spaced or drawn wider (the Selection and Mirror bars, the Stepper's − and +, the Mirror bar's chips and counts), or a pad is its own width (the Mirror bar's). A swatch (the Palette's, Background and Margin colors, the Color filter's families) is its 36px chip, its own hit area. A Mirror bar too narrow for one row scrolls sideways, and its box cuts its controls' pads to the bar's full height (36px), a named exception (ContextBar card, Too narrow). What's inside's chapters on the Homepage are one more case of the panel-row exception above: `panel-row-touch` rows, each its own hit area, since they touch. A browser test measures each with `elementFromPoint` under real touch emulation (`src/testUtils/hitAreas.ts`).
 
 ## Screen edges and height
 

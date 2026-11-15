@@ -414,6 +414,8 @@ export interface Translations {
     faceInfo: string
     /** A Star's count is the whole star, its back beaded as the face's mirror (ticket 0875): "245 beads, front and back". */
     beadsFrontBack: PluralForms
+    /** The folded row over Name and the Layer settings in a Starter's setup (ticket 0952), its values beside it. */
+    beadsAndTechnique: string
   }
   canvas: {
     zoomInLabel: string
@@ -1092,6 +1094,9 @@ export interface Translations {
     progressMarkPiece: string
     /** The Drag a Frame notice on touch (ticket 0954): a finger has no Escape key, and picking a tool cancels. */
     selectFrameTouchHint: string
+    /** The size fields' range line (ticket 0978), shown when a key is refused or a typed side is brought into range; {min} and {max} are numbers of beads. */
+    widthRange: string
+    heightRange: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */

@@ -71,6 +71,15 @@ const moved = computed(() =>
   color: var(--ink);
 }
 
+/* Touch (ticket 0962): the row is `touch-target` tall, so the switch's and the sun's pads stay in it, and 16 apart, so
+ * neither pad lies over the other. */
+@media (pointer: coarse) {
+  .convert-lighting__row {
+    gap: var(--space-16);
+    min-height: var(--touch-target);
+  }
+}
+
 /* 2 under the row, wrapping (DS-3). */
 .convert-lighting__moved {
   margin: var(--space-2) 0 0;

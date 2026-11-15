@@ -68,9 +68,10 @@ export function frameWithSize(frame: Rect, columns: number, rows: number): Rect 
   return { ...frame, columns: Math.max(1, Math.round(columns)), rows: Math.max(1, Math.round(rows)) }
 }
 
-/** The fewest beads a side of the Frame keeps when stepped or typed (ticket 473). */
-const FEWEST_SIDE = 4
-const MAX_TYPED_SIDE = 999
+/** The fewest beads a side of the Frame keeps when stepped or typed (ticket 473), and the most a typed side takes: the
+ * range the Frame panel's size fields say when they bring a number into it (ticket 0978). */
+export const FEWEST_SIDE = 4
+export const MAX_TYPED_SIDE = 999
 
 // The Frame with one edge moved a bead out (`step` 1) or in (`step` -1), the others staying put (Edit Frame's steppers,
 // ticket 417). The top edge goes by a whole cycle of rows (brick stitch) and the left by one of columns (peyote, ticket

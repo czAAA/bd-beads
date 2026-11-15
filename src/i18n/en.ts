@@ -296,6 +296,7 @@ export const en: Translations = {
     faceInfoLabel: 'What the counts cover',
     faceInfo: 'A Kaleidocycle is {total} triangles, {faces} faces of {parts}, and this Frame is one face. The whole piece counts every face beaded like this one. To give another face its own design, make a Frame for it. The whole piece also counts the beads that join the triangles: Edge Beads, Hinge Beads, and the 15/0 Triangle Tips and Hinge Pins.',
     beadsFrontBack: { one: '{count} bead, front and back', other: '{count} beads, front and back' },
+    beadsAndTechnique: 'Beads and technique',
   },
   canvas: {
     zoomInLabel: 'Zoom in',
@@ -891,6 +892,8 @@ export const en: Translations = {
     qualityNote: 'For the picture. The printable chart is drawn in lines and stays sharp at any zoom.',
     progressMarkPiece: 'Mark the piece to export and count: drag with Select.',
     selectFrameTouchHint: 'Drag over the Canvas to select the Frame. Pick a tool to cancel.',
+    widthRange: 'Width is {min} to {max} beads',
+    heightRange: 'Height is {min} to {max} beads',
   },
   size: {
     estimateLabel: 'Estimated size',

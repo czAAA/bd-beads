@@ -90,6 +90,77 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.emitted('resize')).toEqual([[20, 6], [5, 12]])
   })
 
+  it('drops a fraction and shows the range under a refused field, which goes with its next valid entry (ticket 0978)', async () => {
+    const wrapper = mountBar()
+    const width = wrapper.get('[data-testid="frame-panel-width"]')
+    const range = () => wrapper.find('[data-testid="frame-width-range"]')
+    expect(width.attributes('aria-invalid')).toBeUndefined()
+    await width.setValue('12.5')
+    expect((width.element as HTMLInputElement).value).toBe('12')
+    expect(range().text()).toBe('Width is 4 to 999 beads')
+    expect(range().attributes('role')).toBe('alert')
+    expect(width.attributes('aria-invalid')).toBe('true')
+    expect(width.attributes('aria-describedby')).toBe(range().attributes('id'))
+    await width.setValue('5000')
+    expect((width.element as HTMLInputElement).value).toBe('500')
+    expect(range().exists()).toBe(true)
+    await width.setValue('50')
+    expect(range().exists()).toBe(false)
+    expect(width.attributes('aria-invalid')).toBeUndefined()
+    expect(wrapper.find('[data-testid="frame-height-range"]').exists()).toBe(false)
+  })
+
+  it('refuses ".", "," and "-" at the key, and the digits after a point, until the caret moves (ticket 0978)', async () => {
+    const wrapper = mountBar()
+    const width = wrapper.get('[data-testid="frame-panel-width"]')
+    const input = width.element as HTMLInputElement
+    const type = (data: string) => {
+      const event = new InputEvent('beforeinput', { data, inputType: 'insertText', cancelable: true })
+      input.dispatchEvent(event)
+      return event.defaultPrevented
+    }
+    input.value = '12'
+    input.setSelectionRange(2, 2)
+    expect(type('-')).toBe(true)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="frame-width-range"]').exists()).toBe(true)
+    expect(type('.')).toBe(true)
+    expect(type('5')).toBe(true)
+    await width.trigger('keydown', { key: 'Unidentified' })
+    expect(type('5')).toBe(true)
+    await width.trigger('keydown', { key: 'ArrowLeft' })
+    expect(type('5')).toBe(false)
+    expect(type(',')).toBe(true)
+    input.value = '500'
+    input.setSelectionRange(3, 3)
+    await width.trigger('keydown', { key: 'End' })
+    expect(type('0')).toBe(true)
+    input.setSelectionRange(0, 3)
+    expect(type('7')).toBe(false)
+  })
+
+  it('shows the range when a typed number is brought into it, and Escape takes the line away (ticket 0978)', async () => {
+    const wrapper = mountPanel()
+    const height = wrapper.get('[data-testid="frame-panel-height"]')
+    await height.setValue('1')
+    await height.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.get('[data-testid="frame-height-range"]').text()).toBe('Height is 4 to 999 beads')
+    await height.setValue('2')
+    ;(height.element as HTMLInputElement).focus()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="frame-height-range"]').exists()).toBe(false)
+  })
+
+  it('reads the line again when a refusal comes again (ticket 0995)', async () => {
+    const wrapper = mountBar()
+    const width = wrapper.get('[data-testid="frame-panel-width"]')
+    await width.setValue('1a')
+    const first = wrapper.get('[data-testid="frame-width-range"]').element
+    await width.setValue('1b')
+    expect(wrapper.get('[data-testid="frame-width-range"]').element).not.toBe(first)
+  })
+
   it('takes the size when focus leaves both fields, not when it moves between them, and ignores the size it has', async () => {
     const wrapper = mountBar()
     const width = wrapper.get('[data-testid="frame-panel-width"]')

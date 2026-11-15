@@ -1,4 +1,4 @@
-import { defineComponent, h, provide, type Component } from 'vue'
+import { defineComponent, h, nextTick, provide, type Component } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { LOCALES } from '../domain/locale'
 import { describeFits, fitProblems, inShell, mountAt, tooltipProblems, type FitCase } from '../testUtils/browserFit'
@@ -47,6 +47,16 @@ const unfold = (root: HTMLElement): void => {
   if (headers.length !== 2) throw new Error('The Frame panel has no Export or margin header')
   headers.forEach((header) => header.click())
 }
+/** A width and a height that each bring up their range line (ticket 0978). */
+const refuseSizes = async (root: HTMLElement): Promise<void> => {
+  for (const side of ['width', 'height']) {
+    const field = root.querySelector<HTMLInputElement>(`[data-testid="frame-panel-${side}"]`)
+    if (!field) throw new Error(`The Frame panel has no ${side} field`)
+    field.value = '12.5'
+    field.dispatchEvent(new Event('input'))
+  }
+  await nextTick()
+}
 /** The Project panel's This Project unfolded, as it opens folded (ticket 0971); kept open on the device once opened. */
 const unfoldThisProject = (root: HTMLElement): void => {
   const header = root.querySelector<HTMLElement>('[data-testid="project-this"] .panel-section__header')
@@ -81,6 +91,7 @@ const CASES: FitCase[] = [
   ['FramePanel (all colors shown)', inPanel(FramePanel, { project: painted }), {}, showAll],
   ['FramePanel (Export and margin unfolded)', inPanel(FramePanel, { project: painted }), {}, unfold],
   ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}, unfold],
+  ['FramePanel (size refused)', inPanel(FramePanel, { project: painted }), {}, refuseSizes],
   ['FramePanel (rows done)', inPanel(FramePanel, { project: withLayers(painted, { rowProgress: { ...rowProgressOf(painted), currentRow: 1 } }) }), {}],
   ['FramePanel (turned)', inPanel(FramePanel, { project: rotateFrame(painted)! }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],

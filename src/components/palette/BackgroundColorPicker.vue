@@ -184,4 +184,12 @@ async function cancel() {
   font: var(--type-meta);
   color: var(--muted);
 }
+
+/* Touch (ticket 0962): the swatches and the custom color are the Palette's chip size, each its own hit area, kept
+ * apart by the 6px gap (responsive.md). */
+@media (pointer: coarse) {
+  .background-color-picker {
+    --swatch-size: var(--swatch-touch-min);
+  }
+}
 </style>

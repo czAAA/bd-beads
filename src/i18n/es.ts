@@ -298,6 +298,7 @@ export const es: Translations = {
     faceInfoLabel: 'Qué cuentan las cifras',
     faceInfo: 'Un caleidociclo tiene {total} triángulos, {faces} caras de {parts}, y este marco es una cara. La pieza entera cuenta cada cara tejida como esta. Para dar a otra cara su propio diseño, haz un marco para ella. La pieza entera cuenta también las cuentas que unen los triángulos: las del borde, las de las bisagras y las 15/0 de las puntas y de los pasadores de bisagra.',
     beadsFrontBack: { one: '{count} cuenta, anverso y reverso', many: '{count} de cuentas, anverso y reverso', other: '{count} cuentas, anverso y reverso' },
+    beadsAndTechnique: 'Cuentas y técnica',
   },
   canvas: {
     zoomInLabel: 'Acercar',
@@ -898,6 +899,8 @@ export const es: Translations = {
     qualityNote: 'Para la imagen. El gráfico para imprimir se dibuja con líneas y se ve nítido con cualquier zoom.',
     progressMarkPiece: 'Marca la pieza para exportar y contar: arrastra con Seleccionar.',
     selectFrameTouchHint: 'Arrastra sobre el lienzo para seleccionar el marco. Elige una herramienta para cancelar.',
+    widthRange: 'El ancho es de {min} a {max} cuentas',
+    heightRange: 'El alto es de {min} a {max} cuentas',
   },
   size: {
     estimateLabel: 'Tamaño estimado',
