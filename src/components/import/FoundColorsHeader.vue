@@ -28,7 +28,7 @@ const words = computed(() => t.value.convertImage.wizard)
   position: sticky;
   /* At the top of the Colors popover's list as it scrolls (ticket 0896). */
   top: 0;
-  z-index: 1;
+  z-index: var(--convert-layer-pinned);
   display: grid;
   grid-template-columns: var(--found-columns);
   column-gap: var(--space-8);

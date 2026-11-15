@@ -920,11 +920,11 @@ onBeforeUnmount(() => {
 /* The crop's handles are the shared handle (Handle card), over the clipped picture; a corner wins where it and an
    edge's reach meet, as on the Canvas. */
 .convert-preview__handle {
-  z-index: 2;
+  z-index: var(--convert-layer-handle);
 }
 
 .convert-preview__handle--corner {
-  z-index: 3;
+  z-index: calc(var(--convert-layer-handle) + 1);
 }
 
 /* Under a finger the held corner's disc is 44 across (DS-1). */
@@ -937,7 +937,7 @@ onBeforeUnmount(() => {
 /* The kept chip, centred on the crop's top edge with its bottom 14 above it (DS-1). */
 .convert-preview__kept-chip {
   position: absolute;
-  z-index: 4;
+  z-index: var(--convert-layer-chip);
   display: flex;
   align-items: center;
   gap: var(--space-8);
@@ -974,7 +974,7 @@ onBeforeUnmount(() => {
 /* The size chip, 26 right of the handle held, in the Tooltip's look (DS-1). */
 .convert-preview__size-chip {
   position: absolute;
-  z-index: 4;
+  z-index: var(--convert-layer-chip);
   display: flex;
   flex-direction: column;
   padding: var(--space-6) var(--space-10);
@@ -1000,7 +1000,7 @@ onBeforeUnmount(() => {
 
 .convert-preview__ring {
   position: absolute;
-  z-index: 2;
+  z-index: var(--convert-layer-handle);
   pointer-events: none;
   box-shadow:
     inset 0 0 0 2px var(--ink),
@@ -1014,7 +1014,7 @@ onBeforeUnmount(() => {
   right: var(--space-8);
   bottom: var(--convert-tools-lift);
   left: var(--space-8);
-  z-index: 3;
+  z-index: var(--convert-layer-tools);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1061,7 +1061,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: var(--space-14);
   left: 50%;
-  z-index: 3;
+  z-index: var(--convert-layer-tools);
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
@@ -1098,7 +1098,7 @@ onBeforeUnmount(() => {
 /* Under a finger that holds Compare or Picture, a 44 disc in accent at 18% (DS-3). */
 .convert-preview__press {
   position: absolute;
-  z-index: 4;
+  z-index: var(--convert-layer-chip);
   width: calc(var(--handle-reach-touch) * 2);
   height: calc(var(--handle-reach-touch) * 2);
   pointer-events: none;
