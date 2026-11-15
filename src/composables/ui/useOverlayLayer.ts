@@ -13,7 +13,8 @@ export interface OverlayLayerOptions {
   /** Escape, and by default a press outside. */
   close: () => void
   /** A press outside swallows and, with `'swallow'`, does not close (a modal that demands an answer); with `'through'`
-   * it closes and the press goes on (the paper tag over the canvas, ticket 0721). */
+   * it closes and the press goes on (the paper tag over the canvas, ticket 0721; a Tooltip a click opened, ticket 0955),
+   * to the layer beneath if there is one. */
   outside?: 'close' | 'swallow' | 'through'
   /** What a press outside does instead of `close` (a sheet notes it was closed by a press, ticket 424). */
   onOutsidePress?: () => void
@@ -60,7 +61,14 @@ function onPointerDown(event: PointerEvent) {
   if (!top || (event.pointerType === 'touch' && !event.isPrimary) || !(target instanceof Element)) return
   const root = top.root()
   if (!root || root.contains(target) || isExempt(top, target) || top.keepsPress?.(event) || top.scope.pagesOwn?.(target)) return
-  if (top.outside === 'through') return (top.onOutsidePress ?? top.close)()
+  if (top.outside === 'through') {
+    ;(top.onOutsidePress ?? top.close)()
+    // Closed, it hands the press on to the layer beneath, as if it had never been open (an Info tip pinned in the
+    // Menu panel, ticket 0955: a press outside the panel still closes the panel). `close` takes it off the stack at
+    // once, the watch in useOverlayLayer being `flush: 'sync'`.
+    if (!layers.includes(top)) onPointerDown(event)
+    return
+  }
   event.stopPropagation()
   event.preventDefault()
   swallowNextClick()
