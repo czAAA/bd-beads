@@ -87,6 +87,11 @@ function onDrop(event: DragEvent, refused: boolean | undefined) {
   outline-offset: var(--focus-offset);
 }
 
+/* On the accent fill the ring takes on-accent (KeyboardFocus card, ticket 0938). */
+.file-button__target--accent:has(:focus-visible) {
+  outline-color: var(--focus-ring-on-accent);
+}
+
 .file-button__target--small {
   height: var(--control-height-sm);
   padding: 0 var(--space-10);
