@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "In Convert image the picture's file name has a line of its own: a long one is shortened in the middle and shown whole when you hover it, and the picture's size stays on one line",
+    "ru": "В «Конвертировать изображение» имя файла стоит на отдельной строке: длинное сокращается посередине и видно целиком при наведении, а размер изображения не переносится",
+    "uk": "У «Конвертувати зображення» назва файлу стоїть в окремому рядку: довга скорочується посередині й видна повністю під час наведення, а розмір зображення не переноситься",
+    "be": "У «Канвертаваць выяву» назва файла стаіць у асобным радку: доўгая скарачаецца пасярэдзіне і бачная цалкам пры навядзенні, а памер выявы не пераносіцца",
+    "zh": "在“转换图片”中，图片文件名单独占一行：过长的名字从中间省略，鼠标悬停时显示完整名字；图片尺寸也不再换行",
+    "es": "En Convertir imagen, el nombre del archivo tiene una línea propia: uno largo se acorta por el medio y se ve entero al pasar el cursor, y el tamaño de la imagen queda en una sola línea",
+    "pl": "W Konwertuj obraz nazwa pliku ma własny wiersz: długa jest skracana w środku i widać ją całą po najechaniu, a rozmiar obrazu mieści się w jednym wierszu"
+  }
+}

@@ -2,10 +2,12 @@
 import { computed, ref, watchPostEffect } from 'vue'
 import { useConvertFileInput } from '../../composables/import/useConvertFileInput'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
+import { useMiddleCut } from '../../composables/ui/useMiddleCut'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppMessage from '../ui/AppMessage.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import ConvertLightingRow from './ConvertLightingRow.vue'
@@ -28,6 +30,10 @@ const size = computed(() => {
   const image = wizard.image.value
   return image ? fillBlanks(words.value.pictureSize, { width: image.width, height: image.height }) : ''
 })
+/** The file's name, on a line of its own under the label (ticket 0929): cut in the middle when long, whole in its Tooltip. */
+const fileName = computed(() => (wizard.hasPicture.value ? wizard.fileName.value : wizard.reading.value ? (wizard.readingFile.value?.name ?? '') : ''))
+const nameLine = ref<HTMLElement>()
+const name = useMiddleCut(nameLine, () => fileName.value)
 const replaceItems = computed(() => [words.value.chooseFile, words.value.paste, ...(touch.value ? [words.value.takePhoto] : [])])
 
 
@@ -55,38 +61,42 @@ watchPostEffect(() => {
 
 <template>
   <div class="convert-picture" data-testid="convert-picture">
-    <span class="convert-picture__label">{{ words.pictureLabel }}</span>
+    <div class="convert-picture__head">
+      <span class="convert-picture__label">{{ words.pictureLabel }}</span>
+      <div v-if="fileName" ref="nameLine" class="convert-picture__name-line">
+        <component :is="name.cut.value ? AppTooltip : 'span'" v-bind="name.cut.value ? { name: fileName, announce: false } : {}">
+          <span class="convert-picture__name" data-user-text data-testid="convert-file-name" :aria-hidden="name.cut.value || undefined">{{ name.shown.value }}</span>
+          <span v-if="name.cut.value" class="convert-picture__whole">{{ fileName }}</span>
+        </component>
+      </div>
+    </div>
 
     <div v-if="wizard.reading.value && !wizard.hasPicture.value" class="convert-picture__set">
       <span class="convert-picture__thumb" aria-hidden="true" />
-      <div class="convert-picture__facts">
-        <span class="convert-picture__name" data-user-text>{{ wizard.readingFile.value?.name }}</span>
-        <span class="convert-picture__size">{{ words.readingLine }}</span>
-      </div>
+      <span class="convert-picture__size">{{ words.readingLine }}</span>
     </div>
     <p v-else-if="!wizard.hasPicture.value" class="convert-picture__none" data-testid="convert-no-picture">{{ words.bandEmpty }}</p>
 
     <div v-else class="convert-picture__set">
       <canvas ref="thumbEl" class="convert-picture__thumb" :width="THUMB_BITMAP.width" :height="THUMB_BITMAP.height" aria-hidden="true" />
       <div class="convert-picture__facts">
-        <span class="convert-picture__name" data-user-text data-testid="convert-file-name">{{ wizard.fileName.value }}</span>
         <span class="convert-picture__size" data-testid="convert-picture-size">{{ size }}</span>
-      </div>
-      <span ref="replaceEl" class="convert-picture__menus">
-        <MenuButton :label="words.replace" :items="replaceItems" variant="in-box" align="end" data-testid="convert-replace">
-          <AppMenuItem icon="import" data-testid="convert-replace-file" @select="pick('convert-replace-input')">{{ words.chooseFile }}</AppMenuItem>
-          <AppMenuItem icon="paste" data-testid="convert-replace-paste" @select="emit('paste')">{{ words.paste }}</AppMenuItem>
-          <AppMenuItem v-if="touch" icon="camera" data-testid="convert-replace-photo" @select="pick('convert-replace-photo-input')">{{ words.takePhoto }}</AppMenuItem>
-        </MenuButton>
-        <MenuButton :label="t.referenceImage.bar.more" icon="more" icon-only variant="in-box" align="end" :items="[words.turn, words.flipLeftRight]" data-testid="convert-picture-more">
-          <AppMenuItem icon="rotate" data-testid="convert-turn" @select="wizard.turn">{{ words.turn }}</AppMenuItem>
-          <AppMenuItem icon="flip" data-testid="convert-flip" @select="wizard.flip">{{ words.flipLeftRight }}</AppMenuItem>
-        </MenuButton>
-        <span class="convert-picture__inputs" hidden>
-          <FileButton :label="words.chooseFile" :accept="accept" tabindex="-1" data-testid="convert-replace-input" @change="onFileChange" />
-          <FileButton v-if="touch" :label="words.takePhoto" :accept="accept" capture="environment" tabindex="-1" data-testid="convert-replace-photo-input" @change="onFileChange" />
+        <span ref="replaceEl" class="convert-picture__menus">
+          <MenuButton :label="words.replace" :items="replaceItems" variant="in-box" align="end" data-testid="convert-replace">
+            <AppMenuItem icon="import" data-testid="convert-replace-file" @select="pick('convert-replace-input')">{{ words.chooseFile }}</AppMenuItem>
+            <AppMenuItem icon="paste" data-testid="convert-replace-paste" @select="emit('paste')">{{ words.paste }}</AppMenuItem>
+            <AppMenuItem v-if="touch" icon="camera" data-testid="convert-replace-photo" @select="pick('convert-replace-photo-input')">{{ words.takePhoto }}</AppMenuItem>
+          </MenuButton>
+          <MenuButton :label="t.referenceImage.bar.more" icon="more" icon-only variant="in-box" align="end" :items="[words.turn, words.flipLeftRight]" data-testid="convert-picture-more">
+            <AppMenuItem icon="rotate" data-testid="convert-turn" @select="wizard.turn">{{ words.turn }}</AppMenuItem>
+            <AppMenuItem icon="flip" data-testid="convert-flip" @select="wizard.flip">{{ words.flipLeftRight }}</AppMenuItem>
+          </MenuButton>
+          <span class="convert-picture__inputs" hidden>
+            <FileButton :label="words.chooseFile" :accept="accept" tabindex="-1" data-testid="convert-replace-input" @change="onFileChange" />
+            <FileButton v-if="touch" :label="words.takePhoto" :accept="accept" capture="environment" tabindex="-1" data-testid="convert-replace-photo-input" @change="onFileChange" />
+          </span>
         </span>
-      </span>
+      </div>
     </div>
     <ConvertLightingRow v-if="wizard.hasPicture.value" />
 
@@ -99,6 +109,14 @@ watchPostEffect(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
+}
+
+/* The label with the file's name right under it, as a label and its value. */
+.convert-picture__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .convert-picture__label {
@@ -129,23 +147,38 @@ watchPostEffect(() => {
   border-radius: var(--radius-sm);
 }
 
-.convert-picture__facts {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: var(--space-2);
+/* One line, never wider than the column: a long name is cut in the middle to fit it (useMiddleCut). */
+.convert-picture__name-line {
+  position: relative;
   min-width: 0;
-}
-
-/* The name wraps anywhere, never cut. */
-.convert-picture__name {
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  white-space: nowrap;
   font: var(--type-control);
   color: var(--ink);
 }
 
+/* The whole name, for a screen reader, while the line shows it cut. */
+.convert-picture__whole {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* Beside the thumbnail: the size over Replace and ···, so the size has the column's room. */
+.convert-picture__facts {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* The size never breaks inside its number. */
 .convert-picture__size {
-  overflow-wrap: anywhere;
+  white-space: nowrap;
   font: var(--type-meta);
   color: var(--muted);
 }
