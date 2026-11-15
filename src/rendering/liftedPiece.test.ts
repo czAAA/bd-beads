@@ -9,11 +9,11 @@ import { recordingContext } from '../testUtils/recordingContext'
 import { PRINT_THEME, PROJECT_THEMES } from './beadLook'
 import { canvasTheme } from './canvasBackgrounds'
 import { CELL_SIZE_PX } from './cellSize'
-import { canvasLiftCells, drawLift, LIFT_REACH_PX, liftCollector, liftLookOf, liftRows, paintedOnly } from './liftedPiece'
+import { canvasLiftCells, drawLift, joinedRound, LIFT_REACH_PX, liftCollector, liftLookOf, liftRows, liftsAcross, paintedOnly } from './liftedPiece'
 import { positionBoxPx } from './surfaceView'
 
-const painted = (cells: [number, number][], technique: Technique = 'loom', frame?: { row: number; column: number; rows: number; columns: number }) => {
-  const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+const painted = (cells: [number, number][], technique: Technique = 'loom', frame?: { row: number; column: number; rows: number; columns: number }, beadId = 'toho-cube-1.5mm') => {
+  const project = createProject({ technique, beadId, size: { width: 3, height: 3, unit: 'beads' } })
   const beads = withColors({}, cells.map(([row, column]) => ({ row, column, color: '#e63746' })))
   return withLayers(project, { technique, beads, frame: frame && { ...weaveOf(canvasOf(project)), technique, ...frame, beads: {} } })
 }
@@ -106,7 +106,77 @@ describe('drawLift', () => {
   })
 })
 
+describe('drawLift of round beads (ticket 1010, Open weave)', () => {
+  const round = { x: 0, y: 0, width: CELL_SIZE_PX, height: CELL_SIZE_PX * 1.4, bead: CELL_SIZE_PX }
+
+  it('rounds a round bead\'s cell by its own half circle, grown with the shape: a single bead is a pill', () => {
+    const { context, named } = recordingContext()
+    drawLift(context, [round], '#fafafa', 1)
+    const [ground, contour] = named('roundRect').map(({ args }) => args)
+    // The body stands half a px in from its cell and is as wide as the cell less a px, so its end is that wide's half.
+    expect(ground).toEqual([-2.25, -2.25, CELL_SIZE_PX + 4.5, round.height + 4.5, CELL_SIZE_PX / 2 + 2.25])
+    expect(contour).toEqual([-3.5, -3.5, CELL_SIZE_PX + 7, round.height + 7, CELL_SIZE_PX / 2 + 3.5])
+  })
+
+  it('keeps the card\'s corners for a bead whose corner is not a half circle', () => {
+    const { context, named } = recordingContext()
+    drawLift(context, [{ ...round, bead: undefined }], '#fafafa', 1)
+    expect(named('roundRect').map(({ args }) => args[4])).toEqual([3.75, 5])
+  })
+
+  const row = (column: number, columns: number, line: number) => ({ ...round, x: column * CELL_SIZE_PX, y: line * round.height, width: columns * CELL_SIZE_PX })
+
+  it('rounds an inner corner where a row reaches further than the row under it, as big as the shape\'s own corner', () => {
+    const { context, named } = recordingContext()
+    // The long row hangs two beads over the short one on each side: room for the card's whole rounding.
+    drawLift(context, [row(0, 6, 0), row(2, 2, 1)], '#fafafa', 1)
+    const radii = named('pathArc').map(({ args }) => args[2] as number).sort((a, b) => a - b)
+    expect(radii).toEqual([3.75, 3.75, 5, 5])
+  })
+
+  it('keeps two roundings that face each other across a gap from passing its middle', () => {
+    const { context, named } = recordingContext()
+    // Two beads under a row, half a bead apart: the gap is 10, its middle at 25 (the left bead ends at 20).
+    drawLift(context, [row(0, 5, 0), row(0, 1, 1), { ...row(0, 1, 1), x: CELL_SIZE_PX * 1.5 }], '#fafafa', 1)
+    const centres = named('pathArc').map(({ args }) => args[0] as number).filter((x) => x > CELL_SIZE_PX && x < CELL_SIZE_PX * 1.5)
+    // Emitted left bead first (ground, contour), then the right one.
+    expect(centres).toHaveLength(4)
+    expect(centres.slice(0, 2).every((x) => x <= 25)).toBe(true)
+    expect(centres.slice(2).every((x) => x >= 25)).toBe(true)
+  })
+
+  it('rounds the one corner of a row that reaches further on one side only, and none between two alike', () => {
+    const { context, named } = recordingContext()
+    drawLift(context, [row(0, 4, 0), row(0, 2, 1)], '#fafafa', 1)
+    expect(named('pathArc')).toHaveLength(2)
+    const alike = recordingContext()
+    drawLift(alike.context, [row(0, 4, 0), row(0, 4, 1)], '#fafafa', 1)
+    expect(alike.named('pathArc')).toHaveLength(0)
+  })
+
+  it('rounds none where the step is smaller than the bead\'s own corner leaves room for', () => {
+    const { context, named } = recordingContext()
+    // A step of half a bead, as in brick stitch: the straight edge ends before the step begins.
+    drawLift(context, [{ ...round, width: 4 * CELL_SIZE_PX }, { ...round, x: CELL_SIZE_PX / 2, y: round.height, width: 4 * CELL_SIZE_PX }], '#fafafa', 1)
+    expect(named('pathArc')).toHaveLength(0)
+  })
+})
+
 describe('canvasLiftCells', () => {
+  it.each([
+    ['toho/round/11-0', true],
+    ['miyuki/round/11-0', true],
+    ['miyuki/delica/11-0', false],
+    ['toho/cube/1.5mm', false],
+  ])('gives %s\'s cells the bead\'s width: %s, in every Technique', (beadId, round) => {
+    const cells = [[0, 0], [0, 1], [1, 1]] as [number, number][]
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      const lifted = canvasLiftCells(painted(cells, technique, undefined, beadId), everywhere)
+      expect(lifted.length).toBeGreaterThan(0)
+      expect(lifted.every((cell) => ('bead' in cell) === round && (!round || cell.bead === CELL_SIZE_PX))).toBe(true)
+    }
+  })
+
   it('takes a row\'s touching beads as one cell, and a bead apart as its own', () => {
     const project = painted([[0, 0], [0, 1], [0, 2], [0, 4], [1, 1]])
     const box = (row: number, column: number) => positionBoxPx({ technique: 'loom' }, row, column)
@@ -156,6 +226,28 @@ describe('the Frame\'s passes', () => {
     paintedOnly(draw)(context, { ...bead, color: '#e63746' })
     expect(drawn).toEqual([null, '#e63746'])
     expect(collect.cells).toEqual([{ x: 20, y: 0, width: 20, height: 20 }])
+  })
+
+  it('notes a round bead\'s width on its cell, and a bead whose corner is not a half circle\'s none', () => {
+    const { context } = recordingContext()
+    const collect = liftCollector(() => {}, false)
+    const bead = { x: 0, y: 0, size: 20, width: 20, height: 28, dimmed: false, deviceScale: 1, color: '#e63746', theme: PROJECT_THEMES.light }
+    collect.drawer(context, { ...bead, cornerRadius: 10 })
+    collect.drawer(context, { ...bead, x: 40, cornerRadius: 2 })
+    expect(collect.cells).toEqual([{ x: 0, y: 0, width: 20, height: 28, bead: 20 }, { x: 40, y: 0, width: 20, height: 28 }])
+  })
+
+  it('joins a Frame\'s round beads that touch into one cell as the Canvas does, and leaves the others', () => {
+    const bead = (x: number, y: number) => ({ x, y, width: 20, height: 28, bead: 20 })
+    const across = joinedRound([bead(0, 0), bead(20, 0), bead(60, 0), bead(0, 28), { x: 0, y: 100, width: 20, height: 28 }], true)
+    expect(across).toEqual([{ x: 0, y: 100, width: 20, height: 28 }, { ...bead(0, 0), width: 40 }, bead(60, 0), bead(0, 28)])
+    const down = joinedRound([bead(0, 0), bead(0, 28), bead(20, 14)], false)
+    expect(down).toEqual([{ ...bead(0, 0), height: 56 }, bead(20, 14)])
+    expect(joinedRound([{ x: 0, y: 0, width: 20, height: 28 }], true)).toEqual([{ x: 0, y: 0, width: 20, height: 28 }])
+  })
+
+  it('lifts runs of a row in loom and brick stitch, of a column in peyote', () => {
+    expect([liftsAcross({ technique: 'loom' }), liftsAcross({ technique: 'brick' }), liftsAcross({ technique: 'peyote' })]).toEqual([true, true, false])
   })
 
   it('grows a redrawn band by the rows a piece reaches', () => {

@@ -16,6 +16,11 @@ export function recordingContext() {
   class RecordedPath2D {
     roundRect = record('roundRect')
     addPath = record('addPath')
+    // A round piece's inner corners (ticket 1010): drawn by hand, so their points are written down too.
+    moveTo = record('pathMoveTo')
+    lineTo = record('pathLineTo')
+    arc = record('pathArc')
+    closePath = record('pathClose')
   }
   Object.assign(globalThis, { Path2D: RecordedPath2D })
 

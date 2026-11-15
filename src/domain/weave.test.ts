@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, columnCycle, columnOffset, describeWeave, heldSettings, neighborsOf, positionStep, rowCycle, rowOffset, techniqueGeometry, TECHNIQUES, touchKey, weaveSettings, type Weave } from './weave'
+import { beadCell, beadRoundness, cellCenter, columnCycle, columnOffset, describeWeave, hasHalfCircleCorner, heldSettings, neighborsOf, positionStep, rowCycle, rowOffset, techniqueGeometry, TECHNIQUES, touchKey, weaveSettings, type Weave } from './weave'
+import { findBead } from './beads'
 import type { GeometryRef } from './weaveGeometry'
 
 /** A Weave's passes, as Row progress asks for them (ticket 0621). */
@@ -413,5 +414,25 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
     expect(heldSettings('loom', { brickDrop: 3, beadsPerLoop: 5 })).toEqual({ brickDrop: 3 })
     expect(heldSettings('peyote', { brickDrop: 3, peyoteDrop: 2 })).toEqual({ brickDrop: 3, peyoteDrop: 2 })
     expect(heldSettings('brick', { brickDrop: 2, peyoteDrop: 1 })).toEqual({ brickDrop: 2 })
+  })
+})
+
+describe('a bead with a half-circle corner (ticket 1010, Open weave)', () => {
+  const roundnessOf = (id: string | undefined, technique: (typeof TECHNIQUES)[number]) => {
+    const bead = id ? findBead(id) : undefined
+    if (id && !bead) throw new Error(`no Bead ${id}`)
+    return beadRoundness(technique, beadCell(bead, technique))
+  }
+
+  it.each(['toho/round/11-0', 'miyuki/round/11-0'])('is %s, whatever the Technique', (id) => {
+    for (const technique of TECHNIQUES) expect(hasHalfCircleCorner(roundnessOf(id, technique))).toBe(true)
+  })
+
+  it.each(['miyuki/delica/11-0', 'toho/cube/1.5mm'])('is not %s', (id) => {
+    for (const technique of TECHNIQUES) expect(hasHalfCircleCorner(roundnessOf(id, technique))).toBe(false)
+  })
+
+  it('is not a Project with no Bead, in any Technique: the Technique\'s own corner is less than a half circle', () => {
+    for (const technique of TECHNIQUES) expect(hasHalfCircleCorner(roundnessOf(undefined, technique))).toBe(false)
   })
 })
