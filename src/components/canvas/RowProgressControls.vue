@@ -157,24 +157,26 @@ function toggleDirection(event: MouseEvent) {
   directionOpen.value = !directionOpen.value
 }
 const turns = computed(() => frameRowOrder(props.project).turns)
-/** In the bar Row highlight is Show row marks in that list, so it stands alone only where the rows run one way (a
- * Custom frame). */
-const highlightShown = computed(() => props.form !== 'bar' || !turns.value)
+/** Row highlight is Show row marks in that list, so the bar's stands alone only where the rows run one way (a Custom
+ * frame). One lit Switch at most (ticket 0981, UX-092): the margin's smaller forms, with no list, keep theirs only while
+ * the bar's is in its list. */
+const highlightShown = computed(() => (props.form === 'bar' ? !turns.value : turns.value))
 
 type Item = 'direction' | 'highlight' | 'reset' | 'position' | 'counter' | 'track' | 'divider' | 'steps'
 /** The bar's order (ProgressBar card), and the margin's, which puts Reset beside Turn row direction and sets the
- * counter off with dividers, then its smaller forms, which keep Row highlight beside Row done (MarginSheet card, Zoom
- * forms; ticket 0698). */
+ * counter off with dividers, its Row highlight in Turn row direction's list (ticket 0981), then its smaller forms, which
+ * keep Row highlight beside Row done (MarginSheet card, Zoom forms; ticket 0698). */
 const ITEMS: Record<typeof props.form, readonly Item[]> = {
   bar: ['direction', 'highlight', 'reset', 'position', 'counter', 'track', 'steps'],
-  margin: ['direction', 'reset', 'highlight', 'divider', 'counter', 'track', 'divider', 'steps'],
+  margin: ['direction', 'reset', 'divider', 'counter', 'track', 'divider', 'steps'],
   compact: ['highlight', 'counter', 'track', 'steps'],
   folded: ['highlight', 'counter', 'steps'],
 }
 /** What each drop leaves out: the track, then the counter with the divider that set it off. */
 const DROPPED: Record<0 | 1 | 2, readonly Item[]> = { 0: [], 1: ['track'], 2: ['track', 'counter'] }
 const items = computed(() => {
-  const left = ITEMS[props.form].filter((item) => !DROPPED[props.drop].includes(item))
+  const kept = (item: Item) => !DROPPED[props.drop].includes(item) && (item !== 'highlight' || highlightShown.value)
+  const left = ITEMS[props.form].filter(kept)
   return left.filter((item, index) => item !== 'divider' || left[index + 1] !== 'divider')
 })
 const margin = computed(() => props.form !== 'bar')
@@ -198,7 +200,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     />
     <!-- Row highlight is a view switch, not an action on the Project: an on/off Switch (ticket 474); the parent owns the value and flips it. -->
     <AppSwitch
-      v-else-if="item === 'highlight' && highlightShown"
+      v-else-if="item === 'highlight'"
       :model-value="rowHighlight"
       :action="actions.rowHighlight"
       :data-testid="`${testid}-highlight`"
@@ -283,8 +285,10 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
         :data-testid="`${testid}-previous`"
         @click="emit('move-row', -1)"
       />
+      <!-- The Progress bar's Row done is the one filled one on screen; the margin's is in a box, the same words and
+        press (ticket 0981, UX-092). -->
       <AppButton
-        variant="primary"
+        variant="in-box"
         size="sm"
         :action="actions.done"
         :label="doneLabel"
@@ -437,7 +441,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   background: var(--margin-line);
 }
 
-/* The margin's tools: 28px, no fill, hover ink at 10% (MarginSheet card); Row done is the bar's primary at 26px. */
+/* The margin's tools: 28px, no fill, hover ink at 10% (MarginSheet card); Row done is a secondary in a box at 26px. */
 .row-progress--margin :deep(.icon-btn) {
   width: var(--margin-tool);
   height: var(--margin-tool);
