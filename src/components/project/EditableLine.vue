@@ -69,17 +69,42 @@ function start() {
   })
 }
 
-function commit() {
+/** Focus back on the pencil that opened the edit, or the line inviting a value (ticket 0939), once the line shows again. */
+function returnFocus() {
+  void nextTick(() => {
+    const id = props.testid
+    const opener = rootEl.value?.querySelector<HTMLElement>(`[data-testid="${id}-edit"], [data-testid="${id}-add"], button[data-testid="${id}"]`)
+    opener?.focus({ preventScroll: true })
+  })
+}
+
+/** Save from Enter or the Save button: the keyboard goes back to the line. */
+function save() {
+  if (commit()) returnFocus()
+}
+
+/** Cancel from Escape or the Cancel button: the keyboard goes back to the line. */
+function dismiss() {
+  cancel()
+  returnFocus()
+}
+
+/** Ends the edit with what was typed; false when the value is refused and the edit stays open. */
+function commit(): boolean {
   // A value left as it was is kept whole, even one longer than the limit that came in with a file (ticket 0854).
-  if (draft.value === props.value) return cancel()
+  if (draft.value === props.value) {
+    cancel()
+    return true
+  }
   const next = props.normalize(draft.value)
   if (tooLong.value || (!next && props.requiredMessage)) {
     refused.value = tooLong.value ? 'long' : 'empty'
-    return
+    return false
   }
   editing.value = false
   anchored.stop()
   if (next !== props.value) emit('save', next)
+  return true
 }
 
 function cancel() {
@@ -89,8 +114,8 @@ function cancel() {
 }
 
 // While editing the line is a layer of its own (tickets 0685, 0854): Escape cancels, a press outside keeps what was
-// typed, as Save does, in a panel as on the margin sheet.
-useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: cancel, onOutsidePress: commit })
+// typed, as Save does, in a panel as on the margin sheet; focus then stays where the press put it.
+useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: dismiss, onOutsidePress: commit })
 </script>
 
 <template>
@@ -114,7 +139,7 @@ useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: ca
         :popover="bare ? 'manual' : undefined"
         :style="bare ? anchored.style.value : undefined"
         :data-testid="`${testid}-form`"
-        @submit.prevent="commit"
+        @submit.prevent="save"
       >
         <div class="editable-line__field">
           <TextField
@@ -130,8 +155,8 @@ useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: ca
             :data-testid="`${testid}-input`"
             @input="refused = undefined"
           />
-          <IconButton variant="plain" icon="check" :label="t.panels.project.save" tooltip :disabled="!canSave" :data-testid="`${testid}-save`" @click="commit" />
-          <IconButton variant="plain" icon="close" :label="t.panels.project.cancel" tooltip :data-testid="`${testid}-cancel`" @click="cancel" />
+          <IconButton variant="plain" icon="check" :label="t.panels.project.save" tooltip :disabled="!canSave" :data-testid="`${testid}-save`" @click="save" />
+          <IconButton variant="plain" icon="close" :label="t.panels.project.cancel" tooltip :data-testid="`${testid}-cancel`" @click="dismiss" />
         </div>
         <FieldCounter :length="draft.length" :max="maxlength" />
         <p v-if="refused" :id="errorId" class="editable-line__error" role="alert" :data-testid="`${testid}-error`">{{ refusal }}</p>

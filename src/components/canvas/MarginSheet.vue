@@ -6,11 +6,12 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import type { ExportOpener } from '../../composables/shell/openPanel'
 import { overlapsSelectionHandles, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useElementSize } from '../../composables/ui/useElementSize'
+import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { rowProgressOf, rowProgressPosition, rowProgressStarted, type ShownWay } from '../../domain/rowProgress'
+import { rowProgressOf, rowProgressPosition, type ShownWay } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
@@ -94,10 +95,13 @@ const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
 /** The name the tab reads and is named by, or "Name this Frame". */
 const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
-/** A Custom frame's shape comes from its settings, and a Frame with a pass done holds still: no Edit Frame then. */
-const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgressStarted(props.project))
+/** A Custom frame's shape comes from its settings: no Edit Frame then. A Frame with a row done holds still, its Edit
+ * Frame kept in place, disabled, saying why (ticket 0975). */
+const editable = computed(() => frameAllows(frame.value, 'resize'))
 
 const canvas = useCanvasBackground(() => props.project)
+/** A finger: the band keeps Edit Frame and the Frame tools button, its other tools in that menu (ticket 0976). */
+const touch = useMediaQuery('(pointer: coarse)')
 // The margin's popups follow their cells as the canvas is panned or zoomed (ticket 0736).
 const fold = useTitleBlockFold()
 /** Unseen until the canvas view is set and two frames after (ticket 0991): the sheet would show at the view's stand-in
@@ -229,7 +233,7 @@ const rowFit = useFittingForm({
   // rows, the row it stepped down from shows whole again where it fits (ticket 0851).
   labels: () => {
     const { current, total } = rowProgressPosition(props.project)
-    return JSON.stringify([locale.value, rowProgressOf(props.project).direction, current, total, rotatable.value, editable.value])
+    return JSON.stringify([locale.value, rowProgressOf(props.project).direction, current, total, rotatable.value, editable.value, touch.value])
   },
 })
 const row = computed(() => rowFit.value?.split(':')[0] as RowForm | undefined)
@@ -288,6 +292,13 @@ function onMovePress(event: PointerEvent): void {
   emit('move-press', event)
 }
 
+/** Which tools the band shows as buttons: all of them in the full and compact rows; folded, Margin color; on a coarse
+ * pointer, Edit Frame alone, the rest in the Frame tools menu so no two 44px hit areas overlap (ticket 0976). The
+ * narrow row shows none. */
+const iconsShown = computed(() => !touch.value && (row.value === 'full' || row.value === 'compact'))
+const editShown = computed(() => editable.value && (iconsShown.value || (touch.value && row.value !== 'narrow')))
+const colorShown = computed(() => !touch.value && row.value !== 'narrow')
+
 /** The Margin color popover, hung from its button, or from the Frame tools menu where that holds it. */
 const toolsEl = ref<HTMLElement>()
 /** The tools are one Tab stop too, ←/→ along them (ticket 0857), so the title block's name is the next stop. */
@@ -298,21 +309,21 @@ const colorButton = computed(() =>
 )
 // It hangs from its button as a dropdown does (ticket 0698): where the zoom or the width takes that button away (into
 // the Frame tools menu, or the row with it), it closes rather than float.
-const colorHangsFrom = computed(() => (row.value === 'narrow' ? 'menu' : row.value ? 'button' : 'none'))
+const colorHangsFrom = computed(() => (!row.value ? 'none' : colorShown.value ? 'button' : 'menu'))
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
 /** Mirror the whole Frame's name: "Mirror off" while it is on (MarginSheet card). */
 const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOff : undefined))
 
-/** Folded, the Frame tools menu holds the tools the band has no room for (MarginSheet card, Zoom forms); Mirror the
- * whole Frame first, checked while on, shown as Rotate Frame is. */
+/** The Frame tools menu holds the tools the band shows no button for (MarginSheet card, Zoom forms); Mirror the whole
+ * Frame first, checked while on, shown as Rotate Frame is. */
 const menuItems = computed(() =>
   [
     rotatable.value && { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
     rotatable.value && { id: 'rotate', action: actions.rotate, run: () => emit('rotate') },
-    editable.value && { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
+    editable.value && !editShown.value && { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
     { id: 'export', action: actions.export, run: () => emit('export', 'margin-frame-tools') },
-    row.value === 'narrow' && { id: 'color', action: actions.color, run: () => (colorOpen.value = true) },
+    !colorShown.value && { id: 'color', action: actions.color, run: () => (colorOpen.value = true) },
     { id: 'remove', action: actions.remove, run: () => emit('remove') },
   ].filter((item) => !!item),
 )
@@ -330,7 +341,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       v-if="row"
       ref="bandEl"
       class="margin-sheet__band"
-      :class="[`margin-sheet__band--${row}`, { 'margin-sheet__yielding': bandYields }]"
+      :class="[`margin-sheet__band--${row}`, { 'margin-sheet__band--touch': touch, 'margin-sheet__yielding': bandYields }]"
       :style="bandStyle"
       :data-form="row"
       data-testid="margin-band"
@@ -353,7 +364,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       </div>
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
       <div ref="toolsEl" class="margin-sheet__tools" @keydown="toolsRoving.onKeydown" @focusin="toolsRoving.onFocusin">
-        <template v-if="row === 'full' || row === 'compact'">
+        <template v-if="iconsShown">
           <IconButton
             v-if="rotatable"
             variant="plain"
@@ -367,21 +378,30 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
             @click="emit('mirror')"
           />
           <IconButton v-if="rotatable" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" @click="emit('rotate')" />
-          <IconButton
-            v-if="editable"
-            variant="plain"
-            class="margin-sheet__tool"
-            :icon-size="iconSize"
-            :action="actions.edit"
-            :deps="deps"
-            :selected="editing"
-            data-testid="frame-edit-toggle"
-            @click="emit('toggle-edit')"
-          />
-          <IconButton variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.export" :selected="exportOpen" data-testid="margin-export" @click="emit('export', 'margin-export')" />
         </template>
         <IconButton
-          v-if="row !== 'narrow'"
+          v-if="editShown"
+          variant="plain"
+          class="margin-sheet__tool"
+          :icon-size="iconSize"
+          :action="actions.edit"
+          :deps="deps"
+          :selected="editing"
+          data-testid="frame-edit-toggle"
+          @click="emit('toggle-edit')"
+        />
+        <IconButton
+          v-if="iconsShown"
+          variant="plain"
+          class="margin-sheet__tool"
+          :icon-size="iconSize"
+          :action="actions.export"
+          :selected="exportOpen"
+          data-testid="margin-export"
+          @click="emit('export', 'margin-export')"
+        />
+        <IconButton
+          v-if="colorShown"
           variant="plain"
           class="margin-sheet__tool"
           :icon-size="iconSize"
@@ -392,7 +412,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           data-testid="margin-color"
           @click="colorOpen = !colorOpen"
         />
-        <template v-if="row === 'full' || row === 'compact'">
+        <template v-if="iconsShown">
           <span class="margin-sheet__divider" aria-hidden="true" />
           <IconButton variant="plain" :icon-size="iconSize" :action="actions.remove" :deps="deps" class="margin-sheet__tool margin-sheet__remove" data-testid="frame-chrome-remove" @click="emit('remove')" />
         </template>
@@ -550,12 +570,38 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   height: var(--margin-tool-compact);
 }
 
+/* On a coarse pointer (ticket 0976) Edit Frame and the Frame tools button stand apart by what their 44px hit areas
+ * reach past their drawn size, and clear of the Move bar's, so no two overlap. */
+.margin-sheet__band--touch.margin-sheet__band--full .margin-sheet__tools {
+  gap: calc(var(--touch-target) - var(--margin-tool));
+  padding-inline-start: calc((var(--touch-target) - var(--margin-tool)) / 2);
+}
+
+.margin-sheet__band--touch:not(.margin-sheet__band--full) .margin-sheet__tools {
+  gap: calc(var(--touch-target) - var(--margin-tool-compact));
+  padding-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2);
+}
+
+/* So do Row progress's 28px Turn row direction and Reset progress, and Back a row beside Row done, in the full row. */
+.margin-sheet__band--touch :deep(.row-progress--margin > .icon-btn-wrap + .icon-btn-wrap) {
+  margin-inline-start: calc(var(--touch-target) - var(--margin-tool) - var(--space-4));
+}
+
+.margin-sheet__band--touch :deep(.row-progress__steps > .icon-btn-wrap + *) {
+  margin-inline-start: calc((var(--touch-target) - var(--margin-tool)) / 2 - var(--space-4));
+}
+
 /* Mirror the whole Frame on is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
  * Edit Frame's `ink`, the Mirror being a setting that stays on. */
 .margin-sheet__tools :deep(.margin-sheet__mirror--on),
 .margin-sheet__tools :deep(.margin-sheet__mirror--on:hover) {
   color: var(--on-accent);
   background: var(--accent);
+}
+
+/* Its focus ring takes on-accent on that fill (KeyboardFocus card, ticket 0938). */
+.margin-sheet__tools :deep(.icon-btn.margin-sheet__mirror--on:focus-visible) {
+  outline-color: var(--focus-ring-on-accent);
 }
 
 /* Remove Frame is `ink` on the paper and `danger` on hover. */

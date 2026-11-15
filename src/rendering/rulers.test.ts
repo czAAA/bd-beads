@@ -66,9 +66,24 @@ describe('which boxes carry rulers', () => {
     expect(boxes.map(({ row, column, rows, columns }) => ({ row, column, rows, columns }))).toEqual([{ row: 0, column: 0, rows: 3, columns: 3 }])
   })
 
-  it('is the Frame alone, on every side, once it is set, whatever pieces there are', () => {
-    const { boxes } = layoutOf(project([...block(0, 0), ...block(10, 10)], { row: 2, column: 3, rows: 4, columns: 5 }))
-    expect(boxes).toEqual([{ row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'sheet' }])
+  it('is the Frame, on every side, then each Piece area around it once it is set (ticket 1012)', () => {
+    const { boxes } = layoutOf(project([...block(0, 0), ...block(30, 30)], { row: 12, column: 13, rows: 4, columns: 5 }))
+    expect(boxes.map((box) => [box.kind, box.row, box.column, box.sides])).toEqual([['frame', 12, 13, 'sheet'], ['piece', 0, 0, 'start'], ['piece', 30, 30, 'start']])
+  })
+
+  it('leaves out the beads the Frame and its margin cover, which carry no rectangle (ticket 1012)', () => {
+    // The Frame covers rows 10-13, columns 10-14, and its margin 4 more all round.
+    const covered = layoutOf(project([...block(7, 7, 8, 8), ...block(0, 0)], { row: 10, column: 10, rows: 4, columns: 5 }))
+    expect(covered.boxes.map((box) => [box.kind, box.row, box.column, box.rows, box.columns])).toEqual([['frame', 10, 10, 4, 5], ['piece', 0, 0, 3, 3]])
+  })
+
+  it('is each Piece area with the Rulers on only, the Frame always, and no Frame box for a Custom frame (ticket 1012)', () => {
+    const beside = project(block(0, 0), { row: 20, column: 20, rows: 4, columns: 5 })
+    expect(layoutOf(beside, { numbers: false }).boxes.map((box) => box.kind)).toEqual(['frame'])
+    expect(layoutOf(beside).boxes.map((box) => box.kind)).toEqual(['frame', 'piece'])
+    const triangle = { row: 20, column: 20, rows: 12, columns: 10, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
+    const custom = bareProject({ technique: 'peyote', frame: { ...triangle, beads: {} }, beads: withColors({}, block(0, 0).map(([row, column]) => ({ row, column, color: R }))) })
+    expect(layoutOf(custom).boxes.map((box) => box.kind)).toEqual(['piece'])
   })
 
   it('leaves out a box far off screen', () => {
@@ -252,11 +267,14 @@ describe('the Ruler dots', () => {
     expect(whole.length).toBeGreaterThan(piece.length)
   })
 
-  it('are none with the numbers off, though the Frame’s box is still there', () => {
+  it('stay on a Frame with the numbers off, and are none on a Piece area (ticket 1012)', () => {
     const layout = framed(frame, { zoom: 0.7, numbers: false })
-    expect(layout.dots).toEqual([])
-    expect(layout.labels).toEqual([])
+    expect(layout.dots.length).toBeGreaterThan(0)
+    expect(layout.labels.length).toBeGreaterThan(0)
     expect(layout.boxes).toHaveLength(1)
+    const piece = layoutOf(project(block(0, 0, 4, 30)), { zoom: 0.7, numbers: false })
+    expect(piece.dots).toEqual([])
+    expect(piece.labels).toEqual([])
   })
 
   it('are none on a Frame whose margin sheet is compact or folded, which has no room for them, the line kept (ticket 0658)', () => {
@@ -273,11 +291,29 @@ describe('the Ruler dots', () => {
 
   it('are drawn at the margin sheet\'s scale on a Frame, in place of the zoom\'s own rule, and a Piece\'s keep it (ticket 0698)', () => {
     const scaled = framed(frame, { zoom: 2, sheetScale: 1.5 })
-    expect(scaled.scale.fontPx).toBeCloseTo(16.5)
+    expect(scaled.frameScale.fontPx).toBeCloseTo(16.5)
     expect(scaled.sheetScale).toBe(1.5)
     expect(scaled.labels[0]!.height).toBeCloseTo(16.5)
     const piece = project(block(0, 0, 5, 5))
     expect(layoutOf(piece, { zoom: 2, sheetScale: 1.5 }).scale.fontPx).toBeCloseTo(layoutOf(piece, { zoom: 2 }).scale.fontPx)
+  })
+
+  it('are a Frame\'s at its sheet\'s scale and the Pieces around it at the zoom\'s, in the same view (ticket 1012)', () => {
+    const both = layoutOf(project(block(0, 0, 5, 5), { row: 20, column: 20, rows: 3, columns: 4 }), { zoom: 2, sheetScale: 1.5 })
+    const heights = (kind: RulerLabel['kind']) => new Set(both.labels.filter((label) => label.kind === kind && !label.turned).map((label) => label.height))
+    expect(both.scale.fontPx).toBeCloseTo(14.3)
+    expect(both.frameScale.fontPx).toBeCloseTo(16.5)
+    expect([...heights('frame')]).toEqual([expect.closeTo(16.5)])
+    expect([...heights('piece')]).toEqual([expect.closeTo(both.scale.fontPx)])
+  })
+
+  it('number each Piece area around a Frame from 1, columns above and rows to the left (ticket 1012)', () => {
+    const { labels } = layoutOf(project(block(0, 0, 6, 8), { row: 30, column: 30, rows: 3, columns: 4 }))
+    const piece = labels.filter((label) => label.kind === 'piece')
+    expect(piece.filter((label) => label.axis === 'column').map((label) => label.text)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
+    expect(piece.filter((label) => label.axis === 'row').map((label) => label.text)).toEqual(['1', '2', '3', '4', '5', '6'])
+    expect(Math.max(...piece.filter((label) => label.axis === 'column').map((label) => label.y))).toBeLessThan(Math.min(...piece.filter((label) => label.axis === 'row').map((label) => label.y)))
+    expect(Math.max(...piece.filter((label) => label.axis === 'row').map((label) => label.x))).toBeLessThan(Math.min(...piece.filter((label) => label.axis === 'column').map((label) => label.x)))
   })
 })
 

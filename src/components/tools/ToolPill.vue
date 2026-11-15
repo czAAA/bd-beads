@@ -6,7 +6,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useScrollCut } from '../../composables/ui/useScrollCut'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
-import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, pillPositionForKey, pillTileKey, type PillPosition, type PillRect } from '../../domain/toolPill'
+import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, pillPositionForKey, pillTileKey, type PillPosition, type PillRect, type PillTile } from '../../domain/toolPill'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -57,6 +57,8 @@ const emit = defineEmits<{
   'update:popoverOpen': [open: boolean]
   /** The Mirror tile was pressed: Mirror mode on, or off as Escape does (ADR 0082). */
   'mirror-tile': []
+  /** A tile was tapped or clicked, not keyed, before its own event (ticket 0927): on touch its first tap says its name. */
+  'tile-tap': [tile: PillTile]
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
@@ -124,6 +126,11 @@ const toolsCut = useScrollCut(toolsEl, () => (vertical.value ? 'vertical' : 'hor
 
 const pillStyle = computed(() => (drag.dragging.value ? { left: `${drag.corner.value.left}px`, top: `${drag.corner.value.top}px` } : undefined))
 
+/** A tile's press by a finger, pen or mouse: a key's click has no `detail`, and the keyboard has the Tooltip on focus. */
+function tapped(event: MouseEvent, tile: PillTile) {
+  if (event.detail !== 0) emit('tile-tap', tile)
+}
+
 /** The grip's arrow keys send the pill to that edge. */
 function onGripKeydown(event: KeyboardEvent) {
   const next = pillPositionForKey(event.key)
@@ -149,23 +156,31 @@ function measure(): PillRect | undefined {
 }
 
 // The pill shows the recents only while the whole pill fits along its edge (ticket 439), else the one swatch
-// rather than scroll. Fit is probed by drawing the recents and asking the tools if they must scroll, before the browser
-// paints.
+// rather than scroll. Fit is probed by drawing the recents and measuring whether the tools' tiles still fit their row,
+// before the browser paints.
 const recentsRoom = ref(true)
 const probing = ref(false)
 const showRecents = computed(() => recentsRoom.value || probing.value)
 let latestProbe = 0
+/** Whether the tools' tiles, first tile's start to last tile's end, fit their row: not the scroll length, which the
+ * last tile's invisible touch pad (`.ui-control::before` on a coarse pointer) grows by a few pixels, so an iPad never
+ * showed the recents (ticket 0958). One pixel of slack for sub-pixel rounding. */
+function tilesFit(tools: HTMLElement, isVertical: boolean): boolean {
+  const tiles = tools.querySelectorAll('.ui-control')
+  const first = tiles[0]?.getBoundingClientRect()
+  const last = tiles[tiles.length - 1]?.getBoundingClientRect()
+  if (!first || !last) return true
+  return isVertical ? last.bottom - first.top <= tools.clientHeight + 1 : last.right - first.left <= tools.clientWidth + 1
+}
 async function probeRoom() {
   if (drag.dragging.value) return
   const probe = ++latestProbe
   probing.value = true
   await nextTick()
   if (probe !== latestProbe) return // a newer probe owns the measuring now
-  // The tools give way first when the pill is longer than its edge; one pixel of slack for sub-pixel rounding.
+  // The tools give way first when the pill is longer than its edge.
   const tools = toolsEl.value
-  if (tools && tools.clientWidth > 0) {
-    recentsRoom.value = vertical.value ? tools.scrollHeight <= tools.clientHeight + 1 : tools.scrollWidth <= tools.clientWidth + 1
-  }
+  if (tools && tools.clientWidth > 0) recentsRoom.value = tilesFit(tools, vertical.value)
   probing.value = false
 }
 const pillSize = useElementSize(pillEl)
@@ -205,6 +220,7 @@ watch(
       :aria-label="t.a11y.toolsLandmark"
       :aria-orientation="vertical ? 'vertical' : 'horizontal'"
       data-tool-pill
+      data-button-names
       data-testid="tool-pill"
       :data-position="position"
       @pointerdown="drag.onPointerDown"
@@ -222,7 +238,7 @@ watch(
         <span class="tool-pill__grip-bar" />
       </button>
 
-      <IconButton v-bind="toolTile(pinnedTile)" @click="emit('select-tool', pinnedTile.tool)" />
+      <IconButton v-bind="toolTile(pinnedTile)" @click="tapped($event, pinnedTile.tool); emit('select-tool', pinnedTile.tool)" />
 
       <div
         ref="toolsEl"
@@ -230,7 +246,7 @@ watch(
         :class="{ 'tool-pill__tools--cut-start': toolsCut === 'start' || toolsCut === 'both', 'tool-pill__tools--cut-end': toolsCut === 'end' || toolsCut === 'both' }"
         data-testid="tool-pill-tools"
       >
-        <IconButton v-for="tile in scrollingTiles" :key="tile.tool" v-bind="toolTile(tile)" @click="emit('select-tool', tile.tool)" />
+        <IconButton v-for="tile in scrollingTiles" :key="tile.tool" v-bind="toolTile(tile)" @click="tapped($event, tile.tool); emit('select-tool', tile.tool)" />
 
         <IconButton
           class="tool-pill__stop"
@@ -245,7 +261,7 @@ watch(
           :tabindex="-1"
           v-bind="off"
           data-testid="pill-tool-mirror"
-          @click="emit('mirror-tile')"
+          @click="tapped($event, 'mirror'); emit('mirror-tile')"
         />
 
         <IconButton
@@ -261,7 +277,7 @@ watch(
           :tabindex="roving.tabIndexFor(!!pasteArmed)"
           v-bind="off"
           data-testid="pill-tool-paste"
-          @click="emit('paste-mode')"
+          @click="tapped($event, 'paste'); emit('paste-mode')"
         />
       </div>
 

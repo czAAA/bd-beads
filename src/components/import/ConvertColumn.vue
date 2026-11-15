@@ -159,7 +159,8 @@ function closeNeighbours(refocus: boolean) {
       <ConvertBackgroundSection />
     </ConvertPopover>
 
-    <section ref="pictureEl" class="convert-column__section">
+    <!-- Each section a region named as it is labelled, so a screen reader can go to it (ticket 0995). -->
+    <section ref="pictureEl" class="convert-column__section" :aria-label="words.pictureLabel">
       <ConvertPictureSection @paste="emit('paste')" />
     </section>
     <!-- Lighting (DS-3, ticket 0908): from the sun button, its top level with the picture section's, 16 under the strip. -->
@@ -175,7 +176,7 @@ function closeNeighbours(refocus: boolean) {
       <ConvertLightingSection />
     </ConvertPopover>
 
-    <section ref="beadEl" class="convert-column__section">
+    <section ref="beadEl" class="convert-column__section" :aria-label="words.beadAndTechnique">
       <span class="convert-column__label">{{ words.beadAndTechnique }}</span>
       <AppButton
         trailing-icon="chevron-down"
@@ -207,7 +208,7 @@ function closeNeighbours(refocus: boolean) {
       </div>
     </ConvertPopover>
 
-    <section ref="sizeEl" class="convert-column__section">
+    <section ref="sizeEl" class="convert-column__section" :aria-label="words.sizeTitle">
       <ValueSlider
         :label="t.form.widthLabel"
         :model-value="wizard.sizing.value.width"
@@ -255,6 +256,7 @@ function closeNeighbours(refocus: boolean) {
     <section
       ref="colorsEl"
       class="convert-column__section"
+      :aria-label="words.colorsLabel"
       @focusin="showNeighbours"
       @focusout="leaveNeighbours"
       @pointerdown="showNeighbours"

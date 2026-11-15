@@ -53,4 +53,14 @@ const { t } = useI18n()
 .more-below__arrow {
   color: var(--accent);
 }
+
+/* Touch (ticket 0962): the pill's `touch-target` pad grows up from its foot, over the fade, never down over the bar's
+ * section steps it rides on. */
+@media (pointer: coarse) {
+  .more-below .more-below__pill::before {
+    top: auto;
+    bottom: 0;
+    transform: translateX(-50%);
+  }
+}
 </style>

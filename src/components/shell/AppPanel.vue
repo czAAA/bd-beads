@@ -85,6 +85,10 @@ function barTop(): number | undefined {
   return bar && bar.height > 0 ? bar.top : undefined
 }
 const onOwnBar = (target: EventTarget | null) => target instanceof Node && !!ownBar()?.contains(target)
+/** The shell's notice row (a Project that didn't open, a failed save): a press on its buttons acts at once and the panel
+ * stays, since the Menu may open on its own while a notice shows (ticket 0985). */
+const NOTICE_ROW = '[data-notice-row]'
+const onNoticeRow = (target: EventTarget | null) => target instanceof Element && target.closest(NOTICE_ROW) !== null
 const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start', () => 'below', barTop)
 /** The dropdown is as tall as the room allows below its button (above the bottom bar, else 16px clear of the window's
  * bottom edge) and scrolls inside past that. */
@@ -132,7 +136,7 @@ useOverlayLayer({
   close: onEscape,
   // The strip's own buttons are left alone, since their click swaps or closes the panel.
   isOpener: (target) => target.closest(OPENERS) !== null,
-  keepsPress: (event) => onOwnBar(event.target),
+  keepsPress: (event) => onOwnBar(event.target) || onNoticeRow(event.target),
   onOutsidePress: () => {
     pressClosed.markPressClosed()
     emit('close')
@@ -173,16 +177,15 @@ function revealInBody(entry: HTMLElement) {
   if (below > 0) body.scrollTop += entry.getBoundingClientRect().top - body.getBoundingClientRect().top
 }
 
-/** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab is
- * left to the browser, which leaves the dropdown, except in the Menu: there Tab and Shift+Tab wrap, so focus never
- * leaves the open panel (ADR 0075). */
+/** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab and
+ * Shift+Tab wrap in every panel, so focus never leaves the open panel for the controls under it (ADR 0075, ticket 0939). */
 function onKeydown(event: KeyboardEvent) {
   // A key the content already used (the Frame panel's arrows move the Frame) is not a move through the panel.
   if (event.defaultPrevented) return
   const target = event.target as HTMLElement
   const list = focusables()
   if (event.key === 'Tab') {
-    if (!props.menu || !list.length) return
+    if (!list.length) return
     const index = list.indexOf(target)
     const edge = event.shiftKey ? index <= 0 : index === list.length - 1
     if (!edge) return
@@ -199,7 +202,8 @@ function onKeydown(event: KeyboardEvent) {
   list[next]?.focus({ preventScroll: true })
 }
 
-/** The dropdown closes when focus leaves it with Tab; a press on the bottom bar leaves it open. */
+/** The dropdown closes when focus leaves it some way other than Tab (a shortcut, a screen reader's move); a press on
+ * the bottom bar leaves it open. */
 function onFocusOut(event: FocusEvent) {
   if (props.menu) return
   const next = event.relatedTarget
@@ -220,8 +224,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   anchored.stop()
   const target = findInShell(`[data-testid="${props.anchor}"]`) ?? opener
-  // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes.
-  if (!pressClosed.wasPressClosed() && !findInShell('.app-modal')) void nextTick(() => target?.isConnected && target.focus({ preventScroll: true }))
+  // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes. Focus moves to
+  // the button before the dialog mounts, so the button is what the dialog gives it back to (ticket 0939).
+  if (pressClosed.wasPressClosed() || findInShell('.app-modal')) return
+  if (target?.isConnected) target.focus({ preventScroll: true })
+  else void nextTick(() => target?.isConnected && target.focus({ preventScroll: true }))
 })
 </script>
 

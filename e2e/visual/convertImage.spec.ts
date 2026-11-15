@@ -68,7 +68,9 @@ test.describe('Convert image layouts', () => {
       const lightingRow = (await page.getByTestId('convert-lighting').boundingBox())!.height + 10
       // The foot's colors line wraps where it says the picture gives no more (ticket 0928): its second line is allowed too.
       const colorsWrap = (await page.getByTestId('convert-result-colors').boundingBox())!.height - (await page.getByTestId('convert-result-size').boundingBox())!.height
-      if (viewport.width === 1440) expect(shown.columnOverflow).toBeLessThanOrEqual(lightingRow + colorsWrap)
+      // The line under Colors says the beads are real and their colors approximate on a second line (ticket 0966).
+      const matchedWrap = (await page.getByTestId('convert-matched').boundingBox())!.height / 2
+      if (viewport.width === 1440) expect(shown.columnOverflow).toBeLessThanOrEqual(lightingRow + colorsWrap + matchedWrap)
       const above = await page.getByTestId('convert-column').evaluate((column) => {
         column.scrollTop = column.scrollHeight
         const button = column.querySelector('[data-testid="convert-clean-up-button"]')!.getBoundingClientRect()

@@ -27,7 +27,7 @@ import { paintCells } from './drawing'
 import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'
-import { backgroundOf, canvasOf, frameOf, withBackground, withLayer } from './layerRecord'
+import { backgroundOf, canvasOf, frameOf, projectNameOf, withBackground, withLayer } from './layerRecord'
 import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
 import { legacyFile } from '../testUtils/legacyFile'
 import { newReferenceImage, withReferenceImage } from './referenceImage'
@@ -487,14 +487,14 @@ describe('importProjects', () => {
   it('adds Projects that are not on this device yet, untouched', () => {
     const incoming = [makeProject('Fox')]
 
-    expect(importProjects(incoming, [])).toEqual(incoming)
+    expect(importProjects(incoming, [], 'Project 1')).toEqual(incoming)
   })
 
   it('keeps a same-identity local Project and brings the imported one in alongside it', () => {
     const local = decoratedProject()
     const incoming = paintAt(local, [{ row: 0, column: 0 }], '#2f6fed')
 
-    const added = importProjects([incoming], [local], () => 'fresh-id')
+    const added = importProjects([incoming], [local], 'Project 1', () => 'fresh-id')
 
     expect(added).toHaveLength(1)
     expect(added[0]!.id).toBe('fresh-id')
@@ -506,7 +506,7 @@ describe('importProjects', () => {
     const local = makeProject('Fox')
     let next = 0
 
-    const added = importProjects([local, local], [local], () => `fresh-${next++}`)
+    const added = importProjects([local, local], [local], 'Project 1', () => `fresh-${next++}`)
 
     expect(added.map((project) => project.id)).toEqual(['fresh-0', 'fresh-1'])
   })
@@ -514,9 +514,16 @@ describe('importProjects', () => {
   it('treats a Project already imported in the same batch as a collision too', () => {
     const incoming = makeProject('Fox')
 
-    const added = importProjects([incoming, incoming], [], () => 'fresh-id')
+    const added = importProjects([incoming, incoming], [], 'Project 1', () => 'fresh-id')
 
     expect(added.map((project) => project.id)).toEqual([incoming.id, 'fresh-id'])
+  })
+
+  it('gives a Project whose name is only spaces the name a Project left unnamed takes (ticket 0988)', () => {
+    const blank = withLayer(makeProject(), 'canvas', { name: '     ' })
+    const added = importProjects([blank, makeProject('Fox')], [], 'Project 1')
+
+    expect(added.map(projectNameOf)).toEqual(['Project 1', 'Fox'])
   })
 })
 
@@ -576,7 +583,7 @@ describe('a reference image in the file (ticket 0790, ADR 0089)', () => {
 
   it('keeps an imported picture with its Project when the Project comes in under a fresh id', () => {
     const project = traced()
-    const added = importProjects([project], [{ id: project.id }], () => 'fresh')
+    const added = importProjects([project], [{ id: project.id }], 'Project 1', () => 'fresh')
     expect(importedPictures([project], added, new Map([[project.id, 'AAEC']]))).toEqual(new Map([['fresh', 'AAEC']]))
   })
 })

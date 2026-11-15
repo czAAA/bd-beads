@@ -73,11 +73,11 @@ const sourceNote = computed(() =>
     .join(' '),
 )
 
-/** The count line: the source's codes in the Finishes on (ticket 0901). */
+/** The count line: the source's codes in the Finishes on (ticket 0901), as bead colors ("1 191 bead colors in size 11/0", ticket 0966). */
 const codes = computed(() =>
   wizard.source.value === 'my-beads'
-    ? fillBlanks(myWords.value.codesInList, { count: count(wizard.codesLeft.value) })
-    : fillBlanks(words.value.codesInSize, { size: wizard.bead.value.size, count: count(wizard.codesLeft.value) }),
+    ? plural(locale.value, wizard.codesLeft.value, myWords.value.codesInList)
+    : fillBlanks(pluralForm(locale.value, wizard.codesLeft.value, words.value.codesInSize), { size: wizard.bead.value.size, count: count(wizard.codesLeft.value) }),
 )
 /** Fewer codes left in the Finishes on than colors asked: as many colors come out, and the line says so (DS-2). */
 const tooFew = computed(() =>

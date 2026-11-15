@@ -42,14 +42,16 @@ import FieldCounter from '../ui/form/FieldCounter.vue'
 import FormField from '../ui/form/FormField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
+import PanelSection from '../shell/PanelSection.vue'
 import LayerSettings from './LayerSettings.vue'
+import { layerSummary } from './layerSettingsOf'
 import StarterPicture from './StarterPicture.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 
-// A Starter's setup (tickets 0596, 0597, 0671; StarterGallery card, Setup): the live picture, Name on New Project only,
-// the Frame's Layer settings, Use design or Start empty, its sizes and choices, and the Estimated size. Moving any size
-// or choice off the design turns it off; setting them all back turns it on.
+// A Starter's setup (tickets 0596, 0597, 0671, 0952; StarterGallery card, Setup): the live picture, its sizes and
+// choices, the Estimated size, Use design or Start empty, then Name (New Project only) and the Frame's Layer settings
+// folded under Beads and technique. Moving any size or choice off the design turns it off; setting them all back turns it on.
 const props = defineProps<{ starter: Starter; project?: Project }>()
 const emit = defineEmits<{ submit: [choice: StarterProjectChoice] }>()
 
@@ -210,7 +212,7 @@ const bead = computed(() => findBead(beadId.value))
 const face = computed(() => pieceFaceOf(props.starter.shape))
 const faceInfo = computed(() => face.value && faceInfoWords(t.value, face.value))
 
-/** The Estimated size and the lines under it (StarterGallery card, Setup 5): a Shape's or earring's width × height, a
+/** The Estimated size and the lines under it (StarterGallery card, Setup 3): a Shape's or earring's width × height, a
  * Ring's inside and width, a Band's width × length; the bead count, a pair's, and a Ring's or Band's rows. */
 const estimate = computed(() => {
   if (!bead.value) return { value: '', lines: [] as string[] }
@@ -237,6 +239,9 @@ const estimate = computed(() => {
   return { value, lines: [count, plural(locale.value, 2 * starterBeadCount(props.starter, choice.value, bead.value), words.forPair)] }
 })
 
+/** The folded Beads and technique row's values (ticket 0952): the Name typed, the Technique and the Bead. */
+const beadsSummary = computed(() => [name.value.trim(), layerSummary(t.value, { technique: technique.value, bead: bead.value })].filter(Boolean).join(' · '))
+
 const pictureName = computed(() => fillBlanks(useDesign.value ? t.value.starters.pictureWithDesign : t.value.starters.pictureEmpty, { option: optionName.value }))
 
 function onSubmit() {
@@ -249,39 +254,6 @@ function onSubmit() {
     <div class="starter-setup__picture" role="img" :aria-label="pictureName" data-testid="starter-setup-picture">
       <StarterPicture :starter="starter" :choice="choice" :bead-id="bead?.id" :drawn-px="320" />
     </div>
-
-    <FormField v-if="!project" :label="t.form.nameLabel" label-for="starter-name-input" :aside="t.form.optional">
-      <TextField id="starter-name-input" v-model="name" data-testid="starter-name-input" type="text" :maxlength="MAX_PROJECT_NAME" :placeholder="optionName" />
-      <template #after><FieldCounter :length="name.length" :max="MAX_PROJECT_NAME" /></template>
-    </FormField>
-
-    <LayerSettings
-      layer="frame"
-      :technique="technique"
-      :technique-settings="settings"
-      :techniques="techniquesOf(starter)"
-      :without-technique-settings="!followsWeave(starter)"
-      :bead="bead"
-      :background="background"
-      testid="starter"
-      @set-technique="setWeave($event, settings)"
-      @set-setting="(id, value) => setWeave(technique, { ...settings, [id]: value })"
-      @pick-bead="beadId = $event"
-      @set-background="picked = $event"
-    />
-
-    <AppNote v-if="widthKept !== undefined" data-testid="starter-width-note">{{ fillBlanks(t.frame.oddWidthNote, { count: widthKept }) }}</AppNote>
-
-    <FormField :label="t.starters.designLabel" label-id="starter-design-label">
-      <SegmentedControl
-        :model-value="useDesign ? 'design' : 'empty'"
-        :options="designOptions"
-        labelledby="starter-design-label"
-        data-testid="starter-design"
-        @update:model-value="setDesign"
-      />
-      <AppNote v-if="note" data-testid="starter-design-note">{{ note }}</AppNote>
-    </FormField>
 
     <template v-for="row in rows" :key="'size' in row ? row.size.id : 'pick' in row ? row.pick.id : 'system'">
       <div v-if="'size' in row" class="starter-setup__size" :data-testid="`starter-size-${row.size.id}`">
@@ -333,6 +305,9 @@ function onSubmit() {
       </FormField>
     </template>
 
+    <!-- Said by the Width it moved, so it shows with the Beads and technique row folded too. -->
+    <AppNote v-if="widthKept !== undefined" data-testid="starter-width-note">{{ fillBlanks(t.frame.oddWidthNote, { count: widthKept }) }}</AppNote>
+
     <div class="starter-setup__estimate" role="group" :aria-label="t.size.estimateLabel">
       <p class="starter-setup__estimate-row">
         <span>{{ t.size.estimateLabel }}</span>
@@ -343,6 +318,44 @@ function onSubmit() {
         <InfoButton v-if="faceInfo" :label="t.starters.faceInfoLabel" :body="faceInfo" data-testid="starter-face-info" />
       </p>
     </div>
+
+    <FormField :label="t.starters.designLabel" label-id="starter-design-label">
+      <SegmentedControl
+        :model-value="useDesign ? 'design' : 'empty'"
+        :options="designOptions"
+        labelledby="starter-design-label"
+        data-testid="starter-design"
+        @update:model-value="setDesign"
+      />
+      <AppNote v-if="note" data-testid="starter-design-note">{{ note }}</AppNote>
+    </FormField>
+
+    <!-- Name and the Layer settings, the questions a stranger cannot answer yet, folded under one row that shows their
+         values (ticket 0952). -->
+    <PanelSection id="starter:beads" :label="t.starters.beadsAndTechnique" :summary="beadsSummary" folded class="starter-setup__fold" data-testid="starter-beads">
+      <div class="starter-setup__beads">
+        <FormField v-if="!project" :label="t.form.nameLabel" label-for="starter-name-input" :aside="t.form.optional">
+          <TextField id="starter-name-input" v-model="name" data-testid="starter-name-input" type="text" :maxlength="MAX_PROJECT_NAME" :placeholder="optionName" />
+          <template #after><FieldCounter :length="name.length" :max="MAX_PROJECT_NAME" /></template>
+        </FormField>
+
+        <LayerSettings
+          layer="frame"
+          :technique="technique"
+          :technique-settings="settings"
+          :techniques="techniquesOf(starter)"
+          :without-technique-settings="!followsWeave(starter)"
+          :bead="bead"
+          :background="background"
+          testid="starter"
+          @set-technique="setWeave($event, settings)"
+          @set-setting="(id, value) => setWeave(technique, { ...settings, [id]: value })"
+          @pick-bead="beadId = $event"
+          @set-background="picked = $event"
+        />
+
+      </div>
+    </PanelSection>
   </form>
 </template>
 
@@ -361,6 +374,25 @@ function onSubmit() {
   background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);
+}
+
+/* The folded row's values are never shortened: with no room beside its label they take a line of their own and wrap,
+ * as a kept summary does (PanelSection; ticket 0952). */
+.starter-setup :deep(.starter-setup__fold .panel-section__header) {
+  flex-wrap: wrap;
+  padding-block: var(--space-4);
+}
+
+.starter-setup :deep(.starter-setup__fold .panel-section__summary) {
+  white-space: normal;
+}
+
+/* Name and the Layer settings inside the folded row (ticket 0952), spaced as the setup is. */
+.starter-setup__beads {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding-top: var(--space-8);
 }
 
 .starter-setup__size {
@@ -422,6 +454,28 @@ function onSubmit() {
 .starter-setup__chip:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+/* On the accent fill the ring takes on-accent (KeyboardFocus card, ticket 0938). */
+.starter-setup__chip[aria-pressed='true']:focus-visible {
+  outline-color: var(--focus-ring-on-accent);
+}
+
+/* Touch (ticket 0952; responsive.md): each chip answers across the 44px `touch-target`, as `.ui-control` does, the
+ * chips set the rest of it apart so the pads meet and never overlap. */
+@media (pointer: coarse) {
+  .starter-setup__presets {
+    gap: calc(var(--touch-target) - var(--item-height));
+  }
+
+  .starter-setup__chip::before {
+    content: '';
+    position: absolute;
+    inset: 50%;
+    width: max(100%, var(--touch-target));
+    height: max(100%, var(--touch-target));
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* The design's own size: a dot at the chip's top right. */

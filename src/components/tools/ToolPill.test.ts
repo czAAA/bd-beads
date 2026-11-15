@@ -51,6 +51,17 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.get('[data-testid="pill-tool-fill"]').classes()).toContain('icon-btn--accent')
   })
 
+  it('tells of a tile tapped or clicked, Mirror and Paste too, and not of one keyed (ticket 0927)', async () => {
+    const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
+
+    const press = (tile: string, detail: number) => wrapper.get(`[data-testid="pill-tool-${tile}"]`).element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail }))
+    for (const tile of ['fill', 'mirror', 'paste']) press(tile, 1)
+    press('hand', 0)
+
+    expect(wrapper.emitted('tile-tap')).toEqual([['fill'], ['mirror'], ['paste']])
+    expect(wrapper.emitted('select-tool')).toEqual([['fill'], ['hand']])
+  })
+
   it('lights the Mirror tile in Mirror mode, and not the Select tile it runs under (ADR 0082)', () => {
     const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'select', mirrorMarking: true } })
     expect(wrapper.get('[data-testid="pill-tool-mirror"]').classes()).toContain('icon-btn--accent')
@@ -169,7 +180,8 @@ describe('ToolPill (ticket 439)', () => {
     tile.element.click()
     expect(wrapper.emitted('update:popoverOpen')).toEqual([[true]])
     await wrapper.setProps({ popoverOpen: true })
-    await nextTick()
+    // Focus goes in once the popover is placed (ticket 0961).
+    await flushPromises()
     expect(tileTip().props('suppressed')).toBe(true)
     expect(document.activeElement?.getAttribute('data-testid')).toBe('palette-swatch')
     wrapper.unmount()
@@ -216,10 +228,10 @@ describe('ToolPill (ticket 439)', () => {
   })
 
   it('drops the recents while the tools would have to scroll, and brings them back with room (ticket 0837)', async () => {
-    // The tools have 300px of room and need `needed`.
+    // The tools have 300px of room and their tiles run `needed`, first tile's start to last tile's end.
     let needed = 500
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(300)
-    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => needed)
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, 0, needed, 40))
     const wrapper = mount(ToolPill, { props: { ...base, recentsInPill: ['#111111', '#222222', '#333333'] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)

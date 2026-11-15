@@ -122,6 +122,15 @@ describe('AppModal', () => {
     expect(tab(first).defaultPrevented).toBe(false)
   })
 
+  it('brings focus that left back to the data-autofocus control, not the first one (ticket 0939)', () => {
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    const wrapper = mountModal({}, '<button data-testid="side">Save first</button><button data-testid="marked" data-autofocus>Cancel</button>')
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="marked"]').element)
+    outside.focus()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="marked"]').element)
+  })
+
   it('gives focus back to the control that opened it', () => {
     const opener = document.createElement('button')
     document.body.append(opener)

@@ -86,7 +86,8 @@ export interface Translations {
   form: {
     nameLabel: string
     beadLabel: string
-    /** The Bead picker (ticket 535): `hint` is its one line while collapsed; Brand, Form factor and Bead size are its steps. */
+    /** The Bead picker (ticket 535): `hint` is what a Bead sets, the help behind New Project's Bead Info button (ticket 0951);
+     * Brand, Form factor and Bead size are its steps. */
     beadPicker: {
       hint: string
       change: string
@@ -120,8 +121,7 @@ export interface Translations {
     enterWholeBeads: string
     /** Between Create Project and Convert image. */
     or: string
-    /** New Project's heading and what an open canvas is for (ticket 568). */
-    openCanvasTitle: string
+    /** What New Project's open canvas is for, under the panel's title (tickets 568, 0951). */
     openCanvasSubtitle: string
     /** The button that unfolds the Starter gallery. */
     pickStarter: string
@@ -130,6 +130,11 @@ export interface Translations {
     /** What a new Project left unnamed is called, and the Name's placeholder (ticket 0866): "Project 1", then the next
      * free number. It ends in its number, as Duplicate's suggestions do. */
     unnamedProject: string
+    /** New Project's Info buttons (ticket 0951): what Technique decides, and each button's name; Bead's help is
+     * `beadPicker.hint`. */
+    techniqueInfo: string
+    techniqueInfoLabel: string
+    beadInfoLabel: string
   }
   /** Screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {
@@ -167,6 +172,8 @@ export interface Translations {
     close: string
     /** A recent colour's name. */
     useColor: string
+    /** The toast of a tile's first tap on touch (ticket 0927): its Tooltip's `{name}` and `{line}`. */
+    tileNamed: string
   }
   /** Mirror (ADR 0082, ticket 0750; ContextBar card's Mirror bar): the tile's name, the Mirror bar's controls, the
    * Selection bar's Mirror and the margin's Mirror the whole Frame. */
@@ -235,7 +242,8 @@ export interface Translations {
       themeLight: string
       themeDark: string
       tooltipDeleteAll: string
-      deleteAllTitle: string
+      /** Delete all Projects? with the count (ticket 0984). */
+      deleteAllTitle: PluralForms
       deleteAllMessage: string
       deleteAllConfirm: string
       /** The Help row and the Language row's link that open the Feedback sheet (ticket 0700). */
@@ -248,6 +256,8 @@ export interface Translations {
       keepProjectsOff: string
       keepProjectsInfoLabel: string
       keepProjectsInfo: string
+      /** Help's row that shows every strip and pill button's name at once (ticket 0927). */
+      buttonNames: string
     }
     project: {
       rename: string
@@ -295,6 +305,8 @@ export interface Translations {
       duplicatedToast: string
       /** Said under 1024px, where the strip shows no name, when a Project opens from the library (ticket 0986). */
       openedToast: string
+      /** After Delete of the open Project (ticket 0983): `{name}` is the deleted one, `{open}` the one open now. */
+      deletedToast: string
     }
   }
   /** The header's theme control (ticket 139). */
@@ -402,6 +414,8 @@ export interface Translations {
     faceInfo: string
     /** A Star's count is the whole star, its back beaded as the face's mirror (ticket 0875): "245 beads, front and back". */
     beadsFrontBack: PluralForms
+    /** The folded row over Name and the Layer settings in a Starter's setup (ticket 0952), its values beside it. */
+    beadsAndTechnique: string
   }
   canvas: {
     zoomInLabel: string
@@ -432,6 +446,8 @@ export interface Translations {
       /** On touch (ticket 0846): the line in finger words, with no key chips. */
       twoFingersToMove: string
       pinchToZoom: string
+      /** On touch (ticket 0927): a half-second hold on a button shows its Tooltip. */
+      holdForName: string
     }
     /** The welcome over an empty Project (FirstRunHints card, tickets 0795, 0798 and 0920): its quiet line on where
      * Projects are kept, and its lead line off touch, the Paint tool's Tooltip (`tooltips.paint`) in mouse words. */
@@ -1065,11 +1081,6 @@ export interface Translations {
     announceFrameRotated: string
     /** Export without a Frame opens a dialog with this title. */
     countNeedsFrame: string
-    /** The Progress bar's hint with no Frame: [Select icon] {progressSelectToSet} [Frame icon] {progressFrameWord}.
-     * Two pieces so each language can order and inflect them: the second ends the sentence (a noun in the
-     * accusative where the language has one). */
-    progressSelectToSet: string
-    progressFrameWord: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
     /** The Progress bar's button with no Frame (ticket 0847): fits a Frame and opens Export on Picture. */
@@ -1080,6 +1091,14 @@ export interface Translations {
     qualityHighCaption: string
     /** The line under the Export quality stops: the slider sets the picture only (ticket 0957). */
     qualityNote: string
+    /** The Progress bar's line with no Frame, after its Select and Frame chips: what a Frame gives, then how to set one
+     * (ticket 0944). The line is a button that picks the Select tool. */
+    progressMarkPiece: string
+    /** The Drag a Frame notice on touch (ticket 0954): a finger has no Escape key, and picking a tool cancels. */
+    selectFrameTouchHint: string
+    /** The size fields' range line (ticket 0978), shown when a key is refused or a typed side is brought into range; {min} and {max} are numbers of beads. */
+    widthRange: string
+    heightRange: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */
@@ -1206,7 +1225,7 @@ export interface Translations {
       /** The Background tool (ticket 0787): its name on the floating bar, and Start over for its steps. */
       backgroundTool: string
       startOver: string
-      /** No picture yet (the column and its foot), and the lines on what the preview shows now (ticket 0896): Make empty's
+      /** No picture yet (the column and its foot), and the lines on what the preview shows now (ticket 0896): Leave a color out's
        * and Compare's chips, and the Background popover's tool line. */
       bandEmpty: string
       bandMakeEmpty: string
@@ -1244,7 +1263,6 @@ export interface Translations {
       zoomLevel: string
       /** The Colors section's source control and what each source does. */
       matchTo: string
-      beadColors: string
       /** Match to's first option: the Bead's palette, `{bead}` its maker, name and shape; and the Note under it. */
       beadPalette: string
       beadPaletteNote: string
@@ -1252,7 +1270,7 @@ export interface Translations {
       beadPaletteNotePhotos: string
       defaultPalette: string
       exact: string
-      codesInSize: string
+      codesInSize: PluralForms
       /** The found-colors table's headings (Empty and Change are the buttons' names). */
       fromPicture: string
       becomes: string
@@ -1306,7 +1324,7 @@ export interface Translations {
         note: string
         matched: PluralForms
         fewerColors: PluralForms
-        codesInList: string
+        codesInList: PluralForms
         edit: string
         choose: string
         codes: PluralForms
@@ -1342,7 +1360,7 @@ export interface Translations {
       keepAll: string
       cropMeasure: string
       /** Clean up (ticket 0906, DS-3): the popover's title, the button's name (`{line}` its first line), Info, switch,
-       * steps and their off reason, the counts, the pixel-art lines, and Small colors join with its Info, stepper names
+       * steps and their off reason, the counts, the pixel-art lines, and Drop colors used by few beads with its Info, stepper names
        * and result (`colorsJoined` then `joinedBeads`, joined by " · "). */
       cleanUp: {
         title: string
@@ -1374,6 +1392,8 @@ export interface Translations {
         colorsJoined: PluralForms
         joinedBeads: PluralForms
         everyColorStays: string
+        /** The Clean up button's first line with its name before it (ticket 0966): "Clean up · off for pixel art". */
+        named: string
       }
       /** Compare (ticket 0909): the chips over its halves, the narrow bar's Beads | Picture ("Show"), the preview's names. */
       compareChipPicture: string
@@ -1438,6 +1458,10 @@ export interface Translations {
        * was found, then Remove what was found and Turn off. */
       backgroundChip: string
       backgroundTurnOff: string
+      /** `exact`'s short name, where a segmented control has no room for it: Convert to beads on the Canvas (ticket 0966). */
+      exactShort: string
+      /** The foot's name as a screen reader lists the converter's regions (ticket 0995): what the picture makes. */
+      resultLabel: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
@@ -1468,7 +1492,7 @@ export interface Translations {
     cancelButton: string
   }
   /** The `?` shortcuts help overlay (ticket 96): every keyboard shortcut, grouped by Tool group. Key labels
-   * themselves (digits, letters, "Ctrl/Cmd+C") are locale-neutral and built inline in ShortcutsHelp.vue rather than
+   * themselves (digits, letters, "⌘C" or "Ctrl+C") are locale-neutral and built inline in ShortcutsHelp.vue rather than
    * translated here — only the description of what each one does needs a translation. */
   shortcutsHelp: {
     title: string
@@ -1485,6 +1509,9 @@ export interface Translations {
     keyHints: string
     keyHintsOn: string
     keyHintsOff: string
+    /** The two Pastes named apart in the list (ticket 0993): the pill's tool and the clipboard's key. */
+    pasteTool: string
+    pasteClipboard: string
   }
   /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One
    * imperative sentence ending in a full stop; keys never appear (they are the key chip). */
@@ -1552,7 +1579,7 @@ export interface Translations {
     changeName: string
     convertImage: string
     /** Convert image's floating bar (ticket 0780): Turn 90°, Flip, Select (keeping a part of the beads, or cropping the
-     * picture), Make empty and Compare. */
+     * picture), Leave a color out and Compare. */
     makeEmpty: string
     backgroundTool: string
     compare: string
@@ -1791,5 +1818,18 @@ export interface Translations {
     feedbackEmail: string
     /** Under a name edited in place that is longer than the limit, with {max}. */
     tooLong: string
+  }
+  /** The keyboard's bead cursor on the Pattern (ticket 0942, ADR 0093): each move and tap, said once. */
+  beadCursor: {
+    /** A move: {row} and {column} as the rulers count them, {color} the bead's. */
+    place: string
+    /** A tap that changed beads, with the paint color's {color}. */
+    painted: string
+    filled: string
+    erased: string
+    /** A Shift + arrow step: the Selection's {columns} and {rows}. */
+    selected: string
+    /** A bead with no color, in `place`. */
+    empty: string
   }
 }

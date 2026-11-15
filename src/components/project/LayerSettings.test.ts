@@ -30,6 +30,15 @@ describe('LayerSettings (ADR 0079, ticket 0670)', () => {
     expect(wrapper.get('[data-testid="x-brick-drop-value"]').text()).toBe('3')
   })
 
+  it('gives Technique and Bead an Info button saying what each decides only where asked to, as New Project does (ticket 0951)', () => {
+    const infos = (props: Record<string, unknown>) =>
+      mountSettings(props)
+        .findAll('[data-testid="x-technique-info"], [data-testid="x-bead-info"]')
+        .map((info) => info.attributes('aria-label'))
+    expect(infos({})).toEqual([])
+    expect(infos({ explained: true })).toEqual([en.form.techniqueInfoLabel, en.form.beadInfoLabel])
+  })
+
   it('asks for each change and shows only what it is given', async () => {
     const wrapper = mountSettings()
     await wrapper.get('[data-testid="x-technique"] button').trigger('click')

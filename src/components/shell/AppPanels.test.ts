@@ -17,6 +17,7 @@ import { moveToRow, rowProgressStarted } from '../../domain/rowProgress'
 import { newReferenceImage, withReferenceImage } from '../../domain/referenceImage'
 import { projectFileNameOf } from '../../domain/projectFile'
 import { downloadFile } from '../../services/fileDownload'
+import { hasOpenLayer } from '../../composables/ui/useOverlayLayer'
 
 vi.mock('../../services/fileDownload', () => ({ downloadFile: vi.fn() }))
 
@@ -67,6 +68,19 @@ describe('Menu', () => {
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
+  it('shows every button\'s name from Help\'s What the buttons do, the Menu closed, until Escape (ticket 0927)', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-item-button-names')
+    expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+    expect(hasOpenLayer()).toBe(true)
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    expect(hasOpenLayer()).toBe(false)
+    mounted.wrapper.unmount()
+  })
+
   it('opens the Projects library and New Project as its subpanels, each under its own title', async () => {
     const mounted = mountPanels()
     await openSavedProjects(mounted)
@@ -103,6 +117,20 @@ describe('Menu', () => {
 
     expect(loadProjects()).toEqual([])
     expect(mounted.panels.activeProject.value).toBeUndefined()
+  })
+
+  it('asks Delete all naming how many, whose Save all Projects to a Project file saves them and leaves the question open (ticket 0984)', async () => {
+    saveProjects([moth(), other()])
+    const mounted = mountPanels()
+    await openSavedProjects(mounted)
+    await click(mounted, 'menu-delete-all')
+
+    expect(text(mounted, 'delete-all-projects-modal')).toContain('Delete all 2 Projects?')
+    expect(text(mounted, 'confirm-modal-extra')).toBe(en.transfer.exportLibraryButton)
+    await click(mounted, 'confirm-modal-extra')
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
+    expect(mounted.wrapper.find('[data-testid="delete-all-projects-modal"]').exists()).toBe(true)
+    expect(names()).toEqual(['Moth', 'Other'])
   })
 
   it('starts a Project from a Starter: a category, an option, and Create puts it in place and closes the panel (ticket 0596)', async () => {
@@ -283,6 +311,28 @@ describe('Project', () => {
     expect(mounted.panels.activeProject.value?.id).toBe(loadProjects()[0]!.id)
   })
 
+  it('gives focus to the Project button when a question its row asked is answered Cancel or Escape, starting on Cancel (ticket 0939)', async () => {
+    const stripButton = document.createElement('button')
+    stripButton.dataset.testid = 'strip-project'
+    document.body.append(stripButton)
+    const mounted = mountPanels()
+    for (const [row, close] of [['project-delete', 'cancel'], ['project-clear', 'escape'], ['project-duplicate', 'escape']] as const) {
+      await mounted.openPanel('project')
+      const opener = mounted.wrapper.get(`[data-testid="${row}"]`)
+      ;(opener.element as HTMLElement).focus()
+      await click(mounted, row)
+      if (row !== 'project-duplicate') expect(document.activeElement).toBe(mounted.wrapper.get('[data-testid="confirm-modal-cancel"]').element)
+      if (close === 'cancel') await click(mounted, 'confirm-modal-cancel')
+      else {
+        document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+        await flushPromises()
+      }
+      expect(mounted.wrapper.find('.app-modal').exists()).toBe(false)
+      expect(document.activeElement).toBe(stripButton)
+    }
+    stripButton.remove()
+  })
+
   it('replaces the Canvas\'s Bead after a confirmation, the Frame keeping its own; Cancel keeps it (tickets 48, 0665, 0670)', async () => {
     const mounted = mountPanels()
     const pickReplacement = async () => {
@@ -397,6 +447,14 @@ describe('The Export panel', () => {
     expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
     expect(mounted.wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
     expect(downloadFile).not.toHaveBeenCalled()
+  })
+
+  it('opens on its first row, Picture, from its strip button (ticket 0939)', async () => {
+    saveProjects([withLayers(moth(), { beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }]) })])
+    const mounted = mountPanels()
+    await mounted.openPanel('export')
+    await flushPromises()
+    expect(document.activeElement).toBe(mounted.wrapper.get('[data-testid="export-png"]').element)
   })
 
   it('fits a frame to the drawing from the no-Frame view, then shows the exports (ticket 0652)', async () => {

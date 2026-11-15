@@ -7,7 +7,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import InfoButton from '../ui/InfoButton.vue'
 
-// The entry to the Bead's palette (BeadColors card, ticket 0746): "Palette {bead}" under the Palette grid, and while
+// The entry to the Bead's palette (BeadColors card, ticket 0746): "Add {bead} colors" under the Palette grid, and while
 // its list is open the Info button after it, whose Tooltip holds the notes the list no longer shows.
 const props = defineProps<{ bead: Bead | undefined; open: boolean; testid: string; photoColors?: boolean }>()
 defineEmits<{ toggle: [] }>()

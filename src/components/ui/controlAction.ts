@@ -1,4 +1,5 @@
-import { chordParts, type Chord } from '../../domain/chord'
+import { chordLine, chordParts, type Chord, type Keyboard } from '../../domain/chord'
+import { deviceKeyboard } from '../../composables/ui/useKeyHints'
 import type { Translations } from '../../i18n/translations'
 import type { IconName } from './icons'
 
@@ -17,18 +18,10 @@ export interface ControlActionLike {
   disabledBody?: (t: Translations, deps: never) => string
 }
 
-/** A chord written on one line: its parts joined by "+", except that a key which is itself a sign takes no separator
- * (`Ctrl/Cmd+`, `Ctrl/Cmd−`, not `Ctrl/Cmd++`, `Ctrl/Cmd+−`). */
-function chordText(chord: Chord): string {
-  const parts = chordParts(chord)
-  const key = parts.pop() ?? ''
-  const modifiers = parts.join('+')
-  return !modifiers ? key : key === '+' || key === '−' ? modifiers + key : `${modifiers}+${key}`
-}
-
-/** The action's first chord as the shortcuts help writes it (`Ctrl/Cmd+S`, `Shift+R`), or undefined without one. */
-export function actionKey(action: ControlActionLike | undefined): string | undefined {
+/** The action's first chord as the shortcuts help writes it for the keyboard (`⌘S` or `Ctrl+S`, `Shift+R`), or
+ * undefined without one. */
+export function actionKey(action: ControlActionLike | undefined, keyboard: Keyboard = deviceKeyboard()): string | undefined {
   if (!action) return undefined
   const [first] = action.chords
-  return first ? chordText(first) : action.shownKey
+  return first ? chordLine(chordParts(first, keyboard)) : action.shownKey
 }

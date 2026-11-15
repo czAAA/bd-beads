@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "The app says pattern for what you are making, and the Frame button's Tooltip says what the Frame is",
+    "ru": "Подсказка кнопки «Рамка» теперь объясняет, что такое рамка",
+    "uk": "Підказка кнопки «Рамка» тепер пояснює, що таке рамка",
+    "be": "Падказка кнопкі «Рамка» цяпер тлумачыць, што такое рамка",
+    "zh": "“边框”按钮的提示现在会说明边框是什么",
+    "es": "La ayuda del botón Marco ahora explica qué es el marco",
+    "pl": "Podpowiedź przycisku Ramka wyjaśnia teraz, czym jest ramka"
+  }
+}

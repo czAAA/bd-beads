@@ -33,7 +33,7 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 
 ## Language
 
-The full glossary, with the words to avoid for each term, lives in [docs/glossary/](docs/glossary/README.md), one file per area. Grep it for the term you need rather than reading it all; use its terms in tickets, tests and code.
+The full glossary, with the words to avoid for each term, lives in [docs/glossary/](docs/glossary/README.md), one file per area. Grep it for the term you need rather than reading it all; use its terms in tickets, tests and code. The words the app shows a person, in every language, are settled in one place, the Glossary in the design system's [writing.md](docs/design/system/writing.md#glossary) (ticket 0989).
 
 | Area | Terms |
 |---|---|

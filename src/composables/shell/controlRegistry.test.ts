@@ -141,15 +141,16 @@ describe('the control registry', () => {
     for (const id of ['tool-paint', 'tool-fill', 'tool-erase', 'rulers', 'row-direction', 'row-highlight', 'reset-progress']) {
       for (const t of Object.values(LANGUAGES)) expect(controlAction(id).body?.(t), id).toBeTruthy()
     }
-    expect(controlAction('rulers').body?.(en)).toBe('Rulers number your beads and the Frame.')
+    expect(controlAction('rulers').body?.(en)).toBe('Rulers number your beads.')
     expect(controlAction('tool-erase').body?.(en)).toBe('Drag over beads to remove them.')
     expect(controlAction('empty-selection').name(en)).toBe('Remove selected beads')
     expect(controlAction('strip-menu').body?.(en)).toBe('New Project, Convert image, Projects library, Language, Theme.')
   })
 
-  it('writes the zoom chords without a separator before the sign: Ctrl/Cmd+ and Ctrl/Cmd−', () => {
-    expect(actionKey(controlAction('zoom-in'))).toBe('Ctrl/Cmd+')
-    expect(actionKey(controlAction('zoom-out'))).toBe('Ctrl/Cmd−')
-    expect(actionKey(controlAction('zoom-fit'))).toBe('Ctrl/Cmd+0')
+  it('writes the zoom chords for the keyboard, without a separator before the sign: Ctrl+ and Ctrl−, ⌘+ and ⌘−', () => {
+    expect(actionKey(controlAction('zoom-in'), 'other')).toBe('Ctrl+')
+    expect(actionKey(controlAction('zoom-out'), 'other')).toBe('Ctrl−')
+    expect(actionKey(controlAction('zoom-fit'), 'apple')).toBe('⌘0')
   })
+
 })

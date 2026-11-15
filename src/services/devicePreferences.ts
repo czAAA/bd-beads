@@ -207,6 +207,13 @@ export const PREFERENCES = {
   }),
   /** My beads (ticket 0902, ADR 0010 D-3): the codes owned, one list per Color catalog; none until one is ticked. */
   myBeads: preference<MyBeads>({ key: 'openbeads:my-beads', fallback: {}, parse: parseMyBeads, write: writeMyBeads }),
+  /** The Tool pill tiles whose name a first tap on touch has said (ticket 0927): each says it once on this device. */
+  pillTilesNamed: preference<readonly string[]>({
+    key: 'openbeads:pill-tiles-named',
+    fallback: [],
+    parse: (raw) => raw.split(',').filter((tile) => tile.length > 0),
+    write: (tiles) => (tiles.length ? tiles.join(',') : null),
+  }),
 }
 
 /** The theme the person was seeing: their pick, or the device's when they never picked (high contrast counts as light,

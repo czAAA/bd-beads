@@ -49,7 +49,7 @@ The one exception: on the Homepage's What's inside, the demo Frame's band has no
 
 - While Edit Frame is on, the sheet's outer edge is outlined 1px dashed in `accent` at 55%, 3px outside it.
 - The eight resize handles are the Handle card's, in `accent`, on the Frame line: a bracket at each corner, a bar at each edge's middle, the corner under the pointer hot. Beside the hot corner the size Tooltip shows ("42 × 13 ≈ 6.7 × 1.7 cm"). Their reach is the Handle card's (14px for mouse and pen, a 44px touch area).
-- Editing stays locked once a Row progress pass is done, as before; the Edit Frame button is then not offered.
+- Editing stays locked once a row is marked done, as before. The Edit Frame button stays in its place, disabled (`aria-disabled`, still focusable), its Tooltip giving the lock sentence "Rows are marked done. Reset progress to change the size." on hover, focus, a tap or a long press, as Reset progress says why before a row is done (ticket 0975). In the Frame tools menu its item is disabled with the same reason. After Reset progress it works again.
 
 ## Title block
 
@@ -90,7 +90,7 @@ The sheet is drawn at a **scale**, the band's height over the drafting sheet's 7
 
 ## Touch
 
-On a coarse pointer every control on the sheet has a 44px hit area, centred on its drawn size; where neighbours would overlap, the band uses the compact form one step earlier. Bare, the Move bar rises by the part of its hit area below it and 16px more, so a finger on the Frame's first row reaches the bead.
+On a coarse pointer every control on the sheet has a 44px hit area, centred on its drawn size, and no two on the band overlap. The band keeps Row progress, the Move bar, Edit Frame and the **···** Frame tools button; Mirror the whole Frame, Rotate Frame, Export, Margin color and Remove Frame are in that button's menu, with their names. Where the wider spacing leaves a form no room, the band steps down a form earlier. Bare, the Move bar rises by the part of its hit area below it and 16px more, so a finger on the Frame's first row reaches the bead.
 
 ## Copy
 
@@ -116,7 +116,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - **The fold** is kept for the session (not saved) and applies to every Frame. The fold button is in the compact title block too, its last cell. The tab is a button (chevron-up, "Show the title block: {name}") only where the sheet has room to unfold the block; folded by the zoom or the width, it is the name alone. An unnamed Frame's tab invites a name (ticket 0803): pressing "Name this Frame" opens the name field above it, as the full block's pencil does, and the chevron is a button of its own (18px, `body`, the same name) that unfolds the block where there is room.
 - **The Frame tools menu** opens Export hung from the ··· button. Its items are the band's buttons' own actions, names and disabled reasons.
 - **Compact title block:** the name and the Technique are read only there (no pencils); the full form and the Frame panel edit them. "Name this Frame" is the exception (ticket 0803): an empty name is an invitation, so pressing it opens the name field, in the full block too. In the full block an empty maker's name ("Your name") opens its field the same way, as both are the one bare editable line.
-- **Left out:** the coarse-pointer rule (Touch above: the compact form one step earlier where 44px hit areas would overlap) is not built. (A row pointer that could sit under a tool with columns running was replaced by the mark on the number, ticket 0685.)
+- **Left out:** the coarse-pointer rule (Touch above: the compact form one step earlier where 44px hit areas would overlap) was not built then (built by ticket 0976). (A row pointer that could sit under a tool with columns running was replaced by the mark on the number, ticket 0685.)
 
 ## As built (ticket 0698)
 
@@ -126,7 +126,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - **Popovers and menus** on the sheet (Margin color, a setting's stepper, the name and maker editors, the Technique picker, Frame tools) open in the top layer, so the scale never shrinks or moves them, and follow their button as the canvas is panned, zoomed or turned. Margin color closes where the zoom or the width takes its button away. The name and maker editors open 4px above their cell (they were 8px above, 8px to the left).
 - **A setting's cell** comes from the Technique's description (`describeWeave(...).settings`), never from its name: its value through the setting's `short` words ("{count}-drop"), its pencil named "Change {setting}" with the setting's Tooltip, and the panels' stepper in its popover, each step applied at once. Locked with the Technique once a pass is done, with the setting's own reason. Read only in the compact row.
 - **Checked against the drafting sheet artboard** at 200%, 100%, 60%, 40% and 20% (loom, peyote, and brick stitch with Drop 2): the band's order, the tools, the Move bar, the title block's cells and rules, the fold button, the legend and the insets match it at scale 1. What differed was the proportion (controls of a fixed size in a band of 80 to 160px, and on a narrow sheet the tools and title block spilling past its edge, the fold button off it) and the Technique pencil standing about 2px above the others (its picker's wrap sat on a text baseline); both are gone.
-- **Touch:** the 44px hit areas scale with the sheet too (no smaller than 44px since the scale stops at 1, ticket 0851); the coarse-pointer rule (compact one step earlier) is still not built.
+- **Touch:** the 44px hit areas scale with the sheet too (no smaller than 44px since the scale stops at 1, ticket 0851); the coarse-pointer rule (compact one step earlier) was not built then (built by ticket 0976).
 - **Stacking:** the sheet is part of the drawing and takes no z-index (StackingOrder card: nothing in the canvas box goes above `z-canvas-overlay`). At its scale the title block reached under the Tool pill and was drawn over the pill and its color popover, while taking no press there itself; now they float over it, and the parts of the band and title block the pill does not cover keep taking their presses.
 
 ## As built (ticket 0682)
@@ -157,4 +157,10 @@ Hand-written from the ticket 0655 design canvas; static rendition.
 - **Why the scale stops at 1:** at 0.6 the compact tools were 14 × 14px with 2px between them, Row done 13px high with 8px words, the counter 9px and "Name this Frame" 7px (a phone at Fit, a 300 × 120 tapestry on Full HD, a 240 × 160 converted piece). `MARGIN_PX.legible` holds the two sizes and `MARGIN_PX.scale.min` is 1; `MarginSheet.browser.test.ts` checks every word and band button on screen against them at every 5% from 10% to 150%, on a phone at Fit, and on Full HD at Fit for the two big pieces, which are bare. Row done in the compact and folded forms is 24px (it was 22px), the row's own height.
 - **Measured again:** `useFittingForm` learns a form's width only while it is shown, so a row stepped down by "Column done" stayed at "…" when "Row done" came back. Each fitting now has a key of its labels; a change of it forgets every width learnt. Checked by a direction turn and back, and English to Spanish and back, on Frames 40 to 10 beads wide.
 - **The Homepage demo** keeps the old least scale, 0.6 (`MARGIN_PX.scale.demo`, given by `provideMarginLeastScale` in its shell and carried on its `MarginLook`, so its sheet, its canvas drawing and its rulers agree): at 0.6 its band shows on a laptop, a short screen and a tablet, where at 1 the sheet was bare and the tour had no Mirror the whole Frame to press.
-- **Left out:** the phone's 12px (accessibility.md) is not a third size: the sheet's words are 11px at scale 1 everywhere. A legend that loses colors as beads are painted is not in the title block's key, so a title block it stepped down stays down until another label changes. The coarse-pointer rule is still not built.
+- **Left out:** the phone's 12px (accessibility.md) is not a third size: the sheet's words are 11px at scale 1 everywhere. A legend that loses colors as beads are painted is not in the title block's key, so a title block it stepped down stays down until another label changes. The coarse-pointer rule was not built then (built by ticket 0976).
+
+## As built (ticket 0976)
+
+- **On a coarse pointer** (`(pointer: coarse)`), in the full, compact and folded rows the tools are Edit Frame and the **···** Frame tools button. The menu is the folded row's own, which lists Mirror the whole Frame (checked while on), Rotate Frame, Export, Margin color and Remove Frame. In the narrow row Edit Frame goes into the menu too. With a mouse the band is as before.
+- **Spacing:** the tools stand 16px apart (20px compact), the size of the 44px hit area less the drawn button, with half of that before the first tool so its hit area clears the Move bar's. In the full row Reset progress stands 16px from Turn row direction and Row done 8px from Back a row. `MarginSheet.browser.test.ts` checks every 5% from 25% to 150% on Frames 40, 16, 8 and 3 beads wide, and no two hit areas on the band overlap.
+- **Left out:** no one has checked it by hand on a real iPad.

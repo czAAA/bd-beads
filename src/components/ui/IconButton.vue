@@ -27,6 +27,9 @@ const props = withDefaults(
     size?: 'md' | 'lg'
     iconSize?: IconSize
     selected?: boolean
+    /** Opens a panel (ticket 0995): `aria-expanded` follows this, the button drawn selected while it is true, and no
+     * `aria-pressed`. */
+    expanded?: boolean
     /** A `pill` tile's or `tool` tab's accent color (the active tool, the input mode toggle). */
     accent?: boolean
     /** A toggle, not a tab or a selection: `aria-pressed` follows this, with no underline (the input mode toggle). */
@@ -55,6 +58,7 @@ const props = withDefaults(
     size: 'md',
     iconSize: 15,
     selected: undefined,
+    expanded: undefined,
     accent: false,
     pressed: undefined,
     disabled: undefined,
@@ -112,13 +116,14 @@ function swallowClick(event: MouseEvent) {
     <component
       :is="href ? 'a' : 'button'"
       class="ui-control icon-btn"
-      :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${props.size}`, { 'icon-btn--selected': selected, 'icon-btn--accent': accent }]"
+      :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${props.size}`, { 'icon-btn--selected': selected || expanded, 'icon-btn--accent': accent }]"
       :type="href ? undefined : 'button'"
       :href="href"
       :target="href ? '_blank' : undefined"
       :rel="href ? 'noopener' : undefined"
       :aria-label="name"
       :aria-pressed="pressed ?? selected"
+      :aria-expanded="expanded"
       :aria-disabled="isDisabled ? 'true' : undefined"
       :aria-keyshortcuts="keyed ? hotkey : undefined"
       v-bind="$attrs"

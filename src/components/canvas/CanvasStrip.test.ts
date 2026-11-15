@@ -47,12 +47,27 @@ describe('CanvasStrip', () => {
     expect(wrapper.find('[data-testid="strip-menu"] svg').exists()).toBe(true)
     expect(wrapper.get('[data-testid="strip-project"]').text()).toBe('Test')
     expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-label')).toBe('Project: Test')
-    expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBeUndefined()
+    expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-expanded')).toBe('false')
 
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="strip-project"]').trigger('click')
     expect(wrapper.emitted('select-panel')).toEqual([['menu'], ['project']])
+  })
+
+  it('says each panel button opens a panel and whether it is open, not that it is pressed (ticket 0995)', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
+    const strip = (id: string) => wrapper.get(`[data-testid="strip-${id}"]`)
+    const panels = ['menu', 'project', 'frame', 'export']
+    for (const id of panels) {
+      expect(strip(id).attributes('aria-expanded'), id).toBe('false')
+      expect(strip(id).attributes('aria-pressed'), id).toBeUndefined()
+    }
+    expect(panels.map((id) => strip(id).attributes('aria-haspopup'))).toEqual([undefined, 'dialog', 'dialog', 'dialog'])
+
+    await wrapper.setProps({ frameOpen: true })
+    expect(strip('frame').attributes('aria-expanded')).toBe('true')
+    expect(strip('frame').attributes('aria-pressed')).toBeUndefined()
   })
 
   it('asks for the Export panel from its last button, lit while that panel is open (ticket 0652)', async () => {
@@ -60,12 +75,13 @@ describe('CanvasStrip', () => {
     const exportButton = () => wrapper.get('[data-testid="strip-export"]')
 
     expect(exportButton().attributes('aria-label')).toBe(en.panels.project.exportHeading)
-    expect(exportButton().attributes('aria-pressed')).toBe('false')
+    expect(exportButton().attributes('aria-expanded')).toBe('false')
     await exportButton().trigger('click')
     expect(wrapper.emitted('select-panel')).toEqual([['export']])
 
     await wrapper.setProps({ openPanel: 'export' })
-    expect(exportButton().attributes('aria-pressed')).toBe('true')
+    expect(exportButton().attributes('aria-expanded')).toBe('true')
+    expect(exportButton().classes()).toContain('icon-btn--selected')
     const noProject = mount(CanvasStrip, { props: { zoomPercent: 100 } })
     expect(noProject.find('[data-testid="strip-export"]').exists()).toBe(false)
     noProject.unmount()
@@ -173,8 +189,9 @@ describe('CanvasStrip Rotate canvas (ticket 471)', () => {
   })
 })
 
-describe('CanvasStrip Rulers (ticket 0921)', () => {
+describe('CanvasStrip Rulers (tickets 0921, 1012)', () => {
   const empty = bareProject({ beads: {}, technique: 'loom' })
+  const frame = { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 4, beads: {} }
   const rulersButton = (wrapper: ReturnType<typeof mount>) => wrapper.get('[data-testid="strip-rulers"]')
 
   it('is held and plain while the Canvas is empty, even on a device that keeps rulers on, with the reason in its Tooltip', async () => {
@@ -189,9 +206,19 @@ describe('CanvasStrip Rulers (ticket 0921)', () => {
     expect(wrapper.emitted('toggle-rulers')).toBeUndefined()
   })
 
+  it('is held and plain with only a Frame, whose own rulers it does not switch, and with only Frame beads', async () => {
+    for (const project of [bareProject({ beads: {}, technique: 'loom', frame }), bareProject({ beads: {}, technique: 'loom', frame: { ...frame, beads: { 0: { 0: '#ff0000' } } } })]) {
+      const wrapper = mount(CanvasStrip, { props: { project, rulers: true } })
+      expect(rulersButton(wrapper).attributes('aria-disabled')).toBe('true')
+      expect(rulersButton(wrapper).attributes('aria-pressed')).toBe('false')
+      await rulersButton(wrapper).trigger('click')
+      expect(wrapper.emitted('toggle-rulers')).toBeUndefined()
+    }
+  })
+
   it.each([
     ['a bead', bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })],
-    ['a Frame', bareProject({ beads: {}, technique: 'loom', frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })],
+    ['a bead beside a Frame', bareProject({ beads: { 9: { 9: '#ff0000' } }, technique: 'loom', frame })],
   ])('can be pressed once the Canvas holds %s, and is lit only while rulers are on', async (_what, held) => {
     const wrapper = mount(CanvasStrip, { props: { project: held, rulers: false } })
     expect(rulersButton(wrapper).attributes('aria-disabled')).toBeUndefined()
@@ -250,11 +277,14 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     wrapper.unmount()
   })
 
-  it('opens a panel on ↓ like Enter, but not one that is already open', async () => {
+  it('opens a panel on ↓ like Enter, Export\'s too, but not one that is already open (ticket 0939)', async () => {
     const wrapper = mount(CanvasStrip, { props: { ...props, openPanel: 'project' }, attachTo: document.body })
     await wrapper.get('[data-testid="strip-menu"]').trigger('keydown', { key: 'ArrowDown' })
     await wrapper.get('[data-testid="strip-project"]').trigger('keydown', { key: 'ArrowDown' })
-    expect(wrapper.emitted('select-panel')).toEqual([['menu']])
+    await wrapper.get('[data-testid="strip-export"]').trigger('keydown', { key: 'ArrowDown' })
+    await wrapper.get('[data-testid="zoom-reset"]').trigger('keydown', { key: 'ArrowDown' })
+    expect(wrapper.emitted('select-panel')).toEqual([['menu'], ['export']])
+    expect(wrapper.emitted('reset')).toBeUndefined()
     wrapper.unmount()
   })
 
@@ -393,6 +423,6 @@ describe('CanvasStrip Frame button (ticket 0932)', () => {
     expect(wrapper.text()).toContain(en.tooltips.framePanel)
     await wrapper.setProps({ settledProject: framedWith({ 1: { 1: '#ff0000', 2: '#00ff00' }, 2: { 1: '#ff0000' } }) })
     expect(wrapper.text()).not.toContain(en.tooltips.framePanel)
-    expect(wrapper.text()).toMatch(/Open Beads needed \(3( · ≈ [^)]+)?\), the Frame’s size, Rotate and Remove\./)
+    expect(wrapper.text()).toMatch(/The Frame marks the part you export and weave\. Open Export, Beads needed \(3( · ≈ [^)]+)?\), the Frame’s size, Rotate and Remove\./)
   })
 })

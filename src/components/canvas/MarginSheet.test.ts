@@ -12,6 +12,7 @@ import { frameOutsetPx } from '../../rendering/rulerScale'
 import { frameOf } from '../../domain/layerRecord'
 import { MARGIN_PX } from '../../rendering/marginSizes'
 import { withLayers } from '../../testUtils/layerFields'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => {
   localStorage.clear()
@@ -23,6 +24,7 @@ beforeEach(() => {
 const mounted: ReturnType<typeof mount>[] = []
 afterEach(() => {
   mounted.splice(0).forEach((wrapper) => wrapper.unmount())
+  vi.useRealTimers()
 })
 
 /** Where a 40 × 11 loom Frame and its sheet are at a zoom: beads of 20px at 100%, its line out from them, its sheet 4
@@ -136,10 +138,30 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(wrapper.emitted('remove')).toHaveLength(1)
   })
 
-  it('offers no Edit Frame once a row is done, the Frame then holding still', () => {
+  it('keeps Edit Frame in place once a row is done, disabled, a long press showing why (ticket 0975)', async () => {
+    vi.useFakeTimers()
     const wrapper = mountSheet({ project: moveToRow(framed(), 1) })
-    expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
+    const pencil = control(wrapper, 'frame-edit-toggle')
+    expect(pencil.attributes('aria-disabled')).toBe('true')
+    await pencil.trigger('click')
+    expect(wrapper.emitted('toggle-edit')).toBeUndefined()
+
+    // On touch, a long press shows the reason.
+    const tip = () => pencil.element.closest('.app-tooltip')!.querySelector('[role="tooltip"]') as HTMLElement
+    await pencil.trigger('pointerdown', { pointerType: 'touch' })
+    vi.advanceTimersByTime(500)
+    await nextTick()
+    expect(tip().hidden).toBe(false)
+    expect(tip().textContent).toContain('Rows are marked done. Reset progress to change the size.')
+  })
+
+  it('lets Edit Frame work again once progress is reset (ticket 0975)', async () => {
+    const wrapper = mountSheet({ project: moveToRow(framed(), 1) })
+    await wrapper.setProps({ project: framed() })
+    const pencil = control(wrapper, 'frame-edit-toggle')
+    expect(pencil.attributes('aria-disabled')).toBeUndefined()
+    await pencil.trigger('click')
+    expect(wrapper.emitted('toggle-edit')).toHaveLength(1)
   })
 
   it('opens the margin color\'s picker under Margin color, and closes it on Escape', async () => {
@@ -229,8 +251,8 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
   it('is compact under 68px: Row highlight, the counter, the track and Row done, the tools, and the title block in one row with its legend', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.6), project: moveToRow(framed(), 2) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
-    // Two rows done: the Frame holds still, so no Edit Frame.
-    expect(names(wrapper)).toEqual(['Row highlight', 'Row done', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Export', 'Margin color', 'Remove Frame'])
+    // Two rows done: the Frame holds still, its Edit Frame kept in place, disabled (ticket 0975).
+    expect(names(wrapper)).toEqual(['Row highlight', 'Row done', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
     expect(control(wrapper, 'margin-progress-compact-position').text()).toBe('3/11')
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(true)
     expect(styleOf(wrapper, 'margin-band')).toContain('top: 8px')
@@ -304,6 +326,59 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     // Export hangs from the menu's button, the one it was asked from.
     expect(wrapper.emitted('export')).toEqual([['margin-frame-tools']])
     expect(wrapper.emitted('remove')).toHaveLength(1)
+  })
+
+  it('keeps Edit Frame in the Frame tools menu once a row is done, disabled with its reason (ticket 0975)', async () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.45), project: moveToRow(framed(), 1) })
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+    const edit = control(wrapper, 'margin-frame-tools-edit').get('[role="menuitem"]')
+    expect(edit.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Rows are marked done. Reset progress to change the size.')
+    await edit.trigger('click')
+    expect(wrapper.emitted('toggle-edit')).toBeUndefined()
+  })
+})
+
+describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+  const toolNames = (wrapper: ReturnType<typeof mountSheet>) =>
+    control(wrapper, 'margin-band').findAll('.margin-sheet__tools button').map((button) => button.attributes('aria-label'))
+
+  it('keeps Edit Frame and the Frame tools button on the band, full, compact and folded', () => {
+    for (const zoom of [1, 0.6, 0.45]) expect(toolNames(mountSheet({ anchor: anchorAt(zoom) })), `${zoom}`).toEqual(['Edit Frame', 'Frame tools'])
+  })
+
+  it('lists Mirror, Rotate, Export, Margin color and Remove Frame in the Frame tools menu with their names, each running its own action', async () => {
+    const wrapper = mountSheet()
+    const items = async () => {
+      await control(wrapper, 'margin-frame-tools').trigger('click')
+      await nextTick()
+      return wrapper.findAll('[role^="menuitem"]')
+    }
+    expect((await items()).map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Export', 'Margin color', 'Remove Frame'])
+    for (const id of ['mirror', 'rotate', 'export', 'remove']) {
+      if (!wrapper.find('[role^="menuitem"]').exists()) await items()
+      await control(wrapper, `margin-frame-tools-${id}`).trigger('click')
+    }
+    expect(wrapper.emitted('mirror')).toHaveLength(1)
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    expect(wrapper.emitted('export')).toEqual([['margin-frame-tools']])
+    expect(wrapper.emitted('remove')).toHaveLength(1)
+    await items()
+    await control(wrapper, 'margin-frame-tools-color').trigger('click')
+    await nextTick()
+    expect(document.querySelector('[data-testid="margin-color-popover"]')).not.toBeNull()
+  })
+
+  it('keeps Edit Frame on the band once a row is done, disabled', () => {
+    const wrapper = mountSheet({ project: moveToRow(framed(), 1) })
+    expect(control(wrapper, 'frame-edit-toggle').attributes('aria-disabled')).toBe('true')
   })
 })
 

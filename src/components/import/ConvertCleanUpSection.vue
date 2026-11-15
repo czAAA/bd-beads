@@ -256,6 +256,13 @@ const joinedLine = computed(() => {
   font: var(--type-meta);
 }
 
+/* Touch (ticket 0962): the number answers across `touch-target`, as the Stepper's own does. */
+@media (pointer: coarse) {
+  .convert-clean-up__stepper :deep(.stepper__value) {
+    min-width: var(--touch-target);
+  }
+}
+
 .convert-clean-up__joined {
   margin: 0;
   font: var(--type-meta);

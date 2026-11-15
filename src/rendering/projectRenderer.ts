@@ -682,8 +682,13 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const frameLook = space.open ? canvasLook(frameTheme) : frameTheme
   // A band of rows is the same rows of both layers only where they are alike (woven alike, in Beads of one size).
   const alike = !space.open || !frame || layersAlike(project)
-  const band = alike ? rows : undefined
   const bandWeave = space.open ? canvasWeave(project) : frameWeave(project)
+  // The Lifted piece's contour and shadow reach past a bead's rows (ticket 1004): a band is cleared, cut and redrawn that
+  // much wider on the Canvas, else the contour above the first row (or the shadow below the last) is cut off until the
+  // next full draw.
+  const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
+  const lifts = space.open && look.liftedPiece && !draft
+  const band = alike ? (lifts ? liftRows(rows, cellSizePx(bandWeave.technique, bandWeave.cell).height) : rows) : undefined
 
   // The backing store is in device px: clear (and paint the background, in Frame-only space) there, the whole surface
   // or just the band being drawn again, which the rest of the drawing is then cut to, then draw in CSS px scaled up to
@@ -718,7 +723,6 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     }
     return shown
   }
-  const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
   const drawn = space.open ? reference : undefined
   const under = drawn?.over ? undefined : drawn
   const seeThrough = drawn && EMPTY_BEAD_OPACITY[drawn.opacity]

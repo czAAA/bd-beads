@@ -5,8 +5,11 @@ import { contrastRatio, mix, type Rgb } from '../../domain/color'
 import { createProject } from '../../domain/createProject'
 import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
 import { mountAt } from '../../testUtils/browserFit'
+import { MIRROR_CONTROLS, roomyMirrorBar } from '../../testUtils/contextBarHosts'
+import { byTestid, hitAreaProblems } from '../../testUtils/hitAreas'
 import { paintAt } from '../../testUtils/layers'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
+import { tokenPx } from '../../testUtils/tokenPx'
 import ContextBar from './ContextBar.vue'
 
 // The Selection bar's and the Mirror bar's controls share one set of states (ticket 0753): hovered, pressed or "on", the
@@ -120,5 +123,16 @@ describe('ContextBar states', () => {
     expect(Number(getComputedStyle(bar).zIndex)).toBeLessThan(Number(getComputedStyle(selectionBar).zIndex))
     root.querySelector<HTMLElement>('[data-testid="mirror-bar-close"]')!.focus()
     expect(Number(getComputedStyle(bar).zIndex)).toBe(Number(getComputedStyle(selectionBar).zIndex))
+  })
+})
+
+// With a mouse the Mirror bar's segments, chips and count buttons answer at least `hit-min`, none over another (ticket
+// 0962); on touch, `ContextBar.touch.browser.test.ts`.
+describe('ContextBar hit areas with a mouse (ticket 0962)', () => {
+  it('gives every Mirror bar control at least the smallest hit size, none over another', async () => {
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false)
+    const { root } = await mountAt(roomyMirrorBar, {}, { locale: 'en', width: 1280 })
+    expect(root.querySelector('.context-bar--scrolls')).toBeNull()
+    expect(hitAreaProblems(byTestid(root, MIRROR_CONTROLS), tokenPx(document.body, '--hit-min'))).toEqual([])
   })
 })

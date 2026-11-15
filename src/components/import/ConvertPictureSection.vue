@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watchPostEffect } from 'vue'
+import { computed, ref, watch, watchPostEffect } from 'vue'
 import { useConvertFileInput } from '../../composables/import/useConvertFileInput'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { useMiddleCut } from '../../composables/ui/useMiddleCut'
@@ -36,6 +36,17 @@ const fileName = computed(() => (wizard.hasPicture.value ? wizard.fileName.value
 const nameLine = ref<HTMLElement>()
 const name = useMiddleCut(nameLine, () => fileName.value)
 const replaceItems = computed(() => [words.value.chooseFile, words.value.paste, ...(touch.value ? [words.value.takePhoto] : [])])
+
+/** Once the first picture is read, the drop zone's button that had focus is gone: focus goes to Replace, the column's
+ * first control (ticket 0939), unless it is already somewhere else. */
+watch(
+  () => wizard.hasPicture.value,
+  (has, had) => {
+    const lost = document.activeElement === null || document.activeElement === document.body
+    if (has && !had && lost) replaceEl.value?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true })
+  },
+  { flush: 'post' },
+)
 
 
 /** The thumbnail's bitmap, twice its box (`--convert-thumb-width` × `--convert-thumb-height`, 44 × 54) for a sharp picture. */

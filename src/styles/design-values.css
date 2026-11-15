@@ -45,6 +45,7 @@
   --my-beads-swatch: 24px; /* ConvertImage card (ticket 0902): a code's swatch in a My beads row. */
   --my-beads-tick: 20px; /* ConvertImage card (ticket 0902): the tick box at a My beads row's right. */
   --my-beads-never-opacity: 0.4; /* ConvertImage card (ticket 0903): the swatch of a My beads code that is never matched. */
+  --my-beads-empty-leading: 1.25rem; /* ConvertImage card (ticket 0996): the My beads empty state, in `small` on `body`'s 20px line height. */
   --convert-compare-side: 24px; /* ConvertImage card (ticket 0900): room at each side of the picture and the beads in each half of Compare. */
   --convert-chip-height: 30px; /* ConvertImage card (ticket 0900): a chip over the preview ("picture", "beads", "picture · let go to see the beads"). */
   --convert-chip-height-touch: 32px; /* ConvertImage card (ticket 0900): the same chip on a coarse pointer. */
@@ -119,6 +120,9 @@
   --picture-drop-height: 220px; /* ConvertImage card: its height. */
   --focus-ring-lit: var(--surface); /* KeyboardFocus card (ticket 0857): the ring on a lit (ink-filled) control, the surface color, so it shows against the fill. */
   --focus-offset-lit: calc(var(--focus-offset) - var(--focus-width)); /* KeyboardFocus card (ticket 0857): that ring inside the control's ink edge, which stays. */
+  --focus-ring-on-accent: var(--on-accent); /* KeyboardFocus card (ticket 0938): the ring on an accent fill (a primary button, an on switch), the fill's own label color. */
+  --focus-ring-on-danger: var(--on-danger); /* KeyboardFocus card (ticket 0938): the ring on the danger button, its label color. */
+  --focus-ring-band: var(--surface); /* KeyboardFocus card (ticket 0938): on a swatch, whose fill is any color, the band inside the ring, so one of the two shows. */
 }
 
 :root,

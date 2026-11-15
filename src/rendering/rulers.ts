@@ -3,7 +3,7 @@ import { frameShapeOf } from '../domain/frameShape'
 import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
-import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
+import { canvasWeave, frameScale as frameBeadScale, frameWeave } from '../domain/layerWeave'
 import { hasGuides, type Selection } from '../domain/selection'
 import { titleBlockCorner, type MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
@@ -52,6 +52,8 @@ export interface RulerLabel {
   turned: boolean
   /** Every 5th number. */
   fifth: boolean
+  /** Whose ruler it is: the Frame's, drawn at its sheet's scale, or a Piece area's, at the zoom's (ticket 1012). */
+  kind: RuledBox['kind']
   axis: 'row' | 'column'
   /** Zero-based along its ruler: the row or column of the ruled box it numbers. */
   index: number
@@ -64,19 +66,22 @@ export interface RulerLabel {
 /** What decides which boxes carry rulers. */
 export type RuledProject = Layered
 
-// The boxes that carry rulers: the Frame alone once set, as it lies (ticket 0667), else every Piece area of more than 4
-// beads (the caller picks those near the viewport), with the Rulers on only, as a Piece's line goes with its numbers.
-// A Custom frame has none: its beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
+// The boxes that carry rulers: the Frame as it lies (ticket 0667), then every Piece area of more than 4 beads (the
+// caller picks those near the viewport; only with the Rulers on, ticket 1012). A Custom frame has no box of its own: its
+// beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPieces): RuledBox[] {
   const frame = frameOf(project)
-  if (frame) {
-    if (frameShapeOf(frame)) return []
+  const own: RuledBox[] = []
+  if (frame && !frameShapeOf(frame)) {
     const { row, column, rows, columns } = laidRect({ ...frame, cell: frameWeave(project).cell })
-    return [{ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }]
+    own.push({ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' })
   }
-  return (pieces.areas ?? [])
-    .filter(hasGuides)
-    .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const, ...(pieces.uncounted ? { outlined: false as const } : {}) }))
+  return [
+    ...own,
+    ...(pieces.areas ?? [])
+      .filter(hasGuides)
+      .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const, ...(pieces.uncounted ? { outlined: false as const } : {}) })),
+  ]
 }
 
 /** The Ruler steps in order: every bead, then 5, 10, 50, 100, 500... (ADR 0033). */
@@ -127,6 +132,8 @@ export interface RulerDot {
   fifth: boolean
   /** Whether this bead already carries a number at the current Ruler step. */
   numbered: boolean
+  /** Whose ruler it is, as for a number. */
+  kind: RuledBox['kind']
   axis: 'row' | 'column'
   index: number
   selection: Selection
@@ -142,13 +149,14 @@ export interface RulerDot {
 export interface RulerLayoutOptions {
   /** The numbers' size in px at zoom 1: 11, or 12 on a phone. It grows or shrinks with the zoom (`RulerScale`). */
   fontPx: number
-  /** Whether the numbers and dots are drawn (the Rulers toggle). The Frame's line and picking do not depend on it. */
+  /** Whether the Piece areas' rulers and rectangles are drawn (the Rulers toggle). The Frame's numbers, dots and line do
+   * not depend on it (ticket 1012). */
   numbers: boolean
   /** The form of the Frame's margin sheet, which its numbers hang on: only the full form has room for them and their
    * dots (MarginSheet card, ticket 0658). Full when left out. */
   sheet?: MarginForm
   /** The margin sheet's scale (`marginScale`, ticket 0698): a Frame's numbers stand on its sheet and are drawn at it in
-   * place of the zoom's own rule. Left out, the zoom's rule. */
+   * place of the zoom's own rule; a Piece's keep the zoom's. Left out, the zoom's rule for both. */
   sheetScale?: number
   /** The Pieces to rule, when the caller holds them through a stroke (`ruledPieces`, ticket 0674); counted from the
    * beads otherwise. */
@@ -157,10 +165,12 @@ export interface RulerLayoutOptions {
 
 /** What the rulers of one view are: what to draw, and what a point of the viewport selects. */
 export interface RulerLayout {
-  /** What the parts of the rulers measure at this zoom: the numbers' size, their gap to the line and the dots'
-   * radii. */
+  /** What the parts of a Piece area's rulers measure at this zoom: the numbers' size, their gap to the line and the
+   * dots' radii. */
   scale: RulerScale
-  /** Whether the numbers and dots are drawn (the Rulers toggle). */
+  /** The same for the Frame's, whose numbers stand on its margin sheet and follow the sheet's scale (ticket 0698). */
+  frameScale: RulerScale
+  /** Whether the Piece areas' rulers and rectangles are drawn (the Rulers toggle); the Frame's always are. */
   numbers: boolean
   /** The boxes near the viewport that carry rulers, for their lines. */
   boxes: RuledBox[]
@@ -170,10 +180,10 @@ export interface RulerLayout {
   passMark: boolean
   /** The margin sheet's scale, which the current pass's mark is drawn at too (ticket 0698). */
   sheetScale: number
-  /** The numbers to draw: none while `numbers` is off. */
+  /** The numbers to draw: a Piece's none while `numbers` is off, the Frame's none while its sheet has no room. */
   labels: RulerLabel[]
   // The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch;
-  // none while `numbers` is off.
+  // on the same terms as the numbers.
   dots: RulerDot[]
 }
 
@@ -261,14 +271,14 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     const dotAway = box.outset + gap + dotHalf
     const dot = { x: x + nx * dotAway, y: y + ny * dotAway }
     if (dotSeen(dot)) {
-      beads.push({ ...dot, fifth: (index + 1) % 5 === 0, numbered: (index + 1) % step === 0, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half: dotHalf })
+      beads.push({ ...dot, fifth: (index + 1) % 5 === 0, numbered: (index + 1) % step === 0, kind: box.kind, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half: dotHalf })
     }
     if ((index + 1) % step === 0) {
       const size = labelBox(text, turned, fontPx)
       const reach = gap + (Math.abs(nx) * (column ? band.width : rowSize.width) + Math.abs(ny) * (column ? band.height : rowSize.height)) / 2
       const spot = { x: x + nx * (box.outset + reach), y: y + ny * (box.outset + reach), ...size }
       if (seen(spot)) {
-        labels.push({ text, ...spot, turned, fifth: (index + 1) % 5 === 0, axis, index, selection, position })
+        labels.push({ text, ...spot, turned, fifth: (index + 1) % 5 === 0, kind: box.kind, axis, index, selection, position })
       }
     }
   }
@@ -310,32 +320,36 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
-  const zoomed = rulerScale(surface.zoom, fontPx)
-  // Once there is a Frame its numbers are the only ones, on its sheet, and grow and shrink with it (ticket 0698).
-  const scale = frameOf(project) && sheetScale !== undefined ? { ...zoomed, fontPx: fontPx * sheetScale } : zoomed
-  const reach = scale.fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
+  const scale = rulerScale(surface.zoom, fontPx)
+  // The Frame's numbers stand on its sheet, and grow and shrink with it (ticket 0698).
+  const frameScale = sheetScale !== undefined ? { ...scale, fontPx: fontPx * sheetScale } : scale
+  const scaleOf = (kind: RuledBox['kind']) => (kind === 'frame' ? frameScale : scale)
+  const reachOf = (kind: RuledBox['kind']) => scaleOf(kind).fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
   const boxes = ruledBoxes(project, scale, pieces).filter((box) => {
     const shown = surface.beadBox(box, box.kind === 'frame' ? 'frame' : 'canvas')
+    const reach = reachOf(box.kind)
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
   const laid = boxes.map((box) => ({
     kind: box.kind,
-    ...(box.kind === 'frame' && frameOf(project)
-      ? layBox(box, frameWeave(project), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame', size: frameScale(project) }, surface, viewport, scale)
+    ...(box.kind === 'frame'
+      ? layBox(box, frameWeave(project), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame', size: frameBeadScale(project) }, surface, viewport, frameScale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
-  const numbered = laid.filter((box) => box.kind !== 'frame' || sheet === 'full')
+  // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.
+  const numbered = laid.filter((box) => (box.kind === 'frame' ? sheet === 'full' : numbers))
   const everyLabel = numbered.flatMap((box) => box.labels)
   const everyBead = numbered.flatMap((box) => box.beads)
 
   return {
     scale,
+    frameScale,
     numbers,
     boxes,
     step: Math.max(1, ...laid.map((box) => box.step)),
     passMark: sheet !== 'bare',
     sheetScale: sheetScale ?? 1,
-    labels: numbers ? everyLabel : [],
-    dots: numbers ? everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)) : [],
+    labels: everyLabel,
+    dots: everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)),
   }
 }

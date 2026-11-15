@@ -319,7 +319,7 @@ describe('a color used by a handful of beads (ticket 0891)', () => {
   })
 })
 
-describe('Small colors join (ticket 0906)', () => {
+describe('Drop colors used by few beads (ticket 0906)', () => {
   const targets = [{ hex: '#ff0000' }, { hex: '#0000ff' }, { hex: '#00ff00' }]
   const picture = reducedPicture({ '#ff0000': 40, '#0000ff': 30, '#00ff00': 3 })
 

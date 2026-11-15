@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "The reference image's bar stays on the picture as you pan, and showing the picture brings it into view",
+    "ru": "Панель референса остаётся на картинке, когда двигаете холст, а показанная картинка сама появляется в поле зрения",
+    "uk": "Панель референсу лишається на картинці, коли рухаєте полотно, а показана картинка сама з'являється в полі зору",
+    "be": "Панэль рэферэнсу застаецца на малюнку, калі рухаеце палатно, а паказаны малюнак сам з'яўляецца ў полі зроку",
+    "zh": "平移画布时，参考图的工具条会跟着图片走；显示参考图时，画面会移到图片所在处",
+    "es": "La barra de la imagen de referencia se queda sobre la imagen al mover el lienzo, y al mostrarla la imagen entra en la vista",
+    "pl": "Pasek obrazu referencyjnego zostaje na obrazie podczas przesuwania płótna, a pokazany obraz sam pojawia się w widoku"
+  }
+}

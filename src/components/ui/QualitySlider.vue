@@ -88,9 +88,11 @@ function pick(next: number): void {
 </template>
 
 <style scoped>
-  .qs { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-8) 0 0; font: 400 12px/16px var(--font-sans); color: var(--body); }
+  /* Type in rem, never px, so the browser's text size reaches it (ticket 0941): calc(12rem / 18) is 12px at the default
+     size, where the root is 18px. --qs-small is the slider's 12/16 small print. */
+  .qs { --qs-small: 400 calc(12rem / 18) / calc(16rem / 18) var(--font-sans); display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-8) 0 0; font: var(--qs-small); color: var(--body); }
   .qs-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-8); margin: 0; font: var(--type-control); color: var(--ink); }
-  .qs-chosen { font: 400 12px/16px var(--font-sans); color: var(--muted); }
+  .qs-chosen { font: var(--qs-small); color: var(--muted); }
   .qs-range { -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box; height: var(--touch-target); margin: 0 calc(100% / (2 * var(--qs-n)) - var(--slider-thumb) / 2); width: calc(100% - 100% / var(--qs-n) + var(--slider-thumb)); background: transparent; cursor: pointer; --qs-line: calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * var(--qs-at)); }
   .qs-range::-webkit-slider-runnable-track { height: var(--slider-track); border-radius: var(--radius-full); background: linear-gradient(var(--accent), var(--accent)) 0 / var(--qs-line) 100% no-repeat, var(--track); }
   .qs-range::-moz-range-track { height: var(--slider-track); border-radius: var(--radius-full); background: var(--track); }
@@ -113,11 +115,11 @@ function pick(next: number): void {
   .qs-stop { box-sizing: border-box; min-height: var(--touch-target); padding: var(--space-4) var(--space-2); border: 0; border-radius: var(--radius-sm); background: none; color: var(--muted); font: inherit; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0; overflow-wrap: break-word; hyphens: manual; }
   .qs-stop:hover { background: var(--hover-fill); }
   .qs-stop:focus-visible { outline: var(--focus-width) solid var(--focus-ring); outline-offset: var(--focus-offset); }
-  .qs-stop b { font: 500 13px/18px var(--font-sans); color: var(--body); }
+  .qs-stop b { font: 500 calc(13rem / 18) / 1rem var(--font-sans); color: var(--body); }
   .qs-stop[aria-checked="true"] b { color: var(--ink); }
   .qs-stop:disabled { cursor: default; background: none; }
-  .qs-stop small { font: 400 12px/16px var(--font-sans); color: var(--muted); }
-  .qs-note { margin: var(--space-4) 0 0; font: 400 12px/16px var(--font-sans); color: var(--muted); }
+  .qs-stop small { font: var(--qs-small); color: var(--muted); }
+  .qs-note { margin: var(--space-4) 0 0; font: var(--qs-small); color: var(--muted); }
   .qs-stop .qs-was { color: var(--accent-strong); }
   .qs-label { display: inline-flex; align-items: center; gap: var(--space-4); margin-right: auto; }
   .qs-info { margin-right: 0; }

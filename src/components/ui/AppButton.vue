@@ -20,6 +20,8 @@ const props = withDefaults(
     /** `link` only: the destructive color. */
     danger?: boolean
     selected?: boolean
+    /** Opens a panel: `aria-expanded` follows this, the button lit while it is true, and no `aria-pressed`. */
+    expanded?: boolean
     disabled?: boolean
     type?: 'button' | 'submit'
     /** Makes it a link that opens in a new tab with `rel="noopener"` (an external page). */
@@ -41,6 +43,7 @@ const props = withDefaults(
     trailingIcon: undefined,
     danger: false,
     selected: undefined,
+    expanded: undefined,
     disabled: undefined,
     type: 'button',
     href: undefined,
@@ -73,12 +76,13 @@ const tooltipProps = computed(() => {
 })
 
 const buttonAttrs = computed(() => ({
-  class: ['ui-control', 'app-button', `app-button--${props.variant}`, `app-button--${props.size}`, { 'app-button--selected': props.selected, 'app-button--danger-link': props.danger }],
+  class: ['ui-control', 'app-button', `app-button--${props.variant}`, `app-button--${props.size}`, { 'app-button--selected': props.selected || props.expanded, 'app-button--danger-link': props.danger }],
   type: props.href ? undefined : props.type,
   href: props.href,
   target: props.href ? '_blank' : undefined,
   rel: props.href ? 'noopener' : undefined,
   'aria-pressed': props.selected === undefined ? undefined : props.selected,
+  'aria-expanded': props.expanded,
   'aria-disabled': isDisabled.value ? true : undefined,
 }))
 
@@ -220,6 +224,16 @@ function swallowClick(event: MouseEvent) {
 .app-button--selected:focus-visible {
   outline-color: var(--focus-ring-lit);
   outline-offset: var(--focus-offset-lit);
+}
+
+/* On an accent or danger fill the ring takes the fill's label color, so it shows against the fill (KeyboardFocus card,
+ * ticket 0938). A disabled primary is grey, so the usual ring stays on it. */
+.app-button--primary:not([aria-disabled='true']):focus-visible {
+  outline-color: var(--focus-ring-on-accent);
+}
+
+.app-button--danger:not([aria-disabled='true']):focus-visible {
+  outline-color: var(--focus-ring-on-danger);
 }
 
 /* Hover exists only with a mouse or trackpad: on touch the pressed state is the only feedback. */

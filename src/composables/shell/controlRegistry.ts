@@ -1,9 +1,9 @@
-import { type Chord } from '../../domain/chord'
+import { MOD_KEY, type Chord } from '../../domain/chord'
 import type { IconName } from '../../components/ui/icons'
 import { CROP_HANDLES } from '../../domain/convertSize'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
-import { hasProjectBeads } from '../../domain/layerBeads'
+import { hasCanvasBeads, hasProjectBeads } from '../../domain/layerBeads'
 import { rowProgressOn, rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
@@ -119,8 +119,8 @@ export type ControlAction = Disableable & {
   /** A key the action shows without owning it (Done, Cancel and Clear selection show Back out's `Esc`). */
   shownKey?: string
   /** The Keyboard shortcuts dialog's wording when it differs from `name` and `chords` (one row for the whole
-   * Palette). */
-  help?: { name: (t: Translations) => string; keys: readonly (readonly string[])[] }
+   * Palette; the two Pastes named apart, ticket 0993). */
+  help?: { name: (t: Translations) => string; keys?: readonly (readonly string[])[] }
   /** Runs from a key press: the key is claimed from the browser first when `preventDefault`. Absent where there is
    * no key: the control's own surface runs it. */
   run?: (deps: ControlDeps, event: KeyboardEvent) => void
@@ -163,8 +163,12 @@ const hasBeads = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && hasProjectBeads(project)
 }
-/** Whether the rulers have anything to number: a bead or a Frame (ticket 0921). */
-const hasRuled = (deps: ControlDeps) => hasBeads(deps) || hasFrame(deps)
+/** Whether the Rulers toggle has anything to switch: a bead on the Canvas, whether or not a Frame is set, as the
+ * Frame's own rulers are always on (tickets 0921, 1012). */
+const hasRuled = (deps: ControlDeps) => {
+  const project = deps.activeProject()
+  return project !== undefined && hasCanvasBeads(project)
+}
 /** When Fit to drawing can frame the beads, and why not: its own and the Progress bar's way to a picture (ticket 0847). */
 const fitsDrawing: Disableable = {
   enabled: (deps: ControlDeps) => !frameLocked(deps) && hasBeads(deps),
@@ -194,10 +198,34 @@ const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, r
 // The control registry (ADR 0035, ticket 329): every action with a key, defined once; the shortcut table and the
 // shortcuts dialog (in this order) are built from it. A test fails if two actions share a key.
 export const CONTROLS: readonly ControlAction[] = [
+  // The pill's tools 1 to 8 in the pill's order, then the tools group's other keys (ticket 0993).
   selectTool('paint', 'paint', (t) => t.tools.paintLabel, 'tools', (t) => t.tooltips.paint),
   selectTool('fill', 'fill', (t) => t.tools.fillLabel, 'tools', (t) => t.tooltips.fill),
   selectTool('select', 'select', (t) => t.tools.selectLabel, 'tools', (t) => t.tooltips.select),
+  selectTool('erase', 'erase', (t) => t.tools.eraseLabel, 'tools', (t) => t.tooltips.erase),
+  selectTool('hand', 'hand', (t) => t.tools.handLabel, 'tools', (t) => t.tooltips.hand),
   selectTool('piece', 'piece', (t) => t.tools.pieceLabel, 'tools', (t) => t.tooltips.piece),
+  {
+    id: 'mirror',
+    icon: 'mirror',
+    name: (t) => t.mirror.title,
+    body: (t) => t.tooltips.mirror,
+    group: 'tools',
+    chords: [tileChord('mirror')],
+    needsProject: true,
+    run: (deps) => deps.onMirrorTile(),
+  },
+  {
+    id: 'tool-paste',
+    icon: 'paste',
+    name: (t) => t.tools.pasteLabel,
+    body: (t) => t.tooltips.pasteTool,
+    touchBody: (t) => t.tooltips.pasteToolTouch,
+    group: 'tools',
+    help: { name: (t) => t.shortcutsHelp.pasteTool },
+    chords: [tileChord('paste')],
+    run: (deps) => deps.onPasteMode(),
+  },
   {
     id: 'select-all',
     icon: 'select-all',
@@ -209,7 +237,6 @@ export const CONTROLS: readonly ControlAction[] = [
     needsProject: true,
     run: (deps) => deps.onSelectAll(),
   },
-  selectTool('erase', 'erase', (t) => t.tools.eraseLabel, 'tools', (t) => t.tooltips.erase),
   {
     id: 'empty-selection',
     icon: 'delete',
@@ -238,34 +265,14 @@ export const CONTROLS: readonly ControlAction[] = [
       if (deps.activeTool() !== 'paint') deps.onSelectTool('paint')
     },
   },
-  selectTool('hand', 'hand', (t) => t.tools.handLabel, 'canvas', (t) => t.tooltips.hand),
-  {
-    id: 'mirror',
-    icon: 'mirror',
-    name: (t) => t.mirror.title,
-    body: (t) => t.tooltips.mirror,
-    group: 'tools',
-    chords: [tileChord('mirror')],
-    needsProject: true,
-    run: (deps) => deps.onMirrorTile(),
-  },
-  {
-    id: 'tool-paste',
-    icon: 'paste',
-    name: (t) => t.tools.pasteLabel,
-    body: (t) => t.tooltips.pasteTool,
-    touchBody: (t) => t.tooltips.pasteToolTouch,
-    group: 'canvas',
-    chords: [tileChord('paste')],
-    run: (deps) => deps.onPasteMode(),
-  },
   {
     id: 'edit-frame',
     icon: 'pencil',
     name: (t) => t.frame.editFrame,
     body: (t) => t.tooltips.editFrame,
-    enabled: hasFrame,
-    disabledBody: (t) => t.tooltips.setFrameFirst,
+    // A Frame with a row done holds still: the pencil stays, saying why (ticket 0975).
+    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.frameSizeLocked : t.tooltips.setFrameFirst),
     group: 'canvas',
     chords: [],
     needsProject: true,
@@ -405,6 +412,7 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps) => deps.hasClipboard(),
     disabledBody: (t) => t.tooltips.pasteDisabled,
     group: 'edit',
+    help: { name: (t) => t.shortcutsHelp.pasteClipboard },
     chords: [{ key: 'v', mod: true, label: 'V' }],
     run: (deps, event) => deps.pasteAtPointer(event),
   },
@@ -655,7 +663,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('input-mode', (t) => t.panels.menu.input, 'canvas', { icon: 'pen-mode' }),
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
   // The Convert image wizard's own controls (ticket 0650): its zoom is the Canvas's, its Close the shared one.
-  // Its floating bar (ticket 0896): Background, Make empty and Compare; Undo and Redo stand in Background's popover.
+  // Its floating bar (ticket 0896): Background, Leave a color out and Compare; Undo and Redo stand in Background's popover.
   unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),
   // The Background tool (ticket 0787): a tap or a drag keeps or removes the patch of background under it.
   unkeyed('convert-background', (t) => t.convertImage.wizard.backgroundTool, 'edit', { icon: 'erase', body: (t) => t.tooltips.backgroundTool }),
@@ -679,7 +687,7 @@ export const CONTROLS: readonly ControlAction[] = [
 /** The gestures with no key the dialog still lists beside the keys (ticket 95): not actions, so not in CONTROLS. */
 export const POINTER_HELP: readonly { group: ControlGroup; name: (t: Translations) => string; keys: readonly (readonly string[])[] }[] = [
   { group: 'canvas', name: (t) => t.shortcutsHelp.panCanvas, keys: [['Space', 'drag']] },
-  { group: 'canvas', name: (t) => t.shortcutsHelp.zoomCanvas, keys: [['Ctrl/Cmd', 'wheel']] },
+  { group: 'canvas', name: (t) => t.shortcutsHelp.zoomCanvas, keys: [[MOD_KEY, 'wheel']] },
 ]
 
 /** Whether a key press is this chord. */
@@ -706,4 +714,9 @@ export function controlAction(id: string): ControlAction {
   const action = CONTROLS.find((control) => control.id === id)
   if (!action) throw new Error(`No control "${id}" in the registry`)
   return action
+}
+
+/** A Tool pill tile's action (ADR 0084): a tool's own, the Mirror's or Paste's. */
+export function pillTileAction(tile: PillTile): ControlAction {
+  return controlAction(tile === 'mirror' ? 'mirror' : `tool-${tile}`)
 }

@@ -29,22 +29,27 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Text and zoom
 
-- Sizes in `rem`, so the browser's text size scales the chrome; the layout holds at 200% zoom (the left column scrolls, the header drops labels as on smaller tiers).
+- Sizes in `rem` and the root size in percent (112.5%, 18px at the browser's default 16px; never px), so the browser's text size scales the chrome: its text grows with a 125% or 200% setting, and at 200% on a phone and an iPad nothing scrolls sideways and panels and dialogs fit, rows wrapping under their label where they have no room beside it (ticket 0941). The app's styles never set type in px (`src/styles/textSize.test.ts`); the canvas, rulers and printed pages are drawn in px and keep their size. Page zoom stays locked (ADR 0034); the layout holds at 200% zoom (the left column scrolls, the header drops labels as on smaller tiers).
 - Nothing below 11px (rulers, Saved Pattern sizes and the hotkey in a tool tile's corner: 10px in the Toolbox, 11px on the iPad toolbar, 12px in the phone Dock); on a phone nothing below 12px. Phone rulers are therefore 12px.
 - `lang="en"` / `lang="ru"` on `<html>` follows the language.
 
 ## Keyboard
 
-- Tab order (ADR 0075): the Canvas strip (one stop per section: Menu/Project/Frame, the Wordmark, the right-hand tools), the Tool pill (its colour control and recents included), the Progress bar (only with a Frame), the Frame's controls, the Selection bar (only with a Selection). Shift+Tab walks it backwards. The Pattern takes no focus and there is no skip link (ADR 0074).
+- Tab order (ADR 0075, ADR 0093): the Canvas strip (one stop per section: Menu/Project/Frame, the Wordmark, the right-hand tools), the Pattern (one stop, its bead cursor), the Tool pill (its colour control and recents included), the Progress bar (only with a Frame), the Frame's controls, the Selection bar (only with a Selection). Shift+Tab walks it backwards. There is no skip link.
 - One stop per group; arrow keys inside it (roving tabindex), stopping at the ends. In the strip and the Progress and Selection bars ←/→ step; the Tool pill follows its axis (↑/↓ when it stands left or right, ←/→ when top or bottom, the other axis does nothing), with Home and End.
-- Enter or ↓ on Menu, Project or Frame opens the panel with focus on its first item. In an open Menu Tab and Shift+Tab wrap, so focus never leaves it; ←/→ closes or opens a row's dropdown, Enter or Space opens it, ↓/↑ step past it to the next row, Escape closes the panel and returns focus to its button.
+- Enter or ↓ on Menu, Project, Frame or Export opens the panel with focus on its first item. In every open panel Tab and Shift+Tab wrap, so focus never leaves it for the controls under it (ticket 0939). In the Menu ←/→ closes or opens a row's dropdown, Enter or Space opens it, ↓/↑ step past it to the next row, Escape closes the panel and returns focus to its button.
 - Modals and the modal Pattern and Menu panels trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet → menu → Selection → open disclosure row.
 - Focus is never hidden behind the header or the Dock (`scroll-margin`).
 
 ## Beads and the keyboard
 
-- The keyboard does not place, erase or select beads (ADR 0074): the Pattern is pointer and touch only, takes no focus, and has no cursor ring or ruler marks. A person who cannot point or touch cannot place a bead; the Tool keys, Select all, Remove selected beads, Undo and Redo, and the Frame handle's keys still work from the keyboard.
-- Screen readers meet the Pattern as one image named for what it shows (see Screen readers below), and hear a polite announcement after a Frame move or a rotation.
+- **The bead cursor** (ADR 0093): Tab reaches the Pattern once, and a ring shows the bead the cursor is on, the Frame's first bead to start with, or the middle of the view on a Canvas with no Frame. The ring is the swatch's two-tone focus ring (KeyboardFocus card), as a bead may be any color. Focus a pointer press gave shows no ring.
+- **The arrow keys** move the cursor one bead the way they point on screen, after a quarter turn too, and the view pans just enough to keep it in sight.
+- **Space or Enter** uses the active Tool at the cursor: the same press and release as a tap there, so it paints, fills, erases, selects a Piece or stamps a Paste exactly as a tap does, keeps to the Row progress lock and the Frame's margin, and Undo takes it back. On the focused Pattern Enter is this tap, not Row done. A held key taps once. While Edit Frame is on the keys tap nothing; the Frame handle's own keys move it.
+- **Shift with the arrows** grows a Selection from the bead the cursor was on, under any Tool, as a Select drag does (in Mirror mode it marks the Mirror's Area). Letting go of Shift ends it; a step the Selection cannot take shows the not-allowed cue and the cursor stays.
+- **Said once:** each move ("Row 3, column 5, Black", counted from the Frame's first bead as the rulers count), each tap that changed beads ("Painted Black", "Filled with Black", "Erased") and each Shift step ("Selected 4 by 2"). A tap that changed nothing says nothing of its own.
+- The rest of the keyboard stays: the Tool keys, Select all, Remove selected beads, Undo and Redo, Space held to pan, the Frame handle's keys. Keys with Ctrl, ⌘ or Alt go to the shortcuts.
+- Screen readers meet the Pattern as one image named for what it shows (see Screen readers below), and hear a polite announcement after a Frame move, a rotation and every bead cursor action.
 
 ## Screen readers
 
@@ -52,7 +57,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 - The Pattern is `role="img"` named "Logo panel, 40 by 30 beads, 2 colors, row 12 of 30 done"; Beads needed is its text equivalent.
 - Every icon-only button has a name in the app's own words (the ScreenReaders card lists them). Toggles use `aria-pressed`, the Switch `role="switch"`, disclosure rows `aria-expanded`.
 - A control with words on it is called by those words, first (WCAG 2.5.3, ticket 0940): a Palette row is "1, Crystal, Transparent, add to the Palette". Anything more goes after them, as visually hidden text or a description, never in an `aria-label` that drops what is shown.
-- Results are `role="status"` (polite), errors `role="alert"`; one announcement per action, none for painting single beads.
+- Results are `role="status"` (polite), errors `role="alert"`; one announcement per action, none for painting single beads with a pointer (the bead cursor says each of its own).
 
 ## Stacking order
 

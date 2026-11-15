@@ -5,8 +5,10 @@ import App from './App.vue'
 import { saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { openColorPopover } from './testUtils/pill'
+import { beadColor, drawnProject } from './testUtils/beads'
+import { frameOf } from './domain/layerRecord'
 
-/** Landmarks, the Project's name and the Tab stops that remain (ticket 159; `accessibility.md`, ScreenReaders card). */
+/** Landmarks, the Project's name, the Tab stops and the bead cursor (tickets 159, 0942; `accessibility.md`). */
 
 beforeEach(() => {
   localStorage.clear()
@@ -20,11 +22,11 @@ async function openProject(columns = 6, rows = 4) {
 
 const surface = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="project-surface"]')
 
-describe('the Project for a screen reader (ticket 159, ADR 0074)', () => {
-  it('is an image named for what it shows, with no keyboard stop', async () => {
+describe('the Project for a screen reader (ticket 159, ADR 0093)', () => {
+  it('is an image named for what it shows, and one keyboard stop', async () => {
     const wrapper = await openProject()
 
-    expect(surface(wrapper).attributes('tabindex')).toBeUndefined()
+    expect(surface(wrapper).attributes('tabindex')).toBe('0')
     expect(surface(wrapper).attributes('role')).toBe('img')
     expect(surface(wrapper).attributes('aria-label')).toMatch(/, 6 by 4 beads, 0 colors, row 0 of 4 done$/)
   })
@@ -40,6 +42,23 @@ describe('the Project for a screen reader (ticket 159, ADR 0074)', () => {
     expect(wrapper.findAll('header').map((header) => header.attributes('data-testid'))).toEqual(['canvas-strip'])
     expect(wrapper.get('[data-testid="canvas-strip"]').element.closest('main')).toBeNull()
     expect(wrapper.find('[data-testid="skip-to-project"]').exists()).toBe(false)
+  })
+})
+
+describe('the bead cursor (ticket 0942, ADR 0093)', () => {
+  it('rings the Frame\'s first bead when Tab reaches the Pattern, paints it on Space, and Undo takes it back', async () => {
+    const wrapper = await openProject()
+    const frame = frameOf(drawnProject(wrapper))!
+    const first = { row: frame.row, column: frame.column }
+    await surface(wrapper).trigger('focus')
+    expect(wrapper.find('[data-testid="bead-cursor"]').exists()).toBe(true)
+
+    await surface(wrapper).trigger('keydown', { key: ' ', code: 'Space' })
+    expect(beadColor(wrapper, first)).not.toBeNull()
+
+    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
+    expect(beadColor(wrapper, first)).toBeNull()
+    wrapper.unmount()
   })
 })
 

@@ -8,7 +8,6 @@ import StarterGallery from '../project/StarterGallery.vue'
 import StarterSetup from '../project/StarterSetup.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectsLibrary from '../project/ProjectsLibrary.vue'
-import PanelItem from './PanelItem.vue'
 import ProjectPanel from '../project/ProjectPanel.vue'
 import { computed, ref } from 'vue'
 import { starterById, type StarterCategoryId, type StarterId } from '../../domain/starters'
@@ -86,6 +85,7 @@ const {
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
   onOpenShortcutsHelp,
+  onShowButtonNames,
   onOpenFeedback,
   projectsKept,
   onSelectPanel,
@@ -203,6 +203,7 @@ const chosenStarter = ref<StarterId>()
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"
+      @button-names="onShowButtonNames"
       @feedback="onOpenFeedback"
     />
     <ProjectPanel
@@ -239,10 +240,12 @@ const chosenStarter = ref<StarterId>()
         :projects="projects"
         :sealed="sealed"
         :active-project-id="activeProjectId"
+        deletes-all
         @select="onSelectProjectFromPhoneDrawer"
         @remove="onRequestRemove"
         @import="onImportProjects"
         @export-all="onExportLibraryFile"
+        @delete-all="onRequestDeleteAllProjects"
       />
       <!-- Level 1 is New Project; its Pick a starter pushes the Starter gallery's categories, then a category's options,
         then a Starter's setup (ticket 0596). -->
@@ -263,18 +266,6 @@ const chosenStarter = ref<StarterId>()
       />
     </template>
     <template #footer="{ depth }">
-      <PanelItem
-        v-if="depth === 1 && phoneSavedProjectsOpen && openPanel === 'menu'"
-        icon="delete"
-        danger
-        :disabled="projects.length + sealed.length === 0"
-        :name="t.panels.menu.deleteAll"
-        :disabled-body="t.projects.emptyTitle"
-        data-testid="menu-delete-all"
-        @select="onRequestDeleteAllProjects"
-      >
-        {{ t.panels.menu.deleteAll }}
-      </PanelItem>
       <AppButton v-if="depth === 4" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
         {{ t.form.submit }}
       </AppButton>
