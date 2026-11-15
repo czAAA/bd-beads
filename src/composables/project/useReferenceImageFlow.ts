@@ -14,9 +14,11 @@ import {
   type ReferencePlace,
   type WidthLimits,
 } from '../../domain/referenceImage'
-import { referenceBoxPx, referenceWidthLimits, type DrawnReference } from '../../rendering/referenceImage'
+import { placeOnScreen, referenceBoxPx, referenceWidthLimits, type DrawnReference } from '../../rendering/referenceImage'
+import type { Region, SurfaceView } from '../../rendering/surfaceView'
 import type { PictureStore } from '../../services/pictureStore'
 import type { DrawablePicture, PreparedPicture } from '../../services/referencePicture'
+import { pictureBounds } from '../canvas/pictureBarPlacement'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What the reference image needs from the app shell: the open Project and its write path, the library's ids, where
@@ -32,6 +34,9 @@ export interface ReferenceImageFlowDeps {
   decode: (blob: Blob) => Promise<DrawablePicture>
   /** The Canvas positions in view: what a picture is fitted inside on an empty Canvas without a Frame. */
   inView: () => Rect | undefined
+  /** Pans the shortest way that brings a part of the drawing into view, zoom kept (ticket 0934): a picture shown out of
+   * view (ticket 1011). */
+  bringIntoView: (locate: (surface: SurfaceView) => Region | undefined) => void
   announce: (text: string) => void
   /** Opens the Project panel, where a refusal of a file picked from the strip button is told. */
   openProjectPanel: () => void
@@ -187,12 +192,17 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     await opened
   }
 
-  /** The strip button and `I`: shows or hides the picture. */
+  /** The strip button and `I`: shows or hides the picture; one shown out of view is brought into it (ticket 1011). */
   function toggleShown(): void {
     const project = deps.currentProject()
     if (!project?.referenceImage) return
     if (project.referenceImage.shown) adjusting.value = false
     save(project, { ...project.referenceImage, shown: !project.referenceImage.shown })
+    const { picture, place, shown } = project.referenceImage
+    if (!shown) deps.bringIntoView((surface) => {
+      const { left, top, width, height } = pictureBounds(placeOnScreen(surface, place, referenceHeight({ picture, place })))
+      return { x: left, y: top, width, height }
+    })
   }
 
   /** Shows or hides the picture: Convert to beads hides it after, and its toast's Undo shows it again (ticket 0883). */
