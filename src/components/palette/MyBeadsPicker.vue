@@ -8,6 +8,7 @@ import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { pastedCodes, type PastedCodes } from '../../domain/myBeads'
+import { catalogColorName } from '../../i18n/colorLabel'
 import { plural, pluralForm } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -77,11 +78,12 @@ const { query, familyName, matches, shown, families, finishes, filtersOnCount, f
   startFinishes: props.startFinishes,
 })
 
-/** A code's second line, its family and Finish in lower case ("red opaque"), and why it is never matched. */
+/** A code's second line, its name as Color by color writes it after the code ("Opaque Black", ticket 0966), and why it
+ * is never matched. */
 function nameOf(row: Row): string {
   if (row.unknown) return words.value.unknownRow
   const finish = row.finish ? t.value.palette.beadColors.finishes[row.finish] : ''
-  const name = `${row.family ? familyName(row.family) : ''} ${finish}`.trim().toLocaleLowerCase(locale.value)
+  const name = row.family && row.finish ? catalogColorName(t.value, row.family, row.finish) : row.family ? familyName(row.family) : finish
   return row.discontinued ? fillBlanks(words.value.discontinuedRow, { name }) : name
 }
 

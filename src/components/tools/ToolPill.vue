@@ -156,23 +156,31 @@ function measure(): PillRect | undefined {
 }
 
 // The pill shows the recents only while the whole pill fits along its edge (ticket 439), else the one swatch
-// rather than scroll. Fit is probed by drawing the recents and asking the tools if they must scroll, before the browser
-// paints.
+// rather than scroll. Fit is probed by drawing the recents and measuring whether the tools' tiles still fit their row,
+// before the browser paints.
 const recentsRoom = ref(true)
 const probing = ref(false)
 const showRecents = computed(() => recentsRoom.value || probing.value)
 let latestProbe = 0
+/** Whether the tools' tiles, first tile's start to last tile's end, fit their row: not the scroll length, which the
+ * last tile's invisible touch pad (`.ui-control::before` on a coarse pointer) grows by a few pixels, so an iPad never
+ * showed the recents (ticket 0958). One pixel of slack for sub-pixel rounding. */
+function tilesFit(tools: HTMLElement, isVertical: boolean): boolean {
+  const tiles = tools.querySelectorAll('.ui-control')
+  const first = tiles[0]?.getBoundingClientRect()
+  const last = tiles[tiles.length - 1]?.getBoundingClientRect()
+  if (!first || !last) return true
+  return isVertical ? last.bottom - first.top <= tools.clientHeight + 1 : last.right - first.left <= tools.clientWidth + 1
+}
 async function probeRoom() {
   if (drag.dragging.value) return
   const probe = ++latestProbe
   probing.value = true
   await nextTick()
   if (probe !== latestProbe) return // a newer probe owns the measuring now
-  // The tools give way first when the pill is longer than its edge; one pixel of slack for sub-pixel rounding.
+  // The tools give way first when the pill is longer than its edge.
   const tools = toolsEl.value
-  if (tools && tools.clientWidth > 0) {
-    recentsRoom.value = vertical.value ? tools.scrollHeight <= tools.clientHeight + 1 : tools.scrollWidth <= tools.clientWidth + 1
-  }
+  if (tools && tools.clientWidth > 0) recentsRoom.value = tilesFit(tools, vertical.value)
   probing.value = false
 }
 const pillSize = useElementSize(pillEl)

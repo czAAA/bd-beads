@@ -140,7 +140,7 @@ describe('MyBeadsPicker (ticket 0903)', () => {
     const { wrapper, codes } = picker(['DB10', 'DB31', 'DB99999'])
     expect(rowCodes(wrapper)).toEqual(['DB10', 'DB31', 'DB99999'])
     expect(row(wrapper, 'DB31').classes()).toContain('my-beads-picker__row--never')
-    expect(row(wrapper, 'DB31').text()).toContain('gold plated · discontinued, never matched')
+    expect(row(wrapper, 'DB31').text()).toContain('Plated Gold · discontinued, never matched')
     expect(row(wrapper, 'DB99999').text()).toContain(words.unknownRow)
     expect(row(wrapper, 'DB10').classes()).not.toContain('my-beads-picker__row--never')
 

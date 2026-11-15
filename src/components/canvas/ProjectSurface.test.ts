@@ -350,8 +350,9 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: painted(project, 12, 4) })
 
-      // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it.
-      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
+      // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it and widened by three rows
+      // either side, where the Lifted piece's contour and shadow reach (ticket 1004).
+      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 180, 400, 140]])
     })
 
     it('draws a band for each cluster of changed rows, as a change to rows far apart', async () => {
@@ -362,7 +363,7 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: painted(painted(project, 3, 4), 26, 4) })
 
-      expect(context.named('rect').map((call) => call.args[1])).toEqual([60, 520])
+      expect(context.named('rect').map((call) => call.args[1])).toEqual([0, 460])
     })
 
     // A shaped Frame's rows are its layout's, not rows on the screen: a Fringe earring's top is counted up from its base
@@ -491,15 +492,16 @@ describe('ProjectSurface', () => {
       expect(await nextFrame()).toEqual(['all'])
 
       await surface.trigger('pointerdown', { ...pointAt(2, 1), button: 0, buttons: 1 })
-      expect(await nextFrame()).toEqual([{ first: 2, last: 2 }])
+      // Each band reaches three rows either side of the rows painted, as far as the Lifted piece does (ticket 1004).
+      expect(await nextFrame()).toEqual([{ first: 0, last: 5 }])
 
       // Two moves in one frame, seven beads along row 2: still one draw, of that row.
       await surface.trigger('pointermove', { ...pointAt(2, 4), buttons: 1 })
       await surface.trigger('pointermove', { ...pointAt(2, 8), buttons: 1 })
-      expect(await nextFrame()).toEqual([{ first: 2, last: 2 }])
+      expect(await nextFrame()).toEqual([{ first: 0, last: 5 }])
 
       await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
-      expect(await nextFrame()).toEqual([{ first: 3, last: 6 }])
+      expect(await nextFrame()).toEqual([{ first: 0, last: 9 }])
 
       // Over a bead already painted, and the release: nothing changed, so nothing is drawn.
       await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
@@ -1920,6 +1922,23 @@ describe('ProjectSurface with a Frame', () => {
   it('reports no Frame place once the Frame is scrolled wholly out of view, so no control stays on screen', async () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 5000, y: 5000 }, { tools: can({ settingFrame: true }) })
     expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toBeUndefined()
+  })
+
+  it('reads a resize drag from the middle of the bead it was pressed on, so a press on the corner\'s line that wobbles 3px reports the same bead (ticket 0977)', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
+    // Just past the corner of the Frame's last bead (8 × 6 beads of 20px), then 3px back over the line into that bead.
+    await gesture(wrapper, [161, 121], [158, 118])
+
+    const pressed = wrapper.emitted('frame-press')![0]![1]
+    expect(wrapper.emitted('frame-drag')!.map(([cell]) => cell)).toEqual([pressed])
+  })
+
+  it('moves a resize drag on by a bead once the pointer has gone a bead (ticket 0977)', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
+    await gesture(wrapper, [161, 121], [141, 101])
+
+    const pressed = wrapper.emitted('frame-press')![0]![1] as { row: number; column: number }
+    expect(wrapper.emitted('frame-drag')!.map(([cell]) => cell)).toEqual([{ row: pressed.row - 1, column: pressed.column - 1 }])
   })
 
   it('reports a press on a resize handle, the drag and the release, and draws no bead', async () => {

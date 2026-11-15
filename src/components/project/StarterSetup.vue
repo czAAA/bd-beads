@@ -424,6 +424,11 @@ function onSubmit() {
   outline-offset: var(--focus-offset);
 }
 
+/* On the accent fill the ring takes on-accent (KeyboardFocus card, ticket 0938). */
+.starter-setup__chip[aria-pressed='true']:focus-visible {
+  outline-color: var(--focus-ring-on-accent);
+}
+
 /* The design's own size: a dot at the chip's top right. */
 .starter-setup__dot {
   position: absolute;
