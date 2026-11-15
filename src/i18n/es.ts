@@ -899,6 +899,8 @@ export const es: Translations = {
     qualityNote: 'Para la imagen. El gráfico para imprimir se dibuja con líneas y se ve nítido con cualquier zoom.',
     progressMarkPiece: 'Marca la pieza para exportar y contar: arrastra con Seleccionar.',
     selectFrameTouchHint: 'Arrastra sobre el lienzo para seleccionar el marco. Elige una herramienta para cancelar.',
+    widthRange: 'El ancho es de {min} a {max} cuentas',
+    heightRange: 'El alto es de {min} a {max} cuentas',
   },
   size: {
     estimateLabel: 'Tamaño estimado',
