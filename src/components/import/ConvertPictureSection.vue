@@ -26,9 +26,10 @@ const replaceEl = ref<HTMLElement>()
 /** Replace's Choose file and Take photo open the pickers of the file inputs kept beside the menu. */
 const pick = (testid: string) => replaceEl.value?.querySelector<HTMLInputElement>(`input[data-testid="${testid}"]`)?.click()
 
+/** The picture's own size, also when it was read smaller (ticket 0931). */
 const size = computed(() => {
-  const image = wizard.image.value
-  return image ? fillBlanks(words.value.pictureSize, { width: image.width, height: image.height }) : ''
+  const own = wizard.pictureSize.value
+  return own ? fillBlanks(words.value.pictureSize, { width: own.width, height: own.height }) : ''
 })
 /** The file's name, on a line of its own under the label (ticket 0929): cut in the middle when long, whole in its Tooltip. */
 const fileName = computed(() => (wizard.hasPicture.value ? wizard.fileName.value : wizard.reading.value ? (wizard.readingFile.value?.name ?? '') : ''))

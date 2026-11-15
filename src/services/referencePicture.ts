@@ -1,4 +1,4 @@
-import { ImageConversionError, validateImageFile, validateImagePixelCount } from '../domain/imageConversion'
+import { ImageConversionError, validateImageFile } from '../domain/imageConversion'
 import type { ReferencePicture } from '../domain/referenceImage'
 import { decodeSource } from './imageDecode'
 
@@ -57,9 +57,9 @@ async function encoded(canvas: HTMLCanvasElement, transparent: boolean): Promise
   return last
 }
 
-/** A picked picture made ready to keep (ReferenceImage card): refused as Convert image refuses one (ImageConversionError),
- * else drawn at most 2048 px on its longest side, WebP where the browser writes it (else JPEG, PNG with transparency),
- * stepped down until it is at most 1 MB. */
+/** A picked picture made ready to keep (ReferenceImage card): refused as Convert image refuses a file (ImageConversionError),
+ * of any number of pixels (ticket 0931), drawn at most 2048 px on its longest side, WebP where the browser writes it
+ * (else JPEG, PNG with transparency), stepped down until it is at most 1 MB. */
 export async function preparePicture(file: File): Promise<PreparedPicture> {
   const rejection = validateImageFile(file)
   if (rejection) throw new ImageConversionError(rejection)
@@ -68,8 +68,6 @@ export async function preparePicture(file: File): Promise<PreparedPicture> {
   })
   try {
     if (source.width === 0 || source.height === 0) throw new ImageConversionError('decodeFailed')
-    const tooMany = validateImagePixelCount(source)
-    if (tooMany) throw new ImageConversionError(tooMany)
     let scale = Math.min(1, MAX_SIDE_PX / Math.max(source.width, source.height))
     let transparent: boolean | undefined
     for (;;) {

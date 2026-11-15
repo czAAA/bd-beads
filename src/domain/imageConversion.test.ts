@@ -13,7 +13,6 @@ import {
   ACCEPTED_IMAGE_FORMATS,
   IMAGE_MAX_BYTES,
   IMAGE_MAX_MEGABYTES,
-  IMAGE_MAX_MEGAPIXELS,
   IMAGE_MAX_PIXELS,
   frameColors,
   imageInputAccept,
@@ -21,9 +20,9 @@ import {
   NO_COLOR,
   packedToHex,
   pixelPackedAt,
+  readSize,
   sampleLatticePacked,
   validateImageFile,
-  validateImagePixelCount,
   type PixelData,
 } from './imageConversion'
 
@@ -248,9 +247,8 @@ describe('sampleLatticePacked', () => {
 
 describe('input limits', () => {
   it('states them once, and derives the byte and pixel counts from what the UI advertises', () => {
-    expect(IMAGE_MAX_MEGABYTES).toBe(10)
-    expect(IMAGE_MAX_BYTES).toBe(10 * 1024 * 1024)
-    expect(IMAGE_MAX_MEGAPIXELS).toBe(16)
+    expect(IMAGE_MAX_MEGABYTES).toBe(50)
+    expect(IMAGE_MAX_BYTES).toBe(50 * 1024 * 1024)
     expect(IMAGE_MAX_PIXELS).toBe(16_000_000)
   })
 
@@ -266,9 +264,9 @@ describe('input limits', () => {
   })
 
   it('fills the advertised limits into a localised sentence, so the copy cannot drift from the validation', () => {
-    const filled = formatImageLimits('{formats} / {maxSizeMb} / {maxMegapixels}')
+    const filled = formatImageLimits('{formats} / {maxSizeMb}')
 
-    expect(filled).toBe('PNG, JPEG, GIF, WebP / 10 / 16')
+    expect(filled).toBe('PNG, JPEG, GIF, WebP / 50')
     expect(filled).not.toContain('{')
   })
 })
@@ -309,10 +307,18 @@ describe('validateImageFile', () => {
   })
 })
 
-describe('validateImagePixelCount', () => {
-  it('accepts a picture at the resolution limit and rejects one past it', () => {
-    expect(validateImagePixelCount({ width: 4000, height: 4000 })).toBeUndefined()
-    expect(validateImagePixelCount({ width: 4001, height: 4000 })).toBe('tooManyPixels')
+describe('readSize (ticket 0931)', () => {
+  it('reads a picture at the limit at its own size', () => {
+    expect(readSize({ width: 4000, height: 4000 })).toEqual({ width: 4000, height: 4000 })
+  })
+
+  it('reads a larger one smaller, its shape kept, within the limit', () => {
+    for (const own of [{ width: 5472, height: 3648 }, { width: 8064, height: 6048 }, { width: 4001, height: 4000 }, { width: 40_000, height: 1000 }]) {
+      const read = readSize(own)
+      expect(read.width * read.height).toBeLessThanOrEqual(IMAGE_MAX_PIXELS)
+      expect(read.width * read.height).toBeGreaterThan(IMAGE_MAX_PIXELS * 0.99)
+      expect(read.width / read.height).toBeCloseTo(own.width / own.height, 1)
+    }
   })
 })
 

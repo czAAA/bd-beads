@@ -1124,7 +1124,7 @@ export interface Translations {
     confirmButton: string
     cancelButton: string
   }
-  // Convert image (CONTEXT.md, ADR 0010). Strings holding `{formats}`, `{maxSizeMb}` or `{maxMegapixels}` are
+  // Convert image (CONTEXT.md, ADR 0010). Strings holding `{formats}` or `{maxSizeMb}` are
   // filled by formatImageLimits (domain/imageConversion.ts) from the validation constants, so never write the numbers
   // here.
   convertImage: {
