@@ -246,11 +246,12 @@ export const zh: Translations = {
     emptyBody: '你创建的项目保存在此浏览器中。打开项目文件即可带入项目。',
     pieces: { other: '{count} 个小块' },
     unnamedPieces: '{count} 个未命名',
-    frameSize: '边框 {width} × {height} 颗珠子',
+    rowSize: '{width} × {height} 颗珠子',
     tooBigToCount: '太多，无法计数',
     countingPieces: '正在计数小块',
     beads: { other: '{count} 颗珠子' },
     sealedDates: '创建于 {created} · 保存于 {saved}',
+    savedOn: '保存于 {date}',
   },
   starters: {
     title: '起始方案',

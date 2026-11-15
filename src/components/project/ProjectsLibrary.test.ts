@@ -22,25 +22,33 @@ const first = make('Moth', { makerName: 'Ada' })
 const second = make('Fern')
 const noFrame = (project: Project): Project => (withLayers(project, { frame: undefined }))
 
+/** The words a screen reader hears of an element: its text less what is hidden from it (the Tooltip's bubble). */
+function heard(element: Element): string {
+  const copy = element.cloneNode(true) as Element
+  for (const hidden of copy.querySelectorAll('[aria-hidden="true"]')) hidden.remove()
+  return copy.textContent ?? ''
+}
+
 function mountLibrary(props: Record<string, unknown> = {}) {
   return mount(ProjectsLibrary, { props: { projects: [first, second], ...props }, global: { stubs: { ProjectThumbnail: true } } })
 }
 
 describe('ProjectsLibrary (ticket 0553)', () => {
-  it('lists each project with its name, maker and Pieces count, newest first', () => {
-    const rows = mountLibrary().findAll('[data-testid="project-item"]')
+  it('lists each project with its name over its Frame size, last save and maker, newest first; its Pieces in a Tooltip (ticket 0982)', () => {
+    const rows = mountLibrary({ projects: [{ ...first, savedAt: Date.UTC(2026, 10, 12, 12) }, second] }).findAll('[data-testid="project-item"]')
     expect(rows).toHaveLength(2)
     expect(rows[0]!.text()).toContain('Moth')
-    expect(rows[0]!.text()).toContain('Ada')
-    expect(rows[0]!.get('[data-testid="project-pieces"]').text()).toBe('0')
+    expect(rows[0]!.get('[data-testid="project-line"]').text()).toBe('4 × 4 beads · saved Nov 12 · Ada')
+    expect((rows[0]!.getComponent(AppTooltip).props() as { name: string }).name).toBe('0 pieces')
+    expect(rows[0]!.find('[data-testid="project-pieces"]').exists()).toBe(false)
     expect(rows[1]!.text()).not.toContain('Ada')
   })
 
-  it('marks the framed projects and rings the open one', () => {
+  it('leaves the size out for a Project with no Frame, and rings the open one', () => {
     const wrapper = mountLibrary({ projects: [first, noFrame(second)], activeProjectId: first.id })
     const rows = wrapper.findAll('[data-testid="project-item"]')
-    expect(rows[0]!.find('[data-testid="project-framed"]').exists()).toBe(true)
-    expect(rows[1]!.find('[data-testid="project-framed"]').exists()).toBe(false)
+    expect(rows[0]!.get('[data-testid="project-line"]').text()).toContain('4 × 4 beads · saved ')
+    expect(rows[1]!.get('[data-testid="project-line"]').text()).toMatch(/^saved \w+ \d+$/)
     expect(rows[0]!.get('.panel-list-row').classes()).toContain('panel-list-row--active')
     expect(rows[1]!.get('.panel-list-row').classes()).not.toContain('panel-list-row--active')
   })
@@ -48,9 +56,9 @@ describe('ProjectsLibrary (ticket 0553)', () => {
   it('opens a project on a press and asks to remove it from its ×', async () => {
     const wrapper = mountLibrary()
     const button = wrapper.get(`[data-testid="select-project-${first.id}"]`)
-    // Named by the words it shows, then the Frame's size (ticket 0940).
+    // Named by the words it shows (ticket 0940), the Frame's size among them (ticket 0982).
     expect(button.attributes('aria-label')).toBeUndefined()
-    expect(button.text().replace(/\s+/g, ' ')).toBe('Moth Ada 4×4')
+    expect(heard(button.element).replace(/\s+/g, ' ').trim()).toMatch(/^Moth 4 × 4 beads · saved \w+ \d+ · Ada$/)
     await button.trigger('click')
     await wrapper.get(`[data-testid="remove-project-${first.id}"]`).trigger('click')
     expect(wrapper.emitted('select')).toEqual([[first.id]])
@@ -107,7 +115,7 @@ describe('ProjectsLibrary with a huge Project (ticket 0716)', () => {
 
     const row = mountHosted({ projects: [project] }).get('[data-testid="project-item"]')
 
-    expect(row.get('[data-testid="project-pieces"]').text()).toBe('…')
+    expect((row.getComponent(AppTooltip).props() as { name: string }).name).toBe(en.projects.countingPieces)
     expect(reads.beads).toBeLessThanOrEqual(PIECE_WALK_LIMIT + 1000 + 260_000)
   })
 
@@ -116,7 +124,7 @@ describe('ProjectsLibrary with a huge Project (ticket 0716)', () => {
     const wrapper = mountHosted({ projects: [project] })
     await walkDrained()
     await nextTick()
-    expect(wrapper.get('[data-testid="project-pieces"]').text()).toBe('1')
+    expect((wrapper.get('[data-testid="project-item"]').getComponent(AppTooltip).props() as { name: string }).name).toBe('1 piece')
   })
 
   it('lists a sealed Project by its name, dates and bead count, with no thumbnail and no Piece count, among the rest by last save', async () => {
@@ -127,10 +135,8 @@ describe('ProjectsLibrary with a huge Project (ticket 0716)', () => {
     const [row] = wrapper.findAll('[data-testid="project-item"]')
 
     expect(row!.text()).toContain('Black fill')
-    expect(row!.text()).toContain('31\u00a0771\u00a0464 beads')
-    expect(row!.get('[data-testid="project-saved-on"]').text()).toBe('Oct 30')
+    expect(row!.get('[data-testid="project-line"]').text()).toBe('31\u00a0771\u00a0464 beads · saved Oct 30')
     expect((row!.getComponent(AppTooltip).props() as { name: string }).name).toBe('made Oct 1, 2026 · saved Oct 30, 2026')
-    expect(row!.find('[data-testid="project-pieces"]').exists()).toBe(false)
     expect(row!.find('[data-testid="project-sealed"]').exists()).toBe(true)
     await row!.get('[data-testid="select-project-big"]').trigger('click')
     await row!.get('[data-testid="remove-project-big"]').trigger('click')

@@ -1,13 +1,13 @@
 <script setup lang="ts">
-// A two-line row of a panel list (MenuPanel card): a thumbnail, the name (one line, ellipsis) over a second line in
-// `muted`, then facts at the right, and an `actions` slot shown on hover or keyboard focus (the library's × Remove).
-// The row is one button, `active` ringing the thumbnail (the open project); a `still` one only shows (ticket 0790).
-defineProps<{ name: string; sub?: string; heard?: string; active?: boolean; selectTestid?: string; still?: boolean }>()
+// A two-line row of a panel list (MenuPanel card): a thumbnail, the name over a second line in `muted` (`sub` or its
+// slot), and `actions` shown on hover or focus. `wraps`: a 44px thumbnail, the name on two lines, the line wrapping (0982).
+// One button named by the words it shows (0940), `active` ringing the thumbnail; a `still` row only shows (0790).
+defineProps<{ name: string; sub?: string; active?: boolean; selectTestid?: string; still?: boolean; wraps?: boolean }>()
 const emit = defineEmits<{ select: [] }>()
 </script>
 
 <template>
-  <div class="panel-list-row" :class="{ 'panel-list-row--active': active, 'panel-list-row--still': still }">
+  <div class="panel-list-row" :class="{ 'panel-list-row--active': active, 'panel-list-row--still': still, 'panel-list-row--wraps': wraps }">
     <component
       :is="still ? 'div' : 'button'"
       class="panel-list-row__select"
@@ -21,13 +21,9 @@ const emit = defineEmits<{ select: [] }>()
       <span class="panel-list-row__text">
         <span class="panel-list-row__name" data-user-text>{{ name }}</span>
         {{ ' ' }}
-        <span v-if="sub" class="panel-list-row__sub">{{ sub }}</span>
+        <span v-if="sub || $slots.sub" class="panel-list-row__sub"><slot name="sub">{{ sub }}</slot></span>
       </span>
-      {{ ' ' }}
-      <!-- The row's name is the words it shows, then `heard`, said only to a screen reader (ticket 0940). -->
-      <span v-if="heard" class="panel-list-row__heard">{{ heard }}</span>
     </component>
-    <span class="panel-list-row__facts"><slot name="facts" /></span>
     <span class="panel-list-row__actions"><slot name="actions" /></span>
   </div>
 </template>
@@ -112,22 +108,26 @@ const emit = defineEmits<{ select: [] }>()
   color: var(--muted);
 }
 
-/* Heard, not seen. */
-.panel-list-row__heard {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+/* A long name on two lines, then the ellipsis, and the second line wrapping (ticket 0982); the row grows round them. */
+.panel-list-row--wraps {
+  padding-block: var(--space-4);
 }
 
-.panel-list-row__facts {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--space-8);
-  color: var(--muted);
+.panel-list-row--wraps .panel-list-row__thumb {
+  --thumbnail-size: var(--library-thumbnail-size);
+}
+
+.panel-list-row--wraps .panel-list-row__name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.panel-list-row--wraps .panel-list-row__sub {
+  white-space: normal;
 }
 
 .panel-list-row__actions {
