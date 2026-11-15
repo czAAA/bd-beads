@@ -2,7 +2,7 @@ import { defineComponent, h } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { FINISHES } from '../../domain/colorCatalog'
 import { mountAt } from '../../testUtils/browserFit'
-import { emulateTouch, hitAreaProblems } from '../../testUtils/hitAreas'
+import { expectTouchScreen, hitAreaProblems } from '../../testUtils/hitAreas'
 import { tokenPx } from '../../testUtils/tokenPx'
 import BeadColorFilters from './BeadColorFilters.vue'
 
@@ -23,7 +23,7 @@ const named = (elements: Element[], name: string) => Object.fromEntries(elements
 describe('BeadColorFilters on touch (ticket 0962)', () => {
   for (const width of [600, 360]) {
     it(`gives each Finish line and Clear filters a touch-target hit area and each family the Palette's chip size, ${width}px wide`, async () => {
-      await emulateTouch()
+      expectTouchScreen()
       const { root } = await mountAt(inList(width), {}, { locale: 'en', width: 1280 })
       const finishes = { ...named([...root.querySelectorAll('[data-testid="bead-colors-finish"]')], 'finish'), clear: root.querySelector('[data-testid="bead-colors-filters-clear"]')! }
       expect(hitAreaProblems(finishes, tokenPx(document.body, '--touch-target'))).toEqual([])

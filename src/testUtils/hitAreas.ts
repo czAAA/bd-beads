@@ -1,21 +1,11 @@
 // Measuring where a control answers a press in a real browser (ticket 0962): the hit area is what `elementFromPoint`
 // finds, a pad (`::before`) included. Only for `*.browser.test.ts`.
-import { expect, onTestFinished } from 'vitest'
-// Types `cdp()` as Playwright's Chromium session.
-import type {} from '@vitest/browser-playwright'
-import { cdp } from 'vitest/browser'
-import { resetKeyHintsDevice } from '../composables/ui/useKeyHints'
+import { expect } from 'vitest'
 
-/** Turns the browser's touch emulation on for this test, so `(pointer: coarse)` turns the touch CSS on, and off after,
- * once the page is a mouse's again re-reading the pointer for the key chips, which every file on the page shares. */
-export async function emulateTouch(): Promise<void> {
-  await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
-  onTestFinished(async () => {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false })
-    await expect.poll(() => matchMedia('(pointer: coarse)').matches || !matchMedia('(any-hover: hover)').matches).toBe(false)
-    resetKeyHintsDevice()
-  })
-  await expect.poll(() => matchMedia('(pointer: coarse)').matches).toBe(true)
+/** Fails unless the page is a touch screen: a test of touch hit areas runs in the `browser-touch` project, named
+ * `*.touch.browser.test.ts`, whose page has Playwright's `hasTouch` (vite.config.ts). */
+export function expectTouchScreen(): void {
+  expect(matchMedia('(pointer: coarse)').matches, 'a *.touch.browser.test.ts runs on a touch screen').toBe(true)
 }
 
 const answers = (control: Element, x: number, y: number) => {

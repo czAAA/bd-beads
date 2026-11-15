@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mountAt } from '../testUtils/browserFit'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
-import { emulateTouch, hitAreaProblems } from '../testUtils/hitAreas'
+import { expectTouchScreen, hitAreaProblems } from '../testUtils/hitAreas'
 import { turnToSection } from '../testUtils/homepageSection'
 import { tokenPx } from '../testUtils/tokenPx'
 import HomePage from './HomePage.vue'
@@ -12,7 +12,7 @@ import HomePage from './HomePage.vue'
 describe('the Homepage on touch (ticket 0962)', () => {
   for (const width of [1366, 820]) {
     it(`gives each section step a touch-target hit area and each chapter its row, ${width}px wide`, async () => {
-      await emulateTouch()
+      expectTouchScreen()
       const { root } = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
       const steps = [...root.querySelectorAll<HTMLElement>('[data-testid="section-step"]')]
       expect(steps).toHaveLength(4)
