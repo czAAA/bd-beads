@@ -381,7 +381,7 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 | Name on exports · Your name · Printed on this Project's PDF and PNG exports. | Имя на экспорте · Ваше имя · Печатается на PDF и PNG этого проекта. |
 | Duplicate · Duplicate Project · Name · Everything is copied, including Row progress. The copy opens; the original stays as it is now. · Suggested: the current name and the next free number. | Дублировать · Дублировать проект · Название · Копируется всё, включая прогресс по рядам. Откроется копия, а оригинал останется таким, как сейчас. · Предложено: текущее название и следующий свободный номер. |
 | Delete all Projects? · Every Project is removed from this browser. This can't be undone. Export all first if you want to keep copies. · Clear this Project | Удалить все проекты? · Все проекты будут удалены из этого браузера. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии. · Очистить этот проект |
-| Delete this Project · Delete “{name}”? · “{name}” and its Row progress are removed from this browser. This can't be undone. Save its Project file first if you want to keep it. · Save Project file · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены из этого браузера. Это нельзя отменить. Если хотите оставить его себе, сначала сохраните файл проекта. · Сохранить файл проекта · Удалить проект |
+| Delete this Project · Delete “{name}”? · “{name}” and its Row progress are removed from this browser. Save its Project file first if you want to keep it. · Save Project file · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены из этого браузера. Если хотите оставить его себе, сначала сохраните файл проекта. · Сохранить файл проекта · Удалить проект |
 | A Project needs a name. · Enter saves · Escape cancels | У проекта должно быть название. · Enter сохраняет · Esc отменяет |
 | The Canvas stays white in high contrast. | В режиме высокой контрастности холст остаётся белым. |
 
@@ -1113,6 +1113,7 @@ Opening, duplicating and switching Projects say what happened and ask only when 
 | Everything is copied, including Row progress. The copy opens; the original stays as it is now. (Duplicate's note) | Копируется всё, включая прогресс по рядам. Откроется копия, а оригинал останется таким, как сейчас. | Копіюється все, зокрема прогрес за рядами. Відкриється копія, а оригінал залишиться таким, як зараз. | Капіруецца ўсё, у тым ліку прагрэс па радах. Адкрыецца копія, а арыгінал застанецца такім, як зараз. | 所有内容都会被复制，包括行进度。复制后打开副本，原项目保持现状。 | Se copia todo, incluido el progreso por filas. Se abre la copia; el original se queda como está ahora. | Kopiowane jest wszystko, także postęp rzędów. Otworzy się kopia, a oryginał zostanie taki, jak teraz. |
 | Copy this Project and open the copy. (Duplicate's Tooltip) | Скопировать проект и открыть копию. | Скопіювати проєкт і відкрити копію. | Скапіраваць праект і адкрыць копію. | 复制此项目并打开副本。 | Copia este proyecto y abre la copia. | Skopiuj ten projekt i otwórz kopię. |
 | Now in “{name}”. (the toast after a pick in the Projects library under 1024px, where the strip shows no name, ticket 0986) | Теперь открыт «{name}». | Тепер відкрито «{name}». | Цяпер адкрыты «{name}». | 现在打开的是“{name}”。 | Ahora estás en “{name}”. | Teraz otwarty jest „{name}”. |
+| “{name}” was deleted. Now in “{open}”. (the toast after Delete of the open Project, with Undo, ticket 0983; “{name}” was deleted. alone when the open Project stays or none is left) | Проект «{name}» удалён. Теперь открыт «{open}». | Проєкт «{name}» видалено. Тепер відкрито «{open}». | Праект «{name}» выдалены. Цяпер адкрыты «{open}». | “{name}”已删除。现在打开的是“{open}”。 | Se eliminó «{name}». Ahora estás en «{open}». | Projekt „{name}” został usunięty. Teraz otwarty jest „{open}”. |
 
 ## Unnamed Project copy (ticket 0866)
 
@@ -1275,3 +1276,15 @@ Convert image's Create Project says what it made and where it is kept, in a succ
 | Project “{name}” made from your picture. It is kept in this browser. (toast) | Проект «{name}» создан из вашего изображения. Он хранится в этом браузере. | Проєкт «{name}» створено з вашого зображення. Він зберігається в цьому браузері. | Праект «{name}» створаны з вашай выявы. Ён захоўваецца ў гэтым браўзеры. | 已用你的图片创建项目“{name}”。它保存在此浏览器中。 | Proyecto “{name}” creado a partir de tu imagen. Se guarda en este navegador. | Projekt „{name}” utworzony z Twojego obrazu. Jest przechowywany w tej przeglądarce. |
 
 English follows the audit's proposal (UX-055) but for where the Project is kept; the other languages are proposals for review with the build.
+
+## A button says its name on touch (ticket 0927)
+
+On the iPad most buttons are icons, and only a half-second hold shows a name. The touch hint line now says so, a Tool pill tile's first tap says its Tooltip's name and line in a toast, and Help has a row that shows every strip and pill name at once. `{name}` and `{line}` are the tile's Tooltip's own words, not copies.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| hold a button for its name (the touch hint's last part) | удержание кнопки: её название | утримання кнопки: її назва | утрыманне кнопкі: яе назва | 长按按钮查看名称 | mantén un botón para ver su nombre | przytrzymaj przycisk, aby zobaczyć nazwę |
+| {name}: {line} (toast, a tile's first tap) | {name}: {line} | {name}: {line} | {name}: {line} | {name}：{line} | {name}: {line} | {name}: {line} |
+| What the buttons do (Menu › Help) | Что делают кнопки | Що роблять кнопки | Што робяць кнопкі | 按钮的作用 | Qué hace cada botón | Co robią przyciski |
+
+English follows the audit's proposal (UX-006); the other languages are proposals for review with the build.

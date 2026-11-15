@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Colors opened with Enter or Space puts you on the chosen color: the arrows move among the colors, and Escape or a choice takes you back to the Colors button",
+    "ru": "Цвета, открытые клавишей Enter или пробелом, ставят вас на выбранный цвет: стрелки переходят между цветами, а Escape или выбор возвращает к кнопке «Цвета»",
+    "uk": "Кольори, відкриті клавішею Enter або пробілом, ставлять вас на вибраний колір: стрілки переходять між кольорами, а Escape або вибір повертає до кнопки «Кольори»",
+    "be": "Колеры, адкрытыя клавішай Enter або прабелам, ставяць вас на абраны колер: стрэлкі пераходзяць паміж колерамі, а Escape або выбар вяртае да кнопкі «Колеры»",
+    "zh": "用 Enter 或空格打开“颜色”后，焦点落在所选颜色上：方向键在颜色之间移动，按 Escape 或选定颜色后回到“颜色”按钮",
+    "es": "Colores abierto con Enter o Espacio te deja en el color elegido: las flechas se mueven entre los colores, y Escape o una elección te devuelve al botón Colores",
+    "pl": "Kolory otwarte klawiszem Enter lub spacją ustawiają cię na wybranym kolorze: strzałki przechodzą między kolorami, a Escape lub wybór wraca do przycisku Kolory"
+  }
+}

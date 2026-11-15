@@ -65,6 +65,7 @@ export const uk: Translations = {
     palette: 'Палітра',
     close: 'Закрити',
     useColor: 'Малювати кольором {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Відображення',
@@ -152,6 +153,7 @@ export const uk: Translations = {
       keepProjectsInfoLabel: 'Про зберігання проєктів',
       keepProjectsInfo:
         'Коли на пристрої мало місця, браузер може видалити дані цього застосунку, якщо він не зберігає ваші проєкти. Браузер вирішує це сам, тож збережіть файл проєкту для кожного, який вам дорогий.',
+      buttonNames: 'Що роблять кнопки',
     },
     project: {
       rename: 'Перейменувати «{name}»',
@@ -176,7 +178,7 @@ export const uk: Translations = {
       duplicateHint: 'Запропоновано: поточна назва й наступний вільний номер.',
       deleteThis: 'Видалити проєкт',
       deleteTitle: 'Видалити «{name}»?',
-      deleteMessage: '«{name}» і прогрес за рядами буде видалено з цього браузера. Це не можна скасувати. Якщо хочете залишити його собі, спершу збережіть файл проєкту.',
+      deleteMessage: '«{name}» і прогрес за рядами буде видалено з цього браузера. Якщо хочете залишити його собі, спершу збережіть файл проєкту.',
       deleteConfirm: 'Видалити проєкт',
       cancel: 'Скасувати',
       save: 'Зберегти',
@@ -196,6 +198,7 @@ export const uk: Translations = {
       beadSize: 'Розмір',
       duplicatedToast: 'Тепер відкрито «{copy}». «{original}» залишився як був.',
       openedToast: 'Тепер відкрито «{name}».',
+      deletedToast: 'Проєкт «{name}» видалено. Тепер відкрито «{open}».',
     },
   },
   theme: {
@@ -317,6 +320,7 @@ export const uk: Translations = {
       rulers: 'Лінійки',
       twoFingersToMove: 'два пальці: зсув',
       pinchToZoom: 'зведення пальців: масштаб',
+      holdForName: 'утримання кнопки: її назва',
     },
     firstRun: {
       storage: 'Ваші проєкти збережено лише в цьому браузері, на цьому пристрої.',

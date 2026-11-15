@@ -65,6 +65,7 @@ export const pl: Translations = {
     palette: 'Paleta',
     close: 'Zamknij',
     useColor: 'Maluj kolorem {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Odbicie',
@@ -152,6 +153,7 @@ export const pl: Translations = {
       keepProjectsInfoLabel: 'O zachowywaniu projektów',
       keepProjectsInfo:
         'Gdy na urządzeniu brakuje miejsca, przeglądarka może usunąć dane tej aplikacji, chyba że zachowuje Twoje projekty. Przeglądarka decyduje o tym sama, więc zapisz plik projektu każdego, na którym Ci zależy.',
+      buttonNames: 'Co robią przyciski',
     },
     project: {
       rename: 'Zmień nazwę „{name}”',
@@ -176,7 +178,7 @@ export const pl: Translations = {
       duplicateHint: 'Propozycja: obecna nazwa i następny wolny numer.',
       deleteThis: 'Usuń projekt',
       deleteTitle: 'Usunąć „{name}”?',
-      deleteMessage: '„{name}” i jego postęp rzędów zostaną usunięte z tej przeglądarki. Nie można tego cofnąć. Jeśli chcesz go zachować, najpierw zapisz plik projektu.',
+      deleteMessage: '„{name}” i jego postęp rzędów zostaną usunięte z tej przeglądarki. Jeśli chcesz go zachować, najpierw zapisz plik projektu.',
       deleteConfirm: 'Usuń projekt',
       cancel: 'Anuluj',
       save: 'Zapisz',
@@ -196,6 +198,7 @@ export const pl: Translations = {
       beadSize: 'Rozmiar',
       duplicatedToast: 'Teraz otwarty jest „{copy}”. „{original}” zostaje bez zmian.',
       openedToast: 'Teraz otwarty jest „{name}”.',
+      deletedToast: 'Projekt „{name}” został usunięty. Teraz otwarty jest „{open}”.',
     },
   },
   theme: {
@@ -317,6 +320,7 @@ export const pl: Translations = {
       rulers: 'Linijki',
       twoFingersToMove: 'dwa palce, aby przesunąć',
       pinchToZoom: 'uszczypnij, aby powiększyć',
+      holdForName: 'przytrzymaj przycisk, aby zobaczyć nazwę',
     },
     firstRun: {
       storage: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',

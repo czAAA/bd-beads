@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "After a row is marked done, Edit Frame stays on the Frame's bar and says why it is locked",
+    "ru": "Когда ряд отмечен как готовый, «Править рамку» остаётся на панели рамки и говорит, почему она заблокирована",
+    "uk": "Коли ряд позначено як готовий, «Правити рамку» лишається на панелі рамки й каже, чому її заблоковано",
+    "be": "Калі рад пазначаны як гатовы, «Правіць рамку» застаецца на панэлі рамкі і кажа, чаму яна заблакаваная",
+    "zh": "有行标记完成后，“编辑边框”仍留在边框栏上，并说明为什么被锁定",
+    "es": "Cuando una fila está marcada como terminada, Editar marco sigue en la barra del marco y dice por qué está bloqueado",
+    "pl": "Gdy rząd jest oznaczony jako gotowy, Edytuj ramkę zostaje na pasku ramki i mówi, dlaczego jest zablokowana"
+  }
+}

@@ -167,6 +167,8 @@ export interface Translations {
     close: string
     /** A recent colour's name. */
     useColor: string
+    /** The toast of a tile's first tap on touch (ticket 0927): its Tooltip's `{name}` and `{line}`. */
+    tileNamed: string
   }
   /** Mirror (ADR 0082, ticket 0750; ContextBar card's Mirror bar): the tile's name, the Mirror bar's controls, the
    * Selection bar's Mirror and the margin's Mirror the whole Frame. */
@@ -248,6 +250,8 @@ export interface Translations {
       keepProjectsOff: string
       keepProjectsInfoLabel: string
       keepProjectsInfo: string
+      /** Help's row that shows every strip and pill button's name at once (ticket 0927). */
+      buttonNames: string
     }
     project: {
       rename: string
@@ -295,6 +299,8 @@ export interface Translations {
       duplicatedToast: string
       /** Said under 1024px, where the strip shows no name, when a Project opens from the library (ticket 0986). */
       openedToast: string
+      /** After Delete of the open Project (ticket 0983): `{name}` is the deleted one, `{open}` the one open now. */
+      deletedToast: string
     }
   }
   /** The header's theme control (ticket 139). */
@@ -432,6 +438,8 @@ export interface Translations {
       /** On touch (ticket 0846): the line in finger words, with no key chips. */
       twoFingersToMove: string
       pinchToZoom: string
+      /** On touch (ticket 0927): a half-second hold on a button shows its Tooltip. */
+      holdForName: string
     }
     /** The welcome over an empty Project (FirstRunHints card, tickets 0795, 0798 and 0920): its quiet line on where
      * Projects are kept, and its lead line off touch, the Paint tool's Tooltip (`tooltips.paint`) in mouse words. */

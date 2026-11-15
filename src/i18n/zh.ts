@@ -65,6 +65,7 @@ export const zh: Translations = {
     palette: '调色板',
     close: '关闭',
     useColor: '用 {color} 绘制',
+    tileNamed: '{name}：{line}',
   },
   mirror: {
     title: '镜像',
@@ -152,6 +153,7 @@ export const zh: Translations = {
       keepProjectsInfoLabel: '关于保留项目',
       keepProjectsInfo:
         '设备空间不足时，浏览器可能会清除此应用的数据，除非它保留你的项目。这由浏览器自行决定，所以请为每个你在意的项目保存项目文件。',
+      buttonNames: '按钮的作用',
     },
     project: {
       rename: '重命名“{name}”',
@@ -176,7 +178,7 @@ export const zh: Translations = {
       duplicateHint: '建议：当前名称加上下一个可用编号。',
       deleteThis: '删除项目',
       deleteTitle: '删除“{name}”？',
-      deleteMessage: '“{name}”及其行进度将从此浏览器中移除，且无法撤销。如需保留，请先保存项目文件。',
+      deleteMessage: '“{name}”及其行进度将从此浏览器中移除。如需保留，请先保存项目文件。',
       deleteConfirm: '删除项目',
       cancel: '取消',
       save: '保存',
@@ -196,6 +198,7 @@ export const zh: Translations = {
       beadSize: '尺寸',
       duplicatedToast: '现在打开的是“{copy}”。“{original}”保持原样。',
       openedToast: '现在打开的是“{name}”。',
+      deletedToast: '“{name}”已删除。现在打开的是“{open}”。',
     },
   },
   theme: {
@@ -317,6 +320,7 @@ export const zh: Translations = {
       rulers: '标尺',
       twoFingersToMove: '双指移动',
       pinchToZoom: '双指捏合缩放',
+      holdForName: '长按按钮查看名称',
     },
     firstRun: {
       storage: '你的项目只保存在这台设备的浏览器里。',
