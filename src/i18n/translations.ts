@@ -328,8 +328,8 @@ export interface Translations {
     pieces: PluralForms
     /** "1 unnamed": the Pieces with no name, after the named ones. */
     unnamedPieces: string
-    /** "Frame 24 × 30 beads", with {width} and {height}. */
-    frameSize: string
+    /** "24 × 30 beads": a framed Project's size, on its library row (ticket 0982), with {width} and {height}. */
+    rowSize: string
     /** A row's Piece count over the size gate, never counted (ticket 0716). */
     tooBigToCount: string
     /** The Tooltip of a row's count still being worked out in idle time (ticket 0716). */
@@ -338,6 +338,8 @@ export interface Translations {
     beads: PluralForms
     /** A sealed Project's row: "made {created} · saved {saved}", dates in the app's language (ticket 0716). */
     sealedDates: string
+    /** "saved Nov 12": a library row's last save, the date short in the app's language (ticket 0982). */
+    savedOn: string
   }
   /** The Starter gallery and its setup (tickets 0596, 0597; StarterGallery card). */
   starters: {

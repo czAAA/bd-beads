@@ -3,13 +3,12 @@ import { computed, toRaw } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useIdlePieces } from '../../composables/canvas/idlePieces'
 import type { Project } from '../../domain/project'
-import { shownDimensions } from '../../domain/projectExtent'
-import { inSavedOrder, projectFrameSize, summarizeProject } from '../../domain/projectLibrary'
+import { inSavedOrder, lastSaved, shownFrameSize, summarizeProject } from '../../domain/projectLibrary'
 import { namedPieces, namedPiecesFrom } from '../../domain/pieceNames'
 import { piecesOf } from '../../domain/pieces'
 import { beadsOver, SIZE_GATE_BEADS, tooManyToWalk } from '../../domain/openingLimits'
 import type { SealedProject } from '../../domain/sealedProject'
-import { frameOf, heldWeave, layerOf, pieceNamesOf, projectNameOf } from '../../domain/layerRecord'
+import { heldWeave, layerOf, pieceNamesOf, projectNameOf } from '../../domain/layerRecord'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import ProjectImport from '../import/ProjectImport.vue'
@@ -20,9 +19,9 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import ProjectThumbnail from './ProjectThumbnail.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// The Projects library, a subpanel of the Menu (ticket 0553; MenuPanel card): Import and Export all, then every saved
-// Project as a two-line row, newest first (ticket 145); a press opens it, × Remove asks first. A sealed Project (ticket
-// 0716) is never decoded: its bead count and last save stand in for the thumbnail and the Piece count.
+// The Projects library, a subpanel of the Menu (ticket 0553; MenuPanel card): Import, Export all, then every saved
+// Project newest first (145), its second line "24 × 14 beads · saved Nov 12" (0982), its Pieces in that line's Tooltip.
+// A sealed Project (0716) is never decoded: its bead count stands in for the size, its Tooltip has both dates.
 const props = withDefaults(
   defineProps<{
     projects: Project[]
@@ -71,34 +70,38 @@ function piecesNow(shown: Project): { total: number; named: string[] } | 'counti
   return walked ? { total: walked.pieces.length, named: namedPiecesFrom(project, walked).map((piece) => piece.name) } : 'counting'
 }
 
-/** What a row states about a Project's Pieces: the count (or what stands for it), and the Tooltip's lines. */
-const facts = computed(() =>
+/** What a row's Tooltip says of a Project's Pieces: the count (or what stands for it), then the named ones. */
+const pieceFacts = computed(() =>
   new Map(
     props.projects.map((project) => {
       const pieces = piecesNow(project)
-      const size = frameOf(project) ? frameSize(project) : undefined
-      if (pieces === 'counting') return [project.id, { shown: '…', title: t.value.projects.countingPieces, body: size }]
-      if (pieces === 'too big') return [project.id, { shown: t.value.projects.tooBigToCount, title: t.value.projects.tooBigToCount, body: size }]
+      if (pieces === 'counting') return [project.id, { title: t.value.projects.countingPieces, body: undefined }]
+      if (pieces === 'too big') return [project.id, { title: t.value.projects.tooBigToCount, body: undefined }]
       const { total, named } = pieces
       const unnamed = total - named.length
       const lines = [...named, ...(unnamed > 0 && named.length > 0 ? [fillBlanks(t.value.projects.unnamedPieces, { count: unnamed })] : [])]
-      const body = [lines.join(' · '), size ?? ''].filter(Boolean).join('\n')
-      return [project.id, { shown: String(total), title: plural(locale.value, total, t.value.projects.pieces), body: body || undefined }]
+      return [project.id, { title: plural(locale.value, total, t.value.projects.pieces), body: lines.join(' · ') || undefined }]
     }),
   ),
 )
 
-function frameSize(project: Project): string {
-  const { columns, rows } = shownDimensions(project)
-  return fillBlanks(t.value.projects.frameSize, { width: columns, height: rows })
+/** A row's second line: "24 × 14 beads · saved Nov 12", then the maker's name when set. */
+function projectLine(project: Project): string {
+  const size = shownFrameSize(project)
+  return [size && fillBlanks(t.value.projects.rowSize, size), savedOn(project), project.makerName].filter(Boolean).join(' · ')
+}
+
+/** A sealed row's second line: "31 771 464 beads · saved Oct 30". */
+function sealedLine(project: SealedProject): string {
+  return `${plural(locale.value, project.beads, t.value.projects.beads)} · ${savedOn(project)}`
 }
 
 const dateFormat = computed(() => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', year: 'numeric' }))
 const shortDateFormat = computed(() => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short' }))
 
-/** A sealed row's last save, short ("Oct 30"); its Tooltip has both dates in full. */
-function shortDate(at: number): string {
-  return shortDateFormat.value.format(new Date(at))
+/** A row's last save, short: "saved Oct 30". */
+function savedOn(project: Project | SealedProject): string {
+  return fillBlanks(t.value.projects.savedOn, { date: shortDateFormat.value.format(new Date(lastSaved(project))) })
 }
 
 /** A sealed row's dates in full, for its Tooltip: when it was made and last saved. */
@@ -137,14 +140,14 @@ function sealedDates(project: SealedProject): string {
         <PanelListRow
           v-if="isSealed(entry)"
           :name="entry.name"
-          :sub="plural(locale, entry.beads, t.projects.beads)"
           :select-testid="`select-project-${entry.id}`"
+          wraps
           @select="emit('select', entry.id)"
         >
           <template #thumb><span class="projects-library__sealed" data-testid="project-sealed" aria-hidden="true"><AppIcon name="library" :size="16" /></span></template>
-          <template #facts>
+          <template #sub>
             <AppTooltip :name="sealedDates(entry)" :announce="false">
-              <span class="projects-library__pieces" data-testid="project-saved-on">{{ shortDate(entry.savedAt ?? entry.updatedAt) }}</span>
+              <span class="projects-library__line" data-testid="project-line">{{ sealedLine(entry) }}</span>
             </AppTooltip>
           </template>
           <template #actions>
@@ -162,19 +165,15 @@ function sealedDates(project: SealedProject): string {
         <PanelListRow
           v-else
           :name="projectNameOf(entry)"
-          :sub="entry.makerName"
           :active="entry.id === activeProjectId"
-          :heard="projectFrameSize(entry)"
           :select-testid="`select-project-${entry.id}`"
+          wraps
           @select="emit('select', entry.id)"
         >
           <template #thumb><ProjectThumbnail :project="entry" /></template>
-          <template #facts>
-            <AppTooltip :name="facts.get(entry.id)!.title" :body="facts.get(entry.id)!.body" :announce="false">
-              <span class="projects-library__facts">
-                <span class="projects-library__pieces" data-testid="project-pieces"><AppIcon name="piece" :size="14" />{{ facts.get(entry.id)!.shown }}</span>
-                <span class="projects-library__frame" :data-testid="frameOf(entry) ? 'project-framed' : undefined" aria-hidden="true"><AppIcon v-if="frameOf(entry)" name="frame" :size="14" /></span>
-              </span>
+          <template #sub>
+            <AppTooltip :name="pieceFacts.get(entry.id)!.title" :body="pieceFacts.get(entry.id)!.body" :announce="false">
+              <span class="projects-library__line" data-testid="project-line">{{ projectLine(entry) }}</span>
             </AppTooltip>
           </template>
           <template #actions>
@@ -248,17 +247,9 @@ function sealedDates(project: SealedProject): string {
   list-style: none;
 }
 
-.projects-library__facts {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-8);
-}
-
-.projects-library__pieces {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font: var(--type-meta-small);
+/* The second line is its Tooltip's trigger, no wider than the row: it wraps where the words are long (ticket 0982). */
+.projects-library__list :deep(.app-tooltip) {
+  max-width: 100%;
 }
 
 .projects-library__sealed {
@@ -269,12 +260,6 @@ function sealedDates(project: SealedProject): string {
   color: var(--muted);
   background: var(--board);
   border-radius: var(--radius-sm);
-}
-
-.projects-library__frame {
-  display: inline-grid;
-  width: var(--panel-mark-size);
-  height: var(--panel-mark-size);
 }
 
 /* Remove: a 20px × shown on hover or keyboard focus, and always without hover. */

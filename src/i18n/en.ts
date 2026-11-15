@@ -245,11 +245,12 @@ export const en: Translations = {
     emptyBody: 'Projects you make are kept in this browser. Open a Project file to bring one in.',
     pieces: { one: '{count} piece', other: '{count} pieces' },
     unnamedPieces: '{count} unnamed',
-    frameSize: 'Frame {width} × {height} beads',
+    rowSize: '{width} × {height} beads',
     tooBigToCount: 'too big to count',
     countingPieces: 'Counting pieces',
     beads: { one: '{count} bead', other: '{count} beads' },
     sealedDates: 'made {created} · saved {saved}',
+    savedOn: 'saved {date}',
   },
   starters: {
     title: 'Starter',

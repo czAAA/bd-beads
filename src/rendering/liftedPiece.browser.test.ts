@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { DARK_THEME, LIGHT_THEME, type DrawingContext, type ProjectTheme } from './beadLook'
+import { DARK_THEME, drawFlatBead, LIGHT_THEME, type DrawingContext, type ProjectTheme } from './beadLook'
 import { CELL_SIZE_PX } from './cellSize'
-import { drawLift, liftLookOf } from './liftedPiece'
+import { drawLift, joinedRound, liftLookOf, type LiftCell } from './liftedPiece'
 
 // The Lifted piece drawn for real (ticket 1004, BeadBoard card, Lifted piece): the ground round the beads, the contour
 // past it, and the shadow under it, made without the canvas filter.
@@ -97,5 +97,73 @@ describe('the shadows\' sheet', () => {
     expect(smaller!.sourceWidth).toBeLessThan(large!.sourceWidth)
     const [larger] = laid(row(60), 2)
     expect(larger!.canvasWidth).toBeGreaterThan(large!.canvasWidth)
+  })
+})
+
+// A piece in a round bead, drawn for real (ticket 1010, BeadBoard card, Lifted piece): TOHO Round 11/0's cell is a pill
+// 20 wide and 28 tall here. Beads are laid over the piece, so what shows between them is what the piece leaves.
+describe.each([
+  ['dark', DARK_THEME],
+  ['light', LIGHT_THEME],
+] as const)('a Lifted piece of round beads in %s', (_name, theme) => {
+  const [WIDTH, HEIGHT] = [CELL_SIZE_PX, CELL_SIZE_PX * 1.4]
+  const look = liftLookOf(theme.canvas)
+
+  /** The beads at `[row, column, columns]` runs (touching beads as one cell, as the Canvas takes them), lifted and drawn. */
+  function roundPiece(runs: [number, number, number][]): (x: number, y: number) => string {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = SIDE * SCALE
+    const context = canvas.getContext('2d')!
+    context.fillStyle = theme.canvas
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.setTransform(SCALE, 0, 0, SCALE, 0, 0)
+    const cells: LiftCell[] = runs.map(([row, column, columns]) => ({ x: 40 + column * WIDTH, y: 40 + row * HEIGHT, width: columns * WIDTH, height: HEIGHT, bead: WIDTH }))
+    drawLift(context as DrawingContext, joinedRound(cells, true), theme.canvas, SCALE)
+    for (const [row, column, columns] of runs) {
+      for (let each = column; each < column + columns; each += 1) {
+        drawFlatBead(context as DrawingContext, { x: 40 + each * WIDTH, y: 40 + row * HEIGHT, size: WIDTH, width: WIDTH, height: HEIGHT, cornerRadius: WIDTH / 2, color: '#e63746', dimmed: false, deviceScale: SCALE, theme })
+      }
+    }
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+    return (x, y) => {
+      const index = (Math.round(y * SCALE) * canvas.width + Math.round(x * SCALE)) * 4
+      return hex([data[index]!, data[index + 1]!, data[index + 2]!])
+    }
+  }
+
+  it('makes a single bead a pill: its contour has no square corner, and the ground is round it', () => {
+    const pixel = roundPiece([[0, 0, 1]])
+    // The pill's top end is a half circle: past it, at the corner of the box it stands in, only the Canvas shows.
+    // The shadow reaches a little round it, so what shows is not the piece's, whichever shade it is.
+    for (const [x, y] of [[37, 37], [63, 37], [37, 71], [63, 71]] as const) expect([look.ground, look.contour]).not.toContain(pixel(x, y))
+    // Beside the middle of its side, the ground, and the line past it.
+    expect(pixel(38, 54)).toBe(look.ground)
+    expect(pixel(36.9, 54)).toBe(look.contour)
+  })
+
+  it('shows the ground, and nothing else, in the star between four round beads, in every row of a small piece', () => {
+    const pixel = roundPiece([[0, 0, 3], [1, 0, 3], [2, 0, 3]])
+    for (const [column, row] of [[1, 1], [2, 1], [1, 2], [2, 2]]) expect(pixel(40 + column * WIDTH, 40 + row * HEIGHT)).toBe(look.ground)
+    // Between two beads of a row, mid-height, the gap is the same: no cell of its own color, no Canvas, no tile.
+    expect(pixel(40 + WIDTH, 40 + HEIGHT / 2)).toBe(look.ground)
+    expect(pixel(40 + 2 * WIDTH, 40 + 1.5 * HEIGHT)).toBe(look.ground)
+  })
+
+  it('keeps a hole of one bead with its own line', () => {
+    const pixel = roundPiece([[0, 0, 3], [1, 0, 1], [1, 2, 1], [2, 0, 3]])
+    const [left, middle] = [40 + WIDTH, 40 + 1.5 * HEIGHT]
+    // Inside the hole: past the ground, the contour's line runs 2.25 to 3.5 px in from the neighbours' cells.
+    expect(pixel(left + 2.9, middle)).toBe(look.contour)
+    expect([look.ground, look.contour]).not.toContain(pixel(left + WIDTH / 2, middle))
+  })
+
+  it('rounds the inner corner where a row reaches past the row under it, with nothing left square', () => {
+    const pixel = roundPiece([[0, 0, 4], [1, 1, 2]])
+    // The contour's corner is at the short row's left edge less 3.5, under the long row less 3.5 again; one px into the
+    // empty quarter, the fillet's corner square is filled, where a square corner would leave the Canvas.
+    const [cornerX, cornerY] = [40 + WIDTH - 3.5, 40 + HEIGHT + 3.5]
+    expect(pixel(cornerX - 0.8, cornerY + 0.8)).toBe(look.contour)
+    // And further in, past the fillet, there is none of the piece: only the shadow.
+    expect([look.ground, look.contour]).not.toContain(pixel(cornerX - 5, cornerY + 5))
   })
 })

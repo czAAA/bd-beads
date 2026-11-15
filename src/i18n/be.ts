@@ -248,11 +248,12 @@ export const be: Translations = {
     emptyBody: 'Праекты захоўваюцца ў гэтым браўзеры. Адкрыйце файл праекта, каб дадаць праект.',
     pieces: { one: '{count} частка', few: '{count} часткі', many: '{count} частак', other: '{count} часткі' },
     unnamedPieces: 'без назвы: {count}',
-    frameSize: 'Рамка {width} × {height} бісерын',
+    rowSize: '{width} × {height} бісерын',
     tooBigToCount: 'зашмат, каб палічыць',
     countingPieces: 'Лічым часткі',
     beads: { one: '{count} бісерынка', few: '{count} бісерынкі', many: '{count} бісерынак', other: '{count} бісерынкі' },
     sealedDates: 'створаны {created} · захаваны {saved}',
+    savedOn: 'захаваны {date}',
   },
   starters: {
     title: 'Стартар',

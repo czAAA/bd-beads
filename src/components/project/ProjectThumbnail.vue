@@ -7,8 +7,8 @@ import { thumbnailPixels } from '../../rendering/projectThumbnail'
 // its size for sharp screens. Redrawn only when the Project is replaced, at most once a frame while a stroke lands.
 const props = defineProps<{ project: Project }>()
 
-/** Pixels on the longer side: the 36px thumbnail at twice the density. */
-const DRAWN_SIZE = 72
+/** Pixels on the longer side: the largest thumbnail, the library row's 44px (ticket 0982), at twice the density. */
+const DRAWN_SIZE = 88
 
 const canvasEl = ref<HTMLCanvasElement>()
 let frame = 0

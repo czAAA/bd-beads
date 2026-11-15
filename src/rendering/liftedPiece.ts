@@ -4,8 +4,8 @@ import { footprintOf } from '../domain/footprint'
 import { beadsOfLayer, type Layered } from '../domain/layerRecord'
 import { canvasWeave } from '../domain/layerWeave'
 import { withMargin } from '../domain/margin'
-import { describeWeave } from '../domain/weave'
-import { BEAD_GAP_PX, type BeadDrawer, type DrawingContext } from './beadLook'
+import { beadRoundness, describeWeave, hasHalfCircleCorner, type Weave } from '../domain/weave'
+import { BEAD_GAP_PX, isOpenWeave, type BeadDrawer, type DrawingContext } from './beadLook'
 import { cellSizePx } from './cellSize'
 
 // The Lifted piece (ticket 1004, BeadBoard card, Canvas look): on the screen in light and dark, every Piece is one
@@ -74,6 +74,9 @@ export interface LiftCell {
   width: number
   height: number
   transform?: DOMMatrix2DInit
+  /** With a round bead (Open weave, ticket 1010): one bead's width, whose half circle is the piece's corner here. A
+   * cell of a bead whose corner isn't a half circle leaves it out. */
+  bead?: number
 }
 
 /** Sets a transform kept as a matrix, by its six numbers. */
@@ -92,24 +95,158 @@ function relativeTo({ a: a1 = 1, b: b1 = 0, c: c1 = 0, d: d1 = 1, e: e1 = 0, f: 
 const GROUND_OUT_PX = CONTOUR_OUT_PX - CONTOUR_LINE_PX
 const GROUND_RADIUS_PX = CONTOUR_RADIUS_PX - CONTOUR_LINE_PX
 
-/** The piece's shapes, built in one pass over the cells: each cell grown past its body, rounded, as one path, so
- * overlapping cells make one outline. The ground's (the shadows' too) and the contour's, the line's width past it, in
- * the space the context draws in (`base`, where beads are turned and each has its own transform: put into that). */
-function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined): { ground: Path2D; contour: Path2D } {
-  const grounds = new Path2D()
-  const contours = new Path2D()
-  for (const { x, y, width, height, transform } of cells) {
-    const into = transform && base ? relativeTo(base, transform) : undefined
-    for (const [path, out, radius] of [[grounds, GROUND_OUT_PX, GROUND_RADIUS_PX], [contours, CONTOUR_OUT_PX, CONTOUR_RADIUS_PX]] as const) {
-      const grow = out - BODY_INSET_PX
-      if (into) {
-        const own = new Path2D()
-        own.roundRect(x - grow, y - grow, width + grow * 2, height + grow * 2, radius)
-        path.addPath(own, into)
-      } else path.roundRect(x - grow, y - grow, width + grow * 2, height + grow * 2, radius)
+/** The two shapes of a piece: how far past a body each reaches and how round its corner is. */
+const SHAPES = [
+  { key: 'ground', out: GROUND_OUT_PX, radius: GROUND_RADIUS_PX },
+  { key: 'contour', out: CONTOUR_OUT_PX, radius: CONTOUR_RADIUS_PX },
+] as const
+
+/** A cell's corner on a shape reaching `out` past the body: the card's, or a round bead's own half circle, grown with
+ * it (ticket 1010). */
+function cornerOf({ bead }: LiftCell, out: number, radius: number): number {
+  return bead === undefined ? radius : bead / 2 - BODY_INSET_PX + out
+}
+
+/** The least inner-corner rounding drawn, in grid px: a smaller one is not seen. */
+const LEAST_FILLET_PX = 0.4
+/** How much smaller each try of an inner corner's rounding is than the last, where the first doesn't fit. */
+const FILLET_SHRINK = 0.7
+
+/** The key a line of cells is kept under: where it starts across the lines, to a thousandth of a px. */
+const lineKey = (v: number): number => Math.round(v * 1000)
+
+/** An inward step of a round piece's outline (`u` along the lines, `v` across): touching cells meet at `vt`; the one
+ * reaching further on side `su` gives the straight edge (to `straightEnd`), the other its corner's half circle (at
+ * `cornerEnd`); `sv` points to the empty side; `halfGap` is midway to the corner's next cell, which roundings don't pass. */
+interface InnerCorner {
+  su: -1 | 1
+  sv: -1 | 1
+  vt: number
+  straightEnd: number
+  cornerEnd: number
+  halfGap: number
+}
+
+/** The inner corners of a round piece's outline (ticket 1010): where one cell reaches further than the touching cell of
+ * the next line. `rows` says the lines are rows, else columns. Cells are the untransformed ones that have a bead. */
+function innerCornersOf(cells: readonly LiftCell[], rows: boolean): InnerCorner[] {
+  // A cell in line terms: u runs along its line, v across lines.
+  const lines = new Map<number, { u0: number; u1: number; v1: number }[]>()
+  for (const { x, y, width, height } of cells) {
+    const [u0, u1, v0, v1] = rows ? [x, x + width, y, y + height] : [y, y + height, x, x + width]
+    const key = lineKey(v0)
+    const line = lines.get(key)
+    if (line) line.push({ u0, u1, v1 })
+    else lines.set(key, [{ u0, u1, v1 }])
+  }
+  const found: InnerCorner[] = []
+  for (const line of lines.values()) {
+    line.sort((a, b) => a.u0 - b.u0)
+    const below = lines.get(lineKey(line[0]!.v1))
+    if (!below) continue
+    below.sort((a, b) => a.u0 - b.u0)
+    // Every pair that overlaps along the lines, by a sweep of both.
+    for (let at = 0, from = 0; at < line.length; at += 1) {
+      const above = line[at]!
+      while (from < below.length && below[from]!.u1 <= above.u0) from += 1
+      for (let each = from; each < below.length && below[each]!.u0 < above.u1; each += 1) {
+        const under = below[each]!
+        const vt = above.v1
+        // Midway to the next cell of the corner's own line, where there is one.
+        const [before, after] = [(cells: typeof line, at: number) => cells[at - 1]?.u1, (cells: typeof line, at: number) => cells[at + 1]?.u0]
+        const mid = (end: number, next: number | undefined, su: -1 | 1) => (next === undefined ? su * Infinity : (end + next) / 2)
+        if (above.u0 < under.u0) found.push({ su: -1, sv: 1, vt, straightEnd: above.u0, cornerEnd: under.u0, halfGap: mid(under.u0, before(below, each), -1) })
+        if (above.u1 > under.u1) found.push({ su: 1, sv: 1, vt, straightEnd: above.u1, cornerEnd: under.u1, halfGap: mid(under.u1, after(below, each), 1) })
+        if (under.u0 < above.u0) found.push({ su: -1, sv: -1, vt, straightEnd: under.u0, cornerEnd: above.u0, halfGap: mid(above.u0, before(line, at), -1) })
+        if (under.u1 > above.u1) found.push({ su: 1, sv: -1, vt, straightEnd: under.u1, cornerEnd: above.u1, halfGap: mid(above.u1, after(line, at), 1) })
+      }
     }
   }
-  return { ground: grounds, contour: contours }
+  return found
+}
+
+/** Adds the rounding of an inner corner to `path`, on a shape reaching `grow` past the bodies with corners of radius `r`:
+ * the spandrel between the straight edge, the other cell's corner circle and a circle tangent to both, a px into the cells
+ * so no seam shows, wound as a rounded rectangle is. Left out where the straight edge is too short to reach its foot. */
+function addFillet(path: Path2D, corner: InnerCorner, grow: number, r: number, most: number, rows: boolean): void {
+  const { su, sv, vt, straightEnd, cornerEnd, halfGap } = corner
+  const line = sv > 0 ? vt + grow : vt - grow
+  const [centreU, centreV] = [cornerEnd + su * (grow - r), sv > 0 ? vt - grow + r : vt + grow - r]
+  // Where the straight edge cuts the corner's circle.
+  const reach = r * r - (line - centreV) ** 2
+  if (reach <= 0) return
+  const meet = centreU + su * Math.sqrt(reach)
+  // The rounding's circle, tangent to the line and outside the corner's, as big as the straight edge allows.
+  const footLimit = su > 0 ? Math.min(straightEnd + grow - r, halfGap) : Math.max(straightEnd - grow + r, halfGap)
+  for (let rho = most; rho >= LEAST_FILLET_PX; rho *= FILLET_SHRINK) {
+    const centreF = line + sv * rho
+    const apart = (r + rho) ** 2 - (centreV - centreF) ** 2
+    if (apart <= 0) return
+    const foot = centreU + su * Math.sqrt(apart)
+    if (su * foot > su * footLimit || su * foot < su * meet) continue
+    const touch = [centreU + ((foot - centreU) * r) / (r + rho), centreV + ((centreF - centreV) * r) / (r + rho)] as const
+    const into = line - sv
+    const [mapped, ring] = [(u: number, v: number) => (rows ? [u, v] : [v, u]) as readonly [number, number], [] as (readonly [number, number])[]]
+    ring.push(mapped(foot, into), mapped(meet, into), mapped(meet, line), mapped(touch[0], touch[1]), mapped(foot, line))
+    const [fx, fy] = mapped(foot, centreF)
+    const [fromX, fromY] = mapped(touch[0], touch[1])
+    const [toX, toY] = mapped(foot, line)
+    const [from, to] = [Math.atan2(fromY - fy, fromX - fx), Math.atan2(toY - fy, toX - fx)]
+    // The way round the circle that is the short one, the corner's side.
+    const sweep = Math.atan2(Math.sin(to - from), Math.cos(to - from))
+    // Clockwise on the screen is a positive area, as y runs down.
+    const area = ring.reduce((sum, [x, y], at) => sum + x * ring[(at + 1) % ring.length]![1] - ring[(at + 1) % ring.length]![0] * y, 0)
+    if (area > 0) {
+      path.moveTo(...ring[0]!)
+      path.lineTo(...ring[1]!)
+      path.lineTo(...ring[2]!)
+      path.lineTo(...ring[3]!)
+      path.arc(fx, fy, rho, from, to, sweep < 0)
+    } else {
+      path.moveTo(...ring[0]!)
+      path.lineTo(...ring[4]!)
+      path.arc(fx, fy, rho, to, from, sweep > 0)
+      path.lineTo(...ring[3]!)
+      path.lineTo(...ring[2]!)
+      path.lineTo(...ring[1]!)
+    }
+    path.closePath()
+    return
+  }
+}
+
+/** The piece's shapes, built in one pass over the cells: each grown past its body, rounded, as one path, so overlapping
+ * cells make one outline. The ground's (the shadows' too) and the contour's, in the space the context draws in (`base`,
+ * where beads are turned: each put into that). A round bead's cell takes its half circle, and inner corners are rounded. */
+function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined, rows: boolean): { ground: Path2D; contour: Path2D } {
+  const paths = { ground: new Path2D(), contour: new Path2D() }
+  for (const cell of cells) {
+    const { x, y, width, height, transform } = cell
+    const into = transform && base ? relativeTo(base, transform) : undefined
+    for (const { key, out, radius } of SHAPES) {
+      const grow = out - BODY_INSET_PX
+      const corner = cornerOf(cell, out, radius)
+      if (into) {
+        const own = new Path2D()
+        own.roundRect(x - grow, y - grow, width + grow * 2, height + grow * 2, corner)
+        paths[key].addPath(own, into)
+      } else paths[key].roundRect(x - grow, y - grow, width + grow * 2, height + grow * 2, corner)
+    }
+  }
+  // Every round cell of a piece has the one bead's width: a Frame's and the Canvas's are drawn apart.
+  const round = cells.filter((cell) => cell.bead !== undefined && !cell.transform)
+  if (round.length > 1) {
+    const { bead, height } = round[0]!
+    for (const inner of innerCornersOf(round, rows)) {
+      for (const { key, out, radius } of SHAPES) {
+        const grow = out - BODY_INSET_PX
+        // A corner is at most half the shorter side, as the rounded rectangles draw it (a brick stitch bead lies wide).
+        const corner = Math.min(bead! / 2 + grow, rows ? height / 2 + grow : Infinity)
+        addFillet(paths[key], inner, grow, corner, radius, rows)
+      }
+    }
+  }
+  return paths
 }
 
 /** How many device px the shadows' own picture takes per px of it, at most: a blur this soft loses nothing drawn
@@ -199,12 +336,12 @@ function drawShadows(context: DrawingContext, shape: Path2D, cells: readonly Lif
 
 /** The pieces the cells make, at `deviceScale` device px per grid px, on `background`: their shadows, the contour, and
  * the ground inside it. Drawn before the beads, which cover the rest. The shapes are built once, so overlapping cells
- * make one outline. */
-export function drawLift(context: DrawingContext, cells: readonly LiftCell[], background: string, deviceScale: number): void {
+ * make one outline. `rows` says whether the cells are runs of a row, else of a column (for a round bead's inner corners). */
+export function drawLift(context: DrawingContext, cells: readonly LiftCell[], background: string, deviceScale: number, rows = true): void {
   if (!cells.length) return
   const look = liftLookOf(background)
   const base = cells.some((cell) => cell.transform) ? context.getTransform() : undefined
-  const { ground, contour } = shapesOf(cells, base)
+  const { ground, contour } = shapesOf(cells, base, rows)
   // Each shadow in a sheet fine enough for its own blur. Laying a sheet over the screen costs the screen, so the
   // shadows share one wherever it is smaller than the screen, at the finest step either needs; where the closest is not
   // drawn smaller, the soft one keeps its coarse sheet and the closest falls straight on the screen.
@@ -251,6 +388,12 @@ function joinedDown(cells: LiftCell[]): LiftCell[] {
   return joined
 }
 
+/** Whether a Weave's beads are lifted as runs of a row (loom, brick stitch), else of a column (peyote). */
+export function liftsAcross(weave: Weave): boolean {
+  const description = describeWeave(weave)
+  return !description.shifted || description.staggers === 'rows'
+}
+
 /** What part of the Canvas a draw covers, in grid px, and the rows it redraws when only some. */
 export interface LiftView {
   area: { left: number; right: number; top: number; bottom: number }
@@ -274,7 +417,9 @@ export function canvasLiftCells(project: Layered, { area, rows, margin }: LiftVi
   const last = rows ? Math.min(visible.lastRow, rows.last + rowsReach) : visible.lastRow
   const covered = footprintOf(project)
   const keptOut: Rect | undefined = covered && withMargin(covered, margin)
-  const across = !description.shifted || description.staggers === 'rows'
+  const across = liftsAcross(weave)
+  // A round bead's piece follows its half circle (ticket 1010).
+  const round = hasHalfCircleCorner(beadRoundness(weave.technique, weave.cell)) ? { bead: cell.width } : {}
   const cells: LiftCell[] = []
   for (const key in beads) {
     const row = Number(key)
@@ -294,11 +439,11 @@ export function canvasLiftCells(project: Layered, { area, rows, margin }: LiftVi
         if (across) {
           const left = description.box({ row, column }, cell.width, cell.height)
           const right = description.box({ row, column: stop }, cell.width, cell.height)
-          cells.push({ x: left.x, y: left.y, width: right.x + right.width - left.x, height: left.height })
+          cells.push({ x: left.x, y: left.y, width: right.x + right.width - left.x, height: left.height, ...round })
         } else {
           for (let each = column; each <= stop; each += 1) {
             const { x, y, width, height } = description.box({ row, column: each }, cell.width, cell.height)
-            cells.push({ x, y, width, height })
+            cells.push({ x, y, width, height, ...round })
           }
         }
         column = stop + 1
@@ -306,6 +451,27 @@ export function canvasLiftCells(project: Layered, { area, rows, margin }: LiftVi
     }
   }
   return across ? cells : joinedDown(cells)
+}
+
+/** Cells of one line that touch end to end as one: a row's, where rows are not staggered. */
+function joinedAcross(cells: LiftCell[]): LiftCell[] {
+  cells.sort((a, b) => a.y - b.y || a.x - b.x)
+  const joined: LiftCell[] = []
+  for (const cell of cells) {
+    const last = joined.at(-1)
+    if (last && last.y === cell.y && last.height === cell.height && Math.abs(last.x + last.width - cell.x) < 1e-6) last.width += cell.width
+    else joined.push({ ...cell })
+  }
+  return joined
+}
+
+/** The cells of round beads that stand upright, touching ones joined as the Canvas's are (a row's, or a column's where
+ * columns are staggered), so a Frame's piece has the same outline: the others are left as they are (ticket 1010). */
+export function joinedRound(cells: readonly LiftCell[], across: boolean): LiftCell[] {
+  const round = cells.filter((cell) => cell.bead !== undefined && !cell.transform)
+  if (!round.length) return cells.slice()
+  const others = cells.filter((cell) => cell.bead === undefined || cell.transform)
+  return [...others, ...(across ? joinedAcross(round) : joinedDown(round))]
 }
 
 /** A bead drawer that draws the empty positions with `draw` and keeps the painted beads' cells for the piece under
@@ -318,7 +484,8 @@ export function liftCollector(draw: BeadDrawer, turned: boolean): { drawer: Bead
       return
     }
     const { x, y, size, width = size, height = size } = bead
-    cells.push(turned ? { x, y, width, height, transform: context.getTransform() } : { x, y, width, height })
+    const round = isOpenWeave(bead.cornerRadius, width) ? { bead: width } : {}
+    cells.push(turned ? { x, y, width, height, transform: context.getTransform(), ...round } : { x, y, width, height, ...round })
   }
   return { drawer, cells }
 }

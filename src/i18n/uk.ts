@@ -247,11 +247,12 @@ export const uk: Translations = {
     emptyBody: 'Проєкти зберігаються в цьому браузері. Відкрийте файл проєкту, щоб додати проєкт.',
     pieces: { one: '{count} частина', few: '{count} частини', many: '{count} частин', other: '{count} частини' },
     unnamedPieces: 'без назви: {count}',
-    frameSize: 'Рамка {width} × {height} намистин',
+    rowSize: '{width} × {height} намистин',
     tooBigToCount: 'забагато, щоб порахувати',
     countingPieces: 'Рахуємо частини',
     beads: { one: '{count} бісеринка', few: '{count} бісеринки', many: '{count} бісеринок', other: '{count} бісеринки' },
     sealedDates: 'створено {created} · збережено {saved}',
+    savedOn: 'збережено {date}',
   },
   starters: {
     title: 'Стартер',

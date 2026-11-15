@@ -13,7 +13,7 @@ Signed off in the design session of 2026-10-27 (the claude.ai canvas "Printed ch
 ## Color key
 
 - On every Word chart page: a strip 26.5 mm from the top, the full content width (190 mm), outlined like the chart pad (0.2 mm `faint`, corners 2 mm, no fill). It is 8 mm tall for one row of colors and grows 4.5 mm for each further row.
-- In it, the colors in Swatch letter order, 31 mm apart, starting 3 mm in: a 3 mm swatch drawn like a chart bead (fill, 0.1 mm `line-strong` edge, its letter on it by PrintChartPage's white-or-black rule), then 1.6 mm, then the name in Inter 400 7 pt `ink`. When the Schema has empty positions, the last item is an empty swatch with `*` in `muted` and "empty".
+- In it, the colors in Swatch letter order, 31 mm apart, starting 3 mm in: a 3 mm swatch drawn like a chart bead (fill, 0.1 mm `line-strong` edge, its letter on it by PrintChartPage's white-or-black rule), then 1.6 mm, then the name in Inter 400 7 pt `ink`. When the Schema has empty positions, the last item is an empty swatch (0.1 mm `line-strong` edge, no fill) carrying the chart's small `faint` cross, then "empty" (ticket 0963).
 - Under the strip, 6 mm below its bottom edge: one line in Inter 7.5 pt `muted` saying where Row 1 is and what a run is ("Row 1 is at the top of the picture. All rows read left to right; 3D is three beads of D."). Peyote adds "Even count" or "Odd count".
 
 ## Rows
@@ -23,7 +23,7 @@ Signed off in the design session of 2026-10-27 (the claude.ai canvas "Printed ch
   1. A tick box: a 2.8 mm square, 0.2 mm `field-line` outline, corners 0.4 mm, its top 1.4 mm below the row's top.
   2. The row number in DM Mono 500 `print-word-row` (10 pt) `ink`, right-aligned 11.5 mm from the box's left edge ("1&2" fits).
   3. The (L) or (R) marker, for peyote, brick and a Kite's rows only, in DM Mono 10 pt `muted`, 1 mm after the number. The runs follow it.
-  4. The runs in DM Mono 400 10 pt `ink`, from 13.5 mm after the box's left edge (2 mm further with a marker), in the 0574 notation ("3A, 7B, 2*").
+  4. The runs in DM Mono 400 10 pt `ink`, from 13.5 mm after the box's left edge (2 mm further with a marker), in the 0574 notation ("3A, 7B, 2×"), an empty position written `×`, the cross the chart draws there (ticket 0963).
 - Text baseline: 3.9 mm below the row's top.
 - A hairline under each row, across the column: 0.15 mm `line-soft`, and under every 5th row 0.2 mm `line-strong`, so the rows can be counted as on the chart.
 - The number of runs on the right is gone: it is not something a weaver works from.
@@ -53,7 +53,7 @@ A build agent checks on a 35 × 120 loom bracelet and a 100 × 100 loom Schema, 
 - [ ] Rows are DM Mono 10 pt with a 5.6 mm pitch: the tick box, then the number (500, right-aligned), then the runs. No run count.
 - [ ] Each row has a `line-soft` hairline under it, and every 5th row a `line-strong` one.
 - [ ] A row never splits across a column or a page. A wrapped row indents to its runs.
-- [ ] The color key strip is an outline with no fill, its swatches drawn like chart beads with their letters, and `*` empty listed when the Schema has empty positions.
+- [ ] The color key strip is an outline with no fill, its swatches drawn like chart beads with their letters, and the cross listed as "empty" when the Schema has empty positions.
 - [ ] Peyote's first line is "1&2". Peyote and brick lines carry (L)/(R) in `muted`. The run notation is unchanged from 0574.
 - [ ] A 5-round Warped Square in one color reads "Round 1: 4A", "Round 2: (2A) | (2A) | (2A) | (2A)", "Round 5: (2A), 3A | …" four sides; a Fringe earring reads as before (ticket 0873).
 - [ ] A 5-row Kite in one color reads "1 (L) Row 1: (2A)", "2 (R) Row 2: (2A)", "3 (L) Row 3: 1A, (2A), 1A", "5 (L) Row 5: 2A, (2A), 2A" (ticket 0874).

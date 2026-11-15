@@ -247,11 +247,12 @@ export const pl: Translations = {
     emptyBody: 'Projekty są przechowywane w tej przeglądarce. Otwórz plik projektu, aby dodać projekt.',
     pieces: { one: '{count} kawałek', few: '{count} kawałki', many: '{count} kawałków', other: '{count} kawałka' },
     unnamedPieces: 'bez nazwy: {count}',
-    frameSize: 'Ramka {width} × {height} koralików',
+    rowSize: '{width} × {height} koralików',
     tooBigToCount: 'za dużo, by policzyć',
     countingPieces: 'Liczenie kawałków',
     beads: { one: '{count} koralik', few: '{count} koraliki', many: '{count} koralików', other: '{count} koralika' },
     sealedDates: 'utworzono {created} · zapisano {saved}',
+    savedOn: 'zapisano {date}',
   },
   starters: {
     title: 'Starter',

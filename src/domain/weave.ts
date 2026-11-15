@@ -306,6 +306,13 @@ export function beadRoundness(technique: Technique, cell?: BeadCell): number {
   return cell ? cell.roundness : describeTechnique(technique).roundness
 }
 
+/** Whether a bead's corner is a half circle (roundness 0.5, a round Bead's pill): such a bead is drawn in Open weave,
+ * its body and light with nothing round it, and its Piece's shape follows it (ticket 1010). The one place that rule is
+ * decided, on the bead's shape and not on any Bead's name. */
+export function hasHalfCircleCorner(roundness: number): boolean {
+  return roundness >= 0.5 - 1e-9
+}
+
 // Physical and px geometry both come from the grid units of the Weave's geometry, scaled by the cell size asked for.
 
 /** Horizontal offset for a row's cells: only brick stitch's rows shift, every other one (or block of N) by half a bead,

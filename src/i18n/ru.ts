@@ -247,11 +247,12 @@ export const ru: Translations = {
     emptyBody: 'Проекты хранятся в этом браузере. Откройте файл проекта, чтобы добавить проект.',
     pieces: { one: '{count} часть', few: '{count} части', many: '{count} частей', other: '{count} части' },
     unnamedPieces: 'без названия: {count}',
-    frameSize: 'Рамка {width} × {height} бисеринок',
+    rowSize: '{width} × {height} бисеринок',
     tooBigToCount: 'слишком много, чтобы посчитать',
     countingPieces: 'Считаем части',
     beads: { one: '{count} бисеринка', few: '{count} бисеринки', many: '{count} бисеринок', other: '{count} бисеринки' },
     sealedDates: 'создан {created} · сохранён {saved}',
+    savedOn: 'сохранён {date}',
   },
   starters: {
     title: 'Стартер',
