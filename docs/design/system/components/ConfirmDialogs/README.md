@@ -3,6 +3,7 @@
 The Delete all? and Replace bead? confirmations.
 
 - The Modal template with the app's own copy: a destructive confirm is danger-filled (Delete all), any other is primary (Replace bead). Cancel is always on the left and has focus first.
+- A side action (Save Project file, Save first) sits at the left of the row. When the row is too narrow for all three, the side action keeps the first row to itself and Cancel and the confirm move down together, side by side (ticket 0994).
 
 Hand-written from the Phase A sign-off (forms, screens and states); static rendition.
 

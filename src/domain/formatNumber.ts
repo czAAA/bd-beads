@@ -2,6 +2,16 @@ import type { Locale } from './locale'
 
 const formats = new Map<string, Intl.NumberFormat>()
 
+// Chromium ships no Belarusian number data and would write Belarusian as English ("0.5", "1,200"); Belarusian writes
+// numbers as Russian does (comma, no-break space), so Russian stands in where 'be' is missing (ticket 0994).
+const NUMBER_FALLBACK: Partial<Record<Locale, Locale>> = { be: 'ru' }
+
+/** The locales to hand `Intl.NumberFormat` for a language: its own first, then the one that writes numbers the same. */
+function numberLocales(locale: Locale): Locale[] {
+  const fallback = NUMBER_FALLBACK[locale]
+  return fallback ? [locale, fallback] : [locale]
+}
+
 function numberFormat(locale: Locale, fractionDigits: number): Intl.NumberFormat {
   const key = `${locale}:${fractionDigits}`
   let found = formats.get(key)
@@ -9,7 +19,7 @@ function numberFormat(locale: Locale, fractionDigits: number): Intl.NumberFormat
     // 'always' groups four-digit numbers too (Spanish and Polish would leave 1200 bare), so "1 200" reads the same
     // everywhere. The TypeScript lib types useGrouping as a boolean only; 'always' is valid in every supported browser.
     const useGrouping = 'always' as unknown as boolean
-    found = new Intl.NumberFormat(locale, {
+    found = new Intl.NumberFormat(numberLocales(locale), {
       useGrouping,
       minimumFractionDigits: fractionDigits,
       maximumFractionDigits: fractionDigits,
@@ -34,6 +44,11 @@ export function groupThousands(value: number, locale: Locale = 'en'): string {
 // and Chinese (`writing.md`, Numbers).
 export function decimalSign(locale: Locale): string {
   return numberFormat(locale, 1).formatToParts(1.5).find((part) => part.type === 'decimal')?.value ?? '.'
+}
+
+/** A size with at most one decimal and no trailing zero, as a file's megabytes are read out: "9,6", "10". */
+export function atMostOneDecimal(value: number, locale: Locale = 'en'): string {
+  return new Intl.NumberFormat(numberLocales(locale), { maximumFractionDigits: 1 }).format(value)
 }
 
 /** A count of beads in millions for the size gate's warning (ticket 0716): "31" for 31 771 024, "2,5" for 2 512 000 in
