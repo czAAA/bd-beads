@@ -885,6 +885,8 @@ export const zh: Translations = {
     qualityNote: '用于图片。可打印图表由线条绘制，任意放大都清晰。',
     progressMarkPiece: '标出要导出和计数的部分：用“选择”拖动。',
     selectFrameTouchHint: '在画布上拖动以框选边框，选择一个工具即可取消。',
+    widthRange: '宽度为 {min} 到 {max} 颗珠子',
+    heightRange: '高度为 {min} 到 {max} 颗珠子',
   },
   size: {
     estimateLabel: '估算尺寸',

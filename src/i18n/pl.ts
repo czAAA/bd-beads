@@ -903,6 +903,8 @@ export const pl: Translations = {
     qualityNote: 'Dla obrazu. Wykres do druku jest rysowany liniami i pozostaje ostry przy każdym powiększeniu.',
     progressMarkPiece: 'Zaznacz część do eksportu i liczenia: przeciągnij narzędziem Zaznacz.',
     selectFrameTouchHint: 'Przeciągnij po płótnie, by zaznaczyć ramkę. Wybierz narzędzie, by anulować.',
+    widthRange: 'Szerokość: od {min} do {max} koralików',
+    heightRange: 'Wysokość: od {min} do {max} koralików',
   },
   size: {
     estimateLabel: 'Szacunkowy rozmiar',
