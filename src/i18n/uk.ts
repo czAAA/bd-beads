@@ -36,11 +36,13 @@ export const uk: Translations = {
     enterHeight: 'Вкажіть висоту.',
     enterWholeBeads: 'Вкажіть ціле число бісерин.',
     or: 'або',
-    openCanvasTitle: 'Відкрите полотно',
-    openCanvasSubtitle: 'Малюйте на відкритому полотні, задайте рамку, щоб експортувати картинку або PDF, коли знадобиться',
+    openCanvasSubtitle: 'Малюйте будь-де. Задайте розмір, коли знадобиться картинка або PDF.',
     pickStarter: 'Обрати стартер',
     estimateBeads: '≈ {columns}×{rows} бісерин',
     unnamedProject: 'Проєкт {number}',
+    techniqueInfo: 'Як лежать бісерини: сіткою на верстаті в ткацтві або рядами зі зсувом у мозаїчному та цегляному плетінні.',
+    techniqueInfoLabel: 'Що робить Техніка плетіння',
+    beadInfoLabel: 'Що задає Бісер',
   },
   a11y: {
     toolsLandmark: 'Інструменти',
@@ -1192,6 +1194,7 @@ export const uk: Translations = {
       backgroundChip: 'Тло знайдено · {n}% зображення',
       backgroundTurnOff: 'Вимкнути',
       exactShort: 'Власні кольори',
+      resultLabel: 'результат',
     },
     errors: {
       heic: 'Браузери не вміють читати HEIC. Збережіть зображення в PNG або JPEG і спробуйте знову.',

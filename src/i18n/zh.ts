@@ -36,11 +36,13 @@ export const zh: Translations = {
     enterHeight: '请输入高度。',
     enterWholeBeads: '请输入整数颗珠子。',
     or: '或',
-    openCanvasTitle: '开放画布',
-    openCanvasSubtitle: '在开放画布上自由绘制，需要导出图片或 PDF 时再设边框',
+    openCanvasSubtitle: '随处绘制。需要图片或 PDF 时再设尺寸。',
     pickStarter: '选择起始方案',
     estimateBeads: '≈ {columns}×{rows} 颗',
     unnamedProject: '项目 {number}',
+    techniqueInfo: '珠子如何排列：织机上排成方格，佩奥和砖形则逐行错开。',
+    techniqueInfoLabel: '编织技法的作用',
+    beadInfoLabel: '珠子的作用',
   },
   a11y: {
     toolsLandmark: '工具',
@@ -1167,6 +1169,7 @@ export const zh: Translations = {
       backgroundChip: '已找到背景 · 图片的 {n}%',
       backgroundTurnOff: '关闭',
       exactShort: '图片原色',
+      resultLabel: '结果',
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

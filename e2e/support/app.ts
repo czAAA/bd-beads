@@ -78,7 +78,7 @@ export async function openStripPanel(page: Page, dock: StripPanelButton): Promis
 
 /** Closes whatever is open: Menu or Project with the strip button that lit it; does nothing with none open. */
 export async function closePanel(page: Page): Promise<void> {
-  const lit = page.locator('[data-testid="strip-menu"][aria-pressed="true"], [data-testid="strip-project"][aria-pressed="true"], [data-testid="strip-frame"][aria-pressed="true"]')
+  const lit = page.locator('[data-testid="strip-menu"][aria-expanded="true"], [data-testid="strip-project"][aria-expanded="true"], [data-testid="strip-frame"][aria-expanded="true"]')
   if ((await lit.count()) > 0) {
     await lit.first().click()
     await settle(page)

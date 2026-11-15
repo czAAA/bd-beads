@@ -84,18 +84,16 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
 
 <template>
   <!--
-    The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: the Open canvas title and what
-    it is for, Name (optional, "Project 1" when left empty), Maker's name (ticket 182, also optional), the Layer settings
-    both layers start from (the section the Project and Frame panels share, ticket 0670) without its Background (ticket
-    0881), then the primary Create Project and the secondary Convert image and Pick a starter (ticket 0866). It states no
-    size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert image opens its own
-    popup on a copy of these values (spec 0645).
+    The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel, titled once by the panel ("New
+    Project", ticket 0951): what its open canvas is for, Name (optional, "Project 1" when left empty), Maker's name
+    (ticket 182, also optional), the Layer settings both layers start from (the section the Project and Frame panels
+    share, ticket 0670) without its Background (ticket 0881), Technique and Bead each with an Info button saying what they
+    decide (ticket 0951), then the primary Create Project and the secondary Convert image and Pick a starter (ticket
+    0866). It states no size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert
+    image opens its own popup on a copy of these values (spec 0645).
   -->
   <form id="new-project-form" class="new-project-form" novalidate @submit.prevent="onSubmit">
-    <div class="new-project-form__head">
-      <h2 class="new-project-form__title" data-testid="open-canvas-title">{{ t.form.openCanvasTitle }}</h2>
-      <p class="new-project-form__subtitle">{{ t.form.openCanvasSubtitle }}</p>
-    </div>
+    <p class="new-project-form__subtitle" data-testid="open-canvas-subtitle">{{ t.form.openCanvasSubtitle }}</p>
 
     <NamesSection ref="names" v-model:name="name" v-model:maker-name="makerName" :name-placeholder="namePlaceholder" />
 
@@ -105,6 +103,7 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
       :technique-settings="settings"
       :bead="selectedBead"
       testid="new-project"
+      explained
       @set-technique="technique = $event"
       @set-setting="(id, value) => (settings = { ...settings, [id]: value })"
       @pick-bead="beadId = $event"
@@ -147,18 +146,6 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
 .new-project-form__convert :deep(.new-project-form__convert-button) {
   width: 100%;
   height: var(--field-height);
-}
-
-.new-project-form__head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.new-project-form__title {
-  margin: 0;
-  font: var(--type-title);
-  color: var(--ink);
 }
 
 .new-project-form__subtitle {

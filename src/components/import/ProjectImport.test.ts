@@ -9,7 +9,9 @@ import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { serializeLibrary, serializeProject } from '../../domain/projectFile'
 import { frameGrid } from '../../testUtils/frameGrid'
+import { projectNameOf, withLayer } from '../../domain/layerRecord'
 import { en } from '../../i18n/en'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -62,6 +64,15 @@ describe('ProjectImport import', () => {
 
     expect(wrapper.emitted('import')).toEqual([[[project], new Map()]])
     expect(wrapper.find('[data-testid="import-result"]').text()).toContain('1')
+  })
+
+  it('names a Project whose name is only spaces as a Project left unnamed is named (ticket 0988)', async () => {
+    const wrapper = mount(ProjectImport, { props: { projects: [] } })
+
+    await pickFile(wrapper, serializeProject(withLayer(makeProject('Fox'), 'canvas', { name: '     ' })))
+
+    const [[added]] = wrapper.emitted('import') as [[Project[]]]
+    expect(added.map(projectNameOf)).toEqual([fillBlanks(en.form.unnamedProject, { number: 1 })])
   })
 
   it('hands back a whole library at once', async () => {

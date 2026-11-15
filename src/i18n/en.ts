@@ -34,11 +34,13 @@ export const en: Translations = {
     enterHeight: 'Enter a height.',
     enterWholeBeads: 'Enter a whole number of beads.',
     or: 'or',
-    openCanvasTitle: 'Open Canvas',
-    openCanvasSubtitle: 'Draw anywhere on the Canvas, and set a Frame when you want a picture or a PDF.',
+    openCanvasSubtitle: 'Draw anywhere. Set the size when you want a picture or a PDF.',
     pickStarter: 'Pick a starter',
     estimateBeads: '≈ {columns}×{rows} beads',
     unnamedProject: 'Project {number}',
+    techniqueInfo: 'How the beads sit: in a grid on a loom, or offset rows in peyote and brick stitch.',
+    techniqueInfoLabel: 'What Technique does',
+    beadInfoLabel: 'What Bead does',
   },
   a11y: {
     toolsLandmark: 'Tools',
@@ -1176,6 +1178,7 @@ export const en: Translations = {
       backgroundChip: 'Background found · {n}% of the picture',
       backgroundTurnOff: 'Turn off',
       exactShort: 'Picture\'s own',
+      resultLabel: 'result',
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',

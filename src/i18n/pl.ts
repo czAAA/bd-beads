@@ -36,11 +36,13 @@ export const pl: Translations = {
     enterHeight: 'Wpisz wysokość.',
     enterWholeBeads: 'Wpisz całkowitą liczbę koralików.',
     or: 'lub',
-    openCanvasTitle: 'Otwarte płótno',
-    openCanvasSubtitle: 'Rysuj na otwartym płótnie, ustaw ramkę, by wyeksportować obraz lub PDF, gdy będzie potrzeba',
+    openCanvasSubtitle: 'Rysuj, gdzie chcesz. Ustaw rozmiar, gdy zechcesz obraz lub PDF.',
     pickStarter: 'Wybierz starter',
     estimateBeads: '≈ {columns}×{rows} koralików',
     unnamedProject: 'Projekt {number}',
+    techniqueInfo: 'Jak układają się koraliki: w siatce na krośnie albo w przesuniętych rzędach w peyote i ściegu ceglastym.',
+    techniqueInfoLabel: 'Co robi Technika',
+    beadInfoLabel: 'Co robi Koralik',
   },
   a11y: {
     toolsLandmark: 'Narzędzia',
@@ -1192,6 +1194,7 @@ export const pl: Translations = {
       backgroundChip: 'Znaleziono tło · {n}% obrazu',
       backgroundTurnOff: 'Wyłącz',
       exactShort: 'Własne kolory',
+      resultLabel: 'wynik',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',
