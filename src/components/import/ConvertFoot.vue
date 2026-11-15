@@ -89,7 +89,7 @@ const buttonLabel = computed(() => (wizard.addsToCanvas ? t.value.convertImage.a
 </script>
 
 <template>
-  <div class="convert-foot" data-testid="convert-foot">
+  <div class="convert-foot" role="region" :aria-label="words.resultLabel" data-testid="convert-foot">
     <template v-if="lines">
       <p class="convert-foot__project" data-testid="convert-project-line">
         <span class="convert-foot__label">{{ wizard.addsToCanvas ? words.footAddsTo : words.footProject }}</span> <span class="convert-foot__name">{{ wizard.projectName.value }}</span>

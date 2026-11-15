@@ -96,7 +96,7 @@ describe('Edit Frame', () => {
     expect(editing(wrapper)).toBe(false)
     await toggleBar(wrapper)
     expect(editing(wrapper)).toBe(true)
-    expect(button().attributes('aria-pressed')).toBe('true')
+    expect(button().attributes('aria-expanded')).toBe('true')
     await toggleBar(wrapper)
     expect(editing(wrapper)).toBe(false)
 

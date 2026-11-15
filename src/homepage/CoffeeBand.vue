@@ -60,7 +60,7 @@ const steam = [
             />
           </svg>
         </component>
-        <h3 class="coffee__title">{{ t.homepage.coffee.title }}</h3>
+        <h2 class="coffee__title">{{ t.homepage.coffee.title }}</h2>
       </div>
       <div class="coffee__ask">
         <p class="coffee__text">{{ t.homepage.coffee.text }}</p>

@@ -1194,6 +1194,7 @@ export const uk: Translations = {
       backgroundChip: 'Тло знайдено · {n}% зображення',
       backgroundTurnOff: 'Вимкнути',
       exactShort: 'Власні кольори',
+      resultLabel: 'результат',
     },
     errors: {
       heic: 'Браузери не вміють читати HEIC. Збережіть зображення в PNG або JPEG і спробуйте знову.',

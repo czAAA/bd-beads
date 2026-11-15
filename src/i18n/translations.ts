@@ -1451,6 +1451,8 @@ export interface Translations {
       backgroundTurnOff: string
       /** `exact`'s short name, where a segmented control has no room for it: Convert to beads on the Canvas (ticket 0966). */
       exactShort: string
+      /** The foot's name as a screen reader lists the converter's regions (ticket 0995): what the picture makes. */
+      resultLabel: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
