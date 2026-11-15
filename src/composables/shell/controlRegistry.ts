@@ -598,6 +598,8 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { body: (t) => t.tooltips.moveFrame }),
   // The area bars' move grips (ContextBar card, Area sheet, ticket 0808): a drag moves the area, arrows a bead.
   unkeyed('move-selection', (t) => t.contextBar.moveSelection, 'canvas', { body: (t) => t.contextBar.moveSelectionBody }),
+  // The same grip on a Piece's shape (ticket 1013): the Piece goes with its beads.
+  unkeyed('move-piece', (t) => t.contextBar.movePiece, 'canvas', { body: (t) => t.contextBar.movePieceBody }),
   unkeyed('move-mirror-area', (t) => t.mirror.moveArea, 'canvas', { body: (t) => t.mirror.moveAreaBody }),
   // The picture bar's Move grip (ReferenceImage card, ticket 0883): a drag moves the reference image, arrows a bead.
   unkeyed('move-reference-image', (t) => t.referenceImage.bar.move, 'canvas', { body: (t) => t.referenceImage.bar.moveBody }),

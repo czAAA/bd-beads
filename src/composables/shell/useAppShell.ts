@@ -311,6 +311,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     pastePreviewStamp,
     clearSelection: resetSelection,
     moveSelectionBy,
+    carriedProject,
     pasteProjectionActive,
     hasClipboard,
   } = useSelectionGesture(
@@ -1252,7 +1253,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onFrameSchema: frameFlow.setTo,
       settingFrame: frameFlow.settingFrame,
       framePanelOpen: frameFlow.barOpen,
-      frameDraftProject: frameFlow.draftProject,
+      // What the canvas shows in place of the open Project: a Piece held by its move grip where the release will leave
+      // it (ticket 1013), else the Frame's draft.
+      frameDraftProject: computed(() => carriedProject.value ?? frameFlow.draftProject.value),
       onToggleFramePanel: frameFlow.toggleBar,
       onEditFrame: editFrame,
       onFrameKey,

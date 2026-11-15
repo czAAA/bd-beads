@@ -466,6 +466,8 @@ export const pl: Translations = {
     moreLabel: 'Więcej',
     moveSelection: 'Przesuń zaznaczenie',
     moveSelectionBody: 'Przeciągnij, aby przesunąć zaznaczenie, lub naciśnij strzałkę, aby przesunąć je o jeden koralik.',
+    movePiece: 'Przesuń kawałek',
+    movePieceBody: 'Przeciągnij, aby przesunąć kawałek razem z koralikami, lub naciśnij strzałkę, aby przesunąć go o jeden koralik.',
   },
   palette: {
     pickerLabel: 'Kolory palety',

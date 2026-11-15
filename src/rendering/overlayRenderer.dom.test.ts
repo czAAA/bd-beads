@@ -1049,7 +1049,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     expect(named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
   })
 
-  it('outlines a shape round its outside: each side of a bead that no bead of the shape lies across', () => {
+  it('outlines a shape round its outside: each side of a bead that no bead of the shape lies against, closed at an inner corner', () => {
     const project = canvas()
     const { context, named } = recordingContext()
     const cells = [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 0 }]
@@ -1057,7 +1057,33 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2, cells } })
 
     const sides = named('fillRect').map((call) => (call.args as number[]).join(' ')).sort()
-    expect(sides).toEqual(['0 0 2 20', '0 0 20 2', '0 20 2 20', '0 38 20 2', '18 20 2 20', '20 0 20 2', '20 18 20 2', '38 0 2 20'].sort())
+    // The line under the second bead runs on into the corner the third bead makes with the first.
+    expect(sides).toEqual(['0 0 2 20', '0 0 20 2', '0 20 2 20', '0 38 20 2', '18 20 2 20', '20 0 20 2', '18 18 22 2', '38 0 2 20'].sort())
+  })
+
+  it('outlines a peyote shape whole: a side half against a neighbour is drawn half (ticket 1013)', () => {
+    const project: Project = withLayers(canvas(), { technique: 'peyote' })
+    const { context, named } = recordingContext()
+    const cells = [{ row: 0, column: 0 }, { row: 0, column: 1 }]
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 1, columns: 2, cells } })
+
+    // The second column lies half a bead lower: each bead's side against the other is drawn for its free half only, and
+    // the lines across run on into the two corners the step makes.
+    const sides = named('fillRect').map((call) => (call.args as number[]).join(' ')).sort()
+    expect(sides).toEqual(['0 0 2 20', '0 0 20 2', '0 18 22 2', '18 0 2 10', '18 10 22 2', '20 20 2 10', '20 28 20 2', '38 10 2 20'])
+  })
+
+  it('outlines a brick stitch shape whole too, its rows half a bead apart (ticket 1013)', () => {
+    const project: Project = withLayers(canvas(), { technique: 'brick' })
+    const { context, named } = recordingContext()
+    const cells = [{ row: 0, column: 0 }, { row: 1, column: 0 }]
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 1, cells } })
+
+    // The second row lies half a bead to the right: the lines across stop at the step and close its two corners.
+    const sides = named('fillRect').map((call) => (call.args as number[]).join(' ')).sort()
+    expect(sides).toEqual(['0 0 2 20', '0 0 20 2', '0 18 12 2', '10 20 2 20', '10 38 20 2', '18 0 2 20', '18 20 12 2', '28 20 2 20'])
   })
 
   it('outlines a shape on the Frame inside the Frame\'s layer, in its own Weave', () => {

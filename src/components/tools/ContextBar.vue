@@ -195,7 +195,7 @@ const capacity = computed(() => {
   const gap = Number.parseFloat(style?.columnGap ?? '') || BAR_ITEM_GAP_PX
   const side = Number.parseFloat(style?.paddingLeft ?? '') || BAR_SIDE_PADDING_PX
   const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * (side + BAR_DIVIDER_PX)
-  return Math.max(1, Math.floor(room / (bar.height.value + gap)) - (sheetArea.value ? 1 : 0))
+  return Math.max(1, Math.floor(room / (bar.height.value + gap)) - (gripArea.value ? 1 : 0))
 })
 const overflowing = computed(() => items.value.length > capacity.value)
 const shown = computed(() => (overflowing.value ? items.value.slice(0, Math.max(0, capacity.value - 1)) : items.value))
@@ -209,6 +209,9 @@ const sheetArea = computed<SheetArea | undefined>(() => {
   if (mirrorShown.value) return props.mirror!.setting.place?.layer === 'canvas' ? 'mirror' : undefined
   return props.selection && !props.selection.cells ? 'selection' : undefined
 })
+/** The area the bar's move grip moves: the sheet's, or a Piece's shape, whose bar floats and whose beads go with it
+ * (ticket 1013). */
+const gripArea = computed<SheetArea | undefined>(() => sheetArea.value ?? (!mirrorShown.value && props.selection?.cells ? 'selection' : undefined))
 const readoutText = computed(() => (mirrorShown.value ? props.mirror!.summary : props.selectionSummary))
 /** Touch's bigger icons, as the bar's own; the Mirror bar's chips take the same. */
 const chipIconSize = computed(() => (touch.value ? 18 : 16))
@@ -279,7 +282,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
     @keydown="roving.onKeydown"
     @focusin="roving.onFocusin"
   >
-    <AreaMoveGrip v-if="sheetArea" v-show="!compact" :area="sheetArea" @press="emit('move-press', $event, sheetArea)" @key="emit('move-key', $event, sheetArea)" />
+    <AreaMoveGrip v-if="gripArea" v-show="!compact" :area="gripArea" :piece="!!selection?.cells" @press="emit('move-press', $event, gripArea)" @key="emit('move-key', $event, gripArea)" />
     <span v-show="!mirrorShown || mirrorFit === 0 || compact" ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ readoutText }}</span>
     <MirrorBarItems
       v-if="mirrorShown"

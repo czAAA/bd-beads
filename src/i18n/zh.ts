@@ -465,6 +465,8 @@ export const zh: Translations = {
     moreLabel: '更多',
     moveSelection: '移动选区',
     moveSelectionBody: '拖动可移动选区，按方向键可将其移动一颗珠子。',
+    movePiece: '移动小块',
+    movePieceBody: '拖动可连同珠子一起移动小块，按方向键可将其移动一颗珠子。',
   },
   palette: {
     pickerLabel: '调色板颜色',

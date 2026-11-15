@@ -1857,6 +1857,21 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
   })
 
+  it('takes a press on the move grip of a Piece\'s shape as a drag too (ticket 1013)', async () => {
+    const shape = { ...selection, cells: [{ row: 1, column: 1 }, { row: 2, column: 2 }] }
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can(), selection: shape })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+    const grip = wrapper.vm as unknown as { pressAreaGrip(event: PointerEvent, area: 'selection' | 'mirror'): void }
+
+    grip.pressAreaGrip({ button: 0, clientX: 30, clientY: 10, pointerId: 1, pointerType: 'mouse', isPrimary: true, preventDefault: () => {} } as unknown as PointerEvent, 'selection')
+    await surface.trigger('pointermove', { buttons: 1, clientX: 50, clientY: 30, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+
+    expect(wrapper.emitted('selection-press')!.map(([target, , area]) => [target, area])).toEqual([[{ kind: 'inside' }, 'selection']])
+    expect(wrapper.emitted('selection-drag')).toHaveLength(1)
+    expect(wrapper.emitted('selection-release')).toHaveLength(1)
+  })
+
   it('scrolls the view toward the edge a resized or moved Selection is dragged to, and follows it (ticket 0660)', async () => {
     const frames: Array<() => void> = []
     vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))

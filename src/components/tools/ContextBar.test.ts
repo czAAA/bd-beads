@@ -322,11 +322,14 @@ describe('an area\'s bar (ContextBar card, Area sheet, tickets 0808, 0812)', () 
     expect(root.attributes('style')).not.toContain('min-width')
   })
 
-  it('floats above a Piece\'s shape, with no grip', () => {
+  it('floats above a Piece\'s shape, with the grip that moves the Piece (ticket 1013)', async () => {
     const shape: Selection = { ...selection, cells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] }
     const wrapper = mount(ContextBar, { props: { project: drawn, selection: shape, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false, anchor } })
     expect(wrapper.get('[data-testid="context-bar"]').classes()).not.toContain('context-bar--area')
-    expect(wrapper.find('[data-testid="context-bar-move"]').exists()).toBe(false)
+    const grip = wrapper.get('[data-testid="context-bar-move"]')
+    expect(grip.attributes('aria-label')).toBe('Move piece')
+    await grip.trigger('pointerdown', { button: 0 })
+    expect(wrapper.emitted('move-press')?.[0]?.[1]).toBe('selection')
   })
 
   it('leads with the move grip, named and its own Tab stop: a press hands on to the canvas, an arrow moves the Selection, not the focus', async () => {

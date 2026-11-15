@@ -562,14 +562,12 @@ function drawCutHalves(context: DrawingContext, weave: Weave, lines: { top: numb
   context.restore()
 }
 
-/** The sides of a bead on a shape's outline, as bits. */
-const TOP = 1
-const BOTTOM = 2
-const LEFT = 4
-const RIGHT = 8
+/** The eight positions round a bead, as steps down and across: a bit each, in this order, in a bead's `around`. */
+const AROUND = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]] as const
+const ALL_AROUND = (1 << AROUND.length) - 1
 
-/** A shape's outline by row: each bead with a side no other bead of the shape lies across, and which sides. */
-type Outline = Map<number, { column: number; sides: number }[]>
+/** A shape's outline by row: each bead with a position round it the shape doesn't hold, and which ones it does. */
+type Outline = Map<number, { column: number; around: number }[]>
 
 // A Selection's shape never changes in place, so its outline is worked out once per shape and only drawn after that
 // (ticket 0675).
@@ -583,19 +581,74 @@ function outlineOf(cells: readonly GridPosition[]): Outline {
   const has = (row: number, column: number) => rows.get(row)?.has(column) === true
   const outline: Outline = new Map()
   for (const { row, column } of cells) {
-    const sides = (has(row - 1, column) ? 0 : TOP) | (has(row + 1, column) ? 0 : BOTTOM) | (has(row, column - 1) ? 0 : LEFT) | (has(row, column + 1) ? 0 : RIGHT)
-    if (sides === 0) continue
+    let around = 0
+    AROUND.forEach(([down, across], bit) => {
+      if (has(row + down, column + across)) around |= 1 << bit
+    })
+    if (around === ALL_AROUND) continue
     const beads = outline.get(row) ?? []
-    beads.push({ column, sides })
+    beads.push({ column, around })
     outline.set(row, beads)
   }
   outlines.set(cells, outline)
   return outline
 }
 
-// A shaped Selection (ticket 547): each cell's side that no other cell of the shape lies across is part of the outline,
-// so it runs round the outside and round each hole. Only the part in view is drawn (ticket 0675); `origin` is the layer's
-// first position on the Canvas, the cells being Canvas positions.
+/** A bead's box on screen, in grid px. */
+type BeadBox = ReturnType<BoxOf>
+
+/** How close two edges lie to count as one, in grid px: boxes are whole fractions of a bead, never this near by chance. */
+const TOUCH_PX = 0.01
+/** How far off a line's end the shape is probed for the way its outline turns there, in grid px. */
+const PROBE_PX = 0.5
+
+/** The stretches of `from`..`to` that none of `covers` lies over. */
+function uncovered(from: number, to: number, covers: readonly (readonly [number, number])[]): [number, number][] {
+  const left: [number, number][] = []
+  let at = from
+  for (const [start, end] of [...covers].sort((a, b) => a[0] - b[0])) {
+    if (start - at > TOUCH_PX) left.push([at, Math.min(start, to)])
+    at = Math.max(at, end)
+  }
+  if (to - at > TOUCH_PX) left.push([at, to])
+  return left
+}
+
+// One bead's share of a shape's outline (ticket 1013): of each side, the stretches no bead of the shape (`beads`: its
+// own box and its neighbours') lies against, so on peyote and brick stitch a side half against a neighbour is drawn
+// half. The line lies inside the bead; where the outline turns into the shape, the line across runs on to close the corner.
+function drawBeadOutline(context: DrawingContext, own: BeadBox, beads: readonly BeadBox[]): void {
+  const t = OUTLINE_PX
+  const inShape = (x: number, y: number) => beads.some((bead) => x > bead.x && x < bead.x + bead.width && y > bead.y && y < bead.y + bead.height)
+  const right = own.x + own.width
+  const bottom = own.y + own.height
+  /** The free stretches of one of its sides, `from`..`to` along it: clear of each neighbour that `lies` against that
+   * side, over the `span` it lies there. */
+  const free = (from: number, to: number, lies: (bead: BeadBox) => boolean, span: (bead: BeadBox) => readonly [number, number]) => {
+    const against = beads.filter((bead) => bead !== own && lies(bead)).map(span)
+    return uncovered(from, to, against.filter(([start, end]) => Math.min(to, end) - Math.max(from, start) > TOUCH_PX))
+  }
+  const meets = (edge: number, at: number) => Math.abs(edge - at) < TOUCH_PX
+  const wide = (bead: BeadBox) => [bead.x, bead.x + bead.width] as const
+  const tall = (bead: BeadBox) => [bead.y, bead.y + bead.height] as const
+  /** How far a line across runs on past its end at `x`: its thickness where the shape lies on both sides of it there. */
+  const reach = (x: number, y: number, way: number) => (inShape(x + way * PROBE_PX, y - PROBE_PX) && inShape(x + way * PROBE_PX, y + PROBE_PX) ? t : 0)
+
+  for (const [from, to] of free(own.x, right, (bead) => meets(bead.y + bead.height, own.y), wide)) {
+    const start = from - reach(from, own.y, -1)
+    context.fillRect(start, own.y, to + reach(to, own.y, 1) - start, t)
+  }
+  for (const [from, to] of free(own.x, right, (bead) => meets(bead.y, bottom), wide)) {
+    const start = from - reach(from, bottom, -1)
+    context.fillRect(start, bottom - t, to + reach(to, bottom, 1) - start, t)
+  }
+  for (const [from, to] of free(own.y, bottom, (bead) => meets(bead.x + bead.width, own.x), tall)) context.fillRect(own.x, from, t, to - from)
+  for (const [from, to] of free(own.y, bottom, (bead) => meets(bead.x, right), tall)) context.fillRect(right - t, from, t, to - from)
+}
+
+// A shaped Selection (ticket 547): each stretch of a bead's side that no other bead of the shape lies against is part of
+// the outline, so it runs round the outside and round each hole, whole on every Weave (ticket 1013). Only the part in
+// view is drawn (ticket 0675); `origin` is the layer's first position on the Canvas, the cells being Canvas positions.
 function drawShapeOutline(context: DrawingContext, weave: Weave, cells: readonly GridPosition[], view: VisiblePositions, origin: GridPosition, color: string): void {
   const boxOf = boxesOf(weave)
   context.fillStyle = color
@@ -606,11 +659,12 @@ function drawShapeOutline(context: DrawingContext, weave: Weave, cells: readonly
     for (const bead of beads) {
       const column = bead.column - origin.column
       if (column < first || column > last) continue
-      const { x, y, width, height } = boxOf(row, column)
-      if (bead.sides & TOP) context.fillRect(x, y, width, OUTLINE_PX)
-      if (bead.sides & BOTTOM) context.fillRect(x, y + height - OUTLINE_PX, width, OUTLINE_PX)
-      if (bead.sides & LEFT) context.fillRect(x, y, OUTLINE_PX, height)
-      if (bead.sides & RIGHT) context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
+      const own = boxOf(row, column)
+      const boxes = [own]
+      AROUND.forEach(([down, across], bit) => {
+        if (bead.around & (1 << bit)) boxes.push(boxOf(row + down, column + across))
+      })
+      drawBeadOutline(context, own, boxes)
     }
   }
 }

@@ -894,6 +894,92 @@ describe('useSelectionGesture', () => {
     })
   })
 
+  describe('moving a Piece by its move grip (ticket 1013)', () => {
+    /** A Canvas with no Frame holding two Pieces: two RED beads at (5, 5) and (5, 6), tapped, and a BLUE one at (5, 9). */
+    function pieceSelected(technique: 'loom' | 'peyote' = 'loom') {
+      const bare = createProject({ technique, beadId: cubeBeadId })
+      const drawn = paintAt(paintAt(bare, [{ row: 5, column: 5 }, { row: 5, column: 6 }], RED), [{ row: 5, column: 9 }], BLUE)
+      const made = setup(drawn)
+      made.gesture.tapPiece(5, 5)
+      return made
+    }
+    const canvasBeads = (project: Project | undefined) => beadsOfLayer(project!, 'canvas')
+
+    it('a drag of the grip carries the Piece: the Selection follows, the canvas shows the beads there, and the Project waits for the release', () => {
+      const { gesture, harness } = pieceSelected()
+      const before = harness.currentProject()
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
+      gesture.dragAdjust({ row: 11, column: 8 })
+
+      expect(gesture.selection.value).toMatchObject({ top: 7, left: 4, cells: [{ row: 7, column: 4 }, { row: 7, column: 5 }] })
+      expect(canvasBeads(gesture.carriedProject.value)[7]).toEqual({ 4: RED, 5: RED })
+      expect(harness.currentProject()).toBe(before)
+
+      gesture.endAdjust()
+
+      expect(gesture.carriedProject.value).toBeUndefined()
+      expect(canvasBeads(harness.currentProject())[7]).toEqual({ 4: RED, 5: RED })
+      expect(canvasBeads(harness.currentProject())[5]).toEqual({ 9: BLUE })
+      expect(gesture.selection.value).toMatchObject({ top: 7, left: 4 })
+    })
+
+    it('a press of the grip that goes nowhere, or comes back, changes nothing', () => {
+      const { gesture, harness } = pieceSelected()
+      const before = harness.currentProject()
+      const selection = gesture.selection.value
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
+      gesture.dragAdjust({ row: 10, column: 9 })
+      gesture.dragAdjust({ row: 9, column: 9 })
+      expect(gesture.carriedProject.value).toBeUndefined()
+      gesture.endAdjust()
+
+      expect(harness.currentProject()).toBe(before)
+      expect(gesture.selection.value).toBe(selection)
+    })
+
+    it('passes over a place where it would lie on another Piece, waiting at the last one it could', () => {
+      const { gesture, harness } = pieceSelected()
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
+      gesture.dragAdjust({ row: 9, column: 10 })
+      // Three to the right would put its second bead on the BLUE one.
+      gesture.dragAdjust({ row: 9, column: 12 })
+      expect(gesture.selection.value).toMatchObject({ top: 5, left: 6 })
+      gesture.dragAdjust({ row: 9, column: 14 })
+      gesture.endAdjust()
+
+      expect(canvasBeads(harness.currentProject())[5]).toEqual({ 9: BLUE, 10: RED, 11: RED })
+    })
+
+    it('goes by a pair of columns on peyote, so the Piece keeps its shape', () => {
+      const { gesture } = pieceSelected('peyote')
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
+      gesture.dragAdjust({ row: 9, column: 8 })
+      gesture.endAdjust()
+
+      expect(gesture.selection.value).toMatchObject({ top: 5, left: 3 })
+    })
+
+    it('an arrow on the grip moves the Piece a bead with its beads, and shows the cue where it can\'t go', () => {
+      const { gesture, harness } = pieceSelected()
+
+      gesture.moveSelectionBy(1, 0)
+      expect(canvasBeads(harness.currentProject())[6]).toEqual({ 5: RED, 6: RED })
+      expect(gesture.selection.value).toMatchObject({ top: 6, left: 5 })
+
+      gesture.moveSelectionBy(-1, 0)
+      gesture.moveSelectionBy(0, 1)
+      gesture.moveSelectionBy(0, 1)
+      const refused = gesture.refusals.value
+      gesture.moveSelectionBy(0, 1)
+      expect(gesture.refusals.value).toBe(refused + 1)
+      expect(gesture.selection.value).toMatchObject({ top: 5, left: 7 })
+    })
+  })
+
   describe('picking a drag back up, a finger come back from the bezel (ticket 0805)', () => {
     function marked(project = makeProject()) {
       const { gesture } = setup(project)
