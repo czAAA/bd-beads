@@ -1170,6 +1170,7 @@ export const zh: Translations = {
       tooManyPixels: '该图片太大，无法在此设备上打开。请在照片应用中缩小后重试。',
       decodeFailed: '无法读取该图片。请在照片应用中打开，另存为 PNG 或 JPEG 后重试。',
     },
+    createdToast: '已用你的图片创建项目“{name}”。它保存在此浏览器中。',
   },
   replaceBead: {
     selectLabel: '替换珠子',

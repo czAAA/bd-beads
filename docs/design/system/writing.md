@@ -1265,3 +1265,13 @@ The counter names its step in the announcer's words: `{unit} {current} of {total
 | What a pass is (Info button) | Что такое проход | Що таке прохід | Што такое праход | 什么是趟 | Qué es una pasada | Czym jest przejście |
 
 English follows the audit (UX-059, UX-062, UX-063); whether a peyote beader says "pass" or "row" for a step is open for a beader's answer.
+
+## Made from a picture copy (ticket 0968)
+
+Convert image's Create Project says what it made and where it is kept, in a success toast (Message card). `{name}` is the new Project's name. Where it is kept is said as everywhere else (ticket 0992): in this browser, never "on this device", which the audit's proposal had.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Project “{name}” made from your picture. It is kept in this browser. (toast) | Проект «{name}» создан из вашего изображения. Он хранится в этом браузере. | Проєкт «{name}» створено з вашого зображення. Він зберігається в цьому браузері. | Праект «{name}» створаны з вашай выявы. Ён захоўваецца ў гэтым браўзеры. | 已用你的图片创建项目“{name}”。它保存在此浏览器中。 | Proyecto “{name}” creado a partir de tu imagen. Se guarda en este navegador. | Projekt „{name}” utworzony z Twojego obrazu. Jest przechowywany w tej przeglądarce. |
+
+English follows the audit's proposal (UX-055) but for where the Project is kept; the other languages are proposals for review with the build.

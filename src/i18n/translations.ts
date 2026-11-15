@@ -1442,6 +1442,8 @@ export interface Translations {
       tooManyPixels: string
       decodeFailed: string
     }
+    /** Create Project's toast (ticket 0968, Message card): the Project it made, `{name}`, and where it is kept. */
+    createdToast: string
   }
   /** The Replace Bead control (CONTEXT.md, ADR 0007) in each layer's panel (ticket 0687), and its confirmation modal
    * (ticket 48). */
