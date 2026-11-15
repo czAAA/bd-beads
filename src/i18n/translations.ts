@@ -771,6 +771,14 @@ export interface Translations {
     directionKeptToast: string
     /** The Go to row Tooltip on a Kaleidocycle (ticket 0876): the triangles here are this face's, `{then}` its usual sentence. */
     faceBody: string
+    /** What the announcer says after Row done, Row not done and Go to row (ticket 0934), in the counter's words: "Row 7
+     * of 10" (`unit` is Row or Column), and on peyote the pass with the rulers' row, "Pass 3 of 27, row 2". */
+    announcePosition: string
+    announcePass: string
+    announceColumnPass: string
+    /** Go to row's button that brings the current row back into view after the beader panned away (ticket 0934). */
+    showRow: string
+    showColumn: string
   }
   quantities: {
     heading: string

@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Row done, Row not done and Go to row bring the row you are on into view and say it aloud to a screen reader, and Go to row has Show row to find it again",
+    "ru": "«Ряд готов», «Ряд не готов» и «Перейти к ряду» показывают текущий ряд на экране и называют его вслух для экранного диктора, а в «Перейти к ряду» есть «Показать ряд», чтобы снова его найти",
+    "uk": "«Ряд готовий», «Ряд не готовий» і «Перейти до ряду» показують поточний ряд на екрані та називають його вголос для екранного диктора, а в «Перейти до ряду» є «Показати ряд», щоб знову його знайти",
+    "be": "«Рад гатовы», «Рад не гатовы» і «Перайсці да рада» паказваюць бягучы рад на экране і называюць яго ўголас для экраннага дыктара, а ў «Перайсці да рада» ёсць «Паказаць рад», каб зноў яго знайсці",
+    "zh": "“行已完成”“行未完成”和“跳到行”会把当前行移到视野中，并为读屏软件读出它；“跳到行”里还有“显示当前行”，随时把它找回来",
+    "es": "Fila terminada, Fila sin terminar e Ir a la fila traen a la vista la fila en la que estás y la dicen en voz alta a un lector de pantalla, e Ir a la fila tiene Mostrar fila para volver a encontrarla",
+    "pl": "Rząd gotowy, Rząd niegotowy i Przejdź do rzędu pokazują rząd, na którym jesteś, i odczytują go czytnikowi ekranu, a Przejdź do rzędu ma Pokaż rząd, by znów go znaleźć"
+  }
+}

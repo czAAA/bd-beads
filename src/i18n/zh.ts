@@ -618,6 +618,11 @@ export const zh: Translations = {
     goButton: '跳转',
     directionKeptToast: '{toast}{kept}',
     faceBody: '这里的每个三角形都属于这一面：整件 {total} 个中的 {parts} 个。{then}',
+    announcePosition: '第 {current} {unit}，共 {total} {unit}',
+    announcePass: '第 {current} 趟，共 {total} 趟，第 {line} 行',
+    announceColumnPass: '第 {current} 趟，共 {total} 趟，第 {line} 列',
+    showRow: '显示当前行',
+    showColumn: '显示当前列',
   },
   quantities: {
     heading: '所需珠子',

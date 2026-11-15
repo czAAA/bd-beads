@@ -630,6 +630,11 @@ export const pl: Translations = {
     goButton: 'Przejdź',
     directionKeptToast: '{toast} {kept}',
     faceBody: 'Każdy trójkąt tutaj plecie się dla tej ściany: {parts} z {total} w całej pracy. {then}',
+    announcePosition: '{unit} {current} z {total}',
+    announcePass: 'Przejście {current} z {total}, rząd {line}',
+    announceColumnPass: 'Przejście {current} z {total}, kolumna {line}',
+    showRow: 'Pokaż rząd',
+    showColumn: 'Pokaż kolumnę',
   },
   quantities: {
     heading: 'Potrzebne koraliki',

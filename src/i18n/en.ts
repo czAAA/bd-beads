@@ -622,6 +622,11 @@ export const en: Translations = {
     goButton: 'Go',
     directionKeptToast: '{toast} {kept}',
     faceBody: 'Each triangle here is beaded for this face, {parts} of the piece\'s {total}. {then}',
+    announcePosition: '{unit} {current} of {total}',
+    announcePass: 'Pass {current} of {total}, row {line}',
+    announceColumnPass: 'Pass {current} of {total}, column {line}',
+    showRow: 'Show row',
+    showColumn: 'Show column',
   },
   quantities: {
     heading: 'Beads needed',
