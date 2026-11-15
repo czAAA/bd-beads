@@ -511,6 +511,16 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   gap: var(--space-4);
 }
 
+/* With the browser's text so large that the shell is under 17.5rem wide (a phone from 125%, ticket 0941; 315px at the
+ * default size, so never at 320px), the title's total and tools, and the estimate's size, go under their label rather
+ * than run over it. */
+@container shell (max-width: 17.5rem) {
+  .frame-panel__title,
+  .frame-panel__estimate {
+    flex-wrap: wrap;
+  }
+}
+
 .frame-panel__title :deep(.frame-panel__remove) {
   color: var(--danger);
 }
