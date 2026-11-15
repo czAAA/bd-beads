@@ -110,6 +110,54 @@ describe.each([
   })
 })
 
+describe('EditableLine gives the keyboard back to the line (ticket 0939)', () => {
+  const settle = async (wrapper: ReturnType<typeof mountLine>) => {
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+  }
+
+  it('puts focus on the pencil after Enter, the Save button, Escape and the Cancel button', async () => {
+    const wrapper = mountLine({ value: 'Ada' })
+    const pencil = () => wrapper.get('[data-testid="line-edit"]').element
+    await wrapper.get('[data-testid="line-edit"]').trigger('click')
+    await wrapper.get('[data-testid="line-input"]').setValue('Eve')
+    await wrapper.get('[data-testid="line-form"]').trigger('submit')
+    await settle(wrapper)
+    expect(document.activeElement).toBe(pencil())
+
+    await wrapper.get('[data-testid="line-edit"]').trigger('click')
+    await wrapper.get('[data-testid="line-save"]').trigger('click')
+    await settle(wrapper)
+    expect(document.activeElement).toBe(pencil())
+
+    await wrapper.get('[data-testid="line-edit"]').trigger('click')
+    wrapper.get('[data-testid="line-input"]').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await settle(wrapper)
+    expect(document.activeElement).toBe(pencil())
+
+    await wrapper.get('[data-testid="line-edit"]').trigger('click')
+    await wrapper.get('[data-testid="line-cancel"]').trigger('click')
+    await settle(wrapper)
+    expect(document.activeElement).toBe(pencil())
+    wrapper.unmount()
+  })
+
+  it('puts focus on the line inviting a value when it is still empty, and keeps the edit open after a refusal', async () => {
+    const wrapper = mountLine({ requiredMessage: 'Give it a name.' })
+    await wrapper.get('[data-testid="line-add"]').trigger('click')
+    await wrapper.get('[data-testid="line-input"]').setValue('  ')
+    await wrapper.get('[data-testid="line-form"]').trigger('submit')
+    await settle(wrapper)
+    expect(wrapper.find('[data-testid="line-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="line-add"]').exists()).toBe(false)
+
+    wrapper.get('[data-testid="line-input"]').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await settle(wrapper)
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="line-add"]').element)
+    wrapper.unmount()
+  })
+})
+
 describe('EditableLine in the margin\'s title block (ticket 0685)', () => {
 
   // The empty text is an invitation: pressing it starts the edit, as the pencil does (ticket 0803).
