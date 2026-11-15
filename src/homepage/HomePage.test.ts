@@ -68,6 +68,17 @@ describe('HomePage', () => {
       expect(bar.attributes('role')).toBe('navigation')
       expect(bar.attributes('aria-label')).toBe(en.homepage.sections.label)
     })
+
+    it('has one h1, the Welcome heading, and no heading a level deeper than the one before it (ticket 0995)', () => {
+      for (const count of [0, 3]) {
+        const wrapper = page(count)
+        const levels = wrapper.findAll('h1, h2, h3, h4, h5, h6').map((heading) => Number(heading.element.tagName[1]))
+        expect(levels.filter((level) => level === 1), `${count} Projects`).toHaveLength(1)
+        expect(levels[0], `${count} Projects`).toBe(1)
+        levels.forEach((level, i) => expect(level, `${count} Projects, heading ${i}`).toBeLessThanOrEqual((levels[i - 1] ?? 0) + 1))
+        wrapper.unmount()
+      }
+    })
   })
 
   describe('no hero (ticket 0822)', () => {
@@ -152,7 +163,7 @@ describe('HomePage', () => {
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
 
-    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-expanded')).toBe('true')
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="theme-picker"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
@@ -288,7 +299,7 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('1/4')
     // Welcome's heading is a sentence, so its step has a name of its own.
     expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe('1/4 · Welcome')
-    expect(wrapper.get('[data-testid="homepage-section-welcome"] h2').text()).toBe('Bead patterns, drawn the way the beads sit.')
+    expect(wrapper.get('[data-testid="homepage-section-welcome"] h1').text()).toBe('Bead patterns, drawn the way the beads sit.')
   })
 
   it('turns with Next and Back, the bar following, the page itself never scrolled', async () => {

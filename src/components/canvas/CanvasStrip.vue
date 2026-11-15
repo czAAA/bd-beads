@@ -146,7 +146,7 @@ const cut = useScrollCut(scrollerEl)
 function onPanelsKeydown(event: KeyboardEvent) {
   const button = event.target as HTMLElement
   // ↓ opens a panel; the save ring has none, so it is not pressed by it.
-  if (event.key === 'ArrowDown' && button.getAttribute('aria-pressed') !== 'true' && !button.closest('.save-ring')) {
+  if (event.key === 'ArrowDown' && button.getAttribute('aria-expanded') !== 'true' && !button.closest('.save-ring')) {
     event.preventDefault()
     event.stopPropagation()
     button.click()
@@ -164,7 +164,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <AppButton
           variant="text"
           :action="actions.menu"
-          :selected="openPanel === 'menu' ? true : undefined"
+          :expanded="openPanel === 'menu'"
           data-testid="strip-menu"
           @click="emit('select-panel', 'menu')"
         >
@@ -178,7 +178,8 @@ function onPanelsKeydown(event: KeyboardEvent) {
           :action="actions.project"
           :label="projectNamed"
           :aria-label="projectNamed"
-          :selected="openPanel === 'project' ? true : undefined"
+          aria-haspopup="dialog"
+          :expanded="openPanel === 'project'"
           data-testid="strip-project"
           @click="emit('select-panel', 'project')"
         >
@@ -199,7 +200,8 @@ function onPanelsKeydown(event: KeyboardEvent) {
           :action="actions.frame"
           :deps="deps"
           :tooltip="frameTooltip"
-          :selected="frameOpen"
+          aria-haspopup="dialog"
+          :expanded="!!frameOpen"
           data-testid="strip-frame"
           @click="emit('toggle-frame')"
         >
@@ -285,7 +287,8 @@ function onPanelsKeydown(event: KeyboardEvent) {
         variant="plain"
         :icon-size="18"
         :action="actions.export"
-        :selected="openPanel === 'export'"
+        aria-haspopup="dialog"
+        :expanded="openPanel === 'export'"
         data-testid="strip-export"
         @click="emit('select-panel', 'export')"
       />

@@ -1194,6 +1194,7 @@ export const ru: Translations = {
       backgroundChip: 'Фон найден · {n}% изображения',
       backgroundTurnOff: 'Выключить',
       exactShort: 'Свои цвета',
+      resultLabel: 'результат',
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',
