@@ -879,7 +879,7 @@ The two toasts (Message card, info tone) after a Fill tool press on the Canvas t
 
 ## First-run welcome copy (tickets 0725, 0738, 0795, 0798, 0920)
 
-The welcome over an empty Project (FirstRunHints card): the next step, and one quiet line under it on where Projects are kept. On touch the next step is the Paint tool's own Tooltip (`tooltips.paint`), so it is not new copy; with a mouse it is the same sentence in mouse words (Voice, A help line fits the device in hand). The path to a Project file is no longer on the welcome (ticket 0920): the Project panel and the Save reminder carry it. The bar's "Select to set a Frame" and the CanvasHint keep their existing strings. Ticket 0798 took the captions beside the controls away, so nothing else is written over an empty Project.
+The welcome over an empty Project (FirstRunHints card): the next step, and one quiet line under it on where Projects are kept. On touch the next step is the Paint tool's own Tooltip (`tooltips.paint`), so it is not new copy; with a mouse it is the same sentence in mouse words (Voice, A help line fits the device in hand). The path to a Project file is no longer on the welcome (ticket 0920): the Project panel and the Save reminder carry it. The bar's no-Frame line (ProgressBar card, ticket 0944) and the CanvasHint keep their own strings. Ticket 0798 took the captions beside the controls away, so nothing else is written over an empty Project.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

@@ -212,7 +212,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
       <p class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.starters.title, { opener: 'frame-from-starter' })">{{ t.frame.fromStarter }}</PanelItem>
       <PanelItem icon="select" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
-      <PanelItem icon="fit" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
+      <PanelItem icon="frame" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
       <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
     </div>
 
