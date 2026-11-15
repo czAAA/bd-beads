@@ -49,10 +49,10 @@ for (const [name, viewport, hasTouch] of [['iPad', { width: 1366, height: 1024 }
   test(`opening the Frame panel pans the Frame beside it, not under it, and closing puts it back, on the ${name} (ticket 0971)`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport, hasTouch, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    // The Summer bracelet's size: 24 columns, which the panel covered 21 of.
+    // The Summer bracelet's size at 100%: 24 columns, which the panel covered 21 of. (Its fit is larger, ticket 0964.)
     await openApp(page, [fixtureProject({ technique: 'loom', columns: 24, rows: 10 })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-    await settle(page)
+    await setZoom(page, 100)
     const surface = await box(page, 'project-surface')
     const closed = await box(page, 'frame-edit-toggle')
     await page.getByTestId('strip-frame').click()
