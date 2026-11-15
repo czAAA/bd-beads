@@ -43,7 +43,15 @@ export interface ProjectLibrary {
   /** Every name the library holds, sealed Projects' too: what a new or imported name must not repeat (tickets 0860, 0866). */
   names: () => string[]
   replaceProject: (project: Project, options?: ReplaceOptions) => void
+  /** Removes a Project from this device and holds it in memory as `removed`, for Delete's Undo (ticket 0983). */
   removeProject: (id: string) => void
+  /** The Project removed last, held in memory only (never stored) until Undo brings it back or the hold is let go: its
+   * records beside the library stay while it is held (ticket 0983). */
+  removed: ShallowRef<RemovedProject | undefined>
+  /** Puts the held Project back in the library as it was, and opens it again if it was open. */
+  restoreRemoved: () => void
+  /** Lets the held Project go: it is gone from the device, its records beside the library with it. */
+  forgetRemoved: () => void
   /** Removes every Project from this device and leaves none open (Menu's Delete all Projects, ticket 443). */
   removeAllProjects: () => void
   flushPendingSave: () => void
@@ -55,6 +63,12 @@ export interface ProjectLibrary {
   /** Takes the open Project over from the tab that has it (Work here instead, ticket 0937): this tab then draws and saves
    * it, from what that tab stored, and that tab is told it is open elsewhere. A no-op while it is not open elsewhere. */
   workHere: () => void
+}
+
+/** A removed Project as Delete's Undo needs it: the Project, decoded or sealed, and whether it was the open one. */
+interface RemovedProject {
+  project: HeldProject
+  wasOpen: boolean
 }
 
 const isSealed = (project: HeldProject): project is SealedProject => 'stored' in project
@@ -215,6 +229,8 @@ export function useProjectLibrary(
     if (getCurrentScope()) onScopeDispose(() => claimed?.letGo())
   }
 
+  const removed = shallowRef<RemovedProject>()
+
   const names = () => [...projects.value.map(projectNameOf), ...sealed.value.map((kept) => kept.name)]
 
   return {
@@ -269,6 +285,8 @@ export function useProjectLibrary(
 
     /** Removes a Project; if it was the open one, the most recently updated of the rest takes its place. */
     removeProject(id: string) {
+      const project = inMemory().find((each) => each.id === id)
+      if (project) removed.value = { project, wasOpen: activeProjectId.value === id }
       projects.value = projects.value.filter((project) => project.id !== id)
       sealed.value = sealed.value.filter((project) => project.id !== id)
       if (activeProjectId.value === id) {
@@ -277,8 +295,26 @@ export function useProjectLibrary(
       commit()
     },
 
+    removed,
+
+    restoreRemoved() {
+      const held = removed.value
+      if (!held) return
+      removed.value = undefined
+      const { project, wasOpen } = held
+      if (isSealed(project)) sealed.value = [...sealed.value, project]
+      else projects.value = inSavedOrder([...projects.value, project])
+      if (wasOpen) activeProjectId.value = project.id
+      commit()
+    },
+
+    forgetRemoved() {
+      removed.value = undefined
+    },
+
     /** Removes every Project; none is open afterwards. */
     removeAllProjects() {
+      removed.value = undefined
       projects.value = []
       sealed.value = []
       activeProjectId.value = undefined
