@@ -1,4 +1,6 @@
+import { clamp } from '../../domain/clamp'
 import { turnedExtent } from '../../domain/referenceImage'
+import { BAR_STICK_PX } from '../tools/selectionBarPlacement'
 
 // Where the reference image's picture bar and its Convert to beads popover stand on the canvas box (ReferenceImage card,
 // ticket 0883), in screen px: the bar over the picture's top edge, level, the popover beside the picture.
@@ -32,16 +34,22 @@ export function pictureBounds({ centre, width, height, angle }: OnScreen): Scree
 }
 
 const overlaps = (a: ScreenBox, b: ScreenBox) => a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height
-const within = (at: number, size: number, room: number) => Math.max(EDGE_PX, Math.min(room - size - EDGE_PX, at))
+const within = (at: number, size: number, room: number) => clamp(at, EDGE_PX, room - size - EDGE_PX)
 
-/** The bar's top-left: centred over the picture, its bottom 14px above the top edge, or above the Frame's margin sheet
- * where the picture lies under it; with no room there, 14px inside the picture's top edge as it shows (below is the
- * Turn handle's and the Tool pill's). Kept inside the canvas box. */
+/** The bar's top-left: centred over the picture, 14px above its top edge or its Frame's margin sheet, else 14px inside
+ * the top edge as it shows. Kept in the canvas box only while on the picture (ticket 1011): 24px over it across, no
+ * lower than 14px inside its bottom edge; a picture panned away takes it along. */
 export function pictureBarPlace(picture: ScreenBox, bar: { width: number; height: number }, viewport: { width: number; height: number }, sheet?: ScreenBox): { left: number; top: number } {
   const under = sheet && overlaps(picture, sheet) ? sheet : undefined
   const above = Math.min(picture.top, under?.top ?? Infinity) - BAR_GAP_PX - bar.height
   const top = above >= EDGE_PX ? above : Math.max(picture.top, 0) + BAR_GAP_PX
-  return { left: within(picture.left + picture.width / 2 - bar.width / 2, bar.width, viewport.width), top: within(top, bar.height, viewport.height) }
+  const stick = Math.min(BAR_STICK_PX, picture.width / 2)
+  const left = within(picture.left + picture.width / 2 - bar.width / 2, bar.width, viewport.width)
+  const lowest = Math.max(above, picture.top + BAR_GAP_PX, picture.top + picture.height - BAR_GAP_PX - bar.height)
+  return {
+    left: clamp(left, picture.left + stick - bar.width, picture.left + picture.width - stick),
+    top: clamp(within(top, bar.height, viewport.height), above, lowest),
+  }
 }
 
 /** The popover's top-left: 20px right of the picture, or left of it where there is no room, its top level with the

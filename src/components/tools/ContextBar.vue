@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n/useI18n'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
-import { areaBarPlacement, BAR_EDGE_PX, selectionBarPlacement, type BarBox, type SheetArea, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { areaBarPlacement, BAR_EDGE_PX, type BarBox, barOutOfView, type SelectionAnchor, selectionBarPlacement, type SheetArea } from '../../composables/tools/selectionBarPlacement'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
@@ -245,10 +245,7 @@ const placement = computed<{ left: number; top: number; below: boolean } | undef
 const away = computed(() => {
   const at = placement.value
   const viewport = placedAnchor.value?.viewport
-  if (!at || !viewport) return false
-  const right = at.left + bar.width.value
-  const bottom = at.top + bar.height.value
-  return right <= 0 || at.left >= viewport.width || bottom <= 0 || at.top >= viewport.height
+  return !!at && !!viewport && barOutOfView(at, { width: bar.width.value, height: bar.height.value }, viewport)
 })
 const placedStyle = computed(() => {
   const at = placement.value
