@@ -11,6 +11,7 @@ import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import BackgroundSection from './BackgroundSection.vue'
 import BeadSection from './BeadSection.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import MarkedDoneLine from './MarkedDoneLine.vue'
 import TechniqueSection from './TechniqueSection.vue'
 
@@ -35,6 +36,9 @@ const props = defineProps<{
   frame?: Pick<FrameSheet, 'shape' | 'settings'>
   /** A Row progress pass is done: what moves positions (the Technique, its settings, the shape settings) waits. */
   locked?: boolean
+  /** Technique and Bead each with an Info button saying what they decide: New Project's, for a stranger who has not
+   * met the words (ticket 0951). */
+  explained?: boolean
   /** The prefix of the Technique controls' test ids. */
   testid: string
 }>()
@@ -70,6 +74,7 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
       :settings="techniqueSettings"
       :techniques="techniques"
       :without-settings="withoutTechniqueSettings"
+      :explained="explained"
       :disabled="locked"
       :technique-disabled-body="locked ? t.tooltips.rowProgressLockedTechnique : undefined"
       :testid="testid"
@@ -113,7 +118,10 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
     </div>
 
     <div class="layer-settings__group" role="group" :aria-labelledby="beadLabelId">
-      <span :id="beadLabelId" class="layer-settings__label layer-settings__heading">{{ t.panels.project.bead }}</span>
+      <span class="layer-settings__label layer-settings__heading">
+        <span :id="beadLabelId">{{ t.panels.project.bead }}</span>
+        <InfoButton v-if="explained" :label="t.form.beadInfoLabel" :body="t.form.beadPicker.hint" :data-testid="`${testid}-bead-info`" />
+      </span>
       <BeadSection :bead="bead" :candidates="candidates" :outdated="outdated" @pick="emit('pick-bead', $event)" />
     </div>
 
@@ -164,6 +172,9 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
 
 /* A field's name in `control`, as Technique's and Drop's, so it never reads as the section header (ticket 0992). */
 .layer-settings__heading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
   padding: 0 var(--space-10);
 }
 

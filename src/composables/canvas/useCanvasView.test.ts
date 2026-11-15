@@ -6,7 +6,8 @@ import { paintAt } from '../../testUtils/layers'
 import { orientationOf } from '../../domain/layerRecord'
 import { rotateCanvas, turnCanvasTo } from '../../domain/rotate'
 import { INTO_VIEW_MS, SNAP_MS } from '../../rendering/gestureView'
-import { FIT_MARGIN_PX, fitBox, useCanvasView, type CanvasViewOptions } from './useCanvasView'
+import { FIT_MARGIN_PX, fitBox, LARGEST_FIT_BEAD_PX, useCanvasView, type CanvasViewOptions } from './useCanvasView'
+import { MAX_ZOOM } from '../../domain/grid'
 import { NO_INSETS } from '../../domain/toolPill'
 import { surfaceView, type SurfaceView } from '../../rendering/surfaceView'
 import { OPEN_SPACE } from '../../rendering/space'
@@ -41,13 +42,44 @@ describe('useCanvasView', () => {
     expect(view.placed.value).toBe(true)
   })
 
-  it('fits the Frame whole in the viewport, never zooming in past 100%, with the Frame in the middle', async () => {
+  it('zooms a small Frame in until its sheet fills the viewport one way, with the Frame in the middle (ticket 0964)', async () => {
     const { view } = setup(projectOf(20, 10))
     view.fit()
 
+    // The sheet is 28 × 18 beads of 20px, 560 × 360 at 100%: 36px clear each side across, it fills the 1000px at 165%.
+    expect(view.zoom.value).toBe(1.65)
+    // The Frame, 400 × 200 at 100%, sits at 0, 0: its middle (330, 165) is the viewport's middle (500, 400).
+    expect(view.scroll.value.x).toBeCloseTo(-170, 6)
+    expect(view.scroll.value.y).toBeCloseTo(-235, 6)
+  })
+
+  it('fills the canvas box of a 1366 × 1024 screen with the 16 × 10 Loom cuff\'s sheet, down (ticket 0964)', () => {
+    const pill = { ...NO_INSETS, bottom: 64 }
+    const { view } = setup(projectOf(16, 10), { width: 1366, height: 930 }, pill)
+    view.fit()
+
+    // The sheet, 24 × 18 beads (480 × 360 at 100%), is 830px tall at 230%: the 866px above the pill less 18px air
+    // each side.
+    expect(view.zoom.value).toBe(2.3)
+    const sheet = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: view.zoom.value, scroll: view.scroll.value }).beadBox({ row: -4, column: -4, rows: 18, columns: 24 })
+    expect(930 - 64 - sheet.height).toBeLessThan(2 * 18 + 360 * 0.01)
+  })
+
+  it('zooms a tiny Frame in no further than its beads at the largest size, under the Zoom ceiling (ticket 0964)', () => {
+    const { view } = setup(projectOf(6, 4), { width: 1366, height: 930 })
+    view.fit()
+
+    // A bead is 20px at 100%: 48px is 240%, short of filling the 1366 × 930 with the 14 × 12 sheet.
+    expect(view.zoom.value).toBe(LARGEST_FIT_BEAD_PX / 20)
+    expect(view.zoom.value).toBeLessThan(MAX_ZOOM)
+  })
+
+  it('fits a drawing with no Frame never past 100%, as before (ticket 0964)', () => {
+    const painted = paintAt(withLayers(projectOf(2, 2), { frame: undefined }), [{ row: 0, column: 0 }], '#e63746')
+    const { view } = setup(painted)
+    view.fit()
+
     expect(view.zoom.value).toBe(1)
-    // The Frame is 400 × 200 and sits at 0, 0: its middle (200, 100) is the viewport's middle (500, 400).
-    expect(view.scroll.value).toEqual({ x: -300, y: -300 })
   })
 
   it('zooms out to fit a Frame bigger than the viewport, its Margin sheet whole (ticket 0850)', () => {
@@ -153,19 +185,20 @@ describe('useCanvasView', () => {
     view.fit()
     const anchor = { x: 200, y: 100 }
     const before = { x: view.scroll.value.x + anchor.x, y: view.scroll.value.y + anchor.y }
+    const ratio = 2 / view.zoom.value
 
     view.setZoom(2, anchor)
 
     expect(view.zoom.value).toBe(2)
-    expect(view.scroll.value.x + anchor.x).toBeCloseTo(before.x * 2)
-    expect(view.scroll.value.y + anchor.y).toBeCloseTo(before.y * 2)
+    expect(view.scroll.value.x + anchor.x).toBeCloseTo(before.x * ratio)
+    expect(view.scroll.value.y + anchor.y).toBeCloseTo(before.y * ratio)
   })
 
   it('zooms about the middle of the viewport for the buttons, in steps, within the usable range', () => {
     const { view } = setup(projectOf(20, 10))
     view.fit()
     view.zoomIn()
-    expect(view.zoom.value).toBe(1.1)
+    expect(view.zoom.value).toBe(1.7)
     for (let i = 0; i < 40; i += 1) view.zoomIn()
     expect(view.zoom.value).toBe(4)
     for (let i = 0; i < 60; i += 1) view.zoomOut()
@@ -209,17 +242,21 @@ describe('useCanvasView', () => {
     const { current, viewport, view } = setup(projectOf(20, 10), { width: 0, height: 0 })
     viewport.value = { width: 1000, height: 800 }
     await nextTick()
-    expect(view.scroll.value).toEqual({ x: -300, y: -300 })
+    expect(view.scroll.value.x).toBeCloseTo(-170, 6)
+    expect(view.scroll.value.y).toBeCloseTo(-235, 6)
 
     view.panBy(10, 10)
     viewport.value = { width: 1200, height: 800 }
     await nextTick()
-    expect(view.scroll.value).toEqual({ x: -310, y: -310 })
+    expect(view.scroll.value.x).toBeCloseTo(-180, 6)
+    expect(view.scroll.value.y).toBeCloseTo(-245, 6)
 
+    // 6 × 6 at its largest beads, 240%: its middle, 60px at 100%, is 144px.
     current.value = projectOf(6, 6)
     await nextTick()
     expect(view.isAtFit.value).toBe(true)
-    expect(view.scroll.value).toEqual({ x: 60 - 600, y: 60 - 400 })
+    expect(view.scroll.value.x).toBeCloseTo(144 - 600, 6)
+    expect(view.scroll.value.y).toBeCloseTo(144 - 400, 6)
   })
 
   it('stays where it is when the same Project is edited, even while it still follows the fit', async () => {
@@ -260,28 +297,30 @@ describe('useCanvasView', () => {
       const project = projectOf(20, 10)
       const { current, view } = setup(projectOf(6, 6), undefined, NO_INSETS, { project: project.id, view: { zoom: 2, at: { row: 30, column: 30 } } })
       view.fit()
-      expect(view.zoom.value).toBe(1)
+      expect(view.zoom.value).toBe(2.4)
 
       current.value = project
       await nextTick()
       expect(view.isAtFit.value).toBe(true)
-      expect(view.scroll.value).toEqual({ x: -300, y: -300 })
+      expect(view.zoom.value).toBe(1.65)
 
       const { view: opened } = setup(project, undefined, NO_INSETS, { project: project.id, view: { zoom: 2, at: { row: 30, column: 30 } } })
       opened.fit()
       opened.fit()
-      expect(opened.zoom.value).toBe(1)
-      expect(opened.scroll.value).toEqual({ x: -300, y: -300 })
+      expect(opened.zoom.value).toBe(1.65)
+      expect(opened.scroll.value).toEqual(view.scroll.value)
     })
   })
 
   it('centres on a block of beads without changing the zoom', () => {
     const { view } = setup(projectOf(20, 10))
     view.fit()
+    const zoom = view.zoom.value
     view.centreOn({ row: 100, column: 100, rows: 2, columns: 2 })
 
-    expect(view.zoom.value).toBe(1)
-    expect(view.scroll.value).toEqual({ x: 2020 - 500, y: 2020 - 400 })
+    expect(view.zoom.value).toBe(zoom)
+    expect(view.scroll.value.x).toBeCloseTo(2020 * zoom - 500, 6)
+    expect(view.scroll.value.y).toBeCloseTo(2020 * zoom - 400, 6)
   })
 
   describe('bringing a part of the drawing into view (ticket 0934)', () => {
@@ -375,17 +414,17 @@ describe('useCanvasView', () => {
       const { view } = setup(projectOf(20, 10))
       view.fit()
       const zoom = view.zoom.value
-      // A panel over the left 560px: the Frame, 400px wide, moves just clear of it.
-      view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 560 } })
+      // A panel over the left 300px: the Frame, 660px wide at the fit, moves just clear of it.
+      view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 300 } })
       const shown = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom, scroll: view.scroll.value }).beadBox({ row: 0, column: 0, rows: 10, columns: 20 })
-      expect(shown.x).toBeCloseTo(560, 6)
+      expect(shown.x).toBeCloseTo(300, 6)
     })
 
     it('puts the view back where it was, still following the fit', () => {
       const { view } = setup(projectOf(20, 10))
       view.fit()
       const from = view.scroll.value
-      const move = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 560 } })!
+      const move = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 300 } })!
       expect(view.isAtFit.value).toBe(false)
       vi.stubGlobal('matchMedia', () => ({ matches: true }))
       try {
@@ -400,14 +439,14 @@ describe('useCanvasView', () => {
     it('leaves a view the person moved or zoomed since where they left it', () => {
       const { view } = setup(projectOf(20, 10))
       view.fit()
-      const move = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 560 } })!
+      const move = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 300 } })!
       view.panBy(30, 0)
       const moved = view.scroll.value
       view.putBack(move)
       expect(view.scroll.value).toEqual(moved)
       expect(view.isAtFit.value).toBe(false)
 
-      const again = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 700 } })!
+      const again = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 335 } })!
       view.setZoom(0.5)
       const zoomed = view.scroll.value
       view.putBack(again)
@@ -428,7 +467,7 @@ describe('useCanvasView', () => {
         const { view } = setup(projectOf(20, 10))
         view.fit()
         const from = view.scroll.value
-        const move = view.bringIntoView(frameOf20, { clear: { ...NO_INSETS, left: 560 } })!
+        const move = view.bringIntoView(frameOf20, { clear: { ...NO_INSETS, left: 300 } })!
         frame(1000)
         frame(1000 + INTO_VIEW_MS / 2)
         view.putBack(move)

@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { createProject } from '../../domain/createProject'
@@ -17,6 +17,7 @@ import MarginSheet from './MarginSheet.vue'
 import { withLayers } from '../../testUtils/layerFields'
 import { browserDevicePreferences } from '../../services/devicePreferences'
 import { MARGIN_PX } from '../../rendering/marginSizes'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 // The margin sheet scales with its band, and under its smallest scale, 1, changes form (tickets 0658, 0698, 0851): at each zoom,
 // and on a narrow Frame, nothing of the Frame stands outside its sheet, over its beads, or over another control.
@@ -411,5 +412,50 @@ describe('the margin sheet readable at any zoom (ticket 0851)', () => {
       expect(specks(root), `${across} × ${down}`).toEqual([])
       expect(root.querySelector('[data-testid="frame-move-handle"]'), `${across} × ${down}`).not.toBeNull()
     }
+  })
+})
+
+/** The band's controls' `--touch-target` hit areas on a coarse pointer, modelled as controls.css draws them (the stubbed
+ * query does not turn on its CSS): each centred on its drawn size, never smaller, and scaled with the sheet. */
+function hitAreas(root: HTMLElement): { name: string; rect: DOMRect }[] {
+  const page = getComputedStyle(document.documentElement)
+  const touchTarget = parseFloat(page.getPropertyValue('--touch-target')) * parseFloat(page.fontSize)
+  return [...root.querySelectorAll<HTMLElement>('[data-testid="margin-band"] .ui-control')].map((element) => {
+    const drawn = element.getBoundingClientRect()
+    const target = touchTarget * (drawn.width / element.offsetWidth)
+    const [width, height] = [Math.max(drawn.width, target), Math.max(drawn.height, target)]
+    const rect = new DOMRect(drawn.left + (drawn.width - width) / 2, drawn.top + (drawn.height - height) / 2, width, height)
+    return { name: element.getAttribute('aria-label') || element.dataset.testid || element.textContent!.trim(), rect }
+  })
+}
+
+describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
+  it('keeps Edit Frame and the Frame tools button, whose 44px hit areas overlap no other, at every zoom and width', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+    zoom.value = 1
+    columns.value = 40
+    const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
+    const found: Record<string, string[]> = {}
+    for (const across of [40, 16, 8, 3]) {
+      columns.value = across
+      for (let percent = 25; percent <= 150; percent += 5) {
+        zoom.value = percent / 100
+        await settled(root)
+        const name = `${across} columns at ${percent}%`
+        const band = root.querySelector<HTMLElement>('[data-testid="margin-band"]')
+        if (!band) continue
+        const tools = [...band.querySelectorAll<HTMLElement>('.margin-sheet__tools > *')].map((tool) => tool.dataset.testid ?? tool.querySelector<HTMLElement>('[data-testid]')?.dataset.testid)
+        const wrong = [...problems(root)]
+        const expected = band.dataset.form === 'narrow' ? ['margin-frame-tools'] : ['frame-edit-toggle', 'margin-frame-tools']
+        if (tools.join() !== expected.join()) wrong.push(`the tools are ${tools.join(', ')}`)
+        const areas = hitAreas(root)
+        for (const [index, area] of areas.entries()) for (const other of areas.slice(index + 1)) if (overlap(area.rect, other.rect)) wrong.push(`${area.name} overlaps ${other.name}`)
+        if (wrong.length) found[name] = wrong
+      }
+    }
+    expect(found).toEqual({})
   })
 })

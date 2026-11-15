@@ -73,7 +73,7 @@ export interface ConvertImageWizardDeps {
   myBeads?: Ref<MyBeads>
 }
 
-/** The preview's tools (ConvertImage card DS-1, the floating bar): one or none is on. Make empty leaves a color out with
+/** The preview's tools (ConvertImage card DS-1, the floating bar): one or none is on. Leave a color out leaves a color out with
  * a tap; Background keeps or removes the patch under a tap or a drag (ticket 0787). The crop on the picture took Select's
  * place (ticket 0898). */
 export type ConvertTool = 'make-empty' | 'background'
@@ -544,7 +544,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     setChoice(pictureHexes, empty ? undefined : { kind: 'empty' })
   }
 
-  /** Make empty (ConvertImage card): a tap on a bead makes its bead color empty everywhere (its row of Color by color,
+  /** Leave a color out (ConvertImage card): a tap on a bead makes its bead color empty everywhere (its row of Color by color,
    * ticket 0863), and a tap on an empty place of that color brings it back. A place the background left is not a color
    * to tap. */
   function toggleEmptyAtBead(index: number) {
@@ -895,7 +895,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     remapPalette,
     remapSwatches,
     catalogRemapSwatches,
-    /** Clean up (ticket 0906): Clean up stray beads, its strength and Small colors join, with what each did. */
+    /** Clean up (ticket 0906): Clean up stray beads, its strength and Drop colors used by few beads, with what each did. */
     cleanUp,
     /** Auto-fix lighting (ticket 0907): its switch, and the picture the beads are sampled from (what Compare shows). */
     lighting,

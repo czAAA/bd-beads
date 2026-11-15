@@ -278,6 +278,28 @@ describe('the canvas box\'s bottom bar (ticket 0850)', () => {
   })
 })
 
+describe('the notice row (ticket 0985)', () => {
+  it('lets a press on a notice\'s button act at once and stays open', async () => {
+    const notices = document.createElement('div')
+    notices.setAttribute('data-notice-row', '')
+    notices.innerHTML = '<button data-testid="missed-project-export"></button>'
+    document.body.append(notices)
+    const wrapper = mountShell()
+    await nextTick()
+    const save = document.querySelector<HTMLElement>('[data-testid="missed-project-export"]')!
+    const pressed = vi.fn()
+    save.addEventListener('click', pressed)
+
+    const down = new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    save.dispatchEvent(down)
+    save.click()
+    await nextTick()
+    expect(down.defaultPrevented).toBe(false)
+    expect(pressed).toHaveBeenCalledOnce()
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
+})
+
 describe('AppPanel opened on a section (ticket 0935)', () => {
   it('scrolls its body until the section it opens on starts at the top, and focuses that section\'s first control', async () => {
     const rect = (top: number, bottom: number) => ({ top, bottom, left: 0, right: 100, width: 100, height: bottom - top, x: 0, y: top }) as DOMRect

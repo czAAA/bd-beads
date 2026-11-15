@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "On a phone or tablet the notice for dragging out a Frame no longer mentions Escape: it says picking a tool cancels, and the note after a Frame snaps says what was added and why",
+    "ru": "На телефоне и планшете подсказка о выделении рамки больше не упоминает Esc: она говорит, что отменить можно выбором инструмента, а сообщение после сдвига рамки говорит, что добавлено и зачем",
+    "uk": "На телефоні й планшеті підказка про виділення рамки більше не згадує Esc: вона каже, що скасувати можна вибором інструмента, а повідомлення після зсуву рамки каже, що додано і навіщо",
+    "be": "На тэлефоне і планшэце падказка пра вылучэнне рамкі больш не згадвае Esc: яна кажа, што адмяніць можна выбарам інструмента, а паведамленне пасля зруху рамкі кажа, што дададзена і навошта",
+    "zh": "在手机和平板上，框选边框的提示不再提到 Esc 键：改为说明选择一个工具即可取消；边框对齐后的提示也会说明添加了什么、为什么添加",
+    "es": "En el móvil o la tableta, el aviso para arrastrar un marco ya no menciona Esc: dice que elegir una herramienta lo cancela, y el aviso tras ajustar un marco dice qué se añadió y por qué",
+    "pl": "Na telefonie i tablecie podpowiedź o zaznaczaniu ramki nie wspomina już o Esc: mówi, że wybór narzędzia anuluje, a komunikat po dosunięciu ramki mówi, co dodano i dlaczego"
+  }
+}

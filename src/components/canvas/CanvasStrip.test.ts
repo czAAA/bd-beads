@@ -393,6 +393,6 @@ describe('CanvasStrip Frame button (ticket 0932)', () => {
     expect(wrapper.text()).toContain(en.tooltips.framePanel)
     await wrapper.setProps({ settledProject: framedWith({ 1: { 1: '#ff0000', 2: '#00ff00' }, 2: { 1: '#ff0000' } }) })
     expect(wrapper.text()).not.toContain(en.tooltips.framePanel)
-    expect(wrapper.text()).toMatch(/Open Beads needed \(3( · ≈ [^)]+)?\), the Frame’s size, Rotate and Remove\./)
+    expect(wrapper.text()).toMatch(/Open Export, Beads needed \(3( · ≈ [^)]+)?\), the Frame’s size, Rotate and Remove\./)
   })
 })

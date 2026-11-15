@@ -77,14 +77,14 @@ function apartMatches(reduced: ReducedColors, targets: readonly TargetColor[] | 
 }
 
 /** The fewest beads a bead color of a reduced picture is used by (ticket 0891, ADR 0010), Stitch Fiddle's default
- * (benchmark CB-16): a color of fewer joins the nearest that stays. Small colors join's number (ticket 0906) opens on it
+ * (benchmark CB-16): a color of fewer joins the nearest that stays. Drop colors used by few beads's number (ticket 0906) opens on it
  * for a photo. */
 export const LEAST_COLOR_BEADS = 10
 
-/** Small colors join's lowest step, "off": every color has at least one bead, so none joins (ticket 0906). */
+/** Drop colors used by few beads's lowest step, "off": every color has at least one bead, so none joins (ticket 0906). */
 export const NO_LEAST_COLOR_BEADS = 1
 
-/** Small colors join's highest step (ConvertImage card DS-3), and how far a step with Shift goes. */
+/** Drop colors used by few beads's highest step (ConvertImage card DS-3), and how far a step with Shift goes. */
 export const MOST_LEAST_COLOR_BEADS = 50
 export const LEAST_COLOR_BEADS_SHIFT_STEP = 10
 
@@ -185,7 +185,7 @@ export function newProjectPalette(builtIns: readonly PaletteColor[], found: read
   return { ids, codes }
 }
 
-/** What Small colors join did (ticket 0906): how many bead colors went into a nearer one and how many beads they had,
+/** What Drop colors used by few beads did (ticket 0906): how many bead colors went into a nearer one and how many beads they had,
  * from the found colors with the minimum and the same with none (NO_LEAST_COLOR_BEADS). */
 export function smallColorsJoined(joined: readonly FoundColor[], unjoined: readonly FoundColor[]): { colors: number; beads: number } {
   const used = (found: readonly FoundColor[]) => new Set(found.flatMap((color) => (color.result ? [color.result.hex] : []))).size
