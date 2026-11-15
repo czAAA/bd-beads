@@ -50,7 +50,7 @@ The Mirror's own bar: the Selection bar's component (same look, sizes, hover and
 - **On the canvas, whatever tool is active,** not hidden by the Rulers toggle, never in exports, on the canvas overlay layer in the Area's geometry:
   - **Axis lines:** `mirror`, `--mirror-axis-width` (1.25px), dash `--mirror-axis-dash` (5 4), across the Area. A straight Axis runs through the Area's centre; with an Axis count of N, N lines cut it into N+1 equal strips.
   - **Radial:** the centre is a ring, `--mirror-ring-radius` (7px), 2px `mirror`, at the Area's centre. Mirror mode: the Fold's mirror lines through it, 180° over the Fold apart, the first vertical and full, the others at `--mirror-axis-soft` (45%). Repeat: the Fold's rays from it, 360° over the Fold apart, the first straight up. On a round Custom frame the ring is at the layout's centre and the first line or ray runs along the shape's first Seam, clipped to the Frame's rectangle; a Kite's or Fringe earring's one line runs through the layout's centre.
-  - **Hover preview:** every counterpart under the pointer at `--mirror-ghost-opacity` (45%) of the colour with a 1.5px `mirror` outline (an Eraser's with no fill).
+  - **Hover preview:** every counterpart under the pointer at `--mirror-ghost-opacity` (45%) of the colour with a 1.5px `mirror` outline (an Eraser's round its fade, BeadHover card).
 - **Counterparts** land only inside the Area: one outside it, in the keep-out margin, on a Seam or Off-shape, or in a finished row is dropped silently, as Paste drops; a gesture outside the Area is not mirrored. The rules (by index on a grid at Fold 2 and 4 as Rotate turns a fragment, geometric on a Custom frame) are the glossary's Axis entry.
 
 ### Placement

@@ -101,6 +101,8 @@ export interface SurfaceOverlayDeps {
   surface: Ref<SurfaceView>
   rulers: Ref<RulerLayout>
   theme: Ref<ProjectTheme>
+  /** The theme the Frame's own Background draws it in: what a bead the Eraser hovers fades toward there (ticket 1014). */
+  frameTheme: Ref<ProjectTheme>
   marksShown: Ref<boolean>
   /** Where the bead-shaped marker stands for the pointer, if anywhere (ticket 353). */
   markerAt: Ref<{ x: number; y: number; layer: ViewLayer } | undefined>
@@ -121,7 +123,7 @@ export interface SurfaceOverlayDeps {
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion } = deps
+  const { props, canvas: canvasEl, size, space, surface, rulers, theme, frameTheme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -168,6 +170,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         zoom: props.zoom,
         pixelRatio,
         theme: theme.value,
+        frameTheme: frameTheme.value,
         rowMarks: marksShown.value,
         letters: shownLetters(props.project),
         pointer: markerAt.value && !tools.tool && !tools.moves && !tools.markerHidden && !tools.picking && !tools.selects ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
@@ -217,6 +220,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       hotHandle,
       hotAreaHandle,
       theme,
+      frameTheme,
     ],
     deps.oncePerFrame(drawOverlay),
     { flush: 'post' },

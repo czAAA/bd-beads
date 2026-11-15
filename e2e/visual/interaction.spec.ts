@@ -38,10 +38,11 @@ const colorAt = (project: Project, row: number, column: number) => frameGrid(pro
 
 test.describe('the hover preview', () => {
   const scenarios = [
-    { name: 'loom-hover-paint', technique: 'loom' as const, tool: undefined },
-    { name: 'peyote-hover-paint', technique: 'peyote' as const, tool: undefined },
-    { name: 'brick-hover-paint', technique: 'brick' as const, tool: undefined },
-    { name: 'peyote-hover-erase', technique: 'peyote' as const, tool: 'erase' as const },
+    { name: 'loom-hover-paint', technique: 'loom' as const, tool: undefined, column: 5 },
+    { name: 'peyote-hover-paint', technique: 'peyote' as const, tool: undefined, column: 5 },
+    { name: 'brick-hover-paint', technique: 'brick' as const, tool: undefined, column: 5 },
+    // The Eraser previews only a bead (ticket 1014), and the fixture's (3, 5) is empty: (3, 6) holds one.
+    { name: 'peyote-hover-erase', technique: 'peyote' as const, tool: 'erase' as const, column: 6 },
   ]
 
   for (const scenario of scenarios) {
@@ -57,7 +58,7 @@ test.describe('the hover preview', () => {
 
         for (const zoom of zoomsFor(rotated)) {
           await setZoom(page, zoom)
-          const at = await pointOn(page, scenario.technique, rotated, zoom, 3, 5)
+          const at = await pointOn(page, scenario.technique, rotated, zoom, 3, scenario.column)
           await page.mouse.move(at.x, at.y)
           await settle(page)
 
@@ -72,7 +73,7 @@ test.describe('the hover preview', () => {
 
           const label = `${scenario.name}, ${orientation}, ${zoom}%`
           // The hovered bead's centre carries the preview, which is what is being looked at, not a wrong color.
-          const { look, wrong } = compareToReference(actual, expected, project, zoom, corner, origin, new Set(['(3, 5)']))
+          const { look, wrong } = compareToReference(actual, expected, project, zoom, corner, origin, new Set([`(3, ${scenario.column})`]))
           expect.soft(look, `${label}: look`).toBeLessThanOrEqual(MAX_DIFFERING_BLOCKS[scenario.technique])
           expect.soft(wrong, `${label}: beads in the wrong color`).toEqual([])
         }

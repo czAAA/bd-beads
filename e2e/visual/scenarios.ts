@@ -128,13 +128,13 @@ export const SCENARIOS: Scenario[] = [
     place: pointerAway,
   },
 
-  // The Erase tool has no color to preview: a neutral outline on the hovered bead.
+  // The Eraser previews the bead gone: it fades toward its empty position (ticket 1014).
   {
     technique: 'peyote',
     name: 'peyote-hover-erase',
     prepare: async (page) => {
       await selectTool(page, 'erase')
     },
-    place: (page, context) => pointerOnBead(page, context, 3, 5),
+    place: (page, context) => pointerOnBead(page, context, 3, 6),
   },
 ]
