@@ -193,8 +193,10 @@ function onListKeydown(event: KeyboardEvent) {
 </template>
 
 <style scoped>
+/* The button goes under its label when the browser's text leaves it no room beside it (ticket 0941). */
 .panel-picker {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);

@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Menus, panels and dialogs follow your browser's text size, so a larger setting makes their text larger",
+    "ru": "Меню, панели и диалоги следуют размеру текста в браузере: если его увеличить, их текст тоже станет крупнее",
+    "uk": "Меню, панелі й діалоги стежать за розміром тексту в браузері: якщо його збільшити, їхній текст теж стане більшим",
+    "be": "Меню, панэлі і дыялогі сочаць за памерам тэксту ў браўзеры: калі яго павялічыць, іх тэкст таксама стане большым",
+    "zh": "菜单、面板和对话框会跟随浏览器的文字大小设置：调大后，其中的文字也会变大",
+    "es": "Los menús, paneles y diálogos siguen el tamaño de texto del navegador: si lo aumentas, su texto también se hace más grande",
+    "pl": "Menu, panele i okna dialogowe idą za rozmiarem tekstu w przeglądarce: gdy go zwiększysz, ich tekst też będzie większy"
+  }
+}
