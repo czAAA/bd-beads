@@ -635,6 +635,7 @@ export const es: Translations = {
     goToPass: 'Ir a la pasada',
     passesInfoName: 'Qué es una pasada',
     showRowMarks: 'Mostrar marcas de fila',
+    goToRange: 'de 1 a {total}',
   },
   quantities: {
     heading: 'Cuentas necesarias',

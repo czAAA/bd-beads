@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Go to row turns its field red for a row that doesn't exist and says which rows do, \"1 to 27\"",
+    "ru": "«Перейти к ряду» подсвечивает поле красным, если такого ряда нет, и говорит, какие ряды есть: «от 1 до 27»",
+    "uk": "«Перейти до ряду» підсвічує поле червоним, якщо такого ряду немає, і каже, які ряди є: «від 1 до 27»",
+    "be": "«Перайсці да рада» падсвечвае поле чырвоным, калі такога рада няма, і кажа, якія рады ёсць: «ад 1 да 27»",
+    "zh": "“跳到行”在输入不存在的行号时将输入框标红，并说明有哪些行：“1 到 27”",
+    "es": "Ir a la fila marca el campo en rojo si la fila no existe y dice cuáles existen: «de 1 a 27»",
+    "pl": "Przejdź do rzędu zaznacza pole na czerwono, gdy taki rząd nie istnieje, i mówi, które istnieją: „od 1 do 27”"
+  }
+}

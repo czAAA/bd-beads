@@ -1,4 +1,4 @@
-import { defineComponent, h, onMounted, ref, type Component } from 'vue'
+import { defineComponent, h, nextTick, onMounted, ref, type Component } from 'vue'
 import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
 import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
@@ -215,6 +215,14 @@ const GoToPassHost = defineComponent({
   },
 })
 
+/** Types 99 into Go to pass's field, a pass of 27 that doesn't exist (ticket 0980). */
+async function typeNoSuchPass() {
+  const field = document.querySelector<HTMLInputElement>('[data-testid="go-to-row-field"]')!
+  field.value = '99'
+  field.dispatchEvent(new Event('input'))
+  await nextTick()
+}
+
 /** Two unframed Schemas with their tags in a phone-sized canvas box (tickets 0721, 0733): "Owl" and "Butterfly", which
  * opens into the paper tag. */
 const schemaTagsHost = defineComponent({
@@ -256,6 +264,8 @@ const CASES: FitCase[] = [
   ['Turn row direction\'s list', ProgressBar, { project: framed }, (root: HTMLElement) => press(root, 'progress-bar-direction')],
   // Go to pass on peyote, with its Info button beside the name (ticket 0972).
   ['Go to pass', GoToPassHost as Component, {}],
+  // Go to pass with a pass that doesn't exist, "1 to 27" under its field (ticket 0980).
+  ['Go to pass (no such pass)', GoToPassHost as Component, {}, typeNoSuchPass],
   [
     'ContextBar',
     ContextBar,

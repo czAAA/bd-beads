@@ -630,6 +630,7 @@ export const en: Translations = {
     goToPass: 'Go to pass',
     passesInfoName: 'What a pass is',
     showRowMarks: 'Show row marks',
+    goToRange: '1 to {total}',
   },
   quantities: {
     heading: 'Beads needed',

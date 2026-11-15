@@ -638,6 +638,7 @@ export const pl: Translations = {
     goToPass: 'Przejdź do przejścia',
     passesInfoName: 'Czym jest przejście',
     showRowMarks: 'Pokazuj oznaczenia rzędów',
+    goToRange: 'od 1 do {total}',
   },
   quantities: {
     heading: 'Potrzebne koraliki',
