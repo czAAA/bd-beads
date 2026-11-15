@@ -655,7 +655,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('input-mode', (t) => t.panels.menu.input, 'canvas', { icon: 'pen-mode' }),
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
   // The Convert image wizard's own controls (ticket 0650): its zoom is the Canvas's, its Close the shared one.
-  // Its floating bar (ticket 0896): Background, Make empty and Compare; Undo and Redo stand in Background's popover.
+  // Its floating bar (ticket 0896): Background, Leave a color out and Compare; Undo and Redo stand in Background's popover.
   unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),
   // The Background tool (ticket 0787): a tap or a drag keeps or removes the patch of background under it.
   unkeyed('convert-background', (t) => t.convertImage.wizard.backgroundTool, 'edit', { icon: 'erase', body: (t) => t.tooltips.backgroundTool }),
