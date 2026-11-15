@@ -199,10 +199,18 @@ onBeforeUnmount(() => {
   gap: var(--space-16);
 }
 
+/* A name with no spaces breaks where it has to, so it never runs out of the dialog; the title's lines are balanced
+ * (Modal card, ticket 0988). The body's `break-word` leaves its controls' own widths, so a segment never breaks a word. */
 .app-modal__title {
   margin: 0;
   font: var(--type-title);
   color: var(--ink);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.app-modal__body {
+  overflow-wrap: break-word;
 }
 
 .app-modal__body :deep(p) {
