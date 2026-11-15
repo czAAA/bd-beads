@@ -132,7 +132,7 @@ const dropLimits = computed(() => imageLimitsText(locale.value, words.value.drop
 .convert-page__dropping {
   position: absolute;
   inset: var(--space-12);
-  z-index: 5;
+  z-index: var(--convert-layer-dropping);
   display: flex;
   flex-direction: column;
   align-items: center;

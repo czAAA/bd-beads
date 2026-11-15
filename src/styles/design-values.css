@@ -103,6 +103,13 @@
   --panel-item-secondary-height: 22px; /* MenuPanel card: a secondary link under a row (Report a translation problem). */
   --convert-thumb-width: 44px; /* ConvertImage card (ticket 0896): the picture row's thumbnail, the picture cover-fitted. */
   --convert-thumb-height: 54px; /* ConvertImage card: the thumbnail's height. */
+  /* ConvertImage card (ticket 0997): the converter page's own layers, named once, lowest first. They stack inside the page, under the app's --z-* layers. */
+  --convert-layer-pinned: 1; /* A sticky row over what scrolls under it: the column's foot, the Colors list's header. */
+  --convert-layer-handle: 2; /* The crop's handles and the ring over the clipped picture; a corner one above. */
+  --convert-layer-tools: 3; /* The preview's floating bar and the chips over its halves. */
+  --convert-layer-chip: 4; /* Over the bar: the kept chip, the size chip, the pressed disc. */
+  --convert-layer-dropping: 5; /* A picture dragged over the page: the drop look over all of it. */
+  --convert-layer-popover: 6; /* The converter's popovers and the neighbours' card, over everything else on the page. */
   --slider-mark-width: 2px; /* ValueSlider card: a mark across the track. */
   --slider-mark-height: 14px; /* ValueSlider card: a mark's height, taller than the track so it shows over the filled part. */
   --slider-mark-snap: 6px; /* ValueSlider card: a drag released this near a mark lands on it. */
@@ -286,6 +293,7 @@
   --picture-bar-grip-line: 32px; /* ReferenceImage card: the Move grip's `ink` pill, 6px thick (the Frame's handle thickness). */
   --convert-popover-width: 360px; /* ReferenceImage card: the Convert to beads popover beside the picture. */
   --convert-swatch: 18px; /* ReferenceImage card: a color's swatch in the popover, four rows shown before it scrolls. */
+  --convert-popover-layer: 3; /* ReferenceImage card (ticket 0997): the Convert to beads popover over the picture and its bar. */
   --picture-bar-divider: 18px; /* ReferenceImage card: the bar's 1px `line` dividers. */
   --frame-preview-line: 2px; /* ReferenceImage card: Set Frame around the picture's preview of the Frame's line. */
   /* The MarginSheet card's px the canvas and the sheet's script use too: `MARGIN_PX` (src/rendering/marginSizes.ts) holds
@@ -405,6 +413,18 @@
   --free-lead-width: 20rem; /* A new visitor's Free to use: the heading and the way in beside the free list, 320px (ticket 0947). */
   --coming-soon-width: 14.75rem; /* The Coming soon stamp on Free account and Pro, 236px. */
   --coming-soon-tilt: -8deg; /* The stamp's tilt; Pro's is -5deg, so the two don't look pasted. */
+  --plan-radius: 1rem; /* A plan tile's corners, 16px (ticket 0997). */
+  --plan-bead-radius: 2.5px; /* The bead on a tile's strand, its corners. */
+  --plan-why-size: 0.8125rem; /* The reason beside the heading, body at 13px on 18. */
+  --plan-why-line: 1.125rem;
+  --plan-name-size: 1.875rem; /* A tile's name, serif-heading at 30px on 32. */
+  --plan-name-line: 2rem;
+  --plan-name-size-phone: 1.5rem; /* Free account's and Pro's name in their row on a phone, 24px on 28. */
+  --plan-name-line-phone: 1.75rem;
+  --plan-price-size: 1rem; /* The price, body 600 at 16px on 24. */
+  --plan-price-line: 1.5rem;
+  /* Homepage card, the coffee band (ticket 0997). */
+  --coffee-steam: 2.4s; /* One bead of steam rising and fading; the three start a third of it apart, on --ease-out. */
   /* Homepage card, the Progress bar's steps (ticket 0743) */
   --step-dot: 0.5rem; /* A step's dot on the track, passed or ahead, 8px. */
   --step-dot-current: 0.875rem; /* The current step's ring, 14px. */

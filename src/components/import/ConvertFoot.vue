@@ -109,7 +109,7 @@ const buttonLabel = computed(() => (wizard.addsToCanvas ? t.value.convertImage.a
 .convert-foot {
   position: sticky;
   bottom: 0;
-  z-index: 1;
+  z-index: var(--convert-layer-pinned);
   display: flex;
   flex-direction: column;
   gap: var(--space-12);

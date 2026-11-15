@@ -419,3 +419,7 @@ What the build of Brightness, Contrast and Saturation (DS-3) had to settle:
 - **The reset** is a `plain` IconButton, `--control-height-small` (28) square with the 16 `reset` icon, `aria-disabled` with "Already at 0." at 0, so it keeps focus when pressed.
 - **The popover** is ConvertPopover's `beside` place, its top level with the picture section's content (16 under the strip). Under 1024 px it opens in place under the picture section, right under the Auto-fix lighting row, until ticket 0911's sheet (which repeats the switch at its top).
 - **The first window holds 15 controls** with the sun button, as DS-3 counts. The sun button stands in Auto-fix lighting's row, so the column is no taller; the line naming the moved sliders adds its height only while one is off 0.
+
+## As built (ticket 0997)
+
+- **The page's layers are named once**, lowest first: `--convert-layer-pinned` (1: the column's sticky foot, the Colors list's header), `--convert-layer-handle` (2: the crop's handles and the ring; a corner handle one above), `--convert-layer-tools` (3: the floating bar, the chips over the halves), `--convert-layer-chip` (4: the kept chip, the size chip, the pressed disc), `--convert-layer-dropping` (5: a picture dragged over the page) and `--convert-layer-popover` (6: the popovers and the neighbours' card). They stack inside the page, under the app's `--z-*` layers, so the numbers stay as they were and nothing moves.

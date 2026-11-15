@@ -194,15 +194,15 @@ a.coffee__cup:hover .coffee-cup {
 .coffee-cup__steam {
   fill: var(--muted);
   opacity: 0;
-  animation: coffee-steam 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  animation: coffee-steam var(--coffee-steam) var(--ease-out) infinite;
 }
 
 .coffee-cup__steam:nth-child(2) {
-  animation-delay: 0.8s;
+  animation-delay: calc(var(--coffee-steam) / 3);
 }
 
 .coffee-cup__steam:nth-child(3) {
-  animation-delay: 1.6s;
+  animation-delay: calc(var(--coffee-steam) * 2 / 3);
 }
 
 @keyframes coffee-steam {
