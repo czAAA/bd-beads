@@ -66,7 +66,9 @@ test.describe('Convert image layouts', () => {
       // At the 18px root Clean up's button (ticket 0906) stands under the pinned foot until the column scrolls, at 1440 × 900
       // too since Auto-fix lighting's row (0907), by at most that row and its 10: scrolled, it stands whole above the foot.
       const lightingRow = (await page.getByTestId('convert-lighting').boundingBox())!.height + 10
-      if (viewport.width === 1440) expect(shown.columnOverflow).toBeLessThanOrEqual(lightingRow)
+      // The foot's colors line wraps where it says the picture gives no more (ticket 0928): its second line is allowed too.
+      const colorsWrap = (await page.getByTestId('convert-result-colors').boundingBox())!.height - (await page.getByTestId('convert-result-size').boundingBox())!.height
+      if (viewport.width === 1440) expect(shown.columnOverflow).toBeLessThanOrEqual(lightingRow + colorsWrap)
       const above = await page.getByTestId('convert-column').evaluate((column) => {
         column.scrollTop = column.scrollHeight
         const button = column.querySelector('[data-testid="convert-clean-up-button"]')!.getBoundingClientRect()

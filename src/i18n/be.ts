@@ -1172,6 +1172,10 @@ export const be: Translations = {
         atZero: 'Ужо на 0.',
         moved: '{slider} {value}',
       },
+      fewerFound: {
+        asked: 'просілі {asked} · знойдзена {found}',
+        allGiven: '{colors} (усё, што дае гэтая выява ў {bead})',
+      },
     },
     errors: {
       heic: 'Браўзеры не ўмеюць чытаць HEIC. Захавайце выяву ў PNG або JPEG і паспрабуйце зноў.',

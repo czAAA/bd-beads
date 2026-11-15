@@ -1155,6 +1155,10 @@ export const en: Translations = {
         atZero: 'Already at 0.',
         moved: '{slider} {value}',
       },
+      fewerFound: {
+        asked: '{asked} asked · {found} found',
+        allGiven: '{colors} (all this picture gives in {bead})',
+      },
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',

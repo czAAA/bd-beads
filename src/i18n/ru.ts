@@ -1171,6 +1171,10 @@ export const ru: Translations = {
         atZero: 'Уже на 0.',
         moved: '{slider} {value}',
       },
+      fewerFound: {
+        asked: 'запрошено {asked} · найдено {found}',
+        allGiven: '{colors} (всё, что даёт это изображение в {bead})',
+      },
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',

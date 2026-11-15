@@ -22,11 +22,18 @@ async function redAndWhite(): Promise<PixelData> {
   return { width: 8, height: 4, data: new Uint8ClampedArray(data) }
 }
 
+/** An 8 × 4 picture in two reds too close to be two beads, and white: three colors found, two beads to buy. */
+async function twoRedsAndWhite(): Promise<PixelData> {
+  const data: number[] = []
+  for (let y = 0; y < 4; y += 1) for (let x = 0; x < 8; x += 1) data.push(...(x < 3 ? [230, 55, 70, 255] : x < 5 ? [233, 58, 72, 255] : [255, 255, 255, 255]))
+  return { width: 8, height: 4, data: new Uint8ClampedArray(data) }
+}
+
 const draft: CreateProjectInput = { technique: 'loom', beadId: 'miyuki/delica/11-0', name: 'Tabby', makerName: 'Olga' }
 
-function open(options: { start?: CreateProjectInput; addsToCanvas?: boolean } = {}) {
+function open(options: { start?: CreateProjectInput; addsToCanvas?: boolean; picture?: () => Promise<PixelData> } = {}) {
   const wizard = effectScope().run(() =>
-    useConvertImageWizard({ start: options.start ?? draft, decodeImage: redAndWhite, loadCatalog: () => Promise.reject(new Error('none')), addsToCanvas: options.addsToCanvas }),
+    useConvertImageWizard({ start: options.start ?? draft, decodeImage: options.picture ?? redAndWhite, loadCatalog: () => Promise.reject(new Error('none')), addsToCanvas: options.addsToCanvas }),
   )!
   const Host = defineComponent({
     emits: ['create'],
@@ -89,6 +96,37 @@ describe('ConvertFoot with a picture', () => {
     expect(button.attributes('aria-disabled')).toBeUndefined()
     await button.trigger('click')
     expect(wrapper.emitted('create')).toHaveLength(1)
+  })
+
+  it('says the picture gives no more where fewer colors come out than asked for no list or Finish (ticket 0928)', async () => {
+    const { wizard, wrapper } = open({ picture: twoRedsAndWhite })
+    await withPicture(wizard)
+    wizard.setMaxColors(3)
+    await flushPromises()
+    expect(text(wrapper, 'convert-result-colors')).toBe("2 colors (all this picture gives in Miyuki Delica 11/0)")
+  })
+
+  it('names the Default Palette where it is matched to, and gives no reason under Exact (ticket 0928)', async () => {
+    const { wizard, wrapper } = open({ picture: twoRedsAndWhite })
+    await withPicture(wizard)
+    wizard.setSource('default')
+    wizard.setMaxColors(3)
+    await flushPromises()
+    expect(text(wrapper, 'convert-result-colors')).toBe('2 colors (all this picture gives in Default Palette)')
+    wizard.setSource('exact')
+    await flushPromises()
+    expect(text(wrapper, 'convert-result-colors')).toMatch(/^\d colors?$/)
+  })
+
+  it('names the count alone where as many come out as asked, or the fewer are set to empty (ticket 0928)', async () => {
+    const { wizard, wrapper } = open({ picture: twoRedsAndWhite })
+    await withPicture(wizard)
+    wizard.setMaxColors(2)
+    await flushPromises()
+    expect(text(wrapper, 'convert-result-colors')).toBe('2 colors')
+    wizard.toggleEmpty(wizard.rows.value[0]!.pictureHexes)
+    await flushPromises()
+    expect(text(wrapper, 'convert-result-colors')).toBe('1 color')
   })
 
   it('names the Project after the picture’s file when no form named it', async () => {

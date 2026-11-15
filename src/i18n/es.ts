@@ -1168,6 +1168,10 @@ export const es: Translations = {
         atZero: 'Ya está en 0.',
         moved: '{slider} {value}',
       },
+      fewerFound: {
+        asked: '{asked} pedidos · {found} encontrados',
+        allGiven: '{colors} (todos los que da esta imagen en {bead})',
+      },
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

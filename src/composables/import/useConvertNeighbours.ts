@@ -20,7 +20,7 @@ export type NeighbourPlace = { end: true; count: number } | { end: false; count:
 export const NEIGHBOURS_REST_MS = 150
 
 /** Whether two grids hold the same beads, place by place. */
-function sameBeads(a: Grid, b: Grid): boolean {
+export function sameBeads(a: Grid, b: Grid): boolean {
   return a.length === b.length && a.every((row, at) => row.length === b[at]!.length && row.every((cell, column) => cell.color === b[at]![column]!.color))
 }
 
