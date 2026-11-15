@@ -442,9 +442,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   let selectDrag = false
   let selectLayer: ViewLayer = 'canvas'
 
+  /** How far the middle of the bead a Frame drag was pressed on is from the press, in viewport pixels (ticket 0977):
+   * a resize drag reads its beads from there, so an edge moves once the pointer has gone half a bead, not as soon as a
+   * press on the line between two beads wobbles across it. Nothing for the Move handle. */
+  let frameGrip = { x: 0, y: 0 }
+
   /** Reports the cell at `point` to whichever drag is held: a Frame's, a Selection's adjust or a Select drag. */
   function followHeldDrag(point: { x: number; y: number }): void {
-    if (framing.value) emit('frame-drag', surface.value.pointToCell(point, gestureLayer))
+    if (framing.value) emit('frame-drag', surface.value.pointToCell({ x: point.x + frameGrip.x, y: point.y + frameGrip.y }, gestureLayer))
     else if (adjusting.value) emit('selection-drag', surface.value.pointToCell(point, gestureLayer))
     else if (selectDrag) {
       const near = surface.value.pointToCell(point, selectLayer)
@@ -556,6 +561,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     hideMarker()
     rootEl.value?.setPointerCapture?.(event.pointerId)
     gestureLayer = 'canvas'
+    frameGrip = { x: 0, y: 0 }
     emit('frame-press', { kind: 'move' }, cellUnder(event))
     event.preventDefault()
   }
@@ -604,7 +610,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = target.kind === 'handle' ? 'frame' : 'canvas'
-        emit('frame-press', target, cellUnder(event))
+        const pressed = cellUnder(event)
+        const point = pointInDrawing(event)
+        const middle = surface.value.beadToPoint(pressed, gestureLayer)
+        frameGrip = { x: middle.x - point.x, y: middle.y - point.y }
+        emit('frame-press', target, pressed)
         event.preventDefault()
         return
       }

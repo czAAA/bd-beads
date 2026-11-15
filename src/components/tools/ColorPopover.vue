@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, provide, ref } from 'vue'
+import { provide, ref, watch } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { usePillPopoverPlacement } from '../../composables/tools/usePillPopoverPlacement'
 import type { PillPosition } from '../../domain/toolPill'
@@ -42,10 +42,6 @@ function close() {
   emit('close')
 }
 
-onMounted(() => {
-  if (props.focusSwatch) rootEl.value?.querySelector<HTMLElement>('.palette-picker [tabindex="0"]')?.focus()
-})
-
 provide(PICK_CLOSE, close)
 useOverlayLayer({
   isOpen: () => true,
@@ -55,6 +51,20 @@ useOverlayLayer({
 })
 
 const style = usePillPopoverPlacement(rootEl, () => ({ tile: props.tile, pill: props.pill, position: props.position }))
+
+// Opened from the keyboard, focus goes to the chosen swatch once the popover is placed (ticket 0961): until then it is
+// hidden, and a hidden swatch cannot take focus, so focusing it on mount left focus on the tile.
+if (props.focusSwatch) {
+  const stop = watch(
+    () => style.value.visibility,
+    (hidden) => {
+      if (hidden) return
+      stop()
+      rootEl.value?.querySelector<HTMLElement>('.palette-picker [tabindex="0"]')?.focus()
+    },
+    { flush: 'post' },
+  )
+}
 </script>
 
 <template>

@@ -26,6 +26,23 @@ describe('the picture bar and the Convert to beads popover on the canvas box (Re
     expect(pictureBarPlace({ left: 300, top: -300, width: 200, height: 900 }, bar, viewport)).toEqual({ left: 320, top: 14 })
   })
 
+  it('goes out of view with a picture panned away, rather than wait at the canvas box\'s edge (ticket 1011)', () => {
+    // Panned off the right: the bar keeps 24px over the picture's left edge, past the canvas box.
+    expect(pictureBarPlace({ left: 1100, top: 200, width: 200, height: 100 }, bar, viewport)).toEqual({ left: 964, top: 146 })
+    // Off the left: 24px over its right edge.
+    expect(pictureBarPlace({ left: -400, top: 200, width: 200, height: 100 }, bar, viewport)).toEqual({ left: -224, top: 146 })
+    // Off the bottom: still 14px above its top edge.
+    expect(pictureBarPlace({ left: 300, top: 900, width: 200, height: 100 }, bar, viewport)).toEqual({ left: 320, top: 846 })
+    // Off the top: 14px inside the bottom edge, the last of the picture it can stand on.
+    expect(pictureBarPlace({ left: 300, top: -300, width: 200, height: 280 }, bar, viewport)).toEqual({ left: 320, top: -74 })
+    // A picture narrower than 48px keeps the bar over half its width.
+    expect(pictureBarPlace({ left: 1100, top: 200, width: 30, height: 100 }, bar, viewport)).toEqual({ left: 955, top: 146 })
+  })
+
+  it('keeps 14px inside the top edge of a picture too short to hold the bar above its bottom edge (ticket 1011)', () => {
+    expect(pictureBarPlace({ left: 300, top: 10, width: 200, height: 50 }, bar, viewport)).toEqual({ left: 320, top: 24 })
+  })
+
   it('stands inside the picture\'s top edge with no room above its sheet either', () => {
     const sheet = { left: 0, top: 20, width: 1000, height: 670 }
     expect(pictureBarPlace({ left: 300, top: 80, width: 200, height: 560 }, bar, viewport, sheet)).toEqual({ left: 320, top: 94 })

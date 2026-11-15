@@ -28,7 +28,13 @@ const BAR_GAP_PX = 6
 export const BAR_EDGE_PX = 8
 /** How far across the bar keeps over its Selection while the clamp holds it on screen (ticket 0779): past that it goes
  * out of view with the Selection. */
-const BAR_STICK_PX = 24
+export const BAR_STICK_PX = 24
+
+/** A bar gone out of view with what it stands on (tickets 0779, 1011): wholly outside the canvas box, hidden so Tab
+ * never reaches it. */
+export function barOutOfView(at: { left: number; top: number }, bar: { width: number; height: number }, viewport: { width: number; height: number }): boolean {
+  return at.left + bar.width <= 0 || at.left >= viewport.width || at.top + bar.height <= 0 || at.top >= viewport.height
+}
 
 /** Whether two boxes of the canvas box overlap: the Selection bar against the Tool pill. */
 const boxesOverlap = (a: BarBox, b: BarBox) => a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height

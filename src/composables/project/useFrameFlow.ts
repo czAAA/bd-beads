@@ -55,9 +55,20 @@ export interface FrameFlowDeps {
   dialogs?: Dialogs
 }
 
+/** How far a press on a resize handle is from the beads its edges stand on (ticket 0977): the drag keeps this distance,
+ * so the press alone changes nothing and a drag of some beads moves the edges by that many, however near the corner. */
+function gripOf(frame: Rect, edges: readonly FrameEdge[], press: GridPosition): GridPosition {
+  const row = edges.includes('top') ? frame.row : frame.row + frame.rows - 1
+  const column = edges.includes('left') ? frame.column : frame.column + frame.columns - 1
+  return {
+    row: edges.includes('top') || edges.includes('bottom') ? press.row - row : 0,
+    column: edges.includes('left') || edges.includes('right') ? press.column - column : 0,
+  }
+}
+
 type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Rect }
-  | { kind: 'resize'; edges: FrameEdge[]; start: Rect }
+  | { kind: 'resize'; edges: FrameEdge[]; start: Rect; grip: GridPosition }
 
 // Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054): the edit pencil shows the handles and the strip's Frame
 // button opens the Frame panel; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
@@ -259,7 +270,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!frame) return
     // The Move handle always works; a resize handle only while the edit toggle is on.
     if (target.kind === 'move') gesture = { kind: 'move', origin: cell, start: frame }
-    else if (target.kind === 'handle' && settingFrame.value) gesture = { kind: 'resize', edges: target.edges, start: frame }
+    else if (target.kind === 'handle' && settingFrame.value) gesture = { kind: 'resize', edges: target.edges, start: frame, grip: gripOf(frame, target.edges, cell) }
   }
 
   function drag(cell: GridPosition): void {
@@ -267,7 +278,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!project || !gesture) return
     dragged = true
     if (gesture.kind === 'resize') {
-      draft.value = { frame: frameWithEdges(frameWeave(project), gesture.start, gesture.edges, cell) }
+      const { grip } = gesture
+      draft.value = { frame: frameWithEdges(frameWeave(project), gesture.start, gesture.edges, { row: cell.row - grip.row, column: cell.column - grip.column }) }
     } else {
       const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
       // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left

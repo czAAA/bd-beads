@@ -865,10 +865,10 @@ export const zh: Translations = {
     oddWidthNote: '宽度现为 {count}：佩奥特针法的顶部需要一列居中，所以宽度须为奇数列（多于 1-drop 时为奇数个块）。',
     announceCustom: '边框「{shape}」，{size}',
     snapAddedTop: {
-      other: '在上方添加了 {count} 行空白：边框必须从未错位的行开始。',
+      other: '在上方添加了 {count} 行空白，让边框从完整的一行开始。',
     },
     snapAddedLeft: {
-      other: '在左侧添加了 {count} 列空白：边框必须从未错位的列开始。',
+      other: '在左侧添加了 {count} 列空白，让边框从完整的一列开始。',
     },
     announceTechnique: '编织技法已改为{technique}',
     announceSelectionRotated: '选区已旋转',
@@ -882,6 +882,7 @@ export const zh: Translations = {
     qualityHighCaption: '最清晰',
     qualityNote: '用于图片。可打印图表由线条绘制，任意放大都清晰。',
     progressMarkPiece: '标出要导出和计数的部分：用“选择”拖动。',
+    selectFrameTouchHint: '在画布上拖动以框选边框，选择一个工具即可取消。',
   },
   size: {
     estimateLabel: '估算尺寸',

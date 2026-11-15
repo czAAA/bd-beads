@@ -5,6 +5,7 @@ import { createProject } from '../../domain/createProject'
 import { ImageConversionError } from '../../domain/imageConversion'
 import type { Project } from '../../domain/project'
 import { newReferenceImage, withReferenceImage, type ReferencePicture } from '../../domain/referenceImage'
+import type { Region, SurfaceView } from '../../rendering/surfaceView'
 import { editHarness } from '../../testUtils/editHarness'
 import { memoryPictureStore } from '../../testUtils/pictureStore'
 import { useDialogs } from '../shell/useDialogs'
@@ -31,6 +32,7 @@ function setup(project: Project | undefined = framed(), { refuses = false, prepa
     }),
     decode: vi.fn(async () => ({ image: {} as CanvasImageSource, url: 'blob:picture', release: vi.fn() })),
     inView: () => undefined,
+    bringIntoView: vi.fn<(locate: (surface: SurfaceView) => Region | undefined) => void>(),
     announce: vi.fn(),
     openProjectPanel: vi.fn(),
     closePanel: vi.fn(),
@@ -93,6 +95,17 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
     flow.setOpacity(100)
     expect(harness.project.referenceImage).toMatchObject({ opacity: 100, shown: false })
     expect(harness.history.canUndo.value).toBe(false)
+  })
+
+  it('brings the picture into view as it is shown, not as it is hidden (ticket 1011)', async () => {
+    const { flow, deps } = setup()
+    await flow.pick(file(), 'panel')
+    flow.toggleShown()
+    expect(deps.bringIntoView).not.toHaveBeenCalled()
+    flow.toggleShown()
+    // At 200%, the grid's first point at (10, 20): the 80 × 40 picture centred on (40, 40) lies at (10, 60), 160 × 80.
+    const surface = { gridToPoint: (x: number, y: number) => ({ x: x * 2 + 10, y: y * 2 + 20 }) } as SurfaceView
+    expect(deps.bringIntoView.mock.calls[0][0](surface)).toEqual({ x: 10, y: 60, width: 160, height: 80 })
   })
 
   it('lays the picture over the beads for the session, not saved nor an Undo step, back under in another Project (ticket 1009)', async () => {
