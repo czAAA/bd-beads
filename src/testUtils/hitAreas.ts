@@ -4,12 +4,16 @@ import { expect, onTestFinished } from 'vitest'
 // Types `cdp()` as Playwright's Chromium session.
 import type {} from '@vitest/browser-playwright'
 import { cdp } from 'vitest/browser'
+import { resetKeyHintsDevice } from '../composables/ui/useKeyHints'
 
-/** Turns the browser's touch emulation on for this test, so `(pointer: coarse)` turns the touch CSS on, and off after. */
+/** Turns the browser's touch emulation on for this test, so `(pointer: coarse)` turns the touch CSS on, and off after,
+ * once the page is a mouse's again re-reading the pointer for the key chips, which every file on the page shares. */
 export async function emulateTouch(): Promise<void> {
   await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
   onTestFinished(async () => {
     await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false })
+    await expect.poll(() => matchMedia('(pointer: coarse)').matches || !matchMedia('(any-hover: hover)').matches).toBe(false)
+    resetKeyHintsDevice()
   })
   await expect.poll(() => matchMedia('(pointer: coarse)').matches).toBe(true)
 }
