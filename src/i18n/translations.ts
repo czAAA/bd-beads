@@ -1078,6 +1078,8 @@ export interface Translations {
     qualityHighCaption: string
     /** The line under the Export quality stops: the slider sets the picture only (ticket 0957). */
     qualityNote: string
+    /** The Select a Frame notice on touch (ticket 0954): a finger has no Escape key, and picking a tool cancels. */
+    selectFrameTouchHint: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */

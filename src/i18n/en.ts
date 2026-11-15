@@ -865,12 +865,12 @@ export const en: Translations = {
     oddWidthNote: 'Width is now {count}: a peyote top needs a middle column, so its Width is an odd number of columns, or of blocks on more than 1-drop.',
     announceCustom: '{shape} Frame set, {size}',
     snapAddedTop: {
-      one: 'Added an empty row on top: a Frame must start on an unshifted row.',
-      other: 'Added {count} empty rows on top: a Frame must start on an unshifted row.',
+      one: 'Added an empty row on top so the Frame starts on a full row.',
+      other: 'Added {count} empty rows on top so the Frame starts on a full row.',
     },
     snapAddedLeft: {
-      one: 'Added an empty column on the left: a Frame must start on an unshifted column.',
-      other: 'Added {count} empty columns on the left: a Frame must start on an unshifted column.',
+      one: 'Added an empty column on the left so the Frame starts on a full column.',
+      other: 'Added {count} empty columns on the left so the Frame starts on a full column.',
     },
     announceTechnique: 'Technique changed to {technique}',
     announceSelectionRotated: 'Selection rotated',
@@ -885,6 +885,7 @@ export const en: Translations = {
     qualityMediumCaption: 'for print',
     qualityHighCaption: 'sharpest',
     qualityNote: 'For the picture. The printable chart is drawn in lines and stays sharp at any zoom.',
+    selectFrameTouchHint: 'Drag over the Canvas to select the Frame. Pick a tool to cancel.',
   },
   size: {
     estimateLabel: 'Estimated size',

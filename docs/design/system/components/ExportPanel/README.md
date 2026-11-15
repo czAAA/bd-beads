@@ -33,7 +33,7 @@ The Frame panel's export section, the same component, under the title line:
 No export buttons and no slider. Under the title line:
 
 - One `meta-small` `muted` line: "Set a Frame around the drawing you want to export."
-- **Select a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568). Once the Frame is set the notice about dragging closes and this panel opens again, hung from the strip's button, on Picture and Printable chart (ticket 0847). Escape or another tool cancels and the notice closes too; the panel stays shut.
+- **Select a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568). Once the Frame is set the notice about dragging closes and this panel opens again, hung from the strip's button, on Picture and Printable chart (ticket 0847). Escape or another tool cancels and the notice closes too; the panel stays shut. The notice reads "Drag over the Canvas to select the Frame. Escape cancels."; on touch, where there is no Escape key, it ends "Pick a tool to cancel." instead (ticket 0954), as the paste notice does.
 - **Fit a Frame to the drawing** (`fit`): disabled with "Nothing is drawn yet to fit a Frame to." while nothing is drawn.
 
 The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Select a Frame closes it until the drag has set the Frame, then brings it back (ticket 0847), so both ways end at the export rows.

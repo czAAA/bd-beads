@@ -870,14 +870,14 @@ export const es: Translations = {
     oddWidthNote: 'El ancho ahora es {count}: una parte superior en peyote necesita una columna central, así que su ancho es un número impar de columnas, o de bloques con más de 1-drop.',
     announceCustom: 'Marco «{shape}», {size}',
     snapAddedTop: {
-      one: 'Se añadió una fila vacía arriba: un marco debe empezar en una fila sin desplazar.',
-      many: 'Se añadieron {count} filas vacías arriba: un marco debe empezar en una fila sin desplazar.',
-      other: 'Se añadieron {count} filas vacías arriba: un marco debe empezar en una fila sin desplazar.',
+      one: 'Se añadió una fila vacía arriba para que el marco empiece en una fila completa.',
+      many: 'Se añadieron {count} filas vacías arriba para que el marco empiece en una fila completa.',
+      other: 'Se añadieron {count} filas vacías arriba para que el marco empiece en una fila completa.',
     },
     snapAddedLeft: {
-      one: 'Se añadió una columna vacía a la izquierda: un marco debe empezar en una columna sin desplazar.',
-      many: 'Se añadieron {count} columnas vacías a la izquierda: un marco debe empezar en una columna sin desplazar.',
-      other: 'Se añadieron {count} columnas vacías a la izquierda: un marco debe empezar en una columna sin desplazar.',
+      one: 'Se añadió una columna vacía a la izquierda para que el marco empiece en una columna completa.',
+      many: 'Se añadieron {count} columnas vacías a la izquierda para que el marco empiece en una columna completa.',
+      other: 'Se añadieron {count} columnas vacías a la izquierda para que el marco empiece en una columna completa.',
     },
     announceTechnique: 'Técnica cambiada a {technique}',
     announceSelectionRotated: 'Selección girada',
@@ -892,6 +892,7 @@ export const es: Translations = {
     qualityMediumCaption: 'para imprimir',
     qualityHighCaption: 'la más nítida',
     qualityNote: 'Para la imagen. El gráfico para imprimir se dibuja con líneas y se ve nítido con cualquier zoom.',
+    selectFrameTouchHint: 'Arrastra sobre el lienzo para seleccionar el marco. Elige una herramienta para cancelar.',
   },
   size: {
     estimateLabel: 'Tamaño estimado',
