@@ -1240,7 +1240,7 @@ export const pl: Translations = {
     selectAll: 'Zaznacza wszystkie koraliki naraz.',
     hand: 'Przeciągnij, aby przesuwać się po płótnie.',
     editFrame: 'Pokaż lub ukryj uchwyty ramki.',
-    framePanel: 'Otwórz eksport, „Potrzebne koraliki”, rozmiar ramki, obrót i usuwanie.',
+    framePanel: 'Ramka zaznacza część, którą eksportujesz i wyplatasz. Otwórz eksport, „Potrzebne koraliki”, rozmiar ramki, obrót i usuwanie.',
     frameEdgeOut: 'Powiększ ramkę o jeden koralik z tej strony.',
     frameEdgeIn: 'Zmniejsz ramkę o jeden koralik z tej strony.',
     frameEdgeInDisabled: 'Z tej strony ramki nie można już zmniejszyć.',
@@ -1305,7 +1305,7 @@ export const pl: Translations = {
     fitAndExport: 'Dopasuj ramkę do wszystkich koralików i otwórz eksport obrazu.',
     pasteToolTouch: 'Dotknij miejsca, gdzie ma trafić kopia.',
     noBeadsToNumber: 'Nie ma koralików do ponumerowania.',
-    framePanelBeads: 'Otwórz eksport, „Potrzebne koraliki” ({total}), rozmiar ramki, obrót i usuwanie.',
+    framePanelBeads: 'Ramka zaznacza część, którą eksportujesz i wyplatasz. Otwórz eksport, „Potrzebne koraliki” ({total}), rozmiar ramki, obrót i usuwanie.',
   },
   layerSettings: {
     frameHeading: 'Ustawienia',
