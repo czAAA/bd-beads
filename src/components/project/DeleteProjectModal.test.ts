@@ -13,7 +13,7 @@ describe('DeleteProjectModal (ticket 0842)', () => {
 
     expect(wrapper.text()).toContain('Delete “Sunflower”?')
     expect(wrapper.get('[data-testid="confirm-modal-message"]').text()).toBe(
-      "“Sunflower” and its Row progress are removed from this device. This can't be undone. Save its Project file first if you want to keep it.",
+      "“Sunflower” and its Row progress are removed from this browser. This can't be undone. Save its Project file first if you want to keep it.",
     )
     expect(['extra', 'cancel', 'confirm'].map((id) => button(id).text())).toEqual(['Save Project file', 'Cancel', 'Delete Project'])
 

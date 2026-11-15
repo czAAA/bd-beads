@@ -127,13 +127,13 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.emitted('save')).toHaveLength(1)
   })
 
-  it('says the reference image is not saved on this device while the device won\'t keep its picture (ticket 0790)', () => {
+  it('says the reference image is not saved in this browser while the device won\'t keep its picture (ticket 0790)', () => {
     const wrapper = mountPanel({ reference: { preparing: false, notSaved: true } })
     expect(wrapper.get('[data-testid="save-state"]').text()).toBe(en.referenceImage.notSaved)
     expect(wrapper.get('[data-testid="save-state"]').classes()).toContain('project-head__state--unsaved')
   })
 
-  it('says nothing is saved here while the Project is open in another tab, never Saved in local browser (ticket 0937)', () => {
+  it('says nothing is saved here while the Project is open in another tab, never Saved in this browser (ticket 0937)', () => {
     const wrapper = mountPanel({ openElsewhere: true })
     expect(wrapper.get('[data-testid="save-state"]').text()).toBe(en.storage.notSavedHere)
     expect(wrapper.get('[data-testid="save-state"]').classes()).toContain('project-head__state--unsaved')

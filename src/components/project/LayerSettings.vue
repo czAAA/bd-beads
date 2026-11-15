@@ -162,10 +162,9 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
   color: var(--ink);
 }
 
+/* A field's name in `control`, as Technique's and Drop's, so it never reads as the section header (ticket 0992). */
 .layer-settings__heading {
   padding: 0 var(--space-10);
-  font: var(--type-label);
-  color: var(--muted);
 }
 
 .layer-settings__group {

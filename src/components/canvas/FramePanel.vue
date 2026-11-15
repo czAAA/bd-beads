@@ -31,7 +31,7 @@ import { frameOf, layerOf, lettersOn, projectNameOf } from '../../domain/layerRe
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Background, Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
-import { estimatedSizeMm, formatSizeInMm } from '../../domain/projectSize'
+import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { frameWeave } from '../../domain/layerWeave'
@@ -153,11 +153,12 @@ function onSizeFocusOut(event: FocusEvent): void {
   if (!(event.relatedTarget instanceof Node && (event.currentTarget as HTMLElement).contains(event.relatedTarget))) commitSize()
 }
 
-/** The Estimated size as "≈ 38 × 39 mm" (the Bead's size × beads across and down), always in mm as Replace Bead states it
- * (ticket 0687), or nothing for an unknown Bead. */
+/** The Estimated size as "≈ 3.8 × 3.9 cm" (the Bead's size × beads across and down), in the unit the margin's title
+ * block gives the same size (cm from 10 mm up, ticket 0992), or nothing for an unknown Bead. */
 const estimate = computed(() => {
   const bead = layerOf(props.project, 'frame')?.bead
-  return bead && frame.value ? `≈ ${formatSizeInMm(estimatedSizeMm(frame.value, bead, frame.value.technique), t.value.form.unitMm, locale.value)}` : ''
+  const units = { mm: t.value.form.unitMm, cm: t.value.form.unitCm }
+  return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead, frame.value.technique), units, locale.value)}` : ''
 })
 const sizeSummary = computed(() =>
   [sizeSettings.value[0] ? plural(locale.value, sizeSettings.value[0].value, sizeSettings.value[0].words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
