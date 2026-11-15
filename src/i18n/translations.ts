@@ -1061,11 +1061,6 @@ export interface Translations {
     announceFrameRotated: string
     /** Export without a Frame opens a dialog with this title. */
     countNeedsFrame: string
-    /** The Progress bar's hint with no Frame: [Select icon] {progressSelectToSet} [Frame icon] {progressFrameWord}.
-     * Two pieces so each language can order and inflect them: the second ends the sentence (a noun in the
-     * accusative where the language has one). */
-    progressSelectToSet: string
-    progressFrameWord: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
     /** The Progress bar's button with no Frame (ticket 0847): fits a Frame and opens Export on Picture. */
@@ -1076,6 +1071,9 @@ export interface Translations {
     qualityHighCaption: string
     /** The line under the Export quality stops: the slider sets the picture only (ticket 0957). */
     qualityNote: string
+    /** The Progress bar's line with no Frame, after its Select and Frame chips: what a Frame gives, then how to set one
+     * (ticket 0944). The line is a button that picks the Select tool. */
+    progressMarkPiece: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */

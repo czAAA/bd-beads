@@ -282,12 +282,12 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     return rest
   }
 
-  it('shows "Select to set a Frame" and Fit a Frame and export a picture, and no row buttons (tickets 426, 0847)', async () => {
+  it('shows what a Frame is for and Fit a Frame and export a picture, and no row buttons (tickets 426, 0847, 0944)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
 
     expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-reset"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text().replace(/\s+/g, ' ')).toBe(`${ru.frame.progressSelectToSet} ${ru.frame.progressFrameWord}`)
+    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(ru.frame.progressMarkPiece)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
 
@@ -299,6 +299,16 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     await wrapper.setProps({ project: withLayers(unframedProject(), { beads: { 0: { 0: '#e63746' } } }) })
     await button().trigger('click')
     expect(wrapper.emitted('fit-and-export')).toHaveLength(1)
+  })
+  it('picks the Select tool from its line, a button carrying the Select and Frame chips, with the Select tile\'s Tooltip (ticket 0944)', async () => {
+    const wrapper = mount(ProgressBar, { props: { project: unframedProject() }, attachTo: document.body })
+    const line = wrapper.get('[data-testid="progress-bar-needs-frame"]')
+
+    expect(line.element.tagName).toBe('BUTTON')
+    expect(line.findAll('.hint-chip [data-icon]').map((icon) => icon.attributes('data-icon'))).toEqual(['select', 'frame'])
+    await line.trigger('click')
+    expect(wrapper.emitted('select-tool')).toEqual([['select']])
+    wrapper.unmount()
   })
 })
 

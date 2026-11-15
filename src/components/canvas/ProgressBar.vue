@@ -37,6 +37,8 @@ const emit = defineEmits<{
   /** The bar's own way to a Frame and a picture, shown while there is none to count rows on (ticket 0847, O-03): Fit
    * to drawing, then Export opened on Picture. */
   'fit-and-export': []
+  /** The no-Frame line's press (ticket 0944): the Select tile's own pick, as the Tool pill emits it. */
+  'select-tool': [tool: 'select']
 }>()
 
 const { t } = useI18n()
@@ -46,6 +48,8 @@ const rootEl = ref<HTMLElement>()
 const roving = useRovingFocus(rootEl, { axis: () => 'horizontal', managesTabIndex: true })
 
 const fitAndExport = controlAction('fit-and-export')
+/** The Select tile's action (ticket 0944): the no-Frame line names, keys and runs as the tile does. */
+const selectTile = controlAction('tool-select')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
@@ -56,13 +60,17 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
   <div ref="rootEl" class="progress-bar no-page-pan" data-testid="progress-bar" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
     <slot>
     <template v-if="project && !hasFrame">
-      <!-- Styled like the CanvasHint, icons 14px to fit the 20px chips: "(Select chip) Select to set a (Frame chip) Frame", each icon in a chip. -->
-      <p class="progress-bar__need" data-testid="progress-bar-needs-frame">
-        <span class="hint-chip"><AppIcon name="select" :size="14" /></span>
-        {{ t.frame.progressSelectToSet }}
-        <span class="hint-chip"><AppIcon name="frame" :size="14" /></span>
-        {{ t.frame.progressFrameWord }}
-      </p>
+      <!-- Set like the CanvasHint, icons 14px to fit the 20px chips: "(Select chip)(Frame chip) Mark the piece to export and
+           count: drag with Select.", a button that picks the Select tool as its pill tile does (ticket 0944). -->
+      <span class="progress-bar__need">
+        <AppButton variant="text" :action="selectTile" data-wrap-ok data-testid="progress-bar-needs-frame" @click="emit('select-tool', 'select')">
+          <span class="progress-bar__chips">
+            <span class="hint-chip"><AppIcon name="select" :size="14" /></span>
+            <span class="hint-chip"><AppIcon name="frame" :size="14" /></span>
+          </span>
+          <span class="progress-bar__need-text">{{ t.frame.progressMarkPiece }}</span>
+        </AppButton>
+      </span>
       <span class="progress-bar__fit-frame">
         <AppButton variant="box" :action="fitAndExport" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-and-export')" />
       </span>
@@ -86,19 +94,37 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
 </template>
 
 <style scoped>
-/* No Frame (ProgressBar card): "Select to set a Frame" set like the CanvasHint, and Fit a Frame and export a picture
- * pushed to the right. */
+/* No Frame (ProgressBar card): the line that picks Select, set like the CanvasHint, wrapping to a second line where it
+ * has no room, and Fit a Frame and export a picture pushed to the right. */
 .progress-bar__need {
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin: 0;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.progress-bar__need :deep(.app-button-wrap) {
+  min-width: 0;
+}
+
+.progress-bar__need :deep(.app-button) {
+  justify-content: flex-start;
+  min-width: 0;
+  height: auto;
+  min-height: var(--control-height);
   font: 400 0.75rem/1rem var(--font-sans);
   color: var(--muted);
-  white-space: nowrap;
+  white-space: normal;
+  text-align: start;
+}
+
+.progress-bar__chips {
+  display: flex;
+  flex: none;
+  gap: var(--space-4);
 }
 
 .progress-bar__fit-frame {
+  flex: none;
   margin-left: auto;
 }
 
@@ -130,6 +156,11 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
      * 443): 4px between them keeps it one row at 320px, inside the 12px screen edge (ticket 450). */
     gap: var(--space-4);
     padding-inline: var(--space-4);
+  }
+
+  /* The no-Frame line takes the first row whole; Fit a Frame and export a picture wraps to the second. */
+  .progress-bar__need {
+    flex-basis: 100%;
   }
 }
 </style>

@@ -9,7 +9,7 @@ import { frameOf, projectNameOf } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 
 // The Export panel (ticket 0652; ExportPanel card): opened by the strip's Export button. With a Frame, the Frame panel's
-// export rows (ExportSection); with none, the way to set one: Select a Frame and Fit a Frame to the drawing.
+// export rows (ExportSection); with none, the ways to set one: Fit a Frame to the drawing (first once something is drawn) and Drag a Frame.
 const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
@@ -42,8 +42,10 @@ const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
     <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" :opens-on="opensOn" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
     <template v-else>
       <p class="export-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
+      <!-- The one-tap way first once something is drawn (ticket 0944); `frame`, as `fit` is the zoom's Fit. -->
+      <PanelItem v-if="!nothingToFit" icon="frame" stays data-testid="export-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
       <PanelItem icon="select" data-testid="export-select-frame" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
-      <PanelItem icon="fit" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="export-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
+      <PanelItem v-if="nothingToFit" icon="frame" stays disabled :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="export-fit">{{ t.frame.fitAFrame }}</PanelItem>
     </template>
   </div>
 </template>
