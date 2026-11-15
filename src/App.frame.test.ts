@@ -253,13 +253,13 @@ describe('A Frame from the panel with no Frame', () => {
     return wrapper.get('[data-testid="select-frame"]').text()
   }
 
-  it('with a keyboard, the Select a Frame notice says Escape cancels (ticket 0954)', async () => {
+  it('with a keyboard, the Drag a Frame notice says Escape cancels (ticket 0954)', async () => {
     const wrapper = await mountOpen()
     expect(await selectFrameNotice(wrapper)).toContain('Drag over the Canvas to select the Frame. Escape cancels.')
     wrapper.unmount()
   })
 
-  it('on touch, the Select a Frame notice names no key: a tool cancels, as picking one does (ticket 0954)', async () => {
+  it('on touch, the Drag a Frame notice names no key: a tool cancels, as picking one does (ticket 0954)', async () => {
     vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
     const wrapper = await mountOpen()
     try {
@@ -296,6 +296,14 @@ describe('Painting a Custom frame', () => {
 
 describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
   const savedProgress = () => rowProgressOf(loadProjects()[0])
+
+  it('picks the Select tool from the bar\'s no-Frame line, as its pill tile does (ticket 0944)', async () => {
+    const wrapper = await mountOpen()
+    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('false')
+
+    await wrapper.get('[data-testid="progress-bar-needs-frame"]').trigger('click')
+    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('true')
+  })
 
   it('turns on with the first Frame, fitted from the Progress bar, which opens Export on Picture; one Undo takes both back (ticket 0847)', async () => {
     const wrapper = await mountOpen()

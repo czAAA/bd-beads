@@ -53,6 +53,8 @@ const emit = defineEmits<{
   'update:inputMode': [mode: InputMode]
   'update:handedness': [hand: Handedness]
   shortcuts: []
+  /** What the buttons do (ticket 0927): every strip and pill button shows its name until the next press. */
+  'button-names': []
   /** Opens the Feedback sheet with its Report kind (ticket 0700). */
   feedback: [kind: 'general' | 'translation']
 }>()
@@ -183,6 +185,7 @@ const inputOptions = computed(() => [
 
     <PanelSection id="menu:help" :label="t.panels.menu.help">
       <PanelItem v-if="inEditor" icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
+      <PanelItem v-if="page === 'editor' && !demo" icon="info" data-testid="menu-item-button-names" @select="emit('button-names')">{{ t.panels.menu.buttonNames }}</PanelItem>
       <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
       <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>

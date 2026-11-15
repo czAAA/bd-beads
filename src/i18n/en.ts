@@ -63,6 +63,7 @@ export const en: Translations = {
     palette: 'Palette',
     close: 'Close',
     useColor: 'Paint with {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Mirror',
@@ -150,6 +151,7 @@ export const en: Translations = {
       keepProjectsInfoLabel: 'About keeping Projects',
       keepProjectsInfo:
         "When the device runs short on space, the browser can clear this app's data, unless it keeps your Projects. The browser decides this by itself, so save a Project file of each one you care about.",
+      buttonNames: 'What the buttons do',
     },
     project: {
       rename: 'Rename {name}',
@@ -174,7 +176,7 @@ export const en: Translations = {
       duplicateHint: 'Suggested: the current name and the next free number.',
       deleteThis: 'Delete Project',
       deleteTitle: 'Delete “{name}”?',
-      deleteMessage: "“{name}” and its Row progress are removed from this browser. This can't be undone. Save its Project file first if you want to keep it.",
+      deleteMessage: '“{name}” and its Row progress are removed from this browser. Save its Project file first if you want to keep it.',
       deleteConfirm: 'Delete Project',
       cancel: 'Cancel',
       save: 'Save',
@@ -194,6 +196,7 @@ export const en: Translations = {
       beadSize: 'Size',
       duplicatedToast: 'Now in “{copy}”. “{original}” stays as it was.',
       openedToast: 'Now in “{name}”.',
+      deletedToast: '“{name}” was deleted. Now in “{open}”.',
     },
   },
   theme: {
@@ -315,6 +318,7 @@ export const en: Translations = {
       rulers: 'Rulers',
       twoFingersToMove: 'two fingers to move',
       pinchToZoom: 'pinch to zoom',
+      holdForName: 'hold a button for its name',
     },
     firstRun: {
       storage: 'Your Projects are saved only in this browser, on this device.',
@@ -762,7 +766,7 @@ export const en: Translations = {
     fitAFrame: 'Fit a Frame to the drawing',
     fitNothing: 'Nothing is drawn yet to fit a Frame to.',
     noFrameLine: 'A Frame sets the size, the exports and Beads needed.',
-    selectAFrame: 'Select a Frame',
+    selectAFrame: 'Drag a Frame',
     selectFrameHint: 'Drag over the Canvas to select the Frame. Escape cancels.',
     exportNeedsFrame: 'Set a Frame around the drawing you want to export.',
     sizeHeading: 'Size',
@@ -877,14 +881,13 @@ export const en: Translations = {
     rotateFrameLabel: 'Rotate Frame',
     announceFrameRotated: 'Frame rotated',
     countNeedsFrame: 'Set Frame to count beads.',
-    progressSelectToSet: 'Select to set a',
-    progressFrameWord: 'Frame',
     rotateCoveredMessage: 'The turned fragment landed on top of existing beads.',
     fitAndExport: 'Fit a Frame and export a picture',
     qualityLowCaption: 'small file',
     qualityMediumCaption: 'for print',
     qualityHighCaption: 'sharpest',
     qualityNote: 'For the picture. The printable chart is drawn in lines and stays sharp at any zoom.',
+    progressMarkPiece: 'Mark the piece to export and count: drag with Select.',
     selectFrameTouchHint: 'Drag over the Canvas to select the Frame. Pick a tool to cancel.',
   },
   size: {

@@ -66,6 +66,7 @@ export const be: Translations = {
     palette: 'Палітра',
     close: 'Закрыць',
     useColor: 'Маляваць колерам {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Адлюстраванне',
@@ -153,6 +154,7 @@ export const be: Translations = {
       keepProjectsInfoLabel: 'Пра захоўванне праектаў',
       keepProjectsInfo:
         'Калі на прыладзе мала месца, браўзер можа выдаліць даныя гэтай праграмы, калі ён не захоўвае вашы праекты. Браўзер вырашае гэта сам, таму захавайце файл праекта для кожнага, які вам дарагі.',
+      buttonNames: 'Што робяць кнопкі',
     },
     project: {
       rename: 'Перайменаваць «{name}»',
@@ -177,7 +179,7 @@ export const be: Translations = {
       duplicateHint: 'Прапанавана: бягучая назва і наступны вольны нумар.',
       deleteThis: 'Выдаліць праект',
       deleteTitle: 'Выдаліць «{name}»?',
-      deleteMessage: '«{name}» і прагрэс па радах будуць выдалены з гэтага браўзера. Гэта нельга адмяніць. Калі хочаце пакінуць яго сабе, спачатку захавайце файл праекта.',
+      deleteMessage: '«{name}» і прагрэс па радах будуць выдалены з гэтага браўзера. Калі хочаце пакінуць яго сабе, спачатку захавайце файл праекта.',
       deleteConfirm: 'Выдаліць праект',
       cancel: 'Скасаваць',
       save: 'Захаваць',
@@ -197,6 +199,7 @@ export const be: Translations = {
       beadSize: 'Памер',
       duplicatedToast: 'Цяпер адкрыты «{copy}». «{original}» застаўся як быў.',
       openedToast: 'Цяпер адкрыты «{name}».',
+      deletedToast: 'Праект «{name}» выдалены. Цяпер адкрыты «{open}».',
     },
   },
   theme: {
@@ -318,6 +321,7 @@ export const be: Translations = {
       rulers: 'Лінейкі',
       twoFingersToMove: 'два пальцы: зрух',
       pinchToZoom: 'звядзенне пальцаў: маштаб',
+      holdForName: 'утрыманне кнопкі: яе назва',
     },
     firstRun: {
       storage: 'Вашы праекты захаваны толькі ў гэтым браўзеры, на гэтай прыладзе.',
@@ -771,7 +775,7 @@ export const be: Translations = {
     fitAFrame: 'Падагнаць рамку пад малюнак',
     fitNothing: 'Пакуль нічога не намалявана, падганяць рамку няма да чаго.',
     noFrameLine: 'Рамка задае памер, экспарт і «Патрэбна бісеру».',
-    selectAFrame: 'Вылучыць рамку',
+    selectAFrame: 'Расцягнуць рамку',
     selectFrameHint: 'Правядзіце па палатне, каб вылучыць рамку. Esc адмяняе.',
     exportNeedsFrame: 'Задайце рамку вакол малюнка, які хочаце экспартаваць.',
     sizeHeading: 'Памер',
@@ -890,14 +894,13 @@ export const be: Translations = {
     rotateFrameLabel: 'Павярнуць рамку',
     announceFrameRotated: 'Рамка павернута',
     countNeedsFrame: 'Задайце рамку, каб палічыць бісер.',
-    progressSelectToSet: 'Вылучыце, каб задаць',
-    progressFrameWord: 'рамку',
     rotateCoveredMessage: 'Павернуты фрагмент апынуўся паверх існуючых бусін.',
     fitAndExport: 'Рамка і экспарт карцінкі',
     qualityLowCaption: 'малы файл',
     qualityMediumCaption: 'для друку',
     qualityHighCaption: 'найвыразнейшая',
     qualityNote: 'Для карцінкі. Схема для друку намалявана лініямі і застаецца выразнай пры любым павелічэнні.',
+    progressMarkPiece: 'Пазначце частку для экспарту і падліку: правядзіце Вылучэннем.',
     selectFrameTouchHint: 'Правядзіце па палатне, каб вылучыць рамку. Абярыце інструмент, каб адмяніць.',
   },
   size: {

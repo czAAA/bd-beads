@@ -65,6 +65,7 @@ export const es: Translations = {
     palette: 'Paleta',
     close: 'Cerrar',
     useColor: 'Pintar con {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Espejo',
@@ -152,6 +153,7 @@ export const es: Translations = {
       keepProjectsInfoLabel: 'Sobre conservar proyectos',
       keepProjectsInfo:
         'Cuando el dispositivo se queda sin espacio, el navegador puede borrar los datos de esta app, salvo que conserve tus proyectos. El navegador lo decide por su cuenta, así que guarda un archivo de proyecto de cada uno que te importe.',
+      buttonNames: 'Qué hace cada botón',
     },
     project: {
       rename: 'Renombrar «{name}»',
@@ -176,7 +178,7 @@ export const es: Translations = {
       duplicateHint: 'Sugerido: el nombre actual y el siguiente número libre.',
       deleteThis: 'Eliminar proyecto',
       deleteTitle: '¿Eliminar «{name}»?',
-      deleteMessage: '«{name}» y su progreso por filas se quitan de este navegador. No se puede deshacer. Si quieres conservarlo, guarda antes su archivo de proyecto.',
+      deleteMessage: '«{name}» y su progreso por filas se quitan de este navegador. Si quieres conservarlo, guarda antes su archivo de proyecto.',
       deleteConfirm: 'Eliminar proyecto',
       cancel: 'Cancelar',
       save: 'Guardar',
@@ -196,6 +198,7 @@ export const es: Translations = {
       beadSize: 'Tamaño',
       duplicatedToast: 'Ahora estás en “{copy}”. “{original}” se queda como estaba.',
       openedToast: 'Ahora estás en “{name}”.',
+      deletedToast: 'Se eliminó «{name}». Ahora estás en «{open}».',
     },
   },
   theme: {
@@ -317,6 +320,7 @@ export const es: Translations = {
       rulers: 'Reglas',
       twoFingersToMove: 'dos dedos para mover',
       pinchToZoom: 'pellizca para hacer zoom',
+      holdForName: 'mantén un botón para ver su nombre',
     },
     firstRun: {
       storage: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
@@ -767,7 +771,7 @@ export const es: Translations = {
     fitAFrame: 'Ajustar un marco al dibujo',
     fitNothing: 'Todavía no hay nada dibujado a lo que ajustar un marco.',
     noFrameLine: 'Un marco fija el tamaño, las exportaciones y Cuentas necesarias.',
-    selectAFrame: 'Seleccionar un marco',
+    selectAFrame: 'Arrastrar un marco',
     selectFrameHint: 'Arrastra sobre el lienzo para seleccionar el marco. Esc cancela.',
     exportNeedsFrame: 'Pon un marco alrededor del dibujo que quieras exportar.',
     sizeHeading: 'Tamaño',
@@ -884,14 +888,13 @@ export const es: Translations = {
     rotateFrameLabel: 'Girar marco',
     announceFrameRotated: 'Marco girado',
     countNeedsFrame: 'Define el marco para contar las cuentas.',
-    progressSelectToSet: 'Selecciona para definir el',
-    progressFrameWord: 'marco',
     rotateCoveredMessage: 'El fragmento girado quedó sobre cuentas existentes.',
     fitAndExport: 'Ajustar marco y exportar imagen',
     qualityLowCaption: 'archivo pequeño',
     qualityMediumCaption: 'para imprimir',
     qualityHighCaption: 'la más nítida',
     qualityNote: 'Para la imagen. El gráfico para imprimir se dibuja con líneas y se ve nítido con cualquier zoom.',
+    progressMarkPiece: 'Marca la pieza para exportar y contar: arrastra con Seleccionar.',
     selectFrameTouchHint: 'Arrastra sobre el lienzo para seleccionar el marco. Elige una herramienta para cancelar.',
   },
   size: {

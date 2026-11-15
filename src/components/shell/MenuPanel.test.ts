@@ -107,7 +107,7 @@ describe('MenuPanel (ticket 443)', () => {
     const panel = wrapper.getComponent(MenuPanel)
     const help = wrapper.findAll('[role="group"]').find((group) => group.find('h3').text() === en.panels.menu.help)!
     const rows = help.findAll('.panel-item').map((row) => row.attributes('data-testid'))
-    expect(rows.slice(0, 2)).toEqual(['menu-item-shortcuts', 'menu-item-feedback'])
+    expect(rows.slice(0, 3)).toEqual(['menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback'])
     const feedback = wrapper.get('[data-testid="menu-item-feedback"]')
     expect(feedback.text()).toBe(en.panels.menu.sendFeedback)
     expect(feedback.find('svg[data-icon="message"]').exists()).toBe(true)
@@ -117,6 +117,18 @@ describe('MenuPanel (ticket 443)', () => {
     await feedback.trigger('click')
     await link.trigger('click')
     expect(panel.emitted('feedback')).toEqual([['general'], ['translation']])
+  })
+
+  it('asks for every button\'s name from Help\'s What the buttons do, in the editor only (ticket 0927)', async () => {
+    const wrapper = mountIn()
+    const row = wrapper.get('[data-testid="menu-item-button-names"]')
+    expect(row.text()).toBe(en.panels.menu.buttonNames)
+    await row.trigger('click')
+    expect(wrapper.getComponent(MenuPanel).emitted('button-names')).toHaveLength(1)
+
+    for (const away of [{ page: 'homepage' }, { page: 'convert-image' }, { demo: true }]) {
+      expect(mountIn(away).find('[data-testid="menu-item-button-names"]').exists()).toBe(false)
+    }
   })
 
   // Folding and remembering is PanelSection's; the Menu names each section for it.

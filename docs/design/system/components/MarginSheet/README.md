@@ -49,7 +49,7 @@ The one exception: on the Homepage's What's inside, the demo Frame's band has no
 
 - While Edit Frame is on, the sheet's outer edge is outlined 1px dashed in `accent` at 55%, 3px outside it.
 - The eight resize handles are the Handle card's, in `accent`, on the Frame line: a bracket at each corner, a bar at each edge's middle, the corner under the pointer hot. Beside the hot corner the size Tooltip shows ("42 × 13 ≈ 6.7 × 1.7 cm"). Their reach is the Handle card's (14px for mouse and pen, a 44px touch area).
-- Editing stays locked once a Row progress pass is done, as before; the Edit Frame button is then not offered.
+- Editing stays locked once a row is marked done, as before. The Edit Frame button stays in its place, disabled (`aria-disabled`, still focusable), its Tooltip giving the lock sentence "Rows are marked done. Reset progress to change the size." on hover, focus, a tap or a long press, as Reset progress says why before a row is done (ticket 0975). In the Frame tools menu its item is disabled with the same reason. After Reset progress it works again.
 
 ## Title block
 
