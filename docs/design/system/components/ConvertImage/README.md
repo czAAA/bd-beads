@@ -50,7 +50,7 @@ Each ticket's `### From the design (DS-2)` section holds every size, state and c
 - "{bead} · {n} finishes" with four or more;
 - "my beads · 40 codes", "default palette", "the picture's own colors".
 
-When fewer colors come out than asked, the result's second line at the column's foot says why: "8 colors (your list has 8)", "9 colors (only 9 codes left)". The slider stays at the count asked.
+When fewer colors come out than asked, the result's second line at the column's foot says why: "8 colors (your list has 8)", "9 colors (only 9 codes left)", and where neither a list nor a Finish is the reason, that the picture has no more to give in the colors matched to: "7 colors (all this picture gives in Miyuki Delica 11/0)", or "in Default Palette", "in My beads" (ticket 0928; none under Exact). The slider stays at the count asked, and its value says both numbers, "12 asked · 7 found" (also its `aria-valuetext`); "found" counts every color found, set to empty or not, over the whole picture where a part is kept. Its filled part is `accent` only up to the last count that changes the beads and `line-strong` from there to the thumb (ValueSlider card, reach), worked out once the count rests. With as many found as asked, both read as before.
 
 **The number of colors and its neighbours** (0904):
 - The Colors slider runs 1 to 40 on the doubling scale (ValueSlider card), marks at 5, 10 and 20, ends "1" and "40+".
