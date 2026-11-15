@@ -61,7 +61,7 @@ describe('ReferenceImageSection (ReferenceImage card, ticket 0790)', () => {
   })
 
   it('says why a file was refused, and shows the picture being made ready', () => {
-    expect(mount(ReferenceImageSection, { props: { refusal: 'tooLarge' } }).get('[data-testid="reference-image-refused"]').text()).toBe("This file can't be used: over 10 MB")
+    expect(mount(ReferenceImageSection, { props: { refusal: 'tooLarge' } }).get('[data-testid="reference-image-refused"]').text()).toBe("This file can't be used: over 50 MB")
     const preparing = mount(ReferenceImageSection, { props: { preparing: true } })
     expect(preparing.find('[data-testid="reference-image-add"]').exists()).toBe(false)
     expect(preparing.find('[data-testid="reference-image-preparing"]').exists()).toBe(true)
