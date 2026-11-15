@@ -496,7 +496,7 @@ export const be: Translations = {
     },
     removeAllConfirmButton: 'Прыбраць усе',
     beadColors: {
-      open: 'Палітра {bead}',
+      open: 'Дадаць колеры {bead}',
       info: 'Пра гэтыя колеры',
       codeCount: 'кодаў: {count}',
       firstShown: 'паказаны першыя {count}',

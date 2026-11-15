@@ -491,7 +491,7 @@ export const en: Translations = {
     },
     removeAllConfirmButton: 'Remove all',
     beadColors: {
-      open: 'Palette {bead}',
+      open: 'Add {bead} colors',
       info: 'About these colors',
       codeCount: 'codes: {count}',
       firstShown: 'first {count} shown',

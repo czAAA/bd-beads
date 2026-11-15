@@ -495,7 +495,7 @@ export const ru: Translations = {
     },
     removeAllConfirmButton: 'Убрать все',
     beadColors: {
-      open: 'Палитра {bead}',
+      open: 'Добавить цвета {bead}',
       info: 'Об этих цветах',
       codeCount: 'кодов: {count}',
       firstShown: 'показаны первые {count}',

@@ -491,7 +491,7 @@ export const zh: Translations = {
     },
     removeAllConfirmButton: '全部移除',
     beadColors: {
-      open: '{bead} 调色板',
+      open: '添加 {bead} 颜色',
       info: '关于这些颜色',
       codeCount: '色号：{count}',
       firstShown: '显示前 {count} 个',
