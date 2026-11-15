@@ -65,6 +65,7 @@ export const ru: Translations = {
     palette: 'Палитра',
     close: 'Закрыть',
     useColor: 'Рисовать цветом {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Отражение',
@@ -152,6 +153,7 @@ export const ru: Translations = {
       keepProjectsInfoLabel: 'О хранении проектов',
       keepProjectsInfo:
         'Когда на устройстве мало места, браузер может удалить данные этого приложения, если он не хранит ваши проекты. Браузер решает это сам, поэтому сохраните файл проекта для каждого, который вам дорог.',
+      buttonNames: 'Что делают кнопки',
     },
     project: {
       rename: 'Переименовать «{name}»',
@@ -316,6 +318,7 @@ export const ru: Translations = {
       rulers: 'Линейки',
       twoFingersToMove: 'два пальца: сдвиг',
       pinchToZoom: 'сведение пальцев: масштаб',
+      holdForName: 'удержание кнопки: её название',
     },
     firstRun: {
       storage: 'Ваши проекты сохранены только в этом браузере, на этом устройстве.',

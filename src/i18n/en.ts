@@ -63,6 +63,7 @@ export const en: Translations = {
     palette: 'Palette',
     close: 'Close',
     useColor: 'Paint with {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Mirror',
@@ -150,6 +151,7 @@ export const en: Translations = {
       keepProjectsInfoLabel: 'About keeping Projects',
       keepProjectsInfo:
         "When the device runs short on space, the browser can clear this app's data, unless it keeps your Projects. The browser decides this by itself, so save a Project file of each one you care about.",
+      buttonNames: 'What the buttons do',
     },
     project: {
       rename: 'Rename {name}',
@@ -314,6 +316,7 @@ export const en: Translations = {
       rulers: 'Rulers',
       twoFingersToMove: 'two fingers to move',
       pinchToZoom: 'pinch to zoom',
+      holdForName: 'hold a button for its name',
     },
     firstRun: {
       storage: 'Your Projects are saved only in this browser, on this device.',

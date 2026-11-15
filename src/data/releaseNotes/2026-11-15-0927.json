@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "On a touch screen a tool's first tap says its name, the hint line says a hold shows a button's name, and Help › What the buttons do shows them all at once",
+    "ru": "На сенсорном экране первое касание инструмента называет его, подсказка говорит, что удержание показывает название кнопки, а «Справка › Что делают кнопки» показывает все названия сразу",
+    "uk": "На сенсорному екрані перший дотик до інструмента називає його, підказка каже, що утримання показує назву кнопки, а «Довідка › Що роблять кнопки» показує всі назви одразу",
+    "be": "На сэнсарным экране першы дотык да інструмента называе яго, падказка кажа, што ўтрыманне паказвае назву кнопкі, а «Даведка › Што робяць кнопкі» паказвае ўсе назвы адразу",
+    "zh": "在触摸屏上，第一次点按工具会显示它的名称，提示行说明长按按钮可查看名称，“帮助 › 按钮的作用”会一次显示所有名称",
+    "es": "En una pantalla táctil, el primer toque en una herramienta dice su nombre, la línea de ayuda dice que mantener un botón muestra su nombre, y Ayuda › Qué hace cada botón los muestra todos a la vez",
+    "pl": "Na ekranie dotykowym pierwsze dotknięcie narzędzia podaje jego nazwę, podpowiedź mówi, że przytrzymanie pokazuje nazwę przycisku, a Pomoc › Co robią przyciski pokazuje wszystkie naraz"
+  }
+}

@@ -1275,3 +1275,15 @@ Convert image's Create Project says what it made and where it is kept, in a succ
 | Project “{name}” made from your picture. It is kept in this browser. (toast) | Проект «{name}» создан из вашего изображения. Он хранится в этом браузере. | Проєкт «{name}» створено з вашого зображення. Він зберігається в цьому браузері. | Праект «{name}» створаны з вашай выявы. Ён захоўваецца ў гэтым браўзеры. | 已用你的图片创建项目“{name}”。它保存在此浏览器中。 | Proyecto “{name}” creado a partir de tu imagen. Se guarda en este navegador. | Projekt „{name}” utworzony z Twojego obrazu. Jest przechowywany w tej przeglądarce. |
 
 English follows the audit's proposal (UX-055) but for where the Project is kept; the other languages are proposals for review with the build.
+
+## A button says its name on touch (ticket 0927)
+
+On the iPad most buttons are icons, and only a half-second hold shows a name. The touch hint line now says so, a Tool pill tile's first tap says its Tooltip's name and line in a toast, and Help has a row that shows every strip and pill name at once. `{name}` and `{line}` are the tile's Tooltip's own words, not copies.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| hold a button for its name (the touch hint's last part) | удержание кнопки: её название | утримання кнопки: її назва | утрыманне кнопкі: яе назва | 长按按钮查看名称 | mantén un botón para ver su nombre | przytrzymaj przycisk, aby zobaczyć nazwę |
+| {name}: {line} (toast, a tile's first tap) | {name}: {line} | {name}: {line} | {name}: {line} | {name}：{line} | {name}: {line} | {name}: {line} |
+| What the buttons do (Menu › Help) | Что делают кнопки | Що роблять кнопки | Што робяць кнопкі | 按钮的作用 | Qué hace cada botón | Co robią przyciski |
+
+English follows the audit's proposal (UX-006); the other languages are proposals for review with the build.

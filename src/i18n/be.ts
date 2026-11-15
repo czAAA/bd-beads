@@ -66,6 +66,7 @@ export const be: Translations = {
     palette: 'Палітра',
     close: 'Закрыць',
     useColor: 'Маляваць колерам {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Адлюстраванне',
@@ -153,6 +154,7 @@ export const be: Translations = {
       keepProjectsInfoLabel: 'Пра захоўванне праектаў',
       keepProjectsInfo:
         'Калі на прыладзе мала месца, браўзер можа выдаліць даныя гэтай праграмы, калі ён не захоўвае вашы праекты. Браўзер вырашае гэта сам, таму захавайце файл праекта для кожнага, які вам дарагі.',
+      buttonNames: 'Што робяць кнопкі',
     },
     project: {
       rename: 'Перайменаваць «{name}»',
@@ -317,6 +319,7 @@ export const be: Translations = {
       rulers: 'Лінейкі',
       twoFingersToMove: 'два пальцы: зрух',
       pinchToZoom: 'звядзенне пальцаў: маштаб',
+      holdForName: 'утрыманне кнопкі: яе назва',
     },
     firstRun: {
       storage: 'Вашы праекты захаваны толькі ў гэтым браўзеры, на гэтай прыладзе.',

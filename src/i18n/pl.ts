@@ -65,6 +65,7 @@ export const pl: Translations = {
     palette: 'Paleta',
     close: 'Zamknij',
     useColor: 'Maluj kolorem {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Odbicie',
@@ -152,6 +153,7 @@ export const pl: Translations = {
       keepProjectsInfoLabel: 'O zachowywaniu projektów',
       keepProjectsInfo:
         'Gdy na urządzeniu brakuje miejsca, przeglądarka może usunąć dane tej aplikacji, chyba że zachowuje Twoje projekty. Przeglądarka decyduje o tym sama, więc zapisz plik projektu każdego, na którym Ci zależy.',
+      buttonNames: 'Co robią przyciski',
     },
     project: {
       rename: 'Zmień nazwę „{name}”',
@@ -316,6 +318,7 @@ export const pl: Translations = {
       rulers: 'Linijki',
       twoFingersToMove: 'dwa palce, aby przesunąć',
       pinchToZoom: 'uszczypnij, aby powiększyć',
+      holdForName: 'przytrzymaj przycisk, aby zobaczyć nazwę',
     },
     firstRun: {
       storage: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',

@@ -17,6 +17,7 @@ import { moveToRow, rowProgressStarted } from '../../domain/rowProgress'
 import { newReferenceImage, withReferenceImage } from '../../domain/referenceImage'
 import { projectFileNameOf } from '../../domain/projectFile'
 import { downloadFile } from '../../services/fileDownload'
+import { hasOpenLayer } from '../../composables/ui/useOverlayLayer'
 
 vi.mock('../../services/fileDownload', () => ({ downloadFile: vi.fn() }))
 
@@ -63,6 +64,19 @@ describe('Menu', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+  })
+
+  it('shows every button\'s name from Help\'s What the buttons do, the Menu closed, until Escape (ticket 0927)', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-item-button-names')
+    expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+    expect(hasOpenLayer()).toBe(true)
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    expect(hasOpenLayer()).toBe(false)
+    mounted.wrapper.unmount()
   })
 
   it('opens the Projects library and New Project as its subpanels, each under its own title', async () => {
