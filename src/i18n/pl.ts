@@ -1190,6 +1190,7 @@ export const pl: Translations = {
       },
       backgroundChip: 'Znaleziono tło · {n}% obrazu',
       backgroundTurnOff: 'Wyłącz',
+      resultLabel: 'wynik',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',

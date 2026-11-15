@@ -47,12 +47,27 @@ describe('CanvasStrip', () => {
     expect(wrapper.find('[data-testid="strip-menu"] svg').exists()).toBe(true)
     expect(wrapper.get('[data-testid="strip-project"]').text()).toBe('Test')
     expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-label')).toBe('Project: Test')
-    expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBeUndefined()
+    expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-expanded')).toBe('false')
 
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="strip-project"]').trigger('click')
     expect(wrapper.emitted('select-panel')).toEqual([['menu'], ['project']])
+  })
+
+  it('says each panel button opens a panel and whether it is open, not that it is pressed (ticket 0995)', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
+    const strip = (id: string) => wrapper.get(`[data-testid="strip-${id}"]`)
+    const panels = ['menu', 'project', 'frame', 'export']
+    for (const id of panels) {
+      expect(strip(id).attributes('aria-expanded'), id).toBe('false')
+      expect(strip(id).attributes('aria-pressed'), id).toBeUndefined()
+    }
+    expect(panels.map((id) => strip(id).attributes('aria-haspopup'))).toEqual([undefined, 'dialog', 'dialog', 'dialog'])
+
+    await wrapper.setProps({ frameOpen: true })
+    expect(strip('frame').attributes('aria-expanded')).toBe('true')
+    expect(strip('frame').attributes('aria-pressed')).toBeUndefined()
   })
 
   it('asks for the Export panel from its last button, lit while that panel is open (ticket 0652)', async () => {
@@ -60,12 +75,13 @@ describe('CanvasStrip', () => {
     const exportButton = () => wrapper.get('[data-testid="strip-export"]')
 
     expect(exportButton().attributes('aria-label')).toBe(en.panels.project.exportHeading)
-    expect(exportButton().attributes('aria-pressed')).toBe('false')
+    expect(exportButton().attributes('aria-expanded')).toBe('false')
     await exportButton().trigger('click')
     expect(wrapper.emitted('select-panel')).toEqual([['export']])
 
     await wrapper.setProps({ openPanel: 'export' })
-    expect(exportButton().attributes('aria-pressed')).toBe('true')
+    expect(exportButton().attributes('aria-expanded')).toBe('true')
+    expect(exportButton().classes()).toContain('icon-btn--selected')
     const noProject = mount(CanvasStrip, { props: { zoomPercent: 100 } })
     expect(noProject.find('[data-testid="strip-export"]').exists()).toBe(false)
     noProject.unmount()

@@ -1440,6 +1440,8 @@ export interface Translations {
        * was found, then Remove what was found and Turn off. */
       backgroundChip: string
       backgroundTurnOff: string
+      /** The foot's name as a screen reader lists the converter's regions (ticket 0995): what the picture makes. */
+      resultLabel: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {

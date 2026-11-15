@@ -157,6 +157,17 @@ describe('ConvertImageWizard before a picture is set', () => {
   })
 })
 
+describe('ConvertImageWizard regions (ticket 0995)', () => {
+  it('names each section of the column and the result, so a screen reader can go to them', async () => {
+    const { wrapper } = open({ file: picture() })
+    await flushPromises()
+    const words = en.convertImage.wizard
+    const named = wrapper.get('[data-testid="convert-column"]').findAll('section[aria-label], [role="region"][aria-label]')
+    expect(named.map((region) => region.attributes('aria-label'))).toEqual([words.pictureLabel, words.beadAndTechnique, words.sizeTitle, words.colorsLabel, words.resultLabel])
+    expect(named.at(-1)!.attributes('data-testid')).toBe('convert-foot')
+  })
+})
+
 describe('ConvertImageWizard help lines by device (ticket 0846)', () => {
   const realMatchMedia = window.matchMedia
   function onDevice(media: Record<string, boolean>, userAgent: string) {

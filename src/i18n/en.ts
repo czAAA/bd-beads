@@ -1174,6 +1174,7 @@ export const en: Translations = {
       },
       backgroundChip: 'Background found · {n}% of the picture',
       backgroundTurnOff: 'Turn off',
+      resultLabel: 'result',
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',

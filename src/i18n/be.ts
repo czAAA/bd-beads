@@ -1191,6 +1191,7 @@ export const be: Translations = {
       },
       backgroundChip: 'Фон знойдзены · {n}% выявы',
       backgroundTurnOff: 'Выключыць',
+      resultLabel: 'вынік',
     },
     errors: {
       heic: 'Браўзеры не ўмеюць чытаць HEIC. Захавайце выяву ў PNG або JPEG і паспрабуйце зноў.',

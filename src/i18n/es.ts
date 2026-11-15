@@ -1187,6 +1187,7 @@ export const es: Translations = {
       },
       backgroundChip: 'Fondo encontrado · {n} % de la imagen',
       backgroundTurnOff: 'Desactivar',
+      resultLabel: 'resultado',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',
