@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "The Projects library tells your Projects apart: each row says its size and when it was saved, shows a larger picture, and a long name takes two lines",
+    "ru": "Библиотека проектов помогает отличить проекты: в каждой строке видны размер и дата сохранения, картинка крупнее, а длинное название занимает две строки",
+    "uk": "Бібліотека проєктів допомагає розрізнити проєкти: у кожному рядку видно розмір і дату збереження, картинка більша, а довга назва займає два рядки",
+    "be": "Бібліятэка праектаў дапамагае адрозніць праекты: у кожным радку відаць памер і дата захавання, малюнак большы, а доўгая назва займае два радкі",
+    "zh": "项目库更容易分辨各个项目：每一行显示尺寸和保存日期，图片更大，长名称可占两行",
+    "es": "La biblioteca de proyectos distingue tus proyectos: cada fila dice su tamaño y cuándo se guardó, muestra una imagen más grande y un nombre largo ocupa dos líneas",
+    "pl": "Biblioteka projektów pomaga odróżnić projekty: każdy wiersz podaje rozmiar i datę zapisu, pokazuje większy obraz, a długa nazwa zajmuje dwa wiersze"
+  }
+}

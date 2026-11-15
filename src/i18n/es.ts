@@ -246,11 +246,12 @@ export const es: Translations = {
     emptyBody: 'Los proyectos que crees se guardan en este navegador. Abre un archivo de proyecto para traer uno.',
     pieces: { one: '{count} trozo', many: '{count} trozos', other: '{count} trozos' },
     unnamedPieces: 'sin nombre: {count}',
-    frameSize: 'Marco de {width} × {height} cuentas',
+    rowSize: '{width} × {height} cuentas',
     tooBigToCount: 'demasiado para contar',
     countingPieces: 'Contando trozos',
     beads: { one: '{count} cuenta', many: '{count} de cuentas', other: '{count} cuentas' },
     sealedDates: 'creado {created} · guardado {saved}',
+    savedOn: 'guardado {date}',
   },
   starters: {
     title: 'Punto de partida',
