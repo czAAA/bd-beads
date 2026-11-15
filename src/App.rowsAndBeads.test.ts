@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import { pressBead, rowProgressView } from './testUtils/beads'
 import { loadProjects } from './services/libraryStore'
@@ -64,6 +65,13 @@ describe('App row progress', () => {
 
     await wrapper.find('[data-testid="strip-undo"]').trigger('click')
     expect(rowPress()).toBeUndefined()
+  })
+
+  it('says each row move aloud through the announcer (ticket 0934)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await nextTick()
+    expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Ряд 2 из 20')
   })
 })
 

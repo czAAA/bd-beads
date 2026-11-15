@@ -631,6 +631,11 @@ export const be: Translations = {
     goButton: 'Перайсці',
     directionKeptToast: '{toast} {kept}',
     faceBody: 'Кожны трохвугольнік тут пляцецца для гэтай грані: {parts} з {total} у вырабе. {then}',
+    announcePosition: '{unit} {current} з {total}',
+    announcePass: 'Праход {current} з {total}, рад {line}',
+    announceColumnPass: 'Праход {current} з {total}, слупок {line}',
+    showRow: 'Паказаць рад',
+    showColumn: 'Паказаць слупок',
   },
   quantities: {
     heading: 'Патрэбна бісеру',

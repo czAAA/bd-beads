@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { frameRowOrder, passLine, rowProgressOf, rowProgressPosition, shownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import { orderStepLabel } from '../../i18n/orderStep'
+import { customPassWords } from '../../i18n/rowProgressWords'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { useI18n } from '../../i18n/useI18n'
@@ -44,6 +44,8 @@ const emit = defineEmits<{
   'toggle-row-highlight': []
   /** Go to row, from the bar's counter (ticket 0849): the pass to point at, from 0. */
   'go-to-row': [pass: number]
+  /** Go to row's Show row (ticket 0934): the current row brought back into view, the pointer where it is. */
+  'show-row': []
 }>()
 
 const { t } = useI18n()
@@ -121,21 +123,9 @@ const goToUnit = computed(() => {
   return columnWise.value ? words.columnLabel : words.positionLabel
 })
 
-/** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): "Round 3 of 9", or where
- * its passes are of several sorts, parts, joins or a Fringe earring's strands, "Part 2, round 3 · 8 of 20". None for a
- * Frame without a Frame shape. */
-const customPosition = computed(() => {
-  const order = frameRowOrder(props.project)
-  const step = order.stepOf?.(shownRow.value - 1)
-  if (!step) return undefined
-  const words = t.value.rowProgress
-  // The last pass is a join or a strand wherever the passes are not all rounds or rows of one part.
-  const last = order.stepOf!(order.count - 1)!
-  const single = last.kind !== 'join' && last.kind !== 'strand' && last.part === undefined
-  const total = position.value.total
-  const of = single ? fillBlanks(words.ofSteps, { total }) : fillBlanks(words.stepOfSteps, { current: shownRow.value, total })
-  return { label: orderStepLabel(words, step), of }
-})
+/** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): none for a Frame without a
+ * Frame shape. */
+const customPosition = computed(() => customPassWords(t.value.rowProgress, props.project, shownRow.value))
 
 /** The turn that points the down arrow along the rows: the arrows are drawn for top to bottom (ticket 0589). A turned
  * Frame's rows run turned with it (ticket 0667). */
@@ -282,8 +272,10 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     :unit="goToUnit"
     :current="shownRow"
     :total="position.total"
+    :show-label="columnWise ? t.rowProgress.showColumn : t.rowProgress.showRow"
     @close="goToOpen = false"
     @go="emit('go-to-row', $event)"
+    @show="emit('show-row')"
   />
   </div>
 </template>

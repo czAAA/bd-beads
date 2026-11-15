@@ -3,6 +3,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
 import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, toggleRowDirection } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
+import { rowProgressAnnouncement } from '../../i18n/rowProgressWords'
 import type { Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
@@ -16,6 +17,10 @@ export interface RowOpsDeps {
   messages: () => Translations
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
+  /** The announcer: each move of the row pointer is said in the counter's words (ticket 0934). */
+  announce?: (text: string) => void
+  /** Pans the Canvas the shortest way that brings the current row into view (ticket 0934). */
+  showRow?: () => void
 }
 
 /** A press of Row done or Row not done that moved the pointer (ticket 0730): what the Pattern's motion plays from.
@@ -69,7 +74,8 @@ export function useRowOps(deps: RowOpsDeps) {
     }
   }
 
-  /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or Go to row's jump. */
+  /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or Go to row's jump. The row it
+   * reaches is brought into view and said aloud (ticket 0934). */
   function moveTo(pass: (from: number) => number, pressed: boolean) {
     const project = deps.currentProject()
     if (!project) return
@@ -81,6 +87,8 @@ export function useRowOps(deps: RowOpsDeps) {
     if (pressed) rowPress.value = { id: ++presses, done: to > from, from, to, patternDone: to === total }
     else stopRowMotion()
     deps.replaceProject(moved)
+    deps.showRow?.()
+    deps.announce?.(rowProgressAnnouncement(deps.messages().rowProgress, moved))
   }
 
   /** Steps the row pointer forward as a row is finished, or back to revisit an earlier one. */

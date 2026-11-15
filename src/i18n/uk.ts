@@ -630,6 +630,11 @@ export const uk: Translations = {
     goButton: 'Перейти',
     directionKeptToast: '{toast} {kept}',
     faceBody: 'Кожен трикутник тут плететься для цієї грані: {parts} із {total} у виробі. {then}',
+    announcePosition: '{unit} {current} з {total}',
+    announcePass: 'Прохід {current} з {total}, ряд {line}',
+    announceColumnPass: 'Прохід {current} з {total}, стовпець {line}',
+    showRow: 'Показати ряд',
+    showColumn: 'Показати стовпець',
   },
   quantities: {
     heading: 'Потрібно бісеру',

@@ -627,6 +627,11 @@ export const es: Translations = {
     goButton: 'Ir',
     directionKeptToast: '{toast} {kept}',
     faceBody: 'Cada triángulo de aquí se teje para esta cara: {parts} de los {total} de la pieza. {then}',
+    announcePosition: '{unit} {current} de {total}',
+    announcePass: 'Pasada {current} de {total}, fila {line}',
+    announceColumnPass: 'Pasada {current} de {total}, columna {line}',
+    showRow: 'Mostrar fila',
+    showColumn: 'Mostrar columna',
   },
   quantities: {
     heading: 'Cuentas necesarias',

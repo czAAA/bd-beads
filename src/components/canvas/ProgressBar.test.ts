@@ -340,4 +340,16 @@ describe('ProgressBar counter (ticket 0849)', () => {
     expect(wrapper.find('[data-testid="go-to-row"]').exists()).toBe(false)
     wrapper.unmount()
   })
+
+  it("offers Show row in Go to row, Show column while rows run down the columns, and passes it on (ticket 0934)", async () => {
+    const wrapper = mount(ProgressBar, { props: { project: toggleRowDirection(moveToRow(makeProject(), 4)) }, attachTo: document.body })
+    await wrapper.get('[data-testid="progress-bar-compact-position"]').trigger('click')
+    const show = wrapper.get('[data-testid="go-to-row-show"]')
+    expect(show.text()).toBe(ru.rowProgress.showColumn)
+
+    await show.trigger('click')
+    expect(wrapper.emitted('show-row')).toHaveLength(1)
+    expect(wrapper.emitted('go-to-row')).toBeUndefined()
+    wrapper.unmount()
+  })
 })
