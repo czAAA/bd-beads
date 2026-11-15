@@ -892,6 +892,8 @@ export const en: Translations = {
     qualityNote: 'For the picture. The printable chart is drawn in lines and stays sharp at any zoom.',
     progressMarkPiece: 'Mark the piece to export and count: drag with Select.',
     selectFrameTouchHint: 'Drag over the Canvas to select the Frame. Pick a tool to cancel.',
+    widthRange: 'Width is {min} to {max} beads',
+    heightRange: 'Height is {min} to {max} beads',
   },
   size: {
     estimateLabel: 'Estimated size',
