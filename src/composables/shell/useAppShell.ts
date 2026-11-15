@@ -918,6 +918,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const manageProject = useProjectManageFlow({
     currentProject,
     projects: () => projects.value,
+    sealed: () => sealed.value,
     replaceProject,
     // Duplicate copies the reference image's picture with the settings (ticket 0790).
     addProject: (copy) => {
@@ -1396,6 +1397,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSaveFileBeforeDelete: deleteProject.onSaveFileBeforeDelete,
       onConfirmDeleteAllProjects: manageProject.onConfirmDeleteAllProjects,
       onCancelDeleteAllProjects: manageProject.onCancelDeleteAllProjects,
+      // Delete all Projects? names how many go, sealed ones too, and saves them all first as the library's row does (ticket 0984)
+      deleteAllCount: computed(() => projects.value.length + sealed.value.length),
+      onSaveAllBeforeDeleteAll: exportFlow.onExportLibraryFile,
       naming: namePiece.naming,
       onSavePieceName: namePiece.onSavePieceName,
       onCancelPieceName: namePiece.onCancelPieceName,

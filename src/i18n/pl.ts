@@ -142,7 +142,7 @@ export const pl: Translations = {
       themeLight: 'Jasny',
       themeDark: 'Ciemny',
       tooltipDeleteAll: 'Usuń wszystkie projekty z tej przeglądarki.',
-      deleteAllTitle: 'Usunąć projekty?',
+      deleteAllTitle: { one: 'Usunąć {count} projekt?', few: 'Usunąć wszystkie {count} projekty?', many: 'Usunąć wszystkie {count} projektów?', other: 'Usunąć wszystkie {count} projektu?' },
       deleteAllMessage: 'Wszystkie projekty zostaną usunięte z tej przeglądarki. Nie można tego cofnąć. Najpierw kliknij „Zapisz wszystko w pliku projektu”, jeśli chcesz zachować kopie.',
       deleteAllConfirm: 'Usuń wszystkie projekty',
       sendFeedback: 'Wyślij opinię',
