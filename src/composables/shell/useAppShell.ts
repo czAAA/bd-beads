@@ -416,11 +416,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** Select a frame (ticket 568): Select is the tool, and the Selection the next drag makes is framed on release. From
-   * the Export panel, the panel comes back once the Frame is set (ticket 0847). */
+   * the Export panel, the panel comes back once the Frame is set (ticket 0847). On touch the notice names no Escape key:
+   * picking a tool cancels there (ticket 0954). */
   function onSelectFrame(from: FramingFrom = 'frame') {
     onSelectTool('select')
     selectingFrame.value = from
-    showToast('select-frame', t.value.frame.selectFrameHint, 'info')
+    showToast('select-frame', touch.value ? t.value.frame.selectFrameTouchHint : t.value.frame.selectFrameHint, 'info')
   }
 
   /** The Progress bar's Fit a Frame and export a picture (ticket 0847, O-03): Fit to drawing, then Export on Picture. */
