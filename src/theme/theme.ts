@@ -23,6 +23,16 @@ export function resolveTheme(pick: ThemePick, device: DeviceTheme): ResolvedThem
 export function applyTheme(root: HTMLElement, theme: ResolvedTheme): void {
   root.dataset.theme = theme
   root.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
+  followThemeInBrowserBar(root)
+}
+
+/** The browser's bar (the installed app's frame, a phone browser's top bar) on the theme's page background (ticket
+ * 0998): every `theme-color` meta takes the `--surface` the theme now resolves to, so a picked theme beats the device's
+ * light or dark that the metas' `media` would follow. Where the styles aren't there to ask, the metas are left alone. */
+function followThemeInBrowserBar(root: HTMLElement): void {
+  const surface = getComputedStyle(root).getPropertyValue('--surface').trim()
+  if (!surface) return
+  for (const meta of root.ownerDocument.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) meta.content = surface
 }
 
 /** Applies the theme now and whenever the device's setting changes while the pick is 'device'; returns a stop
