@@ -1177,6 +1177,8 @@ export const es: Translations = {
         asked: '{asked} pedidos · {found} encontrados',
         allGiven: '{colors} (todos los que da esta imagen en {bead})',
       },
+      backgroundChip: 'Fondo encontrado · {n} % de la imagen',
+      backgroundTurnOff: 'Desactivar',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

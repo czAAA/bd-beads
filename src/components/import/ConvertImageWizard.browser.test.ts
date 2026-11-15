@@ -387,3 +387,36 @@ describe('the Convert image picture row', () => {
     })
   }
 })
+
+// The background still found once its popover closes (ticket 0930): Escape leaves Background pressed and the chip whole
+// over the beads, inside their half, in the longest wording and on a phone.
+describe('the Convert image background chip', () => {
+  for (const [width, height] of [
+    [1366, 1024],
+    [390, 844],
+  ] as const) {
+    for (const locale of ['en', 'longest'] as const) {
+      it(`stands whole over the beads after Escape at ${width} × ${height} in ${locale}`, async () => {
+        const mounted = await mountAt(ConvertPageHost, props, { locale, width })
+        await page.viewport(width, height)
+        await pictureSet(mounted.root)
+        const find = (testid: string) => mounted.root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)
+        find('convert-tool-background')!.click()
+        await settleForMeasuring()
+        expect(find('convert-background-chip')).toBeNull()
+        await userEvent.keyboard('{Escape}')
+        await settleForMeasuring()
+
+        expect(find('convert-background-popover')).toBeNull()
+        expect(find('convert-tool-background')!.getAttribute('aria-pressed')).toBe('true')
+        const chip = find('convert-background-chip')!.getBoundingClientRect()
+        const half = find('convert-half-beads')!.getBoundingClientRect()
+        expect(chip.left).toBeGreaterThanOrEqual(half.left)
+        expect(chip.right).toBeLessThanOrEqual(half.right)
+        expect(chip.top).toBeGreaterThanOrEqual(half.top)
+        expect(chip.left + chip.width / 2).toBeCloseTo(half.left + half.width / 2, 0)
+        expect(await fitProblems('Convert image page, background chip', locale, width)).toEqual([])
+      })
+    }
+  }
+})
