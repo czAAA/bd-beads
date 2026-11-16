@@ -4,6 +4,9 @@ import type { AddressInfo } from 'node:net'
 // Our hosting, played by the test (ticket 69): a server in front of the preview build that can be taken down (503),
 // slowed, or have a file changed, so the service worker meets the failures the real one would. Like Cloudflare (ticket
 // 1017): `/index.html` answers a 307 to its folder, and `accessExpired` sends every request to a sign-in page.
+/** The folders of the built pages (`index.html`, `homepage/index.html`), relative to the base path. */
+const PAGE_FOLDERS = ['', 'homepage/']
+
 export interface Host {
   /** The app's address, with the base path, like the preview's. */
   url: string
@@ -25,7 +28,7 @@ export interface Host {
 /** Starts the stand-in host in front of `upstream` (the preview's address) on a free port; `close()` it after the
  * check. */
 export async function startHost(upstream: string): Promise<Host> {
-  const origin = new URL(upstream).origin
+  const { origin, pathname: basePath } = new URL(upstream)
   const host: Host = { url: '', signInText: 'Sign in with your email', accessExpired: false, down: false, delay: null, rewrite: null, close: async () => {} }
 
   // Another origin (another port), as bdbeads.cloudflareaccess.com is to the app.
@@ -48,10 +51,10 @@ export async function startHost(upstream: string): Promise<Host> {
         return
       }
       // Cloudflare's static assets send a page's own file name to its folder (the default HTML handling).
-      // Only plain folder names match, so the target (a path with no `//`) can only stay on this origin.
-      const folder = /^(?:\/[\w-]+)*\/index\.html$/.exec(path.split('?')[0]!)
-      if (folder) {
-        response.writeHead(307, { location: folder[0].slice(0, -'index.html'.length) }).end()
+      // The target is picked from the built pages' folders, never built from the request.
+      const folder = PAGE_FOLDERS.find((candidate) => path.split('?')[0] === `${basePath}${candidate}index.html`)
+      if (folder !== undefined) {
+        response.writeHead(307, { location: basePath + folder }).end()
         return
       }
       const answer = await fetch(origin + path, { headers: { 'cache-control': 'no-cache' } })
@@ -64,7 +67,7 @@ export async function startHost(upstream: string): Promise<Host> {
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   const { port } = server.address() as AddressInfo
-  host.url = `http://localhost:${port}${new URL(upstream).pathname}`
+  host.url = `http://localhost:${port}${basePath}`
   host.close = () =>
     new Promise((resolve) => {
       signIn.close()
