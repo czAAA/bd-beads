@@ -55,6 +55,8 @@ export interface ProjectLibrary {
   /** Removes every Project from this device and leaves none open (Menu's Delete all Projects, ticket 443). */
   removeAllProjects: () => void
   flushPendingSave: () => void
+  /** The page is going: notes, for the next start, each write not yet landed (ADR 0012). Call it after flushPendingSave. */
+  noteClosing: () => void
   /** Writes the library now, pending change or not, and says whether storage took it once it has answered (ticket
    * 115's Save). */
   saveNow: () => Promise<boolean>
@@ -213,26 +215,33 @@ export function useProjectLibrary(
       answered()
       // A Project another tab removed is gone here too, even though it was changed here.
       if (dropped.length > 0) takeIn({ changed: [], gone: dropped }, refused())
-      if (mine === saves) {
+      // An earlier save still unanswered, or one that failed, left a change not stored: this answer cannot clear the flags.
+      const left = pendingChanges()
+      if (mine === saves && unanswered.size === 0 && left.changed.length === 0 && left.removed.length === 0) {
         saveFailed.value = false
         if (edits === covered) savePending.value = false
       }
       return true
     } catch {
       answered()
+      let restored = false
       for (const { project } of changed) {
         if (known.get(project.id) !== project) continue
+        restored = true
         const earlier = before.get(project.id)
         if (earlier) known.set(project.id, earlier)
         else known.delete(project.id)
       }
       for (const id of removed) {
         const earlier = before.get(id)
-        if (!known.has(id) && earlier) known.set(id, earlier)
+        if (!known.has(id) && earlier) {
+          known.set(id, earlier)
+          restored = true
+        }
       }
       // Out of quota, or storage refused outright (a private window can). The edit itself stands in memory; leaving
       // it pending means the next save retries it, and saveFailed tells the user it isn't safe yet.
-      if (mine === saves) {
+      if (mine === saves || restored) {
         savePending.value = true
         saveFailed.value = true
       }
@@ -405,6 +414,10 @@ export function useProjectLibrary(
       if (savePending.value) {
         void save()
       }
+    },
+
+    noteClosing() {
+      store.noteClosing()
     },
 
     // The Save tool's write (ticket 115): doesn't trust the pending flag, since "Saved" must be true; saves the open

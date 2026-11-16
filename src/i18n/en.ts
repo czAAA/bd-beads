@@ -344,6 +344,8 @@ export const en: Translations = {
       "Couldn't save in this browser. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it.",
     openElsewhere: "This Project is open in another tab. Changes made here aren't saved while it is open there.",
     keptToast: 'This browser will keep your Projects.',
+    libraryUnopened: "The Projects on this device couldn't be opened. Reload to try again.",
+    reload: 'Reload',
     workHere: 'Work here instead',
     notSavedHere: 'Open in another tab: not saved here',
     toolsOff: 'Off while this Project is open in another tab. Work here instead to draw.',

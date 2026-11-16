@@ -48,14 +48,22 @@ const libraryStarted = browserLibraryStore.start()
  * here. A gated Project, or one that didn't open, stays stored. */
 let library: ReturnType<typeof useProjectLibrary> | undefined
 const openLibrary = async () => {
-  await libraryStarted
+  if ((await libraryStarted) === 'unopened') throw new Error('The library could not be opened')
   return (library ??= useProjectLibrary(browserLibraryStore, { held: browserOpeningNote.read()?.id }))
 }
 
 /** What's inside's Open editor from here (ticket 0879): the demo's Project kept in the library, its picture beside it,
  * and the editor opened on it at the demo's view, as every way in leaves. */
 async function openDemoCopy(snapshot: DemoSnapshot) {
-  const id = await keepDemoCopy(snapshot, { library: await openLibrary(), pictures: browserPictureStore })
+  let opened: Awaited<ReturnType<typeof openLibrary>>
+  try {
+    opened = await openLibrary()
+  } catch {
+    // The Projects couldn't be opened: the editor's own address says so, with Reload.
+    await goToEditor()
+    return
+  }
+  const id = await keepDemoCopy(snapshot, { library: opened, pictures: browserPictureStore })
   await goToEditor(projectAddress(base, id, snapshot.view))
 }
 
@@ -74,11 +82,13 @@ async function saveProjectFile(project: Project | SealedProject) {
 }
 
 // Only the language in use is fetched before the page starts (ticket 0616), and the count of Projects (spec 1018).
-void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), browserLibraryStore.count()]).then(([, projectCount]) => {
+void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), browserLibraryStore.count()]).then(([, counted]) => {
   createApp({
     render: () =>
       h(HomePage, {
-        projectCount,
+        // An unknown count is shown as none, with the Saved Projects list saying why (spec 1018).
+        projectCount: counted === 'unopened' ? 0 : counted,
+        libraryUnopened: counted === 'unopened',
         feedback: browserFeedback,
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
         openLibrary,

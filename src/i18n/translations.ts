@@ -480,6 +480,10 @@ export interface Translations {
     openElsewhere: string
     /** The browser's yes, said back once at the first Project file (tickets 0839, 0936); a no says nothing. */
     keptToast: string
+    /** The full-page message when the Projects saved on this device couldn't be opened (ticket 1020, spec 1018). */
+    libraryUnopened: string
+    /** The one action of that message: loads the page again. */
+    reload: string
     /** The notice's action while the open Project is open in another tab (ticket 0937): takes it over here. */
     workHere: string
     /** The Project panel's save state there (ticket 0937): nothing drawn here is saved. */

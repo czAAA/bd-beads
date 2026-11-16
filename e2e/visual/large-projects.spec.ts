@@ -112,7 +112,9 @@ for (const { columns, rows } of SIZES) {
     test('a full device says the change is not saved, and keeps it on screen', async ({ page }) => {
       await openSized(page, columns, rows)
       await page.evaluate(() => {
-        Storage.prototype.setItem = () => {
+        IDBObjectStore.prototype.put = function (this: IDBObjectStore) {
+          // The database has no room: the transaction is aborted, as the browser does.
+          this.transaction.abort()
           throw new DOMException('The quota has been exceeded.', 'QuotaExceededError')
         }
       })

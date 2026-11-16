@@ -58,7 +58,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 |---|---|---|
 | `domain/` | Pure logic and data: Project, Frame, Pieces, Techniques, Row progress, Selection, history, encodings and file formats | `project.ts`, `changeFrame.ts`, `projectFile.ts` |
 | `rendering/` | Drawing on a canvas, shared by the editor, previews and exports: the Project, overlays, rulers, print pages | `projectRenderer.ts`, `overlayRenderer.ts` |
-| `services/` | The only code that reaches outside the page: the Project library in localStorage, preferences, image decoding, file download | `index.ts`, `libraryStore.ts` |
+| `services/` | The only code that reaches outside the page: the Project library in IndexedDB (localStorage where the browser refuses it), preferences, image decoding, file download | `index.ts`, `libraryStore.ts`, `indexedLibraryStore.ts` |
 | `composables/<feature>/` | The app's behavior, one composable per concern; user flows are `use<Name>Flow` | `shell/useAppShell.ts` (wires them all), `project/useEdit.ts`, `shell/controlRegistry.ts` |
 | `components/<feature>/` | The Vue components for each feature: `canvas`, `tools`, `palette`, `export`, `import`, `project`, `shell` | `shell/AppShell.vue` |
 | `components/ui/`, `composables/ui/` | Primitives every feature builds on: `IconButton`, `AppButton`, `MenuButton`, `AppSwatch`, `AppNote`, `AppTooltip`, modals, menus, form fields; generic composables | `controlAction.ts` |

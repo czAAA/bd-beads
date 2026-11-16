@@ -202,12 +202,41 @@ export async function setConvertWidth(page: Page, beads: number): Promise<void> 
   await expect(range).toHaveAttribute('aria-valuenow', String(beads))
 }
 
+/** The Projects the app has stored, as the library's records hold them (ADR 0094): read from the database itself, where the
+ * first start copied the library the check seeded into localStorage and every save since writes. Empty until that has
+ * happened. */
+export async function storedProjects(page: Page): Promise<EncodedProject[]> {
+  const stored = await page.evaluate(
+    () =>
+      new Promise<string[]>((resolve) => {
+        const open = indexedDB.open('openbeads-library')
+        open.onerror = () => resolve([])
+        open.onsuccess = () => {
+          const db = open.result
+          if (!db.objectStoreNames.contains('projects')) {
+            db.close()
+            resolve([])
+            return
+          }
+          const all = db.transaction('projects').objectStore('projects').getAll()
+          all.onsuccess = () => {
+            db.close()
+            resolve((all.result as { format: number; stored: string }[]).filter((record) => record.format === 1).map((record) => record.stored))
+          }
+          all.onerror = () => {
+            db.close()
+            resolve([])
+          }
+        }
+      }),
+  )
+  return stored.map((json) => JSON.parse(json) as EncodedProject)
+}
+
 /** The Project the app has saved, read back the way it is stored. Edits reach the device on their own (ticket 523). */
 export async function savedProject(page: Page): Promise<Project> {
-  await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).not.toBeNull()
-  const stored = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)
-  const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
-  return normalizeProject(decodeProject(library.patterns[0]!))
+  await expect.poll(async () => (await storedProjects(page)).length).toBeGreaterThan(0)
+  return normalizeProject(decodeProject((await storedProjects(page))[0]!))
 }
 
 /** Keeps the sharp redraw a settled view asks for, to run when the test says: the pan stays in flight till then. */

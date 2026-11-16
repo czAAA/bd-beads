@@ -132,6 +132,19 @@ describe('HomePage', () => {
       }
     })
 
+    it('says in Saved Projects that the Projects could not be opened when the library fails to open (spec 1018)', async () => {
+      const openLibrary = vi.fn(() => Promise.reject(new Error('unopened')))
+      const wrapper = mount(HomePage, { props: { projectCount: 0, libraryUnopened: true, openLibrary, feedback: fakeFeedback() }, attachTo: document.body })
+      // Not a new visitor: the way in to Saved Projects is there although no count is known, and names none.
+      expect(wrapper.get('[data-testid="homepage-saved-projects"]').text()).not.toContain('·')
+      await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+      await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="library-unopened"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
+    })
+
     it('lists the library in the Menu\'s Saved Projects, opened only then, with × asking Delete first and a pick opening it (tickets 0716, 0842)', async () => {
       const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
       const projects = shallowRef([project])

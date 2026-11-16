@@ -30,6 +30,8 @@ const props = withDefaults(
     leave?: () => Promise<boolean>
     /** How many Projects the library holds, sealed ones too (ticket 0716). */
     projectCount?: number
+    /** The Projects couldn't be opened, so none is counted: Saved Projects is still there, to say so (spec 1018). */
+    countUnknown?: boolean
     toolsPosition?: PillPosition
     inputMode?: InputMode
     handedness?: Handedness
@@ -114,14 +116,14 @@ const inputOptions = computed(() => [
 <template>
   <div class="menu-panel" data-testid="menu-panel">
     <!-- On the Homepage only Saved Projects, while the library is not empty (ticket 0716). -->
-    <PanelSection v-if="inEditor || projectCount > 0" id="menu:projects" :label="t.panels.menu.projects">
+    <PanelSection v-if="inEditor || projectCount > 0 || countUnknown" id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
       <PanelItem v-if="inEditor" icon="plus" accent :sub="!demo" :stays="!demo" data-testid="menu-new-project" @select="demo ? emit('new-project') : openNewProject()">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Convert image is an App page (ADR 0086): while it is open, its row is the current page. -->
       <PanelItem v-if="inEditor" icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" @select="converting || emit('convert-image')">
         {{ actions.convertImage.name(t) }}
       </PanelItem>
-      <PanelItem icon="library" :value="String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
+      <PanelItem icon="library" :value="countUnknown ? undefined : String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}
       </PanelItem>
       <!-- Whether the browser keeps the Projects, as a fact with its reason behind an Info button (tickets 0839, 0936). -->
