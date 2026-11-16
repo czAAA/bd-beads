@@ -11,7 +11,7 @@ import { frameLayoutOf } from '../domain/frameShape'
 import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 import type { Project, RowProgress } from '../domain/project'
-import { DEFAULT_THEME, flatLook } from './beadLook'
+import { DARK_THEME, DEFAULT_THEME, PROJECT_THEMES, flatLook } from './beadLook'
 import { GLINT_COLOR, ROW_MOTION } from './rowMotion'
 import { beadRoundness, type Technique } from '../domain/weave'
 import { recordingContext } from '../testUtils/recordingContext'
@@ -20,6 +20,7 @@ import { AREA_SHEET_OUTSET } from './frameHandles'
 import { tileColorOf } from './tonalTiles'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
+import { BEAD_GAP_PX, brighten, CURRENT_ROW_BRIGHTNESS } from './beadLook'
 import { displayedExtentPx, surfaceView } from './surfaceView'
 import { rulerLayout } from './rulers'
 import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
@@ -97,27 +98,28 @@ describe('renderOverlay', () => {
       expect(named('lineTo')).toHaveLength(0)
     })
 
-    it('lays the `canvas` line from 2px to 3px inside each cell, on the ring\'s curve 1.5px further in (ticket 1031)', () => {
-      const R = beadRoundness('peyote') * CELL_SIZE_PX
+    it('lays the `marker` line on the raised bead\'s edge, 1px outside the cell, and the `canvas` line directly inside it (tickets 1031, 1032)', () => {
+      // The raised bead's corner is the bead's own, 1px rounder.
+      const R = beadRoundness('peyote') * CELL_SIZE_PX + 1
       const project = ownCell(projectOf('peyote', 5, 3, { currentRow: 0 }))
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
       const [ring, line] = [ringRects(calls)[0]!.args, caseRects(calls)[0]!.args]
-      expect(ring).toEqual([1, 1, 18, 18, R - 1])
-      expect(line).toEqual([2.5, 2.5, 15, 15, R - 2.5])
+      expect(ring).toEqual([0, 0, 20, 20, R - 1])
+      expect(line).toEqual([1.5, 1.5, 17, 17, R - 2.5])
     })
 
-    it('rings every bead of the row inside its cell (tickets 375, 376)', () => {
+    it('rings every bead of the row on its raised edge, so two touching beads share one 2px `marker` line (tickets 375, 376, 1032)', () => {
       const project = projectOf('loom', 3, 3, { currentRow: 1 })
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
       const outline = ringRects(calls)
-      // Row 1 of a 3-wide loom: three beads at x 0, 20, 40 and y 20, each ringed 1px in, so its 2px stroke ends on the cell's edge and no ring reaches a neighbour.
-      expect(outline.map((call) => call.args)).toEqual([[1, 21, 18, 18, 0], [21, 21, 18, 18, 0], [41, 21, 18, 18, 0]])
+      // Row 1 of a 3-wide loom: beads at x 0, 20, 40 and y 20, raised to -1..21 and so on, each line centred 1px inside that: the 2px lines of two neighbours both cover 19..21.
+      expect(outline.map((call) => call.args)).toEqual([[0, 20, 20, 20, 0], [20, 20, 20, 20, 0], [40, 20, 20, 20, 0]])
     })
 
     it('rings only the peyote beads woven in the current pass (ticket 375)', () => {
@@ -130,14 +132,14 @@ describe('renderOverlay', () => {
       expect(ringRects(calls)).toHaveLength(2)
     })
 
-    it('keeps the last row\'s rings inside the Project, with no clamping needed', () => {
+    it('lets the last row\'s rings reach 1px past the Project\'s edge, as its raised beads do', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 4 })
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      // Row 4 is y 80..100, the Project's own edge: the ring's outer edge is that edge.
-      expect(ringRects(calls)[1]!.args).toEqual([21, 81, 18, 18, 0])
+      // Row 4 is y 80..100, the Project's own edge: the raised bead and its ring reach 1px past it (ticket 1032).
+      expect(ringRects(calls)[1]!.args).toEqual([20, 80, 20, 20, 0])
     })
 
     it('rings a brick stitch row where it sits, half a bead across', () => {
@@ -145,11 +147,12 @@ describe('renderOverlay', () => {
       const { context, calls } = recordingContext()
       renderOverlay(context, { project: brick, region: whole(brick), zoom: 1 })
 
-      expect(ringRects(calls)[0]!.args.slice(0, 2)).toEqual([11, 21])
+      expect(ringRects(calls)[0]!.args.slice(0, 2)).toEqual([10, 20])
     })
 
-    it('rings each peyote bead with its own corner radius, less the half stroke', () => {
-      const R = beadRoundness('peyote') * CELL_SIZE_PX - 1
+    it('rings each peyote bead with its raised corner radius, less the half stroke', () => {
+      // The raised bead's corner is 1px rounder, its ring's centre 1px in: the bead's own radius.
+      const R = beadRoundness('peyote') * CELL_SIZE_PX
       const project = ownCell(projectOf('peyote', 5, 3, { currentRow: 0 }))
       const { context, calls } = recordingContext()
 
@@ -165,7 +168,7 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[1, 21], [41, 21]])
+      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[0, 20], [40, 20]])
     })
 
     it('shows no marker for a pass with no beads', () => {
@@ -186,6 +189,124 @@ describe('renderOverlay', () => {
 
       expect(named('fillRect')).toHaveLength(0)
       expect(named('fill')).toHaveLength(0)
+    })
+  })
+
+  describe('the raised pass (BeadBoard card, ticket 1032)', () => {
+    /** A recording context that also writes down each fill cast with a shadow: its color, blur, fall, how far it is cast
+     * across and how many shapes it was cast from. A restore puts the shadow off, as the canvas's own does here. */
+    function shadowRecording() {
+      const recording = recordingContext()
+      const target = recording.context as unknown as Record<string, unknown>
+      const none = { shadowColor: 'rgba(0, 0, 0, 0)', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 }
+      Object.assign(target, none)
+      const shadows: { color: unknown; blur: number; down: number; aside: number; shapes: number }[] = []
+      const context = new Proxy(target, {
+        get: (own, key) => {
+          if (key === 'fill') {
+            return (...args: unknown[]) => {
+              if ((own.shadowBlur as number) > 0) {
+                const begin = recording.calls.map((call) => call.name).lastIndexOf('beginPath')
+                const shapes = recording.calls.slice(begin).filter((call) => call.name === 'roundRect').length
+                shadows.push({ color: own.shadowColor, blur: own.shadowBlur as number, down: own.shadowOffsetY as number, aside: own.shadowOffsetX as number, shapes })
+              }
+              ;(own.fill as (...args: unknown[]) => void)(...args)
+            }
+          }
+          if (key === 'restore') return () => ((own.restore as () => void)(), Object.assign(own, none))
+          return Reflect.get(own, key)
+        },
+      }) as unknown as Parameters<typeof renderOverlayWith>[0]
+      return { ...recording, context, shadows }
+    }
+
+    /** The inside of each lifted bead in `color`, as the flat look fills it: the bead's box less its gap and rim. */
+    const insides = (named: ReturnType<typeof recordingContext>['named'], color: string) => named('fillRect').filter((call) => call.fillStyle === color).map((call) => call.args)
+    const [lifted, inset] = [brighten('#e63746', CURRENT_ROW_BRIGHTNESS), BEAD_GAP_PX / 2 + 0.75]
+
+    it('draws each bead of the pass 1px larger on every side, its Letter at the bead\'s own size', () => {
+      const project = projectOf('loom', 3, 3, { currentRow: 1 })
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, theme: flatLook(DEFAULT_THEME), letters: { '#e63746': 'A' } })
+
+      expect(insides(named, lifted)).toEqual([-1, 19, 39].map((x) => [x + inset, 19 + inset, 22 - 2 * inset, 22 - 2 * inset]))
+      // The Letter is centred on the bead's own 20px box and sized by it, as before.
+      expect(named('translate').slice(-3).map((call) => call.args)).toEqual([[10, 30], [30, 30], [50, 30]])
+      expect(new Set(named('fillText').map((call) => call.args[2]))).toEqual(new Set([20 * 0.56 / (0.62 + 0.38) * 0.04]))
+    })
+
+    it('glints the pass just finished at its own size, under the raised pass', () => {
+      const project = projectOf('loom', 4, 3, { currentRow: 2 })
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, theme: flatLook(DEFAULT_THEME), rowMotion: { glints: [{ pass: 1, elapsed: 0.35 * ROW_MOTION.glint }] } })
+
+      expect(insides(named, '#e63746').map((box) => box.slice(2))).toEqual(Array(4).fill([20 - 2 * inset, 20 - 2 * inset]))
+      expect(insides(named, lifted).map((box) => box.slice(2))).toEqual(Array(4).fill([22 - 2 * inset, 22 - 2 * inset]))
+      const order = named('fillRect').map((call) => call.fillStyle)
+      expect(order.indexOf(lifted)).toBeGreaterThan(order.lastIndexOf('#e63746'))
+    })
+
+    it('casts one shadow under the pass, a row\'s touching beads one shape: black, blurred 5px (a `shadowBlur` of twice that, as the Lifted piece\'s), 2px down, 24% in light and 72% in dark, following the zoom', () => {
+      const project = projectOf('loom', 4, 5, { currentRow: 2 })
+      const light = shadowRecording()
+      renderOverlay(light.context, { project, region: whole(project), zoom: 1, pixelRatio: 2 })
+      const dark = shadowRecording()
+      renderOverlay(dark.context, { project, region: whole(project, 3), zoom: 3, theme: DARK_THEME })
+
+      expect(light.shadows).toEqual([{ color: 'rgba(0, 0, 0, 0.24)', blur: 20, down: 4, aside: expect.any(Number), shapes: 1 }])
+      expect(dark.shadows).toEqual([{ color: 'rgba(0, 0, 0, 0.72)', blur: 30, down: 6, aside: expect.any(Number), shapes: 1 }])
+    })
+
+    it('casts the shadow from a shape laid off the device\'s pixels to the left, so only the shadow shows', () => {
+      const project = projectOf('loom', 4, 5, { currentRow: 2 })
+      const { context, calls, shadows } = shadowRecording()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      // The row's run, raised and less the gap: x -0.5 to 80.5, cast back across by more than its right edge.
+      const run = calls.find((call) => call.name === 'roundRect')!.args as number[]
+      expect(run[0]! + run[2]!).toBeLessThan(0)
+      expect(run[0]! + shadows[0]!.aside).toBe(-0.5)
+      expect(run.slice(1, 4)).toEqual([39.5, 81, 21])
+    })
+
+    it('casts the shadow 2px down the screen however the Project is turned, the pass still one shape', () => {
+      const falls = ([90, 180, 270] as const).map((rotation) => {
+        const project = projectOf('loom', 4, 5, { currentRow: 2 }, rotation)
+        const { context, shadows } = shadowRecording()
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true) })
+        return shadows.map(({ down, shapes }) => ({ down, shapes }))
+      })
+
+      expect(falls).toEqual(Array(3).fill([{ down: 2, shapes: 1 }]))
+    })
+
+    it('joins a column\'s touching beads where the Row direction runs down the columns, and leaves peyote\'s later beads apart', () => {
+      const column = shadowRecording()
+      const down = projectOf('loom', 4, 3, { direction: 'columns', currentColumn: 1 })
+      renderOverlay(column.context, { project: down, region: whole(down), zoom: 1 })
+      const later = shadowRecording()
+      const peyote = projectOf('peyote', 5, 3, { currentRow: 1 })
+      renderOverlay(later.context, { project: peyote, region: whole(peyote), zoom: 1 })
+
+      expect(column.shadows.map(({ shapes }) => shapes)).toEqual([1])
+      expect(later.shadows.map(({ shapes }) => shapes)).toEqual([3])
+    })
+
+    it('casts no shadow in high contrast, in the draft look or with Row highlight off, and keeps the growth and the ring in the draft look', () => {
+      const project = projectOf('loom', 4, 5, { currentRow: 2 })
+      const contrast = shadowRecording()
+      renderOverlay(contrast.context, { project, region: whole(project), zoom: 1, theme: PROJECT_THEMES.contrast })
+      const draft = shadowRecording()
+      renderOverlay(draft.context, { project, region: whole(project, 0.1), zoom: 0.1 })
+      const off = shadowRecording()
+      renderOverlay(off.context, { project, region: whole(project), zoom: 1, rowMarks: false })
+
+      expect([contrast.shadows, draft.shadows, off.shadows]).toEqual([[], [], []])
+      expect(ringRects(draft.calls)[0]!.args.slice(0, 4)).toEqual([0, 40, 20, 20])
+      expect(off.calls.map((call) => call.name)).toEqual(['setTransform', 'clearRect'])
     })
   })
 
@@ -228,7 +349,7 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[21, 1], [21, 21], [21, 41]])
+      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[20, 0], [20, 20], [20, 40]])
       expect(named('lineTo')).toHaveLength(0)
     })
 
@@ -255,8 +376,8 @@ describe('renderOverlay', () => {
       renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true) })
 
       expect(named('rotate').map((call) => call.args[0])).toEqual(expect.arrayContaining(round.slice(0, 4).map(({ angle }) => angle)))
-      // Each of the four beads is lifted and ringed, both turned: eight turns, no more.
-      expect(named('rotate')).toHaveLength(8)
+      // Each of the four beads casts its part of the shadow, is lifted and is ringed, all turned: twelve turns, no more.
+      expect(named('rotate')).toHaveLength(12)
       // Each ring turned with its bead has both its lines (ticket 1031).
       expect(named('stroke').map((call) => call.strokeStyle)).toEqual(Array(4).fill([DEFAULT_THEME.marker, DEFAULT_THEME.markerCase]).flat())
     })
@@ -959,7 +1080,7 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
     expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
     // Pass 1 is row 1's even beads, columns 0 and 2: x 0 and 40, y 20 (columns 0 and 2 are unshifted).
     const rings = ringRects(calls).map((call) => call.args as number[])
-    expect(rings.map(([x, y]) => [x! - 1, y! - 1])).toEqual([[0, 20], [40, 20]])
+    expect(rings.map(([x, y]) => [x!, y!])).toEqual([[0, 20], [40, 20]])
   })
 
   it('outlines a Selection of the Frame inside the Frame\'s layer and one of the Canvas outside it', () => {
