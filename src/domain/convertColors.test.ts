@@ -8,12 +8,14 @@ import {
   beadColorRows,
   beadColorTargets,
   convertFrame,
+  MEASURED_REACH,
   matchFoundColors,
   newProjectPalette,
   NO_LEAST_COLOR_BEADS,
   smallColorsJoined,
   sourceTargets,
   type FoundColorChoice,
+  type TargetColor,
 } from './convertColors'
 
 const reduced = (entries: Record<string, number>) => reducePictureColors(new Map(Object.entries(entries)), 14)
@@ -333,5 +335,52 @@ describe('Drop colors used by few beads (ticket 0906)', () => {
     const unjoined = matchFoundColors(picture, targets, choices(), NO_LEAST_COLOR_BEADS)
     expect(delivered(unjoined)).toHaveLength(3)
     expect(smallColorsJoined(unjoined, unjoined)).toEqual({ colors: 0, beads: 0 })
+  })
+})
+
+describe('a part measured catalog (ticket 0887)', () => {
+  /** A Bead color as the catalog hands it over: a generated hex is marked approximate. */
+  const target = (code: string, hex: string, measured: boolean): TargetColor => ({ hex, code, family: 'Red', finish: 'opaque', ...(measured ? {} : { approximate: true as const }) })
+  /** A grey at this lightness (0 to 1). */
+  const grey = (lightness: number) => {
+    const level = Math.round(lightness * 255)
+    return `#${[level, level, level].map((c) => c.toString(16).padStart(2, '0')).join('')}`
+  }
+  const apart = (a: string, b: string) => colorDistance(toOklab(channelsOf(a)), toOklab(channelsOf(b)))
+  const aim = grey(0.5)
+  const near = grey(0.502)
+  const insideReach = grey(0.5 + 0.03)
+  const outsideReach = grey(0.5 + 0.2)
+
+  it('names a measured code within the reach over a nearer approximate one', () => {
+    expect(apart(aim, insideReach)).toBeLessThan(MEASURED_REACH)
+    const targets = [target('NEAR', near, false), target('MEAS', insideReach, true)]
+    const [found] = matchFoundColors(reducedPicture({ [aim]: 5 }), targets, choices())
+    expect(found!.match.code).toBe('MEAS')
+  })
+
+  it('names the approximate code when no measured code is within the reach', () => {
+    expect(apart(aim, outsideReach)).toBeGreaterThan(MEASURED_REACH)
+    const targets = [target('NEAR', near, false), target('MEAS', outsideReach, true)]
+    const [found] = matchFoundColors(reducedPicture({ [aim]: 5 }), targets, choices())
+    expect(found!.match.code).toBe('NEAR')
+  })
+
+  it('matches as before when every code is measured, or none is', () => {
+    for (const measured of [true, false]) {
+      const targets = [target('A', near, measured), target('B', insideReach, measured)]
+      const [found] = matchFoundColors(reducedPicture({ [aim]: 5 }), targets, choices())
+      expect(found!.match.code).toBe('A')
+    }
+  })
+
+  it('says whether the bead color a found color became is measured or approximate', () => {
+    const targets = [target('NEAR', near, false), target('MEAS', outsideReach, true)]
+    const [approximate] = matchFoundColors(reducedPicture({ [aim]: 5 }), targets, choices())
+    expect(approximate!.approximate).toBe(true)
+    const [measured] = matchFoundColors(reducedPicture({ [outsideReach]: 5 }), targets, choices())
+    expect(measured!.approximate).toBe(false)
+    const [exact] = matchFoundColors(reducedPicture({ [aim]: 5 }), targets, choices({ [aim]: { kind: 'exact' } }))
+    expect(exact!.approximate).toBe(false)
   })
 })

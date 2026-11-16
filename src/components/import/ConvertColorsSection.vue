@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
-import type { ColorSource } from '../../domain/convertColors'
+import { isPartMeasured, measuredCount, type ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { beadLabel } from '../../domain/beads'
@@ -73,6 +73,14 @@ const sourceNote = computed(() =>
     .join(' '),
 )
 
+/** A part measured catalog's line (ticket 0887): how many of the Bead's codes have a measured color. None for a catalog with
+ * none measured (ticket 0884's words stand) or with all (ticket 0886's credit says enough). */
+const measuredLine = computed(() => {
+  const total = wizard.beadTargets.value.length
+  const measured = measuredCount(wizard.beadTargets.value)
+  return wizard.source.value === 'bead-colors' && isPartMeasured(wizard.beadTargets.value) ? fillBlanks(words.value.measuredOf, { n: count(measured), total: count(total) }) : undefined
+})
+
 /** The count line: the source's codes in the Finishes on (ticket 0901), as bead colors ("1 191 bead colors in size 11/0", ticket 0966). */
 const codes = computed(() =>
   wizard.source.value === 'my-beads'
@@ -142,6 +150,7 @@ const remapping = ref<string>()
           <ConvertFinishFilter :codes="codes" />
         </div>
         <span v-if="wizard.source.value === 'bead-colors' || wizard.source.value === 'my-beads'" class="convert-colors__codes" data-testid="convert-codes">{{ codes }}</span>
+        <span v-if="measuredLine" class="convert-colors__codes" data-testid="convert-measured">{{ measuredLine }}</span>
         <span v-if="tooFew" class="convert-colors__too-few" role="status" data-testid="convert-too-few">{{ tooFew }}</span>
         <AppNote v-if="wizard.source.value === 'bead-colors' && wizard.catalogState.value === 'failed'" role="alert" data-testid="convert-catalog-failed">
           {{ t.palette.beadColors.failed }}

@@ -1017,6 +1017,7 @@ export const zh: Translations = {
       beadPaletteNote: '色号是真实的 {bead} 珠子。颜色为近似值，由色系和表面处理生成。',
       beadPaletteNotePhotos: '色号是真实的 {bead} 珠子。颜色取自 MIYUKI 的照片，接近真实珠子，但并不精确。',
       codesInSize: { other: '{size} 尺寸的珠子颜色：{count}' },
+      measuredOf: '{total} 个中已测量 {n} 个',
       fromPicture: '来自图片',
       becomes: '变成',
       beadsColumn: '珠子数',

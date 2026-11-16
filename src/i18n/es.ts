@@ -1035,6 +1035,7 @@ export const es: Translations = {
       beadPaletteNote: 'Los códigos son cuentas reales de {bead}. Sus colores son aproximados, hechos con la familia de color y el acabado.',
       beadPaletteNotePhotos: 'Los códigos son cuentas reales de {bead}. Sus colores se leyeron de las fotografías de MIYUKI: se acercan a las cuentas reales, sin ser exactos.',
       codesInSize: { other: 'colores de cuenta en tamaño {size}: {count}' },
+      measuredOf: '{n} de {total} medidos',
       fromPicture: 'De la imagen',
       becomes: 'Resultado',
       beadsColumn: 'Cuentas',

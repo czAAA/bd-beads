@@ -1043,6 +1043,7 @@ export const be: Translations = {
       beadPaletteNote: 'Коды сапраўдныя, гэта бісер {bead}. Колеры прыблізныя, складзеныя з сямейства колеру і пакрыцця.',
       beadPaletteNotePhotos: 'Коды сапраўдныя, гэта бісер {bead}. Колеры ўзятыя з фотаздымкаў MIYUKI: блізкія да сапраўднага бісеру, але не дакладныя.',
       codesInSize: { other: 'колераў бісеру памеру {size}: {count}' },
+      measuredOf: '{n} з {total} вымераныя',
       fromPicture: 'З выявы',
       becomes: 'Стане',
       beadsColumn: 'Бісерын',

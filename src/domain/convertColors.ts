@@ -38,6 +38,8 @@ export interface FoundColor {
   choice: FoundColorChoice | undefined
   /** Undefined when the color is set to empty. */
   result: TargetColor | undefined
+  /** True when its result is a Bead color whose hex is generated, not measured (ticket 0887; ticket 0905 marks it). */
+  approximate: boolean
 }
 
 /** The codes of a Color catalog a match may use (spec 0645): those made in the Bead size, discontinued ones left out. */
@@ -54,21 +56,51 @@ export function sourceTargets(source: ColorSource, builtIns: readonly PaletteCol
   return source === 'default' ? builtIns.map((color) => ({ hex: color.hex, colorId: color.id })) : [...beadColors]
 }
 
-/** The nearest of the targets to `hex`, by how alike they look (OKLab, ticket 0634); itself, a Custom color, under Exact. */
-function matchOf(hex: string, targets: readonly TargetColor[] | undefined, nearest: (hex: string) => string | undefined): TargetColor {
+/** How far a measured code may lie from the color sought and still win over a nearer generated one (ticket 0887, D-1):
+ * two thirds of the distance at which two codes look alike (LEAST_COLOR_DISTANCE).
+ * @internal The tests place their codes inside and outside it; the app reads it only here. */
+export const MEASURED_REACH = LEAST_COLOR_DISTANCE * (2 / 3)
+
+/** How many of the targets have a measured color, not one generated from family and Finish (ticket 0887). */
+export function measuredCount(targets: readonly TargetColor[]): number {
+  return targets.filter((target) => !target.approximate).length
+}
+
+/** Whether some targets are measured and some generated (ticket 0887): the only catalog the match and the Colors section's
+ * "n of total measured" line treat differently; one with none or all measured matches and reads as it always did. */
+export function isPartMeasured(targets: readonly TargetColor[]): boolean {
+  const measured = measuredCount(targets)
+  return measured > 0 && measured < targets.length
+}
+
+/** The hexes a match chooses among, listed once for a picture's found colors: all of the targets, and (for a part measured
+ * catalog) the measured ones apart. */
+interface MatchPool {
+  all: readonly string[]
+  measured: readonly string[] | undefined
+}
+
+/** The target for `hex` (OKLab, ticket 0634), or itself, a Custom color, under Exact. The nearest of all of them, except that
+ * in a part measured catalog a measured code within MEASURED_REACH is taken first (ticket 0887); an approximate code is
+ * named only when none is. */
+function matchOf(hex: string, targets: readonly TargetColor[] | undefined, pool: MatchPool): TargetColor {
   if (!targets) return { hex }
-  const hit = nearest(hex)
-  return targets.find((target) => target.hex === hit) ?? { hex }
+  const closest = pool.measured && nearestColor(pool.measured, hex)
+  const withinReach = closest && colorDistance(toOklab(channelsOf(hex)), toOklab(channelsOf(closest))) <= MEASURED_REACH ? closest : undefined
+  const chosen = withinReach ?? nearestColor(pool.all, hex)
+  return targets.find((target) => target.hex === chosen) ?? { hex }
 }
 
 /** Each found color's match, kept the least distance apart for a reduced picture (ticket 0890): a color whose match is
  * that close to a bigger color's match takes it, so two codes that look alike never both come out. */
 function apartMatches(reduced: ReducedColors, targets: readonly TargetColor[] | undefined): TargetColor[] {
-  const hexes = targets?.map((target) => target.hex) ?? []
-  const nearest = (hex: string) => nearestColor(hexes, hex)
+  const pool: MatchPool = {
+    all: targets?.map((target) => target.hex) ?? [],
+    measured: targets && isPartMeasured(targets) ? targets.filter((target) => !target.approximate).map((target) => target.hex) : undefined,
+  }
   const kept: { match: TargetColor; lab: Oklab }[] = []
   return reduced.colors.map(({ hex }) => {
-    const match = matchOf(hex, targets, nearest)
+    const match = matchOf(hex, targets, pool)
     if (!reduced.keptApart) return match
     const lab = toOklab(channelsOf(match.hex))
     const near = kept.find((other) => colorDistance(other.lab, lab) < LEAST_COLOR_DISTANCE)
@@ -118,7 +150,7 @@ export function matchFoundColors(
     const match = matches[at]!
     const choice = choices.get(hex)
     const result = !choice ? match : choice.kind === 'exact' ? { hex } : choice.kind === 'remap' ? choice.target : undefined
-    return { pictureHex: hex, count, match, choice, result }
+    return { pictureHex: hex, count, match, choice, result, approximate: result?.approximate === true }
   })
 }
 

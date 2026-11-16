@@ -1042,6 +1042,7 @@ export const uk: Translations = {
       beadPaletteNote: 'Коди справжні, це бісер {bead}. Кольори приблизні, складені з родини кольору та покриття.',
       beadPaletteNotePhotos: 'Коди справжні, це бісер {bead}. Кольори зчитано з фотографій MIYUKI: близькі до справжнього бісеру, але не точні.',
       codesInSize: { other: 'кольорів бісеру розміру {size}: {count}' },
+      measuredOf: '{n} з {total} виміряні',
       fromPicture: 'Із картинки',
       becomes: 'Стане',
       beadsColumn: 'Бісерин',

@@ -1026,6 +1026,7 @@ export const en: Translations = {
       beadPaletteNote: 'The codes are real {bead} beads. Their colors are approximate, made from the color family and the finish.',
       beadPaletteNotePhotos: "The codes are real {bead} beads. Their colors were read from MIYUKI's photographs: close to the real beads, not exact.",
       codesInSize: { one: '{count} bead color in size {size}', other: '{count} bead colors in size {size}' },
+      measuredOf: '{n} of {total} measured',
       fromPicture: 'From picture',
       becomes: 'Becomes',
       beadsColumn: 'Beads',

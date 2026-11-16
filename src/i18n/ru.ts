@@ -1042,6 +1042,7 @@ export const ru: Translations = {
       beadPaletteNote: 'Коды настоящие, это бисер {bead}. Цвета приблизительные, собраны из семейства цвета и покрытия.',
       beadPaletteNotePhotos: 'Коды настоящие, это бисер {bead}. Цвета считаны с фотографий MIYUKI: близки к настоящему бисеру, но не точны.',
       codesInSize: { other: 'цветов бисера размера {size}: {count}' },
+      measuredOf: '{n} из {total} измерены',
       fromPicture: 'Из картинки',
       becomes: 'Станет',
       beadsColumn: 'Бисеринок',
