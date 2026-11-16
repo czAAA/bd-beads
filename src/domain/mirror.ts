@@ -499,6 +499,15 @@ export function mirrorGrowthOf(project: Project, setting: MirrorSetting): Mirror
   return growth && Object.keys(growth.grewFor).length > 0 ? growth : undefined
 }
 
+/** The Project with its Canvas Area grown to the nearest Fitting size where its own Mirror does not fit it (ticket 1029,
+ * ADR 0095): what an older file opens with and what a change of the Canvas's Technique or Drop takes, the Mode, Axes and
+ * counts kept and nothing else touched. The growth beside it for the Message; the Project as it is where nothing grows. */
+export function withFittedArea(project: Project): { project: Project; growth?: MirrorGrowth } {
+  const setting = mirrorSettingOf(project)
+  const growth = mirrorGrowthOf(project, setting)
+  return growth ? { project: { ...project, mirror: { ...setting, place: { layer: 'canvas', area: growth.area } } }, growth } : { project }
+}
+
 /** The Fold Radial uses: the setting's as a grid takes it, no more than the Area offers; none where Radial is off. */
 function fittedFold(fit: MirrorFit, fold: number, rect: Rect): number | undefined {
   return fit.folds.length === 0 ? undefined : Math.min(gridFold(fold, rect), Math.max(...fit.folds))

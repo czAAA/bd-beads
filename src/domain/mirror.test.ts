@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { layerSheet } from './layers'
-import { changeFrame } from './changeFrame'
+import { changeCanvasWeave, changeFrame } from './changeFrame'
 import { withLayers } from '../testUtils/layerFields'
 import { frameOf, withFrameSheet } from './layerRecord'
 import { frameLayoutOf, type FrameShapeId, type QuarterTurns } from './frameShape'
@@ -28,6 +28,7 @@ import {
   readMirrorSetting,
   shapeAxesOf,
   withAxisToggled,
+  withFittedArea,
   withMirror,
   withMirrorCount,
   withMirrorFold,
@@ -787,5 +788,44 @@ describe('the whole-Frame Mirror on a Custom frame, the shape\'s own Axes (ticke
     expect(mirrorSettingOf(offStar).axes).toEqual({ leftRight: true, topBottom: false, radial: false })
     const afterClose = withMirrorPlace(withMirrorPlace(onStar, undefined), onCanvas(area(0, 0, 4, 4)))
     expect(mirrorSettingOf(afterClose).axes).toEqual({ leftRight: true, topBottom: false, radial: false })
+  })
+})
+
+describe('a Canvas Area that arrives unfit grows: an older file, a changed Technique or Drop (ticket 1029, ADR 0095)', () => {
+  /** A Project with its Mirror set as given, put there by hand as an older file holds it, nothing grown. */
+  const holding = (project: Project, setting: MirrorSetting): Project => ({ ...project, mirror: setting })
+
+  it('grows an unfit Canvas Area right and down to the nearest Fitting size, its settings and the Project otherwise as they were', () => {
+    const setting = on({ leftRight: true }, { leftRight: 2 }, 'repeat', onCanvas(area(3, 4, 24, 25)))
+    const unfit = holding(open('loom'), setting)
+    const { project, growth } = withFittedArea(unfit)
+    expect(mirrorSettingOf(project)).toEqual({ ...setting, place: onCanvas(area(3, 4, 24, 27)) })
+    expect(growth).toEqual({ area: area(3, 4, 24, 27), grewFor: { leftRight: 2 } })
+    expect(project.updatedAt).toBe(unfit.updatedAt)
+  })
+
+  it('leaves a Project alone whose Area fits, whose Mirror is on the whole Frame or off, or that has none', () => {
+    const fitting = holding(open('loom'), on({ leftRight: true }, { leftRight: 4 }, 'repeat', onCanvas(area(0, 0, 5, 25))))
+    expect(withFittedArea(fitting)).toEqual({ project: fitting })
+    const wholeFrame = holding(framed('loom', 25, 4), on({ leftRight: true }, { leftRight: 2 }, 'repeat'))
+    expect(withFittedArea(wholeFrame)).toEqual({ project: wholeFrame })
+    const closed = holding(open('loom'), { ...on({ leftRight: true }, { leftRight: 2 }, 'repeat'), place: null })
+    expect(withFittedArea(closed)).toEqual({ project: closed })
+    expect(withFittedArea(open('loom')).growth).toBeUndefined()
+  })
+
+  it('grows for a changed Technique or Drop, and a count no size fits there for the nearest count that has one, the count kept', () => {
+    // Loom 16 across fits 3 Left–right Axes in Mirror mode; 1-drop peyote fits only one, at an odd width.
+    const setting = on({ leftRight: true }, { leftRight: 3 }, 'mirror', onCanvas(area(0, 0, 9, 16)))
+    const loom = holding(open('loom'), setting)
+    expect(withFittedArea(loom).growth).toBeUndefined()
+    const { project, growth } = withFittedArea(changeCanvasWeave(loom, { technique: 'peyote' }))
+    expect(growth).toEqual({ area: area(0, 0, 9, 17), grewFor: { leftRight: 1 } })
+    expect(mirrorSettingOf(project).counts.leftRight).toBe(3)
+    // A Drop from 1 to 2 changes what fits along the shift too.
+    const peyote = holding(open('peyote'), on({ leftRight: true }, {}, 'mirror', onCanvas(area(0, 0, 9, 17))))
+    const dropped = withFittedArea(changeCanvasWeave(peyote, { techniqueSettings: { peyoteDrop: 2 } }))
+    expect(dropped.growth?.area.columns).toBeGreaterThan(17)
+    expect(isFittingSize(layerSheet(dropped.project, 'canvas').weave, dropped.growth!.area, mirrorSettingOf(dropped.project))).toBe(true)
   })
 })
