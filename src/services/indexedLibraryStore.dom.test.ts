@@ -1,5 +1,5 @@
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../domain/createProject'
 import { lastSaved } from '../domain/projectLibrary'
 import type { Project } from '../domain/project'
@@ -101,6 +101,12 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks()
   vi.useRealTimers()
+})
+
+// The `page` project's files share a worker's globals (`isolate: false`): a file run after this one must find no
+// IndexedDB, as jsdom has none, or its library is decided as the IndexedDB form.
+afterAll(() => {
+  Reflect.deleteProperty(globalThis, 'indexedDB')
 })
 
 describe('the library in IndexedDB', () => {
