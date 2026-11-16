@@ -27,8 +27,9 @@ import type { IconName } from '../ui/icons'
 // control carries `context-bar__control`, so the bar's arrows walk them (ADR 0075).
 const props = defineProps<{
   setting: MirrorSetting
-  /** What the Area offers (tickets 0775, 1026): each direction's fitting Axis counts and Radial's Folds, none with the
-   * reason where a chip is off. Without it every count and both Folds are offered. */
+  /** What the Area offers (tickets 0775, 1026, 1027): each direction's Axis counts and Radial's Folds, none with the
+   * reason where a chip is off; on a Canvas Area every one some size fits, the Area growing to it. Without it every
+   * count and both Folds are offered. */
   fit?: MirrorFit
   /** A Custom frame's own Axes while the whole Frame is the Mirror: noted, with no chips. */
   shape?: ShapeAxes
@@ -63,6 +64,10 @@ const quarterReason = computed(() => {
   return off === 'square' ? t.value.mirror.quarterNeedsSquare : off === 'shift' ? t.value.mirror.quarterNeedsStraight : undefined
 })
 
+/** Why a count's + is off (ticket 1027): radial's quarter turn, or on a Canvas Area in Mirror mode a direction where
+ * the half-bead shift lines up no more Axes at any size. */
+const moreReason = (axis: MirrorAxis) => (axis === 'radial' ? quarterReason.value : props.fit?.capped?.[axis] ? t.value.mirror.moreAxesShift : undefined)
+
 /** The values a chip's Stepper steps through, ascending: an Axis count the Area offers, or Radial's Fold, 2 or 4. */
 function valuesOf(axis: MirrorAxis): readonly number[] | undefined {
   if (axis === 'radial') return props.fit?.folds ?? [MIN_FOLD, MAX_GRID_FOLD]
@@ -76,7 +81,9 @@ function stepperFor(axis: MirrorAxis) {
     ? { fewer: t.value.mirror.fewerFolds, more: t.value.mirror.moreFolds, name: t.value.mirror.fold }
     : { fewer: t.value.mirror.fewerAxes, more: t.value.mirror.moreAxes, name: axis === 'leftRight' ? t.value.mirror.leftRightAxes : t.value.mirror.topBottomAxes }
   const wanted = axis === 'radial' ? props.setting.fold : props.setting.counts[axis]
-  const fitted = axis === 'radial' ? (values?.length ? Math.min(wanted, Math.max(...values)) : undefined) : props.fit && nearestFittingCount(props.fit, axis, wanted)
+  // The count the Mirror uses: what the size fits as it is, on a Canvas Area too (`now`), until a setting grows it.
+  const used = props.fit?.now ?? props.fit
+  const fitted = axis === 'radial' ? (values?.length ? Math.min(wanted, Math.max(...values)) : undefined) : used && nearestFittingCount(used, axis, wanted)
   const value = fitted ?? wanted
   // Without a fit an Axis count steps one at a time, with no top.
   const below = values ? [...values].reverse().find((each) => each < value) : value > 1 ? value - 1 : undefined
@@ -102,8 +109,8 @@ function toggle(axis: MirrorAxis) {
   if (!offReason(axis)) emit('update:setting', withAxisToggled(props.setting, axis))
 }
 function step(axis: MirrorAxis, by: number) {
-  // The next value the Area offers: a Fold steps between 2 and 4 (ticket 0751), a count over the ones the Area's size
-  // does not fit (ADR 0095) or the half-bead shift has no exact image for (ticket 0775).
+  // The next value the Area offers: a Fold steps between 2 and 4 (ticket 0751), a count over the ones no size fits on a
+  // Canvas Area (ticket 1027), or the whole Frame's size does not (ADR 0095, ticket 0775).
   const { below, above } = stepperOf(axis)
   const next = by < 0 ? below : above
   if (next === undefined) return
@@ -167,7 +174,7 @@ function step(axis: MirrorAxis, by: number) {
             </button>
           </AppTooltip>
           <output class="mirror-bar__value" :aria-label="`${stepperOf(axis).name}, ${stepperOf(axis).value}`" :data-testid="`mirror-bar-${axis}-value`">{{ stepperOf(axis).value }}</output>
-          <AppTooltip :name="stepperOf(axis).more" :announce="false" :disabled="stepperOf(axis).above === undefined" :disabled-body="axis === 'radial' ? quarterReason : undefined">
+          <AppTooltip :name="stepperOf(axis).more" :announce="false" :disabled="stepperOf(axis).above === undefined" :disabled-body="moreReason(axis)">
             <button
               type="button"
               class="context-bar__control mirror-bar__step"

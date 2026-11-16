@@ -72,19 +72,39 @@ export function withMirror(project: Project, mirror: MirrorSetting): Project {
   return { ...project, mirror: { ...mirror, place: mirrorSettingOf(project).place ?? null } }
 }
 
+/** The Mirror bar's settings, its place left out: what an Undo step puts back with the place when its change took them
+ * too (ticket 1027, a bar setting that grew the Area). */
+export type MirrorBar = Omit<MirrorSetting, 'place'>
+
+/** A Mirror's bar settings, for an Undo step to keep. */
+export function mirrorBarOf(setting: MirrorSetting): MirrorBar {
+  const { place: _place, ...bar } = setting
+  return bar
+}
+
+/** Whether two Mirrors have the same bar settings (a Project without one has the Mirror off's). */
+export function sameMirrorBar(one: MirrorSetting | undefined, other: MirrorSetting | undefined): boolean {
+  const [a, b] = [one ?? MIRROR_OFF, other ?? MIRROR_OFF]
+  const sameRecord = <K extends string>(x: Partial<Record<K, boolean | number>> | undefined, y: typeof x) => (!x && !y) || (!!x && !!y && Object.keys({ ...x, ...y }).every((key) => x[key as K] === y[key as K]))
+  return a.mode === b.mode && a.fold === b.fold && sameRecord(a.axes, b.axes) && sameRecord(a.counts, b.counts) && sameRecord(a.beforeRadial, b.beforeRadial)
+}
+
 /** Whether the Mirror is on: it has a place, so the tile is lit, the bar shows and a gesture inside it is mirrored. */
 export function isMirrorOn(setting: MirrorSetting): boolean {
   return !!setting.place
 }
 
-/** What the Mirror's place offers the bar (ticket 0775): its grid Area's `mirrorFit`; none while it is off, or on a Frame
- * that is no grid (a Custom frame takes its shape's own Axes). */
+/** What the Mirror's place offers the bar (tickets 0775, 1027): a Canvas Area's `mirrorReach`, as it grows to fit, the
+ * whole Frame's `mirrorFit`, as it is never resized; none while it is off, or on a Frame that is no grid (a Custom
+ * frame takes its shape's own Axes). */
 export function mirrorFitOf(project: Project, setting: MirrorSetting): MirrorFit | undefined {
   const place = setting.place
   const rect = place ? placeRect(project, place) : undefined
   if (!place || !rect) return undefined
   const sheet = layerSheet(project, place.layer)
-  return sheet.geometry.grid ? mirrorFit(sheet.weave, rect, setting.mode) : undefined
+  if (!sheet.geometry.grid) return undefined
+  const fit = mirrorFit(sheet.weave, rect, setting.mode)
+  return place.layer === 'canvas' ? { ...mirrorReach(sheet.weave, rect, setting.mode), now: fit } : fit
 }
 
 /** The Rect a Mirror place covers in its layer's own positions: the Canvas Area, or the Frame's rectangle from its first
@@ -328,6 +348,12 @@ export interface MirrorFit {
   /** Why Radial offers no quarter turn: an Area that is not square, or the half-bead shift, which a quarter turn would
    * turn from columns to rows. */
   quarterOff?: 'square' | 'shift'
+  /** A direction on a Canvas Area whose counts stop short of beads across minus one, no size fitting more
+   * (`mirrorReach`): its Stepper's + says why at the last. */
+  capped?: Partial<Record<MirrorDirection, 'shift'>>
+  /** On a Canvas Area, what its size fits as it is (`mirrorFit`): the count the Mirror uses, which the Stepper shows,
+   * until a bar setting grows it (an Area a drag left unfit, tickets 1028 and 1029). */
+  now?: MirrorFit
 }
 
 /** What a rectangle of a Weave's grid offers the Mirror in a Mode: the Axis counts its size fits (`countFits`, ADR
@@ -365,12 +391,112 @@ export function nearestFittingCount(fit: MirrorFit, direction: MirrorDirection, 
 }
 
 /** Whether a grid rectangle is a Fitting size for the setting (glossary, ADR 0095): its Mode, the Axes that are on and
- * their counts, or Radial's Fold, map every bead exactly, so the setting is used as it is. Tickets 1027 to 1029 grow
- * a Canvas Area to one. @internal Until ticket 1027, only its test asks. */
+ * their counts, or Radial's Fold, map every bead exactly. `grownToFit` grows a Canvas Area to one.
+ * @internal Its tests check `grownToFit` by it; tickets 1028 and 1029 may ask it. */
 export function isFittingSize(weave: Weave, rect: Rect, setting: MirrorSetting): boolean {
   const fit = mirrorFit(weave, rect, setting.mode)
   if (setting.axes.radial) return fit.folds.includes(gridFold(setting.fold))
   return MIRROR_DIRECTIONS.every((direction) => !setting.axes[direction] || fit.counts[direction].includes(setting.counts[direction]))
+}
+
+// Growing to fit (ticket 1027, ADR 0095): a Canvas Area grows right and down, its top-left corner kept, to the nearest
+// Fitting size. Each direction grows on its own to the fewest lines its part of the setting fits; Fold 4 takes a square.
+
+/** The fewest lines at or past `lines.count` (and `least`), its first line kept, that `fits`; none where none does. The
+ * rules repeat within `period` lines, so none there is none at any size. */
+function grownLines(lines: Lines, least: number, period: number, fits: (lines: Lines) => boolean): number | undefined {
+  const from = Math.max(lines.count, least)
+  for (let count = from; count < from + period; count++) if (fits({ first: lines.first, count })) return count
+  return undefined
+}
+
+/** The fewest lines a direction grows to for `count` Axes: a bead each side of every Axis, the strips whole, and along
+ * the shift every Axis on a line it mirrors onto itself; none for a count no size fits (1-drop peyote's second
+ * Left–right Axis in Mirror mode). */
+function linesForCount(stagger: Stagger | undefined, lines: Lines, direction: MirrorDirection, count: number, mode: MirrorMode): number | undefined {
+  const along = stagger?.along === direction ? stagger : undefined
+  const strips = count + 1
+  return grownLines(lines, strips, 2 * strips * (along?.cycle ?? 1), (each) => countFits(each.count, count, mode) && (!along || countKeepsShift(along, each, count, mode)))
+}
+
+/** The rectangle Radial grows to for its Fold: on loom a square on the longer side for Fold 4, as it is for Fold 2; on
+ * peyote and brick the fewest lines along the shift a half turn keeps it at, never Fold 4 (no quarter turn there). */
+function rectForFold(stagger: Stagger | undefined, rect: Rect, fold: number, mode: MirrorMode): Rect | undefined {
+  if (!stagger) return fold === MAX_GRID_FOLD ? { ...rect, rows: Math.max(rect.rows, rect.columns), columns: Math.max(rect.rows, rect.columns) } : rect
+  if (fold === MAX_GRID_FOLD) return undefined
+  const lines = grownLines(linesOf(rect, stagger.along), 1, 4 * stagger.cycle, (each) => halfTurnKeepsShift(stagger, each, mode))
+  return lines === undefined ? undefined : withLines(rect, stagger.along, lines)
+}
+
+/** A rectangle with a direction's lines set to `count`, its first line kept. */
+function withLines(rect: Rect, direction: MirrorDirection, count: number): Rect {
+  return direction === 'leftRight' ? { ...rect, columns: count } : { ...rect, rows: count }
+}
+
+/** What a Canvas Area offers the Mirror bar (ticket 1027), growing to fit: every count up to beads across minus one and
+ * every Fold, but a count no size fits (`capped`) and Fold 4 on peyote and brick; never off for one bead across.
+ * @internal The app asks `mirrorFitOf`; tests ask this with a bare Weave and rectangle. */
+export function mirrorReach(weave: Weave, rect: Rect, mode: MirrorMode): MirrorFit {
+  const stagger = staggerOf(weave)
+  const off: MirrorFit['off'] = {}
+  const capped: NonNullable<MirrorFit['capped']> = {}
+  const countsOf = (direction: MirrorDirection): number[] => {
+    const lines = linesOf(rect, direction)
+    const all = Array.from({ length: maxAxisCount(lines.count) }, (_count, index) => index + 1)
+    const reached = all.filter((count) => linesForCount(stagger, lines, direction, count, mode) !== undefined)
+    if (reached.length === 0) off[direction] = 'shift'
+    if ((reached.at(-1) ?? 0) < all.length) capped[direction] = 'shift'
+    return reached
+  }
+  const counts = { leftRight: countsOf('leftRight'), topBottom: countsOf('topBottom') }
+  const folds = [MIN_FOLD, MAX_GRID_FOLD].filter((fold) => rectForFold(stagger, rect, fold, mode) !== undefined)
+  if (folds.length === 0) off.radial = 'shift'
+  return { counts, off, folds, ...(stagger ? { quarterOff: 'shift' as const } : {}), ...(Object.keys(capped).length ? { capped } : {}) }
+}
+
+/** What growing to fit does for a setting (ticket 1027): the Area it grows to, and what it grew for, the counts of the
+ * directions that grew or Radial's Fold, for the Message. An Area that fits already grows for nothing. */
+export interface MirrorGrowth {
+  area: Rect
+  grewFor: { leftRight?: number; topBottom?: number; fold?: number }
+}
+
+/** The nearest Fitting size for a setting at or past a grid rectangle (ticket 1027, ADR 0095): grown right and down,
+ * never shrunk, none where no size fits; a count no size fits is grown for as the Mirror uses it (the nearest below).
+ * @internal The app asks `mirrorGrowthOf`; tests, and tickets 1028 and 1029, ask this with a bare Weave and rectangle. */
+export function grownToFit(weave: Weave, rect: Rect, setting: MirrorSetting): MirrorGrowth | undefined {
+  const stagger = staggerOf(weave)
+  if (setting.axes.radial) {
+    // On peyote and brick Radial is the half turn whatever the Fold says (`fittedFold`).
+    const fold = stagger ? MIN_FOLD : gridFold(setting.fold)
+    const area = rectForFold(stagger, rect, fold, setting.mode)
+    if (!area) return undefined
+    return { area, grewFor: area.rows === rect.rows && area.columns === rect.columns ? {} : { fold } }
+  }
+  const reach = mirrorReach(weave, rect, setting.mode)
+  let area = rect
+  const grewFor: MirrorGrowth['grewFor'] = {}
+  for (const direction of MIRROR_DIRECTIONS) {
+    if (!setting.axes[direction]) continue
+    const count = nearestFittingCount(reach, direction, setting.counts[direction])
+    const lines = count === undefined ? undefined : linesForCount(stagger, linesOf(rect, direction), direction, count, setting.mode)
+    if (count === undefined || lines === undefined) return undefined
+    if (lines === linesOf(rect, direction).count) continue
+    area = withLines(area, direction, lines)
+    grewFor[direction] = count
+  }
+  return { area, grewFor }
+}
+
+/** The growth a Canvas Area takes for the Mirror bar's setting (ticket 1027): none for the whole Frame (never resized),
+ * a Mirror that is off, an Area that fits already or a setting no size fits. */
+export function mirrorGrowthOf(project: Project, setting: MirrorSetting): MirrorGrowth | undefined {
+  const place = setting.place
+  if (place?.layer !== 'canvas') return undefined
+  const sheet = layerSheet(project, 'canvas')
+  if (!sheet.geometry.grid) return undefined
+  const growth = grownToFit(sheet.weave, place.area, setting)
+  return growth && Object.keys(growth.grewFor).length > 0 ? growth : undefined
 }
 
 /** The Fold Radial uses: the setting's as a grid takes it, no more than the Area offers; none where Radial is off. */

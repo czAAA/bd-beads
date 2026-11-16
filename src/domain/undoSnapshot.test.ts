@@ -5,6 +5,7 @@ import { deleteAll } from './drawing'
 import { moveToRow, rowProgressOf } from './rowProgress'
 import { replaceBead } from './projectBead'
 import { restoreSnapshot, snapshotOf, UNDO_CAP } from './undoSnapshot'
+import { mirrorSettingOf, withMirror, withMirrorMode, withMirrorPlace } from './mirror'
 import { withColors, type BeadMap } from './canvas'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
@@ -68,6 +69,17 @@ describe('snapshotOf and restoreSnapshot', () => {
     const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })
 
     expect(frameOf(restoreSnapshot(framed, snapshotOf(before)))).toBeUndefined()
+  })
+})
+
+describe('the Mirror in an undo entry (ADR 0082, ticket 1027)', () => {
+  it('puts back its place alone, and its bar settings too only on a step that took them', () => {
+    const area = { row: 0, column: 0, rows: 4, columns: 4 }
+    const made = withMirrorPlace(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), { layer: 'canvas', area })
+    const repeated = withMirror(made, withMirrorMode(mirrorSettingOf(made), 'repeat'))
+    const moved = withMirrorPlace(repeated, { layer: 'canvas', area: { ...area, row: 2 } })
+    expect(mirrorSettingOf(restoreSnapshot(moved, snapshotOf(made)))).toMatchObject({ mode: 'repeat', place: { area } })
+    expect(mirrorSettingOf(restoreSnapshot(moved, snapshotOf(made, { mirrorBar: true })))).toMatchObject({ mode: 'mirror', place: { area } })
   })
 })
 

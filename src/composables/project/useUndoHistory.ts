@@ -43,6 +43,12 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
     history.value = emptyHistory()
   }
 
+  /** The state Undo or Redo leaves, as the entry it swaps with: a step that puts the Mirror bar's settings back keeps
+   * the ones it replaces, so its way back does too (ticket 1027). */
+  function pairedSnapshot(project: Project, swapped: UndoEntry | undefined): UndoEntry {
+    return snapshotOf(project, { mirrorBar: swapped?.mirrorBar !== undefined })
+  }
+
   function applyHistoryStep(project: Project, step: HistoryStep<UndoEntry>, sign: 1 | -1) {
     history.value = step.history
     deps.countChange?.(project, step.snapshot, sign)
@@ -52,7 +58,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
   function onUndo() {
     deps.settle()
     const project = deps.currentProject()
-    const step = project && undoStep(history.value, snapshotOf(project))
+    const step = project && undoStep(history.value, pairedSnapshot(project, history.value.undoStack.at(-1)))
     if (step) {
       applyHistoryStep(project, step, -1)
     }
@@ -63,7 +69,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
   function onRedo() {
     deps.settle()
     const project = deps.currentProject()
-    const step = project && redoStep(history.value, snapshotOf(project), UNDO_CAP)
+    const step = project && redoStep(history.value, pairedSnapshot(project, history.value.redoStack.at(-1)), UNDO_CAP)
     if (step) {
       applyHistoryStep(project, step, 1)
     }

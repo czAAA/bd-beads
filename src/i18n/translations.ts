@@ -203,6 +203,16 @@ export interface Translations {
     shiftTall: string
     shiftRadial: string
     quarterNeedsStraight: string
+    /** Why an Axis count's + is off on a Canvas Area where no size fits more Axes (ticket 1027): the half-bead shift in
+     * Mirror mode. */
+    moreAxesShift: string
+    /** The Message once a bar setting grew the Canvas Area to fit (ticket 1027): `{size}` as the readout writes it, the
+     * Mode `{mode}` and `{axes}`, the counts it grew for (one, or both joined by `bothAxes`); for Radial its Fold. */
+    grownForAxes: string
+    grownForFold: PluralForms
+    leftRightAxesCount: PluralForms
+    topBottomAxesCount: PluralForms
+    bothAxes: string
     /** A Custom frame's fixed Axes, noted in place of the chips (ADR 0082): Radial with the side count `{count}`, or
      * the shape's one straight line `{axis}`, which in Repeat maps nothing. */
     radialFromShape: string

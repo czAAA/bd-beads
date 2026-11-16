@@ -12,9 +12,10 @@ import { en } from '../../i18n/en'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import { FakeResizeObserver } from '../../testUtils/fakeResizeObserver'
 import { frameOf } from '../../domain/layerRecord'
-import { MIRROR_OFF, mirrorFit, type MirrorMode } from '../../domain/mirror'
+import { MIRROR_OFF, mirrorFit, mirrorReach, type MirrorMode } from '../../domain/mirror'
 import type { Technique } from '../../domain/weave'
 import IconButton from '../ui/IconButton.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import { AREA_BAR_GAP_PX } from '../../rendering/frameHandles'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
@@ -442,6 +443,24 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     expect(chip.attributes('aria-pressed')).toBe('false')
     await chip.trigger('click')
     expect(wrapper.emitted('update:mirror')).toBeUndefined()
+  })
+
+  it('on a Canvas Area offers every count and a chip one bead across, and says why the + is off where no size fits more (ticket 1027)', async () => {
+    const reachOf = (rows: number, columns: number, technique: Technique = 'loom') => mirrorReach({ technique }, { row: 0, column: 0, rows, columns }, 'mirror')
+    const counted = { ...setting, counts: { leftRight: 4, topBottom: 1 } }
+    const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: counted, fit: reachOf(4, 6) } } })
+    expect(wrapper.get('[data-testid="mirror-bar-leftRight-value"]').text()).toBe('4')
+    await wrapper.get('[data-testid="mirror-bar-leftRight-more"]').trigger('click')
+    expect(wrapper.emitted('update:mirror')).toEqual([[{ ...counted, counts: { leftRight: 5, topBottom: 1 } }]])
+    // An Area a drag left unfit shows the count the Mirror uses at its size now.
+    const unfit = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: counted, fit: { ...reachOf(4, 6), now: fitOf(4, 6) } } } })
+    expect(unfit.get('[data-testid="mirror-bar-leftRight-value"]').text()).toBe('3')
+    const narrow = mount(ContextBar, { props: { ...base, mirror: { ...mirror, rect: { row: 0, column: 0, rows: 4, columns: 1 }, fit: reachOf(4, 1) } } })
+    expect(narrow.get('[data-testid="mirror-bar-axis-leftRight"]').attributes('aria-disabled')).toBeUndefined()
+
+    const peyote = mount(ContextBar, { props: { ...base, mirror: { ...mirror, fit: reachOf(4, 16, 'peyote') } } })
+    expect(peyote.get('[data-testid="mirror-bar-leftRight-more"]').attributes('aria-disabled')).toBe('true')
+    expect(peyote.findAllComponents(AppTooltip).map((tip) => tip.props())).toContainEqual(expect.objectContaining({ name: en.mirror.moreAxes, disabledBody: en.mirror.moreAxesShift }))
   })
 
   /** The reason an Axis chip's Tooltip gives while it is off. */
