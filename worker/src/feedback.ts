@@ -25,9 +25,12 @@ export const feedbackRoute: Route = {
   method: 'POST',
   path: '/api/feedback',
   feature: 'feedback',
+  // Ticket 1024: the per-address limit first, so a flood from one address never reaches the verifier; the overall one
+  // after Turnstile, so it counts only Reports with a confirmed token and made-up ones can't shut everyone out.
   guards: [
-    turnstile(),
     rateLimit({ binding: 'FEEDBACK_RATE', periodSeconds: 60 }),
+    turnstile(),
+    rateLimit({ binding: 'FEEDBACK_RATE_ALL', periodSeconds: 60 }, () => 'all'),
     sizeCap(() => FEEDBACK_BODY_CAP_BYTES),
   ],
   async handler(rc) {

@@ -39,10 +39,25 @@ function match(route: Route, method: string, pathname: string): Record<string, s
   if (want.length !== got.length) return null
   const params: Record<string, string> = {}
   for (const [index, segment] of want.entries()) {
-    if (segment.startsWith(':')) params[segment.slice(1)] = decodeURIComponent(got[index])
-    else if (segment !== got[index]) return null
+    if (!segment.startsWith(':')) {
+      if (segment !== got[index]) return null
+      continue
+    }
+    const value = decoded(got[index])
+    if (value === null) return null
+    params[segment.slice(1)] = value
   }
   return params
+}
+
+/** A path segment decoded, or null for a broken percent-escape (`%E0%A4%A`): such a path names no route, so it is
+ * answered `not-found` and never a crash the watchdog would count (ticket 1024). */
+function decoded(segment: string): string | null {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return null
+  }
 }
 
 /** Everything under /api in spec 385's order: Origin check on changing requests (CSRF), kill switches, route,
