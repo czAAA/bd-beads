@@ -9,7 +9,7 @@ import { recordingContext } from '../testUtils/recordingContext'
 import { PRINT_THEME, PROJECT_THEMES } from './beadLook'
 import { canvasTheme } from './canvasBackgrounds'
 import { CELL_SIZE_PX } from './cellSize'
-import { canvasLiftCells, drawLift, joinedRound, LIFT_REACH_PX, liftCollector, liftLookOf, liftRows, liftsAcross, paintedOnly } from './liftedPiece'
+import { canvasLiftCells, drawLift, joinedUpright, LIFT_REACH_PX, liftCollector, liftLookOf, liftRows, liftsAcross, paintedOnly } from './liftedPiece'
 import { positionBoxPx } from './surfaceView'
 
 const painted = (cells: [number, number][], technique: Technique = 'loom', frame?: { row: number; column: number; rows: number; columns: number }, beadId = 'toho-cube-1.5mm') => {
@@ -237,13 +237,25 @@ describe('the Frame\'s passes', () => {
     expect(collect.cells).toEqual([{ x: 0, y: 0, width: 20, height: 28, bead: 20 }, { x: 40, y: 0, width: 20, height: 28 }])
   })
 
-  it('joins a Frame\'s round beads that touch into one cell as the Canvas does, and leaves the others', () => {
+  it('joins a Frame\'s upright beads that touch into one cell as the Canvas does, round or not, and leaves the turned ones', () => {
     const bead = (x: number, y: number) => ({ x, y, width: 20, height: 28, bead: 20 })
-    const across = joinedRound([bead(0, 0), bead(20, 0), bead(60, 0), bead(0, 28), { x: 0, y: 100, width: 20, height: 28 }], true)
-    expect(across).toEqual([{ x: 0, y: 100, width: 20, height: 28 }, { ...bead(0, 0), width: 40 }, bead(60, 0), bead(0, 28)])
-    const down = joinedRound([bead(0, 0), bead(0, 28), bead(20, 14)], false)
+    const square = { x: 0, y: 100, width: 20, height: 28 }
+    const across = joinedUpright([bead(0, 0), bead(20, 0), bead(60, 0), bead(0, 28), square, { ...square, x: 20 }], true)
+    expect(across).toEqual([{ ...bead(0, 0), width: 40 }, bead(60, 0), bead(0, 28), { ...square, width: 40 }])
+    const down = joinedUpright([bead(0, 0), bead(0, 28), bead(20, 14)], false)
     expect(down).toEqual([{ ...bead(0, 0), height: 56 }, bead(20, 14)])
-    expect(joinedRound([{ x: 0, y: 0, width: 20, height: 28 }], true)).toEqual([{ x: 0, y: 0, width: 20, height: 28 }])
+    expect(joinedUpright([square, { ...square, y: 128 }, { ...square, x: 20, y: 114 }], false)).toEqual([{ ...square, height: 56 }, { ...square, x: 20, y: 114 }])
+    const turned = { ...square, transform: { a: 0, b: 1, c: -1, d: 0, e: 0, f: 0 } }
+    expect(joinedUpright([square, turned, { ...turned, x: 20 }, { ...square, x: 20 }], true)).toEqual([turned, { ...turned, x: 20 }, { ...square, width: 40 }])
+  })
+
+  it('makes one cell a row of a full Frame of square beads, not one a bead (ticket 1030)', () => {
+    // One rectangle per bead is 30 030 for this Frame, a shape Safari took 15 s to cast a shadow from; one per row is 231.
+    const [columns, rows, side] = [130, 231, 20]
+    const cells = Array.from({ length: rows * columns }, (_, at) => ({ x: (at % columns) * side, y: Math.floor(at / columns) * side, width: side, height: side }))
+    const joined = joinedUpright(cells, true)
+    expect(joined).toHaveLength(rows)
+    expect(joined.every((cell) => cell.x === 0 && cell.width === columns * side && cell.height === side)).toBe(true)
   })
 
   it('lifts runs of a row in loom and brick stitch, of a column in peyote', () => {
