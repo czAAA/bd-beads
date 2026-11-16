@@ -82,7 +82,7 @@ describe('the Palette reaches its flows', () => {
     const project = loadProjects()[0]!
     saveProjects([{ ...project, paletteCodes: { '#123456': '49' } }])
     const wrapper = await openApp()
-    await vi.waitFor(() => expect(wrapper.get(`[data-color-id="${A}"]`).attributes('aria-label')).toBe('49 Opaque Black'))
+    await vi.waitFor(() => expect(wrapper.get(`[data-color-id="${A}"]`).attributes('aria-label')).toBe('49 Opaque Black, approximate color'))
     wrapper.unmount()
   })
 

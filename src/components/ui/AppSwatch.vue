@@ -28,8 +28,10 @@ const props = withDefaults(
     /** One of the Tool pill's recent colors (ticket 0865): a thin `field-line` ring, so a used color is found in its
      * place. The selected ring wins. */
     recent?: boolean
+    /** A Bead color of a catalog (ticket 0905): true is made from its family and Finish and carries the dashed mark; false is measured. Unset, no mark. */
+    approximate?: boolean
   }>(),
-  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined, tooltipName: undefined, recent: false },
+  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined, tooltipName: undefined, recent: false, approximate: undefined },
 )
 const emit = defineEmits<{
   select: []
@@ -41,6 +43,10 @@ const { t } = useI18n()
 const mark = computed(() => markOn(props.color))
 const tooltip = computed(() => {
   const name = props.tooltipName ?? t.value.palette.colorLabel
+  if (props.lockedBody === undefined && props.approximate !== undefined) {
+    const words = t.value.palette.beadColors
+    return { name, body: props.approximate ? words.approximateBody : words.measuredBody, hotkey: props.hotkey, announce: true }
+  }
   return props.lockedBody === undefined
     ? { name, body: props.color, hotkey: props.hotkey, announce: !props.label.toLowerCase().includes(props.color.toLowerCase()) }
     : { name, disabled: true as const, disabledBody: props.lockedBody, announce: true }
@@ -55,7 +61,7 @@ const tooltip = computed(() => {
           v-bind="$attrs"
           type="button"
           class="swatch__chip"
-          :class="{ 'swatch__chip--selected': selected, 'swatch__chip--recent': recent && !selected }"
+          :class="{ 'swatch__chip--selected': selected, 'swatch__chip--recent': recent && !selected, 'swatch__chip--approximate': approximate }"
           :style="{ backgroundColor: color }"
           :role="role === 'radio' ? 'radio' : undefined"
           :aria-label="label"
@@ -105,6 +111,12 @@ const tooltip = computed(() => {
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
   cursor: pointer;
   transition: transform var(--duration-instant) var(--ease-standard);
+}
+
+/* A Bead color made from its family and Finish (ticket 0905): the same dashed outline as everywhere a swatch is drawn. */
+.swatch__chip--approximate {
+  outline: 1px dashed var(--field-line);
+  outline-offset: 1px;
 }
 
 /* A recent color (ticket 0865): the selected ring's gap, then 1px of `field-line`, thinner and quieter than it. */

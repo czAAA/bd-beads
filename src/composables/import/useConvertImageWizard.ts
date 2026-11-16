@@ -927,6 +927,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     /** The source's codes before the Finishes, which their live counts are counted over. */
     sourceBeadTargets,
     codesLeft: finishes.codesLeft,
+    measuredLeft: finishes.measuredLeft,
     finishesShort,
     // The Colors neighbours (ticket 0904)
     beadsAtColors,

@@ -19,6 +19,7 @@ import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
 import BeadColorFilters from './BeadColorFilters.vue'
 import BeadColorFindRow from './BeadColorFindRow.vue'
+import BeadSwatchChip from './BeadSwatchChip.vue'
 
 // My beads' picker (ConvertImage card DS-2, tickets 0902, 0903): the BeadColors list in its narrow layout, each row one
 // button that ticks its code, the switch All codes | My beads, and a foot that pastes codes and clears the list. The
@@ -42,7 +43,7 @@ const rootEl = ref<HTMLElement>()
 const fieldId = useId()
 
 /** A row: a code of the Bead's size, or a listed code the catalog does not know at all. */
-type Row = { code: string; family?: string; finish?: Finish; hex?: string; discontinued?: boolean; unknown?: boolean }
+type Row = { code: string; family?: string; finish?: Finish; hex?: string; approximate?: boolean; discontinued?: boolean; unknown?: boolean }
 
 const owned = computed(() => new Set(props.codes))
 const listed = computed(() => props.codes.length)
@@ -234,7 +235,7 @@ defineExpose({ onPaste })
         @clear="clearFilters"
       />
       <p class="my-beads-picker__count" data-testid="convert-my-beads-shown">
-        <span>{{ fillBlanks(words.shown, { count: groupThousands(matches.length, locale) }) }}</span>
+        <span>{{ fillBlanks(words.shown, { count: groupThousands(matches.length, locale) }) }} · {{ fillBlanks(t.convertImage.wizard.measuredIn, { n: groupThousands(matches.filter((row) => !row.approximate && !row.unknown).length, locale) }) }}</span>
         <span v-if="matches.length > SHOWN">{{ fillBlanks(t.palette.beadColors.firstShown, { count: SHOWN }) }}</span>
       </p>
     </div>
@@ -246,11 +247,12 @@ defineExpose({ onPaste })
           class="ui-control my-beads-picker__row"
           :class="{ 'my-beads-picker__row--never': row.discontinued || row.unknown }"
           :aria-pressed="owned.has(row.code)"
+          :aria-label="row.approximate ? `${row.code} ${nameOf(row)}${t.palette.beadColors.approximateSuffix}` : undefined"
           :data-code="row.code"
           data-testid="convert-my-beads-row"
           @click="emit('toggle', row.code)"
         >
-          <span class="my-beads-picker__swatch" :style="row.hex ? { backgroundColor: row.hex } : undefined" aria-hidden="true" />
+          <BeadSwatchChip class="my-beads-picker__swatch" :hex="row.hex" :approximate="row.unknown ? undefined : row.approximate" :tip="false" />
           <span class="my-beads-picker__lines">
             <span class="my-beads-picker__code">{{ row.code }}</span>
             {{ ' ' }}
@@ -451,15 +453,6 @@ defineExpose({ onPaste })
 .my-beads-picker__row:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: calc(-1 * var(--focus-width));
-}
-
-.my-beads-picker__swatch {
-  flex: none;
-  box-sizing: border-box;
-  width: var(--my-beads-swatch);
-  height: var(--my-beads-swatch);
-  border: 1px solid var(--swatch-edge);
-  border-radius: var(--radius-xs);
 }
 
 .my-beads-picker__lines {

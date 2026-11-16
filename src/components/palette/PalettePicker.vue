@@ -35,6 +35,11 @@ const closePanel = useClosePopoverOnPick()
 const beadColors = useBeadColorsList()
 loadCatalogWhen(beadColors, () => colors.value.some((color) => !!color.code))
 const labelOf = (color: PaletteColor) => colorLabel(t.value, color, beadColors?.catalog.value)
+/** Whether a swatch of a catalog code is made from its family and Finish (ticket 0905); a plain color has no mark. */
+function approximateOf(color: PaletteColor): boolean | undefined {
+  if (!color.code) return undefined
+  return beadColors?.swatches.value.find((swatch) => swatch.code === color.code)?.approximate
+}
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
 const gridEl = ref<HTMLElement>()
@@ -86,8 +91,9 @@ function pick(colorId: string) {
 
 /** A swatch's name; in Edit palette an added one's is the removal it would ask for. */
 function swatchLabel(color: PaletteColor, slot: number): string {
-  if (!isAddedColorId(color.id)) return `${t.value.palette.colorLabel} ${slot + 1}, ${labelOf(color).text}`
-  return props.editing && removeAdded ? fillBlanks(t.value.palette.removeSwatch, { hex: color.hex }) : labelOf(color).text
+  const suffix = approximateOf(color) ? t.value.palette.beadColors.approximateSuffix : ''
+  if (!isAddedColorId(color.id)) return `${t.value.palette.colorLabel} ${slot + 1}, ${labelOf(color).text}${suffix}`
+  return props.editing && removeAdded ? fillBlanks(t.value.palette.removeSwatch, { hex: color.hex }) : labelOf(color).text + suffix
 }
 
 function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number) {
@@ -113,6 +119,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
       :label="swatchLabel(color, index)"
       :tooltip-name="color.code ? labelOf(color).text : undefined"
       :selected="color.id === selectedColorId"
+      :approximate="approximateOf(color)"
       :recent="isRecent(color)"
       :hotkey="PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index] ? `Shift+${PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index]!.keyLabel}` : undefined"
       :removable="editing && !!removeAdded && isAddedColorId(color.id)"

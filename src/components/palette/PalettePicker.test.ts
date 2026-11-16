@@ -92,7 +92,7 @@ describe('PalettePicker', () => {
 
   it('names a swatch picked from the Color catalog by its code and name, the hex in its Tooltip (ticket 0760)', async () => {
     const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
-    const beadColors = { catalog: ref(catalog), load: vi.fn() } as unknown as BeadColors
+    const beadColors = { catalog: ref(catalog), swatches: ref([]), load: vi.fn() } as unknown as BeadColors
     const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { codes: { '#123456': '49' }, beadColors })
     const swatch = wrapper.get(`[data-color-id="${added}"]`)
     const name = `49 ${ru.colorNames.black} · ${ru.palette.beadColors.finishes.opaque}`
@@ -103,6 +103,16 @@ describe('PalettePicker', () => {
     await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
     expect(tooltip.get('.app-tooltip__name').text()).toBe(name)
     expect(tooltip.get('.app-tooltip__body').text()).toBe('#123456')
+  })
+
+  it('marks a catalog swatch made from its family and Finish, and names it so; a plain color has no mark (ticket 0905)', () => {
+    const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
+    const swatches = ref([{ code: '49', family: 'Black', finish: 'opaque', hex: '#123456', approximate: true, discontinued: false, taken: false }])
+    const beadColors = { catalog: ref(catalog), swatches, load: vi.fn() } as unknown as BeadColors
+    const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { codes: { '#123456': '49' }, beadColors })
+    expect(wrapper.get(`[data-color-id="${added}"]`).classes()).toContain('swatch__chip--approximate')
+    expect(wrapper.get(`[data-color-id="${added}"]`).attributes('aria-label')).toContain(ru.palette.beadColors.approximateSuffix)
+    expect(wrapper.findAll('.swatch__chip--approximate')).toHaveLength(1)
   })
 
   describe('Edit palette (ticket 531)', () => {

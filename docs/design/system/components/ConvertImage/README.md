@@ -315,7 +315,7 @@ What the build of My beads (DS-2) had to settle:
 - **The My beads half keeps its rows** while the view is open: a code unticked there stays in place, unticked, as the design asks.
 - **The Change picker's list holds only My beads' codes** while My beads is the source; the switch inside the Palette popover's Bead colors list is ticket 0918's.
 - **A press outside the My beads view closes the Colors popover** as one outside the Colors view does; Escape returns to Colors first.
-- **New values:** `--my-beads-row` (`panel-row-two-line` + 4), `--my-beads-row-touch`, `--my-beads-swatch` (24), `--my-beads-tick` (20). SegmentedControl's options take a `meta` count in `meta-small` (the switch's "1 191").
+- **New values:** `--my-beads-row` (`panel-row-two-line` + 4), `--my-beads-row-touch`, `--bead-swatch` (24; ticket 0905 adds `--bead-swatch-sm` 16 and `--bead-swatch-xs` 12), `--my-beads-tick` (20). SegmentedControl's options take a `meta` count in `meta-small` (the switch's "1 191").
 
 ## As built (ticket 0897)
 
@@ -424,3 +424,14 @@ What the build of Brightness, Contrast and Saturation (DS-3) had to settle:
 ## As built (ticket 0997)
 
 - **The page's layers are named once**, lowest first: `--convert-layer-pinned` (1: the column's sticky foot, the Colors list's header), `--convert-layer-handle` (2: the crop's handles and the ring; a corner handle one above), `--convert-layer-tools` (3: the floating bar, the chips over the halves), `--convert-layer-chip` (4: the kept chip, the size chip, the pressed disc), `--convert-layer-dropping` (5: a picture dragged over the page) and `--convert-layer-popover` (6: the popovers and the neighbours' card). They stack inside the page, under the app's `--z-*` layers, so the numbers stay as they were and nothing moves.
+
+## As built (ticket 0905)
+
+What the mark for an approximate swatch (DS-2) had to settle:
+
+- **One swatch, one mark.** `BeadSwatchChip` draws every Bead color's swatch outside the Palette grid (Color by color's "becomes", the picker's head, BeadColors' and My beads' rows, the legend): the inset `swatch-edge`, and for an approximate one the 1px dashed `field-line` outline, offset 1px, at the swatch's radius (`radius-sm` at 24, `radius-xs` at 16 and 12). `AppSwatch` carries the same outline for the Palette grid. BeadColors' dashed `line-strong` border is gone.
+- **Only a catalog code is marked.** A swatch whose color has a code is measured or approximate; a Default Palette, Exact, kept exact, Custom or empty swatch carries no mark and no Tooltip. In the Palette grid the code is looked up in the Bead's catalog swatches.
+- **Tooltips on the swatches that are not inside a button.** Color by color's "becomes", the picker's head and the legend-less grid swatch say "Approximate color" / "Measured color". A row of BeadColors or My beads is one button, so its swatch carries no bubble of its own: the row's name gains ", approximate color" instead.
+- **The count line** reads "{codes} · {n} measured" under Match to (Bead colors and My beads), with the legend (a 12 swatch with the mark, "approximate") at its right, wrapping. It replaces ticket 0887's separate "n of total measured" line: the count of measured codes now shows for any catalog, including none (0) and all.
+- **The picker's head swatch** is 16 with the mark; the Tool pill's colour popover keeps its 20 plain swatch (no mark).
+- **Left as is.** BeadColors' Info note about approximate colors stays until every code is measured. The "· measured" sub-line is in BeadColors' rows; My beads' second line keeps the color's name.
