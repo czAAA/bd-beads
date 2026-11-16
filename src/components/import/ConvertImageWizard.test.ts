@@ -363,6 +363,19 @@ describe('ConvertImageWizard setup', () => {
     expect(measured.wrapper.find('.found-color__swatch').exists()).toBe(true)
   })
 
+  it('counts the measured codes of a part measured catalog in one quiet line, and says nothing for a catalog with none or all measured (ticket 0887)', async () => {
+    const part: ColorCatalog = { id: 'miyuki-delica', codes: [...catalog.codes, { ...catalog.codes[0]!, code: 'DB724', hex: undefined }] }
+    const lineOf = async (loaded: ColorCatalog) => {
+      const { wrapper } = open({ draft: delica, loadCatalog: async () => loaded })
+      await chooseFile(wrapper, picture())
+      await show(wrapper, 'colors')
+      return wrapper.find('[data-testid="convert-measured"]')
+    }
+    expect((await lineOf(part)).text()).toBe('1 of 2 measured')
+    expect((await lineOf(catalog)).exists()).toBe(false)
+    expect((await lineOf({ id: 'miyuki-delica', codes: part.codes.map((entry) => ({ ...entry, hex: undefined })) })).exists()).toBe(false)
+  })
+
   it('matches the found colors to the Bead’s colors at first, and heads their table From picture, Becomes, Beads, Change, Empty (tickets 0758, 0863)', async () => {
     const { wrapper } = open({ draft: delica })
     await chooseFile(wrapper, picture())

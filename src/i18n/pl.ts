@@ -1042,6 +1042,7 @@ export const pl: Translations = {
       beadPaletteNote: 'Kody to prawdziwe koraliki {bead}. Kolory są przybliżone, powstają z rodziny koloru i wykończenia.',
       beadPaletteNotePhotos: 'Kody to prawdziwe koraliki {bead}. Kolory odczytano ze zdjęć MIYUKI: są bliskie prawdziwym koralikom, ale nie dokładne.',
       codesInSize: { other: 'kolorów koralików w rozmiarze {size}: {count}' },
+      measuredOf: '{n} z {total} zmierzonych',
       fromPicture: 'Z obrazu',
       becomes: 'Wynik',
       beadsColumn: 'Koraliki',
