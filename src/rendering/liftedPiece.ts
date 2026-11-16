@@ -26,11 +26,11 @@ const CONTOUR_TOWARD = { dark: 0.484, light: 0.384 }
 /** How far toward white the piece's ground is from the Background. */
 const GROUND_TOWARD_WHITE = { dark: 0.05, light: 0.8 }
 
-/** The two shadows under the piece ground, at 100% zoom: a soft one well down and a close one. `blur` is the Gaussian's
+/** The two shadows under the piece ground, at 100% zoom: a soft one a little down and a close one. `blur` is the Gaussian's
  * spread (a CSS `blur()`), `down` how far below the piece it falls, `opacity` its black's in each look. */
 const SHADOWS = [
-  { blur: 9, down: 6, opacity: { dark: 0.6, light: 0.2 } },
-  { blur: 2, down: 1.5, opacity: { dark: 0.5, light: 0.16 } },
+  { blur: 4.5, down: 3, opacity: { dark: 0.6, light: 0.2 } },
+  { blur: 1, down: 0.75, opacity: { dark: 0.5, light: 0.16 } },
 ] as const
 
 /** How far from a bead's cell anything of its piece is drawn, in grid px: the contour, and the soft shadow's fall
@@ -258,7 +258,7 @@ function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined,
  * smaller, and blurring and laying down a sixteenth of the pixels is what keeps a large pattern's redraw quick. */
 const MOST_SHADOW_STEP = 4
 
-/** How many device px a shadow's sheet takes per px of it: as many as keep its blur over a sheet px or so. */
+/** How many device px a shadow's sheet takes per px of it: as many as keep its blur's spread two sheet px or more. */
 function shadowStep(blur: number, deviceScale: number): number {
   return Math.max(1, Math.min(MOST_SHADOW_STEP, Math.floor((blur * deviceScale) / 2)))
 }
