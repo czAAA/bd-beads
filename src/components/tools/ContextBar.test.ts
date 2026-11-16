@@ -406,7 +406,7 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     ])
   })
 
-  it('carries a Stepper on a chip that is on, limited by the Area: an Axis count 1 to its beads across minus one, the Fold 2 or 4', async () => {
+  it('carries a Stepper on a chip that is on, limited by the Area: an Axis count it fits (6 across: 1, 2, 3, 5), the Fold 2 or 4', async () => {
     const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: { ...setting, counts: { leftRight: 5, topBottom: 1 } } } } })
     expect(wrapper.get('[data-testid="mirror-bar-leftRight-value"]').text()).toBe('5')
     expect(wrapper.get('[data-testid="mirror-bar-leftRight-value"]').attributes('aria-label')).toBe('Left–right axes, 5')
@@ -414,7 +414,10 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     expect(wrapper.find('[data-testid="mirror-bar-topBottom-value"]').exists()).toBe(false)
     await wrapper.get('[data-testid="mirror-bar-leftRight-more"]').trigger('click')
     await wrapper.get('[data-testid="mirror-bar-leftRight-fewer"]').trigger('click')
-    expect(wrapper.emitted('update:mirror')).toEqual([[{ ...setting, counts: { leftRight: 4, topBottom: 1 } }]])
+    expect(wrapper.emitted('update:mirror')).toEqual([[{ ...setting, counts: { leftRight: 3, topBottom: 1 } }]])
+    // A saved count the Area does not fit shows as the nearest fitting count below (ADR 0095).
+    const unfit = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: { ...setting, counts: { leftRight: 4, topBottom: 1 } } } } })
+    expect(unfit.get('[data-testid="mirror-bar-leftRight-value"]').text()).toBe('3')
 
     const radial = mount(ContextBar, { props: { ...base, mirror: { ...mirror, rect: { row: 0, column: 0, rows: 5, columns: 5 }, fit: fitOf(5, 5), setting: { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 4 } } } })
     expect(radial.get('[data-testid="mirror-bar-radial-value"]').attributes('aria-label')).toBe('Fold, 4')
