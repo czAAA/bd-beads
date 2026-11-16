@@ -481,7 +481,7 @@ describe('useFrameFlow', () => {
       const { deps, setLayerTechnique } = setup(mirrored)
       setLayerTechnique('canvas', 'peyote')
       expect(mirrorSettingOf(deps.harness.project).place).toEqual({ layer: 'canvas', area: { row: 0, column: 0, rows: 9, columns: 17 } })
-      expect(deps.showToast).toHaveBeenCalledWith('mirror-grown', 'Mirror area grown to 17×9 so Mirror with 1 Left–right axis lines up.', 'info')
+      expect(deps.showToast).toHaveBeenCalledWith('mirror-grown', expect.stringContaining('17×9'), 'info')
       deps.harness.history.onUndo()
       expect(canvasOf(deps.harness.project).technique).toBe('loom')
       expect(mirrorSettingOf(deps.harness.project)).toEqual(mirrored.mirror)

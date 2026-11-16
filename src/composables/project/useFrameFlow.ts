@@ -225,7 +225,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       growth = fitted.growth
       return fitted.project
     }
-    const outcome = layer === 'frame' ? deps.edit('frame', (current) => changeFrame(current, change)) : deps.edit('exempt', rewoven)
+    const outcome =
+      layer === 'frame' ? deps.edit('frame', (current) => changeFrame(current, change)) : deps.edit('exempt', rewoven)
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
     if (growth) deps.showToast('mirror-grown', mirrorGrownMessage(t, deps.locale(), mirrorSettingOf(deps.currentProject()!), growth), 'info')
