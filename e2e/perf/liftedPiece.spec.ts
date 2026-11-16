@@ -90,17 +90,22 @@ const lines: string[] = []
 for (const [name, build] of Object.entries(FIXTURES)) {
   if (ONLY && !ONLY.includes(name)) continue
   test(`the Lifted piece of a ${name} in WebKit at 2×`, async ({ page }) => {
+    // A step that freezes the page is reported by the lines missing after it, not waited on for the whole run.
+    test.setTimeout(5 * 60_000)
     await openApp(page, [build()])
     await page.mouse.move(2, 2)
     await page.waitForTimeout(AFTERMATH_MS)
     const zoom = await page.getByTestId('canvas-strip-zoom').getAttribute('data-zoom-percent')
-    const measured: [string, number][] = []
-    measured.push(['full redraw', await longestGap(page, () => page.setViewportSize({ width: 1366, height: 1000 }))])
-    measured.push(['Progress bar step', await longestGap(page, () => page.getByTestId('progress-bar-next').click())])
-    measured.push(['zoom step in', await longestGap(page, () => page.getByTestId('zoom-in').click())])
-    measured.push(['zoom step out', await longestGap(page, () => page.getByTestId('zoom-out').click())])
-    measured.push(['zoom step out', await longestGap(page, () => page.getByTestId('zoom-out').click())])
-    for (const [what, ms] of measured) lines.push(`${name.padEnd(14)} ${`at ${zoom}%`.padEnd(7)} ${what.padEnd(18)} ${ms.toFixed(0).padStart(6)} ms  ${ms > BUDGET_MS ? `OVER ${BUDGET_MS}` : 'ok'}`)
+    const step = async (what: string, act: () => Promise<void>) => {
+      const ms = await longestGap(page, act)
+      lines.push(`${name.padEnd(14)} ${`at ${zoom}%`.padEnd(7)} ${what.padEnd(18)} ${ms.toFixed(0).padStart(6)} ms  ${ms > BUDGET_MS ? `OVER ${BUDGET_MS}` : 'ok'}`)
+    }
+    // Each line is kept as it is measured, so a step that never ends still leaves those before it.
+    await step('full redraw', () => page.setViewportSize({ width: 1366, height: 1000 }))
+    await step('Progress bar step', () => page.getByTestId('progress-bar-next').click())
+    await step('zoom step in', () => page.getByTestId('zoom-in').click())
+    await step('zoom step out', () => page.getByTestId('zoom-out').click())
+    await step('zoom step out', () => page.getByTestId('zoom-out').click())
   })
 }
 
