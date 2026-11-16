@@ -68,6 +68,17 @@ The tests apply every migration before each Worker starts (`docs/testing/worker.
 
 GitHub holds only what CI needs, in the `production` environment (limited to `main`): the secret `CLOUDFLARE_API_TOKEN` (this account only, Workers Scripts edit and D1 edit), the variable `CLOUDFLARE_ACCOUNT_ID`, and for the backup the secret `HEALTHCHECK_BACKUP_URL` and the variable `AGE_PUBLIC_KEY`.
 
+## The pages' security headers
+
+Every page and file of the build is sent with `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` and `Referrer-Policy: strict-origin-when-cross-origin` (ticket 1024). No other site can show the app in a frame, and a script that got into a page can load nothing and send nothing outside the app's own origin.
+
+- **Where they are set.** `vite.headers.ts` writes `dist/_headers` at the end of every build; Cloudflare's static assets read that file and send its headers with every page and file. Answers the Worker makes itself (`/api/*`) are not covered by it, so they set `nosniff` in code (`worker/src/errors.ts`).
+- **Inline scripts need no step.** The pages' inline scripts (the theme, the Homepage's handoff) must run before first paint, so the policy names each by its hash. The hashes are taken from the built pages, so changing a script changes the policy with it.
+- **Adding a source.** A script, frame, font, picture or API from another origin is refused until the policy names it: add it to `securityHeaders` in `vite.headers.ts` and to `vite.headers.test.ts`. Scripts never get `'unsafe-inline'` or `'unsafe-eval'`. Today the only other origin is `https://challenges.cloudflare.com` (Turnstile's script and frame).
+- **Checked before deploy.** `vite preview` sends the same headers, so every browser check (`npm run visual`) runs under the policy; `e2e/visual/securityPolicy.spec.ts` says outright that it is in force.
+- **Cloudflare features that add a script to the pages** (Rocket Loader, Web Analytics' automatic setup) are refused too. After switching one on for the zone, open dev with the browser's console: a line starting "Refused to" names what the policy stopped.
+- **HTTP Strict Transport Security** is the zone's own setting, not this file's: SSL/TLS → Edge Certificates in the dashboard.
+
 ## The human steps
 
 The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h6`; h6 is ticket 400's domain), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.

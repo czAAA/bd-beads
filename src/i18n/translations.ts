@@ -656,6 +656,13 @@ export interface Translations {
       firstShown: string
       inMyBeads: string
       measuredCount: string
+      legendApproximate: string
+      approximateName: string
+      approximateBody: string
+      measuredName: string
+      measuredBody: string
+      approximateSuffix: string
+      measuredSub: string
       /** The narrow layout's disclosure, and its name while `{count}` values are on. */
       filters: string
       filtersOn: string
@@ -1278,8 +1285,8 @@ export interface Translations {
       defaultPalette: string
       exact: string
       codesInSize: PluralForms
-      /** A part measured catalog's quiet line under the count (ticket 0887): the codes in the Bead's size whose color was read, of all. */
-      measuredOf: string
+      /** The count line's measured part (ticket 0905): the codes left in the Finishes whose color was read. */
+      measuredIn: string
       /** The found-colors table's headings (Empty and Change are the buttons' names). */
       fromPicture: string
       becomes: string

@@ -26,6 +26,8 @@ export function useConvertFinishes({ start = [], source, sourceTargets }: Conver
     targets,
     /** How many codes the Finishes leave ("codes in 11/0: 412"). */
     codesLeft: computed(() => kept.value.length),
+    /** Of those, how many have a color read from a photo ("· 96 measured", ticket 0905). */
+    measuredLeft: computed(() => kept.value.filter((target) => !target.approximate).length),
     /** Whether any Finish is on and narrows the match. */
     on: computed(() => applies.value && finishes.value.length > 0),
     /** The Finishes that narrow the match now: none under Default Palette or Exact. */

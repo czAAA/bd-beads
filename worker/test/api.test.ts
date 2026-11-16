@@ -75,6 +75,19 @@ describe('the Worker', () => {
     expect(await response.json()).toEqual({ error: 'not-found' })
   })
 
+  it('refuses a path parameter that cannot be decoded with not-found, not a crash (ticket 1024)', () =>
+    withWorker({ entry: 'fixture' }, async (fixture) => {
+      const response = await fixture.fetch('/api/test/free/blobs/%E0%A4%A')
+      expect(response.status).toBe(404)
+      expect(await response.json()).toEqual({ error: 'not-found' })
+    }))
+
+  it('tells the browser not to guess the type of an answer or a refusal (ticket 1024)', async () => {
+    for (const path of ['/api/health', '/api/nothing-here']) {
+      expect((await worker.fetch(path)).headers.get('X-Content-Type-Options'), path).toBe('nosniff')
+    }
+  })
+
   it('sends no CORS headers, and does not answer a preflight', async () => {
     const health = await worker.fetch('/api/health', { headers: { Origin: 'https://elsewhere.example' } })
     expect([...health.headers.keys()].filter((name) => name.startsWith('access-control-'))).toEqual([])
@@ -173,11 +186,12 @@ describe('the Origin check', () => {
 })
 
 describe('the Turnstile guard', () => {
-  /** Answers siteverify as Cloudflare does for its dummy secret keys. */
-  const siteverify: StartOptions['reply'] = ({ url, body }) => {
+  /** Answers siteverify as Cloudflare does for its dummy secret keys, for a token made on a page of `hostname`. */
+  const siteverifyFor = (hostname: string): StartOptions['reply'] => ({ url, body }) => {
     if (!url.startsWith('https://challenges.cloudflare.com/turnstile/')) return new Response('unexpected', { status: 500 })
-    return Response.json({ success: new URLSearchParams(body).get('secret') === TURNSTILE_PASSES })
+    return Response.json({ success: new URLSearchParams(body).get('secret') === TURNSTILE_PASSES, hostname })
   }
+  const siteverify = siteverifyFor(new URL(ORIGIN).hostname)
 
   it('refuses a request with no token, without asking Cloudflare', () =>
     withWorker({ entry: 'fixture', vars: { TURNSTILE_SECRET_KEY: TURNSTILE_PASSES }, reply: siteverify }, async (worker) => {
@@ -207,6 +221,16 @@ describe('the Turnstile guard', () => {
       expect(form.get('response')).toBe('XXXX.DUMMY.TOKEN.XXXX')
       expect(form.get('remoteip')).toBe('203.0.113.9')
     }))
+
+  it("refuses a token Cloudflare confirms for another page's hostname, or for none (ticket 1024)", async () => {
+    for (const reply of [siteverifyFor('elsewhere.example'), () => Response.json({ success: true })]) {
+      await withWorker({ entry: 'fixture', vars: { TURNSTILE_SECRET_KEY: TURNSTILE_PASSES }, reply }, async (worker) => {
+        const response = await worker.fetch('/api/test/create', change('POST', { headers: { 'X-Turnstile-Token': 'token' } }))
+        expect(response.status).toBe(403)
+        expect(await response.json()).toEqual({ error: 'turnstile-failed' })
+      })
+    }
+  })
 
   it('refuses when no secret key is set, and when Cloudflare cannot be reached', async () => {
     await withWorker({ entry: 'fixture' }, async (worker) => {

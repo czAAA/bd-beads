@@ -4,6 +4,7 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { usePalette, useRemoveAllAddedColors } from '../../composables/tools/usePalette'
 import { isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
+import BeadSwatchChip from '../palette/BeadSwatchChip.vue'
 import IconButton from '../ui/IconButton.vue'
 import ToolColorControls from './ToolColorControls.vue'
 
@@ -14,6 +15,8 @@ const props = withDefaults(
   defineProps<{
     colorHex?: string
     colorName?: string
+    /** Whether the chosen color is a Bead color made from its family and Finish (true), read from a photo (false), or no bead of a catalog (ticket 0905). */
+    colorApproximate?: boolean
     selectedColorId?: string
     customColor?: string
     /** The section's label; the Palette's by default. */
@@ -21,7 +24,7 @@ const props = withDefaults(
     /** Whether the Palette's added colors can be edited (the pencil in the head, Remove all). */
     editable?: boolean
   }>(),
-  { colorHex: undefined, colorName: undefined, selectedColorId: undefined, customColor: undefined, paletteLabel: undefined, editable: true },
+  { colorHex: undefined, colorName: undefined, colorApproximate: undefined, selectedColorId: undefined, customColor: undefined, paletteLabel: undefined, editable: true },
 )
 
 const emit = defineEmits<{
@@ -51,7 +54,8 @@ watch(hasAdded, (has) => {
 
 <template>
   <div class="color-popover-body__head">
-    <span class="color-popover-body__chosen" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
+    <BeadSwatchChip v-if="colorApproximate !== undefined && colorHex" :hex="colorHex" :size="16" :approximate="colorApproximate" />
+    <span v-else class="color-popover-body__chosen" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
     <span class="color-popover-body__name" data-testid="color-popover-name">{{ colorName }}</span>
     <span v-if="colorHex" class="color-popover-body__hex">{{ colorHex }}</span>
     <IconButton

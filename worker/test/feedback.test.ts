@@ -10,11 +10,18 @@ const ISSUES_URL = 'https://api.github.com/repos/czAAA/bd-beads-docs/issues'
 
 const context = { appVersion: '1.4.0', uiLanguage: 'en', browser: 'Safari', os: 'iOS', viewport: '390 × 844' }
 
-/** Answers siteverify as Cloudflare does for its dummy keys, and GitHub's issue creation with `github`'s status. */
+const SITEVERIFY = 'https://challenges.cloudflare.com/turnstile/'
+/** A token the fake verifier rejects whatever the secret key, as Cloudflare rejects a made-up one. */
+const REJECTED_TOKEN = 'made-up'
+
+/** Answers siteverify as Cloudflare does for its dummy keys, for a token made on the app's own page, and GitHub's issue
+ * creation with `github`'s status. */
 function fakes(github = 201): NonNullable<StartOptions['reply']> {
   return ({ url, body }: Outbound) => {
-    if (url.startsWith('https://challenges.cloudflare.com/turnstile/')) {
-      return Response.json({ success: new URLSearchParams(body).get('secret') === TURNSTILE_PASSES })
+    if (url.startsWith(SITEVERIFY)) {
+      const form = new URLSearchParams(body)
+      const success = form.get('secret') === TURNSTILE_PASSES && form.get('response') !== REJECTED_TOKEN
+      return Response.json({ success, hostname: new URL(ORIGIN).hostname })
     }
     if (url === ISSUES_URL) return Response.json({ number: 7 }, { status: github })
     return new Response('unexpected', { status: 500 })
@@ -129,6 +136,38 @@ describe('POST /api/feedback', () => {
       expect(refused.status).toBe(429)
       expect(refused.headers.get('Retry-After')).toBe('60')
       expect((await send(worker, report, { 'CF-Connecting-IP': '203.0.113.10' })).status).toBe(201)
+    }))
+
+  it('refuses a Report past the per-address limit without asking the verifier (ticket 1024)', () =>
+    withWorker({}, async (worker) => {
+      const report = { kind: 'general', fields: { message: 'Hi' }, context }
+      const from = { 'CF-Connecting-IP': '203.0.113.9' }
+      for (let sent = 0; sent < 2; sent++) await send(worker, report, from)
+      worker.outbound.length = 0
+      expect((await send(worker, report, from)).status).toBe(429)
+      expect(worker.outbound).toHaveLength(0)
+    }))
+
+  it("refuses 429 with Retry-After past wrangler.jsonc's FEEDBACK_RATE_ALL, 10 a minute over every address (ticket 1024)", () =>
+    withWorker({ env: 'production' }, async (worker) => {
+      const report = { kind: 'general', fields: { message: 'Hi' }, context }
+      for (let sent = 1; sent <= 10; sent++) {
+        expect((await send(worker, report, { 'CF-Connecting-IP': `203.0.113.${sent}` })).status, `Report ${sent}`).toBe(201)
+      }
+      const refused = await send(worker, report, { 'CF-Connecting-IP': '203.0.113.11' })
+      expect(refused.status).toBe(429)
+      expect(refused.headers.get('Retry-After')).toBe('60')
+      expect(await refused.json()).toEqual({ error: 'rate-limited' })
+    }))
+
+  it('counts only Reports with a confirmed token toward the overall limit, so made-up ones cannot shut everyone out', () =>
+    withWorker({}, async (worker) => {
+      const report = { kind: 'general', fields: { message: 'Hi' }, context }
+      for (let sent = 1; sent <= 12; sent++) {
+        const junk = await send(worker, report, { 'CF-Connecting-IP': `203.0.113.${sent}`, 'X-Turnstile-Token': REJECTED_TOKEN })
+        expect(junk.status).toBe(403)
+      }
+      expect((await send(worker, report, { 'CF-Connecting-IP': '203.0.113.99' })).status).toBe(201)
     }))
 
   it('answers 502 feedback-failed when GitHub refuses, and logs a 401 by name', async () => {

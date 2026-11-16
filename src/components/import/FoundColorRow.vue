@@ -17,6 +17,7 @@ import { groupThousands } from '../../domain/formatNumber'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
+import BeadSwatchChip from '../palette/BeadSwatchChip.vue'
 import ColorLabel from '../palette/ColorLabel.vue'
 import { PICK_CLOSE } from '../shell/pickContext'
 import ColorPopoverBody from '../tools/ColorPopoverBody.vue'
@@ -59,10 +60,13 @@ const lines = computed<{ color?: LabelledColor; source?: string }>(() => {
 
 const nameText = computed(() => (lines.value.color ? colorLabel(t.value, lines.value.color, wizard.catalog.value).text : words.value.empty))
 
+/** A Bead color made from its family and Finish says so (ticket 0905); a Default Palette, Exact or empty swatch is no bead of a catalog. */
+const approximate = computed(() => (props.row.result?.code ? props.row.result.approximate === true : undefined))
+
 const rowName = computed(() =>
   fillBlanks(
     pluralForm(locale.value, props.row.count, words.value.rowName),
-    { hex: formatList(locale.value, props.row.pictureHexes), name: nameText.value },
+    { hex: formatList(locale.value, props.row.pictureHexes), name: nameText.value + (approximate.value ? t.value.palette.beadColors.approximateSuffix : '') },
     { count: groupThousands(props.row.count, locale.value) },
   ),
 )
@@ -149,12 +153,8 @@ useRevealWhenOpen(rowEl, () => props.open)
         <AppIcon class="found-color__arrow" name="arrow-down" :size="12" />
       </span>
       <span class="found-color__becomes">
-        <span
-          class="found-color__swatch"
-          :class="{ 'found-color__swatch--empty': !row.result, 'found-color__swatch--approximate': !!row.result?.approximate }"
-          :style="row.result ? { backgroundColor: row.result.hex } : undefined"
-          aria-hidden="true"
-        />
+        <span v-if="!row.result" class="found-color__swatch found-color__swatch--empty" aria-hidden="true" />
+        <BeadSwatchChip v-else :hex="row.result.hex" :approximate="approximate" />
         <span class="found-color__lines">
           <ColorLabel v-if="lines.color" class="found-color__name" :color="lines.color" :catalog="wizard.catalog.value" data-testid="found-color-name" />
           <span v-else class="found-color__name" data-testid="found-color-name">{{ words.empty }}</span>
@@ -189,6 +189,7 @@ useRevealWhenOpen(rowEl, () => props.open)
     <div v-if="open" class="found-color__picker" data-testid="found-color-picker">
       <ColorPopoverBody
         :color-hex="row.result?.hex"
+        :color-approximate="approximate"
         :color-name="nameText"
         :selected-color-id="selectedColorId"
         :custom-color="customColor"
@@ -265,11 +266,6 @@ useRevealWhenOpen(rowEl, () => props.open)
   height: var(--found-swatch);
   border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
-}
-
-.found-color__swatch--approximate {
-  outline: 1px dashed var(--field-line);
-  outline-offset: 1px;
 }
 
 .found-color__swatch--empty {

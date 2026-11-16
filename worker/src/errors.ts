@@ -48,10 +48,11 @@ export class ApiError extends Error {
   }
 }
 
-/** A JSON response. The API is never cached and, sharing one origin with the app, sends no CORS headers. */
+/** A JSON response. The API is never cached and, sharing one origin with the app, sends no CORS headers; `nosniff`
+ * here because the build's `_headers` (vite.headers.ts) reaches only the static files (ticket 1024). */
 export function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
   })
 }

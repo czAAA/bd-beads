@@ -57,7 +57,7 @@ describe('MyBeadsPicker (ticket 0903)', () => {
     }
     await find(wrapper, '72')
     expect(rowCodes(wrapper)).toEqual(['DB72', 'DB721', 'DB1721'])
-    expect(wrapper.get('[data-testid="convert-my-beads-shown"]').text()).toBe('codes: 3')
+    expect(wrapper.get('[data-testid="convert-my-beads-shown"]').text()).toBe('codes: 3 · 0 measured')
 
     await find(wrapper, 'blue')
     expect(rowCodes(wrapper)).toEqual(['DB721', 'DB1721'])

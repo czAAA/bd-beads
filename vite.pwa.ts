@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import type { Plugin } from 'vite'
+import { HEADERS_FILE } from './vite.headers.ts'
 
 /** The worker as the build writes it, next to index.html (the scope is its folder, so it covers the whole app). */
 export const SERVICE_WORKER_FILE = 'sw.js'
@@ -17,7 +18,8 @@ export function filesBelow(dir: string): string[] {
 /** The worker's source with this build's file list (ticket 69, ADR 0045). The cache is named after the files'
  * content, so a changed build is a new cache and the old one is dropped when the new worker takes over. */
 export function renderServiceWorker(template: string, dir: string): { source: string; precache: string[] } {
-  const precache = filesBelow(dir).filter((path) => path !== SERVICE_WORKER_FILE)
+  // Not the headers file either (ticket 1024): the host reads it and serves none, so fetching it would fail the install.
+  const precache = filesBelow(dir).filter((path) => path !== SERVICE_WORKER_FILE && path !== HEADERS_FILE)
   // The worker's own text counts too, so a fixed worker is a new cache and a device drops what an older one kept.
   const hash = createHash('sha256').update(template).update('\0')
   for (const path of precache) hash.update(path).update('\0').update(readFileSync(join(dir, path)))

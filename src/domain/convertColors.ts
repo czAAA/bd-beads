@@ -62,13 +62,12 @@ export function sourceTargets(source: ColorSource, builtIns: readonly PaletteCol
 export const MEASURED_REACH = LEAST_COLOR_DISTANCE * (2 / 3)
 
 /** How many of the targets have a measured color, not one generated from family and Finish (ticket 0887). */
-export function measuredCount(targets: readonly TargetColor[]): number {
+function measuredCount(targets: readonly TargetColor[]): number {
   return targets.filter((target) => !target.approximate).length
 }
 
-/** Whether some targets are measured and some generated (ticket 0887): the only catalog the match and the Colors section's
- * "n of total measured" line treat differently; one with none or all measured matches and reads as it always did. */
-export function isPartMeasured(targets: readonly TargetColor[]): boolean {
+/** Whether some targets are measured and some generated (ticket 0887): the only catalog the match treats differently; one with none or all measured matches and reads as it always did. */
+function isPartMeasured(targets: readonly TargetColor[]): boolean {
   const measured = measuredCount(targets)
   return measured > 0 && measured < targets.length
 }

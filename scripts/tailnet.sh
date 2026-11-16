@@ -17,7 +17,8 @@ case "${1:-}" in
   start)
     if [ -f "$state" ]; then echo "already serving (npm run tailnet:status)" >&2; exit 1; fi
     port=${2:-$(node -e 'const s=require("net").createServer().listen(0,()=>{console.log(s.address().port);s.close()})')}
-    (cd "$root" && nohup npx vite --host --port "$port" --strictPort >"$state.log" 2>&1 & echo $! >"$state.pid")
+    # Loopback only (ticket 1024): `tailscale serve` reaches it there, and `--host` alone showed it to the whole local network.
+    (cd "$root" && nohup npx vite --host 127.0.0.1 --port "$port" --strictPort >"$state.log" 2>&1 & echo $! >"$state.pid")
     "$TS" serve --bg --https="$port" "$port" >/dev/null
     echo "$port" >"$state"
     echo "serving: $(url "$port")"
