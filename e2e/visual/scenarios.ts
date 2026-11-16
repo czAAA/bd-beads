@@ -107,8 +107,9 @@ export const SCENARIOS: Scenario[] = [
     name: `${technique}-hover-paint`,
     place: (page, context) => pointerOnBead(page, context, 3, 5),
   })),
-  // The whole-Frame Mirror's Axis lines across a peyote Frame (tickets 0703, 0750): two Top–bottom axes, dashed in the
-  // Selection colour, set on the Mirror bar; no Left–right, which the 16-column Frame's shift has no image for (0775).
+  // The whole-Frame Mirror's Axis lines across a peyote Frame (tickets 0703, 0750): three Top–bottom axes (+ steps from 1
+  // to 3, the next count the 10 rows fit, ADR 0095), dashed in the Selection colour; no Left–right, as the 16-column
+  // Frame's shift has no image for it (0775).
   {
     technique: 'peyote',
     name: 'peyote-mirror-axes',

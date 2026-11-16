@@ -243,11 +243,18 @@ function maxAxisCount(cellsAcross: number): number {
   return Math.max(1, cellsAcross - 1)
 }
 
-/** The axis positions along a direction of `cellsAcross` beads cut by `count` axes, in bead widths from its first
- * edge: where the overlay draws the lines. */
+/** Whether `count` Axes fit `beads` beads in a Mode (glossary: Fitting size, ADR 0095): a bead each side of every Axis;
+ * in Repeat the beads divide by the strips, in Mirror mode twice them do (an Axis through a bead's middle is exact).
+ * Then nothing rounds; along peyote's and brick's half-bead shift `countKeepsShift` asks more. */
+function countFits(beads: number, count: number, mode: MirrorMode): boolean {
+  const strips = count + 1
+  return count >= 1 && strips <= beads && (mode === 'repeat' ? beads : 2 * beads) % strips === 0
+}
+
+/** The axis positions along a direction of `cellsAcross` beads cut by a fitting `count` of axes, in bead widths from
+ * its first edge: where the overlay draws the lines. */
 function axisOffsets(cellsAcross: number, count: number): number[] {
-  const strips = Math.min(count, maxAxisCount(cellsAcross)) + 1
-  return Array.from({ length: strips - 1 }, (_axis, index) => (cellsAcross * (index + 1)) / strips)
+  return Array.from({ length: count }, (_axis, index) => (cellsAcross * (index + 1)) / (count + 1))
 }
 
 // Peyote and brick (ticket 0775, spec 0702): every other line, or block of lines, sits half a bead along, peyote's
@@ -323,8 +330,8 @@ export interface MirrorFit {
   quarterOff?: 'square' | 'shift'
 }
 
-/** What a rectangle of a Weave's grid offers the Mirror in a Mode: on loom every count to its beads across minus one,
- * Fold 4 in a square; on peyote and brick only what lands every counterpart on a bead (ticket 0775).
+/** What a rectangle of a Weave's grid offers the Mirror in a Mode: the Axis counts its size fits (`countFits`, ADR
+ * 0095), Fold 4 in a square; on peyote and brick only what lands every counterpart on a bead (ticket 0775).
  * @internal The app asks `mirrorFitOf`; tests ask this with a bare Weave and rectangle. */
 export function mirrorFit(weave: Weave, rect: Rect, mode: MirrorMode): MirrorFit {
   const stagger = staggerOf(weave)
@@ -336,8 +343,9 @@ export function mirrorFit(weave: Weave, rect: Rect, mode: MirrorMode): MirrorFit
       return []
     }
     const all = Array.from({ length: maxAxisCount(lines.count) }, (_count, index) => index + 1)
-    if (stagger?.along !== direction) return all
-    const kept = all.filter((count) => countKeepsShift(stagger, lines, count, mode))
+    const fitting = all.filter((count) => countFits(lines.count, count, mode))
+    if (stagger?.along !== direction) return fitting
+    const kept = fitting.filter((count) => countKeepsShift(stagger, lines, count, mode))
     if (kept.length === 0) off[direction] = 'shift'
     return kept
   }
@@ -349,11 +357,20 @@ export function mirrorFit(weave: Weave, rect: Rect, mode: MirrorMode): MirrorFit
   return { counts, off, folds, ...(quarterOff ? { quarterOff } : {}) }
 }
 
-/** The Axis count a direction uses: the setting's where the Area takes it, else the nearest below it that it takes,
- * else the least; none where its chip is off. */
-export function fittedCount(fit: MirrorFit, direction: MirrorDirection, count: number): number | undefined {
+/** The Axis count a direction uses (ADR 0095): the setting's where the Area fits it, else the nearest fitting count
+ * below it, else the least; none where its chip is off. A saved count is kept as it is, only used so. */
+export function nearestFittingCount(fit: MirrorFit, direction: MirrorDirection, count: number): number | undefined {
   const counts = fit.counts[direction]
   return [...counts].reverse().find((each) => each <= count) ?? counts[0]
+}
+
+/** Whether a grid rectangle is a Fitting size for the setting (glossary, ADR 0095): its Mode, the Axes that are on and
+ * their counts, or Radial's Fold, map every bead exactly, so the setting is used as it is. Tickets 1027 to 1029 grow
+ * a Canvas Area to one. @internal Until ticket 1027, only its test asks. */
+export function isFittingSize(weave: Weave, rect: Rect, setting: MirrorSetting): boolean {
+  const fit = mirrorFit(weave, rect, setting.mode)
+  if (setting.axes.radial) return fit.folds.includes(gridFold(setting.fold))
+  return MIRROR_DIRECTIONS.every((direction) => !setting.axes[direction] || fit.counts[direction].includes(setting.counts[direction]))
 }
 
 /** The Fold Radial uses: the setting's as a grid takes it, no more than the Area offers; none where Radial is off. */
@@ -361,9 +378,9 @@ function fittedFold(fit: MirrorFit, fold: number, rect: Rect): number | undefine
   return fit.folds.length === 0 ? undefined : Math.min(gridFold(fold, rect), Math.max(...fit.folds))
 }
 
-// The strip maths (ticket 0044): N axes cut a direction into N + 1 strips as equal as possible, read as mirror images
-// (Mirror) or the same way round (Repeat). Worked in an integer space, cell centres doubled and scaled by the strip
-// count, so no float drifts.
+// The strip maths (ticket 0044, ADR 0095): N axes cut a direction into N + 1 equal strips, read as mirror images (Mirror)
+// or the same way round (Repeat). Worked in an integer space, cell centres doubled and scaled by the strip count; at a
+// fitting count every image is a bead, so nothing rounds.
 interface StripSpace {
   strips: number
   /** How much a cell index advances a position. */
@@ -385,20 +402,19 @@ function reversed(strip: number, repeat: boolean): boolean {
   return !repeat && strip % 2 === 1
 }
 
-/** Every index of `dimension` that `index` mirrors onto under `count` axes, itself included, in strip order; an uneven
- * split rounds. `offset`: how far the bead's line sits along, so its centre is reflected (ticket 0775); a shifted line's
- * last bead hangs half past the edge, its image maybe past the other one, which the caller drops. */
+/** Every index of `dimension` that `index` mirrors onto under a fitting `count` of axes, itself included, in strip
+ * order. `offset`: how far the bead's line sits along, so its centre is reflected (ticket 0775); a shifted line's last
+ * bead hangs half past the edge, its image maybe past the other one, which the caller drops. */
 function stripCounterparts(index: number, dimension: number, count: number, repeat: boolean, offset = 0): number[] {
-  const space = stripSpace(dimension, Math.min(count, maxAxisCount(dimension)) + 1)
+  const space = stripSpace(dimension, count + 1)
   const position = (index + offset) * space.scale + space.strips
   const source = stripAt(position, space)
   const local = reversed(source, repeat) ? (source + 1) * space.stripWidth - position : position - source * space.stripWidth
   const images: number[] = []
   for (let strip = 0; strip < space.strips; strip++) {
     const target = reversed(strip, repeat) ? (strip + 1) * space.stripWidth - local : strip * space.stripWidth + local
-    const along = Math.round((target - space.strips) / space.scale - offset)
-    const at = offset === 0 ? Math.min(dimension - 1, Math.max(0, along)) : along
-    if (!images.includes(at)) images.push(at)
+    const along = (target - space.strips) / space.scale - offset
+    if (!images.includes(along)) images.push(along)
   }
   return images
 }
@@ -411,7 +427,7 @@ type PositionImages = (position: GridPosition) => (GridPosition | undefined)[]
  * each column image. A direction whose chip is off (`mirrorFit`), or turned off, maps nothing. Across the shift a bead
  * keeps its own line, so its strip maths takes that line's offset (a peyote column's for Top–bottom). */
 function straightImages(rect: Rect, setting: MirrorSetting, fit: MirrorFit, stagger: Stagger | undefined): PositionImages | undefined {
-  const countOf = (direction: MirrorDirection) => (setting.axes[direction] ? fittedCount(fit, direction, setting.counts[direction]) : undefined)
+  const countOf = (direction: MirrorDirection) => (setting.axes[direction] ? nearestFittingCount(fit, direction, setting.counts[direction]) : undefined)
   const leftRight = countOf('leftRight')
   const topBottom = countOf('topBottom')
   if (leftRight === undefined && topBottom === undefined) return undefined
@@ -490,7 +506,7 @@ export function mirrorLines(weave: Weave, rect: Rect, setting: MirrorSetting): {
     return { leftRight: [], topBottom: [], radial: { centre: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }, fold } }
   }
   const offsets = (direction: MirrorDirection) => {
-    const count = setting.axes[direction] ? fittedCount(fit, direction, setting.counts[direction]) : undefined
+    const count = setting.axes[direction] ? nearestFittingCount(fit, direction, setting.counts[direction]) : undefined
     return count === undefined ? [] : axisOffsets(linesOf(rect, direction).count, count)
   }
   return { leftRight: offsets('leftRight'), topBottom: offsets('topBottom') }

@@ -11,13 +11,14 @@ import {
   MIRROR_OFF,
   canvasMirrors,
   counterparts,
-  fittedCount,
   mirrorFit,
   mirrorFitOf,
   mirrorLines,
+  isFittingSize,
   isMirrorOn,
   mirrorSettingOf,
   mirroredOnCanvas,
+  nearestFittingCount,
   placeRect,
   readMirrorArea,
   readMirrorSetting,
@@ -85,10 +86,10 @@ describe('counterparts on the whole Frame by index (tickets 0703, 0750, spec 070
     expect(columnsOf(counterparts(six, on({ leftRight: true }, { leftRight: 2 }, 'repeat'), [{ row: 0, column: 1 }]))).toEqual([1, 3, 5])
   })
 
-  it('makes the strips as equal as possible: 7 beads over two axes give the middle strip the odd bead, its own centre (ticket 0044)', () => {
+  it('uses a count the Frame does not fit as the nearest fitting one below: 2 axes on 7 beads act as 1 (ADR 0095)', () => {
     const seven = layerSheet(framed('loom', 7, 1), 'frame')
-    expect(columnsOf(counterparts(seven, on({ leftRight: true }, { leftRight: 2 }), [{ row: 0, column: 3 }]))).toEqual([3, 1, 5])
-    expect(columnsOf(counterparts(seven, on({ leftRight: true }, { leftRight: 2 }), [{ row: 0, column: 0 }]))).toEqual([0, 4, 5])
+    expect(columnsOf(counterparts(seven, on({ leftRight: true }, { leftRight: 2 }), [{ row: 0, column: 0 }]))).toEqual([0, 6])
+    expect(mirrorLines(seven.weave, area(0, 0, 1, 7), on({ leftRight: true }, { leftRight: 2 })).leftRight).toEqual([3.5])
   })
 
   it('reflects the row about a Top–bottom axis, and both directions together give four images', () => {
@@ -284,6 +285,75 @@ describe('the one Mirror of a Project (ADR 0082, ticket 0750)', () => {
   })
 })
 
+describe('a Fitting size: the Mirror never rounds (ADR 0095, ticket 1026)', () => {
+  /** A grid of a Technique on the open Canvas, its Drop given. */
+  const grid = (technique: Technique, drop = 1) => {
+    const sheet = layerSheet(open(technique), 'canvas')
+    return drop === 1 ? sheet : { ...sheet, weave: { ...sheet.weave, techniqueSettings: { peyoteDrop: drop } } }
+  }
+  const inArea = (rect: Rect, axes: Partial<MirrorSetting['axes']>, mode: MirrorSetting['mode'], counts: Partial<MirrorSetting['counts']> = {}) => on(axes, counts, mode, onCanvas(rect))
+  const keys = (positions: readonly { row: number; column: number }[]) => positions.map(({ row, column }) => `${row}:${column}`).sort()
+
+  it('offers only the counts an Area fits: in Repeat strips its beads divide by, in Mirror mode strips twice its beads do', () => {
+    const { weave } = grid('loom')
+    expect(mirrorFit(weave, area(0, 0, 5, 25), 'repeat').counts.leftRight).toEqual([4, 24])
+    expect(mirrorFit(weave, area(0, 0, 5, 25), 'mirror').counts.leftRight).toEqual([1, 4, 9, 24])
+    // An Axis through a bead's middle is exact: 25 across with one Axis, 6 across with three.
+    expect(mirrorFit(weave, area(0, 0, 5, 6), 'mirror').counts.leftRight).toEqual([1, 2, 3, 5])
+    expect(mirrorFit(weave, area(0, 0, 1, 6), 'mirror')).toMatchObject({ counts: { topBottom: [] }, off: { topBottom: 'oneBead' } })
+  })
+
+  it('uses a saved count the Area does not fit as the nearest fitting count below, else the least, and keeps it saved', () => {
+    const fit = mirrorFit(grid('brick').weave, area(0, 0, 6, 25), 'repeat')
+    expect([1, 2, 5, 23, 30].map((count) => nearestFittingCount(fit, 'leftRight', count))).toEqual([4, 4, 4, 4, 24])
+    const setting = inArea(area(0, 0, 6, 25), { leftRight: true }, 'repeat', { leftRight: 2 })
+    expect(cells(counterparts(grid('brick'), setting, [at(0, 3)]))).toEqual([[0, 3], [0, 8], [0, 13], [0, 18], [0, 23]])
+    expect(setting.counts.leftRight).toBe(2)
+  })
+
+  it('names a Fitting size: the Mode, the Axes on and their counts, or Radial\'s Fold, mapping every bead as they are', () => {
+    const { weave } = grid('loom')
+    expect(isFittingSize(weave, area(0, 0, 5, 25), inArea(area(0, 0, 5, 25), { leftRight: true }, 'repeat', { leftRight: 4 }))).toBe(true)
+    expect(isFittingSize(weave, area(0, 0, 5, 25), inArea(area(0, 0, 5, 25), { leftRight: true }, 'repeat', { leftRight: 2 }))).toBe(false)
+    expect(isFittingSize(weave, area(0, 0, 5, 24), inArea(area(0, 0, 5, 24), { leftRight: true }, 'repeat', { leftRight: 2 }))).toBe(true)
+    // A direction that is off asks nothing of its count; Fold 4 takes a square.
+    expect(isFittingSize(weave, area(0, 0, 7, 24), inArea(area(0, 0, 7, 24), { leftRight: true }, 'repeat', { leftRight: 2, topBottom: 5 }))).toBe(true)
+    expect(isFittingSize(weave, area(0, 0, 7, 7), radial(4, 'repeat'))).toBe(true)
+    expect(isFittingSize(weave, area(0, 0, 7, 8), radial(4, 'repeat'))).toBe(false)
+    expect(isFittingSize(grid('peyote').weave, area(0, 0, 13, 16), inArea(area(0, 0, 13, 16), { leftRight: true }, 'mirror'))).toBe(false)
+  })
+
+  it('gives every bead of an Area the same counterparts as each of them, on loom, peyote and brick, in Mirror mode and in Repeat', () => {
+    for (const [technique, drop] of [['loom', 1], ['peyote', 1], ['peyote', 2], ['brick', 1]] as const) {
+      const sheet = grid(technique, drop)
+      for (const [rows, columns] of [[5, 25], [6, 6], [7, 9], [8, 12], [13, 17], [12, 16]] as const) {
+        const rect = area(2, 3, rows, columns)
+        for (const mode of ['mirror', 'repeat'] as const) {
+          const fit = mirrorFit(sheet.weave, rect, mode)
+          const ends = (counts: readonly number[]) => [...new Set([counts[0], counts[counts.length - 1]])].filter((count) => count !== undefined)
+          const settings = [
+            ...fit.counts.leftRight.map((count) => inArea(rect, { leftRight: true }, mode, { leftRight: count })),
+            ...fit.counts.topBottom.map((count) => inArea(rect, { topBottom: true }, mode, { topBottom: count })),
+            ...ends(fit.counts.leftRight).flatMap((leftRight) => ends(fit.counts.topBottom).map((topBottom) => inArea(rect, { leftRight: true, topBottom: true }, mode, { leftRight, topBottom }))),
+          ]
+          for (const setting of settings) {
+            const label = `${technique} ${drop}-drop ${rows}×${columns} ${mode} ${setting.axes.leftRight ? setting.counts.leftRight : '-'}/${setting.axes.topBottom ? setting.counts.topBottom : '-'}`
+            const sets = new Map<string, { images: string[]; set: string }>()
+            for (let row = rect.row; row < rect.row + rows; row++) {
+              for (let column = rect.column; column < rect.column + columns; column++) {
+                const images = keys(counterparts(sheet, setting, [at(row, column)]).positions)
+                sets.set(`${row}:${column}`, { images, set: images.join(' ') })
+              }
+            }
+            const unclosed = [...sets].flatMap(([from, { images, set }]) => images.filter((image) => sets.get(image)?.set !== set).map((image) => `${from} via ${image}`))
+            expect(unclosed, label).toEqual([])
+          }
+        }
+      }
+    }
+  })
+})
+
 describe('the Mirror bar\'s settings (ContextBar card, Mirror bar)', () => {
   it('switches the Mode and steps a count, never under one, and the Fold on a grid 2 or 4 (ticket 0751)', () => {
     expect(withMirrorMode(on({ leftRight: true }), 'repeat').mode).toBe('repeat')
@@ -432,8 +502,8 @@ describe('Mirror on peyote and brick, by the bead\'s place (ticket 0775, spec 07
     expect(mirrorFit(weave, area(0, 0, 13, 17), 'mirror')).toMatchObject({ counts: { leftRight: [1] }, off: {} })
     expect(mirrorFit(weave, area(0, 0, 13, 16), 'mirror')).toMatchObject({ counts: { leftRight: [] }, off: { leftRight: 'shift' } })
     expect(mirrorFit(weave, area(0, 0, 13, 16), 'repeat').counts.leftRight).toEqual([1, 3, 7])
-    // Top–bottom keeps a bead in its column: every count, as on loom.
-    expect(mirrorFit(weave, area(0, 0, 13, 16), 'mirror').counts.topBottom).toHaveLength(12)
+    // Top–bottom keeps a bead in its column: every count the size fits, as on loom.
+    expect(mirrorFit(weave, area(0, 0, 13, 16), 'mirror').counts.topBottom).toEqual([1, 12])
     expect(counterparts(canvas('peyote'), inArea(area(0, 0, 13, 16), { leftRight: true }), [at(2, 3)])).toEqual({ positions: [at(2, 3)], dropped: 0 })
   })
 
@@ -447,8 +517,8 @@ describe('Mirror on peyote and brick, by the bead\'s place (ticket 0775, spec 07
 
   it('uses the nearest count the Area offers below the setting, else the least, and none where the chip is off', () => {
     const fit = mirrorFit(canvas('peyote').weave, area(0, 0, 13, 16), 'repeat')
-    expect([1, 2, 3, 6, 9].map((count) => fittedCount(fit, 'leftRight', count))).toEqual([1, 1, 3, 3, 7])
-    expect(fittedCount(mirrorFit(canvas('peyote').weave, area(0, 0, 13, 16), 'mirror'), 'leftRight', 1)).toBeUndefined()
+    expect([1, 2, 3, 6, 9].map((count) => nearestFittingCount(fit, 'leftRight', count))).toEqual([1, 1, 3, 3, 7])
+    expect(nearestFittingCount(mirrorFit(canvas('peyote').weave, area(0, 0, 13, 16), 'mirror'), 'leftRight', 1)).toBeUndefined()
   })
 
   it('turns a half about the centre by the bead\'s place: on an odd width a shifted column\'s bead a row further, on an even one by index about a centre a quarter bead down', () => {
@@ -467,7 +537,7 @@ describe('Mirror on peyote and brick, by the bead\'s place (ticket 0775, spec 07
     expect(counterparts(sheet, inArea(area(0, 0, 8, 8), { radial: true }), [at(0, 0)]).positions).toEqual([at(0, 0)])
     // 2-drop with an odd width: a column and the one it turns onto sit alike in some pairs and differently in others.
     expect(mirrorFit(canvas('peyote', 2).weave, area(0, 0, 9, 9), 'repeat').off.radial).toBe('shift')
-    expect(mirrorFit(canvas('loom').weave, area(0, 0, 9, 9), 'mirror')).toEqual({ counts: { leftRight: [1, 2, 3, 4, 5, 6, 7, 8], topBottom: [1, 2, 3, 4, 5, 6, 7, 8] }, off: {}, folds: [2, 4] })
+    expect(mirrorFit(canvas('loom').weave, area(0, 0, 9, 9), 'mirror')).toEqual({ counts: { leftRight: [1, 2, 5, 8], topBottom: [1, 2, 5, 8] }, off: {}, folds: [2, 4] })
   })
 
   /** A bead's centre on peyote (columns a block of `drop` shifted down) or brick (rows shifted across). */
@@ -519,7 +589,6 @@ describe('Mirror on peyote and brick, by the bead\'s place (ticket 0775, spec 07
             for (const count of fit.counts[direction]) {
               const setting = inArea(rect, { [direction]: true }, mode, { [direction]: count })
               const width = direction === 'leftRight' ? columns : rows
-              if (mode === 'mirror' ? (2 * width) % (count + 1) !== 0 : width % (count + 1) !== 0) continue
               for (let row = 0; row < rows; row++) {
                 for (let column = 0; column < columns; column++) {
                   const source = centreOf(technique, drop, at(row, column))
