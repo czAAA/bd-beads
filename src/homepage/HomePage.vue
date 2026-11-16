@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowReactive, s
 import AppButton from '../components/ui/AppButton.vue'
 import DeleteProjectModal from '../components/project/DeleteProjectModal.vue'
 import ProjectsLibrary from '../components/project/ProjectsLibrary.vue'
+import LoadingState from '../components/ui/LoadingState.vue'
 import { controlAction } from '../composables/shell/controlRegistry'
 import type { ProjectLibrary } from '../composables/project/useProjectLibrary'
 import { useDeleteProjectFlow } from '../composables/project/useDeleteProjectFlow'
@@ -53,7 +54,7 @@ const props = defineProps<{
   /** Sending a Report: the Menu's Send feedback works here too (spec 0698), so a beader can say the app won't start. */
   feedback: FeedbackService
   /** The library, opened only once its Saved Projects are shown in the Menu (ticket 0716). */
-  openLibrary?: () => HomepageLibrary
+  openLibrary?: () => Promise<HomepageLibrary>
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
@@ -314,8 +315,17 @@ const deleteProject = useDeleteProjectFlow({
   dialogs,
 })
 
-function showSavedProjects() {
-  library.value ??= props.openLibrary?.()
+/** Whether the Menu's Saved Projects is waiting for the library to arrive. */
+const libraryLoading = ref(false)
+
+async function showSavedProjects() {
+  if (library.value || libraryLoading.value) return
+  libraryLoading.value = true
+  try {
+    library.value = await props.openLibrary?.()
+  } finally {
+    libraryLoading.value = false
+  }
 }
 
 /** The phone bar's main button: into the editor as the strip's way in goes, a new visitor making their first Project. */
@@ -399,8 +409,9 @@ const savedProjects = controlAction('saved-projects')
         <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="String(count)" @close="menuOpen = false">
           <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
           <template #sub="{ depth }">
+            <LoadingState v-if="depth === 1 && libraryLoading" compact :text="t.projects.loading" />
             <ProjectsLibrary
-              v-if="depth === 1 && library"
+              v-else-if="depth === 1 && library"
               :projects="library.projects.value"
               :sealed="library.sealed.value"
               @select="emit('openProject', $event)"

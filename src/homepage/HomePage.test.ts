@@ -106,16 +106,43 @@ describe('HomePage', () => {
       expect(page(0).find('[data-testid="homepage-saved-projects"]').exists()).toBe(false)
     })
 
+    it('shows the loading state, after the loading delay, in Saved Projects until the library arrives (spec 1018)', async () => {
+      vi.useFakeTimers()
+      try {
+        const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
+        const library = { projects: shallowRef([project]), sealed: shallowRef([]), removeProject: vi.fn(), restoreRemoved: vi.fn(), forgetRemoved: vi.fn(), addProjects: vi.fn(), entryOf: (id: string) => ({ id, name: 'Moth' }) }
+        let arrive: (opened: typeof library) => void = () => undefined
+        const openLibrary = vi.fn(() => new Promise<typeof library>((resolve) => (arrive = resolve)))
+        const wrapper = mount(HomePage, { props: { projectCount: 1, openLibrary, feedback: fakeFeedback() }, attachTo: document.body })
+        await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+        await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
+
+        expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
+        await vi.advanceTimersByTimeAsync(400)
+        expect(wrapper.get('[data-testid="loading"]').text()).toBe(en.projects.loading)
+        expect(wrapper.find(`[data-testid="select-project-${project.id}"]`).exists()).toBe(false)
+
+        arrive(library)
+        await flushPromises()
+        expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
+        expect(wrapper.find(`[data-testid="select-project-${project.id}"]`).exists()).toBe(true)
+        expect(openLibrary).toHaveBeenCalledOnce()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('lists the library in the Menu\'s Saved Projects, opened only then, with × asking Delete first and a pick opening it (tickets 0716, 0842)', async () => {
       const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
       const projects = shallowRef([project])
       const library = { projects, sealed: shallowRef([]), removeProject: vi.fn(() => void (projects.value = [])), restoreRemoved: vi.fn(), forgetRemoved: vi.fn(), addProjects: vi.fn(), entryOf: (id: string) => ({ id, name: 'Moth' }) }
-      const openLibrary = vi.fn(() => library)
+      const openLibrary = vi.fn(async () => library)
       const wrapper = mount(HomePage, { props: { projectCount: 1, openLibrary, feedback: fakeFeedback() }, attachTo: document.body })
       await wrapper.get('[data-testid="strip-menu"]').trigger('click')
       expect(openLibrary).not.toHaveBeenCalled()
 
       await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
+      await flushPromises()
       await wrapper.get(`[data-testid="select-project-${project.id}"]`).trigger('click')
       expect(wrapper.emitted('openProject')).toEqual([[project.id]])
       await wrapper.get('[data-testid="menu-export-all"]').trigger('click')

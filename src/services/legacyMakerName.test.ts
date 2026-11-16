@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { createProject } from '../domain/createProject'
 import type { Project } from '../domain/project'
 import { applyLegacyMakerName, LEGACY_MAKER_NAME_KEY, migrateLegacyMakerName } from './legacyMakerName'
@@ -23,7 +24,12 @@ describe('applyLegacyMakerName (temporary, ADR 0060)', () => {
 
 describe('migrateLegacyMakerName', () => {
   /** What a library that no other tab writes to answers. */
-  const unchanging = { reread: () => undefined, onOutsideChange: () => () => undefined }
+  const unchanging = {
+    start: async () => 'ready' as const,
+    count: async () => 0,
+    reread: async () => ({ changed: [], gone: [] }),
+    onOutsideChange: () => () => undefined,
+  }
 
   function fakes(device: Record<string, string>, projects: Project[]) {
     const data = new Map(Object.entries(device))
@@ -36,19 +42,20 @@ describe('migrateLegacyMakerName', () => {
     const library: LibraryStore = {
       ...unchanging,
       load: () => projects,
-      open: () => ({ projects, sealed: [], revision: '' }),
+      open: () => ({ projects, sealed: [] }),
       unseal: () => projects[0]!,
-      save: (next) => {
-        saved = next
-        return ''
+      save: async (changed) => {
+        saved = changed.map((change) => change.project as Project)
+        return { dropped: [] }
       },
     }
     return { storage, library, data, saved: () => saved }
   }
 
-  it('copies the device name into the library, then clears the device value', () => {
+  it('copies the device name into the library, then clears the device value', async () => {
     const { storage, library, data, saved } = fakes({ [LEGACY_MAKER_NAME_KEY]: 'Ada' }, [make('Fox')])
     migrateLegacyMakerName(library, storage)
+    await flushPromises()
 
     expect(saved()?.[0]?.makerName).toBe('Ada')
     expect(data.has(LEGACY_MAKER_NAME_KEY)).toBe(false)
@@ -60,10 +67,11 @@ describe('migrateLegacyMakerName', () => {
     expect(saved()).toBeUndefined()
   })
 
-  it('keeps the device value when the library refuses the write, to try again next load', () => {
+  it('keeps the device value when the library refuses the write, to try again next load', async () => {
     const { storage, data } = fakes({ [LEGACY_MAKER_NAME_KEY]: 'Ada' }, [])
-    const library: LibraryStore = { ...unchanging, load: () => [make('Fox')], open: () => ({ projects: [], sealed: [], revision: '' }), unseal: () => make('Fox'), save: () => { throw new Error('quota') } }
+    const library: LibraryStore = { ...unchanging, load: () => [make('Fox')], open: () => ({ projects: [], sealed: [] }), unseal: () => make('Fox'), save: () => Promise.reject(new Error('quota')) }
     migrateLegacyMakerName(library, storage)
+    await flushPromises()
     expect(data.get(LEGACY_MAKER_NAME_KEY)).toBe('Ada')
   })
 })

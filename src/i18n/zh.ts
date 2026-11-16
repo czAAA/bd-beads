@@ -244,6 +244,7 @@ export const zh: Translations = {
   },
   projects: {
     heading: '项目库',
+    loading: '正在载入你的项目…',
     newProjectButton: '新建项目',
     removeButton: '移除',
     unknownBeadLabel: '未知珠子',

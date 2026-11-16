@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../domain/createProject'
 import type { Grid, Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
-import { browserLibraryStore, loadProjects, saveProjects, storedProjectCount } from './libraryStore'
+import { browserLibraryStore, loadProjects, saveProjects, type HeldProject } from './libraryStore'
 import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
@@ -11,7 +11,7 @@ import { backgroundOf, canvasOf, frameOf, withBackground } from '../domain/layer
 import { layersView } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 import { encodeProject } from '../domain/projectEncoding'
-import { storedHugeProject, storeLibrary } from '../testUtils/hugeProject'
+import { storeLibrary } from '../testUtils/hugeProject'
 
 // Counts the encodings a save makes (ticket 0677), passing each through to the real encoder.
 vi.mock('../domain/projectEncoding', async (importOriginal) => {
@@ -389,12 +389,12 @@ describe('a library opened with some Projects kept sealed (ticket 0716)', () => 
     expect(opened.sealed).toMatchObject([{ id: 'huge', beads: 3_000_000, layerBeads: [3_000_000, 0], savedAt: 5 }])
   })
 
-  it('writes a sealed Project back exactly as it was stored', () => {
+  it('writes a sealed Project back exactly as it was stored, beside the Projects saved after it', async () => {
     const huge = storedSolid('huge', 3000, 1000, 5)
     store(huge)
-    const { projects, sealed } = browserLibraryStore.open(() => true)
+    browserLibraryStore.open(() => true)
 
-    browserLibraryStore.save([...projects, makeProject()], sealed)
+    await browserLibraryStore.save([{ project: makeProject(), knownStored: false }], [])
 
     const patterns = (JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: unknown[] }).patterns
     expect(patterns).toContainEqual(huge)
@@ -409,12 +409,12 @@ describe('a library opened with some Projects kept sealed (ticket 0716)', () => 
     expect(browserLibraryStore.unseal(sealed[0]!)).toEqual(loadProjects()[0])
   })
 
-  it('counts the stored Projects without decoding any, for the main address and the Homepage', () => {
+  it('counts the stored Projects without decoding any, for the main address and the Homepage', async () => {
     store(storedSolid('huge', 3000, 1000, 5), encodeProject(makeProject()))
 
-    expect(storedProjectCount()).toBe(2)
+    await expect(browserLibraryStore.count()).resolves.toBe(2)
     localStorage.setItem(STORAGE_KEY, 'not json')
-    expect(storedProjectCount()).toBe(0)
+    await expect(browserLibraryStore.count()).resolves.toBe(0)
   })
 })
 
@@ -456,7 +456,7 @@ describe('a layer Background a library stored before ticket 1000', () => {
     const { sealed } = browserLibraryStore.open(() => true)
 
     const project = browserLibraryStore.unseal(sealed[0]!)
-    browserLibraryStore.save([], sealed)
+    saveProjects([], sealed)
 
     expect([backgroundOf(project, 'canvas'), backgroundOf(project, 'frame')]).toEqual([1, 3])
     expect((JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: unknown[] }).patterns).toEqual([earlier])
@@ -478,43 +478,114 @@ describe('a library of version 5 opened with a Project kept sealed (ticket 0716)
   })
 })
 
-describe('rereading what another tab stored (ticket 0834)', () => {
-  it('gives nothing while storage holds what this tab last wrote', () => {
-    const revision = browserLibraryStore.save([makeProject()])
+describe('saving what a tab changed (tickets 0834, 1019)', () => {
+  const change = (project: HeldProject, knownStored = true) => ({ project, knownStored })
+  const storedIds = () => loadProjects().map((project) => project.id).sort()
 
-    expect(browserLibraryStore.reread(revision, () => false, [])).toBeUndefined()
+  it('writes the Projects changed inside the call, answers later, and leaves every other Project as it is', async () => {
+    const [kept, edited] = [makeProject(), makeProject()]
+    saveProjects([kept, edited])
+    browserLibraryStore.open(() => false)
+    const changed = { ...edited, updatedAt: edited.updatedAt + 1 }
+
+    const answer = browserLibraryStore.save([change(changed)], [])
+
+    expect(loadProjects()).toEqual([changed, kept])
+    await expect(answer).resolves.toEqual({ dropped: [] })
   })
 
-  it('hands back each Project held as it is stored, decoding only the ones another tab changed or made', () => {
+  it('removes the ids removed', async () => {
+    const [kept, removed] = [makeProject(), makeProject()]
+    saveProjects([kept, removed])
+
+    await browserLibraryStore.save([], [removed.id])
+
+    expect(storedIds()).toEqual([kept.id])
+  })
+
+  it('keeps the Projects another tab stored since this one read, which a whole-library write would have erased', async () => {
     const mine = makeProject()
-    const revision = browserLibraryStore.save([mine])
+    saveProjects([mine])
+    browserLibraryStore.open(() => false)
     const theirs = makeProject()
     saveProjects([mine, theirs])
 
-    const fresh = browserLibraryStore.reread(revision, () => false, [mine])!
+    await browserLibraryStore.save([change({ ...mine, updatedAt: mine.updatedAt + 1 })], [])
 
-    expect(fresh.projects[0]).toBe(mine)
-    expect(fresh.projects.map((project) => project.id)).toEqual([mine.id, theirs.id])
-    expect(fresh.revision).toBe(localStorage.getItem(STORAGE_KEY))
+    expect(storedIds()).toEqual([mine.id, theirs.id].sort())
   })
 
-  it('keeps a Project the caller picks sealed, and a sealed one held as stored is that one', () => {
-    storeLibrary([], [storedHugeProject()])
-    const opened = browserLibraryStore.open(() => true)
+  it('does not write a Project it knew as stored whose record is gone, and says so', async () => {
+    const [removedElsewhere, other] = [makeProject(), makeProject()]
+    saveProjects([removedElsewhere, other])
+    browserLibraryStore.open(() => false)
+    saveProjects([other])
+
+    const answer = await browserLibraryStore.save([change(removedElsewhere), change(makeProject(), false)], [])
+
+    expect(answer.dropped).toEqual([removedElsewhere.id])
+    expect(storedIds()).toHaveLength(2)
+    expect(storedIds()).not.toContain(removedElsewhere.id)
+  })
+
+  it('rejects, writing nothing, when the device refuses the write', async () => {
+    saveProjects([makeProject()])
+    refuseStorageWrites(STORAGE_KEY)
+
+    await expect(browserLibraryStore.save([change(makeProject(), false)], [])).rejects.toThrow()
+
+    vi.restoreAllMocks()
+    expect(loadProjects()).toHaveLength(1)
+  })
+
+  it('parses nothing while the value is the one this page wrote (tickets 0677, 0834)', async () => {
+    saveProjects([makeProject(), makeProject()])
+    const { projects } = browserLibraryStore.open(() => false)
+    const edited = { ...projects[0]!, updatedAt: projects[0]!.updatedAt + 1 }
+    const parse = vi.spyOn(JSON, 'parse')
+
+    await browserLibraryStore.save([change(edited)], [])
+    await browserLibraryStore.reread([edited, projects[1]!], () => false)
+
+    expect(parse).not.toHaveBeenCalled()
+  })
+})
+
+describe('rereading what another tab stored (tickets 0834, 1019)', () => {
+  it('gives nothing while storage holds what the tab holds', async () => {
+    const mine = makeProject()
+    await browserLibraryStore.save([{ project: mine, knownStored: false }], [])
+
+    await expect(browserLibraryStore.reread([mine], () => false)).resolves.toEqual({ changed: [], gone: [] })
+  })
+
+  it('gives the Projects another tab changed or made, as the tab holds them, and the ids gone', async () => {
+    const [mine, removed] = [makeProject(), makeProject()]
+    saveProjects([mine, removed])
+    const held = browserLibraryStore.open(() => false).projects
     const theirs = makeProject()
-    saveProjects([theirs], opened.sealed)
+    const renamed = { ...mine, updatedAt: mine.updatedAt + 1 }
+    saveProjects([renamed, theirs])
 
-    const fresh = browserLibraryStore.reread(opened.revision, (summary) => summary.id !== theirs.id, opened.sealed)!
+    const fresh = await browserLibraryStore.reread(held, () => false)
 
-    expect(fresh.sealed).toHaveLength(1)
-    expect(fresh.sealed[0]).toBe(opened.sealed[0])
-    expect(fresh.projects.map((project) => project.id)).toEqual([theirs.id])
+    expect(fresh.changed).toEqual([renamed, theirs])
+    expect(fresh.gone).toEqual([removed.id])
   })
 
-  it('refuses a stored value it cannot read', () => {
+  it('keeps a Project the caller picks sealed', async () => {
+    const theirs = makeProject()
+    saveProjects([theirs])
+
+    const fresh = await browserLibraryStore.reread([], () => true)
+
+    expect(fresh.changed).toMatchObject([{ id: theirs.id, stored: expect.any(String) }])
+  })
+
+  it('refuses a stored value it cannot read', async () => {
     localStorage.setItem(STORAGE_KEY, 'not json')
 
-    expect(() => browserLibraryStore.reread('', () => false, [])).toThrow()
+    await expect(browserLibraryStore.reread([], () => false)).rejects.toThrow()
   })
 
   it("hears another tab's write of the library, and stops hearing when asked", () => {
@@ -527,5 +598,14 @@ describe('rereading what another tab stored (ticket 0834)', () => {
     window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
 
     expect(heard).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the start (spec 1018)', () => {
+  it('is ready at once and counts the stored Projects without a start, for the main address and the Homepage', async () => {
+    await expect(browserLibraryStore.start()).resolves.toBe('ready')
+    await expect(browserLibraryStore.count()).resolves.toBe(0)
+    saveProjects([makeProject(), makeProject()])
+    await expect(browserLibraryStore.count()).resolves.toBe(2)
   })
 })

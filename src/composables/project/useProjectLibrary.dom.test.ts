@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { effectScope, type EffectScope } from 'vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
@@ -10,6 +11,7 @@ import { sharedProjectLocks } from '../../testUtils/projectLocks'
 import { projectNameOf } from '../../domain/layerRecord'
 import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storageWrites'
 import { useProjectLibrary } from './useProjectLibrary'
+import { memoryLibraryStore } from '../../services/memoryLibraryStore'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { frameOf } from '../../domain/layerRecord'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
@@ -29,6 +31,9 @@ function makeProject(overrides: LayersChange = {}): Project {
     overrides,
   )
 }
+
+/** The color at a column of the Frame's first row. */
+const painted = (project: Project | undefined, column = 0) => frameGrid(project!)[0]![column]!.color
 
 /** One painted cell, the way a stroke's per-cell commit arrives at replaceProject. */
 function withPaintedCell(project: Project, row: number, column: number): Project {
@@ -137,9 +142,10 @@ describe('useProjectLibrary', () => {
     expect(frameGrid(loadProjects()[0]!)[0]!.every((cell) => cell.color === '#e63746')).toBe(true)
   })
 
-  it('flushing with nothing pending writes nothing', () => {
+  it('flushing with nothing pending writes nothing', async () => {
     const library = useProjectLibrary()
     library.addProject(makeProject())
+    await flushPromises()
 
     const writes = spyOnStorageWrites()
     library.flushPendingSave()
@@ -271,53 +277,62 @@ describe('useProjectLibrary', () => {
     expect(loadProjects().map(projectNameOf).sort()).toEqual(['Huge', 'Huge 2', 'Owl', 'Summer bracelet', 'Summer bracelet 2'])
   })
 
-  it('reports a failed save instead of throwing, and clears the report once a save gets through', () => {
+  it('reports a failed save instead of throwing, and clears the report once a save gets through', async () => {
     const library = useProjectLibrary()
     const project = makeProject()
     library.addProject(project)
+    await flushPromises()
     expect(library.saveFailed.value).toBe(false)
 
     const failing = refuseStorageWrites()
     expect(() => library.replaceProject(withPaintedCell(project, 0, 0))).not.toThrow()
+    await flushPromises()
     expect(library.saveFailed.value).toBe(true)
 
     failing.mockRestore()
     library.replaceProject(withPaintedCell(library.activeProject.value!, 1, 1))
+    await flushPromises()
 
     expect(library.saveFailed.value).toBe(false)
   })
 
-  it('reports a failed save on a deferred stroke only once it is flushed', () => {
+  it('reports a failed save on a deferred stroke only once it is flushed', async () => {
     const library = useProjectLibrary()
     const project = makeProject()
     library.addProject(project)
 
+    await flushPromises()
     refuseStorageWrites()
     library.replaceProject(withPaintedCell(project, 0, 0), { deferSave: true })
+    await flushPromises()
     expect(library.saveFailed.value).toBe(false)
 
     library.flushPendingSave()
+    await flushPromises()
 
     expect(library.saveFailed.value).toBe(true)
   })
 
-  it('keeps a failed change pending so the next save retries it', () => {
+  it('keeps a failed change pending so the next save retries it', async () => {
     const library = useProjectLibrary()
     const project = makeProject()
     library.addProject(project)
 
+    await flushPromises()
     const failing = refuseStorageWrites()
     library.replaceProject(withPaintedCell(project, 0, 0))
+    await flushPromises()
     failing.mockRestore()
 
     library.flushPendingSave()
+    await flushPromises()
 
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
     expect(library.saveFailed.value).toBe(false)
   })
 
   describe('saveNow (ticket 115)', () => {
-    it('writes a deferred change straight away and reports that it landed', () => {
+    it('writes a deferred change straight away and reports that it landed', async () => {
       const library = useProjectLibrary()
       const project = makeProject()
       library.addProject(project)
@@ -325,39 +340,43 @@ describe('useProjectLibrary', () => {
 
       const saved = library.saveNow()
 
-      expect(saved).toBe(true)
+      // Written inside the call; the answer comes after.
+      expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+      expect(await saved).toBe(true)
       expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
     })
 
-    it('writes even with nothing pending, so a "saved" answer never rests on an assumption', () => {
+    it('writes even with nothing pending, so a "saved" answer never rests on an assumption', async () => {
       const library = useProjectLibrary()
       library.addProject(makeProject())
+      await flushPromises()
 
       const writes = spyOnStorageWrites()
 
-      expect(library.saveNow()).toBe(true)
+      expect(await library.saveNow()).toBe(true)
       expect(writes.count).toBe(1)
     })
 
-    it('reports a refused write and raises saveFailed', () => {
+    it('reports a refused write and raises saveFailed', async () => {
       const library = useProjectLibrary()
       library.addProject(makeProject())
 
       refuseStorageWrites()
 
-      expect(library.saveNow()).toBe(false)
+      expect(await library.saveNow()).toBe(false)
       expect(library.saveFailed.value).toBe(true)
     })
 
-    it('clears an earlier saveFailed once the write gets through', () => {
+    it('clears an earlier saveFailed once the write gets through', async () => {
       const library = useProjectLibrary()
       const project = makeProject()
       library.addProject(project)
       const failing = refuseStorageWrites()
       library.replaceProject(withPaintedCell(project, 0, 0))
+      await flushPromises()
       failing.mockRestore()
 
-      expect(library.saveNow()).toBe(true)
+      expect(await library.saveNow()).toBe(true)
       expect(library.saveFailed.value).toBe(false)
     })
   })
@@ -539,9 +558,14 @@ describe('two tabs over one library (ticket 0834)', () => {
   type Tab = ReturnType<typeof openTab>
   afterEach(() => scopes.splice(0).forEach((scope) => scope.stop()))
 
-  const storedIds = () => loadProjects().map((project) => project.id).sort()
-  const painted = (project: Project | undefined, column: number) => frameGrid(project!)[0]![column]!.color
+  /** What the browser does when another tab stored: tells this one, which then rereads. */
+  const hearOthers = async () => {
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+    await flushPromises()
+  }
 
+  const storedIds = () => loadProjects().map((project) => project.id).sort()
+  
   /** Every order the two tabs' steps can come in, each tab's own steps in their order. */
   function interleavings<T>(a: T[], b: T[]): T[][] {
     if (a.length === 0) return [b]
@@ -549,7 +573,7 @@ describe('two tabs over one library (ticket 0834)', () => {
     return [...interleavings(a.slice(1), b).map((rest) => [a[0]!, ...rest]), ...interleavings(a, b.slice(1)).map((rest) => [b[0]!, ...rest])]
   }
 
-  it('loses no Project and no drawing in any order of the two tabs\' saves (F-05-01)', () => {
+  it('loses no Project and no drawing in any order of the two tabs\' saves (F-05-01)', async () => {
     const steps = (made: Project, column: number) => [
       (tab: Tab) => tab.addProject(made),
       (tab: Tab) => tab.replaceProject(withPaintedCell(tab.projects.value.find((project) => project.id === made.id)!, 0, column)),
@@ -567,6 +591,7 @@ describe('two tabs over one library (ticket 0834)', () => {
       useProjectLibrary().addProject(alpha)
       const tabs = { a: openTab(), b: openTab() }
       for (const { tab, step } of order) step(tabs[tab])
+      await flushPromises()
 
       expect(storedIds()).toEqual([alpha.id, beta.id, gamma.id].sort())
       const reloaded = openTab().projects.value
@@ -575,29 +600,30 @@ describe('two tabs over one library (ticket 0834)', () => {
     }
   })
 
-  it('takes in the Projects another tab saved, so a later save of its own keeps them', () => {
+  it('keeps the Projects another tab saved when a save of its own comes, without having heard of them', () => {
     const a = openTab()
     const b = openTab()
     const beta = makeProject()
     b.addProject(beta)
 
-    a.addProject(makeProject())
+    const alpha = makeProject()
+    a.addProject(alpha)
 
-    expect(a.projects.value.map((project) => project.id)).toContain(beta.id)
+    expect(storedIds()).toEqual([alpha.id, beta.id].sort())
   })
 
-  it("follows another tab's write as it lands, before saving anything", () => {
+  it("follows another tab's write as it lands, before saving anything", async () => {
     const a = openTab()
     const b = openTab()
     const beta = makeProject()
     b.addProject(beta)
 
-    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+    await hearOthers()
 
     expect(a.projects.value.map((project) => project.id)).toEqual([beta.id])
   })
 
-  it('keeps a rename made in one tab after the other tab saves', () => {
+  it('keeps a rename made in one tab after the other tab saves', async () => {
     const alpha = makeProject({ name: 'Alpha' })
     const beta = makeProject()
     useProjectLibrary().addProjects([alpha, beta])
@@ -605,13 +631,15 @@ describe('two tabs over one library (ticket 0834)', () => {
     const b = openTab()
 
     a.replaceProject(withLayers(a.projects.value.find((project) => project.id === alpha.id)!, { name: 'Sunrise' }))
+    await hearOthers()
     b.replaceProject(withPaintedCell(b.projects.value.find((project) => project.id === beta.id)!, 0, 0))
 
+    await flushPromises()
     expect(projectNameOf(loadProjects().find((project) => project.id === alpha.id)!)).toBe('Sunrise')
     expect(projectNameOf(b.projects.value.find((project) => project.id === alpha.id)!)).toBe('Sunrise')
   })
 
-  it('keeps a Project removed in one tab removed after the other tab saves, or draws on it', () => {
+  it('keeps a Project removed in one tab removed after the other tab saves, or draws on it', async () => {
     const alpha = makeProject()
     const beta = makeProject()
     useProjectLibrary().addProjects([alpha, beta])
@@ -620,24 +648,26 @@ describe('two tabs over one library (ticket 0834)', () => {
 
     a.removeProject(alpha.id)
     b.replaceProject(withPaintedCell(b.projects.value.find((project) => project.id === alpha.id)!, 0, 0))
+    await flushPromises()
 
     expect(storedIds()).toEqual([beta.id])
     expect(b.projects.value.map((project) => project.id)).toEqual([beta.id])
   })
 
-  it('refuses a save over a stored library it cannot read, rather than writing one without its Projects', () => {
+  it('refuses a save over a stored library it cannot read, rather than writing one without its Projects', async () => {
     const a = openTab()
     a.addProject(makeProject())
     localStorage.setItem(STORAGE_KEY, '{"version":999,"patterns":[]}')
 
     a.replaceProject(withPaintedCell(a.activeProject.value!, 0, 0))
+    await flushPromises()
 
     expect(a.saveFailed.value).toBe(true)
     expect(localStorage.getItem(STORAGE_KEY)).toBe('{"version":999,"patterns":[]}')
   })
 
   describe('the same Project open in both tabs', () => {
-    it('tells the second tab it is open in another tab, and keeps the first tab\'s beads whatever the second draws', () => {
+    it('tells the second tab it is open in another tab, and keeps the first tab\'s beads whatever the second draws', async () => {
       const alpha = makeProject()
       useProjectLibrary().addProject(alpha)
       const locks = sharedProjectLocks()
@@ -646,6 +676,7 @@ describe('two tabs over one library (ticket 0834)', () => {
 
       first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 0))
       second.replaceProject(withPaintedCell(second.activeProject.value!, 0, 1))
+      await flushPromises()
 
       expect(first.openElsewhere.value).toBe(false)
       expect(second.openElsewhere.value).toBe(true)
@@ -655,7 +686,7 @@ describe('two tabs over one library (ticket 0834)', () => {
       expect(painted(second.activeProject.value, 1)).toBeNull()
     })
 
-    it('lets the second tab draw once the first opens another Project, from what the first one drew', () => {
+    it('lets the second tab draw once the first opens another Project, from what the first one drew', async () => {
       const alpha = makeProject()
       const beta = makeProject()
       useProjectLibrary().addProjects([alpha, beta])
@@ -667,6 +698,7 @@ describe('two tabs over one library (ticket 0834)', () => {
       first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 0))
 
       first.openProject(open === alpha.id ? beta.id : alpha.id)
+      await flushPromises()
 
       expect(second.openElsewhere.value).toBe(false)
       expect(painted(second.activeProject.value, 0)).toBe('#e63746')
@@ -689,6 +721,14 @@ describe('two tabs over one library (ticket 0834)', () => {
       expect(painted(loadProjects().find((project) => project.id === open), 0)).toBe('#e63746')
     })
 
+    it('writes a Project made here at once, though the locks have not answered yet', () => {
+      const unanswered = openTab({ claim: () => ({ letGo: () => undefined, takeOver: () => undefined }) })
+
+      unanswered.addProject(makeProject())
+
+      expect(loadProjects()).toHaveLength(1)
+    })
+
     it('keeps to the stored copy of the open Project until the locks answer', () => {
       useProjectLibrary().addProject(makeProject())
       const unanswered = openTab({ claim: () => ({ letGo: () => undefined, takeOver: () => undefined }) })
@@ -698,7 +738,7 @@ describe('two tabs over one library (ticket 0834)', () => {
       expect(painted(loadProjects()[0], 0)).toBeNull()
     })
 
-    it('lets the second tab work here instead: it draws and saves from what the first stored, and the first is told (ticket 0937)', () => {
+    it('lets the second tab work here instead: it draws and saves from what the first stored, and the first is told (ticket 0937)', async () => {
       useProjectLibrary().addProject(makeProject())
       const locks = sharedProjectLocks()
       const first = openTab(locks)
@@ -706,11 +746,13 @@ describe('two tabs over one library (ticket 0834)', () => {
       first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 0))
 
       second.workHere()
+      await flushPromises()
 
       expect([first.openElsewhere.value, second.openElsewhere.value]).toEqual([true, false])
       expect(painted(second.activeProject.value, 0)).toBe('#e63746')
       second.replaceProject(withPaintedCell(second.activeProject.value!, 0, 1))
       first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 2))
+      await flushPromises()
       const stored = loadProjects()[0]
       expect([painted(stored, 0), painted(stored, 1), painted(stored, 2)]).toEqual(['#e63746', '#e63746', null])
     })
@@ -739,5 +781,129 @@ describe('two tabs over one library (ticket 0834)', () => {
 
       expect([first.openElsewhere.value, second.openElsewhere.value]).toEqual([false, false])
     })
+  })
+})
+
+describe('a library over a store that answers a save later (spec 1018)', () => {
+  const ids = (library: { projects: { value: Project[] } }) => library.projects.value.map((project) => project.id).sort()
+
+  it('is unsaved from the edit until the store has answered, then saved', async () => {
+    const store = memoryLibraryStore([makeProject()])
+    const library = useProjectLibrary(store)
+    const release = store.holdWrites()
+
+    library.replaceProject(withPaintedCell(library.activeProject.value!, 0, 0))
+
+    await flushPromises()
+    expect(library.unsaved.value).toBe(true)
+    release()
+    await flushPromises()
+    expect(library.unsaved.value).toBe(false)
+    expect(painted(store.stored()[0])).toBe('#e63746')
+  })
+
+  it('stays unsaved while a later edit waits for the answer to an earlier save', async () => {
+    const store = memoryLibraryStore([makeProject()])
+    const library = useProjectLibrary(store)
+    const release = store.holdWrites()
+    library.replaceProject(withPaintedCell(library.activeProject.value!, 0, 0))
+    library.replaceProject(withPaintedCell(library.activeProject.value!, 0, 1), { deferSave: true })
+
+    release()
+    await flushPromises()
+
+    expect(library.unsaved.value).toBe(true)
+    library.flushPendingSave()
+    await flushPromises()
+    expect(library.unsaved.value).toBe(false)
+    expect([painted(store.stored()[0]), painted(store.stored()[0], 1)]).toEqual(['#e63746', '#e63746'])
+  })
+
+  it('raises saveFailed when the store refuses, keeps the change pending, and retries it with the next save', async () => {
+    const store = memoryLibraryStore([makeProject()])
+    const library = useProjectLibrary(store)
+    const stop = store.refuseWrites()
+
+    library.replaceProject(withPaintedCell(library.activeProject.value!, 0, 0))
+    await flushPromises()
+
+    expect([library.saveFailed.value, library.unsaved.value]).toEqual([true, true])
+    expect(painted(store.stored()[0])).toBeNull()
+    stop()
+    expect(await library.saveNow()).toBe(true)
+    expect([library.saveFailed.value, library.unsaved.value]).toEqual([false, false])
+    expect(painted(store.stored()[0])).toBe('#e63746')
+  })
+
+  it('answers Save once the write has landed, not before', async () => {
+    const store = memoryLibraryStore([makeProject()])
+    const library = useProjectLibrary(store)
+    const release = store.holdWrites()
+    let answered: boolean | undefined
+    void library.saveNow().then((landed) => (answered = landed))
+
+    await flushPromises()
+    expect(answered).toBeUndefined()
+    release()
+    await flushPromises()
+
+    expect(answered).toBe(true)
+  })
+
+  it('writes only the Project changed, and the id removed', async () => {
+    const [kept, edited, removed] = [makeProject(), makeProject(), makeProject()]
+    const store = memoryLibraryStore([kept, edited, removed])
+    const save = vi.spyOn(store, 'save')
+    const library = useProjectLibrary(store)
+
+    library.replaceProject(withPaintedCell(library.projects.value.find((project) => project.id === edited.id)!, 0, 0))
+    library.removeProject(removed.id)
+    await flushPromises()
+
+    expect(save.mock.calls[0]![0].map((change) => change.project.id)).toEqual([edited.id])
+    expect(save.mock.calls[1]![1]).toEqual([removed.id])
+    expect(store.stored().map((project) => project.id).sort()).toEqual([kept.id, edited.id].sort())
+  })
+
+  it("takes in the Projects an outside change names, and a Project it removed, while this tab's own change stays", async () => {
+    const [mine, theirs, removed] = [makeProject(), makeProject(), makeProject()]
+    const store = memoryLibraryStore([mine, removed])
+    const library = useProjectLibrary(store)
+    const other = useProjectLibrary(store)
+    other.addProject(theirs)
+    other.removeProject(removed.id)
+    library.replaceProject(withPaintedCell(library.projects.value.find((project) => project.id === mine.id)!, 0, 0), { deferSave: true })
+
+    await flushPromises()
+
+    expect(ids(library)).toEqual([mine.id, theirs.id].sort())
+    expect(painted(library.projects.value.find((project) => project.id === mine.id))).toBe('#e63746')
+  })
+
+  it('does not write back a Project another tab removed after this tab changed it, and drops it', async () => {
+    const [alpha, beta] = [makeProject(), makeProject()]
+    const store = memoryLibraryStore([alpha, beta])
+    const library = useProjectLibrary(store)
+    const release = store.holdWrites()
+    library.replaceProject(withPaintedCell(library.projects.value.find((project) => project.id === alpha.id)!, 0, 0))
+    // The other tab's removal lands first.
+    store.save([], [alpha.id])
+    release()
+    await flushPromises()
+
+    expect(store.stored().map((project) => project.id)).toEqual([beta.id])
+    expect(ids(library)).toEqual([beta.id])
+  })
+
+  it('gives up the open Project when another tab removed it, and opens the next', async () => {
+    const [alpha, beta] = [makeProject({ updatedAt: 2000 }), makeProject({ updatedAt: 1000 })]
+    const store = memoryLibraryStore([alpha, beta])
+    const library = useProjectLibrary(store)
+    expect(library.activeProjectId.value).toBe(alpha.id)
+
+    await store.save([], [alpha.id])
+    await flushPromises()
+
+    expect(library.activeProjectId.value).toBe(beta.id)
   })
 })

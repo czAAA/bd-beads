@@ -5,7 +5,7 @@ import { browserFeedback } from './feedback'
 import { downloadFile } from './fileDownload'
 import { decodeImageFile } from './imageDecode'
 import { readClipboardImage } from './clipboardImage'
-import type { LibraryStore } from './libraryStore'
+import { memoryLibraryStore } from './memoryLibraryStore'
 import type { ProjectKeyedStore } from './deviceDatabase'
 import { browserFileWriter } from './fileWriter'
 import type { SinceFiles } from './sinceFileStore'
@@ -48,32 +48,6 @@ function memoryPreferences(page: DevicePreferences, pageStorage: () => Preferenc
   }
 }
 
-/** A library kept in memory, starting with `projects`; each save is a revision of its own, and its listeners hear
- * every one after it, as the browser's other tabs would. */
-function memoryLibrary(projects: readonly Project[]): LibraryStore {
-  let kept = [...projects]
-  let revision = 0
-  const listeners = new Set<() => void>()
-  return {
-    load: () => [...kept],
-    open: () => ({ projects: [...kept], sealed: [], revision: String(revision) }),
-    unseal: () => {
-      throw new Error('A library in memory keeps nothing sealed')
-    },
-    save: (next) => {
-      kept = [...next]
-      revision += 1
-      queueMicrotask(() => listeners.forEach((listener) => listener()))
-      return String(revision)
-    },
-    reread: (since) => (since === String(revision) ? undefined : { projects: [...kept], sealed: [], revision: String(revision) }),
-    onOutsideChange: (listener) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
-  }
-}
-
 /** Values kept per Project in memory: reference images' pictures, Linked files. */
 function memoryKeyed<T>(): ProjectKeyedStore<T> {
   const kept = new Map<string, T>()
@@ -112,7 +86,7 @@ interface MemoryServicesOptions {
 export function memoryServices(projects: readonly Project[], options: MemoryServicesOptions = {}): Services {
   const { page = browserDevicePreferences, pageStorage = () => localStorage, start = {} } = options
   return {
-    libraryStore: memoryLibrary(projects),
+    libraryStore: memoryLibraryStore(projects),
     downloadFile,
     decodeImage: decodeImageFile,
     readClipboardImage,

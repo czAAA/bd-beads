@@ -17,14 +17,14 @@ function page(seed: Record<string, string> = {}) {
 const project = () => createProject({ name: 'Kaleidoscope', technique: 'loom', beadId: 'miyuki/delica/11-0' })
 
 describe("memoryServices: the Homepage demo's own (ticket 0797)", () => {
-  it('keeps its library in memory, starting from the Projects given', () => {
+  it('keeps its library in memory, starting from the Projects given', async () => {
     const { kept, storage, preferences } = page()
     const start = project()
     const services = memoryServices([start], { page: preferences, pageStorage: () => storage })
     expect(services.libraryStore.load().map((each) => each.id)).toEqual([start.id])
 
     const another = project()
-    services.libraryStore.save([start, another])
+    await services.libraryStore.save([{ project: another, knownStored: false }], [])
     expect(services.libraryStore.open(() => false).projects.map((each) => each.id)).toEqual([start.id, another.id])
     expect(kept.size).toBe(0)
   })

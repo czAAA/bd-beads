@@ -106,32 +106,19 @@ function withDevicePalette(stored: StoredProject[], sealed: readonly SealedProje
   return migrated
 }
 
-/** The library as the editor opens it (ticket 0716): Projects decoded, and those kept sealed in their stored form.
- * `revision` is what storage held, for rereadStored to tell whether another tab has stored since (ticket 0834). */
+/** The library as the editor opens it (ticket 0716): Projects decoded, and those kept sealed in their stored form. */
 interface OpenedLibrary {
   projects: Project[]
   sealed: SealedProject[]
-  revision: LibraryRevision
 }
 
-/** What the stored library was when a tab last read or wrote it (ticket 0834): opaque, compared whole. */
-type LibraryRevision = string
-
-/** The revision of a stored value, none stored being the empty one. */
-function revisionOf(raw: string | null): LibraryRevision {
-  return raw ?? ''
-}
-
-/** A Project of the library as a tab holds it, decoded or sealed: rereadStored hands it back where storage holds it
- * unchanged, so nothing that didn't change is decoded again. */
+/** A Project of the library as a tab holds it, decoded or sealed. A held Project carries its stamp: what the store
+ * compares to tell whether another tab changed its record (stampOf). */
 export type HeldProject = Project | SealedProject
 
-// Reads the whole library in any stored format (READERS). A current-format Project `keepSealed` picks stays stored (0716);
-// on a reread (0834) one stored as a `reused` one is that one, and the device Palette's move is left to the open.
+// Reads the whole library in any stored format (READERS). A current-format Project `keepSealed` picks stays stored (0716).
 // Undefined for an unreadable value (bad JSON, wrong shape, newer version).
-function readStored(raw: string, keepSealed: (summary: ProjectSummary) => boolean, reused?: ReadonlyMap<string, HeldProject>): Omit<OpenedLibrary, 'revision'> | undefined {
-  const opening = reused === undefined
-  const withPalette = (stored: StoredProject[], sealed: readonly SealedProject[]) => (opening ? withDevicePalette(stored, sealed) : stored)
+function readStored(raw: string, keepSealed: (summary: ProjectSummary) => boolean): OpenedLibrary | undefined {
   try {
     const parsed: unknown = JSON.parse(raw)
     const version = versionOf(parsed)
@@ -139,21 +126,17 @@ function readStored(raw: string, keepSealed: (summary: ProjectSummary) => boolea
     if (read && (version === STORED_VERSION || version === LAYERED_VERSION)) {
       const sealed: SealedProject[] = []
       const decoded: EncodedProject[] = []
-      const kept: Project[] = []
       // Version 5 differs only in brick stitch's Drop, stored as a Brick block: renamed here, the beads left encoded.
       const current = (stored: EncodedProject) => (version === STORED_VERSION ? stored : { ...stored, layers: stored.layers.map(renamedBrickBlock) })
       for (const encoded of inKnownTechniques((parsed as StoredLibrary).patterns).map(current)) {
-        const same = reused?.get(JSON.stringify(encoded))
-        const summary = same ? undefined : projectSummaryOf(encoded)
-        if (same && 'stored' in same) sealed.push(same)
-        else if (same) kept.push(same)
-        else if (summary && keepSealed(summary)) sealed.push({ ...summary, stored: JSON.stringify(encoded) })
+        const summary = projectSummaryOf(encoded)
+        if (summary && keepSealed(summary)) sealed.push({ ...summary, stored: JSON.stringify(encoded) })
         else decoded.push(encoded)
       }
-      return { projects: [...kept, ...withPalette(decoded.map(decodeProject), sealed).map(normalizeProject)], sealed }
+      return { projects: withDevicePalette(decoded.map(decodeProject), sealed).map(normalizeProject), sealed }
     }
     if (read) {
-      return { projects: withPalette(inKnownTechniques(read(parsed)), []).map(normalizeProject), sealed: [] }
+      return { projects: withDevicePalette(inKnownTechniques(read(parsed)), []).map(normalizeProject), sealed: [] }
     }
   } catch {
     // Unparseable, or not the shape the version it claims implies — the same situation either way: unreadable here.
@@ -161,34 +144,74 @@ function readStored(raw: string, keepSealed: (summary: ProjectSummary) => boolea
   return undefined
 }
 
+/** One Project as storage holds it: held already (opened or written by a tab here), or its stored JSON, not yet decoded. */
+type StoredRecord = HeldProject | string
+
+/** What storage held when this page last read or wrote it, by Project. The raw value it came from makes it a plain
+ * memo: a read that finds the same value parses nothing (tickets 0677, 0834). */
+interface StoredLibraryView {
+  raw: string | null
+  records: Map<string, StoredRecord>
+}
+
+let seen: StoredLibraryView | undefined
+
+/** The stamp of a Project: its stored JSON. Another tab's write of it is a record with a different one. Kept per Project
+ * object (storedJsonOf), so a Project not changed is never encoded again. */
+function stampOf(record: StoredRecord): string {
+  if (typeof record === 'string') return record
+  return 'stored' in record ? record.stored : storedJsonOf(record)
+}
+
+/** The records of a stored value, by Project, in stored order. Throws on a value this build can't read. */
+function parseRecords(raw: string): Map<string, StoredRecord> {
+  const parsed: unknown = JSON.parse(raw)
+  const version = versionOf(parsed)
+  const read = version === undefined ? undefined : READERS[version]
+  const records = new Map<string, StoredRecord>()
+  if (!read) throw new Error('The stored library is in a form this build cannot read')
+  if (version === STORED_VERSION || version === LAYERED_VERSION) {
+    for (const encoded of inKnownTechniques((parsed as StoredLibrary).patterns)) {
+      const current = version === STORED_VERSION ? encoded : { ...encoded, layers: encoded.layers.map(renamedBrickBlock) }
+      records.set(encoded.id, JSON.stringify(current))
+    }
+  } else {
+    for (const project of inKnownTechniques(read(parsed)).map(normalizeProject)) records.set(project.id, project)
+  }
+  return records
+}
+
+/** What storage holds now by Project: what this page saw of that same value, or the value parsed once. */
+function storedNow(): Map<string, StoredRecord> {
+  const raw = readKey(localStorage, STORAGE_KEY)
+  if (seen?.raw === raw) return seen.records
+  const records = raw === null ? new Map<string, StoredRecord>() : parseRecords(raw)
+  seen = { raw, records }
+  return records
+}
+
+/** A stored record as a tab holds it: sealed when `keepSealed` picks it, otherwise decoded. */
+function heldFromRecord(record: StoredRecord, keepSealed: (summary: ProjectSummary) => boolean): HeldProject {
+  const json = stampOf(record)
+  const encoded = JSON.parse(json) as EncodedProject
+  const summary = projectSummaryOf(encoded)
+  if (summary && keepSealed(summary)) return { ...summary, stored: json }
+  const project = normalizeProject(decodeProject(encoded))
+  // Kept as stored, so the next stamp of it is this record's and it isn't taken for a change.
+  storedJson.set(project, json)
+  return project
+}
+
 // The library as it opens (see readStored). For an unreadable value (bad JSON, wrong shape, newer version) returns no
 // Projects, after keeping the bytes aside.
 function openStored(keepSealed: (summary: ProjectSummary) => boolean): OpenedLibrary {
   const raw = readKey(localStorage, STORAGE_KEY)
-  const revision = revisionOf(raw)
-  if (raw === null) return { projects: [], sealed: [], revision }
-  const opened = readStored(raw, keepSealed)
-  if (opened) return { ...opened, revision }
-  keepUnreadable(raw)
-  return { projects: [], sealed: [], revision }
-}
-
-/** The library as stored now, when another tab stored since `since` (ticket 0834); undefined when it holds what it did.
- * Each Project `held` holds as stored is handed back as it is. Throws on a value this build can't read, so a save
- * merging with it is refused rather than writing a library without the Projects it couldn't read. */
-function rereadStored(since: LibraryRevision, keepSealed: (summary: ProjectSummary) => boolean, held: readonly HeldProject[]): OpenedLibrary | undefined {
-  const raw = readKey(localStorage, STORAGE_KEY)
-  const revision = revisionOf(raw)
-  if (revision === since) return undefined
-  if (raw === null) return { projects: [], sealed: [], revision }
-  const reused = new Map<string, HeldProject>()
-  for (const project of held) {
-    const stored = 'stored' in project ? project.stored : storedJson.get(project)
-    if (stored !== undefined) reused.set(stored, project)
-  }
-  const opened = readStored(raw, keepSealed, reused)
-  if (!opened) throw new Error('The stored library is in a form this build cannot read')
-  return { ...opened, revision }
+  const opened = raw === null ? { projects: [], sealed: [] } : readStored(raw, keepSealed)
+  if (raw !== null && !opened) keepUnreadable(raw)
+  const library = opened ?? { projects: [], sealed: [] }
+  // Read again: opening may have moved the device's old Palette into the library (withDevicePalette).
+  seen = { raw: readKey(localStorage, STORAGE_KEY), records: new Map([...library.projects, ...library.sealed].map((project) => [project.id, project])) }
+  return library
 }
 
 /** Every stored Project, decoded (see openStored). @internal Tests read back what the app saved with it. */
@@ -198,7 +221,7 @@ export function loadProjects(): Project[] {
 
 /** How many Projects are stored, read without decoding any (ticket 0716): the main address decides between the
  * Homepage and the editor on it, and the Homepage names it. An unreadable value counts none. */
-export function storedProjectCount(): number {
+function storedProjectCount(): number {
   try {
     const raw = readKey(localStorage, STORAGE_KEY)
     if (raw === null) return 0
@@ -223,14 +246,19 @@ function storedJsonOf(project: Project): string {
   return json
 }
 
-/** Writes the whole library (ADR 0009) from each Project's kept encoding and each sealed one's stored JSON (ticket 0716),
- * as the library merged it with what other tabs stored (ticket 0834), and gives its revision. Throws the browser's QuotaExceededError when it doesn't fit; the caller surfaces it.
- * @internal Tests seed a library with it before mounting the App. */
-export function saveProjects(projects: Project[], sealed: readonly SealedProject[] = []): LibraryRevision {
-  const patterns = [...projects.map(storedJsonOf), ...sealed.map((project) => project.stored)]
-  const raw = `{"version":${STORED_VERSION},"patterns":[${patterns.join(',')}]}`
+/** Writes the library from `records` (ADR 0009), each Project from its kept encoding or its stored JSON (tickets 0677,
+ * 0716), and remembers it as what storage holds. Throws the browser's QuotaExceededError when it doesn't fit; the
+ * caller surfaces it. */
+function writeRecords(records: Map<string, StoredRecord>): void {
+  const raw = `{"version":${STORED_VERSION},"patterns":[${[...records.values()].map(stampOf).join(',')}]}`
   localStorage.setItem(STORAGE_KEY, raw)
-  return revisionOf(raw)
+  seen = { raw, records }
+}
+
+/** Replaces the whole stored library with these Projects.
+ * @internal Tests seed a library with it before mounting the App. */
+export function saveProjects(projects: Project[], sealed: readonly SealedProject[] = []): void {
+  writeRecords(new Map([...projects, ...sealed].map((project) => [project.id, project])))
 }
 
 /** A sealed Project decoded, as a whole load would give it, its stored JSON kept as its encoding so the next save
@@ -241,21 +269,53 @@ function unsealProject(sealed: SealedProject): Project {
   return project
 }
 
-// Where the Project library is kept (ADR 0020); useProjectLibrary persists through it, so tests fake it and a backend
-// can add a store.
+/** A Project the tab changed (or made) since its last save, for the store to write. */
+export interface ProjectChange {
+  project: HeldProject
+  /** Whether the tab knew a record of it as stored: if that record is gone, another tab removed it, and it isn't written. */
+  knownStored: boolean
+}
+
+/** What a save answers once it has landed. */
+interface SaveResult {
+  /** The changed Projects not written because another tab removed them: the library drops them too. */
+  dropped: readonly string[]
+}
+
+/** What changed in storage since the Projects a tab holds, by each one's stamp. */
+interface Reread {
+  /** The records whose stamp differs from the held Project's, or that the tab doesn't hold, as the tab holds them. */
+  changed: HeldProject[]
+  /** The ids held that are no longer stored. */
+  gone: string[]
+}
+
+/** Another tab's write: the Projects it names, or undefined when the store can't tell which (reread them all). */
+export type OutsideChange = readonly string[] | undefined
+
+// Where the Project library is kept (ADR 0020, spec 1018); useProjectLibrary persists through it, so tests fake it and a
+// backend can add a store. Forms: the browser's localStorage (below) and, for tests and the Homepage's demo, memory
+// (memoryLibraryStore). A device that refuses the start or can't open the library is ticket 1020's.
 export interface LibraryStore {
-  /** Every stored Project, decoded; see openStored for what an unreadable value gives. */
+  /** Gets the library ready, before anything mounts. */
+  start: () => Promise<'ready'>
+  /** How many Projects are listed, without decoding any: the main address and the Homepage ask it before the start. */
+  count: () => Promise<number>
+  /** Every stored Project, decoded, once the store has started. */
   load: () => Project[]
-  /** The library with the Projects `keepSealed` picks left in their stored form (ticket 0716). */
+  /** The library with the Projects `keepSealed` picks left in their stored form (ticket 0716). Synchronous over what
+   * the start loaded. */
   open: (keepSealed: (summary: ProjectSummary) => boolean) => OpenedLibrary
   /** A sealed Project decoded, when it is picked. */
   unseal: (sealed: SealedProject) => Project
-  /** Replaces the stored library and gives its revision; throws when the device refuses the write (see saveProjects). */
-  save: (projects: Project[], sealed?: readonly SealedProject[]) => LibraryRevision
-  /** The library as stored now, when another tab stored since `since`; undefined when not (ticket 0834, rereadStored). */
-  reread: (since: LibraryRevision, keepSealed: (summary: ProjectSummary) => boolean, held: readonly HeldProject[]) => OpenedLibrary | undefined
-  /** Hears each time another tab stores the library; gives back the way to stop (ticket 0834). */
-  onOutsideChange: (listener: () => void) => () => void
+  /** Stores the Projects changed and removes the ids removed, and answers when it has landed; rejects when the device
+   * refuses it. */
+  save: (changed: readonly ProjectChange[], removed: readonly string[]) => Promise<SaveResult>
+  /** The records that differ from the Projects `held` as the tab last read or wrote them. `ids` narrows it to the
+   * Projects an outside change named. Rejects on a value this build can't read. */
+  reread: (held: readonly HeldProject[], keepSealed: (summary: ProjectSummary) => boolean, ids?: readonly string[]) => Promise<Reread>
+  /** Hears each time another tab stores; gives back the way to stop. */
+  onOutsideChange: (listener: (named: OutsideChange) => void) => () => void
 }
 
 /** How long to wait for a quiet moment where the browser has no idle callback (Safari). */
@@ -279,8 +339,11 @@ function encodeWhenIdle(projects: readonly Project[]): void {
   whenIdle(next)
 }
 
-/** The library in this browser's localStorage (ADR 0001). */
+/** The library in this browser's localStorage (ADR 0001): the whole library is one value, so every write goes inside the
+ * save call (the flush on pagehide keeps its guarantee) and only its answer comes later. */
 export const browserLibraryStore: LibraryStore = {
+  start: () => Promise.resolve('ready'),
+  count: () => Promise.resolve(storedProjectCount()),
   load: () => {
     const projects = loadProjects()
     encodeWhenIdle(projects)
@@ -292,13 +355,39 @@ export const browserLibraryStore: LibraryStore = {
     return opened
   },
   unseal: unsealProject,
-  save: saveProjects,
-  reread: rereadStored,
+  save: (changed, removed) => {
+    try {
+      const stored = storedNow()
+      const dropped: string[] = []
+      const next = new Map<string, StoredRecord>()
+      for (const { project, knownStored } of changed) {
+        if (knownStored && !stored.has(project.id)) dropped.push(project.id)
+        else next.set(project.id, project)
+      }
+      const removedHere = new Set(removed)
+      for (const [id, record] of stored) if (!next.has(id) && !removedHere.has(id)) next.set(id, record)
+      writeRecords(next)
+      return Promise.resolve({ dropped })
+    } catch (error) {
+      return Promise.reject(error)
+    }
+  },
+  reread: (held, keepSealed) => {
+    try {
+      const stored = storedNow()
+      const stamps = new Map(held.map((project) => [project.id, stampOf(project)]))
+      const changed: HeldProject[] = []
+      for (const [id, record] of stored) if (stamps.get(id) !== stampOf(record)) changed.push(heldFromRecord(record, keepSealed))
+      return Promise.resolve({ changed, gone: [...stamps.keys()].filter((id) => !stored.has(id)) })
+    } catch (error) {
+      return Promise.reject(error)
+    }
+  },
   // The browser tells every other tab of the origin about a write, never the one that wrote it; a cleared storage has
-  // no key.
+  // no key. It doesn't say which Projects.
   onOutsideChange: (listener) => {
     const heard = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY || event.key === null) listener()
+      if (event.key === STORAGE_KEY || event.key === null) listener(undefined)
     }
     window.addEventListener('storage', heard)
     return () => window.removeEventListener('storage', heard)

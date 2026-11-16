@@ -59,28 +59,39 @@ interface Entry {
   id: string
 }
 
-/** The library a save writes when another tab may have stored since (ticket 0834): `stored` with this tab's changes
- * since `known` (what it last read or wrote) on top, so what another tab made, renamed or removed stays so, and one
- * changed here but removed there stays removed. `mayChange` is false for a Project another tab has open first. */
-export function mergeLibrary<T extends Entry>(
+/** What other tabs changed in the stored library, by Project (ADR 0091): the records now different from what this tab
+ * held, and the ids no longer there. */
+export interface OutsideChange<T extends Entry> {
+  changed: readonly T[]
+  gone: readonly string[]
+}
+
+/** The library after taking in what other tabs stored, per Project: one changed here (`known` is what this tab last read
+ * or wrote) stays this tab's unless `mayChange` refuses it; one removed here stays removed; one gone from storage is
+ * removed here too, even when changed here after. Anything else takes the stored copy. */
+export function takeInOutside<T extends Entry>(
   here: readonly T[],
   known: ReadonlyMap<string, T>,
-  stored: readonly T[],
+  outside: OutsideChange<T>,
   mayChange: (id: string) => boolean = () => true,
-): T[] {
-  const hereById = new Map(here.map((entry) => [entry.id, entry]))
-  const storedIds = new Set(stored.map((entry) => entry.id))
-  const changedHere = (id: string) => {
-    const mine = hereById.get(id)
-    return mine === undefined ? known.has(id) : mine !== known.get(id) && mayChange(id)
+): { library: T[]; known: Map<string, T> } {
+  const gone = new Set(outside.gone)
+  const stored = new Map(outside.changed.map((entry) => [entry.id, entry]))
+  const hereIds = new Set(here.map((entry) => entry.id))
+  const library: T[] = []
+  for (const mine of here) {
+    const theirs = stored.get(mine.id)
+    if (gone.has(mine.id)) continue
+    if (theirs === undefined) library.push(mine)
+    else if (mine !== known.get(mine.id) && mayChange(mine.id)) library.push(mine)
+    else library.push(theirs)
   }
-  const merged: T[] = []
-  for (const entry of stored) {
-    if (!changedHere(entry.id)) merged.push(entry)
-    else if (hereById.has(entry.id)) merged.push(hereById.get(entry.id)!)
+  for (const theirs of outside.changed) {
+    // A Project removed here stays removed (it is still `known`); one made elsewhere joins.
+    if (!hereIds.has(theirs.id) && !known.has(theirs.id)) library.push(theirs)
   }
-  for (const entry of here) {
-    if (!storedIds.has(entry.id) && !known.has(entry.id)) merged.push(entry)
-  }
-  return merged
+  const nextKnown = new Map(known)
+  for (const id of gone) nextKnown.delete(id)
+  for (const theirs of outside.changed) nextKnown.set(theirs.id, theirs)
+  return { library, known: nextKnown }
 }
