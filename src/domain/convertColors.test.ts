@@ -10,6 +10,7 @@ import {
   convertFrame,
   MEASURED_REACH,
   matchFoundColors,
+  reduceDelivering,
   newProjectPalette,
   NO_LEAST_COLOR_BEADS,
   smallColorsJoined,
@@ -382,5 +383,42 @@ describe('a part measured catalog (ticket 0887)', () => {
     expect(measured!.approximate).toBe(false)
     const [exact] = matchFoundColors(reducedPicture({ [aim]: 5 }), targets, choices({ [aim]: { kind: 'exact' } }))
     expect(exact!.approximate).toBe(false)
+  })
+})
+
+// Ticket 0892: the count asked is the count delivered, unless the picture has fewer.
+describe('the count of colors asked is delivered (ticket 0892)', () => {
+  const codes = [
+    { hex: '#202020', code: 'DB10' },
+    { hex: '#e0e0e0', code: 'DB200' },
+    { hex: '#e02020', code: 'DB159' },
+  ]
+  const counted = (entries: Record<string, number>) => new Map(Object.entries(entries))
+  const deliveredBy = (asked: number, entries: Record<string, number>, leastBeads = 1) =>
+    delivered(matchFoundColors(reduceDelivering(counted(entries), asked, codes, choices(), leastBeads), codes, choices(), leastBeads))
+
+  // The grey is far enough from the dark to be kept, but its code is the dark's: asked 3, the reduction spends its third
+  // place on it and the red is left out.
+  const photo = { '#1a1a1a': 5000, '#383838': 4000, '#e8e8e8': 200, '#d03030': 150 }
+
+  it('gives the place a join freed to the next most different color of the picture', () => {
+    expect(matchFoundColors(reducePictureColors(counted(photo), 3), codes, choices(), 1).map((c) => c.result?.code)).toEqual(['DB10', 'DB10', 'DB200'])
+    expect(deliveredBy(3, photo)).toEqual(['#202020', '#e0e0e0', '#e02020'])
+  })
+
+  it('asks for no more than the count asked', () => {
+    expect(deliveredBy(2, photo)).toHaveLength(2)
+  })
+
+  it('stops when the picture has no color left that different', () => {
+    expect(deliveredBy(4, { '#1a1a1a': 5000, '#383838': 4000, '#e8e8e8': 200, '#1c1c1c': 150, '#1b1b1b': 100 })).toHaveLength(2)
+  })
+
+  it('leaves flat artwork with fewer colors than asked as it is', () => {
+    expect(deliveredBy(12, { '#1a1a1a': 50, '#e8e8e8': 20 })).toHaveLength(2)
+  })
+
+  it('counts the colors a minimum of beads would join', () => {
+    expect(deliveredBy(3, photo, 10)).toHaveLength(3)
   })
 })

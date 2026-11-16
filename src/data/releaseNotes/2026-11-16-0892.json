@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-16",
+  "line": {
+    "en": "Convert image gives the number of colors you ask for when the picture has that many, instead of two or three fewer",
+    "ru": "«Из картинки» даёт столько цветов, сколько вы просите, если они есть в картинке, а не на два-три меньше",
+    "uk": "«З картинки» дає стільки кольорів, скільки ви просите, якщо вони є в картинці, а не на два-три менше",
+    "be": "«З малюнка» дае столькі колераў, колькі вы просіце, калі яны ёсць у малюнку, а не на два-тры менш",
+    "zh": "只要图片里有，转换图片就会给出你要求的颜色数，而不是少两三种",
+    "es": "Convertir imagen da el número de colores que pides cuando la imagen los tiene, en lugar de dos o tres menos",
+    "pl": "Konwertuj obraz daje tyle kolorów, ile prosisz, jeśli obraz je ma, zamiast dwóch czy trzech mniej"
+  }
+}

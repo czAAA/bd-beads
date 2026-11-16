@@ -136,9 +136,9 @@ interface Candidate {
 /** The candidates the reduction keeps (ticket 0890): the biggest first, then each time the one that covers most times how
  * far it is from the nearest kept, so a noisy ground spends one color and a small figure its own; none within the least
  * distance of a kept one. */
-function chooseByDifference(candidates: readonly Candidate[], maxColors: number): Oklab[] {
-  const nearest = candidates.map(() => Infinity)
-  const chosen: Oklab[] = []
+function chooseByDifference(candidates: readonly Candidate[], maxColors: number, kept: readonly Oklab[] = []): Oklab[] {
+  const chosen: Oklab[] = [...kept]
+  const nearest = candidates.map((candidate) => chosen.reduce((least, lab) => Math.min(least, colorDistance(candidate.lab, lab)), Infinity))
   while (chosen.length < maxColors) {
     let best = -1
     let bestScore = 0
@@ -179,10 +179,31 @@ function closest(colors: readonly Oklab[], lab: Oklab): number {
 function groupByDifference(sampled: readonly WeightedColor[], maxColors: number): WeightedColor[][] {
   const boxes = medianCut([...sampled], Math.min(sampled.length, Math.max(maxColors * CANDIDATES_PER_COLOR, LEAST_CANDIDATES)))
   const candidates = boxes.map((box) => ({ lab: toOklab(representative(box)), count: size(box) }))
-  const chosen = chooseByDifference(candidates, maxColors)
-  const groups: WeightedColor[][] = chosen.map(() => [])
-  for (const color of sampled) groups[closest(chosen, toOklab(color.rgb))]!.push(color)
+  return filledUp(sampled, maxColors, groupAround(sampled, chooseByDifference(candidates, maxColors)))
+}
+
+/** The sampled colors grouped round `seeds`, each joining its nearest; the groups that end alike joined. */
+function groupAround(sampled: readonly WeightedColor[], seeds: readonly Oklab[]): WeightedColor[][] {
+  const groups: WeightedColor[][] = seeds.map(() => [])
+  for (const color of sampled) groups[closest(seeds, toOklab(color.rgb))]!.push(color)
   return joinNear(groups.filter((group) => group.length > 0))
+}
+
+/** The groups with the places a join freed given away (ticket 0892): while fewer than `maxColors` are left, the picture's
+ * own color most different from the groups' (at least the least distance from each) seeds one more, and the sampled
+ * colors are grouped round them again. Ends at the count asked or when no color is that different; the most groups is kept. */
+function filledUp(sampled: readonly WeightedColor[], maxColors: number, first: WeightedColor[][]): WeightedColor[][] {
+  const own = sampled.map((color) => ({ lab: toOklab(color.rgb), count: color.count }))
+  let best = first
+  let groups = first
+  for (let round = 0; round < maxColors && groups.length < maxColors; round++) {
+    const labs = groups.map((group) => toOklab(channelsOf(boxColor(group))))
+    const seeds = chooseByDifference(own, labs.length + 1, labs)
+    if (seeds.length === labs.length) break
+    groups = groupAround(sampled, seeds)
+    if (groups.length > best.length) best = groups
+  }
+  return best
 }
 
 /** The groups with any two whose colors ended closer than the least distance joined, the smaller into the bigger, until
