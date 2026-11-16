@@ -664,8 +664,8 @@ describe('ProjectSurface', () => {
 
     context.calls.length = 0
     await mountSurface(projectOf(20, 10, { beads, rowProgress: progress }))
-    // The marker is one stroke: the rings round the beads in the pass (tickets 375, 376), over whatever else the overlay strokes.
-    expect(context.named('stroke')).toHaveLength(without + 1)
+    // The marker is two strokes, its `marker` line and its `canvas` line: the rings round the beads in the pass (tickets 375, 376, 1031), over whatever else the overlay strokes.
+    expect(context.named('stroke')).toHaveLength(without + 2)
   })
 
   describe('moving the canvas', () => {

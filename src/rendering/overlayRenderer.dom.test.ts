@@ -34,6 +34,12 @@ function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnT
   return calls.slice(begin, stroke).filter((call) => call.name === 'roundRect')
 }
 
+/** The `canvas` lines inside the rings (ticket 1031): the rounded rectangles of the second stroked path. */
+function caseRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
+  const first = calls.findIndex((call) => call.name === 'stroke')
+  return ringRects(calls.slice(first + 1))
+}
+
 /** A test Project that draws no Row progress says `marks: false` on its Row progress; the wrapper below hands that to the renderer as `rowMarks`, as an export does. */
 type TestRowProgress = RowProgress & { marks?: boolean }
 
@@ -79,15 +85,28 @@ describe('renderOverlay', () => {
   })
 
   describe('the row being woven (rows along the grid\'s rows)', () => {
-    it('strokes one 3px ring path round the beads of the row, and no line joins them (tickets 352, 376)', () => {
+    it('strokes one ring path round the beads of the row a line, `marker` then `canvas`, and no line joins them (tickets 352, 376, 1031)', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 2 })
       const { context, calls, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(named('stroke')).toHaveLength(1)
+      expect(named('stroke').map((call) => call.strokeStyle)).toEqual([DEFAULT_THEME.marker, DEFAULT_THEME.markerCase])
       expect(ringRects(calls)).toHaveLength(4)
+      expect(caseRects(calls)).toHaveLength(4)
       expect(named('lineTo')).toHaveLength(0)
+    })
+
+    it('lays the `canvas` line from 2px to 3px inside each cell, on the ring\'s curve 1.5px further in (ticket 1031)', () => {
+      const R = beadRoundness('peyote') * CELL_SIZE_PX
+      const project = ownCell(projectOf('peyote', 5, 3, { currentRow: 0 }))
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      const [ring, line] = [ringRects(calls)[0]!.args, caseRects(calls)[0]!.args]
+      expect(ring).toEqual([1, 1, 18, 18, R - 1])
+      expect(line).toEqual([2.5, 2.5, 15, 15, R - 2.5])
     })
 
     it('rings every bead of the row inside its cell (tickets 375, 376)', () => {
@@ -238,6 +257,8 @@ describe('renderOverlay', () => {
       expect(named('rotate').map((call) => call.args[0])).toEqual(expect.arrayContaining(round.slice(0, 4).map(({ angle }) => angle)))
       // Each of the four beads is lifted and ringed, both turned: eight turns, no more.
       expect(named('rotate')).toHaveLength(8)
+      // Each ring turned with its bead has both its lines (ticket 1031).
+      expect(named('stroke').map((call) => call.strokeStyle)).toEqual(Array(4).fill([DEFAULT_THEME.marker, DEFAULT_THEME.markerCase]).flat())
     })
 
     it('glints the round just finished one bead at a time in its Row order, each turned to its panel (ticket 0730)', () => {

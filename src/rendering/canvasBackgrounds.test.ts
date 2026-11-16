@@ -83,8 +83,8 @@ describe('Canvas color backgrounds', () => {
   })
 
   it('draws on a dark Custom color in the dark look and on a light one in the light look, whatever the theme', () => {
-    expect(canvasTheme('light', 'custom', '#14213d')).toMatchObject({ canvas: '#14213d', background: '#14213d', marker: PROJECT_THEMES.dark.marker, rim: PROJECT_THEMES.dark.rim })
-    expect(canvasTheme('dark', 'custom', '#fde68a')).toMatchObject({ canvas: '#fde68a', marker: PROJECT_THEMES.light.marker, rim: PROJECT_THEMES.light.rim })
+    expect(canvasTheme('light', 'custom', '#14213d')).toMatchObject({ canvas: '#14213d', background: '#14213d', marker: PROJECT_THEMES.dark.marker, markerCase: PROJECT_THEMES.dark.markerCase, rim: PROJECT_THEMES.dark.rim })
+    expect(canvasTheme('dark', 'custom', '#fde68a')).toMatchObject({ canvas: '#fde68a', marker: PROJECT_THEMES.light.marker, markerCase: PROJECT_THEMES.light.markerCase, rim: PROJECT_THEMES.light.rim })
   })
 
   it.each(['#ffffff', '#fde68a', '#9ca3af', '#777777', '#767676', '#e03c3c', '#3b82f6', '#14213d', '#000000'])(

@@ -35,6 +35,9 @@ import type { LayoutPoint, LayoutSymmetry } from '../domain/frameLayout'
  * card). */
 const MARKER_RING_PX = 2
 
+/** The case line's thickness: the `canvas` line directly inside the ring (ticket 1031, BeadBoard card). */
+const MARKER_CASE_PX = 1
+
 /** What a hover preview shows a bead in (BeadHover card): the chosen color at 60%, over whatever the bead holds. */
 const PREVIEW_OPACITY = 0.6
 
@@ -280,25 +283,54 @@ function drawGlint(context: DrawingContext, beads: readonly PassBead[], weave: W
   context.restore()
 }
 
-// The Row progress marker (tickets 352, 375, 376): a ring, MARKER_RING_PX thick, round each bead in the current pass,
-// inside its cell so it never reaches a neighbour and two rings side by side stay two. No line joins them; one path,
-// one stroke.
+/** One line of the ring: its color and thickness, and how far inside the cell's edge it starts. */
+interface RingLine {
+  color: string
+  width: number
+  inset: number
+}
+
+/** A ring's lines (BeadBoard card, Current row): `marker`, its outer edge on the cell's edge, and directly inside it the
+ * case line in `canvas` (ticket 1031), so one of the two reads on a bead of any color. */
+function ringLines(theme: ProjectTheme): readonly RingLine[] {
+  return [
+    { color: theme.marker, width: MARKER_RING_PX, inset: 0 },
+    { color: theme.markerCase, width: MARKER_CASE_PX, inset: MARKER_RING_PX },
+  ]
+}
+
+/** One line of a ring round a bead's box, centred on its own thickness and following the bead's corner `radius`. */
+function ringPath(context: DrawingContext, bead: PassBead, line: RingLine, radius: number): void {
+  const centre = line.inset + line.width / 2
+  roundedRect(context, bead.x + centre, bead.y + centre, bead.width - 2 * centre, bead.height - 2 * centre, Math.max(0, radius - centre))
+}
+
+// The Row progress marker (tickets 352, 375, 376, 1031): a ring round each bead in the current pass, MARKER_RING_PX of
+// `marker` and MARKER_CASE_PX of `canvas` inside it, within its cell so it never reaches a neighbour and two rings side
+// by side stay two. No line joins them: each line is one path and one stroke.
 function drawBeadRings(context: DrawingContext, beads: readonly PassBead[], weave: Weave, theme: ProjectTheme): void {
   const corner = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
-  const half = MARKER_RING_PX / 2
-  context.strokeStyle = theme.marker
-  context.lineWidth = MARKER_RING_PX
-  context.beginPath()
-  for (const bead of beads.filter(({ turned }) => !turned)) {
-    roundedRect(context, bead.x + half, bead.y + half, bead.width - MARKER_RING_PX, bead.height - MARKER_RING_PX, Math.max(0, corner - half))
+  const lines = ringLines(theme)
+  const upright = beads.filter(({ turned }) => !turned)
+  if (upright.length > 0) {
+    for (const line of lines) {
+      context.strokeStyle = line.color
+      context.lineWidth = line.width
+      context.beginPath()
+      for (const bead of upright) ringPath(context, bead, line, corner)
+      context.stroke()
+    }
   }
-  context.stroke()
   // A Custom frame's beads each lie at their panel's angle (ticket 0594): a ring apiece, turned with it.
   for (const bead of beads.filter(({ turned }) => turned)) {
     inPlace(context, bead, () => {
-      context.beginPath()
-      roundedRect(context, bead.x + half, bead.y + half, bead.width - MARKER_RING_PX, bead.height - MARKER_RING_PX, Math.max(0, bead.turned!.radius - half))
-      context.stroke()
+      for (const line of lines) {
+        context.strokeStyle = line.color
+        context.lineWidth = line.width
+        context.beginPath()
+        ringPath(context, bead, line, bead.turned!.radius)
+        context.stroke()
+      }
     })
   }
 }
