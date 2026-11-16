@@ -56,10 +56,10 @@ describe('drawLift', () => {
     drawLift(watched, [cell], '#202020', 2)
     const fills = named('fill')
     expect(fills.map(({ fillStyle }) => fillStyle)).toEqual(['#8c8c8c', '#8c8c8c', '#8c8c8c', '#2b2b2b'])
-    // Blur 9 px and 6 px down, then 2 px and 1.5 px down, in device px at twice: a canvas shadow's blur is two spreads.
+    // Blur 4.5 px and 3 px down, then 1 px and 0.75 px down, in device px at twice: a canvas shadow's blur is two spreads.
     expect(shadows.slice(0, 2)).toEqual([
-      { color: 'rgba(0, 0, 0, 0.6)', blur: 36, down: 12 },
-      { color: 'rgba(0, 0, 0, 0.5)', blur: 8, down: 3 },
+      { color: 'rgba(0, 0, 0, 0.6)', blur: 18, down: 6 },
+      { color: 'rgba(0, 0, 0, 0.5)', blur: 4, down: 1.5 },
     ])
   })
 
@@ -200,7 +200,8 @@ describe('canvasLiftCells', () => {
     expect(rows).toHaveLength(1)
     const seen = canvasLiftCells(project, { ...everywhere, area: { left: 0, right: 100, top: 0, bottom: 100 } })
     expect(seen.map(({ y }) => y)).toEqual([0])
-    expect(LIFT_REACH_PX).toBeLessThan(10 * CELL_SIZE_PX)
+    // The soft shadow's fall, three spreads of its blur and the contour: the BeadBoard card's 20.5px (ticket 1033).
+    expect(LIFT_REACH_PX).toBe(20.5)
   })
 
   it('leaves out the beads in the Frame\'s keep-out margin, which are not drawn', () => {

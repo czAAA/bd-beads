@@ -9,19 +9,19 @@ import { drawLift, joinedUpright, liftLookOf, type LiftCell } from './liftedPiec
 const SCALE = 4
 const SIDE = 140
 
-/** A 3-bead row and a bead below its middle, lifted on `theme`'s Background, read back as pixels. */
-function lifted(theme: ProjectTheme): (x: number, y: number) => [number, number, number] {
+/** A 3-bead row and a bead below its middle, lifted on `theme`'s Background at `scale`, read back as pixels. */
+function lifted(theme: ProjectTheme, scale = SCALE): (x: number, y: number) => [number, number, number] {
   const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = SIDE * SCALE
+  canvas.width = canvas.height = Math.ceil(SIDE * scale)
   const context = canvas.getContext('2d')!
   context.fillStyle = theme.canvas
   context.fillRect(0, 0, canvas.width, canvas.height)
-  context.setTransform(SCALE, 0, 0, SCALE, 0, 0)
+  context.setTransform(scale, 0, 0, scale, 0, 0)
   const at = (column: number, row: number) => ({ x: 40 + column * CELL_SIZE_PX, y: 40 + row * CELL_SIZE_PX, width: CELL_SIZE_PX, height: CELL_SIZE_PX })
-  drawLift(context as DrawingContext, [{ ...at(0, 0), width: 3 * CELL_SIZE_PX }, at(1, 1)], theme.canvas, SCALE)
+  drawLift(context as DrawingContext, [{ ...at(0, 0), width: 3 * CELL_SIZE_PX }, at(1, 1)], theme.canvas, scale)
   const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
   return (x, y) => {
-    const index = (Math.round(y * SCALE) * canvas.width + Math.round(x * SCALE)) * 4
+    const index = (Math.round(y * scale) * canvas.width + Math.round(x * scale)) * 4
     return [data[index]!, data[index + 1]!, data[index + 2]!]
   }
 }
@@ -53,6 +53,20 @@ describe.each([
     expect(lum(pixel(70, 12))).toBe(far)
     expect(lum(pixel(70, 88))).toBeLessThan(far)
   })
+
+  it('casts the same shadow at low zoom, with no sheet, as on a sheet and at full size, scaled down (ticket 1033)', () => {
+    const lum = ([r, g, b]: [number, number, number]) => r + g + b
+    // Below the row's first bead, past its contour, the soft shadow's fall and fade.
+    const profile = (scale: number) => {
+      const at = lifted(theme, scale)
+      return [66, 70, 74, 78].map((y) => lum(at(50, y)))
+    }
+    const full = profile(SCALE)
+    // A step of 4 in each channel at most: the smaller pictures round the shape's edge to fewer pixels.
+    const SAME = 12
+    for (const scale of [0.8, 1.6]) profile(scale).forEach((value, index) => expect(Math.abs(value - full[index]!)).toBeLessThanOrEqual(SAME))
+    expect(full[0]).toBeLessThan(full[3]!)
+  })
 })
 
 // What the shadows cost (ticket 1006): a layer laid over the screen costs the screen, so the shadows are blurred on a
@@ -78,24 +92,28 @@ describe('the shadows\' sheet', () => {
   }
   const row = (columns: number) => [{ x: 40, y: 40, width: columns * CELL_SIZE_PX, height: CELL_SIZE_PX }]
 
-  it('blurs the soft shadow on a sheet smaller than the screen at 40% on pixel ratio 2, the close one apart on the screen', () => {
-    const [soft, ...others] = laid(row(20), 0.8)
+  it('blurs the soft shadow on a sheet smaller than the screen at 80% on pixel ratio 2, the close one apart on the screen', () => {
+    const [soft, ...others] = laid(row(20), 1.6)
     expect(others).toEqual([])
     expect(soft!.sourceWidth * 2).toBeLessThan(soft!.width)
   })
 
   it('lays one sheet for both shadows where the close one is blurred on a smaller sheet too', () => {
-    expect(laid(row(20), 2)).toHaveLength(1)
+    expect(laid(row(20), 4)).toHaveLength(1)
+  })
+
+  it('lays no sheet at low zoom, where the soft shadow\'s blur is too small to draw smaller', () => {
+    expect(laid(row(20), 0.8)).toEqual([])
   })
 
   it('keeps the sheet when the next draw needs the same or a smaller one, and grows it when it needs more', () => {
-    const [large] = laid(row(20), 2)
-    const [same] = laid(row(20), 2)
-    const [smaller] = laid(row(4), 2)
+    const [large] = laid(row(20), 4)
+    const [same] = laid(row(20), 4)
+    const [smaller] = laid(row(4), 4)
     expect(same!.source).toBe(large!.source)
     expect(smaller!.canvasWidth).toBe(large!.canvasWidth)
     expect(smaller!.sourceWidth).toBeLessThan(large!.sourceWidth)
-    const [larger] = laid(row(60), 2)
+    const [larger] = laid(row(60), 4)
     expect(larger!.canvasWidth).toBeGreaterThan(large!.canvasWidth)
   })
 })
