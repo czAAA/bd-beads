@@ -48,9 +48,10 @@ export async function startHost(upstream: string): Promise<Host> {
         return
       }
       // Cloudflare's static assets send a page's own file name to its folder (the default HTML handling).
-      const [pathname, query = ''] = path.split('?')
-      if (pathname!.endsWith('/index.html')) {
-        response.writeHead(307, { location: pathname!.slice(0, -'index.html'.length) + (query ? `?${query}` : '') }).end()
+      // Only plain folder names match, so the target (a path with no `//`) can only stay on this origin.
+      const folder = /^(?:\/[\w-]+)*\/index\.html$/.exec(path.split('?')[0]!)
+      if (folder) {
+        response.writeHead(307, { location: folder[0].slice(0, -'index.html'.length) }).end()
         return
       }
       const answer = await fetch(origin + path, { headers: { 'cache-control': 'no-cache' } })
