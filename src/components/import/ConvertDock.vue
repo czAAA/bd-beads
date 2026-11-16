@@ -81,7 +81,9 @@ const isOpen = (setting: Setting) => owner(open.value) === setting
 const off = (setting: Setting) => !has.value && setting !== 'bead'
 const settingName = (setting: Setting) => {
   const value = values.value[setting]
-  return value ? fillBlanks(words.value.settingName, { setting: names.value[setting], value }) : names.value[setting]
+  // The Bead's setting is shortened on the dock; its name and its sheet's title stay whole (DS-4).
+  const name = setting === 'bead' ? words.value.sheetBeadAndTechnique : names.value[setting]
+  return value ? fillBlanks(words.value.settingName, { setting: name, value }) : name
 }
 
 const root = computed(() => (typeof document === 'undefined' ? undefined : document))
@@ -109,7 +111,7 @@ const sheetTitle = computed(() => {
     case 'background':
       return words.value.removeBackground
     case 'bead':
-      return words.value.beadAndTechnique
+      return words.value.sheetBeadAndTechnique
     case undefined:
       return ''
     default:

@@ -30,8 +30,6 @@ const rootEl = ref<HTMLElement>()
 // The layout follows the page's own size on every resize and turn (DS-4); with no size yet it is the Desktop's.
 const { width: pageWidth, height: pageHeight } = useElementSize(rootEl, { box: 'border-box' })
 const layout = computed(() => convertLayoutFor(pageWidth.value, pageHeight.value))
-/** How far the page's top is below the window's: the notch and the strip, which the half detent leaves out (DS-4). */
-const pageTop = computed(() => (pageHeight.value > 0 ? (rootEl.value?.getBoundingClientRect().top ?? 0) : 0))
 
 // The page is the top layer while it shows, so Escape asks to leave; a press elsewhere (the strip's Menu) goes through.
 useOverlayLayer({ isOpen: () => true, root: () => rootEl.value, close: () => emit('close'), outside: 'through', onOutsidePress: () => undefined })
@@ -86,7 +84,6 @@ const dropLimits = computed(() => imageLimitsText(locale.value, words.value.drop
     ref="rootEl"
     class="convert-page"
     :data-layout="layout"
-    :style="{ '--convert-page-top': `${pageTop}px` }"
     role="region"
     :aria-label="words.title"
     data-testid="convert-image-wizard"

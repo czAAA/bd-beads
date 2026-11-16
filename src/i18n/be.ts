@@ -1083,6 +1083,7 @@ export const be: Translations = {
       sheetClose: 'Закрыць',
       settingsLabel: 'налады',
       dockBead: 'Бісер',
+      sheetBeadAndTechnique: 'Бісер і тэхніка',
       settingName: '{setting}: {value}',
       matchedBead: 'сапраўдны бісер · {bead} · колеры прыблізныя',
       matchedDefault: 'падабрана з тыповай палітры',

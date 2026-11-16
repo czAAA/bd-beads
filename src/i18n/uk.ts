@@ -1082,6 +1082,7 @@ export const uk: Translations = {
       sheetClose: 'Закрити',
       settingsLabel: 'налаштування',
       dockBead: 'Бісер',
+      sheetBeadAndTechnique: 'Бісер і техніка',
       settingName: '{setting}: {value}',
       matchedBead: 'справжній бісер · {bead} · кольори приблизні',
       matchedDefault: 'підібрано з типової палітри',

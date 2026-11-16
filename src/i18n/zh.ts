@@ -1057,6 +1057,7 @@ export const zh: Translations = {
       sheetClose: '关闭',
       settingsLabel: '设置',
       dockBead: '珠子',
+      sheetBeadAndTechnique: '珠子和技法',
       settingName: '{setting}: {value}',
       matchedBead: '真实珠子 · {bead} · 颜色为近似',
       matchedDefault: '按默认色板匹配',

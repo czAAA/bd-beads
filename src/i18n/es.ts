@@ -1075,6 +1075,7 @@ export const es: Translations = {
       sheetClose: 'Cerrar',
       settingsLabel: 'ajustes',
       dockBead: 'Cuenta',
+      sheetBeadAndTechnique: 'Cuenta y técnica',
       settingName: '{setting}: {value}',
       matchedBead: 'cuentas reales · {bead} · colores aproximados',
       matchedDefault: 'ajustado a la paleta predeterminada',

@@ -1082,6 +1082,7 @@ export const ru: Translations = {
       sheetClose: 'Закрыть',
       settingsLabel: 'настройки',
       dockBead: 'Бисер',
+      sheetBeadAndTechnique: 'Бисер и техника',
       settingName: '{setting}: {value}',
       matchedBead: 'настоящий бисер · {bead} · цвета примерные',
       matchedDefault: 'подобрано по палитре по умолчанию',

@@ -1066,6 +1066,7 @@ export const en: Translations = {
       sheetClose: 'Close',
       settingsLabel: 'settings',
       dockBead: 'Bead',
+      sheetBeadAndTechnique: 'Bead and Technique',
       settingName: '{setting}: {value}',
       matchedBead: 'real beads · {bead} · approximate colors',
       matchedDefault: 'matched to the default palette',

@@ -1082,6 +1082,7 @@ export const pl: Translations = {
       sheetClose: 'Zamknij',
       settingsLabel: 'ustawienia',
       dockBead: 'Koralik',
+      sheetBeadAndTechnique: 'Koralik i technika',
       settingName: '{setting}: {value}',
       matchedBead: 'prawdziwe koraliki · {bead} · kolory przybliżone',
       matchedDefault: 'dopasowane do domyślnej palety',

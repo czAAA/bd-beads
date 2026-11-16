@@ -127,7 +127,7 @@ test.describe('Convert image layouts', () => {
     await page.getByTestId('convert-setting-colors-count').click()
     const sheet = page.getByTestId('convert-sheet-colors-count')
     await expect(sheet).toBeVisible()
-    await page.waitForTimeout(300)
+    // In the app, under the strip: the browser test mounts the page alone, where the strip's height can't be missed.
     const above = (await page.locator('.convert-page__preview').boundingBox())!
     expect(above.height / 844).toBeGreaterThanOrEqual(0.5)
     await page.keyboard.press('Escape')

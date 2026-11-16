@@ -81,9 +81,10 @@ function drop(event: PointerEvent) {
 </template>
 
 <style scoped>
-/* The surface runs on under the home bar: the foot pads by the bottom inset. The sheet is at most the half detent, its body scrolling inside. */
+/* The surface runs on under the home bar: the foot pads by the bottom inset. The sheet is at most half the
+ * window and gives way to the beads' half (the page's rule, which counts the strip and the notch), its body scrolling inside. */
 .convert-sheet {
-  --convert-sheet-half: calc(50dvh - var(--convert-page-top, 0px) - env(safe-area-inset-bottom));
+  --convert-sheet-half: calc(50dvh - env(safe-area-inset-bottom));
   position: relative;
   z-index: var(--convert-layer-popover);
   display: flex;
