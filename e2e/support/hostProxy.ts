@@ -1,11 +1,20 @@
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { securityHeaders } from '../../vite.headers'
 
 // Our hosting, played by the test (ticket 69): a server in front of the preview build that can be taken down (503),
 // slowed, or have a file changed, so the service worker meets the failures the real one would. Like Cloudflare (ticket
 // 1017): `/index.html` answers a 307 to its folder, and `accessExpired` sends every request to a sign-in page.
 /** The folders of the built pages (`index.html`, `homepage/index.html`), relative to the base path. */
 const PAGE_FOLDERS = ['', 'homepage/']
+
+/** The headers the build's pages are sent with (ticket 1024), passed on as the preview sends them. */
+const SECURITY_HEADERS = Object.keys(securityHeaders([])).map((name) => name.toLowerCase())
+
+function securityHeadersOf(answer: Response): Record<string, string> {
+  const sent = SECURITY_HEADERS.flatMap((name) => (answer.headers.has(name) ? [[name, answer.headers.get(name)!]] : []))
+  return Object.fromEntries(sent)
+}
 
 export interface Host {
   /** The app's address, with the base path, like the preview's. */
@@ -62,7 +71,7 @@ export async function startHost(upstream: string): Promise<Host> {
       const body = host.rewrite && /^text\/|javascript|json/.test(type)
         ? Buffer.from(host.rewrite(path, await answer.text()))
         : Buffer.from(await answer.arrayBuffer())
-      response.writeHead(answer.status, { 'content-type': type, 'cache-control': 'no-cache' }).end(body)
+      response.writeHead(answer.status, { 'content-type': type, 'cache-control': 'no-cache', ...securityHeadersOf(answer) }).end(body)
     })()
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))

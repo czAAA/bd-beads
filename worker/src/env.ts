@@ -38,6 +38,8 @@ export interface Env {
   FEEDBACK_REPO?: string
   /** Reports per IP, 2 per 60 seconds (spec 0698); declared under `ratelimits`. */
   FEEDBACK_RATE?: RateLimit
+  /** Reports from every address together, 10 per 60 seconds at one Cloudflare location (ticket 1024). */
+  FEEDBACK_RATE_ALL?: RateLimit
 
   UPLOAD_CAP_D1_BYTES: number | string
   UPLOAD_CAP_R2_MB: number | string

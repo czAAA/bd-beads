@@ -85,7 +85,11 @@
       "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads-dev" }],
       // Spec 0698: Reports per IP. The binding counts over 10 or 60 seconds only, so "five an hour" became 2 a minute; it
       // stops floods. A namespace id is the account's own number for the counter, one per Worker.
-      "ratelimits": [{ "name": "FEEDBACK_RATE", "namespace_id": "1001", "simple": { "limit": 2, "period": 60 } }]
+      // FEEDBACK_RATE_ALL (ticket 1024) counts every address's Reports together, for a sender with many addresses.
+      "ratelimits": [
+        { "name": "FEEDBACK_RATE", "namespace_id": "1001", "simple": { "limit": 2, "period": 60 } },
+        { "name": "FEEDBACK_RATE_ALL", "namespace_id": "1003", "simple": { "limit": 10, "period": 60 } }
+      ]
     },
     "production": {
       "name": "bd-beads",
@@ -132,7 +136,10 @@
         }
       ],
       "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads" }],
-      "ratelimits": [{ "name": "FEEDBACK_RATE", "namespace_id": "1002", "simple": { "limit": 2, "period": 60 } }]
+      "ratelimits": [
+        { "name": "FEEDBACK_RATE", "namespace_id": "1002", "simple": { "limit": 2, "period": 60 } },
+        { "name": "FEEDBACK_RATE_ALL", "namespace_id": "1004", "simple": { "limit": 10, "period": 60 } }
+      ]
     }
   }
 }

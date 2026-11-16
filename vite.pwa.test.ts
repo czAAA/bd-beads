@@ -1,8 +1,10 @@
+import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { HEADERS_FILE } from './vite.headers.ts'
 import { filesBelow, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
 import { LOCALES } from './src/domain/locale.ts'
 
@@ -38,6 +40,11 @@ describe('renderServiceWorker', () => {
     expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['assets/app.js', 'homepage/index.html', 'index.html'])
   })
 
+  it('leaves out the headers file, which the host reads and never serves, so the install would fail on it (ticket 1024)', () => {
+    const dir = folder({ 'index.html': 'a', [HEADERS_FILE]: '/*\n  X-Frame-Options: DENY\n' })
+    expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['index.html'])
+  })
+
   it('names the cache after the content, so a changed file is a new cache', () => {
     const before = cacheNameOf(renderServiceWorker(template, folder({ 'index.html': 'one' })).source)
     const same = cacheNameOf(renderServiceWorker(template, folder({ 'index.html': 'one' })).source)
@@ -68,7 +75,7 @@ describe('the production build (ticket 69)', () => {
 
   it('has every built file in the worker\'s offline list, and nothing else', () => {
     const precache = precacheOf(readFileSync(join(outDir, SERVICE_WORKER_FILE), 'utf8'))
-    expect(precache).toEqual(files.filter((path) => path !== SERVICE_WORKER_FILE))
+    expect(precache).toEqual(files.filter((path) => path !== SERVICE_WORKER_FILE && path !== HEADERS_FILE))
     // The pieces the offline use needs, by name, so an empty list can't pass.
     expect(precache).toEqual(
       expect.arrayContaining(['index.html', 'homepage/index.html', 'manifest.webmanifest', 'icons/bd-beads-app-icon.svg']),
@@ -87,6 +94,26 @@ describe('the production build (ticket 69)', () => {
       // A file the page itself loads or preloads is named in it; the language's is fetched only when it is chosen.
       for (const page of pages) expect(page).not.toContain(file!.slice('assets/'.length))
     }
+  })
+
+  it('sends both pages with a policy that names every inline script they hold, and no script it lets run unnamed (ticket 1024)', () => {
+    const rule = readFileSync(join(outDir, HEADERS_FILE), 'utf8').split('\n')
+    expect(rule[0]).toBe('/*')
+    // Cloudflare reads at most 2,000 characters of a line.
+    for (const line of rule) expect(line.length).toBeLessThan(2000)
+    const policy = rule.find((line) => line.startsWith('  Content-Security-Policy: ')) ?? ''
+    const scripts = policy.split('; ').find((part) => part.includes('script-src ')) ?? ''
+    expect(scripts).not.toMatch(/unsafe-inline|unsafe-eval/)
+    let inline = 0
+    for (const page of ['index.html', 'homepage/index.html']) {
+      for (const [, attributes, text] of readFileSync(join(outDir, page), 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+        if (/\bsrc=/.test(attributes!)) continue
+        inline += 1
+        expect(scripts, `${page}: ${text!.trim().slice(0, 60)}`).toContain(`'sha256-${createHash('sha256').update(text!).digest('base64')}'`)
+      }
+    }
+    // The theme, the two handoff scripts and the Homepage's own, so a pattern that finds none can't pass.
+    expect(inline).toBeGreaterThanOrEqual(4)
   })
 
   it('keeps index.html, splash included, under 14 KB so the first round trip carries it', () => {
