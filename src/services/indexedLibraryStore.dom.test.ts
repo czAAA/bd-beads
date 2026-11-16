@@ -23,8 +23,17 @@ const STORAGE_KEY = 'openbeads:patterns'
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 function makeProject(name: string, updatedAt = 1_700_000_000_000): Project {
-  const project = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } })
-  return withLayers(project, { id: `project-${name}`, name, updatedAt, createdAt: updatedAt })
+  const project = createProject({
+    technique: 'loom',
+    beadId: cubeBead.id,
+    size: { width: 15, height: 15, unit: 'mm' },
+  })
+  return withLayers(project, {
+    id: `project-${name}`,
+    name,
+    updatedAt,
+    createdAt: updatedAt,
+  })
 }
 
 const byId = (projects: readonly Project[]) => [...projects].sort((a, b) => a.id.localeCompare(b.id))
@@ -38,13 +47,29 @@ async function startTab() {
 }
 
 /** Reads the library database directly, as a developer's tools would. */
-async function records(): Promise<{ id: string; format: number; stored: string; stamp: string; summary: unknown }[]> {
+async function records(): Promise<
+  {
+    id: string
+    format: number
+    stored: string
+    stamp: string
+    summary: unknown
+  }[]
+> {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(LIBRARY_DATABASE, 1)
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error)
   })
-  const all = await new Promise<{ id: string; format: number; stored: string; stamp: string; summary: unknown }[]>((resolve, reject) => {
+  const all = await new Promise<
+    {
+      id: string
+      format: number
+      stored: string
+      stamp: string
+      summary: unknown
+    }[]
+  >((resolve, reject) => {
     const request = db.transaction('projects').objectStore('projects').getAll()
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error)
@@ -94,11 +119,20 @@ describe('the library in IndexedDB', () => {
     const { store } = await startTab()
     const [fox, owl] = [makeProject('Fox'), makeProject('Owl')]
 
-    await store.save([{ project: fox, knownStored: false }, { project: owl, knownStored: false }], [])
+    await store.save(
+      [
+        { project: fox, knownStored: false },
+        { project: owl, knownStored: false },
+      ],
+      [],
+    )
 
     const rows = await records()
     expect(names(rows)).toEqual(['project-Fox', 'project-Owl'])
-    expect(rows[0]).toMatchObject({ format: RECORD_FORMAT, summary: { name: 'Fox' } })
+    expect(rows[0]).toMatchObject({
+      format: RECORD_FORMAT,
+      summary: { name: 'Fox' },
+    })
     expect(typeof rows[0]!.stamp).toBe('string')
     expect(JSON.parse(rows[0]!.stored)).toMatchObject({ id: 'project-Fox' })
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
@@ -114,7 +148,13 @@ describe('the library in IndexedDB', () => {
   it('writes only the Projects that changed, deletes the removed ones and gives every write a new stamp', async () => {
     const { store } = await startTab()
     const [fox, owl] = [makeProject('Fox'), makeProject('Owl')]
-    await store.save([{ project: fox, knownStored: false }, { project: owl, knownStored: false }], [])
+    await store.save(
+      [
+        { project: fox, knownStored: false },
+        { project: owl, knownStored: false },
+      ],
+      [],
+    )
     const before = new Map((await records()).map((row) => [row.id, row.stamp]))
 
     const foxAgain = { ...fox, updatedAt: fox.updatedAt + 1 }
@@ -131,10 +171,22 @@ describe('the library in IndexedDB', () => {
     await first.store.save([{ project: fox, knownStored: false }], [])
     const second = await startTab()
     const held = second.store.open(() => false).projects
-    expect(await second.store.reread(held, () => false)).toEqual({ changed: [], gone: [] })
+    expect(await second.store.reread(held, () => false)).toEqual({
+      changed: [],
+      gone: [],
+    })
 
     const owl = makeProject('Owl')
-    await first.store.save([{ project: owl, knownStored: false }, { project: { ...fox, updatedAt: fox.updatedAt + 5 }, knownStored: true }], [])
+    await first.store.save(
+      [
+        { project: owl, knownStored: false },
+        {
+          project: { ...fox, updatedAt: fox.updatedAt + 5 },
+          knownStored: true,
+        },
+      ],
+      [],
+    )
     const heard = await second.store.reread(held, () => false)
     expect(names(heard.changed)).toEqual(['project-Fox', 'project-Owl'])
     expect(heard.gone).toEqual([])
@@ -150,7 +202,15 @@ describe('the library in IndexedDB', () => {
     await store.save([{ project: fox, knownStored: false }], [])
     await store.save([], ['project-Fox'])
 
-    const result = await store.save([{ project: { ...fox, updatedAt: fox.updatedAt + 1 }, knownStored: true }], [])
+    const result = await store.save(
+      [
+        {
+          project: { ...fox, updatedAt: fox.updatedAt + 1 },
+          knownStored: true,
+        },
+      ],
+      [],
+    )
 
     expect(result.dropped).toEqual(['project-Fox'])
     expect(await records()).toEqual([])
@@ -168,17 +228,35 @@ describe('the library in IndexedDB', () => {
   it('leaves a record of a format it does not know alone: not listed, not counted, not written, not deleted', async () => {
     const { store } = await startTab()
     await store.save([{ project: makeProject('Fox'), knownStored: false }], [])
-    await putRecord({ id: 'project-Newer', format: 2, stored: '{"future":true}', stamp: 'x', summary: null })
+    await putRecord({
+      id: 'project-Newer',
+      format: 2,
+      stored: '{"future":true}',
+      stamp: 'x',
+      summary: null,
+    })
 
     const next = createBrowserLibraryStore()
     expect(await next.count()).toBe(1)
     await next.start()
     expect(names(next.open(() => false).projects)).toEqual(['project-Fox'])
-    await next.save([{ project: { ...makeProject('Newer'), id: 'project-Newer' }, knownStored: false }], [])
+    await next.save(
+      [
+        {
+          project: { ...makeProject('Newer'), id: 'project-Newer' },
+          knownStored: false,
+        },
+      ],
+      [],
+    )
     await next.save([], ['project-Newer'])
 
     const rows = await records()
-    expect(rows.find((row) => row.id === 'project-Newer')).toMatchObject({ format: 2, stored: '{"future":true}', stamp: 'x' })
+    expect(rows.find((row) => row.id === 'project-Newer')).toMatchObject({
+      format: 2,
+      stored: '{"future":true}',
+      stamp: 'x',
+    })
   })
 
   it('opens a record of format 1 from the stored-data fixtures as the Project it holds', async () => {
@@ -307,26 +385,140 @@ describe('the copy of the old library', () => {
     expect(byId(second.store.open(() => false).projects)).toEqual(byId(expected))
     expect(localStorage.getItem(STORAGE_KEY)).toBe(libraryV5)
   })
+})
 
-  it('does not copy again once moved: a later change to the old key is not taken in here', async () => {
-    localStorage.setItem(STORAGE_KEY, libraryV5)
+describe('the old library taken in', () => {
+  const oldKeyHolds = (...projects: Project[]) => saveProjects(projects)
+  const fox = (updatedAt: number) => makeProject('Fox', updatedAt)
+
+  it('takes in a Project new there, at the next start, leaving the old key as it was', async () => {
+    oldKeyHolds(fox(1_700_000_000_000))
     await startTab()
-    localStorage.setItem(STORAGE_KEY, libraryV1)
+    const owl = makeProject('Owl')
+    oldKeyHolds(fox(1_700_000_000_000), owl)
+    const before = localStorage.getItem(STORAGE_KEY)
 
     const { store } = await startTab()
 
-    expect(store.open(() => false).projects.map((project) => project.id)).toEqual(loadProjectsOf(libraryV5))
+    expect(names(store.open(() => false).projects)).toEqual(['project-Fox', 'project-Owl'])
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(before)
+  })
+
+  it('takes in a Project changed there when its last save is newer than the record', async () => {
+    oldKeyHolds(fox(1_700_000_000_000))
+    await startTab()
+    oldKeyHolds(fox(1_800_000_000_000))
+    const { store } = await startTab()
+
+    expect(lastSaved(store.open(() => false).projects[0]!)).toBe(1_800_000_000_000)
+  })
+
+  it('leaves a record newer than the old library alone', async () => {
+    oldKeyHolds(fox(1_700_000_000_000))
+    const first = await startTab()
+    await first.store.save([{ project: fox(1_900_000_000_000), knownStored: true }], [])
+    oldKeyHolds(fox(1_800_000_000_000))
+
+    const { store } = await startTab()
+
+    expect(lastSaved(store.open(() => false).projects[0]!)).toBe(1_900_000_000_000)
+  })
+
+  it('never deletes a Project missing from the old library, and does not bring back one it still holds unchanged', async () => {
+    oldKeyHolds(fox(1_700_000_000_000), makeProject('Owl'))
+    const first = await startTab()
+    await first.store.save([], ['project-Owl'])
+    expect(names((await startTab()).store.open(() => false).projects)).toEqual(['project-Fox'])
+    oldKeyHolds(fox(1_700_000_000_000))
+    expect(names((await startTab()).store.open(() => false).projects)).toEqual(['project-Fox'])
+  })
+
+  it('changes nothing for an unreadable or missing old value', async () => {
+    oldKeyHolds(fox(1_700_000_000_000))
+    await startTab()
+    localStorage.setItem(STORAGE_KEY, '{not json')
+    expect(names((await startTab()).store.open(() => false).projects)).toEqual(['project-Fox'])
+    localStorage.removeItem(STORAGE_KEY)
+    expect(names((await startTab()).store.open(() => false).projects)).toEqual(['project-Fox'])
+  })
+
+  it('does not parse an old library whose digest is the remembered one', async () => {
+    oldKeyHolds(fox(1_700_000_000_000))
+    await startTab()
+    const raw = localStorage.getItem(STORAGE_KEY)!
+    const parse = vi.spyOn(JSON, 'parse')
+
+    await startTab()
+
+    expect(parse.mock.calls.filter(([text]) => text === raw)).toEqual([])
+  })
+
+  it('takes in the old key when the storage event names it, and tells the library which Projects', async () => {
+    oldKeyHolds(fox(1_700_000_000_000))
+    const { store } = await startTab()
+    const heard = vi.fn()
+    const stop = store.onOutsideChange(heard)
+    const heardByOther = vi.fn()
+    const stopOther = (await startTab()).store.onOutsideChange(heardByOther)
+    oldKeyHolds(fox(1_700_000_000_000), makeProject('Owl'))
+
+    window.dispatchEvent(new StorageEvent('storage', { key: 'openbeads:other' }))
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+    await vi.waitFor(() => expect(heard).toHaveBeenCalledWith(['project-Owl']))
+
+    expect(heard).toHaveBeenCalledTimes(1)
+    expect(heardByOther).toHaveBeenCalledWith(['project-Owl'])
+    expect(names(await records())).toEqual(['project-Fox', 'project-Owl'])
+    stop()
+    stopOther()
   })
 })
 
-function loadProjectsOf(raw: string): string[] {
-  const keep = localStorage.getItem(STORAGE_KEY)
-  localStorage.setItem(STORAGE_KEY, raw)
-  const ids = loadProjects().map((project) => project.id)
-  if (keep === null) localStorage.removeItem(STORAGE_KEY)
-  else localStorage.setItem(STORAGE_KEY, keep)
-  return ids
-}
+describe('tabs of the same build', () => {
+  it('tells the other tabs which Projects a save wrote and removed, and not the tab that saved', async () => {
+    const first = await startTab()
+    const second = await startTab()
+    const heardThere = vi.fn()
+    const heardHere = vi.fn()
+    const stop = second.store.onOutsideChange(heardThere)
+    const stopHere = first.store.onOutsideChange(heardHere)
+
+    await first.store.save([{ project: makeProject('Fox'), knownStored: false }], ['project-Owl'])
+    await vi.waitFor(() => expect(heardThere).toHaveBeenCalledWith(['project-Fox', 'project-Owl']))
+
+    expect(heardHere).not.toHaveBeenCalled()
+    stop()
+    stopHere()
+  })
+
+  it('stops hearing once told to', async () => {
+    const first = await startTab()
+    const second = await startTab()
+    const heard = vi.fn()
+    second.store.onOutsideChange(heard)()
+
+    await first.store.save([{ project: makeProject('Fox'), knownStored: false }], [])
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(heard).not.toHaveBeenCalled()
+  })
+
+  it('asks for a reread of everything when the tab becomes visible, and not when it hides', async () => {
+    const { store } = await startTab()
+    const heard = vi.fn()
+    const stop = store.onOutsideChange(heard)
+    const state = vi.spyOn(document, 'visibilityState', 'get')
+
+    state.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(heard).not.toHaveBeenCalled()
+    state.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(heard).toHaveBeenCalledWith(undefined)
+    stop()
+  })
+})
 
 describe('a device that would not open or never moved', () => {
   it('keeps the library in localStorage where the browser has no IndexedDB, as before', async () => {
@@ -405,7 +597,11 @@ describe('a device that would not open or never moved', () => {
 })
 
 describe('the closing note', () => {
-  const noteOf = () => JSON.parse(localStorage.getItem(CLOSING_NOTE_KEY) ?? 'null') as { projects: Record<string, { stored: string; at: number }>; removed: string[] } | null
+  const noteOf = () =>
+    JSON.parse(localStorage.getItem(CLOSING_NOTE_KEY) ?? 'null') as {
+      projects: Record<string, { stored: string; at: number }>
+      removed: string[]
+    } | null
 
   it('holds each write under way when the page hides, and drops it when the write lands', async () => {
     const { store } = await startTab()
@@ -444,7 +640,7 @@ describe('the closing note', () => {
     expect(localStorage.getItem(CLOSING_NOTE_KEY)).toBeNull()
   })
 
-  it('notes a removal, and a removal wins over another tab\'s write of the same Project', async () => {
+  it("notes a removal, and a removal wins over another tab's write of the same Project", async () => {
     const { store } = await startTab()
     const fox = makeProject('Fox')
     await store.save([{ project: fox, knownStored: false }], [])
@@ -452,7 +648,15 @@ describe('the closing note', () => {
 
     const removing = store.save([], ['project-Fox'])
     store.noteClosing()
-    const writing = other.store.save([{ project: { ...fox, updatedAt: fox.updatedAt + 1 }, knownStored: true }], [])
+    const writing = other.store.save(
+      [
+        {
+          project: { ...fox, updatedAt: fox.updatedAt + 1 },
+          knownStored: true,
+        },
+      ],
+      [],
+    )
     other.store.noteClosing()
 
     expect(noteOf()).toEqual({ projects: {}, removed: ['project-Fox'] })
@@ -467,7 +671,13 @@ describe('the closing note', () => {
       real.call(this, key, value)
     })
 
-    const landing = store.save([{ project: makeProject('Big'), knownStored: false }, { project: makeProject('Small'), knownStored: false }], [])
+    const landing = store.save(
+      [
+        { project: makeProject('Big'), knownStored: false },
+        { project: makeProject('Small'), knownStored: false },
+      ],
+      [],
+    )
     store.noteClosing()
 
     expect(Object.keys(noteOf()!.projects)).toEqual(['project-Small'])
@@ -483,7 +693,10 @@ describe('the closing note', () => {
     const stored = JSON.stringify(encodeProject(fox))
     localStorage.setItem(
       CLOSING_NOTE_KEY,
-      JSON.stringify({ projects: { 'project-Fox': { stored, at: lastSaved(fox) } }, removed: ['project-Owl'] }),
+      JSON.stringify({
+        projects: { 'project-Fox': { stored, at: lastSaved(fox) } },
+        removed: ['project-Owl'],
+      }),
     )
 
     const next = await startTab()
@@ -499,7 +712,13 @@ describe('the closing note', () => {
     await store.save([{ project: newer, knownStored: false }], [])
     const older = makeProject('Fox', 1_700_000_000_000)
     const stored = JSON.stringify(encodeProject(withLayers(older, { name: 'Older' })))
-    localStorage.setItem(CLOSING_NOTE_KEY, JSON.stringify({ projects: { 'project-Fox': { stored, at: lastSaved(older) } }, removed: [] }))
+    localStorage.setItem(
+      CLOSING_NOTE_KEY,
+      JSON.stringify({
+        projects: { 'project-Fox': { stored, at: lastSaved(older) } },
+        removed: [],
+      }),
+    )
 
     const next = await startTab()
 
