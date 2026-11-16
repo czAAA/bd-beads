@@ -1,6 +1,6 @@
 // The offline shell (ticket 69, ADR 0045). vite.pwa.ts copies this to the build as `sw.js`, filling in cache and files.
-// Install caches every built file, all or nothing; no skipWaiting; pages are network-first, other built files
-// cache-first (hashed names); anything else goes to the network. Plain JS: no library.
+// Install caches every built file as a plain answer, all or nothing; no skipWaiting; pages are network-first, other
+// built files cache-first (hashed names); anything else goes to the network. Plain JS: no library.
 
 const CACHE = '__CACHE_NAME__'
 const PRECACHE = '__PRECACHE__'
@@ -21,10 +21,30 @@ function builtFile(url) {
 
 const urlOf = (path) => new URL(path, scope).href
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE.map((path) => new Request(urlOf(path), { cache: 'reload' })))),
+/** The answer as a plain one. Cloudflare answers `/index.html` with a redirect to `/`, and a response that followed a
+ * redirect is marked as such: a browser refuses it as the answer to a page load (ERR_FAILED), so it is rebuilt from
+ * its content. */
+async function plain(answer) {
+  if (!answer.redirected) return answer
+  return new Response(await answer.blob(), { status: answer.status, statusText: answer.statusText, headers: answer.headers })
+}
+
+/** Fetches every built file, then keeps them all or none. */
+async function precache() {
+  const answers = await Promise.all(
+    PRECACHE.map(async (path) => {
+      const answer = await fetch(new Request(urlOf(path), { cache: 'reload' }))
+      if (!answer.ok) throw new Error(`${path}: ${answer.status}`)
+      return [path, await plain(answer)]
+    }),
   )
+  // A failed put fails the install: the worker never takes over, so a half-filled cache is never served.
+  const cache = await caches.open(CACHE)
+  await Promise.all(answers.map(([path, answer]) => cache.put(urlOf(path), answer)))
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(precache())
 })
 
 self.addEventListener('activate', (event) => {
@@ -54,7 +74,9 @@ async function networkFirst(request, path) {
     answer = await (cached
       ? Promise.race([attempt, new Promise((_, reject) => setTimeout(reject, NETWORK_TIMEOUT_MS))])
       : attempt)
-    if (answer.ok) return answer
+    // Only a server error falls back to the copy (owner's rule, ticket 1017). Anything else goes to the browser as it
+    // is, a redirect above all: Cloudflare Access sending a person whose session ran out to sign in.
+    if (answer.status < 500) return answer
   } catch {
     // No network, or too slow: the copy on the device answers.
   }

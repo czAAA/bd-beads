@@ -18,7 +18,8 @@ export function filesBelow(dir: string): string[] {
  * content, so a changed build is a new cache and the old one is dropped when the new worker takes over. */
 export function renderServiceWorker(template: string, dir: string): { source: string; precache: string[] } {
   const precache = filesBelow(dir).filter((path) => path !== SERVICE_WORKER_FILE)
-  const hash = createHash('sha256')
+  // The worker's own text counts too, so a fixed worker is a new cache and a device drops what an older one kept.
+  const hash = createHash('sha256').update(template).update('\0')
   for (const path of precache) hash.update(path).update('\0').update(readFileSync(join(dir, path)))
   const source = template
     .replace("'__CACHE_NAME__'", JSON.stringify(`bd-beads-${hash.digest('hex').slice(0, 12)}`))

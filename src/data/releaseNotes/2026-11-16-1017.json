@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-16",
+  "line": {
+    "en": "The app opens again with no network or a slow one, and asks you to sign in once your session has run out",
+    "ru": "Приложение снова открывается без сети или при медленной сети, а когда сеанс истёк, просит войти заново",
+    "uk": "Застосунок знову відкривається без мережі чи за повільної мережі, а коли сеанс завершився, просить увійти знову",
+    "be": "Праграма зноў адкрываецца без сеткі або пры павольнай сетцы, а калі сеанс скончыўся, просіць увайсці зноў",
+    "zh": "没有网络或网络很慢时应用可以再次打开，登录过期后会提示重新登录",
+    "es": "La app vuelve a abrirse sin red o con una red lenta, y te pide iniciar sesión cuando tu sesión ha caducado",
+    "pl": "Aplikacja znów otwiera się bez sieci lub przy wolnej sieci, a gdy sesja wygaśnie, prosi o ponowne zalogowanie"
+  }
+}
