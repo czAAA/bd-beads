@@ -1165,6 +1165,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       toggleRowHighlight,
       /** The last press of Row done or Row not done, which the Pattern's motion plays from (ticket 0730). */
       rowPress: rowOps.rowPress,
+      /** How many times Rotate Frame has been pressed, which the Frame is seen turning by (ticket 1016). */
+      frameTurns: rotateFrameFlow.frameTurns,
       panBy,
       /** The bead in the middle of the view: what the Homepage's demo opens the editor on (ticket 0879). */
       visibleCentre,

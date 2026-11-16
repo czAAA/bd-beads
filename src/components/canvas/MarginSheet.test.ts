@@ -12,6 +12,7 @@ import { frameOutsetPx } from '../../rendering/rulerScale'
 import { frameOf } from '../../domain/layerRecord'
 import { MARGIN_PX } from '../../rendering/marginSizes'
 import { withLayers } from '../../testUtils/layerFields'
+import { rotateFrame } from '../../domain/rotate'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => {
@@ -487,5 +488,144 @@ describe('Mirror the whole Frame (MarginSheet card, ADR 0082)', () => {
     expect(control(wrapper, 'margin-mirror-frame').attributes('aria-label')).toBe('Mirror off')
     expect(control(wrapper, 'margin-mirror-frame').attributes('aria-pressed')).toBe('true')
     expect(control(wrapper, 'margin-mirror-frame').classes()).toContain('margin-sheet__mirror--on')
+  })
+})
+
+describe('Rotate Frame waits under the pointer (ticket 1016)', () => {
+  const copy = (wrapper: ReturnType<typeof mountSheet>) => wrapper.find('[data-testid="margin-rotate-copy"]')
+  /** Rotate Frame pressed with a pointer of a kind, its button at (300, 20) on screen. */
+  async function pressRotate(wrapper: ReturnType<typeof mountSheet>, pointerType = 'mouse') {
+    const button = control(wrapper, 'margin-rotate-frame')
+    button.element.getBoundingClientRect = () => new DOMRect(300, 20, 28, 28)
+    await button.trigger('pointerdown', { pointerType, clientX: 310, clientY: 30 })
+    await button.trigger('click')
+  }
+  const pressCopy = async (wrapper: ReturnType<typeof mountSheet>, pointerType = 'mouse') => {
+    const button = copy(wrapper).get('button')
+    await button.trigger('pointerdown', { pointerType })
+    await button.trigger('click')
+  }
+
+  it('leaves a copy of the button where it was pressed, which stays there as the band moves and turns the Frame again', async () => {
+    const wrapper = mountSheet()
+    await pressRotate(wrapper)
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    expect(copy(wrapper).attributes('style')).toContain('left: 300px')
+    expect(copy(wrapper).attributes('style')).toContain('top: 20px')
+    // The Frame turned: its sheet moved 100px left and 40px down, the copy stays on screen where it was.
+    await wrapper.setProps({ anchor: { ...anchor, sheet: { ...anchor.sheet, left: -100, top: 40 } } })
+    expect(copy(wrapper).attributes('style')).toContain('left: 400px')
+    expect(copy(wrapper).attributes('style')).toContain('top: -20px')
+    for (let press = 0; press < 3; press++) await pressCopy(wrapper)
+    expect(wrapper.emitted('rotate')).toHaveLength(4)
+    const button = copy(wrapper).get('button')
+    expect([button.attributes('aria-label'), button.attributes('tabindex'), copy(wrapper).attributes('aria-hidden')]).toEqual(['Rotate Frame', '-1', 'true'])
+  })
+
+  it('fades out 200ms after the pointer leaves it, and stays if the pointer comes back in time', async () => {
+    vi.useFakeTimers()
+    const wrapper = mountSheet()
+    await pressRotate(wrapper)
+    await copy(wrapper).trigger('pointerleave', { pointerType: 'mouse' })
+    vi.advanceTimersByTime(199)
+    await copy(wrapper).trigger('pointerenter', { pointerType: 'mouse' })
+    vi.advanceTimersByTime(1000)
+    await nextTick()
+    expect(copy(wrapper).classes()).not.toContain('margin-sheet__rotate-copy--leaving')
+    await copy(wrapper).trigger('pointerleave', { pointerType: 'mouse' })
+    vi.advanceTimersByTime(200)
+    await nextTick()
+    expect(copy(wrapper).classes()).toContain('margin-sheet__rotate-copy--leaving')
+    vi.advanceTimersByTime(150)
+    await nextTick()
+    expect(copy(wrapper).exists()).toBe(false)
+  })
+
+  it('on touch leaves 1.6s after the last tap', async () => {
+    vi.useFakeTimers()
+    const wrapper = mountSheet()
+    await pressRotate(wrapper, 'touch')
+    vi.advanceTimersByTime(1500)
+    await pressCopy(wrapper, 'touch')
+    // A finger's lift is no leaving.
+    await copy(wrapper).trigger('pointerleave', { pointerType: 'touch' })
+    vi.advanceTimersByTime(1599)
+    await nextTick()
+    expect(copy(wrapper).classes()).not.toContain('margin-sheet__rotate-copy--leaving')
+    vi.advanceTimersByTime(1 + 150)
+    await nextTick()
+    expect(copy(wrapper).exists()).toBe(false)
+  })
+
+  it('gives way to the band\'s own button once the Frame has turned back under it, with no fade', async () => {
+    vi.useFakeTimers()
+    const wrapper = mountSheet()
+    await pressRotate(wrapper)
+    const button = control(wrapper, 'margin-rotate-frame')
+    button.element.getBoundingClientRect = () => new DOMRect(200, 60, 28, 28)
+    await wrapper.setProps({ anchor: { ...anchor, sheet: { ...anchor.sheet, left: -100 } } })
+    vi.advanceTimersByTime(1000)
+    await nextTick()
+    expect(copy(wrapper).exists()).toBe(true)
+    button.element.getBoundingClientRect = () => new DOMRect(300, 20, 28, 28)
+    await wrapper.setProps({ anchor })
+    await nextTick()
+    vi.advanceTimersByTime(149)
+    await nextTick()
+    expect(copy(wrapper).exists()).toBe(true)
+    vi.advanceTimersByTime(1)
+    await nextTick()
+    expect(copy(wrapper).exists()).toBe(false)
+  })
+
+  it('starts its wait on a move away though the pointer never entered it, and goes with the Frame', async () => {
+    vi.useFakeTimers()
+    const wrapper = mountSheet()
+    await pressRotate(wrapper)
+    copy(wrapper).element.getBoundingClientRect = () => new DOMRect(295, 15, 38, 38)
+    window.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: 500, clientY: 300 }))
+    vi.advanceTimersByTime(150)
+    // More moves away keep the wait it began.
+    window.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: 520, clientY: 300 }))
+    vi.advanceTimersByTime(50)
+    await nextTick()
+    expect(copy(wrapper).classes()).toContain('margin-sheet__rotate-copy--leaving')
+    await pressRotate(wrapper)
+    await wrapper.setProps({ project: withLayers(framed(), { frame: undefined }) })
+    expect(copy(wrapper).exists()).toBe(false)
+  })
+
+  it('leaves no copy for a press from the keyboard, whose focus goes with the band', async () => {
+    const wrapper = mountSheet()
+    await control(wrapper, 'margin-rotate-frame').trigger('click')
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    expect(copy(wrapper).exists()).toBe(false)
+  })
+
+  it('pressed from the Frame tools menu, closes it and stands where the item was pressed', async () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.45) })
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+    const item = control(wrapper, 'margin-frame-tools-rotate')
+    await item.trigger('pointerdown', { pointerType: 'mouse', clientX: 200, clientY: 30 })
+    await item.trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role^="menuitem"]').exists()).toBe(false)
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    // A full-size button centred where the item was pressed.
+    expect(copy(wrapper).attributes('style')).toContain(`left: ${200 - MARGIN_PX.tool / 2}px`)
+    expect(copy(wrapper).attributes('style')).toContain(`top: ${30 - MARGIN_PX.tool / 2}px`)
+  })
+})
+
+describe('Edit Frame on a turned Frame (ticket 1016)', () => {
+  it('keeps its place in the band, enabled, so no tool shifts as the Frame turns', () => {
+    const ids = (project: Project) => mountSheet({ project }).findAll('.margin-sheet__tools [data-testid]').map((each) => each.attributes('data-testid'))
+    let turned = framed()
+    for (let turn = 1; turn <= 3; turn++) {
+      turned = rotateFrame(turned)!
+      expect(ids(turned), `${turn}`).toEqual(ids(framed()))
+      expect(control(mountSheet({ project: turned }), 'frame-edit-toggle').attributes('aria-disabled')).not.toBe('true')
+    }
   })
 })

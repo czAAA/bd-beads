@@ -24,7 +24,7 @@ import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
 import { usePanelSection } from '../../composables/shell/usePanelSection'
 import { FEWEST_SIDE, FRAME_EDGES, MAX_TYPED_SIDE, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { seenSize } from '../../domain/frameOrientation'
+import { ownEdge, seenSize } from '../../domain/frameOrientation'
 import { frameAllows, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
 import type { Layer } from '../../domain/grid'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
@@ -90,10 +90,8 @@ const settingsSummary = computed(() => (frameSettings.value ? layerSummary(t.val
 const SETTINGS_SECTION = 'frame:settings'
 const settingsSection = usePanelSection(() => SETTINGS_SECTION)
 if (props.opensOnSettings && !settingsSection.open.value) settingsSection.toggle()
-/** A Frame without a shape lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
-const turned = computed(() => !!frame.value && !frameAllows(frame.value, 'resize') && !locked.value)
-/** Whether the size fields are off, and why: finished rows, or a turned Frame. */
-const sizeHeld = computed(() => locked.value || turned.value)
+/** Whether the size fields are off: finished rows. A turned Frame is sized as seen (ticket 1016). */
+const sizeHeld = computed(() => locked.value)
 
 /** A Custom frame's settings (tickets 0592, 0593, 0597), set in its Layer settings (ticket 0670): the first one is the
  * size section's summary, which then holds the Estimated size alone; none for a Frame without a Frame shape. */
@@ -107,7 +105,7 @@ const lastEdge = ref<FrameEdge>()
 const cells = FRAME_EDGES.map((edge) => {
   const hold = useHoldRepeat((direction) => {
     const current = frame.value
-    if (!current || sizeHeld.value || frameWithEdgeStep(frameWeave(props.project), current, edge, direction) === current) return false
+    if (!current || sizeHeld.value || frameWithEdgeStep(frameWeave(props.project), current, ownEdge(current, edge), direction) === current) return false
     lastEdge.value = edge
     emit('step', edge, direction)
     return true
@@ -217,7 +215,7 @@ const sizeSummary = computed(() =>
 /** Fit a Frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 /** The Tooltip over the off size fields. */
-const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: turned.value ? t.value.tooltips.frameSizeTurned : t.value.tooltips.frameSizeLocked, announce: false }))
+const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: t.value.tooltips.frameSizeLocked, announce: false }))
 
 // Top, Bottom, Left, Right is the cell order whatever the edges' own order is.
 const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cells.find((cell) => cell.edge === edge)!)
@@ -312,7 +310,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
         </div>
         <div v-else class="frame-panel__body">
           <!-- Escape during an edit in a field puts the size back; otherwise it closes the panel (PanelHost). -->
-          <!-- Once a pass is done, or while the Frame lies turned, the fields are shown but off, and a Tooltip says why and how to unblock. -->
+          <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
           <component
             :is="sizeHeld ? AppTooltip : 'div'"
             v-bind="sizeHeld ? lockedTip : {}"
@@ -375,7 +373,6 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
           </template>
 
           <MarkedDoneLine v-if="locked" class="frame-panel__line" testid="frame-size-locked" @reset-progress="emit('reset-progress')" />
-          <p v-else-if="turned" class="frame-panel__line" data-testid="frame-size-turned">{{ t.frame.sizeTurnedLine }}</p>
           <div v-else ref="edgesEl" class="frame-panel__edges">
             <div v-for="cell in ordered" :key="cell.edge" class="frame-panel__cell" :data-testid="`frame-panel-cell-${cell.edge}`">
               <component

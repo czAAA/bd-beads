@@ -32,6 +32,7 @@ import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
 import type { MirrorSetting } from '../../domain/mirror'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 import { useRowMotion } from './surface/useRowMotion'
+import { useFrameTurn } from './surface/useFrameTurn'
 import type { RowPress } from '../../composables/project/useRowOps'
 import PatternDone from './PatternDone.vue'
 import { PATTERN_DONE_STARS } from '../../rendering/rowMotion'
@@ -95,6 +96,8 @@ const props = withDefaults(defineProps<{
   /** The last press of Row done or Row not done (ticket 0730): the Pattern's motion plays from it, never from the
    * pointer changing. */
   rowPress?: RowPress
+  /** How many times Rotate Frame has been pressed (ticket 1016): each press is seen turning, never an Undo. */
+  frameTurns?: number
   /** The reference image to draw under the beads (ticket 0790), none while it is hidden. */
   reference?: DrawnReference
   /** The keyboard's bead cursor (ADR 0093), ringed while focus came by keyboard; none otherwise. */
@@ -139,6 +142,7 @@ const rootEl = ref<HTMLElement>()
 const baseEl = ref<HTMLCanvasElement>()
 const overlayEl = ref<HTMLCanvasElement>()
 const fadeEl = ref<HTMLCanvasElement>()
+const turnEl = ref<HTMLCanvasElement>()
 const standInEl = ref<HTMLCanvasElement>()
 
 /** How big the surface is on screen, measured: the canvases are exactly this big. */
@@ -367,6 +371,17 @@ const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size,
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle, pressAreaGrip } = pointer
 const { oncePerFrame } = useFrameScheduler()
 const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
+const frameTurn = useFrameTurn({
+  turns: () => props.frameTurns,
+  beads: baseEl,
+  copy: turnEl,
+  frameBox: () => {
+    const frame = frameOf(props.project)
+    return frame && layerSurface.value.frameBox(frame)
+  },
+  paper: () => theme.value.margin.fill,
+  view: () => [props.zoom, props.scroll, layerSize.value, props.twist],
+})
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
 useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference: toRef(() => props.reference) })
@@ -490,6 +505,8 @@ onBeforeUnmount(() => {
       <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
       <!-- The finished passes as they were dimmed, fading out as Pattern done brings them back (ticket 0730). -->
       <canvas v-show="rowMotion.fadeOpacity.value > 0" ref="fadeEl" class="project-surface__canvas" :style="{ opacity: rowMotion.fadeOpacity.value }" aria-hidden="true" />
+      <!-- The Frame as it was, turning a quarter over the Frame drawn turned (ticket 1016). -->
+      <canvas v-show="frameTurn.turning.value" ref="turnEl" class="project-surface__canvas" data-testid="project-surface-turn" aria-hidden="true" />
       <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
       <PatternDone v-if="patternDoneAt" :key="patternDoneAt.id" :sheet="patternDoneAt.sheet" :frame="patternDoneAt.frame" :stars="patternDoneAt.stars" />
     </div>

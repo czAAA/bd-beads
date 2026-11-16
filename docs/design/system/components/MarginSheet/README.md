@@ -45,9 +45,21 @@ The one exception: on the Homepage's What's inside, the demo Frame's band has no
 - **A press** makes the whole Frame the Mirror's Area (a Canvas Area is dropped, its Mode and Axes kept, counts clamped; onto a Custom frame the Axes become the shape's own), enters Mirror mode and shows the Mirror bar above the sheet (ContextBar card); one Undo step. **Pressed while on** it turns the Mirror off, as Close mirror does.
 - **Shown and hidden as Rotate Frame is**, in every form that has the tools; with Row progress started it stays (mirroring does not change the Frame). In the folded form it is the first item of the **Frame tools** menu, "Mirror the whole Frame", with a check (`check`, `accent-strong`) while on and `role="menuitemcheckbox"`; in the bare form it is not offered (the Mirror bar's Close mirror still turns it off).
 
+## Rotate Frame waits under the pointer (ticket 1016)
+
+The Frame turns about its middle (ADR 0052, ADR 0079), seen turning over `--frame-turn-duration` (150ms, `--ease-standard`; a jump under reduced motion), and the band with all its tools goes with it at once; the view does not scroll. So the next press needs no aim:
+
+- **The copy.** A pointer's press on Rotate Frame leaves a copy of the button exactly where it was pressed, lifted off the paper: the band's button, at the band's scale, on an `elevated` pill (`space-4` padding, 1px `overlay-line`, `radius-lg`) with `elevation-3`. A press on it turns the Frame again by the same action as the band's button; four presses without moving the pointer turn the Frame four times.
+- **It leaves** `--rotate-copy-wait` (200ms) after the pointer leaves it, fading out over `--rotate-copy-fade` (150ms, `--ease-in`); back over it within that time, it stays. On touch, which has no hover, it leaves `--rotate-copy-tap-hold` (1.6s) after the last tap.
+- **Turned back** to where the copy stands, the band's own button arrives under it, and the copy goes once the turn has been seen, with no fade: the pointer is never over nothing.
+- **From the Frame tools menu** (a coarse pointer, or a band too narrow for its tools), the menu closes on the press and a full-size copy stands centred where the item was pressed, by the same rules.
+- **Keyboard and screen reader.** The copy has the button's name and Tooltip but is not a Tab stop, takes no focus and is hidden from a screen reader (`aria-hidden`), so Rotate Frame is there once: the keyboard's is the band's own button, whose focus goes with the band, and a press from the keyboard leaves no copy. Each turn is announced once.
+- Rotate Frame from the Frame panel, which does not move, leaves no copy.
+
 ## Edit Frame: hot corners
 
 - While Edit Frame is on, the sheet's outer edge is outlined 1px dashed in `accent` at 55%, 3px outside it.
+- **On a turned Frame** (ticket 1016) Edit Frame keeps its place in the band, enabled, so no tool shifts as the Frame turns. The handles stand on the line of the rectangle the Frame lies in; each moves the Frame's own edge that lies under it, by that edge's own step (on peyote and brick stitch the two-bead step shows on whichever screen edge the Frame's own top or left has become), and the edge across from it stays where it is on the Canvas. The size Tooltip and the title block give the size as seen.
 - The eight resize handles are the Handle card's, in `accent`, on the Frame line: a bracket at each corner, a bar at each edge's middle, the corner under the pointer hot. Beside the hot corner the size Tooltip shows ("42 × 13 ≈ 6.7 × 1.7 cm"). Their reach is the Handle card's (14px for mouse and pen, a 44px touch area).
 - Editing stays locked once a row is marked done, as before. The Edit Frame button stays in its place, disabled (`aria-disabled`, still focusable), its Tooltip giving the lock sentence "Rows are marked done. Reset progress to change the size." on hover, focus, a tap or a long press, as Reset progress says why before a row is done (ticket 0975). In the Frame tools menu its item is disabled with the same reason. After Reset progress it works again.
 

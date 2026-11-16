@@ -27,6 +27,7 @@ import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { PATTERN_DONE_MS, ROW_MOTION } from '../../rendering/rowMotion'
+import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
 /** A Project of this many beads, with any of its fields changed. */
@@ -1893,6 +1894,29 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
 describe('ProjectSurface with a Frame', () => {
   const framed = () => projectOf(8, 6, { frame: { technique: 'loom' as const, row: 0, column: 0, columns: 8, rows: 6, beads: {} } })
 
+  // Unmounted while the test's animation frames are still stubbed: unmounting cancels the ones waiting.
+  const mounted: VueWrapper[] = []
+  afterEach(() => mounted.splice(0).forEach((wrapper) => wrapper.unmount()))
+  const mountPlaying = async (...args: Parameters<typeof mountSurface>) => {
+    const { wrapper } = await mountSurface(...args)
+    mounted.push(wrapper)
+    return { wrapper }
+  }
+
+  /** Animation frames the test hands out at the times it chooses. */
+  function frameClock() {
+    const waiting = new Map<number, FrameRequestCallback>()
+    let next = 0
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => (waiting.set(++next, callback), next))
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => waiting.delete(id))
+    return async (time: number) => {
+      const due = [...waiting.values()]
+      waiting.clear()
+      due.forEach((callback) => callback(time))
+      await nextTick()
+    }
+  }
+
   /** A press at a point of the viewport, then moves and a release. */
   async function gesture(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], from: [number, number], to: [number, number]) {
     const surface = wrapper.find('[data-testid="project-surface"]')
@@ -2058,29 +2082,6 @@ describe('ProjectSurface with a Frame', () => {
     const lastPass: RowPress = { id: 1, done: true, from: 9, to: 10, patternDone: true }
     const patternDone = (wrapper: VueWrapper) => wrapper.find('[data-testid="pattern-done"]')
 
-    // Unmounted while the test's animation frames are still stubbed: unmounting cancels the ones waiting.
-    const mounted: VueWrapper[] = []
-    afterEach(() => mounted.splice(0).forEach((wrapper) => wrapper.unmount()))
-    const mountPlaying = async (...args: Parameters<typeof mountSurface>) => {
-      const { wrapper } = await mountSurface(...args)
-      mounted.push(wrapper)
-      return { wrapper }
-    }
-
-    /** Animation frames the test hands out at the times it chooses. */
-    function frameClock() {
-      const waiting = new Map<number, FrameRequestCallback>()
-      let next = 0
-      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => (waiting.set(++next, callback), next))
-      vi.stubGlobal('cancelAnimationFrame', (id: number) => waiting.delete(id))
-      return async (time: number) => {
-        const due = [...waiting.values()]
-        waiting.clear()
-        due.forEach((callback) => callback(time))
-        await nextTick()
-      }
-    }
-
     it('plays Pattern done after the press that marks the last pass, then shows the finished passes at full color', async () => {
       const at = frameClock()
       const { wrapper } = await mountPlaying(woven(9))
@@ -2161,6 +2162,49 @@ describe('ProjectSurface with a Frame', () => {
       expect(redShown()).toBe(true)
       await at(ROW_MOTION.patternDoneDelay)
       expect(patternDone(wrapper).exists()).toBe(false)
+    })
+  })
+
+  describe('Rotate Frame seen turning (ticket 1016)', () => {
+    const turnShown = (wrapper: VueWrapper) => wrapper.find('[data-testid="project-surface-turn"]').isVisible()
+
+    it('turns the Frame as it was drawn a quarter over FRAME_TURN_MS after a press, then shows the Frame as drawn', async () => {
+      const at = frameClock()
+      const { wrapper } = await mountPlaying(framed())
+      await at(0)
+      await wrapper.setProps({ project: rotateFrame(framed())!, frameTurns: 1 })
+      expect(turnShown(wrapper)).toBe(true)
+      context.calls.length = 0
+      await at(1000)
+      await at(1000 + FRAME_TURN_MS / 2)
+      const turned = context.named('rotate').at(-1)!.args[0] as number
+      expect(turned).toBeGreaterThan(0)
+      expect(turned).toBeLessThan(Math.PI / 2)
+      await at(1000 + FRAME_TURN_MS)
+      expect(turnShown(wrapper)).toBe(false)
+    })
+
+    it('jumps on a change that is not a press, such as an Undo', async () => {
+      frameClock()
+      const { wrapper } = await mountPlaying(framed(), 1, { x: 0, y: 0 }, { frameTurns: 1 })
+      await wrapper.setProps({ project: rotateFrame(framed())! })
+      expect(turnShown(wrapper)).toBe(false)
+    })
+
+    it('jumps under reduced motion', async () => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(prefers-reduced-motion: reduce)': true }).matchMedia)
+      frameClock()
+      const { wrapper } = await mountPlaying(framed())
+      await wrapper.setProps({ project: rotateFrame(framed())!, frameTurns: 1 })
+      expect(turnShown(wrapper)).toBe(false)
+    })
+
+    it('ends the turn when the view moves, as the copy lies only where the drawing was', async () => {
+      frameClock()
+      const { wrapper } = await mountPlaying(framed())
+      await wrapper.setProps({ project: rotateFrame(framed())!, frameTurns: 1 })
+      await wrapper.setProps({ scroll: { x: 30, y: 0 } })
+      expect(turnShown(wrapper)).toBe(false)
     })
   })
 })

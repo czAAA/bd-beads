@@ -238,13 +238,14 @@ function rulesOf(frame: Pick<FrameSheet, 'shape'>): FrameRules {
   return frameShapeOf(frame) ?? FRAME
 }
 
-/** What a Frame without a shape lying turned does not offer (ticket 0667): what reshapes it as a rectangle of the
- * Canvas's positions, which its own rows and columns no longer are. Turned upright again, it offers them again. */
-const UPRIGHT_ONLY: ReadonlySet<FrameAction> = new Set(['resize', 'remove-line', 'from-selection'])
+/** What a Frame without a shape lying turned does not offer (tickets 0667, 1016): what takes the Canvas's positions as
+ * its own rows and columns, which they no longer are. Turned upright again, it offers them again. A resize it offers, as
+ * seen (`changeFrame`). */
+const UPRIGHT_ONLY: ReadonlySet<FrameAction> = new Set(['remove-line', 'from-selection'])
 
 /** Whether a Frame without a shape lies turned (ticket 0667): its own grid, not a layout, drawn a quarter turn or more
  * round. */
-function turnedGrid(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>): boolean {
+export function turnedGrid(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>): boolean {
   return !!frame.quarterTurns && !frameShapeOf(frame)
 }
 
@@ -409,9 +410,10 @@ export type SizeFit = 'nearest' | 'cover'
 /** The sides round a shape, clockwise from its top. */
 const AROUND: readonly FrameEdge[] = ['top', 'right', 'bottom', 'left']
 
-/** The side of a Custom frame's shape, as it stands upright, that an edge of its rectangle on the Canvas shows once
- * Rotate Frame has turned it (ticket 0814): turned a quarter clockwise, its top is on the right. */
-function shapeSide(edge: FrameEdge, quarterTurns = 0): FrameEdge {
+/** The side of a Frame, as it stands upright, that an edge of its rectangle on the Canvas shows once Rotate Frame has
+ * turned it (tickets 0814, 1016): turned a quarter clockwise, its top is on the right. A Custom frame's shape side, or
+ * the own edge of a Frame without a shape that a resize handle or stepper on that edge moves. */
+export function shapeSide(edge: FrameEdge, quarterTurns = 0): FrameEdge {
   return AROUND[(AROUND.indexOf(edge) - quarterTurns + AROUND.length) % AROUND.length]!
 }
 

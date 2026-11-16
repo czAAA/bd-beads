@@ -4,7 +4,10 @@ import { refitSheet } from './folding'
 import type { GridPosition } from './grid'
 import { columnCycle, rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
-import { canvasDistance, laidOnCanvas, layersAlike } from './layerWeave'
+import { canvasDistance, frameWeave, laidOnCanvas } from './layerWeave'
+import { tradesWithCanvas } from './frameGrowth'
+import { shapeSide, turnedGrid } from './frameShape'
+import { laidSize } from './frameOrientation'
 import { beadsOfLayer, frameOf, heldWeave, type Layered, touchFrameSheet } from './layerRecord'
 import type { Project } from './project'
 import { clampPointer, rowProgressOf } from './rowProgress'
@@ -121,10 +124,31 @@ export function fitToDrawing(project: Layered): Rect | undefined {
 }
 
 /** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
- * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas. */
+ * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas; a turned one's corner
+ * goes where its edges lie (`turnedOrigin`). */
 function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect): GridPosition {
+  if (turnedGrid(current)) return turnedOrigin(project, current, rectangle)
   const moved = canvasDistance(project, heldWeave(project, 'frame')!, rectangle.row - current.row, rectangle.column - current.column)
   return { row: current.row + moved.row, column: current.column + moved.column }
+}
+
+/** Where a turned Frame resized to its own `rectangle` starts on the Canvas (ticket 1016): along each side as seen, the
+ * edge whose own edge did not move stays; where both did (a typed size), the change is shared as they grew. */
+function turnedOrigin(project: Project, current: FrameSheet, rectangle: Rect): GridPosition {
+  const own = frameWeave(project)
+  const grew: Record<FrameEdge, number> = {
+    top: current.row - rectangle.row,
+    left: current.column - rectangle.column,
+    bottom: rectangle.row + rectangle.rows - current.row - current.rows,
+    right: rectangle.column + rectangle.columns - current.column - current.columns,
+  }
+  const [was, now] = [laidSize({ ...current, ...own }), laidSize({ ...current, ...own, rows: rectangle.rows, columns: rectangle.columns })]
+  const share = (first: FrameEdge, last: FrameEdge) => {
+    const [before, after] = [Math.abs(grew[shapeSide(first, current.quarterTurns)]), Math.abs(grew[shapeSide(last, current.quarterTurns)])]
+    return before + after === 0 ? 0 : before / (before + after)
+  }
+  const moved = canvasDistance(project, own, Math.round((now.rows - was.rows) * share('top', 'bottom')), Math.round((now.columns - was.columns) * share('left', 'right')))
+  return { row: current.row - moved.row, column: current.column - moved.column }
 }
 
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
@@ -152,7 +176,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
   // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638) and takes what is offered (ticket
   // 0639); one made anew is empty.
   const refit = current
-    ? refitSheet(current, !layersAlike(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
+    ? refitSheet(current, !tradesWithCanvas(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
     : { beads: {}, given: {}, taken: {} }
   const frame: FrameSheet = {
     row,

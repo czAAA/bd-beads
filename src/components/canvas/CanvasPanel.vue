@@ -83,6 +83,7 @@ const {
   rowHighlight,
   toggleRowHighlight,
   rowPress,
+  frameTurns,
   canUndo,
   canRedo,
   onUndo,
@@ -483,6 +484,7 @@ const drawingStyle = computed(() => {
                 :stroking="stroking"
                 :row-marks="rowHighlight"
                 :row-press="rowPress"
+                :frame-turns="frameTurns"
                 :input-mode="surfaceInputMode"
                 :handedness="handedness"
                 :preview-cells="previewCells"

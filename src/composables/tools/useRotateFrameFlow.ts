@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { rotateFrame } from '../../domain/rotate'
 import type { Project } from '../../domain/project'
 import type { Translations } from '../../i18n/translations'
@@ -12,17 +13,21 @@ export interface RotateFrameFlowDeps {
   messages: () => Translations
 }
 
-/** Rotate Frame (tickets 471, 0647, 0667, ADR 0052, 0079): the Frame's orientation a quarter turn on, as one Edit so
- * Undo restores it. An exempt one: no bead moves, so the finished-row lock has nothing to trim, and it never asks. The
- * Canvas under it is not touched, so there is nothing to say was covered. */
+/** Rotate Frame (tickets 471, 0647, 0667, 1016, ADR 0052, 0079): the Frame's orientation a quarter turn on, as one
+ * Edit; exempt, as no bead moves, so it never asks, and the Canvas under it is untouched. Each press is counted before
+ * its Edit, so the surface takes the Frame as drawn and shows it turning. */
 export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
+  /** How many times Rotate Frame has turned the Frame: what the Frame is seen turning by, never an Undo. */
+  const frameTurns = ref(0)
+
   function onRotateFrame(): void {
     if (!frameOf(deps.currentProject())) {
       return
     }
+    frameTurns.value += 1
     deps.edit('exempt', (project) => rotateFrame(project) ?? project)
     deps.announce(deps.messages().frame.announceFrameRotated)
   }
 
-  return { onRotateFrame }
+  return { onRotateFrame, frameTurns }
 }
