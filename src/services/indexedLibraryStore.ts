@@ -15,6 +15,7 @@ import {
   type ProjectChange,
   type Reread,
   type SaveResult,
+  type StoredRecord,
 } from './libraryFormats'
 
 // The Project library in IndexedDB, one record per Project (ADR 0094, ADR 0012, spec 1018): the store, the copy of the old
@@ -91,7 +92,13 @@ let stampCount = 0
 const newStamp = (): string => `${Date.now().toString(36)}-${(stampCount += 1).toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
 function recordOf(id: string, stored: string, summary: ProjectSummary | undefined): LibraryRecord {
-  return { id, format: RECORD_FORMAT, stored, stamp: newStamp(), summary: summary ?? null }
+  return {
+    id,
+    format: RECORD_FORMAT,
+    stored,
+    stamp: newStamp(),
+    summary: summary ?? null,
+  }
 }
 
 const known = (record: LibraryRecord | undefined): record is LibraryRecord => record !== undefined && record.format === RECORD_FORMAT
@@ -172,7 +179,10 @@ export async function copyOldLibrary(db: IDBDatabase): Promise<void> {
     try {
       for (const [id, record] of parseRecords(raw)) {
         const stored = stampOf(record)
-        entries.set(id, { stored, summary: projectSummaryOf(JSON.parse(stored)) })
+        entries.set(id, {
+          stored,
+          summary: projectSummaryOf(JSON.parse(stored)),
+        })
       }
     } catch {
       entries.clear()
@@ -206,6 +216,62 @@ export async function copyOldLibrary(db: IDBDatabase): Promise<void> {
     remember.objectStore(META).put(memo)
     await finished(remember)
   }
+}
+
+// --- The old library, taken in -----------------------------------------------------------------------------------------
+
+/** Takes in what an older build's tab saved into the old library (ADR 0094): if its digest differs from the remembered one,
+ * each Project new or changed there is written when its last save is newer than the record's. Adds and updates only;
+ * a missing or unreadable value changes nothing. Answers the ids written. */
+export async function takeInOldLibrary(db: IDBDatabase): Promise<string[]> {
+  const raw = readKey(localStorage, STORAGE_KEY)
+  if (raw === null) return []
+  const digest = digestOf(raw)
+  const memo = await wrap(db.transaction(META, 'readonly').objectStore(META).get(OLD_LIBRARY) as IDBRequest<OldLibraryMemo | undefined>)
+  if (memo?.digest === digest) return []
+  let entries: Map<string, StoredRecord>
+  try {
+    entries = parseRecords(raw)
+  } catch {
+    return []
+  }
+  const remembered = memo?.projects ?? {}
+  // Earlier digests stay, so a Project that leaves the old library and comes back unchanged isn't taken for new.
+  const projects: Record<string, string> = { ...remembered }
+  const changed: {
+    id: string
+    stored: string
+    summary: ProjectSummary | undefined
+  }[] = []
+  for (const [id, record] of entries) {
+    const stored = stampOf(record)
+    projects[id] = digestOf(stored)
+    if (remembered[id] === projects[id]) continue
+    try {
+      changed.push({
+        id,
+        stored,
+        summary: projectSummaryOf(JSON.parse(stored)),
+      })
+    } catch {
+      // A Project of the old library that can't be read is left out.
+    }
+  }
+  const transaction = db.transaction([PROJECTS, META], 'readwrite')
+  const store = transaction.objectStore(PROJECTS)
+  const written: string[] = []
+  for (const { id, stored, summary } of changed) {
+    if (!summary) continue
+    getRecord(store, id, (record) => {
+      if (record !== undefined && !known(record)) return
+      if (record?.summary && lastSaved(record.summary) >= lastSaved(summary)) return
+      store.put(recordOf(id, stored, summary))
+      written.push(id)
+    })
+  }
+  transaction.objectStore(META).put({ key: OLD_LIBRARY, digest, projects } satisfies OldLibraryMemo)
+  await finished(transaction)
+  return written
 }
 
 // --- The closing note ---------------------------------------------------------------------------------------------------
@@ -246,6 +312,15 @@ export async function replayClosingNote(db: IDBDatabase): Promise<void> {
 
 // --- The store ----------------------------------------------------------------------------------------------------------
 
+/** The channel tabs of this build tell each other of their writes on. */
+const CHANNEL = 'openbeads-library'
+
+/** What a save tells the other tabs: the Projects it wrote and the ones it removed. */
+interface LibraryMessage {
+  written: string[]
+  removed: string[]
+}
+
 /** A write started and not yet landed: what the closing note would hold of it. */
 interface Underway {
   entries: NoteEntries
@@ -259,6 +334,17 @@ export function indexedLibraryStore(connection: LibraryConnection): LibraryStore
   const underway = new Set<Underway>()
   /** What this tab has put in the closing note, to take out when the write lands. */
   const noted = new Map<Underway, NoteEntries>()
+  let channel: BroadcastChannel | undefined
+  const channelOf = (): BroadcastChannel | undefined => {
+    if (channel === undefined && typeof BroadcastChannel !== 'undefined') {
+      try {
+        channel = new BroadcastChannel(CHANNEL)
+      } catch {
+        return undefined
+      }
+    }
+    return channel
+  }
 
   const openLoaded = (keepSealed: (summary: ProjectSummary) => boolean) => {
     const projects: Project[] = []
@@ -297,13 +383,25 @@ export function indexedLibraryStore(connection: LibraryConnection): LibraryStore
     }
     await finished(transaction)
     for (const [project, stamp] of written) stamps.set(project, stamp)
+    if (written.length > 0 || removed.length > 0) {
+      try {
+        channelOf()?.postMessage({
+          written: written.map(([project]) => project.id),
+          removed: [...removed],
+        } satisfies LibraryMessage)
+      } catch {
+        // The channel is a nicety: a tab that misses the message rereads when it becomes visible.
+      }
+    }
     return { dropped }
   }
 
   return {
     start: async () => {
       const db = await connection.get()
-      loaded = (await wrap(db.transaction(PROJECTS, 'readonly').objectStore(PROJECTS).getAll() as IDBRequest<LibraryRecord[]>)).filter(known)
+      loaded = (await wrap(db.transaction(PROJECTS, 'readonly').objectStore(PROJECTS).getAll() as IDBRequest<LibraryRecord[]>)).filter(
+        known,
+      )
       return 'ready'
     },
     count: async () => {
@@ -320,7 +418,11 @@ export function indexedLibraryStore(connection: LibraryConnection): LibraryStore
     },
     save: (changed, removed) => {
       const entries: NoteEntries = { projects: {}, removed }
-      for (const { project } of changed) entries.projects[project.id] = { stored: stampOf(project), at: lastSaved(project) } satisfies NotedProject
+      for (const { project } of changed)
+        entries.projects[project.id] = {
+          stored: stampOf(project),
+          at: lastSaved(project),
+        } satisfies NotedProject
       const mine: Underway = { entries }
       underway.add(mine)
       return run(changed, removed).then(
@@ -360,13 +462,52 @@ export function indexedLibraryStore(connection: LibraryConnection): LibraryStore
       const gone = [...heldStamps.keys()].filter((id) => !there.has(id) && (named === undefined || named.has(id)))
       return { changed, gone } satisfies Reread
     },
-    // Other tabs' writes are heard by the channel of ticket 1021; until then a tab rereads where the library asks.
-    onOutsideChange: () => () => undefined,
+    // Another tab's write is heard on the channel; an older build's save into the old key, by the `storage` event, is taken in
+    // first; a tab that was hidden rereads everything when it is shown again, for a message it missed.
+    onOutsideChange: (listener) => {
+      const stops: (() => void)[] = []
+      const heard = channelOf()
+      if (heard) {
+        const onMessage = (event: MessageEvent<LibraryMessage>) => {
+          const { written = [], removed = [] } = event.data ?? {}
+          listener([...written, ...removed])
+        }
+        heard.addEventListener('message', onMessage)
+        stops.push(() => heard.removeEventListener('message', onMessage))
+      }
+      const onStorage = (event: StorageEvent) => {
+        if (event.key !== STORAGE_KEY && event.key !== null) return
+        void connection
+          .get()
+          .then((db) => takeInOldLibrary(db))
+          .then((written) => {
+            if (written.length === 0) return
+            // Tabs that took in nothing themselves (this tab got there first) are told of the records written.
+            channelOf()?.postMessage({
+              written,
+              removed: [],
+            } satisfies LibraryMessage)
+            listener(written)
+          })
+          .catch(() => undefined)
+      }
+      window.addEventListener('storage', onStorage)
+      stops.push(() => window.removeEventListener('storage', onStorage))
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') listener(undefined)
+      }
+      document.addEventListener('visibilitychange', onVisible)
+      stops.push(() => document.removeEventListener('visibilitychange', onVisible))
+      return () => stops.forEach((stop) => stop())
+    },
     noteClosing: () => {
       for (const write of underway) {
         const merged = mergeIntoNote(localStorage, write.entries)
         if (merged.projects.length === 0 && merged.removed.length === 0) continue
-        const put: NoteEntries = { projects: Object.fromEntries(merged.projects.map((id) => [id, write.entries.projects[id]!])), removed: merged.removed }
+        const put: NoteEntries = {
+          projects: Object.fromEntries(merged.projects.map((id) => [id, write.entries.projects[id]!])),
+          removed: merged.removed,
+        }
         noted.set(write, put)
       }
     },

@@ -3,7 +3,7 @@ import type { Project } from '../domain/project'
 import { decodeProject, type EncodedProject } from '../domain/projectEncoding'
 import { paletteFromDevice } from '../domain/palette'
 import { renamedBrickBlock } from '../domain/flatWeave'
-import { MOVED_FLAG, copyOldLibrary, indexedLibraryStore, libraryConnection, openLibraryDatabase, replayClosingNote, type LibraryConnection } from './indexedLibraryStore'
+import { MOVED_FLAG, copyOldLibrary, indexedLibraryStore, libraryConnection, openLibraryDatabase, replayClosingNote, takeInOldLibrary, type LibraryConnection } from './indexedLibraryStore'
 import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, readDeviceAddedColors, readDevicePaletteOrder } from './legacyDevicePalette'
 import { readKey } from './storageKeys'
 import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../domain/sealedProject'
@@ -275,11 +275,15 @@ function deviceMoved(): boolean {
   }
 }
 
-/** Opens the database of a moved device and takes in the closing note, before anything is read. */
+/** Opens the database of a moved device, takes in what an older build saved into the old library, and takes in the closing
+ * note, before anything is read. */
 async function openMoved(): Promise<LibraryConnection> {
   const connection = libraryConnection()
   try {
-    await replayClosingNote(await connection.get())
+    const db = await connection.get()
+    // A library the old key holds that can't be taken in must not keep the app from opening.
+    await takeInOldLibrary(db).catch(() => [])
+    await replayClosingNote(db)
     return connection
   } catch (error) {
     connection.close()
