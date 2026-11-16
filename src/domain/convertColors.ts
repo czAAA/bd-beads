@@ -1,7 +1,7 @@
 import { catalogSwatches, type CatalogSwatch } from './beadSwatch'
 import type { ColorCatalog } from './colorCatalog'
 import { channelsOf, colorDistance, toOklab, type Oklab } from './color'
-import { LEAST_COLOR_DISTANCE, nearestColor, type ReducedColors } from './imageColors'
+import { LEAST_COLOR_DISTANCE, nearestColor, reducePictureColors, type ReducedColors } from './imageColors'
 import { addedColorId, type PaletteCodes, type PaletteColor } from './palette'
 import type { Cell, Grid } from './project'
 
@@ -152,6 +152,32 @@ export function matchFoundColors(
     const result = !choice ? match : choice.kind === 'exact' ? { hex } : choice.kind === 'remap' ? choice.target : undefined
     return { pictureHex: hex, count, match, choice, result, approximate: result?.approximate === true }
   })
+}
+
+/** The picture reduced so the count asked comes out as bead colors (ticket 0892): a join onto one code, or a code under
+ * the minimum of beads, frees a place, so more colors are asked of the reduction until the rows reach `asked` (a row set
+ * to empty counts), or the picture has no more to give. A picture with no more colors than asked is not padded. */
+export function reduceDelivering(
+  counts: ReadonlyMap<string, number>,
+  asked: number,
+  targets: readonly TargetColor[] | undefined,
+  choices: ColorChoices,
+  leastBeads = LEAST_COLOR_BEADS,
+): ReducedColors {
+  const deliveredBy = (reduced: ReducedColors) => beadColorRows(matchFoundColors(reduced, targets, choices, leastBeads)).length
+  let best = reducePictureColors(counts, asked)
+  if (counts.size <= asked) return best
+  let bestCount = deliveredBy(best)
+  for (let asking = asked + 1; bestCount < asked && asking <= asked * 2 && asking <= counts.size; asking++) {
+    const reduced = reducePictureColors(counts, asking)
+    const count = deliveredBy(reduced)
+    if (count > asked) break
+    if (count > bestCount) {
+      best = reduced
+      bestCount = count
+    }
+  }
+  return best
 }
 
 /** One row of Color by color (FoundColorRow card, ticket 0863): the found colors that become the same bead color, joined,

@@ -9,8 +9,11 @@ import {
   beadColorRows,
   beadColorTargets,
   convertFrame,
+  LEAST_COLOR_BEADS,
   matchFoundColors,
   newProjectPalette,
+  NO_LEAST_COLOR_BEADS,
+  reduceDelivering,
   sourceTargets,
   type ColorSource,
   type FoundColorChoice,
@@ -27,7 +30,6 @@ import {
 } from '../../domain/convertSize'
 import { createProjectFromImage, type CreateProjectInput } from '../../domain/createProject'
 import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from '../../domain/framingPreview'
-import { reducePictureColors } from '../../domain/imageColors'
 import {
   DEFAULT_MAX_IMAGE_COLORS,
   ImageConversionError,
@@ -459,7 +461,14 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   const shortOf = (count: number) => finishes.on.value && finishes.codesLeft.value > 0 && finishes.codesLeft.value < count
   const finishesShort = computed(() => shortOf(maxColors.value))
   /** The picture reduced for a number of colors asked, to the codes left where the Finishes leave fewer. */
-  const reducedFor = (count: number) => reducePictureColors(frameSampled.value?.counts ?? new Map(), shortOf(count) ? finishes.codesLeft.value : count)
+  const reducedFor = (count: number) =>
+    reduceDelivering(
+      frameSampled.value?.counts ?? new Map(),
+      shortOf(count) ? finishes.codesLeft.value : count,
+      targets.value,
+      choices.value,
+      kind.value === 'photo' ? LEAST_COLOR_BEADS : NO_LEAST_COLOR_BEADS,
+    )
   const sampledReduced = computed(() => reducedFor(maxColors.value))
   // Clean up (ticket 0906): stray beads and small colors, between the reduction and the beads; the found colors follow.
   const cleanUp = useConvertCleanUp({
