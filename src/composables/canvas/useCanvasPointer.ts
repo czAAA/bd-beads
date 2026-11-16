@@ -32,7 +32,8 @@ export interface CanvasPointerDeps {
   pasteAt: (cell: GridPosition | undefined) => boolean
   /** Pick color from canvas (ticket 398): true when it is on and took this press. */
   pickColorAt: (row: number, column: number, layer?: Layer) => boolean
-  /** The Mirror setting (ticket 0703): the hover preview shows every counterpart of the hovered bead. */
+  /** The Mirror setting (ticket 0703): the hover preview shows every counterpart of the hovered bead, under any tool
+   * but Fill (ticket 1025). */
   mirror: () => MirrorSetting
   /** Whether the Canvas takes no press (open in another tab, ticket 0937): no tool acts, and no preview shows. */
   readOnly?: () => boolean
@@ -59,7 +60,8 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (tool === 'select') {
       return deps.pastePreviewCells(project, hovered)
     }
-    const cells = mirroredOnCanvas(project, deps.mirror(), [hovered])
+    // A Fill is not mirrored (ticket 1025), so its preview is the hovered bead alone.
+    const cells = tool === 'fill' ? [hovered] : mirroredOnCanvas(project, deps.mirror(), [hovered])
     if (tool !== 'erase') {
       return cells
     }

@@ -2,8 +2,7 @@ import { ref } from 'vue'
 import { layerAt, onLayer, type Layer, type OnLayerOptions } from '../../domain/layers'
 import { fillArea, isFillRefusal, type FillRefusal } from '../../domain/fill'
 import { paintCells } from '../../domain/drawing'
-import { canvasMirrors, counterparts, isMirrorOn, type MirrorSetting } from '../../domain/mirror'
-import { changedPositions } from '../../domain/canvas'
+import { canvasMirrors, counterparts, type MirrorSetting } from '../../domain/mirror'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
@@ -21,7 +20,8 @@ export interface PaintStrokeDeps {
   endSelectPress: () => void
   /** The first finger of a pinch was never a Select press either: it is forgotten, not taken for a tap (ticket 0868). */
   cancelSelectPress: () => void
-  /** The Mirror setting (ticket 0703): a stroke and a Fill land at their counterparts too. */
+  /** The Mirror setting (ticket 0703): a stroke lands at its counterparts too; a Fill does not (ticket 1025), though on
+   * the Canvas its Area's edge is the flood's border. */
   mirror: () => MirrorSetting
   /** The Canvas positions on screen at a Fill press (Fill reach, ticket 0715); nothing until the view is measured. */
   onScreen: () => Rect | undefined
@@ -97,7 +97,8 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     return { underFrame: (position) => !sources().some((source) => source.row === position.row && source.column === position.column) }
   }
 
-  /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke. */
+  /** Fill acts immediately, in one click, on either button (ticket 25), at the press alone (ticket 1025); Paint starts a
+   * stroke. */
   function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: number, column: number, named?: Layer) {
     const project = deps.currentProject()
     if (!project) {
@@ -110,23 +111,17 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       const place = deps.mirror().place
       const border = layer === 'canvas' && place?.layer === 'canvas' ? place.area : undefined
       let refused: FillRefusal | undefined
-      deps.edit.edit('drawing', (current) => {
-        /** What the flood itself changed: the sources, which stay clear of the Frame. */
-        let flooded: GridPosition[] = []
-        return onLayer(current, layer, (sheet, local) => {
+      // Not mirrored (ticket 1025): the flood lands where it was pressed, no counterpart paints over the other strips.
+      deps.edit.edit('drawing', (current) =>
+        onLayer(current, layer, (sheet, local) => {
           const at = local({ row, column })
           const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen(), border })
-          if (isFillRefusal(filled)) {
-            // Refused, it lands nowhere, counterparts included: the beads as they were leave no Undo step, nothing saved.
-            refused = filled
-            return sheet.beads
-          }
-          // Under Mirror the flooded region's counterparts take the color too (ticket 0703): what the flood changed, mapped.
-          if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
-          flooded = changedPositions(sheet.beads, filled)
-          return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), flooded).positions, color)
-        }, counterpartsThrough(() => flooded))
-      })
+          if (!isFillRefusal(filled)) return filled
+          // Refused, it lands nowhere: the beads as they were leave no Undo step, nothing saved.
+          refused = filled
+          return sheet.beads
+        }),
+      )
       if (refused) {
         fillRefusals.value += 1
         const t = deps.messages().tools

@@ -129,10 +129,12 @@ describe('useCanvasPointer', () => {
       expect(deps.pastePreviewCells).toHaveBeenCalled()
     })
 
-    it('shows only the hovered cell under Fill', () => {
-      const { previewCells, onCellHover } = setup({ tool: 'fill' })
-      onCellHover(3, 3)
-      expect(previewCells.value).toEqual([{ row: 3, column: 3 }])
+    it('shows only the hovered cell under Fill, no counterparts under Mirror either (ticket 1025)', () => {
+      const { row, column } = frameOf(base)!
+      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
+      const { previewCells, onCellHover } = setup({ tool: 'fill', mirror })
+      onCellHover(row + 3, column, 'frame')
+      expect(previewCells.value).toEqual([{ row: row + 3, column, layer: 'frame' }])
     })
 
     it('leaves out beads in rows already woven', () => {
