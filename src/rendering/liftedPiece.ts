@@ -55,7 +55,7 @@ export function liftLookOf(background: string): LiftLook {
   let look = looks.get(background)
   if (!look) {
     const channels = channelsOf(background)
-    const side = relativeLuminance(channels) < BLACK_WHITE_BALANCE ? 'dark' : 'light'
+    const side = lookSideOf(background)
     look = {
       contour: toHex(mix(channels, side === 'dark' ? WHITE : BLACK, CONTOUR_TOWARD[side])),
       ground: toHex(mix(channels, WHITE, GROUND_TOWARD_WHITE[side])),
@@ -64,6 +64,11 @@ export function liftLookOf(background: string): LiftLook {
     looks.set(background, look)
   }
   return look
+}
+
+/** The look a Background is drawn in: dark on a dark one, light on a light one (canvasBackgrounds.ts's rule). */
+export function lookSideOf(background: string): 'dark' | 'light' {
+  return relativeLuminance(channelsOf(background)) < BLACK_WHITE_BALANCE ? 'dark' : 'light'
 }
 
 /** A bead's cell in grid px, and where it was drawn when that isn't the transform the piece is drawn in (a bead turned
@@ -463,6 +468,12 @@ function joinedAcross(cells: LiftCell[]): LiftCell[] {
     else joined.push({ ...cell })
   }
   return joined
+}
+
+/** Cells that touch end to end as one, a row's and then a column's: the current pass's raised beads, one shape for
+ * their shadow whichever way the Row direction runs (ticket 1032). */
+export function joinedTouching(cells: readonly LiftCell[]): LiftCell[] {
+  return joinedDown(joinedAcross([...cells]))
 }
 
 /** A Frame's cells, the upright ones that touch joined as the Canvas's are (a row's, or a column's where columns are
