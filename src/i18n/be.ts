@@ -1079,6 +1079,7 @@ export const be: Translations = {
       beadAndTechnique: 'бісер і тэхніка',
       moreForSize: 'Яшчэ для памеру',
       moreForColors: 'Яшчэ для колераў',
+      backToColorsCount: 'Назад да колькасці колераў',
       dockPicture: 'Малюнак',
       sheetClose: 'Закрыць',
       settingsLabel: 'налады',

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
+import { useConvertSheet } from '../../composables/import/convertSheet'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { LEAST_COLOR_BEADS_SHIFT_STEP, MOST_LEAST_COLOR_BEADS, NO_LEAST_COLOR_BEADS } from '../../domain/convertColors'
 import { CLEAN_UP_STRENGTHS, type CleanUpStrength } from '../../domain/strayBeads'
@@ -10,6 +11,7 @@ import AppSwitch from '../ui/AppSwitch.vue'
 import InfoButton from '../ui/InfoButton.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import ConvertSheetHead from './ConvertSheetHead.vue'
 
 // The Clean up popover's body (ConvertImage card DS-3, ticket 0906): Clean up stray beads with its strength and the
 // live count, then Small colors join's number and what it joined. No Undo: each control shows its state.
@@ -17,6 +19,8 @@ const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard.cleanUp)
 const cleanUp = wizard.cleanUp
+/** In a docked layout's sheet (DS-4, ticket 0919): the sheet's head, then the rows with no box, a rule between the two. */
+const sheet = useConvertSheet()
 const switchId = useId()
 const strengthId = useId()
 const smallId = useId()
@@ -47,8 +51,11 @@ const joinedLine = computed(() => {
 </script>
 
 <template>
-  <div class="convert-clean-up" data-testid="convert-clean-up">
-    <span class="convert-clean-up__title">
+  <div class="convert-clean-up" :class="{ 'convert-clean-up--sheet': sheet }" data-testid="convert-clean-up">
+    <ConvertSheetHead v-if="sheet" :title="words.title">
+      <InfoButton :label="words.whatDoes" :body="words.whatDoesBody" data-testid="convert-clean-up-info" />
+    </ConvertSheetHead>
+    <span v-else class="convert-clean-up__title">
       {{ words.title }}
       <InfoButton :label="words.whatDoes" :body="words.whatDoesBody" data-testid="convert-clean-up-info" />
     </span>
@@ -65,7 +72,7 @@ const joinedLine = computed(() => {
       </div>
       <div class="convert-clean-up__strength">
         <span :id="strengthId" class="convert-clean-up__label" :class="{ 'convert-clean-up__label--off': !on }">{{ words.strength }}</span>
-        <SegmentedControl v-model="strength" class="convert-clean-up__steps" :options="steps" :labelledby="strengthId" :disabled="!on" small data-testid="convert-clean-up-strength" />
+        <SegmentedControl v-model="strength" class="convert-clean-up__steps" :options="steps" :labelledby="strengthId" :disabled="!on" :small="!sheet" data-testid="convert-clean-up-strength" />
       </div>
       <p class="convert-clean-up__count" :class="{ 'convert-clean-up__count--off': !on }" role="status" data-testid="convert-clean-up-count">
         <span v-if="on" class="convert-clean-up__ring" aria-hidden="true" />
@@ -202,6 +209,58 @@ const joinedLine = computed(() => {
 
 .convert-clean-up__count--off {
   color: var(--body);
+}
+
+/* In a sheet (DS-4, ticket 0919): no box, the switch's row `touch-target` tall, a `line-soft` rule before Small colors join. */
+.convert-clean-up--sheet {
+  gap: 0;
+}
+
+.convert-clean-up--sheet .convert-clean-up__box {
+  gap: 0;
+  padding: 0 0 var(--space-4);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 0;
+}
+
+.convert-clean-up--sheet .convert-clean-up__switch,
+.convert-clean-up--sheet .convert-clean-up__small-row {
+  min-height: var(--touch-target);
+}
+
+.convert-clean-up--sheet .convert-clean-up__strength {
+  gap: var(--space-2);
+}
+
+.convert-clean-up--sheet .convert-clean-up__count {
+  min-height: var(--space-20);
+  margin-top: var(--space-6);
+}
+
+/* The name wraps with its (i) in the line, so the row stays two lines at most. */
+.convert-clean-up--sheet .convert-clean-up__small-row > .convert-clean-up__name {
+  display: block;
+}
+
+.convert-clean-up--sheet .convert-clean-up__small-row > .convert-clean-up__name :deep(.info-button),
+.convert-clean-up--sheet .convert-clean-up__small-row > .convert-clean-up__name > :last-child {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.convert-clean-up--sheet .convert-clean-up__small {
+  gap: 0;
+  padding: var(--space-4) 0 0;
+}
+
+.convert-clean-up--sheet .convert-clean-up__stepper :deep(.stepper) {
+  height: var(--control-height-lg);
+}
+
+.convert-clean-up--sheet .convert-clean-up__stepper :deep(.stepper__button) {
+  width: calc(var(--space-32) + var(--space-8));
 }
 
 /* The swatch of the preview's ring round each changed bead. */

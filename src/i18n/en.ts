@@ -1062,6 +1062,7 @@ export const en: Translations = {
       beadAndTechnique: 'bead and technique',
       moreForSize: 'More for the size',
       moreForColors: 'More for the colors',
+      backToColorsCount: 'Back to the number of colors',
       dockPicture: 'Picture',
       sheetClose: 'Close',
       settingsLabel: 'settings',

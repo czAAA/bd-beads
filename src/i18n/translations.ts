@@ -1323,6 +1323,8 @@ export interface Translations {
       beadAndTechnique: string
       moreForSize: string
       moreForColors: string
+      /** The Colors list's back arrow in a docked layout's sheet (ticket 0919). */
+      backToColorsCount: string
       /** The dock's Picture and Bead settings, at most 9 letters (ConvertImage card DS-4, ticket 0911). */
       dockPicture: string
       dockBead: string

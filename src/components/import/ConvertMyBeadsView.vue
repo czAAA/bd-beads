@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useConvertSheet } from '../../composables/import/convertSheet'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { catalogSwatches } from '../../domain/beadSwatch'
@@ -9,6 +10,7 @@ import { brandColors } from '../../domain/palette'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
+import ConvertSheetHead from './ConvertSheetHead.vue'
 import InfoButton from '../ui/InfoButton.vue'
 import MyBeadsPicker from '../palette/MyBeadsPicker.vue'
 
@@ -21,6 +23,8 @@ const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard.myBeads)
 const rootEl = ref<HTMLElement>()
+/** In a docked layout's sheet (DS-4, ticket 0919) the head is the sheet's: Back, the name, the count, Close. */
+const sheet = useConvertSheet()
 const picker = ref<InstanceType<typeof MyBeadsPicker>>()
 
 const listed = computed(() => wizard.myBeadsCodes.value.length)
@@ -43,7 +47,13 @@ onMounted(() => rootEl.value?.querySelector<HTMLElement>('[data-testid="convert-
 
 <template>
   <div ref="rootEl" class="my-beads" data-testid="convert-my-beads" @paste="picker?.onPaste($event)">
-    <div class="my-beads__head">
+    <template v-if="sheet">
+      <ConvertSheetHead class="my-beads__sheet-head" :title="words.name" :back="words.back" back-testid="convert-my-beads-back" :value="countText" value-testid="convert-my-beads-count" @back="emit('back')">
+        <InfoButton :label="words.whatIs" :body="words.whatIsBody" data-testid="convert-my-beads-info" />
+      </ConvertSheetHead>
+      <span class="my-beads__catalog my-beads__catalog--sheet">{{ catalogLine }}</span>
+    </template>
+    <div v-else class="my-beads__head">
       <IconButton icon="arrow-left" variant="plain" :label="words.back" data-testid="convert-my-beads-back" @click="emit('back')" />
       <span class="my-beads__title">
         {{ words.name }}
@@ -100,6 +110,15 @@ onMounted(() => rootEl.value?.querySelector<HTMLElement>('[data-testid="convert-
   font: var(--type-meta);
   color: var(--muted);
   text-align: right;
+}
+
+.my-beads__sheet-head {
+  padding-inline: var(--space-16);
+}
+
+.my-beads__catalog--sheet {
+  padding: 0 var(--space-16) var(--space-8);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 /* Under the title, indented to it. */

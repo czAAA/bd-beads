@@ -1078,6 +1078,7 @@ export const ru: Translations = {
       beadAndTechnique: 'бисер и техника',
       moreForSize: 'Ещё для размера',
       moreForColors: 'Ещё для цветов',
+      backToColorsCount: 'Назад к числу цветов',
       dockPicture: 'Картинка',
       sheetClose: 'Закрыть',
       settingsLabel: 'настройки',

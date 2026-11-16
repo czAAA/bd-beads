@@ -30,6 +30,9 @@ const rootEl = ref<HTMLElement>()
 // The layout follows the page's own size on every resize and turn (DS-4); with no size yet it is the Desktop's.
 const { width: pageWidth, height: pageHeight } = useElementSize(rootEl, { box: 'border-box' })
 const layout = computed(() => convertLayoutFor(pageWidth.value, pageHeight.value))
+/** A Phone's Colors list dragged to its full detent (ticket 0919): the beads keep `--convert-preview-min`, their bar hidden. */
+const sheetAtFull = ref(false)
+const sheetFull = computed(() => sheetAtFull.value && layout.value === 'phone')
 
 // The page is the top layer while it shows, so Escape asks to leave; a press elsewhere (the strip's Menu) goes through.
 useOverlayLayer({ isOpen: () => true, root: () => rootEl.value, close: () => emit('close'), outside: 'through', onOutsidePress: () => undefined })
@@ -84,6 +87,7 @@ const dropLimits = computed(() => imageLimitsText(locale.value, words.value.drop
     ref="rootEl"
     class="convert-page"
     :data-layout="layout"
+    :data-sheet="sheetFull ? 'full' : undefined"
     role="region"
     :aria-label="words.title"
     data-testid="convert-image-wizard"
@@ -92,11 +96,11 @@ const dropLimits = computed(() => imageLimitsText(locale.value, words.value.drop
     @drop="onDrop"
   >
     <div class="convert-page__preview">
-      <ConvertImagePreview :layout="layout" @paste="pasteFromClipboard" />
+      <ConvertImagePreview :layout="layout" :bar-hidden="sheetFull" @paste="pasteFromClipboard" />
     </div>
 
     <ConvertColumn v-if="layout === 'desktop'" class="convert-page__column" @paste="pasteFromClipboard" @create="emit('create')" />
-    <ConvertDock v-else :layout="layout" @paste="pasteFromClipboard" @create="emit('create')" />
+    <ConvertDock v-else :layout="layout" @full="sheetAtFull = $event" @paste="pasteFromClipboard" @create="emit('create')" />
 
     <div v-if="dropping" class="convert-page__dropping" data-testid="convert-dropping">
       <AppIcon name="image" :size="34" />
@@ -179,6 +183,13 @@ const dropLimits = computed(() => imageLimitsText(locale.value, words.value.drop
 .convert-page[data-layout='phone']:has(.convert-sheet) .convert-page__preview {
   box-sizing: border-box;
   min-height: 50dvh;
+}
+
+/* The full detent (the Colors list, ticket 0919): the beads keep `--convert-preview-min` and the sheet takes the rest. */
+.convert-page[data-layout='phone'][data-sheet='full']:has(.convert-sheet) .convert-page__preview {
+  flex: none;
+  height: var(--convert-preview-min);
+  min-height: 0;
 }
 
 .convert-page[data-layout='side'] {
