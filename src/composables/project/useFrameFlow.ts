@@ -24,6 +24,8 @@ import { laidFrame, ownEdge, ownSize, seenSize, turnedWithEdges } from '../../do
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave } from '../../domain/weaveSwitch'
 import type { Project } from '../../domain/project'
+import { mirrorSettingOf, withFittedArea, type MirrorGrowth } from '../../domain/mirror'
+import { mirrorGrownMessage } from '../tools/mirrorGrownMessage'
 import { weaveSettingWords } from '../../i18n/settingWords'
 import { techniqueName } from '../../i18n/techniqueName'
 import { plural } from '../../i18n/plural'
@@ -216,12 +218,18 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const before = layerWeave(project, layer)
     const width = frameOf(project)?.settings?.topWidth
     const change = { technique, techniqueSettings: values }
+    // A Canvas Mirror Area the new Weave does not fit grows in the same Undo step (ticket 1029); the Message says so.
+    let growth: MirrorGrowth | undefined
+    const rewoven = (current: Project) => {
+      const fitted = withFittedArea(changeCanvasWeave(current, change))
+      growth = fitted.growth
+      return fitted.project
+    }
     const outcome =
-      layer === 'frame'
-        ? deps.edit('frame', (current) => changeFrame(current, change))
-        : deps.edit('exempt', (current) => changeCanvasWeave(current, change))
+      layer === 'frame' ? deps.edit('frame', (current) => changeFrame(current, change)) : deps.edit('exempt', rewoven)
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
+    if (growth) deps.showToast('mirror-grown', mirrorGrownMessage(t, deps.locale(), mirrorSettingOf(deps.currentProject()!), growth), 'info')
     // A Fringe earring's top switched to peyote keeps a middle column, so its Width may move (ticket 0814).
     const kept = layer === 'frame' ? frameOf(deps.currentProject())?.settings?.topWidth : undefined
     if (kept !== undefined && kept !== width) deps.showToast('frame-odd-width', fillBlanks(t.frame.oddWidthNote, { count: kept }), 'info')

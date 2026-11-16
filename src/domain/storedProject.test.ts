@@ -11,7 +11,7 @@ import { replaceBead } from './projectBead'
 import { frameSheetOf, withLayers } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 import { type RowProgress } from './project'
-import { mirrorSettingOf, withMirrorPlace } from './mirror'
+import { MIRROR_OFF, mirrorSettingOf, withMirrorPlace, type MirrorSetting } from './mirror'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -82,6 +82,14 @@ describe('normalizeProject', () => {
     expect(mirrorSettingOf(normalizeProject(JSON.parse(JSON.stringify(placed))))).toEqual(mirrorSettingOf(placed))
     const closed = withMirrorPlace(placed, undefined)
     expect(mirrorSettingOf(normalizeProject(JSON.parse(JSON.stringify(closed)))).place).toBeNull()
+  })
+
+  it('opens a Canvas Area its Mirror does not fit grown right and down to the nearest Fitting size, its settings as saved (ticket 1029)', () => {
+    const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
+    const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, leftRight: true }, counts: { leftRight: 2, topBottom: 1 }, place: { layer: 'canvas', area: { row: 1, column: 2, rows: 4, columns: 25 } } }
+    const opened = normalizeProject(JSON.parse(JSON.stringify({ ...project, mirror })))
+    expect(mirrorSettingOf(opened)).toEqual({ ...mirror, place: { layer: 'canvas', area: { row: 1, column: 2, rows: 4, columns: 27 } } })
+    expect(opened.updatedAt).toBe(project.updatedAt)
   })
 
   it('keeps a canvas twisted to any angle through a save and load, and reads a broken one as upright (ticket 0672)', () => {
