@@ -81,15 +81,17 @@ function drop(event: PointerEvent) {
 </template>
 
 <style scoped>
-/* The surface runs on under the home bar: the foot pads by the bottom inset. The body is at most the half detent. */
+/* The surface runs on under the home bar: the foot pads by the bottom inset. The sheet is at most the half detent, its body scrolling inside. */
 .convert-sheet {
-  --convert-sheet-half: calc(50dvh - var(--strip-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  --convert-sheet-half: calc(50dvh - var(--convert-page-top, 0px) - env(safe-area-inset-bottom));
   position: relative;
   z-index: var(--convert-layer-popover);
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
   flex-direction: column;
+  min-height: 0;
   box-sizing: border-box;
+  max-height: var(--convert-sheet-half);
   padding: 0 var(--space-16) env(safe-area-inset-bottom);
   background: var(--elevated);
   border-top: 1px solid var(--line);
@@ -139,8 +141,8 @@ function drop(event: PointerEvent) {
 
 .convert-sheet__body {
   box-sizing: border-box;
+  flex: 0 1 auto;
   min-height: 0;
-  max-height: calc(var(--convert-sheet-half) - var(--convert-sheet-grab) - var(--convert-sheet-head));
   padding-bottom: var(--space-12);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -167,13 +169,10 @@ function drop(event: PointerEvent) {
   animation: none;
 }
 
-.convert-sheet--tablet .convert-sheet__body {
-  max-height: none;
-}
-
 /* Side's sheet takes the column's place, its full height, scrolling inside. */
 .convert-sheet--side {
   flex: 1;
+  max-height: none;
   padding-inline: var(--space-16);
   border-top: 0;
   border-radius: 0;
@@ -183,7 +182,6 @@ function drop(event: PointerEvent) {
 
 .convert-sheet--side .convert-sheet__body {
   flex: 1;
-  max-height: none;
 }
 
 @keyframes convert-sheet-rise {

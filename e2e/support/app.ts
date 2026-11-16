@@ -174,7 +174,7 @@ export async function gridBox(page: Page): Promise<Box> {
 export async function convertPicture(page: Page, buffer: Buffer): Promise<void> {
   await page.getByTestId('convert-image').click()
   await page.getByTestId('convert-choose-file').setInputFiles({ name: 'fixture.png', mimeType: 'image/png', buffer })
-  await page.getByTestId('convert-file-name').waitFor()
+  await page.getByTestId('convert-image-canvas').waitFor()
 }
 
 /** Opens one of the Convert image column's popovers by its button (ticket 0896): Bead and Technique, Size or Colors. */

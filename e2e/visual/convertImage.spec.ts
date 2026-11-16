@@ -116,21 +116,22 @@ test.describe('Convert image layouts', () => {
     expect(popover.y + popover.height).toBeLessThan(bar.y)
   })
 
-  test('the column under the preview, scrolling on its own, on a phone', async ({ page }) => {
+  test('the dock under the beads on a phone, a sheet taking its place with the beads above it at half the height or more', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openPage(page)
-    const wizard = page.getByTestId('convert-image-wizard')
     const preview = (await page.locator('.convert-page__preview').boundingBox())!
-    const column = (await page.getByTestId('convert-column').boundingBox())!
+    const dock = (await page.getByTestId('convert-dock').boundingBox())!
+    expect(preview.y + preview.height).toBeLessThanOrEqual(dock.y + 1)
+    expect(dock.y + dock.height).toBeLessThanOrEqual(844)
 
-    expect(preview.y + preview.height).toBeLessThanOrEqual(column.y + 1)
-    expect(preview.height).toBeLessThanOrEqual(301)
-    await expect.soft(wizard).toHaveScreenshot('convert-page-phone.png', { maxDiffPixelRatio: 0.01 })
-
-    // A popover opens in place under its button, in the column, and the preview stays where it was.
-    await openConvertPopover(page, 'colors')
-    await page.getByTestId('convert-column').evaluate((scroller) => scroller.scrollTo({ top: 900 }))
-    expect(await page.locator('.convert-page__preview').boundingBox()).toEqual(preview)
+    await page.getByTestId('convert-setting-colors-count').click()
+    const sheet = page.getByTestId('convert-sheet-colors-count')
+    await expect(sheet).toBeVisible()
+    await page.waitForTimeout(300)
+    const above = (await page.locator('.convert-page__preview').boundingBox())!
+    expect(above.height / 844).toBeGreaterThanOrEqual(0.5)
+    await page.keyboard.press('Escape')
+    await expect(sheet).toHaveCount(0)
   })
 })
 

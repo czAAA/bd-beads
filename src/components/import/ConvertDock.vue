@@ -256,6 +256,14 @@ const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${l
   min-width: 0;
 }
 
+/* On a Phone the dock gives way to the beads' half (the page's half rule), and its sheet with it. */
+.convert-dock--phone {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .convert-dock__bar {
   background: var(--canvas);
   display: flex;
@@ -362,15 +370,13 @@ const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${l
   color: var(--muted);
 }
 
-/* A Phone's dock has a line on top where the preview ends. */
-.convert-dock--phone {
+/* A Phone's and a Tablet's dock has a line on top where the preview ends (the bar's, so a sheet adds no height). */
+.convert-dock--phone .convert-dock__bar,
+.convert-dock--tablet .convert-dock__bar {
   border-top: 1px solid var(--panel-rule);
 }
 
 /* A Tablet's dock is one row: the result, the five settings, Create Project (DS-4). */
-.convert-dock--tablet {
-  border-top: 1px solid var(--panel-rule);
-}
 
 .convert-dock--tablet .convert-dock__bar {
   flex-direction: row;
