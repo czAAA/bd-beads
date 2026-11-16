@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId } from 'vue'
+import { useConvertSheet } from '../../composables/import/convertSheet'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import type { ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -15,6 +16,7 @@ import InfoButton from '../ui/InfoButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import ConvertFinishFilter from './ConvertFinishFilter.vue'
 import ConvertMyBeadsView from './ConvertMyBeadsView.vue'
+import ConvertSheetHead from './ConvertSheetHead.vue'
 import FoundColorRow from './FoundColorRow.vue'
 import FoundColorsHeader from './FoundColorsHeader.vue'
 
@@ -25,6 +27,8 @@ const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const sourceLabelId = useId()
+/** In a docked layout's sheet (DS-4, ticket 0919): its head holds Back, "Colors" with its (i), the count and Close. */
+const sheet = useConvertSheet()
 
 /** The Bead as the palette's Bead colors entry names it: its maker, name and shape, with no finish. */
 const beadName = computed(() => beadLabel(wizard.bead.value))
@@ -109,11 +113,23 @@ const remapping = ref<string>()
 </script>
 
 <template>
-  <div ref="rootEl" class="convert-colors" data-testid="convert-colors">
+  <div ref="rootEl" class="convert-colors" :class="{ 'convert-colors--sheet': sheet }" data-testid="convert-colors">
     <ConvertMyBeadsView v-if="view === 'my-beads'" @back="backToColors" />
     <template v-else>
+      <ConvertSheetHead
+        v-if="sheet"
+        class="convert-colors__sheet-head"
+        :title="words.colorsLabel"
+        :back="words.backToColorsCount"
+        back-testid="convert-colors-back"
+        :value="summary"
+        value-testid="convert-found-count"
+        @back="wizard.togglePopover('colors-count')"
+      >
+        <InfoButton :label="colorsInfo.label" :body="colorsInfo.body" data-testid="convert-colors-slider-info" />
+      </ConvertSheetHead>
       <div class="convert-colors__head">
-        <span class="convert-colors__title">
+        <span v-if="!sheet" class="convert-colors__title">
           {{ words.colorsLabel }}
           <InfoButton :label="colorsInfo.label" :body="colorsInfo.body" data-testid="convert-colors-slider-info" />
         </span>
@@ -157,7 +173,7 @@ const remapping = ref<string>()
         </AppNote>
       </div>
 
-      <div class="convert-colors__found-head">
+      <div v-if="!sheet" class="convert-colors__found-head">
         <span class="convert-colors__title">{{ words.colorByColor }}</span>
         <span class="convert-colors__count" role="status" data-testid="convert-found-count">{{ summary }}</span>
       </div>
@@ -316,6 +332,29 @@ const remapping = ref<string>()
   .convert-colors__table {
     overflow-y: visible;
   }
+}
+
+/* In a sheet (DS-4, ticket 0919) the sheet scrolls: its head stays, the table's heading row under it; the rows a
+ * sheet's own columns. */
+.convert-colors--sheet {
+  --found-header-top: var(--convert-sheet-head);
+}
+
+.convert-colors__sheet-head {
+  padding-inline: var(--space-16);
+}
+
+.convert-colors--sheet .convert-colors__head {
+  padding-block: 0 var(--space-8);
+  border-bottom: 0;
+}
+
+.convert-colors--sheet .convert-colors__source-head {
+  min-height: var(--space-24);
+}
+
+.convert-colors--sheet .convert-colors__table {
+  overflow-y: visible;
 }
 
 .convert-colors__list {

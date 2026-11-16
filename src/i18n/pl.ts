@@ -1078,6 +1078,7 @@ export const pl: Translations = {
       beadAndTechnique: 'koralik i technika',
       moreForSize: 'Więcej dla rozmiaru',
       moreForColors: 'Więcej dla kolorów',
+      backToColorsCount: 'Wróć do liczby kolorów',
       dockPicture: 'Obraz',
       sheetClose: 'Zamknij',
       settingsLabel: 'ustawienia',

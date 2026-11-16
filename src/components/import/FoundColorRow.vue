@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, provide, ref } from 'vue'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
+import { useConvertSheet } from '../../composables/import/convertSheet'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { providePalette } from '../../composables/tools/usePalette'
@@ -37,6 +38,7 @@ const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const actions = { change: controlAction('remap-color'), empty: controlAction('empty-color') }
 const rowEl = ref<HTMLElement>()
+const sheet = useConvertSheet()
 const changeButton = ref<InstanceType<typeof IconButton>>()
 
 /** The two lines a color reads as (FoundColorRow card): its label (code and name, or hex; ticket 0760) over where it is from.
@@ -146,7 +148,7 @@ useRevealWhenOpen(rowEl, () => props.open)
 </script>
 
 <template>
-  <li ref="rowEl" class="found-color" :class="{ 'found-color--open': open }" data-testid="found-color" :data-picture-hex="row.pictureHexes.join(' ')">
+  <li ref="rowEl" class="found-color" :class="{ 'found-color--open': open, 'found-color--sheet': sheet }" data-testid="found-color" :data-picture-hex="row.pictureHexes.join(' ')">
     <div class="found-color__row" role="group" :aria-label="rowName">
       <span class="found-color__from" aria-hidden="true">
         <span class="found-color__swatch" :style="pictureSwatch" data-testid="found-color-picture" />
@@ -212,7 +214,7 @@ useRevealWhenOpen(rowEl, () => props.open)
 <style scoped>
 .found-color {
   /* Revealed clear of the table's heading row, pinned at the top of the list as it scrolls. */
-  scroll-margin-top: var(--space-32);
+  scroll-margin-top: calc(var(--space-32) + var(--found-header-top, 0px));
   list-style: none;
   border-top: 1px solid var(--line-soft);
 }
@@ -291,6 +293,30 @@ useRevealWhenOpen(rowEl, () => props.open)
   .found-color__arrow {
     display: none;
   }
+}
+
+/* In a sheet (DS-4, ticket 0919) a row is `panel-row-two-line-touch` tall, and from a 360 px page (a 328 px table)
+ * the narrow columns keep the arrow; a narrower table keeps a hex whole instead. */
+.found-color--sheet .found-color__row {
+  min-height: var(--panel-row-two-line-touch);
+}
+
+@container found-colors (width >= 328px) and (width < 360px) {
+  .found-color--sheet .found-color__row {
+    grid-template-columns: var(--found-columns-sheet);
+  }
+
+  .found-color--sheet .found-color__from {
+    gap: var(--space-4);
+  }
+
+  .found-color--sheet .found-color__arrow {
+    display: block;
+  }
+}
+
+.found-color--sheet.found-color--open {
+  border: 1px solid var(--line-soft);
 }
 
 .found-color__lines {

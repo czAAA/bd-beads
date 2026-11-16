@@ -1071,6 +1071,7 @@ export const es: Translations = {
       beadAndTechnique: 'cuenta y técnica',
       moreForSize: 'Más opciones del tamaño',
       moreForColors: 'Más opciones de los colores',
+      backToColorsCount: 'Volver al número de colores',
       dockPicture: 'Imagen',
       sheetClose: 'Cerrar',
       settingsLabel: 'ajustes',

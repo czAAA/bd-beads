@@ -1053,6 +1053,7 @@ export const zh: Translations = {
       beadAndTechnique: '珠子和技法',
       moreForSize: '尺寸的更多选项',
       moreForColors: '颜色的更多选项',
+      backToColorsCount: '返回颜色数量',
       dockPicture: '图片',
       sheetClose: '关闭',
       settingsLabel: '设置',

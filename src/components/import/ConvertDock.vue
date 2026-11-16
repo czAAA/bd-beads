@@ -33,7 +33,7 @@ import ConvertWidthSlider from './ConvertWidthSlider.vue'
 // settings (Picture, Bead, Width, Colors, Clean up) and Create Project; a setting's press opens its sheet in the dock's
 // place (the Tablet's stays under its card). The beads above keep what room the sheet leaves them.
 const props = defineProps<{ layout: Exclude<ConvertLayout, 'desktop'> }>()
-const emit = defineEmits<{ paste: []; create: [] }>()
+const emit = defineEmits<{ paste: []; create: []; full: [full: boolean] }>()
 
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
@@ -126,6 +126,15 @@ async function closeFromNeighbours() {
   settingButton(lastOwner.value)?.focus({ preventScroll: true })
 }
 
+/** The sheets laid out with a head of their own: its (i), its value, a back arrow (ticket 0919). */
+const OWN_HEAD: ConvertPopover[] = ['colors', 'clean-up', 'lighting']
+/** The Colors list at its full detent (a Phone): the page gives the beads `--convert-preview-min` and hides their bar. */
+const full = ref(false)
+watch(open, (now) => {
+  if (now !== 'colors') full.value = false
+})
+watch(full, (now) => emit('full', now))
+
 /** A Phone and Side's sheet takes the dock's place; a Tablet's stands over its dock, which stays. */
 const dockShown = computed(() => props.layout === 'tablet' || open.value === undefined)
 
@@ -137,14 +146,17 @@ const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${l
 </script>
 
 <template>
-  <div class="convert-dock" :class="`convert-dock--${layout}`" :data-layout="layout" data-testid="convert-dock">
+  <div class="convert-dock" :class="[`convert-dock--${layout}`, { 'convert-dock--full': full }]" :data-layout="layout" data-testid="convert-dock">
     <ConvertSheet
       v-if="open !== undefined"
       :layout="layout"
       :label="sheetTitle"
       :opener="opener"
       :keeps-press="open === 'background' ? onBeads : undefined"
+      v-model:full="full"
       :flush="open === 'colors'"
+      :own-head="open !== undefined && OWN_HEAD.includes(open)"
+      :tall="open === 'colors'"
       :testid="`convert-sheet-${open}`"
       @close="wizard.closePopover"
     >
@@ -264,6 +276,10 @@ const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${l
   flex: 0 1 auto;
   flex-direction: column;
   min-height: 0;
+}
+
+.convert-dock--phone.convert-dock--full {
+  flex: 1 1 auto;
 }
 
 .convert-dock__bar {

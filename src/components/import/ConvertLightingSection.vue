@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
+import { useConvertSheet } from '../../composables/import/convertSheet'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { LIGHTING_SLIDER_LEAST, LIGHTING_SLIDER_MOST, LIGHTING_SLIDERS, type LightingSlider } from '../../domain/lightingFix'
 import { signedValue } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
+import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import InfoButton from '../ui/InfoButton.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
+import ConvertSheetHead from './ConvertSheetHead.vue'
 
 // The Lighting popover's body (ConvertImage card DS-3, ticket 0908): "Lighting" with its (i), then Brightness, Contrast
 // and Saturation, each from a middle that changes nothing, with its value and its own reset. No Undo: each shows its
@@ -17,6 +20,10 @@ const { lighting } = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard.lighting)
 /** Shift and an arrow, and Page Up and Page Down, move a slider by 10 (DS-3). */
 const SHIFT_STEP = 10
+/** In a docked layout's sheet (DS-4, ticket 0919): the sheet's head, then Auto-fix lighting's switch over the sliders. */
+const sheet = useConvertSheet()
+const autoFixId = useId()
+const autoFix = computed({ get: () => lighting.on.value, set: (next: boolean) => lighting.setOn(next) })
 const MIDDLE = [{ value: 0 }]
 
 const sliders = computed(() =>
@@ -29,8 +36,17 @@ const sliders = computed(() =>
 </script>
 
 <template>
-  <div class="convert-lighting-sliders" data-testid="convert-lighting-sliders">
-    <span class="convert-lighting-sliders__title">
+  <div class="convert-lighting-sliders" :class="{ 'convert-lighting-sliders--sheet': sheet }" data-testid="convert-lighting-sliders">
+    <template v-if="sheet">
+      <ConvertSheetHead :title="words.title">
+        <InfoButton :label="words.whatDoes" :body="words.whatDoesBody" data-testid="convert-lighting-info" />
+      </ConvertSheetHead>
+      <div class="convert-lighting-sliders__auto-fix">
+        <span :id="autoFixId">{{ t.convertImage.wizard.autoFixLighting }}</span>
+        <AppSwitch v-model="autoFix" :label="t.convertImage.wizard.autoFixLighting" :aria-labelledby="autoFixId" data-testid="convert-lighting-sheet-switch" />
+      </div>
+    </template>
+    <span v-else class="convert-lighting-sliders__title">
       {{ words.title }}
       <InfoButton :label="words.whatDoes" :body="words.whatDoesBody" data-testid="convert-lighting-info" />
     </span>
@@ -86,6 +102,19 @@ const sliders = computed(() =>
   color: var(--ink);
 }
 
+/* A sheet's first row, under the head's `line-soft` rule: Auto-fix lighting and its switch, `touch-target` tall. */
+.convert-lighting-sliders__auto-fix {
+  display: flex;
+  gap: var(--space-12);
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch-target);
+  font: var(--type-control);
+  color: var(--ink);
+  border-top: 1px solid var(--line-soft);
+  overflow-wrap: anywhere;
+}
+
 /* The head at least 28 tall: the name, the value and 4 after it the reset (DS-3). */
 .convert-lighting-sliders__slider :deep(.vs-head) {
   gap: var(--space-4);
@@ -122,6 +151,16 @@ const sliders = computed(() =>
 
 .convert-lighting-sliders :deep(.convert-lighting-sliders__reset[aria-disabled='true']) {
   color: var(--faint);
+}
+
+/* In a sheet (DS-4, ticket 0919) each reset is `touch-target` to hit, its row as tall, whatever the pointer. */
+.convert-lighting-sliders--sheet .convert-lighting-sliders__slider :deep(.vs-head) {
+  min-height: var(--touch-target);
+}
+
+.convert-lighting-sliders--sheet :deep(.convert-lighting-sliders__reset) {
+  width: var(--touch-target);
+  height: var(--touch-target);
 }
 
 /* Touch (ticket 0962): the track is the slider's `touch-target` tall, and the head too, so the reset's `touch-target`

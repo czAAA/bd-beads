@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useConvertSheet } from '../../composables/import/convertSheet'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 
@@ -8,10 +9,11 @@ import AppIcon from '../ui/AppIcon.vue'
 // Beads", the buttons naming themselves. Decorative: each row names itself to a screen reader.
 const { t } = useI18n()
 const words = computed(() => t.value.convertImage.wizard)
+const sheet = useConvertSheet()
 </script>
 
 <template>
-  <div class="found-colors-header" aria-hidden="true" data-testid="found-colors-header">
+  <div class="found-colors-header" :class="{ 'found-colors-header--sheet': sheet }" aria-hidden="true" data-testid="found-colors-header">
     <div class="found-colors-header__pair">
       <span>{{ words.fromPicture }}</span>
       <AppIcon class="found-colors-header__arrow" name="arrow-down" :size="12" />
@@ -27,7 +29,7 @@ const words = computed(() => t.value.convertImage.wizard)
 .found-colors-header {
   position: sticky;
   /* At the top of the Colors popover's list as it scrolls (ticket 0896). */
-  top: 0;
+  top: var(--found-header-top, 0);
   z-index: var(--convert-layer-pinned);
   display: grid;
   grid-template-columns: var(--found-columns);
@@ -79,6 +81,13 @@ const words = computed(() => t.value.convertImage.wizard)
 
   .found-colors-header__action {
     display: none;
+  }
+}
+
+/* A sheet's own columns, as its rows take them (FoundColorRow, ticket 0919). */
+@container found-colors (width >= 328px) and (width < 360px) {
+  .found-colors-header--sheet {
+    grid-template-columns: var(--found-columns-sheet);
   }
 }
 </style>

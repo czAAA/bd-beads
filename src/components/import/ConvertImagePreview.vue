@@ -36,7 +36,14 @@ import ConvertDropZone from './ConvertDropZone.vue'
 // Convert image's preview (ConvertImage card DS-1, DS-3; tickets 0747, 0780, 0787, 0896, 0898, 0909): the beads with
 // the crop's handles, what was found hatched, a chip while a tool or Compare shows something, the floating bar, and with
 // Compare on the picture beside the beads in two halves at one scale. With no picture yet, the drop zone.
-const props = withDefaults(defineProps<{ layout?: ConvertLayout }>(), { layout: 'desktop' })
+const props = withDefaults(
+  defineProps<{
+    layout?: ConvertLayout
+    /** The bar on the beads steps aside (a Phone's sheet at its full detent, ticket 0919). */
+    barHidden?: boolean
+  }>(),
+  { layout: 'desktop' },
+)
 const emit = defineEmits<{ paste: [] }>()
 /** Phone, Tablet and Side (DS-4, ticket 0911): the dock below or beside the beads, the bar and zoom chip of the phone. */
 const docked = computed(() => props.layout !== 'desktop')
@@ -99,7 +106,10 @@ const ROOM = computed(() => {
     return Number.isFinite(read) ? read : fallback
   }
   // Phone, Tablet and Side fit the beads close, the bar's room under them (DS-4, ticket 0911).
-  if (props.layout === 'phone') return { top: px('--convert-fit-phone', 16), side: px('--convert-fit-phone', 16), bottom: px('--convert-fit-bottom-phone', 64) }
+  if (props.layout === 'phone') {
+    const close = px('--convert-fit-phone', 16)
+    return { top: close, side: close, bottom: props.barHidden ? close : px('--convert-fit-bottom-phone', 64) }
+  }
   if (props.layout === 'tablet') return { top: px('--convert-fit-tablet', 24), side: px('--convert-fit-tablet', 24), bottom: px('--convert-fit-bottom-tablet', 76) }
   if (props.layout === 'side') return { top: px('--space-12', 12), side: px('--convert-fit-phone', 16), bottom: px('--convert-fit-bottom-phone', 64) }
   return {
@@ -780,7 +790,7 @@ onBeforeUnmount(() => {
 
       <span v-if="compare.held.value && pressedAt" class="convert-preview__press" :style="{ left: `${pressedAt.x}px`, top: `${pressedAt.y}px` }" aria-hidden="true" />
 
-      <div class="convert-preview__tools" :data-layout="layout" :class="{ 'convert-preview__tools--narrow': narrow && !toolWords }" data-testid="convert-preview-tools">
+      <div v-show="!barHidden" class="convert-preview__tools" :data-layout="layout" :class="{ 'convert-preview__tools--narrow': narrow && !toolWords }" data-testid="convert-preview-tools">
         <template v-if="!toolWords">
           <IconButton
             variant="plain"

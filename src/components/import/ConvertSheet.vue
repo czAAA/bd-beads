@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { provideConvertSheet } from '../../composables/import/convertSheet'
 import { wouldRaiseKeyboard } from '../../composables/ui/touchKeyboard'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import type { ConvertLayout } from '../../domain/convertLayout'
-import { useI18n } from '../../i18n/useI18n'
-import IconButton from '../ui/IconButton.vue'
+import ConvertSheetHead from './ConvertSheetHead.vue'
 
 // One setting's sheet on the docked converter (ConvertImage card DS-4, ticket 0911): on a Phone it takes the dock's place
 // at the foot of the page, on a Tablet it is a card above the dock, on Side it takes the column's place. A grab zone
@@ -18,11 +18,17 @@ const props = defineProps<{
   /** A press outside that still works its own thing, so the sheet stays open (the Background tool's taps on the beads). */
   keepsPress?: (event: PointerEvent) => boolean
   testid: string
-  /** The content runs edge to edge (the Colors list's table), the head keeping the sheet's padding. */
+  /** The content runs edge to edge (the Colors list's table). */
   flush?: boolean
+  /** The content draws the head itself, with its (i), its value or a back arrow (ConvertSheetHead, ticket 0919). */
+  ownHead?: boolean
+  /** A Phone's sheet that may be dragged past half the screen, to the full detent (the Colors list alone, DS-4). */
+  tall?: boolean
 }>()
 const emit = defineEmits<{ close: [] }>()
-const { t } = useI18n()
+/** At the full detent: the beads keep `--convert-preview-min` and the sheet takes the rest (Phone, `tall`). */
+const full = defineModel<boolean>('full', { default: false })
+const detent = computed(() => (props.layout === 'phone' && props.tall && full.value ? 'full' : 'half'))
 
 const rootEl = ref<HTMLElement>()
 
@@ -35,6 +41,8 @@ async function close() {
   target?.focus({ preventScroll: true })
 }
 
+provideConvertSheet({ close: () => void close() })
+
 useOverlayLayer({
   isOpen: () => true,
   root: () => rootEl.value,
@@ -44,15 +52,31 @@ useOverlayLayer({
 })
 
 const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-onMounted(async () => {
+/** Focus goes to the sheet's first control. A field first would raise a touch keyboard nobody asked for: the sheet
+ * itself takes focus then (ticket 0688). */
+async function focusFirst() {
   await nextTick()
-  // A field first would raise a touch keyboard nobody asked for: the sheet itself takes focus then (ticket 0688).
-  const first = rootEl.value?.querySelector<HTMLElement>(`.convert-sheet__body ${FOCUSABLE.split(', ').join(', .convert-sheet__body ')}`)
+  // Past the head a setting draws itself (ticket 0919): its Back and (i) are not where a change starts.
+  const first = [...(rootEl.value?.querySelectorAll<HTMLElement>(`.convert-sheet__body ${FOCUSABLE.split(', ').join(', .convert-sheet__body ')}`) ?? [])].find(
+    (control) => !control.closest('.convert-sheet-head'),
+  )
   ;(first && !wouldRaiseKeyboard(first) ? first : rootEl.value)?.focus({ preventScroll: true })
-})
+}
+onMounted(focusFirst)
+// Another setting put in this sheet's place (the Colors list from Colors): it opens at half, focus on its first control.
+watch(
+  () => props.testid,
+  () => {
+    full.value = false
+    void focusFirst()
+  },
+)
 
-// A drag down on the grab zone closes the sheet (Phone).
+// A drag on the grab zone (Phone): down closes the sheet; a tall one goes up to the full detent, and from there down
+// to half, or closes when let go in the lower half of what the half detent holds.
 const DRAG_TO_CLOSE = 40
+/** Let go from the full detent under this share of the window's height, the sheet closes rather than stopping at half. */
+const CLOSE_FROM_FULL_UNDER = 0.75
 let grabbedAt: number | undefined
 function grab(event: PointerEvent) {
   grabbedAt = event.clientY
@@ -61,19 +85,23 @@ function grab(event: PointerEvent) {
 function drop(event: PointerEvent) {
   const started = grabbedAt
   grabbedAt = undefined
-  if (started !== undefined && event.clientY - started >= DRAG_TO_CLOSE) close()
+  if (started === undefined) return
+  const moved = event.clientY - started
+  if (detent.value === 'full') {
+    if (moved < DRAG_TO_CLOSE) return
+    full.value = false
+    if (event.clientY > window.innerHeight * CLOSE_FROM_FULL_UNDER) close()
+  } else if (moved >= DRAG_TO_CLOSE) close()
+  else if (props.tall && -moved >= DRAG_TO_CLOSE) full.value = true
 }
 </script>
 
 <template>
-  <div ref="rootEl" class="convert-sheet" :class="[`convert-sheet--${layout}`, { 'convert-sheet--flush': flush }]" role="dialog" tabindex="-1" :aria-label="label" :data-testid="testid">
+  <div ref="rootEl" class="convert-sheet" :class="[`convert-sheet--${layout}`, { 'convert-sheet--flush': flush }]" :data-detent="detent" role="dialog" tabindex="-1" :aria-label="label" :data-testid="testid">
     <div v-if="layout === 'phone'" class="convert-sheet__grab" aria-hidden="true" data-testid="convert-sheet-grab" @pointerdown="grab" @pointerup="drop" @pointercancel="grabbedAt = undefined">
       <span class="convert-sheet__pill" />
     </div>
-    <div class="convert-sheet__head">
-      <span class="convert-sheet__title">{{ label }}</span>
-      <IconButton icon="close" :label="t.convertImage.wizard.sheetClose" data-testid="convert-sheet-close" @click="close" />
-    </div>
+    <ConvertSheetHead v-if="!ownHead" :title="label" />
     <div class="convert-sheet__body" data-testid="convert-sheet-body">
       <slot />
     </div>
@@ -126,20 +154,6 @@ function drop(event: PointerEvent) {
   border-radius: var(--radius-full);
 }
 
-.convert-sheet__head {
-  display: flex;
-  flex: none;
-  gap: var(--space-8);
-  align-items: center;
-  justify-content: space-between;
-  min-height: var(--convert-sheet-head);
-}
-
-.convert-sheet__title {
-  font: var(--type-control);
-  font-weight: 600;
-}
-
 .convert-sheet__body {
   box-sizing: border-box;
   flex: 0 1 auto;
@@ -148,14 +162,21 @@ function drop(event: PointerEvent) {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+/* The full detent (the Colors list, DS-4): the sheet takes all the page leaves under the beads' `--convert-preview-min`. */
+.convert-sheet[data-detent='full'] {
+  flex: 1 1 auto;
+  max-height: none;
+}
+
+.convert-sheet[data-detent='full'] .convert-sheet__body {
+  flex: 1 1 auto;
 }
 
 .convert-sheet--flush {
   padding-inline: 0;
-}
-
-.convert-sheet--flush .convert-sheet__head {
-  padding-inline: var(--space-16);
 }
 
 /* A Tablet's sheet is a card, 560 wide, centred, 12 above the dock and in the flow, so the beads fit above it (DS-4). */
