@@ -5,7 +5,7 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 
 // A popover of the quiet converter (ConvertImage card DS-1, ticket 0896), from its own button, never a panel: `beside`
 // the column, level with its section; `level` beside it, its bottom level with its button's (Clean up, ticket 0906); `tall`
-// down the preview (Colors); `bar` over the floating bar (Background). Under 1024 px or in portrait it opens in place.
+// down the preview (Colors); `bar` over the floating bar (Background). Under 1024 px or in portrait the dock's sheets (ConvertSheet) stand in for it.
 const props = defineProps<{
   /** Where it stands from 1024 px wide in landscape. */
   place: 'beside' | 'tall' | 'bar' | 'level'
@@ -149,25 +149,6 @@ onMounted(async () => {
   .convert-popover--bar {
     left: calc((100% - var(--convert-column-width-narrow)) / 2);
     max-width: calc(100% - var(--convert-column-width-narrow) - var(--space-32));
-  }
-}
-
-/* Under 1024 px or in portrait the column stacks under the preview: the popover opens in place, in the column's flow. */
-@media (max-width: 63.99rem), (orientation: portrait) {
-  .convert-popover,
-  .convert-popover--tall,
-  .convert-popover--bar {
-    position: static;
-    inset: auto;
-    width: auto;
-    max-width: none;
-    max-height: none;
-    margin: 0 0 var(--space-12);
-    overflow: visible;
-    border-inline: 0;
-    border-radius: 0;
-    box-shadow: none;
-    transform: none;
   }
 }
 </style>

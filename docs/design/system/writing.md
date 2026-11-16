@@ -1317,3 +1317,12 @@ The converter's labels say the result, not the mechanism (ConvertImage and Found
 | A drawing, a logo, pixel art or a photo of one thing on a plain ground works best. (first sentence of What pictures work) | Лучше всего подходит рисунок, логотип, пиксель-арт или фото одного предмета на ровном фоне. | Найкраще підходить малюнок, логотип, піксель-арт або фото одного предмета на рівному тлі. | Найлепш падыходзіць малюнак, лагатып, піксель-арт або фота аднаго прадмета на роўным фоне. | 最适合的是图画、标志、像素画，或纯色背景上单个物体的照片。 | Funciona mejor un dibujo, un logotipo, pixel art o una foto de una sola cosa sobre un fondo liso. | Najlepiej sprawdza się rysunek, logo, pixel art albo zdjęcie jednej rzeczy na gładkim tle. |
 
 English follows the audit's proposals (UX-050, UX-053, UX-054, UX-082); the other languages are proposals for review with the build. "Drop" here is the plain verb, not a Technique's Drop.
+
+## Convert image on a phone (DS-4, ticket 0911)
+
+The dock's settings are named in at most nine letters in every language; a name wraps under its icon rather than cut. "{setting}: {value}" is each setting's accessible name ("Width: 60 beads"), and "settings" names the row.
+
+| English | Русский | Українська | Polski |
+|---|---|---|---|
+| Picture · Bead · settings · Close | Картинка · Бисер · настройки · Закрыть | Картинка · Бісер · налаштування · Закрити | Obraz · Koralik · ustawienia · Zamknij |
+| {setting}: {value} | {setting}: {value} | {setting}: {value} | {setting}: {value} |

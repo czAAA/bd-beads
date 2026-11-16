@@ -12,6 +12,7 @@ import { useRefitGlide } from '../../composables/ui/useRefitGlide'
 import { clamp } from '../../domain/clamp'
 import { foundRuns } from '../../domain/convertBackground'
 import { CROP_HANDLES, type CropHandle } from '../../domain/convertSize'
+import type { ConvertLayout } from '../../domain/convertLayout'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { beadCell, beadRoundness } from '../../domain/weave'
 import { plural } from '../../i18n/plural'
@@ -35,7 +36,12 @@ import ConvertDropZone from './ConvertDropZone.vue'
 // Convert image's preview (ConvertImage card DS-1, DS-3; tickets 0747, 0780, 0787, 0896, 0898, 0909): the beads with
 // the crop's handles, what was found hatched, a chip while a tool or Compare shows something, the floating bar, and with
 // Compare on the picture beside the beads in two halves at one scale. With no picture yet, the drop zone.
+const props = withDefaults(defineProps<{ layout?: ConvertLayout }>(), { layout: 'desktop' })
 const emit = defineEmits<{ paste: [] }>()
+/** Phone, Tablet and Side (DS-4, ticket 0911): the dock below or beside the beads, the bar and zoom chip of the phone. */
+const docked = computed(() => props.layout !== 'desktop')
+/** Background and Make empty carry their words on a Tablet, whose bar has room; under 600 wide they are icons. */
+const toolWords = computed(() => !narrow.value || props.layout === 'tablet')
 
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
@@ -92,6 +98,10 @@ const ROOM = computed(() => {
     const read = Number.parseFloat(style?.getPropertyValue(name) ?? '')
     return Number.isFinite(read) ? read : fallback
   }
+  // Phone, Tablet and Side fit the beads close, the bar's room under them (DS-4, ticket 0911).
+  if (props.layout === 'phone') return { top: px('--convert-fit-phone', 16), side: px('--convert-fit-phone', 16), bottom: px('--convert-fit-bottom-phone', 64) }
+  if (props.layout === 'tablet') return { top: px('--convert-fit-tablet', 24), side: px('--convert-fit-tablet', 24), bottom: px('--convert-fit-bottom-tablet', 76) }
+  if (props.layout === 'side') return { top: px('--space-12', 12), side: px('--convert-fit-phone', 16), bottom: px('--convert-fit-bottom-phone', 64) }
   return {
     top: px('--convert-fit-top', 72),
     side: sideBySide.value ? px('--convert-compare-side', 24) : px('--convert-fit-side', 40),
@@ -683,7 +693,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="paneEl" class="convert-preview" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--background': tool === 'background' }" data-testid="convert-preview">
+  <div ref="paneEl" class="convert-preview" :data-layout="layout" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--background': tool === 'background' }" data-testid="convert-preview">
     <ConvertDropZone v-if="!wizard.hasPicture.value" @paste="emit('paste')" />
 
     <div v-else class="convert-preview__room" :class="{ 'convert-preview__room--split': sideBySide }">
@@ -770,8 +780,8 @@ onBeforeUnmount(() => {
 
       <span v-if="compare.held.value && pressedAt" class="convert-preview__press" :style="{ left: `${pressedAt.x}px`, top: `${pressedAt.y}px` }" aria-hidden="true" />
 
-      <div class="convert-preview__tools" :class="{ 'convert-preview__tools--narrow': narrow }" data-testid="convert-preview-tools">
-        <template v-if="narrow">
+      <div class="convert-preview__tools" :data-layout="layout" :class="{ 'convert-preview__tools--narrow': narrow && !toolWords }" data-testid="convert-preview-tools">
+        <template v-if="!toolWords">
           <IconButton
             variant="plain"
             :icon-size="16"
@@ -825,7 +835,7 @@ onBeforeUnmount(() => {
           @blur="compare.pressEnd()"
           @click="compare.clicked()"
         />
-        <template v-if="zoomed">
+        <template v-if="zoomed && !docked">
           <span class="convert-preview__divider" aria-hidden="true" />
           <span class="convert-preview__zoom" data-testid="convert-zoom-chip">
             <IconButton variant="plain" :icon-size="16" :action="actions.zoomOut" data-testid="convert-zoom-out" @click="zoomOut" />
@@ -843,6 +853,22 @@ onBeforeUnmount(() => {
           </span>
         </template>
       </div>
+      <div v-if="zoomed && docked" class="convert-preview__zoom-chip">
+          <span class="convert-preview__zoom" data-testid="convert-zoom-chip">
+            <IconButton variant="plain" :icon-size="16" :action="actions.zoomOut" data-testid="convert-zoom-out" @click="zoomOut" />
+            <span class="convert-preview__level" data-testid="convert-zoom-level">{{ zoomLevel }}</span>
+            <IconButton
+              variant="plain"
+              :icon-size="16"
+              :action="actions.zoomIn"
+              :disabled="viewZoom >= VIEW_ZOOMS.at(-1)!"
+              :disabled-body="t.tooltips.zoomInLimit"
+              data-testid="convert-zoom-in"
+              @click="zoomIn"
+            />
+            <IconButton variant="plain" :icon-size="16" :action="actions.zoomFit" data-testid="convert-zoom-fit" @click="fit" />
+          </span>
+        </div>
     </div>
   </div>
 </template>
@@ -1115,6 +1141,11 @@ onBeforeUnmount(() => {
   transform: translateX(-50%);
 }
 
+/* On the docked layouts the tool's chip stands 8 below the preview's top (DS-4). */
+.convert-preview:not([data-layout='desktop']) .convert-preview__chips {
+  top: var(--space-8);
+}
+
 /* Compare's never wrap, Make empty's line may on a phone. */
 .convert-preview__chip {
   display: inline-flex;
@@ -1185,6 +1216,33 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.convert-preview__tools[data-layout='phone'],
+.convert-preview__tools[data-layout='side'] {
+  bottom: var(--convert-tools-lift-phone);
+}
+
+.convert-preview__tools[data-layout='tablet'] {
+  bottom: var(--space-16);
+}
+
+/* The zoom chip of the docked layouts (DS-4): the bar's box, at the right, 8 above the bar, only while zoomed past Fit. */
+.convert-preview__zoom-chip {
+  position: absolute;
+  right: var(--space-16);
+  bottom: calc(var(--convert-tools-lift-phone) + var(--touch-target) + var(--space-8));
+  z-index: var(--convert-layer-tools);
+  padding: var(--space-4);
+  background: var(--elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-3);
+}
+
+:root[data-theme='dark'] .convert-preview__zoom-chip {
+  border-color: var(--line-strong);
+  box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

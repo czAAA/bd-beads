@@ -351,17 +351,20 @@ describe('Convert image, the quiet converter', () => {
     expect(await fitProblems('Convert image page (iPad)', 'en', 1180)).toEqual([])
   })
 
-  it('stacks the column under the preview in portrait, a popover opening in place in it', async () => {
+  it('lays a portrait page out as a Tablet: the dock under the beads, a sheet a card over its foot', async () => {
     const mounted = await mountAt(ConvertPageHost, props, { locale: 'longest', width: 1024 })
-    await page.viewport(1024, 1366)
+    await page.viewport(820, 1180)
     await pictureSet(mounted.root)
-    find(mounted.root, 'convert-size-more').click()
+    await settleForMeasuring()
+    find(mounted.root, 'convert-setting-width').click()
     await settleForMeasuring()
     const preview = mounted.root.querySelector('.convert-page__preview')!.getBoundingClientRect()
-    expect(preview.bottom).toBeLessThanOrEqual(rect(mounted.root, 'convert-column').top + 1)
-    const popover = rect(mounted.root, 'convert-size-popover')
-    expect(popover.top).toBeGreaterThan(rect(mounted.root, 'convert-size-more').bottom)
-    expect(await fitProblems('Convert image page (portrait)', 'longest', 1024)).toEqual([])
+    const sheet = rect(mounted.root, 'convert-sheet-width')
+    const dock = rect(mounted.root, 'convert-foot')
+    expect(preview.bottom).toBeLessThanOrEqual(sheet.top + 1)
+    expect(sheet.bottom).toBeLessThanOrEqual(dock.top)
+    expect(sheet.width).toBeLessThanOrEqual(560)
+    expect(await fitProblems('Convert image page (portrait)', 'longest', 820)).toEqual([])
   })
 
   it('sets the ways in with one height in one row, and fits the drop zone in the longest wording', async () => {
