@@ -1326,3 +1326,18 @@ The dock's settings are named in at most nine letters in every language; a name 
 |---|---|---|---|
 | Picture · Bead · settings · Close | Картинка · Бисер · настройки · Закрыть | Картинка · Бісер · налаштування · Закрити | Obraz · Koralik · ustawienia · Zamknij |
 | {setting}: {value} | {setting}: {value} | {setting}: {value} | {setting}: {value} |
+
+## Mirror area grows to fit (ticket 1027)
+
+A setting on the Mirror bar that a Canvas Area's size does not fit grows the Area, and an info toast (Message card) says so, once per action, naming the new size as the bar's readout writes it (`{size}`, columns×rows), the Mode `{mode}` (the bar's own segment name) and only the counts it grew for, `{axes}`: one direction's count, or both joined. For Fold 4 the Radial line stands alone. Counts take each language's plural forms. The Stepper's + says why it is off where no size fits another Axis.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Mirror area grown to {size} so {mode} with {axes} lines up. | Область отражения увеличена до {size}, и «{mode}» с {axes} ложится ровно. | Область відображення збільшено до {size}, і «{mode}» з {axes} лягає рівно. | Вобласць адлюстравання павялічана да {size}, і «{mode}» з {axes} кладзецца роўна. | 镜像区域已扩大到 {size}，让“{mode}”的{axes}对齐。 | Área del espejo ampliada a {size} para que {mode} con {axes} quede alineado. | Obszar odbicia powiększony do {size}, aby tryb „{mode}” z {axes} pasował. |
+| Mirror area grown to {size} so Radial with Fold {count} lines up. | … и «По кругу» на {count} часть / части / частей ложится ровно. | … і «По колу» на {count} частину / частини / частин лягає рівно. | … і «Па крузе» на {count} частку / часткі / частак кладзецца роўна. | …，让“环绕”的 {count} 份对齐。 | … para que Radial con {count} parte / partes quede alineado. | …, aby obrót „Wokół środka” na {count} część / części pasował. |
+| {count} Left–right axis / axes | {count} осью / осями слева направо | {count} віссю / осями зліва направо | {count} воссю / восямі злева направа | {count} 条左右轴 | {count} eje / ejes izquierda–derecha | {count} osią / osiami lewo–prawo |
+| {count} Top–bottom axis / axes | {count} осью / осями сверху вниз | {count} віссю / осями згори донизу | {count} воссю / восямі зверху ўніз | {count} 条上下轴 | {count} eje / ejes arriba–abajo | {count} osią / osiami góra–dół |
+| {leftRight} and {topBottom} | {leftRight} и {topBottom} | {leftRight} і {topBottom} | {leftRight} і {topBottom} | {leftRight}和{topBottom} | {leftRight} y {topBottom} | {leftRight} i {topBottom} |
+| In Mirror mode the half-bead shift lines up no more axes: try Repeat. (the + Tooltip) | В режиме «Отражение» сдвиг на половину бисеринки не даёт больше осей: попробуйте «Повтор». | У режимі «Відображення» зсув на пів бісерини не дає більше осей: спробуйте «Повтор». | У рэжыме «Адлюстраванне» зрух на паўпацеркі не дае больш восей: паспрабуйце «Паўтор». | 在“镜像”模式下，半珠错位无法对齐更多轴：请试试“重复”。 | En modo Espejo el desfase de media cuenta no alinea más ejes: prueba con Repetir. | W trybie „Odbicie” przesunięcie o pół koralika nie pozwala na więcej osi: spróbuj „Powtórz”. |
+
+English follows the ticket, tightened to name each count with its own noun ("2 Left–right axes and 1 Top–bottom axis"); Russian rewrites the ticket's «чтобы … совпадал» as «и … ложится ровно», so the verb agrees with every Mode and the Area keeps the app's word, «область отражения». The other languages are proposals for review with the build.

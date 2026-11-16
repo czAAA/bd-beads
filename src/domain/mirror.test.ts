@@ -15,6 +15,10 @@ import {
   mirrorFitOf,
   mirrorLines,
   isFittingSize,
+  grownToFit,
+  mirrorGrowthOf,
+  mirrorReach,
+  sameMirrorBar,
   isMirrorOn,
   mirrorSettingOf,
   mirroredOnCanvas,
@@ -354,6 +358,76 @@ describe('a Fitting size: the Mirror never rounds (ADR 0095, ticket 1026)', () =
   })
 })
 
+describe('a Canvas Area grows to fit (ticket 1027, ADR 0095)', () => {
+  const grid = (technique: Technique, drop = 1) => {
+    const sheet = layerSheet(open(technique), 'canvas')
+    return drop === 1 ? sheet.weave : { ...sheet.weave, techniqueSettings: { peyoteDrop: drop } }
+  }
+  const straight = (rect: Rect, axes: Partial<MirrorSetting['axes']>, mode: MirrorSetting['mode'], counts: Partial<MirrorSetting['counts']> = {}) => on(axes, counts, mode, onCanvas(rect))
+
+  it('grows each direction on its own, right and down from the top-left corner, to the nearest Fitting size', () => {
+    const rect = area(3, 4, 24, 25)
+    expect(grownToFit(grid('loom'), rect, straight(rect, { leftRight: true }, 'repeat', { leftRight: 2 }))).toEqual({ area: area(3, 4, 24, 27), grewFor: { leftRight: 2 } })
+    expect(grownToFit(grid('loom'), rect, straight(rect, { leftRight: true, topBottom: true }, 'repeat', { leftRight: 2, topBottom: 4 }))).toEqual({ area: area(3, 4, 25, 27), grewFor: { leftRight: 2, topBottom: 4 } })
+    // A size that fits already changes nothing; one bead across grows until each Axis has a bead on each side.
+    expect(grownToFit(grid('loom'), rect, straight(rect, { leftRight: true }, 'repeat', { leftRight: 4 }))).toEqual({ area: rect, grewFor: {} })
+    expect(grownToFit(grid('loom'), area(0, 0, 1, 1), straight(area(0, 0, 1, 1), { topBottom: true }, 'mirror'))?.area).toEqual(area(0, 0, 2, 1))
+    for (const [technique, drop] of [['loom', 1], ['peyote', 1], ['peyote', 2], ['brick', 1]] as const) {
+      for (const mode of ['mirror', 'repeat'] as const) {
+        for (const beads of [1, 7, 16, 25]) {
+          for (const direction of ['leftRight', 'topBottom'] as const) {
+            const from = direction === 'leftRight' ? area(2, 3, 9, beads) : area(3, 2, beads, 9)
+            const label = `${technique} ${drop}-drop ${mode} ${direction} ${beads}`
+            for (const count of mirrorReach(grid(technique, drop), from, mode).counts[direction]) {
+              const setting = straight(from, { [direction]: true }, mode, { [direction]: count })
+              const grown = grownToFit(grid(technique, drop), from, setting)
+              expect(grown && isFittingSize(grid(technique, drop), grown.area, setting), `${label} ${count}`).toBe(true)
+              expect(grown!.area.rows * grown!.area.columns, label).toBeGreaterThanOrEqual(9 * beads)
+            }
+          }
+        }
+      }
+    }
+  })
+
+  it('grows a rectangle to a square on its longer side for Fold 4 on loom; on peyote and brick Fold 4 is off', () => {
+    const rect = area(0, 0, 5, 8)
+    expect(grownToFit(grid('loom'), rect, radial(4, 'mirror', onCanvas(rect)))).toEqual({ area: area(0, 0, 8, 8), grewFor: { fold: 4 } })
+    expect(grownToFit(grid('loom'), rect, radial(2, 'mirror', onCanvas(rect)))).toEqual({ area: rect, grewFor: {} })
+    expect(mirrorReach(grid('loom'), rect, 'mirror')).toMatchObject({ folds: [2, 4], off: {} })
+    expect(mirrorReach(grid('peyote'), rect, 'mirror')).toMatchObject({ folds: [2], quarterOff: 'shift' })
+    // On peyote the half turn grows along the shift to a size it keeps.
+    const peyote = area(0, 0, 13, 16)
+    const grown = grownToFit(grid('peyote'), peyote, radial(2, 'mirror', onCanvas(peyote)))!
+    expect(isFittingSize(grid('peyote'), grown.area, radial(2, 'mirror', onCanvas(grown.area)))).toBe(true)
+  })
+
+  it('offers every count up to beads across minus one, but those no size fits: on 1-drop peyote one Left–right Axis in Mirror mode', () => {
+    expect(mirrorReach(grid('loom'), area(0, 0, 1, 25), 'repeat')).toMatchObject({ counts: { leftRight: Array.from({ length: 24 }, (_c, index) => index + 1), topBottom: [1] }, off: {} })
+    expect(mirrorReach(grid('peyote'), area(0, 0, 13, 16), 'mirror')).toMatchObject({ counts: { leftRight: [1] }, capped: { leftRight: 'shift' } })
+    expect(mirrorReach(grid('peyote'), area(0, 0, 13, 16), 'repeat').capped).toBeUndefined()
+    expect(mirrorReach(grid('brick'), area(0, 0, 13, 16), 'mirror')).toMatchObject({ counts: { topBottom: [1] }, capped: { topBottom: 'shift' } })
+    // A count no size fits is grown for as the Mirror uses it, the nearest below that one does.
+    const rect = area(0, 0, 13, 16)
+    expect(grownToFit(grid('peyote'), rect, straight(rect, { leftRight: true }, 'mirror', { leftRight: 3 }))?.grewFor).toEqual({ leftRight: 1 })
+  })
+
+  it('grows only a Canvas Area that does not fit: never the whole Frame, nor a Mirror that is off', () => {
+    const project = withMirrorPlace(open('loom'), onCanvas(area(0, 0, 4, 25)))
+    expect(mirrorGrowthOf(project, straight(area(0, 0, 4, 25), { leftRight: true }, 'repeat', { leftRight: 2 }))?.area).toEqual(area(0, 0, 4, 27))
+    expect(mirrorGrowthOf(project, straight(area(0, 0, 4, 25), { leftRight: true }, 'repeat', { leftRight: 4 }))).toBeUndefined()
+    expect(mirrorGrowthOf(framed('loom', 25, 4), on({ leftRight: true }, { leftRight: 2 }, 'repeat'))).toBeUndefined()
+    expect(mirrorGrowthOf(project, { ...on({ leftRight: true }, { leftRight: 2 }, 'repeat'), place: null })).toBeUndefined()
+  })
+
+  it('tells two Mirrors\' bar settings apart, the place left out', () => {
+    expect(sameMirrorBar(on({ leftRight: true }), { ...on({ leftRight: true }), place: onCanvas(area(0, 0, 2, 2)) })).toBe(true)
+    expect(sameMirrorBar(undefined, MIRROR_OFF)).toBe(true)
+    expect(sameMirrorBar(on({ leftRight: true }), on({ leftRight: true }, { leftRight: 2 }))).toBe(false)
+    expect(sameMirrorBar(withAxisToggled(on({ leftRight: true }), 'radial'), on({ radial: true }))).toBe(false)
+  })
+})
+
 describe('the Mirror bar\'s settings (ContextBar card, Mirror bar)', () => {
   it('switches the Mode and steps a count, never under one, and the Fold on a grid 2 or 4 (ticket 0751)', () => {
     expect(withMirrorMode(on({ leftRight: true }), 'repeat').mode).toBe('repeat')
@@ -613,11 +687,13 @@ describe('Mirror on peyote and brick, by the bead\'s place (ticket 0775, spec 07
   })
 })
 
-describe('what the Mirror\'s place offers the bar (ticket 0775)', () => {
-  it('is its grid Area\'s fit, the whole Frame\'s on a peyote Frame, and none while the Mirror is off or on a Custom frame', () => {
+describe('what the Mirror\'s place offers the bar (tickets 0775, 1027)', () => {
+  it('is the whole Frame\'s fit on a peyote Frame, a Canvas Area\'s reach, and none while the Mirror is off or on a Custom frame', () => {
     const peyote = framed('peyote', 6, 4)
     expect(mirrorFitOf(peyote, on({ leftRight: true }))?.off).toEqual({ leftRight: 'shift', radial: 'shift' })
     expect(mirrorFitOf(peyote, MIRROR_OFF)).toBeUndefined()
+    // A Canvas Area offers what it grows to (ticket 1027): one bead across is no reason for a chip to be off.
+    expect(mirrorFitOf(open('peyote'), on({ leftRight: true }, {}, 'mirror', onCanvas(area(0, 0, 1, 6))))?.off).toEqual({})
     const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const star = changeFrame(blank, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 30 } } }) as { project: Project }
     expect(mirrorFitOf(star.project, on({ radial: true }))).toBeUndefined()

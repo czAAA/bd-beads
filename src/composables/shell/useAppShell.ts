@@ -280,7 +280,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { edit } = editing
 
   /** Mirror (ADR 0082, ticket 0750): the Project's one Mirror, its place and bar settings, and Mirror mode. */
-  const mirror = useMirrorFlow({ currentProject, replaceProject, edit })
+  const mirror = useMirrorFlow({ currentProject, replaceProject, edit, showToast, messages, locale: () => locale.value })
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and
    * the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that

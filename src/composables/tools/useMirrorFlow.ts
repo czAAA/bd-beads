@@ -2,19 +2,26 @@ import { computed, ref } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
-import { isMirrorOn, MIRROR_OFF, mirrorFitOf, mirrorSettingOf, placeRect, shapeAxesOf, withMirror, withMirrorPlace, type MirrorPlace, type MirrorSetting } from '../../domain/mirror'
+import { isMirrorOn, MIRROR_OFF, mirrorFitOf, mirrorGrowthOf, mirrorSettingOf, placeRect, shapeAxesOf, withMirror, withMirrorPlace, type MirrorPlace, type MirrorSetting } from '../../domain/mirror'
 import type { Project } from '../../domain/project'
+import type { Locale, Translations } from '../../i18n/translations'
 import { movedSelection, selectionFrame, selectionWithEdges, type Selection } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { EditFn } from '../project/useEdit'
+import type { MessageTone } from '../ui/useToasts'
+import { mirrorGrownMessage } from './mirrorGrownMessage'
 
 /** What Mirror needs from the app shell: the open Project and its two write paths. A bar setting is not an Undo step,
  * so it goes to `replaceProject` as Letters does (ADR 0036's "outside Edit"); making, moving, resizing and closing the
- * Mirror are, through `edit`. */
+ * Mirror are, through `edit`, and so is a bar setting that grows the Canvas Area (ticket 1027), which a Message tells. */
 export interface MirrorFlowDeps {
   currentProject: () => Project | undefined
   replaceProject: (project: Project) => void
   edit: EditFn
+  showToast: (id: string, text: string, tone?: MessageTone) => void
+  messages: () => Translations
+  /** The language the grown Area's Message counts in. */
+  locale: () => Locale
 }
 
 /** The Mirror's state (ADR 0082, ticket 0750): the one Mirror of the Project and its place, Mirror mode (the tile's pick,
@@ -60,10 +67,19 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     return place?.layer === 'canvas' ? { top: place.area.row, left: place.area.column, rows: place.area.rows, columns: place.area.columns, layer: 'canvas' } : undefined
   })
 
-  /** The Mirror bar changed the Mode, an Axis or a count: saved with the Project, no Undo step. */
+  /** The Mirror bar changed the Mode, an Axis, a count or the Fold: saved with the Project, no Undo step. Where a Canvas
+   * Area does not fit it, the Area grows right and down to the nearest Fitting size (ticket 1027): one Undo step for the
+   * setting and the size together, and a Message saying what it grew for. */
   function update(next: MirrorSetting) {
     const project = deps.currentProject()
-    if (project) deps.replaceProject(withMirror(project, next))
+    if (!project) return
+    const growth = mirrorGrowthOf(project, next)
+    if (!growth) {
+      deps.replaceProject(withMirror(project, next))
+      return
+    }
+    const outcome = deps.edit('exempt', (current) => withMirrorPlace(withMirror(current, next), { layer: 'canvas', area: growth.area }))
+    if (outcome.kind === 'applied') deps.showToast('mirror-grown', mirrorGrownMessage(deps.messages(), deps.locale(), next, growth), 'info')
   }
 
   /** The Mirror made, moved or resized to a place, replacing the one before, one Undo step (ADR 0082). */

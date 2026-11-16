@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import { changeFrame } from '../../domain/changeFrame'
-import { MIRROR_OFF, mirrorSettingOf, withAxisToggled, withMirrorMode } from '../../domain/mirror'
+import { MIRROR_OFF, mirrorSettingOf, withAxisToggled, withMirrorCount, withMirrorFold, withMirrorMode } from '../../domain/mirror'
+import { en } from '../../i18n/en'
 import type { Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 import { useMirrorFlow } from './useMirrorFlow'
@@ -11,8 +12,9 @@ function setup(open = false) {
   let project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } })
   if (open) project = (changeFrame(project, { remove: true }) as { project: Project }).project
   const harness = editHarness(project)
-  const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit })
-  return { flow, harness }
+  const showToast = vi.fn()
+  const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, showToast, messages: () => en, locale: () => 'en' })
+  return { flow, harness, showToast }
 }
 
 const area = { row: 1, column: 2, rows: 3, columns: 6 }
@@ -23,7 +25,7 @@ describe('useMirrorFlow (ADR 0082, ticket 0750)', () => {
     expect(flow.setting.value).toEqual(MIRROR_OFF)
     expect(flow.on.value).toBe(false)
     expect(flow.rect.value).toBeUndefined()
-    const none = useMirrorFlow({ currentProject: () => undefined, replaceProject: () => {}, edit: () => ({ kind: 'unchanged' }) })
+    const none = useMirrorFlow({ currentProject: () => undefined, replaceProject: () => {}, edit: () => ({ kind: 'unchanged' }), showToast: () => {}, messages: () => en, locale: () => 'en' })
     expect(none.setting.value).toEqual(MIRROR_OFF)
   })
 
@@ -41,12 +43,13 @@ describe('useMirrorFlow (ADR 0082, ticket 0750)', () => {
 
   it('puts the bar\'s settings on the Project with no Undo step, and Undo of the place keeps them', () => {
     const { flow, harness } = setup(true)
-    flow.makeFrom(area)
+    const fitting = { ...area, rows: 4 }
+    flow.makeFrom(fitting)
     flow.update(withMirrorMode(withAxisToggled(flow.setting.value, 'topBottom'), 'repeat'))
-    expect(mirrorSettingOf(harness.project!)).toMatchObject({ mode: 'repeat', axes: { leftRight: true, topBottom: true }, place: { layer: 'canvas', area } })
+    expect(mirrorSettingOf(harness.project!)).toMatchObject({ mode: 'repeat', axes: { leftRight: true, topBottom: true }, place: { layer: 'canvas', area: fitting } })
     flow.makeFrom({ row: 0, column: 0, rows: 4, columns: 4 })
     harness.history.onUndo()
-    expect(mirrorSettingOf(harness.project!)).toMatchObject({ mode: 'repeat', axes: { topBottom: true }, place: { layer: 'canvas', area } })
+    expect(mirrorSettingOf(harness.project!)).toMatchObject({ mode: 'repeat', axes: { topBottom: true }, place: { layer: 'canvas', area: fitting } })
   })
 
   it('mirrors the whole Frame, its rect the Frame\'s, and closes as one Undo step keeping the settings', () => {
@@ -112,5 +115,38 @@ describe('useMirrorFlow (ADR 0082, ticket 0750)', () => {
     expect(flow.holding()).toBe(true)
     flow.releaseArea()
     expect(flow.holding()).toBe(false)
+  })
+
+  it('grows a Canvas Area a bar setting does not fit, right and down, as one Undo step for the setting and the size, and says so (ticket 1027)', () => {
+    const { flow, harness, showToast } = setup(true)
+    flow.makeFrom({ row: 1, column: 2, rows: 24, columns: 25 })
+    flow.update(withMirrorMode(flow.setting.value, 'repeat'))
+    expect(flow.rect.value).toEqual({ row: 1, column: 2, rows: 24, columns: 26 })
+    expect(showToast).toHaveBeenLastCalledWith('mirror-grown', 'Mirror area grown to 26×24 so Repeat with 1 Left–right axis lines up.', 'info')
+    flow.update(withMirrorCount(flow.setting.value, 'leftRight', 2))
+    expect(flow.rect.value).toEqual({ row: 1, column: 2, rows: 24, columns: 27 })
+
+    // Back to one Axis it never shrinks to 26: Repeat's two strips grow it to 28. A count 28 fits changes nothing.
+    showToast.mockClear()
+    flow.update(withMirrorCount(flow.setting.value, 'leftRight', 1))
+    expect(flow.rect.value?.columns).toBe(28)
+    flow.update(withMirrorCount(flow.setting.value, 'leftRight', 3))
+    expect(flow.rect.value?.columns).toBe(28)
+    expect(showToast).toHaveBeenCalledTimes(1)
+
+    harness.history.onUndo()
+    expect(flow.setting.value).toMatchObject({ counts: { leftRight: 2 }, place: { area: { columns: 27 } } })
+    harness.history.onUndo()
+    expect(flow.setting.value).toMatchObject({ mode: 'repeat', counts: { leftRight: 1 }, place: { area: { columns: 26 } } })
+    harness.history.onRedo()
+    expect(flow.setting.value).toMatchObject({ mode: 'repeat', counts: { leftRight: 2 }, place: { area: { columns: 27 } } })
+  })
+
+  it('says the Fold it grew a square for (ticket 1027)', () => {
+    const { flow, showToast } = setup(true)
+    flow.makeFrom({ row: 0, column: 0, rows: 5, columns: 8 })
+    flow.update(withMirrorFold(withAxisToggled(flow.setting.value, 'radial'), 4))
+    expect(flow.rect.value).toEqual({ row: 0, column: 0, rows: 8, columns: 8 })
+    expect(showToast).toHaveBeenLastCalledWith('mirror-grown', 'Mirror area grown to 8×8 so Radial with Fold 4 lines up.', 'info')
   })
 })

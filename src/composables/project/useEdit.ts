@@ -5,6 +5,7 @@ import { sameFrame } from '../../domain/canvas'
 import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
 import { sameBeads, sameLayers } from '../../domain/layerBeads'
 import { frameOf, layerOf, type Layered } from '../../domain/layerRecord'
+import { sameMirrorBar } from '../../domain/mirror'
 import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
@@ -101,7 +102,8 @@ export function useEdit(deps: EditDeps) {
     if (updated === project) {
       return { kind: 'unchanged' }
     }
-    step(snapshotOf(project), updated)
+    // A change that took the Mirror bar's settings too (an Area grown to fit them, ticket 1027) puts them back with it.
+    step(snapshotOf(project, { mirrorBar: !sameMirrorBar(project.mirror, updated.mirror) }), updated)
     deps.replaceProject(updated)
     // A command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
     if (!sameFrame(frameOf(project), frameOf(updated)) || techniqueOf(project, 'canvas') !== techniqueOf(updated, 'canvas')) {
