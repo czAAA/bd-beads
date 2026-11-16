@@ -10,7 +10,7 @@ import { describeWeave, type Weave } from './weave'
 
 // Mirror (ADR 0082, spec 0702; tickets 0703, 0750): the live mode that lands a drawing gesture at its counterparts,
 // one per Project, inside its Area. This module owns the record and the counterpart maths, positions in and positions
-// out; the callers of `paintCells` (the Paint stroke, Fill, Paste) and the hover preview all ask `counterparts`.
+// out; the Paint stroke, Paste and the hover preview ask `counterparts` (a Fill does not, ticket 1025).
 
 /** How Mirror lays a counterpart (glossary: Mirror mode): a reflection, or the same way round. No Off: Close mirror is
  * the way out (ADR 0082). */

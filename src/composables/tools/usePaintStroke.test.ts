@@ -144,15 +144,43 @@ describe('usePaintStroke', () => {
       expect(at(0, 0)).toBeNull()
     })
 
-    it('fills the counterparts of the flooded region too, as one undo step', () => {
+    it('fills only the flooded region, no counterpart of it, as one undo step (ticket 1025)', () => {
       const { stroke, harness, at, frame } = setup('fill', fourWide(), leftRight)
       harness.edit('drawing', (project) => paintAt(project, [{ row: frame.row, column: frame.column }, { row: frame.row, column: frame.column + 1 }], '#0000ff'))
       stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
 
-      expect([0, 1, 2, 3].map((column) => at(0, column))).toEqual(['#00ff00', '#00ff00', '#00ff00', '#00ff00'])
+      expect([0, 1, 2, 3].map((column) => at(0, column))).toEqual(['#00ff00', '#00ff00', null, null])
       expect(at(1, 0)).toBeNull()
       harness.history.onUndo()
       expect([0, 1, 2, 3].map((column) => at(0, column))).toEqual(['#0000ff', '#0000ff', null, null])
+      expect(harness.history.canUndo.value).toBe(true)
+    })
+
+    it.each<[string, MirrorSetting]>([
+      ['Repeat on straight Axes', { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, counts: { leftRight: 2, topBottom: 2 }, place: { layer: 'frame' } }],
+      ['Mirror on Radial', { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, radial: true }, fold: 4, place: { layer: 'frame' } }],
+      ['Repeat on Radial', { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, radial: true }, fold: 4, place: { layer: 'frame' } }],
+    ])('fills only the flooded region on the whole Frame under %s (ticket 1025)', (_name, mirror) => {
+      const six = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 6, height: 6, unit: 'beads' } })
+      const { stroke, harness, frame } = setup('fill', six, mirror)
+      harness.edit('drawing', (project) => paintAt(project, [{ row: frame.row, column: frame.column }, { row: frame.row, column: frame.column + 1 }], '#0000ff'))
+      stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+
+      expect(frameOf(harness.project)!.beads).toEqual({ 0: { 0: '#00ff00', 1: '#00ff00' } })
+    })
+
+    it('fills only the flooded region on a Custom frame\'s Mirror (ticket 1025)', () => {
+      const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+      const placed = changeFrame(withFrameSheet(base, undefined), { custom: { shape: 'triangle', size: 5, centre: { row: 20, column: 30 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+      const turns: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, radial: true }, fold: 3, place: { layer: 'frame' } }
+      const { row, column } = frameOf(placed.project)!
+      const painted = paintAt(placed.project, [{ row: row + 4, column }], '#0000ff')
+      const { stroke, harness } = setup('fill', painted, turns)
+
+      stroke.beginOrCommitPress('paint', '#00ff00', row + 4, column, 'frame')
+
+      expect(frameOf(harness.project)!.beads).toEqual({ 4: { 0: '#00ff00' } })
     })
 
     it('paints only where aimed on the Canvas while the Mirror is the whole Frame\'s (ADR 0082)', () => {
@@ -163,7 +191,7 @@ describe('usePaintStroke', () => {
       expect(beadsOfLayer(harness.project, 'canvas')).toEqual({ [frame.row - 6]: { [frame.column]: '#ff0000' } })
     })
 
-    it('lands a Canvas stroke and a Fill inside a Canvas Area, a counterpart under the Frame painted there hidden (ADR 0082)', () => {
+    it('lands a Canvas stroke inside a Canvas Area, a counterpart under the Frame painted there hidden, and a Fill there alone (ADR 0082)', () => {
       // A 4 x 3 Frame at (10, 10), its margin out to (6, 6); the Area's Axis through column 6 maps column 2 to 10, under
       // the Frame on row 11 and clear of it on row 20.
       const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 10, column: 10 } })
@@ -181,12 +209,12 @@ describe('usePaintStroke', () => {
       const { stroke: fill, harness: filled } = setup('fill', framed, inArea)
       filled.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 2 }, { row: 20, column: 3 }], '#0000ff'))
       fill.beginOrCommitPress('paint', '#00ff00', 20, 2)
-      expect(beadsOfLayer(filled.project, 'canvas')[20]).toEqual({ 2: '#00ff00', 3: '#00ff00', 9: '#00ff00', 10: '#00ff00' })
+      expect(beadsOfLayer(filled.project, 'canvas')[20]).toEqual({ 2: '#00ff00', 3: '#00ff00' })
     })
 
     it('stops a Fill at the edge of the Mirror\'s Canvas Area, as a border', () => {
       const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 10, column: 10 } })
-      const area: MirrorSetting = { ...MIRROR_OFF, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 25, columns: 13 } } }
+      const area: MirrorSetting = { ...leftRight, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 25, columns: 13 } } }
       const { stroke, harness } = setup('fill', framed, area)
       harness.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 12 }, { row: 20, column: 13 }], '#0000ff'))
 
@@ -348,7 +376,7 @@ describe('usePaintStroke', () => {
       expect(showToast).toHaveBeenCalledWith('fill-refused', 'Nothing encloses this spot. Select an area to fill it.', 'info')
     })
 
-    it('lands a refused Fill nowhere under Mirror, no counterparts either (ADR 0082)', () => {
+    it('lands a refused Fill nowhere under Mirror (ADR 0082)', () => {
       const mirrored: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'canvas', area: { row: -30, column: -30, rows: 30, columns: 30 } } }
       const { stroke, harness } = setup('fill', open(ring(5)), mirrored, { row: -10, column: -10, rows: 30, columns: 30 })
       const before = harness.project
