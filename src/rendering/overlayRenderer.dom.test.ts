@@ -371,7 +371,7 @@ describe('renderOverlay', () => {
       const round = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row === 1)
       const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746'))
       const project = moveToRow(painted, 1)
-      const { context, named } = recordingContext()
+      const { context, calls, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true) })
 
@@ -380,6 +380,9 @@ describe('renderOverlay', () => {
       expect(named('rotate')).toHaveLength(12)
       // Each ring turned with its bead has both its lines (ticket 1031).
       expect(named('stroke').map((call) => call.strokeStyle)).toEqual(Array(4).fill([DEFAULT_THEME.marker, DEFAULT_THEME.markerCase]).flat())
+      // Each turned bead is raised in its own box, centred on its place: its `marker` line 1px outside it (ticket 1032).
+      const marker = calls.filter((call, at) => call.name === 'roundRect' && calls[at + 1]?.name === 'stroke' && calls[at + 1]!.strokeStyle === DEFAULT_THEME.marker)
+      expect(marker.map((call) => call.args.slice(0, 4))).toEqual(Array(4).fill([-10, -10, 20, 20]))
     })
 
     it('glints the round just finished one bead at a time in its Row order, each turned to its panel (ticket 0730)', () => {

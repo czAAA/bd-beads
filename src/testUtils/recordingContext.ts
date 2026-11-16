@@ -43,6 +43,7 @@ export function recordingContext() {
     translate: record('translate'),
     scale: record('scale'),
     rotate: record('rotate'),
+    transform: record('transform'),
     stroke: record('stroke'),
     setLineDash: record('setLineDash'),
     font: '',

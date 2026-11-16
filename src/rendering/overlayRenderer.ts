@@ -216,6 +216,11 @@ function inPlace(context: DrawingContext, bead: PassBead, draw: () => void): voi
   context.restore()
 }
 
+/** An upright pass bead's corner radius, `by` px rounder as its box grows `by` px on every side (ticket 1032). */
+function cornerOf(weave: Weave, by: number): number {
+  return beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX + by
+}
+
 /** A pass bead drawn `by` px larger on every side, its corner `by` px rounder where it carries its own (ticket 1032). */
 function raisedBy(bead: PassBead, by: number): PassBead {
   if (by === 0) return bead
@@ -268,7 +273,7 @@ function sizeOf(bead: PassBead, side: number): { size: number; width?: number; h
 // A pass just finished is drawn the same way, unbrightened and at its own size, while its glint shows it at full color
 // (ticket 0730). The current pass is raised `raise` px on every side (ticket 1032); its Letter keeps the bead's size.
 function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme, letters?: Readonly<Record<string, string>>, lift = CURRENT_ROW_BRIGHTNESS, raise = 0): void {
-  const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX + raise
+  const cornerRadius = cornerOf(weave, raise)
   const look = drawsDraft(zoom * pixelRatio) ? flatLook(theme) : theme
   for (const bead of beads) {
     const raised = raisedBy(bead, raise)
@@ -300,7 +305,7 @@ function drawRaisedShadow(context: DrawingContext, beads: readonly PassBead[], w
   if (!beads.length || !theme.liftedPiece || drawsDraft(deviceScale)) return
   const inset = BEAD_GAP_PX / 2
   const body = (bead: PassBead) => raisedBy(bead, RAISE_PX - inset)
-  const corner = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX + RAISE_PX - inset
+  const corner = cornerOf(weave, RAISE_PX - inset)
   const upright = joinedTouching(beads.filter((bead) => !bead.turned)).map((cell) => body({ ...cell, color: '' }))
   const turned = beads.filter((bead) => bead.turned).map(body)
   const shapes = [...upright, ...turned]
@@ -373,7 +378,7 @@ function ringPath(context: DrawingContext, bead: PassBead, line: RingLine, radiu
 // MARKER_RING_PX of `marker` on its edge and MARKER_CASE_PX of `canvas` inside it. Touching beads' `marker` lines fall
 // on the same px; no line joins them otherwise: each line is one path and one stroke.
 function drawBeadRings(context: DrawingContext, inPass: readonly PassBead[], weave: Weave, theme: ProjectTheme): void {
-  const corner = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX + RAISE_PX
+  const corner = cornerOf(weave, RAISE_PX)
   const lines = ringLines(theme)
   const beads = inPass.map((bead) => raisedBy(bead, RAISE_PX))
   const upright = beads.filter(({ turned }) => !turned)
