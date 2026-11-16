@@ -238,7 +238,7 @@ export function canvasMirrors(setting: MirrorSetting): boolean {
 }
 
 /** The most axes a direction with this many beads across can take (ticket 0044): every axis has a bead on each side;
- * one for a direction of one bead. */
+ * one for a direction of one bead. Which counts under it fit is `countFits` (ADR 0095). */
 function maxAxisCount(cellsAcross: number): number {
   return Math.max(1, cellsAcross - 1)
 }
