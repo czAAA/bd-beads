@@ -215,26 +215,33 @@ export function useProjectLibrary(
       answered()
       // A Project another tab removed is gone here too, even though it was changed here.
       if (dropped.length > 0) takeIn({ changed: [], gone: dropped }, refused())
-      if (mine === saves) {
+      // An earlier save still unanswered, or one that failed, left a change not stored: this answer cannot clear the flags.
+      const left = pendingChanges()
+      if (mine === saves && unanswered.size === 0 && left.changed.length === 0 && left.removed.length === 0) {
         saveFailed.value = false
         if (edits === covered) savePending.value = false
       }
       return true
     } catch {
       answered()
+      let restored = false
       for (const { project } of changed) {
         if (known.get(project.id) !== project) continue
+        restored = true
         const earlier = before.get(project.id)
         if (earlier) known.set(project.id, earlier)
         else known.delete(project.id)
       }
       for (const id of removed) {
         const earlier = before.get(id)
-        if (!known.has(id) && earlier) known.set(id, earlier)
+        if (!known.has(id) && earlier) {
+          known.set(id, earlier)
+          restored = true
+        }
       }
       // Out of quota, or storage refused outright (a private window can). The edit itself stands in memory; leaving
       // it pending means the next save retries it, and saveFailed tells the user it isn't safe yet.
-      if (mine === saves) {
+      if (mine === saves || restored) {
         savePending.value = true
         saveFailed.value = true
       }
