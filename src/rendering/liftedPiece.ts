@@ -465,13 +465,14 @@ function joinedAcross(cells: LiftCell[]): LiftCell[] {
   return joined
 }
 
-/** The cells of round beads that stand upright, touching ones joined as the Canvas's are (a row's, or a column's where
- * columns are staggered), so a Frame's piece has the same outline: the others are left as they are (ticket 1010). */
-export function joinedRound(cells: readonly LiftCell[], across: boolean): LiftCell[] {
-  const round = cells.filter((cell) => cell.bead !== undefined && !cell.transform)
-  if (!round.length) return cells.slice()
-  const others = cells.filter((cell) => cell.bead === undefined || cell.transform)
-  return [...others, ...(across ? joinedAcross(round) : joinedDown(round))]
+/** A Frame's cells, the upright ones that touch joined as the Canvas's are (a row's, or a column's where columns are
+ * staggered), so its piece has the same outline (ticket 1010) and one rectangle per line, not per bead: Safari took 15 s
+ * to cast a large Frame's shadow from one per bead (ticket 1030). Turned beads' cells are left as they are. */
+export function joinedUpright(cells: readonly LiftCell[], across: boolean): LiftCell[] {
+  const upright = cells.filter((cell) => !cell.transform)
+  if (!upright.length) return cells.slice()
+  const turned = cells.filter((cell) => cell.transform)
+  return [...turned, ...(across ? joinedAcross(upright) : joinedDown(upright))]
 }
 
 /** A bead drawer that draws the empty positions with `draw` and keeps the painted beads' cells for the piece under

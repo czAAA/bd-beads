@@ -28,7 +28,7 @@ import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
-import { canvasLiftCells, drawLift, joinedRound, liftCollector, liftRows, liftsAcross, paintedOnly } from './liftedPiece'
+import { canvasLiftCells, drawLift, joinedUpright, liftCollector, liftRows, liftsAcross, paintedOnly } from './liftedPiece'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
   frameOriginPx,
@@ -343,7 +343,7 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
     const weave = frameWeave(project)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: liftRows(band, cellSizePx(weave.technique, weave.cell).height) }, space, origin)
     const across = liftsAcross(weave)
-    drawLift(context, joinedRound(collect.cells, across), draw.look.canvas, draw.zoom * draw.pixelRatio, across)
+    drawLift(context, joinedUpright(collect.cells, across), draw.look.canvas, draw.zoom * draw.pixelRatio, across)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined }, space, origin)
     return
   }
