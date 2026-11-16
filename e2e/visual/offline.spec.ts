@@ -1,7 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
-import { openApp, openStripPanel } from '../support/app'
+import { openApp, openStripPanel, storedProjects } from '../support/app'
 import { startHost, type Host } from '../support/hostProxy'
-import { fixtureProject, STORAGE_KEY } from '../support/projects'
+import { fixtureProject } from '../support/projects'
 import { baseURL } from '../support/server'
 
 // The offline shell in a real browser (ticket 69, ADR 0045): the production build under `vite preview` with its service
@@ -24,8 +24,7 @@ async function openAndInstall(page: Page, storageNote = false): Promise<void> {
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true)
 }
 
-const savedNames = (page: Page) =>
-  page.evaluate((key) => (JSON.parse(localStorage.getItem(key) ?? '{"patterns":[]}') as { patterns: { layers: { name: string }[] }[] }).patterns.map((p) => p.layers[0]!.name), STORAGE_KEY)
+const savedNames = async (page: Page) => (await storedProjects(page)).map((project) => project.layers[0]!.name)
 
 /** Reloads, and expects the app itself (not the browser's error page) with the Project that was open. */
 async function reloadsIntoTheApp(page: Page): Promise<void> {

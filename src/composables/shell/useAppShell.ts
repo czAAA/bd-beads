@@ -144,6 +144,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     forgetRemoved,
     removeAllProjects,
     flushPendingSave,
+    noteClosing,
     saveNow,
     openElsewhere,
     workHere,
@@ -903,7 +904,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs, announce, showRow })
 
   /** The deferred save's safety net (see useSaveOnPageHide). */
-  if (!demo) useSaveOnPageHide(flushPendingSave)
+  if (!demo) useSaveOnPageHide(flushPendingSave, noteClosing)
 
   function onSelectProject(id: string) {
     openProject(id)

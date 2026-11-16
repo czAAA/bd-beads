@@ -44,7 +44,7 @@ export function memoryLibraryStore(projects: readonly Project[] = []): MemoryLib
   }
 
   return {
-    start: async () => 'ready',
+    start: async () => 'ready' as const,
     count: async () => records.size,
     load: () => [...records.values()].map((record) => record.project),
     open: () => ({ projects: [...records.values()].map((record) => record.project), sealed: [] }),
@@ -72,6 +72,7 @@ export function memoryLibraryStore(projects: readonly Project[] = []): MemoryLib
       const gone = [...heldStamps.keys()].filter((id) => !records.has(id) && (named === undefined || named.has(id)))
       return { changed, gone }
     },
+    noteClosing: () => undefined,
     onOutsideChange: (listener) => {
       listeners.add(listener)
       return () => listeners.delete(listener)

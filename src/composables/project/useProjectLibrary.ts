@@ -55,6 +55,8 @@ export interface ProjectLibrary {
   /** Removes every Project from this device and leaves none open (Menu's Delete all Projects, ticket 443). */
   removeAllProjects: () => void
   flushPendingSave: () => void
+  /** The page is going: notes, for the next start, each write not yet landed (ADR 0012). Call it after flushPendingSave. */
+  noteClosing: () => void
   /** Writes the library now, pending change or not, and says whether storage took it once it has answered (ticket
    * 115's Save). */
   saveNow: () => Promise<boolean>
@@ -405,6 +407,10 @@ export function useProjectLibrary(
       if (savePending.value) {
         void save()
       }
+    },
+
+    noteClosing() {
+      store.noteClosing()
     },
 
     // The Save tool's write (ticket 115): doesn't trust the pending flag, since "Saved" must be true; saves the open

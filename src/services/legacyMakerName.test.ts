@@ -29,6 +29,7 @@ describe('migrateLegacyMakerName', () => {
     count: async () => 0,
     reread: async () => ({ changed: [], gone: [] }),
     onOutsideChange: () => () => undefined,
+    noteClosing: () => undefined,
   }
 
   function fakes(device: Record<string, string>, projects: Project[]) {

@@ -346,6 +346,8 @@ export const pl: Translations = {
       'Nie udało się zapisać w tej przeglądarce. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo zapisz plik projektu, żeby jej nie stracić.',
     openElsewhere: 'Ten projekt jest otwarty w innej karcie. Zmiany wprowadzone tutaj nie są zapisywane, dopóki jest tam otwarty.',
     keptToast: 'Ta przeglądarka zachowa Twoje projekty.',
+    libraryUnopened: 'Nie udało się otworzyć projektów na tym urządzeniu. Załaduj ponownie, aby spróbować jeszcze raz.',
+    reload: 'Załaduj ponownie',
     workHere: 'Pracuj tutaj',
     notSavedHere: 'Otwarty w innej karcie: tutaj się nie zapisuje',
     toolsOff: 'Wyłączone, gdy ten projekt jest otwarty w innej karcie. Aby rysować, wybierz „Pracuj tutaj”.',

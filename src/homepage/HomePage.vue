@@ -4,6 +4,7 @@ import AppButton from '../components/ui/AppButton.vue'
 import DeleteProjectModal from '../components/project/DeleteProjectModal.vue'
 import ProjectsLibrary from '../components/project/ProjectsLibrary.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
+import LibraryUnopened from '../components/shell/LibraryUnopened.vue'
 import { controlAction } from '../composables/shell/controlRegistry'
 import type { ProjectLibrary } from '../composables/project/useProjectLibrary'
 import { useDeleteProjectFlow } from '../composables/project/useDeleteProjectFlow'
@@ -51,6 +52,8 @@ import type { FeedbackService } from '../services/feedback'
 const props = defineProps<{
   /** How many Projects this device has saved, read without decoding any; none means a new visitor. */
   projectCount: number
+  /** The Projects on this device couldn't be opened (spec 1018): the count is unknown, and Saved Projects says so. */
+  libraryUnopened?: boolean
   /** Sending a Report: the Menu's Send feedback works here too (spec 0698), so a beader can say the app won't start. */
   feedback: FeedbackService
   /** The library, opened only once its Saved Projects are shown in the Menu (ticket 0716). */
@@ -125,11 +128,13 @@ const boxStyle = computed(() => {
   }
 })
 
+/** Whether the library couldn't be opened: the list says so, with Reload. */
+const libraryFailed = ref(props.libraryUnopened === true)
 /** The library, once the Menu's Saved Projects opened it (ticket 0716); until then the count read at the start. */
 const library = shallowRef<HomepageLibrary>()
 const count = computed(() => (library.value ? library.value.projects.value.length + library.value.sealed.value.length : props.projectCount))
 /** No Projects saved: Welcome's way in makes the first, and the plans show No account alone (ticket 0871). */
-const isNew = computed(() => count.value === 0)
+const isNew = computed(() => count.value === 0 && !libraryFailed.value)
 
 // The sections (tickets 0739, 0744, 0801): one at a time in the box, which never moves; the page itself never scrolls.
 // This list is the one place they are named and ordered: the page draws them and turns between them, the Progress bar
@@ -323,6 +328,8 @@ async function showSavedProjects() {
   libraryLoading.value = true
   try {
     library.value = await props.openLibrary?.()
+  } catch {
+    libraryFailed.value = true
   } finally {
     libraryLoading.value = false
   }
@@ -400,16 +407,17 @@ const savedProjects = controlAction('saved-projects')
                 </AppButton>
                 <!-- Projects library (ticket 0716): the editor with no Project open and the Menu on its list. -->
                 <AppButton size="sm" :action="savedProjects" data-testid="homepage-saved-projects" @click="emit('openSavedProjects')">
-                  <span class="canvas-strip__way-in-name">{{ savedProjects.name(t) }}</span> · {{ count }}
+                  <span class="canvas-strip__way-in-name">{{ savedProjects.name(t) }}</span><template v-if="!libraryFailed"> · {{ count }}</template>
                 </AppButton>
               </template>
             </template>
           </CanvasStrip>
         </div>
-        <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="String(count)" @close="menuOpen = false">
-          <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
+        <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="libraryFailed ? undefined : String(count)" @close="menuOpen = false">
+          <MenuPanel page="homepage" :project-count="count" :count-unknown="libraryFailed" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
           <template #sub="{ depth }">
-            <LoadingState v-if="depth === 1 && libraryLoading" compact :text="t.projects.loading" />
+            <LibraryUnopened v-if="depth === 1 && libraryFailed" list />
+            <LoadingState v-else-if="depth === 1 && libraryLoading" compact :text="t.projects.loading" />
             <ProjectsLibrary
               v-else-if="depth === 1 && library"
               :projects="library.projects.value"
