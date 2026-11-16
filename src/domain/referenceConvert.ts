@@ -1,9 +1,8 @@
 import { colorAt, frameContains, withColors, type BeadChange, type BeadMap } from './canvas'
 import { clamp } from './clamp'
-import { matchFoundColors, type TargetColor } from './convertColors'
+import { matchFoundColors, reduceDelivering, type TargetColor } from './convertColors'
 import { footprintOf } from './footprint'
 import type { GridPosition } from './grid'
-import { reducePictureColors } from './imageColors'
 import { MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, NO_COLOR, packedToHex, pixelPackedAt, type PixelData } from './imageConversion'
 import { frameGeometryOf, positionInLayer } from './layers'
 import { beadsOfLayer, frameOf, withLayer } from './layerRecord'
@@ -55,7 +54,7 @@ export function convertSampled(sampled: readonly SampledPosition[], maxColors: n
     }
     counts.set(hex, (counts.get(hex) ?? 0) + 1)
   }
-  const reduced = reducePictureColors(counts, clamp(maxColors, MIN_IMAGE_COLORS, MAX_IMAGE_COLORS))
+  const reduced = reduceDelivering(counts, clamp(maxColors, MIN_IMAGE_COLORS, MAX_IMAGE_COLORS), targets, new Map())
   const found = matchFoundColors(reduced, targets, new Map())
   const result = new Map(found.map((color) => [color.pictureHex, color.result?.hex]))
   const changes: ReferenceConversion['changes'] = []

@@ -158,4 +158,23 @@ describe('reducePictureColors (ticket 177, ADR 0010)', () => {
       }
     })
   })
+
+  // Ticket 0892: groups that end alike join, and the places that frees go to the picture's next most different colors.
+  it('gives the places a join frees to colors of the picture that are still apart', () => {
+    // A seeded noisy picture of 300 colors (the 12th of the pictures drawn) that used to come out with 11 of the 12 asked.
+    let seed = 7
+    const next = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+    let counts = new Map<string, number>()
+    for (let picture = 0; picture < 12; picture++) {
+      counts = new Map()
+      for (let i = 0; i < 300; i++) {
+        const rgb = { r: Math.floor(next() * 256), g: Math.floor(next() * 256), b: Math.floor(next() * 256) }
+        counts.set(toHex(rgb), 1 + Math.floor(next() * 30))
+      }
+    }
+    const reduced = reducePictureColors(counts, 12)
+    expect(reduced.colors).toHaveLength(12)
+    const labs = reduced.colors.map((color) => toOklab(channelsOf(color.hex)))
+    for (const [at, a] of labs.entries()) for (const b of labs.slice(at + 1)) expect(colorDistance(a, b)).toBeGreaterThanOrEqual(LEAST_COLOR_DISTANCE)
+  })
 })
