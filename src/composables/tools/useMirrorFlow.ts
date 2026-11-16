@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
-import { isMirrorOn, MIRROR_OFF, mirrorFitOf, mirrorGrowthOf, mirrorSettingOf, placeRect, shapeAxesOf, withMirror, withMirrorPlace, type MirrorPlace, type MirrorSetting } from '../../domain/mirror'
+import { fittedCanvasArea, isMirrorOn, MIRROR_OFF, mirrorFitOf, mirrorGrowthOf, mirrorSettingOf, placeRect, shapeAxesOf, withMirror, withMirrorPlace, type FitAnchor, type MirrorPlace, type MirrorSetting } from '../../domain/mirror'
 import type { Project } from '../../domain/project'
 import type { Locale, Translations } from '../../i18n/translations'
 import { movedSelection, selectionFrame, selectionWithEdges, type Selection } from '../../domain/selection'
@@ -38,6 +38,8 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
   /** The Canvas Area as its handles drag it, before the release saves it. */
   const draft = ref<Rect>()
   let adjust: { kind: 'resize'; edges: FrameEdge[]; start: Selection } | { kind: 'move'; origin: GridPosition; start: Selection } | undefined
+  /** What the hand asks of the Area while its handles or inside are dragged, before it sticks to a Fitting size. */
+  let asked: { area: Rect; from: FitAnchor } | undefined
 
   /** The Mirror as drawn and as the bar shows it: the saved one, its Area where a drag has it meanwhile. */
   const setting = computed<MirrorSetting>(() => (draft.value ? { ...saved.value, place: { layer: 'canvas', area: draft.value } } : saved.value))
@@ -87,9 +89,15 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     deps.edit('exempt', (current) => withMirrorPlace(current, to))
   }
 
-  /** A Canvas rectangle as the Mirror's Area: a Mirror-mode drag's, or a Selection's (the Selection bar's Mirror). */
-  function makeFrom(area: Rect) {
-    place({ layer: 'canvas', area })
+  /** A Canvas rectangle as the Mirror's Area: a Mirror-mode drag's, a Selection's (the Selection bar's Mirror), or the
+   * one a handle's drag or a move asks. It takes the nearest Fitting size (ticket 1028), grown right and down but on the
+   * edges `from` keeps, one Undo step; an Area that ended bigger than asked says so in a Message. */
+  function makeFrom(area: Rect, from: FitAnchor = {}) {
+    const project = deps.currentProject()
+    if (!project) return
+    const growth = fittedCanvasArea(project, area, from)
+    const outcome = deps.edit('exempt', (current) => withMirrorPlace(current, { layer: 'canvas', area: growth.area }))
+    if (outcome.kind === 'applied' && Object.keys(growth.grewFor).length > 0) deps.showToast('mirror-grown', mirrorGrownMessage(deps.messages(), deps.locale(), saved.value, growth), 'info')
   }
 
   /** Mirror the whole Frame (MarginSheet card). */
@@ -110,11 +118,14 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     else if (target.kind === 'inside') adjust = { kind: 'move', origin: cell, start }
   }
 
-  /** The held handle or inside dragged to a cell: the Area follows, as the Selection does. */
+  /** The held handle or inside dragged to a cell: the Area follows, as the Selection does, at the nearest Fitting size
+   * (ticket 1028), the edge opposite a dragged handle kept. */
   function dragArea(cell: GridPosition) {
-    if (!adjust) return
+    const project = deps.currentProject()
+    if (!adjust || !project) return
     const moved = adjust.kind === 'resize' ? selectionWithEdges(adjust.start, adjust.edges, cell) : movedSelection(adjust.start, cell.row - adjust.origin.row, cell.column - adjust.origin.column)
-    draft.value = selectionFrame(moved)
+    asked = { area: selectionFrame(moved), from: adjust.kind === 'resize' ? keptEdges(adjust.edges) : {} }
+    draft.value = fittedCanvasArea(project, asked.area, asked.from).area
   }
 
   /** An arrow on the Mirror bar's move grip (ticket 0808): the Canvas Area moves by that many beads, one Undo step, as a
@@ -124,14 +135,17 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     if (start) makeFrom(selectionFrame(movedSelection(start, rows, columns)))
   }
 
-  /** Let go: the Area is saved where the drag left it, one Undo step; nothing when it did not change. */
+  /** Let go: the Area is saved where the drag left it, one Undo step, with the Message if it stuck bigger than the hand
+   * asked; nothing when it did not change. */
   function releaseArea() {
     const area = draft.value
+    const ask = asked
     adjust = undefined
+    asked = undefined
     draft.value = undefined
     const before = saved.value.place
-    if (!area || (before?.layer === 'canvas' && ['row', 'column', 'rows', 'columns'].every((key) => before.area[key as keyof Rect] === area[key as keyof Rect]))) return
-    makeFrom(area)
+    if (!area || !ask || (before?.layer === 'canvas' && ['row', 'column', 'rows', 'columns'].every((key) => before.area[key as keyof Rect] === area[key as keyof Rect]))) return
+    makeFrom(ask.area, ask.from)
   }
 
   return {
@@ -155,4 +169,13 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     releaseArea,
     moveAreaBy,
   }
+}
+
+/** The edges a handle's drag keeps where they are as the Area grows to fit (ticket 1028): the one opposite each dragged
+ * edge, in the directions the handle resizes. */
+function keptEdges(edges: readonly FrameEdge[]): FitAnchor {
+  const kept = (first: FrameEdge, last: FrameEdge) => (edges.includes(first) ? 'last' : edges.includes(last) ? 'first' : undefined)
+  const leftRight = kept('left', 'right')
+  const topBottom = kept('top', 'bottom')
+  return { ...(leftRight ? { leftRight } : {}), ...(topBottom ? { topBottom } : {}) }
 }

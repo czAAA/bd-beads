@@ -180,6 +180,23 @@ describe('useSelectionGesture', () => {
       expect(gesture.hasClipboard()).toBe(false)
     })
 
+    it('in Mirror mode sticks the Area to Fitting sizes for the kept settings, the pressed corner kept, and tells the shell what was asked (ticket 1028)', () => {
+      const kept: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, leftRight: true }, counts: { leftRight: 2, topBottom: 1 }, place: null }
+      const { gesture } = setup({ ...makeProject(), mirror: kept })
+      gesture.beginPress(20, 5, undefined, true)
+      gesture.extendPress(21, 2)
+      expect(gesture.selection.value).toMatchObject({ top: 20, left: 0, rows: 2, columns: 6 })
+      gesture.extendPress(21, 0)
+      expect(gesture.selection.value).toMatchObject({ top: 20, left: 0, rows: 2, columns: 6 })
+      gesture.endPress()
+      expect(gesture.lastMarked()).toEqual({ asked: { row: 20, column: 0, rows: 2, columns: 6 }, from: { leftRight: 'last', topBottom: 'first' } })
+      gesture.beginPress(20, 1)
+      gesture.extendPress(21, 3)
+      gesture.endPress()
+      expect(gesture.selection.value).toMatchObject({ columns: 3 })
+      expect(gesture.lastMarked()).toBeUndefined()
+    })
+
     it('ignores a move or an end with no press in progress', () => {
       const { gesture, commitGridChange } = setup()
 

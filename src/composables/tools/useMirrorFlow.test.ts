@@ -5,6 +5,7 @@ import { MIRROR_OFF, mirrorSettingOf, withAxisToggled, withMirrorCount, withMirr
 import { en } from '../../i18n/en'
 import type { Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
+import { withLayers } from '../../testUtils/layerFields'
 import { useMirrorFlow } from './useMirrorFlow'
 
 /** The flow over a real Edit and Undo history, on a 5 × 3 loom Frame or, `open`, the Canvas with the Frame removed. */
@@ -148,5 +149,103 @@ describe('useMirrorFlow (ADR 0082, ticket 0750)', () => {
     flow.update(withMirrorFold(withAxisToggled(flow.setting.value, 'radial'), 4))
     expect(flow.rect.value).toEqual({ row: 0, column: 0, rows: 8, columns: 8 })
     expect(showToast).toHaveBeenLastCalledWith('mirror-grown', 'Mirror area grown to 8×8 so Radial with Fold 4 lines up.', 'info')
+  })
+})
+
+describe('the Area sticks to Fitting sizes as it is dragged, made or moved (ticket 1028)', () => {
+  /** An open loom Canvas whose Area of 6 × 3 at (1, 2) holds 2 Left–right Axes in Repeat: its width goes in threes. */
+  function inThrees() {
+    const { flow, harness, showToast } = setup(true)
+    flow.makeFrom(area)
+    flow.update(withMirrorCount(withMirrorMode(flow.setting.value, 'repeat'), 'leftRight', 2))
+    expect(flow.rect.value).toEqual(area)
+    showToast.mockClear()
+    return { flow, harness, showToast }
+  }
+  const placeOf = (project: Project | undefined) => mirrorSettingOf(project!).place
+
+  it('shows a handle\'s drag only at Fitting sizes, the nearest not smaller than the pointer, and says so once on release', () => {
+    const { flow, harness, showToast } = inThrees()
+    flow.pressArea({ kind: 'handle', edges: ['right'] }, { row: 2, column: 7 })
+    flow.dragArea({ row: 2, column: 10 })
+    expect(flow.rect.value).toEqual({ ...area, columns: 9 })
+    flow.dragArea({ row: 2, column: 8 })
+    expect(flow.rect.value).toEqual({ ...area, columns: 9 })
+    expect(showToast).not.toHaveBeenCalled()
+    flow.releaseArea()
+    expect(placeOf(harness.project)).toEqual({ layer: 'canvas', area: { ...area, columns: 9 } })
+    expect(showToast).toHaveBeenCalledTimes(1)
+    expect(showToast).toHaveBeenCalledWith('mirror-grown', 'Mirror area grown to 9×3 so Repeat with 2 Left–right axes lines up.', 'info')
+    harness.history.onUndo()
+    expect(placeOf(harness.project)).toEqual({ layer: 'canvas', area })
+  })
+
+  it('keeps the edge opposite a dragged handle, and never goes below the smallest Fitting size nor changes a count', () => {
+    const { flow, harness, showToast } = inThrees()
+    flow.pressArea({ kind: 'handle', edges: ['left'] }, { row: 2, column: 2 })
+    flow.dragArea({ row: 2, column: 1 })
+    expect(flow.rect.value).toEqual({ ...area, column: -1, columns: 9 })
+    flow.dragArea({ row: 2, column: 7 })
+    expect(flow.rect.value).toEqual({ ...area, column: 5, columns: 3 })
+    flow.releaseArea()
+    expect(mirrorSettingOf(harness.project!)).toMatchObject({ counts: { leftRight: 2 }, place: { area: { ...area, column: 5, columns: 3 } } })
+    expect(showToast).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows no Message for a drag that ends on a Fitting size, nor for a move on loom, which keeps the size', () => {
+    const { flow, harness, showToast } = inThrees()
+    flow.pressArea({ kind: 'handle', edges: ['right'] }, { row: 2, column: 7 })
+    flow.dragArea({ row: 2, column: 10 })
+    flow.releaseArea()
+    expect(placeOf(harness.project)).toEqual({ layer: 'canvas', area: { ...area, columns: 9 } })
+    flow.pressArea({ kind: 'inside' }, { row: 2, column: 4 })
+    flow.dragArea({ row: 3, column: 5 })
+    flow.releaseArea()
+    flow.moveAreaBy(0, 1)
+    expect(placeOf(harness.project)).toEqual({ layer: 'canvas', area: { row: 2, column: 4, rows: 3, columns: 9 } })
+    expect(showToast).not.toHaveBeenCalled()
+  })
+
+  it('makes an Area from a rectangle at a Fitting size for the kept settings, grown right and down, and says so', () => {
+    const { flow, harness, showToast } = inThrees()
+    flow.close()
+    flow.makeFrom({ row: 4, column: 4, rows: 2, columns: 4 })
+    expect(placeOf(harness.project)).toEqual({ layer: 'canvas', area: { row: 4, column: 4, rows: 2, columns: 6 } })
+    expect(showToast).toHaveBeenCalledWith('mirror-grown', 'Mirror area grown to 6×2 so Repeat with 2 Left–right axes lines up.', 'info')
+    // A Mirror-mode drag up and left keeps the corner it started from.
+    flow.makeFrom({ row: 4, column: 4, rows: 2, columns: 4 }, { leftRight: 'last', topBottom: 'last' })
+    expect(placeOf(harness.project)).toEqual({ layer: 'canvas', area: { row: 4, column: 2, rows: 2, columns: 6 } })
+    harness.history.onUndo()
+    expect(placeOf(harness.project)).toEqual({ layer: 'canvas', area: { row: 4, column: 4, rows: 2, columns: 6 } })
+  })
+
+  it('keeps Fold 4 on loom square as a handle is dragged', () => {
+    const { flow } = setup(true)
+    flow.makeFrom({ row: 0, column: 0, rows: 6, columns: 6 })
+    flow.update(withMirrorFold(withAxisToggled(flow.setting.value, 'radial'), 4))
+    flow.pressArea({ kind: 'handle', edges: ['right'] }, { row: 3, column: 5 })
+    flow.dragArea({ row: 3, column: 8 })
+    expect(flow.rect.value).toEqual({ row: 0, column: 0, rows: 9, columns: 9 })
+    flow.dragArea({ row: 3, column: 3 })
+    expect(flow.rect.value).toEqual({ row: 0, column: 0, rows: 4, columns: 4 })
+    flow.releaseArea()
+    expect(flow.setting.value.fold).toBe(4)
+  })
+
+  it('grows a moved Area on peyote with a Drop above 1 where its new place does not fit, one Undo step with the Message', () => {
+    const peyote = (changeFrame(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }), { remove: true }) as { project: Project }).project
+    const harness = editHarness(withLayers(peyote, { techniqueSettings: { peyoteDrop: 2 } }))
+    const showToast = vi.fn()
+    const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, showToast, messages: () => en, locale: () => 'en' })
+    flow.makeFrom({ row: 0, column: 0, rows: 4, columns: 8 })
+    const before = flow.rect.value!
+    showToast.mockClear()
+    const columns = [1, 2, 3].map(() => {
+      flow.moveAreaBy(0, 1)
+      return flow.rect.value!.columns
+    })
+    expect(columns.some((each) => each > before.columns)).toBe(true)
+    expect(columns.every((each) => each >= before.columns)).toBe(true)
+    expect(showToast).toHaveBeenCalled()
   })
 })

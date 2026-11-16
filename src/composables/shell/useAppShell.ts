@@ -291,6 +291,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     beginPress: beginSelectPress,
     extendPress: extendSelection,
     endPress: endSelectPress,
+    lastMarked,
     cancelPress: cancelSelectPress,
     cancel: backOutOfSelect,
     leaveSelectTool,
@@ -441,10 +442,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
   function endSelectPressFraming() {
     endSelectPress()
     if (mirror.marking.value && selection.value) {
-      const area = selectionFrame(selection.value)
+      const marked = lastMarked()
+      const area = marked?.asked ?? selectionFrame(selection.value)
       resetSelection()
+      // A drag out and back to its bead asks one bead, which makes no Area, however big it would stick.
       if (area.rows * area.columns > 1) {
-        mirror.makeFrom(area)
+        mirror.makeFrom(area, marked?.from)
         onSelectTool(toolBeforeMirror)
       }
       return

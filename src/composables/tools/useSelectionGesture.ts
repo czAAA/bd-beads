@@ -14,6 +14,7 @@ import {
   pasteStampOnLayer,
   pieceSelectionOnLayer,
   selectionBetween,
+  selectionFrame,
   selectionWithEdges,
   type CopiedBlock,
   type PasteLoss,
@@ -25,8 +26,9 @@ import { frameAllows } from '../../domain/frameShape'
 import { laidFrame } from '../../domain/frameOrientation'
 import { frameOf, layerOf } from '../../domain/layerRecord'
 import type { FrameEdge } from '../../domain/frame'
+import type { Rect } from '../../domain/canvas'
 import type { EditFn } from '../project/useEdit'
-import { canvasMirrors, isMirrorOn, MIRROR_OFF, mirroredOnCanvas, type MirrorSetting } from '../../domain/mirror'
+import { canvasMirrors, fittedCanvasArea, isMirrorOn, MIRROR_OFF, mirroredOnCanvas, type FitAnchor, type MirrorSetting } from '../../domain/mirror'
 import type { FramePress } from '../../rendering/frameHandles'
 
 /** The drags a finger that comes back from the bezel can pick back up (ticket 0805): marking out a Selection, resizing one
@@ -134,8 +136,22 @@ export function useSelectionGesture(
     // The rectangle follows the pointer anywhere, across the Frame and its margin; the Selection stays on the layer the
     // drag began on (ticket 491), and selects only what that layer shows (ticket 0659).
     press.focus = { row, column }
-    selection.value = selectionBetween(press.anchor, press.focus, press.layer)
+    const marked = press.marking ? markedArea(press) : undefined
+    selection.value = marked ? stuckSelection(fittedCanvasArea(project, marked.asked, marked.from).area, press.layer) : selectionBetween(press.anchor, press.focus, press.layer)
     return true
+  }
+
+  /** What a Mirror-mode drag asks of the Area (ticket 1028): the rectangle from the press to the pointer, and the press's
+   * corner kept where it is as the Area sticks to a Fitting size. */
+  function markedArea(press: NonNullable<typeof selectPress.value>): MarkedArea {
+    const asked = selectionFrame(selectionBetween(press.anchor, press.focus))
+    const from: FitAnchor = { leftRight: press.focus.column < press.anchor.column ? 'last' : 'first', topBottom: press.focus.row < press.anchor.row ? 'last' : 'first' }
+    return { asked, from }
+  }
+
+  /** The last Mirror-mode drag's ask, for the shell to make the Area from on release (ticket 1028); none for any other. */
+  function lastMarked(): MarkedArea | undefined {
+    return lastDrag?.kind === 'mark' && lastDrag.press.marking ? markedArea(lastDrag.press) : undefined
   }
 
   /** Ends a Select press: in paste mode, click or drag, one stamp at the press point (ticket 437); otherwise a drag
@@ -468,6 +484,7 @@ export function useSelectionGesture(
     beginPress,
     extendPress,
     endPress,
+    lastMarked,
     cancelPress,
     cancel,
     leaveSelectTool,
@@ -496,4 +513,15 @@ export function useSelectionGesture(
     /** Whether a block is copied, ready for Ctrl/Cmd+V (the Paste control's enabled state). */
     hasClipboard: () => copiedBlock.value !== undefined,
   }
+}
+
+/** What a Mirror-mode drag asks of the Area (ticket 1028): its rectangle from press to pointer, and the edges it keeps. */
+export interface MarkedArea {
+  asked: Rect
+  from: FitAnchor
+}
+
+/** A Canvas rectangle as the Selection a Mirror-mode drag shows (ticket 1028), on the layer the drag began on. */
+function stuckSelection(area: Rect, layer: Layer): Selection {
+  return { top: area.row, left: area.column, rows: area.rows, columns: area.columns, layer }
 }
