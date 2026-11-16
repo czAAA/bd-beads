@@ -111,6 +111,37 @@ for (const [situation, breakIt] of failures) {
   })
 }
 
+// Cloudflare answers `/index.html` with a redirect to `/` (the test hosting does too), and a browser refuses a redirected
+// response as the answer to a page load (ticket 1017).
+test('keeps no redirected copy of a page, so the copy on the device can open', async ({ page }) => {
+  await openAndInstall(page)
+  const kept = await page.evaluate(async () => {
+    const cache = await caches.open((await caches.keys())[0]!)
+    const copy = await cache.match(new URL('index.html', document.baseURI).href)
+    return copy ? { redirected: copy.redirected, text: await copy.text() } : null
+  })
+  expect(kept).not.toBeNull()
+  expect(kept!.redirected).toBe(false)
+  expect(kept!.text).toContain('<div id="app">')
+})
+
+// Cloudflare Access sends a page load without a session to its sign-in page; the worker lets that through instead of
+// answering from the device, where the person could never sign in again (ticket 1017).
+test('shows the sign-in page, not the copy on the device, once the Access session has run out', async ({ page }) => {
+  await openAndInstall(page)
+  host.accessExpired = true
+
+  await page.reload()
+  await expect(page.getByRole('heading', { name: host.signInText })).toBeVisible()
+  await expect(page.getByTestId('app-canvas')).toHaveCount(0)
+
+  host.accessExpired = false
+  // Signed in again: the app opens, with the library it had.
+  await page.goto(host.url)
+  await expect(page.getByTestId('app-canvas')).toBeVisible()
+  expect(await savedNames(page)).toContain('Fixture loom')
+})
+
 test('is installable: a manifest with icons, standalone, and no installability error', async ({ page, context }) => {
   await openAndInstall(page)
   const cdp = await context.newCDPSession(page)

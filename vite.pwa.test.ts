@@ -46,6 +46,13 @@ describe('renderServiceWorker', () => {
     expect(same).toBe(before)
     expect(changed).not.toBe(before)
   })
+
+  it('names the cache after the worker too, so a fixed worker never reuses what an older one kept (ticket 1017)', () => {
+    const dir = folder({ 'index.html': 'one' })
+    const before = cacheNameOf(renderServiceWorker(template, dir).source)
+    const fixed = cacheNameOf(renderServiceWorker(`${template}\n// fixed`, dir).source)
+    expect(fixed).not.toBe(before)
+  })
 })
 
 describe('the production build (ticket 69)', () => {
