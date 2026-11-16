@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { provideConvertImageWizard, type ConvertImageWizard } from '../../composables/import/useConvertImageWizard'
+import { useElementSize } from '../../composables/ui/useElementSize'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { convertLayoutFor } from '../../domain/convertLayout'
 import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import ConvertColumn from './ConvertColumn.vue'
+import ConvertDock from './ConvertDock.vue'
 import ConvertImagePreview from './ConvertImagePreview.vue'
 
-// Convert image as an App page (tickets 0756, 0896; ADR 0086; ConvertImage card DS-1): the beads are the page, the
-// preview taking the room beside a short column of the decisions most pictures need, with Create Project at its foot
-// (under 1024 px or in portrait the column stacks under the preview). Close and Escape ask to leave.
+// Convert image as an App page (tickets 0756, 0896, 0911; ADR 0086; ConvertImage card DS-1, DS-4): the beads are the page.
+// From 1024 px in landscape the preview takes the room beside a short column of decisions, Create Project at its foot;
+// otherwise a dock holds the settings and Create Project, one sheet at a time (Phone, Tablet, Side). Escape asks to leave.
 const props = defineProps<{
   wizard: ConvertImageWizard
   readClipboardImage: () => Promise<File | undefined>
@@ -24,6 +27,9 @@ const { wizard } = props
 provideConvertImageWizard(wizard)
 
 const rootEl = ref<HTMLElement>()
+// The layout follows the page's own size on every resize and turn (DS-4); with no size yet it is the Desktop's.
+const { width: pageWidth, height: pageHeight } = useElementSize(rootEl, { box: 'border-box' })
+const layout = computed(() => convertLayoutFor(pageWidth.value, pageHeight.value))
 
 // The page is the top layer while it shows, so Escape asks to leave; a press elsewhere (the strip's Menu) goes through.
 useOverlayLayer({ isOpen: () => true, root: () => rootEl.value, close: () => emit('close'), outside: 'through', onOutsidePress: () => undefined })
@@ -77,6 +83,7 @@ const dropLimits = computed(() => imageLimitsText(locale.value, words.value.drop
   <div
     ref="rootEl"
     class="convert-page"
+    :data-layout="layout"
     role="region"
     :aria-label="words.title"
     data-testid="convert-image-wizard"
@@ -85,10 +92,11 @@ const dropLimits = computed(() => imageLimitsText(locale.value, words.value.drop
     @drop="onDrop"
   >
     <div class="convert-page__preview">
-      <ConvertImagePreview @paste="pasteFromClipboard" />
+      <ConvertImagePreview :layout="layout" @paste="pasteFromClipboard" />
     </div>
 
-    <ConvertColumn class="convert-page__column" @paste="pasteFromClipboard" @create="emit('create')" />
+    <ConvertColumn v-if="layout === 'desktop'" class="convert-page__column" @paste="pasteFromClipboard" @create="emit('create')" />
+    <ConvertDock v-else :layout="layout" @paste="pasteFromClipboard" @create="emit('create')" />
 
     <div v-if="dropping" class="convert-page__dropping" data-testid="convert-dropping">
       <AppIcon name="image" :size="34" />
@@ -154,28 +162,26 @@ const dropLimits = computed(() => imageLimitsText(locale.value, words.value.drop
   color: var(--muted);
 }
 
-/* Under 1024 px or in portrait the column stacks under the preview in the same order, nothing cut (DS-1; the phone's
- * own layout is ticket 0911). On a short page the preview takes at most half and the column keeps room (ticket 0820). */
-@media (max-width: 63.99rem), (orientation: portrait) {
-  .convert-page {
-    flex-direction: column;
-  }
-
-  .convert-page__preview {
-    flex: 0 1 min(var(--convert-preview-phone), 50%);
-    min-height: min(var(--convert-preview-min), 40%);
-    border-bottom: 1px solid var(--panel-rule);
-  }
-
-  .convert-page__column {
-    flex: 1 1 0;
-    width: auto;
-  }
+/* A Phone and a Tablet stack the beads over the dock; Side puts the dock's column at the right (DS-4). The preview takes
+ * what the dock or its open sheet leaves, so the beads re-fit as a sheet opens. */
+.convert-page[data-layout='phone'],
+.convert-page[data-layout='tablet'] {
+  flex-direction: column;
 }
 
-@media (min-width: 40rem) and (orientation: portrait) {
-  .convert-page__preview {
-    flex-basis: min(var(--convert-preview-tablet), 50%);
-  }
+.convert-page[data-layout='phone'] .convert-page__preview,
+.convert-page[data-layout='tablet'] .convert-page__preview {
+  border-bottom: 1px solid var(--panel-rule);
+}
+
+/* The half rule (DS-4): while a sheet is open on a Phone the beads keep half the window's height, whatever stands above
+ * the page; the dock and its sheet give way and the sheet scrolls inside. */
+.convert-page[data-layout='phone']:has(.convert-sheet) .convert-page__preview {
+  box-sizing: border-box;
+  min-height: 50dvh;
+}
+
+.convert-page[data-layout='side'] {
+  padding-inline-start: env(safe-area-inset-left);
 }
 </style>

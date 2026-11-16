@@ -1323,6 +1323,16 @@ export interface Translations {
       beadAndTechnique: string
       moreForSize: string
       moreForColors: string
+      /** The dock's Picture and Bead settings, at most 9 letters (ConvertImage card DS-4, ticket 0911). */
+      dockPicture: string
+      dockBead: string
+      sheetBeadAndTechnique: string
+      /** The dock's row of five settings, as a group's name. */
+      settingsLabel: string
+      /** A dock sheet's Close button. */
+      sheetClose: string
+      /** A dock setting's accessible name: "Width: 60 beads". */
+      settingName: string
       matchedBead: string
       matchedDefault: string
       matchedExact: string

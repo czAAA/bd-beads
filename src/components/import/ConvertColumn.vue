@@ -1,22 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useConvertImageWizardState, type ConvertPopover as PopoverName } from '../../composables/import/useConvertImageWizard'
-import { useConvertColorsReach } from '../../composables/import/useConvertColorsReach'
+import { useConvertColorsReadings } from '../../composables/import/useConvertColorsReadings'
 import { useConvertNeighbours } from '../../composables/import/useConvertNeighbours'
-import { useConvertSizeReadings } from '../../composables/import/useConvertSizeReadings'
 import { beadLabel, offeredBeads } from '../../domain/beads'
 import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { groupThousands } from '../../domain/formatNumber'
-import { MIN_IMAGE_COLORS } from '../../domain/imageConversion'
-import { plural, pluralForm } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
 import IconButton from '../ui/IconButton.vue'
 import FormField from '../ui/form/FormField.vue'
-import ValueSlider from '../ui/form/ValueSlider.vue'
+import ConvertColorsSlider from './ConvertColorsSlider.vue'
+import ConvertWidthSlider from './ConvertWidthSlider.vue'
 import BeadSection from '../project/BeadSection.vue'
 import TechniqueSection from '../project/TechniqueSection.vue'
 import ConvertBackgroundSection from './ConvertBackgroundSection.vue'
@@ -35,14 +32,10 @@ import ConvertSizeSection from './ConvertSizeSection.vue'
 // Each one's more is a popover of its own button; Background's lives here too, so it stacks in the column under 1024 px.
 const emit = defineEmits<{ paste: []; create: [] }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
-const readings = useConvertSizeReadings(wizard)
 const has = computed(() => wizard.hasPicture.value)
-const offBody = computed(() => (has.value ? undefined : words.value.addPictureFirst))
-/** A value an off slider shows before a picture (DS-1). */
-const NONE = '—'
 
 const pictureEl = ref<HTMLElement>()
 const beadEl = ref<HTMLElement>()
@@ -58,47 +51,7 @@ const isOpen = (name: PopoverName) => wizard.popover.value === name
 
 const beadButton = computed(() => `${beadLabel(wizard.bead.value)} · ${techniqueName(t.value, wizard.technique.value)}`)
 
-/** The Colors slider's end (DS-2, ticket 0904): what is woven; a larger count is typed in the neighbours' card. */
-const COLORS_SLIDER_END = 40
-const colorsEnd = computed(() => Math.min(COLORS_SLIDER_END, wizard.colorsMax.value))
-/** The Colors slider's marks (DS-2), on the doubling scale. */
-const COLORS_MARKS = [5, 10, 20]
-const colorsMarks = computed(() =>
-  COLORS_MARKS.filter((value) => value > MIN_IMAGE_COLORS && value < colorsEnd.value).map((value) => ({ value, label: String(value) })),
-)
-/** The most Finishes the line under Colors names; more are counted (DS-2). */
-const NAMED_FINISHES = 3
-/** Under Colors, where they are matched (DS-1): the Bead's palette, the Default Palette, or the picture's own. */
-const matchedLine = computed(() => {
-  const source = wizard.source.value
-  if (source === 'exact') return words.value.matchedExact
-  if (source === 'default') return words.value.matchedDefault
-  if (source === 'my-beads') return plural(locale.value, wizard.myBeadsCodes.value.length, words.value.myBeads.matched)
-  const bead = beadLabel(wizard.bead.value).toLocaleLowerCase(locale.value)
-  const on = wizard.finishesApplied.value
-  // With Finishes on (ticket 0901, DS-2): their names, or past three their count, so the line stays two lines at most.
-  if (on.length > NAMED_FINISHES) return fillBlanks(pluralForm(locale.value, on.length, words.value.finish.matchedMany), { bead }, { count: on.length })
-  if (on.length > 0) {
-    const names = on.map((finish) => t.value.palette.beadColors.finishes[finish].toLocaleLowerCase(locale.value))
-    return fillBlanks(words.value.finish.matched, { bead, finishes: names.join(words.value.finish.separator) })
-  }
-  return fillBlanks(words.value.matchedBead, { bead })
-})
-/** The Colors value: the count, or with fewer found than asked both numbers ("12 asked · 7 found", ticket 0928). */
-const colorsValue = computed(() => {
-  const asked = wizard.maxColors.value
-  const found = wizard.foundColorCount.value
-  if (found >= asked) return plural(locale.value, asked, words.value.colorsCount)
-  return fillBlanks(words.value.fewerFound.asked, { asked: groupThousands(asked, locale.value), found: groupThousands(found, locale.value) })
-})
-/** The last count that changes the beads (ticket 0928): the track is accent only up to it. */
-const colorsReach = useConvertColorsReach({ count: wizard.maxColors, found: wizard.foundColorCount, beadsAt: wizard.beadsAtColors, beadsShown: wizard.beadsShown })
-/** "40+" where the picture has more colors than the slider reaches, else "max 9" (DS-2). */
-const colorsMaxLabel = computed(() =>
-  wizard.colorsMax.value > colorsEnd.value
-    ? fillBlanks(words.value.neighbours.pastEnd, { value: colorsEnd.value })
-    : fillBlanks(words.value.maxLabel, { value: groupThousands(wizard.colorsMax.value, locale.value) }),
-)
+const { matchedLine } = useConvertColorsReadings()
 
 /** The neighbours' card (DS-2, ticket 0904): shown while the Colors slider is focused or pressed, or focus is inside it;
  * never over an open popover. */
@@ -209,22 +162,7 @@ function closeNeighbours(refocus: boolean) {
     </ConvertPopover>
 
     <section ref="sizeEl" class="convert-column__section" :aria-label="words.sizeTitle">
-      <ValueSlider
-        :label="t.form.widthLabel"
-        :model-value="wizard.sizing.value.width"
-        :min="wizard.sizing.value.range.min"
-        :max="wizard.sizing.value.range.max"
-        :value="has ? readings.width.value.value : NONE"
-        :secondary="has ? readings.width.value.secondary : undefined"
-        :valuetext="has ? readings.width.value.valuetext : NONE"
-        :min-label="has ? readings.width.value.minLabel : ''"
-        :max-label="has ? readings.width.value.maxLabel : ''"
-        :marks="has ? readings.widthMarks.value : undefined"
-        :off-body="offBody"
-        doubling
-        testid="convert-width"
-        @update:model-value="wizard.setWidth"
-      >
+      <ConvertWidthSlider>
         <template #action>
           <IconButton
             icon="size"
@@ -238,7 +176,7 @@ function closeNeighbours(refocus: boolean) {
             @click="wizard.togglePopover('size')"
           />
         </template>
-      </ValueSlider>
+      </ConvertWidthSlider>
       <AppNote v-if="has && wizard.largeSchema.value" data-testid="convert-large-schema">{{ fillBlanks(words.largeSchema, { beads: LARGE_SCHEMA_BEADS }) }}</AppNote>
     </section>
     <ConvertPopover
@@ -261,23 +199,7 @@ function closeNeighbours(refocus: boolean) {
       @focusout="leaveNeighbours"
       @pointerdown="showNeighbours"
     >
-      <ValueSlider
-        :label="words.colorsLabel"
-        :model-value="wizard.maxColors.value"
-        :min="MIN_IMAGE_COLORS"
-        :max="colorsEnd"
-        :value="has ? colorsValue : NONE"
-        :valuetext="has ? colorsValue : NONE"
-        :min-label="has ? String(MIN_IMAGE_COLORS) : ''"
-        :max-label="has ? colorsMaxLabel : ''"
-        :marks="has ? colorsMarks : undefined"
-        :reach="has ? colorsReach : undefined"
-        :off-body="offBody"
-        doubling
-        :page-step="5"
-        testid="convert-colors-slider"
-        @update:model-value="wizard.setMaxColors"
-      >
+      <ConvertColorsSlider>
         <template #action>
           <IconButton
             icon="palette"
@@ -291,7 +213,7 @@ function closeNeighbours(refocus: boolean) {
             @click="wizard.togglePopover('colors')"
           />
         </template>
-      </ValueSlider>
+      </ConvertColorsSlider>
       <ConvertColorsNeighbours
         v-if="neighboursOpen"
         :fewer="neighbours.fewer.value"
@@ -410,11 +332,5 @@ function closeNeighbours(refocus: boolean) {
   margin: 0;
   font: var(--type-meta-small);
   color: var(--muted);
-}
-
-@media (max-width: 63.99rem), (orientation: portrait) {
-  .convert-column {
-    border-left: 0;
-  }
 }
 </style>

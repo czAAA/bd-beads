@@ -2,7 +2,7 @@
 
 The Convert image page: an App page (ADR 0085, ADR 0086) where a picture becomes a new Project, a live bead preview beside the steps, every change shown at once (spec 0645, ADR 0010). Designed in ticket 0646 as a large popup, made an App page in ticket 0756, and **redesigned for desktop in ticket 0778** (design canvas "Convert image, desktop redesign", link on ticket 0778 in the private docs repo): one scrolling pane of steps that the Progress bar follows, Picture and Bead & Technique as one step, Background in place of Cut out, a floating bar of tools under the picture, Keep the picture's shape in place of the chain, Make empty as a tool in place of Treat as empty, and a part of the beads kept with Select.
 
-Built in ticket 0780 (As built, below). The phone and tablet layout is signed off (DS-4, ticket 0910: On a phone and a tablet, below) and built by tickets 0911 and 0919; until they land the rules under 1024 px below are 0756's, applied to the one pane.
+Built in ticket 0780 (As built, below). The phone and tablet layout is signed off (DS-4, ticket 0910: On a phone and a tablet, below) and built by tickets 0911 (the page, the dock, the sheets) and 0919 (the Colors list, Clean up and Lighting as phone sheets; until it lands each shows its popover's content in the sheet).
 
 ## The quiet converter (DS-1, ticket 0895)
 
@@ -435,3 +435,13 @@ What the mark for an approximate swatch (DS-2) had to settle:
 - **The count line** reads "{codes} · {n} measured" under Match to (Bead colors and My beads), with the legend (a 12 swatch with the mark, "approximate") at its right, wrapping. It replaces ticket 0887's separate "n of total measured" line: the count of measured codes now shows for any catalog, including none (0) and all.
 - **The picker's head swatch** is 16 with the mark; the Tool pill's colour popover keeps its 20 plain swatch (no mark).
 - **Left as is.** BeadColors' Info note about approximate colors stays until every code is measured. The "· measured" sub-line is in BeadColors' rows; My beads' second line keeps the color's name.
+
+## As built (ticket 0911)
+
+What the phone, tablet and side layouts (DS-4, block 0911a) had to settle:
+
+- **The layout is read from the page's own size** (`convertLayoutFor`, `domain/convertLayout.ts`) on every resize: portrait under 600 is Phone, portrait from 600 Tablet, landscape under 1024 Side, landscape from 1024 the Desktop's column. A square page is landscape; a page not yet measured is the Desktop's.
+- **One dock, three shapes.** `ConvertDock` holds the result, the five settings (Picture, Bead, Width, Colors, Clean up) and Create Project. A Phone's sheet takes the dock's place; Side's takes the column's; a Tablet's is a 560 card in the flow above its dock, so the beads fit above it. The sheets reuse the popovers' content (`ConvertWidthSlider`, `ConvertColorsSlider`, the sections) inside `ConvertSheet`, and the popover rules that stacked the column in portrait are gone.
+- **The half detent** is `50dvh` less the strip and both insets, set as the sheet body's `max-height`; taller content scrolls inside. Escape, Close, a drag down on the grab zone and a press on the beads close it, and focus goes back to the setting.
+- **The beads fit close** (`--convert-fit-phone`, `--convert-fit-tablet`, bottom room for the bar); the zoom chip is its own box above the bar; the tool's chip stands 8 below the top. The settings' icons are 18, the nearest of the icon sizes.
+- **Left to ticket 0919:** the Colors list, Clean up and Lighting keep their popover content; the Colors sheet keeps the neighbours' card with its "type a number" field rather than the head's number field; no sheet is dragged taller than its half.

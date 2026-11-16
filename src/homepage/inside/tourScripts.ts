@@ -229,10 +229,18 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.pressWith('convert-choose-file', () => hand.canvas.convertSession.value?.setFile(picture))
     await hand.find('convert-image-canvas')
     await hand.wait(HOLD.convertPicture)
-    await hand.press('convert-colors-more')
-    await hand.wait(HOLD.convertColors)
-    // Pressed again, the button closes its popover, so the strip's Close is not taken as a press outside it.
-    await hand.press('convert-colors-more')
+    // In a box under 1024px wide the converter is docked (ticket 0911): the Colors sheet, then its list, closed by its Close.
+    if (await present(hand, 'convert-dock')) {
+      await hand.press('convert-setting-colors-count')
+      await hand.press('convert-colors-more')
+      await hand.wait(HOLD.convertColors)
+      await hand.press('convert-sheet-close')
+    } else {
+      await hand.press('convert-colors-more')
+      await hand.wait(HOLD.convertColors)
+      // Pressed again, the button closes its popover, so the strip's Close is not taken as a press outside it.
+      await hand.press('convert-colors-more')
+    }
     await hand.press('convert-close')
     if (await present(hand, 'leave-converter-modal')) await hand.press('confirm-modal-confirm')
   },
