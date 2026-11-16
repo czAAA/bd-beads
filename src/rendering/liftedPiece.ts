@@ -220,15 +220,15 @@ function addFillet(path: Path2D, corner: InnerCorner, grow: number, r: number, m
   }
 }
 
-/** The piece's shapes, built in one pass over the cells: each grown past its body, rounded, as one path, so overlapping
- * cells make one outline. The ground's (the shadows' too) and the contour's, in the space the context draws in (`base`,
- * where beads are turned: each put into that). A round bead's cell takes its half circle, and inner corners are rounded. */
-function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined, rows: boolean): { ground: Path2D; contour: Path2D } {
+/** The piece's shapes (or those `shapes` names), built in one pass over the cells, each grown past its body and rounded as
+ * one path: the ground's and the contour's, in the space the context draws in (`base`, where beads are turned: each put
+ * into that). A round bead's cell takes its half circle; inner corners, found among `cornered`, are rounded. */
+function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined, rows: boolean, shapes: readonly (typeof SHAPES)[number][] = SHAPES, cornered = cells): { ground: Path2D; contour: Path2D } {
   const paths = { ground: new Path2D(), contour: new Path2D() }
   for (const cell of cells) {
     const { x, y, width, height, transform } = cell
     const into = transform && base ? relativeTo(base, transform) : undefined
-    for (const { key, out, radius } of SHAPES) {
+    for (const { key, out, radius } of shapes) {
       const grow = out - BODY_INSET_PX
       const corner = cornerOf(cell, out, radius)
       if (into) {
@@ -239,11 +239,11 @@ function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined,
     }
   }
   // Every round cell of a piece has the one bead's width: a Frame's and the Canvas's are drawn apart.
-  const round = cells.filter((cell) => cell.bead !== undefined && !cell.transform)
+  const round = cornered.filter((cell) => cell.bead !== undefined && !cell.transform)
   if (round.length > 1) {
     const { bead, height } = round[0]!
     for (const inner of innerCornersOf(round, rows)) {
-      for (const { key, out, radius } of SHAPES) {
+      for (const { key, out, radius } of shapes) {
         const grow = out - BODY_INSET_PX
         // A corner is at most half the shorter side, as the rounded rectangles draw it (a brick stitch bead lies wide).
         const corner = Math.min(bead! / 2 + grow, rows ? height / 2 + grow : Infinity)
@@ -339,21 +339,212 @@ function drawShadows(context: DrawingContext, shape: Path2D, cells: readonly Lif
   context.restore()
 }
 
-/** The pieces the cells make, at `deviceScale` device px per grid px, on `background`: their shadows, the contour, and
- * the ground inside it. Drawn before the beads, which cover the rest. The shapes are built once, so overlapping cells
- * make one outline. `rows` says whether the cells are runs of a row, else of a column (for a round bead's inner corners). */
-export function drawLift(context: DrawingContext, cells: readonly LiftCell[], background: string, deviceScale: number, rows = true): void {
+/** How far from a point of the screen the shape its shadows are cast from counts, in grid px: the soft shadow's fall
+ * and three spreads of its blur. */
+const SHADOW_REACH_PX = SHADOWS[0].down + SHADOWS[0].blur * 3
+
+/** The side of the squares the outline's edges are found on, in device px, and at most in grid px: under how far two
+ * touching cells' contours overlap, so a square on the line between them lies inside one of them. */
+const EDGE_SQUARE_DEVICE_PX = 4
+const EDGE_SQUARE_MOST_PX = 3
+/** The most squares the edges are found among; past it, every cell casts its shadow. */
+const MOST_EDGE_SQUARES = 4_000_000
+
+/** A box in the space the context draws in. */
+type Box = { left: number; top: number; right: number; bottom: number }
+
+/** A raster of squares over the base space: `columns` × `rows` of side `step` from `left`, `top`. */
+interface Raster {
+  columns: number
+  rows: number
+  left: number
+  top: number
+  step: number
+}
+
+/** Whether a point lies inside a rounded rectangle. */
+function insideRounded(px: number, py: number, { left, top, right, bottom }: Box, radius: number): boolean {
+  if (px < left || px > right || py < top || py > bottom) return false
+  const dx = Math.max(left + radius - px, 0, px - (right - radius))
+  const dy = Math.max(top + radius - py, 0, py - (bottom - radius))
+  return dx * dx + dy * dy <= radius * radius
+}
+
+/** Where a matrix puts a point. */
+function mapped({ a = 1, b = 0, c = 0, d = 1, e = 0, f = 0 }: DOMMatrix2DInit, x: number, y: number): readonly [number, number] {
+  return [a * x + c * y + e, b * x + d * y + f]
+}
+
+/** The box round a cell's rectangle grown by `grow`, put into the base space by `into`. */
+function grownBox({ x, y, width, height }: LiftCell, grow: number, into: DOMMatrix2DInit | undefined): Box {
+  const box = { left: x - grow, top: y - grow, right: x + width + grow, bottom: y + height + grow }
+  if (!into) return box
+  const corners = [mapped(into, box.left, box.top), mapped(into, box.right, box.top), mapped(into, box.left, box.bottom), mapped(into, box.right, box.bottom)]
+  return { left: Math.min(...corners.map(([px]) => px)), right: Math.max(...corners.map(([px]) => px)), top: Math.min(...corners.map(([, py]) => py)), bottom: Math.max(...corners.map(([, py]) => py)) }
+}
+
+/** Marks each square wholly inside a cell's contour as covered: row by row inside its rounded corners, or, for a turned
+ * cell, a square whose four corners its turned contour holds. */
+function markCovered(covered: Uint8Array, { columns, rows, left, top, step }: Raster, cell: LiftCell, into: DOMMatrix2DInit | undefined): void {
+  const grow = CONTOUR_OUT_PX - BODY_INSET_PX
+  const own = { left: cell.x - grow, top: cell.y - grow, right: cell.x + cell.width + grow, bottom: cell.y + cell.height + grow }
+  const radius = Math.min(cornerOf(cell, CONTOUR_OUT_PX, CONTOUR_RADIUS_PX), (own.right - own.left) / 2, (own.bottom - own.top) / 2)
+  const box = grownBox(cell, grow, into)
+  const [firstRow, lastRow] = [Math.max(0, Math.ceil((box.top - top) / step)), Math.min(rows - 1, Math.floor((box.bottom - top) / step) - 1)]
+  if (!into) {
+    for (let row = firstRow; row <= lastRow; row += 1) {
+      const [y0, y1] = [top + row * step, top + (row + 1) * step]
+      const edge = Math.min(y0 - own.top, own.bottom - y1)
+      const inset = edge >= radius ? 0 : radius - Math.sqrt(radius * radius - (radius - edge) ** 2)
+      const from = Math.max(0, Math.ceil((own.left + inset - left) / step))
+      const to = Math.min(columns, Math.floor((own.right - inset - left) / step))
+      if (to > from) covered.fill(1, row * columns + from, row * columns + to)
+    }
+    return
+  }
+  const back = relativeTo(into, {})
+  const [firstColumn, lastColumn] = [Math.max(0, Math.ceil((box.left - left) / step)), Math.min(columns - 1, Math.floor((box.right - left) / step) - 1)]
+  for (let row = firstRow; row <= lastRow; row += 1) {
+    for (let column = firstColumn; column <= lastColumn; column += 1) {
+      const [x0, y0] = [left + column * step, top + row * step]
+      const corners = [mapped(back, x0, y0), mapped(back, x0 + step, y0), mapped(back, x0, y0 + step), mapped(back, x0 + step, y0 + step)]
+      if (corners.every(([px, py]) => insideRounded(px, py, own, radius))) covered[row * columns + column] = 1
+    }
+  }
+}
+
+/** Whether each square lies within `reach` squares of one `covered` leaves open, by a sweep across and one down. */
+function nearOpen(covered: Uint8Array, { columns, rows }: Raster, reach: number): Uint8Array {
+  const across = new Uint8Array(covered.length)
+  for (let row = 0; row < rows; row += 1) {
+    const at = row * columns
+    let open = 0
+    for (let column = 0; column < Math.min(reach, columns); column += 1) open += 1 - covered[at + column]!
+    for (let column = 0; column < columns; column += 1) {
+      if (column + reach < columns) open += 1 - covered[at + column + reach]!
+      if (column - reach - 1 >= 0) open -= 1 - covered[at + column - reach - 1]!
+      across[at + column] = open > 0 ? 1 : 0
+    }
+  }
+  const near = new Uint8Array(covered.length)
+  for (let column = 0; column < columns; column += 1) {
+    let open = 0
+    for (let row = 0; row < Math.min(reach, rows); row += 1) open += across[row * columns + column]!
+    for (let row = 0; row < rows; row += 1) {
+      if (row + reach < rows) open += across[(row + reach) * columns + column]!
+      if (row - reach - 1 >= 0) open -= across[(row - reach - 1) * columns + column]!
+      near[row * columns + column] = open > 0 ? 1 : 0
+    }
+  }
+  return near
+}
+
+/** The parts of `cells` (in the base space) whose shadows can show in `view` (ticket 1034): a shadow shows only where no
+ * contour covers the screen, cast by the shape within its reach of there. Found on squares a few device px wide; an
+ * upright run is cut to its stretches near an edge, a turned cell kept whole or left out. */
+function shadowCells(cells: readonly LiftCell[], view: Box | undefined, deviceScale: number, base: DOMMatrix2DInit | undefined): readonly LiftCell[] {
+  const step = Math.min(EDGE_SQUARE_DEVICE_PX / deviceScale, EDGE_SQUARE_MOST_PX)
+  const reach = Math.ceil(SHADOW_REACH_PX / step) + 1
+  const margin = (reach + 1) * step
+  const into = cells.map((cell) => (cell.transform && base ? relativeTo(base, cell.transform) : undefined))
+  const bounds = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity }
+  cells.forEach((cell, at) => {
+    const box = grownBox(cell, CONTOUR_OUT_PX, into[at])
+    bounds.left = Math.min(bounds.left, box.left)
+    bounds.top = Math.min(bounds.top, box.top)
+    bounds.right = Math.max(bounds.right, box.right)
+    bounds.bottom = Math.max(bounds.bottom, box.bottom)
+  })
+  // The squares over the cells and their reach, cut to as far past the view as a shadow cast into it comes from.
+  const area = { left: bounds.left - margin, top: bounds.top - margin, right: bounds.right + margin, bottom: bounds.bottom + margin }
+  if (view) {
+    area.left = Math.max(area.left, view.left - margin)
+    area.top = Math.max(area.top, view.top - margin)
+    area.right = Math.min(area.right, view.right + margin)
+    area.bottom = Math.min(area.bottom, view.bottom + margin)
+  }
+  if (area.right <= area.left || area.bottom <= area.top) return []
+  const raster: Raster = { columns: Math.ceil((area.right - area.left) / step), rows: Math.ceil((area.bottom - area.top) / step), left: area.left, top: area.top, step }
+  if (raster.columns * raster.rows > MOST_EDGE_SQUARES) return cells
+  const covered = new Uint8Array(raster.columns * raster.rows)
+  // Out of view counts as covered: no shadow is seen there, and what lies there was not taken in.
+  if (view) {
+    for (let row = 0; row < raster.rows; row += 1) {
+      const y0 = area.top + row * step
+      const outside = y0 + step <= view.top || y0 >= view.bottom
+      for (let column = 0; column < raster.columns; column += 1) {
+        const x0 = area.left + column * step
+        if (outside || x0 + step <= view.left || x0 >= view.right) covered[row * raster.columns + column] = 1
+      }
+    }
+  }
+  cells.forEach((cell, at) => markCovered(covered, raster, cell, into[at]))
+  const near = nearOpen(covered, raster, reach)
+  const groundGrow = GROUND_OUT_PX - BODY_INSET_PX
+  const pad = step + GROUND_RADIUS_PX
+  const kept: LiftCell[] = []
+  cells.forEach((cell, at) => {
+    const box = grownBox(cell, groundGrow, into[at])
+    const [firstRow, lastRow] = [Math.max(0, Math.floor((box.top - area.top) / step)), Math.min(raster.rows - 1, Math.floor((box.bottom - area.top) / step))]
+    const [firstColumn, lastColumn] = [Math.max(0, Math.floor((box.left - area.left) / step)), Math.min(raster.columns - 1, Math.floor((box.right - area.left) / step))]
+    // Along the run (a row's, or a column's where it is taller than wide): whether a square across it is near an edge.
+    const down = cell.height > cell.width
+    const nearAt = (along: number) => {
+      if (down) {
+        for (let column = firstColumn; column <= lastColumn; column += 1) if (near[along * raster.columns + column]) return true
+      } else {
+        for (let row = firstRow; row <= lastRow; row += 1) if (near[row * raster.columns + along]) return true
+      }
+      return false
+    }
+    const [first, final] = down ? [firstRow, lastRow] : [firstColumn, lastColumn]
+    if (into[at]) {
+      for (let along = first; along <= final; along += 1) {
+        if (nearAt(along)) {
+          kept.push(cell)
+          return
+        }
+      }
+      return
+    }
+    // An upright run, cut to its stretches near an edge, each a square and a ground's corner longer either side.
+    const [start, length, origin] = down ? [cell.y, cell.height, area.top] : [cell.x, cell.width, area.left]
+    let last: { from: number; to: number } | undefined
+    const stretches: { from: number; to: number }[] = []
+    for (let along = first; along <= final; along += 1) {
+      if (!nearAt(along)) continue
+      let end = along
+      while (end + 1 <= final && nearAt(end + 1)) end += 1
+      const from = Math.max(start, origin + along * step - pad)
+      const to = Math.min(start + length, origin + (end + 1) * step + pad)
+      if (last && from <= last.to) last.to = to
+      else if (to > from) stretches.push((last = { from, to }))
+      along = end
+    }
+    if (stretches.length === 1 && stretches[0]!.from === start && stretches[0]!.to === start + length) kept.push(cell)
+    else for (const { from, to } of stretches) kept.push(down ? { ...cell, y: from, height: to - from } : { ...cell, x: from, width: to - from })
+  })
+  // Where every cell casts its shadow whole, the shadows are the ground's own shape.
+  return kept.length === cells.length && kept.every((cell, at) => cell === cells[at]) ? cells : kept
+}
+
+/** The pieces the cells make, at `deviceScale` device px per grid px, on `background`: their shadows (from the outline's
+ * edges near `view` alone, ticket 1034), the contour, and the ground inside it, under the beads. `rows` says whether the
+ * cells are runs of a row, else of a column (for a round bead's inner corners). */
+export function drawLift(context: DrawingContext, cells: readonly LiftCell[], background: string, deviceScale: number, rows = true, view?: Box): void {
   if (!cells.length) return
   const look = liftLookOf(background)
   const base = cells.some((cell) => cell.transform) ? context.getTransform() : undefined
   const { ground, contour } = shapesOf(cells, base, rows)
+  const cast = shadowCells(cells, view, deviceScale, base)
+  const shadow = cast === cells ? ground : shapesOf(cast, base, rows, [SHAPES[0]], cells).ground
   // Each shadow in a sheet fine enough for its own blur. Laying a sheet over the screen costs the screen, so the
   // shadows share one wherever it is smaller than the screen, at the finest step either needs; where the closest is not
   // drawn smaller, the soft one keeps its coarse sheet and the closest falls straight on the screen.
   const steps = SHADOWS.map(({ blur }) => shadowStep(blur, deviceScale))
   const finest = Math.min(...steps)
-  if (finest > 1) drawShadows(context, ground, cells, SHADOWS.map((_, at) => at), finest, look, deviceScale, base)
-  else SHADOWS.forEach((_, at) => drawShadows(context, ground, cells, [at], steps[at]!, look, deviceScale, base))
+  if (cast.length && finest > 1) drawShadows(context, shadow, cast, SHADOWS.map((_, at) => at), finest, look, deviceScale, base)
+  else if (cast.length) SHADOWS.forEach((_, at) => drawShadows(context, shadow, cast, [at], steps[at]!, look, deviceScale, base))
   context.fillStyle = look.contour
   context.fill(contour)
   context.fillStyle = look.ground

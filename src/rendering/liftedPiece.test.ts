@@ -99,6 +99,48 @@ describe('drawLift', () => {
     ])
   })
 
+  describe('the shadows from the outline\'s edges in view alone (ticket 1034)', () => {
+    /** The rows of a piece 60 beads wide, each one run. */
+    const runs = (rows: number) => Array.from({ length: rows }, (_, row) => ({ x: 0, y: row * CELL_SIZE_PX, width: 60 * CELL_SIZE_PX, height: CELL_SIZE_PX }))
+    /** How many fills cast a shadow, and the rounded rectangles drawn, for a piece of `rows` rows. */
+    const shadowed = (rows: number, view?: { left: number; top: number; right: number; bottom: number }) => {
+      const { context, named } = recordingContext()
+      let blurred = 0
+      const watched = new Proxy(context, {
+        get: (target, key) => (key === 'fill' ? (...args: unknown[]) => ((blurred += target.shadowBlur > 0 ? 1 : 0), (target.fill as (...args: unknown[]) => void)(...args)) : Reflect.get(target, key)),
+        set: (target, key, value) => Reflect.set(target, key, value),
+      })
+      drawLift(watched, runs(rows), '#fafafa', 2, true, view)
+      return { blurred, rects: named('roundRect').map(({ args }) => args as number[]) }
+    }
+
+    it('casts none where the piece fills the view, and still lays its contour and ground', () => {
+      const { blurred, rects } = shadowed(40, { left: 200, top: 200, right: 800, bottom: 600 })
+      expect(blurred).toBe(0)
+      // The ground's and the contour's shapes, one each a row.
+      expect(rects).toHaveLength(80)
+    })
+
+    it('casts the shadow from a piece\'s edges, cut where a row\'s inside lies further from them than a shadow reaches', () => {
+      const { rects } = shadowed(40)
+      // After the ground's and the contour's 80, the shadow's: the rows near the top and bottom whole, the others cut to their two ends.
+      const shadow = rects.slice(80)
+      const middle = shadow.filter(([, y]) => y! > 10 * CELL_SIZE_PX && y! < 30 * CELL_SIZE_PX)
+      expect(middle.length).toBeGreaterThan(0)
+      for (const [x, , width] of middle) expect(x! < 2 * CELL_SIZE_PX || x! + width! > 58 * CELL_SIZE_PX).toBe(true)
+      expect(Math.max(...middle.map(([, , width]) => width!))).toBeLessThan(4 * CELL_SIZE_PX)
+      const top = shadow.filter(([, y]) => y! < 0)
+      expect(top.map(([, , width]) => width)).toEqual([60 * CELL_SIZE_PX + 4.5])
+    })
+
+    it('casts it from the ground\'s own shape where every cell is near an edge', () => {
+      const { context, named } = recordingContext()
+      drawLift(context, runs(2), '#fafafa', 2, true, { left: -100, top: -100, right: 2000, bottom: 200 })
+      const shapes = named('fill').map(({ args }) => args[0])
+      expect(shapes[0]).toBe(shapes.at(-1))
+    })
+  })
+
   it('draws nothing with no bead', () => {
     const { context, calls } = recordingContext()
     drawLift(context, [], '#fafafa', 1)

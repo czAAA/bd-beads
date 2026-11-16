@@ -343,7 +343,7 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
     const weave = frameWeave(project)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: liftRows(band, cellSizePx(weave.technique, weave.cell).height) }, space, origin)
     const across = liftsAcross(weave)
-    drawLift(context, joinedUpright(collect.cells, across), draw.look.canvas, draw.zoom * draw.pixelRatio, across)
+    drawLift(context, joinedUpright(collect.cells, across), draw.look.canvas, draw.zoom * draw.pixelRatio, across, area)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined }, space, origin)
     return
   }
@@ -743,7 +743,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     }
     if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
     if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
-    if (lift && look.liftedPiece) drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio, liftsAcross(canvasWeave(project)))
+    if (lift && look.liftedPiece) drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio, liftsAcross(canvasWeave(project)), area)
     drawCanvasLayer(context, draw, space)
     if (frame && frameBox) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)
