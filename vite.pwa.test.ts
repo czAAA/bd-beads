@@ -106,7 +106,7 @@ describe('the production build (ticket 69)', () => {
     expect(scripts).not.toMatch(/unsafe-inline|unsafe-eval/)
     let inline = 0
     for (const page of ['index.html', 'homepage/index.html']) {
-      for (const [, attributes, text] of readFileSync(join(outDir, page), 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+      for (const [, attributes, text] of readFileSync(join(outDir, page), 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
         if (/\bsrc=/.test(attributes!)) continue
         inline += 1
         expect(scripts, `${page}: ${text!.trim().slice(0, 60)}`).toContain(`'sha256-${createHash('sha256').update(text!).digest('base64')}'`)

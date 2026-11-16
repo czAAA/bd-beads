@@ -12,7 +12,9 @@ export const HEADERS_FILE = '_headers'
 /** Turnstile's script and frame (the Feedback sheet's check): the only other origin a page loads from. */
 const TURNSTILE = 'https://challenges.cloudflare.com'
 
-const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi
+/** A script element as a browser reads it: tags in any case, and an end tag that may hold a space (`</script >`). A
+ * script this missed would only be refused by the policy, never let through. */
+const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi
 
 /** The `'sha256-…'` source of every inline script in `html`, in order: what a policy names to let that script run. */
 export function inlineScriptHashes(html: string): string[] {

@@ -19,6 +19,10 @@ describe('inlineScriptHashes', () => {
   it("names each inline script by its text's hash, attributes or not, and no script that is a file", () => {
     expect(inlineScriptHashes(page)).toEqual([HELLO, VAR_A])
   })
+
+  it('finds a script however its tags are written: upper case, or an end tag with a space', () => {
+    expect(inlineScriptHashes("<SCRIPT>var a = 1</SCRIPT ><script>alert('Hello, world.');</script\n>")).toEqual([VAR_A, HELLO])
+  })
 })
 
 describe('securityHeaders', () => {
