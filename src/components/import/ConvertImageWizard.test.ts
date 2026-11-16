@@ -355,25 +355,27 @@ describe('ConvertImageWizard setup', () => {
     expect(infoBody(wrapper, 'convert-color-source-info')).toContain(fillBlanks(words.beadPaletteNote, { bead: 'Miyuki Delica 11/0' }))
     expect(infoBody(wrapper, 'convert-color-source-info')).not.toContain('photographs')
     // The "becomes" swatch is dashed for a generated code only (ticket 0905), plain for one whose color was read.
-    expect(wrapper.find('.found-color__swatch--approximate').exists()).toBe(true)
+    expect(wrapper.find('.found-color .bead-swatch-chip--approximate').exists()).toBe(true)
     const measured = open({ draft: delica })
     await chooseFile(measured.wrapper, picture())
     await show(measured.wrapper, 'colors')
-    expect(measured.wrapper.find('.found-color__swatch--approximate').exists()).toBe(false)
-    expect(measured.wrapper.find('.found-color__swatch').exists()).toBe(true)
+    expect(measured.wrapper.find('.found-color .bead-swatch-chip--approximate').exists()).toBe(false)
+    expect(measured.wrapper.find('.found-color .bead-swatch-chip').exists()).toBe(true)
   })
 
-  it('counts the measured codes of a part measured catalog in one quiet line, and says nothing for a catalog with none or all measured (ticket 0887)', async () => {
+  it('says on the count line how many codes are measured, with the legend of the approximate mark (ticket 0905)', async () => {
     const part: ColorCatalog = { id: 'miyuki-delica', codes: [...catalog.codes, { ...catalog.codes[0]!, code: 'DB724', hex: undefined }] }
     const lineOf = async (loaded: ColorCatalog) => {
       const { wrapper } = open({ draft: delica, loadCatalog: async () => loaded })
       await chooseFile(wrapper, picture())
       await show(wrapper, 'colors')
-      return wrapper.find('[data-testid="convert-measured"]')
+      return wrapper
     }
-    expect((await lineOf(part)).text()).toBe('1 of 2 measured')
-    expect((await lineOf(catalog)).exists()).toBe(false)
-    expect((await lineOf({ id: 'miyuki-delica', codes: part.codes.map((entry) => ({ ...entry, hex: undefined })) })).exists()).toBe(false)
+    const part1 = await lineOf(part)
+    expect(part1.find('[data-testid="convert-codes"]').text()).toMatch(/ · 1 measured$/)
+    expect(part1.find('[data-testid="convert-legend"]').text()).toBe('approximate')
+    const none = await lineOf({ id: 'miyuki-delica', codes: part.codes.map((entry) => ({ ...entry, hex: undefined })) })
+    expect(none.find('[data-testid="convert-codes"]').text()).toMatch(/ · 0 measured$/)
   })
 
   it('matches the found colors to the Bead’s colors at first, and heads their table From picture, Becomes, Beads, Change, Empty (tickets 0758, 0863)', async () => {
@@ -1139,7 +1141,7 @@ describe('ConvertImageWizard My beads (ticket 0902)', () => {
     await matchTo(wrapper, 'my-beads')
 
     expect(wrapper.get('[data-testid="convert-color-source"]').text()).toBe(words.name)
-    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('1 bead color in my beads')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('1 bead color in my beads · 1 measured')
     expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('my beads · 1 code')
     expect(wrapper.get('[data-testid="convert-result-colors"]').text()).toBe('1 color (your list has 1)')
     expect(wrapper.findAll('[data-testid="found-color"]')).toHaveLength(1)
@@ -1194,12 +1196,12 @@ describe('ConvertImageWizard the match kept to chosen Finishes (ticket 0901)', (
     const list = wrapper.get('[data-testid="convert-finish-list"]')
     expect(list.findAll('[data-testid="bead-colors-finish"]').map((line) => line.attributes('aria-label'))).toEqual(['Opaque, 2', 'Matte, 2', 'Plated, 1'])
     expect(list.find('[data-testid="bead-colors-family"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('5 bead colors in size 11/0')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('5 bead colors in size 11/0 · 5 measured')
 
     await finishLine(wrapper, 'matte').trigger('click')
     await flushPromises()
     expect(finishLine(wrapper, 'matte').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('2 bead colors in size 11/0')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('2 bead colors in size 11/0 · 2 measured')
     expect(wrapper.get('[data-testid="convert-finish-codes"]').text()).toBe('2 bead colors in size 11/0')
     expect(codesUsed(wrapper).every((name) => name.startsWith('DB378') || name.startsWith('DB351'))).toBe(true)
     expect(wrapper.get('[data-testid="convert-finish"]').attributes('aria-label')).toBe('Finish, 1 on')
@@ -1211,7 +1213,7 @@ describe('ConvertImageWizard the match kept to chosen Finishes (ticket 0901)', (
 
     await wrapper.get('[data-testid="convert-finish-list"] [data-testid="bead-colors-filters-clear"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('5 bead colors in size 11/0')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('5 bead colors in size 11/0 · 5 measured')
     expect(wrapper.find('[data-testid="convert-finish-badge"]').exists()).toBe(false)
   })
 

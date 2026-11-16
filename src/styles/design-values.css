@@ -42,7 +42,9 @@
   --convert-cleaned-ring: 2px; /* ConvertImage card (ticket 0900): the marker ring round each bead Clean up changed, while its popover is open. */
   --my-beads-row: calc(var(--panel-row-two-line) + var(--space-4)); /* ConvertImage card (DS-2, ticket 0902): a row of the My beads view, at least this tall. */
   --my-beads-row-touch: var(--panel-row-two-line-touch); /* ConvertImage card (ticket 0902): the same on a coarse pointer. */
-  --my-beads-swatch: 24px; /* ConvertImage card (ticket 0902): a code's swatch in a My beads row. */
+  --bead-swatch: 24px; /* ConvertImage card (tickets 0902, 0905): a Bead color's swatch in a row, the Palette grid and Color by color. */
+  --bead-swatch-sm: 16px; /* ConvertImage card (ticket 0905): the swatch in the Change picker's head. */
+  --bead-swatch-xs: 12px; /* ConvertImage card (ticket 0905): the swatch in the count line's legend. */
   --my-beads-tick: 20px; /* ConvertImage card (ticket 0902): the tick box at a My beads row's right. */
   --my-beads-never-opacity: 0.4; /* ConvertImage card (ticket 0903): the swatch of a My beads code that is never matched. */
   --my-beads-empty-leading: 1.25rem; /* ConvertImage card (ticket 0996): the My beads empty state, in `small` on `body`'s 20px line height. */

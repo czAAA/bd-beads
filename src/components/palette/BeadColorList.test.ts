@@ -42,9 +42,9 @@ describe('BeadColorList', () => {
     const { wrapper } = setup([entry({}), entry({ code: 'DB2', family: 'Gray', finish: 'matte', discontinued: true }), entry({ code: 'DB3', taken: true })])
 
     expect(names(wrapper, 'bead-color')).toEqual([
-      'DB1, Blue, Metallic, add to the Palette',
-      'DB2, Gray, Matte, Discontinued, add to the Palette',
-      'DB3, Blue, Metallic, in the Palette as the same color',
+      'DB1, Blue, Metallic, approximate color, add to the Palette',
+      'DB2, Gray, Matte, approximate color, Discontinued, add to the Palette',
+      'DB3, Blue, Metallic, approximate color, in the Palette as the same color',
     ])
     // The words shown, spaced as read: each name starts with them.
     expect(wrapper.findAll('[data-testid="bead-color"]').map((row) => row.text().replace(/\s+/g, ' '))).toEqual(['DB1 Blue · Metallic', 'DB2 Gray · Matte · Discontinued', 'DB3 Blue · Metallic In the Palette'])

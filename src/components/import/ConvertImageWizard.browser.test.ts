@@ -54,7 +54,7 @@ describe('the Convert image found-colors table heading', () => {
 
       const pair = mounted.root.querySelector('.found-colors-header__pair')!.getBoundingClientRect()
       const row = mounted.root.querySelector('[data-testid="found-color"]')!
-      const swatches = [...row.querySelectorAll('.found-color__swatch')].map((swatch) => swatch.getBoundingClientRect())
+      const swatches = [...row.querySelectorAll('.found-color__swatch, .bead-swatch-chip')].map((swatch) => swatch.getBoundingClientRect())
       expect(pair.left).toBeCloseTo(swatches[0]!.left, 0)
       expect(pair.right).toBeGreaterThan(swatches[1]!.right)
       expect(mounted.root.querySelector('.found-colors-header__action')!.getBoundingClientRect().width).toBe(0)

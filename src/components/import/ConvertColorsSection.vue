@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
-import { isPartMeasured, measuredCount, type ColorSource } from '../../domain/convertColors'
+import type { ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { beadLabel } from '../../domain/beads'
 import { hasMeasuredColors } from '../../domain/colorCatalog'
 import { plural, pluralForm } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
+import BeadSwatchChip from '../palette/BeadSwatchChip.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppNote from '../ui/AppNote.vue'
 import InfoButton from '../ui/InfoButton.vue'
@@ -73,20 +74,14 @@ const sourceNote = computed(() =>
     .join(' '),
 )
 
-/** A part measured catalog's line (ticket 0887): how many of the Bead's codes have a measured color. None for a catalog with
- * none measured (ticket 0884's words stand) or with all (ticket 0886's credit says enough). */
-const measuredLine = computed(() => {
-  const total = wizard.beadTargets.value.length
-  const measured = measuredCount(wizard.beadTargets.value)
-  return wizard.source.value === 'bead-colors' && isPartMeasured(wizard.beadTargets.value) ? fillBlanks(words.value.measuredOf, { n: count(measured), total: count(total) }) : undefined
-})
-
 /** The count line: the source's codes in the Finishes on (ticket 0901), as bead colors ("1 191 bead colors in size 11/0", ticket 0966). */
 const codes = computed(() =>
   wizard.source.value === 'my-beads'
     ? plural(locale.value, wizard.codesLeft.value, myWords.value.codesInList)
     : fillBlanks(pluralForm(locale.value, wizard.codesLeft.value, words.value.codesInSize), { size: wizard.bead.value.size, count: count(wizard.codesLeft.value) }),
 )
+/** The count line with how many of those codes are measured (ticket 0905), as the My beads view and the legend read it. */
+const codesLine = computed(() => `${codes.value} · ${fillBlanks(words.value.measuredIn, { n: count(wizard.measuredLeft.value) })}`)
 /** Fewer codes left in the Finishes on than colors asked: as many colors come out, and the line says so (DS-2). */
 const tooFew = computed(() =>
   wizard.finishesShort.value
@@ -149,8 +144,13 @@ const remapping = ref<string>()
           </MenuButton>
           <ConvertFinishFilter :codes="codes" />
         </div>
-        <span v-if="wizard.source.value === 'bead-colors' || wizard.source.value === 'my-beads'" class="convert-colors__codes" data-testid="convert-codes">{{ codes }}</span>
-        <span v-if="measuredLine" class="convert-colors__codes" data-testid="convert-measured">{{ measuredLine }}</span>
+        <span v-if="wizard.source.value === 'bead-colors' || wizard.source.value === 'my-beads'" class="convert-colors__counts">
+          <span class="convert-colors__codes" data-testid="convert-codes">{{ codesLine }}</span>
+          <span class="convert-colors__legend" data-testid="convert-legend">
+            <BeadSwatchChip :size="12" :approximate="true" :tip="false" />
+            {{ t.palette.beadColors.legendApproximate }}
+          </span>
+        </span>
         <span v-if="tooFew" class="convert-colors__too-few" role="status" data-testid="convert-too-few">{{ tooFew }}</span>
         <AppNote v-if="wizard.source.value === 'bead-colors' && wizard.catalogState.value === 'failed'" role="alert" data-testid="convert-catalog-failed">
           {{ t.palette.beadColors.failed }}
@@ -251,6 +251,21 @@ const remapping = ref<string>()
 }
 
 .convert-colors__source-meta {
+  font: var(--type-meta-small);
+  color: var(--muted);
+}
+
+.convert-colors__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-12);
+  justify-content: space-between;
+}
+
+.convert-colors__legend {
+  display: inline-flex;
+  gap: var(--space-6);
+  align-items: center;
   font: var(--type-meta-small);
   color: var(--muted);
 }

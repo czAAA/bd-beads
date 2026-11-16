@@ -11,6 +11,7 @@ import AppNote from '../ui/AppNote.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import BeadColorFilters from './BeadColorFilters.vue'
 import BeadColorFindRow from './BeadColorFindRow.vue'
+import BeadSwatchChip from './BeadSwatchChip.vue'
 
 // The Bead's Color catalog (ticket 0537, ADR 0072; BeadColors card): every code in the Bead's size, a code the Palette
 // holds taken; adding is an Edit. Color and Finish filters narrow the search (ticket 0713), reset on close, and stand
@@ -51,7 +52,7 @@ const highlightedShown = computed(() => (shown.value.some((entry) => entry.code 
 
 /** A row's name starts with the words it shows (ticket 0940, WCAG 2.5.3): code, family, finish and Discontinued. */
 function rowName(entry: (typeof shown.value)[number]): string {
-  const name = fillBlanks(words.value.rowName, { code: entry.code, family: familyName(entry.family), finish: words.value.finishes[entry.finish] })
+  const name = fillBlanks(words.value.rowName, { code: entry.code, family: familyName(entry.family), finish: words.value.finishes[entry.finish] }) + (entry.approximate ? words.value.approximateSuffix : '')
   return entry.discontinued ? fillBlanks(words.value.rowNote, { name, note: words.value.discontinued }) : name
 }
 
@@ -109,12 +110,12 @@ function add(hex: string, code: string) {
               @click="!entry.taken && add(entry.hex, entry.code)"
               @focus="highlighted = { code: entry.code, hex: entry.hex }"
             >
-              <span class="bead-color-list__chip" :class="{ 'bead-color-list__chip--approximate': entry.approximate }" :style="{ backgroundColor: entry.hex }" />
+              <BeadSwatchChip class="bead-color-list__chip" :hex="entry.hex" :approximate="entry.approximate" :tip="false" />
               <span class="bead-color-list__text">
                 <span class="bead-color-list__code">{{ entry.code }}</span>
                 {{ ' ' }}
                 <span class="bead-color-list__meta">
-                  {{ familyName(entry.family) }} · {{ words.finishes[entry.finish] }}
+                  {{ entry.approximate ? `${familyName(entry.family)} · ${words.finishes[entry.finish]}` : fillBlanks(words.measuredSub, { family: familyName(entry.family), finish: words.finishes[entry.finish] }) }}
                   <span v-if="entry.discontinued" class="bead-color-list__note"> · {{ words.discontinued }}</span>
                 </span>
               </span>
@@ -330,20 +331,6 @@ function add(hex: string, code: string) {
 .bead-color-list__row--taken {
   color: var(--muted);
   cursor: default;
-}
-
-.bead-color-list__chip {
-  flex: none;
-  box-sizing: border-box;
-  width: var(--field-height);
-  height: var(--field-height);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
-}
-
-/* An approximate swatch has a dashed edge: it is made, not measured. */
-.bead-color-list__chip--approximate {
-  border-style: dashed;
 }
 
 .bead-color-list__text {
