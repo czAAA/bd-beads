@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DARK_THEME, drawFlatBead, LIGHT_THEME, type DrawingContext, type ProjectTheme } from './beadLook'
 import { CELL_SIZE_PX } from './cellSize'
-import { drawLift, joinedRound, liftLookOf, type LiftCell } from './liftedPiece'
+import { drawLift, joinedUpright, liftLookOf, type LiftCell } from './liftedPiece'
 
 // The Lifted piece drawn for real (ticket 1004, BeadBoard card, Lifted piece): the ground round the beads, the contour
 // past it, and the shadow under it, made without the canvas filter.
@@ -118,7 +118,7 @@ describe.each([
     context.fillRect(0, 0, canvas.width, canvas.height)
     context.setTransform(SCALE, 0, 0, SCALE, 0, 0)
     const cells: LiftCell[] = runs.map(([row, column, columns]) => ({ x: 40 + column * WIDTH, y: 40 + row * HEIGHT, width: columns * WIDTH, height: HEIGHT, bead: WIDTH }))
-    drawLift(context as DrawingContext, joinedRound(cells, true), theme.canvas, SCALE)
+    drawLift(context as DrawingContext, joinedUpright(cells, true), theme.canvas, SCALE)
     for (const [row, column, columns] of runs) {
       for (let each = column; each < column + columns; each += 1) {
         drawFlatBead(context as DrawingContext, { x: 40 + each * WIDTH, y: 40 + row * HEIGHT, size: WIDTH, width: WIDTH, height: HEIGHT, cornerRadius: WIDTH / 2, color: '#e63746', dimmed: false, deviceScale: SCALE, theme })

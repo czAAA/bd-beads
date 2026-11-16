@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PROJECT_THEMES, PRINT_THEME, type ProjectTheme } from './beadLook'
+import { brighten, CURRENT_ROW_BRIGHTNESS, parseColor, PROJECT_THEMES, PRINT_THEME, type ProjectTheme } from './beadLook'
+import { channelsOf, contrastRatio, toHex } from '../domain/color'
 
 type Theme = 'light' | 'dark' | 'contrast'
 const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as {
@@ -20,6 +21,7 @@ const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'ownColo
   rulerStrong: 'body',
   emptyBead: 'bead-empty',
   marker: 'marker',
+  markerCase: 'canvas',
   mirror: 'mirror',
   accent: 'accent',
   outline: 'bead-outline',
@@ -60,5 +62,34 @@ describe('ProjectTheme', () => {
 
   it('marks empty positions as tonal tiles on screen in light and dark, the outline in high contrast and exports (ticket 1001)', () => {
     expect([PROJECT_THEMES.light.tonalTiles, PROJECT_THEMES.dark.tonalTiles, PROJECT_THEMES.contrast.tonalTiles, PRINT_THEME.tonalTiles]).toEqual([true, true, false, false])
+  })
+})
+
+describe('the current row\'s ring (ticket 1031, BeadBoard card)', () => {
+  /** The better of the ring's two lines, `marker` and its `canvas` line, on a bead lifted as the current pass's are. */
+  const better = (theme: ProjectTheme, bead: string) => {
+    const lifted = parseColor(brighten(bead, CURRENT_ROW_BRIGHTNESS))!
+    return Math.max(contrastRatio(channelsOf(theme.marker), lifted), contrastRatio(channelsOf(theme.markerCase), lifted))
+  }
+  const greys = Array.from({ length: 256 }, (_, value) => toHex({ r: value, g: value, b: value }))
+
+  it.each([
+    ['dark', 4.2],
+    ['light', 2.6],
+    ['contrast', 4.6],
+  ] as const)('stands at least %s\'s worst on every grey a lifted bead can be: one of its lines reads', (theme, worst) => {
+    const least = Math.min(...greys.map((grey) => better(PROJECT_THEMES[theme], grey)))
+    // To one decimal, as the BeadBoard card gives them.
+    expect(Number(least.toFixed(1))).toBeGreaterThanOrEqual(worst)
+  })
+
+  it.each([
+    ['dark', '#ffffff'],
+    ['light', '#2348c4'],
+    ['contrast', '#000000'],
+  ] as const)('finds the row in %s on the bead its `marker` alone is lost on (%s)', (theme, bead) => {
+    const marker = contrastRatio(channelsOf(PROJECT_THEMES[theme].marker), parseColor(brighten(bead, CURRENT_ROW_BRIGHTNESS))!)
+    expect(marker).toBeLessThan(2)
+    expect(better(PROJECT_THEMES[theme], bead)).toBeGreaterThanOrEqual(3)
   })
 })

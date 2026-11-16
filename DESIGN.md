@@ -105,6 +105,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `pieceLine` | `line-strong` (a Piece area's rectangle in high contrast and exports; light and dark draw each Piece's contour and shadow instead, the Lifted piece, `liftedPiece`, ticket 1004, `src/rendering/liftedPiece.ts`; round beads give it their own round shape, ticket 1010) |
 | `seam` | `bead-seam` |
 | `marker` | `marker` |
+| `markerCase` | `canvas` (the 1px line inside the current-row ring, ticket 1031; the page's `canvas` token, never the Canvas's own Background, and a Custom Canvas color takes it from the look it is drawn in) |
 | `mirror` | `mirror` (the Mirror's Area, its Axes, ring and hover outline, ticket 0806) |
 | `accent` | `accent` (Edit Frame's hot corners, ticket 0657) |
 | `outline` | `bead-outline` |

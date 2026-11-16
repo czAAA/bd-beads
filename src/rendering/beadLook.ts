@@ -95,6 +95,9 @@ export interface ProjectTheme {
   emptyBead: string
   /** The mark that shows where the weaver has got to: the current-row outline (`marker`). */
   marker: string
+  /** The 1px line directly inside the current-row outline (`canvas`, the page color; ticket 1031, BeadBoard card): with
+   * `marker` beside it, one of the two reads on a bead of any color. */
+  markerCase: string
   /** The Mirror's Area (`mirror`, ContextBar card, ticket 0806): Mirror mode's rubber band, a Canvas Area's line, the
    * Axis lines, Radial's ring and the hover preview's outline inside the Area, so it is never taken for a Selection. */
   mirror: string
@@ -133,6 +136,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
+  markerCase: '#ffffff',
   mirror: '#c026d3',
   accent: '#fa520f',
   outline: '#1f1f1f',
@@ -156,6 +160,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
+  markerCase: '#141414',
   mirror: '#b79cff',
   accent: '#faff69',
   outline: '#ffffff',
@@ -178,6 +183,7 @@ const CONTRAST_THEME: ProjectTheme = {
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
+  markerCase: '#ffffff',
   mirror: '#6d28d9',
   accent: '#a82c00',
   outline: '#000000',
