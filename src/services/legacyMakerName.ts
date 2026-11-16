@@ -28,8 +28,11 @@ export function migrateLegacyMakerName(
   try {
     const deviceName = readKey(storage, LEGACY_MAKER_NAME_KEY)
     if (deviceName === null) return
-    library.save(applyLegacyMakerName(library.load(), deviceName))
-    removeKey(storage, LEGACY_MAKER_NAME_KEY)
+    const named = applyLegacyMakerName(library.load(), deviceName).map((project) => ({ project, knownStored: true }))
+    void library.save(named, []).then(
+      () => removeKey(storage, LEGACY_MAKER_NAME_KEY),
+      () => undefined,
+    )
   } catch {
     // Blocked storage or a refused write: the device value stays and the next load tries again.
   }

@@ -245,6 +245,7 @@ export const be: Translations = {
   },
   projects: {
     heading: 'Бібліятэка праектаў',
+    loading: 'Загружаем вашы праекты…',
     newProjectButton: 'Новы праект',
     removeButton: 'Выдаліць',
     unknownBeadLabel: 'Невядомая бісерына',

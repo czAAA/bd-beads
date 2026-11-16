@@ -16,7 +16,7 @@ function setup(options: { open?: boolean; saved?: boolean; saveFailed?: boolean;
     findProject: (id: string) => [{ id: 'open', name: 'Open' }, { id: 'other', name: 'Other' }, { id: 'huge', name: 'Huge', gatedBeads: 31_000_000 }].find((entry) => entry.id === id),
     openProject: vi.fn(),
     saveFailed: () => options.saveFailed ?? false,
-    saveNow: vi.fn(() => options.saved ?? true),
+    saveNow: vi.fn(async () => options.saved ?? true),
     nameHidden: () => options.nameHidden ?? false,
     showToast: vi.fn(),
     messages: () => en,
@@ -65,19 +65,19 @@ describe('useSavedProjectConfirms', () => {
     expect(deps.openProject).toHaveBeenCalledWith('other')
   })
 
-  it('Save first switches once the save gets through', () => {
+  it('Save first switches once the save gets through', async () => {
     const { deps, pendingSwitch, switchSaveRefused, onRequestSwitch, onSaveBeforeSwitch } = setup({ saveFailed: true })
     onRequestSwitch('other')
-    onSaveBeforeSwitch()
+    await onSaveBeforeSwitch()
     expect(switchSaveRefused.value).toBe(false)
     expect(pendingSwitch.value).toBeUndefined()
     expect(deps.openProject).toHaveBeenCalledWith('other')
   })
 
-  it('Save first reports a refusal, and a later confirm still switches', () => {
+  it('Save first reports a refusal, and a later confirm still switches', async () => {
     const { deps, switchSaveRefused, onRequestSwitch, onSaveBeforeSwitch, onConfirmSwitch } = setup({ saved: false, saveFailed: true })
     onRequestSwitch('other')
-    onSaveBeforeSwitch()
+    await onSaveBeforeSwitch()
     expect(switchSaveRefused.value).toBe(true)
     expect(deps.openProject).not.toHaveBeenCalled()
     onConfirmSwitch()

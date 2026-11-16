@@ -244,6 +244,7 @@ export const es: Translations = {
   },
   projects: {
     heading: 'Biblioteca de proyectos',
+    loading: 'Cargando tus proyectos…',
     newProjectButton: 'Nuevo proyecto',
     removeButton: 'Quitar',
     unknownBeadLabel: 'Cuenta desconocida',

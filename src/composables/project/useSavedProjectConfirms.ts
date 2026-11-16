@@ -21,7 +21,7 @@ export interface SavedProjectConfirmsDeps {
   /** Whether the library's last write was refused: only then does a switch ask first (ticket 0860). */
   saveFailed: () => boolean
   /** Writes the library now; false when the device refused it. */
-  saveNow: () => boolean
+  saveNow: () => Promise<boolean>
   /** Whether the strip shows no Project name (under 1024px): then an open says the name in a toast (ticket 0986). */
   nameHidden: () => boolean
   showToast: (id: string, text: string, tone?: MessageTone) => void
@@ -120,8 +120,8 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
 
   /** Save first, the question's side action: once the save gets through the switch goes ahead, as a pick does when
    * nothing can be lost; otherwise the question says it didn't. */
-  function onSaveBeforeSwitch() {
-    switchSaveRefused.value = !deps.saveNow()
+  async function onSaveBeforeSwitch() {
+    switchSaveRefused.value = !(await deps.saveNow())
     if (!switchSaveRefused.value) onConfirmSwitch()
   }
 

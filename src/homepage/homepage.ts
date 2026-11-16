@@ -10,7 +10,7 @@ import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
 import { loadLocale } from '../i18n/useI18n'
 import { browserDevicePreferences } from '../services/devicePreferences'
-import { browserLibraryStore, storedProjectCount } from '../services/libraryStore'
+import { browserLibraryStore } from '../services/libraryStore'
 import { startOfflineShell } from '../services/offlineShell'
 import { browserOpeningNote } from '../services/openingNote'
 import { downloadFile } from '../services/fileDownload'
@@ -41,15 +41,21 @@ async function goToEditor(address = base) {
   location.assign(address)
 }
 
-/** The beader's library, opened once: by the Menu's Saved Projects (ticket 0716) or by Open editor from here. A gated
- * Project, or one that didn't open, stays stored. */
+/** The library's start, begun with the page and not waited for (spec 1018): the page shows after the count alone. */
+const libraryStarted = browserLibraryStore.start()
+
+/** The beader's library, opened once it has started: by the Menu's Saved Projects (ticket 0716) or by Open editor from
+ * here. A gated Project, or one that didn't open, stays stored. */
 let library: ReturnType<typeof useProjectLibrary> | undefined
-const openLibrary = () => (library ??= useProjectLibrary(browserLibraryStore, { held: browserOpeningNote.read()?.id }))
+const openLibrary = async () => {
+  await libraryStarted
+  return (library ??= useProjectLibrary(browserLibraryStore, { held: browserOpeningNote.read()?.id }))
+}
 
 /** What's inside's Open editor from here (ticket 0879): the demo's Project kept in the library, its picture beside it,
  * and the editor opened on it at the demo's view, as every way in leaves. */
 async function openDemoCopy(snapshot: DemoSnapshot) {
-  const id = await keepDemoCopy(snapshot, { library: openLibrary(), pictures: browserPictureStore })
+  const id = await keepDemoCopy(snapshot, { library: await openLibrary(), pictures: browserPictureStore })
   await goToEditor(projectAddress(base, id, snapshot.view))
 }
 
@@ -67,12 +73,12 @@ async function saveProjectFile(project: Project | SealedProject) {
   await downloadFile(name, contents, 'application/json')
 }
 
-// Only the language in use is fetched before the page starts (ticket 0616).
-void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
+// Only the language in use is fetched before the page starts (ticket 0616), and the count of Projects (spec 1018).
+void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), browserLibraryStore.count()]).then(([, projectCount]) => {
   createApp({
     render: () =>
       h(HomePage, {
-        projectCount: storedProjectCount(),
+        projectCount,
         feedback: browserFeedback,
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
         openLibrary,

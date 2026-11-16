@@ -328,6 +328,8 @@ export interface Translations {
   weaveSettings: Readonly<Record<string, SettingWords>>
   projects: {
     heading: string
+    /** The Saved Projects list while the library hasn't arrived (spec 1018). */
+    loading: string
     newProjectButton: string
     removeButton: string
     unknownBeadLabel: string

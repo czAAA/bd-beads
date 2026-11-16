@@ -244,6 +244,7 @@ export const pl: Translations = {
   },
   projects: {
     heading: 'Biblioteka projektów',
+    loading: 'Wczytuję Twoje projekty…',
     newProjectButton: 'Nowy projekt',
     removeButton: 'Usuń',
     unknownBeadLabel: 'Nieznany koralik',

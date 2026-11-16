@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { mergeLibrary, mostRecentlyUpdated, summarizeProject } from './projectLibrary'
+import { takeInOutside, mostRecentlyUpdated, summarizeProject } from './projectLibrary'
 import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { turnedClockwise } from '../testUtils/rotated'
@@ -64,46 +64,47 @@ describe('mostRecentlyUpdated', () => {
   })
 })
 
-describe('mergeLibrary (ticket 0834)', () => {
+describe('takeInOutside (tickets 0834, 1019)', () => {
   /** A library entry: an id and the version it is at, so a test can tell two copies of one Project apart. */
   const entry = (id: string, version = 1) => ({ id, version })
   type Entry = ReturnType<typeof entry>
   const known = (...entries: Entry[]) => new Map(entries.map((each) => [each.id, each]))
+  const outside = (changed: Entry[] = [], gone: string[] = []) => ({ changed, gone })
 
-  it('keeps a Project another tab stored that this tab has never seen', () => {
+  it('takes in a Project another tab made, which this tab has never seen', () => {
     const alpha = entry('alpha')
     const beta = entry('beta')
 
-    expect(mergeLibrary([alpha], known(alpha), [alpha, beta])).toEqual([alpha, beta])
+    expect(takeInOutside([alpha], known(alpha), outside([beta])).library).toEqual([alpha, beta])
   })
 
-  it("writes this tab's change over the stored copy, and only that Project", () => {
+  it("keeps this tab's change over the stored copy, and takes the stored copy of the rest", () => {
     const alpha = entry('alpha')
     const beta = entry('beta')
     const changed = entry('alpha', 2)
 
-    expect(mergeLibrary([changed, beta], known(alpha, beta), [alpha, entry('beta', 3)])).toEqual([changed, entry('beta', 3)])
+    const taken = takeInOutside([changed, beta], known(alpha, beta), outside([entry('alpha', 5), entry('beta', 3)]))
+
+    expect(taken.library).toEqual([changed, entry('beta', 3)])
+    // The stored copy is what this tab now knows, so the change here still counts as made here.
+    expect(taken.known.get('alpha')).toEqual(entry('alpha', 5))
   })
 
-  it('adds a Project made here', () => {
-    const alpha = entry('alpha')
-    const made = entry('gamma')
-
-    expect(mergeLibrary([made, alpha], known(alpha), [alpha])).toEqual([alpha, made])
-  })
-
-  it('leaves out a Project removed here, and keeps out one another tab removed', () => {
+  it('leaves a Project removed here removed, even when another tab changed it', () => {
     const alpha = entry('alpha')
     const beta = entry('beta')
 
-    expect(mergeLibrary([beta], known(alpha, beta), [alpha, beta])).toEqual([beta])
-    expect(mergeLibrary([alpha, beta], known(alpha, beta), [beta])).toEqual([beta])
+    expect(takeInOutside([beta], known(alpha, beta), outside([entry('alpha', 2)])).library).toEqual([beta])
   })
 
-  it('keeps a Project removed even when this tab changed it after', () => {
+  it('removes a Project another tab removed, even when this tab changed it after', () => {
     const alpha = entry('alpha')
+    const beta = entry('beta')
 
-    expect(mergeLibrary([entry('alpha', 2)], known(alpha), [])).toEqual([])
+    const taken = takeInOutside([entry('alpha', 2), beta], known(alpha, beta), outside([], ['alpha']))
+
+    expect(taken.library).toEqual([beta])
+    expect([...taken.known.keys()]).toEqual(['beta'])
   })
 
   it('takes the stored copy of a Project this tab may not change, but still removes it when asked', () => {
@@ -111,7 +112,13 @@ describe('mergeLibrary (ticket 0834)', () => {
     const drawnThere = entry('alpha', 3)
     const notHere = (id: string) => id !== 'alpha'
 
-    expect(mergeLibrary([entry('alpha', 2)], known(alpha), [drawnThere], notHere)).toEqual([drawnThere])
-    expect(mergeLibrary([], known(alpha), [drawnThere], notHere)).toEqual([])
+    expect(takeInOutside([entry('alpha', 2)], known(alpha), outside([drawnThere]), notHere).library).toEqual([drawnThere])
+    expect(takeInOutside([entry('alpha', 2)], known(alpha), outside([], ['alpha']), notHere).library).toEqual([])
+  })
+
+  it('changes nothing when nothing changed', () => {
+    const alpha = entry('alpha')
+
+    expect(takeInOutside([alpha], known(alpha), outside()).library).toEqual([alpha])
   })
 })

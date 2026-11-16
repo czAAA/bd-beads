@@ -242,6 +242,7 @@ export const en: Translations = {
   },
   projects: {
     heading: 'Projects library',
+    loading: 'Loading your Projects…',
     newProjectButton: 'New Project',
     removeButton: 'Remove',
     unknownBeadLabel: 'Unknown bead',

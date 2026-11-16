@@ -18,7 +18,7 @@ function setup(options: { open?: boolean; saved?: boolean; rename?: Record<strin
     currentProject: () => (options.open === false ? undefined : open),
     addProjects: vi.fn((projects: Project[]) => projects.map((project) => (options.rename?.[project.id] ? withProjectName(project, options.rename[project.id]!) : project))),
     openProject: vi.fn(),
-    saveNow: vi.fn(() => options.saved ?? true),
+    saveNow: vi.fn(async () => options.saved ?? true),
   }
   return { deps, ...useImportSwitchFlow(deps) }
 }
@@ -86,18 +86,18 @@ describe('useImportSwitchFlow', () => {
     expect(deps.openProject).not.toHaveBeenCalled()
   })
 
-  it('remembers when Save current was refused, and forgets it on the next import', () => {
+  it('remembers when Save current was refused, and forgets it on the next import', async () => {
     const { importSaveRefused, onImportProjects, onSaveBeforeImportSwitch } = setup({ saved: false })
     onImportProjects([older])
-    onSaveBeforeImportSwitch()
+    await onSaveBeforeImportSwitch()
     expect(importSaveRefused.value).toBe(true)
     onImportProjects([newer])
     expect(importSaveRefused.value).toBe(false)
   })
 
-  it('does not report a refusal when Save current got through', () => {
+  it('does not report a refusal when Save current got through', async () => {
     const { importSaveRefused, onSaveBeforeImportSwitch } = setup({ saved: true })
-    onSaveBeforeImportSwitch()
+    await onSaveBeforeImportSwitch()
     expect(importSaveRefused.value).toBe(false)
   })
 })

@@ -91,9 +91,10 @@ describe("App maker line: the Project's own Maker's name (ADR 0060, tickets 443,
     expect(wrapper.find('[data-testid="project-maker-add"]').exists()).toBe(true)
   })
 
-  it("copies a saved device-wide name into a Project with none on the first load, then clears the device value (temporary)", () => {
+  it("copies a saved device-wide name into a Project with none on the first load, then clears the device value (temporary)", async () => {
     localStorage.setItem(LEGACY_MAKER_NAME_KEY, 'Maria')
     mountApp()
+    await flushPromises()
 
     expect(savedName()).toBe('Maria')
     expect(localStorage.getItem(LEGACY_MAKER_NAME_KEY)).toBeNull()

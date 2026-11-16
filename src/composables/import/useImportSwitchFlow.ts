@@ -12,7 +12,7 @@ export interface ImportSwitchFlowDeps {
   /** Opens a Project by id, the same switch the library list makes. */
   openProject: (id: string) => void
   /** Writes the library now; false when the device refused it. */
-  saveNow: () => boolean
+  saveNow: () => Promise<boolean>
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
@@ -69,8 +69,8 @@ export function useImportSwitchFlow(deps: ImportSwitchFlowDeps) {
 
   /** Save current: writes the library as it stands now; the modal turns to the plain question once that gets through
    * (saveFailed clears), or says so if it didn't. */
-  function onSaveBeforeImportSwitch() {
-    importSaveRefused.value = !deps.saveNow()
+  async function onSaveBeforeImportSwitch() {
+    importSaveRefused.value = !(await deps.saveNow())
   }
 
   return {

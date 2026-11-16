@@ -244,6 +244,7 @@ export const uk: Translations = {
   },
   projects: {
     heading: 'Бібліотека проєктів',
+    loading: 'Завантажуємо ваші проєкти…',
     newProjectButton: 'Новий проєкт',
     removeButton: 'Видалити',
     unknownBeadLabel: 'Невідома бісерина',
