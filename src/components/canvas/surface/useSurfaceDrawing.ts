@@ -2,6 +2,7 @@ import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { changedRows } from '../../../domain/canvas'
 import { beadTotal } from '../../../domain/openingLimits'
 import { frameOf, layerOf } from '../../../domain/layerRecord'
+import { INITIAL_ROW_PROGRESS, rowProgressOf, stepLines } from '../../../domain/rowProgress'
 import { layersAlike } from '../../../domain/layerWeave'
 import { draftCost } from '../../../domain/weave'
 import { shownLetters } from '../../../domain/paletteEdits'
@@ -124,13 +125,17 @@ function sameFields(a: object, b: object): boolean {
   })
 }
 
+type Band = { first: number; last: number }
+/** What a draw redraws alone: bands of rows, or strips of columns where a Progress bar step's passes run down the grid. */
+type Bands = { rows: Band[] } | { columns: Band[] }
+
 /** Past this many changed rows, drawing them one band at a time costs more than drawing the lot. */
 const MOST_ROWS_WORTH_A_BAND = 40
 
 // Bands of rows an edit changed, to draw just those (rows within two apart share a band; neighbours are drawn anyway).
 // Empty when nothing changed; undefined when so much did (Undo, Fill) that drawing all again is
 // cheaper.
-function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
+function changedBands(before: Project, after: Project): Bands | undefined {
   // The Frame's rows are not the Canvas's where it is woven otherwise or in a Bead of another size (tickets 492, 0665),
   // nor rows on the screen where it has a Frame shape, whose layout places each bead (a Fringe earring's top is counted
   // up from its base row, its strands from row 1000): draw it all again.
@@ -148,20 +153,48 @@ function changedBands(before: Project, after: Project): { first: number; last: n
       ...changedRows(framed(before), framed(after)).map((row) => row + frameTop),
     ]),
   ].sort((x, y) => x - y)
-  if (changed.length > MOST_ROWS_WORTH_A_BAND) {
+  const rows = bandsOf(changed)
+  return rows && { rows }
+}
+
+/** Lines in order grouped into bands (lines within two apart share one; neighbours are drawn anyway), or undefined past
+ * as many as bands pay for. */
+function bandsOf(lines: readonly number[]): Band[] | undefined {
+  if (lines.length > MOST_ROWS_WORTH_A_BAND) {
     return undefined
   }
-
-  const bands: { first: number; last: number }[] = []
-  for (const row of changed) {
+  const bands: Band[] = []
+  for (const line of lines) {
     const band = bands.at(-1)
-    if (band && row - band.last <= 2) {
-      band.last = row
+    if (band && line - band.last <= 2) {
+      band.last = line
     } else {
-      bands.push({ first: row, last: row })
+      bands.push({ first: line, last: line })
     }
   }
   return bands
+}
+
+/** A Project with its Frame's Row progress taken out, to tell a Progress bar step from any other change. */
+function withoutProgress(project: Project): Project {
+  const [canvas, frame, ...others] = project.layers
+  return frame ? { ...project, layers: [canvas, { ...frame, rowProgress: INITIAL_ROW_PROGRESS }, ...others] } : project
+}
+
+/** The bands of a Progress bar step (ticket 1038), when nothing but the Frame's Row progress changed: the Canvas rows,
+ * or columns where the rows run down it, of the passes whose look changed. Undefined where they are not lines of the
+ * Canvas (a Frame shape, a Frame woven otherwise or in a Bead of another size) or too many to pay. */
+function stepBands(before: Project, after: Project): Bands | undefined {
+  const frame = frameOf(after)
+  const painted = (layer: 'canvas' | 'frame') => changedRows(layerOf(before, layer)?.beads ?? {}, layerOf(after, layer)?.beads ?? {}).length > 0
+  const samePaint = !painted('canvas') && !painted('frame')
+  if (!frame || frame.shape || !layersAlike(after) || !samePaint || !sameDrawing(withoutProgress(before), withoutProgress(after))) {
+    return undefined
+  }
+  const step = stepLines(after, rowProgressOf(before))
+  const across = step?.direction === 'columns'
+  const bands = step && bandsOf(step.lines.map((line) => line + (across ? frame.column : frame.row)))
+  return bands && (across ? { columns: bands } : { rows: bands })
 }
 
 /** How many beads a Project stores: counted once per set of beads, an edit's from the last by the rows it changed, and
@@ -219,18 +252,22 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       before.frameTheme === frameTheme.value &&
       before.showFinished === showFinished.value &&
       before.rowMarks === marksShown.value &&
-      sameReference(before.reference, reference.value) &&
-      sameDrawing(before.project, project)
-        ? changedBands(before.project, project)
+      sameReference(before.reference, reference.value)
+        ? sameDrawing(before.project, project)
+          ? changedBands(before.project, project)
+          : stepBands(before.project, project)
         : undefined
+    const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value }
 
     if (bands === undefined) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value })
+      renderProject(context, drawing)
       onDrawn?.()
       return
     }
-    for (const rows of bands) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value })
+    if ('rows' in bands) {
+      for (const rows of bands.rows) renderProject(context, { ...drawing, rows })
+    } else {
+      for (const columns of bands.columns) renderProject(context, { ...drawing, columns })
     }
   }
 
