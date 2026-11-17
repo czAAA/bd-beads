@@ -342,6 +342,8 @@ export const zh: Translations = {
     canvasPlaceholder: '还没有打开的项目',
     updateReady: '更新已就绪',
     updateReload: '重新加载',
+    signInRunOut: '登录已过期。',
+    signIn: '登录',
     canvasPlaceholderPan: '用鼠标右键或空格键拖动画布。',
     canvasDeleted: '“{name}”已删除。',
     canvasDeletedHint: '从项目库打开另一个，或新建一个。',

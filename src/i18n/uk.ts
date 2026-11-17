@@ -342,6 +342,8 @@ export const uk: Translations = {
     canvasPlaceholder: 'Проєкт ще не відкрито',
     updateReady: 'Оновлення готове',
     updateReload: 'Перезавантажити',
+    signInRunOut: 'Термін входу минув.',
+    signIn: 'Увійти',
     canvasPlaceholderPan: 'Переміщуйте полотно правою кнопкою миші або пробілом.',
     canvasDeleted: 'Проєкт «{name}» видалено.',
     canvasDeletedHint: 'Відкрийте інший із бібліотеки проєктів або створіть новий.',

@@ -92,6 +92,7 @@ export function memoryServices(projects: readonly Project[], options: MemoryServ
     readClipboardImage,
     devicePreferences: memoryPreferences(page, pageStorage, start),
     appUpdates: { onReady: () => () => undefined, apply: () => undefined },
+    appSignIn: { onRunOut: () => () => undefined, signIn: () => undefined },
     // Kept already, so the demo never asks the browser to keep a library it doesn't save.
     persistentStorage: { persisted: async () => true, persist: async () => undefined },
     feedback: browserFeedback,

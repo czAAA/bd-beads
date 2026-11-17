@@ -1,12 +1,13 @@
 // The offline shell (ticket 69, ADR 0045). vite.pwa.ts copies this to the build as `sw.js`, filling in cache and files.
-// Install caches every built file as a plain answer, all or nothing; no skipWaiting; pages are network-first, other
-// built files cache-first (hashed names); anything else goes to the network. Plain JS: no library.
+// Install caches every built file as a plain answer, all or nothing; no skipWaiting; a built file, pages included,
+// comes from the copy on the device (ticket 1041); anything else goes to the network. Plain JS: no library.
 
 const CACHE = '__CACHE_NAME__'
 const PRECACHE = '__PRECACHE__'
 
-/** How long a page may take before the copy on the device is shown instead. Only waited out when there is no copy. */
-const NETWORK_TIMEOUT_MS = 4000
+/** The mark on a page load that asks the host, so Cloudflare Access can show its sign-in page (ticket 1041). The page
+ * side sets it: `SIGN_IN_MARK` in src/services/offlineShell.ts. */
+const SIGN_IN_MARK = 'sign-in'
 
 const scope = new URL(self.registration.scope)
 const precached = new Set(PRECACHE)
@@ -65,32 +66,25 @@ async function fromCache(path) {
   return cache.match(urlOf(path))
 }
 
-async function networkFirst(request, path) {
-  const cached = await fromCache(path)
-  let answer
-  try {
-    const attempt = fetch(request)
-    attempt.catch(() => {}) // a slow answer that loses the race and then fails is not an error to report
-    answer = await (cached
-      ? Promise.race([attempt, new Promise((_, reject) => setTimeout(reject, NETWORK_TIMEOUT_MS))])
-      : attempt)
-    // Only a server error falls back to the copy (owner's rule, ticket 1017). Anything else goes to the browser as it
-    // is, a redirect above all: Cloudflare Access sending a person whose session ran out to sign in.
-    if (answer.status < 500) return answer
-  } catch {
-    // No network, or too slow: the copy on the device answers.
-  }
-  return cached ?? answer ?? Response.error()
+/** A built file from the copy on the device, so a refresh keeps the version the person is on (ticket 1041). The
+ * network answers only when there is no copy. */
+async function fromDevice(request, path) {
+  return (await fromCache(path)) ?? fetch(request)
 }
 
-async function cacheFirst(request, path) {
-  return (await fromCache(path)) ?? fetch(request)
+/** A page load marked Sign in asks the host first. A redirect (Access sending the person to sign in) goes to the
+ * browser; any other answer is dropped for the copy on the device, so signing in never changes the version. */
+async function signInOrPage(request, path) {
+  const answer = await fetch(request).catch(() => null)
+  return answer && answer.type === 'opaqueredirect' ? answer : fromDevice(request, path)
 }
 
 self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return
-  const path = builtFile(new URL(request.url))
+  const url = new URL(request.url)
+  const path = builtFile(url)
   if (path === null) return
-  event.respondWith(request.mode === 'navigate' ? networkFirst(request, path) : cacheFirst(request, path))
+  const signIn = request.mode === 'navigate' && url.searchParams.has(SIGN_IN_MARK)
+  event.respondWith(signIn ? signInOrPage(request, path) : fromDevice(request, path))
 })

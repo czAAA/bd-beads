@@ -342,6 +342,8 @@ export const es: Translations = {
     canvasPlaceholder: 'Aún no hay ningún proyecto abierto',
     updateReady: 'Actualización lista',
     updateReload: 'Recargar',
+    signInRunOut: 'Tu sesión ha caducado.',
+    signIn: 'Iniciar sesión',
     canvasPlaceholderPan: 'Mueve el lienzo arrastrando con el botón derecho del ratón o con Espacio.',
     canvasDeleted: 'Se eliminó «{name}».',
     canvasDeletedHint: 'Abre otro desde la biblioteca de proyectos o crea uno nuevo.',

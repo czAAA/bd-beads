@@ -4,7 +4,7 @@ import { decodeImageFile } from './imageDecode'
 import { readClipboardImage } from './clipboardImage'
 import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
-import { browserAppUpdates, type AppUpdates } from './offlineShell'
+import { browserAppSignIn, browserAppUpdates, type AppSignIn, type AppUpdates } from './offlineShell'
 import { browserPersistentStorage, type PersistentStorage } from './persistentStorage'
 import { browserFeedback, type FeedbackService } from './feedback'
 import { browserOpeningNote, type OpeningNoteStore } from './openingNote'
@@ -27,6 +27,8 @@ export interface Services {
   readClipboardImage: () => Promise<File | undefined>
   devicePreferences: DevicePreferences
   appUpdates: AppUpdates
+  /** The host's sign-in, which a page opened from the device never meets (ticket 1041). */
+  appSignIn: AppSignIn
   persistentStorage: PersistentStorage
   /** Sending a Report from the Feedback sheet, and Copy report (ADR 0081). */
   feedback: FeedbackService
@@ -54,6 +56,7 @@ export const browserServices: Services = {
   readClipboardImage,
   devicePreferences: browserDevicePreferences,
   appUpdates: browserAppUpdates,
+  appSignIn: browserAppSignIn,
   persistentStorage: browserPersistentStorage,
   feedback: browserFeedback,
   openingNote: browserOpeningNote,

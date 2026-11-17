@@ -342,6 +342,8 @@ export const pl: Translations = {
     canvasPlaceholder: 'Nie otwarto jeszcze żadnego projektu',
     updateReady: 'Aktualizacja gotowa',
     updateReload: 'Załaduj ponownie',
+    signInRunOut: 'Sesja wygasła.',
+    signIn: 'Zaloguj się',
     canvasPlaceholderPan: 'Przesuwaj płótno prawym przyciskiem myszy lub spacją.',
     canvasDeleted: 'Projekt „{name}” został usunięty.',
     canvasDeletedHint: 'Otwórz inny z biblioteki projektów albo utwórz nowy.',
