@@ -40,7 +40,7 @@ const COLOR_CATALOG_CODES = Object.fromEntries(
 )
 
 /** The Build's Version, build mark and newest date for the app (ticket 1045). A build ships, so it fails when git can't
- * place a note; the dev server and the tests go on (spec 1043). */
+ * place a note; the dev server and the tests, a build inside them too (vite.pwa.test.ts), go on (spec 1043). */
 function versionDefines(ships: boolean): Record<string, string> {
   const { version, mark, date } = buildVersion(import.meta.dirname, ships)
   return { __APP_VERSION__: JSON.stringify(version), __BUILD_MARK__: JSON.stringify(mark), __BUILD_DATE__: JSON.stringify(date) }
@@ -58,7 +58,7 @@ export default defineConfig(({ command, mode }) => ({
   // Lets `tailscale serve` reach the dev server from other devices on the tailnet.
   server: { allowedHosts: ['.ts.net'] },
   // What About and a Report show (ticket 1045); the catalogs' code counts the Homepage names (ticket 0742).
-  define: { ...versionDefines(command === 'build'), __COLOR_CATALOG_CODES__: JSON.stringify(COLOR_CATALOG_CODES) },
+  define: { ...versionDefines(command === 'build' && !process.env.VITEST), __COLOR_CATALOG_CODES__: JSON.stringify(COLOR_CATALOG_CODES) },
   build: {
     // Two pages: the editor and the Homepage (ticket 77), which is a folder with its own index.html so a static host
     // serves /homepage/ with no rewrite rules (ADR 0014).
