@@ -352,9 +352,10 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: painted(project, 12, 4) })
 
-      // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it and widened by three rows
-      // either side, where the Lifted piece's contour and shadow reach (ticket 1004).
-      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 180, 400, 140]])
+      // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it and its rim a row either
+      // side (ticket 1036), widened by three rows either side, where the Lifted piece's contour and shadow reach
+      // (ticket 1004).
+      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 160, 400, 180]])
     })
 
     it('draws a band for each cluster of changed rows, as a change to rows far apart', async () => {
@@ -494,16 +495,17 @@ describe('ProjectSurface', () => {
       expect(await nextFrame()).toEqual(['all'])
 
       await surface.trigger('pointerdown', { ...pointAt(2, 1), button: 0, buttons: 1 })
-      // Each band reaches three rows either side of the rows painted, as far as the Lifted piece does (ticket 1004).
-      expect(await nextFrame()).toEqual([{ first: 0, last: 5 }])
+      // Each band reaches three rows either side of the rows painted and of their rim a row round them, as far as the
+      // Lifted piece does (tickets 1004, 1036).
+      expect(await nextFrame()).toEqual([{ first: 0, last: 6 }])
 
       // Two moves in one frame, seven beads along row 2: still one draw, of that row.
       await surface.trigger('pointermove', { ...pointAt(2, 4), buttons: 1 })
       await surface.trigger('pointermove', { ...pointAt(2, 8), buttons: 1 })
-      expect(await nextFrame()).toEqual([{ first: 0, last: 5 }])
+      expect(await nextFrame()).toEqual([{ first: 0, last: 6 }])
 
       await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
-      expect(await nextFrame()).toEqual([{ first: 0, last: 9 }])
+      expect(await nextFrame()).toEqual([{ first: 0, last: 10 }])
 
       // Over a bead already painted, and the release: nothing changed, so nothing is drawn.
       await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })

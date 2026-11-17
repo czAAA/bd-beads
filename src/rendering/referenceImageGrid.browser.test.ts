@@ -17,11 +17,11 @@ import { gridToRegion, positionBoxPx } from './surfaceView'
 const REGION = { x: 0, y: 0, width: 400, height: 400 }
 const ZOOM = 1
 
-/** A 3 × 3 Frame at row 2, column 2, its first row painted and the others left empty. */
+/** A 4 × 3 Frame at row 2, column 2, its first row painted and the others left empty. */
 function framedProject(): Project {
   const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } })
   const cells = [0, 1, 2].map((column) => ({ row: 0, column, color: '#1a1a1a' }))
-  const frame = { ...weaveOf(canvasOf(project)), row: 2, column: 2, rows: 3, columns: 3, beads: withColors({}, cells) }
+  const frame = { ...weaveOf(canvasOf(project)), row: 2, column: 2, rows: 4, columns: 3, beads: withColors({}, cells) }
   return withLayers(project, { frame })
 }
 
@@ -65,7 +65,7 @@ describe('the grid under a reference image (ticket 1008)', () => {
       const hidden = rendered(project, theme)
       // On the open Canvas far from the picture, and on the Frame's empty row.
       expect(shown.across(9, 9)).toEqual(hidden.across(9, 9))
-      expect(shown.across(4, 3)).toEqual(hidden.across(4, 3))
+      expect(shown.across(5, 3)).toEqual(hidden.across(5, 3))
     })
   }
 
@@ -73,9 +73,9 @@ describe('the grid under a reference image (ticket 1008)', () => {
     const project = framedProject()
     const { across } = rendered(project, PROJECT_THEMES.light, pictureAt(0, 0, 1000))
     // An empty position at 100% is the picture: nothing is drawn over it, on the Canvas or in the Frame (the row
-    // just under the painted one takes their Lifted piece's shadow).
+    // just under the painted one is their Lifted piece's rim, ticket 1036, and the next takes its shadow).
     expect(new Set(across(9, 9))).toEqual(new Set([RED]))
-    expect(new Set(across(4, 3))).toEqual(new Set([RED]))
+    expect(new Set(across(5, 3))).toEqual(new Set([RED]))
     // A painted bead still covers it.
     expect(across(2, 3).filter((pixel) => pixel !== RED).length).toBeGreaterThan(across(2, 3).length / 2)
   })

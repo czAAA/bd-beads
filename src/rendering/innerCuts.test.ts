@@ -32,6 +32,13 @@ function liftedPicture(cuts: InnerCuts, layer: CutLayer, picture: string): strin
     .join('\n')
 }
 
+/** A picture with a ring of empty positions round it, for the rim a bead out. */
+const framed = (picture: string) => {
+  const rows = lines(picture).split('\n')
+  const empty = '.'.repeat(rows[0]!.length + 2)
+  return [empty, ...rows.map((line) => `.${line}.`), empty].join('\n')
+}
+
 const lines = (picture: string) => picture.trim().split('\n').map((line) => line.trim()).join('\n')
 
 /** Sets or takes off one bead, keeping every other row as it was, as a stroke step does. */
@@ -43,67 +50,134 @@ function withBead(beads: BeadMap, row: number, column: number, bead: boolean): B
 }
 
 describe('inner cuts', () => {
+  /** The lifted positions of `picture` with a ring of empty positions round it. */
+  const liftedRound = (picture: string, technique: Technique = 'loom') => {
+    const round = framed(picture)
+    return liftedPicture(new InnerCuts(), layerOf(beadsOf(round), technique), round)
+  }
+
   it('lifts a hole of one bead and a strip one bead wide whole', () => {
-    const picture = `
+    expect(liftedRound(`
       #######
       #.#...#
-      #######`
-    expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(picture)), picture)).toBe(lines(`
-      #######
-      #+#+++#
-      #######`))
+      #######`)).toBe(lines(`
+      +++++++++
+      +#######+
+      +#+#+++#+
+      +#######+
+      +++++++++`))
   })
 
   it('lifts a cut two beads across whole, and one that holds no 2 × 2 block a bead from the beads', () => {
-    const picture = `
-      ######
-      #....#
-      #....#
-      #....#
-      ######`
-    expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(picture)), picture)).toBe(lines(`
-      ######
-      #++++#
-      #++++#
-      #++++#
-      ######`))
+    expect(liftedRound(`
+      #####
+      #...#
+      #...#
+      #...#
+      #####`)).toBe(lines(`
+      +++++++
+      +#####+
+      +#+++#+
+      +#+++#+
+      +#+++#+
+      +#####+
+      +++++++`))
   })
 
   it('keeps a larger cut open a bead in from its beads', () => {
-    const picture = `
+    expect(liftedRound(`
       ######
       #....#
       #....#
       #....#
       #....#
-      ######`
+      ######`)).toBe(lines(`
+      ++++++++
+      +######+
+      +#++++#+
+      +#+..+#+
+      +#+..+#+
+      +#++++#+
+      +######+
+      ++++++++`))
+  })
+
+  it('lifts the rim a bead round the beads outside, and leaves what lies further out alone (ticket 1036)', () => {
+    const picture = `
+      .......
+      .......
+      ..##...
+      .......
+      .......
+      .....#.`
     expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(picture)), picture)).toBe(lines(`
-      ######
-      #++++#
-      #+..+#
-      #+..+#
-      #++++#
-      ######`))
+      .......
+      .++++..
+      .+##+..
+      .++++..
+      ....+++
+      ....+#+`))
   })
 
-  it('leaves empty positions joined to the outside alone, a gap corner to corner included', () => {
-    const picture = `
-      ##.###
-      #....#
-      ######
-      ...#.#
-      ..#.##
-      ...###`
-    expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(picture)), picture)).toBe(lines(picture))
-  })
-
-  it("counts the layer's edge as outside: a gap against it is no cut", () => {
-    const picture = `
-      .###
+  it('gives two pieces two beads apart one ground between them', () => {
+    expect(liftedRound(`
       #..#
-      ####`
-    const has = (row: number, column: number) => row >= 1 && column >= 0 && column < 4 && row < 3
-    expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(picture), 'loom', has, 'from row 1'), picture)).toBe(lines(picture))
+      #..#`)).toBe(lines(`
+      ++++++
+      +#++#+
+      +#++#+
+      ++++++`))
+  })
+
+  it('leaves a gap joined to the outside unlifted where it lies a bead from every bead', () => {
+    // Columns 2 to 4 are three wide, so their middle lies a bead from the beads: closed in at the top it would be lifted.
+    const open = `
+      ##...##
+      #.....#
+      #.....#
+      #######`
+    expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(open)), open)).toBe(lines(`
+      ##+.+##
+      #++.++#
+      #+++++#
+      #######`))
+    const closed = open.replace('##...##', '#######')
+    expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(closed)), closed)).toBe(lines(`
+      #######
+      #+++++#
+      #+++++#
+      #######`))
+  })
+
+  it('counts a gap corner to corner as leading out', () => {
+    const picture = `
+      ####..
+      #...#.
+      #...#.
+      #...#.
+      #####.`
+    expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(picture)), picture)).toBe(lines(`
+      ####++
+      #+++#+
+      #+.+#+
+      #+++#+
+      #####+`))
+  })
+
+  it("counts the layer's edge as outside, and lifts no position off it: the rim stops at the edge", () => {
+    const picture = `
+      #...#
+      #...#
+      #...#
+      #...#
+      #####`
+    const has = (row: number, column: number) => row >= 1 && column >= 0 && column < 5 && row < 5
+    expect(liftedPicture(new InnerCuts(), layerOf(beadsOf(picture), 'loom', has, 'from row 1'), picture)).toBe(lines(`
+      #...#
+      #+.+#
+      #+.+#
+      #+++#
+      #####`))
   })
 
   it('finds cuts by how beads touch in brick stitch and peyote', () => {
@@ -120,16 +194,19 @@ describe('inner cuts', () => {
   })
 
   it('opens a cut at once when an edit joins it to the outside, and closes it again', () => {
+    // The middle of a cut three across lies a bead from the beads: lifted only while the cut is closed in.
     const picture = `
       #####
+      #...#
+      #...#
       #...#
       #####`
     const cuts = new InnerCuts()
     const closed = beadsOf(picture)
-    expect(cuts.update(layerOf(closed)).rows.get(1)).toEqual([1, 2, 3])
+    expect(cuts.update(layerOf(closed)).has(2, 2)).toBe(true)
     const opened = withBead(closed, 0, 2, false)
-    expect(cuts.update(layerOf(opened)).rows.get(1)).toBeUndefined()
-    expect(cuts.update(layerOf(withBead(opened, 0, 2, true))).rows.get(1)).toEqual([1, 2, 3])
+    expect(cuts.update(layerOf(opened)).has(2, 2)).toBe(false)
+    expect(cuts.update(layerOf(withBead(opened, 0, 2, true))).has(2, 2)).toBe(true)
   })
 
   it('parts a cut a bead is set across, and joins two a bead is taken off between', () => {
@@ -150,10 +227,10 @@ describe('inner cuts', () => {
     expect([parted.has(1, 1), parted.has(2, 4), parted.has(2, 6)]).toEqual([true, true, true])
     // A wall at column 3 too: cuts of 2 × 4 and 1 × 4 beside it, each lifted whole.
     for (let row = 1; row <= 4; row += 1) beads = withBead(beads, row, 3, true)
-    expect(cuts.update(layerOf(beads)).rows.get(2)).toEqual([1, 2, 4, 6, 9])
+    expect(cuts.update(layerOf(beads)).rows.get(2)).toEqual([-1, 1, 2, 4, 6, 9, 11])
     // The walls taken off again: one cut, its middle open.
     for (let row = 1; row <= 4; row += 1) beads = withBead(withBead(beads, row, 3, false), row, 5, false)
-    expect(cuts.update(layerOf(beads)).rows.get(2)).toEqual([1, 9])
+    expect(cuts.update(layerOf(beads)).rows.get(2)).toEqual([-1, 1, 9, 11])
   })
 
   it.each(['loom', 'brick', 'peyote'] as const)('works out the same cuts from the edits as from scratch in %s', (technique) => {
