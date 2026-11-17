@@ -20,6 +20,8 @@ The work is everything since the merge-base, committed or not, so one command co
 
 Confirm the ref resolves and the diff is non-empty. Fail here, not inside the sub-agents. If a PR is open for the branch (`gh pr view`), its description is spec material, and its title must match `type:[NNNN] Description` (`docs/agents/pull-requests.md`): a mismatch is a hard finding.
 
+If the diff adds a Release note (`src/data/releaseNotes/*.json`), check its kind against the rules in `docs/agents/pull-requests.md` (Release notes) yourself and report it under `## Spec`: a `fix` PR's note that isn't Fixed, a kind smaller than the change (the bigger kind wins), or a New note with no sign the owner said yes is a hard finding; so is a title or ticket that names a Version, and a note that is deleted or renamed. A user-facing change with no note is a judgement finding.
+
 ### 2. Find the spec
 
 First hit wins:

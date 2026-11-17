@@ -22,7 +22,7 @@ describe('useFeedbackFlow', () => {
     expect(dialogs.open.value).toBe('feedback')
     const { context } = feedbackRequest.value!
     expect(context).toEqual({
-      appVersion: __APP_VERSION__,
+      appVersion: expect.stringMatching(/^\d+\.\d+\.\d+ · ([0-9a-f]{7}|dev)$/),
       uiLanguage: 'uk',
       browser: expect.any(String),
       os: expect.any(String),
