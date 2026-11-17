@@ -102,6 +102,24 @@ describe('the watchdog', () => {
       expect(ping.body).toContain('dev Worker')
     }))
 
+  it("reports the day's Reports against FEEDBACK_DAILY_LIMIT, and pings /fail once one was refused (ticket 1051)", async () => {
+    await withWatchdog({ vars: { FEEDBACK_DAILY_LIMIT: 30 } }, async (worker) => {
+      await worker.scheduled(NOON)
+      expect(onePing(worker).body).toContain('Reports today (this Worker; over means refused): 0 (warn level 30)')
+      // Yesterday's count is not today's; at the limit nothing was refused yet.
+      await worker.coreDb.prepare("INSERT INTO feedback_days (day, reports) VALUES ('2026-10-10', 31), ('2026-10-11', 30)").run()
+      worker.outbound.length = 0
+      await worker.scheduled(NOON)
+      expect(onePing(worker).url).toBe(PING)
+      await worker.coreDb.prepare("UPDATE feedback_days SET reports = 31 WHERE day = '2026-10-11'").run()
+      worker.outbound.length = 0
+      await worker.scheduled(NOON)
+      const ping = onePing(worker)
+      expect(ping.url).toBe(`${PING}/fail`)
+      expect(ping.body).toContain('Over its warn level:\n- Reports today (this Worker; over means refused): 31 (warn level 30)')
+    })
+  })
+
   it('groups counts by thousands, from 0 up to millions', () =>
     withWatchdog({ today: { requests: 1234567, rowsWritten: 0, errors: 999 } }, async (worker) => {
       await worker.scheduled(NOON)

@@ -41,6 +41,9 @@ export interface Env {
   /** Reports from every address together, 10 per 60 seconds at one Cloudflare location (ticket 1024). */
   FEEDBACK_RATE_ALL?: RateLimit
 
+  /** Reports this Worker takes per UTC day (ticket 1051); the watchdog reports the day it was reached. */
+  FEEDBACK_DAILY_LIMIT: number | string
+
   UPLOAD_CAP_D1_BYTES: number | string
   UPLOAD_CAP_R2_MB: number | string
   BLOBS_STORAGE_LIMIT_MB: number | string
@@ -64,6 +67,7 @@ export interface Env {
 
 /** The variables that hold a number: every limit and warn level. */
 export type NumberVar =
+  | 'FEEDBACK_DAILY_LIMIT'
   | 'UPLOAD_CAP_D1_BYTES'
   | 'UPLOAD_CAP_R2_MB'
   | 'BLOBS_STORAGE_LIMIT_MB'
