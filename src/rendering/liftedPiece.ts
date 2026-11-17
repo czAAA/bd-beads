@@ -214,11 +214,34 @@ function addFillet(path: Path2D, corner: InnerCorner, grow: number, r: number, m
   }
 }
 
-/** The piece's shapes (or those `shapes` names), built in one pass over the cells, each grown past its body and rounded as
- * one path: the ground's and the contour's, in the space the context draws in (`base`, where beads are turned: each put
+/** The most parts one path of a shape holds (ticket 1034): Safari's engine fills a path of rounded parts in time that
+ * grows with their number squared (4 000 took 0.27 s; a checkered Frame's 15 000 stopped the screen for 15 s).
+ * @internal Tests count the paths a shape of many parts is filled in. */
+export const MOST_PARTS_PER_PATH = 32
+
+/** A shape of a piece as the paths that make it up, a few parts each, overlapping where its parts do. */
+interface Shape {
+  paths: Path2D[]
+  parts: number
+}
+
+/** The path a shape's next part goes on: its last, or a new one once that is full. */
+function nextPart(shape: Shape): Path2D {
+  if (shape.parts % MOST_PARTS_PER_PATH === 0) shape.paths.push(new Path2D())
+  shape.parts += 1
+  return shape.paths.at(-1)!
+}
+
+/** Fills a shape, path by path, in the context's fill: one color and opaque, so it is the shape whole. */
+function fillParts(context: Pick<DrawingContext, 'fill'>, shape: Shape): void {
+  for (const path of shape.paths) context.fill(path)
+}
+
+/** The piece's shapes (or those `shapes` names), built in one pass over the cells, each grown past its body and
+ * rounded: the ground's and the contour's, in the space the context draws in (`base`, where beads are turned: each put
  * into that). A round bead's cell takes its half circle; inner corners, found among `cornered`, are rounded. */
-function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined, rows: boolean, shapes: readonly (typeof SHAPES)[number][] = SHAPES, cornered = cells): { ground: Path2D; contour: Path2D } {
-  const paths = { ground: new Path2D(), contour: new Path2D() }
+function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined, rows: boolean, shapes: readonly (typeof SHAPES)[number][] = SHAPES, cornered = cells): { ground: Shape; contour: Shape } {
+  const paths: { ground: Shape; contour: Shape } = { ground: { paths: [], parts: 0 }, contour: { paths: [], parts: 0 } }
   for (const cell of cells) {
     const { x, y, width, height, transform } = cell
     const into = transform && base ? relativeTo(base, transform) : undefined
@@ -228,8 +251,8 @@ function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined,
       if (into) {
         const own = new Path2D()
         own.roundRect(x - grow, y - grow, width + grow * 2, height + grow * 2, corner)
-        paths[key].addPath(own, into)
-      } else paths[key].roundRect(x - grow, y - grow, width + grow * 2, height + grow * 2, corner)
+        nextPart(paths[key]).addPath(own, into)
+      } else nextPart(paths[key]).roundRect(x - grow, y - grow, width + grow * 2, height + grow * 2, corner)
     }
   }
   // Every round cell of a piece has the one bead's width: a Frame's and the Canvas's are drawn apart.
@@ -241,7 +264,7 @@ function shapesOf(cells: readonly LiftCell[], base: DOMMatrix2DInit | undefined,
         const grow = out - BODY_INSET_PX
         // A corner is at most half the shorter side, as the rounded rectangles draw it (a brick stitch bead lies wide).
         const corner = Math.min(bead! / 2 + grow, rows ? height / 2 + grow : Infinity)
-        addFillet(paths[key], inner, grow, corner, radius, rows)
+        addFillet(nextPart(paths[key]), inner, grow, corner, radius, rows)
       }
     }
   }
@@ -257,17 +280,39 @@ function shadowStep(blur: number, deviceScale: number): number {
   return Math.max(1, Math.min(MOST_SHADOW_STEP, Math.floor((blur * deviceScale) / 2)))
 }
 
-let shadowCanvas: HTMLCanvasElement | null | undefined
+/** What a shape is drawn in on a sheet, where only its shadows are kept: opaque, whatever the color. */
+const CAST_INK = '#000'
 
-/** The shadows' own sheet and its context, kept from draw to draw; undefined where there is no canvas to make one on. */
-function shadowSheet(): { canvas: HTMLCanvasElement; sheet: CanvasRenderingContext2D } | undefined {
-  if (shadowCanvas === undefined) shadowCanvas = typeof document === 'undefined' ? null : document.createElement('canvas')
-  const sheet = shadowCanvas?.getContext('2d')
-  return shadowCanvas && sheet ? { canvas: shadowCanvas, sheet } : undefined
+/** A canvas of the piece's own and its context. */
+interface Sheet {
+  canvas: HTMLCanvasElement
+  sheet: CanvasRenderingContext2D
+}
+
+const sheets: { shadows?: HTMLCanvasElement | null; shape?: HTMLCanvasElement | null } = {}
+
+/** The shadows' own sheet, or the one a shape of many paths is drawn on as one picture: kept from draw to draw;
+ * undefined where there is no canvas to make one on. */
+function sheetOf(which: keyof typeof sheets): Sheet | undefined {
+  if (sheets[which] === undefined) sheets[which] = typeof document === 'undefined' ? null : document.createElement('canvas')
+  const canvas = sheets[which]
+  const sheet = canvas?.getContext('2d')
+  return canvas && sheet ? { canvas, sheet } : undefined
+}
+
+/** Clears a sheet's corner of `width` × `height` px for a picture. The sheet only grows: sizing it allocates and clears
+ * it, and a smaller picture takes the corner of a larger one. */
+function clearSheet({ canvas, sheet }: Sheet, width: number, height: number): void {
+  if (canvas.width < width || canvas.height < height) {
+    canvas.width = Math.max(canvas.width, width)
+    canvas.height = Math.max(canvas.height, height)
+  }
+  sheet.setTransform(1, 0, 0, 1, 0, 0)
+  sheet.clearRect(0, 0, width, height)
 }
 
 /** The device px box round the cells' ground, grown by `reach`. */
-function deviceBox(cells: readonly LiftCell[], transform: DOMMatrix2DInit, reach: number): { left: number; top: number; right: number; bottom: number } {
+function deviceBox(cells: readonly LiftCell[], transform: DOMMatrix2DInit, reach: number): Box {
   const grow = GROUND_OUT_PX - BODY_INSET_PX
   const box = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity }
   for (const { x, y, width, height, transform: own } of cells) {
@@ -283,49 +328,67 @@ function deviceBox(cells: readonly LiftCell[], transform: DOMMatrix2DInit, reach
   return { left: Math.floor(box.left - reach), top: Math.floor(box.top - reach), right: Math.ceil(box.right + reach), bottom: Math.ceil(box.bottom + reach) }
 }
 
-/** Casts the shadows at `at` of `shape` onto `context`, each `step` times smaller and `aside` px right of the shape, the
- * shape put on it by `transform`. A shadow's blur is twice its spread, and it is in device px whatever the transform,
- * so it follows the zoom and falls down the screen however the Project is turned. */
-function castShadows(context: DrawingContext, shape: Path2D, at: readonly number[], shadows: readonly string[], deviceScale: number, { transform, step, aside }: { transform?: DOMMatrix2DInit; step: number; aside: number }): void {
+/** Casts the shadows at `at` of what `lay` draws onto `context`, each `step` times smaller and `aside` px right of it.
+ * A shadow's blur is twice its spread, and it is in device px whatever the transform, so it follows the zoom and falls
+ * down the screen however the Project is turned. */
+function castShadows(context: DrawingContext, at: readonly number[], shadows: readonly string[], deviceScale: number, { step, aside }: { step: number; aside: number }, lay: () => void): void {
   context.save()
-  if (transform) setMatrix(context, transform)
   for (const each of at) {
     const { blur, down } = SHADOWS[each]!
     context.shadowColor = shadows[each]!
     context.shadowBlur = (blur * 2 * deviceScale) / step
     context.shadowOffsetX = aside
     context.shadowOffsetY = (down * deviceScale) / step
-    context.fill(shape)
+    lay()
   }
   context.restore()
 }
 
 /** The shadows at `at`, blurred together on a sheet `step` times smaller than the screen and laid down smoothed, as a
- * layer laid over the screen costs its size. The shape lies a sheet's width to the left, so the sheet holds the shadows
- * alone. At step 1, or with no sheet, they fall straight on the context, under a shape the contour covers. */
-function drawShadows(context: DrawingContext, shape: Path2D, cells: readonly LiftCell[], at: readonly number[], step: number, look: LiftLook, deviceScale: number, base: DOMMatrix2DInit | undefined): void {
-  const own = step > 1 ? shadowSheet() : undefined
-  if (!own) {
+ * layer laid over the screen costs its size; at step 1, or with no sheet, straight on the context, under a shape the
+ * contour covers. A shape of many paths casts them as one picture of itself, else each path's would fall on the next's. */
+function drawShadows(context: DrawingContext, shape: Shape, cells: readonly LiftCell[], at: readonly number[], step: number, look: LiftLook, deviceScale: number, base: DOMMatrix2DInit | undefined): void {
+  const own = step > 1 ? sheetOf('shadows') : undefined
+  const picture = shape.paths.length > 1 ? sheetOf('shape') : undefined
+  if (!own && !picture) {
     context.fillStyle = look.contour
-    castShadows(context, shape, at, look.shadows, deviceScale, { step: 1, aside: 0 })
+    castShadows(context, at, look.shadows, deviceScale, { step: 1, aside: 0 }, () => fillParts(context, shape))
     return
   }
+  const smaller = own ? step : 1
   const transform = base ?? context.getTransform()
   const box = deviceBox(cells, transform, Math.max(...at.map((each) => SHADOWS[each]!.down + SHADOWS[each]!.blur * 3)) * deviceScale)
-  const [width, height] = [Math.ceil((box.right - box.left) / step), Math.ceil((box.bottom - box.top) / step)]
+  const [width, height] = [Math.ceil((box.right - box.left) / smaller), Math.ceil((box.bottom - box.top) / smaller)]
   if (width <= 0 || height <= 0) return
-  const { canvas, sheet } = own
-  // The sheet only grows: sizing it allocates and clears it, and a smaller picture takes the corner of a larger one.
-  if (canvas.width < width || canvas.height < height) {
-    canvas.width = Math.max(canvas.width, width)
-    canvas.height = Math.max(canvas.height, height)
-  } else {
-    sheet.setTransform(1, 0, 0, 1, 0, 0)
-    sheet.clearRect(0, 0, width, height)
-  }
   const { a = 1, b = 0, c = 0, d = 1, e = 0, f = 0 } = transform
-  sheet.fillStyle = '#000'
-  castShadows(sheet, shape, at, look.shadows, deviceScale, { transform: { a: a / step, b: b / step, c: c / step, d: d / step, e: (e - box.left) / step - width, f: (f - box.top) / step }, step, aside: width })
+  /** The context's transform on a sheet: from the box's corner, `smaller` times smaller, `aside` px to the left. */
+  const onSheet = (aside: number) => ({ a: a / smaller, b: b / smaller, c: c / smaller, d: d / smaller, e: (e - box.left) / smaller - aside, f: (f - box.top) / smaller })
+  if (picture) {
+    clearSheet(picture, width, height)
+    setMatrix(picture.sheet, onSheet(0))
+    picture.sheet.fillStyle = own ? CAST_INK : look.contour
+    fillParts(picture.sheet, shape)
+  }
+  if (!own) {
+    // The picture of the shape, pixel on pixel, where the contour covers it.
+    castShadows(context, at, look.shadows, deviceScale, { step: 1, aside: 0 }, () => {
+      context.setTransform(1, 0, 0, 1, 0, 0)
+      context.drawImage(picture!.canvas, 0, 0, width, height, box.left, box.top, width, height)
+    })
+    return
+  }
+  // The shape lies a sheet's width to the left, so the sheet holds the shadows alone.
+  const { canvas, sheet } = own
+  clearSheet(own, width, height)
+  sheet.fillStyle = CAST_INK
+  castShadows(sheet, at, look.shadows, deviceScale, { step, aside: width }, () => {
+    if (picture) {
+      sheet.drawImage(picture.canvas, 0, 0, width, height, -width, 0, width, height)
+      return
+    }
+    setMatrix(sheet, onSheet(width))
+    sheet.fill(shape.paths[0]!)
+  })
   context.save()
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.imageSmoothingEnabled = true
@@ -381,7 +444,7 @@ function grownBox({ x, y, width, height }: LiftCell, grow: number, into: DOMMatr
  * cell, a square whose four corners its turned contour holds. */
 function markCovered(covered: Uint8Array, { columns, rows, left, top, step }: Raster, cell: LiftCell, into: DOMMatrix2DInit | undefined): void {
   const grow = CONTOUR_OUT_PX - BODY_INSET_PX
-  const own = { left: cell.x - grow, top: cell.y - grow, right: cell.x + cell.width + grow, bottom: cell.y + cell.height + grow }
+  const own = grownBox(cell, grow, undefined)
   const radius = Math.min(cornerOf(cell, CONTOUR_OUT_PX, CONTOUR_RADIUS_PX), (own.right - own.left) / 2, (own.bottom - own.top) / 2)
   const box = grownBox(cell, grow, into)
   const [firstRow, lastRow] = [Math.max(0, Math.ceil((box.top - top) / step)), Math.min(rows - 1, Math.floor((box.bottom - top) / step) - 1)]
@@ -540,9 +603,9 @@ export function drawLift(context: DrawingContext, cells: readonly LiftCell[], ba
   if (cast.length && finest > 1) drawShadows(context, shadow, cast, SHADOWS.map((_, at) => at), finest, look, deviceScale, base)
   else if (cast.length) SHADOWS.forEach((_, at) => drawShadows(context, shadow, cast, [at], steps[at]!, look, deviceScale, base))
   context.fillStyle = look.contour
-  context.fill(contour)
+  fillParts(context, contour)
   context.fillStyle = look.ground
-  context.fill(ground)
+  fillParts(context, ground)
 }
 
 /** The runs of touching columns of a stored row, cached by the row itself: a stroke step changes few rows. */

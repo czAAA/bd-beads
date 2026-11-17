@@ -13,8 +13,8 @@ import { openApp, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
 // The Lifted piece's cost in Safari's engine at an iPad's density (ticket 1034), by hand with
-// `npm run perf -- liftedPiece`: the longest gap between two frames over a full redraw (the window resized), a Progress
-// bar step and zoom steps (in, then out twice), on four synthetic Projects of square beads. Env: PERF_LIFT (fixture names, comma separated).
+// `E2E_PORT=<a free port> npm run perf -- liftedPiece`: the longest gap between two frames over a full redraw (the window
+// resized), a Progress bar step and zoom steps, on four synthetic Projects. Env: PERF_LIFT (fixture names, comma separated).
 
 const [COLUMNS, ROWS] = [130, 231]
 const BUDGET_MS = 250
@@ -43,8 +43,7 @@ function canvasPiece(): Project {
     beads[row] = {}
     for (let column = 0; column < COLUMNS; column += 1) beads[row]![column + 20] = row % 10 === 0 ? RED : GREY
   }
-  const project = withLayers(withFrameSheet(small, { ...frame, beads: { 0: { 0: RED } } }), { beads })
-  return project
+  return withLayers(withFrameSheet(small, { ...frame, beads: { 0: { 0: RED } } }), { beads })
 }
 
 /** A Triangle Custom frame of 40 rounds, every bead painted: each bead stands at its panel's angle. */
@@ -63,7 +62,8 @@ const FIXTURES: Record<string, () => Project> = {
   'turned frame': turnedFrame,
 }
 
-/** The longest gap between two frames while `act` runs and for AFTERMATH_MS after it, in ms. */
+/** The longest gap between two frames while `act` runs and for AFTERMATH_MS after it, in ms. A stop that outlasts the
+ * watch is waited out and counted: while the screen stands still no frame comes to end a gap. */
 async function longestGap(page: Page, act: () => Promise<void>): Promise<number> {
   await settle(page)
   await page.evaluate(() => {
@@ -78,6 +78,7 @@ async function longestGap(page: Page, act: () => Promise<void>): Promise<number>
   })
   await act()
   await page.waitForTimeout(AFTERMATH_MS)
+  await settle(page)
   return page.evaluate(() => {
     const watch = (window as unknown as { __gaps: { most: number; running: boolean } }).__gaps
     watch.running = false
@@ -95,17 +96,21 @@ for (const [name, build] of Object.entries(FIXTURES)) {
     await openApp(page, [build()])
     await page.mouse.move(2, 2)
     await page.waitForTimeout(AFTERMATH_MS)
-    const zoom = await page.getByTestId('canvas-strip-zoom').getAttribute('data-zoom-percent')
     const step = async (what: string, act: () => Promise<void>) => {
+      const zoom = await page.getByTestId('canvas-strip-zoom').getAttribute('data-zoom-percent')
       const ms = await longestGap(page, act)
-      lines.push(`${name.padEnd(14)} ${`at ${zoom}%`.padEnd(7)} ${what.padEnd(18)} ${ms.toFixed(0).padStart(6)} ms  ${ms > BUDGET_MS ? `OVER ${BUDGET_MS}` : 'ok'}`)
+      lines.push(`${name.padEnd(14)} ${`at ${zoom}%`.padEnd(8)} ${what.padEnd(18)} ${ms.toFixed(0).padStart(6)} ms  ${ms > BUDGET_MS ? `OVER ${BUDGET_MS}` : 'ok'}`)
+    }
+    /** A press of a zoom button, where the zoom has a step left that way: at its end the button waits for nobody. */
+    const zoomStep = async (button: 'zoom-in' | 'zoom-out') => {
+      if (await page.getByTestId(button).isEnabled()) await step(`${button === 'zoom-in' ? 'zoom step in' : 'zoom step out'}`, () => page.getByTestId(button).click())
     }
     // Each line is kept as it is measured, so a step that never ends still leaves those before it.
     await step('full redraw', () => page.setViewportSize({ width: 1366, height: 1000 }))
     await step('Progress bar step', () => page.getByTestId('progress-bar-next').click())
-    await step('zoom step in', () => page.getByTestId('zoom-in').click())
-    await step('zoom step out', () => page.getByTestId('zoom-out').click())
-    await step('zoom step out', () => page.getByTestId('zoom-out').click())
+    await zoomStep('zoom-in')
+    await zoomStep('zoom-out')
+    await zoomStep('zoom-out')
   })
 }
 
