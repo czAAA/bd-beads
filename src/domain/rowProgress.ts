@@ -9,6 +9,7 @@ import { frameWeave } from './layerWeave'
 import type { Project, RowProgress } from './project'
 import type { RowOrder, RowWay } from './rowOrder'
 import type { AreaLine } from './removeLine'
+import type { PassDirection } from './weaveGeometry'
 
 // Row progress (CONTEXT.md): which pass of the Frame's Row order the weaver is on, the lock on finished rows, and
 // reading the pointers back from a stored Project.
@@ -289,6 +290,23 @@ export function rowPassesOf(project: Layered): (row: number, column: number) => 
     const pass = (order ??= frameRowOrder(project)).passAt(own)
     return pass < current ? 'finished' : pass === current ? 'current' : undefined
   }
+}
+
+/** The Frame lines (rows or columns, from its first, the way the rows run) whose Row progress look differs from what
+ * `before` showed of the same Frame (ticket 1038): the passes a step crossed, the one it left and the one it reached.
+ * Undefined where that is no set of lines: the way turned (every pass changes), a pass off one line (a Custom frame). */
+export function stepLines(project: Layered, before: RowProgress): { direction: PassDirection; lines: number[] } | undefined {
+  const after = rowProgressOf(project)
+  if (!frameOf(project) || before.direction !== after.direction || !!before.reversed !== !!after.reversed) return undefined
+  const order = frameRowOrder(project)
+  const [from, to] = [currentPass(before), currentPass(after)].sort((a, b) => a - b) as [number, number]
+  const lines = new Set<number>()
+  for (let pass = from; pass <= Math.min(to, order.count - 1); pass += 1) {
+    const line = order.lineOf(pass)
+    if (line === undefined) return undefined
+    lines.add(line)
+  }
+  return { direction: after.direction, lines: [...lines].sort((a, b) => a - b) }
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the

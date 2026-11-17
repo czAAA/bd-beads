@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, shownWay, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
+import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, shownWay, stepLines, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
+import { changeFrame } from './changeFrame'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
 import { withFrame } from './frame'
@@ -420,5 +421,37 @@ describe('passLine (ticket 0849)', () => {
     // None once every pass is done, and none where a pass is a whole line.
     expect(passLine(moveToRow(peyote, rowProgressPosition(peyote).total))).toBeUndefined()
     expect(passLine(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }))).toBeUndefined()
+  })
+})
+
+describe('stepLines (ticket 1038)', () => {
+  const frame = (technique: 'loom' | 'peyote') => createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 20, height: 30, unit: 'beads' } })
+  const step = (project: Project, from: number, to: number) => stepLines(moveToRow(project, to), rowProgressOf(moveToRow(project, from)))
+
+  it('names the lines of the passes a step crossed, the one it left and the one it reached, either way', () => {
+    expect(step(frame('loom'), 12, 13)).toEqual({ direction: 'rows', lines: [12, 13] })
+    expect(step(frame('loom'), 16, 12)).toEqual({ direction: 'rows', lines: [12, 13, 14, 15, 16] })
+  })
+
+  it('names a line once where two passes are its halves (peyote), and none past the last pass', () => {
+    expect(step(frame('peyote'), 23, 24)).toEqual({ direction: 'rows', lines: [12] })
+    const { total } = rowProgressPosition(frame('loom'))
+    expect(step(frame('loom'), total - 1, total)).toEqual({ direction: 'rows', lines: [total - 1] })
+  })
+
+  it('names columns where the rows run down the Frame', () => {
+    expect(step(toggleRowDirection(frame('loom')), 4, 5)).toEqual({ direction: 'columns', lines: [4, 5] })
+  })
+
+  it('names none where the way turned, which changes every pass', () => {
+    const project = moveToRow(frame('loom'), 12)
+    expect(stepLines(toggleRowDirection(project), rowProgressOf(project))).toBeUndefined()
+  })
+
+  it('names none for a Custom frame, whose passes are rounds, not lines', () => {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 60, height: 60, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 10, centre: { row: 30, column: 30 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
+    expect(step(placed.project, 2, 3)).toBeUndefined()
   })
 })
