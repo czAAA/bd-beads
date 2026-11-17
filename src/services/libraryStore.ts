@@ -3,7 +3,17 @@ import type { Project } from '../domain/project'
 import { decodeProject, type EncodedProject } from '../domain/projectEncoding'
 import { paletteFromDevice } from '../domain/palette'
 import { renamedBrickBlock } from '../domain/flatWeave'
-import { MOVED_FLAG, copyOldLibrary, indexedLibraryStore, libraryConnection, openLibraryDatabase, replayClosingNote, takeInOldLibrary, type LibraryConnection } from './indexedLibraryStore'
+import {
+  MOVED_FLAG,
+  copyOldLibrary,
+  indexedLibraryStore,
+  libraryConnection,
+  openLibraryDatabase,
+  removeOldLibraryOnceSafe,
+  replayClosingNote,
+  takeInOldLibrary,
+  type LibraryConnection,
+} from './indexedLibraryStore'
 import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, readDeviceAddedColors, readDevicePaletteOrder } from './legacyDevicePalette'
 import { readKey } from './storageKeys'
 import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../domain/sealedProject'
@@ -292,7 +302,7 @@ async function openMoved(): Promise<LibraryConnection> {
 }
 
 /** Where the library is kept on this device, once decided (ADR 0094). */
-type Form = { kind: 'indexed'; store: LibraryStore } | { kind: 'local' } | { kind: 'unopened' }
+type Form = { kind: 'indexed'; store: LibraryStore; connection: LibraryConnection } | { kind: 'local' } | { kind: 'unopened' }
 
 /** Decides it: IndexedDB, or localStorage on a device that never moved and whose browser refuses, or unopened on a device
  * that moved and whose database can't be reached. A device not yet moved is copied first (the old key is only read), and
@@ -313,7 +323,8 @@ async function decideForm(): Promise<Form> {
     }
   }
   try {
-    return { kind: 'indexed', store: indexedLibraryStore(await twice(openMoved)) }
+    const connection = await twice(openMoved)
+    return { kind: 'indexed', store: indexedLibraryStore(connection), connection }
   } catch {
     return { kind: 'unopened' }
   }
@@ -340,6 +351,8 @@ const unopenedLibraryStore: LibraryStore = {
 export function createBrowserLibraryStore(): LibraryStore {
   let deciding: Promise<Form> | undefined
   let current: LibraryStore = localStorageLibraryStore
+  /** Whether this page's start was counted towards the old library's removal: once a page. */
+  let oldLibrarySeen = false
   const decide = (): Promise<Form> => (deciding ??= decideForm())
   const unopened = (): 'unopened' => {
     deciding = Promise.resolve({ kind: 'unopened' })
@@ -360,6 +373,14 @@ export function createBrowserLibraryStore(): LibraryStore {
         return unopened()
       }
       current = decided.store
+      if (!oldLibrarySeen) {
+        oldLibrarySeen = true
+        // The library opened from IndexedDB: the old one may go (ticket 1023). The start doesn't wait for it.
+        void decided.connection
+          .get()
+          .then((db) => removeOldLibraryOnceSafe(db))
+          .catch(() => undefined)
+      }
       return 'ready'
     },
     count: async () => {

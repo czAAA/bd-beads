@@ -43,3 +43,13 @@ export function removeKey(storage: KeyStorage, key: string): void {
   }
   storage.removeItem(key)
 }
+
+/** The old-name copy of a key, which builds from before the rename wrote and read; null when there is none. */
+export function readOldNameKey(storage: KeyStorage, key: string): string | null {
+  return key.startsWith(CURRENT_PREFIX) ? storage.getItem(legacyKey(key)) : null
+}
+
+/** Removes the old-name copy of a key (ticket 1023): only for a value that nothing reads any more, older builds included. */
+export function removeOldNameKey(storage: KeyStorage, key: string): void {
+  if (key.startsWith(CURRENT_PREFIX)) storage.removeItem(legacyKey(key))
+}

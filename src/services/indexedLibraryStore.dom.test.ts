@@ -8,7 +8,7 @@ import { canvasOf } from '../domain/layerRecord'
 import { encodeProject } from '../domain/projectEncoding'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createBrowserLibraryStore, loadProjects, saveProjects } from './libraryStore'
-import { LIBRARY_DATABASE, MOVED_FLAG, RECORD_FORMAT } from './indexedLibraryStore'
+import { LIBRARY_DATABASE, MOVED_FLAG, RECORD_FORMAT, removeOldLibraryOnceSafe } from './indexedLibraryStore'
 import { CLOSING_NOTE_KEY } from './closingNote'
 import libraryV1 from '../domain/fixtures/library-v1.json?raw'
 import libraryV2 from '../domain/fixtures/library-v2.json?raw'
@@ -46,52 +46,51 @@ async function startTab() {
   return { store, answered }
 }
 
-/** Reads the library database directly, as a developer's tools would. */
-async function records(): Promise<
-  {
-    id: string
-    format: number
-    stored: string
-    stamp: string
-    summary: unknown
-  }[]
-> {
+/** Opens the library database directly, as a developer's tools would, for one piece of work. */
+async function withDatabase<T>(work: (db: IDBDatabase) => Promise<T>): Promise<T> {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(LIBRARY_DATABASE, 1)
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error)
   })
-  const all = await new Promise<
-    {
-      id: string
-      format: number
-      stored: string
-      stamp: string
-      summary: unknown
-    }[]
-  >((resolve, reject) => {
-    const request = db.transaction('projects').objectStore('projects').getAll()
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
-  })
-  db.close()
-  return all
+  try {
+    return await work(db)
+  } finally {
+    db.close()
+  }
 }
 
-async function putRecord(record: object): Promise<void> {
-  const db = await new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(LIBRARY_DATABASE, 1)
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
-  })
-  await new Promise<void>((resolve, reject) => {
-    const transaction = db.transaction('projects', 'readwrite')
-    transaction.objectStore('projects').put(record)
-    transaction.oncomplete = () => resolve()
-    transaction.onerror = () => reject(transaction.error)
-  })
-  db.close()
+interface RecordRow {
+  id: string
+  format: number
+  stored: string
+  stamp: string
+  summary: unknown
 }
+
+const records = () =>
+  withDatabase(
+    (db) =>
+      new Promise<RecordRow[]>((resolve, reject) => {
+        const request = db.transaction('projects').objectStore('projects').getAll()
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      }),
+  )
+
+/** Writes a row into one of the database's stores. */
+const putRow = (storeName: 'projects' | 'meta', row: object) =>
+  withDatabase(
+    (db) =>
+      new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readwrite')
+        transaction.objectStore(storeName).put(row)
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+      }),
+  )
+
+const putRecord = (record: object) => putRow('projects', record)
 
 beforeEach(() => {
   localStorage.clear()
@@ -477,6 +476,188 @@ describe('the old library taken in', () => {
     expect(names(await records())).toEqual(['project-Fox', 'project-Owl'])
     stop()
     stopOther()
+  })
+})
+
+describe('the old library removed (ticket 1023)', () => {
+  const OLD_NAME_KEY = 'bd-beads:patterns'
+  const DAY = 24 * 60 * 60 * 1000
+  const oldKeyHolds = (...projects: Project[]) => saveProjects(projects)
+  const fox = (updatedAt = 1_700_000_000_000) => makeProject('Fox', updatedAt)
+
+  /** What the store remembers of the old library. */
+  const remembered = () =>
+    withDatabase(
+      (db) =>
+        new Promise<{ since?: number; starts?: number } | undefined>((resolve, reject) => {
+          const request = db.transaction('meta').objectStore('meta').get('old-library')
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+        }),
+    )
+
+  /** Starts a tab and waits until that start was counted: the count is not part of the start. */
+  async function startCounted(starts = 1) {
+    const tab = await startTab()
+    await vi.waitFor(async () => expect((await remembered())?.starts).toBe(starts))
+    return tab
+  }
+
+  /** Counts `count` more starts at `now`, and answers whether each deleted the old library. */
+  async function startsAt(now: number, count: number): Promise<boolean[]> {
+    const deleted: boolean[] = []
+    for (let index = 0; index < count; index += 1) deleted.push(await withDatabase((db) => removeOldLibraryOnceSafe(db, now)))
+    return deleted
+  }
+
+  /** Long after the move: the 14 days have passed, so only the starts and the check decide. */
+  const late = () => Date.now() + 15 * DAY
+
+  it('keeps the old library for 14 days, however many starts', async () => {
+    oldKeyHolds(fox())
+    const before = localStorage.getItem(STORAGE_KEY)
+    await startCounted()
+    const moved = (await remembered())!.since!
+
+    expect(await startsAt(moved + 14 * DAY - 1, 20)).not.toContain(true)
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(before)
+    expect(await startsAt(moved + 14 * DAY, 1)).toEqual([true])
+  })
+
+  it('keeps it for 10 starts, however many days, then deletes it, and the Projects stay', async () => {
+    oldKeyHolds(fox(), makeProject('Owl'))
+    const before = localStorage.getItem(STORAGE_KEY)
+    await startCounted()
+
+    expect(await startsAt(Date.now() + 100 * DAY, 8)).not.toContain(true)
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(before)
+    expect(await startsAt(Date.now() + 100 * DAY, 1)).toEqual([true])
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(MOVED_FLAG)).toBe('1')
+    expect(names((await startTab()).store.open(() => false).projects)).toEqual(['project-Fox', 'project-Owl'])
+  })
+
+  it('is deleted by the start of a tab, once the library opened from IndexedDB', async () => {
+    oldKeyHolds(fox())
+    await startCounted()
+    vi.useFakeTimers({ toFake: ['Date'], now: late() })
+
+    for (let starts = 2; starts <= 9; starts += 1) await startCounted(starts)
+    expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull()
+    await startTab()
+
+    await vi.waitFor(() => expect(localStorage.getItem(STORAGE_KEY)).toBeNull())
+  })
+
+  it('counts a device that moved before from its first start with this build', async () => {
+    oldKeyHolds(fox())
+    await startCounted()
+    const { since: _since, starts: _starts, ...earlier } = (await remembered())!
+    await putRow('meta', earlier)
+    const first = Date.now() + 100 * DAY
+
+    expect(await startsAt(first, 12)).not.toContain(true)
+    expect((await remembered())!.since).toBe(first)
+    expect(await startsAt(first + 14 * DAY, 1)).toEqual([true])
+  })
+
+  it('does not wait for a Project removed after the move', async () => {
+    oldKeyHolds(fox(), makeProject('Owl'))
+    const { store } = await startCounted()
+    await store.save([], ['project-Owl'])
+
+    expect(await startsAt(late(), 9)).toContain(true)
+    expect(names(await records())).toEqual(['project-Fox'])
+  })
+
+  it.each([
+    ['an older save', (record: RecordRow) => ({ ...record, summary: { ...(record.summary as object), updatedAt: 1_700_000_000_000 } })],
+    ['a format this build does not know', (record: RecordRow) => ({ ...record, format: RECORD_FORMAT + 1 })],
+    ['no summary', (record: RecordRow) => ({ ...record, summary: null })],
+  ])('keeps an old library whose Project has a record with %s', async (_label, altered) => {
+    oldKeyHolds(fox(1_800_000_000_000))
+    await startCounted()
+    const [record] = await records()
+    await putRecord(altered(record!))
+
+    expect(await startsAt(late(), 12)).not.toContain(true)
+    expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull()
+  })
+
+  it('keeps an old library this build cannot read', async () => {
+    oldKeyHolds(fox())
+    await startCounted()
+    localStorage.setItem(STORAGE_KEY, '{not json')
+    await startTab()
+
+    expect(await startsAt(late(), 12)).not.toContain(true)
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('{not json')
+  })
+
+  it('keeps an old library holding a Project of a Technique this build does not know', async () => {
+    oldKeyHolds(fox(), makeProject('Owl'))
+    const unknownTechnique = localStorage.getItem(STORAGE_KEY)!.replace('"technique":"loom"', '"technique":"not-a-technique"')
+    localStorage.setItem(STORAGE_KEY, unknownTechnique)
+    expect(names((await startCounted()).store.open(() => false).projects)).toEqual(['project-Owl'])
+
+    expect(await startsAt(late(), 12)).not.toContain(true)
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(unknownTechnique)
+  })
+
+  it('starts the wait again when an older build writes the old library, and keeps a value not yet taken in', async () => {
+    oldKeyHolds(fox())
+    await startCounted()
+    expect(await startsAt(late(), 8)).not.toContain(true)
+
+    // Written, not yet taken in: the tenth start keeps it.
+    oldKeyHolds(fox(), makeProject('Owl'))
+    expect(await startsAt(late(), 1)).toEqual([false])
+    await startCounted()
+    expect(await startsAt(late(), 1)).toEqual([false])
+
+    expect(names(await records())).toEqual(['project-Fox', 'project-Owl'])
+    expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull()
+  })
+
+  it('keeps a value an older build wrote while the records were being checked', async () => {
+    oldKeyHolds(fox())
+    await startCounted()
+    await startsAt(late(), 8)
+    const get = IDBObjectStore.prototype.get
+    vi.spyOn(IDBObjectStore.prototype, 'get').mockImplementation(function (this: IDBObjectStore, key) {
+      if (this.name === 'projects') oldKeyHolds(fox(), makeProject('Owl'))
+      return get.call(this, key)
+    })
+
+    expect(await startsAt(late(), 1)).toEqual([false])
+
+    expect(names(loadProjects())).toEqual(['project-Fox', 'project-Owl'])
+  })
+
+  it('deletes the old-name copy with it', async () => {
+    localStorage.setItem(OLD_NAME_KEY, libraryV5)
+    await startCounted()
+
+    expect(await startsAt(late(), 9)).toContain(true)
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(OLD_NAME_KEY)).toBeNull()
+  })
+
+  it('keeps an old-name copy holding a newer save, and never copies it forward again', async () => {
+    oldKeyHolds(fox(1_900_000_000_000))
+    localStorage.setItem(OLD_NAME_KEY, localStorage.getItem(STORAGE_KEY)!)
+    oldKeyHolds(fox(1_700_000_000_000))
+    const oldName = localStorage.getItem(OLD_NAME_KEY)
+    await startCounted()
+
+    expect(await startsAt(late(), 9)).toContain(true)
+
+    expect(localStorage.getItem(OLD_NAME_KEY)).toBe(oldName)
+    const { store } = await startTab()
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(lastSaved(store.open(() => false).projects[0]!)).toBe(1_700_000_000_000)
   })
 })
 

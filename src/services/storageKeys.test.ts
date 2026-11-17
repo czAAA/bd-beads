@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readKey, removeKey } from './storageKeys'
+import { readKey, readOldNameKey, removeKey, removeOldNameKey } from './storageKeys'
 
 function memory(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial))
@@ -40,5 +40,15 @@ describe('the move from bd-beads:* to openbeads:* keys (ticket 392)', () => {
     const storage = memory({ 'bd-beads:maker-name': 'Anna' })
     removeKey(storage, 'openbeads:maker-name')
     expect(readKey(storage, 'openbeads:maker-name')).toBeNull()
+  })
+
+  it('reads and removes the old-name copy itself, leaving the new key alone (ticket 1023)', () => {
+    const storage = memory({ 'bd-beads:patterns': 'old', 'openbeads:patterns': 'new' })
+    expect(readOldNameKey(storage, 'openbeads:patterns')).toBe('old')
+
+    removeOldNameKey(storage, 'openbeads:patterns')
+
+    expect(readOldNameKey(storage, 'openbeads:patterns')).toBeNull()
+    expect(storage.data.get('openbeads:patterns')).toBe('new')
   })
 })
