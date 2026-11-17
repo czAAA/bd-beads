@@ -8,6 +8,7 @@ import { withFrame } from '../../domain/frame'
 import { laidFrame, seenSize } from '../../domain/frameOrientation'
 import { rotateFrame } from '../../domain/rotate'
 import type { Project } from '../../domain/project'
+import { MIRROR_OFF, mirrorSettingOf } from '../../domain/mirror'
 import { starterById, starterDesign } from '../../domain/starters'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
@@ -469,6 +470,34 @@ describe('useFrameFlow', () => {
       setWeaveSetting('canvas', 'brickDrop', 3)
       expect(canvasOf(deps.harness.project).techniqueSettings?.brickDrop).toBe(3)
       expect(frameOf(deps.harness.project)?.techniqueSettings?.brickDrop).toBeUndefined()
+    })
+  })
+
+  describe('a Canvas Mirror Area the change leaves unfit (ticket 1029)', () => {
+    /** The Canvas with a Mirror Area 16 across, 3 Left–right Axes in Mirror mode: a Fitting size on loom, not on peyote. */
+    const mirrored: Project = { ...sized, mirror: { ...MIRROR_OFF, axes: { ...MIRROR_OFF.axes, leftRight: true }, counts: { leftRight: 3, topBottom: 1 }, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 9, columns: 16 } } } }
+
+    it('grows within the change\'s Undo step and says so, and Undo takes back the Technique and the size together', () => {
+      const { deps, setLayerTechnique } = setup(mirrored)
+      setLayerTechnique('canvas', 'peyote')
+      expect(mirrorSettingOf(deps.harness.project).place).toEqual({ layer: 'canvas', area: { row: 0, column: 0, rows: 9, columns: 17 } })
+      expect(deps.showToast).toHaveBeenCalledWith('mirror-grown', expect.stringContaining('17×9'), 'info')
+      deps.harness.history.onUndo()
+      expect(canvasOf(deps.harness.project).technique).toBe('loom')
+      expect(mirrorSettingOf(deps.harness.project)).toEqual(mirrored.mirror)
+      expect(deps.harness.history.canUndo.value).toBe(false)
+    })
+
+    it('grows for a Drop too, and leaves alone an Area the change leaves fitting', () => {
+      const { deps, setLayerTechnique, setWeaveSetting } = setup(mirrored)
+      setLayerTechnique('canvas', 'brick')
+      expect(mirrorSettingOf(deps.harness.project).place).toEqual(mirrored.mirror!.place)
+      expect(deps.showToast).not.toHaveBeenCalled()
+      setWeaveSetting('canvas', 'brickDrop', 3)
+      expect(deps.showToast).not.toHaveBeenCalled()
+      setLayerTechnique('canvas', 'peyote')
+      setWeaveSetting('canvas', 'peyoteDrop', 2)
+      expect(deps.showToast).toHaveBeenCalledTimes(2)
     })
   })
 

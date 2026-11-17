@@ -9,7 +9,7 @@ import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } fr
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
-import { readMirrorArea, readMirrorSetting } from './mirror'
+import { readMirrorArea, readMirrorSetting, withFittedArea } from './mirror'
 import { readPieceNames } from './pieceNames'
 import { readReferenceImage } from './referenceImage'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
@@ -108,7 +108,8 @@ export function normalizeProject(stored: StoredProject): Project {
 
   const mirror = readMirrorSetting(storedMirror, { canvasArea: readMirrorArea(storedCanvas.mirrorArea), framed: frames.length > 0 })
   const referenceImage = readReferenceImage(storedReference)
-  return {
+  // An older file's Canvas Area its Mirror does not fit opens grown to a Fitting size (ticket 1029): no Message, no Undo.
+  return withFittedArea({
     ...rest,
     layers: [canvas, ...frames],
     palette,
@@ -119,7 +120,7 @@ export function normalizeProject(stored: StoredProject): Project {
     ...(mirror ? { mirror } : {}),
     // The reference image (ticket 0790): an unreadable record opens with none.
     ...(referenceImage ? { referenceImage } : {}),
-  }
+  }).project
 }
 
 /** A Project saved before its layers (ticket 0664) as its layers: the Canvas from its own fields, its rotation its

@@ -569,7 +569,7 @@ describe('stored-data compatibility', () => {
       expect(JSON.parse(serializeProject(opened!))).toEqual(placedBack(projectFileV13MirrorArea, place))
     })
 
-    it('opens a version 13 file with the one Mirror of a Project and its place, and writes it back the same (ticket 0750)', () => {
+    it('opens a version 13 file with the one Mirror of a Project and its place, its unfit Area grown, and writes it back so (tickets 0750, 1029)', () => {
       const [opened] = parseProjectsFile(projectFileV13MirrorPlace).projects
       expect(mirrorSettingOf(opened!)).toEqual({
         mode: 'mirror',
@@ -577,10 +577,12 @@ describe('stored-data compatibility', () => {
         fold: 2,
         counts: { leftRight: 1, topBottom: 2 },
         beforeRadial: { leftRight: false, topBottom: true },
-        place: { layer: 'canvas', area: { row: -2, column: 4, rows: 5, columns: 6 } },
+        // 5 rows do not fit 2 Top–bottom Axes in Mirror mode on 3-drop brick: the Area opens grown down (ticket 1029).
+        place: { layer: 'canvas', area: { row: -2, column: 4, rows: 7, columns: 6 } },
       })
       // The stored Fold 3 is a grid's now: 2 in this Area, which is not square (ticket 0751), and written back so.
-      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13MirrorPlace.replace('"fold":3', '"fold":2')))
+      const back = projectFileV13MirrorPlace.replace('"fold":3', '"fold":2').replace('"rows":5,"columns":6}}}', '"rows":7,"columns":6}}}')
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(back))
     })
 
     it('opens a version 14 file with a reference image and its picture, and writes it back the same (ticket 0790, ADR 0089)', () => {
