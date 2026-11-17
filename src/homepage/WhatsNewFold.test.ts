@@ -93,6 +93,16 @@ describe("What's new, folded (tickets 0824, 0880, 1047)", () => {
     expect(body(wrapper).get('[data-testid="homepage-history"]').isVisible()).toBe(true)
   })
 
+  it('reads the file again at the next open when it couldn’t be read', async () => {
+    const notes = vi.fn<(locale: Locale) => Promise<NotesFile | null>>().mockResolvedValueOnce(null).mockResolvedValue(FILE)
+    const wrapper = await opened(notes)
+    expect(wrapper.findAll('[data-testid="homepage-whats-new-block"]')).toHaveLength(0)
+    await head(wrapper).trigger('click')
+    await head(wrapper).trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="homepage-whats-new-block"]')).toHaveLength(2)
+  })
+
   it('reads the file of the language shown, and writes its kinds and release lines in it', async () => {
     localStorage.setItem('openbeads:locale', 'ru')
     const notes = vi.fn(async () => FILE)

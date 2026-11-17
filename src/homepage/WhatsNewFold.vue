@@ -25,14 +25,15 @@ const open = ref(false)
 const notesId = useId()
 const built = computed(() => shownDay(BUILD_DATE, locale.value))
 
-/** The notes file read for a language, null when it couldn't be; none yet while it is being read. */
+/** The notes file read for a language, null when it couldn't be (read again at the next open); none yet while read. */
 const file = shallowRef<{ locale: Locale; notes: NotesFile | null }>()
 watch([open, locale], async ([isOpen, shown]) => {
-  if (!isOpen || file.value?.locale === shown) return
+  if (!isOpen || (file.value?.locale === shown && file.value.notes)) return
   const notes = (await props.notes?.(shown)) ?? null
   if (locale.value === shown) file.value = { locale: shown, notes }
 })
-const view = computed(() => (file.value?.notes ? whatsNewView(file.value.notes, [], locale.value) : null))
+// Only the file of the language shown: another's lines never show under this one's words while it is read.
+const view = computed(() => (file.value?.notes && file.value.locale === locale.value ? whatsNewView(file.value.notes, [], locale.value) : null))
 </script>
 
 <template>
