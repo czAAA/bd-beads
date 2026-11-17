@@ -96,6 +96,9 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again a row of a 
   })
 })
 
+/** The color of the pixel whose red channel is at `at`, as hex. */
+const hexAt = (data: Uint8ClampedArray, at: number) => `#${[data[at]!, data[at + 1]!, data[at + 2]!].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+
 // A Piece's inner cuts (ticket 1035): a cut close to its beads is part of the piece, with no line of its own; a larger
 // one keeps its line a bead further in. A cut an edit opens or closes is drawn again with the band, however far it runs.
 describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('a Frame piece\'s inner cuts, in %s', (bead) => {
@@ -112,7 +115,7 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('a Frame piece\'s inner cu
     const [x, y] = [(left + 40) * 2, (top + 40) * 2]
     const { data } = canvas.getContext('2d')!.getImageData(x, y, (right - left) * 2, (bottom - top) * 2)
     let found = 0
-    for (let at = 0; at < data.length; at += 4) if (`#${[data[at]!, data[at + 1]!, data[at + 2]!].map((channel) => channel.toString(16).padStart(2, '0')).join('')}` === contour) found += 1
+    for (let at = 0; at < data.length; at += 4) if (hexAt(data, at) === contour) found += 1
     return found
   }
 
@@ -157,7 +160,7 @@ describe('a Canvas piece\'s inner cut', () => {
     const look = liftLookOf(DARK_THEME.canvas)
     const pixel = (x: number, y: number) => {
       const { data } = canvas.getContext('2d')!.getImageData((x + 40) * 2, (y + 40) * 2, 1, 1)
-      return `#${[data[0]!, data[1]!, data[2]!].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+      return hexAt(data, 0)
     }
     // The cut is row 5, column 5: its middle is a tile as the open Canvas's at row 12, column 12; its edge the ground.
     expect(pixel(110, 110)).toBe(pixel(250, 250))

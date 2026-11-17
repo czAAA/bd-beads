@@ -56,6 +56,12 @@ function extentOf(stored: Record<number, string> | undefined): readonly [number,
 
 type Visit = (row: number, column: number) => void
 
+/** The root of an entry in a union-find kept as each entry's parent, shortening the way there as it goes. */
+function rootIn(parent: number[]): (at: number) => number {
+  const find = (at: number): number => (parent[at] === at ? at : (parent[at] = find(parent[at]!)))
+  return find
+}
+
 /** The positions whose beads touch a position's, corners too: a cut is closed only where no gap leads out of it, so on
  * an upright grid a corner-to-corner gap between two beads joins it to what lies past them. */
 function touching({ spans: { along, reach }, shifted }: CutLayer['description']): (row: number, column: number, visit: Visit) => void {
@@ -225,7 +231,7 @@ export class InnerCuts {
       if (!this.isBead(r, c)) nodes.push(keyOf(r, c))
     })
     const parent = nodes.map((_, at) => at)
-    const find = (at: number): number => (parent[at] === at ? at : (parent[at] = find(parent[at]!)))
+    const find = rootIn(parent)
     const index = new Map(nodes.map((node, at) => [node, at]))
     let outsider = -1
     nodes.forEach((node, at) => {
@@ -291,7 +297,7 @@ export class InnerCuts {
    * at most one is left undecided: that one leads out, as the space round the bead did. A group closed in is a new cut. */
   private enclosed(groups: number[][], dirty: Set<number>): void {
     const parent = groups.map((_, at) => at)
-    const find = (at: number): number => (parent[at] === at ? at : (parent[at] = find(parent[at]!)))
+    const find = rootIn(parent)
     const open = groups.map((group) => group.some((node) => this.outside(rowOf(node), columnOf(node))))
     const closed = groups.map(() => false)
     const queues = groups.map((group) => [...group])
