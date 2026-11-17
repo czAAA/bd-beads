@@ -303,6 +303,23 @@ function sheetOf(which: keyof typeof sheets): Sheet | undefined {
   return canvas && sheet ? { canvas, sheet } : undefined
 }
 
+/** Whether a shape drew its picture on its sheet since the whole draw now running began. */
+let pictured = false
+
+/** Runs `draw`, a whole draw of the screen (ticket 1040). The picture sheet, which only grows, is let go after it when no
+ * shape of it took more than one path, and made again by the next shape that does; a band's draw, outside this, keeps
+ * it as it is, so a stroke does not make it band by band. The shadows' sheet, many times smaller, is kept. */
+export function drawWholeScreen(draw: () => void): void {
+  pictured = false
+  try {
+    draw()
+  } finally {
+    const picture = sheets.shape
+    // Sizing a canvas to nothing gives its pixels back.
+    if (!pictured && picture?.width) picture.width = picture.height = 0
+  }
+}
+
 /** Clears a sheet's corner of `width` × `height` px for a picture. The sheet only grows: sizing it allocates and clears
  * it, and a smaller picture takes the corner of a larger one. */
 function clearSheet({ canvas, sheet }: Sheet, width: number, height: number): void {
@@ -367,6 +384,7 @@ function drawShadows(context: DrawingContext, shape: Shape, cells: readonly Lift
   /** The context's transform on a sheet: from the box's corner, `smaller` times smaller, `aside` px to the left. */
   const onSheet = (aside: number) => ({ a: a / smaller, b: b / smaller, c: c / smaller, d: d / smaller, e: (e - box.left) / smaller - aside, f: (f - box.top) / smaller })
   if (picture) {
+    pictured = true
     clearSheet(picture, width, height)
     setMatrix(picture.sheet, onSheet(0))
     picture.sheet.fillStyle = own ? CAST_INK : look.contour
