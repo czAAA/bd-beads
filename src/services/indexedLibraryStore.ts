@@ -1,7 +1,7 @@
 import type { Project } from '../domain/project'
 import { lastSaved } from '../domain/projectLibrary'
 import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../domain/sealedProject'
-import { readKey } from './storageKeys'
+import { readKey, readOldNameKey, removeKey, removeOldNameKey } from './storageKeys'
 import { clearNote, mergeIntoNote, readNote, takeOutOfNote, type NoteEntries, type NotedProject } from './closingNote'
 import {
   STORAGE_KEY,
@@ -19,8 +19,8 @@ import {
 } from './libraryFormats'
 
 // The Project library in IndexedDB, one record per Project (ADR 0094, ADR 0012, spec 1018): the store, the copy of the old
-// localStorage library and the replay of the closing note. The database is its own, never a version of `openbeads`, which a
-// tab of an older build holds open.
+// localStorage library, its removal and the replay of the closing note. The database is its own, never a version of
+// `openbeads`, which a tab of an older build holds open.
 
 /** @internal Tests read the database under its name. */
 export const LIBRARY_DATABASE = 'openbeads-library'
@@ -52,6 +52,9 @@ interface OldLibraryMemo {
   digest: string
   /** A digest per Project. */
   projects: Record<string, string>
+  /** When the old library was last copied or taken in, and the starts counted since: what its removal waits on. */
+  since?: number
+  starts?: number
 }
 
 const wrap = <T>(request: IDBRequest<T>): Promise<T> =>
@@ -170,7 +173,7 @@ export function libraryConnection(): LibraryConnection {
 
 /** Copies the old localStorage library into the database (ADR 0094): every stored version through its reader, each Project
  * a record, in one transaction, read back and compared; only then is the old library remembered in `meta`. The old key is
- * never written or deleted; an empty, missing or unreadable library copies nothing. Rejects when the copy fails. */
+ * never written or deleted here; an empty, missing or unreadable library copies nothing. Rejects when the copy fails. */
 export async function copyOldLibrary(db: IDBDatabase): Promise<void> {
   const raw = readKey(localStorage, STORAGE_KEY)
   const entries = new Map<string, { stored: string; summary: ProjectSummary | undefined }>()
@@ -211,6 +214,7 @@ export async function copyOldLibrary(db: IDBDatabase): Promise<void> {
       key: OLD_LIBRARY,
       digest: digestOf(raw),
       projects: Object.fromEntries([...entries].map(([id, { stored }]) => [id, digestOf(stored)])),
+      ...waitFromNow(),
     }
     const remember = db.transaction(META, 'readwrite')
     remember.objectStore(META).put(memo)
@@ -269,9 +273,77 @@ export async function takeInOldLibrary(db: IDBDatabase): Promise<string[]> {
       written.push(id)
     })
   }
-  transaction.objectStore(META).put({ key: OLD_LIBRARY, digest, projects } satisfies OldLibraryMemo)
+  // A value an older build wrote starts the wait for the old library's removal again.
+  transaction.objectStore(META).put({ key: OLD_LIBRARY, digest, projects, ...waitFromNow() } satisfies OldLibraryMemo)
   await finished(transaction)
   return written
+}
+
+// --- The old library, removed -------------------------------------------------------------------------------------------
+
+/** How long the old library stays as the backup after it was last copied or taken in (ADR 0094, ticket 1023): this many
+ * days and this many starts, both. */
+const KEEP_MS = 14 * 24 * 60 * 60 * 1000
+const KEEP_STARTS = 10
+
+/** The wait as it begins: what a copy or a take-in of the old library remembers. */
+const waitFromNow = (): Pick<OldLibraryMemo, 'since' | 'starts'> => ({ since: Date.now(), starts: 0 })
+
+/** Whether the records hold everything an old library value does: this build reads every Project in it, and each one's
+ * record is at least as new. A Project with no record was removed here after the move. */
+async function heldByRecords(db: IDBDatabase, raw: string): Promise<boolean> {
+  const summaries: ProjectSummary[] = []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    const stored = Array.isArray(parsed) ? parsed : (parsed as { patterns?: unknown } | null)?.patterns
+    const entries = parseRecords(raw)
+    // A Project the reader leaves out (a Technique this build doesn't know) lives only in the old library.
+    if (!Array.isArray(stored) || stored.length !== entries.size) return false
+    for (const record of entries.values()) {
+      const summary = projectSummaryOf(JSON.parse(stampOf(record)))
+      if (!summary) return false
+      summaries.push(summary)
+    }
+  } catch {
+    return false
+  }
+  const store = db.transaction(PROJECTS, 'readonly').objectStore(PROJECTS)
+  const records = await Promise.all(summaries.map(({ id }) => wrap(store.get(id) as IDBRequest<LibraryRecord | undefined>)))
+  return summaries.every((summary, index) => {
+    const record = records[index]
+    if (record === undefined) return true
+    return known(record) && record.summary !== null && lastSaved(record.summary) >= lastSaved(summary)
+  })
+}
+
+/** Counts this start and, once the old library has waited long enough and the records hold everything in it, deletes it
+ * from localStorage, its old-name copy with it (ADR 0094, ticket 1023). The reader stays. Answers whether it was deleted. */
+export async function removeOldLibraryOnceSafe(db: IDBDatabase, now = Date.now()): Promise<boolean> {
+  const raw = readKey(localStorage, STORAGE_KEY)
+  if (raw === null) return false
+  const digest = digestOf(raw)
+  let waited = false
+  const transaction = db.transaction(META, 'readwrite')
+  const meta = transaction.objectStore(META)
+  const request = meta.get(OLD_LIBRARY) as IDBRequest<OldLibraryMemo | undefined>
+  request.onsuccess = () => {
+    const memo = request.result
+    // A value never copied or taken in (this build can't read it) has no wait to count: it stays.
+    if (memo?.digest !== digest) return
+    const since = memo.since ?? now
+    const starts = (memo.starts ?? 0) + 1
+    meta.put({ ...memo, since, starts } satisfies OldLibraryMemo)
+    waited = now - since >= KEEP_MS && starts >= KEEP_STARTS
+  }
+  await finished(transaction)
+  if (!waited || !(await heldByRecords(db, raw))) return false
+  const oldName = readOldNameKey(localStorage, STORAGE_KEY)
+  const oldNameHeld = oldName === null || oldName === raw || (await heldByRecords(db, oldName))
+  // An older build's tab may have written while the records were read: that value hasn't been taken in or checked.
+  if (localStorage.getItem(STORAGE_KEY) !== raw) return false
+  removeKey(localStorage, STORAGE_KEY)
+  if (oldNameHeld && readOldNameKey(localStorage, STORAGE_KEY) === oldName) removeOldNameKey(localStorage, STORAGE_KEY)
+  return true
 }
 
 // --- The closing note ---------------------------------------------------------------------------------------------------
