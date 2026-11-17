@@ -39,7 +39,7 @@ describe('ProjectSurface: the bead cursor (ticket 0942)', () => {
     expect(ring.attributes('style')).toContain('top: 40px')
 
     // A pointer press takes over from the keyboard: the ring is asked to hide.
-    await wrapper.get('[data-testid="project-surface"]').trigger('pointerdown', { pointerType: 'mouse', button: 2 })
+    await wrapper.get('[data-testid="project-surface"]').trigger('pointerdown', { pointerType: 'mouse', button: 0 })
     expect(wrapper.emitted('cursor-blur')).toHaveLength(1)
 
     await wrapper.setProps({ cursor: undefined })
@@ -55,7 +55,7 @@ describe('ProjectSurface: the bead cursor (ticket 0942)', () => {
     await root.trigger('blur')
     expect(wrapper.emitted('cursor-blur')).toHaveLength(1)
 
-    await root.trigger('pointerdown', { pointerType: 'mouse', button: 2 })
+    await root.trigger('pointerdown', { pointerType: 'mouse', button: 0 })
     await root.trigger('focus')
     expect(wrapper.emitted('keyboard-focus')).toHaveLength(1)
     await root.trigger('keydown', { key: ' ' })

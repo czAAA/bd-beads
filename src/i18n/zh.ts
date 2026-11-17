@@ -347,7 +347,7 @@ export const zh: Translations = {
     updateReload: '重新加载',
     signInRunOut: '登录已过期。',
     signIn: '登录',
-    canvasPlaceholderPan: '用鼠标右键或空格键拖动画布。',
+    canvasPlaceholderPan: '按住空格键拖动画布。',
     canvasDeleted: '“{name}”已删除。',
     canvasDeletedHint: '从项目库打开另一个，或新建一个。',
     canvasPlaceholderPanTouch: '用两根手指拖动画布。',

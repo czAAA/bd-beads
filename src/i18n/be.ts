@@ -348,7 +348,7 @@ export const be: Translations = {
     updateReload: 'Перазагрузіць',
     signInRunOut: 'Тэрмін уваходу скончыўся.',
     signIn: 'Увайсці',
-    canvasPlaceholderPan: 'Перасоўвайце палатно правай кнопкай мышы або прабелам.',
+    canvasPlaceholderPan: 'Перасоўвайце палатно, перацягваючы яго з заціснутым прабелам.',
     canvasDeleted: 'Праект «{name}» выдалены.',
     canvasDeletedHint: 'Адкрыйце іншы з бібліятэкі праектаў або стварыце новы.',
     canvasPlaceholderPanTouch: 'Перасоўвайце палатно двума пальцамі.',

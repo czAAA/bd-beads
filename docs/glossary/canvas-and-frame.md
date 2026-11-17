@@ -108,7 +108,7 @@ The Frame's move grip (tickets 0452, 0455, 0473, ADR 0066): a horizontal line in
 _Avoid_: Frame drag, drag inside the Frame
 
 **Hand tool**:
-The tool (5) that moves the view by dragging and never changes a bead. Space + drag, the middle mouse button and the right mouse button (ticket 541) do the same from any tool; a right-button press that does not move the Canvas does nothing.
+The tool (5) that moves the view by dragging and never changes a bead. Space + drag and the middle mouse button (ticket 541) do the same from any tool. The right mouse button does nothing under every tool (ticket 1054): it is kept for a radial Tool pill around the cursor, so makers don't come to rely on it.
 _Avoid_: pan mode, grab tool
 
 **Pen mode** / **Mouse mode**:

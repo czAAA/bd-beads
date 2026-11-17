@@ -347,7 +347,7 @@ export const uk: Translations = {
     updateReload: 'Перезавантажити',
     signInRunOut: 'Термін входу минув.',
     signIn: 'Увійти',
-    canvasPlaceholderPan: 'Переміщуйте полотно правою кнопкою миші або пробілом.',
+    canvasPlaceholderPan: 'Переміщуйте полотно, перетягуючи його із затиснутим пробілом.',
     canvasDeleted: 'Проєкт «{name}» видалено.',
     canvasDeletedHint: 'Відкрийте інший із бібліотеки проєктів або створіть новий.',
     canvasPlaceholderPanTouch: 'Переміщуйте полотно двома пальцями.',
