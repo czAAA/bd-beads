@@ -3,7 +3,7 @@ import type { WeaveGeometry } from '../domain/weaveGeometry'
 
 // A Piece's inner cuts (ticket 1035, BeadBoard card, Lifted piece): empty positions its own beads close in on every
 // side, not joined to the open Canvas round the Piece. Found when the beads change, from what changed, never on a redraw;
-// a cut is a fact about the layer, so the view has no say in it.
+// a cut is a fact about the layer, so the view has no say in it. With them its rim, empty positions touching a bead (1036).
 
 /** What a layer is, for its cuts: its beads, how its positions touch, and which positions are its own. */
 export interface CutLayer {
@@ -16,8 +16,8 @@ export interface CutLayer {
   edge: string
 }
 
-/** The positions of a layer's cuts that are part of the lifted Piece: a row's columns, ascending. */
-export interface LiftedCuts {
+/** The empty positions of a layer that are part of the lifted Piece, its cuts' and its rim's: a row's columns, ascending. */
+export interface LiftedPositions {
   rows: ReadonlyMap<number, readonly number[]>
   has(row: number, column: number): boolean
   /** The rows whose lifted positions changed since this was last asked, and forgets them: an edit can open or close a
@@ -105,7 +105,7 @@ export class InnerCuts {
   /** While an update runs: the bead map before it, and the changes applied to it so far. */
   private before: BeadMap = {}
   private applied = new Map<number, boolean>()
-  private readonly result: LiftedCuts = {
+  private readonly result: LiftedPositions = {
     rows: this.sorted,
     has: (row, column) => this.lifted.get(row)?.has(column) ?? false,
     takeChanged: () => {
@@ -115,8 +115,9 @@ export class InnerCuts {
     },
   }
 
-  /** The lifted positions of `layer`'s cuts, from the last bead map's by what changed since, or found afresh. */
-  update(layer: CutLayer): LiftedCuts {
+  /** The lifted positions of `layer`, its cuts' and its rim's, from the last bead map's by what changed since, or found
+   * afresh. */
+  update(layer: CutLayer): LiftedPositions {
     if (layer.beads === this.beads && layer.description === this.description && layer.edge === this.edge) return this.result
     const changes = layer.description === this.description && layer.edge === this.edge && this.beads ? changesBetween(this.beads, layer.beads) : undefined
     this.layer = layer
@@ -161,7 +162,8 @@ export class InnerCuts {
     return column < first || column > last
   }
 
-  /** Every cut found from scratch: each gap within a row's beads flooded until it leads out or is closed in. */
+  /** Every cut found from scratch: each gap within a row's beads flooded until it leads out or is closed in. Then every
+   * cut's position and every empty one a bead from a bead is looked at for lifting. */
   private findAll(): void {
     const { beads } = this.layer
     this.before = beads
@@ -198,7 +200,16 @@ export class InnerCuts {
         else this.makeCut(seen)
       }
     }
-    this.relift(new Set(this.cutOf.keys()), 0)
+    const look = new Set(this.cutOf.keys())
+    for (const key in beads) {
+      const row = Number(key)
+      for (const column in beads[row]) {
+        this.around(row, Number(column), (r, c) => {
+          if (!this.isBead(r, c)) look.add(keyOf(r, c))
+        })
+      }
+    }
+    this.relift(look, 0)
   }
 
   private changedRow(row: number): void {
@@ -385,14 +396,26 @@ export class InnerCuts {
     this.cutOf.set(key, into!)
   }
 
-  /** Whether a cut's position lies a bead or more from every bead. */
-  private far(row: number, column: number): boolean {
-    if (!this.cutOf.has(keyOf(row, column))) return false
+  /** Whether a position touches a bead's. */
+  private nearBead(row: number, column: number): boolean {
     let near = false
     this.around(row, column, (r, c) => {
       near ||= this.isBead(r, c)
     })
-    return !near
+    return near
+  }
+
+  /** Whether a cut's position lies a bead or more from every bead. */
+  private far(row: number, column: number): boolean {
+    return this.cutOf.has(keyOf(row, column)) && !this.nearBead(row, column)
+  }
+
+  /** Whether an empty position of the layer is part of the lifted Piece: touching a bead (the Piece's rim outside it,
+   * ticket 1036, or the margin a bead into a cut), or in a cut and not kept open. */
+  private isLifted(row: number, column: number): boolean {
+    if (!this.layer.has(row, column) || this.isBead(row, column)) return false
+    if (this.nearBead(row, column)) return true
+    return this.cutOf.has(keyOf(row, column)) && !this.keptOpen(row, column)
   }
 
   /** Whether a cut's position is left open, under its own border: in a block of 2 × 2 positions all a bead or more from
@@ -419,7 +442,7 @@ export class InnerCuts {
     for (const key of look) {
       const [row, column] = [rowOf(key), columnOf(key)]
       this.work += 1
-      const lifted = this.cutOf.has(key) && !this.keptOpen(row, column)
+      const lifted = this.isLifted(row, column)
       const set = this.lifted.get(row)
       if (lifted === (set?.has(column) ?? false)) continue
       rows.add(row)
@@ -463,7 +486,8 @@ function changesBetween(before: BeadMap, after: BeadMap): Map<number, boolean> |
 
 const layers = { canvas: new InnerCuts(), frame: new InnerCuts() }
 
-/** The lifted positions of the inner cuts of the Canvas's or the Frame's beads, worked out again only where they changed. */
-export function liftedCutsOf(which: keyof typeof layers, layer: CutLayer): LiftedCuts {
+/** The lifted positions of the Canvas's or the Frame's beads, their inner cuts' and their rim's, worked out again only
+ * where they changed. */
+export function liftedPositionsOf(which: keyof typeof layers, layer: CutLayer): LiftedPositions {
   return layers[which].update(layer)
 }

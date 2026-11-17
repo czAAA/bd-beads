@@ -28,7 +28,7 @@ import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
-import { canvasCutCells, canvasCuts, canvasLiftCells, drawLift, frameCutCells, frameCuts, joinedUpright, liftCollector, liftRows, liftsAcross, paintedOnly, withCutRows, type LiftCell } from './liftedPiece'
+import { canvasLiftedCells, canvasLifted, canvasLiftCells, drawLift, frameLiftedCells, frameLifted, joinedUpright, liftCollector, liftRows, liftsAcross, paintedOnly, withLiftedRows, type LiftCell } from './liftedPiece'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { columnStrip } from './columnBand'
 import {
@@ -197,8 +197,9 @@ function drawPositionMarks(
   context.imageSmoothingEnabled = false
 }
 
-/** The Position marks again in `cells`, over what is drawn there: the tiles of the Canvas's lifted cuts (ticket 1035). */
-function drawCutMarks(context: DrawingContext, cells: readonly LiftCell[], { project, zoom, pixelRatio, theme, tiles }: { project: DrawnProject; zoom: number; pixelRatio: number; theme: ProjectTheme; tiles: boolean }): void {
+/** The Position marks again in `cells`, over what is drawn there: the tiles of the Canvas's lifted cuts and rims (tickets
+ * 1035, 1036). */
+function drawLiftedMarks(context: DrawingContext, cells: readonly LiftCell[], { project, zoom, pixelRatio, theme, tiles }: { project: DrawnProject; zoom: number; pixelRatio: number; theme: ProjectTheme; tiles: boolean }): void {
   if (!cells.length) return
   const pattern = positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...markLookOf(theme, tiles) })
   if (!pattern) return
@@ -346,7 +347,8 @@ interface LayerDraw {
   /** Whether painted beads lie on a Lifted piece where the look has one (ticket 1004): on the open Canvas in the full
    * look. */
   lift: boolean
-  /** The only positions drawn, where not every one in view is: a Frame's lifted cuts, its tiles on the piece's ground. */
+  /** The only positions drawn, where not every one in view is: a Frame's lifted cuts and rim, their tiles on the piece's
+   * ground, or every other one, under it. */
   at?: (position: GridPosition) => boolean
 }
 
@@ -362,13 +364,14 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
     const collect = liftCollector(draw.drawBead, !geometry.grid)
     const weave = frameWeave(project)
     const taken = liftRows(band, cellSizePx(weave.technique, weave.cell).height)
-    drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: taken }, space, origin)
+    // An inner cut close to the beads is part of the piece, and its rim a bead round it, their tiles drawn on the piece's
+    // ground (tickets 1035, 1036), not under it too.
+    const lifted = frameLifted(project, geometry)
+    drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: taken, ...(lifted?.rows.size ? { at: ({ row, column }: GridPosition) => !lifted.has(row, column) } : {}) }, space, origin)
     const across = liftsAcross(weave)
-    // An inner cut close to the beads is part of the piece, its tiles drawn again on the piece's ground (ticket 1035).
-    const cuts = frameCuts(project, geometry)
-    const cutCells = cuts ? frameCutCells(project, cuts, geometry, origin, area, taken) : []
-    drawLift(context, joinedUpright([...collect.cells, ...cutCells], across), draw.look.canvas, draw.zoom * draw.pixelRatio, across, area)
-    if (cutCells.length) drawFrameLayer(context, { ...draw, lift: false, tiles: true, letters: undefined, seeThrough: undefined, at: ({ row, column }) => cuts!.has(row, column) }, space, origin)
+    const liftedCells = lifted ? frameLiftedCells(project, lifted, geometry, origin, area, taken) : []
+    drawLift(context, joinedUpright([...collect.cells, ...liftedCells], across), draw.look.canvas, draw.zoom * draw.pixelRatio, across, area)
+    if (liftedCells.length) drawFrameLayer(context, { ...draw, lift: false, tiles: true, letters: undefined, seeThrough: undefined, at: ({ row, column }) => lifted!.has(row, column) }, space, origin)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined }, space, origin)
     return
   }
@@ -713,7 +716,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // next full draw.
   const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
   const lifts = space.open && look.liftedPiece && !draft
-  const band = alike ? (lifts ? liftRows(withCutRows(rows, project, margin, frame && geometryDrawnAlone(project)), cellSizePx(bandWeave.technique, bandWeave.cell).height) : rows) : undefined
+  const band = alike ? (lifts ? liftRows(withLiftedRows(rows, project, margin, frame && geometryDrawnAlone(project)), cellSizePx(bandWeave.technique, bandWeave.cell).height) : rows) : undefined
   const strip = alike && !band && columns ? columnStrip(bandWeave, columns, lifts) : undefined
 
   // The backing store is in device px: clear (and paint the background, in Frame-only space) there, the whole surface
@@ -775,8 +778,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
     if (lift && look.liftedPiece) {
       drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio, liftsAcross(canvasWeave(project)), area)
-      // The tiles of an inner cut close to the beads, on the piece's ground (ticket 1035).
-      if (positionMarks) drawCutMarks(context, canvasCutCells(project, { area, rows: band, margin }, canvasCuts(project, margin)), { project, zoom, pixelRatio, theme, tiles })
+      // The tiles of an inner cut close to the beads and of the rim, on the piece's ground (tickets 1035, 1036).
+      if (positionMarks) drawLiftedMarks(context, canvasLiftedCells(project, { area, rows: band, margin }, canvasLifted(project, margin)), { project, zoom, pixelRatio, theme, tiles })
     }
     drawCanvasLayer(context, draw, space)
     if (frame && frameBox) {
