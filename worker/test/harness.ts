@@ -43,6 +43,7 @@ export interface RunningWorker {
   /** Fires the Cron Trigger as if at `time`; says how the run ended ('ok' or 'exception'). */
   scheduled(time: Date): Promise<string>
   blobsDb: D1
+  coreDb: D1
   r2: R2
   outbound: Outbound[]
   /** What the Worker wrote to its console, line by line, as the dashboard's logs would show it. */
@@ -159,6 +160,7 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
     },
     // A broken BLOBS_DB has no database behind it; a test that breaks it doesn't read it either.
     blobsDb: options.brokenDatabase === 'BLOBS_DB' ? (null as never) : await miniflare.getD1Database('BLOBS_DB'),
+    coreDb: options.brokenDatabase === 'CORE' ? (null as never) : await miniflare.getD1Database('CORE'),
     r2: await miniflare.getR2Bucket('BLOBS'),
     outbound,
     logs,

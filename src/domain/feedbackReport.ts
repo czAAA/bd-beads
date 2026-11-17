@@ -77,7 +77,7 @@ const FIELDS: { [K in ReportKind]: Array<{ key: keyof ReportFieldsByKind[K]; req
   ],
 }
 
-/** The context's rows in table order, with their label; the required ones every Report has. */
+/** The context's rows in the order the issue lists them, with their label; the required ones every Report has. */
 const CONTEXT_ROWS: Array<{ key: keyof ReportContext; label: string; required?: boolean }> = [
   { key: 'appVersion', label: 'App version', required: true },
   { key: 'uiLanguage', label: 'UI language', required: true },
@@ -163,15 +163,47 @@ function titleOf(report: Report): string {
     case 'general':
       return `feedback: ${firstWords(report.fields.message)}`
     case 'translation':
-      return `translation [${report.fields.language.trim()}]: ${firstWords(report.fields.shown)}`
-    case 'bead-color': {
-      const where = [report.fields.catalog, report.fields.code].map((part) => part.trim()).filter(Boolean).join(' ')
-      return `bead-color [${where}]: ${report.fields.problem} color`
-    }
+      return `translation [${firstWords(report.fields.language)}]: ${firstWords(report.fields.shown)}`
+    case 'bead-color':
+      return `bead-color [${firstWords(`${report.fields.catalog} ${report.fields.code}`)}]: ${report.fields.problem} color`
   }
 }
 
-/** The person's fields as headings in the kind's order; an optional field left empty has none. */
+/** What a Report may not carry (ticket 1051): control and format characters, which GitHub's page doesn't show but an
+ * agent reading the issue does (zero-width spaces, bidi marks, Unicode tag characters), and the variation selectors
+ * that can hide bytes. Line breaks and tabs stay, and the joiners emoji and some scripts are written with. */
+const INVISIBLE = /(?![\n\t\u200C\u200D])[\p{Cc}\p{Cf}]|[\u{E0100}-\u{E01EF}]/gu
+
+function clean(text: string): string {
+  return text.replace(/\r\n?/g, '\n').replace(INVISIBLE, '')
+}
+
+function cleanAll<T extends object>(record: T): T {
+  return Object.fromEntries(Object.entries(record).map(([key, value]) => [key, typeof value === 'string' ? clean(value) : value])) as T
+}
+
+/** The longest run of backticks in `value`: code marks one longer can't be closed from inside it. */
+function longestBackticks(value: string): number {
+  return Math.max(0, ...[...value.matchAll(/`+/g)].map(([run]) => run.length))
+}
+
+/** `value` as a fenced code block, so nothing the person wrote is Markdown: no comment hidden from the page, no
+ * heading or link of its own, no mention (ticket 1051). */
+function fence(value: string): string {
+  const marks = '`'.repeat(Math.max(3, longestBackticks(value) + 1))
+  return `${marks}text\n${value}\n${marks}`
+}
+
+/** `value` on one line as a code span, for a context row or the email; an empty one stays empty. */
+function code(value: string): string {
+  const line = value.replace(/\s*\n+\s*/g, ' ').trim()
+  if (line === '') return ''
+  const marks = '`'.repeat(longestBackticks(line) + 1)
+  const pad = line.includes('`') ? ' ' : ''
+  return `${marks}${pad}${line}${pad}${marks}`
+}
+
+/** The person's fields as headings in the kind's order, each in a fence; an optional field left empty has none. */
 function fieldSections(report: Report): string[] {
   const sections: Array<[string, string]> =
     report.kind === 'general'
@@ -184,28 +216,32 @@ function fieldSections(report: Report): string[] {
             ['Note', report.fields.note],
           ]
         : [
-            ['Problem', PROBLEMS[report.fields.problem]],
             ['Brand and catalog', `${report.fields.brand}, ${report.fields.catalog}`],
             ['Code', report.fields.code],
             ['Looks like', report.fields.looksLike],
             ['Note', report.fields.note],
           ]
-  return sections.filter(([, value]) => value.trim() !== '').map(([heading, value]) => `### ${heading}\n\n${value}`)
-}
-
-/** A value made safe for one table cell: no pipe to end it, no line break to end the row, a backslash kept as one. */
-function cell(value: string): string {
-  return value.replace(/[\\|]/g, '\\$&').replace(/\s*[\r\n]+\s*/g, ' ')
+  const written = sections.filter(([, value]) => value.trim() !== '').map(([heading, value]) => `### ${heading}\n\n${fence(value)}`)
+  // The one field that is the app's own words, not the person's.
+  return report.kind === 'bead-color' ? [`### Problem\n\n${PROBLEMS[report.fields.problem]}`, ...written] : written
 }
 
 /** The issue a Report becomes (glossary: Report): titled and labelled by kind, the person's fields as headings, the
- * context as a table, the email last. What the Worker posts and what Copy report copies, so the two never differ. */
-export function reportIssue(report: Report): ReportIssue {
+ * context as a list, the email last. Everything the person or their browser sent is cleaned of invisible characters
+ * and shown as code (ticket 1051). What the Worker posts and what Copy report copies, so the two never differ. */
+export function reportIssue(sent: Report): ReportIssue {
+  const report = {
+    ...sent,
+    fields: cleanAll(sent.fields),
+    context: cleanAll(sent.context),
+    ...(sent.email ? { email: clean(sent.email) } : {}),
+  } as Report
   const context = report.context as unknown as Record<string, string | undefined>
+  // A list, not a table: a table reads a pipe as the end of its cell even inside code, so a value could step out of it.
   const rows = CONTEXT_ROWS.filter(({ key }) => context[key] !== undefined).map(
-    ({ key, label }) => `| ${label} | ${cell(context[key] ?? '')} |`,
+    ({ key, label }) => `- ${label}: ${code(context[key] ?? '')}`,
   )
-  const sections = [...fieldSections(report), ['### Context', '', '| | |', '|---|---|', ...rows].join('\n')]
-  if (report.email) sections.push(`### Email\n\n${report.email}`)
+  const sections = [...fieldSections(report), ['### Context', '', ...rows].join('\n')]
+  if (report.email) sections.push(`### Email\n\n${code(report.email)}`)
   return { title: titleOf(report), labels: ['from-app', KIND_LABEL[report.kind]], body: sections.join('\n\n') }
 }
