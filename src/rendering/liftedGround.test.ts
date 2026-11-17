@@ -284,6 +284,8 @@ describe('lifted ground', () => {
   })
 
   it.each(['loom', 'brick', 'peyote'] as const)('works out the same lifted positions from the edits as from scratch in %s', (technique) => {
+    // Positions off the layer, a corner and a spur, count as open space round a gap in both.
+    const has: GroundLayer['has'] = (row, column) => !(row < 3 && column > 8) && !(row === 9 && column === 0)
     let seed = 7
     const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
     const ground = new LiftedGround()
@@ -291,8 +293,8 @@ describe('lifted ground', () => {
     for (let step = 0; step < 1500; step += 1) {
       const [row, column] = [Math.floor(random() * 12), Math.floor(random() * 12)]
       beads = withBead(beads, row, column, random() < 0.62)
-      const kept = ground.update(layerOf(beads, technique))
-      const fresh = new LiftedGround().update(layerOf(beads, technique))
+      const kept = ground.update(layerOf(beads, technique, has, 'corner and spur'))
+      const fresh = new LiftedGround().update(layerOf(beads, technique, has, 'corner and spur'))
       expect([...kept.rows].sort(([a], [b]) => a - b)).toEqual([...fresh.rows].sort(([a], [b]) => a - b))
     }
   })

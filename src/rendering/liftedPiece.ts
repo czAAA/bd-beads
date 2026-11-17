@@ -35,7 +35,7 @@ const SHADOWS = [
   { blur: 1, down: 0.75, opacity: { dark: 0.5, light: 0.16 } },
 ] as const
 
-/** How far from a cell of a piece (a bead's, a cut's or the rim's) anything of it is drawn, in grid px: the contour, the
+/** How far from a cell of a piece (a bead's or a lifted position's) anything of it is drawn, in grid px: the contour, the
  * soft shadow's fall and three spreads of its blur; from a bead, a bead's step more (ticket 1036).
  * @internal Tests check what a redraw takes in. */
 export const LIFT_REACH_PX = SHADOWS[0].down + SHADOWS[0].blur * 3 + CONTOUR_OUT_PX
@@ -650,8 +650,8 @@ function runsOf(stored: Record<number, string>): readonly (readonly [number, num
   return runs
 }
 
-/** The runs of a stored row with its lifted positions, its cuts' and its rim's (tickets 1035, 1036), kept by the row and
- * those positions. */
+/** The runs of a stored row with its lifted positions, its rim's and its narrow gaps' (tickets 1035, 1036, 1050), kept by
+ * the row and those positions. */
 const rowLiftedRuns = new WeakMap<Record<number, string>, { lifted: readonly number[]; runs: readonly (readonly [number, number])[] }>()
 
 /** The runs of a row of no bead, the rim's above and below a piece, kept by its lifted positions. */
@@ -673,8 +673,8 @@ function runsWithLifted(stored: Record<number, string> | undefined, lifted: read
   return runs
 }
 
-/** The Canvas's empty positions that lie in the lifted piece, its inner cuts' (ticket 1035) and its rim a bead round its
- * beads (ticket 1036): its keep-out margin lies outside every Piece, as its beads are not drawn. */
+/** The Canvas's empty positions that lie in the lifted piece, its rim a bead round its beads (ticket 1036) and its gaps
+ * less than two beads wide (1035, 1050): its keep-out margin lies outside every Piece, as its beads are not drawn. */
 export function canvasLifted(project: Layered, margin: number): LiftedPositions {
   const covered = footprintOf(project)
   const keptOut: Rect | undefined = covered && withMargin(covered, margin)
@@ -686,8 +686,8 @@ export function canvasLifted(project: Layered, margin: number): LiftedPositions 
   })
 }
 
-/** The rows a redraw of `rows` draws to take in the lifted positions an edit changed since the last draw, a cut however far
- * it runs (1035), the rim round it (1036), in the Canvas's rows; what changed is forgotten once asked, so a whole draw
+/** The rows a redraw of `rows` draws to take in the lifted positions an edit changed since the last draw (1035, 1036,
+ * 1050), in the Canvas's rows; what changed is forgotten once asked, so a whole draw
  * asks too. `geometry` is the Frame's. */
 export function withLiftedRows(rows: { first: number; last: number } | undefined, project: Layered, margin: number, geometry: LayerGeometry | undefined): { first: number; last: number } | undefined {
   const canvas = canvasLifted(project, margin).takeChanged()
@@ -716,7 +716,7 @@ export function canvasLiftedCells(project: Layered, { area, rows }: LiftView, li
   return cells
 }
 
-/** The Frame's empty positions that lie in the lifted piece, its inner cuts' (ticket 1035) and its rim, which stops at
+/** The Frame's empty positions that lie in the lifted piece, its narrow gaps' (1035, 1050) and its rim, which stops at
  * the Frame's edge (ticket 1036), on a Frame of rows and columns; a Custom frame's beads, each at its panel's angle, keep
  * every hole's border and have no rim. */
 export function frameLifted(project: Layered, geometry: LayerGeometry): LiftedPositions | undefined {

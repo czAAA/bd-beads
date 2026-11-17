@@ -139,7 +139,7 @@ export class LiftedGround {
   }
 
   /** Whether a position is open space round a gap: off the layer, or empty and a bead or more from every bead. */
-  private open(row: number, column: number): boolean {
+  private isOpenSpace(row: number, column: number): boolean {
     return !this.layer.has(row, column) || (!this.isBead(row, column) && !this.nearBead(row, column))
   }
 
@@ -148,11 +148,16 @@ export class LiftedGround {
   private isLifted(row: number, column: number): boolean {
     if (!this.layer.has(row, column) || this.isBead(row, column)) return false
     if (this.nearBead(row, column)) return true
-    for (const top of [row - 1, row]) {
-      for (const left of [column - 1, column]) {
-        const others = [[top, left], [top, left + 1], [top + 1, left], [top + 1, left + 1]].filter(([r, c]) => r !== row || c !== column)
-        if (others.every(([r, c]) => this.open(r!, c!))) return false
-      }
+    for (let top = row - 1; top <= row; top += 1) {
+      for (let left = column - 1; left <= column; left += 1) if (this.blockOpen(top, left, row, column)) return false
+    }
+    return true
+  }
+
+  /** Whether the block of 2 × 2 positions from `top`, `left` is open space but for `row`, `column`, known to be. */
+  private blockOpen(top: number, left: number, row: number, column: number): boolean {
+    for (let r = top; r <= top + 1; r += 1) {
+      for (let c = left; c <= left + 1; c += 1) if ((r !== row || c !== column) && !this.isOpenSpace(r, c)) return false
     }
     return true
   }
