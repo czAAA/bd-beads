@@ -10,6 +10,7 @@ import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, bitmapBox, coversArea, gestureTransform, mayRedrawMidGesture, SETTLE_MS, GESTURE_BEAD_LIMIT, type View } from '../../../rendering/gestureView'
 import { draftPixelRatio, drawsDraft } from '../../../rendering/draftRenderer'
+import { drawWholeScreen } from '../../../rendering/liftedPiece'
 import { renderProject } from '../../../rendering/projectRenderer'
 import type { DrawnReference } from '../../../rendering/referenceImage'
 import type { Space } from '../../../rendering/space'
@@ -260,7 +261,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value }
 
     if (bands === undefined) {
-      renderProject(context, drawing)
+      drawWholeScreen(() => renderProject(context, drawing))
       onDrawn?.()
       return
     }

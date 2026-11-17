@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DARK_THEME, drawFlatBead, LIGHT_THEME, type DrawingContext, type ProjectTheme } from './beadLook'
 import { CELL_SIZE_PX } from './cellSize'
-import { drawLift, joinedUpright, liftLookOf, type LiftCell } from './liftedPiece'
+import { drawLift, drawWholeScreen, joinedUpright, liftLookOf, MOST_PARTS_PER_PATH, type LiftCell } from './liftedPiece'
 
 // The Lifted piece drawn for real (ticket 1004, BeadBoard card, Lifted piece): the ground round the beads, the contour
 // past it, and the shadow under it, made without the canvas filter.
@@ -157,6 +157,51 @@ describe.each([
     expect(most).toBeLessThanOrEqual(SAME)
     // And a shadow there is: under where they meet, past the contour, darker than far above it.
     expect(paths(meet, 40 + CELL_SIZE_PX + 6)).toBeLessThan(paths(meet, 10))
+  })
+})
+
+// The picture sheet is let go when no shape on the screen needs it (ticket 1040).
+describe('the picture sheet of a shape of many parts', () => {
+  /** Draws a row of `beads` touching beads at 40% on pixel ratio 2, where the shadows fall straight on the screen and
+   * only a shape of many paths lays a sheet: the one it laid, if any. */
+  function draw(beads: number): HTMLCanvasElement | undefined {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = 2000
+    const context = canvas.getContext('2d')!
+    context.setTransform(0.8, 0, 0, 0.8, 0, 0)
+    let laid: HTMLCanvasElement | undefined
+    const watched = new Proxy(context, {
+      get: (target, key) => {
+        if (key === 'drawImage') return (source: HTMLCanvasElement, ...rest: number[]) => ((laid = source), Reflect.apply(target.drawImage, target, [source, ...rest]))
+        const value = Reflect.get(target, key)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+      set: (target, key, value) => Reflect.set(target, key, value),
+    })
+    drawLift(watched as unknown as DrawingContext, Array.from({ length: beads }, (_, at) => ({ x: 40 + at * CELL_SIZE_PX, y: 40, width: CELL_SIZE_PX, height: CELL_SIZE_PX })), DARK_THEME.canvas, 0.8)
+    return laid
+  }
+  const pixels = (sheet: HTMLCanvasElement) => sheet.width * sheet.height
+  // A row of touching beads is a run, and a run of more parts than a path takes is more than one path.
+  const [many, one] = [MOST_PARTS_PER_PATH * 2, MOST_PARTS_PER_PATH]
+
+  it('holds no pixels after a whole draw in which no shape needed it, and is made again by the next that does', () => {
+    let sheet: HTMLCanvasElement | undefined
+    drawWholeScreen(() => (sheet = draw(many)))
+    expect(pixels(sheet!)).toBeGreaterThan(0)
+    drawWholeScreen(() => expect(draw(one)).toBeUndefined())
+    expect(pixels(sheet!)).toBe(0)
+    drawWholeScreen(() => expect(draw(many)).toBe(sheet))
+    // Made again as large as this picture needs: earlier draws may have grown it larger before.
+    expect(pixels(sheet!)).toBeGreaterThan(0)
+  })
+
+  it('is kept by a whole draw that needs it and through bands that do not, so a stroke does not make it band by band', () => {
+    let sheet: HTMLCanvasElement | undefined
+    drawWholeScreen(() => (sheet = draw(many)))
+    const [width, height] = [sheet!.width, sheet!.height]
+    for (let band = 0; band < 4; band += 1) draw(band % 2 ? many : one)
+    expect([sheet!.width, sheet!.height]).toEqual([width, height])
   })
 })
 
