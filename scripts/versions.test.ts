@@ -1,7 +1,7 @@
 // The number rule (ticket 1045, spec 1043, ADR 0096): a release record and the notes merged since, in merge order, in;
 // every note's Version and the Build's out.
 import { describe, expect, it } from 'vitest';
-import { numberNotes, type Kind, type Release } from './versions.ts';
+import { nextRelease, numberNotes, type Kind, type Release } from './versions.ts';
 
 const release = (version: string, notes: Release['notes'] = []): Release => ({ version, date: '2026-11-17', notes });
 const merged = (...kinds: Kind[]) => kinds.map((kind, i) => ({ name: `2026-11-18-${String(i + 1).padStart(4, '0')}`, kind }));
@@ -55,5 +55,12 @@ describe('numberNotes', () => {
 
   it('with no release yet, notes count from 0.0.0', () => {
     expect(numberNotes([], merged('fixed', 'new'), 0).build).toBe('0.1.0');
+  });
+});
+
+describe('nextRelease', () => {
+  it('is the newest release’s first number plus one', () => {
+    expect(nextRelease([release('1.0.0')])).toBe('2.0.0');
+    expect(nextRelease([release('1.0.0'), release('2.0.0')])).toBe('3.0.0');
   });
 });

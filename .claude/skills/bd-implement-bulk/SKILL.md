@@ -63,7 +63,7 @@ Every sub-agent this run starts, and the orchestrator itself, draws on the same 
 
 ## 4. Merge one by one
 
-Merge each PR as it becomes ready, never two at once, in the merge order of step 2.4. For a PR:
+Merge each PR as it becomes ready, never two at once, in the merge order of step 2.4. A **release PR** (title `release: X.0.0`, `docs/agents/pull-requests.md`, The release PR) is never one of them: only the owner merges it. Don't merge it, merge `main` into it, rebase it or run its release command; leave it as it is and name it in the final report ("release PR #n, left for the owner"). For a PR:
 
 1. **Check it.** `gh pr view <n> --json state,isDraft,mergeable,mergeStateStatus,title,files` and `gh pr checks <n>`. The title must be `type:[NNNN] Description`; a draft or a failing check is not ready. A sub-agent that reported `New needs the owner's yes` is not ready until the owner answers: ask, with its line and what the maker can now do (several at once in one question), and keep merging the others meanwhile. On a no, change the note's `kind` to `changed` in its worktree, push and watch CI again (`docs/agents/pull-requests.md`, Release notes).
 2. **Bring main in, if main moved.** If any merge happened in this run since the branch last synced with `origin/main` (or `mergeStateStatus` is `BEHIND` or `DIRTY`), merge `origin/main` into the branch in its worktree (`git -C ../bd-beads-worktrees/bd-beads-NNNN fetch origin main && git -C ... merge origin/main`), push, and watch CI again (`gh pr checks <n> --watch --fail-fast`). Merge, never rebase: no force-push. This is what keeps "one by one" safe: the PR's CI runs on the main it will land on.
@@ -81,5 +81,6 @@ The run is over when every ticket in the batch is merged, dropped, waiting on a 
 - A table: ticket, PR, result (merged / open, needs a human / dropped / not started: weekly usage limit), one line of why for anything not merged.
 - Usage: the 5-hour percentage at the start and at the end, the measured points per ticket, and every pause with its length.
 - Conflicts met and how each was resolved (the dropped-or-reshaped lists from `bd-conflicts`).
+- An open release PR, if there is one (`gh pr list --json number,title --jq '.[] | select(.title | startswith("release: "))'`): its number, skipped and left for the owner to merge.
 - What is left for a human, per ticket, collected from the sub-agents' reports (plus the open PRs, and the worktrees the cleanup kept, each with the reason it gave).
 - `Skills used:` listing every skill you and the sub-agents invoked.

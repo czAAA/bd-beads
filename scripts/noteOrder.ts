@@ -6,24 +6,29 @@ import { git, RELEASE_RECORD } from './release.ts';
 export const NOTES_DIR = 'src/data/releaseNotes';
 
 /** The commit that added `version` to the release record: the oldest on the line whose record lists it. */
-function releaseCommit(cwd: string, version: string): string | undefined {
-  const touching = git(cwd, ['log', '--first-parent', '--reverse', '--format=%H', 'HEAD', '--', RELEASE_RECORD]).split('\n').filter(Boolean);
+function releaseCommit(cwd: string, ref: string, version: string): string | undefined {
+  const touching = git(cwd, ['log', '--first-parent', '--reverse', '--format=%H', ref, '--', RELEASE_RECORD]).split('\n').filter(Boolean);
   return touching.find((commit) => {
     const record = JSON.parse(git(cwd, ['show', `${commit}:${RELEASE_RECORD}`])) as { version: string }[];
     return record.some((release) => release.version === version);
   });
 }
 
-/** The named notes git can place, in merge order (two in one commit by file name), and how many merged before the
- * commit that added `newestRelease` (all while it isn't made, none with no release). Leaves out a note not committed;
- * null when git can't be read: no repository, or a shallow one, whose oldest commit seems to add every file. */
-export function noteOrder(cwd: string, names: readonly string[], newestRelease: string | undefined): { placed: string[]; beforeRelease: number } | null {
+/** The named notes git can place, in merge order on `ref`'s line (two in one commit by file name), and how many merged
+ * before the commit that added `newestRelease` (all while it isn't made, none with no release). Leaves out a note not
+ * committed; null when git can't be read: no repository, or a shallow one, whose oldest commit seems to add every file. */
+export function noteOrder(
+  cwd: string,
+  names: readonly string[],
+  newestRelease: string | undefined,
+  ref = 'HEAD',
+): { placed: string[]; beforeRelease: number } | null {
   let lines: string[];
   let commits: Map<string, number>;
   try {
     if (git(cwd, ['rev-parse', '--is-shallow-repository']) !== 'false') return null;
-    commits = new Map(git(cwd, ['rev-list', '--first-parent', '--reverse', 'HEAD']).split('\n').map((commit, i) => [commit, i]));
-    lines = git(cwd, ['log', '--first-parent', '--diff-merges=first-parent', '--no-renames', '--diff-filter=A', '--reverse', '--name-only', '--format=commit %H', 'HEAD', '--', NOTES_DIR]).split('\n');
+    commits = new Map(git(cwd, ['rev-list', '--first-parent', '--reverse', ref]).split('\n').map((commit, i) => [commit, i]));
+    lines = git(cwd, ['log', '--first-parent', '--diff-merges=first-parent', '--no-renames', '--diff-filter=A', '--reverse', '--name-only', '--format=commit %H', ref, '--', NOTES_DIR]).split('\n');
   } catch {
     return null;
   }
@@ -36,7 +41,7 @@ export function noteOrder(cwd: string, names: readonly string[], newestRelease: 
     if (!name.includes('/') && wanted.delete(name)) added.push({ name, at });
   }
   added.sort((a, b) => a.at - b.at || a.name.localeCompare(b.name));
-  const release = newestRelease === undefined ? undefined : releaseCommit(cwd, newestRelease);
+  const release = newestRelease === undefined ? undefined : releaseCommit(cwd, ref, newestRelease);
   const releaseAt = newestRelease === undefined ? -Infinity : release === undefined ? Infinity : (commits.get(release) ?? Infinity);
   return { placed: added.map((note) => note.name), beforeRelease: added.filter((note) => note.at < releaseAt).length };
 }
