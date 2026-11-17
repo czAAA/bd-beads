@@ -36,7 +36,7 @@ const timings = (page: Page) =>
 
 test('the Homepage paints the Welcome before it asks for the demo editor or the print code, and asks for the demo after', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await openApp(page, [], './homepage/', { canvasHidden: true })
+  await openApp(page, [], './', { canvasHidden: true })
   // The demo is on its way once the Welcome is on screen, not before; the print code isn't asked for at all.
   await expect.poll(async () => (await timings(page)).files.filter((file) => DEMO.test(file.url)).length).toBe(2)
   const { painted, files } = await timings(page)
@@ -48,7 +48,7 @@ test('the Homepage paints the Welcome before it asks for the demo editor or the 
 test("the Homepage's first screen fonts come with the page, and the Welcome holds still as it arrives", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await watchShifts(page)
-  await openApp(page, [], './homepage/', { canvasHidden: true })
+  await openApp(page, [], './', { canvasHidden: true })
   await expect(page.getByTestId('homepage-welcome')).toBeVisible()
   await page.evaluate(() => document.fonts.ready)
   const { files } = await timings(page)

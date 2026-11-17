@@ -125,7 +125,7 @@ describe('CanvasStrip Brand and layout (ticket 540)', () => {
 
     const brand = wrapper.get('[data-testid="canvas-brand"]')
     expect(brand.element.tagName).toBe('A')
-    expect(brand.attributes('href')).toContain('homepage/')
+    expect(brand.attributes('href')).toBe(import.meta.env.BASE_URL)
     expect(brand.attributes('aria-current')).toBeUndefined()
     expect(brand.text()).toBe('openbeads')
     expect(brand.find('[data-testid="app-logo"]').exists()).toBe(true)

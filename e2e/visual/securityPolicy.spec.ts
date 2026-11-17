@@ -39,9 +39,9 @@ test.describe('with motion', () => {
 
   test('the Homepage hands its box to the editor with nothing refused', async ({ page }) => {
     const refused = await watchPolicy(page)
-    await openApp(page, [fixtureProject({ technique: 'loom' })], './homepage/', { canvasHidden: true })
+    await openApp(page, [fixtureProject({ technique: 'loom' })], './', { canvasHidden: true })
     await page.getByTestId('welcome-open-editor').click()
-    await page.waitForURL((url) => !url.pathname.includes('homepage'))
+    await page.waitForURL((url) => url.pathname.endsWith('/app/'))
     await expect(page.locator('#app .canvas-strip')).toBeVisible()
     await settle(page)
     expect(refused).toEqual([])

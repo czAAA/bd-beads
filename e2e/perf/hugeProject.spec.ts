@@ -68,7 +68,7 @@ async function openWith(page: Page, stored: string): Promise<void> {
     },
     { key: STORAGE_KEY, value: stored, opening: OPENING_KEY },
   )
-  await page.goto('./')
+  await page.goto('./app/')
   await page.getByTestId('app-canvas').waitFor()
 }
 

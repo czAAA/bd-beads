@@ -140,7 +140,7 @@ describe('followDeviceTheme', () => {
   })
 })
 
-describe.each(['index.html', 'homepage/index.html'])("%s's pre-paint script", (page) => {
+describe.each(['index.html', 'app/index.html'])("%s's pre-paint script", (page) => {
   const html = readFileSync(resolve(__dirname, '../../', page), 'utf8')
   const script = /<script>([\s\S]*?)<\/script\s*>/i.exec(html)?.[1] ?? ''
 

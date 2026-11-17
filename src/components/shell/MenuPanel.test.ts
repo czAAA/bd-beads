@@ -159,7 +159,7 @@ describe('MenuPanel on the Homepage (ticket 540)', () => {
   it('links to the Homepage without marking it current in the editor, and has the shortcuts there', () => {
     const wrapper = mountIn()
     expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBeUndefined()
-    expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('href')).toMatch(/homepage\/$/)
+    expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('href')).toBe(import.meta.env.BASE_URL)
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
   })
 

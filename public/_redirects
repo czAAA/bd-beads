@@ -1,0 +1,3 @@
+# The Homepage moved to the main address (ticket 1052, ADR 0097). Cloudflare reads this file and never serves it.
+/homepage / 301
+/homepage/* / 301

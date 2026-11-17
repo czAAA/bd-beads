@@ -211,7 +211,7 @@ describe('HomePage', () => {
     expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
     const item = wrapper.get('[data-testid="menu-item-homepage"]')
     expect(item.attributes('aria-current')).toBe('page')
-    expect(item.attributes('href')).toContain('homepage/')
+    expect(item.attributes('href')).toBe(import.meta.env.BASE_URL)
   })
 
   it("opens the editor on a copy of What's inside's Project at the demo's bead size on screen, the page's zoom taken in (ticket 0879)", async () => {
