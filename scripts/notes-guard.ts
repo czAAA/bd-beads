@@ -1,13 +1,9 @@
 // Ticket 1045, ADR 0096: a merged Release note's file name and kind are final, so a branch keeps every note on `main`
 // (its wording may change). releaseNotes.test.ts checks the released ones without git; this covers the ones since.
 // `node scripts/notes-guard.ts <base> [head]` prints what is wrong and fails, or prints nothing.
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { NOTES_DIR } from './noteOrder.ts';
-
-function git(cwd: string, args: string[]): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 }).trim();
-}
+import { git } from './release.ts';
 
 /** Every note at `ref`, in either folder, by file name, with its kind (none for a note from before 1.0.0). */
 function notesAt(cwd: string, ref: string): Map<string, string | undefined> {

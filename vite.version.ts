@@ -1,10 +1,9 @@
 // What the build tells the app about itself (ticket 1045, spec 1043, ADR 0096): its Version, its build mark (the short
 // commit hash) and the date of its newest note or release. The package file's version is not read.
-import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { NOTES_DIR, noteOrder } from './scripts/noteOrder.ts';
-import { RELEASE_RECORD } from './scripts/release.ts';
+import { git, RELEASE_RECORD } from './scripts/release.ts';
 import { numberNotes, type Kind, type Release } from './scripts/versions.ts';
 
 export interface BuildVersion {
@@ -40,7 +39,7 @@ export function buildVersion(root: string, ships: boolean): BuildVersion {
 
 function commitMark(root: string, ships: boolean): string {
   try {
-    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim().slice(0, 7);
+    return git(root, ['rev-parse', 'HEAD']).slice(0, 7);
   } catch (error) {
     if (ships) throw error;
     return 'dev';
