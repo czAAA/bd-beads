@@ -159,6 +159,16 @@
   --tooltip-muted: var(--muted);
 }
 
+/* KindLabel card (ticket 1047): a Release note's kind label is the kind's color at 12% behind its text, as the Demo tag; high contrast has no fill and a 1px edge in the kind's color instead */
+:root, [data-theme="light"], [data-theme="dark"] {
+  --kind-label-tint: 12%;
+  --kind-label-edge: 0px;
+}
+[data-theme="contrast"] {
+  --kind-label-tint: 0%;
+  --kind-label-edge: 1px;
+}
+
 /* Selection bar (ContextBar card): the danger icon, lifted so it reads on the ink bar (on the dark theme the bar is light, so danger darkened: 4.7:1 on it) */
 :root, [data-theme="light"], [data-theme="contrast"] {
   --selbar-danger: color-mix(in srgb, var(--danger) 55%, #fff);

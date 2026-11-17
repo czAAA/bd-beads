@@ -428,7 +428,7 @@ export const pl: Translations = {
     },
     openSource: { name: 'Otwarty kod', text: 'Całe openbeads jest publiczne na licencji AGPL-3.0. Czytaj kod, zgłaszaj błędy, proponuj zmiany.' },
     sayHello: { name: 'Napisz do nas', text: 'Błąd, pomysł, twoja praca: wyślij to rodzinie. Jest to też w {menu} → {feedback}.' },
-    whatsNew: { name: 'Co nowego', history: 'Wszystkie zmiany' },
+    whatsNew: { name: 'Co nowego', history: 'Wszystkie zmiany', release: 'Wydanie {version}' },
     plans: {
       heading: 'Trzy sposoby użycia',
       why: 'Konta i Pro nie są jeszcze otwarte. Wszystko działa bez nich.',
@@ -467,6 +467,7 @@ export const pl: Translations = {
     },
     library: '{library}, {count}',
   },
+  releaseNoteKinds: { new: 'Nowe', changed: 'Zmienione', fixed: 'Poprawione' },
   pieceName: {
     title: 'Nazwij ten kawałek',
     label: 'Nazwa',

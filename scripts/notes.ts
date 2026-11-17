@@ -6,12 +6,14 @@ import { NOTES_DIR, noteOrder } from './noteOrder.ts';
 import { RELEASE_RECORD } from './release.ts';
 import { numberNotes, type Kind, type NumberedNote, type Release } from './versions.ts';
 
-/** One note's file: its name (day and ticket), its day, its kind (none before 1.0.0) and its English line. */
+/** One note's file: its name (day and ticket), its day, its kind (none before 1.0.0), its English line and its line in
+ * every language, by locale. */
 export interface NoteFile {
   name: string;
   date: string;
   kind?: Kind;
   line: string;
+  lines: Record<string, string>;
 }
 
 /** What the repo holds: the release record, the notes since 1.0.0 and the notes from before it, each by file name. */
@@ -27,8 +29,8 @@ function readFolder(folder: string): NoteFile[] {
     .filter((file) => file.endsWith('.json'))
     .sort()
     .map((file) => {
-      const note = JSON.parse(readFileSync(resolve(folder, file), 'utf8')) as { date: string; kind?: Kind; line?: { en?: string } };
-      return { name: file.slice(0, -'.json'.length), date: note.date, kind: note.kind, line: note.line?.en ?? '' };
+      const note = JSON.parse(readFileSync(resolve(folder, file), 'utf8')) as { date: string; kind?: Kind; line?: Record<string, string> };
+      return { name: file.slice(0, -'.json'.length), date: note.date, kind: note.kind, line: note.line?.en ?? '', lines: note.line ?? {} };
     });
 }
 

@@ -6,6 +6,7 @@ import { chromium } from 'playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { resolveBase } from './vite.base.ts'
 import { pageHeaders } from './vite.headers.ts'
+import { releaseNotesFiles } from './vite.notes.ts'
 import { offlineShell } from './vite.pwa.ts'
 import { buildVersion, versionGuard } from './vite.version.ts'
 
@@ -54,7 +55,8 @@ export default defineConfig(({ mode }) => ({
   base: resolveBase(mode, process.env.DEPLOY_BASE),
   // The offline shell (ticket 69, ADR 0045): the service worker, written into the build with the list of every file in it.
   // The pages' security headers (ticket 1024): `_headers` for Cloudflare, and the same from `vite preview`.
-  plugins: [vue(), offlineShell(), pageHeaders(), versionGuard()],
+  // The notes files (ticket 1047): one per language beside the app, built before the worker lists every file.
+  plugins: [vue(), offlineShell(), pageHeaders(), versionGuard(), releaseNotesFiles()],
   // Lets `tailscale serve` reach the dev server from other devices on the tailnet.
   server: { allowedHosts: ['.ts.net'] },
   // What About and a Report show (ticket 1045); the catalogs' code counts the Homepage names (ticket 0742).

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { FIT_LOCALES, misfitsNow, mountAt, type FitLocale } from '../testUtils/browserFit'
+import type { NotesFile, NotesFileNote } from '../domain/notesFile'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 import { turnToSection } from '../testUtils/homepageSection'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
@@ -14,9 +15,22 @@ const middle = (element: Element) => {
 }
 const linkAt = ([x, y]: readonly [number, number]) => document.elementFromPoint(x, y)?.closest('a, button') ?? null
 
+const note = (name: string, version: string, kind: NotesFileNote['kind'], line: string): NotesFileNote => ({ name, version, date: name.slice(0, 10), kind, line })
+/** What's new's notes, as long as the canvas's: every kind in one block, a release between blocks (ticket 1047). */
+const NOTES: NotesFile = {
+  version: '2.1.2',
+  releases: [{ version: '1.0.0', date: '2026-11-20' }, { version: '2.0.0', date: '2026-12-01' }],
+  notes: [
+    note('2026-12-04-0003', '2.1.2', 'fixed', 'На большой рамке «Ряд готов» срабатывает сразу, как и каждый шаг по полосе прогресса'),
+    note('2026-12-03-0002', '2.1.1', 'changed', 'Подложка и контур детали теперь выходят на бисеринку за её крайние бусины, и там видна сетка'),
+    note('2026-12-02-0001', '2.1.0', 'new', 'При увеличении штамп рамки называет её бисер, даёт кнопку «Изменить» и считает бисеринки каждого цвета'),
+    note('2026-11-28-0000', '1.2.0', 'new', 'На холсте панель отражения предлагает любое число осей'),
+  ],
+}
+
 /** The Homepage turned to the coffee screen: its layout answers to the box's width (the `homepage` container). */
 async function coffeeAt(width: number, locale: FitLocale = 'en'): Promise<Element> {
-  const { root } = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale, width })
+  const { root } = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback(), notes: async () => NOTES }, { locale, width })
   await turnToSection(root, 'coffee')
   return root.querySelector('[data-testid="homepage-coffee"]')!
 }
@@ -82,32 +96,36 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
   }
 })
 
-describe("What's new at its widths (tickets 0824, 0880)", () => {
-  for (const width of [1280, 820, 390]) {
-    it(`at ${width}: as wide as the band, under it; open, its dates in one column, each line beside its date, Every change a link`, async () => {
-      const root = await coffeeAt(width)
-      const fold = root.querySelector('[data-testid="homepage-whats-new"]')!.getBoundingClientRect()
-      const band = root.querySelector('[data-testid="homepage-coffee-band"]')!.getBoundingClientRect()
-      expect(fold.width, 'as wide as the band').toBeCloseTo(band.width, 0)
-      expect(fold.top).toBeGreaterThan(band.bottom)
-      const head = root.querySelector<HTMLElement>('[data-testid="homepage-whats-new-toggle"]')!
-      expect(head.getBoundingClientRect().height, 'a hit target').toBeGreaterThanOrEqual(tokenPx(head, '--touch-target') - 0.5)
-      head.click()
-      await settleForMeasuring()
-      const notes = [...root.querySelectorAll('[data-testid="homepage-release-note"]')]
-      expect(notes).toHaveLength(3)
-      const dates = notes.map((note) => note.querySelector('time')!.getBoundingClientRect())
-      const lines = notes.map((note) => note.querySelector('.whats-new__line')!.getBoundingClientRect())
-      expect(new Set(lines.map((line) => Math.round(line.left))).size, 'the lines start in one column').toBe(1)
-      for (const [i, date] of dates.entries()) {
-        expect(date.right, `note ${i + 1}'s line beside its date`).toBeLessThanOrEqual(lines[i].left)
-        expect(Math.abs(date.left - dates[0].left), 'the dates in one column').toBeLessThanOrEqual(1)
-      }
-      const history = root.querySelector('[data-testid="homepage-history"]')!
-      history.scrollIntoView({ block: 'center' })
-      expect(linkAt(middle(history))).toBe(history)
-      expect(getComputedStyle(history).textDecorationLine, 'underlined at rest').toBe('underline')
-    })
+describe("What's new at its widths (tickets 0824, 0880, 1047)", () => {
+  for (const locale of FIT_LOCALES) {
+    for (const width of [1280, 820, 390]) {
+      it(`${locale} at ${width}: as wide as the band, under it; open, the kind labels in one column, each line beside its label, nothing cut off`, async () => {
+        const root = await coffeeAt(width, locale)
+        const fold = root.querySelector('[data-testid="homepage-whats-new"]')!.getBoundingClientRect()
+        const band = root.querySelector('[data-testid="homepage-coffee-band"]')!.getBoundingClientRect()
+        expect(fold.width, 'as wide as the band').toBeCloseTo(band.width, 0)
+        expect(fold.top).toBeGreaterThan(band.bottom)
+        const head = root.querySelector<HTMLElement>('[data-testid="homepage-whats-new-toggle"]')!
+        expect(head.getBoundingClientRect().height, 'a hit target').toBeGreaterThanOrEqual(tokenPx(head, '--touch-target') - 0.5)
+        head.click()
+        await settleForMeasuring()
+        const rows = [...root.querySelectorAll('[data-testid="homepage-release-note"]')]
+        expect(rows).toHaveLength(4)
+        const labels = rows.map((row) => row.querySelector('[data-testid="kind-label"]')!.getBoundingClientRect())
+        const lines = rows.map((row) => row.querySelector('.whats-new__line')!.getBoundingClientRect())
+        expect(new Set(lines.map((line) => Math.round(line.left))).size, 'the lines start in one column').toBe(1)
+        for (const [i, label] of labels.entries()) {
+          expect(label.right, `row ${i + 1}'s line beside its label`).toBeLessThanOrEqual(lines[i].left)
+          expect(Math.abs(label.left - labels[0].left), 'the labels in one column').toBeLessThanOrEqual(1)
+          expect(lines[i].right, `row ${i + 1} within the fold`).toBeLessThanOrEqual(fold.right)
+        }
+        const history = root.querySelector('[data-testid="homepage-history"]')!
+        history.scrollIntoView({ block: 'center' })
+        expect(linkAt(middle(history))).toBe(history)
+        expect(getComputedStyle(history).textDecorationLine, 'underlined at rest').toBe('underline')
+        expect((await misfitsNow()).filter((misfit) => misfit.includes('whats-new') || misfit.includes('kind-label')), 'nothing of What\'s new cut off').toEqual([])
+      })
+    }
   }
 })
 

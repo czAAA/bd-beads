@@ -96,6 +96,19 @@ for (const [situation, breakIt] of failures) {
     await expect(page.getByRole('heading').first()).toBeVisible()
   })
 
+  // The notes files are built files (ticket 1047): What's new reads the page's own, in a language not shown before.
+  test(`What's new opens ${situation}, in a language the device has not shown (ticket 1047)`, async ({ page, context }) => {
+    await openAndInstall(page)
+    await breakIt(context, host)
+
+    await page.addInitScript(() => localStorage.setItem('openbeads:locale', 'es'))
+    await page.goto(new URL('homepage/', host.url).href)
+    await page.locator('[data-testid="section-step"][data-step="coffee"]').click()
+    await page.getByTestId('homepage-whats-new-toggle').click()
+    await expect(page.getByTestId('homepage-whats-new-release').last()).toContainText('Lanzamiento 1.0.0')
+    await expect(page.getByTestId('homepage-history')).toHaveText('Todos los cambios')
+  })
+
   // The demo editor and the print code come after the page (ticket 0991), from the offline copy like every other file.
   test(`What's inside plays its demo ${situation} (ticket 0991)`, async ({ page, context }) => {
     await page.setViewportSize({ width: 1440, height: 900 })

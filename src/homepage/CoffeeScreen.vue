@@ -7,6 +7,7 @@ import CoffeePromises from './CoffeePromises.vue'
 import GroupedList from './GroupedList.vue'
 import WhatsNewFold from './WhatsNewFold.vue'
 import { coffeeRows } from './coffeeCopy'
+import type { NotesSource } from '../services/notesFile'
 
 /** The Homepage's coffee screen (tickets 0811, 0823, 0880, 0948; Homepage card): the band with its promises, then What's
  * new folded under it; on a phone the promises as a grouped list between them (0827). Send feedback only asks for the
@@ -16,6 +17,8 @@ const props = defineProps<{
   phone?: boolean
   /** Whether the Homepage shows this section: What's new left open is closed again once it is turned away. */
   shown?: boolean
+  /** Reads What's new's notes file (ticket 1047). */
+  notes?: NotesSource
 }>()
 const emit = defineEmits<{ feedback: [] }>()
 
@@ -41,7 +44,7 @@ watch(
       <template #action-openSource><CoffeeAction of="openSource" /></template>
       <template #action-sayHello><CoffeeAction of="sayHello" @feedback="emit('feedback')" /></template>
     </GroupedList>
-    <WhatsNewFold :key="leftTimes" />
+    <WhatsNewFold :key="leftTimes" :notes="notes" />
   </div>
 </template>
 

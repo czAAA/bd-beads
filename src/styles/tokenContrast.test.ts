@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { channelsOf, contrastRatio } from '../domain/color'
+import { channelsOf, contrastRatio, mix } from '../domain/color'
 
 // Pairs the ContrastAudit card lists for `danger` and `button-line` (ticket 0855): `danger` is text at 4.5:1 on every
 // surface it is drawn on and a red of its own in light; a secondary button's border is its only edge in dark, so 3:1.
@@ -36,5 +36,17 @@ describe('danger in light', () => {
 describe('button-line in dark', () => {
   it.each(['box', 'panel', 'elevated', 'canvas'])('shows at 3:1 or more against %s', (surface) => {
     expect(ratio(color('button-line', 'dark'), color(surface, 'dark'))).toBeGreaterThanOrEqual(3)
+  })
+})
+
+// The kind labels (ticket 1047, KindLabel card): the word in its kind's color on that color at 12% over the surfaces
+// What's new and the toast draw on; high contrast has no fill.
+describe.each(THEMES)('the kind labels in %s', (theme) => {
+  const tint = theme === 'contrast' ? 0 : 0.12
+  it.each(['kind-new', 'kind-changed', 'kind-fixed'])('%s reads at 4.5:1 or more on its own tint', (kind) => {
+    for (const surface of ['panel', 'elevated', 'canvas']) {
+      const ground = mix(channelsOf(color(surface, theme)), channelsOf(color(kind, theme)), tint)
+      expect(contrastRatio(channelsOf(color(kind, theme)), ground), surface).toBeGreaterThanOrEqual(4.5)
+    }
   })
 })

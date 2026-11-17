@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-17",
+  "kind": "new",
+  "line": {
+    "en": "What's new on the Homepage lists every change under its version, each marked New, Changed or Fixed, and opens with no network",
+    "ru": "«Что нового» на главной показывает каждое изменение под его версией, с пометкой «Новое», «Изменено» или «Исправлено», и открывается без сети",
+    "uk": "«Що нового» на головній показує кожну зміну під її версією, з позначкою «Нове», «Змінено» або «Виправлено», і відкривається без мережі",
+    "be": "«Што новага» на галоўнай паказвае кожную змену пад яе версіяй, з пазнакай «Новае», «Зменена» або «Выпраўлена», і адкрываецца без сеткі",
+    "zh": "主页的“更新内容”按版本列出每项更改，并标明新增、改动或修复，无网络也能打开",
+    "es": "Novedades en la página de inicio muestra cada cambio bajo su versión, marcado como Nuevo, Cambiado o Corregido, y se abre sin conexión",
+    "pl": "„Co nowego” na stronie głównej pokazuje każdą zmianę pod jej wersją, oznaczoną jako Nowe, Zmienione lub Poprawione, i otwiera się bez sieci"
+  }
+}

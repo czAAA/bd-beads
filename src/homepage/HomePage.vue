@@ -45,6 +45,7 @@ import { useDialogs } from '../composables/shell/useDialogs'
 import { useFeedbackFlow } from '../composables/shell/useFeedbackFlow'
 import { useToasts } from '../composables/ui/useToasts'
 import type { FeedbackService } from '../services/feedback'
+import type { NotesSource } from '../services/notesFile'
 
 // The Homepage (ticket 77; Homepage card): one canvas box like the editor's (ticket 540, ADR 0073) mid-page: the Canvas
 // strip (its slogan and the way into the editor, ticket 0822), one section at a time, the Progress bar. Scrolling turns
@@ -58,6 +59,8 @@ const props = defineProps<{
   feedback: FeedbackService
   /** The library, opened only once its Saved Projects are shown in the Menu (ticket 0716). */
   openLibrary?: () => Promise<HomepageLibrary>
+  /** Reads What's new's notes file in a language (ticket 1047): the page's own Build's, from the Offline copy too. */
+  notes?: NotesSource
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
@@ -173,7 +176,7 @@ const sections = computed<HomepageSection[]>(() => [
     centred: true,
     shows: CoffeeScreen,
     // Say hello's Send feedback opens the Feedback sheet as the Menu's row does (ticket 0823).
-    with: (): Record<string, unknown> => ({ phone: narrow.value, shown: sections.value[section.value]?.id === 'coffee', onFeedback: () => feedback.onOpenFeedback('general') }),
+    with: (): Record<string, unknown> => ({ phone: narrow.value, shown: sections.value[section.value]?.id === 'coffee', notes: props.notes, onFeedback: () => feedback.onOpenFeedback('general') }),
   },
   {
     id: 'plans',
