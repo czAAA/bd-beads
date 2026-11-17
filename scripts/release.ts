@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 /** The release record's path in the repo. Its shape is in `docs/agents/pull-requests.md` (Production releases). */
 export const RELEASE_RECORD = 'src/data/releases.json';
 
-function git(cwd: string, args: string[]): string {
+/** Runs git in `cwd` and returns its output, trimmed; throws when git fails. */
+export function git(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 

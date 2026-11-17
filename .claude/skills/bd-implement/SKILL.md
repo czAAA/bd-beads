@@ -16,6 +16,8 @@ Run typechecking regularly and single test files regularly. At the end run `npm 
 
 Once done, use /bd-review to review the work.
 
+A user-facing change adds one Release note with its kind, by the rules in `docs/agents/pull-requests.md` (Release notes): a `fix` PR's note is Fixed, the bigger kind wins, and before a note is New ask the owner (say what the maker can now do); a no makes it Changed. In a bulk run you can't ask: open the PR with the note as New, and put `New needs the owner's yes: <what the maker can now do>` as the first line of your report, so the orchestrator asks before it merges. Never name a Version in the title or the ticket.
+
 If you update visual baselines, read the changed images first (`docs/testing.md`, Visual baselines).
 
 Once the PR is open, you are done: don't watch its CI. No `gh pr checks --watch`, no subscribing to the PR's activity, no scheduled check-ins, no PR comments about CI. The user watches CI and comes back to you if it fails (then read it with `bash scripts/ci-failures.sh <number>`, fix and push). Watching CI is only for a bulk run, which merges its PRs in order once they are green (`bd-implement-bulk`).

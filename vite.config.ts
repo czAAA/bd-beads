@@ -7,6 +7,7 @@ import { configDefaults, defineConfig } from 'vitest/config'
 import { resolveBase } from './vite.base.ts'
 import { pageHeaders } from './vite.headers.ts'
 import { offlineShell } from './vite.pwa.ts'
+import { buildVersion, versionGuard } from './vite.version.ts'
 
 /** What needs a page (ticket 420); every other `src/**\/*.test.ts` runs in Node. */
 const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/homepage/**/*.test.ts', 'src/App*.test.ts', '**/*.dom.test.ts']
@@ -29,8 +30,6 @@ const browserTestsOn = (): boolean => {
   }
 }
 
-const APP_VERSION = (JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as { version: string }).version
-
 /** How many codes each Color catalog holds, by its id (ticket 0742): the Homepage's free list counts them without
  * fetching a catalog, each a lazy chunk of its own. */
 const CATALOGS = resolve(import.meta.dirname, 'src/data/colorCatalogs')
@@ -40,6 +39,13 @@ const COLOR_CATALOG_CODES = Object.fromEntries(
     .map((file) => [file.slice(0, -'.json'.length), (JSON.parse(readFileSync(resolve(CATALOGS, file), 'utf8')) as { codes: unknown[] }).codes.length]),
 )
 
+/** The Build's Version, build mark and newest date for the app (ticket 1045). Reading the config never fails (knip
+ * reads it too); a build that ships does, through `versionGuard`, when git can't place a note (spec 1043). */
+function versionDefines(): Record<string, string> {
+  const { version, mark, date } = buildVersion(import.meta.dirname, false)
+  return { __APP_VERSION__: JSON.stringify(version), __BUILD_MARK__: JSON.stringify(mark), __BUILD_DATE__: JSON.stringify(date) }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   // Production builds (build and preview alike) resolve assets relative to the path the app is served from.
@@ -48,11 +54,11 @@ export default defineConfig(({ mode }) => ({
   base: resolveBase(mode, process.env.DEPLOY_BASE),
   // The offline shell (ticket 69, ADR 0045): the service worker, written into the build with the list of every file in it.
   // The pages' security headers (ticket 1024): `_headers` for Cloudflare, and the same from `vite preview`.
-  plugins: [vue(), offlineShell(), pageHeaders()],
+  plugins: [vue(), offlineShell(), pageHeaders(), versionGuard()],
   // Lets `tailscale serve` reach the dev server from other devices on the tailnet.
   server: { allowedHosts: ['.ts.net'] },
-  // The version the Menu's About section shows (ticket 443); the catalogs' code counts the Homepage names (ticket 0742).
-  define: { __APP_VERSION__: JSON.stringify(APP_VERSION), __COLOR_CATALOG_CODES__: JSON.stringify(COLOR_CATALOG_CODES) },
+  // What About and a Report show (ticket 1045); the catalogs' code counts the Homepage names (ticket 0742).
+  define: { ...versionDefines(), __COLOR_CATALOG_CODES__: JSON.stringify(COLOR_CATALOG_CODES) },
   build: {
     // Two pages: the editor and the Homepage (ticket 77), which is a folder with its own index.html so a static host
     // serves /homepage/ with no rewrite rules (ADR 0014).

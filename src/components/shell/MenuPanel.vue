@@ -20,6 +20,7 @@ import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { SOURCE_URL } from '../../data/sourceLink'
+import { BUILD_MARK, BUILD_VERSION } from '../../data/build'
 
 // The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections, only
 // asking. The Homepage (540) leaves out the editor's parts but Saved Projects (0716), its demo all but the Projects and the
@@ -78,7 +79,6 @@ const actions = {
   convertImage: controlAction('convert-image'),
   shortcuts: controlAction('shortcuts-help'),
 }
-const version = __APP_VERSION__
 
 /** New Project leaves the page, so it opens its form once the page has let go. */
 async function openNewProject() {
@@ -213,7 +213,7 @@ const inputOptions = computed(() => [
       <PanelItem v-if="COFFEE_URL" icon="coffee" accent-icon :href="COFFEE_URL" external data-testid="menu-item-coffee">{{ t.panels.menu.coffee }}</PanelItem>
       <div class="menu-panel__version" data-testid="menu-version">
         <span>{{ t.panels.menu.version }}</span>
-        <span class="menu-panel__number">{{ version }}</span>
+        <span class="menu-panel__number">{{ BUILD_VERSION }} <span class="menu-panel__build">· {{ BUILD_MARK }}</span></span>
       </div>
     </PanelSection>
   </div>
@@ -233,5 +233,11 @@ const inputOptions = computed(() => [
 
 .menu-panel__number {
   font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The build mark after the Version, a step quieter (ticket 1045). */
+.menu-panel__build {
+  color: var(--subtle);
 }
 </style>

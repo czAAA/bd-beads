@@ -1,3 +1,4 @@
+import { BUILD_TEXT } from '../../data/build'
 import type { Report, ReportContext, ReportKind, ReportSent } from '../../domain/feedbackReport'
 import type { Locale } from '../../domain/locale'
 import { browserAndSystem } from '../../domain/userAgent'
@@ -43,7 +44,7 @@ const PREFILL_CONTEXT = ['brand', 'catalog', 'code', 'hex', 'swatchLetter'] as c
 /** What the app attaches to every Report, read as the sheet opens (spec 0698): never the Project or the device id. */
 function baseContext(locale: Locale): ReportContext {
   return {
-    appVersion: __APP_VERSION__,
+    appVersion: BUILD_TEXT,
     uiLanguage: locale,
     ...browserAndSystem(navigator.userAgent),
     viewport: `${window.innerWidth} × ${window.innerHeight}`,

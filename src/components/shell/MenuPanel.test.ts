@@ -59,11 +59,14 @@ describe('MenuPanel (ticket 443)', () => {
     expect(pen.findComponent(MenuPanel).emitted('update:handedness')).toEqual([['left']])
   })
 
-  it('has Source code opening a new tab, and the version as text', () => {
+  it('has Source code opening a new tab, and the Version and build mark as text (ticket 1045)', () => {
     const wrapper = mountIn()
     expect(wrapper.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
     expect(wrapper.get('[data-testid="menu-item-source"]').attributes('target')).toBe('_blank')
-    expect(wrapper.get('[data-testid="menu-version"]').text()).toContain(en.panels.menu.version)
+    const version = wrapper.get('[data-testid="menu-version"]')
+    expect(version.text()).toContain(en.panels.menu.version)
+    expect(version.get('.menu-panel__number').text()).toMatch(/^\d+\.\d+\.\d+ · ([0-9a-f]{7}|dev)$/)
+    expect(version.text()).not.toContain('0.0.0')
   })
 
   it('has the language and theme as pickers, and a language change is remembered', async () => {
