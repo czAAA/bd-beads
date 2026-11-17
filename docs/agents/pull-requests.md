@@ -20,3 +20,7 @@ Only code and the public docs (`docs/design/system/`, `docs/agents/`, `docs/glos
 ## Release notes
 
 A PR that ships a user-facing change adds a release note as a new file, `src/data/releaseNotes/YYYY-MM-DD-NNNN.json` (the day it ships and the PR's ticket), never by editing another note's file, so PRs open at once don't conflict: `{ "date": "YYYY-MM-DD", "line": { "en": "…", … } }`, one short line in every shipped language, in the product's voice (`docs/design/system/writing.md`), no full stop. `RELEASE_NOTES` lists them newest first by file name; the Homepage's What's new tile shows the newest three; `releaseNotes.test.ts` checks every language and that each file's name matches its date.
+
+## Production releases
+
+The release record, `src/data/releases.json`, lists the Production releases, oldest first (spec 1043, ADR 0096). It is a JSON list, empty until the first release; each release is `{ "version": "X.0.0", "date": "YYYY-MM-DD", "notes": [{ "name": "YYYY-MM-DD-NNNN", "version": "X.Y.Z", "kind": "new" | "changed" | "fixed" }, …] }`: its Version, the day it was made, and every Release note it released, by the note's file name, with the number and kind that note got. A release is only ever added at the end, never edited or removed. The commit on `main` that adds one is a **release commit**: merging it deploys production, and production takes no other commit (`docs/deploy.md`, Releasing to production). `scripts/release.ts` is the only code that decides which commit is a release.

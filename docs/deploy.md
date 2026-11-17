@@ -9,7 +9,7 @@ One Cloudflare account, on Workers Free, runs two Workers from one `wrangler.jso
 | | dev | production |
 |---|---|---|
 | Worker | `bd-beads-dev` | `bd-beads` |
-| Deployed | on every push to `main` | by a manual run of the workflow, from `main` only |
+| Deployed | on every push to `main` | on the merge of a release commit, after dev; a manual run redeploys the newest release |
 | Address | `https://dev.openbeads.com`, and `https://bd-beads-dev.bd4beads.workers.dev` | `https://openbeads.com`, and `https://bd-beads.bd4beads.workers.dev` until the release switches it off (ticket 391) |
 | D1 `core` (binding `CORE`) | `bd-beads-dev-core` | `bd-beads-core` |
 | D1 `blobs` (binding `BLOBS_DB`) | `bd-beads-dev-blobs` | `bd-beads-blobs` |
@@ -30,17 +30,25 @@ npx wrangler deploy --env dev --var VERSION:$(git rev-parse HEAD)
 curl -s https://bd-beads-dev.bd4beads.workers.dev/api/health   # or https://dev.openbeads.com/api/health
 ```
 
-Production is the same with `--env production`, from a clean `main`. `npx wrangler deploy --dry-run --env <env>` checks the config and the bundle without touching Cloudflare.
+Production is the same with `--env production`, from a clean checkout of the newest release commit (`git checkout $(node scripts/release.ts production origin/main)`), never from `main`'s head. `npx wrangler deploy --dry-run --env <env>` checks the config and the bundle without touching Cloudflare.
 
 ## Deploying through GitHub
 
-`.github/workflows/deploy.yml` does the same as the steps above:
+`.github/workflows/deploy.yml` does the same as the steps above; each Worker's deploy is `.github/workflows/deploy-worker.yml`, which it calls:
 
-- **When it runs.** A push to `main` deploys dev. Production deploys only from a manual run (Actions → Deploy → Run workflow, on `main`). A run from any other ref fails at once, and the `production` environment refuses it too.
-- **What it does.** One build, then each database's migrations, then the code with `VERSION` set to the commit, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy. A second check asks the custom domain (`dev.openbeads.com` or `openbeads.com`) the same; it sends the Access service token when `CF_ACCESS_CLIENT_ID` is set (ticket 395), and dev's is skipped with a warning until then. It is advisory: the zone's Bot Fight Mode challenges a runner, so a failure there only warns.
+- **When it runs.** A push to `main` deploys dev. When the pushed commit is a release commit, production follows (Releasing to production, below). A manual run (Actions → Deploy → Run workflow, on `main`) redeploys production only. A run from any other ref fails at once, and the `production` environment refuses it too.
+- **What it does.** One build, from `main`'s whole history (`fetch-depth: 0`), then for each Worker each database's migrations, then the code with `VERSION` set to the commit that was built, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy. A second check asks the custom domain (`dev.openbeads.com` or `openbeads.com`) the same; it sends the Access service token when `CF_ACCESS_CLIENT_ID` is set (ticket 395), and dev's is skipped with a warning until then. It is advisory: the zone's Bot Fight Mode challenges a runner, so a failure there only warns.
 - **Custom domains.** Each Worker's `routes` entry in `wrangler.jsonc` is a Custom Domain, so a deploy keeps it. `PUBLIC_ORIGIN` is the origin sign-in is tried on; Google's callback and the allowed origins come from it, never from the request's host. Each hostname has its own Access application (ticket 400), so a tester is added to both policies.
-- **Concurrency.** Runs for the same Worker queue one behind another and are never cancelled halfway through.
-- **What it skips.** A push that changes only Markdown deploys nothing.
+- **Concurrency.** Dev and production each queue on their own: deploys of the same Worker run one behind another and are never cancelled halfway through. GitHub keeps only one waiting deploy per Worker, so a newer push replaces a dev deploy that is still waiting; if that was a release's, its production deploy doesn't run, and a manual run puts it there.
+- **What it skips.** A push that changes only Markdown deploys nothing. A release always changes the release record, so it never skips.
+
+## Releasing to production
+
+Production holds only Production releases (spec 1043, ADR 0096). A release is a pull request that adds a release to the release record, `src/data/releases.json` (its shape is in `docs/agents/pull-requests.md`, Production releases); the commit its merge puts on `main` is a **release commit**. `scripts/release.ts` is the only place that knows which commit that is: `node scripts/release.ts is-release <commit>` says whether a commit adds a release, and `node scripts/release.ts production <ref>` names the commit production may get, the newest release commit on `<ref>`'s first-parent line (`main`'s head until a first release exists).
+
+- **A release reaches production by its merge.** The push builds once and deploys dev from it. Once dev's smoke check has passed, production is deployed from the same build and checked the same way. If dev fails, production is left as it was.
+- **Production refuses any other commit.** Before any migration, production's job asks the script for the newest release commit on `main` as it is then, and fails if the build is of any other commit. So a deploy that waited behind a newer release can't put the older one back.
+- **Redeploying a release.** A manual run (Actions → Deploy → Run workflow, on `main`) checks out the newest release commit, builds it, and deploys it to production; it never takes `main`'s head, and dev is untouched. Use it to repair production (a failed deploy, a release whose dev deploy was replaced, a dashboard change to undo). Going back to an older release is not a redeploy: it is a new release. Until a first release exists, a manual run deploys `main`'s head, as before releases; if `main` moves while it waits, it refuses, and a second run takes the new head.
 
 ## Migrations
 
