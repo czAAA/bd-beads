@@ -1,19 +1,42 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { BUILD_VERSION } from '../data/build'
 
 type Listener = () => void
+
+/** A notes file whose Build is `version`, with one note numbered `version` (ticket 1048). */
+const notesFileOf = (version: string) => ({
+  version,
+  releases: [],
+  notes: [{ name: '2026-12-01-0001', version, date: '2026-12-01', kind: 'new', line: 'A new thing' }],
+})
+const NEWER = `${Number(BUILD_VERSION.split('.')[0]) + 1}.0.0`
+
+/** A waiting worker that answers the page's question with `answer` (its notes file), or never when it is undefined. */
+function waitingWorker(answer?: unknown) {
+  const asked: unknown[] = []
+  const postMessage = vi.fn((message: unknown, ports?: MessagePort[]) => {
+    asked.push(message)
+    const port = ports?.[0]
+    if (port && answer !== undefined)
+      setTimeout(() => {
+        port.postMessage(answer)
+        port.close()
+      })
+  })
+  return Object.assign(new EventTarget(), { state: 'installing', postMessage, asked })
+}
 
 /** The slice of a service worker registration the module reads, with a way to play out an install. */
 class FakeRegistration {
   waiting: object | null = null
-  installing: (EventTarget & { state: string }) | null = null
+  installing: ReturnType<typeof waitingWorker> | null = null
   update = vi.fn(() => Promise.resolve())
   private found: Listener[] = []
   addEventListener(type: string, listener: Listener) {
     if (type === 'updatefound') this.found.push(listener)
   }
   /** A new worker starts installing, then finishes: `state` becomes installed. */
-  install() {
-    const worker = Object.assign(new EventTarget(), { state: 'installing' })
+  install(worker = waitingWorker(notesFileOf(NEWER))) {
     this.installing = worker
     this.found.forEach((listener) => listener())
     worker.state = 'installed'
@@ -39,6 +62,8 @@ async function freshModule() {
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+/** Long enough for a fake worker's answer to cross its port. */
+const answered = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 describe('startOfflineShell', () => {
   beforeEach(() => {
@@ -79,34 +104,111 @@ describe('startOfflineShell', () => {
     const { registration } = stubBrowser({ controlled: false })
     const { startOfflineShell, browserAppUpdates } = await freshModule()
     const ready = vi.fn()
-    browserAppUpdates.onReady(ready)
+    browserAppUpdates.onReady(() => 'en', ready)
     startOfflineShell('/bd-beads/')
     await settle()
     registration.install()
+    await answered()
     expect(ready).not.toHaveBeenCalled()
   })
 
-  it('calls a worker that installs under a controlled page an update', async () => {
+  it('asks a worker that installs under a controlled page what it brings, in the language shown (ticket 1048)', async () => {
     const { registration } = stubBrowser({ controlled: true })
     const { startOfflineShell, browserAppUpdates } = await freshModule()
     const ready = vi.fn()
-    browserAppUpdates.onReady(ready)
+    browserAppUpdates.onReady(() => 'ru', ready)
     startOfflineShell('/bd-beads/')
     await settle()
-    registration.install()
-    expect(ready).toHaveBeenCalledOnce()
+    const worker = waitingWorker(notesFileOf(NEWER))
+    registration.install(worker)
+    await answered()
+    expect(worker.asked).toEqual([{ type: 'NOTES', locale: 'ru' }])
+    expect(ready).toHaveBeenCalledExactlyOnceWith({ version: NEWER, notes: notesFileOf(NEWER).notes })
+  })
+
+  it('raises nothing for a waiting Build with the page\'s own Version', async () => {
+    const { registration } = stubBrowser({ controlled: true })
+    const { startOfflineShell, browserAppUpdates } = await freshModule()
+    const ready = vi.fn()
+    browserAppUpdates.onReady(() => 'en', ready)
+    startOfflineShell('/bd-beads/')
+    await settle()
+    registration.install(waitingWorker(notesFileOf(BUILD_VERSION)))
+    await answered()
+    expect(ready).not.toHaveBeenCalled()
+  })
+
+  it('says it could not learn what waits when the worker gives no answer in time', async () => {
+    vi.useFakeTimers()
+    try {
+      const { registration } = stubBrowser({ controlled: true })
+      const { startOfflineShell, browserAppUpdates, ASK_NOTES_MS } = await freshModule()
+      const ready = vi.fn()
+      browserAppUpdates.onReady(() => 'en', ready)
+      startOfflineShell('/bd-beads/')
+      await vi.advanceTimersByTimeAsync(0)
+      registration.install(waitingWorker())
+      await vi.advanceTimersByTimeAsync(ASK_NOTES_MS - 1)
+      expect(ready).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(ready).toHaveBeenCalledExactlyOnceWith('unknown')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('says it could not learn what waits from an answer that is no notes file', async () => {
+    const { registration } = stubBrowser({ controlled: true })
+    const { startOfflineShell, browserAppUpdates } = await freshModule()
+    const ready = vi.fn()
+    browserAppUpdates.onReady(() => 'en', ready)
+    startOfflineShell('/bd-beads/')
+    await settle()
+    registration.install(waitingWorker({ nothing: 'here' }))
+    await answered()
+    expect(ready).toHaveBeenCalledExactlyOnceWith('unknown')
+  })
+
+  it('asks again when a newer worker takes the waiting one\'s place, and tells the newer answer', async () => {
+    const { registration } = stubBrowser({ controlled: true })
+    const { startOfflineShell, browserAppUpdates } = await freshModule()
+    const ready = vi.fn()
+    browserAppUpdates.onReady(() => 'en', ready)
+    startOfflineShell('/bd-beads/')
+    await settle()
+    registration.install(waitingWorker(notesFileOf(NEWER)))
+    await answered()
+    const newest = `${Number(NEWER.split('.')[0]) + 1}.0.0`
+    registration.install(waitingWorker(notesFileOf(newest)))
+    await answered()
+    expect(ready).toHaveBeenCalledTimes(2)
+    expect(ready).toHaveBeenLastCalledWith(expect.objectContaining({ version: newest }))
   })
 
   it('knows of an update that was already waiting when the page loaded', async () => {
     const registration = new FakeRegistration()
-    registration.waiting = {}
+    registration.waiting = waitingWorker(notesFileOf(NEWER))
     stubBrowser({ controlled: true, registration })
     const { startOfflineShell, browserAppUpdates } = await freshModule()
     startOfflineShell('/bd-beads/')
     await settle()
     const ready = vi.fn()
-    browserAppUpdates.onReady(ready)
-    expect(ready).toHaveBeenCalledOnce()
+    browserAppUpdates.onReady(() => 'en', ready)
+    await answered()
+    expect(ready).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ version: NEWER }))
+  })
+
+  it('tells a listener that has stopped listening nothing', async () => {
+    const { registration } = stubBrowser({ controlled: true })
+    const { startOfflineShell, browserAppUpdates } = await freshModule()
+    const ready = vi.fn()
+    const stop = browserAppUpdates.onReady(() => 'en', ready)
+    startOfflineShell('/bd-beads/')
+    await settle()
+    registration.install()
+    stop()
+    await answered()
+    expect(ready).not.toHaveBeenCalled()
   })
 
   it('hands the waiting worker the go-ahead when the update is applied', async () => {

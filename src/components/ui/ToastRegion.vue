@@ -3,8 +3,9 @@ import { computed, ref, watch, type ComponentPublicInstance } from 'vue'
 import { useShellScope } from '../../composables/ui/shellScope'
 import { toastsBelowPanel } from '../../composables/ui/toastPlacement'
 import { useElementSize } from '../../composables/ui/useElementSize'
-import type { Toast } from '../../composables/ui/useToasts'
+import type { Toast, ToastAction } from '../../composables/ui/useToasts'
 import AppMessage from './AppMessage.vue'
+import ToastUpdate from './ToastUpdate.vue'
 
 /** Where toasts show (ticket 76): top-right of the canvas box on the toast layer (above sheets, below modals);
  * results go after 5s unless hovered or focused, errors stay. */
@@ -39,6 +40,12 @@ function place() {
 }
 watch([() => props.toasts, () => props.clearOfPanel, panelSize.height], place, { flush: 'post' })
 
+/** A pressed action runs and closes the toast; a link then leaves for its page. */
+function press(toast: Toast, action: ToastAction) {
+  action.run()
+  emit('dismiss', toast.id)
+}
+
 const belowStyle = computed(() => (below.value === undefined ? undefined : { '--toasts-below': `${below.value}px` }))
 </script>
 
@@ -61,29 +68,32 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
       :data-testid="toast.id"
       @close="emit('dismiss', toast.id)"
     >
-      {{ toast.text }}
+      <ToastUpdate v-if="toast.update" :name="toast.text" :update="toast.update" />
+      <template v-else>{{ toast.text }}</template>
       <!-- Two actions stand on their own line under the text (ticket 0935): beside it they would leave it no room. -->
       <span v-if="toast.action && toast.secondAction" class="toast-region__actions">
-        <button
+        <component
+          :is="action.href ? 'a' : 'button'"
           v-for="(action, index) in [toast.action, toast.secondAction]"
           :key="index"
-          type="button"
+          v-bind="action.href ? { href: action.href } : { type: 'button' }"
           class="ui-control toast-region__action"
           :data-testid="index ? 'toast-second-action' : 'toast-action'"
-          @click="action.run(); emit('dismiss', toast.id)"
+          @click="press(toast, action)"
         >
           {{ action.label }}
-        </button>
+        </component>
       </span>
       <template v-if="toast.action && !toast.secondAction" #actions>
-        <button
-          type="button"
+        <component
+          :is="toast.action.href ? 'a' : 'button'"
+          v-bind="toast.action.href ? { href: toast.action.href } : { type: 'button' }"
           class="ui-control toast-region__action"
           data-testid="toast-action"
-          @click="toast.action.run(); emit('dismiss', toast.id)"
+          @click="press(toast, toast.action)"
         >
           {{ toast.action.label }}
-        </button>
+        </component>
       </template>
     </AppMessage>
   </TransitionGroup>

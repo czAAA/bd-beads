@@ -9,6 +9,10 @@ const PRECACHE = '__PRECACHE__'
  * side sets it: `SIGN_IN_MARK` in src/services/offlineShell.ts. */
 const SIGN_IN_MARK = 'sign-in'
 
+/** The one question a waiting worker answers, what it brings, with its own notes file (ticket 1048): `ASK_NOTES` in
+ * src/services/offlineShell.ts. */
+const ASK_NOTES = 'NOTES'
+
 const scope = new URL(self.registration.scope)
 const precached = new Set(PRECACHE)
 
@@ -57,14 +61,27 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting()
-})
-
 async function fromCache(path) {
   const cache = await caches.open(CACHE)
   return cache.match(urlOf(path))
 }
+
+/** This copy's notes file in `locale` (ticket 1047), read from its own cache, never the network; null if it has none. */
+async function notesOf(locale) {
+  const path = `notes/${locale}.json`
+  const answer = precached.has(path) ? await fromCache(path) : undefined
+  return answer ? answer.json() : null
+}
+
+self.addEventListener('message', (event) => {
+  const data = event.data
+  if (data && data.type === 'SKIP_WAITING') self.skipWaiting()
+  // What this copy brings: the page works out from the file which Version and notes wait; the worker knows none.
+  const port = event.ports && event.ports[0]
+  if (data && data.type === ASK_NOTES && port) {
+    event.waitUntil(notesOf(String(data.locale)).catch(() => null).then((notes) => port.postMessage(notes)))
+  }
+})
 
 /** A built file from the copy on the device, so a refresh keeps the version the person is on (ticket 1041). The
  * network answers only when there is no copy. */

@@ -15,6 +15,13 @@ export function homepageUrl(base: string): string {
   return `${base}${HOMEPAGE_PATH}`
 }
 
+/** The Homepage's address that opens it at What's new, unfolded and in view: "Update ready"'s link (ticket 1048). */
+export const WHATS_NEW_HASH = '#whats-new'
+
+export function whatsNewUrl(base: string): string {
+  return `${homepageUrl(base)}${WHATS_NEW_HASH}`
+}
+
 export function markEditorChosen(): void {
   try {
     sessionStorage.setItem(EDITOR_CHOSEN_KEY, '1')

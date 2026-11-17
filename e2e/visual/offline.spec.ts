@@ -50,12 +50,37 @@ async function createEditAndSave(page: Page, name: string): Promise<void> {
   await expect.poll(() => savedNames(page)).toContain(name)
 }
 
-/** What the next version looks like to the browser: a worker with another cache name, so it is a different build, and
- * pages that carry a mark the checks can look for. */
-function newVersion(path: string, text: string): string {
+/** The line of the one note the next version brings (ticket 1048). */
+const NEXT_LINE = 'The next version brings this'
+/** The Version after `version`, as a New note steps it. */
+const nextOf = (version: string) => version.replace(/^(\d+)\.(\d+)\.\d+$/, (_, major: string, minor: string) => `${major}.${Number(minor) + 1}.0`)
+
+/** The next Build's notes file: one Version up, with one more note, New. */
+function nextNotes(text: string): string {
+  const file = JSON.parse(text) as { version: string; notes: unknown[] }
+  const version = nextOf(file.version)
+  return JSON.stringify({ ...file, version, notes: [{ name: '2099-01-01-9999', version, date: '2099-01-01', kind: 'new', line: NEXT_LINE }, ...file.notes] })
+}
+
+/** A Build with the page's own Version: only its worker differs, with another cache name, and its pages carry a mark. */
+function sameVersion(path: string, text: string): string {
   if (path.endsWith('/sw.js')) return text.replace('"bd-beads-', '"bd-beads-next-')
   return text.replace('<head>', '<head><meta name="next-version">')
 }
+
+/** What the next version looks like to the browser: a different Build, as `sameVersion`, whose notes files bring one
+ * more note under the next Version. */
+function newVersion(path: string, text: string): string {
+  return /\/notes\/[a-z]+\.json/.test(path) ? nextNotes(text) : sameVersion(path, text)
+}
+
+/** The page's own Version, from its notes file. */
+async function pageVersion(page: Page): Promise<string> {
+  return ((await (await page.request.get(new URL('notes/en.json', host.url).href)).json()) as { version: string }).version
+}
+
+/** Has the browser look for a newer worker, as a tab brought back does. */
+const lookForUpdate = (page: Page) => page.evaluate(async () => void (await (await navigator.serviceWorker.getRegistration())!.update()))
 
 const failures: [string, (context: BrowserContext, host: Host) => Promise<void>][] = [
   ['with no network', (context) => context.setOffline(true)],
@@ -280,31 +305,59 @@ test('asks the browser to keep the library at the first Project file, not on loa
 test.describe('a new version', () => {
   const cacheNames = (page: Page) => page.evaluate(() => caches.keys())
 
-  test('waits for the person: an Update ready toast, and Reload switches over', async ({ page }) => {
+  test('waits for the person: Update ready names the Version and its note, and Reload switches over (ticket 1048)', async ({ page }) => {
     await openAndInstall(page)
     const before = await cacheNames(page)
     expect(before).toHaveLength(1)
+    const next = nextOf(await pageVersion(page))
 
     host.rewrite = newVersion
-    await page.evaluate(async () => void (await (await navigator.serviceWorker.getRegistration())!.update()))
+    await lookForUpdate(page)
 
-    await expect(page.getByTestId('update-ready')).toContainText('Update ready')
+    const toast = page.getByTestId('update-ready')
+    await expect(toast.getByTestId('update-version')).toHaveText(next)
+    await expect(toast.getByTestId('update-note')).toContainText(NEXT_LINE)
+    await expect(toast.getByTestId('kind-label')).toHaveAttribute('data-kind', 'new')
     // Not forced: the old version is still the one in control until Reload is pressed.
     expect(await cacheNames(page)).toHaveLength(2)
     // Reload hands over to the new worker, and the page reloads itself once it takes control. The old page's canvas
     // is still visible until then, so wait for the reload itself before reading the caches.
     const reloaded = page.waitForEvent('load')
-    await page.getByTestId('toast-action').click()
+    await toast.getByTestId('toast-action').click()
     await reloaded
     await expect(page.getByTestId('app-canvas')).toBeVisible()
     await expect(page.locator('meta[name="next-version"]')).toHaveCount(1)
     await expect.poll(() => cacheNames(page)).toEqual([expect.stringContaining('bd-beads-next-')])
   })
 
+  test('names what waits with no network, from the waiting copy itself (ticket 1048)', async ({ page, context }) => {
+    await openAndInstall(page)
+    const next = nextOf(await pageVersion(page))
+    host.rewrite = newVersion
+    await lookForUpdate(page)
+    await expect(page.getByTestId('update-ready')).toBeVisible()
+
+    await context.setOffline(true)
+    await reloadsIntoTheApp(page)
+    await expect(page.getByTestId('update-version')).toHaveText(next)
+    await expect(page.getByTestId('update-note')).toContainText(NEXT_LINE)
+  })
+
+  test("What's new opens the Homepage at What's new, unfolded (ticket 1048)", async ({ page }) => {
+    await openAndInstall(page)
+    host.rewrite = newVersion
+    await lookForUpdate(page)
+    await page.getByTestId('update-ready').getByTestId('toast-second-action').click()
+
+    await expect(page.getByTestId('homepage')).toBeVisible()
+    await expect(page.getByTestId('homepage-whats-new-toggle')).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByTestId('homepage-whats-new-block').first()).toBeInViewport()
+  })
+
   test('a refresh keeps the version the page was on, and offers Update ready again (ticket 1041)', async ({ page }) => {
     await openAndInstall(page)
     host.rewrite = newVersion
-    await page.evaluate(async () => void (await (await navigator.serviceWorker.getRegistration())!.update()))
+    await lookForUpdate(page)
     await expect(page.getByTestId('update-ready')).toBeVisible()
     const scripts = () => page.evaluate(() => [...document.scripts].map((script) => script.src))
     const before = await scripts()
@@ -317,11 +370,14 @@ test.describe('a new version', () => {
     expect(await cacheNames(page)).toHaveLength(2)
   })
 
-  test('arrives on its own when the app is opened again', async ({ page, context }) => {
+  test('a Build with the page\'s own Version raises no toast, and arrives when the app is opened again (ticket 1048)', async ({ page, context }) => {
     await openAndInstall(page)
-    host.rewrite = newVersion
-    await page.evaluate(async () => void (await (await navigator.serviceWorker.getRegistration())!.update()))
-    await expect(page.getByTestId('update-ready')).toBeVisible()
+    host.rewrite = sameVersion
+    await lookForUpdate(page)
+    await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())!.waiting !== null)).toBe(true)
+    // The question to the waiting worker has had its time to be answered.
+    await page.waitForTimeout(2500)
+    await expect(page.getByTestId('update-ready')).toHaveCount(0)
 
     await page.close()
     const again = await context.newPage()

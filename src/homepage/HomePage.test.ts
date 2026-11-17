@@ -332,6 +332,19 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     wrapper.unmount()
   })
 
+  it("opens at What's new, unfolded, from Update ready's link, and closes it once turned away (ticket 1048)", async () => {
+    const notes = vi.fn<NotesSource>(async () => ({ version: '1.1.0', releases: [{ version: '1.0.0', date: '2026-11-17' }], notes: [] }))
+    const wrapper = mount(HomePage, { props: { projectCount: 1, feedback: fakeFeedback(), notes, atWhatsNew: true }, attachTo: document.body })
+    await flushPromises()
+    const toggle = () => wrapper.get('[data-testid="homepage-whats-new-toggle"]')
+    expect(shown(wrapper)).toEqual(['coffee'])
+    expect(toggle().attributes('aria-expanded')).toBe('true')
+    await step(wrapper, 3)
+    await step(wrapper, 2)
+    expect(toggle().attributes('aria-expanded')).toBe('false')
+    wrapper.unmount()
+  })
+
   it("hands What's new the page's notes file, read in the language shown when it opens (ticket 1047)", async () => {
     const notes = vi.fn<NotesSource>(async () => ({ version: '1.1.0', releases: [{ version: '1.0.0', date: '2026-11-17' }], notes: [] }))
     const wrapper = page(0, notes)
