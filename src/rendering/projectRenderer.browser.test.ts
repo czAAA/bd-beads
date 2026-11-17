@@ -72,3 +72,25 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again the row an 
     })
   })
 })
+
+// A piece of many parts (ticket 1034) is filled a few parts a path and casts its shadows from one picture of itself:
+// a band of it drawn again must leave the same picture too.
+describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again a row of a checkered Frame, in %s', (bead) => {
+  const CHECKERED: readonly Cell[] = Array.from({ length: 144 }, (_, at) => [at % 12, Math.floor(at / 12)] as const).filter(([column, row]) => (column + row) % 2 === 0)
+  /** The clip crosses a contour's edge at every bead of the rows it cuts, not at a corner or two. */
+  const CLIPPED_EDGES_PX = 3 * CLIPPED_CORNERS_PX
+
+  it.each([
+    ['painting between its beads', [...CHECKERED, [5, 6]] as readonly Cell[], 6],
+    ['erasing one of its beads', CHECKERED.filter(([column, row]) => !(column === 6 && row === 6)), 6],
+  ] as const)('after %s, leaves the Canvas as a whole draw makes it', (_edit, after, row) => {
+    const edited = projectOf('loom', bead, after)
+    const whole = surface()
+    draw(edited, whole)
+    const banded = surface()
+    draw(projectOf('loom', bead, CHECKERED), banded)
+    draw(edited, banded, { first: row, last: row })
+
+    expect(differing(whole, banded).length).toBeLessThanOrEqual(CLIPPED_EDGES_PX)
+  })
+})

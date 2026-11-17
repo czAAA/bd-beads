@@ -18,5 +18,7 @@ export default defineConfig({
     // The offline shell's worker (ticket 69) would serve the measured build from its cache.
     serviceWorkers: 'block',
   },
-  webServer,
+  // A measure is of this checkout's build: a preview another worktree left on the port is never reused, as it would
+  // be measured in its place (ticket 1034). Where the port is taken, give a free one with E2E_PORT.
+  webServer: { ...webServer, reuseExistingServer: false },
 })

@@ -9,7 +9,7 @@ import { recordingContext } from '../testUtils/recordingContext'
 import { PRINT_THEME, PROJECT_THEMES } from './beadLook'
 import { canvasTheme } from './canvasBackgrounds'
 import { CELL_SIZE_PX } from './cellSize'
-import { canvasLiftCells, drawLift, joinedUpright, LIFT_REACH_PX, liftCollector, liftLookOf, liftRows, liftsAcross, paintedOnly } from './liftedPiece'
+import { canvasLiftCells, drawLift, joinedUpright, LIFT_REACH_PX, liftCollector, liftLookOf, liftRows, liftsAcross, MOST_PARTS_PER_PATH, paintedOnly } from './liftedPiece'
 import { positionBoxPx } from './surfaceView'
 
 const painted = (cells: [number, number][], technique: Technique = 'loom', frame?: { row: number; column: number; rows: number; columns: number }, beadId = 'toho-cube-1.5mm') => {
@@ -97,6 +97,81 @@ describe('drawLift', () => {
       { a: 0, b: 1, c: -1, d: 0, e: 5, f: 0 },
       { a: 0, b: 1, c: -1, d: 0, e: 5, f: 0 },
     ])
+  })
+
+  describe('the shadows from the outline\'s edges in view alone (ticket 1034)', () => {
+    /** The rows of a piece 60 beads wide, each one run. */
+    const runs = (rows: number) => Array.from({ length: rows }, (_, row) => ({ x: 0, y: row * CELL_SIZE_PX, width: 60 * CELL_SIZE_PX, height: CELL_SIZE_PX }))
+    /** How many fills cast a shadow, and the rounded rectangles drawn, for a piece of `rows` rows. */
+    const shadowed = (rows: number, view?: { left: number; top: number; right: number; bottom: number }) => {
+      const { context, named } = recordingContext()
+      let blurred = 0
+      const watched = new Proxy(context, {
+        get: (target, key) => (key === 'fill' ? (...args: unknown[]) => ((blurred += target.shadowBlur > 0 ? 1 : 0), (target.fill as (...args: unknown[]) => void)(...args)) : Reflect.get(target, key)),
+        set: (target, key, value) => Reflect.set(target, key, value),
+      })
+      drawLift(watched, runs(rows), '#fafafa', 2, true, view)
+      return { blurred, rects: named('roundRect').map(({ args }) => args as number[]) }
+    }
+
+    it('casts none where the piece fills the view, and still lays its contour and ground', () => {
+      const { blurred, rects } = shadowed(40, { left: 200, top: 200, right: 800, bottom: 600 })
+      expect(blurred).toBe(0)
+      // The ground's and the contour's shapes, one each a row.
+      expect(rects).toHaveLength(80)
+    })
+
+    it('casts the shadow from a piece\'s edges, cut where a row\'s inside lies further from them than a shadow reaches', () => {
+      const { rects } = shadowed(40)
+      // After the ground's and the contour's 80, the shadow's: the rows near the top and bottom whole, the others cut to their two ends.
+      const shadow = rects.slice(80)
+      const middle = shadow.filter(([, y]) => y! > 10 * CELL_SIZE_PX && y! < 30 * CELL_SIZE_PX)
+      expect(middle.length).toBeGreaterThan(0)
+      for (const [x, , width] of middle) expect(x! < 2 * CELL_SIZE_PX || x! + width! > 58 * CELL_SIZE_PX).toBe(true)
+      expect(Math.max(...middle.map(([, , width]) => width!))).toBeLessThan(4 * CELL_SIZE_PX)
+      const top = shadow.filter(([, y]) => y! < 0)
+      expect(top.map(([, , width]) => width)).toEqual([60 * CELL_SIZE_PX + 4.5])
+    })
+
+    it('cuts a column\'s run as a row\'s, where the cells are taller than wide (peyote)', () => {
+      const { context, named } = recordingContext()
+      const columns = Array.from({ length: 40 }, (_, column) => ({ x: column * CELL_SIZE_PX, y: 0, width: CELL_SIZE_PX, height: 60 * CELL_SIZE_PX }))
+      drawLift(context, columns, '#fafafa', 2, false)
+      // After the ground's and the contour's 80, the shadow's: a column in the middle keeps its two ends alone.
+      const middle = named('roundRect').map(({ args }) => args as number[]).slice(80).filter(([x]) => x! > 10 * CELL_SIZE_PX && x! < 30 * CELL_SIZE_PX)
+      expect(middle.length).toBeGreaterThan(0)
+      expect(Math.max(...middle.map(([, , , height]) => height!))).toBeLessThan(4 * CELL_SIZE_PX)
+    })
+
+    it('keeps a turned bead\'s cell whole near an edge and leaves it out far inside the piece', () => {
+      const { context, named } = recordingContext()
+      // 30 × 30 beads, each put in its place by a transform of its own, as a Custom frame's are.
+      const turned = Array.from({ length: 900 }, (_, at) => ({ x: 0, y: 0, width: CELL_SIZE_PX, height: CELL_SIZE_PX, transform: { a: 1, b: 0, c: 0, d: 1, e: (at % 30) * CELL_SIZE_PX, f: Math.floor(at / 30) * CELL_SIZE_PX } }))
+      drawLift(context, turned, '#fafafa', 2)
+      // After the ground's and the contour's 1800 parts, the shadow's: the beads within a shadow's reach of the outline.
+      const cast = named('addPath').slice(1800).map(({ args }) => args[1] as { e: number; f: number })
+      expect(cast.length).toBeGreaterThan(0)
+      expect(cast.length).toBeLessThan(900)
+      const inside = ({ e, f }: { e: number; f: number }) => Math.min(e, f, 29 * CELL_SIZE_PX - e, 29 * CELL_SIZE_PX - f)
+      expect(Math.max(...cast.map(inside))).toBeLessThan(3 * CELL_SIZE_PX)
+      expect(cast.some((at) => inside(at) === 0)).toBe(true)
+    })
+
+    it('casts it from the ground\'s own shape where every cell is near an edge', () => {
+      const { context, named } = recordingContext()
+      drawLift(context, runs(2), '#fafafa', 2, true, { left: -100, top: -100, right: 2000, bottom: 200 })
+      const shapes = named('fill').map(({ args }) => args[0])
+      expect(shapes[0]).toBe(shapes.at(-1))
+    })
+  })
+
+  it('fills a shape of many parts a few parts at a time, never as one path (ticket 1034)', () => {
+    const { context, named } = recordingContext()
+    // A checkered row: 100 beads apart, each a part of the ground and a part of the contour.
+    drawLift(context, Array.from({ length: 100 }, (_, at) => ({ ...cell, x: at * 2 * CELL_SIZE_PX })), '#fafafa', 1)
+    const ground = named('fill').filter(({ fillStyle }) => fillStyle === liftLookOf('#fafafa').ground).map(({ args }) => args[0])
+    expect(ground).toHaveLength(Math.ceil(100 / MOST_PARTS_PER_PATH))
+    expect(new Set(ground).size).toBe(ground.length)
   })
 
   it('draws nothing with no bead', () => {

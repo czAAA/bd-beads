@@ -118,6 +118,48 @@ describe('the shadows\' sheet', () => {
   })
 })
 
+// A shape of many parts (ticket 1034): filled a few parts at a time, as Safari's engine takes a path of thousands of
+// rounded parts in time that grows with their number squared, and its shadows cast from one picture of it.
+describe.each([
+  ['dark', DARK_THEME],
+  ['light', LIGHT_THEME],
+] as const)('a Lifted piece of many parts in %s', (_name, theme) => {
+  /** A row of `beads` beads apart from each other by nothing, a cell each, drawn at `scale` with its first bead at
+   * `left`: each grid px's brightness. */
+  function drawn(beads: number, left: number, scale: number): (x: number, y: number) => number {
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.ceil((80 + 64 * CELL_SIZE_PX) * scale)
+    canvas.height = Math.ceil(SIDE * scale)
+    const context = canvas.getContext('2d')!
+    context.fillStyle = theme.canvas
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.setTransform(scale, 0, 0, scale, 0, 0)
+    drawLift(context as DrawingContext, Array.from({ length: beads }, (_, at) => ({ x: left + at * CELL_SIZE_PX, y: 40, width: CELL_SIZE_PX, height: CELL_SIZE_PX })), theme.canvas, scale)
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+    return (x, y) => {
+      const index = (Math.round(y * scale) * canvas.width + Math.round(x * scale)) * 4
+      return data[index]! + data[index + 1]! + data[index + 2]!
+    }
+  }
+
+  // At 40% on pixel ratio 2 both shadows fall straight on the screen, at 80% the soft one is on its sheet, at 200% both.
+  it.each([0.8, 1.6, 4])('casts the shadows one path casts and fills the same inside where two paths meet, at %f device px a grid px', (scale) => {
+    // 64 beads are two paths, which meet between the 32nd and the 33rd; 32 beads are one, whose 16th and 17th lie there.
+    const [paths, path] = [drawn(64, 40, scale), drawn(32, 40 + 16 * CELL_SIZE_PX, scale)]
+    const meet = 40 + 32 * CELL_SIZE_PX
+    // A step of 4 in each channel at most: a picture's edge is rounded to pixels once more than a path's.
+    const SAME = 12
+    // The piece's inside, then its shadows. Not the contour's outer edge: Chromium loses the dip between two rounded
+    // corners along the bottom of one long path, and keeps it between two paths, where it is a part of a pixel deep.
+    const rows = [...Array.from({ length: 41 }, (_, at) => 40 + at / 2), ...Array.from({ length: 51 }, (_, at) => 65 + at / 2)]
+    let most = 0
+    for (let x = meet - 12; x <= meet + 12; x += 0.5) for (const y of rows) most = Math.max(most, Math.abs(paths(x, y) - path(x, y)))
+    expect(most).toBeLessThanOrEqual(SAME)
+    // And a shadow there is: under where they meet, past the contour, darker than far above it.
+    expect(paths(meet, 40 + CELL_SIZE_PX + 6)).toBeLessThan(paths(meet, 10))
+  })
+})
+
 // A piece in a round bead, drawn for real (ticket 1010, BeadBoard card, Lifted piece): TOHO Round 11/0's cell is a pill
 // 20 wide and 28 tall here. Beads are laid over the piece, so what shows between them is what the piece leaves.
 describe.each([
