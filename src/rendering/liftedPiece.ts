@@ -1,12 +1,15 @@
 import { beadBounds, frameContains, type BeadMap, type Rect } from '../domain/canvas'
 import { BLACK, channelsOf, mix, toHex, WHITE } from '../domain/color'
 import { footprintOf } from '../domain/footprint'
-import { beadsOfLayer, type Layered } from '../domain/layerRecord'
-import { canvasWeave } from '../domain/layerWeave'
+import type { LayerGeometry } from '../domain/layerGeometry'
+import { beadsOfLayer, frameOf, type Layered } from '../domain/layerRecord'
+import { canvasWeave, frameWeave } from '../domain/layerWeave'
 import { withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, hasHalfCircleCorner, type Weave } from '../domain/weave'
 import { BEAD_GAP_PX, isOpenWeave, type BeadDrawer, type DrawingContext } from './beadLook'
-import { cellSizePx } from './cellSize'
+import { CELL_SIZE_PX, cellSizePx } from './cellSize'
+import { liftedCutsOf, type LiftedCuts } from './innerCuts'
+import { inGridPx } from './surfaceView'
 import { lookSideOf, pieceGroundOf } from './pieceGround'
 
 // The Lifted piece (ticket 1004, BeadBoard card, Canvas look): on the screen in light and dark, every Piece is one
@@ -629,6 +632,101 @@ function runsOf(stored: Record<number, string>): readonly (readonly [number, num
   return runs
 }
 
+/** The runs of a stored row with its lifted cuts' positions (ticket 1035), kept by the row and those positions. */
+const rowCutRuns = new WeakMap<Record<number, string>, { cut: readonly number[]; runs: readonly (readonly [number, number])[] }>()
+
+function runsWithCuts(stored: Record<number, string>, cut: readonly number[] | undefined): readonly (readonly [number, number])[] {
+  if (!cut) return runsOf(stored)
+  const known = rowCutRuns.get(stored)
+  if (known?.cut === cut) return known.runs
+  const columns = [...Object.keys(stored).map(Number), ...cut].sort((a, b) => a - b)
+  const runs: [number, number][] = []
+  for (const column of columns) {
+    const last = runs.at(-1)
+    if (last && last[1] === column - 1) last[1] = column
+    else runs.push([column, column])
+  }
+  rowCutRuns.set(stored, { cut, runs })
+  return runs
+}
+
+/** The Canvas's inner cuts whose positions lie in the lifted piece (ticket 1035): its keep-out margin lies outside every
+ * Piece, as its beads are not drawn. */
+export function canvasCuts(project: Layered, margin: number): LiftedCuts {
+  const covered = footprintOf(project)
+  const keptOut: Rect | undefined = covered && withMargin(covered, margin)
+  return liftedCutsOf('canvas', {
+    beads: beadsOfLayer(project, 'canvas'),
+    description: describeWeave(canvasWeave(project)),
+    has: keptOut ? (row, column) => !frameContains(keptOut, { row, column }) : () => true,
+    edge: keptOut ? `${keptOut.row},${keptOut.column},${keptOut.rows},${keptOut.columns}` : '',
+  })
+}
+
+/** The rows a redraw of `rows` draws so as to take in the Canvas's and the Frame's cuts an edit opened or closed since
+ * the last draw (ticket 1035), in the Canvas's rows; what changed is forgotten once asked, so a whole draw asks too.
+ * `geometry` is the Frame's. */
+export function withCutRows(rows: { first: number; last: number } | undefined, project: Layered, margin: number, geometry: LayerGeometry | undefined): { first: number; last: number } | undefined {
+  const canvas = canvasCuts(project, margin).takeChanged()
+  const frame = frameOf(project)
+  const framed = frame && geometry ? frameCuts(project, geometry)?.takeChanged() : undefined
+  if (!rows) return undefined
+  const changed = [canvas, framed && { first: framed.first + frame!.row, last: framed.last + frame!.row }]
+  return changed.reduce<{ first: number; last: number }>((band, more) => (more ? { first: Math.min(band.first, more.first), last: Math.max(band.last, more.last) } : band), rows)
+}
+
+/** The cells of the Canvas's lifted cut positions a draw covers, in grid px: where the tiles are drawn again on the
+ * piece's ground (ticket 1035). */
+export function canvasCutCells(project: Layered, { area, rows }: LiftView, cuts: LiftedCuts): LiftCell[] {
+  if (!cuts.rows.size) return []
+  const weave = canvasWeave(project)
+  const description = describeWeave(weave)
+  const cell = cellSizePx(weave.technique, weave.cell)
+  const visible = description.visible(area, cell.width, cell.height)
+  const [first, last] = rows ? [Math.max(visible.firstRow, rows.first - 1), Math.min(visible.lastRow, rows.last + 1)] : [visible.firstRow, visible.lastRow]
+  const cells: LiftCell[] = []
+  for (const [row, columns] of cuts.rows) {
+    if (row < first || row > last) continue
+    const seen = visible.columnsOf(row)
+    for (const column of columns) if (column >= seen.first && column <= seen.last) cells.push(description.box({ row, column }, cell.width, cell.height))
+  }
+  return cells
+}
+
+/** The Frame's inner cuts whose positions lie in the lifted piece (ticket 1035), on a Frame of rows and columns; a
+ * Custom frame's beads, each at its panel's angle, keep every hole's border. */
+export function frameCuts(project: Layered, geometry: LayerGeometry): LiftedCuts | undefined {
+  const beads = beadsOfLayer(project, 'frame')
+  const frame = frameOf(project)
+  if (!beads || !frame || !geometry.grid) return undefined
+  return liftedCutsOf('frame', {
+    beads,
+    description: describeWeave(frameWeave(project)),
+    has: (row, column) => geometry.hasPosition({ row, column }),
+    edge: `${frame.rows},${frame.columns}`,
+  })
+}
+
+/** The cells of the Frame's lifted cut positions whose piece reaches `area`, in the rows `rows` takes in when given, from
+ * its first position at `origin`, as its beads' cells are kept (liftCollector). */
+export function frameCutCells(project: Layered, cuts: LiftedCuts, geometry: LayerGeometry, origin: { x: number; y: number }, area: Box, rows: { first: number; last: number } | undefined): LiftCell[] {
+  const weave = frameWeave(project)
+  const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
+  const cells: LiftCell[] = []
+  for (const [row, columns] of cuts.rows) {
+    if (rows && (row < rows.first || row > rows.last)) continue
+    for (const column of columns) {
+      const place = geometry.place({ row, column })
+      if (!place) continue
+      const box = inGridPx(place.box)
+      const [x, y] = [origin.x + box.x, origin.y + box.y]
+      if (x > area.right + LIFT_REACH_PX || x + box.width < area.left - LIFT_REACH_PX || y > area.bottom + LIFT_REACH_PX || y + box.height < area.top - LIFT_REACH_PX) continue
+      cells.push({ x, y, width: box.width, height: box.height, ...(isOpenWeave(cornerRadius, box.width) ? { bead: box.width } : {}) })
+    }
+  }
+  return cells
+}
+
 /** Cells of one line that touch end to end as one: a column's, where columns are staggered. */
 function joinedDown(cells: LiftCell[]): LiftCell[] {
   cells.sort((a, b) => a.x - b.x || a.y - b.y)
@@ -673,12 +771,14 @@ export function canvasLiftCells(project: Layered, { area, rows, margin }: LiftVi
   const across = liftsAcross(weave)
   // A round bead's piece follows its half circle (ticket 1010).
   const round = hasHalfCircleCorner(beadRoundness(weave.technique, weave.cell)) ? { bead: cell.width } : {}
+  // An inner cut close to the beads is part of the piece (ticket 1035).
+  const cuts = canvasCuts(project, margin).rows
   const cells: LiftCell[] = []
   for (const key in beads) {
     const row = Number(key)
     if (row < first || row > last) continue
     const seen = visible.columnsOf(row)
-    for (const [from, to] of runsOf(beads[row]!)) {
+    for (const [from, to] of runsWithCuts(beads[row]!, cuts.get(row))) {
       const [start, end] = [Math.max(from, seen.first), Math.min(to, seen.last)]
       if (start > end) continue
       // A run split where the keep-out margin crosses it.

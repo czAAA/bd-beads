@@ -9,7 +9,7 @@ import { recordingContext } from '../testUtils/recordingContext'
 import { PRINT_THEME, PROJECT_THEMES } from './beadLook'
 import { canvasTheme } from './canvasBackgrounds'
 import { CELL_SIZE_PX } from './cellSize'
-import { canvasLiftCells, drawLift, joinedUpright, LIFT_REACH_PX, liftCollector, liftLookOf, liftRows, liftsAcross, MOST_PARTS_PER_PATH, paintedOnly } from './liftedPiece'
+import { canvasCutCells, canvasCuts, canvasLiftCells, drawLift, joinedUpright, LIFT_REACH_PX, liftCollector, liftLookOf, liftRows, liftsAcross, MOST_PARTS_PER_PATH, paintedOnly } from './liftedPiece'
 import { positionBoxPx } from './surfaceView'
 
 const painted = (cells: [number, number][], technique: Technique = 'loom', frame?: { row: number; column: number; rows: number; columns: number }, beadId = 'toho-cube-1.5mm') => {
@@ -286,6 +286,46 @@ describe('canvasLiftCells', () => {
     expect(cells).toEqual([{ ...positionBoxPx({ technique: 'loom' }, 0, 0), width: 4 * CELL_SIZE_PX }])
     const crossed = painted([[8, -3], [8, -2], [8, -1], [8, 0], [8, 9]], 'loom', { row: 10, column: 3, rows: 2, columns: 2 })
     expect(canvasLiftCells(crossed, everywhere).map(({ x, width }) => [x / CELL_SIZE_PX, width / CELL_SIZE_PX])).toEqual([[-3, 2], [9, 1]])
+  })
+})
+
+describe('an inner cut in the lifted piece (ticket 1035)', () => {
+  /** A ring of beads round rows 1 to `rows`, columns 1 to `columns`. */
+  const ring = (rows: number, columns: number, technique: Technique = 'loom') => {
+    const cells: [number, number][] = []
+    for (let row = 0; row <= rows + 1; row += 1) for (let column = 0; column <= columns + 1; column += 1) if (row === 0 || row > rows || column === 0 || column > columns) cells.push([row, column])
+    return painted(cells, technique)
+  }
+  const box = (row: number, column: number) => positionBoxPx({ technique: 'loom' }, row, column)
+
+  it('takes a cut close to the beads into the row\'s run, so it has no edge of its own', () => {
+    expect(canvasLiftCells(ring(1, 1), everywhere)).toEqual([0, 1, 2].map((row) => ({ ...box(row, 0), width: 3 * CELL_SIZE_PX })))
+  })
+
+  it('keeps a larger cut\'s middle out of the piece, a bead in from its beads', () => {
+    const cells = canvasLiftCells(ring(4, 4), everywhere).filter(({ y }) => y === box(2, 0).y)
+    expect(cells).toEqual([{ ...box(2, 0), width: 2 * CELL_SIZE_PX }, { ...box(2, 4), width: 2 * CELL_SIZE_PX }])
+  })
+
+  it('lifts a cut whose closing beads lie out of view or out of a redrawn band as when they are in it', () => {
+    const project = ring(10, 1)
+    const middle = canvasLiftCells(project, { ...everywhere, rows: { first: 5, last: 5 } }).filter(({ y }) => y === box(5, 0).y)
+    expect(middle).toEqual([{ ...box(5, 0), width: 3 * CELL_SIZE_PX }])
+    const area = { left: box(0, 1).x, right: box(0, 1).x + CELL_SIZE_PX, top: box(5, 0).y, bottom: box(6, 0).y }
+    expect(canvasCutCells(project, { area, margin: 4 }, canvasCuts(project, 4))).toEqual([box(4, 1), box(5, 1), box(6, 1)])
+  })
+
+  it('lists the cut\'s cells in view, for the tiles drawn again on the ground', () => {
+    const project = ring(1, 2)
+    expect(canvasCutCells(project, everywhere, canvasCuts(project, 4))).toEqual([box(1, 1), box(1, 2)])
+  })
+
+  it('counts the keep-out margin round the Frame as outside every piece', () => {
+    // A ring round the Frame's margin closes nothing in: the margin's box is not the piece's.
+    const cells: [number, number][] = []
+    for (let row = 0; row <= 12; row += 1) for (let column = 0; column <= 12; column += 1) if (row === 0 || row === 12 || column === 0 || column === 12) cells.push([row, column])
+    const project = painted(cells, 'loom', { row: 6, column: 6, rows: 1, columns: 1 })
+    expect(canvasCuts(project, 4).rows.size).toBe(0)
   })
 })
 

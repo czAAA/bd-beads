@@ -6,6 +6,7 @@ import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
 import { withLayers } from '../testUtils/layerFields'
 import { DARK_THEME, type DrawingContext } from './beadLook'
+import { liftLookOf } from './liftedPiece'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 
@@ -92,5 +93,76 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again a row of a 
     draw(edited, banded, { first: row, last: row })
 
     expect(differing(whole, banded).length).toBeLessThanOrEqual(CLIPPED_EDGES_PX)
+  })
+})
+
+// A Piece's inner cuts (ticket 1035): a cut close to its beads is part of the piece, with no line of its own; a larger
+// one keeps its line a bead further in. A cut an edit opens or closes is drawn again with the band, however far it runs.
+describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('a Frame piece\'s inner cuts, in %s', (bead) => {
+  const ring = (top: number, left: number, bottom: number, right: number): Cell[] => {
+    const cells: Cell[] = []
+    for (let row = top; row <= bottom; row += 1) for (let column = left; column <= right; column += 1) if (row === top || row === bottom || column === left || column === right) cells.push([column, row])
+    return cells
+  }
+  /** A strip one bead wide down column 5, rows 2 to 8, closed in. */
+  const STRIP = ring(1, 4, 9, 6)
+  const contour = liftLookOf(DARK_THEME.canvas).contour
+  /** The pixels of the contour's color in a box of grid px. */
+  const contourIn = (canvas: HTMLCanvasElement, left: number, top: number, right: number, bottom: number) => {
+    const [x, y] = [(left + 40) * 2, (top + 40) * 2]
+    const { data } = canvas.getContext('2d')!.getImageData(x, y, (right - left) * 2, (bottom - top) * 2)
+    let found = 0
+    for (let at = 0; at < data.length; at += 4) if (`#${[data[at]!, data[at + 1]!, data[at + 2]!].map((channel) => channel.toString(16).padStart(2, '0')).join('')}` === contour) found += 1
+    return found
+  }
+
+  it('draws no line in a cut one bead wide, however long', () => {
+    const canvas = surface()
+    draw(projectOf('loom', bead, STRIP), canvas)
+    expect(contourIn(canvas, 100, 40, 120, 180)).toBe(0)
+    const open = surface()
+    draw(projectOf('loom', bead, STRIP.filter(([column, row]) => !(column === 5 && row === 1))), open)
+    expect(contourIn(open, 100, 40, 120, 180)).toBeGreaterThan(0)
+  })
+
+  it('keeps the line of a cut with a 2 × 2 block a bead in from its beads, a bead further in', () => {
+    const canvas = surface()
+    draw(projectOf('loom', bead, ring(2, 2, 9, 9)), canvas)
+    // The cut is rows and columns 3 to 8: no line along its own edge, one along the open middle's, columns 4 to 7.
+    expect(contourIn(canvas, 61, 100, 64, 120)).toBe(0)
+    expect(contourIn(canvas, 81, 100, 84, 120)).toBeGreaterThan(0)
+  })
+
+  it.each([
+    ['opening a cut far from the rows it runs down', STRIP, STRIP.filter(([column, row]) => !(column === 5 && row === 1)), 1],
+    ['closing it again', STRIP.filter(([column, row]) => !(column === 5 && row === 1)), STRIP, 1],
+  ] as const)('after %s, leaves the Canvas as a whole draw makes it', (_edit, before, after, row) => {
+    const whole = surface()
+    draw(projectOf('loom', bead, after), whole)
+    const banded = surface()
+    draw(projectOf('loom', bead, before), banded)
+    draw(projectOf('loom', bead, after), banded, { first: row, last: row })
+    expect(differing(whole, banded).length).toBeLessThanOrEqual(CLIPPED_CORNERS_PX)
+  })
+})
+
+// On the open Canvas (ticket 1035): the tiles of a cut lifted with its piece are the Canvas's own, laid on the ground.
+describe('a Canvas piece\'s inner cut', () => {
+  it('shows the Canvas\'s tile in a cut of one bead, on the piece\'s ground, and no line', () => {
+    const made = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+    const cells = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2]].map(([row, column]) => ({ row: row! + 4, column: column! + 4, color: '#222222' }))
+    const project = withLayers(made, { technique: 'loom', beads: withColors({}, cells), frame: undefined })
+    const canvas = surface()
+    draw(project, canvas)
+    const look = liftLookOf(DARK_THEME.canvas)
+    const pixel = (x: number, y: number) => {
+      const { data } = canvas.getContext('2d')!.getImageData((x + 40) * 2, (y + 40) * 2, 1, 1)
+      return `#${[data[0]!, data[1]!, data[2]!].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+    }
+    // The cut is row 5, column 5: its middle is a tile as the open Canvas's at row 12, column 12; its edge the ground.
+    expect(pixel(110, 110)).toBe(pixel(250, 250))
+    expect(pixel(110, 110)).not.toBe(look.ground)
+    expect(pixel(100, 110)).toBe(look.ground)
+    expect(pixel(102.9, 110)).not.toBe(look.contour)
   })
 })
