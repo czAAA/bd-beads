@@ -1,4 +1,5 @@
 import type { Locale } from '../domain/locale'
+import type { WaitingBuild } from '../domain/waitingBuild'
 import { newerFirst, RELEASE_NOTE_KINDS, type NotesFile, type NotesFileNote, type ReleaseNoteKind } from '../domain/notesFile'
 
 /** A day as What's new writes it: for `<time>`, and in the language's short form ("Dec 4", "4 дек."; writing.md, dates). */
@@ -25,7 +26,7 @@ interface WhatsNewBlock {
 /** What the open fold draws, top to bottom: blocks newest first, each Production release's line above what it released. */
 type WhatsNewItem = { block: WhatsNewBlock } | { release: { version: string; day: ShownDay } }
 
-/** The open fold: what waits for Reload as one block (ticket 1049 draws it), then the blocks and release lines. */
+/** The open fold: what waits for Reload as one block (ticket 1049), then the blocks and release lines. */
 export interface WhatsNewView {
   waiting: WhatsNewBlock | null
   items: WhatsNewItem[]
@@ -53,10 +54,10 @@ function block(notes: readonly NotesFileNote[], locale: Locale): WhatsNewBlock {
 
 const blockOf = (version: string) => version.split('.').slice(0, 2).join('.')
 
-/** What's new from the notes file of the language shown (ticket 1047, spec 1043) and what waits for Reload (ticket
- * 1049; none until then): a block per second number, newest first, and above the blocks each release released, its
- * line. A release line sits above every block numbered below it. */
-export function whatsNewView(file: NotesFile, waiting: readonly NotesFileNote[], locale: Locale): WhatsNewView {
+/** What's new from the notes file of the language shown (ticket 1047, spec 1043): a block per second number, newest
+ * first, each release's line above every block numbered below it; and what waits for Reload (ticket 1049) as one block
+ * headed by the Version it reaches, however many blocks its notes will land in, none when it brings no note. */
+export function whatsNewView(file: NotesFile, waiting: WaitingBuild | null, locale: Locale): WhatsNewView {
   const byBlock = new Map<string, NotesFileNote[]>()
   for (const note of [...file.notes].sort((a, b) => newerFirst(a.version, b.version))) {
     byBlock.set(blockOf(note.version), [...(byBlock.get(blockOf(note.version)) ?? []), note])
@@ -73,5 +74,5 @@ export function whatsNewView(file: NotesFile, waiting: readonly NotesFileNote[],
     items.push({ block: shown })
   }
   while (releases.length > 0) releaseLine()
-  return { waiting: waiting.length > 0 ? block(waiting, locale) : null, items }
+  return { waiting: waiting && waiting.notes.length > 0 ? { ...block(waiting.notes, locale), version: waiting.version } : null, items }
 }

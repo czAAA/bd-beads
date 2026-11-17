@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { FIT_LOCALES, misfitsNow, mountAt, type FitLocale } from '../testUtils/browserFit'
 import type { NotesFile, NotesFileNote } from '../domain/notesFile'
+import type { AppUpdates } from '../services/offlineShell'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 import { turnToSection } from '../testUtils/homepageSection'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
@@ -28,9 +29,25 @@ const NOTES: NotesFile = {
   ],
 }
 
+/** A newer Build waiting for Reload with a note of each kind, as long as the canvas's (ticket 1049). */
+const WAITING: AppUpdates = {
+  onReady: (_locale, listener) => {
+    listener({
+      version: '2.2.1',
+      notes: [
+        note('2026-12-05-0006', '2.2.1', 'fixed', 'На большой рамке «Ряд готов» срабатывает сразу, как и каждый шаг по полосе прогресса'),
+        note('2026-12-05-0005', '2.2.0', 'new', 'При увеличении штамп рамки называет её бисер, даёт кнопку «Изменить» и считает бисеринки'),
+        note('2026-12-04-0004', '2.1.3', 'changed', 'Подложка и контур детали теперь выходят на бисеринку за её крайние бусины'),
+      ],
+    })
+    return () => {}
+  },
+  apply: () => {},
+}
+
 /** The Homepage turned to the coffee screen: its layout answers to the box's width (the `homepage` container). */
-async function coffeeAt(width: number, locale: FitLocale = 'en'): Promise<Element> {
-  const { root } = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback(), notes: async () => NOTES }, { locale, width })
+async function coffeeAt(width: number, locale: FitLocale = 'en', updates?: AppUpdates): Promise<Element> {
+  const { root } = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback(), notes: async () => NOTES, updates }, { locale, width })
   await turnToSection(root, 'coffee')
   return root.querySelector('[data-testid="homepage-coffee"]')!
 }
@@ -96,11 +113,11 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
   }
 })
 
-describe("What's new at its widths (tickets 0824, 0880, 1047)", () => {
+describe("What's new at its widths (tickets 0824, 0880, 1047, 1049)", () => {
   for (const locale of FIT_LOCALES) {
     for (const width of [1280, 820, 390]) {
-      it(`${locale} at ${width}: as wide as the band, under it; open, the kind labels in one column, each line beside its label, nothing cut off`, async () => {
-        const root = await coffeeAt(width, locale)
+      it(`${locale} at ${width}: as wide as the band, under it; open, the kind labels in one column, each line beside its label, the waiting box's chip and Reload inside it, nothing cut off`, async () => {
+        const root = await coffeeAt(width, locale, WAITING)
         const fold = root.querySelector('[data-testid="homepage-whats-new"]')!.getBoundingClientRect()
         const band = root.querySelector('[data-testid="homepage-coffee-band"]')!.getBoundingClientRect()
         expect(fold.width, 'as wide as the band').toBeCloseTo(band.width, 0)
@@ -110,7 +127,14 @@ describe("What's new at its widths (tickets 0824, 0880, 1047)", () => {
         head.click()
         await settleForMeasuring()
         const rows = [...root.querySelectorAll('[data-testid="homepage-release-note"]')]
-        expect(rows).toHaveLength(4)
+        expect(rows, 'the waiting box’s three, then the blocks’ four').toHaveLength(7)
+        const waiting = root.querySelector('[data-testid="homepage-whats-new-waiting"]')!.getBoundingClientRect()
+        expect(waiting.right, 'the box within the fold').toBeLessThanOrEqual(fold.right)
+        for (const part of ['.whats-new__arrives', '[data-testid="homepage-whats-new-reload"]']) {
+          const shown = root.querySelector(part)!.getBoundingClientRect()
+          expect(shown.right, `${part} within the box`).toBeLessThanOrEqual(waiting.right)
+          expect(shown.bottom, `${part} within the box`).toBeLessThanOrEqual(waiting.bottom)
+        }
         const labels = rows.map((row) => row.querySelector('[data-testid="kind-label"]')!.getBoundingClientRect())
         const lines = rows.map((row) => row.querySelector('.whats-new__line')!.getBoundingClientRect())
         expect(new Set(lines.map((line) => Math.round(line.left))).size, 'the lines start in one column').toBe(1)

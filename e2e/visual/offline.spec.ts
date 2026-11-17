@@ -354,6 +354,26 @@ test.describe('a new version', () => {
     await expect(page.getByTestId('homepage-whats-new-block').first()).toBeInViewport()
   })
 
+  test("What's new shows what waits in a box on top, and its Reload switches over, the notes then in their blocks (ticket 1049)", async ({ page }) => {
+    await openAndInstall(page)
+    const next = nextOf(await pageVersion(page))
+    host.rewrite = newVersion
+    await lookForUpdate(page)
+    await page.getByTestId('update-ready').getByTestId('toast-second-action').click()
+
+    const waiting = page.getByTestId('homepage-whats-new-waiting')
+    await expect(waiting).toBeInViewport()
+    await expect(waiting.locator('.whats-new__version')).toHaveText(next)
+    await expect(waiting.getByTestId('homepage-release-note')).toHaveCount(1)
+    await expect(waiting.getByTestId('homepage-release-note')).toContainText(NEXT_LINE)
+    const reloaded = page.waitForEvent('load')
+    await waiting.getByTestId('homepage-whats-new-reload').click()
+    await reloaded
+    await expect(page.locator('meta[name="next-version"]')).toHaveCount(1)
+    await expect(page.getByTestId('homepage-whats-new-block').first()).toContainText(NEXT_LINE)
+    await expect(page.getByTestId('homepage-whats-new-waiting')).toHaveCount(0)
+  })
+
   test('a refresh keeps the version the page was on, and offers Update ready again (ticket 1041)', async ({ page }) => {
     await openAndInstall(page)
     host.rewrite = newVersion

@@ -224,6 +224,17 @@
   --kind-label-edge: 1px;
 }
 
+/* Homepage card, What's new (ticket 1049): the edge of the chip "Arrives with Reload", the accent at 45%; high
+   contrast draws it solid in `accent-strong` */
+:root,
+:root[data-theme="light"],
+:root[data-theme="dark"] {
+  --whats-new-arrives-edge: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+:root[data-theme="contrast"] {
+  --whats-new-arrives-edge: var(--accent-strong);
+}
+
 /* Selection bar (ContextBar card): the danger icon, lifted so it reads on the ink bar (on the dark theme the bar
    is light, so danger darkened: 4.7:1 on it) */
 :root,

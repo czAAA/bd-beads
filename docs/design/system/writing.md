@@ -1376,3 +1376,11 @@ English, Russian and Spanish were signed off with spec 1043; the other languages
 | Update ready | Обновление готово | Оновлення готове | Абнаўленне гатова | 更新已就绪 | Actualización lista | Aktualizacja gotowa |
 | Reload | Перезагрузить | Перезавантажити | Перазагрузіць | 重新加载 | Recargar | Załaduj ponownie |
 | What's new | Что нового | Що нового | Што новага | 更新内容 | Novedades | Co nowego |
+
+## What's new, what waits (ticket 1049)
+
+What's new's box of what waits for Reload (Homepage card) has one new string, its chip; its button is "Update ready"'s Reload, the same word. English and Russian were signed off with spec 1043; the others follow the Russian column's sense ("comes after reloading") and are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Arrives with Reload (the chip) | Придёт после перезагрузки | Прийде після перезавантаження | Прыйдзе пасля перазагрузкі | 重新加载后到来 | Llega al recargar | Pojawi się po ponownym załadowaniu |
