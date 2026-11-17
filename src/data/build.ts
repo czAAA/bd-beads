@@ -3,3 +3,5 @@
 export const BUILD_VERSION = __APP_VERSION__
 export const BUILD_MARK = __BUILD_MARK__
 export const BUILD_TEXT = `${BUILD_VERSION} · ${BUILD_MARK}`
+/** The day of the Build's newest note or release, `YYYY-MM-DD`: What's new's closed row shows it (ticket 1047). */
+export const BUILD_DATE = __BUILD_DATE__

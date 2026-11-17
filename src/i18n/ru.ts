@@ -428,7 +428,7 @@ export const ru: Translations = {
     },
     openSource: { name: 'Открытый код', text: 'Весь openbeads открыт по лицензии AGPL-3.0. Читайте код, сообщайте об ошибках, предлагайте изменения.' },
     sayHello: { name: 'Напишите нам', text: 'Ошибка, идея, ваша работа: отправьте семье. Это есть и в {menu} → {feedback}.' },
-    whatsNew: { name: 'Что нового', history: 'Все изменения' },
+    whatsNew: { name: 'Что нового', history: 'Все изменения', release: 'Выпуск {version}' },
     plans: {
       heading: 'Три способа работать',
       why: 'Аккаунты и Pro пока не открыты. Всё работает и без них.',
@@ -467,6 +467,7 @@ export const ru: Translations = {
     },
     library: '{library}, {count}',
   },
+  releaseNoteKinds: { new: 'Новое', changed: 'Изменено', fixed: 'Исправлено' },
   pieceName: {
     title: 'Имя кусочка',
     label: 'Название',

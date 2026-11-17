@@ -21,14 +21,14 @@ const FILES: NoteFiles = {
     },
   ],
   notes: [
-    { name: '2026-11-18-0001', date: '2026-11-18', kind: 'new', line: 'Mirror a Piece' },
-    { name: '2026-11-19-0002', date: '2026-11-19', kind: 'fixed', line: 'Undo | Redo keep the Frame' },
-    { name: '2026-11-20-0003', date: '2026-11-20', kind: 'new', line: 'Lift a Piece' },
-    { name: '2026-12-02-0004', date: '2026-12-02', kind: 'changed', line: 'The grid is lighter' },
+    { name: '2026-11-18-0001', date: '2026-11-18', kind: 'new', line: 'Mirror a Piece', lines: {} },
+    { name: '2026-11-19-0002', date: '2026-11-19', kind: 'fixed', line: 'Undo | Redo keep the Frame', lines: {} },
+    { name: '2026-11-20-0003', date: '2026-11-20', kind: 'new', line: 'Lift a Piece', lines: {} },
+    { name: '2026-12-02-0004', date: '2026-12-02', kind: 'changed', line: 'The grid is lighter', lines: {} },
   ],
   before: [
-    { name: '2026-10-29-0694', date: '2026-10-29', line: 'The oldest' },
-    { name: '2026-10-30-0703', date: '2026-10-30', line: 'The newer' },
+    { name: '2026-10-29-0694', date: '2026-10-29', line: 'The oldest', lines: {} },
+    { name: '2026-10-30-0703', date: '2026-10-30', line: 'The newer', lines: {} },
   ],
 };
 

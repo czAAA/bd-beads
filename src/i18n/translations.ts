@@ -572,8 +572,9 @@ export interface Translations {
     openSource: { name: string; text: string }
     /** The coffee screen's Say hello tile (ticket 0823): {menu} and {feedback}, and its button, are the Menu's own labels. */
     sayHello: { name: string; text: string }
-    /** The coffee screen's What's new tile (ticket 0824): its name and Every change, the link to the source's history. */
-    whatsNew: { name: string; history: string }
+    /** The coffee screen's What's new tile (tickets 0824, 1047): its name, Every change (the link to `CHANGELOG.md`) and a
+     * Production release's line, {version} its Version. */
+    whatsNew: { name: string; history: string; release: string }
     /** The plan tiles (ticket 220; Homepage card). */
     plans: {
       heading: string
@@ -594,6 +595,8 @@ export interface Translations {
     /** The phone strip's library button's name (ticket 0827): {library} is the Menu row's, "Projects library, 28". */
     library: string
   }
+  /** A Release note's kind label (ticket 1047, spec 1043), in What's new and "Update ready". */
+  releaseNoteKinds: { new: string; changed: string; fixed: string }
   /** The Name Piece dialog (ticket 406). */
   pieceName: {
     title: string

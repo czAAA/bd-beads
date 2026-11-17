@@ -8,6 +8,7 @@ import { chooseLanguage } from '../testUtils/chooseLanguage'
 import { findBead } from '../domain/beads'
 import { beadCell } from '../domain/weave'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
+import type { NotesSource } from '../services/notesFile'
 
 /** What the stand-in What's inside's Open editor from here gives. */
 const demoSnapshot = vi.hoisted(() => ({ value: undefined as unknown }))
@@ -24,8 +25,8 @@ vi.mock('./inside/WhatsInside.vue', () => ({
   }),
 }))
 
-function page(projectCount = 0) {
-  return mount(HomePage, { props: { projectCount, feedback: fakeFeedback() }, attachTo: document.body })
+function page(projectCount = 0, notes?: NotesSource) {
+  return mount(HomePage, { props: { projectCount, feedback: fakeFeedback(), notes }, attachTo: document.body })
 }
 
 /** The page's width as What's inside reads it before the first resize report. */
@@ -328,6 +329,17 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     await step(wrapper, 2)
     expect(shown(wrapper)).toEqual(['coffee'])
     expect(toggle().attributes('aria-expanded')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it("hands What's new the page's notes file, read in the language shown when it opens (ticket 1047)", async () => {
+    const notes = vi.fn<NotesSource>(async () => ({ version: '1.1.0', releases: [{ version: '1.0.0', date: '2026-11-17' }], notes: [] }))
+    const wrapper = page(0, notes)
+    await step(wrapper, 2)
+    await wrapper.get('[data-testid="homepage-whats-new-toggle"]').trigger('click')
+    await flushPromises()
+    expect(notes).toHaveBeenCalledWith('en')
+    expect(wrapper.get('[data-testid="homepage-whats-new-release"]').text()).toContain('Release 1.0.0')
     wrapper.unmount()
   })
 

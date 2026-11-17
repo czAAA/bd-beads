@@ -289,7 +289,7 @@ Since ticket 0819 the cards above are the coffee screen's promises, in this orde
 | Coming soon (a phone's chip in place of the stamp) · you are here (its chip) | Скоро · вы здесь |
 | Show all {n} (a phone's free list, past its first six rows) | Показать все {n} |
 
-`{menu}` and `{feedback}` are the Menu's own labels (the Canvas strip's Menu, its Send feedback row), never typed in. What's new's lines are the release notes', in the language shown, each with its date in the language's short form ("Nov 7", "7 нояб."). A release note is added as its own file, `src/data/releaseNotes/YYYY-MM-DD-NNNN.json`, when a user-facing change ships: one short line in every language, no full stop.
+`{menu}` and `{feedback}` are the Menu's own labels (the Canvas strip's Menu, its Send feedback row), never typed in. What's new's lines are the release notes', in the language shown, under their Version with a kind label ("What's new by Version (ticket 1047)" below), each date in the language's short form ("Dec 4", "4 дек."). A release note is added as its own file, `src/data/releaseNotes/YYYY-MM-DD-NNNN.json`, when a user-facing change ships: one short line in every language, no full stop.
 
 The scroll story (ticket 0739): the Progress bar's words.
 
@@ -1353,3 +1353,16 @@ The Menu's Preferences switch for the Lifted piece (BeadBoard card), named in th
 | Each piece lies on its own ground, with a thin line and a soft shadow round it. Switched off, pieces lie flat on the Canvas. | Каждый кусочек лежит на своей подложке, с тонкой линией и мягкой тенью вокруг. Если выключить, кусочки лежат на холсте плоско. | Кожен шматочок лежить на власній підкладці, з тонкою лінією та м’якою тінню навколо. Якщо вимкнути, шматочки лежать на полотні пласко. | Кожны кавалачак ляжыць на сваёй падкладцы, з тонкай лініяй і мяккім ценем вакол. Калі выключыць, кавалачкі ляжаць на палатне плоска. | 每个小块都衬在自己的底色上，周围有一条细线和柔和的阴影。关闭后，小块平铺在画布上。 | Cada trozo descansa sobre su propio fondo, con una línea fina y una sombra suave alrededor. Si lo apagas, los trozos quedan planos sobre el lienzo. | Każdy kawałek leży na własnym tle, z cienką linią i miękkim cieniem dookoła. Po wyłączeniu kawałki leżą płasko na płótnie. |
 
 The languages other than English are proposals for review with the build.
+
+## What's new by Version (ticket 1047)
+
+What's new on the Homepage lists every note under its Version (Homepage card): each row's kind label (KindLabel card, lowercase as `meta-small` draws it) and a Production release's line. The kind words are adjectives for "this change", one word each; "Update ready" (ticket 1048) uses the same. Every change now opens `CHANGELOG.md`; its words are unchanged.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| New | Новое | Нове | Новае | 新增 | Nuevo | Nowe |
+| Changed | Изменено | Змінено | Зменена | 改动 | Cambiado | Zmienione |
+| Fixed | Исправлено | Виправлено | Выпраўлена | 修复 | Corregido | Poprawione |
+| Release {version} (a Production release's line, "Release 2.0.0") | Выпуск {version} | Випуск {version} | Выпуск {version} | 发布 {version} | Lanzamiento {version} | Wydanie {version} |
+
+English, Russian and Spanish were signed off with spec 1043; the other languages follow the Russian column's forms (Ukrainian, Belarusian) and are proposals for review with the build.

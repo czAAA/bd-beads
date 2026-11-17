@@ -428,7 +428,7 @@ export const uk: Translations = {
     },
     openSource: { name: 'Відкритий код', text: 'Увесь openbeads відкритий за ліцензією AGPL-3.0. Читайте код, повідомляйте про помилки, пропонуйте зміни.' },
     sayHello: { name: 'Напишіть нам', text: 'Помилка, ідея, ваша робота: надішліть родині. Це є і в {menu} → {feedback}.' },
-    whatsNew: { name: 'Що нового', history: 'Усі зміни' },
+    whatsNew: { name: 'Що нового', history: 'Усі зміни', release: 'Випуск {version}' },
     plans: {
       heading: 'Три варіанти',
       why: 'Акаунти та Pro поки не відкриті. Усе працює й без них.',
@@ -467,6 +467,7 @@ export const uk: Translations = {
     },
     library: '{library}, {count}',
   },
+  releaseNoteKinds: { new: 'Нове', changed: 'Змінено', fixed: 'Виправлено' },
   pieceName: {
     title: 'Назва шматочка',
     label: 'Назва',

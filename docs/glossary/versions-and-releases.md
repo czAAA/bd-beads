@@ -11,7 +11,7 @@ One build of the app from one commit. It has a Version and a **build mark**, the
 _Avoid_: deploy, release (for a Build that isn't a Production release)
 
 **Release note**:
-One file per ticket, `src/data/releaseNotes/YYYY-MM-DD-NNNN.json` (its day and ticket), with its kind and one short line in every shipped language, added by the pull request that makes a user-facing change. Its file name and kind are final once merged: it is never deleted or renamed, only its wording may be corrected, and taking a feature back is a new Changed note. The notes from before 1.0.0 sit apart in `before-1.0.0/`, with no kind and no number. The rules for authors are in `docs/agents/pull-requests.md`, Release notes.
+One file per ticket, `src/data/releaseNotes/YYYY-MM-DD-NNNN.json` (its day and ticket), with its kind and one short line in every shipped language, added by the pull request that makes a user-facing change. Its file name and kind are final once merged: it is never deleted or renamed, only its wording may be corrected, and taking a feature back is a new Changed note. The notes from before 1.0.0 sit apart in `before-1.0.0/`, with no kind and no number. The rules for authors are in `docs/agents/pull-requests.md`, Release notes. The app carries none in its script: the build writes a **notes file** per language, `notes/<locale>.json`, with the Build's Version, the last two Production releases and the notes since the older, which What's new reads (ticket 1047).
 _Avoid_: changelog entry, release item
 
 **New**, **Changed**, **Fixed** (a Release note's kind):

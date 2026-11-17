@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { HEADERS_FILE } from './vite.headers.ts'
 import { filesBelow, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
 import { LOCALES } from './src/domain/locale.ts'
+import { readNotesFile } from './src/domain/notesFile.ts'
 
 const repo = import.meta.dirname
 const template = readFileSync(resolve(repo, 'pwa/serviceWorker.js'), 'utf8')
@@ -94,6 +95,21 @@ describe('the production build (ticket 69)', () => {
       // A file the page itself loads or preloads is named in it; the language's is fetched only when it is chosen.
       for (const page of pages) expect(page).not.toContain(file!.slice('assets/'.length))
     }
+  })
+
+  it('writes one notes file per language, which the offline list keeps, and no script holds a note (ticket 1047)', () => {
+    const precache = precacheOf(readFileSync(join(outDir, SERVICE_WORKER_FILE), 'utf8'))
+    for (const locale of LOCALES) {
+      expect(precache).toContain(`notes/${locale}.json`)
+      expect(readNotesFile(JSON.parse(readFileSync(join(outDir, 'notes', `${locale}.json`), 'utf8'))), locale).not.toBeNull()
+    }
+    const lines = ['src/data/releaseNotes/2026-11-17-1047.json', 'src/data/releaseNotes/before-1.0.0/2026-11-17-1042.json'].map(
+      (path) => (JSON.parse(readFileSync(resolve(repo, path), 'utf8')) as { line: { ru: string } }).line.ru,
+    )
+    const scripts = files.filter((path) => path.endsWith('.js')).map((path) => readFileSync(join(outDir, path), 'utf8'))
+    for (const line of lines) for (const script of scripts) expect(script).not.toContain(line)
+    // A note from before 1.0.0 is in no built file at all.
+    for (const path of files) expect(readFileSync(join(outDir, path), 'utf8'), path).not.toContain(lines[1])
   })
 
   it('sends both pages with a policy that names every inline script they hold, and no script it lets run unnamed (ticket 1024)', () => {

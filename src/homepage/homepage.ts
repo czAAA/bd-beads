@@ -21,6 +21,7 @@ import { firstProjectAddress, firstStarterAddress, projectAddress, savedProjects
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
 import { browserFeedback } from '../services/feedback'
+import { notesFromBase } from '../services/notesFile'
 import { browserPictureStore } from '../services/pictureStore'
 import { leaveWithBox } from './boxHandoff'
 import { keepDemoCopy, type DemoSnapshot } from './demoCopy'
@@ -90,6 +91,8 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         projectCount: counted === 'unopened' ? 0 : counted,
         libraryUnopened: counted === 'unopened',
         feedback: browserFeedback,
+        // What's new's notes, this Build's file in the language shown, read when it opens (ticket 1047).
+        notes: notesFromBase(base),
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
         openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).

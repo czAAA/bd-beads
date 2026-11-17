@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { LOCALES } from '../domain/locale'
+import { LOCALES, type Locale } from '../domain/locale'
+import type { ReleaseNoteKind } from '../domain/notesFile'
 import RELEASE_RECORD from './releases.json'
-import { RELEASE_NOTES, type ReleaseNote } from './releaseNotes'
 
+/** One note's file (docs/agents/pull-requests.md, Release notes): the day it shipped, its kind (none before 1.0.0) and its
+ * line in every shipped language. The app reads none: the build writes them into the notes files (ticket 1047). */
+interface ReleaseNote {
+  date: string
+  kind?: ReleaseNoteKind
+  line: Record<Locale, string>
+}
+
+// One file per note, `releaseNotes/YYYY-MM-DD-NNNN.json` (day shipped, ticket), so PRs that each add one never conflict
+// (ticket 0917); the notes from before 1.0.0 sit apart in `releaseNotes/before-1.0.0/` (ticket 1045).
 const NOTES = import.meta.glob<ReleaseNote>('./releaseNotes/*.json', { eager: true, import: 'default' })
 const BEFORE_1_0_0 = import.meta.glob<ReleaseNote>('./releaseNotes/before-1.0.0/*.json', { eager: true, import: 'default' })
+const RELEASE_NOTES = Object.values({ ...NOTES, ...BEFORE_1_0_0 })
 const KINDS = ['new', 'changed', 'fixed']
 
 interface RecordedRelease {
@@ -31,11 +42,7 @@ function problems(notes: Map<string, ReleaseNote>, record: readonly RecordedRele
   return found
 }
 
-describe('RELEASE_NOTES (tickets 0824, 0917, 1045)', () => {
-  it('holds at least the three the What\'s new tile shows', () => {
-    expect(RELEASE_NOTES.length).toBeGreaterThanOrEqual(3)
-  })
-
+describe('the Release notes (tickets 0824, 0917, 1045)', () => {
   it('has every note in every shipped language, one short line with no full stop', () => {
     for (const note of RELEASE_NOTES) {
       for (const locale of LOCALES) {
@@ -55,12 +62,6 @@ describe('RELEASE_NOTES (tickets 0824, 0917, 1045)', () => {
       expect(new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10), path).toBe(day)
       expect(note.date, path).toBe(day)
     }
-  })
-
-  it('lists the notes newest first, old and new alike', () => {
-    const days = RELEASE_NOTES.map((note) => note.date)
-    expect(days).toEqual([...days].sort().reverse())
-    expect(RELEASE_NOTES).toHaveLength(Object.keys(NOTES).length + Object.keys(BEFORE_1_0_0).length)
   })
 
   it('gives every note since 1.0.0 a kind, and keeps every released note with the kind the release record holds', () => {
