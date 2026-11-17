@@ -58,6 +58,9 @@ export const PREFERENCES = {
   rulers: offUntilOn('openbeads:rulers'),
   /** Whether the Row progress look shows on the Canvas (ticket 474, ADR 0055): on by default; a view setting only. */
   rowHighlight: onUntilOff('openbeads:row-highlight'),
+  /** Whether every Piece lies lifted on the Canvas (Menu's Lifted pieces, ticket 1042): on by default; a view setting
+   * only, with nothing to switch in high contrast. */
+  liftedPieces: onUntilOff('openbeads:lifted-pieces'),
   /** The device's last Canvas color pick (tickets 252, 554, 0653, 1000): a number, 1 to 3, so it survives a change of
    * theme, or `custom`. The list of five's number (1 to 5) and the first list's (1 to 6) are each read once from their
    * own keys and moved to their nearest kept one. */

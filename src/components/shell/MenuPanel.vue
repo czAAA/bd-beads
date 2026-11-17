@@ -9,10 +9,12 @@ import { homepageUrl } from '../../homepage/homepageRoute'
 import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
 import type { ThemePick } from '../../theme/theme'
 import { useThemePick } from '../../theme/useThemePick'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import PanelFactRow from './PanelFactRow.vue'
 import PanelItem from './PanelItem.vue'
 import PanelPicker from './PanelPicker.vue'
 import PanelSection from './PanelSection.vue'
+import PanelSwitchRow from './PanelSwitchRow.vue'
 import type { IconName } from '../ui/icons'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
@@ -63,6 +65,8 @@ const emit = defineEmits<{
 
 const { t, locale, setLocale } = useI18n()
 const { pick, setPick } = useThemePick()
+/** Lifted pieces (ticket 1042): the device's choice, drawn by every Canvas at once. */
+const { lift } = useCanvasBackground()
 const { shown: hintsShown } = useKeyHints()
 const context = inject(PANEL_CONTEXT)
 
@@ -155,6 +159,17 @@ const inputOptions = computed(() => [
         :options="themeOptions"
         data-testid="theme-picker"
         @update:model-value="setPick"
+      />
+      <!-- Lifted pieces (ticket 1042): absent where the look lifts no Piece (high contrast). -->
+      <PanelSwitchRow
+        v-if="inEditor && lift.offered.value"
+        :model-value="lift.on.value"
+        icon="piece"
+        :label="t.panels.menu.liftedPieces"
+        :info-label="t.panels.menu.liftedPiecesInfoLabel"
+        :body="t.panels.menu.liftedPiecesInfo"
+        testid="menu-lifted-pieces"
+        @update:model-value="lift.set"
       />
       <PanelPicker
         v-if="inEditor"

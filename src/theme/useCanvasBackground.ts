@@ -13,7 +13,7 @@ import {
   type CanvasChoice,
   type MarginChoice,
 } from '../rendering/canvasBackgrounds'
-import type { ProjectTheme } from '../rendering/beadLook'
+import { PROJECT_THEMES, type ProjectTheme } from '../rendering/beadLook'
 import { useDevicePreferences, type DevicePreferences } from '../services/devicePreferences'
 import { useResolvedTheme } from './useResolvedTheme'
 
@@ -39,6 +39,15 @@ export interface MarginColor {
   /** Whether the sheet shows its title block (ticket 0657, "Name and size on the margin"), kept on the device. */
   titleBlock: Readonly<Ref<boolean>>
   setTitleBlock: (shown: boolean) => void
+}
+
+/** The Menu's Lifted pieces switch (ticket 1042, BeadBoard card, Lifted piece): stored on the device. */
+export interface LiftedPieces {
+  /** Whether every Piece lies lifted: on until switched off. */
+  on: Readonly<Ref<boolean>>
+  /** Whether the look has a Lifted piece to switch: light and dark do, high contrast lifts none. */
+  offered: ComputedRef<boolean>
+  set: (on: boolean) => void
 }
 
 /** What a layer's Background shows in the current theme (ticket 0666). */
@@ -71,6 +80,7 @@ export function useCanvasBackground(
   /** The Frame's colors on its own background; the Canvas's without a Frame. */
   frameTheme: ComputedRef<ProjectTheme>
   margin: MarginColor
+  lift: LiftedPieces
   /** Keeps a Background as the device's last pick, a Custom color as its last Custom color too. */
   remember: (background: Background) => void
 } {
@@ -79,6 +89,7 @@ export function useCanvasBackground(
   const marginChoice = preferences.get('marginColor')
   const marginCustomColor = preferences.get('marginCustomColor')
   const titleBlock = preferences.get('marginTitleBlock')
+  const lifted = preferences.get('liftedPieces')
   const theme = useResolvedTheme()
   const leastScale = hasInjectionContext() ? inject(marginLeastKey, undefined) : undefined
   const start = computed(() => backgroundOfPick({ choice: choice.value, customColor: customColor.value }))
@@ -98,19 +109,28 @@ export function useCanvasBackground(
   const canvasBackground = computed(() => backgroundOfLayer('canvas'))
   const frameBackground = computed(() => backgroundOfLayer('frame'))
   const canvasPick = computed(() => pickOf(canvasBackground.value))
+  /** A look with its Pieces lying flat where Lifted pieces is off (ticket 1042); nothing else of it changes. */
+  const flatIfOff = (look: ProjectTheme): ProjectTheme => (lifted.value || !look.liftedPiece ? look : { ...look, liftedPiece: false })
   return {
     start,
     customColor: readonly(customColor),
     shownOf,
     background: computed(() => canvasBackgroundOf(theme.value, canvasPick.value.choice, canvasPick.value.customColor)),
     projectTheme: computed(() => {
-      const drawn = canvasTheme(theme.value, canvasPick.value.choice, canvasPick.value.customColor, marginPick())
+      const drawn = flatIfOff(canvasTheme(theme.value, canvasPick.value.choice, canvasPick.value.customColor, marginPick()))
       return leastScale === undefined ? drawn : { ...drawn, margin: { ...drawn.margin, leastScale } }
     }),
     frameTheme: computed(() => {
       const { choice: frameChoice, customColor: frameColor } = pickOf(frameBackground.value)
-      return canvasTheme(theme.value, frameChoice, frameColor)
+      return flatIfOff(canvasTheme(theme.value, frameChoice, frameColor))
     }),
+    lift: {
+      on: readonly(lifted),
+      offered: computed(() => PROJECT_THEMES[theme.value].liftedPiece),
+      set(on) {
+        lifted.value = on
+      },
+    },
     margin: {
       choice: readonly(marginChoice),
       customColor: readonly(marginCustomColor),

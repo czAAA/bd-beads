@@ -162,6 +162,9 @@ export const zh: Translations = {
       keepProjectsInfo:
         '设备空间不足时，浏览器可能会清除此应用的数据，除非它保留你的项目。这由浏览器自行决定，所以请为每个你在意的项目保存项目文件。',
       buttonNames: '按钮的作用',
+      liftedPieces: '浮起的小块',
+      liftedPiecesInfoLabel: '浮起的小块的作用',
+      liftedPiecesInfo: '每个小块都衬在自己的底色上，周围有一条细线和柔和的阴影。关闭后，小块平铺在画布上。',
     },
     project: {
       rename: '重命名“{name}”',

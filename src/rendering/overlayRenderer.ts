@@ -303,7 +303,8 @@ function deviceX(m: DOMMatrix2DInit, bead: PassBead, x: number, y: number): numb
 // joined, filled once. The shape lies left of the device's pixels and the shadow is cast back, so only the shadow shows
 // (Safari took seconds over a blurred path of many shapes: ticket 1030). Light and dark on screen only, not the draft look.
 function drawRaisedShadow(context: DrawingContext, beads: readonly PassBead[], weave: Weave, deviceScale: number, theme: ProjectTheme): void {
-  if (!beads.length || !theme.liftedPiece || drawsDraft(deviceScale)) return
+  // The screen's full look is told by its own-color rim: Lifted pieces can be switched off there (ticket 1042).
+  if (!beads.length || !theme.ownColorRim || drawsDraft(deviceScale)) return
   const inset = BEAD_GAP_PX / 2
   const body = (bead: PassBead) => raisedBy(bead, RAISE_PX - inset)
   const corner = cornerOf(weave, RAISE_PX - inset)
