@@ -51,3 +51,8 @@ export function numberNotes(
   const build = unreleased.length > before ? version : (newest?.version ?? version);
   return { notes, build };
 }
+
+/** The Version the next Production release gets: the newest release's first number plus one. */
+export function nextRelease(record: readonly Release[]): string {
+  return `${Number(record.at(-1)?.version.split('.')[0] ?? 0) + 1}.0.0`;
+}

@@ -12,6 +12,6 @@ The domain language of bd-beads, one file per area. Each entry gives a term's me
 | [Import and rendering](import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer, Tool pointer, Letters, Word chart, Large beads and Row by row, Page 1, Export quality, File size estimate, Clean up stray beads, Auto-fix lighting |
 | [Accounts and sharing](accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
 | [Homepage](homepage.md) | Homepage, Homepage zoom |
-| [Versions and releases](versions-and-releases.md) | Version, Build, Release note, New / Changed / Fixed, Production release |
+| [Versions and releases](versions-and-releases.md) | Version, Build, Release note, New / Changed / Fixed, Production release, Changelog |
 
 Add a new term to the file of its area, and to this table. `CONTEXT.md` keeps the short core (Quick start, Key concepts, Where to start) and points here.
