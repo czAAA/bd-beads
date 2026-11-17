@@ -102,7 +102,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `rim` | `bead-rim` (exports and high contrast; light and dark draw a bead in a rim of its own color, `ownColorRim`, ticket 1003, except a round bead, whose corner is a half circle: Open weave, its body and light with the ground between, ticket 1010; one under 1.3:1 off that ground in the light look keeps its rim as a 0.75px edge, ticket 1037) |
 | `emptyBead` | `bead-empty` |
 | `positionMark` | `position-mark` (high contrast, the draft look and exports; light and dark draw empty positions as tonal tiles from the Background, `tonalTiles`, ticket 1001, `src/rendering/tonalTiles.ts`) |
-| `pieceLine` | `line-strong` (a Piece area's rectangle in high contrast and exports; light and dark draw each Piece's contour and shadow instead, the Lifted piece, `liftedPiece`, ticket 1004, `src/rendering/liftedPiece.ts`; round beads give it their own round shape, ticket 1010) |
+| `pieceLine` | `line-strong` (a Piece area's rectangle in high contrast and exports; light and dark draw each Piece's contour and shadow instead, the Lifted piece, `liftedPiece`, ticket 1004, `src/rendering/liftedPiece.ts`, and the rectangle again where the Menu's Lifted pieces switch is off, ticket 1042; round beads give it their own round shape, ticket 1010) |
 | `seam` | `bead-seam` |
 | `marker` | `marker` |
 | `markerCase` | `canvas` (the 1px line inside the current-row ring, ticket 1031; the page's `canvas` token, never the Canvas's own Background, and a Custom Canvas color takes it from the look it is drawn in) |

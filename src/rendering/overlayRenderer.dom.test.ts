@@ -295,6 +295,14 @@ describe('renderOverlay', () => {
       expect(later.shadows.map(({ shapes }) => shapes)).toEqual([3])
     })
 
+    it('casts the shadow with Lifted pieces off too: the raised pass is Row progress\'s, not the piece\'s (ticket 1042)', () => {
+      const project = projectOf('loom', 4, 5, { currentRow: 2 })
+      const flat = shadowRecording()
+      renderOverlay(flat.context, { project, region: whole(project), zoom: 1, pixelRatio: 2, theme: { ...DEFAULT_THEME, liftedPiece: false } })
+
+      expect(flat.shadows).toEqual([{ color: 'rgba(0, 0, 0, 0.24)', blur: 20, down: 4, aside: expect.any(Number), shapes: 1 }])
+    })
+
     it('casts no shadow in high contrast, in the draft look or with Row highlight off, and keeps the growth and the ring in the draft look', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 2 })
       const contrast = shadowRecording()

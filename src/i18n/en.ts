@@ -160,6 +160,9 @@ export const en: Translations = {
       keepProjectsInfo:
         "When the device runs short on space, the browser can clear this app's data, unless it keeps your Projects. The browser decides this by itself, so save a Project file of each one you care about.",
       buttonNames: 'What the buttons do',
+      liftedPieces: 'Lifted pieces',
+      liftedPiecesInfoLabel: 'What Lifted pieces does',
+      liftedPiecesInfo: 'Each piece lies on its own ground, with a thin line and a soft shadow round it. Switched off, pieces lie flat on the Canvas.',
     },
     project: {
       rename: 'Rename {name}',
