@@ -28,7 +28,7 @@ import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
-import { canvasLiftCells, drawLift, joinedUpright, liftCollector, liftRows, liftsAcross, paintedOnly } from './liftedPiece'
+import { canvasCutCells, canvasCuts, canvasLiftCells, drawLift, frameCutCells, frameCuts, joinedUpright, liftCollector, liftRows, liftsAcross, paintedOnly, withCutRows, type LiftCell } from './liftedPiece'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { columnStrip } from './columnBand'
 import {
@@ -197,6 +197,17 @@ function drawPositionMarks(
   context.imageSmoothingEnabled = false
 }
 
+/** The Position marks again in `cells`, over what is drawn there: the tiles of the Canvas's lifted cuts (ticket 1035). */
+function drawCutMarks(context: DrawingContext, cells: readonly LiftCell[], { project, zoom, pixelRatio, theme, tiles }: { project: DrawnProject; zoom: number; pixelRatio: number; theme: ProjectTheme; tiles: boolean }): void {
+  if (!cells.length) return
+  const pattern = positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...markLookOf(theme, tiles) })
+  if (!pattern) return
+  context.fillStyle = pattern
+  context.imageSmoothingEnabled = true
+  for (const { x, y, width, height } of cells) context.fillRect(x, y, width, height)
+  context.imageSmoothingEnabled = false
+}
+
 /** Fills a rectangle cut to the view, in the fill in force; nothing where it is empty. */
 function stripIn(context: DrawingContext, area: { left: number; right: number; top: number; bottom: number }) {
   return (left: number, top: number, right: number, bottom: number) => {
@@ -335,6 +346,8 @@ interface LayerDraw {
   /** Whether painted beads lie on a Lifted piece where the look has one (ticket 1004): on the open Canvas in the full
    * look. */
   lift: boolean
+  /** The only positions drawn, where not every one in view is: a Frame's lifted cuts, its tiles on the piece's ground. */
+  at?: (position: GridPosition) => boolean
 }
 
 /** The Frame's cells, bead or empty bead, where its Layer geometry places them, from the context's origin (ticket 492).
@@ -348,16 +361,21 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
     // pieces reach a band), then the pieces under the painted beads, then those beads.
     const collect = liftCollector(draw.drawBead, !geometry.grid)
     const weave = frameWeave(project)
-    drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: liftRows(band, cellSizePx(weave.technique, weave.cell).height) }, space, origin)
+    const taken = liftRows(band, cellSizePx(weave.technique, weave.cell).height)
+    drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: taken }, space, origin)
     const across = liftsAcross(weave)
-    drawLift(context, joinedUpright(collect.cells, across), draw.look.canvas, draw.zoom * draw.pixelRatio, across, area)
+    // An inner cut close to the beads is part of the piece, its tiles drawn again on the piece's ground (ticket 1035).
+    const cuts = frameCuts(project, geometry)
+    const cutCells = cuts ? frameCutCells(project, cuts, geometry, origin, area, taken) : []
+    drawLift(context, joinedUpright([...collect.cells, ...cutCells], across), draw.look.canvas, draw.zoom * draw.pixelRatio, across, area)
+    if (cutCells.length) drawFrameLayer(context, { ...draw, lift: false, tiles: true, letters: undefined, seeThrough: undefined, at: ({ row, column }) => cuts!.has(row, column) }, space, origin)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined }, space, origin)
     return
   }
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, into which a shifted column's beads hang; beads that keep no rows are all drawn.
   const inView = () => geometry.positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
-  const placed = () => inView().map((position) => ({ position, place: geometry.place(position)! }))
+  const placed = () => (draw.at ? inView().filter(draw.at) : inView()).map((position) => ({ position, place: geometry.place(position)! }))
   // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
   const framed = beadsOfLayer(project, 'frame')
   const colorAtOwn = (row: number, column: number) => (framed ? colorAt(framed, row, column) : beadInSpace(project, space, row, column))
@@ -695,7 +713,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // next full draw.
   const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
   const lifts = space.open && look.liftedPiece && !draft
-  const band = alike ? (lifts ? liftRows(rows, cellSizePx(bandWeave.technique, bandWeave.cell).height) : rows) : undefined
+  const band = alike ? (lifts ? liftRows(withCutRows(rows, project, margin, frame && geometryDrawnAlone(project)), cellSizePx(bandWeave.technique, bandWeave.cell).height) : rows) : undefined
   const strip = alike && !band && columns ? columnStrip(bandWeave, columns, lifts) : undefined
 
   // The backing store is in device px: clear (and paint the background, in Frame-only space) there, the whole surface
@@ -755,7 +773,11 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     }
     if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
     if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
-    if (lift && look.liftedPiece) drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio, liftsAcross(canvasWeave(project)), area)
+    if (lift && look.liftedPiece) {
+      drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio, liftsAcross(canvasWeave(project)), area)
+      // The tiles of an inner cut close to the beads, on the piece's ground (ticket 1035).
+      if (positionMarks) drawCutMarks(context, canvasCutCells(project, { area, rows: band, margin }, canvasCuts(project, margin)), { project, zoom, pixelRatio, theme, tiles })
+    }
     drawCanvasLayer(context, draw, space)
     if (frame && frameBox) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)

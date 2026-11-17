@@ -74,6 +74,8 @@ const FIXTURES: Record<string, () => Project> = {
   'round stairs': () => framed('round-stairs', (row, column) => Math.floor((row + column) / 4) % 2 === 0, ROUND),
   'large full': () => framed('large-full', () => true, LARGE),
   'large checkered': () => framed('large-checkered', (row, column) => (row + column) % 2 === 0, LARGE),
+  // Ticket 1035: a hole of one bead every third bead in the upper half, one of 4 × 4 every eighth in the lower, each closed in.
+  'inner cuts': () => framed('inner-cuts', (row, column) => (row < ROWS / 2 ? row % 3 !== 1 || column % 3 !== 1 : row % 8 < 2 || row % 8 > 5 || column % 8 < 2 || column % 8 > 5)),
 }
 
 /** The Frames a stroke across them and a pan of the view are measured on too: painted full and checkered (ticket 1039). */
