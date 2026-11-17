@@ -342,6 +342,8 @@ export const ru: Translations = {
     canvasPlaceholder: 'Проект пока не открыт',
     updateReady: 'Обновление готово',
     updateReload: 'Перезагрузить',
+    signInRunOut: 'Срок входа истёк.',
+    signIn: 'Войти',
     canvasPlaceholderPan: 'Двигайте холст, перетаскивая его правой кнопкой мыши или с пробелом.',
     canvasDeleted: 'Проект «{name}» удалён.',
     canvasDeletedHint: 'Откройте другой из библиотеки проектов или создайте новый.',

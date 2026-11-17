@@ -343,6 +343,8 @@ export const be: Translations = {
     canvasPlaceholder: 'Праект яшчэ не адкрыты',
     updateReady: 'Абнаўленне гатова',
     updateReload: 'Перазагрузіць',
+    signInRunOut: 'Тэрмін уваходу скончыўся.',
+    signIn: 'Увайсці',
     canvasPlaceholderPan: 'Перасоўвайце палатно правай кнопкай мышы або прабелам.',
     canvasDeleted: 'Праект «{name}» выдалены.',
     canvasDeletedHint: 'Адкрыйце іншы з бібліятэкі праектаў або стварыце новы.',

@@ -21,13 +21,14 @@ class FakeRegistration {
   }
 }
 
-function stubBrowser(options: { controlled: boolean; registration?: FakeRegistration }) {
+function stubBrowser(options: { controlled: boolean; registration?: FakeRegistration; online?: boolean }) {
   const registration = options.registration ?? new FakeRegistration()
   const persist = vi.fn(() => Promise.resolve(true))
   const register = vi.fn(() => Promise.resolve(registration))
   vi.stubGlobal('navigator', {
     serviceWorker: { register, controller: options.controlled ? {} : null, addEventListener: vi.fn() },
     storage: { persist },
+    onLine: options.online ?? true,
   })
   return { registration, persist, register }
 }
@@ -118,5 +119,108 @@ describe('startOfflineShell', () => {
     await settle()
     browserAppUpdates.apply()
     expect(postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' })
+  })
+
+  describe('an Access sign-in that has run out (ticket 1041)', () => {
+    const redirect = { type: 'opaqueredirect' } as Response
+    const plain = { type: 'basic' } as Response
+
+    /** The host's answers to the worker file: asked without following a redirect, then asked to stay on this origin. */
+    function stubHost(unfollowed: Response | Error, sameOrigin: Response | Error = plain) {
+      // By the question, not by turn: the modules of earlier tests still listen on this document.
+      const fetchStub = vi.fn((_url: string, init: RequestInit) => {
+        const answer = init.redirect === 'manual' ? unfollowed : sameOrigin
+        return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer)
+      })
+      vi.stubGlobal('fetch', fetchStub)
+      return fetchStub
+    }
+
+    async function startAndListen() {
+      const { startOfflineShell, browserAppSignIn } = await freshModule()
+      const runOut = vi.fn()
+      browserAppSignIn.onRunOut(runOut)
+      startOfflineShell('/bd-beads/')
+      await settle()
+      return { runOut, browserAppSignIn }
+    }
+
+    it('is noticed when the host sends the app\'s own request to another origin', async () => {
+      stubBrowser({ controlled: true })
+      const fetchStub = stubHost(redirect, new TypeError('refused'))
+      const { runOut } = await startAndListen()
+      expect(runOut).toHaveBeenCalledOnce()
+      expect(fetchStub).toHaveBeenNthCalledWith(1, '/bd-beads/sw.js', { method: 'HEAD', cache: 'no-store', redirect: 'manual' })
+      expect(fetchStub).toHaveBeenNthCalledWith(2, '/bd-beads/sw.js', { method: 'HEAD', cache: 'no-store', mode: 'same-origin' })
+    })
+
+    it('is told at once to a listener that comes after it was noticed', async () => {
+      stubBrowser({ controlled: true })
+      stubHost(redirect, new TypeError('refused'))
+      const { browserAppSignIn } = await startAndListen()
+      const late = vi.fn()
+      browserAppSignIn.onRunOut(late)
+      expect(late).toHaveBeenCalledOnce()
+    })
+
+    it('is not seen in a host that answers plainly', async () => {
+      stubBrowser({ controlled: true })
+      const fetchStub = stubHost(plain)
+      const { runOut } = await startAndListen()
+      expect(fetchStub).toHaveBeenCalledOnce()
+      expect(runOut).not.toHaveBeenCalled()
+    })
+
+    it('is not seen in a redirect that stays on the host', async () => {
+      stubBrowser({ controlled: true })
+      stubHost(redirect, plain)
+      const { runOut } = await startAndListen()
+      expect(runOut).not.toHaveBeenCalled()
+    })
+
+    it('is not looked for offline', async () => {
+      stubBrowser({ controlled: true, online: false })
+      const fetchStub = stubHost(redirect, new TypeError('refused'))
+      const { runOut } = await startAndListen()
+      expect(fetchStub).not.toHaveBeenCalled()
+      expect(runOut).not.toHaveBeenCalled()
+    })
+
+    it('is not seen in a request that fails', async () => {
+      stubBrowser({ controlled: true })
+      stubHost(new TypeError('no network'))
+      const { runOut } = await startAndListen()
+      expect(runOut).not.toHaveBeenCalled()
+    })
+
+    it('is looked for again when the tab is brought back', async () => {
+      stubBrowser({ controlled: true })
+      stubHost(plain)
+      const { runOut } = await startAndListen()
+      stubHost(redirect, new TypeError('refused'))
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await settle()
+      expect(runOut).toHaveBeenCalledOnce()
+    })
+
+    it('signs in by loading this page with the mark the worker lets through to the host', async () => {
+      stubBrowser({ controlled: true })
+      stubHost(plain)
+      const assign = vi.fn()
+      vi.stubGlobal('location', { href: 'https://openbeads.test/bd-beads/?project=7', assign })
+      const { browserAppSignIn } = await startAndListen()
+      browserAppSignIn.signIn()
+      expect(assign).toHaveBeenCalledWith('https://openbeads.test/bd-beads/?project=7&sign-in=')
+    })
+
+    it('takes the mark off the address once the page is back from signing in', async () => {
+      stubBrowser({ controlled: true })
+      stubHost(plain)
+      vi.stubGlobal('location', { href: 'https://openbeads.test/bd-beads/?project=7&sign-in=' })
+      const replaceState = vi.spyOn(history, 'replaceState').mockImplementation(() => {})
+      await startAndListen()
+      expect(replaceState).toHaveBeenCalledWith(history.state, '', 'https://openbeads.test/bd-beads/?project=7')
+    })
   })
 })

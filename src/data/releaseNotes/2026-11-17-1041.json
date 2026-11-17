@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-17",
+  "line": {
+    "en": "A refresh keeps the version you are on; a newer one arrives when you press Reload in Update ready",
+    "ru": "После обновления страницы версия остаётся прежней; новая приходит по кнопке «Перезагрузить» в «Обновление готово»",
+    "uk": "Після оновлення сторінки версія лишається тією самою; нова приходить за кнопкою «Перезавантажити» в «Оновлення готове»",
+    "be": "Пасля абнаўлення старонкі версія застаецца ранейшай; новая прыходзіць па кнопцы «Перазагрузіць» у «Абнаўленне гатова»",
+    "zh": "刷新页面后版本保持不变；在“更新已就绪”中点“重新加载”才会换到新版本",
+    "es": "Al actualizar la página sigues en la misma versión; la nueva llega al pulsar Recargar en Actualización lista",
+    "pl": "Po odświeżeniu strony wersja zostaje ta sama; nowa przychodzi po naciśnięciu Załaduj ponownie w Aktualizacja gotowa"
+  }
+}

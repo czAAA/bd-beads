@@ -340,6 +340,8 @@ export const en: Translations = {
     canvasPlaceholder: 'No Project open yet',
     updateReady: 'Update ready',
     updateReload: 'Reload',
+    signInRunOut: 'Your sign-in has run out.',
+    signIn: 'Sign in',
     canvasPlaceholderPan: 'Drag the Canvas around with the right mouse button or Space.',
     canvasDeleted: '“{name}” was deleted.',
     canvasDeletedHint: 'Open another from the Projects library, or make a new one.',

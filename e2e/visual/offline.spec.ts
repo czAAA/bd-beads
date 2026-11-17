@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Page } from '@playwright/test'
+import { expect, test, type BrowserContext, type Page, type Response } from '@playwright/test'
 import { openApp, openStripPanel, storedProjects } from '../support/app'
 import { startHost, type Host } from '../support/hostProxy'
 import { fixtureProject } from '../support/projects'
@@ -24,6 +24,9 @@ async function openAndInstall(page: Page, storageNote = false): Promise<void> {
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true)
 }
 
+/** The app's own question to the host, whose redirect to another origin means the sign-in has run out (ticket 1041). */
+const askedForSignIn = (response: Response) => response.url().endsWith('/sw.js') && response.request().method() === 'HEAD'
+
 const savedNames = async (page: Page) => (await storedProjects(page)).map((project) => project.layers[0]!.name)
 
 /** Reloads, and expects the app itself (not the browser's error page) with the Project that was open. */
@@ -45,6 +48,13 @@ async function createEditAndSave(page: Page, name: string): Promise<void> {
   const box = (await surface.boundingBox())!
   await page.mouse.click(box.x + 20, box.y + 20)
   await expect.poll(() => savedNames(page)).toContain(name)
+}
+
+/** What the next version looks like to the browser: a worker with another cache name, so it is a different build, and
+ * pages that carry a mark the checks can look for. */
+function newVersion(path: string, text: string): string {
+  if (path.endsWith('/sw.js')) return text.replace('"bd-beads-', '"bd-beads-next-')
+  return text.replace('<head>', '<head><meta name="next-version">')
 }
 
 const failures: [string, (context: BrowserContext, host: Host) => Promise<void>][] = [
@@ -124,21 +134,93 @@ test('keeps no redirected copy of a page, so the copy on the device can open', a
   expect(kept!.text).toContain('<div id="app">')
 })
 
-// Cloudflare Access sends a page load without a session to its sign-in page; the worker lets that through instead of
-// answering from the device, where the person could never sign in again (ticket 1017).
-test('shows the sign-in page, not the copy on the device, once the Access session has run out', async ({ page }) => {
+// A page the device holds comes from the device, whatever the host does (ticket 1041): no wait for a slow answer.
+test('opens a page from the device at once while the host is slow', async ({ page }) => {
   await openAndInstall(page)
-  host.accessExpired = true
+  host.delay = { pattern: /./, ms: 20_000 }
 
   await page.reload()
-  await expect(page.getByRole('heading', { name: host.signInText })).toBeVisible()
-  await expect(page.getByTestId('app-canvas')).toHaveCount(0)
+  await expect(page.getByTestId('app-canvas')).toBeVisible({ timeout: 4000 })
+})
 
-  host.accessExpired = false
-  // Signed in again: the app opens, with the library it had.
-  await page.goto(host.url)
-  await expect(page.getByTestId('app-canvas')).toBeVisible()
-  expect(await savedNames(page)).toContain('Fixture loom')
+test('takes a page the device has no copy of from the network', async ({ page }) => {
+  await openAndInstall(page)
+  const dropped = await page.evaluate(async () => {
+    const cache = await caches.open((await caches.keys())[0]!)
+    return cache.delete(new URL('index.html', document.baseURI).href)
+  })
+  expect(dropped).toBe(true)
+
+  // The host's page carries a mark the copy on the device never had.
+  host.rewrite = (_path, text) => text.replace('<head>', '<head><meta name="from-host">')
+  await reloadsIntoTheApp(page)
+  await expect(page.locator('meta[name="from-host"]')).toHaveCount(1)
+})
+
+// Cloudflare Access sends a request without a session to its sign-in page. A page from the device never meets it, so
+// the app notices and offers the way back (ticket 1041, reversing ticket 1017's rule).
+test.describe('once the Access sign-in has run out', () => {
+  /** The address Access returns to after signing in: the one Sign in asked for. */
+  const afterSignIn = () => `${host.url}?sign-in=`
+
+  /** Presses Sign in, meets the sign-in page, and comes back signed in, as Access returns to the address asked for. */
+  async function signIn(page: Page): Promise<void> {
+    await page.getByTestId('sign-in').getByTestId('toast-action').click()
+    await expect(page.getByRole('heading', { name: host.signInText })).toBeVisible()
+    host.accessExpired = false
+    await page.goto(afterSignIn())
+    await expect(page.getByTestId('app-canvas')).toBeVisible()
+  }
+
+  test('the app opens from the device and offers Sign in, which keeps the library', async ({ page }) => {
+    await openAndInstall(page)
+    host.accessExpired = true
+
+    await reloadsIntoTheApp(page)
+    await expect(page.getByTestId('sign-in')).toContainText('Your sign-in has run out.')
+
+    const askedAgain = page.waitForResponse((response) => askedForSignIn(response) && response.ok())
+    await signIn(page)
+    expect(await savedNames(page)).toContain('Fixture loom')
+    // Signed in: nothing to offer, and the address is the app's own again.
+    await expect(page).toHaveURL(host.url)
+    await askedAgain
+    await expect(page.getByTestId('sign-in')).toHaveCount(0)
+  })
+
+  test('a newer version published meanwhile is found after signing in', async ({ page }) => {
+    await openAndInstall(page)
+    host.accessExpired = true
+    host.rewrite = newVersion
+    await reloadsIntoTheApp(page)
+    await expect(page.getByTestId('sign-in')).toBeVisible()
+    await expect(page.getByTestId('update-ready')).toHaveCount(0)
+
+    await signIn(page)
+    await expect(page.getByTestId('update-ready')).toBeVisible()
+    // Signing in went through the host, and still opened the version the device holds.
+    await expect(page.locator('meta[name="next-version"]')).toHaveCount(0)
+  })
+})
+
+test('offers no Sign in with no network', async ({ page, context }) => {
+  await openAndInstall(page)
+  host.accessExpired = true
+  await context.setOffline(true)
+
+  await reloadsIntoTheApp(page)
+  // Offline nothing is asked; the wait is for a toast that would have come.
+  await page.waitForTimeout(1000)
+  await expect(page.getByTestId('sign-in')).toHaveCount(0)
+})
+
+test('offers no Sign in on a host that asks for none', async ({ page }) => {
+  await openAndInstall(page)
+
+  const asked = page.waitForResponse(askedForSignIn)
+  await reloadsIntoTheApp(page)
+  await asked
+  await expect(page.getByTestId('sign-in')).toHaveCount(0)
 })
 
 test('is installable: a manifest with icons, standalone, and no installability error', async ({ page, context }) => {
@@ -183,9 +265,6 @@ test('asks the browser to keep the library at the first Project file, not on loa
 })
 
 test.describe('a new version', () => {
-  /** What the next worker looks like to the browser: another cache name, so it is a different build. */
-  const newVersion = (path: string, text: string) => (path.endsWith('/sw.js') ? text.replace('"bd-beads-', '"bd-beads-next-') : text)
-
   const cacheNames = (page: Page) => page.evaluate(() => caches.keys())
 
   test('waits for the person: an Update ready toast, and Reload switches over', async ({ page }) => {
@@ -205,7 +284,24 @@ test.describe('a new version', () => {
     await page.getByTestId('toast-action').click()
     await reloaded
     await expect(page.getByTestId('app-canvas')).toBeVisible()
+    await expect(page.locator('meta[name="next-version"]')).toHaveCount(1)
     await expect.poll(() => cacheNames(page)).toEqual([expect.stringContaining('bd-beads-next-')])
+  })
+
+  test('a refresh keeps the version the page was on, and offers Update ready again (ticket 1041)', async ({ page }) => {
+    await openAndInstall(page)
+    host.rewrite = newVersion
+    await page.evaluate(async () => void (await (await navigator.serviceWorker.getRegistration())!.update()))
+    await expect(page.getByTestId('update-ready')).toBeVisible()
+    const scripts = () => page.evaluate(() => [...document.scripts].map((script) => script.src))
+    const before = await scripts()
+
+    await reloadsIntoTheApp(page)
+    // The host has the newer page; the one shown is the one the device holds, with its own scripts.
+    await expect(page.locator('meta[name="next-version"]')).toHaveCount(0)
+    expect(await scripts()).toEqual(before)
+    await expect(page.getByTestId('update-ready')).toBeVisible()
+    expect(await cacheNames(page)).toHaveLength(2)
   })
 
   test('arrives on its own when the app is opened again', async ({ page, context }) => {
@@ -218,6 +314,7 @@ test.describe('a new version', () => {
     const again = await context.newPage()
     await again.goto(host.url)
     await expect(again.getByTestId('app-canvas')).toBeVisible()
+    await expect(again.locator('meta[name="next-version"]')).toHaveCount(1)
     await expect.poll(() => cacheNames(again)).toEqual([expect.stringContaining('bd-beads-next-')])
   })
 })

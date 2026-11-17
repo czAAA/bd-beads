@@ -52,6 +52,7 @@ import type { OpenPanel } from './openPanel'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
 import { useOverlayVisibility } from './useOverlayVisibility'
+import { useSignInPrompt } from './useSignInPrompt'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
 import { usePinchPan } from '../canvas/usePinchPan'
@@ -168,6 +169,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
   if (!demo) useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
+
+  /** "Sign in", once the host's sign-in has run out under an app opened from the device (ticket 1041). */
+  if (!demo) useSignInPrompt({ signIn: services.appSignIn, messages, showToast })
 
   /** The device's last Background pick (ticket 0666): a new Project's layers start on it, and keep it on every device. */
   const backgrounds = useCanvasBackground(currentProject, services.devicePreferences)
