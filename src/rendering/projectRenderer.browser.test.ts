@@ -49,10 +49,10 @@ function differing(one: HTMLCanvasElement, other: HTMLCanvasElement): number[] {
   return off
 }
 
-/** As many pixels as a contour's edges make where the band's clip crosses them: the browser antialiases a path cut by a
- * clip a little otherwise. A square bead's corners make a few; a round bead's curve two a device row for a few rows.
- * A bead drawn in half is hundreds. */
-const CLIPPED_CORNERS_PX = 12
+/** As many pixels as a contour's edges make where the band's clip crosses them, and where two of a piece's paths meet
+ * (an edit that adds parts moves that seam, ticket 1034): the browser antialiases both a little otherwise. A square
+ * bead's corners make a few; a round bead's curve two a device row for a few rows. A bead drawn in half is hundreds. */
+const CLIPPED_CORNERS_PX = 16
 
 const edits: readonly [string, readonly Cell[], number][] = [
   ['painting under a bead', [...PAINTED, [2, 3]], 3],
@@ -103,15 +103,15 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again a row of a 
 const hexAt = (data: Uint8ClampedArray, at: number) => `#${[data[at]!, data[at + 1]!, data[at + 2]!].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
 
 // A Piece's inner cuts (ticket 1035): a cut close to its beads is part of the piece, with no line of its own; a larger
-// one keeps its line a bead further in. A cut an edit opens or closes is drawn again with the band, however far it runs.
+// one keeps its line a bead further in. A gap less than two beads wide is lifted whether it is closed in or not (1050).
 describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('a Frame piece\'s inner cuts, in %s', (bead) => {
   const ring = (top: number, left: number, bottom: number, right: number): Cell[] => {
     const cells: Cell[] = []
     for (let row = top; row <= bottom; row += 1) for (let column = left; column <= right; column += 1) if (row === top || row === bottom || column === left || column === right) cells.push([column, row])
     return cells
   }
-  /** A strip three beads wide down columns 4 to 6, rows 2 to 8, closed in: its middle lies a bead from the beads, lifted
-   * only while the cut is closed (the rest is the piece's rim either way, ticket 1036). */
+  /** A strip three beads wide down columns 4 to 6, rows 2 to 8, closed in: its middle lies a bead from the beads, one
+   * wide, so lifted with the rest, the piece's rim (ticket 1036), whether the cut is closed or not (ticket 1050). */
   const STRIP = ring(1, 3, 9, 7)
   const contour = liftLookOf(DARK_THEME.canvas).contour
   /** The pixels of the contour's color in a box of grid px. */
@@ -123,13 +123,13 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('a Frame piece\'s inner cu
     return found
   }
 
-  it('draws no line in a cut three beads wide, however long, and one once it is opened', () => {
+  it('draws no line in a cut three beads wide, however long, nor once it is opened', () => {
     const canvas = surface()
     draw(projectOf('loom', bead, STRIP), canvas)
     expect(contourIn(canvas, 100, 40, 120, 180)).toBe(0)
     const open = surface()
     draw(projectOf('loom', bead, STRIP.filter(([column, row]) => !(column === 5 && row === 1))), open)
-    expect(contourIn(open, 100, 40, 120, 180)).toBeGreaterThan(0)
+    expect(contourIn(open, 100, 40, 120, 180)).toBe(0)
   })
 
   it('keeps the line of a cut with a 2 × 2 block a bead in from its beads, a bead further in', () => {
@@ -234,15 +234,19 @@ describe('a piece\'s rim', () => {
     expect(Array.from({ length: 10 }, (_, at) => pixel(95 + at * 0.5, 110))).not.toContain(look.contour)
   })
 
-  it('gives two pieces two beads apart one ground between them, with no line in it', () => {
+  it('gives two pieces two or three beads apart one ground between them, with no line in it', () => {
     const canvas = surface()
     draw(canvasProject('loom', 'toho-cube-1.5mm', [[3, 5], [6, 5]]), canvas)
     const pixel = pixelOf(canvas)
     // Columns 4 and 5 (x 80 to 120) are both pieces' rims.
     expect(Array.from({ length: 40 }, (_, at) => pixel(80 + at, 110))).not.toContain(look.contour)
-    const apart = surface()
-    draw(canvasProject('loom', 'toho-cube-1.5mm', [[3, 5], [7, 5]]), apart)
-    expect(Array.from({ length: 60 }, (_, at) => pixelOf(apart)(80 + at, 110))).toContain(look.contour)
+    // Three apart, the column between the rims is a gap one bead wide, lifted too (ticket 1050); four apart, two stay flat.
+    const three = surface()
+    draw(canvasProject('loom', 'toho-cube-1.5mm', [[3, 5], [7, 5]]), three)
+    expect(Array.from({ length: 60 }, (_, at) => pixelOf(three)(80 + at, 110))).not.toContain(look.contour)
+    const four = surface()
+    draw(canvasProject('loom', 'toho-cube-1.5mm', [[3, 5], [8, 5]]), four)
+    expect(Array.from({ length: 80 }, (_, at) => pixelOf(four)(80 + at, 110))).toContain(look.contour)
   })
 
   it('stops the rim at the Frame\'s edge: a bead on its edge has no ground past it', () => {

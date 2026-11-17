@@ -8,7 +8,7 @@ import { withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, hasHalfCircleCorner, type Weave } from '../domain/weave'
 import { BEAD_GAP_PX, isOpenWeave, type BeadDrawer, type DrawingContext } from './beadLook'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
-import { liftedPositionsOf, type LiftedPositions } from './innerCuts'
+import { liftedPositionsOf, type LiftedPositions } from './liftedGround'
 import { inGridPx } from './surfaceView'
 import { lookSideOf, pieceGroundOf } from './pieceGround'
 
