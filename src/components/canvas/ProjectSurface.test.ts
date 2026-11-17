@@ -20,10 +20,11 @@ import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
-import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameSheet, withLayer } from '../../domain/layerRecord'
+import { canvasOf, frameOf, heldWeave, quarterTurnOf, withCanvas, withFrameSheet, withLayer } from '../../domain/layerRecord'
 import { findBead } from '../../domain/beads'
 import { scaledBead } from '../../testUtils/squareBead'
-import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
+import { moveToRow, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
+import { LIFT_REACH_PX } from '../../rendering/liftedPiece'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { PATTERN_DONE_MS, ROW_MOTION } from '../../rendering/rowMotion'
@@ -533,17 +534,6 @@ describe('ProjectSurface', () => {
       expect(draws()).toBe(1)
     })
 
-    it('draws everything again when Row progress moves, since rows are faded by it', async () => {
-      viewport = { width: 400, height: 600 }
-      const project = projectOf(20, 30)
-      const { wrapper } = await mountSurface(project)
-      context.calls.length = 0
-
-      await wrapper.setProps({ project: withLayers(project, { rowProgress: { direction: 'rows', currentRow: 5, currentColumn: 0 } }) })
-
-      expect(context.named('rect')).toHaveLength(0)
-    })
-
     it('draws everything again when the view moves', async () => {
       const project = projectOf(20, 30)
       const { wrapper } = await mountSurface(project)
@@ -553,6 +543,127 @@ describe('ProjectSurface', () => {
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
+    })
+  })
+
+  // Row done, Row not done and a press on the Progress bar (ticket 1038): only the passes whose look changed are drawn
+  // again, the one finished and the new current row, with the rows their Lifted pieces reach.
+  describe('when a Progress bar step moves Row progress', () => {
+    /** The view's cut, `[x, y, width, height]`, of each band drawn again since the step. */
+    const bands = () => context.named('rect').map((call) => call.args)
+    /** A tall Frame, 20 × 30 at the origin and upright (peyote comes turned), the weaver on `pass`: one Project, as Row
+     * progress steps it. */
+    const upright = (technique: Technique) => withCanvas(projectOf(20, 30, {}, technique), { orientation: 0 })
+    const tall = { loom: upright('loom'), peyote: upright('peyote'), brick: upright('brick') }
+    const weaving = (pass: number, technique: 'loom' | 'peyote' | 'brick' = 'loom') => moveToRow(tall[technique], pass)
+
+    async function step(from: Project, to: Project): Promise<void> {
+      viewport = { width: 400, height: 600 }
+      const { wrapper } = await mountSurface(from)
+      context.calls.length = 0
+      await wrapper.setProps({ project: to })
+    }
+
+    it('draws again after Row done only the row finished and the new current one, of a Frame much taller', async () => {
+      await step(weaving(12), weaving(13))
+
+      // Rows 12 and 13, y 240 to 280, widened by the three rows either side the Lifted piece reaches (ticket 1004).
+      expect(bands()).toEqual([[0, 180, 400, 160]])
+    })
+
+    it.each([
+      ['Row not done', 13, 12, [[0, 180, 400, 160]]],
+      ['a press a few passes along', 12, 16, [[0, 180, 400, 220]]],
+      ['a press a few passes back', 16, 12, [[0, 180, 400, 220]]],
+    ])('draws again after %s only the passes between', async (_name, from, to, drawn) => {
+      await step(weaving(from), weaving(to))
+
+      expect(bands()).toEqual(drawn)
+    })
+
+    it.each([
+      // On peyote a pass is every other bead of a line (its first line one pass): passes 23 and 24 are both of row 12,
+      // drawn whole, down to the half bead its staggered columns hang below it.
+      ['peyote', 23, 24, [[0, 180, 400, 150]]],
+      ['brick', 12, 13, [[0, 180, 400, 160]]],
+    ] as const)('draws again on %s only the lines of the passes between', async (technique, from, to, drawn) => {
+      await step(weaving(from, technique), weaving(to, technique))
+
+      expect(bands()).toEqual(drawn)
+    })
+
+    it('draws again a strip down the view where the rows run down the Frame\'s columns', async () => {
+      const turned = toggleRowDirection(tall.loom)
+      const across = (pass: number) => moveToRow(turned, pass)
+      await step(across(4), across(5))
+
+      // Columns 4 and 5, x 80 to 120, as far either side as the Lifted piece reaches, the view's whole height.
+      const [left, right] = [Math.floor(80 - LIFT_REACH_PX), Math.ceil(120 + LIFT_REACH_PX)]
+      expect(bands()).toEqual([[left, 0, right - left, 600]])
+    })
+
+    describe('draws everything again where the passes are not a few lines of the Canvas', () => {
+      const whole = () => {
+        expect(bands()).toHaveLength(0)
+        expect(draws()).toBe(1)
+      }
+
+      it('a Frame shape, whose passes are its layout\'s', async () => {
+        const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined)
+        const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 15, column: 10 } } })
+        if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
+        await step(moveToRow(placed.project, 2), moveToRow(placed.project, 3))
+        whole()
+      })
+
+      it('a Frame woven otherwise than the Canvas', async () => {
+        const peyote = withLayer(tall.loom, 'frame', { weave: { ...heldWeave(tall.loom, 'frame'), technique: 'peyote' } })
+        const otherwise = (pass: number) => moveToRow(peyote, pass)
+        await step(otherwise(12), otherwise(13))
+        whole()
+      })
+
+      it('a Frame in a Bead of another size', async () => {
+        const twice = withLayer(tall.loom, 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 2) })
+        const larger = (pass: number) => moveToRow(twice, pass)
+        await step(larger(12), larger(13))
+        whole()
+      })
+
+      it('a press far along the Progress bar, past the rows bands pay for', async () => {
+        await step(weaving(0), weaving(29))
+        // Under the rows bands pay for, a press along it is a band.
+        expect(bands()).toHaveLength(1)
+
+        viewport = { width: 400, height: 1000 }
+        const taller = projectOf(20, 60)
+        const { wrapper } = await mountSurface(taller)
+        context.calls.length = 0
+        await wrapper.setProps({ project: moveToRow(taller, 45) })
+        whole()
+      })
+
+      it('the way the rows run turned', async () => {
+        await step(weaving(12), toggleRowDirection(weaving(12)))
+        whole()
+      })
+
+      it('the pointer entering the woven rows and leaving them, which shows every finished pass at its color and dims it', async () => {
+        const { wrapper } = await mountSurface(weaving(12))
+        const surface = wrapper.find('[data-testid="project-surface"]')
+        context.calls.length = 0
+        const centre = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 3, column: 3 })
+        await surface.trigger('pointermove', { clientX: centre.x, clientY: centre.y, pointerType: 'mouse', buttons: 0 })
+        await nextTick()
+        await nextTick()
+        whole()
+
+        context.calls.length = 0
+        await surface.trigger('pointerleave', { pointerType: 'mouse' })
+        await nextTick()
+        await nextTick()
+        whole()
+      })
     })
   })
 
@@ -2109,6 +2220,29 @@ describe('ProjectSurface with a Frame', () => {
       await wrapper.setProps({ project: { ...woven(10) } })
       await at(9000)
       expect(redShown()).toBe(true)
+    })
+
+    it('draws the last pass alone again after its press, and every bead once Pattern done brings the finished passes back to full color (ticket 1038)', async () => {
+      const cells = recordingContext()
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+        return (this.dataset.testid === 'project-surface-cells' ? cells : context).context as unknown as CanvasRenderingContext2D
+      } as never)
+      const at = frameClock()
+      const weaving = woven(9)
+      const { wrapper } = await mountPlaying(weaving)
+      await at(0)
+      cells.calls.length = 0
+
+      await wrapper.setProps({ project: moveToRow(weaving, 10), rowPress: lastPass })
+      await at(1000)
+      // Row 9, y 180 to 200, across the view: high contrast has no Lifted piece to reach further.
+      expect(cells.named('rect').map((call) => call.args)).toEqual([[0, 180, 1000, 20]])
+
+      cells.calls.length = 0
+      await at(1000 + ROW_MOTION.patternDoneDelay + ROW_MOTION.restoreDelay)
+      await at(1000 + ROW_MOTION.patternDoneDelay + ROW_MOTION.restoreDelay + 1)
+      expect(cells.named('clearRect').map((call) => call.args)).toEqual([[0, 0, 1000, 800]])
+      expect(cells.named('rect')).toHaveLength(0)
     })
 
     it('plays nothing when the Project comes finished without a press (opened, Undo, Redo), and shows it at full color', async () => {

@@ -30,6 +30,7 @@ import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
 import { canvasCutCells, canvasCuts, canvasLiftCells, drawLift, frameCutCells, frameCuts, joinedUpright, liftCollector, liftRows, liftsAcross, paintedOnly, withCutRows, type LiftCell } from './liftedPiece'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
+import { columnStrip } from './columnBand'
 import {
   frameOriginPx,
   gridBox,
@@ -111,6 +112,8 @@ export interface RenderInput {
   // Redraw only these rows: their whole band is cleared and redrawn, so edits do not pile up anti-aliasing on rounded
   // beads.
   rows?: { first: number; last: number }
+  /** Redraw only these columns (ticket 1038), as `rows` across the other way: the passes of rows run down the grid. */
+  columns?: { first: number; last: number }
   // How many positions wide the keep-out margin is drawn (ticket 459): the surface widens it when zoomed out. Defaults
   // to `MARGIN`.
   margin?: number
@@ -268,22 +271,19 @@ function drawFrameGround(
   context.imageSmoothingEnabled = false
 }
 
-// The band of the surface, in device pixels, that rows `first` to `last` occupy: the whole Project width, or the
-// viewport on the Canvas. Down to the shift a staggered column hangs below the last row (ticket 0777).
+// The band of the surface, in device pixels, that a cut across the grid takes, in grid px: rows `top` to `bottom` or
+// columns `left` to `right` (ticket 1038), across the whole Project the other way, or the viewport on the Canvas.
 function bandOnSurface(
   space: Space,
   region: Region,
   zoom: number,
   rotation: Rotation,
   pixelRatio: number,
-  weave: Weave,
-  rows: { first: number; last: number },
+  cut: { top: number; bottom: number } | { left: number; right: number },
 ): Region {
-  const band = gridBox(weave, { row: rows.first, column: 0, rows: rows.last - rows.first + 1, columns: 1 })
-  const top = band.y
-  const bottom = band.y + band.height
   const area = regionInGridSpace(space.extent, region, zoom, rotation)
-  const [left, right] = space.open ? [area.left, area.right] : [0, space.extent.width]
+  const across = space.open ? area : { left: 0, right: space.extent.width, top: 0, bottom: space.extent.height }
+  const { left, right, top, bottom } = { ...across, ...cut }
   const [a, b, c, d, e, f] = gridToRegion(space.extent, region, zoom, rotation)
 
   const corners = [
@@ -298,6 +298,13 @@ function bandOnSurface(
   const last = Math.min(region.width * pixelRatio, Math.ceil(Math.max(...corners.map(([x]) => x))))
   const lower = Math.min(region.height * pixelRatio, Math.ceil(Math.max(...corners.map(([, y]) => y))))
   return { x: first, y: upper, width: Math.max(0, last - first), height: Math.max(0, lower - upper) }
+}
+
+/** The rows `first` to `last` across the grid, in grid px: down to the shift a staggered column hangs below the last
+ * row (ticket 0777). */
+function rowsCut(weave: Weave, rows: { first: number; last: number }): { top: number; bottom: number } {
+  const band = gridBox(weave, { row: rows.first, column: 0, rows: rows.last - rows.first + 1, columns: 1 })
+  return { top: band.y, bottom: band.y + band.height }
 }
 
 /** Adds a rectangle to the current path as lines, not `rect`, which a band's clip is told by. */
@@ -690,7 +697,7 @@ function canvasLook(theme: ProjectTheme): ProjectTheme {
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false, opaque = false, positionMarks = true, reference } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, columns, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false, opaque = false, positionMarks = true, reference } = input
   const frameTheme = input.frameTheme ?? theme
   const frame = frameOf(project)
   const rotation = quarterTurnOf(project)
@@ -707,15 +714,18 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
   const lifts = space.open && look.liftedPiece && !draft
   const band = alike ? (lifts ? liftRows(withCutRows(rows, project, margin, frame && geometryDrawnAlone(project)), cellSizePx(bandWeave.technique, bandWeave.cell).height) : rows) : undefined
+  const strip = alike && !band && columns ? columnStrip(bandWeave, columns, lifts) : undefined
 
   // The backing store is in device px: clear (and paint the background, in Frame-only space) there, the whole surface
   // or just the band being drawn again, which the rest of the drawing is then cut to, then draw in CSS px scaled up to
   // it.
   context.setTransform(1, 0, 0, 1, 0, 0)
   const cleared = band
-    ? bandOnSurface(space, region, zoom, rotation, pixelRatio, bandWeave, band)
-    : { x: 0, y: 0, width: region.width * pixelRatio, height: region.height * pixelRatio }
-  if (band) {
+    ? bandOnSurface(space, region, zoom, rotation, pixelRatio, rowsCut(bandWeave, band))
+    : strip
+      ? bandOnSurface(space, region, zoom, rotation, pixelRatio, strip.cut)
+      : { x: 0, y: 0, width: region.width * pixelRatio, height: region.height * pixelRatio }
+  if (band || strip) {
     context.save()
     context.beginPath()
     context.rect(cleared.x, cleared.y, cleared.width, cleared.height)
@@ -731,7 +741,9 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // Bitmaps of beads are made at the size they are on the screen, so they are blitted as they are, not resampled.
   context.imageSmoothingEnabled = false
 
-  const area = regionInGridSpace(extent, region, zoom, rotation)
+  const inView = regionInGridSpace(extent, region, zoom, rotation)
+  // A strip's beads are those drawn into it: the rest of the view, cut away, is left out.
+  const area = strip ? { ...inView, left: Math.max(inView.left, strip.drawn.left), right: Math.min(inView.right, strip.drawn.right) } : inView
   const lifted = new Map<string, string>()
   const lit = (color: string) => {
     let shown = lifted.get(color)
@@ -803,7 +815,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
   if (drawn?.over) drawReference(context, drawn)
 
-  if (band) {
+  if (band || strip) {
     context.restore()
   }
 }

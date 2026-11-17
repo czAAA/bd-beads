@@ -4,6 +4,7 @@ import { createProject } from '../domain/createProject'
 import { frameOf, heldWeave, withCanvas, withLayer } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
+import { moveToRow, rowProgressOf, stepLines, toggleRowDirection } from '../domain/rowProgress'
 import { withLayers } from '../testUtils/layerFields'
 import { DARK_THEME, type DrawingContext } from './beadLook'
 import { liftLookOf } from './liftedPiece'
@@ -24,9 +25,11 @@ function projectOf(technique: Technique, bead: string, cells: readonly Cell[]): 
   return withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, cells.map(([column, row]) => ({ row, column, color: '#222222' }))) } })
 }
 
-function draw(project: Project, canvas: HTMLCanvasElement, rows?: { first: number; last: number }): void {
+type Lines = { first: number; last: number }
+
+function draw(project: Project, canvas: HTMLCanvasElement, rows?: Lines, more: { columns?: Lines; rowMarks?: boolean } = {}): void {
   const region = { x: -40, y: -40, width: SIDE / 2, height: SIDE / 2 }
-  renderProject(canvas.getContext('2d') as unknown as DrawingContext, { project, space: spaceOf(project, true), region, zoom: 1, pixelRatio: 2, rowMarks: false, theme: DARK_THEME, rows, opaque: true, draftWhenSmall: true })
+  renderProject(canvas.getContext('2d') as unknown as DrawingContext, { project, space: spaceOf(project, true), region, zoom: 1, pixelRatio: 2, rowMarks: false, theme: DARK_THEME, rows, opaque: true, draftWhenSmall: true, ...more })
 }
 
 function surface(): HTMLCanvasElement {
@@ -167,5 +170,39 @@ describe('a Canvas piece\'s inner cut', () => {
     expect(pixel(110, 110)).not.toBe(look.ground)
     expect(pixel(100, 110)).toBe(look.ground)
     expect(pixel(102.9, 110)).not.toBe(look.contour)
+  })
+})
+
+// A Progress bar step (ticket 1038) draws again only the lines of the passes whose look changed, a band of rows or, where
+// the rows run down the Frame's columns, a strip of columns: the finished look, the current row and the Lifted piece's
+// contour and shadow next to them must be as a whole draw makes them.
+describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again the passes a Progress bar step changed, in %s', (bead) => {
+  const CHECKERED: readonly Cell[] = Array.from({ length: 144 }, (_, at) => [at % 12, Math.floor(at / 12)] as const).filter(([column, row]) => (column + row) % 2 === 0)
+  /** A step's cut has two edges, each crossing a bead of every line along it: the checkered Frame's allowance twice. */
+  const CLIPPED_EDGES_PX = 2 * 3 * CLIPPED_CORNERS_PX
+
+  describe.each(['loom', 'peyote', 'brick'] as const)('%s', (technique) => {
+    it.each([
+      ['Row done', 'rows', 5, 6],
+      ['Row not done', 'rows', 6, 5],
+      ['a press a few passes along', 'rows', 3, 7],
+      ['Row done down the columns', 'columns', 5, 6],
+    ] as const)('after %s, leaves the Canvas as a whole draw makes it', (_step, direction, from, to) => {
+      const painted = projectOf(technique, bead, CHECKERED)
+      const turned = direction === 'columns' ? toggleRowDirection(painted) : painted
+      const [before, after] = [moveToRow(turned, from), moveToRow(turned, to)]
+      const step = stepLines(after, rowProgressOf(before))!
+      const offset = step.direction === 'rows' ? frameOf(after)!.row : frameOf(after)!.column
+      const lines = { first: step.lines[0]! + offset, last: step.lines.at(-1)! + offset }
+      const whole = surface()
+      draw(after, whole, undefined, { rowMarks: true })
+      const banded = surface()
+      draw(before, banded, undefined, { rowMarks: true })
+      if (step.direction === 'rows') draw(after, banded, lines, { rowMarks: true })
+      else draw(after, banded, undefined, { columns: lines, rowMarks: true })
+
+      expect(step.direction).toBe(direction)
+      expect(differing(whole, banded).length).toBeLessThanOrEqual(CLIPPED_EDGES_PX)
+    })
   })
 })
