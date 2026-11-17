@@ -7,6 +7,7 @@ import AppMessage from './ui/AppMessage.vue'
 import AppButton from './ui/AppButton.vue'
 import { useI18n } from '../i18n/useI18n'
 import { fillBlanks } from '../domain/fillBlanks'
+import whatsNewNote from '../data/releaseNotes/2026-11-17-1047.json'
 import BeadColorList from './palette/BeadColorList.vue'
 import ProjectsLibrary from './project/ProjectsLibrary.vue'
 import StarterGallery from './project/StarterGallery.vue'
@@ -82,11 +83,17 @@ const PictureDragged = defineComponent({
   },
 })
 
-/** Toasts of each tone, with an action, and the Frame stays toast's two (ticket 0935), as the stack shows them. */
+/** Toasts of each tone, with an action, the Frame stays toast's two (ticket 0935) and "Update ready"'s, one note
+ * long in the language shown and a count of each kind (ticket 1048), as the stack shows them. */
 const Toasts = defineComponent({
   setup() {
-    const { t } = useI18n()
+    const { t, locale } = useI18n()
     const stays = () => t.value.layerSettings
+    const updateActions = () => ({
+      action: { label: t.value.shell.updateReload, run: () => {} },
+      secondAction: { label: t.value.homepage.whatsNew.name, href: '#whats-new', run: () => {} },
+      persistent: true,
+    })
     return () =>
       h(ToastRegion, {
         toasts: [
@@ -99,6 +106,22 @@ const Toasts = defineComponent({
             stamp: 3,
             action: { label: stays().changeFrameToo, run: () => {} },
             secondAction: { label: stays().openFrame, run: () => {} },
+          },
+          {
+            id: 'update-ready',
+            text: t.value.shell.updateReady,
+            tone: 'info',
+            stamp: 4,
+            ...updateActions(),
+            update: { version: '2.12.10', note: { kind: 'changed', line: whatsNewNote.line[locale.value] } },
+          },
+          {
+            id: 'update-counts',
+            text: t.value.shell.updateReady,
+            tone: 'info',
+            stamp: 5,
+            ...updateActions(),
+            update: { version: '2.13.0', counts: [{ kind: 'new', count: 12 }, { kind: 'changed', count: 30 }, { kind: 'fixed', count: 5 }] },
           },
         ],
       })

@@ -61,6 +61,8 @@ const props = defineProps<{
   openLibrary?: () => Promise<HomepageLibrary>
   /** Reads What's new's notes file in a language (ticket 1047): the page's own Build's, from the Offline copy too. */
   notes?: NotesSource
+  /** Opened by "Update ready"'s What's new (ticket 1048): at the coffee screen, What's new unfolded and in view. */
+  atWhatsNew?: boolean
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
@@ -176,7 +178,13 @@ const sections = computed<HomepageSection[]>(() => [
     centred: true,
     shows: CoffeeScreen,
     // Say hello's Send feedback opens the Feedback sheet as the Menu's row does (ticket 0823).
-    with: (): Record<string, unknown> => ({ phone: narrow.value, shown: sections.value[section.value]?.id === 'coffee', notes: props.notes, onFeedback: () => feedback.onOpenFeedback('general') }),
+    with: (): Record<string, unknown> => ({
+      phone: narrow.value,
+      shown: sections.value[section.value]?.id === 'coffee',
+      notes: props.notes,
+      whatsNewOpen: props.atWhatsNew,
+      onFeedback: () => feedback.onOpenFeedback('general'),
+    }),
   },
   {
     id: 'plans',
@@ -200,7 +208,7 @@ const plansIndex = computed(() => sections.value.findIndex((entry) => entry.id =
 const wayInAway = computed(() => !phone.value && sections.value[section.value]?.id === 'welcome')
 const pageEl = ref<HTMLElement>()
 /** The section shown: the one truth of where the Homepage is, which every way of turning it sets (ticket 0801). */
-const section = ref(0)
+const section = ref(props.atWhatsNew ? Math.max(0, sections.value.findIndex((entry) => entry.id === 'coffee')) : 0)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
 /** The section shown, as drawn: what the keys and More below scroll when it is taller than its room. */

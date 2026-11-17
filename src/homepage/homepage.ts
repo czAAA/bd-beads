@@ -25,7 +25,7 @@ import { notesFromBase } from '../services/notesFile'
 import { browserPictureStore } from '../services/pictureStore'
 import { leaveWithBox } from './boxHandoff'
 import { keepDemoCopy, type DemoSnapshot } from './demoCopy'
-import { markEditorChosen } from './homepageRoute'
+import { markEditorChosen, WHATS_NEW_HASH } from './homepageRoute'
 import HomePage from './HomePage.vue'
 
 // The Homepage is its own page beside the editor (ticket 77), so it starts the same way main.ts does.
@@ -93,6 +93,8 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         feedback: browserFeedback,
         // What's new's notes, this Build's file in the language shown, read when it opens (ticket 1047).
         notes: notesFromBase(base),
+        // "Update ready"'s What's new (ticket 1048) opens the page at What's new, unfolded and in view.
+        atWhatsNew: location.hash === WHATS_NEW_HASH,
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
         openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).

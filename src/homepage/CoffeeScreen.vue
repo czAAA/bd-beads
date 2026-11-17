@@ -19,6 +19,8 @@ const props = defineProps<{
   shown?: boolean
   /** Reads What's new's notes file (ticket 1047). */
   notes?: NotesSource
+  /** What's new starts unfolded and in view, the first time it is drawn: "Update ready"'s link (ticket 1048). */
+  whatsNewOpen?: boolean
 }>()
 const emit = defineEmits<{ feedback: [] }>()
 
@@ -44,7 +46,7 @@ watch(
       <template #action-openSource><CoffeeAction of="openSource" /></template>
       <template #action-sayHello><CoffeeAction of="sayHello" @feedback="emit('feedback')" /></template>
     </GroupedList>
-    <WhatsNewFold :key="leftTimes" :notes="notes" />
+    <WhatsNewFold :key="leftTimes" :notes="notes" :start-open="whatsNewOpen && leftTimes === 0" />
   </div>
 </template>
 
