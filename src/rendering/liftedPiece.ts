@@ -1,5 +1,5 @@
 import { beadBounds, frameContains, type BeadMap, type Rect } from '../domain/canvas'
-import { BLACK, BLACK_WHITE_BALANCE, channelsOf, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
+import { BLACK, channelsOf, mix, toHex, WHITE } from '../domain/color'
 import { footprintOf } from '../domain/footprint'
 import { beadsOfLayer, type Layered } from '../domain/layerRecord'
 import { canvasWeave } from '../domain/layerWeave'
@@ -7,6 +7,7 @@ import { withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, hasHalfCircleCorner, type Weave } from '../domain/weave'
 import { BEAD_GAP_PX, isOpenWeave, type BeadDrawer, type DrawingContext } from './beadLook'
 import { cellSizePx } from './cellSize'
+import { lookSideOf, pieceGroundOf } from './pieceGround'
 
 // The Lifted piece (ticket 1004, BeadBoard card, Canvas look): on the screen in light and dark, every Piece is one
 // object on the grid: a contour a few px outside its beads, its own ground inside it, a soft shadow under it. Part of
@@ -23,8 +24,6 @@ const BODY_INSET_PX = BEAD_GAP_PX / 2
 
 /** How far toward white (dark look) or black (light look) the contour is from the Background. */
 const CONTOUR_TOWARD = { dark: 0.484, light: 0.384 }
-/** How far toward white the piece's ground is from the Background. */
-const GROUND_TOWARD_WHITE = { dark: 0.05, light: 0.8 }
 
 /** The two shadows under the piece ground, at 100% zoom: a soft one a little down and a close one. `blur` is the Gaussian's
  * spread (a CSS `blur()`), `down` how far below the piece it falls, `opacity` its black's in each look. */
@@ -58,17 +57,12 @@ export function liftLookOf(background: string): LiftLook {
     const side = lookSideOf(background)
     look = {
       contour: toHex(mix(channels, side === 'dark' ? WHITE : BLACK, CONTOUR_TOWARD[side])),
-      ground: toHex(mix(channels, WHITE, GROUND_TOWARD_WHITE[side])),
+      ground: pieceGroundOf(background),
       shadows: SHADOWS.map(({ opacity }) => `rgba(0, 0, 0, ${opacity[side]})`),
     }
     looks.set(background, look)
   }
   return look
-}
-
-/** The look a Background is drawn in: dark on a dark one, light on a light one (canvasBackgrounds.ts's rule). */
-export function lookSideOf(background: string): 'dark' | 'light' {
-  return relativeLuminance(channelsOf(background)) < BLACK_WHITE_BALANCE ? 'dark' : 'light'
 }
 
 /** A bead's cell in grid px, and where it was drawn when that isn't the transform the piece is drawn in (a bead turned

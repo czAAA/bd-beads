@@ -1,6 +1,7 @@
 import { BLACK, contrastRatio, fromHex, luma, mix, toHex, WHITE, type Rgb } from '../domain/color'
 import { hasHalfCircleCorner } from '../domain/weave'
 import { autoMarginColor, marginLookOn, type MarginLook } from './marginLook'
+import { lookSideOf, pieceGroundOf } from './pieceGround'
 import { cachedSprite, type Sprite } from './sprites'
 
 // How a single bead looks (ADR 0018): the one part of the Project renderer that knows. The renderer decides where a
@@ -375,6 +376,9 @@ interface BeadInk {
   fill: string
   /** With the own-color rim (ticket 1003): the light's color and its opacity at the centre and at 45% of its radius. */
   satin?: { color: Rgb; centre: number; middle: number }
+  /** With the own-color rim on a light Background: a round bead too close to the piece's ground for its neighbours to
+   * be told apart is edged in its rim (ticket 1037). */
+  edged?: boolean
   sprite?: { pixels: number; size: number; width: number; height: number; radius: number; image: Sprite | undefined }
 }
 
@@ -393,6 +397,20 @@ export function ownRim(color: string): string {
   if (!rgb) return color
   const darker = rounded(mix(rgb, BLACK, RIM_TOWARD_BLACK))
   return rgbText(contrastRatio(rgb, darker) < RIM_LEAST_CONTRAST ? mix(rgb, WHITE, RIM_TOWARD_WHITE) : darker)
+}
+
+/** The least contrast a round bead keeps off the piece's ground before it is edged in its rim (ticket 1037): its own
+ * limit, which the owner set equal to the rim's. */
+const GROUND_LEAST_CONTRAST = 1.3
+
+/** Whether a color stands under 1.3:1 off the piece's ground on `background`, in the light look: a round bead of it is
+ * edged in its rim (ticket 1037, BeadBoard card, Open weave), as white is. The dark look is left as it is.
+ * @internal Tests check the rule on the card's colors. */
+export function standsOnGround(color: string, background: string): boolean {
+  const rgb = parseColor(color)
+  const ground = parseColor(pieceGroundOf(background))
+  if (!rgb || !ground || lookSideOf(background) !== 'light') return false
+  return contrastRatio(rgb, ground) < GROUND_LEAST_CONTRAST
 }
 
 function rounded({ r, g, b }: Rgb): Rgb {
@@ -457,7 +475,7 @@ function mixInk(color: string | null, dimmed: boolean, backdrop: string | undefi
   const own = color ?? theme.emptyBead
   const fill = dimmed ? finishedColor(own, theme, backdrop) : own
   // An empty position keeps the flat bead: the rim and the light are a painted bead's (ticket 1003).
-  if (theme.ownColorRim && color !== null) return { fill, rim: ownRim(fill), satin: satinOf(fill) }
+  if (theme.ownColorRim && color !== null) return { fill, rim: ownRim(fill), satin: satinOf(fill), edged: standsOnGround(fill, theme.canvas) }
   return { fill, rim: blendOver(isNearBlack(own) ? theme.rimOnBlack : theme.rim, fill) }
 }
 
@@ -471,19 +489,27 @@ export function isOpenWeave(cornerRadius: number, width: number): boolean {
   return width > 0 && hasHalfCircleCorner(cornerRadius / width)
 }
 
-// A bead in its own-color rim (ticket 1003): the whole cell in the rim, so no Canvas shows between two beads; the body a
-// gap in, flat, with the Technique's corner; and one soft light in the body's middle, gone before any edge. A round
-// bead is in Open weave instead (ticket 1010): no rim and nothing round the body, so what lies under the cell shows.
-function drawOwnColorBead(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius }: BeadShape, { rim, fill, satin }: BeadInk): void {
+// A bead in its own-color rim (ticket 1003): the cell in the rim, the body a gap in, one soft light in its middle. A
+// round bead is in Open weave (ticket 1010): its body alone, the ground showing round it; one as light as that ground
+// keeps its rim as a thin edge of the body (ticket 1037).
+function drawOwnColorBead(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius }: BeadShape, { rim, fill, satin, edged }: BeadInk): void {
   const bodyWidth = width - GAP_PX * 2
   const bodyHeight = height - GAP_PX * 2
   const radius = Math.min(Math.max(OWN_BODY_LEAST_RADIUS, cornerRadius - GAP_PX), bodyWidth / 2, bodyHeight / 2)
-  if (!isOpenWeave(cornerRadius, width)) {
+  const open = isOpenWeave(cornerRadius, width)
+  if (!open) {
     context.fillStyle = rim
     context.fillRect(x, y, width, height)
   }
-  context.fillStyle = fill
-  fillShape(context, x + GAP_PX, y + GAP_PX, bodyWidth, bodyHeight, radius)
+  if (open && edged) {
+    context.fillStyle = rim
+    fillShape(context, x + GAP_PX, y + GAP_PX, bodyWidth, bodyHeight, radius)
+    context.fillStyle = fill
+    fillShape(context, x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, bodyWidth - RIM_PX * 2, bodyHeight - RIM_PX * 2, Math.max(0, radius - RIM_PX))
+  } else {
+    context.fillStyle = fill
+    fillShape(context, x + GAP_PX, y + GAP_PX, bodyWidth, bodyHeight, radius)
+  }
   if (!satin) return
   const light = context.createRadialGradient(0, 0, 0, 0, 0, 1)
   light.addColorStop(0, rgbaText(satin.color, satin.centre))
@@ -524,7 +550,7 @@ function spriteFor(bead: BeadShape, ink: BeadInk, draw: (context: DrawingContext
     return made.image
   }
   const [across, down] = [Math.max(1, Math.round(width * bead.deviceScale)), Math.max(1, Math.round(height * bead.deviceScale))]
-  const key = `bead|${pixels}|${size}|${width}x${height}|${cornerRadius}|${ink.rim}|${ink.fill}|${ink.satin ? 'satin' : 'flat'}`
+  const key = `bead|${pixels}|${size}|${width}x${height}|${cornerRadius}|${ink.rim}|${ink.fill}|${ink.satin ? 'satin' : 'flat'}${ink.edged ? '|edged' : ''}`
   const image = cachedSprite(key, across, width, (context) => draw(context, { ...bead, x: 0, y: 0 }, ink), down)
   ink.sprite = { pixels, size, width, height, radius: cornerRadius, image }
   return image

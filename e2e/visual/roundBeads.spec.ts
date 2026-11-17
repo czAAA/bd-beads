@@ -34,3 +34,19 @@ for (const [scheme, name] of [
     await context.close()
   })
 }
+
+// A run of white round beads on Studio (ticket 1037): each white bead edged in its rim, as the ground between them is as
+// light as they are; the heart beside them is not edged.
+const WHITE_RUN = ['ooooo...#.#..', 'ooooo..#####.', '.......#####.', '........###..', '.........#...'] as const
+
+for (const technique of ['loom', 'peyote', 'brick'] as const) {
+  test(`a run of white round beads on studio, ${technique}`, async ({ browser }) => {
+    const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+    const page = await context.newPage()
+    await openApp(page, [pieceProject({ technique, beadId: 'toho-round-11-0', picture: WHITE_RUN })])
+    await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+    await page.mouse.move(5, 5)
+    await expect(page.getByTestId('app-canvas')).toHaveScreenshot(`round-beads-white-run-studio-${technique}.png`, { maxDiffPixelRatio: 0.01 })
+    await context.close()
+  })
+}

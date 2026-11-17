@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { contrastRatio, fromHex, luma } from '../domain/color'
 import { recordingContext } from '../testUtils/recordingContext'
-import { blendOver, DARK_THEME, drawFlatBead, fadeOver, flatLook, isOpenWeave, LIGHT_THEME, ownRim, parseColor, PRINT_THEME, PROJECT_THEMES, type BeadShape } from './beadLook'
+import { blendOver, DARK_THEME, drawFlatBead, standsOnGround, fadeOver, flatLook, isOpenWeave, LIGHT_THEME, ownRim, parseColor, PRINT_THEME, PROJECT_THEMES, type BeadShape } from './beadLook'
+import { canvasTheme } from './canvasBackgrounds'
+import { pieceGroundOf } from './pieceGround'
 
 // The own-color rim and satin light (ticket 1003, BeadBoard card, Canvas look): how one bead is drawn on screen in light
 // and dark. The flat bead of exports and high contrast is in projectRenderer.dom.test.ts.
@@ -107,6 +109,55 @@ describe('the own-color rim', () => {
 
     expect(named('fillRect').map((call) => call.fillStyle)).toEqual([blendOver(theme.rim, '#f2c94c'), '#f2c94c'])
     expect(named('createRadialGradient')).toHaveLength(0)
+  })
+})
+
+describe('a round bead as light as the piece ground (ticket 1037, BeadBoard card, Open weave)', () => {
+  // Studio, Stone, Pebble; Night, Ink, Slate.
+  const light = [1, 2, 3].map((choice) => canvasTheme('light', choice))
+  const dark = [1, 2, 3].map((choice) => canvasTheme('dark', choice))
+  const roundBead = (color: string, theme = light[0]!) => bead({ width: 20, height: 28, cornerRadius: 10, color, theme })
+
+  it('is edged where its color stands under 1.3:1 off the ground, in the light look only: white and a pale ivory, not red', () => {
+    for (const { canvas } of light) {
+      expect(standsOnGround('#ffffff', canvas)).toBe(true)
+      expect(standsOnGround('#f5f1e8', canvas)).toBe(true)
+      expect(standsOnGround('#e63746', canvas)).toBe(false)
+      expect(standsOnGround('#f2c94c', canvas)).toBe(false)
+    }
+    for (const { canvas } of dark) expect(standsOnGround('#ffffff', canvas)).toBe(false)
+  })
+
+  it('draws its rim as a 0.75px edge of the body, which stands off both the body and the ground by more than 1.3:1', () => {
+    for (const theme of light) {
+      for (const color of ['#ffffff', '#f5f1e8']) {
+        const { context, named } = recordingContext()
+
+        drawFlatBead(context, roundBead(color, theme))
+
+        expect(named('roundRect').map((call) => call.args)).toEqual([[40.5, 20.5, 19, 27, 9.5], [41.25, 21.25, 17.5, 25.5, 8.75]])
+        expect(named('fill').slice(0, 2).map((call) => call.fillStyle)).toEqual([ownRim(color), color])
+        const edge = parseColor(ownRim(color))!
+        expect(contrastRatio(edge, fromHex(color)!)).toBeGreaterThan(1.3)
+        expect(contrastRatio(edge, fromHex(pieceGroundOf(theme.canvas))!)).toBeGreaterThan(1.3)
+      }
+    }
+  })
+
+  it('leaves a red round bead, a white one on Night, a white Delica and high contrast as they were', () => {
+    for (const [color, theme] of [['#e63746', light[0]!], ['#ffffff', dark[0]!]] as const) {
+      const { context, named } = recordingContext()
+      drawFlatBead(context, roundBead(color, theme))
+      expect(named('roundRect')).toHaveLength(1)
+    }
+    const delica = recordingContext()
+    drawFlatBead(delica.context, bead({ color: '#ffffff', cornerRadius: 3, theme: light[0]! }))
+    expect(delica.named('fillRect').map((call) => call.fillStyle)).toEqual([ownRim('#ffffff')])
+    expect(delica.named('roundRect')).toHaveLength(1)
+    const contrast = recordingContext()
+    drawFlatBead(contrast.context, roundBead('#ffffff', PROJECT_THEMES.contrast))
+    expect(contrast.named('roundRect').map((call) => call.args)).toEqual([[40.5, 20.5, 19, 27, 9.5], [41.25, 21.25, 17.5, 25.5, 8.75]])
+    expect(contrast.named('fill').map((call) => call.fillStyle)).toEqual([blendOver(PROJECT_THEMES.contrast.rim, '#ffffff'), '#ffffff'])
   })
 })
 
