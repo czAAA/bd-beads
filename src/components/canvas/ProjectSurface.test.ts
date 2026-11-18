@@ -892,23 +892,84 @@ describe('ProjectSurface', () => {
       expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
     })
 
-    it('does nothing with the right button: no pan, no bead, no stroke, under Paint and Hand (ticket 1054)', async () => {
-      for (const tool of ['paint', 'hand'] as const) {
-        const project = projectOf(20, 10)
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool, moves: tool === 'hand' }) })
-        const surface = wrapper.find('[data-testid="project-surface"]')
+    /** The events that would change a bead or start a stroke, a Frame gesture or a Selection gesture. */
+    const worked = (wrapper: { emitted: () => Record<string, unknown[]> }) =>
+      Object.keys(wrapper.emitted()).filter((name) => /^(cell-primary|cells-)|^(frame|selection)-(press|drag|release|resume|cancel)$/.test(name))
 
+    /** Each tool's capabilities, with a Selection for Select to grab: the right button must not take any of them up. */
+    const RIGHT_BUTTON_TOOLS = [
+      { tools: can({ tool: 'paint' }) },
+      { tools: can({ tool: 'fill', nearestOnPress: true }) },
+      { tools: can({ tool: 'hand', moves: true }) },
+      { tools: can({ tool: 'select', selects: true, selectsAnywhere: true }), selection: { top: 0, left: 0, rows: 6, columns: 6 } },
+      { tools: can({ settingFrame: true }) },
+    ]
+
+    it('moves the canvas with a right-button drag of 8 px or more under every tool, as the middle button does, and changes nothing (ticket 1074)', async () => {
+      for (const props of RIGHT_BUTTON_TOOLS) {
+        const project = projectOf(20, 10)
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, props)
+        const surface = wrapper.find('[data-testid="project-surface"]')
         const start = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
 
         await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
-        await surface.trigger('pointermove', { clientX: start.x - 10, clientY: start.y + 10, buttons: 2 })
-        await surface.trigger('pointerup')
-
-        expect(Object.keys(wrapper.emitted()).filter((name) => name === 'pan' || name.startsWith('cells-') || name.startsWith('cell-primary'))).toEqual([])
-        expect(surface.classes()).not.toContain('project-surface--dragging')
+        await surface.trigger('pointermove', { clientX: start.x - 4, clientY: start.y + 4, buttons: 2 })
+        // Short of 8 px the press still waits: nothing moves and the Selection bar stays.
+        expect(wrapper.emitted('pan')).toBeUndefined()
         expect(wrapper.emitted('pressing')).toBeUndefined()
+        expect(surface.classes()).not.toContain('project-surface--dragging')
+
+        await surface.trigger('pointermove', { clientX: start.x - 10, clientY: start.y + 10, buttons: 2 })
+        await surface.trigger('pointermove', { clientX: start.x - 12, clientY: start.y + 15, buttons: 2 })
+        // The pan starts where the button went down, so the bead pressed stays under the pointer.
+        expect(wrapper.emitted('pan')).toEqual([[-10, 10], [-2, 5]])
+        expect(wrapper.emitted('pressing')).toEqual([[true]])
+        expect(surface.classes()).toContain('project-surface--dragging')
+
+        await surface.trigger('pointerup', { button: 2 })
+        expect(wrapper.emitted('pressing')).toEqual([[true], [false]])
+        expect(surface.classes()).not.toContain('project-surface--dragging')
+        expect(worked(wrapper)).toEqual([])
+
+        // The pan is over: the pointer moving on with no button moves nothing.
+        await surface.trigger('pointermove', { clientX: start.x - 40, clientY: start.y + 40, buttons: 0 })
+        expect(wrapper.emitted('pan')).toHaveLength(2)
         wrapper.unmount()
       }
+    })
+
+    it('does nothing on a right click that lifts before it has moved 8 px, under every tool (ticket 1074)', async () => {
+      for (const props of RIGHT_BUTTON_TOOLS) {
+        const project = projectOf(20, 10)
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, props)
+        const surface = wrapper.find('[data-testid="project-surface"]')
+        const start = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
+
+        await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
+        await surface.trigger('pointermove', { clientX: start.x + 3, clientY: start.y + 3, buttons: 2 })
+        await surface.trigger('pointerup', { button: 2 })
+        // The click is over: a move far from it afterwards is a hover, not its drag.
+        await surface.trigger('pointermove', { clientX: start.x + 30, clientY: start.y + 30, buttons: 0 })
+
+        expect(wrapper.emitted('pan')).toBeUndefined()
+        expect(wrapper.emitted('pressing')).toBeUndefined()
+        expect(worked(wrapper)).toEqual([])
+        expect(surface.classes()).not.toContain('project-surface--dragging')
+        wrapper.unmount()
+      }
+    })
+
+    it('follows the same rule for a pen\'s barrel button, which reports the right button (ticket 1074)', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), inputMode: 'pen' })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { ...PEN, clientX: 50, clientY: 50, button: 2, buttons: 2 })
+      await surface.trigger('pointerup', { ...PEN, button: 2 })
+      await surface.trigger('pointerdown', { ...PEN, clientX: 50, clientY: 50, button: 2, buttons: 2 })
+      await surface.trigger('pointermove', { ...PEN, clientX: 50, clientY: 70, buttons: 2 })
+
+      expect(wrapper.emitted('pan')).toEqual([[0, 20]])
+      expect(worked(wrapper)).toEqual([])
     })
 
     it('shows an open hand while moving, closed while dragging', async () => {
@@ -1526,13 +1587,24 @@ describe('ProjectSurface', () => {
       }
     })
 
-    it('does not open the browser\'s menu on a right press', async () => {
+    it('does not open the browser\'s menu on a right press, after a click or a drag', async () => {
       const { wrapper } = await mountSurface(projectOf(20, 10))
-      const event = new Event('contextmenu', { cancelable: true, bubbles: true })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const menuStaysShut = () => {
+        const event = new Event('contextmenu', { cancelable: true, bubbles: true })
+        surface.element.dispatchEvent(event)
+        return event.defaultPrevented
+      }
 
-      wrapper.find('[data-testid="project-surface"]').element.dispatchEvent(event)
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, button: 2, buttons: 2 })
+      expect(menuStaysShut()).toBe(true)
+      await surface.trigger('pointerup', { button: 2 })
+      expect(menuStaysShut()).toBe(true)
 
-      expect(event.defaultPrevented).toBe(true)
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, button: 2, buttons: 2 })
+      await surface.trigger('pointermove', { clientX: 80, clientY: 50, buttons: 2 })
+      await surface.trigger('pointerup', { button: 2 })
+      expect(menuStaysShut()).toBe(true)
     })
 
     it('hides the OS pointer over a bead, and shows the ordinary cursor elsewhere', async () => {

@@ -23,8 +23,10 @@ export interface PaintStrokeDeps {
   /** The Mirror setting (ticket 0703): a stroke lands at its counterparts too; a Fill does not (ticket 1025), though on
    * the Canvas its Area's edge is the flood's border. */
   mirror: () => MirrorSetting
-  /** The Canvas positions on screen at a Fill press (Fill reach, ticket 0715); nothing until the view is measured. */
+  /** The Canvas positions on screen at a Fill (Fill reach, ticket 0715); nothing until the view is measured. */
   onScreen: () => Rect | undefined
+  /** A Custom color about to fill joins the Palette on its first use (ticket 227), at the lift (ticket 1075). */
+  colorUsed: (hex: string) => void
   showToast: (id: string, text: string, tone?: MessageTone) => void
   messages: () => Translations
 }
@@ -39,6 +41,8 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   let strokeLayer: Layer = 'canvas'
   /** How many Fill presses Fill reach has refused (ticket 0715): the canvas shows the not-allowed cue each time it grows. */
   const fillRefusals = ref(0)
+  /** The Fill a press began, waiting for its lift (ticket 1075, ADR 0098): the position and layer that were pressed. */
+  let pendingFill: { color: string | null; row: number; column: number; layer: Layer } | undefined
 
   function beginStroke(mode: 'paint' | 'erase', layer: Layer) {
     strokeMode.value = mode
@@ -56,11 +60,20 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     // The stroke's one Undo step and one write: every cell it painted deferred its save (see paintStrokeCell). A no-op
     // when the mouseup wasn't ending a stroke at all.
     deps.edit.endStroke()
+
+    commitFill()
   }
 
-  /** Drops the stroke in progress with what it painted: the first finger of a pinch was never a stroke
-   * (usePinchPan). */
+  /** A cancelled pointer ends its stroke as a lift does, but a Fill waiting for its lift is dropped, not made. */
+  function endCancelledStroke() {
+    pendingFill = undefined
+    endStroke()
+  }
+
+  /** Drops the stroke in progress with what it painted, and a Fill still waiting for its lift: the first finger of a
+   * pinch was never a stroke (usePinchPan), nor is a press a hold takes over (ticket 1065). */
   function cancelStroke() {
+    pendingFill = undefined
     deps.cancelSelectPress()
     strokeMode.value = null
     deps.edit.cancelStroke()
@@ -97,8 +110,9 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     return { underFrame: (position) => !sources().some((source) => source.row === position.row && source.column === position.column) }
   }
 
-  /** Fill acts immediately, in one click, on either button (ticket 25), at the press alone (ticket 1025); Paint starts a
-   * stroke. */
+  /** Paint starts a stroke at the press. Fill (ticket 25, on either button) only notes the pressed position: it lands
+   * when the press lifts, wherever the pointer is by then (ticket 1075, ADR 0098), so a press that is dropped leaves
+   * nothing behind. */
   function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: number, column: number, named?: Layer) {
     const project = deps.currentProject()
     if (!project) {
@@ -107,26 +121,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
 
     const layer = layerAt(project, { row, column, ...(named ? { layer: named } : {}) })
     if (deps.activeTool() === 'fill') {
-      // The Mirror's Canvas Area is a border on the Canvas: the frame's own edge already bounds a Fill there.
-      const place = deps.mirror().place
-      const border = layer === 'canvas' && place?.layer === 'canvas' ? place.area : undefined
-      let refused: FillRefusal | undefined
-      // Not mirrored (ticket 1025): the flood lands where it was pressed, no counterpart paints over the other strips.
-      deps.edit.edit('drawing', (current) =>
-        onLayer(current, layer, (sheet, local) => {
-          const at = local({ row, column })
-          const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen(), border })
-          if (!isFillRefusal(filled)) return filled
-          // Refused, it lands nowhere: the beads as they were leave no Undo step, nothing saved.
-          refused = filled
-          return sheet.beads
-        }),
-      )
-      if (refused) {
-        fillRefusals.value += 1
-        const t = deps.messages().tools
-        deps.showToast('fill-refused', refused === 'open' ? t.fillOpenMessage : t.fillTooBigMessage, 'info')
-      }
+      pendingFill = { color, row, column, layer }
       return
     }
 
@@ -134,5 +129,36 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     paintStrokeCell(row, column, color)
   }
 
-  return { strokeMode, fillRefusals, beginStroke, endStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
+  /** Makes the Fill a press waited on, at the lift (ticket 1075), as one Undo step. Not mirrored (ticket 1025): the
+   * flood lands where it was pressed. */
+  function commitFill() {
+    const pending = pendingFill
+    pendingFill = undefined
+    if (!pending || !deps.currentProject()) {
+      return
+    }
+    const { color, row, column, layer } = pending
+    // The Mirror's Canvas Area is a border on the Canvas: the frame's own edge already bounds a Fill there.
+    const place = deps.mirror().place
+    const border = layer === 'canvas' && place?.layer === 'canvas' ? place.area : undefined
+    let refused: FillRefusal | undefined
+    if (color) deps.colorUsed(color)
+    deps.edit.edit('drawing', (current) =>
+      onLayer(current, layer, (sheet, local) => {
+        const at = local({ row, column })
+        const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen(), border })
+        if (!isFillRefusal(filled)) return filled
+        // Refused, it lands nowhere: the beads as they were leave no Undo step, nothing saved.
+        refused = filled
+        return sheet.beads
+      }),
+    )
+    if (refused) {
+      fillRefusals.value += 1
+      const t = deps.messages().tools
+      deps.showToast('fill-refused', refused === 'open' ? t.fillOpenMessage : t.fillTooBigMessage, 'info')
+    }
+  }
+
+  return { strokeMode, fillRefusals, beginStroke, endStroke, endCancelledStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
 }

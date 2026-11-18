@@ -3,7 +3,7 @@
 Editing, sizing, counting and the clipboard and history. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
 
 **Eraser**:
-The 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: its primary press/tap erases a single bead under the pointer, dragging to erase a line (ticket 176 — renamed from "Erase" and switched from its original flood-erase primary behavior, so it works on touch/phone). Behaves like every other drawing command — one undo step per stroke, respects the Row progress lock. The Eraser is the only way to erase by pointer: the right mouse button no longer erases under Paint or Fill (ticket 541), and it moves nothing either: it does nothing under every tool (ticket 1054). Its key is `4` (ticket 292; it was `E` from ticket 250). `Del` never picks the Eraser: it only empties the beads of the Selection.
+The 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: its primary press/tap erases a single bead under the pointer, dragging to erase a line (ticket 176 — renamed from "Erase" and switched from its original flood-erase primary behavior, so it works on touch/phone). Behaves like every other drawing command — one undo step per stroke, respects the Row progress lock. The Eraser is the only way to erase by pointer: the right mouse button no longer erases under Paint or Fill (ticket 541). Under every tool its drag moves the Canvas, like the Hand tool, and its click changes no bead (ticket 1074). Its key is `4` (ticket 292; it was `E` from ticket 250). `Del` never picks the Eraser: it only empties the beads of the Selection.
 _Avoid_: erase mode, clear tool
 
 **Clear**:

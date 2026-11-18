@@ -140,9 +140,26 @@ describe('drawing anywhere', () => {
     await pickTool(wrapper, 'fill')
 
     await pressBead(wrapper, { row: 0, column: 0 })
+    await wrapper.trigger('pointerup')
 
     const beads = beadsOfLayer(loadProjects()[0], 'canvas')
     expect([beads[0]![0], beads[0]![1], beads[1]![1]]).toEqual([BLUE, BLUE, BLUE])
+  })
+
+  it('fills nothing when the pointer of a Fill press is cancelled', async () => {
+    saveProjects([unframedProject()])
+    const wrapper = mountApp()
+    await flushPromises()
+    await pickColor(wrapper, 'blue')
+    await pickTool(wrapper, 'fill')
+    const before = beadsOfLayer(loadProjects()[0], 'canvas')
+
+    await pressBead(wrapper, { row: 0, column: 0 })
+    await wrapper.trigger('pointercancel')
+    await wrapper.trigger('pointerup')
+
+    expect(beadsOfLayer(loadProjects()[0], 'canvas')).toEqual(before)
+    expect(wrapper.find('[data-testid="strip-undo"]').attributes('aria-disabled')).toBeDefined()
   })
 
   it('refuses a Fill on open space and says why, with the not-allowed pointer (Fill reach, ticket 0715)', async () => {
@@ -152,6 +169,7 @@ describe('drawing anywhere', () => {
     await pickTool(wrapper, 'fill')
 
     await pressBead(wrapper, { row: 40, column: 40 })
+    await wrapper.trigger('pointerup')
 
     expect(wrapper.get('[data-testid="fill-refused"]').text()).toContain('Nothing encloses this spot.')
     expect(wrapper.get('[data-testid="project-surface"]').classes()).toContain('project-surface--refused')
