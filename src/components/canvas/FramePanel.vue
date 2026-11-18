@@ -613,7 +613,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   width: 14px;
   height: 14px;
   border: 1px solid var(--muted);
-  border-radius: 2px;
+  border-radius: var(--radius-2xs);
 }
 
 .frame-panel__glyph--top {

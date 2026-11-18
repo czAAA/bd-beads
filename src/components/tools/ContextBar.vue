@@ -329,7 +329,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
 </template>
 
 <style scoped>
-/* On ink, elevation-3, --selbar-radius; 28px high (36px on touch), 2px between items (ContextBar card). */
+/* On ink, elevation-3, `radius-sm`; 28px high (36px on touch), 2px between items (ContextBar card). */
 .context-bar {
   display: flex;
   align-items: center;
@@ -339,7 +339,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
   padding: 0 var(--space-2);
   color: var(--canvas);
   background: var(--ink);
-  border-radius: var(--selbar-radius);
+  border-radius: var(--radius-sm);
   box-shadow: var(--elevation-3);
 }
 

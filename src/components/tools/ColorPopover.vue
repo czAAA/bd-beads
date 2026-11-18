@@ -84,7 +84,7 @@ if (props.focusSwatch) {
 </template>
 
 <style scoped>
-/* 288px, --pill-popover-radius corners, overlay fill and line, elevation-3, padding 12px 14px 14px, 12px between
+/* 288px, `radius-xl` corners, overlay fill and line, elevation-3, padding 12px 14px 14px, 12px between
  * sections (ToolPill card). */
 .color-popover {
   position: fixed;
@@ -103,7 +103,7 @@ if (props.focusSwatch) {
   overscroll-behavior: none;
   background: var(--overlay-fill);
   border: 1px solid var(--overlay-line);
-  border-radius: var(--pill-popover-radius);
+  border-radius: var(--radius-xl);
   box-shadow: var(--elevation-3);
   animation: color-popover-in var(--duration-slow) var(--ease-out);
 }
