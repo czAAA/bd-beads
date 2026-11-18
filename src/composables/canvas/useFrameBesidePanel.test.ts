@@ -15,12 +15,12 @@ const area = { x: 0, y: 46, width: 1366, height: 930 }
 const panel = { x: 288, y: 50, width: 565, height: 900 }
 const move: ViewMove = { from: { x: 0, y: 0 }, to: { x: -500, y: 0 }, zoom: 1, atFit: true }
 
-function setup(project: Project = framed) {
+function setup(project: Project = framed, areaZoom = 1) {
   const current = ref(project)
   const open = ref(true)
   const bringIntoView = vi.fn<FrameBesidePanelDeps['bringIntoView']>(() => move)
   const putBack = vi.fn()
-  const deps: FrameBesidePanelDeps = { currentProject: () => current.value, bringIntoView, putBack, panelOpen: () => open.value, area: () => area }
+  const deps: FrameBesidePanelDeps = { currentProject: () => current.value, bringIntoView, putBack, panelOpen: () => open.value, area: () => area, areaZoom: () => areaZoom }
   const { panelPlaced } = effectScope().run(() => useFrameBesidePanel(deps))!
   return { current, open, bringIntoView, putBack, panelPlaced }
 }
@@ -48,6 +48,13 @@ describe('useFrameBesidePanel (ticket 0971)', () => {
     const room = area.width - how.clear.left - how.clear.right
     expect(line.width + 2 * RULER_GUTTER_PX).toBeGreaterThan(room)
     expect(locate(surface)).toEqual({ x: line.x - RULER_GUTTER_PX, y: line.y - RULER_GUTTER_PX, width: room, height: line.height + 2 * RULER_GUTTER_PX })
+  })
+
+  it('keeps clear of the panel in the drawing area\'s own px, where CSS zoom draws it larger (ticket 1071)', () => {
+    const { bringIntoView, panelPlaced } = setup(framed, 2)
+    panelPlaced(panel)
+    const onScreen = roomBesidePanel(panel, area)!
+    expect(bringIntoView.mock.calls[0]![1]).toEqual({ clear: { top: 0, right: 0, bottom: 0, left: onScreen.left / 2 } })
   })
 
   it('takes the move back as the panel closes, once', () => {

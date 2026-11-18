@@ -1,4 +1,5 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
+import { ownPoint } from '../ui/cssZoom'
 import type { Scroll } from '../../rendering/surfaceView'
 import type { PinchStep } from './useCanvasView'
 
@@ -52,15 +53,9 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     return [a as Scroll, b as Scroll]
   }
 
-  /** A point on screen as a point of the viewport. */
-  function anchorOf(point: Scroll): Scroll {
-    const box = scrollEl.value?.getBoundingClientRect()
-    return { x: point.x - (box?.left ?? 0), y: point.y - (box?.top ?? 0) }
-  }
-
   function onDown(event: PointerEvent) {
     if (event.pointerType !== 'touch') return
-    touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    touches.set(event.pointerId, ownPoint(scrollEl.value, event))
     if (touches.size === 2) {
       if (!gesturing) deps.cancelStroke()
       // A finger put down again mid-gesture starts the spread, the middle and the angle afresh, so nothing jumps.
@@ -77,8 +72,7 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
   function onMove(event: PointerEvent) {
     const known = touches.get(event.pointerId)
     if (!known) return
-    known.x = event.clientX
-    known.y = event.clientY
+    Object.assign(known, ownPoint(scrollEl.value, event))
     if (!gesturing) return
     event.stopPropagation()
     if (touches.size < 2) return
@@ -96,7 +90,7 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     if (twisting) lastAngle = turned
     // The point between the fingers stays under them as the zoom changes; moving them together moves the canvas with
     // them.
-    deps.pinch({ zoom: startZoom * (distance(a, b) / startSpread), pan: { x: mid.x - lastMid.x, y: mid.y - lastMid.y }, turn, anchor: anchorOf(mid) })
+    deps.pinch({ zoom: startZoom * (distance(a, b) / startSpread), pan: { x: mid.x - lastMid.x, y: mid.y - lastMid.y }, turn, anchor: mid })
     lastMid = mid
   }
 
@@ -105,7 +99,7 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     if (touches.size === 0 && gesturing) {
       gesturing = false
       twisting = false
-      deps.endTwist(anchorOf(lastMid))
+      deps.endTwist(lastMid)
     }
   }
 
@@ -122,7 +116,7 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     el.removeEventListener('pointerup', onEnd, true)
     el.removeEventListener('pointercancel', onEnd, true)
     touches.clear()
-    if (gesturing) deps.endTwist(anchorOf(lastMid))
+    if (gesturing) deps.endTwist(lastMid)
     gesturing = false
     twisting = false
   }

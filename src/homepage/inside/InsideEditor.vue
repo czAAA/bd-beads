@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { cssZoomOf } from '../../composables/ui/cssZoom'
 import { provideShellScope } from '../../composables/ui/shellScope'
 import { useI18n } from '../../i18n/useI18n'
 import type { DemoSnapshot } from '../demoCopy'
@@ -107,8 +108,10 @@ async function frameDrawings(): Promise<void> {
   const area = rootEl.value?.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
   if (!canvas || !area) return
   const pill = rootEl.value?.querySelector('[data-testid="tool-pill"]')?.getBoundingClientRect().height ?? 0
+  // Measured on screen, which the Homepage's zoom draws larger (ticket 1071); the view moves in the Canvas's own px.
+  const zoom = cssZoomOf(rootEl.value)
   // The sheet lies round the view's middle, so it keeps clear of the pill below and as much room above.
-  const room = area.height - 2 * (pill + 16)
+  const room = area.height - 2 * (pill + 16 * zoom)
   const at = (row: number, column: number) => canvas.surfaceProbe.value?.beadOnScreen({ row, column })
   const last = { row: DEMO_CUFF.row + DEMO_CUFF.rows - 1, column: DEMO_CUFF.column + DEMO_CUFF.columns - 1 }
   const first = at(DEMO_CUFF.row, DEMO_CUFF.column)
@@ -129,7 +132,7 @@ async function frameDrawings(): Promise<void> {
   if (!corner || !far) return
   // The Starter's ring is laid round the bead under the view's middle: a little along from the Frames', it is the band's.
   const along = ((far.x - corner.x) / (DEMO_CUFF.rows - 1)) * STARTER_ALONG
-  canvas.panBy(area.left + area.width / 2 - (corner.x + far.x) / 2 - along, area.top + area.height / 2 - (corner.y + far.y) / 2)
+  canvas.panBy((area.left + area.width / 2 - (corner.x + far.x) / 2 - along) / zoom, (area.top + area.height / 2 - (corner.y + far.y) / 2) / zoom)
 }
 
 /** A fresh demo: Ring with nothing drawn, the Menu's Saved Projects listing the demo's own three. */

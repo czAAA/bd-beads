@@ -1,4 +1,5 @@
 import { nextTick } from 'vue'
+import { ownLength } from './cssZoom'
 
 /** Where no design value loads: `--duration-base` and `--ease-out`. */
 const FALLBACK = { duration: 200, easing: 'cubic-bezier(.2, .8, .2, 1)' }
@@ -30,7 +31,8 @@ export function useRefitGlide(boxes: () => HTMLElement[]): (refit: () => void) =
       const to = box.getBoundingClientRect()
       if (!box.isConnected || typeof box.animate !== 'function' || to.width === 0) continue
       const scale = rect.width / to.width
-      const [x, y] = [rect.left - to.left, rect.top - to.top]
+      // Measured on screen, moved by a transform in the box's own px (ticket 1071).
+      const [x, y] = [ownLength(box, rect.left - to.left), ownLength(box, rect.top - to.top)]
       if (Math.abs(x) < 0.5 && Math.abs(y) < 0.5 && Math.abs(scale - 1) < 0.001) continue
       const start = { transformOrigin: '0 0', transform: `translate(${x}px, ${y}px) scale(${scale})` }
       const animation = box.animate([start, { transformOrigin: '0 0', transform: 'none' }], { duration, easing })

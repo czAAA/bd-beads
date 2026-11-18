@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue'
+import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import { layerOf } from '../../../domain/layerRecord'
 import type { Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
@@ -14,12 +15,14 @@ export interface EmptyCanvasDeps {
   /** The drawing area's box, which the pattern reaches half past on every side. */
   size: Ref<Size>
   theme: Ref<ProjectTheme>
+  /** The surface the look is drawn in: its tile is as sharp as the device's pixels it covers under a CSS zoom. */
+  root: Ref<HTMLElement | undefined>
 }
 
 /** The empty Canvas under the drawing as CSS variables on the drawing area (ticket 0717): its Position marks at the zoom,
  * scroll and quarter turn the beads are drawn at, so a pan, a pinch or a Project opening never shows a bare patch. The
  * tile's image waits for the zoom to settle; until then the last one is scaled. */
-export function useEmptyCanvasLook({ props, surface, size, theme }: EmptyCanvasDeps): ComputedRef<Record<string, string> | undefined> {
+export function useEmptyCanvasLook({ props, surface, size, theme, root }: EmptyCanvasDeps): ComputedRef<Record<string, string> | undefined> {
   const tileZoom = ref(props.zoom)
   let settle: ReturnType<typeof setTimeout> | undefined
   watch(() => props.zoom, (zoom) => {
@@ -35,7 +38,7 @@ export function useEmptyCanvasLook({ props, surface, size, theme }: EmptyCanvasD
       surface: surface.value,
       zoom: props.zoom,
       tileZoom: tileZoom.value,
-      pixelRatio: globalThis.devicePixelRatio || 1,
+      pixelRatio: pixelRatioOf(root.value),
       reach: Math.max(size.value.width, size.value.height) / 2,
     })
   })

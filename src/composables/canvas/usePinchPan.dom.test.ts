@@ -2,9 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import { usePinchPan } from './usePinchPan'
 
-function setup(zoom = 1) {
+function setup(zoom = 1, drawnAt?: number) {
   const el = document.createElement('div')
   document.body.append(el)
+  // The area drawn larger by CSS zoom (ticket 1071), its box from (40, 20) on screen.
+  if (drawnAt) {
+    Object.defineProperty(el, 'currentCSSZoom', { value: drawnAt })
+    el.getBoundingClientRect = () => new DOMRect(40, 20, 1000 * drawnAt, 800 * drawnAt)
+  }
   const state = { zoom }
   const pinch = vi.fn(({ zoom: v }: { zoom?: number }) => {
     state.zoom = v ?? state.zoom
@@ -116,6 +121,14 @@ describe('usePinchPan', () => {
     t.fire('pointerup', 3, -100, 0)
     t.fire('pointerup', 1, 0, 0)
     expect(t.endTwist).toHaveBeenCalledExactlyOnceWith({ x: -50, y: 0 })
+  })
+
+  it("moves and zooms about the point between the fingers in the area's own px, where CSS zoom draws it larger (ticket 1071)", () => {
+    const t = setup(1, 2)
+    t.fire('pointerdown', 1, 40, 20)
+    t.fire('pointerdown', 2, 240, 20)
+    t.fire('pointermove', 2, 440, 60)
+    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 } })
   })
 
   it('ignores a mouse and a pen', () => {

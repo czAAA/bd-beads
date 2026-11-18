@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { ownPoint } from '../../composables/ui/cssZoom'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { barOutOfView } from '../../composables/tools/selectionBarPlacement'
@@ -72,10 +73,9 @@ const opacityOptions = computed(() => OPACITY_STEPS.map((step) => ({ value: Stri
 /** The grip's drag under way: the pointer, where it started on the drawing area and the place it started from. */
 const press = ref<{ pointer: number; start: { x: number; y: number }; from: ReferencePlace; place: ReferencePlace }>()
 
-/** A pointer's place on the drawing area, in its px: the bar's box sits in it. */
+/** A pointer's place on the drawing area, in its own px (ticket 1071): the bar's box sits in it. */
 function local(event: PointerEvent): { x: number; y: number } {
-  const area = barEl.value?.offsetParent?.getBoundingClientRect()
-  return { x: event.clientX - (area?.left ?? 0), y: event.clientY - (area?.top ?? 0) }
+  return ownPoint(barEl.value?.offsetParent, event)
 }
 
 function begin(event: PointerEvent) {

@@ -1,4 +1,5 @@
 import { onBeforeUnmount, ref, type Ref } from 'vue'
+import { ownPoint } from '../ui/cssZoom'
 import { nearestPillEdge, type PillPosition } from '../../domain/toolPill'
 
 /** A press that moves this far (px) before it lifts is a drag; less is still a tap (ToolPill card). */
@@ -41,7 +42,9 @@ export function useToolPillDrag(
       pill.value?.setPointerCapture?.(pressed.id)
       deps.onStart()
     }
-    corner.value = { left: event.clientX - area.left - pressed.grabX, top: event.clientY - area.top - pressed.grabY }
+    // In the layer's own px, should CSS zoom draw it larger (ticket 1071).
+    const at = ownPoint(layer.value, { clientX: event.clientX - pressed.grabX, clientY: event.clientY - pressed.grabY })
+    corner.value = { left: at.x, top: at.y }
     nearest.value = nearestPillEdge({ x: event.clientX, y: event.clientY }, area)
   }
 

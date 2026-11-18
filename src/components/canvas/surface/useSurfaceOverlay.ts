@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import type { PreviewCell } from '../../../domain/grid'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
@@ -157,7 +158,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       return
     }
 
-    const pixelRatio = globalThis.devicePixelRatio || 1
+    const pixelRatio = pixelRatioOf(canvas)
     const region = { x: props.scroll.x, y: props.scroll.y, width: size.value.width, height: size.value.height }
     sizeCanvas(canvas, region.width, region.height, pixelRatio)
     const context = canvas.getContext('2d')

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { cssZoomOf } from '../../composables/ui/cssZoom'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { BUTTON_NAMES_AREA, clearOfPlaced, useButtonNames, type Box } from '../../composables/ui/useButtonNames'
@@ -55,6 +56,8 @@ const triggerEl = ref<HTMLElement>()
 /** Whether this browser has popovers (a test DOM may not). */
 const topLayer = typeof HTMLElement !== 'undefined' && 'showPopover' in HTMLElement.prototype
 const position = ref({ left: 0, top: 0 })
+/** The CSS zoom the bubble is drawn at (ticket 1071): it is placed on screen and drawn in its own px. */
+const bubbleZoom = ref(1)
 let resizeObserver: ResizeObserver | undefined
 
 /** Puts the bubble in the top layer, where no ancestor's `overflow` can cut it; a browser without popovers keeps it
@@ -78,6 +81,7 @@ async function place() {
   const bubble = bubbleEl.value?.getBoundingClientRect()
   const trigger = triggerEl.value?.getBoundingClientRect()
   if (!bubble || !trigger) return
+  bubbleZoom.value = cssZoomOf(bubbleEl.value)
   const room = {
     bottom: window.innerHeight - VIEWPORT_MARGIN_PX - (trigger.bottom + TRIGGER_GAP_PX),
     top: trigger.top - TRIGGER_GAP_PX - VIEWPORT_MARGIN_PX,
@@ -314,7 +318,7 @@ onBeforeUnmount(() => {
         :id="id"
         ref="bubbleEl"
         class="app-tooltip__bubble"
-        :style="{ left: `${position.left}px`, top: `${position.top}px` }"
+        :style="{ left: `${position.left / bubbleZoom}px`, top: `${position.top / bubbleZoom}px` }"
         :popover="topLayer ? 'manual' : undefined"
         role="tooltip"
         :aria-hidden="announce ? undefined : 'true'"

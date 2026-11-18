@@ -1,4 +1,5 @@
 import { nextTick, reactive } from 'vue'
+import { ownLength, ownPoint } from '../../composables/ui/cssZoom'
 import type { GridPosition } from '../../domain/grid'
 import type { CanvasContext, ShellFrameContext } from '../../composables/shell/useAppShell'
 import { easeStandard } from '../../rendering/rowMotion'
@@ -143,9 +144,8 @@ export function createHand(deps: HandDeps) {
   async function moveTo(point: { x: number; y: number }, ms?: number): Promise<void> {
     alive()
     if (instant) return
-    const box = root.getBoundingClientRect()
-    const x = point.x - box.left
-    const y = point.y - box.top
+    // The ghost's layer is laid out in the demo's own px, which the Homepage's zoom draws larger (ticket 1071).
+    const { x, y } = ownPoint(root, { clientX: point.x, clientY: point.y })
     const distance = Math.hypot(ghost.x - x, ghost.y - y)
     const moving = ghost.shown && distance > 0.5
     ms ??= Math.round(Math.min(deps.moveMs, Math.max(HOP_MS, distance * HOP_MS_PER_PX)))
@@ -238,7 +238,8 @@ export function createHand(deps: HandDeps) {
       if (at === 'start' || target.height > bottom - top || target.top < top + margin) by = target.top - (top + margin)
       else if (target.bottom > bottom - margin) by = target.bottom - (bottom - margin)
       const from = scroller.scrollTop
-      const to = Math.max(0, Math.min(scroller.scrollHeight - scroller.clientHeight, from + by))
+      // Measured on screen, scrolled in the scroller's own px (ticket 1071).
+      const to = Math.max(0, Math.min(scroller.scrollHeight - scroller.clientHeight, from + ownLength(scroller, by)))
       if (Math.abs(to - from) < 1) return
       if (instant) {
         scroller.scrollTop = to
@@ -266,9 +267,9 @@ export function createHand(deps: HandDeps) {
     if (element.closest(PANEL)) await wait(deps.pauseMs)
     for (let tries = 0; tries < AIM_TRIES; tries++) {
       await steady(element)
-      const box = root.getBoundingClientRect()
-      const middle = visibleMiddleOf(element)
-      if (Math.hypot(middle.x - (box.left + ghost.x), middle.y - (box.top + ghost.y)) <= AIM_SLACK_PX) return
+      const shown = visibleMiddleOf(element)
+      const middle = ownPoint(root, { clientX: shown.x, clientY: shown.y })
+      if (Math.hypot(middle.x - ghost.x, middle.y - ghost.y) <= AIM_SLACK_PX) return
       await bringIntoView(element, at)
       await moveTo(visibleMiddleOf(element))
     }
