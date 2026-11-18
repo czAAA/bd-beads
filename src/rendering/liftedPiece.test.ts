@@ -256,10 +256,10 @@ describe('canvasLiftCells', () => {
     }
   })
 
-  it('takes a row\'s touching beads and its rim a bead round them as one cell, and a bead three apart as its own', () => {
-    const project = painted([[0, 0], [0, 1], [0, 2], [0, 6]])
-    // Each with its rim (ticket 1036): rows -1 to 1, columns -1 to 3 and 5 to 7; column 4 lies two beads from both.
-    expect(rowRuns(canvasLiftCells(project, everywhere))).toEqual([-1, 0, 1].flatMap((row) => [[row, -1, 3], [row, 5, 7]]))
+  it('takes a row\'s touching beads and its rim a bead round them as one cell, and a bead four apart as its own', () => {
+    const project = painted([[0, 0], [0, 1], [0, 2], [0, 7]])
+    // Each with its rim (ticket 1036): rows -1 to 1, columns -1 to 3 and 6 to 8; columns 4 and 5, two wide, stay flat (1050).
+    expect(rowRuns(canvasLiftCells(project, everywhere))).toEqual([-1, 0, 1].flatMap((row) => [[row, -1, 3], [row, 6, 8]]))
   })
 
   it('joins two pieces two beads apart into one ground, their rims meeting (ticket 1036)', () => {
