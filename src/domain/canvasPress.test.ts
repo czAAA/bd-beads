@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { pressBecomes, type CanvasPress, type CanvasPressStep } from './canvasPress'
 import { DRAG_SLOP_PX } from './dragSlop'
-import { HOLD_MS } from './hold'
+import { CANVAS_HOLD_MS } from './hold'
 
 /** What a press is after these steps, in order. */
 function after(...steps: CanvasPressStep[]): CanvasPress | undefined {
@@ -55,7 +55,7 @@ function down(pointerType: string, inputMode?: 'pen' | 'mouse'): CanvasPressStep
 }
 
 const PEN_DOWN = down('pen', 'pen')
-const HELD: CanvasPressStep = { type: 'time', held: HOLD_MS }
+const HELD: CanvasPressStep = { type: 'time', held: CANVAS_HOLD_MS }
 
 describe('pressBecomes (spec 1072, the drawing pointer\'s hold, ticket 1065)', () => {
   it('times a hold for the pointer that draws: the pen in Pen mode, the finger in Mouse mode', () => {
@@ -83,7 +83,7 @@ describe('pressBecomes (spec 1072, the drawing pointer\'s hold, ticket 1065)', (
   })
 
   it('opens the ring and slides once the press has been still for the hold\'s length', () => {
-    expect(after(PEN_DOWN, { type: 'time', held: HOLD_MS - 1 })).toBe('held')
+    expect(after(PEN_DOWN, { type: 'time', held: CANVAS_HOLD_MS - 1 })).toBe('held')
     expect(after(PEN_DOWN, HELD)).toBe('sliding')
     expect(after(PEN_DOWN, { type: 'move', moved: DRAG_SLOP_PX - 0.5 }, HELD)).toBe('sliding')
   })

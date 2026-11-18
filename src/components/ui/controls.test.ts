@@ -10,6 +10,7 @@ import IconButton from './IconButton.vue'
 import InfoButton from './InfoButton.vue'
 import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegistry'
 import type { TooltipProps } from './tooltipProps'
+import { TOOLTIP_HOLD_MS } from '../../domain/hold'
 import { closePanel } from '../../testUtils/pill'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
@@ -313,7 +314,7 @@ describe('AppTooltip', () => {
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
 
     await wrapper.trigger('pointerdown', { pointerType: 'touch' })
-    vi.advanceTimersByTime(500)
+    vi.advanceTimersByTime(TOOLTIP_HOLD_MS)
     await nextTick()
     expect(wrapper.get('.app-tooltip__body').text()).toBe('Nothing to undo.')
     vi.useRealTimers()
@@ -444,7 +445,7 @@ describe('AppTooltip', () => {
         await wrapper.trigger('pointerdown', { pointerType })
         expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
 
-        vi.advanceTimersByTime(500)
+        vi.advanceTimersByTime(TOOLTIP_HOLD_MS)
         await wrapper.vm.$nextTick()
         expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
 
@@ -468,7 +469,7 @@ describe('AppTooltip', () => {
     vi.useFakeTimers()
     try {
       await button.trigger('pointerdown', { pointerType: 'touch' })
-      vi.advanceTimersByTime(500)
+      vi.advanceTimersByTime(TOOLTIP_HOLD_MS)
       await button.trigger('pointerup', { pointerType: 'touch' })
       await button.trigger('click')
       expect(pressed).not.toHaveBeenCalled()
@@ -489,7 +490,7 @@ describe('AppTooltip', () => {
       const wrapper = tooltip()
       await wrapper.trigger('pointerdown', { pointerType: 'touch' })
       await wrapper.trigger('pointerup', { pointerType: 'touch' })
-      vi.advanceTimersByTime(500)
+      vi.advanceTimersByTime(TOOLTIP_HOLD_MS)
       await wrapper.vm.$nextTick()
       expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
     } finally {
