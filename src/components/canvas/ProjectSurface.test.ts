@@ -1918,6 +1918,22 @@ describe('ProjectSurface', () => {
       expect(context.named('fill').some((call) => call.args[0] === 'evenodd')).toBe(true)
       expect(context.named('setTransform').some((call) => call.args[0] === 3 && call.args[3] === 3)).toBe(true)
     })
+
+    it('the bead the open Radial toolbox was pressed on keeps the neutral outline, whatever is hovered or chosen, until the ring closes (ticket 1076)', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { previewCells: [{ row: 1, column: 2 }], previewColor: '#e63746' })
+      const outlines = () => context.named('fill').filter((call) => call.args[0] === 'evenodd' && call.fillStyle === DEFAULT_THEME.outline)
+      const faint = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6)
+      context.calls.length = 0
+
+      await wrapper.setProps({ outlinedCell: { row: 3, column: 4 } })
+      expect(outlines()).toHaveLength(1)
+      expect(faint()).toHaveLength(0)
+
+      context.calls.length = 0
+      await wrapper.setProps({ outlinedCell: undefined })
+      expect(outlines()).toHaveLength(0)
+      expect(faint()).toHaveLength(1)
+    })
   })
 
   describe('the other overlays', () => {

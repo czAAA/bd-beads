@@ -86,6 +86,7 @@ export interface SurfaceOverlayDeps {
     previewCells?: PreviewCell[]
     previewStamp?: PasteStamp
     previewColor?: string | null
+    outlinedCell?: GridPosition
     selection?: Selection
     showRulers?: boolean
     frameTooltip?: string
@@ -175,7 +176,8 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         rowMarks: marksShown.value,
         letters: shownLetters(props.project),
         pointer: markerAt.value && !tools.tool && !tools.moves && !tools.markerHidden && !tools.picking && !tools.selects ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
-        preview: !tools.picking && (props.previewStamp || (props.previewCells?.length ?? 0) > 0) ? { cells: props.previewCells ?? [], stamp: props.previewStamp, color: props.previewColor ?? null } : undefined,
+        // The bead the open Radial toolbox was pressed on keeps the outline, in place of any hover preview (ticket 1076).
+        preview: props.outlinedCell ? { cells: [props.outlinedCell], color: null } : !tools.picking && (props.previewStamp || (props.previewCells?.length ?? 0) > 0) ? { cells: props.previewCells ?? [], stamp: props.previewStamp, color: props.previewColor ?? null } : undefined,
         selection: props.selection,
         // In Mirror mode the Selection is the rubber band marking out the Area (ticket 0806).
         marksArea: tools.marksArea,
@@ -200,6 +202,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.previewCells,
       () => props.previewStamp,
       () => props.previewColor,
+      () => props.outlinedCell,
       markerAt,
       () => props.selection,
       () => props.showRulers,

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
-import { beadColor, pressBead, rightClickBead } from './testUtils/beads'
+import { beadColor, outlinedBead, pressBead, rightClickBead } from './testUtils/beads'
 import { toolState } from './testUtils/pill'
 
 // The Radial toolbox's wiring (ticket 1064, spec 1072): a right click on the Canvas reaches the ring's flow, and a pick
@@ -81,6 +81,26 @@ describe('the Radial toolbox', () => {
     expect(beadColor(wrapper, 6)).toBeNull()
     await pick('redo')
     expect(beadColor(wrapper, 6)).toBe(first)
+    wrapper.unmount()
+  })
+
+  it('a right click in the corner of the screen opens the whole ring on the screen, and the pressed bead keeps its outline until the ring closes (ticket 1076)', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    const surface = wrapper.get('[data-testid="project-surface"]')
+    expect(outlinedBead(wrapper)).toBeUndefined()
+
+    await rightClickBead(wrapper, 40)
+    expect(outlinedBead(wrapper)).toEqual({ row: 4, column: 0 })
+    await ring(wrapper).get('[data-testid="radial-tool-erase"]').trigger('click')
+    await flushPromises()
+    expect(outlinedBead(wrapper)).toBeUndefined()
+
+    // The window's bottom right corner: the ring's centre stands its reach and float-edge in from both edges.
+    const corner = { clientX: window.innerWidth, clientY: window.innerHeight }
+    await surface.trigger('pointerdown', { ...corner, button: 2, buttons: 2, isPrimary: true })
+    await surface.trigger('pointerup', { ...corner, button: 2, buttons: 0, isPrimary: true })
+    expect(ring(wrapper).isVisible()).toBe(true)
+    expect(ring(wrapper).attributes('style')).toContain(`left: ${window.innerWidth - 120}px; top: ${window.innerHeight - 120}px`)
     wrapper.unmount()
   })
 })
