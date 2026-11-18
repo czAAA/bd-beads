@@ -611,6 +611,12 @@ watch(
   outline-offset: var(--focus-offset);
 }
 
+/* The tile at the pill's far end runs parallel to its round end (ticket 1080): the end's radius less the padding and
+ * line is half the tile, so the tile is round. The grip at the near end is already as round as its 18px allow. */
+.tool-pill > :deep(:last-child > :is(.tool-pill__stop, .tool-pill__recent)) {
+  border-radius: var(--radius-full);
+}
+
 /* The four drop zones inside the drawing area while dragging: dashed, the nearest edge's in the accent with a 14%
  * wash. */
 .tool-pill-zones {

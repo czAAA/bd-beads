@@ -35,3 +35,11 @@ export function tiltOf(orientation: number): number {
 export function settledOrientation(orientation: number): number {
   return Math.abs(tiltOf(orientation)) <= SNAP_DEGREES ? nearestQuarterTurn(orientation) : normalizedOrientation(orientation)
 }
+
+/** Where a turn shown as it goes (the Rotate canvas icon's bead, ticket 1082) goes next, from the unbounded angle it shows
+ * to the Canvas's `orientation`: the shorter way round, half a turn clockwise, so a quarter turn from the button always
+ * goes on clockwise (from 270 on to 360, never back to 0) and the angle a twist settled on is taken with its lean. */
+export function shownTurnTowards(shown: number, orientation: number): number {
+  const ahead = normalizedOrientation(orientation - shown)
+  return shown + (ahead > 180 ? ahead - 360 : ahead)
+}

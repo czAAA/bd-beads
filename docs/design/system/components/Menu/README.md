@@ -2,7 +2,7 @@
 
 A popup list anchored under its button (Export ▾), and the Tooltip. The large panels under the Canvas strip's Menu and Project buttons are the MenuPanel and ProjectPanel cards, built from the same material. (Derived in DESIGN.md.)
 
-- **Menu:** 4px under its button, `canvas` / `panel` fill, radius-md, `elevation-3`, padding 4. Items 34px, radius-sm, icon + label; hover and focus use `surface` / `elevated`.
+- **Menu:** 4px under its button, `canvas` / `panel` fill, radius-md, `elevation-3`, padding 4. Items 34px, radius-sm, icon + label; the first item's top corners and the last's bottom ones run parallel to the menu's (`radius-md` less the 4px padding and the line: 7px, 6px in High contrast; ticket 1080); hover and focus use `surface` / `elevated`.
 - **A chosen item** (ticket 368; the language list): an item that is one of a set to pick from shows a 16px check in the icon's place when it is the current one, and an empty 16px space otherwise so the labels line up; it carries `aria-current="true"`.
 - **A checked item** (ticket 0750; the Frame tools menu's Mirror the whole Frame): an on/off item keeps its icon and, while on, shows a 16px `check` in `accent-strong` after its label; it is a `menuitemcheckbox` with `aria-checked`.
 - **Export ▾** has no "name on exports" footer any more (ticket 0441, ADR 0060): the Maker's name is set per Project in Project (ProjectPanel card, Name on exports).

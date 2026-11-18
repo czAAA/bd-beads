@@ -168,6 +168,20 @@ function onKeydown(event: KeyboardEvent) {
     color var(--duration-fast) var(--ease-standard);
 }
 
+/* The end segments run parallel to the frame's corners (ticket 1080): `radius-md` less the 2px padding and the line;
+ * high contrast's 2px line brings that back to the segments' own `radius-sm`. */
+:root:not([data-theme='contrast']) .segmented > .segmented__option:first-child,
+:root:not([data-theme='contrast']) .segmented > .segmented__tip:first-child > .segmented__option {
+  border-top-left-radius: calc(var(--radius-md) - var(--space-2) - 1px);
+  border-bottom-left-radius: calc(var(--radius-md) - var(--space-2) - 1px);
+}
+
+:root:not([data-theme='contrast']) .segmented > .segmented__option:last-child,
+:root:not([data-theme='contrast']) .segmented > .segmented__tip:last-child > .segmented__option {
+  border-top-right-radius: calc(var(--radius-md) - var(--space-2) - 1px);
+  border-bottom-right-radius: calc(var(--radius-md) - var(--space-2) - 1px);
+}
+
 .segmented--small .segmented__option {
   min-height: var(--control-height-small);
 }

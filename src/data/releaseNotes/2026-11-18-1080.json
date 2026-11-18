@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "Corners inside menus, bars and popovers follow the corner around them",
+    "ru": "Углы внутри меню, панелей и всплывающих окон повторяют внешний угол",
+    "uk": "Кути всередині меню, панелей і спливних вікон повторюють зовнішній кут",
+    "be": "Вуглы ўнутры меню, панэляў і ўсплывальных вокнаў паўтараюць вонкавы вугал",
+    "zh": "菜单、工具条和弹出框里的圆角与外框的圆角保持平行",
+    "es": "Las esquinas dentro de menús, barras y ventanas emergentes siguen la esquina que las rodea",
+    "pl": "Rogi w menu, paskach i okienkach podążają za rogiem wokół nich"
+  }
+}
