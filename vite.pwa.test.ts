@@ -54,8 +54,8 @@ describe('renderServiceWorker', () => {
     expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['index.html'])
   })
 
-  it('leaves out the store screenshots, which only an install dialog or a store shows (ticket 1057)', () => {
-    const dir = folder({ 'index.html': 'a', 'screenshots/editor-wide.png': 'b', 'icons/bd-beads-app-icon-512.png': 'c' })
+  it('leaves out the store screenshots and the link previews’ pictures, which only a store or another site shows (tickets 1057, 1056)', () => {
+    const dir = folder({ 'index.html': 'a', 'screenshots/editor-wide.png': 'b', 'icons/bd-beads-app-icon-512.png': 'c', 'previews/welcome-en.png': 'd' })
     expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['icons/bd-beads-app-icon-512.png', 'index.html'])
   })
 

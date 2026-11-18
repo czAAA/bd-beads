@@ -123,6 +123,45 @@ function applicationData(copy: HomepageCopy, url: string): Record<string, unknow
   }
 }
 
+/** The picture a link preview shows for a language's Homepage (ticket 1056): its Welcome as the app draws it, at the
+ * size Open Graph and the Twitter card read best, made by `npm run store:images` into public/. */
+export const PREVIEW_SIZE = { width: 1200, height: 630 } as const
+export const previewFile = (locale: Locale): string => `previews/welcome-${locale}.png`
+
+/** Open Graph's name for each language, a language and a region (`ru_RU`): the region where most of its speakers are. */
+export const OPEN_GRAPH_LOCALES: Record<Locale, string> = { en: 'en_US', ru: 'ru_RU', uk: 'uk_UA', be: 'be_BY', zh: 'zh_CN', es: 'es_ES', pl: 'pl_PL' }
+
+/** The tags a link preview reads (Open Graph, then the Twitter card for what reads only that): the page's own title and
+ * description, its language's Homepage address and Welcome picture. An editor's page gets the same, so a shared
+ * editor address shows its language's Homepage card. */
+export function previewTags(copy: HomepageCopy, site: string): HeadTag[] {
+  const url = homepageAddress(site, copy.locale)
+  const image = new URL(previewFile(copy.locale), site).href
+  // The picture's words are Welcome's heading, which it shows.
+  const alt = copy.sections[0]?.heading ?? copy.name
+  const property = (name: string, content: string): HeadTag => ({ tag: 'meta', attrs: { property: `og:${name}`, content } })
+  const twitter = (name: string, content: string): HeadTag => ({ tag: 'meta', attrs: { name: `twitter:${name}`, content } })
+  return [
+    property('type', 'website'),
+    property('site_name', copy.name),
+    property('title', copy.title),
+    property('description', copy.description),
+    property('url', url),
+    property('locale', OPEN_GRAPH_LOCALES[copy.locale]),
+    ...LOCALES.filter((locale) => locale !== copy.locale).map((locale) => property('locale:alternate', OPEN_GRAPH_LOCALES[locale])),
+    property('image', image),
+    property('image:type', 'image/png'),
+    property('image:width', String(PREVIEW_SIZE.width)),
+    property('image:height', String(PREVIEW_SIZE.height)),
+    property('image:alt', alt),
+    twitter('card', 'summary_large_image'),
+    twitter('title', copy.title),
+    twitter('description', copy.description),
+    twitter('image', image),
+    twitter('image:alt', alt),
+  ]
+}
+
 /** A head tag as HTML: its attributes escaped, its children (a script's or style's text) as they are. */
 interface HeadTag {
   tag: 'meta' | 'link' | 'script' | 'style'
@@ -139,7 +178,7 @@ function tagHtml({ tag, attrs = {}, children }: HeadTag): string {
 
 /** The tags the page's head gains: its description, its one address, the other languages' Homepages, its data, and the
  * style that keeps the copy out of sight. The data's script is never run, and the policy names it by its hash all the
- * same (vite.headers.ts). Ticket 1056 adds the link preview's here. */
+ * same (vite.headers.ts). Then the link preview's (ticket 1056). */
 function headTags(copy: HomepageCopy, site: string): HeadTag[] {
   const url = homepageAddress(site, copy.locale)
   // `<` written as an escape, so no text in the data can end its script.
@@ -150,6 +189,7 @@ function headTags(copy: HomepageCopy, site: string): HeadTag[] {
     ...alternateAddresses(site).map(({ lang, href }): HeadTag => ({ tag: 'link', attrs: { rel: 'alternate', hreflang: lang, href } })),
     { tag: 'script', attrs: { type: 'application/ld+json' }, children: data },
     { tag: 'style', children: COPY_STYLE },
+    ...previewTags(copy, site),
   ]
 }
 
@@ -165,11 +205,20 @@ function inLanguage(html: string, locale: Locale, folder?: Locale): string {
   return html.replace(HTML_TAG, `<html lang="${locale}"${folder ? ` data-locale="${folder}"` : ''}>`)
 }
 
+/** `html` with `tags` written at the end of its head. */
+function withHeadTags(html: string, tags: HeadTag[]): string {
+  if (!html.includes(HEAD_END)) throw new Error('The page has no </head> to write its tags into')
+  return html.replace(HEAD_END, `${tags.map(tagHtml).join('')}${HEAD_END}`)
+}
+
 /** A Homepage's page: the built one in its language, with its copy and its head's tags written in. */
 function homepageHtml(template: string, copy: HomepageCopy, site: string, folder?: Locale): string {
-  const html = inLanguage(withCopy(template, copy), copy.locale, folder)
-  if (!html.includes(HEAD_END)) throw new Error('The Homepage\'s page has no </head> to write its tags into')
-  return html.replace(HEAD_END, `${headTags(copy, site).map(tagHtml).join('')}${HEAD_END}`)
+  return withHeadTags(inLanguage(withCopy(template, copy), copy.locale, folder), headTags(copy, site))
+}
+
+/** An editor's page: the built one in its language, with its language's Homepage card for a link preview. */
+function editorHtml(template: string, copy: HomepageCopy, site: string, folder?: Locale): string {
+  return withHeadTags(inLanguage(template, copy.locale, folder), previewTags(copy, site))
 }
 
 /** The page with its title and copy written in: the title in place of the source's, the copy inside the app's box. */
@@ -236,13 +285,16 @@ export function crawlerPages(site = process.env.SITE_URL || SITE_URL): Plugin {
         const [homepageTemplate, editorTemplate] = [String(homepage.source), String(editor.source)]
         const copies = new Map(await Promise.all(LOCALES.map(async (locale) => [locale, await homepageCopyIn(locale, root, define)] as const)))
         for (const { locale, folder } of HOMEPAGES) {
-          const page = homepageHtml(homepageTemplate, copies.get(locale)!, site, folder)
+          const copy = copies.get(locale)!
+          const page = homepageHtml(homepageTemplate, copy, site, folder)
+          const editorPage = editorHtml(editorTemplate, copy, site, folder)
           if (!folder) {
             homepage.source = page
+            editor.source = editorPage
             continue
           }
           this.emitFile({ type: 'asset', fileName: homepageFile(folder), source: page })
-          this.emitFile({ type: 'asset', fileName: editorFile(folder), source: inLanguage(editorTemplate, locale, folder) })
+          this.emitFile({ type: 'asset', fileName: editorFile(folder), source: editorPage })
         }
         this.emitFile({ type: 'asset', fileName: ROBOTS_FILE, source: robotsText(site) })
         this.emitFile({ type: 'asset', fileName: SITEMAP_FILE, source: sitemapText(sitemapAddresses(site)) })
