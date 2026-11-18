@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "Corners are rounder, to match macOS 26 and iPadOS 26",
+    "ru": "Углы стали круглее, как в macOS 26 и iPadOS 26",
+    "uk": "Кути стали круглішими, як у macOS 26 та iPadOS 26",
+    "be": "Вуглы сталі больш круглымі, як у macOS 26 і iPadOS 26",
+    "zh": "圆角更圆了，与 macOS 26 和 iPadOS 26 保持一致",
+    "es": "Las esquinas son más redondeadas, como en macOS 26 y iPadOS 26",
+    "pl": "Rogi są bardziej zaokrąglone, jak w macOS 26 i iPadOS 26"
+  }
+}

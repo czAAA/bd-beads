@@ -9,8 +9,8 @@ The Frame's keep-out margin drawn as a sheet of drafting paper: its own backgrou
 
 ## The sheet
 
-- **Fill:** the margin color (below) on the whole band, outer corners `radius-lg` (12px; 10px in the compact form). It is opaque over the Canvas and its Position marks; the Frame's own sheet sits on it as before.
-- **Inner border:** 1px `margin-line`, inset `--margin-border-inset` (10px; 6px compact), radius `radius-sm`, like the border of a drawing. Nothing else is drawn on the paper: no zone letters, no crop marks.
+- **Fill:** the margin color (below) on the whole band, outer corners `--margin-sheet-radius` (12px; 10px in the compact form), drawing geometry that keeps its value when the radius scale changes (ticket 1078). It is opaque over the Canvas and its Position marks; the Frame's own sheet sits on it as before.
+- **Inner border:** 1px `margin-line`, inset `--margin-border-inset` (10px; 6px compact), corners `--margin-border-radius` (6px), like the border of a drawing. Nothing else is drawn on the paper: no zone letters, no crop marks.
 - **Edge:** a 1px `margin-line` hairline round the outside, so the sheet reads on a Canvas of nearly the same color.
 - **High contrast:** the sheet is white with a 2px black border and a 1px `margin-line` inner border.
 - **Never in exports:** PNG and PDF print the Frame's beads only, as before.

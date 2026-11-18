@@ -2,7 +2,7 @@ openbeads is a bead-pattern editor. The canvas is the largest thing on screen; e
 
 ## Principles
 
-- **An editor, not a page.** Give the canvas the space. Chrome is compact: 34px controls, 12px box radii, 14px text.
+- **An editor, not a page.** Give the canvas the space. Chrome is compact: 34px controls, 16px box radii, 14px text.
 - **One accent per theme.** `accent` is orange `#fa520f` in light and neon yellow `#faff69` in dark. It marks the single most likely next action in a region (New project, Replace bead, Save project, Row done), the active tool, the current row, the brand mark and the open saved project. Nothing else is accent-colored. Two primary buttons never sit next to each other.
 - **Flat, with hairlines.** Light separates surfaces with 1px hairlines (`line`, `line-soft`, `panel-line`) and a few soft shadows (`elevation-1`–`3`). Dark uses no shadows: depth comes from four surface steps, `canvas` → `surface` → `panel` → `elevated`. One exception: what floats over the Canvas among the pieces (the Tool pill, the Radial toolbox) casts `elevation-float`, the Lifted piece's shadow, in dark too.
 - **Strict type roles.** Inter for anything you read or press; DM Mono, lowercase, for labels and meta; Instrument Serif italic only for the technique word (on exports) and the maker's name on exports.
@@ -44,7 +44,7 @@ openbeads is a bead-pattern editor. The canvas is the largest thing on screen; e
 
 - The base is 4px, with 2px and 6px steps for tight control groups: `space-2` … `space-32`.
 - The gap between the header, the left column and the canvas box is 6px; the canvas box is flush with the screen, only the safe-area inset round it. The header is 64px tall with 0 32 padding and a 10px gap. The left column is 358px (352px boxes plus a 6px scrollbar gutter), with 16px between boxes. The Toolbox has 24px padding and 20px between groups. The save box is 16 20, and the panels are 14 20 16.
-- Radii: `radius-xs` for kbd hints. `radius-sm` for swatches and small icon buttons. `radius-md` for buttons and selects. `radius-lg` for every box and modals (the canvas box is flush with the screen, square, since 0513). `radius-board` for the board on exports (the editor has no board since v16). `radius-full` for pills, switches, thumbnails and round buttons. Beads have corners at 22% of their width.
+- Radii, as round as macOS 26 and iPadOS 26 (ticket 1078): `radius-2xs` (2px) for dots and small marks (used from ticket 1079). `radius-xs` (4px) for kbd hints. `radius-sm` (8px) for swatches, small icon buttons, menu items and tooltips. `radius-md` (12px) for buttons, selects and menus. `radius-lg` (16px) for every box, modals and messages (the canvas box is flush with the screen, square, since 0513). `radius-xl` (24px) for the largest floating surfaces (used from ticket 1079). `radius-board` (32px) for the board on exports (the editor has no board since v16). `radius-full` for pills, switches, thumbnails and round buttons. What the Canvas and exports draw is drawing geometry, not this scale: beads have corners at 22% of their width.
 - Elevation: `elevation-1` for the save box, Beads needed and Saved projects. `elevation-2` is unused since the canvas box lost its shadow (0513). `elevation-3` for modals, menus and messages. `elevation-float` for the Tool pill and the Radial toolbox (approved 2026-11-18, not yet in the app: tickets 1066 and 1064). Every elevation but `elevation-float` is `none` in dark, where overlays add a 1px `line-strong` border; every one is `none` in high contrast.
 
 ## Layout
