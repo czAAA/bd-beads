@@ -69,8 +69,8 @@ export interface RateLimitRule {
 }
 
 /** Refuses `429 rate-limited` (and `Retry-After`) past `rule`'s binding, counted at the edge with no D1 write. `key`
- * is the address by default, or an account id; a keyless request shares one bucket. With no binding (Workers Free;
- * step A2) every request passes and per-IP limits wait for the domain's WAF rule (spec 385, ticket 391). */
+ * is the address by default, or an account id; a keyless request shares one bucket. With no binding (step A2)
+ * every request passes and per-IP limits wait for the domain's WAF rule (spec 385, ticket 391). */
 export function rateLimit(rule: RateLimitRule, key: (rc: RequestContext) => string | null = byIp): Guard {
   return async (rc) => {
     const binding = (rc.env as unknown as Record<string, RateLimit | undefined>)[rule.binding]

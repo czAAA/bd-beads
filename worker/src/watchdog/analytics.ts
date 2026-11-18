@@ -42,8 +42,8 @@ function requireVar(value: string | undefined, name: string): string {
 }
 
 /** Cloudflare's GraphQL Analytics API, read-only token (spec 385). Production counts account-wide requests, D1 rows
- * written and R2 storage (limits shared with dev); dev counts only its own. GraphQL counts a little more than
- * Cloudflare bills, so it warns early. Verified on Workers Free (ticket 71 step A2, `docs/operations.md`): 32 days. */
+ * written and R2 storage, dev's included; dev counts only its own. GraphQL counts a little more than Cloudflare
+ * bills, so it warns early. Verified on the account (ticket 71 step A2, `docs/operations.md`): 32 days. */
 export function graphqlUsageReader(env: Env): UsageReader {
   return {
     async read(since, until) {

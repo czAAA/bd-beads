@@ -1,6 +1,6 @@
 import { MB, numberVar, type Env, type NumberVar } from '../env'
 
-/** What the watchdog measures (spec 385, "Warn levels on Free"). Counts are per UTC day; sizes are bytes. */
+/** What the watchdog measures (spec 385, its warn levels). Counts are per UTC day; sizes are bytes. */
 type Measure = 'api-requests' | 'd1-rows-written' | 'worker-errors' | 'r2-storage' | 'core-db' | 'blobs-db' | 'reports'
 
 /** Today's readings; a measure that couldn't be read is left out. */
@@ -32,7 +32,7 @@ const MEASURES: Record<Measure, MeasureSpec> = {
 }
 
 /** Whole numbers grouped by regex, not `toLocaleString`: the first `Intl` call in a fresh isolate initialises ICU
- * (~6 ms CPU), and the watchdog is cold every run against Workers Free's 10 ms (ticket 409). */
+ * (~6 ms CPU), and the watchdog is cold every run against its CPU limit (ticket 409). */
 function format(value: number, unit: MeasureSpec['unit']): string {
   return unit === 'MB' ? `${(value / MB).toFixed(1)} MB` : String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }

@@ -4,7 +4,7 @@ How the app and its backend reach Cloudflare (ticket 71, spec 385, [ADR 0014](ad
 
 ## What runs where
 
-One Cloudflare account, on Workers Free, runs two Workers from one `wrangler.jsonc`:
+One Cloudflare account runs two Workers from one `wrangler.jsonc`:
 
 | | dev | production |
 |---|---|---|
@@ -16,7 +16,7 @@ One Cloudflare account, on Workers Free, runs two Workers from one `wrangler.jso
 | R2 (binding `BLOBS`) | `bd-beads-dev` | `bd-beads` |
 | Access | always | until the public release (ticket 391) |
 
-Each Worker serves the Homepage (`/`) and the editor (`/app/`) as static assets at its root (ticket 1052, ADR 0097; `public/_redirects` sends the old `/homepage/` to `/`, read by Cloudflare and never served), and runs its code only for `/api/*` (`run_worker_first`), so loading the app never counts as a Worker request and keeps working when `/api` is over its daily cap or switched off. The code is `worker/` (`CODING_STANDARDS.md`). The two databases are apart so a full `blobs` can't stop sign-in ([ADR 0049](adr/0049-core-and-blobs-are-separate-d1-databases.md)).
+Each Worker serves the Homepage (`/`) and the editor (`/app/`) as static assets at its root (ticket 1052, ADR 0097; `public/_redirects` sends the old `/homepage/` to `/`, read by Cloudflare and never served), and runs its code only for `/api/*` (`run_worker_first`), so loading the app never counts as a Worker request and keeps working when `/api` is down or switched off. The code is `worker/` (`CODING_STANDARDS.md`). The two databases are apart so a full `blobs` can't stop sign-in ([ADR 0049](adr/0049-core-and-blobs-are-separate-d1-databases.md)).
 
 ## Deploying by hand
 
@@ -121,7 +121,7 @@ To remove a tester, delete the address the same way; their open session ends whe
 
 ## A fork's own copy
 
-Nothing in the code names this account, so a fork deploys its own copy with its own accounts, all on free plans (spec 385):
+Nothing in the code names this account, so a fork deploys its own copy with its own accounts (spec 385):
 
 1. **Cloudflare.** Its own account. Create the four D1 databases (`npx wrangler d1 create <name>`, a `core` and a `blobs` per Worker) and the two R2 buckets (`npx wrangler r2 bucket create <name>`).
 2. **`wrangler.jsonc`.** For each environment: the Worker's `name` and `WORKER_SCRIPT`, `CF_ACCOUNT_ID`, each database's `database_name` and `database_id` (in `d1_databases` and in `CORE_DATABASE_ID` / `BLOBS_DATABASE_ID`), the bucket's `bucket_name`, and the fork's own `GOOGLE_CLIENT_ID` and `TURNSTILE_SITE_KEY`. For dev, its Access team as `ACCESS_TEAM_DOMAIN` and each dev host's Access Audience tag in `ACCESS_AUD`: without the right ones, dev refuses every request (ticket 395). Keep or tune the caps and warn levels.
