@@ -1,5 +1,4 @@
 import { computed, inject, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
-import { beadColorAt } from '../../domain/layerBeads'
 import { provideI18n } from '../../i18n/useI18n'
 import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
@@ -53,6 +52,7 @@ import { useOverlayVisibility } from './useOverlayVisibility'
 import { useSignInPrompt } from './useSignInPrompt'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
+import { usePickColor } from '../tools/usePickColor'
 import { usePinchPan } from '../canvas/usePinchPan'
 import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
@@ -602,17 +602,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** Pick color from canvas (ticket 398): the next press on a bead takes its color (an empty cell does nothing); a
-   * tool choice or Escape ends it. */
-  function pickColorAt(row: number, column: number, layer?: Layer): boolean {
-    if (!pickingColor.value) return false
-    const project = currentProject()
-    const hex = project ? beadColorAt(project, row, column, layer) : null
-    if (hex) {
-      pickingColor.value = false
-      onSelectCustomColor(hex)
-    }
-    return true
-  }
+   * tool choice or Escape ends it. takeColorAt is the same step without arming (ticket 1073). */
+  const { pickColorAt } = usePickColor({ picking: pickingColor, currentProject, onSelectCustomColor })
   provideColorPick({ picking: pickingColor, toggle: () => (pickingColor.value = !pickingColor.value) })
 
   /** On touch, Mirror mode, paste mode and Pick color say in a toast what to tap next (ticket 0845). */

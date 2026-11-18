@@ -200,11 +200,13 @@
   --space-20: 20px; /* Gap between Tool groups; save box and panel horizontal padding. */
   --space-24: 24px; /* Page padding (top/bottom); Toolbox padding; modal padding. */
   --space-32: 32px; /* Page padding (left/right); header horizontal padding. */
+  --radius-2xs: 2px; /* Dots and small marks. */
   --radius-xs: 4px; /* kbd hints. */
-  --radius-sm: 6px; /* Swatches, zoom buttons, theme-toggle buttons, menu items, tooltips. */
-  --radius-md: 8px; /* Buttons, selects, the theme toggle frame, menus. */
-  --radius-lg: 12px; /* Every box, the canvas box, modals, messages. */
-  --radius-board: 32px; /* The bead board. */
+  --radius-sm: 8px; /* Swatches, small icon buttons, theme-toggle buttons, menu items, tooltips. */
+  --radius-md: 12px; /* Buttons, selects, the theme toggle frame, menus. */
+  --radius-lg: 16px; /* Every box, modals, messages. */
+  --radius-xl: 24px; /* The largest floating surfaces. */
+  --radius-board: 32px; /* The bead board on exports. */
   --radius-full: 9999px; /* Pills, the switch, round icon buttons, thumbnails, the progress track. */
   --bp-tablet: 744px; /* Bead sizing tier only (smallest bead on screen); not a layout split, everything under 1024px is the phone layout. */
   --bp-tablet-lg: 1024px; /* iPad 13″ tier and up (13″ iPads upright, smaller iPads sideways): the left column docks again. */
