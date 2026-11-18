@@ -101,6 +101,10 @@ const props = withDefaults(defineProps<{
   frameTurns?: number
   /** The reference image to draw under the beads (ticket 0790), none while it is hidden. */
   reference?: DrawnReference
+  /** Whether a hold with the drawing pointer opens the Radial toolbox (ticket 1065); absent, no hold is timed. */
+  holdOpens?: boolean
+  /** How many holds a pinch has ended (ticket 1065): each stops the hold being timed. */
+  holdEnds?: number
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {

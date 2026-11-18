@@ -58,6 +58,24 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
     open.value = false
   }
 
+  /** Whether a hold on the Canvas would open the ring (ticket 1065): the surface times one only then. */
+  const canOpen = computed(() => !deps.demo && !deps.readOnly() && !!deps.currentProject())
+  /** Where a hold is being timed, in client px: the hairline is drawn round it. None when no hold is. */
+  const holdAt = ref<{ x: number; y: number }>()
+  /** How many holds a pinch has ended: the surface, which never hears the second finger, stops timing its own. */
+  const holdEnds = ref(0)
+
+  /** The surface times a hold at a point (client px), or, with none, stopped: moved, lifted, or the ring is opening. */
+  function hold(at?: { x: number; y: number }) {
+    holdAt.value = at && canOpen.value ? { x: at.x, y: at.y } : undefined
+  }
+
+  /** A second finger made the press a pinch: the hold is off and its hairline goes. */
+  function endHold() {
+    holdAt.value = undefined
+    holdEnds.value += 1
+  }
+
   // A Canvas that turns read-only under the open ring, or a Project that closes, takes the ring with it.
   watch(() => deps.readOnly() || !deps.currentProject(), (gone) => {
     if (gone) close()
@@ -89,5 +107,5 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
     if (deps.canRedo()) deps.onRedo()
   }
 
-  return { open, center, beadHex, openAt, close, selectTool, pickRecent, pickColor, undo, redo }
+  return { open, center, beadHex, openAt, close, selectTool, pickRecent, pickColor, undo, redo, canOpen, holdAt, holdEnds, hold, endHold }
 }

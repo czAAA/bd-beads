@@ -669,7 +669,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Two fingers on the Project pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress is
    * taken back when the second lands. */
-  usePinchPan(canvasScrollEl, { zoom: () => zoom.value, pinch: pinchStep, cancelStroke: () => cancelStroke(), endTwist })
+  usePinchPan(canvasScrollEl, {
+    zoom: () => zoom.value,
+    pinch: pinchStep,
+    // The pinch ends the hold the first finger was timing too (ticket 1065).
+    cancelStroke: () => (cancelStroke(), radialToolbox.endHold()),
+    endTwist,
+  })
 
   /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206). */
   const {
@@ -1189,6 +1195,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       pickRecent: toolPill.pickRecent,
       /** The Radial toolbox (ticket 1064): the ring a right click on the Canvas opens round the pointer. */
       radialToolbox,
+      /** A hold that opened the ring drops what its press started (ticket 1065), as a pinch drops its first finger's. */
+      onDropPress: () => cancelStroke(),
       // Mirror (ADR 0082, ticket 0750): the Project's one Mirror and its bar, Mirror mode, the three ways to make one
       mirrorSetting: mirror.setting,
       mirrorOn: mirror.on,

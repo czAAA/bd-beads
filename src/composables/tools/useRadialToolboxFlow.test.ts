@@ -157,4 +157,39 @@ describe('useRadialToolboxFlow (ticket 1064)', () => {
     project.value = withLayers(framed, { beads: {} })
     expect(ring.beadHex.value).toBeNull()
   })
+
+  describe('the hold (ticket 1065)', () => {
+    it('shows the hairline where a hold is timed, and none once it stopped', () => {
+      const { ring } = setup()
+      expect(ring.canOpen.value).toBe(true)
+
+      ring.hold(AT)
+      expect(ring.holdAt.value).toEqual(AT)
+
+      ring.hold()
+      expect(ring.holdAt.value).toBeUndefined()
+    })
+
+    it('a pinch ends the hold: the hairline goes and the surface is told', () => {
+      const { ring } = setup()
+      ring.hold(AT)
+
+      ring.endHold()
+
+      expect(ring.holdAt.value).toBeUndefined()
+      expect(ring.holdEnds.value).toBe(1)
+    })
+
+    it('times no hold where the ring would not open: a read-only Canvas, no Project, the Homepage demo', () => {
+      const readOnly = setup()
+      readOnly.readOnly.value = true
+      const empty = setup()
+      empty.project.value = null
+      for (const { ring } of [readOnly, empty, setup({ demo: true })]) {
+        expect(ring.canOpen.value).toBe(false)
+        ring.hold(AT)
+        expect(ring.holdAt.value).toBeUndefined()
+      }
+    })
+  })
 })

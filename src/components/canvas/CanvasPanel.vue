@@ -8,6 +8,7 @@ import ContextBar, { type MirrorBarState } from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ConvertImageWizard from '../import/ConvertImageWizard.vue'
+import HoldHairline from '../tools/HoldHairline.vue'
 import RadialToolbox from '../tools/RadialToolbox.vue'
 import ToolPill from '../tools/ToolPill.vue'
 import MarginSheet from './MarginSheet.vue'
@@ -190,6 +191,7 @@ const {
   surfaceProbe,
   onToolPillPlaced,
   radialToolbox,
+  onDropPress,
 } = useCanvasContext()
 
 const newProjectAction = controlAction('new-project')
@@ -523,6 +525,10 @@ const drawingStyle = computed(() => {
                 @frame-anchor="frameAnchor = $event"
                 @schema-anchors="schemaAnchors = $event"
                 @pressing="surfacePressing = $event"
+                :hold-opens="radialToolbox.canOpen.value"
+                :hold-ends="radialToolbox.holdEnds.value"
+                @hold="radialToolbox.hold"
+                @drop-press="onDropPress"
                 @open-toolbox="radialToolbox.openAt"
                 @drawn="onSurfaceDrawn"
               />
@@ -670,6 +676,8 @@ const drawingStyle = computed(() => {
               @redo="radialToolbox.redo"
               @close="radialToolbox.close"
             />
+            <!-- The hairline a hold draws while it is timed (ticket 1065), where the ring's hole will be. -->
+            <HoldHairline :at="radialToolbox.holdAt.value" />
           </Teleport>
         </div>
 

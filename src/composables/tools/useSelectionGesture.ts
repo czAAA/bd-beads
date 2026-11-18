@@ -100,6 +100,9 @@ export function useSelectionGesture(
 
   /** A Select press; `marking` for Mirror mode's (ADR 0082), the same drag marking out the Mirror's Area, which the shell
    * takes from the Selection on release and which leaves the clipboard alone. */
+  /** The Selection a Piece tap replaced, until its press ends: a press that was never a tap gives it back (ticket 1065). */
+  let beforeTap: { selection: Selection | undefined } | undefined
+
   function beginPress(row: number, column: number, named?: Layer, marking = false) {
     const project = currentProject()
     if (!project) {
@@ -160,6 +163,7 @@ export function useSelectionGesture(
     const project = currentProject()
     const press = selectPress.value
     selectPress.value = null
+    beforeTap = undefined
     if (press && !press.moved && !pasteProjectionActive.value) selection.value = undefined
     if (press) lastDrag = press.moved && !pasteProjectionActive.value && selection.value ? { kind: 'mark', press, made: selection.value } : undefined
 
@@ -171,11 +175,14 @@ export function useSelectionGesture(
     stamp(block, press.anchor)
   }
 
-  /** Forgets a Select press that was never a gesture, the first finger of a pinch (ticket 0868): unlike a tap it leaves
-   * the Selection, and unlike a release it stamps nothing. */
+  /** Forgets a Select press that was never a gesture, the first finger of a pinch (ticket 0868) or a hold that opened
+   * the Radial toolbox (ticket 1065): unlike a tap it leaves the Selection, and unlike a release it stamps nothing. A
+   * Piece tap, which selects at the press, gives back the Selection it replaced. */
   function cancelPress() {
     selectPress.value = null
     lastDrag = undefined
+    if (beforeTap) selection.value = beforeTap.selection
+    beforeTap = undefined
   }
 
   /** One Paste as one Edit; a Message says how many beads the Frame's edge clipped (ticket 491) or a Custom frame's
@@ -203,6 +210,7 @@ export function useSelectionGesture(
       return
     }
     dropClipboard()
+    beforeTap = { selection: selection.value }
     selection.value = picked
   }
 
