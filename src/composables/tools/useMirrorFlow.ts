@@ -148,6 +148,13 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     makeFrom(ask.area, ask.from)
   }
 
+  /** Forgets a press on the Area whose hold opened the Radial toolbox (ticket 1084): the Area is as it was, nothing recorded. */
+  function dropArea() {
+    adjust = undefined
+    asked = undefined
+    draft.value = undefined
+  }
+
   return {
     setting,
     on,
@@ -167,6 +174,7 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     pressArea,
     dragArea,
     releaseArea,
+    dropArea,
     moveAreaBy,
   }
 }

@@ -98,6 +98,19 @@ describe('useMirrorFlow (ADR 0082, ticket 0750)', () => {
     expect(flow.on.value).toBe(false)
   })
 
+  it('a press on the Area dropped for the Radial toolbox leaves it as it was and records nothing (ticket 1084)', () => {
+    const { flow, harness } = setup(true)
+    flow.makeFrom(area)
+    flow.pressArea({ kind: 'inside' }, { row: 2, column: 4 })
+    flow.dragArea({ row: 3, column: 4 })
+    flow.dropArea()
+    flow.releaseArea()
+    expect(flow.adjusting.value).toBe(false)
+    expect(flow.setting.value.place).toEqual({ layer: 'canvas', area })
+    harness.history.onUndo()
+    expect(flow.on.value).toBe(false)
+  })
+
   it('moves the Canvas Area a bead for an arrow on its move grip, one Undo step each (ticket 0808)', () => {
     const { flow, harness } = setup(true)
     flow.makeFrom(area)

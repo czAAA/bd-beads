@@ -815,6 +815,22 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 30, columns: 30, layer: 'frame' })
     })
 
+    it('a press inside dropped for the Radial toolbox leaves the Selection where it was, with no tap and no move (ticket 1084)', () => {
+      const gesture = frameSelected()
+      const before = gesture.selection.value
+      gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
+      gesture.dropAdjust()
+      gesture.endAdjust()
+      expect(gesture.selection.value).toEqual(before)
+
+      // A wobble of a bead before the hold was up is taken back too.
+      gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
+      gesture.dragAdjust({ row: 12, column: 11 })
+      gesture.dropAdjust()
+      gesture.endAdjust()
+      expect(gesture.selection.value).toEqual(before)
+    })
+
     it('a move is not stopped by the Frame\'s edge or its margin', () => {
       const gesture = frameSelected()
       gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
