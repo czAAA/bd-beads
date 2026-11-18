@@ -125,7 +125,7 @@ watch(
   height: var(--spark-size);
   margin-top: calc(var(--spark-size) / -2);
   background: var(--spark-core);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   box-shadow: 0 0 8px 3px var(--spark-glow);
 }
 

@@ -6,7 +6,8 @@ import type { ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { beadLabel } from '../../domain/beads'
-import { hasMeasuredColors } from '../../domain/colorCatalog'
+import { measuredColorSource } from '../../domain/colorCatalog'
+import { beadPaletteNote } from '../../i18n/measuredColorWords'
 import { plural, pluralForm } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import BeadSwatchChip from '../palette/BeadSwatchChip.vue'
@@ -32,8 +33,8 @@ const sheet = useConvertSheet()
 
 /** The Bead as the palette's Bead colors entry names it: its maker, name and shape, with no finish. */
 const beadName = computed(() => beadLabel(wizard.bead.value))
-/** The Bead's catalog has colors read from the maker's photographs (ticket 0886): the palette's note says so. */
-const photoColors = computed(() => hasMeasuredColors(wizard.beadCatalog.value))
+/** Where the Bead's catalog's colors were read from (tickets 0886, 1068): the palette's note says so in its own words. */
+const measuredFrom = computed(() => measuredColorSource(wizard.beadCatalog.value))
 const myWords = computed(() => words.value.myBeads)
 /** match to's menu (ConvertImage card DS-2): the Bead's palette and My beads (once the list has a code) with their counts,
  * Default Palette and Exact. */
@@ -68,7 +69,7 @@ const sourceNote = computed(() =>
   sourceOptions.value
     .map((option) => {
       const note =
-        option.value === 'bead-colors' ? fillBlanks(photoColors.value ? words.value.beadPaletteNotePhotos : words.value.beadPaletteNote, { bead: beadName.value })
+        option.value === 'bead-colors' ? fillBlanks(beadPaletteNote(t.value, measuredFrom.value), { bead: beadName.value })
         : option.value === 'my-beads' ? fillBlanks(myWords.value.note, { size: wizard.bead.value.size })
         : option.value === 'default' ? words.value.defaultPaletteNote
         : words.value.exactNote

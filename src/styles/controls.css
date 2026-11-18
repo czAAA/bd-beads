@@ -42,9 +42,8 @@
   /* Menu card: the narrowest a menu gets, and an item */
   --menu-width: 12.5rem;
   --menu-item-height: 2.125rem;
-  /* SaveBox card: the Export prompt popover, 288px wide with a 10px radius */
+  /* SaveBox card: the Export prompt popover, 288px wide, its corners `radius-md` */
   --popover-width: 18rem;
-  --popover-radius: 0.625rem;
   /* BeadsNeeded card: an expandable panel's header, a Beads needed row (three fill the collapsed
      body), and a color's 12px dot */
   --panel-head-height: 1.75rem;
@@ -53,7 +52,6 @@
   /* The 24" and larger tier (ticket 83): five Beads needed rows */
   --panel-body-height-desktop: 10rem;
   --swatch-dot: 0.875rem;
-  --swatch-dot-radius: 3px;
   --grams-width: 3.5rem;
   /* A tooltip that holds a sentence or two (the estimated weight) wraps at this width */
   --tooltip-wide: 16rem;
@@ -71,8 +69,6 @@
   --press-scale: 0.98;
   /* responsive.md "Input, not width": a swatch's real minimum size on a coarse pointer */
   --swatch-touch-min: 2.25rem;
-  /* ContextBar card: its own radius, not one of tokens.json's radius steps */
-  --context-bar-radius: 0.875rem;
 }
 
 /* Phone widths: the Progress bar's back and forward pair take a second row (ProgressMoves.vue, ticket 411): a row of

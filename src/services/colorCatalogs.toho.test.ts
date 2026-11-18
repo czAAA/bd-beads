@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { loadColorCatalog } from './colorCatalogs'
-import { BEAD_CATALOG } from '../domain/beads'
-import { brandColors, familyHex } from '../domain/palette'
+import { BEAD_CATALOG, findBead } from '../domain/beads'
+import { catalogSwatches, swatchHex } from '../domain/beadSwatch'
+import { createProject } from '../domain/createProject'
+import { addedColorId, brandColors, defaultPaletteIds, familyHex, projectPalette } from '../domain/palette'
+import { setPalette } from '../domain/paletteEdits'
+import { parseProjectsFile, serializeProject } from '../domain/projectFile'
 
 // The toho catalog (tickets 0694, 0695): built by the docs repo's build-toho-catalog.mjs from TOHO's Japanese search
 // data (the full facts-only table, committed since 2026-10-29) merged with the text tables of TOHO's international
@@ -54,5 +58,42 @@ describe('the toho catalog', () => {
     const pf = catalog.codes.filter((row) => row.code.startsWith('PF'))
     for (const row of pf) expect(row.finish, row.code).toBe('plated')
     expect(catalog.codes.find((row) => row.code === 'PF581')?.sizes).toEqual(['15/0', '11/0', '8/0'])
+  })
+
+  // The colors read from TOHO's sample cards (tickets 1067, 1068; ADR 0072), written by the docs repo's catalog script. The
+  // rules are asserted, not the colors, so a rerun that reads them again or takes some out still passes.
+  it('carries a color read from the sample cards for some codes, a hex each, and none for the others', async () => {
+    const catalog = await loadColorCatalog('toho')
+    const read = catalog.codes.filter((code) => code.hex)
+    expect(read.length).toBeGreaterThan(0)
+    expect(read.length).toBeLessThan(catalog.codes.length)
+    expect(read.filter((code) => !/^#[0-9a-f]{6}$/.test(code.hex!)).map((code) => code.code)).toEqual([])
+  })
+
+  it('draws a read code in its own color on a Cube and a Round, and one with none in its generated, approximate swatch', async () => {
+    const catalog = await loadColorCatalog('toho')
+    const colors = brandColors('toho')
+    const read = catalog.codes.find((code) => code.hex && code.sizes.includes('1.5mm') && code.sizes.includes('11/0'))!
+    const generated = catalog.codes.find((code) => !code.hex && code.sizes.includes('1.5mm') && code.sizes.includes('11/0'))!
+    for (const size of ['1.5mm', '11/0']) {
+      const swatches = catalogSwatches(catalog, size, [], colors)
+      expect(swatches.find((entry) => entry.code === read.code), size).toMatchObject({ hex: read.hex, approximate: false })
+      expect(swatches.find((entry) => entry.code === generated.code), size).toMatchObject({ approximate: true })
+    }
+  })
+
+  it('leaves a Project made before as it was: its beads keep the hex they were painted with (ticket 1068)', async () => {
+    const catalog = await loadColorCatalog('toho')
+    const code = catalog.codes.find((entry) => entry.hex && entry.sizes.includes('1.5mm'))!
+    // The code as the generated swatch made it, the color the Project was painted with before its color was read.
+    const before = swatchHex(code.family[0]!, code.finish, brandColors('toho'))!
+    expect(code.hex).not.toBe(before)
+
+    const made = createProject({ technique: 'loom', beadId: findBead('toho/cube/1.5mm')!.id, name: '', makerName: '' })
+    const old = setPalette(made, [...defaultPaletteIds(), addedColorId(before)], { [before]: code.code })
+    const opened = parseProjectsFile(serializeProject(old)).projects[0]!
+
+    expect(projectPalette(opened).colors.find((color) => color.hex === before)).toMatchObject({ hex: before, code: code.code })
+    expect(projectPalette(opened).colors.some((color) => color.hex === code.hex)).toBe(false)
   })
 })

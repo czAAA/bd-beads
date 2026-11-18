@@ -124,3 +124,11 @@ Nothing in the code names this account, so a fork deploys its own copy with its 
 4. **Secrets.** The five in the table above, per Worker, with `wrangler secret put`.
 5. **GitHub.** A `production` environment limited to `main`, holding `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (and, for the backup, `HEALTHCHECK_BACKUP_URL` and `AGE_PUBLIC_KEY`). Without them the deploy workflow fails at its first Wrangler step and touches nothing. GitHub keeps a fork's workflows off until its Actions tab turns them on.
 6. **First deploy.** By hand (above) or through the workflow; the smoke check reads the address from Wrangler, so nothing else names a host.
+
+## The installed app's icons and screenshots
+
+`public/manifest.webmanifest` is what a browser's install dialog and a store listing read (ticket 1057): the description in the Homepage's words, the categories, the PNG icons at 192 and 512 px and a maskable one, and two screenshots of the editor with a Starter's Project open, one wide (1366 × 768, the Microsoft Store's smallest desktop size) and one tall (820 × 1180). The icons are the design system's `bd-beads-app-icon.svg` (`docs/design/system/assets/Logos/`) drawn by the browser, never redrawn: the maskable one is the same icon at 80% on its own colour, so a round or squircle mask cuts only background. The screenshots are left out of the offline copy (`NOT_PRECACHED` in `vite.pwa.ts`); `vite.pwa.test.ts` checks that every file the manifest names is in the build at the size it says.
+
+**Remaking them.** After a change to the app icon or to how the editor looks, run `npm run store:images` from the repo root (after `npm ci`; `npx playwright install chromium` once on a new machine). It builds the app, serves it on port 4179 (`E2E_PORT` picks another), and writes `public/icons/bd-beads-app-icon-{192,512,maskable-512}.png` and `public/screenshots/editor-{wide,tall}.png` from `e2e/store/storeImages.spec.ts`. Look at the screenshots, then commit what changed. A new size goes in that spec and in the manifest together; CI never runs it.
+
+**The Microsoft Store.** The listing is packaged from the live site with PWABuilder (pwabuilder.com: enter `https://openbeads.com`, check its report, then Package for stores → Windows). Enrolling as a Microsoft Store developer and submitting the package need the owner's Microsoft account.
