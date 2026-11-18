@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "The Tool pill casts a soft shadow, in the dark theme too",
+    "ru": "Панель инструментов отбрасывает мягкую тень, в тёмной теме тоже",
+    "uk": "Панель інструментів відкидає м'яку тінь, у темній темі теж",
+    "be": "Панэль інструментаў кідае мяккі цень, у цёмнай тэме таксама",
+    "zh": "工具条会投下柔和的阴影，深色主题下也一样",
+    "es": "La barra de herramientas proyecta una sombra suave, también en el tema oscuro",
+    "pl": "Pasek narzędzi rzuca miękki cień, także w ciemnym motywie"
+  }
+}
