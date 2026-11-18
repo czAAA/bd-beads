@@ -66,14 +66,13 @@ export function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; cli
   return { clientX: point.x, clientY: point.y }
 }
 
-// Presses a bead: the left button by default, `{ button: 2 }` for the right (which moves the Canvas, ticket 541). Whether the press is released is up to the
+// Presses a bead with the left button. Whether the press is released is up to the
 // test, as it is up to a hand.
-export async function pressBead(wrapper: Anywhere, at: BeadAt, options: { button?: number; pointerType?: string } = {}): Promise<void> {
-  const button = options.button ?? 0
+export async function pressBead(wrapper: Anywhere, at: BeadAt, options: { pointerType?: string } = {}): Promise<void> {
   await surfaceRoot(wrapper).trigger('pointerdown', {
     ...beadPoint(wrapper, at),
-    button,
-    buttons: button === 2 ? 2 : 1,
+    button: 0,
+    buttons: 1,
     isPrimary: true,
     ...(options.pointerType ? { pointerType: options.pointerType } : {}),
   })

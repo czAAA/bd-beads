@@ -345,7 +345,7 @@ export const en: Translations = {
     updateReload: 'Reload',
     signInRunOut: 'Your sign-in has run out.',
     signIn: 'Sign in',
-    canvasPlaceholderPan: 'Drag the Canvas around with the right mouse button or Space.',
+    canvasPlaceholderPan: 'Drag the Canvas around while holding Space.',
     canvasDeleted: '“{name}” was deleted.',
     canvasDeletedHint: 'Open another from the Projects library, or make a new one.',
     canvasPlaceholderPanTouch: 'Drag the Canvas around with two fingers.',

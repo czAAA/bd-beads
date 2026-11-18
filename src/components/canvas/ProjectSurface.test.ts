@@ -894,34 +894,23 @@ describe('ProjectSurface', () => {
       expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
     })
 
-    it('drags the canvas with the right button on any tool, changing no bead (ticket 541)', async () => {
-      const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project)
-      const surface = wrapper.find('[data-testid="project-surface"]')
+    it('does nothing with the right button: no pan, no bead, no stroke, under Paint and Hand (ticket 1054)', async () => {
+      for (const tool of ['paint', 'hand'] as const) {
+        const project = projectOf(20, 10)
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool, moves: tool === 'hand' }) })
+        const surface = wrapper.find('[data-testid="project-surface"]')
 
-      const start = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
+        const start = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
 
-      await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
-      await surface.trigger('pointermove', { clientX: start.x - 10, clientY: start.y + 10, buttons: 2 })
+        await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
+        await surface.trigger('pointermove', { clientX: start.x - 10, clientY: start.y + 10, buttons: 2 })
+        await surface.trigger('pointerup')
 
-      expect(wrapper.emitted('pan')).toEqual([[-10, 10]])
-      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
-      expect(wrapper.emitted('cell-primary-move')).toBeUndefined()
-      expect(Object.keys(wrapper.emitted()).filter((name) => name.startsWith('cell-secondary'))).toEqual([])
-    })
-
-    it('does nothing on a right click that does not move', async () => {
-      const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project)
-      const surface = wrapper.find('[data-testid="project-surface"]')
-
-      const start = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
-
-      await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
-      await surface.trigger('pointerup')
-
-      expect(wrapper.emitted('pan')).toBeUndefined()
-      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+        expect(Object.keys(wrapper.emitted()).filter((name) => name === 'pan' || name.startsWith('cells-') || name.startsWith('cell-primary'))).toEqual([])
+        expect(surface.classes()).not.toContain('project-surface--dragging')
+        expect(wrapper.emitted('pressing')).toBeUndefined()
+        wrapper.unmount()
+      }
     })
 
     it('shows an open hand while moving, closed while dragging', async () => {
@@ -1605,7 +1594,7 @@ describe('ProjectSurface', () => {
 
       const paint = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }) })
       const paintSurface = paint.wrapper.find('[data-testid="project-surface"]')
-      await paintSurface.trigger('pointerdown', { clientX: 105, clientY: 47, button: 2, buttons: 2, pointerId: 1 })
+      await paintSurface.trigger('pointerdown', { clientX: 105, clientY: 47, button: 1, buttons: 4, pointerId: 1 })
       expect(paintSurface.classes()).toContain('project-surface--dragging')
       expect(styleOf(paint.wrapper)).toBe('')
     })

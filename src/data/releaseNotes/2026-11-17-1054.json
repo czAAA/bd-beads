@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-17",
+  "kind": "changed",
+  "line": {
+    "en": "The right mouse button no longer moves the Canvas; hold Space and drag, or use the Hand tool",
+    "ru": "Правая кнопка мыши больше не двигает холст: зажмите пробел и тяните или возьмите «Руку»",
+    "uk": "Права кнопка миші більше не рухає полотно: затисніть пробіл і тягніть або скористайтеся «Рукою»",
+    "be": "Правая кнопка мышы больш не рухае палатно: зацісніце прабел і цягніце або скарыстайцеся «Рукой»",
+    "zh": "鼠标右键不再移动画布；请按住空格键拖动，或使用抓手工具",
+    "es": "El botón derecho del ratón ya no mueve el lienzo; mantén Espacio y arrastra, o usa la herramienta Mano",
+    "pl": "Prawy przycisk myszy nie przesuwa już płótna; przytrzymaj spację i przeciągaj albo użyj narzędzia Ręka"
+  }
+}

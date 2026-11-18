@@ -347,7 +347,7 @@ export const pl: Translations = {
     updateReload: 'Załaduj ponownie',
     signInRunOut: 'Sesja wygasła.',
     signIn: 'Zaloguj się',
-    canvasPlaceholderPan: 'Przesuwaj płótno prawym przyciskiem myszy lub spacją.',
+    canvasPlaceholderPan: 'Przesuwaj płótno, przeciągając je z wciśniętą spacją.',
     canvasDeleted: 'Projekt „{name}” został usunięty.',
     canvasDeletedHint: 'Otwórz inny z biblioteki projektów albo utwórz nowy.',
     canvasPlaceholderPanTouch: 'Przesuwaj płótno dwoma palcami.',

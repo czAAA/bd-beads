@@ -347,7 +347,7 @@ export const ru: Translations = {
     updateReload: 'Перезагрузить',
     signInRunOut: 'Срок входа истёк.',
     signIn: 'Войти',
-    canvasPlaceholderPan: 'Двигайте холст, перетаскивая его правой кнопкой мыши или с пробелом.',
+    canvasPlaceholderPan: 'Двигайте холст, перетаскивая его с зажатым пробелом.',
     canvasDeleted: 'Проект «{name}» удалён.',
     canvasDeletedHint: 'Откройте другой из библиотеки проектов или создайте новый.',
     canvasPlaceholderPanTouch: 'Двигайте холст двумя пальцами.',

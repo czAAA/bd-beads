@@ -347,7 +347,7 @@ export const es: Translations = {
     updateReload: 'Recargar',
     signInRunOut: 'Tu sesión ha caducado.',
     signIn: 'Iniciar sesión',
-    canvasPlaceholderPan: 'Mueve el lienzo arrastrando con el botón derecho del ratón o con Espacio.',
+    canvasPlaceholderPan: 'Mueve el lienzo arrastrando mientras mantienes pulsado Espacio.',
     canvasDeleted: 'Se eliminó «{name}».',
     canvasDeletedHint: 'Abre otro desde la biblioteca de proyectos o crea uno nuevo.',
     canvasPlaceholderPanTouch: 'Mueve el lienzo arrastrando con dos dedos.',

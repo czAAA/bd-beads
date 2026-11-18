@@ -224,6 +224,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   let wheelTimer: ReturnType<typeof setTimeout> | undefined
 
   function onPress(event: PointerEvent) {
+    // The right button does nothing (ticket 1054): not even holding the Selection bar away.
+    if (event.button === 2) return
     const was = activePointers.size > 0
     activePointers.add(event.pointerId)
     if (!was) emit('pressing', true)
@@ -374,10 +376,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     return props.inputMode !== undefined && !pointerDraws(props.inputMode, event.pointerType)
   }
 
-  /** A press that moves the canvas instead of drawing: the Hand tool (or Space), the middle or right button on any
-   * tool (ticket 541), or the pointer the input mode keeps for moving. */
+  /** A press that moves the canvas instead of drawing: the Hand tool (or Space), the middle button on any tool
+   * (ticket 541), or the pointer the input mode keeps for moving. Not the right button (ticket 1054). */
   function startsDrag(event: PointerEvent): boolean {
-    return handMoves.value || event.button === 1 || event.button === 2 || movesCanvas(event)
+    return handMoves.value || event.button === 1 || movesCanvas(event)
   }
 
   /** The point of the viewport a pointer is at on screen, in px from its top-left corner. */
@@ -600,6 +602,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       }
       return
     }
+    // The right button does nothing (ticket 1054): it is kept for a radial Tool pill around the cursor, so makers
+    // must not get used to it as a pan or anything else before that menu exists.
+    if (event.button === 2) return
     if (resumeOffTheGlass(event)) return
     selectionAtPress = props.selection
     if (frameOf(props.project) && !startsDrag(event) && event.button === 0) {
