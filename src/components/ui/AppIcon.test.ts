@@ -50,6 +50,14 @@ describe('AppIcon', () => {
     expect(paths[1]!.attributes('d')).toMatch(/h\.01/)
   })
 
+  it("turns only a drawing's turning part, by the degrees given (ticket 1082)", () => {
+    const turned = mount(AppIcon, { props: { name: 'rotate-canvas-round', turn: 450 } }).get('svg')
+    expect(turned.attributes('style')).toContain('--icon-turn: 450deg')
+    expect(turned.find('[data-turns] rect').exists()).toBe(true)
+    expect(turned.findAll(':scope > path')).toHaveLength(2)
+    expect(mount(AppIcon, { props: { name: 'paint' } }).get('svg').attributes('style')).not.toContain('--icon-turn')
+  })
+
   it('sizes itself in rem from the design system sizes', () => {
     const svg = mount(AppIcon, { props: { name: 'check', size: 14 } }).get('svg')
     expect(svg.attributes('style')).toContain('width: 0.875rem')
