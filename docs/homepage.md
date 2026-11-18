@@ -46,3 +46,12 @@ The Homepage card (`docs/design/system/components/Homepage/README.md`) describes
   the sections draw from (`welcomePromises`, `insideChapters`, `freeListGroups`), and the build writes them into
   `index.html` (`vite.crawler.ts`; `docs/deploy.md`, What crawlers read). A section's new copy reaches the page only
   when `pageCopy.ts` takes it, and only copy the drawn page shows belongs there.
+- Each language has its own addresses (ticket 1053): `/ru/` is the Homepage and `/ru/app/` the editor in Russian, built
+  by `vite.crawler.ts` for every language (`docs/deploy.md`, What crawlers read). `i18n/addressLocale.ts` reads the
+  code: `followAddressLocale`, called by `homepage/homepage.ts` and `main.ts` before the language loads, makes it the
+  device's saved language and from then on changes the code in place (`history.replaceState`, no reload) when the
+  Menu's switch changes the language. An address with no code uses the saved language and is never changed; the
+  installed app starts at `/app/`. Every link between the pages is built on `pagesBase()`, the address's language
+  folder, so the way in from `/ru/` opens `/ru/app/` (its own addresses, `?project=` and the rest, after it) and the
+  Menu's Homepage and the Wordmark lead back to `/ru/`. The pages' first script keeps a language page's `lang`
+  (`data-locale`), so it never flashes the saved one. `npm run dev` serves `/ru/app/` as `/app/`.

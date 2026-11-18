@@ -9,6 +9,7 @@ import type { Project } from '../../domain/project'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { orientationOf, projectNameOf } from '../../domain/layerRecord'
 import { shownTurnTowards } from '../../domain/canvasOrientation'
+import { pagesBase } from '../../i18n/addressLocale'
 import { useI18n } from '../../i18n/useI18n'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { homepageUrl } from '../../homepage/homepageRoute'
@@ -123,7 +124,8 @@ const onHomepage = computed(() => props.page === 'homepage')
 const brandLinks = computed(() => !props.demo && (props.page === undefined || props.page === 'editor'))
 const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
-const homepageHref = homepageUrl(import.meta.env.BASE_URL)
+/** Under the address's language folder when it names one (ticket 1053), which the language switch changes. */
+const homepageHref = computed(() => homepageUrl(pagesBase()))
 
 // The Reference image button (ReferenceImage card): with no picture a plain button opening the Convert image picker,
 // with one a toggle whose Tooltip says what a press does, with the `I` chip.

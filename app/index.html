@@ -51,7 +51,9 @@
         var surface = { light: '#fafafa', dark: '#1a1a1a', contrast: '#f0f0f0' }[theme]
         var bars = document.querySelectorAll('meta[name="theme-color"]')
         for (var b = 0; b < bars.length; b++) bars[b].content = surface
-        root.lang = locale === 'ru' ? 'ru' : 'en'
+        // A page of a language's folder (ticket 1053) was built in that language, and keeps it whatever is saved; the
+        // saved language's code is one of LOCALES (src/domain/locale.ts, held in step by src/theme/theme.dom.test.ts).
+        if (!root.hasAttribute('data-locale')) root.lang = /^(en|ru|uk|be|zh|es|pl)$/.test(locale) ? locale : 'en'
       })()
     </script>
     <!--

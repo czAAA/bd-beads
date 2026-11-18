@@ -3,19 +3,41 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { build, resolveConfig } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { copyHtml, escapeHtml, homepageCopyIn, type HomepageCopy, robotsText, ROBOTS_FILE, SITE_URL, SITEMAP_FILE, sitemapText, withCopy } from './vite.crawler.ts'
+import { LOCALES, type Locale } from './src/domain/locale.ts'
+import {
+  alternateAddresses,
+  copyHtml,
+  editorFile,
+  escapeHtml,
+  homepageAddress,
+  homepageCopyIn,
+  type HomepageCopy,
+  homepageFile,
+  HOMEPAGES,
+  robotsText,
+  ROBOTS_FILE,
+  SITE_URL,
+  SITEMAP_FILE,
+  sitemapAddresses,
+  sitemapText,
+  withCopy,
+  withoutLanguageFolder,
+} from './vite.crawler.ts'
 import { HEADERS_FILE, inlineScriptHashes } from './vite.headers.ts'
 
 const repo = import.meta.dirname
 const configFile = resolve(repo, 'vite.config.ts')
-/** The English copy as the build reads it: the app's code run with the config's defines. */
+/** Each language's copy as the build reads it: the app's code run with the config's defines. */
+const copies = new Map<Locale, HomepageCopy>()
 let copy: HomepageCopy
 beforeAll(async () => {
-  copy = await homepageCopyIn('en', repo, (await resolveConfig({ root: repo, configFile }, 'build')).define ?? {})
-}, 60_000)
+  const define = (await resolveConfig({ root: repo, configFile }, 'build')).define ?? {}
+  for (const locale of LOCALES) copies.set(locale, await homepageCopyIn(locale, repo, define))
+  copy = copies.get('en')!
+}, 120_000)
 
-/** Every string the copy holds, as the page would write it. */
-const copyStrings = (): string[] =>
+/** Every string a copy holds, as the page would write it. */
+const copyStrings = (copy: HomepageCopy): string[] =>
   copy.sections.flatMap((section) => [
     section.heading,
     ...(section.line ? [section.line] : []),
@@ -42,6 +64,21 @@ describe('what the build writes for crawlers (ticket 1055)', () => {
     expect(robotsText(SITE_URL)).toBe('User-agent: *\nDisallow: /api/\n\nSitemap: https://openbeads.com/sitemap.xml\n')
     expect(sitemapText([SITE_URL])).toContain('<loc>https://openbeads.com/</loc>')
   })
+
+  it('gives each language’s Homepage one address, the English one the main address, and names them all (ticket 1053)', () => {
+    expect(homepageAddress(SITE_URL, 'en')).toBe(SITE_URL)
+    expect(homepageAddress(SITE_URL, 'ru')).toBe('https://openbeads.com/ru/')
+    expect(sitemapAddresses(SITE_URL)).toEqual(['https://openbeads.com/', ...LOCALES.filter((l) => l !== 'en').map((l) => `https://openbeads.com/${l}/`)])
+    expect(alternateAddresses(SITE_URL).at(-1)).toEqual({ lang: 'x-default', href: SITE_URL })
+  })
+
+  it('serves a language folder’s page from the dev server’s one page with none (ticket 1053)', () => {
+    expect(withoutLanguageFolder('/ru/app/?open=saved-projects')).toBe('/app/?open=saved-projects')
+    expect(withoutLanguageFolder('/zh/')).toBe('/')
+    expect(withoutLanguageFolder('/de/')).toBe('/de/')
+    expect(withoutLanguageFolder('/src/main.ts')).toBe('/src/main.ts')
+    expect(withoutLanguageFolder('/ru')).toBe('/ru')
+  })
 })
 
 describe('the built Homepage (ticket 1055)', () => {
@@ -64,7 +101,7 @@ describe('the built Homepage (ticket 1055)', () => {
 
   it('holds the dictionary’s copy as plain text before the app starts, out of sight until it draws', () => {
     const app = page.slice(page.indexOf('<div id="app">'), page.indexOf('</body>'))
-    for (const text of copyStrings()) expect(app, text).toContain(escapeHtml(text))
+    for (const text of copyStrings(copy)) expect(app, text).toContain(escapeHtml(text))
     expect(app).toContain(`<h1>${escapeHtml(copy.sections[0]!.heading)}</h1>`)
     // The style that hides it is in the head, read before the body is drawn.
     expect(page.slice(0, page.indexOf('</head>'))).toMatch(/<style>\.homepage-copy\{[^}]*clip-path:inset\(50%\)/)
@@ -84,16 +121,46 @@ describe('the built Homepage (ticket 1055)', () => {
     expect(parsed).not.toHaveProperty('review')
   })
 
-  it('names every inline script of the page, the data included, in the policy it is sent with', () => {
+  it('names every inline script of every page, the data included, in the policy it is sent with', () => {
     const headers = readFileSync(join(outDir, HEADERS_FILE), 'utf8')
-    const hashes = inlineScriptHashes(page)
-    expect(hashes.length).toBeGreaterThanOrEqual(2)
-    for (const hash of hashes) expect(headers).toContain(hash)
+    expect(inlineScriptHashes(page).length).toBeGreaterThanOrEqual(2)
+    for (const { folder } of HOMEPAGES) for (const hash of inlineScriptHashes(built(homepageFile(folder)))) expect(headers).toContain(hash)
   })
 
-  it('has robots.txt and the sitemap beside it, and the editor asks not to be indexed', () => {
+  it('has robots.txt and the sitemap of every language’s Homepage beside it, and every editor asks not to be indexed', () => {
     expect(readFileSync(join(outDir, ROBOTS_FILE), 'utf8')).toBe(robotsText(SITE_URL))
-    expect(readFileSync(join(outDir, SITEMAP_FILE), 'utf8')).toBe(sitemapText([SITE_URL]))
-    expect(readFileSync(join(outDir, 'app/index.html'), 'utf8')).toContain('<meta name="robots" content="noindex" />')
+    expect(readFileSync(join(outDir, SITEMAP_FILE), 'utf8')).toBe(sitemapText(sitemapAddresses(SITE_URL)))
+    for (const { folder } of HOMEPAGES) expect(built(editorFile(folder)), editorFile(folder)).toContain('<meta name="robots" content="noindex" />')
+  })
+
+  /** A built page, by its path in the build. */
+  const built = (file: string) => readFileSync(join(outDir, file), 'utf8')
+
+  it.each(LOCALES)('writes the Homepage in %s in its folder, in its language, naming the others (ticket 1053)', (locale) => {
+    const html = built(homepageFile(locale))
+    const head = html.slice(0, html.indexOf('</head>'))
+    const own = copies.get(locale)!
+    expect(html).toMatch(new RegExp(`<html lang="${locale}" data-locale="${locale}">`))
+    expect(head).toContain(`<title>${escapeHtml(own.title)}</title>`)
+    expect(head).toContain(`<meta name="description" content="${escapeHtml(own.description)}">`)
+    // `/en/` and the main address are one page.
+    expect(head).toContain(`<link rel="canonical" href="${homepageAddress(SITE_URL, locale)}">`)
+    for (const { lang, href } of alternateAddresses(SITE_URL)) expect(head).toContain(`<link rel="alternate" hreflang="${lang}" href="${href}">`)
+    const app = html.slice(html.indexOf('<div id="app">'), html.indexOf('</body>'))
+    for (const text of copyStrings(own)) expect(app, text).toContain(escapeHtml(text))
+    expect(JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '{}')).toMatchObject({ inLanguage: locale, url: homepageAddress(SITE_URL, locale) })
+    // The editor beside it, in the same language.
+    expect(built(editorFile(locale))).toMatch(new RegExp(`<html lang="${locale}" data-locale="${locale}">`))
+  })
+
+  it('gives each language its own words, and the main address none of a language folder’s mark', () => {
+    expect(new Set(LOCALES.map((locale) => copies.get(locale)!.title)).size).toBe(LOCALES.length)
+    expect(new Set(LOCALES.map((locale) => copies.get(locale)!.description)).size).toBe(LOCALES.length)
+    expect(page).toMatch(/<html lang="en">/)
+    expect(built(editorFile())).toMatch(/<html lang="en">/)
+  })
+
+  it('has the page the host shows at an address with none, which asks not to be indexed', () => {
+    expect(built('404.html')).toContain('<meta name="robots" content="noindex" />')
   })
 })

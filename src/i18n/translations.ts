@@ -599,6 +599,9 @@ export interface Translations {
     }
     /** The phone strip's library button's name (ticket 0827): {library} is the Menu row's, "Projects library, 28". */
     library: string
+    /** The page at an address with none, such as a language the app has none for (ticket 1053), and its one action. */
+    notFound: string
+    notFoundHomepage: string
   }
   /** A Release note's kind label (ticket 1047, spec 1043), in What's new and "Update ready". */
   releaseNoteKinds: { new: string; changed: string; fixed: string }

@@ -371,14 +371,14 @@ export const zh: Translations = {
     projectButtonNamed: '项目：{name}',
   },
   homepage: {
-    pageTitle: '首页',
-    description: '免费的串珠图样制作工具，适用于织机、佩奥特编织和砖形。把照片变成串珠图样，统计每种颜色的珠子，边编边标记已完成的行。无需账户。',
+    pageTitle: '免费串珠图样制作工具：织机、佩奥特编织、砖形针法',
+    description: '免费的串珠图样制作工具，适用于织机、佩奥特编织和砖形针法。把照片变成串珠图样，统计每种颜色的珠子，边编边标记已完成的行。无需账户。',
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',
     whatsInside: '功能一览',
     welcome: {
       heading: '串珠图样，按珠子实际的排列方式绘制。',
-      line: '适用于织机、佩奥特编织和砖形。',
+      line: '适用于织机、佩奥特编织和砖形针法。',
       seeHow: '看看怎么用',
       colors: { other: '{codes} 种 {brands} 颜色' },
       startFromStarter: '从现成的设计开始',
@@ -467,6 +467,8 @@ export const zh: Translations = {
       alone: { heading: '免费使用', why: '账户和专业版稍后推出；没有它们，一切照常使用。', info: '关于账户和专业版' },
     },
     library: '{library}，{count}',
+    notFound: '此地址没有页面。',
+    notFoundHomepage: '前往首页',
   },
   releaseNoteKinds: { new: '新增', changed: '改动', fixed: '修复' },
   pieceName: {
