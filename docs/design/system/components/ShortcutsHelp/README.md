@@ -8,5 +8,6 @@ The Keyboard shortcuts modal: every shortcut, grouped as in the Toolbox.
 - **Ticket 0796 adds Save Project file** (`Ctrl/Cmd+S`) **and Save Project file as…** (`Ctrl/Cmd+Shift+S`) to the Edit group (the dialog has no Project group), read from the control registry like every row.
 - **v16 adds a Canvas group:** `6` Set Frame, `5` Hand, `R` Rulers, Space + drag or the wheel to move the canvas, ⌘ or Ctrl + wheel to zoom. Not drawn in the preview yet.
 - Ticket 1007 removed Grid focus (`G`) from the Canvas group.
+- **The Radial toolbox's row (approved 2026-11-18, not yet in the app):** the Canvas group gains one row, "Tools at the pointer": right-click (ticket 1064), and a hold on the Canvas with a finger or the Pencil (ticket 1065). It repeats the Canvas hint, which screen readers do not hear (RadialToolbox card).
 
 Hand-written from the Phase A sign-off (forms, screens and states); static rendition.

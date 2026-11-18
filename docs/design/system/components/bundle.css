@@ -214,6 +214,9 @@
   --pill-fade: 1.5rem;
   --pill-tile-outline: 1.5px;
   --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink);
+  --radial-swatch: 1.5rem; /* RadialToolbox card: a recent colour's round swatch on the ring, 24px. */
+  --hold-duration: 500ms; /* RadialToolbox card: how long a hold is, on the Canvas for the ring and on a control for its Tooltip. */
+  --hold-quiet: 150ms; /* RadialToolbox card: how long a hold on the Canvas shows nothing. */
   --pill-tile-focus-offset: 1px;
   /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview; the Area sheet a Selection and a Canvas Area share */
   --mirror-bar-control: 24px;
@@ -305,6 +308,10 @@
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
 [data-theme="contrast"] { --underline-width: 3px; --pill-tile-outline: 2px; }
+/* RadialToolbox card: `elevation-float` as a filter, for a shape that is not a box (the ring). */
+:root, [data-theme="light"] { --elevation-float-filter: drop-shadow(0 0.75px 2px rgba(0,0,0,.16)) drop-shadow(0 3px 9px rgba(0,0,0,.2)); }
+[data-theme="dark"] { --elevation-float-filter: drop-shadow(0 0.75px 2px rgba(0,0,0,.5)) drop-shadow(0 3px 9px rgba(0,0,0,.6)); }
+[data-theme="contrast"] { --elevation-float-filter: none; }
 
 body {
   margin: 0;
