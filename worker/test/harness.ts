@@ -32,13 +32,16 @@ export interface StartOptions {
   ratelimits?: Record<string, { limit: number; period: 10 | 60 }>
   /** Binds this database to something that isn't one, so every query on it throws. */
   brokenDatabase?: 'CORE' | 'BLOBS_DB'
+  /** Keeps dev's Access check (ticket 395) on; off by default, so the other tests need no Access token. */
+  access?: boolean
 }
 
 type D1 = Awaited<ReturnType<Miniflare['getD1Database']>>
 type R2 = Awaited<ReturnType<Miniflare['getR2Bucket']>>
 
 export interface RunningWorker {
-  /** A request to the Worker's origin (`http://localhost`), routed as the platform would: assets or the Worker. */
+  /** A request to the Worker's origin (`http://localhost`), or to a full URL such as another hostname of it, routed
+   * as the platform would: assets or the Worker. */
   fetch(path: string, init?: RequestInit): Promise<Response>
   /** Fires the Cron Trigger as if at `time`; says how the run ended ('ok' or 'exception'). */
   scheduled(time: Date): Promise<string>
@@ -59,7 +62,7 @@ export const ORIGIN = 'http://localhost'
 interface WranglerEnvironment {
   compatibility_date?: string
   compatibility_flags: string[]
-  vars: Record<string, string | number>
+  vars: Record<string, string | number | Record<string, string>>
   d1_databases: Array<{ binding: string; database_name?: string; migrations_dir?: string }>
   r2_buckets: Array<{ binding: string; bucket_name?: string }>
   assets?: { binding?: string; run_worker_first?: boolean | string[] }
@@ -99,6 +102,8 @@ async function migrate(db: D1, dir: string): Promise<void> {
 /** Starts the Worker with fresh, migrated databases and an empty bucket. Call `dispose` when done. */
 export async function startWorker(options: StartOptions = {}): Promise<RunningWorker> {
   const config: WranglerEnvironment = unstable_readConfig({ config: join(root, 'wrangler.jsonc'), env: options.env ?? 'dev' })
+  const { ACCESS_AUD, ...vars } = config.vars
+  if (options.access && ACCESS_AUD !== undefined) vars.ACCESS_AUD = ACCESS_AUD
   const databases = config.d1_databases.filter((db) => db.binding !== options.brokenDatabase)
   const assetsDir = mkdtempSync(join(tmpdir(), 'bd-beads-assets-'))
   writeFileSync(join(assetsDir, 'index.html'), '<!doctype html><title>app</title>')
@@ -110,7 +115,7 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
     compatibilityDate: config.compatibility_date,
     compatibilityFlags: config.compatibility_flags,
     bindings: {
-      ...config.vars,
+      ...vars,
       ...options.vars,
       ...(options.brokenDatabase ? { [options.brokenDatabase]: 'not a database' } : {}),
     },
@@ -153,7 +158,8 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
   await miniflare.ready
   for (const db of databases) await migrate(await miniflare.getD1Database(db.binding), db.migrations_dir ?? '')
   return {
-    fetch: (path, init) => miniflare.dispatchFetch(`${ORIGIN}${path}`, init as never) as unknown as Promise<Response>,
+    fetch: (path, init) =>
+      miniflare.dispatchFetch(path.startsWith('/') ? `${ORIGIN}${path}` : path, init as never) as unknown as Promise<Response>,
     async scheduled(time) {
       const worker = await miniflare.getWorker()
       return (await worker.scheduled({ scheduledTime: time, cron: config.triggers.crons?.[0] ?? '' })).outcome

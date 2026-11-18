@@ -88,7 +88,7 @@ export async function handleApi(request: Request, env: Env, routes: Route[]): Pr
 }
 
 /** `GET /api/health`: name and version after one read of each database, so "up" means "can reach its storage".
- * Bypasses Access. */
+ * Production's bypasses Access, for UptimeRobot; dev's has no bypass and needs an Access token (ticket 395). */
 export const healthRoute: Route = {
   method: 'GET',
   path: '/api/health',

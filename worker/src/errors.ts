@@ -4,6 +4,7 @@
 type ApiErrorCode =
   | 'bad-request' // 400: a JSON body not shaped as the route takes it, or a field past its length
   | 'forbidden-origin' // 403: a changing request from another origin, or with none
+  | 'access-required' // 403: dev only, no valid Cloudflare Access token for the host asked (ticket 395)
   | 'turnstile-failed' // 403: a missing or rejected Turnstile token
   | 'not-found' // 404: no such route, or no such blob
   | 'length-required' // 411: an upload to R2 without Content-Length (R2 takes only a stream of known length)
@@ -16,6 +17,7 @@ type ApiErrorCode =
 const STATUS: Record<ApiErrorCode, number> = {
   'bad-request': 400,
   'forbidden-origin': 403,
+  'access-required': 403,
   'turnstile-failed': 403,
   'not-found': 404,
   'length-required': 411,

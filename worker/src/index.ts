@@ -1,3 +1,4 @@
+import { accessRefusal } from './access'
 import { handleApi, healthRoute, type Route } from './api'
 import type { Env } from './env'
 import { feedbackRoute } from './feedback'
@@ -10,11 +11,14 @@ interface WorkerParts {
 }
 
 /** The Worker (spec 385). Called only for /api/* (`run_worker_first`) and the Cron Trigger's watchdog; the app is
- * static assets. Built by a function so the tests can add parts of their own. */
+ * static assets. On dev, every request needs an Access token first (ticket 395). Built by a function so the tests can
+ * add parts of their own. */
 export function createWorker({ routes = [], daily = [] }: WorkerParts = {}): ExportedHandler<Env> {
   const all = [healthRoute, feedbackRoute, ...routes]
   return {
-    fetch(request, env) {
+    async fetch(request, env) {
+      const refused = await accessRefusal(request, env)
+      if (refused) return refused
       if (new URL(request.url).pathname.startsWith('/api/')) return handleApi(request, env, all)
       // Reached only for a path with no static asset; the assets' own 404 answers it.
       return env.ASSETS.fetch(request)

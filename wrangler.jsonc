@@ -43,6 +43,14 @@
         // this. One setting per Worker, never read off the request's Host, so a `workers.dev` address (which Google
         // refuses) can't make a redirect URI that isn't listed.
         "PUBLIC_ORIGIN": "https://dev.openbeads.com",
+        // Ticket 395: dev answers only a request that carries a valid Access token for the application of the host it
+        // came in on, so a mistake in the Access setup can't open it. Each host is its own Access application, with its
+        // own Audience tag (not secret). Production declares none, so it doesn't check.
+        "ACCESS_TEAM_DOMAIN": "https://bdbeads.cloudflareaccess.com",
+        "ACCESS_AUD": {
+          "bd-beads-dev.bd4beads.workers.dev": "a103488b0696e24e9db1ce7d23bb4a32b76a9ccb6a5b0b9af252df116fee7a06",
+          "dev.openbeads.com": "7a4eaa9a9c18a6b6695210fded5a9a8110a2404f319c061f18e2a1fb8708e2f3"
+        },
         // This Worker's own script, databases and bucket, which dev's watchdog filters Cloudflare's analytics by (it
         // counts only its own usage).
         "CF_ACCOUNT_ID": "925d034d8d4ae6552ded069d92010749",

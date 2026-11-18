@@ -16,6 +16,10 @@ export interface Env {
   /** The origin people use this Worker on (ticket 400). Google's callback and the allowed origins come from this,
    * never the request's host: `workers.dev` stays on until the release, and Google lists no such redirect URI. */
   PUBLIC_ORIGIN?: string
+  /** Dev only (ticket 395): the Access team's address, and each host's Access application's Audience tag. Where
+   * `ACCESS_AUD` is set, every request needs a valid Access token for its host's application (access.ts). */
+  ACCESS_TEAM_DOMAIN?: string
+  ACCESS_AUD?: Record<string, string>
   /** The git commit of the deploy, passed by the deploy workflow with `--var VERSION:<sha>`. */
   VERSION?: string
   /** Set by hand in the dashboard, never in `wrangler.jsonc`: comma-separated features switched off (worker/src/features.ts). */
