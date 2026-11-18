@@ -85,3 +85,76 @@ describe('ToastRegion (ticket 0859)', () => {
     wrapper.unmount()
   })
 })
+
+describe('"Update ready"\'s list of what waits (ticket 1091)', () => {
+  const list = [
+    { kind: 'new', line: 'A new thing' },
+    { kind: 'changed', line: 'A change' },
+  ] as const
+  const updateToast = (stamp: number, more?: number, leave = vi.fn()): Toast => ({
+    id: 'update-ready',
+    text: 'Update ready',
+    tone: 'info',
+    stamp,
+    persistent: true,
+    action: { label: 'Reload', run: vi.fn() },
+    secondAction: { label: "What's new", href: '/#whats-new', run: leave },
+    update: { version: '2.2.0', counts: [{ kind: 'new', count: 1 }, { kind: 'changed', count: 1 }], list: [...list], ...(more && { more }) },
+  })
+  const toggle = (wrapper: ReturnType<typeof mount>) => wrapper.get('[data-testid="toast-second-action"]')
+
+  it('makes What\'s new a button that opens the list under the actions and closes it again, leaving for nowhere', async () => {
+    const leave = vi.fn()
+    const wrapper = mount(ToastRegion, { props: { toasts: [updateToast(1, undefined, leave)] }, attachTo: document.body })
+    expect(toggle(wrapper).element.tagName).toBe('BUTTON')
+    expect(toggle(wrapper).attributes('href')).toBeUndefined()
+    expect(toggle(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="update-list"]').exists()).toBe(false)
+
+    await toggle(wrapper).trigger('click')
+    expect(toggle(wrapper).attributes('aria-expanded')).toBe('true')
+    const rows = wrapper.findAll('[data-testid="update-list"] li')
+    expect(rows.map((row) => row.find('[data-testid="kind-label"]').attributes('data-kind'))).toEqual(['new', 'changed'])
+    expect(rows.map((row) => row.text())).toEqual(['NewA new thing', 'ChangedA change'])
+    // The list comes after the actions, so Reload never moves.
+    const order = wrapper.findAll('.toast-region__actions, [data-testid="update-list"]').map((el) => el.attributes('data-testid') ?? 'actions')
+    expect(order).toEqual(['actions', 'update-list'])
+
+    await toggle(wrapper).trigger('click')
+    expect(toggle(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="update-list"]').exists()).toBe(false)
+    expect(leave).not.toHaveBeenCalled()
+    expect(wrapper.emitted('dismiss')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('has no link to the rest when the list holds every note', async () => {
+    const wrapper = mount(ToastRegion, { props: { toasts: [updateToast(2)] }, attachTo: document.body })
+    await toggle(wrapper).trigger('click')
+    expect(wrapper.find('[data-testid="update-more"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('links to the rest on What\'s new when more wait, leaving as What\'s new\'s link did', async () => {
+    const leave = vi.fn()
+    const wrapper = mount(ToastRegion, { props: { toasts: [updateToast(3, 17, leave)] }, attachTo: document.body })
+    await toggle(wrapper).trigger('click')
+    const more = wrapper.get('a[data-testid="update-more"]')
+    expect(more.text()).toBe("17 more in What's new")
+    expect(more.attributes('href')).toBe('/#whats-new')
+    more.element.addEventListener('click', (event) => event.preventDefault())
+    await more.trigger('click')
+    expect(leave).toHaveBeenCalledOnce()
+    expect(wrapper.emitted('dismiss')).toEqual([['update-ready']])
+    wrapper.unmount()
+  })
+
+  it('shows a newer Build\'s toast closed', async () => {
+    const wrapper = mount(ToastRegion, { props: { toasts: [updateToast(4)] }, attachTo: document.body })
+    await toggle(wrapper).trigger('click')
+    await wrapper.setProps({ toasts: [updateToast(5)] })
+    expect(toggle(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="update-list"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+})

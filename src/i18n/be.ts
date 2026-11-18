@@ -348,6 +348,7 @@ export const be: Translations = {
     canvasPlaceholder: 'Праект яшчэ не адкрыты',
     updateReady: 'Абнаўленне гатова',
     updateReload: 'Перазагрузіць',
+    updateMore: 'Яшчэ {count} у «Што новага»',
     signInRunOut: 'Тэрмін уваходу скончыўся.',
     signIn: 'Увайсці',
     canvasPlaceholderPan: 'Перасоўвайце палатно, перацягваючы яго з заціснутым прабелам.',

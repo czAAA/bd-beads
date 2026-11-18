@@ -91,3 +91,83 @@ test('names the Version alone when no note waits above the page\'s (ticket 1048)
   await expect(toast.getByTestId('update-version')).toHaveText('99.0.0')
   await expect(toast.getByTestId('kind-label')).toHaveCount(0)
 })
+
+/** A line as long as the canvas's longest, so ten rows make the toast as tall as real ones do. */
+const LONG_CHANGE = 'The Rotate Canvas button shows the bead you weave with and its thread, turned with the Canvas, so you see which way the thread runs before you turn it'
+/** 27 waiting, as on the canvas (ticket 1091): 3 New, 21 Changed and 3 Fixed, so the list holds 10 and 17 more wait. */
+const MANY = fileOf(
+  '99.9.26',
+  Array.from({ length: 27 }, (_, index) => {
+    const kind: Kind = index < 3 ? 'fixed' : index < 6 ? 'new' : 'changed'
+    return note(`99.9.${26 - index}`, kind, `${kind === 'new' ? 'A new thing' : kind === 'fixed' ? 'A fix' : LONG_CHANGE} ${27 - index}`)
+  }),
+)
+const SCHEMES = { light: { colorScheme: 'light' }, dark: { colorScheme: 'dark' }, contrast: { colorScheme: 'light', contrast: 'more' } } as const
+
+test.describe("Update ready's list of what waits (ticket 1091)", () => {
+  test('opens under the actions, keeping Reload in place, and closes again, leaving for nowhere', async ({ page }) => {
+    await waitingWith(page, MANY)
+    const toast = page.getByTestId('update-ready')
+    const reload = toast.getByTestId('toast-action')
+    const toggle = toast.getByTestId('toast-second-action')
+    const before = (await reload.boundingBox())!
+    const address = page.url()
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(toast.getByTestId('update-list').locator('li')).toHaveCount(10)
+    await expect(toast.getByTestId('update-more')).toHaveText("17 more in What's new")
+    // The toast grows to the left as it opens; Reload keeps its height in it.
+    expect((await reload.boundingBox())!.y).toBe(before.y)
+    expect(page.url()).toBe(address)
+    await toggle.click()
+    await expect(toast.getByTestId('update-list')).toHaveCount(0)
+  })
+
+  for (const [scheme, media] of Object.entries(SCHEMES)) {
+    test(`open, in ${scheme}`, async ({ page }) => {
+      await page.emulateMedia(media)
+      await waitingWith(page, MANY)
+      const toast = page.getByTestId('update-ready')
+      await toast.getByTestId('toast-second-action').click()
+      await expect(toast.getByTestId('update-list').locator('li')).toHaveCount(10)
+      await expect(toast).toHaveScreenshot(`update-ready-open-${scheme}.png`, { maxDiffPixelRatio: 0.01 })
+    })
+  }
+
+  for (const locale of ['ru', 'es'] as const) {
+    test(`opens in ${locale}`, async ({ page }) => {
+      await waitingWith(page, MANY, locale)
+      const toast = page.getByTestId('update-ready')
+      await toast.getByTestId('toast-second-action').click()
+      await expect(toast.getByTestId('update-list').locator('li')).toHaveCount(10)
+      await expect(toast).toHaveScreenshot(`update-ready-open-${locale}.png`, { maxDiffPixelRatio: 0.01 })
+    })
+  }
+
+  test.describe('on a short screen, a tablet in landscape', () => {
+    // An iPad's own scale: at 1× a browser can lay out what an iPad doesn't.
+    test.use({ viewport: { width: 1180, height: 820 }, deviceScaleFactor: 2 })
+
+    test('scrolls the list inside the toast, which stays inside the canvas box', async ({ page }) => {
+      await waitingWith(page, MANY, 'ru')
+      const toast = page.getByTestId('update-ready')
+      await toast.getByTestId('toast-second-action').click()
+      const list = toast.getByTestId('update-list')
+      await expect(list.locator('li')).toHaveCount(10)
+      const room = await page.getByTestId('toast-region').evaluate((region) => {
+        const box = (region as HTMLElement).offsetParent!.getBoundingClientRect()
+        const scroller = region.querySelector('[data-testid="update-list"]')!
+        return { bottom: box.bottom, scrolls: scroller.scrollHeight > scroller.clientHeight + 1 }
+      })
+      const box = (await toast.boundingBox())!
+      expect(box.y + box.height).toBeLessThanOrEqual(room.bottom)
+      expect(room.scrolls).toBe(true)
+      // The name, the actions and the link under the list stay in view.
+      for (const part of [toast.getByTestId('update-version'), toast.getByTestId('toast-action'), toast.getByTestId('update-more')]) {
+        const at = (await part.boundingBox())!
+        expect(at.y).toBeGreaterThanOrEqual(box.y)
+        expect(at.y + at.height).toBeLessThanOrEqual(box.y + box.height)
+      }
+    })
+  })
+})

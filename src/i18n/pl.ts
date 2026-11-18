@@ -347,6 +347,7 @@ export const pl: Translations = {
     canvasPlaceholder: 'Nie otwarto jeszcze żadnego projektu',
     updateReady: 'Aktualizacja gotowa',
     updateReload: 'Załaduj ponownie',
+    updateMore: 'Jeszcze {count} w „Co nowego”',
     signInRunOut: 'Sesja wygasła.',
     signIn: 'Zaloguj się',
     canvasPlaceholderPan: 'Przesuwaj płótno, przeciągając je z wciśniętą spacją.',

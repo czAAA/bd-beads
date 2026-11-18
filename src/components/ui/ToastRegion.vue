@@ -5,8 +5,10 @@ import { useShellScope } from '../../composables/ui/shellScope'
 import { toastsBelowPanel } from '../../composables/ui/toastPlacement'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import type { Toast, ToastAction } from '../../composables/ui/useToasts'
+import AppIcon from './AppIcon.vue'
 import AppMessage from './AppMessage.vue'
 import ToastUpdate from './ToastUpdate.vue'
+import ToastUpdateList from './ToastUpdateList.vue'
 
 /** Where toasts show (ticket 76): top-right of the canvas box on the toast layer (above sheets, below modals);
  * results go after 5s unless hovered or focused, errors stay. */
@@ -49,6 +51,14 @@ function press(toast: Toast, action: ToastAction) {
   emit('dismiss', toast.id)
 }
 
+// "Update ready" with counts (ticket 1091): its What's new opens the list of what waits instead of leaving. A toast is
+// open by its stamp, so a newer Build's toast, which takes the waiting one's place, shows closed.
+const openStamp = ref<number>()
+const listOpen = (toast: Toast) => openStamp.value === toast.stamp
+function toggleList(toast: Toast) {
+  openStamp.value = listOpen(toast) ? undefined : toast.stamp
+}
+
 const belowStyle = computed(() => (below.value === undefined ? undefined : { '--toasts-below': `${below.value}px` }))
 </script>
 
@@ -68,6 +78,7 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
       :tone="toast.tone"
       placement="toast"
       :timeout="toast.tone === 'danger' || toast.persistent ? undefined : TOAST_MS"
+      :class="{ 'toast-region__toast--open': listOpen(toast) }"
       :data-testid="toast.id"
       @close="emit('dismiss', toast.id)"
     >
@@ -75,18 +86,38 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
       <template v-else>{{ toast.text }}</template>
       <!-- Two actions stand on their own line under the text (ticket 0935): beside it they would leave it no room. -->
       <span v-if="toast.action && toast.secondAction" class="toast-region__actions">
-        <component
-          :is="action.href ? 'a' : 'button'"
-          v-for="(action, index) in [toast.action, toast.secondAction]"
-          :key="index"
-          v-bind="action.href ? { href: action.href } : { type: 'button' }"
-          class="ui-control toast-region__action"
-          :data-testid="index ? 'toast-second-action' : 'toast-action'"
-          @click="press(toast, action)"
-        >
-          {{ action.label }}
-        </component>
+        <template v-for="(action, index) in [toast.action, toast.secondAction]" :key="index">
+          <!-- The second action opens the list of what waits (ticket 1091): it stays beside Reload and leaves for nowhere. -->
+          <button
+            v-if="index && toast.update?.list"
+            type="button"
+            class="ui-control toast-region__action toast-region__toggle"
+            :class="{ 'toast-region__toggle--open': listOpen(toast) }"
+            :aria-expanded="listOpen(toast)"
+            data-testid="toast-second-action"
+            @click="toggleList(toast)"
+          >
+            {{ action.label }}<AppIcon class="toast-region__chevron" name="chevron-down" :size="16" />
+          </button>
+          <component
+            :is="action.href ? 'a' : 'button'"
+            v-else
+            v-bind="action.href ? { href: action.href } : { type: 'button' }"
+            class="ui-control toast-region__action"
+            :data-testid="index ? 'toast-second-action' : 'toast-action'"
+            @click="press(toast, action)"
+          >
+            {{ action.label }}
+          </component>
+        </template>
       </span>
+      <ToastUpdateList
+        v-if="toast.update?.list && toast.secondAction && listOpen(toast)"
+        :list="toast.update.list"
+        :more="toast.update.more"
+        :href="toast.secondAction.href"
+        @leave="press(toast, toast.secondAction)"
+      />
       <template v-if="toast.action && !toast.secondAction" #actions>
         <component
           :is="toast.action.href ? 'a' : 'button'"
@@ -107,6 +138,8 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
   position: absolute;
   right: var(--space-16);
   top: calc(var(--strip-height) + var(--space-16));
+  /* The toasts' room ends 16px above the box's foot: an open list scrolls inside it (ticket 1091). */
+  bottom: var(--space-16);
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
@@ -141,6 +174,34 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
   color: var(--ink);
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* What's new opening the list (ticket 1091): the word and a chevron in `muted`, turned up while the list is open. */
+.toast-region__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.toast-region__chevron {
+  color: var(--muted);
+}
+
+.toast-region__toggle--open .toast-region__chevron {
+  transform: rotate(180deg);
+}
+
+/* Open, the toast may shrink to the room left, and its words stand in a column whose list scrolls (ticket 1091): the
+ * name, counts, actions and the link under the list stay in view. */
+.toast-region__toast--open {
+  min-height: 0;
+}
+
+.toast-region__toast--open :deep(.app-message__text) {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: 0;
 }
 
 /* Arriving 200ms, leaving 150ms, dropping in 8px (Motion card); reduced motion fades without the drop. */

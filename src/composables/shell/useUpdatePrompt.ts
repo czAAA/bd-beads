@@ -18,7 +18,8 @@ export interface UpdatePromptDeps {
 // the Version that waits and what it brings (ticket 1048), with Reload and What's new, and stays until answered or
 // closed. Nothing reloads by itself, so an update never takes the person's place on the canvas.
 export function useUpdatePrompt({ updates, messages, locale, showToast }: UpdatePromptDeps) {
-  // What's new is a link: the editor keeps every change as it is made, so it leaves with nothing to do first.
+  // What's new is a link (with several notes waiting, the link under the list it opens instead, ticket 1091): the
+  // editor keeps every change as it is made, so it leaves with nothing to do first.
   const leave = () => {}
   const stopListening = updates.onReady(locale, (waits) => {
     const t = messages()

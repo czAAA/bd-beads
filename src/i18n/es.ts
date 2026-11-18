@@ -347,6 +347,7 @@ export const es: Translations = {
     canvasPlaceholder: 'Aún no hay ningún proyecto abierto',
     updateReady: 'Actualización lista',
     updateReload: 'Recargar',
+    updateMore: '{count} más en Novedades',
     signInRunOut: 'Tu sesión ha caducado.',
     signIn: 'Iniciar sesión',
     canvasPlaceholderPan: 'Mueve el lienzo arrastrando mientras mantienes pulsado Espacio.',

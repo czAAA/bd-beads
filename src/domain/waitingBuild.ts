@@ -25,13 +25,26 @@ interface KindCount {
   count: number
 }
 
+/** One waiting note as the toast draws it: its kind label and line. */
+interface UpdateNote {
+  kind: ReleaseNoteKind
+  line: string
+}
+
+/** How many waiting notes the toast's list holds at most (ticket 1091); the rest are on the Homepage's What's new. */
+const UPDATE_LIST_LENGTH = 10
+
 /** What "Update ready" says after its name: the waiting Version, then one note's kind and line, or a count per kind in
  * the order New, Changed, Fixed with a kind that has none left out. Neither for a Version with no note above the
  * page's; nothing at all when what waits is unknown (today's plain words). */
 export interface UpdateSummary {
   version?: string
-  note?: { kind: ReleaseNoteKind; line: string }
+  note?: UpdateNote
   counts?: KindCount[]
+  /** With counts, the list What's new opens (ticket 1091): the first notes in the counts' kind order, newest first. */
+  list?: UpdateNote[]
+  /** How many waiting notes the list leaves out; absent when it holds them all. */
+  more?: number
 }
 
 /** The toast's summary of what waits (ticket 1048). */
@@ -41,5 +54,9 @@ export function updateSummary(waits: WhatWaits): UpdateSummary {
   if (notes.length === 0) return { version }
   if (notes.length === 1) return { version, note: { kind: notes[0].kind, line: notes[0].line } }
   const counts = RELEASE_NOTE_KINDS.map((kind) => ({ kind, count: notes.filter((note) => note.kind === kind).length })).filter((entry) => entry.count > 0)
-  return { version, counts }
+  // The notes come newest first, so each kind keeps that order.
+  const byKind = RELEASE_NOTE_KINDS.flatMap((kind) => notes.filter((note) => note.kind === kind)).map(({ kind, line }) => ({ kind, line }))
+  const list = byKind.slice(0, UPDATE_LIST_LENGTH)
+  const more = byKind.length - list.length
+  return { version, counts, list, ...(more > 0 && { more }) }
 }

@@ -122,7 +122,13 @@ const Toasts = defineComponent({
             tone: 'info',
             stamp: 5,
             ...updateActions(),
-            update: { version: '2.13.0', counts: [{ kind: 'new', count: 12 }, { kind: 'changed', count: 30 }, { kind: 'fixed', count: 5 }] },
+            // Its list, which What's new opens (ticket 1091): long lines in the language shown, and the link to the rest.
+            update: {
+              version: '2.13.0',
+              counts: [{ kind: 'new', count: 12 }, { kind: 'changed', count: 30 }, { kind: 'fixed', count: 5 }],
+              list: (['new', 'new', 'changed', 'changed', 'fixed'] as const).map((kind) => ({ kind, line: whatsNewNote.line[locale.value] })),
+              more: 42,
+            },
           },
         ],
       })
@@ -277,6 +283,7 @@ const CASES: FitCase[] = [
   ['RadialToolbox', RadialToolbox, { open: true, center: { x: 160, y: 300 }, activeTool: 'paint', canUndo: true, canRedo: false, recents: ['#1f77b4'], beadHex: '#e63746', held: 'pick-color' }],
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
+  ['ToastRegion (Update ready list open)', Toasts, {}, (root) => root.querySelector<HTMLElement>('[data-testid="update-counts"] [data-testid="toast-second-action"]')?.click()],
   ['Save failed notice', SaveFailedNotice, {}],
   ['Missed Project notice', MissedProjectNotice, {}],
   ['ProjectsLibrary (sealed and counting)', ProjectsLibrary, { projects: [withLayers(empty, { id: 'h', name: 'Counting', beads: hugeRows, updatedAt: 1, savedAt: 1 })], sealed: [sealedProject] }],

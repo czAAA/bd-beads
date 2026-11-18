@@ -347,6 +347,7 @@ export const ru: Translations = {
     canvasPlaceholder: 'Проект пока не открыт',
     updateReady: 'Обновление готово',
     updateReload: 'Перезагрузить',
+    updateMore: 'Ещё {count} в «Что нового»',
     signInRunOut: 'Срок входа истёк.',
     signIn: 'Войти',
     canvasPlaceholderPan: 'Двигайте холст, перетаскивая его с зажатым пробелом.',
