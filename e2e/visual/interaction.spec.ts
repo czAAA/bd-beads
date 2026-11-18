@@ -128,14 +128,22 @@ test.describe('the pointer tools', () => {
     await openApp(page, [project])
     await setZoom(page, 100)
 
+    const scrollX = async () => Number(await page.getByTestId('project-surface').getAttribute('data-scroll-x')) || 0
+    const before = await scrollX()
     const at = await pointOn(page, 'loom', false, 100, 4, 7)
     await page.mouse.click(at.x, at.y, { button: 'right' })
+    // A right click is not a drag: the Canvas stays (ticket 1074).
+    expect(await scrollX()).toBe(before)
     const from = await pointOn(page, 'loom', false, 100, 4, 10)
     await page.mouse.move(from.x, from.y)
     await page.mouse.down({ button: 'right' })
     const end = await pointOn(page, 'loom', false, 100, 4, 13)
     await page.mouse.move(end.x, end.y, { steps: 12 })
+    expect(await cursorOfSurface(page)).toBe('grabbing')
     await page.mouse.up({ button: 'right' })
+    await settle(page)
+    // The Canvas went with the pointer, the whole way from where the button went down.
+    expect(await scrollX()).toBeCloseTo(before - (end.x - from.x), 0)
 
     const saved = await savedProject(page)
     expect([7, 10, 11, 12, 13].map((column) => colorAt(saved, 4, column))).toEqual([7, 10, 11, 12, 13].map((column) => frameGrid(project)[4]![column]!.color))
