@@ -8,8 +8,9 @@ interface ColorFamily {
 interface Brand {
   id: string
   name: string
-  /** The Brand's color families (ADR 0078): its Beads' default Palette and the base of its catalog's swatches. Absent,
-   * the twelve built-in colors stand in. A Project's Bead copy leaves them out. */
+  /** The Brand's color families (ADR 0078): the base of its catalog's swatches, the order of its default colors, and
+   * the Palette of a Bead its catalog names none for (ADR 0100: a new Brand's catalog names its default colors in
+   * `src/data/defaultColors/`). Absent, the twelve stand in. A Project's Bead copy leaves them out. */
   colorFamilies?: readonly ColorFamily[]
 }
 

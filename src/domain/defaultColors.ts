@@ -8,7 +8,7 @@ interface NamedDefault {
 
 /** A Color catalog's default colors (ticket 1070): for each Bead size it lists codes in, one code per color family of
  * its Brand, by family id. Drafted from the measured colors by `scripts/draft-default-colors.mjs` in the docs repo. */
-export interface DefaultColorsFile {
+interface DefaultColorsFile {
   id: string
   sizes: Readonly<Record<string, Readonly<Record<string, NamedDefault>>>>
 }

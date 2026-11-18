@@ -62,10 +62,9 @@ function catalogDefaultId(hex: string): string {
 
 const catalogDefaults = new Map<string, readonly PaletteColor[]>()
 
-/** The built-in colors a Project on this Bead starts with, its default colors (tickets 0528, 1070): the codes its Color
- * catalog names for its size, one per color family in the Brand's order, each with its measured color; the Brand's
- * generic family colors for a Bead whose catalog names none, or the twelve for a Bead the catalog lacks. The same
- * array every time, so two Beads can be compared by identity. */
+/** A Bead's default colors (tickets 0528, 1070, ADR 0100): its catalog's codes for its size, one per color family in the
+ * Brand's order, with their measured colors; else its Brand's generic family colors, or the twelve for a Bead the
+ * catalog lacks. The same array every time, so two Beads can be compared by identity. */
 export function defaultPalette(beadId: string): readonly PaletteColor[] {
   const bead = findBead(beadId)
   const named = namedDefaults(beadId)
@@ -341,10 +340,9 @@ export function removedDefaultsAfter(before: PaletteIds, after: PaletteIds, remo
   return [...new Set([...removed.filter((hex) => !kept.has(hex)), ...taken])]
 }
 
-/** The Palette after the Bead changes from the built-in colors `from` to `to` (tickets 0528, 1070): `to` become the
- * built-in ones, every added color stays, and a `from` color still there that a bead uses (`used`, by hex) stays as an
- * added one at the end, in slot order; one no bead uses leaves. A hex in both is kept once, as a built-in; a `to` color
- * the maker removed (`removed`) is not put back. */
+/** The Palette after the Bead changes from the built-in colors `from` to `to` (tickets 0528, 1070): `to` come in, every
+ * added color stays, a `from` color a bead uses (`used`, hexes) stays as an added one at the end and an unused one
+ * leaves. A hex in both is kept once, as a built-in; a `to` color the maker removed (`removed`) is not put back. */
 export function paletteForBead(
   ids: PaletteIds,
   removed: readonly string[],
