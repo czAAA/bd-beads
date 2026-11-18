@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { beadCopy, findBead } from './beads'
-import { addedColorId, defaultPalette, defaultPaletteIds } from './palette'
+import { BUILT_IN_COLORS, addedColorId, defaultPalette, defaultPaletteIds } from './palette'
 import { lettersFor } from './swatchLetters'
 import { framedGrid } from './layerBeads'
 import { canvasWeave, frameWeave, weaveOf } from './layerWeave'
@@ -107,10 +107,25 @@ function writtenBack(stored: string): unknown {
     // Written back as this build writes: file version 14 (ticket 0790).
     if (key === '' && typeof value?.version === 'number' && value.version >= 13) return { ...value, version: 14 }
     if (key === 'beadShape') return undefined
-    if (Array.isArray(value?.layers)) return { ...value, backgroundPositions: 3 }
+    if (Array.isArray(value?.layers)) return { ...value, backgroundPositions: 3, ...genericAsAdded(value) }
     const oldDelica = value?.id === 'miyuki/delica/11-0' && value.widthMm === 1.6 && value.heightMm === 1.3
     return oldDelica ? { ...value, widthMm: 1.3, heightMm: 1.6 } : value
   })
+}
+
+/** A stored Palette as this build writes it back (ticket 1070): a generic color its woven Bead's default colors no
+ * longer are is kept as the added color of its hex, the same swatch. */
+function genericAsAdded(project: { layers: { beadId: string }[]; palette?: unknown }): { palette?: string[] } {
+  if (!Array.isArray(project.palette)) return {}
+  const beadId = project.layers.at(-1)!.beadId
+  const builtIns = defaultPalette(beadId)
+  const generic = [...BUILT_IN_COLORS, ...(findBead(beadId)?.brand.colorFamilies ?? [])]
+  return {
+    palette: project.palette.map((id: string) => {
+      const earlier = builtIns.some((color) => color.id === id) ? undefined : generic.find((color) => color.id === id)
+      return earlier ? addedColorId(earlier.hex) : id
+    }),
+  }
 }
 
 /** A stored value of file version 12 or library version 5 as this build writes it back (tickets 0691, 0724): the next

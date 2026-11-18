@@ -1,6 +1,7 @@
 import { BEAD_CATALOG, findBead, findBrand } from './beads'
 import type { ColorCatalog } from './colorCatalog'
 import { BLACK_WHITE_BALANCE, channelsOf, contrastRatio, normalizeHex, relativeLuminance } from './color'
+import { namedDefaults } from './defaultColors'
 import { nearestColor } from './imageColors'
 import { beadIdOfLayer, type Layered } from './layerRecord'
 
@@ -11,6 +12,9 @@ export interface PaletteColor {
   literalName?: string
   /** The maker's catalog code of a swatch picked from the Color catalog (ticket 0538, ADR 0072); absent for a plain color. */
   code?: string
+  /** The color family a catalog's default color stands for (ticket 1070), which names it ("Red · 45"); absent for the
+   * generic family colors, whose id is their family. */
+  family?: string
 }
 
 /** The twelve built-in colors a Palette starts from when its Bead's brand has no set of its own (see CONTEXT.md's
@@ -48,10 +52,33 @@ export function brandColors(brandId: string | undefined): readonly PaletteColor[
   return (brandId && findBrand(brandId)?.colorFamilies) || BUILT_IN_COLORS
 }
 
-/** The built-in colors a Project on this Bead starts with (ticket 0528): its Brand's set, or the twelve for a Bead the
- * catalog lacks. The same array every time, so two Beads can be compared by identity. */
+const DEFAULT_PREFIX = 'default-'
+
+/** The id a catalog's default color is known by (ticket 1070): its hex, as an added color's is, so a stored Palette
+ * still knows the color once the Bead's default colors are others; never a family id, which a generic color has. */
+function catalogDefaultId(hex: string): string {
+  return `${DEFAULT_PREFIX}${hex.slice(1)}`
+}
+
+const catalogDefaults = new Map<string, readonly PaletteColor[]>()
+
+/** The built-in colors a Project on this Bead starts with, its default colors (tickets 0528, 1070): the codes its Color
+ * catalog names for its size, one per color family in the Brand's order, each with its measured color; the Brand's
+ * generic family colors for a Bead whose catalog names none, or the twelve for a Bead the catalog lacks. The same
+ * array every time, so two Beads can be compared by identity. */
 export function defaultPalette(beadId: string): readonly PaletteColor[] {
-  return brandColors(findBead(beadId)?.brand.id)
+  const bead = findBead(beadId)
+  const named = namedDefaults(beadId)
+  if (!bead || !named) return brandColors(bead?.brand.id)
+  let colors = catalogDefaults.get(bead.id)
+  if (!colors) {
+    colors = brandColors(bead.brand.id).flatMap((family) => {
+      const pick = named[family.id]
+      return pick ? [{ id: catalogDefaultId(pick.hex), hex: pick.hex, code: pick.code, family: family.id }] : []
+    })
+    catalogDefaults.set(bead.id, colors)
+  }
+  return colors
 }
 
 /** A built-in color by id.
@@ -132,16 +159,26 @@ function paletteColorForAdded(id: string): PaletteColor | undefined {
   return hex ? { id: addedColorId(hex), hex } : undefined
 }
 
+/** Every generic color by id: the twelve and each Brand's color families, a shared id having one hex (a test checks). */
+const GENERIC_COLORS: readonly PaletteColor[] = [...BUILT_IN_COLORS, ...BEAD_CATALOG.flatMap((bead) => bead.brand.colorFamilies ?? [])]
+
+/** The hex a built-in id the Bead's set lacks stood for: a generic color's (a Project saved before ticket 0528 or 1070),
+ * or a catalog default color's, by its id; undefined for any other id. */
+function earlierBuiltInHex(id: string): string | undefined {
+  if (id.startsWith(DEFAULT_PREFIX)) return normalizeHex(`#${id.slice(DEFAULT_PREFIX.length)}`)
+  return GENERIC_COLORS.find((color) => color.id === id)?.hex
+}
+
 /** A stored Palette read back whatever it holds (see paletteColors), as the ids to keep. A missing or unreadable one
- * is a new Project's Palette. One of the twelve that the Bead's set lacks (a Project saved before ticket 0528) stays
- * in the Palette as an added color, so what was stored is what is shown. */
+ * is a new Project's Palette. A built-in color the Bead's set lacks (a generic one of a Project saved before tickets
+ * 0528 or 1070) stays in the Palette as an added color, so what was stored is what is shown. */
 export function normalizePaletteIds(stored: unknown, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): string[] {
   if (!Array.isArray(stored)) return defaultPaletteIds(builtIns)
   const ids = stored
     .filter((id): id is string => typeof id === 'string')
     .map((id) => {
-      const earlier = builtIns.some((color) => color.id === id) ? undefined : BUILT_IN_COLORS.find((color) => color.id === id)
-      return earlier ? addedColorId(earlier.hex) : id
+      const earlier = builtIns.some((color) => color.id === id) ? undefined : earlierBuiltInHex(id)
+      return earlier ? addedColorId(earlier) : id
     })
   return paletteColors(ids, builtIns).map((color) => color.id)
 }
@@ -183,19 +220,20 @@ export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[]
 /** The least a new Project's first color keeps against its Background: WCAG's 3:1 for a meaningful mark. */
 const START_COLOR_CONTRAST = 3
 
-/** The colors a new Project starts painting with (ticket 0838), first choice first: gold on a dark Background (yellow
- * where the Palette has no gold, as the twelve), red on a light one. */
+/** The color families a new Project starts painting with (ticket 0838), first choice first: gold on a dark Background
+ * (yellow where the Palette has no gold, as the twelve), red on a light one; a family's default color (ticket 1070). */
 const START_COLORS = { dark: ['gold', 'yellow'], light: ['red'] } as const
 
-/** The swatch a new Project starts painting with on its Background's hex (ticket 0838): gold on a dark one, red on a
- * light one, so the first bead shows. Where neither of those is in the Palette or stands 3:1 off the Background (a
+/** The swatch a new Project starts painting with on its Background's hex (ticket 0838): the default color of the gold
+ * family on a dark one, the red family's on a light one (ticket 1070), so the first bead shows. Where neither of those is in the Palette or stands 3:1 off the Background (a
  * Custom color close to it), the swatch that stands off it most. Undefined for an empty Palette. */
 export function startColorId(palette: Palette, background: string): string | undefined {
   const under = channelsOf(background)
   const contrast = (color: PaletteColor) => contrastRatio(channelsOf(color.hex), under)
   const look = relativeLuminance(under) < BLACK_WHITE_BALANCE ? 'dark' : 'light'
+  const ofFamily = (family: string) => palette.colors.find((color) => !isAddedColorId(color.id) && (color.family ?? color.id) === family)
   const picked = START_COLORS[look]
-    .map((id) => palette.byId(id))
+    .map(ofFamily)
     .find((color) => color !== undefined && contrast(color) >= START_COLOR_CONTRAST)
   if (picked) return picked.id
   return palette.colors.reduce<PaletteColor | undefined>((best, color) => (!best || contrast(color) > contrast(best) ? color : best), undefined)?.id
@@ -303,20 +341,24 @@ export function removedDefaultsAfter(before: PaletteIds, after: PaletteIds, remo
   return [...new Set([...removed.filter((hex) => !kept.has(hex)), ...taken])]
 }
 
-/** The Palette after the Bead changes from the built-in colors `from` to `to` (ticket 0528): `to` become the built-in
- * ones, every added color stays, and the `from` still there become added at the end, in slot order. A hex in both is
- * kept once, as a built-in; a `to` color the maker removed (`removed`) is not put back. */
+/** The Palette after the Bead changes from the built-in colors `from` to `to` (tickets 0528, 1070): `to` become the
+ * built-in ones, every added color stays, and a `from` color still there that a bead uses (`used`, by hex) stays as an
+ * added one at the end, in slot order; one no bead uses leaves. A hex in both is kept once, as a built-in; a `to` color
+ * the maker removed (`removed`) is not put back. */
 export function paletteForBead(
   ids: PaletteIds,
   removed: readonly string[],
   from: readonly PaletteColor[],
   to: readonly PaletteColor[],
+  used: ReadonlySet<string>,
 ): string[] {
   if (from === to) return [...ids]
   const promoted = to.filter((color) => !removed.includes(color.hex))
   const promotedHexes = new Set(promoted.map((color) => color.hex))
   const current = paletteColors(ids, from).filter((color) => !promotedHexes.has(color.hex))
   const added = current.filter((color) => isAddedColorId(color.id))
-  const demoted = current.filter((color) => !isAddedColorId(color.id)).map((color) => ({ id: addedColorId(color.hex) }))
+  const demoted = current
+    .filter((color) => !isAddedColorId(color.id) && used.has(color.hex))
+    .map((color) => ({ id: addedColorId(color.hex) }))
   return [...promoted, ...added, ...demoted].map((color) => color.id)
 }

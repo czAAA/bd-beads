@@ -1,12 +1,13 @@
 import { isAddedColorId, type PaletteColor } from '../domain/palette'
 import type { Translations } from './translations'
 
-/** A Palette color's name in words (ticket 0530): a brand's own literal as it is, a generic color's translation, and
- * "Custom color" for an added one or one the Palette doesn't hold; a swatch with a catalog code adds it (ticket 0538). The one lookup every place that names a color uses. */
+/** A Palette color's name in words (ticket 0530): a brand's own literal as it is, a generic color's translation or a
+ * default color's family's (ticket 1070), and "Custom color" for an added one or one the Palette doesn't hold; a swatch
+ * with a catalog code adds it (ticket 0538). The one lookup every place that names a color uses. */
 export function colorName(t: Translations, color: PaletteColor | undefined): string {
   if (!color) return t.palette.customColorLabel
   if (isAddedColorId(color.id)) return color.code ?? t.palette.customColorLabel
-  const name = color.literalName ?? t.colorNames[color.id] ?? color.hex
+  const name = color.literalName ?? t.colorNames[color.family ?? color.id] ?? color.hex
   return color.code ? `${name} · ${color.code}` : name
 }
 
