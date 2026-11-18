@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import type { PillPosition } from '../../domain/toolPill'
+import { pagesBase } from '../../i18n/addressLocale'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
@@ -71,7 +72,8 @@ const { lift } = useCanvasBackground()
 const { shown: hintsShown } = useKeyHints()
 const context = inject(PANEL_CONTEXT)
 
-const homepageHref = homepageUrl(import.meta.env.BASE_URL)
+/** Under the address's language folder when it names one (ticket 1053), which the language switch changes. */
+const homepageHref = computed(() => homepageUrl(pagesBase()))
 
 const actions = {
   newProject: controlAction('new-project'),
@@ -91,7 +93,7 @@ async function openNewProject() {
 async function openHomepage(event: MouseEvent) {
   if (props.page === 'editor') return
   event.preventDefault()
-  if (await props.leave()) location.assign(homepageHref)
+  if (await props.leave()) location.assign(homepageHref.value)
 }
 
 const languageOptions = LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], shortLabel: localeCode(code), lang: code }))

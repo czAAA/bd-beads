@@ -372,8 +372,8 @@ export const pl: Translations = {
     projectButtonNamed: 'Projekt: {name}',
   },
   homepage: {
-    pageTitle: 'Strona główna',
-    description: 'Darmowy kreator wzorów koralikowych na krosno, peyote i ścieg ceglasty. Zamień zdjęcie we wzór, policz każdy kolor, zaznaczaj utkane rzędy.',
+    pageTitle: 'Darmowy kreator wzorów koralikowych: krosno, peyote, ścieg ceglasty',
+    description: 'Darmowy kreator wzorów koralikowych na krosno, peyote i ścieg ceglasty. Zamień zdjęcie we wzór, policz każdy kolor, zaznaczaj utkane rzędy. Bez konta.',
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',
     whatsInside: 'Co jest w środku',
@@ -468,6 +468,8 @@ export const pl: Translations = {
       alone: { heading: 'Za darmo', why: 'Konta i Pro pojawią się później; wszystko działa bez nich.', info: 'O kontach i Pro' },
     },
     library: '{library}, {count}',
+    notFound: 'Pod tym adresem nie ma strony.',
+    notFoundHomepage: 'Przejdź na stronę główną',
   },
   releaseNoteKinds: { new: 'Nowe', changed: 'Zmienione', fixed: 'Poprawione' },
   pieceName: {

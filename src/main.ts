@@ -9,6 +9,7 @@ import './styles/boxHandoff.css'
 import { followDeviceTheme } from './theme/theme'
 import { currentThemePick } from './theme/useThemePick'
 import App from './App.vue'
+import { followAddressLocale } from './i18n/addressLocale'
 import { loadLocale } from './i18n/useI18n'
 import LibraryUnopened from './components/shell/LibraryUnopened.vue'
 import { browserDevicePreferences } from './services/devicePreferences'
@@ -19,6 +20,8 @@ import { growIntoEditor } from './homepage/boxHandoff'
 import { markArrived } from './homepage/homepageRoute'
 
 installTouchFocusGuard()
+// A language's code in the address (ticket 1053) is the device's language from now on, read before it is loaded.
+followAddressLocale(browserDevicePreferences.get('locale'))
 followDeviceTheme(window, document.documentElement, currentThemePick)
 
 /** The Projects on this device couldn't be opened (ADR 0094): the message with Reload, never the Homepage or the editor. */

@@ -8,6 +8,7 @@ import '../style.css'
 import '../styles/boxHandoff.css'
 import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
+import { followAddressLocale, pagesBase } from '../i18n/addressLocale'
 import { loadLocale } from '../i18n/useI18n'
 import { browserDevicePreferences } from '../services/devicePreferences'
 import { browserLibraryStore } from '../services/libraryStore'
@@ -33,12 +34,15 @@ import HomePage from './HomePage.vue'
 followDeviceTheme(window, document.documentElement, currentThemePick)
 
 const base = import.meta.env.BASE_URL
-const editor = editorUrl(base)
+// A language's code in the address (ticket 1053) is the device's language from now on, read before it is loaded.
+followAddressLocale(browserDevicePreferences.get('locale'))
+/** The editor's address, under the address's language folder when it names one, so the way in keeps the code. */
+const editor = () => editorUrl(pagesBase())
 
 /** Every way in leaves for the editor, at its plain address or one asking for Saved Projects, a Project (ticket 0716)
  * or the first Project (ticket 0866). Its content leaves first and its canvas box grows into the editor's (tickets
  * 0776, 0783). */
-async function goToEditor(address = editor) {
+async function goToEditor(address = editor()) {
   await leaveWithBox(document.querySelector('.homepage'))
   location.assign(address)
 }
@@ -66,7 +70,7 @@ async function openDemoCopy(snapshot: DemoSnapshot) {
     return
   }
   const id = await keepDemoCopy(snapshot, { library: opened, pictures: browserPictureStore })
-  await goToEditor(projectAddress(editor, id, snapshot.view))
+  await goToEditor(projectAddress(editor(), id, snapshot.view))
 }
 
 /** Export all from the Menu's Saved Projects: a sealed Project is written from its stored form (ticket 0716). */
@@ -87,7 +91,7 @@ async function saveProjectFile(project: Project | SealedProject) {
 void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), browserLibraryStore.count()]).then(([, counted]) => {
   // A maker with Projects who opens the main address as a tab's first page lands in the editor (ticket 1052).
   if (shouldOpenEditor(counted, hasArrived())) {
-    location.replace(editor)
+    location.replace(editor())
     return
   }
   markArrived()
@@ -107,12 +111,12 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
         openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).
-        onMakeFirstProject: () => goToEditor(firstProjectAddress(editor)),
+        onMakeFirstProject: () => goToEditor(firstProjectAddress(editor())),
         // Start from a ready design: the same, opened on the Frame panel's Starter gallery (ticket 0953).
-        onStartFromStarter: () => goToEditor(firstStarterAddress(editor)),
+        onStartFromStarter: () => goToEditor(firstStarterAddress(editor())),
         onOpenEditor: () => goToEditor(),
-        onOpenSavedProjects: () => goToEditor(savedProjectsAddress(editor)),
-        onOpenProject: (id: string) => goToEditor(projectAddress(editor, id)),
+        onOpenSavedProjects: () => goToEditor(savedProjectsAddress(editor())),
+        onOpenProject: (id: string) => goToEditor(projectAddress(editor(), id)),
         onOpenDemoCopy: openDemoCopy,
         onExportAll: exportAll,
         onSaveProjectFile: saveProjectFile,

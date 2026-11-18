@@ -372,8 +372,8 @@ export const es: Translations = {
     projectButtonNamed: 'Proyecto: {name}',
   },
   homepage: {
-    pageTitle: 'Inicio',
-    description: 'Creador gratis de patrones de cuentas para telar, peyote y punto ladrillo. Convierte una foto en patrón, cuenta cada color y marca las filas tejidas.',
+    pageTitle: 'Creador gratis de patrones de cuentas: telar, peyote, punto ladrillo',
+    description: 'Creador gratis de patrones de cuentas para telar, peyote y punto ladrillo. Convierte una foto en patrón, cuenta cada color y marca las filas hechas. Sin cuenta.',
     makeFirstProject: 'Crea tu primer proyecto',
     openEditor: 'Abrir el editor',
     whatsInside: 'Qué incluye',
@@ -468,6 +468,8 @@ export const es: Translations = {
       alone: { heading: 'De uso gratuito', why: 'Las cuentas de usuario y Pro llegarán más adelante; todo funciona sin ellas.', info: 'Sobre las cuentas y Pro' },
     },
     library: '{library}, {count}',
+    notFound: 'No hay ninguna página en esta dirección.',
+    notFoundHomepage: 'Ir al inicio',
   },
   releaseNoteKinds: { new: 'Nuevo', changed: 'Cambiado', fixed: 'Corregido' },
   pieceName: {

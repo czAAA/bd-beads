@@ -57,15 +57,22 @@ export default defineConfig(({ mode }) => ({
   // The offline shell (ticket 69, ADR 0045): the service worker, written into the build with the list of every file in it.
   // The pages' security headers (ticket 1024): `_headers` for Cloudflare, and the same from `vite preview`.
   // The notes files (ticket 1047): one per language beside the app, built before the worker lists every file.
-  plugins: [vue(), offlineShell(), pageHeaders(), versionGuard(), releaseNotesFiles(), /* What crawlers read (ticket 1055). */ crawlerPages()],
+  plugins: [vue(), offlineShell(), pageHeaders(), versionGuard(), releaseNotesFiles(), /* What crawlers read (ticket 1055), and each language's pages (ticket 1053). */ crawlerPages()],
   // Lets `tailscale serve` reach the dev server from other devices on the tailnet.
   server: { allowedHosts: ['.ts.net'] },
   // What About and a Report show (ticket 1045); the catalogs' code counts the Homepage names (ticket 0742).
   define: { ...versionDefines(), __COLOR_CATALOG_CODES__: JSON.stringify(COLOR_CATALOG_CODES) },
   build: {
-    // Two pages: the Homepage at the main address and the editor (tickets 77, 1052), which is a folder with its own
-    // index.html so a static host serves /app/ with no rewrite rules (ADR 0014, ADR 0097).
-    rollupOptions: { input: { homepage: resolve(import.meta.dirname, 'index.html'), main: resolve(import.meta.dirname, 'app/index.html') } },
+    // Three pages: the Homepage at the main address and the editor (tickets 77, 1052), which is a folder with its own
+    // index.html so a static host serves /app/ with no rewrite rules (ADR 0014, ADR 0097), and the page the host shows
+    // at an address with none (ticket 1053). Each language's copies of the first two are written by `crawlerPages`.
+    rollupOptions: {
+      input: {
+        homepage: resolve(import.meta.dirname, 'index.html'),
+        main: resolve(import.meta.dirname, 'app/index.html'),
+        notFound: resolve(import.meta.dirname, '404.html'),
+      },
+    },
   },
   test: {
     // Generous on purpose: a shared CI runner can be several times slower than a dev machine, and a healthy test
