@@ -590,7 +590,7 @@ const drawingStyle = computed(() => {
                 :size="pictureBar.size.value"
                 :source="pictureBar.source.value"
                 :bead-name="pictureBar.hasCatalog.value ? pictureBar.beadName.value : undefined"
-                :photo-colors="pictureBar.photoColors.value"
+                :measured-from="pictureBar.measuredFrom.value"
                 :colors="pictureBar.colors.value"
                 :colors-max="pictureBar.colorsMax.value"
                 :swatches="pictureBar.conversion.value?.colors ?? []"

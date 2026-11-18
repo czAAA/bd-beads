@@ -44,13 +44,13 @@ describe('useBeadColors', () => {
     expect(swatches.value).toEqual([])
   })
 
-  it('lists TOHO Round 11/0 codes from the one toho catalog, each approximate (ticket 0694)', async () => {
+  it('lists TOHO Round 11/0 codes from the one toho catalog, approximate where no color was read from a card (tickets 0694, 1068)', async () => {
     const { available, load, swatches, state } = setup(tohoRound)
     expect(available.value).toBe(true)
     await load()
     expect(state.value).toBe('ready')
-    expect(swatches.value.find((entry) => entry.code === '1')).toMatchObject({ family: 'Crystal', finish: 'transparent', approximate: true })
-    expect(swatches.value.every((entry) => entry.approximate)).toBe(true)
+    expect(swatches.value.find((entry) => entry.code === '1')).toMatchObject({ family: 'Crystal', finish: 'transparent' })
+    expect(swatches.value.some((entry) => entry.approximate)).toBe(true)
   })
 
   it('lists TOHO Cube 1.5mm real codes, from TOHO\'s international cube card (ticket 0695)', async () => {

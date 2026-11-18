@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasMeasuredColors, parseColorCatalog } from './colorCatalog'
+import { measuredColorSource, parseColorCatalog } from './colorCatalog'
 import { BEAD_CATALOG } from './beads'
 
 const row = { code: 'DB1', family: ['Gray'], finish: 'metallic', wording: 'Opaque · Metallic', sizes: ['11/0'] }
@@ -43,10 +43,15 @@ describe('a Form factor names its catalog', () => {
   })
 })
 
-describe('hasMeasuredColors (ticket 0886)', () => {
-  it('is true once any code carries a hex, false for a catalog of generated swatches or none loaded', () => {
-    const generated = parseColorCatalog({ id: 'x', codes: [row] }, 'x')
-    const measured = parseColorCatalog({ id: 'x', codes: [row, { ...row, code: 'DB2', hex: '#223a70' }] }, 'x')
-    expect([hasMeasuredColors(generated), hasMeasuredColors(measured), hasMeasuredColors(undefined)]).toEqual([false, true, false])
+describe('measuredColorSource (tickets 0886, 1068)', () => {
+  const catalog = (id: string, hex?: string) => parseColorCatalog({ id, codes: [row, { ...row, code: 'DB2', ...(hex ? { hex } : {}) }] }, id)
+
+  it('names the Brand\'s own source once any code carries a hex: MIYUKI\'s photographs for both Miyuki catalogs, TOHO\'s sample cards for TOHO', () => {
+    const sources = ['miyuki-delica', 'miyuki-round', 'toho'].map((id) => measuredColorSource(catalog(id, '#223a70')))
+    expect(sources).toEqual(['photographs', 'photographs', 'sample-cards'])
+  })
+
+  it('names none for a catalog of generated swatches, one no Form factor names, or none loaded', () => {
+    expect([measuredColorSource(catalog('toho')), measuredColorSource(catalog('x', '#223a70')), measuredColorSource(undefined)]).toEqual([undefined, undefined, undefined])
   })
 })
