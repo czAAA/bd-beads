@@ -1,18 +1,16 @@
 import type { BeadMap } from '../domain/canvas'
-import type { WeaveGeometry } from '../domain/weaveGeometry'
 
-// A layer's lifted ground (Lifted piece): its rim, the empty positions touching a bead (1036), and every one in no 2 × 2
-// block a bead from every bead, a gap less than two beads wide, closed in or not (1050; a cut's, 1035). Found when the
-// beads change, round what changed, never on a redraw: a fact about the layer, so the view has no say in it.
+// A layer's lifted ground (Lifted piece): every empty position in no 2 × 2 block of positions that hold no bead, a gap
+// less than two beads wide, closed in or not (1050, 1035). No rim: an empty position beside the beads lies flat (1062).
+// Found when the beads change, round what changed, never on a redraw: a fact about the layer, not the view.
 
-/** What a layer is, for its ground: its beads, how its positions touch, and which positions are its own. */
+/** What a layer is, for its ground: its beads and which positions are its own. */
 export interface GroundLayer {
   beads: BeadMap
-  description: Pick<WeaveGeometry, 'spans' | 'shifted'>
   /** Whether a position is the layer's own: one off it (past a Frame's edge, in the Canvas's keep-out margin) lies
    * outside every Piece, and counts as open space round a gap. */
   has: (row: number, column: number) => boolean
-  /** What `has` is worked out from, as text: the positions found are kept only while it and `description` stay the same. */
+  /** What `has` is worked out from, as text: the positions found are kept only while it stays the same. */
   edge: string
 }
 
@@ -35,42 +33,14 @@ const keyOf = (row: number, column: number): number => (row + MID) * SPAN + colu
 const rowOf = (key: number): number => Math.floor(key / SPAN) - MID
 const columnOf = (key: number): number => (key % SPAN) - MID
 
-type Visit = (row: number, column: number) => void
-
-/** The positions whose beads touch a position's, corners too: on an upright grid a bead touches the empty position
- * corner to corner from it. */
-function touching({ spans: { along, reach }, shifted }: GroundLayer['description']): (row: number, column: number, visit: Visit) => void {
-  const widen = shifted ? 0 : 1
-  if (along === 'row') {
-    return (row, column, visit) => {
-      visit(row, column - 1)
-      visit(row, column + 1)
-      for (const to of [row - 1, row + 1]) {
-        const [first, last] = reach(row, to)
-        for (let at = column + first - widen; at <= column + last + widen; at += 1) visit(to, at)
-      }
-    }
-  }
-  return (row, column, visit) => {
-    visit(row - 1, column)
-    visit(row + 1, column)
-    for (const to of [column - 1, column + 1]) {
-      const [first, last] = reach(column, to)
-      for (let at = row + first - widen; at <= row + last + widen; at += 1) visit(at, to)
-    }
-  }
-}
-
 /** One layer's lifted ground, kept from one bead map to the next and worked out again only round what changed.
  * @internal Tests make their own to count the work an edit does. */
 export class LiftedGround {
   /** Positions looked at so far: a stroke looks only round what it changed. */
   work = 0
   private beads: BeadMap | undefined
-  private description: GroundLayer['description'] | undefined
   private edge = ''
   private layer!: GroundLayer
-  private around!: (row: number, column: number, visit: Visit) => void
   private lifted = new Map<number, Set<number>>()
   private sorted = new Map<number, readonly number[]>()
   private changed: { first: number; last: number } | undefined
@@ -86,20 +56,18 @@ export class LiftedGround {
 
   /** The lifted positions of `layer`, from the last bead map's by what changed since, or found afresh. */
   update(layer: GroundLayer): LiftedPositions {
-    if (layer.beads === this.beads && layer.description === this.description && layer.edge === this.edge) return this.result
-    const changes = layer.description === this.description && layer.edge === this.edge && this.beads ? changesBetween(this.beads, layer.beads) : undefined
+    if (layer.beads === this.beads && layer.edge === this.edge) return this.result
+    const changes = layer.edge === this.edge && this.beads ? changesBetween(this.beads, layer.beads) : undefined
     this.layer = layer
-    this.around = touching(layer.description)
     if (changes) this.relift(changes)
     else this.findAll()
     this.beads = layer.beads
-    this.description = layer.description
     this.edge = layer.edge
     return this.result
   }
 
-  /** Every lifted position found from scratch: what lies a position round the beads with an empty position touching
-   * them, and round those empty positions, looked at; a bead closed in by beads all round has nothing to lift near it. */
+  /** Every lifted position found from scratch, by looking a position round each bead; one closed in by beads all round
+   * has nothing to lift near it and is passed over. */
   private findAll(): void {
     const { beads } = this.layer
     for (const row of this.sorted.keys()) this.changedRow(row)
@@ -110,14 +78,17 @@ export class LiftedGround {
       const row = Number(key)
       for (const stored in beads[row]) {
         const column = Number(stored)
-        this.around(row, column, (r, c) => {
-          if (this.isBead(r, c)) return
-          look.add(keyOf(r, c))
-          look.add(keyOf(row, column))
-        })
+        if (this.closedIn(row, column)) continue
+        look.add(keyOf(row, column))
       }
     }
-    this.relift(look, 1)
+    this.relift(look)
+  }
+
+  /** Whether every position round a bead's, corners too, holds a bead. */
+  private closedIn(row: number, column: number): boolean {
+    for (let r = row - 1; r <= row + 1; r += 1) for (let c = column - 1; c <= column + 1; c += 1) if (!this.isBead(r, c)) return false
+    return true
   }
 
   private changedRow(row: number): void {
@@ -129,47 +100,30 @@ export class LiftedGround {
     return this.layer.has(row, column) && this.layer.beads[row]?.[column] !== undefined
   }
 
-  /** Whether a position touches a bead's. */
-  private nearBead(row: number, column: number): boolean {
-    let near = false
-    this.around(row, column, (r, c) => {
-      near ||= this.isBead(r, c)
-    })
-    return near
-  }
-
-  /** Whether a position is open space round a gap: off the layer, or empty and a bead or more from every bead. */
-  private isOpenSpace(row: number, column: number): boolean {
-    return !this.layer.has(row, column) || (!this.isBead(row, column) && !this.nearBead(row, column))
-  }
-
-  /** Whether an empty position of the layer is part of the lifted Piece: touching a bead (its rim), or in no block of
-   * 2 × 2 open positions, so in a gap less than two beads wide. */
+  /** Whether an empty position of the layer is part of the lifted Piece: in no block of 2 × 2 positions that hold no
+   * bead, so in a gap less than two beads wide. */
   private isLifted(row: number, column: number): boolean {
     if (!this.layer.has(row, column) || this.isBead(row, column)) return false
-    if (this.nearBead(row, column)) return true
     for (let top = row - 1; top <= row; top += 1) {
-      for (let left = column - 1; left <= column; left += 1) if (this.blockOpen(top, left, row, column)) return false
+      for (let left = column - 1; left <= column; left += 1) if (this.blockOpen(top, left)) return false
     }
     return true
   }
 
-  /** Whether the block of 2 × 2 positions from `top`, `left` is open space but for `row`, `column`, known to be. */
-  private blockOpen(top: number, left: number, row: number, column: number): boolean {
-    for (let r = top; r <= top + 1; r += 1) {
-      for (let c = left; c <= left + 1; c += 1) if ((r !== row || c !== column) && !this.isOpenSpace(r, c)) return false
-    }
+  /** Whether no position of the block of 2 × 2 from `top`, `left` holds a bead: one off the layer is open too. */
+  private blockOpen(top: number, left: number): boolean {
+    for (let r = top; r <= top + 1; r += 1) for (let c = left; c <= left + 1; c += 1) if (this.isBead(r, c)) return false
     return true
   }
 
-  /** Each position whose lifting a change can reach, `spread` positions round every one in `dirty` (two round a bead
-   * set or taken off: it decides which positions are a bead from it, and they which blocks are open), looked at again. */
-  private relift(dirty: Iterable<number>, spread = 2): void {
+  /** Each position whose lifting a change can reach, a position round every one in `dirty` (a bead set or taken off
+   * decides which blocks beside it are open), looked at again. */
+  private relift(dirty: Iterable<number>): void {
     const rows = new Set<number>()
     const look = new Set<number>()
     for (const key of dirty) {
       const [row, column] = [rowOf(key), columnOf(key)]
-      for (let r = row - spread; r <= row + spread; r += 1) for (let c = column - spread; c <= column + spread; c += 1) look.add(keyOf(r, c))
+      for (let r = row - 1; r <= row + 1; r += 1) for (let c = column - 1; c <= column + 1; c += 1) look.add(keyOf(r, c))
     }
     for (const key of look) {
       const [row, column] = [rowOf(key), columnOf(key)]

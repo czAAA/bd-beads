@@ -256,14 +256,18 @@ describe('canvasLiftCells', () => {
     }
   })
 
-  it('takes a row\'s touching beads and its rim a bead round them as one cell, and a bead four apart as its own', () => {
+  it('takes a row\'s touching beads as one cell, with no rim round them, and a bead apart from them as its own', () => {
     const project = painted([[0, 0], [0, 1], [0, 2], [0, 7]])
-    // Each with its rim (ticket 1036): rows -1 to 1, columns -1 to 3 and 6 to 8; columns 4 and 5, two wide, stay flat (1050).
-    expect(rowRuns(canvasLiftCells(project, everywhere))).toEqual([-1, 0, 1].flatMap((row) => [[row, -1, 3], [row, 6, 8]]))
+    expect(rowRuns(canvasLiftCells(project, everywhere))).toEqual([[0, 0, 2], [0, 7, 7]])
   })
 
-  it('joins two pieces two beads apart into one ground, their rims meeting (ticket 1036)', () => {
-    expect(rowRuns(canvasLiftCells(painted([[0, 0], [0, 3]]), everywhere))).toEqual([[-1, -1, 4], [0, -1, 4], [1, -1, 4]])
+  it('joins two pieces one bead apart into one ground, and leaves two beads apart as two (ticket 1050)', () => {
+    expect(rowRuns(canvasLiftCells(painted([[0, 0], [0, 2]]), everywhere))).toEqual([[0, 0, 2]])
+    expect(rowRuns(canvasLiftCells(painted([[0, 0], [0, 3]]), everywhere))).toEqual([[0, 0, 0], [0, 3, 3]])
+  })
+
+  it('takes a gap one bead wide on a row of no bead into the piece', () => {
+    expect(rowRuns(canvasLiftCells(painted([[0, 0], [0, 1], [2, 0], [2, 1]]), everywhere))).toEqual([[0, 0, 1], [1, 0, 1], [2, 0, 1]])
   })
 
   it('joins a column\'s beads where columns are staggered (peyote)', () => {
@@ -271,18 +275,17 @@ describe('canvasLiftCells', () => {
     const cells = canvasLiftCells(project, everywhere)
     const bead = positionBoxPx({ technique: 'peyote' }, 0, 0)
     expect(cells.every(({ width }) => width === bead.width)).toBe(true)
-    // Column 0's three beads with the rim above and below them.
+    // Column 0's three beads.
     const first = cells.find(({ x }) => x === bead.x)!
-    expect(first.height).toBeCloseTo(bead.height * 5)
+    expect(first.height).toBeCloseTo(bead.height * 3)
   })
 
   it('takes in only the rows whose pieces reach a redrawn band, and none far out of view', () => {
     const project = painted([[0, 0], [10, 0], [40, 0]])
-    // Row 10's bead with its rim, rows 9 to 11.
     const rows = canvasLiftCells(project, { ...everywhere, rows: { first: 10, last: 10 } })
-    expect(rowRuns(rows)).toEqual([[9, -1, 1], [10, -1, 1], [11, -1, 1]])
+    expect(rowRuns(rows)).toEqual([[10, 0, 0]])
     const seen = canvasLiftCells(project, { ...everywhere, area: { left: 0, right: 100, top: 0, bottom: 100 } })
-    expect(rowRuns(seen).map(([row]) => row)).toEqual([-1, 0, 1])
+    expect(rowRuns(seen).map(([row]) => row)).toEqual([0])
     // The soft shadow's fall, three spreads of its blur and the contour: the BeadBoard card's 20.5px (ticket 1033).
     expect(LIFT_REACH_PX).toBe(20.5)
   })
@@ -290,10 +293,10 @@ describe('canvasLiftCells', () => {
   it('leaves out the beads in the Frame\'s keep-out margin, which are not drawn', () => {
     const project = painted([[0, 0], [0, 1], [0, 2], [0, 3]], 'loom', { row: 10, column: 3, rows: 2, columns: 2 })
     // The margin is 4 positions: rows 6 to 15, columns -1 to 8 are kept out.
-    expect(rowRuns(canvasLiftCells(project, everywhere))).toEqual([[-1, -1, 4], [0, -1, 4], [1, -1, 4]])
-    // The rim stops at the margin too.
+    expect(rowRuns(canvasLiftCells(project, everywhere))).toEqual([[0, 0, 3]])
+    // A run stops at the margin.
     const crossed = painted([[8, -3], [8, -2], [8, -1], [8, 0], [8, 9]], 'loom', { row: 10, column: 3, rows: 2, columns: 2 })
-    expect(rowRuns(canvasLiftCells(crossed, everywhere)).filter(([row]) => row === 8)).toEqual([[8, -4, -2], [8, 9, 10]])
+    expect(rowRuns(canvasLiftCells(crossed, everywhere)).filter(([row]) => row === 8)).toEqual([[8, -3, -2], [8, 9, 9]])
   })
 })
 
@@ -306,19 +309,21 @@ describe('an inner cut in the lifted piece (ticket 1035)', () => {
   }
   const box = (row: number, column: number) => positionBoxPx({ technique: 'loom' }, row, column)
 
-  it('takes a cut close to the beads into the row\'s run, so it has no edge of its own', () => {
-    expect(rowRuns(canvasLiftCells(ring(1, 1), everywhere))).toEqual([-1, 0, 1, 2, 3].map((row) => [row, -1, 3]))
+  it('takes a cut one bead wide into the row\'s run, so it has no edge of its own', () => {
+    expect(rowRuns(canvasLiftCells(ring(1, 1), everywhere))).toEqual([0, 1, 2].map((row) => [row, 0, 2]))
   })
 
-  it('keeps a larger cut\'s middle out of the piece, a bead in from its beads', () => {
-    const cells = canvasLiftCells(ring(4, 4), everywhere).filter(({ y }) => y === box(2, 0).y)
-    expect(rowRuns(cells)).toEqual([[2, -1, 1], [2, 4, 6]])
+  it('keeps a cut two beads across or more out of the piece, up to its beads', () => {
+    for (const across of [2, 4]) {
+      const cells = canvasLiftCells(ring(across, across), everywhere).filter(({ y }) => y === box(2, 0).y)
+      expect(rowRuns(cells)).toEqual([[2, 0, 0], [2, across + 1, across + 1]])
+    }
   })
 
   it('lifts a cut whose closing beads lie out of view or out of a redrawn band as when they are in it', () => {
     const project = ring(10, 1)
     const middle = canvasLiftCells(project, { ...everywhere, rows: { first: 5, last: 5 } }).filter(({ y }) => y === box(5, 0).y)
-    expect(rowRuns(middle)).toEqual([[5, -1, 3]])
+    expect(rowRuns(middle)).toEqual([[5, 0, 2]])
     const area = { left: box(0, 1).x, right: box(0, 1).x + CELL_SIZE_PX, top: box(5, 0).y, bottom: box(6, 0).y }
     expect(canvasLiftedCells(project, { area, margin: 4 }, canvasLifted(project, 4))).toEqual([box(4, 1), box(5, 1), box(6, 1)])
   })
@@ -326,18 +331,17 @@ describe('an inner cut in the lifted piece (ticket 1035)', () => {
   it('lists the cut\'s cells in view, for the tiles drawn again on the ground', () => {
     const project = ring(1, 2)
     const cells = canvasLiftedCells(project, everywhere, canvasLifted(project, 4))
-    expect(cells).toEqual(expect.arrayContaining([box(1, 1), box(1, 2), box(-1, -1), box(3, 4)]))
-    // The cut's two and the rim round rows 0 to 2, columns 0 to 3: 5 × 6 positions less its 10 beads.
-    expect(cells).toHaveLength(20)
+    expect(cells).toEqual([box(1, 1), box(1, 2)])
   })
 
   it('counts the keep-out margin round the Frame as outside every piece', () => {
-    // A ring round the Frame's margin closes nothing in: the margin's box is not the piece's. The margin is rows and
-    // columns 4 to 8; row 3 lies a bead from the ring's beads, so it would be lifted only in a cut.
+    // Row 3 lies between a row of beads and beads in the Frame's margin (rows and columns 4 to 8), which are not drawn
+    // and close nothing in: it stays flat. With no Frame the same beads leave it a gap one bead wide.
     const cells: [number, number][] = []
-    for (let row = 1; row <= 11; row += 1) for (let column = 1; column <= 11; column += 1) if (row === 1 || row === 11 || column === 1 || column === 11) cells.push([row, column])
+    for (let column = 2; column <= 10; column += 1) cells.push([2, column], [4, column])
     const lifted = canvasLifted(painted(cells, 'loom', { row: 6, column: 6, rows: 1, columns: 1 }), 2)
-    expect([lifted.has(0, 6), lifted.has(2, 6), lifted.has(3, 6), lifted.has(6, 6)]).toEqual([true, true, false, false])
+    expect([lifted.has(3, 3), lifted.has(3, 6), lifted.has(3, 9)]).toEqual([true, false, true])
+    expect(canvasLifted(painted(cells), 2).has(3, 6)).toBe(true)
   })
 })
 

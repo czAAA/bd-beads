@@ -73,7 +73,7 @@ describe('the grid under a reference image (ticket 1008)', () => {
     const project = framedProject()
     const { across } = rendered(project, PROJECT_THEMES.light, pictureAt(0, 0, 1000))
     // An empty position at 100% is the picture: nothing is drawn over it, on the Canvas or in the Frame (the row
-    // just under the painted one is their Lifted piece's rim, ticket 1036, and the next takes its shadow).
+    // just under the painted one takes their Lifted piece's shadow).
     expect(new Set(across(9, 9))).toEqual(new Set([RED]))
     expect(new Set(across(5, 3))).toEqual(new Set([RED]))
     // A painted bead still covers it.
