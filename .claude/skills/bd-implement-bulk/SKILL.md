@@ -44,7 +44,13 @@ Launch each runnable ticket as a **sub-agent** (`general-purpose`, run in the ba
 3. The instruction "Read `.claude/skills/bd-implement/SKILL.md` and follow it as your own instructions", with the overrides of a bulk run: the points of 2 win where they differ, such as its "don't watch CI": in a bulk run the sub-agent watches its PR's CI as point 2 says (the orchestrator then watches it again after each merge of main, step 4).
 4. The ticket's conflict notes from step 2.5, verbatim.
 5. The docs-repo rule for a shared clone: every worktree's `.scratch/` is the **same** docs repo, and other sub-agents edit their tickets in it at the same time. When archiving, `git -C ../bd-beads-docs pull --rebase` first, stage only your own ticket file(s) by path (never `git add -A`), commit, push; if the push is rejected, pull with rebase and push again. Never stash or reset the docs repo.
-6. What to report back, as the last message: PR number and URL, CI result (green, or the failing check and why it couldn't be fixed), the files changed, what was left for a human, whether the ticket is archived, and the `Skills used:` line. Nothing else: the report is read by the orchestrator, not the user.
+6. The rule for waiting on long commands (`npm run test:full`, `npm run perf`, Playwright). A background task ends only when its own command exits: the call's `timeout` doesn't apply to it, and nothing stops it when the sub-agent finishes. A loop that waits for a word in a log therefore runs forever if the run dies before printing that word. So:
+   - Run the long command itself with `run_in_background: true`; its exit wakes you, passed, failed or killed. Then read the tail of its output. Don't start a second command just to watch the first one.
+   - If you must wait on a log (the command was started some other way), the loop needs three exits: the word, the producer gone, and a deadline. Start the producer with `cmd > "$log" 2>&1 & pid=$!`, then `until grep -qE 'passed|failed|did not run' "$log" || ! kill -0 "$pid" 2>/dev/null || [ $SECONDS -gt 1800 ]; do sleep 10; done; tail -20 "$log"`. Never a bare `until grep ...; do sleep ...; done`.
+   - Check whether a process is alive with `kill -0 "$pid"`, never with `until ! pgrep -f "<pattern>"`: the loop's own shell command contains the pattern, so `pgrep -f` always finds the loop itself and the wait never ends. To wait for `gh pr checks`, run it in the foreground with `--watch`.
+   - Never start a second wait for a run you're already waiting on. If you retry the run, first stop the old run and its wait (`TaskStop`).
+   - Before your final report, stop every background task you started that is still running (`TaskStop`), dev servers included.
+7. What to report back, as the last message: PR number and URL, CI result (green, or the failing check and why it couldn't be fixed), the files changed, what was left for a human, whether the ticket is archived, background tasks left running (should be none), and the `Skills used:` line. Nothing else: the report is read by the orchestrator, not the user.
 
 Launch the first wave in one turn, as far as `-max` and the gate allow: ask the gate once per launch, counting the ones already launched in that turn as running. Then wait: a finished sub-agent wakes you; don't poll. On each completion, record its report, then run step 4 for its PR, then start the next runnable ticket (a slot freed, or a ticket whose edges are all merged) if the gate allows. A sub-agent that reports a failure it could not fix (CI red, tests it couldn't make pass, a ticket that turned out to need a human decision) is listed under the final report's "needs a human"; its PR stays open, is not merged, and the tickets it blocks don't start.
 
@@ -76,7 +82,9 @@ Keep a running `## Progress` note in your own messages whenever something lands 
 
 ## 5. Finish
 
-The run is over when every ticket in the batch is merged, dropped, waiting on a human, or not started because the weekly usage limit is nearly reached (3.1). Final message:
+The run is over when every ticket in the batch is merged, dropped, waiting on a human, or not started because the weekly usage limit is nearly reached (3.1). Before the final message, sweep for wait loops the sub-agents left behind: `pgrep -fl 'until grep'`. Stop every one whose command names this run's scratchpad or a `bd-beads-worktrees/bd-beads-NNNN` of this batch (`pkill -f '<that path>'`), and leave any other one alone. Name what you stopped in the final message.
+
+Final message:
 
 - A table: ticket, PR, result (merged / open, needs a human / dropped / not started: weekly usage limit), one line of why for anything not merged.
 - Usage: the 5-hour percentage at the start and at the end, the measured points per ticket, and every pause with its length.
