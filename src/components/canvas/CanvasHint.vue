@@ -4,9 +4,9 @@ import { useI18n } from '../../i18n/useI18n'
 import KeyChip from '../ui/KeyChip.vue'
 import { useHelpDevice, useKeyHints } from '../../composables/ui/useKeyHints'
 
-// The one line under the strip while the Project has no beads (tickets 429, 0846; CanvasHint card): "scroll or space drag
-// to move · ⌘ scroll to zoom · 5 Hand · R Rulers" with a keyboard (⌘ reads "Ctrl" off Apple devices), "two fingers to
-// move · pinch to zoom · hold a button for its name" on touch (0927); decoration, left out on phone.
+// The one line under the strip while the Project has no beads (tickets 429, 0846, 1064; CanvasHint card): "scroll or
+// space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers · right-click for tools" with a keyboard (⌘ reads "Ctrl" off
+// Apple devices), "two fingers to move · pinch to zoom · hold a button for its name" on touch; left out on phone.
 const { t } = useI18n()
 /** The key line is made of key chips, so it goes when they do (ticket 438). */
 const { shown } = useKeyHints()
@@ -34,6 +34,8 @@ const { device, modKey } = useHelpDevice()
     <span class="canvas-hint__dot">·</span>
     <KeyChip class="hint-chip canvas-hint__key">R</KeyChip>
     <span>{{ t.canvas.hint.rulers }}</span>
+    <span class="canvas-hint__dot">·</span>
+    <span>{{ t.canvas.hint.rightClickForTools }}</span>
   </p>
 </template>
 

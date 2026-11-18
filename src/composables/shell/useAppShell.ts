@@ -53,6 +53,7 @@ import { useSignInPrompt } from './useSignInPrompt'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
 import { usePickColor } from '../tools/usePickColor'
+import { useRadialToolboxFlow } from '../tools/useRadialToolboxFlow'
 import { usePinchPan } from '../canvas/usePinchPan'
 import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
@@ -603,8 +604,22 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Pick color from canvas (ticket 398): the next press on a bead takes its color (an empty cell does nothing); a
    * tool choice or Escape ends it. takeColorAt is the same step without arming (ticket 1073). */
-  const { pickColorAt } = usePickColor({ picking: pickingColor, currentProject, onSelectCustomColor })
+  const { takeColorAt, pickColorAt } = usePickColor({ picking: pickingColor, currentProject, onSelectCustomColor })
   provideColorPick({ picking: pickingColor, toggle: () => (pickingColor.value = !pickingColor.value) })
+
+  /** The Radial toolbox (ticket 1064, ADR 0098): each pick goes to the handler its own control calls. */
+  const radialToolbox = useRadialToolboxFlow({
+    currentProject,
+    readOnly: () => openElsewhere.value,
+    demo: !!demo,
+    canUndo: () => canUndo.value,
+    canRedo: () => canRedo.value,
+    onSelectTool,
+    pickRecent: toolPill.pickRecent,
+    onUndo,
+    onRedo,
+    takeColorAt,
+  })
 
   /** On touch, Mirror mode, paste mode and Pick color say in a toast what to tap next (ticket 0845). */
   useArmedToolToasts({
@@ -1172,6 +1187,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       toolPillPopoverOpen: toolPill.toolPillPopoverOpen,
       recentsInPill: toolPill.recentsInPill,
       pickRecent: toolPill.pickRecent,
+      /** The Radial toolbox (ticket 1064): the ring a right click on the Canvas opens round the pointer. */
+      radialToolbox,
       // Mirror (ADR 0082, ticket 0750): the Project's one Mirror and its bar, Mirror mode, the three ways to make one
       mirrorSetting: mirror.setting,
       mirrorOn: mirror.on,

@@ -39,10 +39,16 @@ const SCAN_REACH = 2
 /** How far in from a drawn corner a point is taken as the control's own. */
 const CORNER_INSET_PX = 2
 
+/** How far in from its box's corner a control with corners rounded by `radius` px is still drawn: where the round
+ * corner crosses the box's diagonal, and a pixel more. For `hitAreaProblems` on round tiles (ticket 1064). */
+export function roundCornerInset(radius: number): number {
+  return Math.ceil(radius * (1 - Math.SQRT1_2)) + 1
+}
+
 /** What is wrong with each control's hit area, by its name: it answers across less than `least` px wide or tall
  * through its centre, or a point of its own drawing answers to another of `controls` (a neighbour's pad lies over
- * it). Empty is a pass. */
-export function hitAreaProblems(controls: Record<string, Element>, least: number): string[] {
+ * it). `cornerInset` is how far in from its box's corners a control is drawn, for round ones. Empty is a pass. */
+export function hitAreaProblems(controls: Record<string, Element>, least: number, cornerInset: number = CORNER_INSET_PX): string[] {
   const problems: string[] = []
   const all = Object.entries(controls)
   for (const [name, control] of all) {
@@ -62,7 +68,7 @@ export function hitAreaProblems(controls: Record<string, Element>, least: number
     // A pixel's rounding either side: the drawn edges are fractional.
     if (wide < least - 1) problems.push(`${name} answers ${wide}px wide`)
     if (high < least - 1) problems.push(`${name} answers ${high}px tall`)
-    const inset = CORNER_INSET_PX
+    const inset = cornerInset
     for (const [x, y] of [[box.left + inset, box.top + inset], [box.right - inset, box.top + inset], [box.left + inset, box.bottom - inset], [box.right - inset, box.bottom - inset]]) {
       const other = all.find(([otherName, each]) => otherName !== name && answers(each, x, y))
       if (other) problems.push(`${other[0]} answers over ${name} at ${Math.round(x)}, ${Math.round(y)}`)

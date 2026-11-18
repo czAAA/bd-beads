@@ -68,6 +68,9 @@ export interface SurfacePointerEvents {
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside
    * meanwhile. */
   pressing: [pressing: boolean]
+  /** A right click asked for the Radial toolbox (ticket 1064): where it was pressed, in client px, and the bead position
+   * under it, none between positions or off the grid. */
+  'open-toolbox': [at: { x: number; y: number }, position?: GridPosition]
 }
 
 /** What the pointer reads: the surface's props, its root and layout, and the margin cue it sets off. */
@@ -387,8 +390,15 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   }
 
   /** The right-button press in progress, under any tool (ticket 1074): where it went down, on screen, and what it is
-   * so far by `pressBecomes`. It waits, then a drag is the middle button's pan and a click is nothing. */
+   * so far by `pressBecomes`. It waits, then a drag is the middle button's pan and a click opens the Radial toolbox. */
   let rightPress: { id: number; x: number; y: number; is: CanvasPress } | undefined
+
+  /** Asks for the Radial toolbox at a point on screen, on the bead position under it whatever the tool. */
+  function openToolbox(at: { x: number; y: number }): void {
+    const hit = surface.value.pointToHit(pointInDrawing({ clientX: at.x, clientY: at.y }))
+    const [row, column, layer] = hit ? cellArguments(hit) : []
+    emit('open-toolbox', { x: at.x, y: at.y }, ...(row === undefined || column === undefined ? [] : [{ row, column, ...(layer ? { layer } : {}) }]))
+  }
 
   /** The canvas follows the pointer from `from` (on screen) until the press ends; the hover and the marker go. */
   function startPan(from: { x: number; y: number }): void {
@@ -842,8 +852,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
 
   function onPointerEnd(event?: PointerEvent): void {
     if (selectDrag || adjusting.value) noteOffTheGlass()
-    // A right click (lifted while it waited) does nothing; ticket 1064 opens the Radial toolbox on it, here.
-    if (!event || event.pointerId === rightPress?.id) rightPress = undefined
+    if (!event || event.pointerId === rightPress?.id) {
+      // A right click (lifted while it waited) opens the Radial toolbox where it was pressed (ticket 1064).
+      if (event?.type === 'pointerup' && rightPress && pressBecomes(rightPress.is, { type: 'lift' }) === 'ring') openToolbox(rightPress)
+      rightPress = undefined
+    }
     heldPointer = undefined
     resizing = false
     stroke = undefined

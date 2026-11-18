@@ -7,7 +7,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useScrollCut } from '../../composables/ui/useScrollCut'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
-import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, pillPositionForKey, pillTileKey, type PillPosition, type PillRect, type PillTile } from '../../domain/toolPill'
+import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, litPillTool, pillPositionForKey, pillTileKey, type PillPosition, type PillRect, type PillTile } from '../../domain/toolPill'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -88,9 +88,8 @@ const pasteAction = controlAction('tool-paste')
 const mirrorAction = controlAction('mirror')
 /** The Mirror tile is lit while the Mirror is on and through its pick (ToolPill card). */
 const mirrorLit = computed(() => props.mirrorOn || props.mirrorMarking)
-/** Paste mode and Mirror mode run under Select, but their own tile is the one lit then (tickets 447, 0750); none while
- * the eyedropper waits (ticket 0845). */
-const isActive = (tool: Tool) => !props.picking && props.activeTool === tool && !(tool === 'select' && ((props.pasteArmed && props.hasClipboard) || props.mirrorMarking))
+/** Whether a Tool's tile is the lit one, by the rule the Radial toolbox shares (`litPillTool`). */
+const isActive = (tool: Tool) => litPillTool(props) === tool
 /** Every tile off, saying why, while the Canvas is read-only (ticket 0937). */
 const off = computed(() => (props.offBody === undefined ? {} : { disabled: true, disabledBody: props.offBody }))
 /** A Tool tile's button, pinned or scrolling alike. */
