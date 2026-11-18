@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, RADIAL_ROOM, radialCenterOnScreen, radialItemAt, radialNameCenter, radialSliceOutline } from './radialToolbox'
+import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, RADIAL_ROOM, radialCenterOnScreen, radialItemAt, radialItemOff, radialNameCenter, radialSliceOutline } from './radialToolbox'
 import { PILL_TOOLS } from './toolPill'
 
 /** A point `distance` from the ring's centre at `angle`, degrees clockwise from straight up, y down as on screen. */
@@ -156,5 +156,28 @@ describe('radialNameCenter (ticket 1076)', () => {
   it('a long name near a side moves in by the least that keeps it float-edge inside', () => {
     expect(radialNameCenter(120, 280, 1024, 12)).toBe(152)
     expect(radialNameCenter(904, 280, 1024, 12)).toBe(872)
+  })
+})
+
+describe('radialItemOff (RadialToolbox card, States)', () => {
+  const all = { canUndo: true, canRedo: true, recents: ['#111111', '#222222', '#333333'], beadHex: '#444444' }
+  const off = (state: Parameters<typeof radialItemOff>[1]) => RADIAL_PLACES.map((place) => place.id).filter((id) => radialItemOff(id, state))
+
+  it('nothing is off with steps to undo and redo, three recent colours and a bead pressed', () => {
+    expect(off(all)).toEqual([])
+  })
+
+  it('Undo and Redo are off with nothing to undo or redo', () => {
+    expect(off({ ...all, canUndo: false })).toEqual(['undo'])
+    expect(off({ ...all, canRedo: false })).toEqual(['redo'])
+  })
+
+  it('a recent colour that does not exist yet is off, in its place', () => {
+    expect(off({ ...all, recents: ['#111111'] })).toEqual(['recent-2', 'recent-3'])
+  })
+
+  it('Pick color from Canvas is off with no bead pressed', () => {
+    expect(off({ ...all, beadHex: null })).toEqual(['pick-color'])
+    expect(off({ ...all, beadHex: undefined })).toEqual(['pick-color'])
   })
 })

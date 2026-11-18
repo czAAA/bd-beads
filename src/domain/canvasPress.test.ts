@@ -102,13 +102,47 @@ describe('pressBecomes (spec 1072, the drawing pointer\'s hold, ticket 1065)', (
     expect(after(PEN_DOWN, { type: 'lift' }, HELD)).toBe('nothing')
   })
 
-  it('keeps sliding whatever the pointer does after the ring opened, until it lifts', () => {
-    expect(after(PEN_DOWN, HELD, { type: 'move', moved: 40 })).toBe('sliding')
+  it('keeps sliding when a second finger lands after the ring opened', () => {
     expect(after(PEN_DOWN, HELD, { type: 'finger' })).toBe('sliding')
-    expect(after(PEN_DOWN, HELD, { type: 'lift' })).toBe('nothing')
   })
 
   it('leaves the right button\'s press alone: time never opens its ring', () => {
     expect(after(RIGHT_DOWN, HELD)).toBe('waits')
+  })
+})
+
+describe('pressBecomes (spec 1072, sliding, ticket 1077)', () => {
+  const ARMED: CanvasPressStep[] = [PEN_DOWN, HELD, { type: 'move', moved: DRAG_SLOP_PX }]
+
+  it('is armed once the pointer has moved the drag slop since the ring opened, and not before', () => {
+    expect(after(PEN_DOWN, HELD, { type: 'move', moved: DRAG_SLOP_PX - 0.5 })).toBe('sliding')
+    expect(after(...ARMED)).toBe('armed')
+  })
+
+  it('stays armed when the pointer comes back to where the ring opened, and when a second finger lands', () => {
+    expect(after(...ARMED, { type: 'move', moved: 0 })).toBe('armed')
+    expect(after(...ARMED, { type: 'finger' })).toBe('armed')
+  })
+
+  it('lifted not armed, the ring stays open: nothing is picked, whatever the pointer is over', () => {
+    expect(after(PEN_DOWN, HELD, { type: 'lift' })).toBe('nothing')
+    expect(after(PEN_DOWN, HELD, { type: 'lift', over: 'on' })).toBe('nothing')
+    expect(after(PEN_DOWN, HELD, { type: 'lift', over: 'hole' })).toBe('nothing')
+  })
+
+  it('lifted armed on an item that is on, it picks it', () => {
+    expect(after(...ARMED, { type: 'lift', over: 'on' })).toBe('pick')
+  })
+
+  it('lifted armed on an item that is off, the ring stays open', () => {
+    expect(after(...ARMED, { type: 'lift', over: 'off' })).toBe('nothing')
+  })
+
+  it('lifted armed in the hole, the ring closes with nothing picked', () => {
+    expect(after(...ARMED, { type: 'lift', over: 'hole' })).toBe('close')
+  })
+
+  it('an armed press that ends away from the ring (cancelled) leaves it as it is', () => {
+    expect(after(...ARMED, { type: 'lift' })).toBe('nothing')
   })
 })

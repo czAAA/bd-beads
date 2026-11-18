@@ -2,7 +2,7 @@
 
 A ring of the ten most used drawing actions that opens round the pointer, so a maker changes tool or colour without travelling to the Tool pill. On a 13-inch screen the pill, docked at one edge, can be most of the screen away from the bead being drawn.
 
-**In the app since ticket 1064:** the ring, its opening by a right click and picking by a click; since ticket 1065 its opening by a hold. **Since ticket 1076:** the ring kept on the screen near an edge and the pressed bead's outline (Anatomy). **Approved 2026-11-18, not yet in the app:** the slide (ticket 1077). The whole was signed off on mockups taken on the real editor, so its tickets build from this one text: each part below names its ticket, and that ticket removes the note when it lands. The decisions and what was turned down are in ADR 0098 (the Radial toolbox: ten actions in a ring round the pointer).
+**In the app since ticket 1064:** the ring, its opening by a right click and picking by a click; since ticket 1065 its opening by a hold. **Since ticket 1076:** the ring kept on the screen near an edge and the pressed bead's outline (Anatomy). **Since ticket 1077:** the slide. The whole was signed off on mockups taken on the real editor, so its tickets build from this one text: each part below names its ticket, and that ticket removes the note when it lands. The decisions and what was turned down are in ADR 0098 (the Radial toolbox: ten actions in a ring round the pointer).
 
 Sizes are this design system's px (1/16 rem in the app). Angles are degrees clockwise from straight up.
 
@@ -56,7 +56,7 @@ Every item runs the code path its existing control runs, so nothing is reachable
 
 - **Resting:** as above.
 - **Under a mouse:** the tile's hover look, `hover-fill` and the icon in `ink`.
-- **Under a finger or the Pencil mid-slide** (ticket 1065): the pressed look, `press-fill` and the icon in `ink`, one step stronger. On touch it is the only thing that says where the lift will land.
+- **Under a finger or the Pencil mid-slide** (ticket 1077): the pressed look, `press-fill` and the icon in `ink`, one step stronger. On touch it is the only thing that says where the lift will land. It shows once the lift would pick: after the pointer has moved 8px since the ring opened (Picking).
 - **The name of the item under the pointer:** the Tooltip's bubble (same fill, edge, radius, type and shadow), centred over the ring, `space-8` above its outer edge and kept `float-edge` inside the screen. The name in bold; after it, in the Tooltip's meta style, a recent colour's hex or, for Pick color from Canvas, the pressed bead's hex. It shows at once, with no hover delay: the ring was asked for. An item that is off shows its name too, without the hover look. Over the ring no hand covers it, so it also says what is under a finger.
 - **Off:** the icon in `faint`, no hover, no press, `aria-disabled`. Undo and Redo when there is nothing to undo or redo (a new Project has neither). Pick color from Canvas on an empty position and over the Frame's margin. A lift, a tap or a click on an item that is off does nothing and the ring stays.
 - **A recent colour that does not exist yet** (a new device) keeps its place as a 24 ring, 1px dashed `line-strong`, and is off.
@@ -82,8 +82,8 @@ Every item runs the code path its existing control runs, so nothing is reachable
 ## Picking
 
 - **Tap or click (ticket 1064):** with the ring open, a tap or a click on an item picks it. A mouse picks this way only, since its drag is the pan.
-- **Slide (ticket 1065):** hold, slide to an item, lift, in one gesture. The item is the one whose slice the lift is in, so the lift does not have to land on the tile.
-- **Both live together (ticket 1065):** a hold lifted without sliding leaves the ring open for a tap. A lift picks only after the pointer has moved 8px since the ring opened; this also covers a ring that has moved in from an edge, where the pointer may already be over a tile when it opens.
+- **Slide (ticket 1077):** hold, slide to an item, lift, in one gesture. The item is the one whose slice the lift is in, so the lift does not have to land on the tile.
+- **Both live together (ticket 1077):** a hold lifted without sliding leaves the ring open for a tap. A lift picks only after the pointer has moved 8px since the ring opened, measured from where it was at that moment; this also covers a ring that has moved in from an edge, where the pointer may already be over a tile when it opens.
 - **A tool or a colour closes the ring. Undo and Redo keep it open** (ticket 1064), since Undo is often wanted several times in a row. Undo goes off when nothing is left to undo; Redo comes on with the first Undo. If an undo changes the pressed bead, Pick color from Canvas follows the bead as it is now.
 - **Nothing picked:** sliding out and back and lifting in the hole closes the ring. With the ring left open, a press in the hole or anywhere outside it is an Outside press: it closes the ring and does nothing else, and nothing under the press acts. Escape closes it too.
 

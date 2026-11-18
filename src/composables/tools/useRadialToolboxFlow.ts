@@ -4,7 +4,8 @@ import type { GridPosition, Layer } from '../../domain/grid'
 import { beadColorAt } from '../../domain/layerBeads'
 import { inMargin } from '../../domain/margin'
 import type { Project } from '../../domain/project'
-import { RADIAL_ROOM, radialCenterOnScreen } from '../../domain/radialToolbox'
+import { pressBecomes } from '../../domain/canvasPress'
+import { RADIAL_HOLE, RADIAL_PLACES, RADIAL_ROOM, radialCenterOnScreen, radialItemAt, radialItemOff, type RadialItemId } from '../../domain/radialToolbox'
 import type { Tool } from '../../domain/tool'
 
 /** What the Radial toolbox needs from the shell (ticket 1064): the handlers its items' own controls call. */
@@ -16,6 +17,8 @@ export interface RadialToolboxDeps {
   demo: boolean
   canUndo: () => boolean
   canRedo: () => boolean
+  /** The recent colours the Tool pill shows, in its order: what the ring's three colour places hold. */
+  recents: () => readonly string[]
   /** The Tool pill's handler for a tool tile. */
   onSelectTool: (tool: Tool) => void
   /** The Tool pill's handler for a recent colour. */
@@ -43,14 +46,18 @@ export function radialScreenOfWindow(): RadialScreen {
 }
 
 /** The Radial toolbox's flow (spec 1072, ADR 0098): it owns the ring's state (open, where on screen, on which bead
- * position) and routes each pick to the handler the item's existing control calls, so nothing behaves differently in
- * the ring. A tool or a colour closes it; Undo and Redo keep it open. */
+ * position) and routes each pick, a tap's or a slide's lift (ticket 1077), to the handler the item's existing control
+ * calls, so nothing behaves differently in the ring. A tool or a colour closes it; Undo and Redo keep it open. */
 export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
   const open = ref(false)
   /** The ring's centre, in client px; kept after it closes, so it leaves where it stood. */
   const center = ref({ x: 0, y: 0 })
   /** The bead position that was pressed; none between positions or off the grid. */
   const position = ref<GridPosition>()
+
+  /** The item under the pointer that opened the ring by a hold and is still down, once its lift would pick (ticket
+   * 1077): it wears the pressed look. Kept through a pick that closes the ring, which leaves with it pressed. */
+  const held = ref<RadialItemId>()
 
   /** The colour of the pressed bead as the Project holds it now, so the ring follows it through an Undo; none on an
    * empty position and over the Frame's margin, where Pick color from Canvas is off. */
@@ -73,6 +80,7 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
     const screen = deps.screen?.()
     center.value = screen ? radialCenterOnScreen(at, screen, { side: RADIAL_ROOM.side * screen.scale, top: RADIAL_ROOM.top * screen.scale }) : { x: at.x, y: at.y }
     position.value = pressed
+    held.value = undefined
     open.value = true
   }
 
@@ -129,5 +137,40 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
     if (deps.canRedo()) deps.onRedo()
   }
 
-  return { open, center, beadHex, openAt, close, selectTool, pickRecent, pickColor, undo, redo, pressed, canOpen, holdAt, holdEnds, hold, endHold }
+  /** The item a point of the screen (client px) is over, by the ring's rule: measured from where the ring stands,
+   * which near a screen edge is not where it was pressed. */
+  function itemAt(at: { x: number; y: number }): RadialItemId | undefined {
+    return radialItemAt({ x: at.x - center.value.x, y: at.y - center.value.y }, RADIAL_HOLE * (deps.screen?.().scale ?? 1))
+  }
+
+  /** The armed pointer slid to a point (client px), or, with none, its press ended away from the ring. */
+  function slide(at?: { x: number; y: number }) {
+    held.value = at && open.value ? itemAt(at) : undefined
+  }
+
+  /** The armed pointer lifted at a point (client px): an item that is on is picked as a tap picks it, the hole closes
+   * the ring, and an item that is off leaves it open. */
+  function slideLift(at: { x: number; y: number }) {
+    if (!open.value) return
+    const id = itemAt(at)
+    const off = id !== undefined && radialItemOff(id, { canUndo: deps.canUndo(), canRedo: deps.canRedo(), recents: deps.recents(), beadHex: beadHex.value })
+    const lift = pressBecomes('armed', { type: 'lift', over: id === undefined ? 'hole' : off ? 'off' : 'on' })
+    held.value = lift === 'pick' ? id : undefined
+    if (lift === 'close') close()
+    if (lift === 'pick' && id) pick(id)
+    // Undo and Redo leave the ring open with no pointer down: nothing stays pressed.
+    if (open.value) held.value = undefined
+  }
+
+  /** Picks an item that is on, through the handler its tap calls. */
+  function pick(id: RadialItemId) {
+    const place = RADIAL_PLACES.find((each) => each.id === id)!
+    if ('tool' in place) selectTool(place.tool)
+    else if ('recent' in place) pickRecent(deps.recents()[place.recent])
+    else if (id === 'pick-color') pickColor()
+    else if (id === 'undo') undo()
+    else redo()
+  }
+
+  return { open, center, beadHex, openAt, close, selectTool, pickRecent, pickColor, undo, redo, pressed, canOpen, holdAt, holdEnds, hold, endHold, held, slide, slideLift }
 }

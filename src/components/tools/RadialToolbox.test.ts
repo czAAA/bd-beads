@@ -161,6 +161,17 @@ describe('RadialToolbox (ticket 1064)', () => {
     expect(wrapper.get('[data-testid="radial-name"]').text()).toBe('Fill')
   })
 
+  it('names an item that is off under a held pointer without the pressed look, and shows none with no item under it (ticket 1077)', async () => {
+    wrapper = mountRing({ held: 'undo', canUndo: false })
+    expect(wrapper.get('[data-testid="radial-name"]').text()).toBe('Undo')
+    expect(wrapper.findAll('.radial-toolbox__place--held')).toHaveLength(0)
+
+    // The pointer slid back into the hole.
+    await wrapper.setProps({ held: undefined })
+    expect(wrapper.find('[data-testid="radial-name"]').exists()).toBe(false)
+    expect(wrapper.findAll('.radial-toolbox__place--held')).toHaveLength(0)
+  })
+
   it('is hidden while closed, and Escape asks to close it only while it is open', async () => {
     wrapper = mountRing()
     expect(wrapper.get('[data-testid="radial-toolbox"]').isVisible()).toBe(true)

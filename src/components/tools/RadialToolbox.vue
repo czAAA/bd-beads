@@ -4,7 +4,7 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { ownLength } from '../../composables/ui/cssZoom'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, RADIAL_ROOM, radialItemAt, radialNameCenter, radialSliceOutline, type RadialItemId } from '../../domain/radialToolbox'
+import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, RADIAL_ROOM, radialItemAt, radialItemOff, radialNameCenter, radialSliceOutline, type RadialItemId } from '../../domain/radialToolbox'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -25,7 +25,8 @@ const props = defineProps<{
   recents: readonly string[]
   /** The colour of the bead that was pressed; none on an empty position, where Pick color from Canvas is off. */
   beadHex?: string | null
-  /** The item under a held pointer, told by the ring's rule (a slide, ticket 1077): it wears the pressed look. */
+  /** The item under the pointer a slide holds down, told by the ring's rule (ticket 1077): it wears the pressed look
+   * and shows its name. */
   held?: RadialItemId
 }>()
 
@@ -53,10 +54,10 @@ const items = computed(() =>
     if ('recent' in place) {
       const hex = props.recents[place.recent]
       const name = `${t.value.toolPill.recent} ${place.recent + 1}`
-      return { place, hex, name, meta: hex, label: hex ? `${name}, ${fillBlanks(t.value.toolPill.useColor, { color: hex })}` : name, off: !hex }
+      return { place, hex, name, meta: hex, label: hex ? `${name}, ${fillBlanks(t.value.toolPill.useColor, { color: hex })}` : name, off: radialItemOff(place.id, props) }
     }
     const action = controlAction(place.id)
-    const off = place.id === 'undo' ? !props.canUndo : place.id === 'redo' ? !props.canRedo : place.id === 'pick-color' ? !props.beadHex : false
+    const off = radialItemOff(place.id, props)
     const meta = place.id === 'pick-color' ? (props.beadHex ?? undefined) : undefined
     return { place, icon: action.icon, name: action.name(t.value), meta, off, lit: 'tool' in place ? place.tool === props.activeTool : undefined }
   }),
@@ -324,8 +325,9 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rootEl.value, close: () 
   background: var(--hover-fill);
 }
 
-/* Under a held finger or Pencil, at a press, and on the picked tile while the ring leaves: one step stronger. */
-.radial-toolbox__place--held :deep(.icon-btn),
+/* Under a held finger or Pencil, at a press, and on the picked tile while the ring leaves: one step stronger. The
+ * held tile names its place twice, so it outweighs the hover look it also wears (ticket 1077). */
+.radial-toolbox__place.radial-toolbox__place--held :deep(.icon-btn),
 .radial-toolbox__place--held .radial-toolbox__recent,
 .radial-toolbox__recent:active:not([aria-disabled='true']),
 .radial-toolbox-leave-active .radial-toolbox__place--picked :deep(.icon-btn),

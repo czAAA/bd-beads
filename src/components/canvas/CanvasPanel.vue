@@ -531,6 +531,8 @@ const drawingStyle = computed(() => {
                 @hold="radialToolbox.hold"
                 @drop-press="onDropPress"
                 @open-toolbox="radialToolbox.openAt"
+                @slide="radialToolbox.slide"
+                @slide-lift="radialToolbox.slideLift"
                 @drawn="onSurfaceDrawn"
               />
               <!-- What Set Frame around the picture and Convert to beads would make, under the picture's handles (ticket 0883). -->
@@ -670,6 +672,7 @@ const drawingStyle = computed(() => {
               :can-redo="canRedo"
               :recents="recentsInPill"
               :bead-hex="radialToolbox.beadHex.value"
+              :held="radialToolbox.held.value"
               @select-tool="radialToolbox.selectTool"
               @pick-recent="radialToolbox.pickRecent"
               @pick-color="radialToolbox.pickColor"

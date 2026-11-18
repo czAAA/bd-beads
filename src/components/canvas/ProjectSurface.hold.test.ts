@@ -243,3 +243,70 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     }
   })
 })
+
+describe('ProjectSurface: the slide after a hold (ticket 1077)', () => {
+  /** The surface after a pen's hold opened the ring at AT, and what it reports about the slide from then on. */
+  async function held() {
+    const slid: unknown[][] = []
+    const mounted = await mountSurface({ onSlide: (...at: unknown[]) => slid.push(['slide', ...at]), onSlideLift: (...at: unknown[]) => slid.push(['slide-lift', ...at]) })
+    await mounted.surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
+    vi.advanceTimersByTime(HOLD_MS)
+    return { ...mounted, slid }
+  }
+  const right = (px: number) => ({ clientX: AT.clientX + px, clientY: AT.clientY })
+
+  it('says where the pointer is once it has moved the drag slop since the ring opened, and where it lifts', async () => {
+    const { wrapper, surface, slid } = await held()
+    await surface.trigger('pointermove', { ...right(DRAG_SLOP_PX - 1), ...PEN, buttons: 1 })
+    expect(slid).toEqual([])
+    await surface.trigger('pointermove', { ...right(90), ...PEN, buttons: 1 })
+    // Armed for good: back where it started it still slides.
+    await surface.trigger('pointermove', { ...right(2), ...PEN, buttons: 1 })
+    await surface.trigger('pointerup', { ...right(3), ...PEN })
+    expect(slid).toEqual([
+      ['slide', { x: POINT.x + 90, y: POINT.y }],
+      ['slide', { x: POINT.x + 2, y: POINT.y }],
+      ['slide-lift', { x: POINT.x + 3, y: POINT.y }],
+    ])
+    wrapper.unmount()
+  })
+
+  it('a hold lifted with less than the drag slop of movement says nothing: the ring stays open for a tap', async () => {
+    const { wrapper, surface, slid } = await held()
+    await surface.trigger('pointermove', { ...right(DRAG_SLOP_PX - 1), ...PEN, buttons: 1 })
+    await surface.trigger('pointerup', { ...right(DRAG_SLOP_PX - 1), ...PEN })
+    expect(slid).toEqual([])
+    wrapper.unmount()
+  })
+
+  it('measures the move from where the pointer was when the ring opened, not from where it went down', async () => {
+    const slid: unknown[][] = []
+    const { wrapper, surface } = await mountSurface({ onSlide: (...at: unknown[]) => slid.push(['slide', ...at]), onSlideLift: (...at: unknown[]) => slid.push(['slide-lift', ...at]) })
+    await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
+    // The pen drifts during the hold, short of a stroke.
+    await surface.trigger('pointermove', { ...right(DRAG_SLOP_PX - 1), ...PEN, buttons: 1 })
+    vi.advanceTimersByTime(HOLD_MS)
+    await surface.trigger('pointermove', { ...right(DRAG_SLOP_PX + 2), ...PEN, buttons: 1 })
+    await surface.trigger('pointerup', { ...right(DRAG_SLOP_PX + 2), ...PEN })
+    expect(slid).toEqual([])
+    wrapper.unmount()
+  })
+
+  it('a slide that is cancelled lifts on nothing: it only says the slide ended', async () => {
+    const { wrapper, surface, slid } = await held()
+    await surface.trigger('pointermove', { ...right(90), ...PEN, buttons: 1 })
+    await surface.trigger('pointercancel', { ...right(90), ...PEN })
+    expect(slid).toEqual([['slide', { x: POINT.x + 90, y: POINT.y }], ['slide']])
+    wrapper.unmount()
+  })
+
+  it('a mouse does not slide: its right-button drag says nothing to the ring', async () => {
+    const slid: unknown[][] = []
+    const { wrapper, surface } = await mountSurface({ onSlide: () => slid.push(['slide']), onSlideLift: () => slid.push(['slide-lift']) })
+    await surface.trigger('pointerdown', { ...AT, ...MOUSE, button: 2, buttons: 2 })
+    await surface.trigger('pointermove', { ...right(90), ...MOUSE, buttons: 2 })
+    await surface.trigger('pointerup', { ...right(90), ...MOUSE, button: 2 })
+    expect(slid).toEqual([])
+    wrapper.unmount()
+  })
+})
