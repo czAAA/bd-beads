@@ -77,6 +77,11 @@ export interface SurfacePointerEvents {
   hold: [at?: { x: number; y: number }]
   /** A hold is up: drop what its press started, as a pinch's first finger is dropped. `open-toolbox` follows. */
   'drop-press': []
+  /** The pointer whose hold opened the ring, still down and armed (moved the drag slop since), is at this point, in
+   * client px (ticket 1077). With no point its press ended away from the ring (cancelled). */
+  slide: [at?: { x: number; y: number }]
+  /** That armed pointer lifted at this point, in client px: the ring's rule says what it picks. */
+  'slide-lift': [at: { x: number; y: number }]
 }
 
 /** What the pointer reads: the surface's props, its root and layout, and the margin cue it sets off. */
@@ -404,13 +409,16 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   let rightPress: { id: number; x: number; y: number; is: CanvasPress } | undefined
 
   /** The drawing pointer's press while its hold is timed (ticket 1065), by `pressBecomes`: where it went down, on screen,
-   * and the hold's timer. Once the hold has opened the ring it is `sliding` until it lifts, and no tool hears it. */
-  let heldPress: { id: number; x: number; y: number; is: CanvasPress; timer: ReturnType<typeof setTimeout> } | undefined
+   * and the hold's timer. Once the hold has opened the ring it is `sliding`, then `armed`, until it lifts, and no tool
+   * hears it; its moves are then measured from `opened`, where it was when the ring opened (ticket 1077). */
+  let heldPress:
+    | { id: number; x: number; y: number; is: CanvasPress; timer: ReturnType<typeof setTimeout>; at: { x: number; y: number }; opened?: { x: number; y: number } }
+    | undefined
 
   /** Starts timing a press's hold; the hairline shows where. */
   function timeHold(event: PointerEvent): void {
     clearTimeout(heldPress?.timer)
-    heldPress = { id: event.pointerId, x: event.clientX, y: event.clientY, is: 'held', timer: setTimeout(completeHold, HOLD_MS) }
+    heldPress = { id: event.pointerId, x: event.clientX, y: event.clientY, is: 'held', timer: setTimeout(completeHold, HOLD_MS), at: { x: event.clientX, y: event.clientY } }
     emit('hold', { x: event.clientX, y: event.clientY })
   }
 
@@ -439,6 +447,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     dragging.value = false
     emit('drop-press')
     openToolbox(heldPress)
+    heldPress.opened = heldPress.at
     if (!rootEl.value?.hasPointerCapture?.(heldPress.id)) rootEl.value?.setPointerCapture?.(heldPress.id)
   }
   watch(() => props.holdEnds, () => stepHold({ type: 'finger' }))
@@ -816,9 +825,12 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       }
     }
     if (event.pointerId === heldPress?.id) {
-      stepHold({ type: 'move', moved: Math.hypot(event.clientX - heldPress.x, event.clientY - heldPress.y) })
-      // The ring is open under a pointer still down: its moves are not the tool's.
-      if (heldPress.is === 'sliding') return
+      const from = heldPress.opened ?? heldPress
+      heldPress.at = { x: event.clientX, y: event.clientY }
+      stepHold({ type: 'move', moved: Math.hypot(event.clientX - from.x, event.clientY - from.y) })
+      // The ring is open under a pointer still down: its moves are not the tool's but the slide's, once armed.
+      if (heldPress.is === 'armed') emit('slide', heldPress.at)
+      if (heldPress.opened) return
     }
     if (adjusting.value) {
       dragTo(event)
@@ -919,8 +931,13 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       rightPress = undefined
     }
     // Capturing the sliding pointer takes it from the element it went down on: that loss is not its lift.
-    const recaptured = event?.type === 'lostpointercapture' && heldPress?.is === 'sliding'
-    if (!event || (event.pointerId === heldPress?.id && !recaptured)) stepHold({ type: 'lift' })
+    const recaptured = event?.type === 'lostpointercapture' && !!heldPress?.opened
+    if (!event || (event.pointerId === heldPress?.id && !recaptured)) {
+      // An armed lift lands on the ring, which says what it picks (ticket 1077); cancelled, it only ends the slide.
+      if (heldPress?.is === 'armed' && event?.type === 'pointerup') emit('slide-lift', { x: event.clientX, y: event.clientY })
+      else if (heldPress?.is === 'armed') emit('slide')
+      stepHold({ type: 'lift' })
+    }
     heldPointer = undefined
     resizing = false
     stroke = undefined

@@ -614,6 +614,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     demo: !!demo,
     canUndo: () => canUndo.value,
     canRedo: () => canRedo.value,
+    recents: () => toolPill.recentsInPill.value,
     onSelectTool,
     pickRecent: toolPill.pickRecent,
     onUndo,
