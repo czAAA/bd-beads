@@ -8,6 +8,7 @@ import ContextBar, { type MirrorBarState } from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ConvertImageWizard from '../import/ConvertImageWizard.vue'
+import RadialToolbox from '../tools/RadialToolbox.vue'
 import ToolPill from '../tools/ToolPill.vue'
 import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
@@ -29,7 +30,8 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import type { PillRect } from '../../domain/toolPill'
+import { litPillTool, type PillRect } from '../../domain/toolPill'
+import { useShellScope } from '../../composables/ui/shellScope'
 import { hasGuides, selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
@@ -187,6 +189,7 @@ const {
   onToggleDemoExpand,
   surfaceProbe,
   onToolPillPlaced,
+  radialToolbox,
 } = useCanvasContext()
 
 const newProjectAction = controlAction('new-project')
@@ -219,6 +222,13 @@ const pillRect = ref<PillRect>()
 
 /** Pick color from canvas (ticket 403): the surface shows the eyedropper while it is on. */
 const colorPick = useColorPick()
+
+/** Where the Radial toolbox goes: the app shell, as the pill's popovers do. */
+const teleportTo = useShellScope().teleportTo
+/** The Tool the Radial toolbox shows pressed: the one lit in the pill, by the pill's own rule. */
+const litTool = computed(() =>
+  litPillTool({ activeTool: activeTool.value, picking: colorPick?.picking.value, pasteArmed: pasteProjectionActive.value, hasClipboard: hasClipboard(), mirrorMarking: mirrorMarking.value }),
+)
 
 /** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on
  * release. */
@@ -513,6 +523,7 @@ const drawingStyle = computed(() => {
                 @frame-anchor="frameAnchor = $event"
                 @schema-anchors="schemaAnchors = $event"
                 @pressing="surfacePressing = $event"
+                @open-toolbox="radialToolbox.openAt"
                 @drawn="onSurfaceDrawn"
               />
               <!-- What Set Frame around the picture and Convert to beads would make, under the picture's handles (ticket 0883). -->
@@ -641,6 +652,25 @@ const drawingStyle = computed(() => {
             @select-custom-color="onSelectCustomColor"
             @rect="onPillRect"
           />
+          <!-- The Radial toolbox (ticket 1064) sits in the app shell as the pill's popovers do (StackingOrder card):
+            over the bars, outside the canvas's zoom, never clipped by the canvas box. -->
+          <Teleport v-if="activeProject" defer :to="teleportTo">
+            <RadialToolbox
+              :open="radialToolbox.open.value"
+              :center="radialToolbox.center.value"
+              :active-tool="litTool"
+              :can-undo="canUndo"
+              :can-redo="canRedo"
+              :recents="recentsInPill"
+              :bead-hex="radialToolbox.beadHex.value"
+              @select-tool="radialToolbox.selectTool"
+              @pick-recent="radialToolbox.pickRecent"
+              @pick-color="radialToolbox.pickColor"
+              @undo="radialToolbox.undo"
+              @redo="radialToolbox.redo"
+              @close="radialToolbox.close"
+            />
+          </Teleport>
         </div>
 
         <!-- Convert image fills the same cell as the drawing area, which stays laid out beneath it (ADR 0086). -->

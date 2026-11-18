@@ -1,6 +1,7 @@
 import { defineComponent, h, nextTick, onMounted, ref, type Component } from 'vue'
 import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
+import RadialToolbox from './tools/RadialToolbox.vue'
 import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
 import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
@@ -272,6 +273,8 @@ const schemaTagsHost = defineComponent({
 const openSchemaTag = (root: HTMLElement) => root.querySelector<HTMLElement>('[aria-label^="Butterfly"]')?.click()
 
 const CASES: FitCase[] = [
+  // The ring with the name of the item under a held pointer over it, its longest: Pick color from Canvas and a hex.
+  ['RadialToolbox', RadialToolbox, { open: true, center: { x: 160, y: 300 }, activeTool: 'paint', canUndo: true, canRedo: false, recents: ['#1f77b4'], beadHex: '#e63746', held: 'pick-color' }],
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],

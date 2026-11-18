@@ -938,7 +938,7 @@ describe('ProjectSurface', () => {
       }
     })
 
-    it('does nothing on a right click that lifts before it has moved 8 px, under every tool (ticket 1074)', async () => {
+    it('asks for the Radial toolbox on a right click that lifts before it has moved 8 px, and does nothing else, under every tool (tickets 1074, 1064)', async () => {
       for (const props of RIGHT_BUTTON_TOOLS) {
         const project = projectOf(20, 10)
         const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, props)
@@ -951,12 +951,29 @@ describe('ProjectSurface', () => {
         // The click is over: a move far from it afterwards is a hover, not its drag.
         await surface.trigger('pointermove', { clientX: start.x + 30, clientY: start.y + 30, buttons: 0 })
 
+        // Where the button went down, not where it lifted, and the bead position under that point.
+        expect(wrapper.emitted('open-toolbox')).toEqual([[{ x: start.x, y: start.y }, { row: 1, column: 2 }]])
         expect(wrapper.emitted('pan')).toBeUndefined()
         expect(wrapper.emitted('pressing')).toBeUndefined()
         expect(worked(wrapper)).toEqual([])
         expect(surface.classes()).not.toContain('project-surface--dragging')
         wrapper.unmount()
       }
+    })
+
+    it('does not ask for the Radial toolbox after a right-button drag or a cancelled press (ticket 1064)', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }) })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, button: 2, buttons: 2 })
+      await surface.trigger('pointercancel')
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, button: 2, buttons: 2 })
+      await surface.trigger('pointermove', { clientX: 50, clientY: 70, buttons: 2 })
+      await surface.trigger('pointerup', { button: 2 })
+      // The press that was cancelled is over: a lift with no press before it asks for nothing either.
+      await surface.trigger('pointerup', { button: 2 })
+
+      expect(wrapper.emitted('open-toolbox')).toBeUndefined()
     })
 
     it('follows the same rule for a pen\'s barrel button, which reports the right button (ticket 1074)', async () => {

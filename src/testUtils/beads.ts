@@ -78,6 +78,13 @@ export async function pressBead(wrapper: Anywhere, at: BeadAt, options: { pointe
   })
 }
 
+/** Right-clicks a bead: the right button down and up on it, which opens the Radial toolbox there (ticket 1064). */
+export async function rightClickBead(wrapper: Anywhere, at: BeadAt): Promise<void> {
+  const point = beadPoint(wrapper, at)
+  await surfaceRoot(wrapper).trigger('pointerdown', { ...point, button: 2, buttons: 2, isPrimary: true })
+  await surfaceRoot(wrapper).trigger('pointerup', { ...point, button: 2, buttons: 0, isPrimary: true })
+}
+
 /** Moves the pointer onto a bead, with a button held to continue a stroke (`{ buttons: 1 }`) or none for a plain
  * hover. */
 export async function hoverBead(wrapper: Anywhere, at: BeadAt, options: { buttons?: number; pointerType?: string } = {}): Promise<void> {

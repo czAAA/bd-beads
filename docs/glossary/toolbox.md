@@ -73,7 +73,7 @@ _Height (ticket 0544):_ as tall as its tallest item plus 1px above and below (a 
 _Avoid_: footer bar, bottom bar
 
 **Canvas hint**:
-The one line of shortcuts ("scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers") at the top-centre of the drawing area, under the strip (the Tool pill may cover it when docked at the top). Shown only while the Project has no beads and at every size except a phone; it goes with the first bead (ticket 429).
+The one line of shortcuts ("scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers · right-click for tools", the last part since ticket 1064) at the top-centre of the drawing area, under the strip (the Tool pill may cover it when docked at the top). Shown only while the Project has no beads and at every size except a phone; it goes with the first bead (ticket 429).
 _Avoid_: tip, tutorial
 
 **First-run welcome**:
@@ -83,6 +83,10 @@ _Avoid_: first-run hints, onboarding, tour, coach marks, tutorial
 **Message**:
 A notice or toast. A toast (a short-lived result) shows at the top-right of the canvas box under the strip, stacking downward, on the toast layer: above sheets, below modals and Tooltips (ticket 429). The Tool pill may cover a toast when docked at the right or top.
 _Avoid_: snackbar, alert
+
+**Radial toolbox**:
+A ring of ten actions that opens round the pointer on the Canvas (ticket 1064, ADR 0098; RadialToolbox card): Paint, Fill, Select and Eraser, Undo and Redo, Pick color from Canvas and the three recent colours the Tool pill shows, each always in its place, the colours over the top and the tools under. A right click on the Canvas opens it, centred on the pressed point; a right-button drag moves the Canvas instead. A click on an item does what its control on the Tool pill, the Canvas strip or the Palette does, through the same code: nothing is reachable only from the ring. A tool or a colour closes it; Undo and Redo keep it open. Pick color from Canvas takes the colour of the bead that was pressed, and is off on an empty position and over the Frame's margin. An item's hit area is its slice of the ring; the hole in the middle shows the Canvas and counts as outside, so a press there, anywhere else outside, or Escape only closes it (an Outside press). It is drawn in the app shell, outside the Canvas's zoom, and does not open while the Canvas is read-only, with no Project open, or on the Homepage's demo. In code the places and "which item a point picks" are `domain/radialToolbox.ts`, its state and picks `useRadialToolboxFlow`.
+_Avoid_: radial menu, pie menu, context menu, wheel
 
 **Tool button**:
 A Tools-group tool shown as an icon-only tile in the Tool pill, the active one on the panel fill with an accent icon, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Piece (7 is the Paste tile's while the clipboard holds something, 8 the Mirror tile's; tickets 292, 431, 447, 0703), shown as a small badge in the tile's top-right corner where a keyboard is likely (ticket 438). The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
