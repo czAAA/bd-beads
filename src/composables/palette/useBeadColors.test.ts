@@ -94,7 +94,8 @@ describe('a Project on a Miyuki Round Bead (ticket 0693)', () => {
     const codes = swatches.value.map((entry) => entry.code)
     expect(codes).toContain('3271')
     expect(codes).not.toContain('DB1')
-    expect(swatches.value.find((entry) => entry.code === '3271')).toMatchObject({ approximate: true, discontinued: false })
+    // 3271 carries the color read from Miyuki's photograph (ticket 1069), so it is no longer approximate.
+    expect(swatches.value.find((entry) => entry.code === '3271')).toMatchObject({ approximate: false, discontinued: false })
   })
 })
 
