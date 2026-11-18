@@ -133,7 +133,7 @@ const arrive: AreaWalk = {
   states: ['fresh'],
   async run(walk) {
     const { page } = walk
-    await walk.step('homepage-top', async () => openForAudit(walk, { url: 'homepage/' }))
+    await walk.step('homepage-top', async () => openForAudit(walk, { url: './' }))
     await walk.stop('homepage-whole-page', { fullPage: true })
     await walk.step('homepage-inside', async () => turnHomepageTo(page, 'inside'))
     await walk.step('homepage-coffee', async () => turnHomepageTo(page, 'coffee'))
@@ -419,7 +419,7 @@ async function keyboardStops(walk: Walk): Promise<void> {
       })
     }
   }
-  await walk.step('keyboard-homepage-start', async () => openForAudit(walk, { url: 'homepage/' }))
+  await walk.step('keyboard-homepage-start', async () => openForAudit(walk, { url: './' }))
   await tabStops('keyboard-homepage')
   await walk.step('keyboard-editor-start', async () => openForAudit(walk))
   await tabStops('keyboard-editor')
@@ -433,7 +433,7 @@ const crossCutting: AreaWalk = {
       await phonePath(walk)
       return
     }
-    await walk.step('homepage-top', async () => openForAudit(walk, { url: 'homepage/' }))
+    await walk.step('homepage-top', async () => openForAudit(walk, { url: './' }))
     await walk.step('editor-open', async () => openForAudit(walk))
     await walk.step('tapestry-large-open', async () => openSavedProject(page, 'tapestry'))
     await chromeStops(walk)
@@ -441,7 +441,7 @@ const crossCutting: AreaWalk = {
     if (walk.device === 'air-light') {
       await keyboardStops(walk)
       for (const locale of LOCALES) {
-        await walk.step(`${locale}-homepage-top`, async () => openForAudit(walk, { url: 'homepage/', locale }))
+        await walk.step(`${locale}-homepage-top`, async () => openForAudit(walk, { url: './', locale }))
         await walk.step(`${locale}-editor-menu-open`, async () => {
           await openForAudit(walk, { locale })
           await openStripPanel(page, 'strip-menu')

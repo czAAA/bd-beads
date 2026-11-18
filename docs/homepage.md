@@ -2,6 +2,11 @@
 
 The Homepage card (`docs/design/system/components/Homepage/README.md`) describes the page (ticket 0739); this file says how the app builds it. Moved out of `DESIGN.md` §4.7, which keeps a one-line entry. Paths are under `src/`; `inside/` is `src/homepage/inside/`.
 
+- The Homepage is the main address and the editor is `app/` under it (ticket 1052, ADR 0097): two built pages, the
+  root `index.html` and `app/index.html`. `homepage/homepageRoute.ts` holds both addresses and the one rule between
+  them: a tab's first page at the main address goes on to the editor when the device holds Projects
+  (`shouldOpenEditor`, asked by `homepage/homepage.ts` after the count); once a tab has shown either page
+  (`markArrived`) the main address stays the Homepage. The editor never sends anyone here.
 - The page (`position: fixed`, `overflow: hidden`) never scrolls: the stage holds the canvas box in its middle, and
   the section shown is a ref that every way of turning sets (ticket 0801). `homepage/useSectionInput.ts` turns wheel,
   trackpad, swipe and keys into turns, a section taller than its room scrolling inside itself first; the wheel's

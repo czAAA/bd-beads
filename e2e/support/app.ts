@@ -6,12 +6,12 @@ import { decodeProject, type EncodedProject } from '../../src/domain/projectEnco
 import type { Tool } from '../../src/domain/tool'
 import { SETTLE_MS } from '../../src/rendering/gestureView'
 
-/** Opens the app with these Projects in the library (the most recent opens), or none; at the preview's address or
- * `url`. */
+/** Opens the app with these Projects in the library (the most recent opens), or none; at the editor's address
+ * (`./app/`, ticket 1052) or `url` (`./` is the Homepage). */
 export async function openApp(
   page: Page,
   projects: Project[],
-  url = './',
+  url = './app/',
   /** `storageNote`: leave the storage note (ticket 399) to appear at the first save; by default the device has already
    * seen it, so it never covers a check's clicks. `canvasHidden`: the page opens with its canvas out of sight (the
    * Homepage shows Welcome first, ticket 0830), so wait for it to be there, not to be seen. */
@@ -42,8 +42,9 @@ export async function openApp(
       { key: STORAGE_KEY, value: stored },
     )
   }
-  // An empty library would otherwise send a new visitor to the Homepage (ticket 77); these checks are about the editor.
-  await page.addInitScript(() => sessionStorage.setItem('openbeads:editor-chosen', '1'))
+  // A tab's first page at the main address goes to the editor when Projects are saved (ticket 1052); these checks pick
+  // their page by its address, so the tab has already shown the app.
+  await page.addInitScript(() => sessionStorage.setItem('openbeads:arrived', '1'))
   // Text is set from the font files' own measurements, not the operating system's: no hinting, fractional advances,
   // kerning on, and no synthesized bold or italic, so a Mac, a Linux box and CI break lines in the same places.
   // Added on every load, so it survives the navigations some checks make.

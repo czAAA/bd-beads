@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { HEADERS_FILE } from './vite.headers.ts'
-import { filesBelow, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
+import { filesBelow, HOST_FILES, REDIRECTS_FILE, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
 import { LOCALES } from './src/domain/locale.ts'
 import { readNotesFile } from './src/domain/notesFile.ts'
 
@@ -36,13 +36,18 @@ describe('renderServiceWorker', () => {
   }
 
   it('lists every file but the worker itself, in folders too', () => {
-    const dir = folder({ 'index.html': 'a', 'assets/app.js': 'b', 'homepage/index.html': 'c', [SERVICE_WORKER_FILE]: 'old' })
-    expect(filesBelow(dir)).toEqual(['assets/app.js', 'homepage/index.html', 'index.html', SERVICE_WORKER_FILE])
-    expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['assets/app.js', 'homepage/index.html', 'index.html'])
+    const dir = folder({ 'index.html': 'a', 'assets/app.js': 'b', 'app/index.html': 'c', [SERVICE_WORKER_FILE]: 'old' })
+    expect(filesBelow(dir)).toEqual(['app/index.html', 'assets/app.js', 'index.html', SERVICE_WORKER_FILE])
+    expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['app/index.html', 'assets/app.js', 'index.html'])
   })
 
   it('leaves out the headers file, which the host reads and never serves, so the install would fail on it (ticket 1024)', () => {
     const dir = folder({ 'index.html': 'a', [HEADERS_FILE]: '/*\n  X-Frame-Options: DENY\n' })
+    expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['index.html'])
+  })
+
+  it('leaves out the redirects file, which the host reads and never serves either (ticket 1052)', () => {
+    const dir = folder({ 'index.html': 'a', [REDIRECTS_FILE]: '/homepage / 301\n' })
     expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['index.html'])
   })
 
@@ -76,10 +81,10 @@ describe('the production build (ticket 69)', () => {
 
   it('has every built file in the worker\'s offline list, and nothing else', () => {
     const precache = precacheOf(readFileSync(join(outDir, SERVICE_WORKER_FILE), 'utf8'))
-    expect(precache).toEqual(files.filter((path) => path !== SERVICE_WORKER_FILE && path !== HEADERS_FILE))
+    expect(precache).toEqual(files.filter((path) => path !== SERVICE_WORKER_FILE && !HOST_FILES.includes(path)))
     // The pieces the offline use needs, by name, so an empty list can't pass.
     expect(precache).toEqual(
-      expect.arrayContaining(['index.html', 'homepage/index.html', 'manifest.webmanifest', 'icons/bd-beads-app-icon.svg']),
+      expect.arrayContaining(['index.html', 'app/index.html', 'manifest.webmanifest', 'icons/bd-beads-app-icon.svg']),
     )
     expect(precache.some((path) => path.startsWith('assets/') && path.endsWith('.js'))).toBe(true)
     expect(precache.some((path) => path.startsWith('fonts/') && path.endsWith('.woff2'))).toBe(true)
@@ -87,7 +92,7 @@ describe('the production build (ticket 69)', () => {
 
   it('puts each language in a file of its own, which no page fetches at start and the offline list keeps (ticket 0616)', () => {
     const precache = precacheOf(readFileSync(join(outDir, SERVICE_WORKER_FILE), 'utf8'))
-    const pages = ['index.html', 'homepage/index.html'].map((page) => readFileSync(join(outDir, page), 'utf8'))
+    const pages = ['index.html', 'app/index.html'].map((page) => readFileSync(join(outDir, page), 'utf8'))
     for (const locale of LOCALES) {
       const file = files.find((path) => new RegExp(`^assets/${locale}-[\\w-]+\\.js$`).test(path))
       expect(file, locale).toBeDefined()
@@ -121,7 +126,7 @@ describe('the production build (ticket 69)', () => {
     const scripts = policy.split('; ').find((part) => part.includes('script-src ')) ?? ''
     expect(scripts).not.toMatch(/unsafe-inline|unsafe-eval/)
     let inline = 0
-    for (const page of ['index.html', 'homepage/index.html']) {
+    for (const page of ['index.html', 'app/index.html']) {
       for (const [, attributes, text] of readFileSync(join(outDir, page), 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
         if (/\bsrc=/.test(attributes!)) continue
         inline += 1
@@ -132,8 +137,14 @@ describe('the production build (ticket 69)', () => {
     expect(inline).toBeGreaterThanOrEqual(4)
   })
 
-  it('keeps index.html, splash included, under 14 KB so the first round trip carries it', () => {
-    expect(statSync(join(outDir, 'index.html')).size).toBeLessThan(14 * 1024)
+  it('sends the old Homepage address to the main one, with and without its slash (ticket 1052)', () => {
+    const rules = readFileSync(join(outDir, REDIRECTS_FILE), 'utf8').split('\n').filter((line) => line && !line.startsWith('#'))
+    expect(rules).toEqual(['/homepage / 301', '/homepage/* / 301'])
+    expect(files).not.toContain('homepage/index.html')
+  })
+
+  it("keeps the editor's page, splash included, under 14 KB so the first round trip carries it", () => {
+    expect(statSync(join(outDir, 'app/index.html')).size).toBeLessThan(14 * 1024)
   })
 
   it('links the manifest, whose icons and start page are in the build', () => {
@@ -145,7 +156,8 @@ describe('the production build (ticket 69)', () => {
       icons: { src: string }[]
     }
     expect(manifest.display).toBe('standalone')
-    expect(files).toContain('index.html')
+    expect(manifest.start_url).toBe('app/')
+    expect(files).toContain(`${manifest.start_url}index.html`)
     for (const icon of manifest.icons) expect(files).toContain(icon.src)
   })
 })

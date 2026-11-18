@@ -65,10 +65,10 @@ describe('ToastRegion (ticket 0859)', () => {
 
   it('draws an action with an address as a link, which closes the toast as it leaves (ticket 1048)', async () => {
     const reload = vi.fn()
-    const toast: Toast = { id: 'update-ready', text: 'Update ready', tone: 'info', stamp: 3, action: { label: 'Reload', run: reload }, secondAction: { label: "What's new", href: '/homepage/#whats-new', run: vi.fn() } }
+    const toast: Toast = { id: 'update-ready', text: 'Update ready', tone: 'info', stamp: 3, action: { label: 'Reload', run: reload }, secondAction: { label: "What's new", href: '/#whats-new', run: vi.fn() } }
     const wrapper = mount(ToastRegion, { props: { toasts: [toast] }, attachTo: document.body })
     const link = wrapper.get('a[data-testid="toast-second-action"]')
-    expect(link.attributes('href')).toBe('/homepage/#whats-new')
+    expect(link.attributes('href')).toBe('/#whats-new')
     expect(link.text()).toBe("What's new")
     link.element.addEventListener('click', (event) => event.preventDefault())
     await link.trigger('click')

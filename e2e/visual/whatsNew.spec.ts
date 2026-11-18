@@ -52,7 +52,7 @@ async function coffeeScreen(page: Page, locale: 'en' | 'ru', width: number): Pro
   await page.setViewportSize({ width, height: 1400 })
   await page.route('**/notes/*.json', (route) => route.fulfill({ json: fileIn(route.request().url().endsWith('/ru.json') ? 'ru' : 'en') }))
   await page.addInitScript((shown) => localStorage.setItem('openbeads:locale', shown), locale)
-  await openApp(page, [], './homepage/', { canvasHidden: true })
+  await openApp(page, [], './', { canvasHidden: true })
   await page.locator('[data-testid="section-step"][data-step="coffee"]').click()
   await expect(page.getByTestId('homepage-whats-new')).toBeVisible()
 }

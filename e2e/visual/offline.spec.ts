@@ -17,9 +17,12 @@ test.afterEach(async () => {
   await host.close()
 })
 
+/** The editor's address on `host` (ticket 1052); `host.url` is the Homepage's. */
+const editorAddress = () => new URL('app/', host.url).href
+
 /** Opens the editor from `host` on a saved Project, and waits until the worker has the whole app and is in control. */
 async function openAndInstall(page: Page, storageNote = false): Promise<void> {
-  await openApp(page, [fixtureProject({ technique: 'loom', columns: 8, rows: 6, blank: true })], host.url, { storageNote })
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 8, rows: 6, blank: true })], editorAddress(), { storageNote })
   await page.evaluate(() => navigator.serviceWorker.ready)
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true)
 }
@@ -116,7 +119,7 @@ for (const [situation, breakIt] of failures) {
     await openAndInstall(page)
     await breakIt(context, host)
 
-    await page.goto(new URL('homepage/', host.url).href)
+    await page.goto(host.url)
     await expect(page.getByTestId('homepage')).toBeVisible()
     await expect(page.getByRole('heading').first()).toBeVisible()
   })
@@ -127,7 +130,7 @@ for (const [situation, breakIt] of failures) {
     await breakIt(context, host)
 
     await page.addInitScript(() => localStorage.setItem('openbeads:locale', 'es'))
-    await page.goto(new URL('homepage/', host.url).href)
+    await page.goto(host.url)
     await page.locator('[data-testid="section-step"][data-step="coffee"]').click()
     await page.getByTestId('homepage-whats-new-toggle').click()
     await expect(page.getByTestId('homepage-whats-new-release').last()).toContainText('Lanzamiento 1.0.0')
@@ -140,7 +143,7 @@ for (const [situation, breakIt] of failures) {
     await openAndInstall(page)
     await breakIt(context, host)
 
-    await page.goto(new URL('homepage/', host.url).href)
+    await page.goto(host.url)
     await page.locator('[data-testid="section-step"][data-step="inside"]').click()
     await expect(page.getByTestId('inside-editor')).toBeVisible()
     await expect(page.getByTestId('inside-editor').getByTestId('project-surface')).toBeVisible()
@@ -199,7 +202,7 @@ test('takes a page the device has no copy of from the network', async ({ page })
 // the app notices and offers the way back (ticket 1041, reversing ticket 1017's rule).
 test.describe('once the Access sign-in has run out', () => {
   /** The address Access returns to after signing in: the one Sign in asked for. */
-  const afterSignIn = () => `${host.url}?sign-in=`
+  const afterSignIn = () => `${editorAddress()}?sign-in=`
 
   /** Presses Sign in, meets the sign-in page, and comes back signed in, as Access returns to the address asked for. */
   async function signIn(page: Page): Promise<void> {
@@ -221,7 +224,7 @@ test.describe('once the Access sign-in has run out', () => {
     await signIn(page)
     expect(await savedNames(page)).toContain('Fixture loom')
     // Signed in: nothing to offer, and the address is the app's own again.
-    await expect(page).toHaveURL(host.url)
+    await expect(page).toHaveURL(editorAddress())
     await askedAgain
     await expect(page.getByTestId('sign-in')).toHaveCount(0)
   })
@@ -401,7 +404,7 @@ test.describe('a new version', () => {
 
     await page.close()
     const again = await context.newPage()
-    await again.goto(host.url)
+    await again.goto(editorAddress())
     await expect(again.getByTestId('app-canvas')).toBeVisible()
     await expect(again.locator('meta[name="next-version"]')).toHaveCount(1)
     await expect.poll(() => cacheNames(again)).toEqual([expect.stringContaining('bd-beads-next-')])
@@ -416,8 +419,7 @@ test.describe('the splash', () => {
   test.use({ serviceWorkers: 'block', reducedMotion: 'no-preference' })
 
   async function openSlowly(page: Page): Promise<void> {
-    await page.addInitScript(() => sessionStorage.setItem('openbeads:editor-chosen', '1'))
-    await page.goto(host.url, { waitUntil: 'commit' })
+    await page.goto(editorAddress(), { waitUntil: 'commit' })
   }
 
   test('shows three beads in the accent colour after a moment, and is gone once the app is up', async ({ page }) => {
@@ -453,7 +455,7 @@ test.describe('the splash', () => {
 
   test('does not show at all when the app is quick', async ({ page }) => {
     host.delay = null
-    await page.goto(host.url)
+    await page.goto(editorAddress())
     await expect(page.locator('#splash')).toHaveCount(0)
   })
 })

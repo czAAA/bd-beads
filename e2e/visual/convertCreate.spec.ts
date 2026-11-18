@@ -11,7 +11,7 @@ const choosePicture = (page: Page, name = 'tabby.png') =>
 
 test('from the Homepage a pattern is kept with Make your first Project, Convert image, Choose file and Create Project', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await openApp(page, [], './homepage/', { canvasHidden: true })
+  await openApp(page, [], './', { canvasHidden: true })
   await page.getByTestId('welcome-make-first').click()
   await page.getByTestId('project-surface').waitFor()
   // The first Project opens on the Canvas with no panel (ticket 0866), so Convert image is the Menu's row.

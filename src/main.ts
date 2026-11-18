@@ -16,7 +16,7 @@ import { browserLibraryStore } from './services/libraryStore'
 import { startOfflineShell } from './services/offlineShell'
 import { installTouchFocusGuard } from './services/touchFocusGuard'
 import { growIntoEditor } from './homepage/boxHandoff'
-import { isEditorChosen, homepageUrl, shouldOpenHomepage } from './homepage/homepageRoute'
+import { markArrived } from './homepage/homepageRoute'
 
 installTouchFocusGuard()
 followDeviceTheme(window, document.documentElement, currentThemePick)
@@ -29,15 +29,13 @@ function showUnopened(): void {
   })
 }
 
-// A new visitor (an empty Project library) is sent to the Homepage first (ticket 77), told without decoding any Project
-// (ticket 0716) and before anything else is waited for. An unknown count is not a new visitor (spec 1018).
+// The editor never sends anyone to the Homepage (ticket 1052): the main address is the Homepage's, and from here on
+// it stays so in this tab.
+markArrived()
+
 void browserLibraryStore.count().then((count) => {
   if (count === 'unopened') {
     showUnopened()
-    return
-  }
-  if (shouldOpenHomepage(count === 0, isEditorChosen())) {
-    location.replace(homepageUrl(import.meta.env.BASE_URL))
     return
   }
   // Only the language in use is fetched before the app starts (ticket 0616), and the library's start (spec 1018); the

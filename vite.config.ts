@@ -62,9 +62,9 @@ export default defineConfig(({ mode }) => ({
   // What About and a Report show (ticket 1045); the catalogs' code counts the Homepage names (ticket 0742).
   define: { ...versionDefines(), __COLOR_CATALOG_CODES__: JSON.stringify(COLOR_CATALOG_CODES) },
   build: {
-    // Two pages: the editor and the Homepage (ticket 77), which is a folder with its own index.html so a static host
-    // serves /homepage/ with no rewrite rules (ADR 0014).
-    rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), homepage: resolve(import.meta.dirname, 'homepage/index.html') } },
+    // Two pages: the Homepage at the main address and the editor (tickets 77, 1052), which is a folder with its own
+    // index.html so a static host serves /app/ with no rewrite rules (ADR 0014, ADR 0097).
+    rollupOptions: { input: { homepage: resolve(import.meta.dirname, 'index.html'), main: resolve(import.meta.dirname, 'app/index.html') } },
   },
   test: {
     // Generous on purpose: a shared CI runner can be several times slower than a dev machine, and a healthy test

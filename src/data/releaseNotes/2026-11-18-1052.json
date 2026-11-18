@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "The Homepage is now the main address, and the editor opens at /app",
+    "ru": "Главная теперь открывается по основному адресу, а редактор по адресу /app",
+    "uk": "Головна тепер відкривається за основною адресою, а редактор за адресою /app",
+    "be": "Галоўная цяпер адкрываецца па асноўным адрасе, а рэдактар па адрасе /app",
+    "zh": "首页现在位于主地址，编辑器位于 /app",
+    "es": "La página de inicio es ahora la dirección principal, y el editor se abre en /app",
+    "pl": "Strona główna jest teraz pod głównym adresem, a edytor otwiera się pod /app"
+  }
+}

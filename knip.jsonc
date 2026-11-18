@@ -20,7 +20,7 @@
   "entry": [
     "playwright.ux-audit.config.ts",
     "index.html!",
-    "homepage/index.html!",
+    "app/index.html!",
     "src/browserSetup.ts",
     "src/testUtils/*.{ts,vue}",
     "e2e/support/*.ts",

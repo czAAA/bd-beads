@@ -12,7 +12,7 @@ interface TokensJson {
 const tokens = JSON.parse(read('docs/design/system/tokens.json')) as TokensJson
 const color = (name: string, theme: Theme) => tokens.color.tokens.find((token) => token.name === name)!.value[theme]
 
-const html = read('index.html')
+const html = read('app/index.html')
 const splashStyle = /<style>([\s\S]*?)<\/style>/.exec(html)![1]
 
 /** The value of `property` in the first rule for `selector`. */
@@ -24,7 +24,7 @@ function declared(selector: string, property: string): string {
   return value[1].trim()
 }
 
-describe('the splash in index.html (ticket 69)', () => {
+describe("the splash in the editor's page (ticket 69)", () => {
   it('is three beads, hidden from assistive technology', () => {
     expect(html).toMatch(/<div id="splash" aria-hidden="true"><i><\/i><i><\/i><i><\/i><\/div>/)
   })
@@ -69,8 +69,8 @@ describe('manifest.webmanifest (ticket 69)', () => {
     expect(html).toContain(`<meta name="theme-color" content="${color('surface', 'dark')}" media="(prefers-color-scheme: dark)" />`)
   })
 
-  it('opens the app wherever it is served from', () => {
-    expect(manifest.start_url).toBe('./')
+  it('opens the editor wherever the app is served from (ticket 1052)', () => {
+    expect(manifest.start_url).toBe('app/')
     expect(manifest.scope).toBe('./')
   })
 })

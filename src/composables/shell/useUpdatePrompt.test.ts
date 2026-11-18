@@ -43,7 +43,7 @@ describe('useUpdatePrompt', () => {
     release(ONE_NEW)
     expect(showToast).toHaveBeenCalledWith('update-ready', en.shell.updateReady, 'info', expect.objectContaining({ label: en.shell.updateReload }), {
       persistent: true,
-      secondAction: expect.objectContaining({ label: en.homepage.whatsNew.name, href: `${import.meta.env.BASE_URL}homepage/#whats-new` }),
+      secondAction: expect.objectContaining({ label: en.homepage.whatsNew.name, href: `${import.meta.env.BASE_URL}#whats-new` }),
       update: { version: '2.2.0', note: { kind: 'new', line: 'A new thing' } },
     })
     showToast.mock.calls[0][3].run()

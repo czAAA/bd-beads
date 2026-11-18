@@ -12,18 +12,16 @@
          the script below and src/theme/theme.ts set both to the chosen theme's (ticket 0998). -->
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
-    <!-- viewport-fit=cover (ticket 166; responsive.md "Screen edges and height") lets env(safe-area-inset-*) read real insets. -->
-    <!-- maximum-scale=1, user-scalable=no lock Page zoom (ticket 316, ADR 0034); iOS Safari ignores them, usePageZoomLock covers it. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>openbeads</title>
-    <!-- The first screen's fonts, asked for with the page rather than once its code has drawn the text (ticket 0991), as
-         homepage/index.html does: the strip and the Frame's sheet are laid out in them from the first paint. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Homepage · openbeads</title>
+    <!-- The first screen's fonts, asked for with the page rather than once its code has drawn the text (ticket 0991), so
+         the Welcome is set in them from its first paint and its heading keeps its two lines. -->
+    <link rel="preload" href="/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/inter-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/inter-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/dm-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin />
-    <!-- Before first paint: the theme (src/theme/theme.ts has the same rules) and the language, so neither flashes. -->
+    <!-- Before first paint: the theme and the language, exactly as the editor's index.html does, so neither flashes. -->
     <script>
       (function () {
         var root = document.documentElement
@@ -52,106 +50,9 @@
         root.lang = locale === 'ru' ? 'ru' : 'en'
       })()
     </script>
-    <!--
-      Arriving from the Homepage (tickets 0776, 0783, 0792; ADR 0088): its canvas box was left where
-      src/homepage/boxHandoff.ts remembered, with its Canvas strip's markup and its canvas marks. Decided here in the head,
-      before any of the body is parsed: the browser settles whether to take the step across the page load before the
-      body's scripts run, so an opt-in from there came too late and the step never ran (ticket 0792).
-    -->
-    <script data-handoff>
-      (function () {
-        var box = null
-        try {
-          box = JSON.parse(sessionStorage.getItem('openbeads:homepage-box'))
-        } catch (e) {}
-        var sides = ['x', 'y', 'width', 'height', 'bodyY', 'bodyHeight']
-        var look = ['marks', 'tile', 'bg']
-        if (!box || !('startViewTransition' in document) || matchMedia('(prefers-reduced-motion: reduce)').matches) return
-        for (var i = 0; i < sides.length; i++) if (typeof box[sides[i]] !== 'number') return
-        for (var k = 0; k < look.length; k++) if (typeof box[look[k]] !== 'string') return
-        if (typeof box.strip !== 'string') return
-        var root = document.documentElement
-        for (var j = 0; j < sides.length; j++) root.style.setProperty('--handoff-' + sides[j], box[sides[j]] + 'px')
-        for (var l = 0; l < look.length; l++) root.style.setProperty('--handoff-' + look[l], box[look[l]])
-        root.dataset.handoff = 'arriving'
-        var optIn = document.createElement('style')
-        optIn.dataset.handoff = ''
-        optIn.textContent = '@view-transition { navigation: auto; }'
-        document.head.appendChild(optIn)
-        addEventListener('pagereveal', function (event) {
-          window.openbeadsHandoff = event.viewTransition
-        })
-        // An app that never mounts mustn't stay hidden under the box: the splash comes back.
-        setTimeout(function () {
-          if (root.dataset.handoff === 'arriving') delete root.dataset.handoff
-        }, 4000)
-      })()
-    </script>
-    <!--
-      The splash (ticket 69; Loading card): three beads in `accent` on the page background (`surface`) of the theme the
-      script above picked, for a visit that has to wait for the code. Inline, so it needs no request; shown only after
-      `loading-delay` (300ms) so a quick load never flashes; main.ts removes it when the app mounts. The values are
-      tokens.json's (light | dark | contrast), held in step by src/styles/splash.test.ts, which also checks the bead
-      size and gap against the Loading card's `--swatch-dot` and `--space-8`.
-    -->
-    <style>
-      #splash {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        background: #fafafa;
-        opacity: 0;
-        animation: splash-show 1ms linear 300ms forwards;
-      }
-      [data-theme='dark'] #splash { background: #1a1a1a; }
-      [data-theme='contrast'] #splash { background: #f0f0f0; }
-      #splash i {
-        width: 0.875rem;
-        height: 0.875rem;
-        border-radius: 9999px;
-        background: #fa520f;
-        animation: splash-swell 1.2s infinite ease-in-out;
-      }
-      [data-theme='dark'] #splash i { background: #faff69; }
-      [data-theme='contrast'] #splash i { background: #a82c00; }
-      #splash i:nth-child(2) { animation-delay: 0.15s; }
-      #splash i:nth-child(3) { animation-delay: 0.3s; }
-      @keyframes splash-show { to { opacity: 1; } }
-      @keyframes splash-swell {
-        0%, 80%, 100% { opacity: 0.45; transform: scale(0.55); }
-        40% { opacity: 1; transform: scale(1); }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        #splash i { opacity: 0.8; animation: none; }
-      }
-    </style>
   </head>
   <body>
-    <div id="splash" aria-hidden="true"><i></i><i></i><i></i></div>
-    <!--
-      Arriving from the Homepage (the head's script above decided): the first paint draws the Homepage's box here
-      (#handoff), the strip as the Homepage drew it a moment ago in this tab (its styles are in the stylesheet above), so
-      the browser's step across the page load lands on the same picture; boxHandoff.ts grows it into the editor's once
-      the app mounts. Read once, so a reload or any other way in is a plain one.
-    -->
-    <div id="handoff" aria-hidden="true" inert><div><i></i></div></div>
-    <script data-handoff-strip>
-      (function () {
-        var box = null
-        try {
-          box = JSON.parse(sessionStorage.getItem('openbeads:homepage-box'))
-        } catch (e) {}
-        try {
-          sessionStorage.removeItem('openbeads:homepage-box')
-        } catch (e) {}
-        if (document.documentElement.dataset.handoff !== 'arriving' || !box) return
-        document.getElementById('handoff').firstElementChild.insertAdjacentHTML('afterbegin', box.strip)
-      })()
-    </script>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/homepage/homepage.ts"></script>
   </body>
 </html>

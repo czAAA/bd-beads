@@ -7,7 +7,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 // A synthetic 8-column Project, in the app's stored form (`safari-seed.json`).
 const seed = JSON.parse(readFileSync(new URL('./safari-seed.json', import.meta.url), 'utf8'))
 
-const url = process.argv[2] ?? 'http://127.0.0.1:4173/bd-beads/'
+const url = process.argv[2] ?? 'http://127.0.0.1:4173/bd-beads/app/'
 const PORT = 4455
 const driver = spawn('safaridriver', ['-p', String(PORT)], { stdio: 'ignore' })
 const base = `http://127.0.0.1:${PORT}`
@@ -26,7 +26,7 @@ try {
   await call('POST', `/session/${session}/window/rect`, { width: 1400, height: 900 })
   // An 8-column Frame (safari-seed.json), so the band folds into the Frame tools menu.
   await call('POST', `/session/${session}/url`, { url })
-  await run(`localStorage.setItem('openbeads:storage-note-seen', 'yes'); localStorage.setItem(arguments[0], arguments[1]); sessionStorage.setItem('openbeads:editor-chosen', '1')`, seed.key, seed.value)
+  await run(`localStorage.setItem('openbeads:storage-note-seen', 'yes'); localStorage.setItem(arguments[0], arguments[1]); sessionStorage.setItem('openbeads:arrived', '1')`, seed.key, seed.value)
   await call('POST', `/session/${session}/url`, { url })
   await sleep(2500)
   const found = await run(`return !!document.querySelector('[data-testid="margin-frame-tools"]')`)

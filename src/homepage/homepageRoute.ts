@@ -1,18 +1,24 @@
-/** Where the Homepage lives under the app's base path: a folder with its own index.html, so the Worker's static
- * assets serve it (ADR 0014). */
-const HOMEPAGE_PATH = 'homepage/'
+/** Where the editor lives under the app's base path: a folder with its own index.html, so the Worker's static assets
+ * serve it (ADR 0014). The Homepage is the base path itself, the main address (ticket 1052, ADR 0097). */
+const EDITOR_PATH = 'app/'
 
-/** Set for this tab once the visitor has chosen the editor, so the main address doesn't send them straight back. */
-const EDITOR_CHOSEN_KEY = 'openbeads:editor-chosen'
+/** Set once a tab has shown the Homepage or the editor, so the main address is the Homepage from then on. */
+const ARRIVED_KEY = 'openbeads:arrived'
 
-// Whether the main address sends the visitor to the Homepage (ticket 77): only when this device's library is empty,
-// and they haven't just chosen the editor from the Homepage.
-export function shouldOpenHomepage(libraryEmpty: boolean, editorChosen: boolean): boolean {
-  return libraryEmpty && !editorChosen
+// Whether the main address sends the visitor on to the editor (ticket 1052): only as a tab's first page, and only
+// when this device's library holds Projects. An unknown count is not a maker with work: the Homepage says why.
+export function shouldOpenEditor(projectCount: number | 'unopened', arrived: boolean): boolean {
+  return projectCount !== 'unopened' && projectCount > 0 && !arrived
 }
 
+/** The Homepage's address: the main one. */
 export function homepageUrl(base: string): string {
-  return `${base}${HOMEPAGE_PATH}`
+  return base
+}
+
+/** The editor's address, which its own addresses (`domain/openingAddress.ts`) are built on. */
+export function editorUrl(base: string): string {
+  return `${base}${EDITOR_PATH}`
 }
 
 /** The Homepage's address that opens it at What's new, unfolded and in view: "Update ready"'s link (ticket 1048). */
@@ -22,17 +28,18 @@ export function whatsNewUrl(base: string): string {
   return `${homepageUrl(base)}${WHATS_NEW_HASH}`
 }
 
-export function markEditorChosen(): void {
+/** Notes that this tab has shown one of the app's pages. */
+export function markArrived(): void {
   try {
-    sessionStorage.setItem(EDITOR_CHOSEN_KEY, '1')
+    sessionStorage.setItem(ARRIVED_KEY, '1')
   } catch {
-    // Nothing to remember it in: the main address may offer the Homepage again, which is harmless.
+    // Nothing to remember it in: a maker with Projects is sent to the editor from the main address again.
   }
 }
 
-export function isEditorChosen(): boolean {
+export function hasArrived(): boolean {
   try {
-    return sessionStorage.getItem(EDITOR_CHOSEN_KEY) === '1'
+    return sessionStorage.getItem(ARRIVED_KEY) === '1'
   } catch {
     return false
   }

@@ -5,8 +5,8 @@ import { securityHeaders } from '../../vite.headers'
 // Our hosting, played by the test (ticket 69): a server in front of the preview build that can be taken down (503),
 // slowed, or have a file changed, so the service worker meets the failures the real one would. Like Cloudflare (ticket
 // 1017): `/index.html` answers a 307 to its folder, and `accessExpired` sends every request to a sign-in page.
-/** The folders of the built pages (`index.html`, `homepage/index.html`), relative to the base path. */
-const PAGE_FOLDERS = ['', 'homepage/']
+/** The folders of the built pages (`index.html`, `app/index.html`), relative to the base path. */
+const PAGE_FOLDERS = ['', 'app/']
 
 /** The headers the build's pages are sent with (ticket 1024), passed on as the preview sends them. */
 const SECURITY_HEADERS = Object.keys(securityHeaders([])).map((name) => name.toLowerCase())

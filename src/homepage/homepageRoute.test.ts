@@ -1,31 +1,37 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { isEditorChosen, markEditorChosen, homepageUrl, shouldOpenHomepage } from './homepageRoute'
+import { editorUrl, hasArrived, homepageUrl, markArrived, shouldOpenEditor } from './homepageRoute'
 
-describe('shouldOpenHomepage', () => {
-  it('opens it for an empty library', () => {
-    expect(shouldOpenHomepage(true, false)).toBe(true)
+describe('shouldOpenEditor', () => {
+  it("opens it as a tab's first page when Projects are saved", () => {
+    expect(shouldOpenEditor(2, false)).toBe(true)
   })
 
-  it('never opens it once Projects are saved', () => {
-    expect(shouldOpenHomepage(false, false)).toBe(false)
+  it('never opens it for an empty library', () => {
+    expect(shouldOpenEditor(0, false)).toBe(false)
   })
 
-  it('never opens it after the visitor chose the editor', () => {
-    expect(shouldOpenHomepage(true, true)).toBe(false)
+  it("never opens it for a library that couldn't be opened, which the Homepage explains", () => {
+    expect(shouldOpenEditor('unopened', false)).toBe(false)
+  })
+
+  it('never opens it once the tab has shown the app', () => {
+    expect(shouldOpenEditor(2, true)).toBe(false)
   })
 })
 
-describe('the editor choice', () => {
+describe('the arrival', () => {
   beforeEach(() => sessionStorage.clear())
 
   it('is remembered for the tab', () => {
-    expect(isEditorChosen()).toBe(false)
-    markEditorChosen()
-    expect(isEditorChosen()).toBe(true)
+    expect(hasArrived()).toBe(false)
+    markArrived()
+    expect(hasArrived()).toBe(true)
   })
 })
 
-it('puts the Homepage in a folder under the base path', () => {
-  expect(homepageUrl('/bd-beads/')).toBe('/bd-beads/homepage/')
-  expect(homepageUrl('/')).toBe('/homepage/')
+it('puts the Homepage at the base path and the editor in a folder under it', () => {
+  expect(homepageUrl('/bd-beads/')).toBe('/bd-beads/')
+  expect(homepageUrl('/')).toBe('/')
+  expect(editorUrl('/bd-beads/')).toBe('/bd-beads/app/')
+  expect(editorUrl('/')).toBe('/app/')
 })

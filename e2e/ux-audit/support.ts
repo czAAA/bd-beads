@@ -171,7 +171,8 @@ function seededLibrary(): Project[] {
 }
 
 interface OpenOptions {
-  /** Where to go, relative to the app's base: `./` for the editor, `homepage/` for the Homepage. */
+  /** Where to go, relative to the app's base: `./app/` for the editor, `./` for the Homepage. Left out, a fresh
+   * device meets the Homepage and one with Projects the editor, as the main address sends them (ticket 1052). */
   url?: string
   locale?: Locale
   /** Open the editor even on a fresh device, as a stranger who pressed "open the editor" on the Homepage would. */
@@ -197,15 +198,14 @@ export async function openForAudit(walk: Walk, options: OpenOptions = {}): Promi
   if (options.locale) {
     await page.addInitScript((locale) => localStorage.setItem('openbeads:locale', locale), options.locale)
   }
-  if (options.chooseEditor || state !== 'fresh') {
-    await page.addInitScript(() => sessionStorage.setItem('openbeads:editor-chosen', '1'))
-  }
+  // The walk picks its page by its address: the main address stays the Homepage for a device with Projects too.
+  await page.addInitScript(() => sessionStorage.setItem('openbeads:arrived', '1'))
   // A headless browser can't show the save picker (services/fileWriter.ts); without it the app hands over a download,
   // as it does in Safari and Firefox, which the walk can catch and import back.
   await page.addInitScript(() => {
     delete (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker
   })
-  await page.goto(options.url ?? './')
+  await page.goto(options.url ?? (options.chooseEditor || state !== 'fresh' ? './app/' : './'))
   await page.locator('[data-testid="app-canvas"], [data-testid="homepage-page"]').first().waitFor()
   await settle(page)
 }

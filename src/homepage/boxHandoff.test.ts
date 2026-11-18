@@ -163,7 +163,7 @@ const HANDOFF: BoxHandoff = {
   bg: 'rgb(20, 20, 20)',
 }
 
-const INDEX_HTML = readFileSync(resolve(__dirname, '../../index.html'), 'utf8')
+const INDEX_HTML = readFileSync(resolve(__dirname, '../../app/index.html'), 'utf8')
 
 /** The script with this attribute in this part of index.html. */
 function scriptIn(part: string, attribute: string): string {
