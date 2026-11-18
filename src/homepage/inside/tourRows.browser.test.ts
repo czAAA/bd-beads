@@ -2,15 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref, watch } from 'vue'
 import { page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
-import { beadColorAt } from '../../domain/layerBeads'
-import { frameOf } from '../../domain/layerRecord'
+import { linesOf, painted, placeOf } from '../../testUtils/demoDrawing'
 import { currentPass, rowProgressOf } from '../../domain/rowProgress'
+import { beadColorAt } from '../../domain/layerBeads'
 import type { Project } from '../../domain/project'
 import type { ReferencePlace } from '../../domain/referenceImage'
 import type { InsideRowId } from '../../i18n/translations'
 import InsideEditor from './InsideEditor.vue'
-import { DEMO_COLORS, PEACOCK_COLORS } from './demoProjects'
-import { PEACOCK_CUFF, PEACOCK_RING, type PeacockDrawing } from './peacock'
+import { PEACOCK_CUFF, PEACOCK_RING } from './peacock'
 import { ROW_DONE_PASSES, TOUR_SCRIPTS } from './tourScripts'
 
 // The tour's rows applied at once on the real demo editor (ticket 0821), as a press on a later row applies them: what
@@ -34,28 +33,6 @@ async function applyThrough(editor: InstanceType<typeof InsideEditor>, last: Ins
     if (row === last) break
   }
   return hand.canvas.activeProject.value!
-}
-
-/** The feather's colors by part, as the card names them: a barb is the eye's green, the ground deep green. */
-const COLORS: Record<string, string> = Object.fromEntries(Object.entries(PEACOCK_COLORS).map(([part, color]) => [part, DEMO_COLORS[color]]))
-
-/** The Frame's place and size, and nothing else of it. */
-function placeOf(project: Project) {
-  const { row, column, rows, columns } = frameOf(project)!
-  return { row, column, rows, columns }
-}
-
-/** The Frame's beads as lines of parts, as a drawing writes them: a line for each column, a part for each bead along.
- * A bead of another color reads `?`, an empty one a space. */
-function linesOf(project: Project): string[] {
-  const { row, column, rows, columns } = placeOf(project)
-  const part = (color: string | null) => (color ? (Object.keys(COLORS).find((key) => COLORS[key] === color.toLowerCase()) ?? '?') : ' ')
-  return Array.from({ length: columns }, (_, line) => Array.from({ length: rows }, (_, along) => part(beadColorAt(project, row + along, column + line, 'frame'))).join(''))
-}
-
-/** A drawing's lines with barbs read as the green they are painted in. */
-function painted(drawing: PeacockDrawing): string[] {
-  return drawing.rows.map((line) => line.replaceAll('g', 'G'))
 }
 
 /** The middle line of each of the cuff's pupils, 3 beads long: the beads Colors built in paints. */
