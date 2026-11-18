@@ -124,4 +124,20 @@ describe('the Radial toolbox', () => {
     expect(beadColor(wrapper, 5)).toBe('#1d3557')
     wrapper.unmount()
   })
+
+  it('a hold, a slide and a lift on a recent colour choose it in one gesture, and no bead is placed (ticket 1077)', async () => {
+    localStorage.setItem('openbeads:recent-colors', '#1d3557,#f1c453')
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+
+    // Up and a little to the right of the ring's centre, well past the ring: the second recent colour's slice.
+    await holdBead(wrapper, 40, { x: 60, y: -200 })
+    await flushPromises()
+    expect(ring(wrapper).isVisible()).toBe(false)
+    expect(beadColor(wrapper, 40)).toBeNull()
+
+    await pressBead(wrapper, 5)
+    await wrapper.get('[data-testid="project-surface"]').trigger('pointerup')
+    expect(beadColor(wrapper, 5)).toBe('#f1c453')
+    wrapper.unmount()
+  })
 })

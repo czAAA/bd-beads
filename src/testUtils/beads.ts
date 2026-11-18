@@ -88,8 +88,9 @@ export async function rightClickBead(wrapper: Anywhere, at: BeadAt): Promise<voi
 }
 
 /** Holds a finger still on a bead for the hold's length and lifts it, which opens the Radial toolbox there in Mouse
- * mode (ticket 1065); the clock is faked for the wait. */
-export async function holdBead(wrapper: Anywhere, at: BeadAt): Promise<void> {
+ * mode (ticket 1065); the clock is faked for the wait. With `slide`, the finger first slides that far from the ring's
+ * centre (px, x right, y down) and lifts there, which picks the item in that direction (ticket 1077). */
+export async function holdBead(wrapper: Anywhere, at: BeadAt, slide?: { x: number; y: number }): Promise<void> {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
   try {
     await pressBead(wrapper, at, { pointerType: 'touch' })
@@ -97,7 +98,15 @@ export async function holdBead(wrapper: Anywhere, at: BeadAt): Promise<void> {
   } finally {
     vi.useRealTimers()
   }
-  await surfaceRoot(wrapper).trigger('pointerup', { ...beadPoint(wrapper, at), pointerType: 'touch', isPrimary: true })
+  let lift = beadPoint(wrapper, at)
+  if (slide) {
+    await wrapper.vm.$nextTick()
+    const ring = document.querySelector<HTMLElement>('[data-testid="radial-toolbox"]')
+    if (!ring) throw new Error('No Radial toolbox to slide on: mount with attachTo: document.body')
+    lift = { clientX: parseFloat(ring.style.left) + slide.x, clientY: parseFloat(ring.style.top) + slide.y }
+    await surfaceRoot(wrapper).trigger('pointermove', { ...lift, buttons: 1, pointerType: 'touch', isPrimary: true })
+  }
+  await surfaceRoot(wrapper).trigger('pointerup', { ...lift, pointerType: 'touch', isPrimary: true })
 }
 
 /** Moves the pointer onto a bead, with a button held to continue a stroke (`{ buttons: 1 }`) or none for a plain

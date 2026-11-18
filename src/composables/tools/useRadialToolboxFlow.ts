@@ -46,9 +46,8 @@ export function radialScreenOfWindow(): RadialScreen {
 }
 
 /** The Radial toolbox's flow (spec 1072, ADR 0098): it owns the ring's state (open, where on screen, on which bead
- * position) and routes each pick to the handler the item's existing control calls, so nothing behaves differently in
- * the ring. A tool or a colour closes it; Undo and Redo keep it open. A slide's lift (ticket 1077) picks through the
- * same handlers a tap does. */
+ * position) and routes each pick, a tap's or a slide's lift (ticket 1077), to the handler the item's existing control
+ * calls, so nothing behaves differently in the ring. A tool or a colour closes it; Undo and Redo keep it open. */
 export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
   const open = ref(false)
   /** The ring's centre, in client px; kept after it closes, so it leaves where it stood. */

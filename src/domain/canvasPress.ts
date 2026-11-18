@@ -29,12 +29,11 @@ type SlideLift = 'pick' | 'close'
 export type CanvasPress = RightPress | HeldPress | SlideLift | 'nothing'
 
 /** What a sliding pointer is over, by the ring's rule: an item that is `on`, one that is `off`, or the `hole`. */
-export type RingPart = 'on' | 'off' | 'hole'
+type RingPart = 'on' | 'off' | 'hole'
 
-/** What happens to a press: its button goes down (with the pointer's kind and the input mode, for a press that may be
- * a hold), its pointer is `moved` px (on screen) from where it went down or, once sliding, from where it was when the
- * ring opened, it has been `held` this many ms, a second `finger` lands (a pinch), or its button lifts, `over` this
- * part of the open ring. */
+/** What happens to a press: its button goes down (with the pointer's kind and the input mode, for a hold), its pointer
+ * is `moved` px (on screen) from where it went down or, sliding, from where it was when the ring opened, it has been
+ * `held` this many ms, a second `finger` lands (a pinch), or its button lifts, `over` this part of the open ring. */
 export type CanvasPressStep =
   | { type: 'down'; button: number; pointerType?: string; inputMode?: InputMode }
   | { type: 'move'; moved: number }
@@ -59,9 +58,8 @@ function armedLift(over: RingPart | undefined): CanvasPress {
 }
 
 /** What a press becomes at each step (tickets 1074, 1064, 1065, 1077; ADR 0098). The right button waits, pans once
- * moved `DRAG_SLOP_PX`, or opens the ring at its lift. The drawing pointer is held: moved as far or joined by a second
- * finger it is a stroke, still for `HOLD_MS` it opens the ring and slides. Sliding, it is armed once moved as far
- * again: lifted before, the ring stays open for a tap. None for a press this rule does not decide. */
+ * moved `DRAG_SLOP_PX`, or opens the ring at its lift. The drawing pointer is held: moved as far or joined by a finger
+ * it is a stroke, still for `HOLD_MS` it slides, armed once moved as far again. None for a press it does not decide. */
 export function pressBecomes(press: CanvasPress, step: Exclude<CanvasPressStep, { type: 'down' }>): CanvasPress
 export function pressBecomes(press: CanvasPress | undefined, step: CanvasPressStep): CanvasPress | undefined
 export function pressBecomes(press: CanvasPress | undefined, step: CanvasPressStep): CanvasPress | undefined {
