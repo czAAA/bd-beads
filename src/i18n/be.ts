@@ -1515,12 +1515,4 @@ export const be: Translations = {
     feedbackEmail: 'Ваша эл. пошта',
     tooLong: 'Не больш за {max} сімвалаў.',
   },
-  beadCursor: {
-    place: 'Рад {row}, слупок {column}, {color}',
-    painted: 'Пафарбавана: {color}',
-    filled: 'Заліта: {color}',
-    erased: 'Сцёрта',
-    selected: 'Вылучана {columns} на {rows}',
-    empty: 'пуста',
-  },
 }

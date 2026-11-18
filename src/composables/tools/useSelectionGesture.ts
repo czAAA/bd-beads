@@ -479,8 +479,6 @@ export function useSelectionGesture(
   return {
     selection,
     refusals,
-    /** Asks the canvas to show the not-allowed cue (ticket 433), for a refusal the pointer did not make itself. */
-    refuse: () => (refusals.value += 1),
     beginPress,
     extendPress,
     endPress,

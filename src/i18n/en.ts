@@ -1498,12 +1498,4 @@ export const en: Translations = {
     feedbackEmail: 'Your email',
     tooLong: 'Use {max} characters or fewer.',
   },
-  beadCursor: {
-    place: 'Row {row}, column {column}, {color}',
-    painted: 'Painted {color}',
-    filled: 'Filled with {color}',
-    erased: 'Erased',
-    selected: 'Selected {columns} by {rows}',
-    empty: 'empty',
-  },
 }
