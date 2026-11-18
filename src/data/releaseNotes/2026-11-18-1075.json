@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "Fill fills when you lift",
+    "ru": "Заливка срабатывает, когда вы отпускаете",
+    "uk": "Заливка спрацьовує, коли ви відпускаєте",
+    "be": "Заліўка спрацоўвае, калі вы адпускаеце",
+    "zh": "填充会在您抬起时生效",
+    "es": "El relleno se aplica al soltar",
+    "pl": "Wypełnienie działa po puszczeniu"
+  }
+}

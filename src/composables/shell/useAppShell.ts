@@ -626,7 +626,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
-  const { strokeMode, fillRefusals, endStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
+  const { strokeMode, fillRefusals, endStroke, endCancelledStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
     activeTool: () => activeTool.value,
@@ -634,6 +634,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     cancelSelectPress,
     mirror: () => mirror.setting.value,
     onScreen: canvasOnScreen,
+    colorUsed: onPaintColorUsed,
     showToast,
     messages,
   })
@@ -683,7 +684,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     tapPiece,
     beginOrCommitPress: (mode, color, row, column, layer) => {
       // Before the press, so the Palette's Undo step comes before the stroke's own.
-      if (mode === 'paint' && color) onPaintColorUsed(color)
+      // A Fill's color joins at its lift (ticket 1075): a press a hold takes over leaves nothing behind.
+      if (mode === 'paint' && color && activeTool.value !== 'fill') onPaintColorUsed(color)
       beginOrCommitPress(mode, color, row, column, layer)
     },
     paintStrokeCells,
@@ -1090,6 +1092,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       saveFailed,
       announcement,
       endStroke,
+      endCancelledStroke,
       onSaveProjectFile: exportFlow.onSave,
       /** The notice of a Project that didn't open last time (ticket 0716), with its Remove and Export. */
       missedProject,
