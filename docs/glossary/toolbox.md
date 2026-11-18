@@ -19,7 +19,7 @@ A dropdown that hangs from a Canvas strip button, built on one parent component,
 _Avoid_: sheet (for these three), dropdown, Frame bar (retired name), PanelShell (retired name)
 
 **Menu**:
-The Menu panel: the modal dropdown of app-wide settings and links (language, theme, Lifted pieces, Name on exports, Keyboard shortcuts, Homepage, the source link), opened by the first button of the Canvas strip, an icon with the word "Menu" (ticket 431), which is there with or without a Project. Everything about the open Project lives in the Project panel instead.
+The Menu panel: the modal dropdown of app-wide settings and links (language, theme, Lifted pieces, Keyboard shortcuts, Homepage, the source link), opened by the first button of the Canvas strip, an icon with the word "Menu" (ticket 431), which is there with or without a Project. Everything about the open Project lives in the Project panel instead.
 _Avoid_: More, header menu
 
 **Feedback sheet**:

@@ -10,7 +10,7 @@ The domain language of bd-beads, one file per area. Each entry gives a term's me
 | [Tool pill and controls](toolbox.md) | Tool group, Tool pill layout, Tool pill, Panel, Menu, Canvas strip, Wordmark, Canvas footer, First-run welcome, Subpanel, New Project, Starter, Starter gallery, Starter setup, Radial toolbox, Tool button, Tooltip, Note, Outside press, Feedback sheet, Report kind, Report |
 | [Editing a Schema](editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Fill tool, Fill reach, Copy, Paste, Mirror, Mirror bar, Mirror mode, Axis, Area, Fitting size, Mirror (Selection bar), Undo, Redo |
 | [Import and rendering](import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer, Tool pointer, Letters, Word chart, Large beads and Row by row, Page 1, Export quality, File size estimate, Clean up stray beads, Auto-fix lighting |
-| [Accounts and sharing](accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
+| [Accounts and sharing](accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Settings kept in step, Edit link, Locked Project, Sync pending, Surface view |
 | [Homepage](homepage.md) | Homepage, Homepage zoom |
 | [Versions and releases](versions-and-releases.md) | Version, Build, Release note, New / Changed / Fixed, Production release, Changelog |
 

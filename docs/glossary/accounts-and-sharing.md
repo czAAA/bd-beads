@@ -1,6 +1,6 @@
 # Glossary: Accounts and sharing
 
-Guest, Free account, Pro, Sign-in method, View and Edit links, Locked Project, Sync pending. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
+Guest, Free account, Pro, Sign-in method, Settings kept in step, View and Edit links, Locked Project, Sync pending. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
 
 **View link**:
 A hosted, encrypted snapshot of a Project that any signed-in account can make and anyone, a Guest included, can open. The key is in the part of the link after `#`, so the backend never sees the Project; opening it shows the Project and can import it. Later edits don't change it and it can't be used to edit. It expires 3 days after it was last opened, and every open restarts the clock; an expired link is gone, and the Project has to be shared again, as a new link.
@@ -11,7 +11,7 @@ Someone using the app without signing in. Everything that works on the device wo
 _Avoid_: anonymous user, visitor
 
 **Free account**:
-A signed-in person with no paid plan. Gets what needs little of the backend: making View links, the basic settings kept in step across their devices, and one synced Project. Everything on the device is unlimited, as for a Guest: any number of Projects, any of which can be shared as a View link, while only one of them syncs. The exact set is decided by plan, not fixed here.
+A signed-in person with no paid plan. Gets what needs little of the backend: making View links, the Settings kept in step across their devices, and one synced Project. Everything on the device is unlimited, as for a Guest: any number of Projects, any of which can be shared as a View link, while only one of them syncs. The exact set is decided by plan, not fixed here.
 _Avoid_: basic plan, member
 
 **Pro**:
@@ -22,9 +22,13 @@ _Avoid_: premium, subscriber, paid user
 A way to prove who you are to your account: Google, an email link, or a passkey. An account is one verified email address; Google and an email link both prove it, so either reaches the same account, and a passkey is added to an account after signing in, never used to create one.
 
 **Sign in** / **Sign out**:
-Sign in proves a Sign-in method to the backend and starts a session on this device; it is also how an account is created, since there is one flow and the first Google sign-in with an unknown email creates the account (no separate "sign up"). Sign out ends the session on this device and loses nothing, because everything a Guest has lives on the device. Offered in the Menu's user section, which shows the verified email and the plan (Free account or Pro), no name or picture.
+Sign in proves a Sign-in method to the backend and starts a session on this device; it is also how an account is created, since there is one flow and the first Google sign-in with an unknown email creates the account (no separate "sign up"). Sign out ends the session on this device and loses nothing, because everything a Guest has lives on the device. A session lasts 90 days from the sign-in; when it ends the device is a Guest's again until the next sign-in, and nothing on it is lost. Offered in the Menu's user section, which shows the verified email and the plan (Free account or Pro), no name or picture; before the person signs in it says what is kept: the email and the Settings kept in step, and nothing else from Google.
 _Avoid_: sign up, register, log in, log out
 _Avoid_: login provider, auth method, identity
+
+**Settings kept in step**:
+The three settings a signed-in person finds the same on all their devices: language, theme and the Lifted pieces switch (ADR 0014). Every other preference stays on its device, and the Maker's name belongs to each Project. At sign-in the account's settings win over the device's; after that the later change wins, setting by setting, and a device picks changes up when the app opens. "Sync" is kept for Projects.
+_Avoid_: settings sync, synced settings, basic settings
 
 **Edit link**:
 For a synced Project (a Free account's one, or a Pro's), the link whose `#` part is the Project's key; opening it on a device gives that device the same editable Project. Whoever holds it can read and edit the Project.
