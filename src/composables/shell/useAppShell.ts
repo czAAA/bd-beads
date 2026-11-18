@@ -168,7 +168,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   if (!demo) useDocumentTitle({ projectName: () => activeProject.value && projectNameOf(activeProject.value), appTitle: () => t.value.app.title })
 
   /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
-  if (!demo) useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
+  if (!demo) useUpdatePrompt({ updates: services.appUpdates, messages, locale: currentLocale, showToast })
 
   /** "Sign in", once the host's sign-in has run out under an app opened from the device (ticket 1041). */
   if (!demo) useSignInPrompt({ signIn: services.appSignIn, messages, showToast })

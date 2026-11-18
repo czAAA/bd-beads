@@ -1,11 +1,14 @@
 import { ref } from 'vue'
+import type { UpdateSummary } from '../../domain/waitingBuild'
 
 export type MessageTone = 'success' | 'info' | 'warning' | 'danger'
 
-/** A text button in a toast (Message card): pressing it runs `run` and closes the toast. */
+/** A text button in a toast (Message card): pressing it runs `run` and closes the toast. With `href` it is a link to
+ * that page instead, which runs `run` as it leaves (ticket 1048, What's new). */
 export interface ToastAction {
   label: string
   run: () => void
+  href?: string
 }
 
 export interface Toast {
@@ -19,6 +22,8 @@ export interface Toast {
   secondAction?: ToastAction
   /** Stays until closed or answered, instead of going after a few seconds (a prompt, not a result). */
   persistent?: boolean
+  /** "Update ready"'s words after `text` (ticket 1048): the waiting Version and what it brings. */
+  update?: UpdateSummary
   /** Bumped on every show, so a replaced toast is a new one to Vue and its clock starts over. */
   stamp: number
 }
@@ -33,9 +38,15 @@ export function useToasts() {
     toasts.value = toasts.value.filter((toast) => toast.id !== id)
   }
 
-  function show(id: string, text: string, tone: MessageTone = 'success', action?: Toast['action'], options: { persistent?: boolean; secondAction?: ToastAction } = {}) {
-    const { persistent, secondAction } = options
-    toasts.value = [...toasts.value.filter((toast) => toast.id !== id), { id, text, tone, action, secondAction, persistent, stamp: ++stamp }]
+  function show(
+    id: string,
+    text: string,
+    tone: MessageTone = 'success',
+    action?: Toast['action'],
+    options: { persistent?: boolean; secondAction?: ToastAction; update?: UpdateSummary } = {},
+  ) {
+    const { persistent, secondAction, update } = options
+    toasts.value = [...toasts.value.filter((toast) => toast.id !== id), { id, text, tone, action, secondAction, persistent, update, stamp: ++stamp }]
   }
 
   return { toasts, show, dismiss }

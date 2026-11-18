@@ -112,3 +112,24 @@ describe("What's new, folded (tickets 0824, 0880, 1047)", () => {
     expect(wrapper.get('[data-testid="homepage-whats-new-release"]').text()).toBe('Выпуск 2.0.01 дек.')
   })
 })
+
+describe("What's new from Update ready's link (ticket 1048)", () => {
+  const rect = (top: number, bottom: number) => ({ top, bottom, height: bottom - top, left: 0, right: 100, width: 100, x: 0, y: top }) as DOMRect
+
+  it('starts open with its notes, and scrolls the room it is in until its top shows', async () => {
+    const room = document.body.appendChild(document.createElement('div'))
+    room.style.overflowY = 'auto'
+    room.getBoundingClientRect = () => rect(100, 500)
+    Object.defineProperty(room, 'offsetHeight', { value: 400 })
+    const notes = vi.fn(async () => FILE)
+    const wrapper = mount(WhatsNewFold, { props: { notes, startOpen: true }, attachTo: room })
+    wrapper.element.getBoundingClientRect = () => rect(420, 1200)
+    await flushPromises()
+    expect(head(wrapper).attributes('aria-expanded')).toBe('true')
+    expect(notes).toHaveBeenCalledWith('en')
+    expect(wrapper.findAll('[data-testid="homepage-whats-new-block"]')).toHaveLength(2)
+    expect(room.scrollTop).toBe(320)
+    wrapper.unmount()
+    room.remove()
+  })
+})

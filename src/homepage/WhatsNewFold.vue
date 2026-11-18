@@ -18,10 +18,13 @@ import { shownDay, whatsNewView } from './whatsNew'
 const props = defineProps<{
   /** Reads a language's notes file; none (a test) reads nothing, as a file that can't be read. */
   notes?: NotesSource
+  /** Starts open and brought into view once its notes are drawn: "Update ready"'s What's new (ticket 1048). */
+  startOpen?: boolean
 }>()
 
 const { t, locale } = useI18n()
-const open = ref(false)
+const open = ref(props.startOpen === true)
+const foldEl = ref<HTMLElement>()
 const notesId = useId()
 const built = computed(() => shownDay(BUILD_DATE, locale.value))
 
@@ -31,13 +34,37 @@ watch([open, locale], async ([isOpen, shown]) => {
   if (!isOpen || (file.value?.locale === shown && file.value.notes)) return
   const notes = (await props.notes?.(shown)) ?? null
   if (locale.value === shown) file.value = { locale: shown, notes }
-})
+}, { immediate: true })
 // Only the file of the language shown: another's lines never show under this one's words while it is read.
 const view = computed(() => (file.value?.notes && file.value.locale === locale.value ? whatsNewView(file.value.notes, [], locale.value) : null))
+
+/** The fold's top at the top of the room it scrolls in, when the fold doesn't fit in what shows of that room. */
+function bringIntoView(fold: HTMLElement) {
+  let room = fold.parentElement
+  while (room && !/auto|scroll/.test(getComputedStyle(room).overflowY)) room = room.parentElement
+  if (!room) return
+  const [box, shows] = [fold.getBoundingClientRect(), room.getBoundingClientRect()]
+  if (box.top >= shows.top && box.bottom <= shows.bottom) return
+  // In the room's own px: the page's zoom and a section's turn scale it on screen.
+  const scale = room.offsetHeight ? shows.height / room.offsetHeight : 1
+  room.scrollTop += (box.top - shows.top) / scale - parseFloat(getComputedStyle(room).paddingTop || '0')
+}
+
+// Opened by the link, the fold is brought into view once, when its notes have made it as tall as it will be.
+let broughtIntoView = false
+watch(
+  view,
+  (shown) => {
+    if (!shown || !props.startOpen || broughtIntoView || !foldEl.value) return
+    broughtIntoView = true
+    bringIntoView(foldEl.value)
+  },
+  { flush: 'post' },
+)
 </script>
 
 <template>
-  <section class="whats-new" :class="{ 'whats-new--open': open }" data-testid="homepage-whats-new">
+  <section ref="foldEl" class="whats-new" :class="{ 'whats-new--open': open }" data-testid="homepage-whats-new">
     <button type="button" class="whats-new__head" :aria-expanded="open" :aria-controls="notesId" data-testid="homepage-whats-new-toggle" @click="open = !open">
       <AppIcon class="whats-new__icon" name="bead" :size="18" />
       <span class="whats-new__name">{{ t.homepage.whatsNew.name }}</span>

@@ -461,6 +461,14 @@ body {
 .bb-message--danger .bb-icon { color: var(--message-danger); }
 .bb-message-text { flex: 1; }
 .bb-message-close { width: 28px; height: 28px; margin: -4px -8px -4px 0; border: 0; background: none; border-radius: var(--radius-md); color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; }
+/* Update ready (ticket 1048): the name and the waiting Version, then one note's kind label and line, or a count per kind */
+.bb-message-update-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.bb-message-update-name { font: var(--text-control); }
+.bb-message-update-version { font: var(--text-meta); font-variant-numeric: tabular-nums; color: var(--muted); }
+.bb-message-update-note { display: block; margin-top: 4px; color: var(--body); }
+.bb-message-update-note > :first-child { margin-right: 6px; }
+.bb-message-update-counts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; }
+.bb-message-update-count { display: inline-flex; align-items: center; gap: 6px; font: var(--text-control); font-variant-numeric: tabular-nums; }
 
 /* 5.13 Modal, menu, tooltip */
 .bb-scrim { background: var(--scrim); padding: 24px; display: grid; place-items: center; }

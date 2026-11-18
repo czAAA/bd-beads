@@ -21,6 +21,13 @@ export function editorUrl(base: string): string {
   return `${base}${EDITOR_PATH}`
 }
 
+/** The Homepage's address that opens it at What's new, unfolded and in view: "Update ready"'s link (ticket 1048). */
+export const WHATS_NEW_HASH = '#whats-new'
+
+export function whatsNewUrl(base: string): string {
+  return `${homepageUrl(base)}${WHATS_NEW_HASH}`
+}
+
 /** Notes that this tab has shown one of the app's pages. */
 export function markArrived(): void {
   try {

@@ -74,7 +74,7 @@ describe('POST /api/feedback', () => {
       expect(postedIssue(worker)).toEqual({
         title: 'feedback: Lovely app.',
         labels: ['from-app', 'feedback'],
-        body: expect.stringMatching(/^### Message\n\nLovely app\.\n\n### Context\n/),
+        body: expect.stringMatching(/^### Message\n\n```text\nLovely app\.\n```\n\n### Context\n/),
       })
 
       worker.outbound.length = 0
@@ -88,7 +88,7 @@ describe('POST /api/feedback', () => {
       expect(sent.status).toBe(201)
       const issue = postedIssue(worker)
       expect(issue).toMatchObject({ title: 'bead-color [miyuki-delica DB723]: wrong color', labels: ['from-app', 'bead-color'] })
-      expect(issue?.body.endsWith('### Email\n\nann@example.com')).toBe(true)
+      expect(issue?.body.endsWith('### Email\n\n`ann@example.com`')).toBe(true)
     }))
 
   it('adds the label dev on the dev Worker', () =>
@@ -168,6 +168,34 @@ describe('POST /api/feedback', () => {
         expect(junk.status).toBe(403)
       }
       expect((await send(worker, report, { 'CF-Connecting-IP': '203.0.113.99' })).status).toBe(201)
+    }))
+
+  it('takes FEEDBACK_DAILY_LIMIT Reports a day and refuses the next as a switched-off feature, posting nothing (ticket 1051)', () =>
+    withWorker({ vars: { FEEDBACK_DAILY_LIMIT: 2 } }, async (worker) => {
+      const report = { kind: 'general', fields: { message: 'Hi' }, context }
+      const from = (sent: number) => ({ 'CF-Connecting-IP': `203.0.113.${sent}` })
+      // Refused before the count: a made-up token and a body that is no Report take no place.
+      expect((await send(worker, report, { ...from(1), 'X-Turnstile-Token': REJECTED_TOKEN })).status).toBe(403)
+      expect((await send(worker, { kind: 'spam' }, from(2))).status).toBe(400)
+      expect((await send(worker, report, from(3))).status).toBe(201)
+      expect((await send(worker, report, from(4))).status).toBe(201)
+      worker.outbound.length = 0
+      for (const sent of [5, 6, 7]) {
+        const refused = await send(worker, report, from(sent))
+        expect(refused.status).toBe(503)
+        expect(refused.headers.get('Retry-After')).toBe('900')
+        expect(await refused.json()).toEqual({ error: 'feature-off', feature: 'feedback' })
+      }
+      expect(postedIssue(worker)).toBeUndefined()
+      // A refusal writes no row: the count stops at the limit plus the one Report that was refused.
+      const row = await worker.coreDb.prepare('SELECT reports FROM feedback_days').first<{ reports: number }>()
+      expect(row?.reports).toBe(3)
+    }))
+
+  it('refuses every Report when FEEDBACK_DAILY_LIMIT is not a number', () =>
+    withWorker({ vars: { FEEDBACK_DAILY_LIMIT: 'many' } }, async (worker) => {
+      expect((await send(worker, { kind: 'general', fields: { message: 'Hi' }, context })).status).toBe(503)
+      expect(postedIssue(worker)).toBeUndefined()
     }))
 
   it('answers 502 feedback-failed when GitHub refuses, and logs a 401 by name', async () => {

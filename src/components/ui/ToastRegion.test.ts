@@ -62,4 +62,26 @@ describe('ToastRegion (ticket 0859)', () => {
     expect(wrapper.emitted('dismiss')).toEqual([['frame-stays']])
     wrapper.unmount()
   })
+
+  it('draws an action with an address as a link, which closes the toast as it leaves (ticket 1048)', async () => {
+    const reload = vi.fn()
+    const toast: Toast = { id: 'update-ready', text: 'Update ready', tone: 'info', stamp: 3, action: { label: 'Reload', run: reload }, secondAction: { label: "What's new", href: '/#whats-new', run: vi.fn() } }
+    const wrapper = mount(ToastRegion, { props: { toasts: [toast] }, attachTo: document.body })
+    const link = wrapper.get('a[data-testid="toast-second-action"]')
+    expect(link.attributes('href')).toBe('/#whats-new')
+    expect(link.text()).toBe("What's new")
+    link.element.addEventListener('click', (event) => event.preventDefault())
+    await link.trigger('click')
+    expect(reload).not.toHaveBeenCalled()
+    expect(wrapper.emitted('dismiss')).toEqual([['update-ready']])
+    wrapper.unmount()
+  })
+
+  it('draws "Update ready"\'s Version and what it brings after the name, and plain text otherwise (ticket 1048)', () => {
+    const update: Toast = { id: 'update-ready', text: 'Update ready', tone: 'info', stamp: 4, update: { version: '2.2.0', note: { kind: 'new', line: 'A new thing' } } }
+    const wrapper = mount(ToastRegion, { props: { toasts: [update, saved] }, attachTo: document.body })
+    expect(wrapper.get('[data-testid="update-ready"] [data-testid="update-version"]').text()).toBe('2.2.0')
+    expect(wrapper.get('[data-testid="saved-file"] .app-message__text').text()).toBe('Saved: sunflower.png')
+    wrapper.unmount()
+  })
 })

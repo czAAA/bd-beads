@@ -1366,3 +1366,13 @@ What's new on the Homepage lists every note under its Version (Homepage card): e
 | Release {version} (a Production release's line, "Release 2.0.0") | Выпуск {version} | Випуск {version} | Выпуск {version} | 发布 {version} | Lanzamiento {version} | Wydanie {version} |
 
 English, Russian and Spanish were signed off with spec 1043; the other languages follow the Russian column's forms (Ukrainian, Belarusian) and are proposals for review with the build.
+
+## Update ready copy (ticket 1048)
+
+"Update ready" (Message card) says what Reload switches to, in words the app already has: its name, the waiting Version as a number ("2.2.0", never "v2.2.0" or "version"), then the one note's kind label and line as What's new shows it, or each kind's label and count ("new 2 · changed 3 · fixed 5" as drawn, no plural forms, so no counted word). The second action is What's new's own name, so the link and the fold it opens say the same. When what waits can't be learned the toast keeps its plain words. No string is new.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Update ready | Обновление готово | Оновлення готове | Абнаўленне гатова | 更新已就绪 | Actualización lista | Aktualizacja gotowa |
+| Reload | Перезагрузить | Перезавантажити | Перазагрузіць | 重新加载 | Recargar | Załaduj ponownie |
+| What's new | Что нового | Що нового | Што новага | 更新内容 | Novedades | Co nowego |

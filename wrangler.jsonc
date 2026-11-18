@@ -54,6 +54,9 @@
         // ADR 0081: the private repo a Report from the Feedback sheet becomes an issue in, the same for both Workers.
         // Its token is the secret GITHUB_TOKEN.
         "FEEDBACK_REPO": "czAAA/bd-beads-docs",
+        // Ticket 1051: Reports this Worker takes per UTC day; past it the sheet says temporarily unavailable and the
+        // watchdog reports it. The per-minute limits below stop a burst, this a slow flood.
+        "FEEDBACK_DAILY_LIMIT": 30,
         // Upload caps (ticket 323 sets the final numbers): just under D1's 2,000,000-byte row, and under Cloudflare's
         // 100 MB request body.
         "UPLOAD_CAP_D1_BYTES": 1990000,
@@ -111,6 +114,7 @@
         "GOOGLE_CLIENT_ID": "616858853393-fsl5tbh3829ejhh7vb4331rdoqk3m62v.apps.googleusercontent.com",
         "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
         "FEEDBACK_REPO": "czAAA/bd-beads-docs",
+        "FEEDBACK_DAILY_LIMIT": 100,
         "UPLOAD_CAP_D1_BYTES": 1990000,
         "UPLOAD_CAP_R2_MB": 90,
         "BLOBS_STORAGE_LIMIT_MB": 450,
