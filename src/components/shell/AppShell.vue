@@ -13,6 +13,7 @@ const {
   saveFailed,
   announcement,
   endStroke,
+  endCancelledStroke,
   onSaveProjectFile,
   missedProject,
   onRemoveMissed,
@@ -27,7 +28,7 @@ const {
 </script>
 
 <template>
-  <div class="app-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
+  <div class="app-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endCancelledStroke">
     <!-- One polite announcement per action (ticket 159): what a Frame move or a rotation just did. -->
     <p class="app-shell__announcer" role="status" aria-live="polite" data-testid="announcer">{{ announcement }}</p>
 
