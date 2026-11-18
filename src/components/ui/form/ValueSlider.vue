@@ -252,7 +252,7 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
   .vs-range:focus-visible::-webkit-slider-thumb { outline: var(--focus-width) solid var(--focus-ring); outline-offset: 2px; }
   .vs-range:focus-visible::-moz-range-thumb { outline: var(--focus-width) solid var(--focus-ring); outline-offset: 2px; }
   /* A mark stands across the track, taller than it, under the thumb; the pointer goes through it to the range. */
-  .vs-mark { position: absolute; top: 50%; width: var(--slider-mark-width); height: var(--slider-mark-height); background: var(--line-strong); border-radius: 1px; transform: translate(-50%, -50%); pointer-events: none; }
+  .vs-mark { position: absolute; top: 50%; width: var(--slider-mark-width); height: var(--slider-mark-height); background: var(--line-strong); border-radius: var(--radius-2xs); transform: translate(-50%, -50%); pointer-events: none; }
   .vs-ends { position: relative; display: flex; justify-content: space-between; min-height: var(--space-16); margin-top: calc(-1 * var(--space-8)); font: var(--type-meta-small); color: var(--muted); white-space: nowrap; }
   .vs-max { color: var(--ink); }
   .vs-mark-label { position: absolute; top: 0; transform: translateX(-50%); }

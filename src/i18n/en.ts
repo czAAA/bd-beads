@@ -370,7 +370,8 @@ export const en: Translations = {
     projectButtonNamed: 'Project: {name}',
   },
   homepage: {
-    pageTitle: 'Homepage',
+    pageTitle: 'Free bead pattern maker: loom, peyote, brick stitch',
+    description: 'Free bead pattern maker for loom, peyote and brick stitch. Turn a photo into a bead pattern, count every bead color, mark rows done as you weave. No account.',
     makeFirstProject: 'Make your first Project',
     openEditor: 'Open the editor',
     whatsInside: "What's inside",

@@ -79,7 +79,6 @@
   --found-dim: color-mix(in srgb, var(--canvas) 60%, transparent); /* ConvertImage card (ticket 0787): the found beads faded under the hatch, as beads outside a kept part are, so the background reads as gone whatever the bead's color. */
   --handle-arm: 14px; /* Handle card: a corner bracket's arms along the line. */
   --handle-line: 3px; /* Handle card: a bracket's thickness. */
-  --handle-radius: 4px; /* Handle card: a bracket's rounded corner. */
   --handle-offset: 3px; /* Handle card: how far outside the line a bracket and a bar stand. */
   --handle-hot-arm: 18px; /* Handle card: the arms of the corner under the pointer or being dragged. */
   --handle-hot-line: 4px; /* Handle card: the hot corner's thickness. */
@@ -275,9 +274,7 @@
   --hit-min: 24px;
   --selbar-height: 28px;
   --selbar-height-touch: 36px;
-  --selbar-radius: 8px;
   --selbar-divider-margin: 3px;
-  --pill-popover-radius: 24px;
   --pill-fade: 1.5rem; /* ToolPill card: the fade on the end where the pill's scrolling tools are cut on a phone, 24px (ticket 0837). */
   --pill-tile-outline: 1.5px; /* ToolPill card (ticket 0926): the inset `ink` outline round a pressed tile; 2px in high contrast. */
   --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink); /* ToolPill card (ticket 0926): that outline, drawn inside the tile's edge. */
@@ -288,9 +285,7 @@
   --mirror-axis-width: 1.25px; /* ContextBar card, Mirror bar: an Axis line on the overlay. */
   --mirror-axis-dash: 5 4; /* ContextBar card, Mirror bar: the Axis line's dash. */
   --mirror-axis-soft: 0.45; /* ContextBar card, Mirror bar: the Radial mirror lines after the first. */
-  --mirror-ring-radius: 7px; /* ContextBar card, Mirror bar: the Radial centre's ring. */
   --area-band: 10px; /* ContextBar card, Area sheet: the band on every side of a Selection or the Mirror's Canvas Area, its bar above it (ticket 0812). */
-  --area-band-radius: 8px; /* ContextBar card, Area sheet: the band's outer corners. */
   --area-band-fill: 0.16; /* ContextBar card, Area sheet: the band's fill, the area's colour at this opacity. */
   --area-band-edge: 0.55; /* ContextBar card, Area sheet: the band's 1px outer edge, the area's colour at this opacity. */
   --area-bar-gap: 14px; /* ContextBar card, Area sheet: how far the area's bar stands off its sheet, a mouse's reach of its handles (ticket 0833). */
@@ -456,7 +451,6 @@
   --phone-bar-segment: 3px; /* A section's segment on the phone bar. */
   --phone-library: 2.25rem; /* The phone strip's Projects library button, 36px tall. */
   --grouped-tile: 2.25rem; /* A phone's grouped list row's icon tile, 36px. */
-  --grouped-tile-radius: 0.625rem; /* Its corners, 10px. */
   --homepage-tile-inset: 1.125rem; /* A coffee screen row's side padding, 18px: What's new's (ticket 0880). */
   --type-grouped-name: 600 0.9375rem/1.25rem var(--font-sans); /* A grouped list row's name, Inter 600 15/20. */
   /* Homepage card, plan tiles (tickets 0740, 0742). */
@@ -466,8 +460,6 @@
   --free-lead-width: 20rem; /* A new visitor's Free to use: the heading and the way in beside the free list, 320px (ticket 0947). */
   --coming-soon-width: 14.75rem; /* The Coming soon stamp on Free account and Pro, 236px. */
   --coming-soon-tilt: -8deg; /* The stamp's tilt; Pro's is -5deg, so the two don't look pasted. */
-  --plan-radius: 1rem; /* A plan tile's corners, 16px (ticket 0997). */
-  --plan-bead-radius: 2.5px; /* The bead on a tile's strand, its corners. */
   --plan-why-size: 0.8125rem; /* The reason beside the heading, body at 13px on 18. */
   --plan-why-line: 1.125rem;
   --plan-name-size: 1.875rem; /* A tile's name, serif-heading at 30px on 32. */

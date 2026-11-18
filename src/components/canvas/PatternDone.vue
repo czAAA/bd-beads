@@ -110,7 +110,7 @@ const px = (value: number) => `${value}px`
   width: 80px;
   height: 80px;
   background: radial-gradient(circle, var(--pattern-done-spark-1), color-mix(in srgb, var(--pattern-done-spark-3) 40%, transparent) 40%, transparent 70%);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   opacity: 0;
   animation: pattern-done-bloom 600ms var(--ease-out) var(--burst-delay) both;
 }
@@ -121,7 +121,7 @@ const px = (value: number) => `${value}px`
   left: 0;
   width: 20px;
   height: 3px;
-  border-radius: 3px;
+  border-radius: var(--radius-2xs);
   box-shadow: 0 0 6px var(--pattern-done-glow);
   opacity: 0;
   transform-origin: left center;
@@ -137,7 +137,7 @@ const px = (value: number) => `${value}px`
   height: 4px;
   margin-top: -2px;
   background: inherit;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   content: '';
 }
 

@@ -51,7 +51,7 @@ const move = controlAction('move-frame')
   width: var(--frame-handle-length);
   height: var(--frame-handle-thickness);
   background: var(--ink);
-  border-radius: var(--frame-handle-thickness);
+  border-radius: var(--radius-full);
 }
 
 .margin-move--dragging .margin-move__line {

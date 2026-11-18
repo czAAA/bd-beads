@@ -283,7 +283,7 @@ onMounted(async () => {
   width: var(--color-wheel-size);
   height: var(--color-wheel-size);
   border: 1px solid var(--line-strong);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   cursor: crosshair;
   touch-action: none;
 }
@@ -305,7 +305,7 @@ onMounted(async () => {
   width: var(--color-thumb-size);
   height: var(--color-thumb-size);
   border: 2px solid var(--panel);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   box-shadow: 0 0 0 1px var(--ring);
   transform: translate(-50%, -50%);
   pointer-events: none;

@@ -16,6 +16,8 @@
     <!-- maximum-scale=1, user-scalable=no lock Page zoom (ticket 316, ADR 0034); iOS Safari ignores them, usePageZoomLock covers it. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>openbeads</title>
+    <!-- The editor is the Homepage's tool, not a page to find: search engines list the Homepage alone (ticket 1055). -->
+    <meta name="robots" content="noindex" />
     <!-- The first screen's fonts, asked for with the page rather than once its code has drawn the text (ticket 0991), as
          the Homepage's index.html does: the strip and the Frame's sheet are laid out in them from the first paint. -->
     <link rel="preload" href="/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />

@@ -53,7 +53,7 @@ defineProps<{
   border-top: 1px solid var(--panel-rule);
 }
 
-/* The icon tile: 36px, 10px corners, `accent` at 12%, the icon in `accent-strong`. */
+/* The icon tile: 36px, `radius-md` corners, `accent` at 12%, the icon in `accent-strong`. */
 .grouped-list__tile {
   display: grid;
   place-items: center;
@@ -61,7 +61,7 @@ defineProps<{
   height: var(--grouped-tile);
   color: var(--accent-strong);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border-radius: var(--grouped-tile-radius);
+  border-radius: var(--radius-md);
 }
 
 .grouped-list__words {
