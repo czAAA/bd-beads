@@ -345,6 +345,7 @@ export const en: Translations = {
     canvasPlaceholder: 'No Project open yet',
     updateReady: 'Update ready',
     updateReload: 'Reload',
+    updateMore: "{count} more in What's new",
     signInRunOut: 'Your sign-in has run out.',
     signIn: 'Sign in',
     canvasPlaceholderPan: 'Drag the Canvas around while holding Space.',

@@ -1388,6 +1388,14 @@ English, Russian and Spanish were signed off with spec 1043; the other languages
 | Reload | Перезагрузить | Перезавантажити | Перазагрузіць | 重新加载 | Recargar | Załaduj ponownie |
 | What's new | Что нового | Що нового | Што новага | 更新内容 | Novedades | Co nowego |
 
+## Update ready's list (ticket 1091)
+
+With two or more notes waiting, "Update ready"'s What's new opens the list of what waits in the toast (Message card): each row is a note's kind label and line as What's new shows them, so no string is new there. One string is new: when more than 10 wait, the link under the list to the rest on What's new, "{count} more in What's new". It names What's new by its own name and has no plural forms in any language (the count stands apart from any counted word). English and Russian are the canvas's, approved by the owner; the others follow their sense and are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| {count} more in What's new | Ещё {count} в «Что нового» | Ще {count} у «Що нового» | Яшчэ {count} у «Што новага» | “更新内容”中还有 {count} 条 | {count} más en Novedades | Jeszcze {count} w „Co nowego” |
+
 ## What's new, what waits (ticket 1049)
 
 What's new's box of what waits for Reload (Homepage card) has one new string, its chip; its button is "Update ready"'s Reload, the same word. English and Russian were signed off with spec 1043; the others follow the Russian column's sense ("comes after reloading") and are proposals for review with the build.

@@ -347,6 +347,7 @@ export const uk: Translations = {
     canvasPlaceholder: 'Проєкт ще не відкрито',
     updateReady: 'Оновлення готове',
     updateReload: 'Перезавантажити',
+    updateMore: 'Ще {count} у «Що нового»',
     signInRunOut: 'Термін входу минув.',
     signIn: 'Увійти',
     canvasPlaceholderPan: 'Переміщуйте полотно, перетягуючи його із затиснутим пробілом.',

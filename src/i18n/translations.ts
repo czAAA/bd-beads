@@ -482,6 +482,8 @@ export interface Translations {
     /** The toast once a newer version of the app is waiting (ticket 69), and its button, which reloads onto it. */
     updateReady: string
     updateReload: string
+    /** Under "Update ready"'s open list, the link to the notes it leaves out (ticket 1091); no plural forms. */
+    updateMore: string
     /** The toast for a host sign-in (Cloudflare Access) that has run out, and its button (ticket 1041). */
     signInRunOut: string
     signIn: string

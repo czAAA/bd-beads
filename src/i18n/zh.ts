@@ -347,6 +347,7 @@ export const zh: Translations = {
     canvasPlaceholder: '还没有打开的项目',
     updateReady: '更新已就绪',
     updateReload: '重新加载',
+    updateMore: '“更新内容”中还有 {count} 条',
     signInRunOut: '登录已过期。',
     signIn: '登录',
     canvasPlaceholderPan: '按住空格键拖动画布。',

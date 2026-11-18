@@ -258,6 +258,16 @@
   --message-danger: var(--accent-strong);
 }
 
+/* Message card: the toast's own line color, its border's, which also parts "Update ready"'s open list from its actions (ticket 1091) */
+:root,
+:root[data-theme="light"] {
+  --message-line: var(--panel-line);
+}
+:root[data-theme="dark"],
+:root[data-theme="contrast"] {
+  --message-line: var(--line-strong);
+}
+
 /* ConvertImage card (DS-4, ticket 0910): a phone sheet's shadow, cast upward over the beads; flat in dark and high contrast, as the elevations are */
 :root,
 :root[data-theme="light"] {
