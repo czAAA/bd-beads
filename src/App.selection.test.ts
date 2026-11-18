@@ -7,6 +7,7 @@ import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { pressBar, copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
 import { beadsOfLayer, frameOf } from './domain/layerRecord'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 beforeEach(() => {
   localStorage.clear()
@@ -37,9 +38,9 @@ describe('App select, copy and paste', () => {
 
   /** A 4x4 Project with a red cell at (0,0) and a blue one at (1,1), ready to copy as a two-color motif. */
   async function projectWithMotif(wrapper: ReturnType<typeof mount>) {
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await click(wrapper, 0) // (0,0)
-    await pickColor(wrapper, 'blue')
+    await pickColor(wrapper, defaultColorOf('blue').id)
     await click(wrapper, 5) // (1,1)
     await pickTool(wrapper, 'select')
   }
@@ -120,10 +121,10 @@ describe('App select, copy and paste', () => {
     await pressBar(wrapper, 'fill')
 
     const grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![0]!.color).toBe(defaultColorOf('red').hex)
     expect(grid[0]![1]!.color).toBeNull()
-    expect(grid[2]![2]!.color).toBe('#2f6fed')
-    expect(grid[3]![3]!.color).toBe('#2f6fed')
+    expect(grid[2]![2]!.color).toBe(defaultColorOf('blue').hex)
+    expect(grid[3]![3]!.color).toBe(defaultColorOf('blue').hex)
 
     await pressBead(wrapper, { row: 2, column: 2 })
     await wrapper.find('[data-testid="project-surface"]').trigger('pointerup')
@@ -152,8 +153,8 @@ describe('App select, copy and paste', () => {
     await click(wrapper, 10) // (2,2)
 
     const grid = frameGrid(loadProjects()[0]!)
-    expect(grid[2]![2]!.color).toBe('#e63746')
-    expect(grid[3]![3]!.color).toBe('#2f6fed')
+    expect(grid[2]![2]!.color).toBe(defaultColorOf('red').hex)
+    expect(grid[3]![3]!.color).toBe(defaultColorOf('blue').hex)
   })
 
   it('Clear selection empties a partial Selection at once, with no confirmation (ticket 415)', async () => {
@@ -165,7 +166,7 @@ describe('App select, copy and paste', () => {
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
-    expect(frameGrid(loadProjects()[0]!)[1]![1]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadProjects()[0]!)[1]![1]!.color).toBe(defaultColorOf('blue').hex)
   })
 
   it('Select all then Clear selection asks before wiping the drawing (ticket 415)', async () => {
@@ -176,7 +177,7 @@ describe('App select, copy and paste', () => {
     await pressBar(wrapper, 'clear')
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe(defaultColorOf('red').hex)
   })
 
   it('choosing the Eraser with a Selection only leaves Select: the beads stay', async () => {
@@ -187,7 +188,7 @@ describe('App select, copy and paste', () => {
     await pickTool(wrapper, 'erase')
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe(defaultColorOf('red').hex)
   })
 
   it('Frame on the Selection bar moves the Frame to the Selection (ticket 407)', async () => {
@@ -229,7 +230,7 @@ describe('App select, copy and paste', () => {
     // The new Project is a Canvas (ticket 342): the stamp lands at its first bead, with no Frame to count it in.
     await pressBead(wrapper, { row: 0, column: 0 })
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect(beadsOfLayer(newProject(), 'canvas')[0]?.[0]).toBe('#e63746')
+    expect(beadsOfLayer(newProject(), 'canvas')[0]?.[0]).toBe(defaultColorOf('red').hex)
 
     // A Selection does not (making one drops the clipboard, so the two are never held at once): its bar goes with it.
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -252,11 +253,11 @@ describe('App select, copy and paste', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }))
     await flushPromises()
 
-    expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBe(defaultColorOf('red').hex)
     // Paste mode is on: its tile is lit, and a click stamps rather than starting a Selection.
     expect(wrapper.find('[data-testid="pill-tool-paste"]').attributes('aria-pressed')).toBe('true')
     await click(wrapper, 15) // (3,3)
-    expect(frameGrid(loadProjects()[0]!)[3]![3]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[3]![3]!.color).toBe(defaultColorOf('red').hex)
   })
 
   it('Mirror on the Selection bar makes the Selection\'s rectangle the Mirror, clears it and shows the Mirror bar (ADR 0082)', async () => {

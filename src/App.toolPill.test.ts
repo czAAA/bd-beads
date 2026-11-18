@@ -18,6 +18,7 @@ import { withMirrorPlace } from './domain/mirror'
 import type { GridPosition } from './domain/grid'
 import { frameGrid } from './testUtils/frameGrid'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 // The Tool pill's wiring (ticket 439, ADR 0046): one test per control → flow. Where it docks and how it reads and keeps
 // the edge are in ToolPill and devicePreferences, the recents and color keys in toolPill and useToolPill, the popover's
@@ -90,7 +91,7 @@ describe('the Tool pill', () => {
   it('Mirror (ADR 0082): key 7 enters Mirror mode, a drag on the Canvas makes the Mirror there, saved, with its bar, hands back the tool lit before (ticket 0845), and a Canvas stroke lands inside it', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     const top = aboveFrame(wrapper)
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     window.dispatchEvent(new KeyboardEvent('keydown', { key: '7', bubbles: true }))
     await flushPromises()
     expect(wrapper.get('[data-testid="pill-tool-mirror"]').attributes('aria-pressed')).toBe('true')
@@ -102,7 +103,7 @@ describe('the Tool pill', () => {
 
     await pressBead(wrapper, top)
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect(beadsOfLayer(drawnProject(wrapper), 'canvas')[top.row]).toEqual({ [top.column]: '#e63746', [top.column + 3]: '#e63746' })
+    expect(beadsOfLayer(drawnProject(wrapper), 'canvas')[top.row]).toEqual({ [top.column]: defaultColorOf('red').hex, [top.column + 3]: defaultColorOf('red').hex })
     wrapper.unmount()
   })
 
@@ -137,7 +138,7 @@ describe('the Tool pill', () => {
 
   it('Mirror mode (ADR 0082): its drag is the Mirror\'s, so the clipboard stays and Paste with it', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     await selectAll(wrapper)
@@ -178,12 +179,12 @@ describe('the Tool pill', () => {
     await flushPromises()
     expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'frame' })
 
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await pickTool(wrapper, 'paint')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     const row = beadColors(wrapper)[0]!
-    expect([row[0], row.at(-1)]).toEqual(['#e63746', '#e63746'])
+    expect([row[0], row.at(-1)]).toEqual([defaultColorOf('red').hex, defaultColorOf('red').hex])
 
     await wrapper.get('[data-testid="margin-mirror-frame"]').trigger('click')
     await flushPromises()
@@ -198,7 +199,7 @@ describe('the Tool pill', () => {
     saveProjects([withMirrorPlace(placed.project, { layer: 'frame' })])
     const wrapper = mount(App, { attachTo: document.body })
     await nextTick()
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await pickTool(wrapper, 'paint')
 
     // The Star's first bead (round 0, place 0), named from the Frame's corner as a Frame press is aimed.
@@ -207,16 +208,16 @@ describe('the Tool pill', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
     // The stroke reaches the other squares (which beads, and how many, is the domain's test).
     const beads = beadsOfLayer(drawnProject(wrapper), 'frame')!
-    expect([0, 2, 4, 6, 8].map((column) => colorAt(beads, 0, column))).toEqual(['#e63746', '#e63746', '#e63746', '#e63746', '#e63746'])
+    expect([0, 2, 4, 6, 8].map((column) => colorAt(beads, 0, column))).toEqual([defaultColorOf('red').hex, defaultColorOf('red').hex, defaultColorOf('red').hex, defaultColorOf('red').hex, defaultColorOf('red').hex])
     wrapper.unmount()
   })
 
   it('shows a new Project\'s first color, the one that stands off its Background, before the first tap (ticket 0838)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await pickColor(wrapper, 'black')
+    await pickColor(wrapper, defaultColorOf('black').id)
     await createProjectViaForm(wrapper)
     // The light theme's first Background is Studio, near white: red shows on it.
-    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe('Color, Red')
+    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe(`Color, Red · ${defaultColorOf('red').code}`)
     wrapper.unmount()
   })
 
@@ -224,18 +225,18 @@ describe('the Tool pill', () => {
     const wrapper = await mountWithProject(15, 30)
     const placeOf = (colorId: string) => wrapper.findAll('[data-testid="palette-swatch"]').findIndex((swatch) => swatch.attributes('data-color-id') === colorId)
     await openColorPopover(wrapper)
-    const place = placeOf('blue')
-    await pickColor(wrapper, 'blue')
+    const place = placeOf(defaultColorOf('blue').id)
+    await pickColor(wrapper, defaultColorOf('blue').id)
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false) // a pick closes the popover
     await pressBead(wrapper, 0)
-    expect(beadColor(wrapper, 0)).toBe('#2f6fed')
-    await pickColor(wrapper, 'green')
+    expect(beadColor(wrapper, 0)).toBe(defaultColorOf('blue').hex)
+    await pickColor(wrapper, defaultColorOf('green').id)
 
     await openColorPopover(wrapper)
-    expect(placeOf('blue')).toBe(place)
+    expect(placeOf(defaultColorOf('blue').id)).toBe(place)
     await wrapper.get('[data-testid="pill-color"]').trigger('click')
     await wrapper.findAll('[data-testid="pill-recent"]')[0]!.trigger('click')
 
-    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe('Color, Blue')
+    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe(`Color, Blue · ${defaultColorOf('blue').code}`)
   })
 })

@@ -3,9 +3,9 @@ import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
 import { frameOf, orientationOf, projectNameOf, weaveOfLayer } from '../../domain/layerRecord'
 import { hasProjectBeads } from '../../domain/layerBeads'
-import { projectPalette } from '../../domain/palette'
+import { defaultPalette, projectPalette } from '../../domain/palette'
 import { frameGrid } from '../../testUtils/frameGrid'
-import { DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_TECHNIQUE, demoLibrary, finishedCuff, onCanvas } from './demoProjects'
+import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_TECHNIQUE, demoLibrary, finishedCuff, onCanvas } from './demoProjects'
 import { PEACOCK_RING } from './peacock'
 
 describe("What's inside's demo Projects (ticket 0797)", () => {
@@ -20,6 +20,11 @@ describe("What's inside's demo Projects (ticket 0797)", () => {
     expect(orientationOf(ring)).toBe(90)
     expect(library.slice(0, 2).every((project) => frameOf(project) && hasProjectBeads(project))).toBe(true)
     expect(library.every((project) => project.layers[0].beadId === 'miyuki/delica/11-0')).toBe(true)
+  })
+
+  it("draw with their Bead's default colors, real Delica 11/0 codes (ticket 1070)", () => {
+    const delica = defaultPalette('miyuki/delica/11-0').map((color) => color.hex)
+    for (const color of ['W', 'Y', 'R', 'B', 'G', 'D'] as const) expect(delica, color).toContain(DEMO_COLORS[color])
   })
 
   it("give Ring's Palette the peacock's teal, deep blue and deep green beside Miyuki's own colors (ticket 0831)", () => {
@@ -53,7 +58,7 @@ describe("What's inside's demo Projects (ticket 0797)", () => {
 })
 
 describe("the Welcome section's piece (ticket 0831)", () => {
-  const [GREEN, GOLD, TEAL, BLUE, PUPIL, GROUND] = ['#27ae60', '#d4af37', '#17c3c9', '#2f6fed', '#1c1f6e', '#0c4a3a']
+  const [GREEN, GOLD, TEAL, BLUE, PUPIL, GROUND] = (['G', 'D', 'T', 'B', 'N', 'E'] as const).map((color) => DEMO_COLORS[color])
 
   it('is the traced cuff finished: a peyote Frame 48 long and 23 wide on a turned Canvas, every bead woven', () => {
     const piece = finishedCuff()
