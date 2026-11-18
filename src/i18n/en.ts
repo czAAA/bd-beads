@@ -1070,7 +1070,7 @@ export const en: Translations = {
       rowName: { one: '{hex} to {name}, {count} bead', other: '{hex} to {name}, {count} beads' },
       emptyTouchTitle: 'Your picture shows here',
       emptyTouchLine: 'Choose a file, paste or take a photo',
-      defaultPaletteNote: 'Plain named colors, no brand.',
+      defaultPaletteNote: 'One color per color family, with its real code where there is one.',
       exactNote: 'Keeps the picture\'s own colors. These are not beads from a shop.',
       colorsHintExact: 'Each color is one bead color. Max {n}: every color the picture has.',
       colorsHintExactCapped: 'Each color is one bead color. Max {n}: the picture has more, reduced to as many.',

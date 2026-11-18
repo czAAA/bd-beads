@@ -255,7 +255,8 @@ describe('single-Project roundtrip', () => {
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as its Bead\'s built-in colors', () => {
-    const custom = setPalette(decoratedProject(), ['red', addedColorId('#123456'), ...defaultPaletteIds().filter((id) => id !== 'red')])
+    const [first, ...rest] = defaultPaletteIds(defaultPalette(cubeBead.id))
+    const custom = setPalette(decoratedProject(), [first!, addedColorId('#123456'), ...rest])
     const file = JSON.parse(serializeProject(custom))
     expect(file.projects[0].palette).toEqual(custom.palette)
     expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([custom])

@@ -8,6 +8,7 @@ import type { Technique } from './domain/weave'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { armSelectionBar, pickColor, pickTool } from './testUtils/pill'
 import { frameOf } from './domain/layerRecord'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 // "Remove selected row/column" (ticket 123): a Select-tool drag across the Frame selects a whole row/column, removable
 // in one undo step. Ruler numbers are display-only (ticket 447): a press on one selects nothing.
@@ -17,8 +18,8 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-const RED = '#e63746'
-const BLUE = '#2f6fed'
+const RED = defaultColorOf('red').hex
+const BLUE = defaultColorOf('blue').hex
 
 /** Mounts the App on a saved Loom/Peyote/Brick Project of Toho Cube 1.5mm beads with a Frame of `columns` x `rows`
  * beads: the New Project form states no size (ticket 342). */
@@ -29,7 +30,7 @@ async function mountSized(columns: number, rows: number, technique: Technique = 
   return wrapper
 }
 
-async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId = 'red') {
+async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId = defaultColorOf('red').id) {
   await pickColor(wrapper, colorId)
   await pressBead(wrapper, index)
   await wrapper.find('.app-shell').trigger('mouseup')
@@ -85,7 +86,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   it('removes exactly the selected row, from any index, and shifts the rest up, as one undo step', async () => {
     const wrapper = await mountSized(3, 4)
     await paint(wrapper, 1) // (0,1)
-    await paint(wrapper, 10, 'blue') // (3,1), below the row that's about to go
+    await paint(wrapper, 10, defaultColorOf('blue').id) // (3,1), below the row that's about to go
 
     await selectRow(wrapper, 1, 3) // row 2 (index 1), a middle row, no beads on it
     await armSelectionBar()

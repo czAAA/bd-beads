@@ -2,7 +2,8 @@ import { beadsDiffer, colorCatalogOf, type Bead } from './beads'
 import type { ColorCatalog } from './colorCatalog'
 import type { Layer } from './grid'
 import { beadIdOfLayer, beadOfLayer, frameOf, type Layered, weaveOfLayer, withLayer } from './layerRecord'
-import { codesForBead, defaultPalette, paletteForBead } from './palette'
+import { projectColors } from './layerBeads'
+import { codesForBead, codesInPalette, defaultPalette, paletteForBead, type PaletteColor, type PaletteCodes } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { touch, type Project } from './project'
 import { beadCell, type BeadCell } from './weave'
@@ -35,19 +36,27 @@ export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog
   return touch(withWovenPalette(project, replaced, catalog), {})
 }
 
-/** `after` with its Palette moved to its woven layer's Bead where that differs from `before`'s (tickets 0528, 0665): the
- * built-in colors follow its set, a swatch keeps its code if `catalog` (the new Bead's) lists it in its size (ticket
- * 0538), or with none while Color catalog and size stay. The same `after` when the woven Bead is as it was. */
+/** `after` with its Palette moved to its woven layer's Bead where that differs from `before`'s (tickets 0528, 0665, 1070,
+ * see paletteForBead); a swatch keeps its code if `catalog` (the new Bead's) lists it in its size (ticket 0538), or with
+ * none while Color catalog and size stay. The same `after` when the woven Bead is as it was. */
 export function withWovenPalette(before: Project, after: Project, catalog?: ColorCatalog): Project {
   const [from, to] = [beadOfLayer(before, 'frame').bead, beadOfLayer(after, 'frame').bead]
   const [fromId, toId] = [beadIdOfLayer(before, 'frame'), beadIdOfLayer(after, 'frame')]
   if (fromId === toId && (!from || !to || !beadsDiffer(from, to))) {
     return after
   }
-  const palette = paletteForBead(after.palette, after.removedDefaults ?? [], defaultPalette(fromId), defaultPalette(toId))
+  const [fromColors, toColors] = [defaultPalette(fromId), defaultPalette(toId)]
+  const palette = paletteForBead(after.palette, after.removedDefaults ?? [], fromColors, toColors, new Set(projectColors(after)))
+  // An old default color that stays is an added one now, so its code joins the others under 0538's rule.
+  const held = { ...codesOf(fromColors), ...after.paletteCodes }
   const kept = !catalog && colorCatalogOf(fromId) === colorCatalogOf(toId) && from?.size === to?.size
-  const codes = kept ? (after.paletteCodes ?? {}) : codesForBead(after.paletteCodes ?? {}, catalog, to?.size)
+  const codes = codesInPalette(kept ? held : codesForBead(held, catalog, to?.size), palette, toColors)
   const { paletteCodes: _codes, ...rest } = after
   const paletteLetters = lettersOfPalette(palette, toId, after.paletteLetters)
   return { ...rest, palette, paletteLetters, ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}) }
+}
+
+/** The codes of a Bead's default colors, by hex. */
+function codesOf(colors: readonly PaletteColor[]): PaletteCodes {
+  return Object.fromEntries(colors.flatMap((color) => (color.code ? [[color.hex, color.code]] : [])))
 }

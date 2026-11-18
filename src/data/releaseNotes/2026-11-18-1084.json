@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "A hold inside the selection or the mirror area opens tools and colors too",
+    "ru": "Удержание внутри выделения или области отражения тоже открывает инструменты и цвета",
+    "uk": "Утримання всередині виділення або області відображення теж відкриває інструменти й кольори",
+    "be": "Утрыманне ўнутры вылучэння або вобласці адлюстравання таксама адкрывае інструменты і колеры",
+    "zh": "在选区或镜像区域内长按，也会打开工具和颜色",
+    "es": "Mantener pulsado dentro de la selección o del área del espejo también abre las herramientas y los colores",
+    "pl": "Przytrzymanie wewnątrz zaznaczenia lub obszaru odbicia też otwiera narzędzia i kolory"
+  }
+}

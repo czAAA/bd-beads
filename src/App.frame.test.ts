@@ -15,11 +15,12 @@ import { frameOf } from './domain/layerRecord'
 import { rowProgressOf } from './domain/rowProgress'
 import { frameSheetOf, withLayers } from './testUtils/layerFields'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 /** Edit Frame's wiring (tickets 233, 417, ADRs 0026, 0046, 0054): each control reaches the flow once. Its rules live in
  * `useFrameFlow`, `FramePanel` and `changeFrame`'s tests, one level each (ticket 0599, docs/testing.md). */
 
-const RED = '#e63746'
+const RED = defaultColorOf('red').hex
 
 beforeEach(() => {
   localStorage.clear()
@@ -281,7 +282,7 @@ describe('Painting a Custom frame', () => {
   it('paints a bead whose place lies past the Frame\'s columns: the press stays on the Frame (ADR 0077)', async () => {
     const triangle = starterById('triangle')
     const wrapper = await mountOpen(starterProject(triangle, { name: 'Triangle', beadId: STARTER_BEAD_ID, sizes: designSizes(triangle), useDesign: false }))
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red', STARTER_BEAD_ID).id)
     const { row, column, columns } = frameOf(loadProjects()[0])!
     // Round 7 of a 10-round Triangle runs one place past the Frame's last column.
     const own = { row: 7, column: columns }
@@ -290,7 +291,7 @@ describe('Painting a Custom frame', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
     await flushPromises()
 
-    expect(frameOf(loadProjects()[0])!.beads[own.row]?.[own.column]).toBe(RED)
+    expect(frameOf(loadProjects()[0])!.beads[own.row]?.[own.column]).toBe(defaultColorOf('red', STARTER_BEAD_ID).hex)
   })
 })
 

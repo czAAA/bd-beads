@@ -12,6 +12,8 @@ import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrit
 import { chooseAppLanguage, pickColor } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
 import { layersView, withLayers } from './testUtils/layerFields'
+import { defaultColorOf } from './testUtils/defaultColors'
+import { addedColorId } from './domain/palette'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -45,10 +47,11 @@ describe('App', () => {
 
     expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(true)
 
-    await pickColor(wrapper, 'red')
+    // A Bead nobody knows has no default colors of its own: the Cube's red stays, as the added color of its hex.
+    await pickColor(wrapper, addedColorId(defaultColorOf('red').hex))
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe(defaultColorOf('red').hex)
   })
 })
 
@@ -64,7 +67,7 @@ describe('App storage writes', () => {
 
   it('writes a dragged paint stroke once, when the stroke ends, rather than once per cell', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
 
     const writes = spyOnStorageWrites(PROJECTS_KEY)
     await pressBead(wrapper, 0)
@@ -83,7 +86,7 @@ describe('App storage writes', () => {
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
 
     refuseStorageWrites(PROJECTS_KEY)
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
@@ -100,7 +103,7 @@ describe('App storage writes', () => {
     expect(reloadAsks()).toBe(false)
 
     const refused = refuseStorageWrites(PROJECTS_KEY)
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     expect(reloadAsks()).toBe(true)

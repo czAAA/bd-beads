@@ -8,6 +8,7 @@ import { loadProjects } from './services/libraryStore'
 import { frameGrid } from './testUtils/frameGrid'
 import { frameOf } from './domain/layerRecord'
 import ProjectSurface from './components/canvas/ProjectSurface.vue'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 beforeEach(() => {
   localStorage.clear()
@@ -26,7 +27,7 @@ async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
 describe('the Selection bar (tickets 168, 295, 415)', () => {
   it('shows Copy, Cut, Fill, Rotate, Remove line and Clear selection for a Selection, wired to the registry actions', async () => {
     const wrapper = await mountWithProject(3, 30) // 2 columns, so a 2-cell drag along a row is the whole line
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await drag(wrapper, [0]) // one drawn bead for Copy to take
     await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1]) // a 1x2 row selection
@@ -75,7 +76,7 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
 
   it('turns the Selection a quarter through Rotate (ticket 416)', async () => {
     const wrapper = await mountWithProject(4.5, 3) // 3 columns x 2 rows
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await drag(wrapper, [0, 1]) // the top row's first two beads
 
     await pickTool(wrapper, 'piece') // a tap on the strip selects its rectangle
@@ -84,7 +85,7 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
 
     // The 1 x 2 strip becomes a 2 x 1 column on its right: the left bead goes to the top, the right one below it.
     const grid = frameGrid(loadProjects()[0]!)
-    expect([grid[0]![0]!.color, grid[0]![1]!.color, grid[1]![1]!.color]).toEqual([null, '#e63746', '#e63746'])
+    expect([grid[0]![0]!.color, grid[0]![1]!.color, grid[1]![1]!.color]).toEqual([null, defaultColorOf('red').hex, defaultColorOf('red').hex])
   })
 
   it('moves the Selection a bead with an arrow on its move grip (ticket 0808)', async () => {

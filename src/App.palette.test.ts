@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
-import { addedColorId, defaultPaletteIds } from './domain/palette'
+import { addedColorId, defaultPalette, defaultPaletteIds } from './domain/palette'
 import { createProject } from './domain/createProject'
 import { en } from './i18n/en'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { pressBead } from './testUtils/beads'
 import { chooseCustomColor, openColorPopover } from './testUtils/pill'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 // The Palette's wiring only (ticket 0601): each control reaches its flow once. What the flows decide is in
 // useRemoveColorFlow, useBeadColors and useToolAndColor; what the controls show is in ColorPopover and PalettePicker;
@@ -21,7 +22,7 @@ beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
   const project = createProject({ technique: 'loom', beadId: cubeBead.id, name: 'Fox', size: { width: 10, height: 10, unit: 'beads' } })
-  saveProjects([{ ...project, palette: [...defaultPaletteIds(), A, B] }])
+  saveProjects([{ ...project, palette: [...defaultPaletteIds(defaultPalette(cubeBead.id)), A, B] }])
 })
 
 /** The ids of the Palette the saved Project holds (ticket 0525). */
@@ -58,10 +59,10 @@ describe('the Palette reaches its flows', () => {
     expect(wrapper.find('[data-testid="remove-color-modal"]').exists()).toBe(false)
     await wrapper.get(`[data-color-id="${A}"]`).trigger('click')
     await confirm(wrapper)
-    expect(storedPalette()).toEqual([...defaultPaletteIds(), B])
+    expect(storedPalette()).toEqual([...defaultPaletteIds(defaultPalette(cubeBead.id)), B])
     expect(wrapper.text()).toContain(en.palette.removed)
     await wrapper.get('[data-testid="toast-action"]').trigger('click')
-    expect(storedPalette()).toEqual([...defaultPaletteIds(), A, B])
+    expect(storedPalette()).toEqual([...defaultPaletteIds(defaultPalette(cubeBead.id)), A, B])
     wrapper.unmount()
   })
 
@@ -74,7 +75,7 @@ describe('the Palette reaches its flows', () => {
     expect(wrapper.find('[data-testid="remove-all-colors-modal"]').exists()).toBe(false)
     await wrapper.get('[data-testid="color-popover-remove-all"]').trigger('click')
     await confirm(wrapper)
-    expect(storedPalette()).toEqual(defaultPaletteIds())
+    expect(storedPalette()).toEqual(defaultPaletteIds(defaultPalette(cubeBead.id)))
     wrapper.unmount()
   })
 
@@ -101,7 +102,7 @@ describe('the Palette reaches its flows', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await openColorPopover(wrapper)
-    await wrapper.get('[data-color-id="red"]').trigger('click')
+    await wrapper.get(`[data-color-id="${defaultColorOf('red', cubeBead.id).id}"]`).trigger('click')
     await openColorPopover(wrapper)
     await wrapper.get('[data-testid="pick-color-button"]').trigger('click') // arming closes the popover
     await pressBead(wrapper, 0)
