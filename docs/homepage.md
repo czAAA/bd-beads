@@ -41,3 +41,8 @@ The Homepage card (`docs/design/system/components/Homepage/README.md`) describes
   editor over or closing its popovers.
 - The step names are measured, not counted (`StepBar`): where two would come closer than 6px only the current one
   shows, the others on hover or focus.
+- The page carries its own words for crawlers that never run the app (ticket 1055): `homepage/pageCopy.ts` gathers the
+  title (`homepageTitle`, which the tab shows too), the description and the copy a new visitor sees, from the functions
+  the sections draw from (`welcomePromises`, `insideChapters`, `freeListGroups`), and the build writes them into
+  `index.html` (`vite.crawler.ts`; `docs/deploy.md`, What crawlers read). A section's new copy reaches the page only
+  when `pageCopy.ts` takes it, and only copy the drawn page shows belongs there.

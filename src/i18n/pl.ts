@@ -372,6 +372,7 @@ export const pl: Translations = {
   },
   homepage: {
     pageTitle: 'Strona główna',
+    description: 'Darmowy kreator wzorów koralikowych na krosno, peyote i ścieg ceglasty. Zamień zdjęcie we wzór, policz każdy kolor, zaznaczaj utkane rzędy.',
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',
     whatsInside: 'Co jest w środku',

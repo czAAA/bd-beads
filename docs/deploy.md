@@ -88,6 +88,17 @@ Every page and file of the build is sent with `Content-Security-Policy`, `X-Cont
 - **Cloudflare features that add a script to the pages** (Rocket Loader, Web Analytics' automatic setup) are refused too. After switching one on for the zone, open dev with the browser's console: a line starting "Refused to" names what the policy stopped.
 - **HTTP Strict Transport Security** is the zone's own setting, not this file's: SSL/TLS → Edge Certificates in the dashboard.
 
+## What crawlers read
+
+Most search engines and AI crawlers read a page without running its scripts, so the build writes into the Homepage's page what they need (ticket 1055). `vite.crawler.ts` does it, on every build:
+
+- **The Homepage's head.** Its title and description from the dictionary (`homepage.pageTitle` and `homepage.description`), a canonical link naming its one address, and schema.org data saying it is a free web application (name, category, price 0; no rating, as there are no reviews).
+- **The Homepage's copy.** Welcome's heading, line and promises, What's inside's chapters and rows, and the free list are written into `#app` as plain text, from `src/homepage/pageCopy.ts`, which takes them from the same functions the drawn sections use, run through Vite with the app's defines. The copy is out of sight until the app replaces it as it starts, so a visitor never sees it unstyled. It holds nothing the drawn Homepage doesn't show: text a new section adds reaches it only through `pageCopy.ts`.
+- **`robots.txt` and `sitemap.xml`.** Everything may be crawled but `/api/`, and the sitemap lists the Homepage. The editor (`/app/`) is not disallowed but asks for no index in its own page (`<meta name="robots" content="noindex">`), which a crawler can only read if it may fetch it.
+- **The one address** is `https://openbeads.com/` (`SITE_URL` in `vite.crawler.ts`); a fork sets its own with the `SITE_URL` environment variable at build time. Dev's copy names production's address, so a crawler that finds dev is sent there.
+- **The policy still holds.** The data is an inline `<script type="application/ld+json">`, never run, and named by its hash like every inline script (The pages' security headers, above).
+- **Checked by** `vite.crawler.test.ts`, which builds the app and reads the built Homepage. Registering the domain with Google Search Console, Bing Webmaster Tools and Yandex Webmaster is the owner's, by hand.
+
 ## The human steps
 
 The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h6`; h6 is ticket 400's domain), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.

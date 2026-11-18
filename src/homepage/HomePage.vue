@@ -29,6 +29,7 @@ import PhoneBar from './PhoneBar.vue'
 import PlanTiles from './PlanTiles.vue'
 import SectionBar from './SectionBar.vue'
 import WelcomeTile from './WelcomeTile.vue'
+import { homepageTitle } from './pageCopy'
 import { stepName, type HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
 import { useMoreBelow } from './useMoreBelow'
@@ -88,7 +89,7 @@ type HomepageLibrary = Pick<ProjectLibrary, 'projects' | 'sealed' | 'removeProje
 
 const { t, locale } = provideI18n()
 watchEffect(() => {
-  document.title = `${t.value.homepage.pageTitle} · ${t.value.app.title}`
+  document.title = homepageTitle(t.value)
 })
 
 const menuOpen = ref(false)

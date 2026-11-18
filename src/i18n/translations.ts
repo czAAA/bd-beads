@@ -523,7 +523,10 @@ export interface Translations {
   }
   /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
   homepage: {
+    /** The page's title before " · openbeads": what a search result shows, in the words people search with (ticket 1055). */
     pageTitle: string
+    /** The page's description for search engines (ticket 1055): what it is, the Techniques, free. Never drawn. */
+    description: string
     makeFirstProject: string
     openEditor: string
     whatsInside: string
