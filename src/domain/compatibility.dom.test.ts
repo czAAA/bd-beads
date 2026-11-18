@@ -625,7 +625,7 @@ describe('stored-data compatibility', () => {
       expect(backgroundOf(opened!, 'canvas')).toBe(3)
       expect(backgroundOf(opened!, 'frame')).toBe('#336699')
       expect(opened).not.toHaveProperty('backgroundPositions')
-      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV14ThreeBackgrounds))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV14ThreeBackgrounds))
     })
 
     it('opens a version 12 file from before Backgrounds with none, so each layer shows the device\'s last pick (ticket 0666)', () => {
@@ -651,7 +651,8 @@ describe('stored-data compatibility', () => {
 
     it('opens a version 5 file written on Delica with the twelve and an added color showing the same swatches (ticket 0528)', () => {
       const [project] = parseProjectsFile(projectFileV5Delica).projects
-      expect(project!.palette).toEqual(['black', 'white', 'red', 'orange', 'yellow', 'green', addedColorId('#2fb6ae'), 'blue', 'purple', 'pink', 'brown', 'grey', 'added-123456'])
+      // Delica's default colors are its codes since ticket 1070, so each of the twelve is the added color of its hex.
+      expect(project!.palette).toEqual([...BUILT_IN_COLORS.map((color) => addedColorId(color.hex)), 'added-123456'])
       expect(project!.removedDefaults).toBeUndefined()
       expect(parseProjectsFile(serializeProject(project!)).projects).toEqual([project])
     })

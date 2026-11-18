@@ -349,7 +349,8 @@ describe('projectStorage', () => {
 
       const [opened] = loadProjects()
 
-      expect(opened!.palette.slice(0, 3)).toEqual(['red', 'added-123456', 'black'])
+      // The device's generic red and black are no Bead's default colors now (ticket 1070): the same swatches, added.
+      expect(opened!.palette.slice(0, 3)).toEqual(['added-e63746', 'added-123456', 'added-1a1a1a'])
       expect(opened!.palette).toHaveLength(14)
       expect(localStorage.getItem('openbeads:added-colors')).toBeNull()
       expect(localStorage.getItem('openbeads:palette-order')).toBeNull()
@@ -361,7 +362,7 @@ describe('projectStorage', () => {
       keepOnDevice()
       saveProjects([makeProject()])
 
-      expect(loadProjects()[0]!.palette).toHaveLength(21)
+      expect(loadProjects()[0]!.palette).toEqual(makeProject().palette)
       expect(localStorage.getItem('openbeads:added-colors')).not.toBeNull()
     })
   })

@@ -1,7 +1,7 @@
 import { defineComponent, h } from 'vue'
 import MarginSheet from '../components/canvas/MarginSheet.vue'
 import { createProject } from '../domain/createProject'
-import { createPalette, defaultPaletteIds } from '../domain/palette'
+import { projectPalette } from '../domain/palette'
 import type { Project } from '../domain/project'
 import { frameOutsetPx } from '../rendering/rulerScale'
 import { paintAt } from './layers'
@@ -16,7 +16,7 @@ export const marginSheetHost = (zoom: number) =>
   defineComponent({
     setup() {
       const bare: Project = withLayers(moth, { makerName: 'Ada', frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom' as const, beads: {}, name: 'Sun band' } })
-      const project = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
+      const project = projectPalette(bare).colors.map((color) => color.hex).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
       // Beads of 20px at 100%, the line out from them, the sheet 4 beads round them (ticket 0658's forms by zoom).
       const band = 80 * zoom
       const outset = frameOutsetPx(zoom)

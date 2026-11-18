@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import { beadChoices, findBead } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
-import { createPalette, defaultPaletteIds } from '../../domain/palette'
+import { projectPalette } from '../../domain/palette'
 import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
@@ -24,7 +24,7 @@ function framed(extra: LayersChange = {}): Project {
 
 /** The Frame with its first `count` beads painted each in the next Palette color. */
 function painted(count: number): Project {
-  const colors = createPalette(defaultPaletteIds()).colors.slice(0, count).map((color) => color.hex)
+  const colors = projectPalette(framed()).colors.slice(0, count).map((color) => color.hex)
   return colors.reduce((project, color, column) => paintAt(project, [{ row: 0, column }], color), framed())
 }
 
@@ -227,7 +227,7 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     })
 
     it('keys each color with its Swatch letter and its bead count, read out together, at most 8, then "+n"', () => {
-      const twice = paintAt(painted(3), [{ row: 1, column: 0 }], createPalette(defaultPaletteIds()).colors[0]!.hex)
+      const twice = paintAt(painted(3), [{ row: 1, column: 0 }], projectPalette(framed()).colors[0]!.hex)
       const wrapper = mountRoomy(twice)
       expect(wrapper.findAll('.margin-title__disc').map((disc) => disc.text())).toEqual(['A', 'B', 'C'])
       expect(wrapper.findAll('[data-testid="margin-legend-count"]').map((count) => count.text())).toEqual(['2', '1', '1'])

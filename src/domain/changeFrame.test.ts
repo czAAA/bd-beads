@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { type BeadMap, colorAt, type FrameSheet, type Rect, withColors } from './canvas'
 import { TECHNIQUES } from './weave'
+import { defaultPalette } from './palette'
 import { findBead } from './beads'
 import { squareBead } from '../testUtils/squareBead'
 import { replaceBead } from './projectBead'
@@ -795,10 +796,11 @@ describe('a Frame in a Bead of its own is read on the Canvas through millimetres
   })
 
   it("moves the Palette to the Canvas's Bead on Remove Frame, in the same step, when the woven Bead changes", () => {
+    const lime = defaultPalette('toho/round/8-0').find((color) => color.family === 'lime')!.id
     const before = inOtherBead('miyuki/delica/11-0')
-    expect(before.palette).not.toContain('lime')
+    expect(before.palette).not.toContain(lime)
     const removed = changeFrame(before, { remove: true })
-    expect(removed.kind === 'changed' && removed.project.palette).toContain('lime')
+    expect(removed.kind === 'changed' && removed.project.palette).toContain(lime)
   })
 
   it('folds what a resize gives up rather than giving it to the Canvas, whose positions are not its own', () => {

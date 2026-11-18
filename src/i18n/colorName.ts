@@ -12,8 +12,9 @@ export function colorName(t: Translations, color: PaletteColor | undefined): str
 }
 
 /** A color's name in a shopping list (Beads needed, the print): the Palette's name for it, or its hex when it has none
- * of its own (an added color, or one outside the Palette), so two added colors stay told apart. */
+ * of its own (an added color, or one outside the Palette), so two added colors stay told apart. A code is named once:
+ * a default color's name has it already (ticket 1070). */
 export function listedColorName(t: Translations, color: PaletteColor | undefined, hex: string): string {
-  const name = color && !isAddedColorId(color.id) ? colorName(t, color) : hex.toUpperCase()
-  return color?.code ? `${name} · ${color.code}` : name
+  if (color && !isAddedColorId(color.id)) return colorName(t, color)
+  return color?.code ? `${hex.toUpperCase()} · ${color.code}` : hex.toUpperCase()
 }

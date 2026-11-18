@@ -294,13 +294,23 @@ describe('removedDefaultsAfter (ticket 0528)', () => {
 describe('a stored Palette against a Bead\'s set (ticket 0528)', () => {
   it('keeps a color of the twelve that the set lacks, as an added color', () => {
     const stored = BUILT_IN_COLORS.map((color) => color.id)
-    const read = normalizePaletteIds(stored, defaultPalette('miyuki-delica-11-0'))
+    const read = normalizePaletteIds(stored, brandColors('miyuki'))
     expect(read).toContain(addedColorId('#2fb6ae'))
     expect(read).toHaveLength(12)
   })
 
+  it('keeps every generic color of a Project saved before default colors were codes, as an added color of its hex (ticket 1070)', () => {
+    const stored = [...brandColors('toho').map((color) => color.id), addedColorId('#123456')]
+    const read = normalizePaletteIds(stored, defaultPalette('toho/cube/1.5mm'))
+    expect(read).toEqual([...brandColors('toho').map((color) => addedColorId(color.hex)), addedColorId('#123456')])
+  })
+
+  it('keeps a default color the Bead no longer names as an added color of its hex (ticket 1070)', () => {
+    expect(normalizePaletteIds(['default-123456'], defaultPalette('miyuki-delica-11-0'))).toEqual([addedColorId('#123456')])
+  })
+
   it('starts a missing Palette from the set', () => {
-    expect(normalizePaletteIds(undefined, defaultPalette('miyuki-delica-11-0'))).toHaveLength(16)
+    expect(normalizePaletteIds(undefined, defaultPalette('miyuki-delica-11-0'))).toEqual(defaultPalette('miyuki-delica-11-0').map((color) => color.id))
   })
 })
 
@@ -314,10 +324,15 @@ describe('the first color on a new Project\'s Background (ticket 0838)', () => {
     return { canvas, color: palette.byId(startColorId(palette, canvas)) }
   }
 
+  // The family's default color (ticket 1070): yellow's where the Bead has no gold; a Bead with no red takes the
+  // swatch that stands off most, as the last test shows.
   it.each(BEAD_CATALOG.filter((bead) => !bead.retired).map((bead) => bead.id))('starts %s on gold in dark, red in light and high contrast', (beadId) => {
-    expect(startOn(beadId, 'dark', 1).color?.id).toBe('gold')
-    expect(startOn(beadId, 'light', 1).color?.id).toBe('red')
-    expect(startOn(beadId, 'contrast', 1).color?.id).toBe('red')
+    const has = (family: string) => defaultPalette(beadId).some((color) => (color.family ?? color.id) === family)
+    const familyOf = (color: PaletteColor | undefined) => color?.family ?? color?.id
+    expect(familyOf(startOn(beadId, 'dark', 1).color)).toBe(has('gold') ? 'gold' : 'yellow')
+    if (!has('red')) return
+    expect(familyOf(startOn(beadId, 'light', 1).color)).toBe('red')
+    expect(familyOf(startOn(beadId, 'contrast', 1).color)).toBe('red')
   })
 
   it.each(['light', 'dark', 'contrast'] as const)('stands the first color off every Background of %s at 3:1 or more, a swatch of the Bead\'s own', (theme) => {
@@ -333,7 +348,8 @@ describe('the first color on a new Project\'s Background (ticket 0838)', () => {
   })
 
   it('takes the swatch that stands off a Custom color best where neither reaches 3:1', () => {
-    const toho = createPalette(defaultPaletteIds(defaultPalette(DEFAULT_BEAD.id)), defaultPalette(DEFAULT_BEAD.id))
+    const generic = defaultPalette('toho/round/10-0')
+    const toho = createPalette(defaultPaletteIds(generic), generic)
     // Red on a red Custom color, gold on a gold one: neither shows, so the swatch that shows most.
     expect(startColorId(toho, '#e63746')).toBe('white')
     expect(startColorId(toho, '#d4af37')).toBe('black')
