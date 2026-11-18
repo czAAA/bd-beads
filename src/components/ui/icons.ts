@@ -3,6 +3,7 @@
 
 /** @internal Its test checks every name against the design system's icon files. */
 export const ICON_NAMES = [
+  'account',
   'arrow-down',
   'arrow-left',
   'arrow-right',
@@ -85,6 +86,7 @@ export const ICON_NAMES = [
   'select-all',
   'share',
   'sidebar',
+  'sign-out',
   'size',
   'sun',
   'turn-row-direction',

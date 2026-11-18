@@ -75,6 +75,7 @@
     "components/ScreenSizes/README.md",
     "components/SegmentedControl/README.md",
     "components/ShortcutsHelp/README.md",
+    "components/SignIn/README.md",
     "components/StackingOrder/README.md",
     "components/Stepper/README.md",
     "components/SwitchAndFileButton/README.md",
@@ -257,6 +258,11 @@
       "name": "MenuPanel",
       "group": "Overlays",
       "summary": "The Menu: Projects, Preferences, Help and About, as a dropdown on every screen size; setting rows."
+    },
+    {
+      "name": "SignIn",
+      "group": "Overlays",
+      "summary": "The Sign in Subpanel of the Menu: what openbeads keeps, the Google button, Cloudflare's check and the refusals."
     },
     {
       "name": "Message",
