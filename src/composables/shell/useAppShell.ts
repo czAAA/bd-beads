@@ -195,7 +195,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     // Opened from the reference image's All settings, Add to Canvas puts the beads on the open Project (ticket 0883).
     addToCanvas: (grid, request) => pictureBar.addGrid(grid, request),
     convertChoices: services.devicePreferences.get('convertChoices'),
-    myBeads: services.devicePreferences.get('myBeads'),
     showToast,
     messages,
   })
@@ -347,7 +346,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
   const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs })
   provideBeadColors(
-    useBeadColors({ currentProject, palette, addUsed, selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback, myBeads: services.devicePreferences.get('myBeads') }),
+    useBeadColors({ currentProject, palette, addUsed, selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback }),
   )
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */

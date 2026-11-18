@@ -194,15 +194,6 @@ const bodyShown = async (root: HTMLElement) => {
 
 const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)?.click()
 
-/** The Colors popover's My beads view (ticket 0902), from match to's menu. */
-const openMyBeads = async (root: HTMLElement) => {
-  await bodyShown(root)
-  press(root, 'convert-color-source')
-  await new Promise((done) => setTimeout(done, 20))
-  press(root, 'convert-edit-my-beads')
-  await new Promise((done) => setTimeout(done, 20))
-}
-
 const framed = withLayers(empty, { frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } })
 
 /** The roomy title block's Bead and its Change, in the app shell its pickers open in (ticket 1015). */
@@ -365,43 +356,6 @@ const CASES: FitCase[] = [
     async (root) => {
       await bodyShown(root)
       press(root, 'found-color-remap')
-    },
-  ],
-  ['Convert image Colors popover (My beads, the first time)', ConvertSectionHost, popoverBody(ConvertColorsSection), (root) => openMyBeads(root)],
-  [
-    'Convert image Colors popover (My beads, a code ticked)',
-    ConvertSectionHost,
-    popoverBody(ConvertColorsSection),
-    async (root) => {
-      await openMyBeads(root)
-      press(root, 'convert-my-beads-row')
-    },
-  ],
-  [
-    'Convert image Colors popover (My beads, pasting codes)',
-    ConvertSectionHost,
-    popoverBody(ConvertColorsSection),
-    async (root) => {
-      await openMyBeads(root)
-      press(root, 'my-beads-paste')
-    },
-  ],
-  [
-    'Convert image Colors popover (My beads, codes pasted, Clear list asked)',
-    ConvertSectionHost,
-    popoverBody(ConvertColorsSection),
-    async (root) => {
-      await openMyBeads(root)
-      press(root, 'my-beads-paste')
-      await new Promise((done) => setTimeout(done, 20))
-      const area = root.querySelector<HTMLTextAreaElement>('[data-testid="my-beads-paste-field"]')!
-      area.value = 'DB723, DB726\nDB99999, 11-4562, TO-0000123456789'
-      area.dispatchEvent(new Event('input', { bubbles: true }))
-      await new Promise((done) => setTimeout(done, 20))
-      press(root, 'my-beads-add')
-      await new Promise((done) => setTimeout(done, 20))
-      press(root, 'my-beads-clear')
-      await new Promise((done) => setTimeout(done, 20))
     },
   ],
   [

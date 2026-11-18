@@ -1,4 +1,4 @@
-import { computed, inject, onScopeDispose, provide, readonly, ref, shallowRef, watch, type InjectionKey, type Ref } from 'vue'
+import { computed, inject, onScopeDispose, provide, readonly, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { BACKGROUND_TOLERANCE, backgroundShare, findBackground, withoutBackground, type BackgroundMark } from '../../domain/convertBackground'
 import { keptGrid } from '../../domain/convertKeep'
@@ -48,7 +48,6 @@ import {
 import { partLattice, type ImageSize } from '../../domain/imageFraming'
 import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
-import type { MyBeads } from '../../domain/myBeads'
 import { pictureKind } from '../../domain/pictureKind'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
@@ -57,7 +56,6 @@ import { useConvertCleanUp } from './useConvertCleanUp'
 import { useConvertCrop, type CropBeads } from './useConvertCrop'
 import { useConvertFinishes } from './useConvertFinishes'
 import { useConvertLighting } from './useConvertLighting'
-import { useConvertMyBeads } from './useConvertMyBeads'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
  * a picture is decoded and how a Bead's Color catalog is fetched (both services, handed in by the app shell). */
@@ -71,8 +69,6 @@ export interface ConvertImageWizardDeps {
   loadCatalog: (id: string) => Promise<ColorCatalog>
   /** Opened from the reference image's All settings (ticket 0883): the beads go on the open Project, Add to Canvas. */
   addsToCanvas?: boolean
-  /** My beads, the device's list (ticket 0902); a list of the wizard's own where none is handed in. */
-  myBeads?: Ref<MyBeads>
 }
 
 /** The preview's tools (ConvertImage card DS-1, the floating bar): one or none is on. Leave a color out leaves a color out with
@@ -105,7 +101,7 @@ const PAUSE_MS = 150
 /** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
  * the Width, the colors, and the preview and Project they make. It keeps nothing (the flow keeps the last choices,
  * ticket 0893): leaving drops it all, Create reads `createProject`. Run it in an effect scope, which stops its timers. */
-export function useConvertImageWizard({ start, startSource, startFinishes, decodeImage, loadCatalog, addsToCanvas = false, myBeads: myBeadsList }: ConvertImageWizardDeps) {
+export function useConvertImageWizard({ start, startSource, startFinishes, decodeImage, loadCatalog, addsToCanvas = false }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
   const makerName = ref(start.makerName ?? '')
@@ -428,22 +424,16 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   const beadTargets = computed(() =>
     catalog.value && catalog.value.id === catalogId.value ? beadColorTargets(catalog.value, bead.value.size, brandColors(bead.value.brand.id)) : [],
   )
-  const myBeads = useConvertMyBeads({ list: myBeadsList ?? ref<MyBeads>({}), catalogId, beadTargets })
   /** What the found colors are matched to: the Bead's colors until a source is chosen, the Default Palette for a Bead
-   * with no Color catalog (ticket 0863). My beads with no code of the Bead's size is the Bead's colors (ticket 0902). */
+   * with no Color catalog (ticket 0863). */
   const source = computed<ColorSource>(() => {
     const wanted = chosenSource.value ?? 'bead-colors'
-    const loaded = beadTargets.value.length > 0
-    const mine = wanted === 'my-beads' && (!myBeads.offered.value || (loaded && myBeads.targets.value.length === 0)) ? 'bead-colors' : wanted
-    return mine === 'bead-colors' && !hasCatalog.value ? 'default' : mine
+    return wanted === 'bead-colors' && !hasCatalog.value ? 'default' : wanted
   })
-  /** The Bead colors the source names: all the Bead's, or My beads' of them. */
-  const sourceBeadTargets = computed(() => (source.value === 'my-beads' ? myBeads.targets.value : beadTargets.value))
-  const finishes = useConvertFinishes({ start: startFinishes, source, sourceTargets: sourceBeadTargets })
-  // Until its catalog has loaded, Bead colors (and My beads) match to the Default Palette, so the preview never shows
-  // bare pixels.
+  const finishes = useConvertFinishes({ start: startFinishes, source, sourceTargets: beadTargets })
+  // Until its catalog has loaded, Bead colors match to the Default Palette, so the preview never shows bare pixels.
   const targets = computed(() =>
-    source.value !== 'default' && source.value !== 'exact' && sourceBeadTargets.value.length === 0
+    source.value === 'bead-colors' && beadTargets.value.length === 0
       ? sourceTargets('default', builtIns.value, [])
       : sourceTargets(source.value, builtIns.value, finishes.targets.value),
   )
@@ -678,36 +668,12 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
 
   /** The Palette the remap picker shows (FoundColorRow card): the new Project's, as a Palette. */
   const remapPalette = computed(() => createPalette(palette.value.ids, builtIns.value, palette.value.codes))
-  /** Every Bead color of the catalog in the Bead's size: the Change picker's All codes (ticket 0918). */
-  const catalogRemapSwatches = computed(() => {
+  /** The Bead colors the remap picker lists: every one of the catalog in the Bead's size, those the new Palette holds
+   * marked taken. */
+  const remapSwatches = computed(() => {
     if (!catalog.value || catalog.value.id !== catalogId.value) return []
     return catalogSwatches(catalog.value, bead.value.size, remapPalette.value.colors.map((color) => color.hex), brandColors(bead.value.brand.id))
   })
-
-  /** The Bead colors the remap picker lists, those the new Palette holds marked taken; only My beads' while it is the
-   * source (ticket 0902). */
-  const remapSwatches = computed(() => {
-    if (source.value !== 'my-beads') return catalogRemapSwatches.value
-    const owned = new Set(myBeads.codes.value)
-    return catalogRemapSwatches.value.filter((swatch) => owned.has(swatch.code))
-  })
-
-  /** A row of the My beads view pressed (ticket 0902): its code ticked or unticked. Unticking the last code while My
-   * beads is the source falls back to the Bead's palette. */
-  function toggleMyBeadsCode(code: string) {
-    myBeads.toggle(code)
-    fallBackFromEmptyList()
-  }
-
-  /** Clear list in the My beads view (ticket 0903): with My beads the source, the match falls back to the Bead's palette. */
-  function clearMyBeads() {
-    myBeads.clear()
-    fallBackFromEmptyList()
-  }
-
-  function fallBackFromEmptyList() {
-    if (chosenSource.value === 'my-beads' && myBeads.codes.value.length === 0) chosenSource.value = 'bead-colors'
-  }
 
   /** The beads the Project would get at another number of colors, every other setting as it stands (the Colors
    * neighbours, ticket 0904): the page's own path, sampled grid, reduction, Finish cap and Clean up. */
@@ -903,29 +869,16 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     palette,
     remapPalette,
     remapSwatches,
-    catalogRemapSwatches,
     /** Clean up (ticket 0906): Clean up stray beads, its strength and Drop colors used by few beads, with what each did. */
     cleanUp,
     /** Auto-fix lighting (ticket 0907): its switch, and the picture the beads are sampled from (what Compare shows). */
     lighting,
-    // My beads (ticket 0902)
-    myBeadsCodes: myBeads.codes,
-    myBeadsTargets: myBeads.targets,
-    myBeadsOffered: myBeads.offered,
-    toggleMyBeadsCode,
-    /** Pasted codes added to My beads (ticket 0903). */
-    addMyBeadsCodes: myBeads.add,
-    clearMyBeads,
-    /** With My beads the source, whether its codes are fewer than the colors asked, so fewer come out and the foot says so. */
-    myBeadsShort: computed(() => source.value === 'my-beads' && myBeads.targets.value.length > 0 && myBeads.targets.value.length < maxColors.value),
     // The Finish filter (ticket 0901)
     finishes: finishes.finishes,
     /** The Finishes that narrow the match: none under Default Palette or Exact, where they are kept, off. */
     finishesApplied: finishes.applied,
     toggleFinish: finishes.toggle,
     clearFinishes: finishes.clear,
-    /** The source's codes before the Finishes, which their live counts are counted over. */
-    sourceBeadTargets,
     codesLeft: finishes.codesLeft,
     measuredLeft: finishes.measuredLeft,
     finishesShort,

@@ -36,11 +36,10 @@ Signed off on 2026-11-12 in the design canvas "Quiet Convert image" (link on tic
 
 Signed off on 2026-11-12 in the design canvas "Colors that are real beads" (link on ticket 0899 in the private docs repo). It is placed into DS-1's column and Colors popover above. It is built by tickets:
 - 0901: the line at rest, beads from and Finish;
-- 0902: My beads as a source and its view;
-- 0903: finding, filtering and pasting in it;
 - 0904: the neighbours and the slider's range;
-- 0905: the mark for an approximate swatch;
-- 0918: My beads in the Palette popover.
+- 0905: the mark for an approximate swatch.
+
+The design's My beads (the list of owned codes as a source, its view, and its tick in the Palette popover; tickets 0902, 0903, 0918) was built and then retired by ticket 1090: nothing of it is drawn.
 
 Each ticket's `### From the design (DS-2)` section holds every size, state and check. The first window keeps DS-1's 12 controls: only the line under Colors changes.
 
@@ -48,10 +47,10 @@ Each ticket's `### From the design (DS-2)` section holds every size, state and c
 - "real beads · miyuki delica 11/0 · opaque, matte · approximate colors";
 - "real beads · miyuki delica 11/0 · approximate colors" with no Finish on (ticket 0966: the first window says the beads are real and their colors approximate);
 - "real beads · {bead} · {n} finishes · approximate colors" with four or more;
-- "my beads · 40 codes", "default palette", "the picture's own colors".
+- "default palette", "the picture's own colors".
 - With the Bead's palette the line takes two lines in the column (ticket 0966), so at 1440 × 900 the column scrolls by that second line above the pinned foot; Create Project stays whole on screen.
 
-When fewer colors come out than asked, the result's second line at the column's foot says why: "8 colors (your list has 8)", "9 colors (only 9 codes left)", and where neither a list nor a Finish is the reason, that the picture has no more to give in the colors matched to: "7 colors (all this picture gives in Miyuki Delica 11/0)", or "in Default Palette", "in My beads" (ticket 0928; none under the picture's own colors). The slider stays at the count asked, and its value says both numbers, "12 asked · 7 found" (also its `aria-valuetext`); "found" counts every color found, set to empty or not, over the whole picture where a part is kept. Its filled part is `accent` only up to the last count that changes the beads and `line-strong` from there to the thumb (ValueSlider card, reach), worked out once the count rests. With as many found as asked, both read as before.
+When fewer colors come out than asked, the result's second line at the column's foot says why: "9 colors (only 9 codes left)", and where a Finish is not the reason, that the picture has no more to give in the colors matched to: "7 colors (all this picture gives in Miyuki Delica 11/0)", or "in Default Palette" (ticket 0928; none under the picture's own colors). The slider stays at the count asked, and its value says both numbers, "12 asked · 7 found" (also its `aria-valuetext`); "found" counts every color found, set to empty or not, over the whole picture where a part is kept. Its filled part is `accent` only up to the last count that changes the beads and `line-strong` from there to the thumb (ValueSlider card, reach), worked out once the count rests. With as many found as asked, both read as before.
 
 **The number of colors and its neighbours** (0904):
 - The Colors slider runs 1 to 40 on the doubling scale (ValueSlider card), marks at 5, 10 and 20, ends "1" and "40+".
@@ -66,31 +65,16 @@ When fewer colors come out than asked, the result's second line at the column's 
 
 **beads from and Finish** (0901), in the Colors popover's head, in place of DS-1's segmented control:
 - The **beads from** menu button fills the row and shows the source.
-- Its listbox lists "{Bead} palette" with its count, My beads (once the list holds a code) with its count, Default Palette and "The picture's own colors (not beads)" (Exact until ticket 0966). Under a rule comes "Edit My beads", or "Choose My beads" while the list is empty.
+- Its listbox lists "{Bead} palette" with its count, Default Palette and "The picture's own colors (not beads)" (Exact until ticket 0966).
 - Beside it is the **Finish** button, with the BeadColors Filters badge. It opens the BeadColors card's Finish list itself (`--convert-finish-list-width`, 232): the nine Finishes with live counts, Clear filters, and at its foot "412 bead colors in size 11/0".
 - When fewer codes are left than the colors asked, a line follows: "Only 9 codes left: 9 colors, not 12."
-- Finish applies to the Bead's palette and to My beads. It is off for Default Palette and the picture's own colors, with the reason in its Tooltip.
-- The (i) "Where colors come from" gains paragraphs for My beads and Finish.
-- The Change picker's "Add {bead} colors" opens with the same Finishes on, or on My beads.
-
-**My beads** (0902, 0903): one list of owned codes per Color catalog, yes or no, kept on the device (as Export quality is), never sent.
-- "Edit My beads" turns the Colors popover into its **My beads view**, with a back arrow ("Back to Colors"). It is not a popover or panel of its own.
-- The view's head: "My beads" with (i) "What My beads is", "40 codes", and "color catalog · miyuki delica".
-- Then:
-  - the empty state "No codes yet. Tick the codes you own, or paste a list of them." (`small` on `body`'s 20px line height, balanced; ticket 0996);
-  - the switch "All codes | My beads" with counts;
-  - the BeadColors search and Filters, and the count line;
-  - the rows, each one button that ticks the code (a 20 tick box at its right, `aria-pressed`). A discontinued code stays greyed: "· discontinued, never matched".
-- The foot holds:
-  - **Paste codes**, which opens a field that takes codes one a line or between commas or spaces, with or without the catalog's letters, then **Add codes**; ⌘V in the view does the same;
-  - the result "32 added" and "2 not known: …";
-  - **Clear list**, which confirms in place: "Clear all 40 codes?".
-- A list shorter than the count asked gives fewer colors; nothing is taken from outside it.
-- **Outside the converter** the same list lives with the Bead's colors in the editor's Palette popover (BeadColors card; ticket 0918).
+- Finish applies to the Bead's palette. It is off for Default Palette and the picture's own colors, with the reason in its Tooltip.
+- The (i) "Where colors come from" gains a paragraph for Finish.
+- The Change picker's "Add {bead} colors" opens with the same Finishes on.
 
 **Measured and approximate** (0905):
 - An approximate Bead color's swatch carries a 1px dashed `field-line` outline, 1px out; a measured one is plain. The mark is the same at 16 and 24, light and dark, and it is a shape, so it reads without color.
-- It shows on Color by color's "becomes" swatch, in the Change picker (head, grid, list) and in the My beads rows. It never shows on a Default Palette, the picture's own colors, kept exact or empty swatch.
+- It shows on Color by color's "becomes" swatch, and in the Change picker (head, grid, list). It never shows on a Default Palette, the picture's own colors, kept exact or empty swatch.
 - The count line reads "412 bead colors in size 11/0 · 96 measured", with a legend at its right: a 12 marked swatch and "approximate".
 - Tooltips: "Approximate color" ("Made from the color family and the Finish. The real bead may look different.") and "Measured color" ("Read from a photo of this bead.").
 - A row's accessible name gains ", approximate color".
@@ -126,7 +110,7 @@ New values: `--convert-result-button-height`, `--convert-result-button-height-to
 
 ## On a phone and a tablet (DS-4, ticket 0910)
 
-Signed off on 2026-11-12 in the design canvas "Converter on a phone and tablet" (link on ticket 0910 in the private docs repo); built by tickets 0911 (the page, the dock, the sheet and its rules, the Width, Size, Colors, Bead and Technique, Picture and Background sheets, the tools on the beads, Create Project, leaving) and 0919 (the Colors list with My beads, Clean up and Lighting as sheets), whose `### From the design (DS-4)` sections hold every size, state and check. It lays out DS-1, DS-2 and DS-3 and ranks nothing again: what is always on at the desktop is one press on a phone, what is one press there is two. No control is added or taken away. **This section wins over "Frame" and "Steps" below and over the PhoneForms card's Convert image part** under 1024 px or in portrait.
+Signed off on 2026-11-12 in the design canvas "Converter on a phone and tablet" (link on ticket 0910 in the private docs repo); built by tickets 0911 (the page, the dock, the sheet and its rules, the Width, Size, Colors, Bead and Technique, Picture and Background sheets, the tools on the beads, Create Project, leaving) and 0919 (the Colors list, Clean up and Lighting as sheets), whose `### From the design (DS-4)` sections hold every size, state and check. It lays out DS-1, DS-2 and DS-3 and ranks nothing again: what is always on at the desktop is one press on a phone, what is one press there is two. No control is added or taken away. **This section wins over "Frame" and "Steps" below and over the PhoneForms card's Convert image part** under 1024 px or in portrait.
 
 **Four layouts**, chosen from the page's own size on every resize and turn (landscape: wider than tall; a square page counts as landscape): portrait under 600 (`--convert-tablet-min`) wide, **Phone**; portrait from 600, **Tablet**; landscape under 1024, **Side**; landscape from 1024, **Desktop** (DS-1, above). Nothing sits under the notch or the home bar: the strip starts under `env(safe-area-inset-top)`, the dock and every sheet pad their foot by `env(safe-area-inset-bottom)` (the sheet's surface runs on under the home bar), Side keeps clear of the side insets; the page needs `viewport-fit=cover`.
 
@@ -136,7 +120,7 @@ Signed off on 2026-11-12 in the design canvas "Converter on a phone and tablet" 
 - *The tools on the beads*: one bar centred 10 above the preview's bottom (`--convert-tools-lift-phone`), 44 tall, padding 4, `elevated`, 1px `line`, `radius-lg`, `elevation-3`: **Background** (`erase`) and **Leave a color out** (`eyedropper`) as 44 × 36 icon buttons (named, with Tooltips), a divider, and ticket 0909's **Beads** | **Picture** with words (279 wide in English, 294 in Russian). On: `ink` fill. A tool's chip stands 8 below the preview's top (`tipbg`, pill, wrapping at the preview's width less 32): "tap a color to leave it out, tap it again to put it back" (ticket 0966: the way back said), "tap or drag over beads to keep them or take them away" (the Background sheet's tool line moves here on Phone and Side), "picture", "picture · let go to see the beads". While zoomed past Fit the zoom chip stands at the right, 16 in, 8 above the bar.
 - *The dock*, 178 above the bottom inset, on `canvas`, padding 10 16 12, 8 between: **the result** in two `meta` lines ("{w}×{h} beads · {cm} · {n} colors" in `ink`, "beads needed …" in `muted`; "adds to · {Project}" between them from a reference image; DS-1's "project · {name}" is not shown on a phone); **the settings**, one row of five equal buttons (`--convert-settings-height`, 60): Picture (`image`), Bead (`bead`), Width (`size`), Colors (`palette`), Clean up (DS-3's icon), a 20 icon over the name in Inter 12/14 500, each named "{setting}: {value}", off before a picture (all but Bead) with "Add a picture first."; **Create Project** across the page, 44, the page's one `accent` (Add to Canvas from a reference image, its Tooltip "goes where the picture lies on the Canvas").
 - *The sheet*, in the dock's place: `elevated`, 1px `line` top edge (dark `line-strong`), `--convert-sheet-shadow` (cast upward in light; none in dark and high contrast), `radius-lg` top corners, padding 0 16, a 12 grab zone (`--convert-sheet-grab`) with a 36 × 4 `line-strong` pill, a 44 head (`--convert-sheet-head`: the name in `control` 600, its (i), the value, a "More for …" button, Close). Close, Escape, a drag down on the grab zone or a tap on the beads closes it (the tap reaches nothing else); focus goes to its first control and back to its opener. It rises with `transform` in 200 ms ease-out, and the beads re-fit above it in the same time.
-- *The half rule*: a sheet opens at its own height, at most the half detent (the page's height ÷ 2 less the top inset, the strip and the bottom inset: 285 at 390 × 844, 264 at 360 × 640); taller content opens there and scrolls inside, with a 4px `line-strong` scroll mark. Only the Colors list (and My beads) drags up to the full detent, where the beads keep `--convert-preview-min` (160) and the bar steps aside; below half it closes.
+- *The half rule*: a sheet opens at its own height, at most the half detent (the page's height ÷ 2 less the top inset, the strip and the bottom inset: 285 at 390 × 844, 264 at 360 × 640); taller content opens there and scrolls inside, with a 4px `line-strong` scroll mark. Only the Colors list drags up to the full detent, where the beads keep `--convert-preview-min` (160) and the bar steps aside; below half it closes.
 - *The sheets*: Width (158: the slider, "60×59 beads · 7.8 × 9.4 cm"; More for the size puts **Size** in its place: units, Width, Height, Keep the picture's shape, the result box; half, scrolls); Colors (260: the number field "12" with "1 to 256", More for the colors, ticket 0904's three neighbours as 63 × 76 frames (`--convert-neighbour-phone-width`, `--convert-neighbour-phone-height`) over captions, the slider 1 to 40+, the source line); Bead and Technique (208: "brand · type · size" over three pickers in a row, "technique · drop" over Technique and Drop; a picker's list opens above it); Picture (182: the file row with Replace and More for the picture, then Auto-fix lighting with More for the lighting); Background (254 at both stages; stage 2's Show what was found across the sheet under Undo · Redo · Start over); the Colors list (beads from, Finish, Color by color's narrow rows, Change in place; back to the number), Clean up (262) and Lighting (half, scrolls) are ticket 0919's.
 - *The beads above each sheet*, at 390 × 844 · 360 × 640: at rest 529 · 406 (63% · 63%), Width 549 · 426, Colors 447 · 324 (53% · 51%), Bead and Technique 499 · 376, Picture 525 · 402, Background 453 · 330, Clean up 445 · 322, at the half detent 422 · 320 (50%).
 - *Touch on the beads*: one finger on a handle moves the crop; elsewhere it pans past Fit and does nothing at Fit; two fingers pinch and pan; with Leave a color out or Background on, one finger acts on the beads and panning needs two.
@@ -306,16 +290,10 @@ What the build of DS-1's first window had to settle or change:
 
 ## As built (ticket 0902)
 
-What the build of My beads (DS-2) had to settle:
+My beads was built here and retired by ticket 1090. What stays of this build:
 
-- **beads from became the menu here, not in 0901.** Four sources do not fit DS-1's segmented control, so the menu button and its listbox (the Bead's palette and My beads with their counts at the right, Default Palette, the picture's own colors, and under a rule Edit My beads or Choose My beads) are built with My beads; ticket 0901 adds the Finish button beside it. The menu is the app's MenuButton with AppMenuItems, the chosen source checked.
-- **The list is one device preference** (`myBeads`, `openbeads:my-beads`, a JSON object of code lists by Color catalog id), beside the converter's remembered choices; `domain/myBeads.ts` holds its rules. An empty list keeps nothing.
-- **A list with no code in the Bead's size** (a Delica 11/0 list on a 15/0) is not a source: the match falls back to the Bead's palette, as an empty list does. The menu still counts every code of the list.
-- **The view lists every code of the Bead's size** with no "first 60 shown" cap, so a code can be ticked before ticket 0903 brings the search. Discontinued codes are left out until 0903 greys them in.
-- **The My beads half keeps its rows** while the view is open: a code unticked there stays in place, unticked, as the design asks.
-- **The Change picker's list holds only My beads' codes** while My beads is the source; the switch inside the Palette popover's Bead colors list is ticket 0918's.
-- **A press outside the My beads view closes the Colors popover** as one outside the Colors view does; Escape returns to Colors first.
-- **New values:** `--my-beads-row` (`panel-row-two-line` + 4), `--my-beads-row-touch`, `--bead-swatch` (24; ticket 0905 adds `--bead-swatch-sm` 16 and `--bead-swatch-xs` 12), `--my-beads-tick` (20). SegmentedControl's options take a `meta` count in `meta-small` (the switch's "1 191").
+- **beads from is a menu.** The menu button and its listbox (the Bead's palette with its count at the right, Default Palette, the picture's own colors) took the place of DS-1's segmented control; ticket 0901 adds the Finish button beside it. The menu is the app's MenuButton with AppMenuItems, the chosen source checked.
+- **Values kept:** `--bead-swatch` (24; ticket 0905 adds `--bead-swatch-sm` 16 and `--bead-swatch-xs` 12).
 
 ## As built (ticket 0897)
 
@@ -369,9 +347,9 @@ Before and after of DS-3, as designed, with these notes:
 What the build of the Finish filter (DS-2) had to settle:
 
 - **One filter, not a copy.** The Finish list is `BeadColorFilters` itself, given no families: its Color part is left out when it has none, so the Finish lines, their live counts, keys and Clear filters are the Palette popover's. `filterBeadColors` keeps the beads from the Finishes on, so the converter and the list filter alike. The Finish button is a `MenuButton` popover (aligned to its end, `--convert-finish-list-width`), whose label slot holds the count badge; `MenuButton` gained that `label` slot.
-- **The Finishes apply to a catalog source**: the Bead's palette and My beads. Under Default Palette or the picture's own colors the button is off with its `disabledBody` and the Finishes are kept for the Bead's palette again. A Finish line counts the source's codes of it; the lines are the Finishes present in the Bead's size.
+- **The Finishes apply to a catalog source**: the Bead's palette. Under Default Palette or the picture's own colors the button is off with its `disabledBody` and the Finishes are kept for the Bead's palette again. A Finish line counts the source's codes of it; the lines are the Finishes present in the Bead's size.
 - **Too few:** with fewer codes left than colors asked, the picture is reduced to as many colors as there are codes, so no color is joined after the match; the Colors slider keeps the count asked. The foot's line is "{n} colors (only {m} codes left)", from two counted words, since the colors and the codes are counted apart.
-- **A filter that leaves no code** (a Finish none of My beads has, a dimmed line pressed) matches to the whole source rather than to nothing; the count line says 0.
+- **A filter that leaves no code** (a dimmed line pressed) matches to the whole source rather than to nothing; the count line says 0.
 - **The line at rest** joins the Finish names with a separator of each language's own (", ", Chinese "、"), not a list with "and": `Intl.ListFormat`'s unit lists are not alike across the app's languages.
 - **Remembered at Create Project,** with ticket 0893's other last choices; a converter closed without creating keeps nothing, as for the source.
 - **Change picker:** Color by color's Bead colors list opens with the converter's Finishes on (its Filters badge counts them); a change there is that row's alone.
@@ -387,16 +365,10 @@ What the build of Auto-fix lighting (DS-3) had to settle:
 
 ## As built (ticket 0903)
 
-What the build of finding, filtering and pasting in My beads (DS-2) had to settle:
+The My beads picker with its paste box was built here and retired by ticket 1090. What stays of this build:
 
-- **One picker, not a copy.** The view's switch, find and filter row, count line, rows and foot are `MyBeadsPicker` (`components/palette/`), which takes the Bead, its swatches, its catalog and the list as props and emits a tick, the codes added and Clear list; the converter's view keeps only the head and hands it the wizard's list. The editor's Palette popover (ticket 0918) mounts the same picker. The search and the Color and Finish filters are `useBeadColorFinder`, which the Palette popover's `BeadColorList` now uses too, and the search field with the Filters disclosure is one `BeadColorFindRow`; `searchBeadColors` is generic, like `filterBeadColors` since 0901.
-- **The "first 60 shown" cap is back** on both halves, as in BeadColors; the search finds the rest.
-- **The filters open with the converter's Finishes on** (those applied: none under Default Palette or the picture's own colors), as the Change picker does, and reset when the view closes.
-- **A paste reads a code in any size of the catalog:** the Bead's size first, then each other size's shop form, so "DBS22" pasted on a Delica 11/0 is known and kept, though the 11/0 view does not list it. Letters standing alone before a number ("DB 721") are that code's prefix. A code pasted twice counts once; a known code the list held is "already in the list".
-- **A listed code the catalog no longer knows** is greyed like a discontinued one, its second line "not in the color catalog · never matched" (a string the design did not name). Only the My beads half lists these; All codes lists the codes made now.
-- **⌘V** is the view's own `paste` event, ignored inside a text field; a clipboard with no text goes on to the converter's picture paste. Pasting adds to the My beads half and turns the switch to it.
-- **The paste box and the clear confirm are a layer** of the overlay registry over the view: Escape closes them first and keeps nothing; a press in the picker leaves them open, one outside it closes them and goes on.
-- **New value:** `--my-beads-never-opacity` (0.4), a never-matched code's swatch.
+- **One finder.** The search and the Color and Finish filters are `useBeadColorFinder`, which the Palette popover's `BeadColorList` uses, and the search field with the Filters disclosure is one `BeadColorFindRow`; `searchBeadColors` is generic, like `filterBeadColors` since 0901.
+
 ## As built (ticket 0904)
 
 What the build of the number of colors and its neighbours (DS-2) had to settle:
@@ -429,12 +401,12 @@ What the build of Brightness, Contrast and Saturation (DS-3) had to settle:
 
 What the mark for an approximate swatch (DS-2) had to settle:
 
-- **One swatch, one mark.** `BeadSwatchChip` draws every Bead color's swatch outside the Palette grid (Color by color's "becomes", the picker's head, BeadColors' and My beads' rows, the legend): the inset `swatch-edge`, and for an approximate one the 1px dashed `field-line` outline, offset 1px, at the swatch's radius (`radius-sm` at 24, `radius-xs` at 16 and 12). `AppSwatch` carries the same outline for the Palette grid. BeadColors' dashed `line-strong` border is gone.
+- **One swatch, one mark.** `BeadSwatchChip` draws every Bead color's swatch outside the Palette grid (Color by color's "becomes", the picker's head, BeadColors' rows, the legend): the inset `swatch-edge`, and for an approximate one the 1px dashed `field-line` outline, offset 1px, at the swatch's radius (`radius-sm` at 24, `radius-xs` at 16 and 12). `AppSwatch` carries the same outline for the Palette grid. BeadColors' dashed `line-strong` border is gone.
 - **Only a catalog code is marked.** A swatch whose color has a code is measured or approximate; a Default Palette, Exact, kept exact, Custom or empty swatch carries no mark and no Tooltip. In the Palette grid the code is looked up in the Bead's catalog swatches.
-- **Tooltips on the swatches that are not inside a button.** Color by color's "becomes", the picker's head and the legend-less grid swatch say "Approximate color" / "Measured color". A row of BeadColors or My beads is one button, so its swatch carries no bubble of its own: the row's name gains ", approximate color" instead.
-- **The count line** reads "{codes} · {n} measured" under Match to (Bead colors and My beads), with the legend (a 12 swatch with the mark, "approximate") at its right, wrapping. It replaces ticket 0887's separate "n of total measured" line: the count of measured codes now shows for any catalog, including none (0) and all.
+- **Tooltips on the swatches that are not inside a button.** Color by color's "becomes", the picker's head and the legend-less grid swatch say "Approximate color" / "Measured color". A row of BeadColors is one button, so its swatch carries no bubble of its own: the row's name gains ", approximate color" instead.
+- **The count line** reads "{codes} · {n} measured" under Match to (Bead colors), with the legend (a 12 swatch with the mark, "approximate") at its right, wrapping. It replaces ticket 0887's separate "n of total measured" line: the count of measured codes now shows for any catalog, including none (0) and all.
 - **The picker's head swatch** is 16 with the mark; the Tool pill's colour popover keeps its 20 plain swatch (no mark).
-- **Left as is.** BeadColors' Info note about approximate colors stays until every code is measured. The "· measured" sub-line is in BeadColors' rows; My beads' second line keeps the color's name.
+- **Left as is.** BeadColors' Info note about approximate colors stays until every code is measured. The "· measured" sub-line is in BeadColors' rows.
 
 ## As built (ticket 0911)
 
@@ -450,10 +422,9 @@ What the phone, tablet and side layouts (DS-4, block 0911a) had to settle:
 
 What the Colors list, Clean up and Lighting as sheets (DS-4, block 0911b) had to settle:
 
-- **A setting draws its sheet's head.** `ConvertSheetHead` is the head of every sheet: a back arrow where the sheet stands in another's place, the name with its (i), the value, Close. The Colors list, My beads, Clean up and Lighting draw it themselves when they stand in a sheet (they keep their own title row in the Desktop's popover), and it stays at the top while the sheet scrolls, the Colors list's heading row under it. Focus goes to the first control under the head.
+- **A setting draws its sheet's head.** `ConvertSheetHead` is the head of every sheet: a back arrow where the sheet stands in another's place, the name with its (i), the value, Close. The Colors list, Clean up and Lighting draw it themselves when they stand in a sheet (they keep their own title row in the Desktop's popover), and it stays at the top while the sheet scrolls, the Colors list's heading row under it. Focus goes to the first control under the head.
 - **The Colors list**: Back ("Back to the number of colors", `chevron-left`, `touch-target` square), "Colors" with its (i), the count ("12 colors", with the empty ones) and Close; then the source's label, the source menu and Finish, the codes line, and the rows. "Color by color" is not said again. From a 360 px page the rows take `--found-columns-sheet` (54 | rest | 44 | 32 | 32, the arrow kept); a narrower table (Side's column) keeps ticket 0782's narrow columns, so a hex stays on one line. A row is `panel-row-two-line-touch` tall; the open row has a 1px `line-soft` edge.
-- **The full detent** is the Colors list's alone (My beads with it, being its second view): a drag of 40 px up on the grab zone takes it there, the beads keep `--convert-preview-min` and fit 16 all round, and the bar on the beads is hidden. A drag down returns to half; let go in the page's lowest quarter it closes; from half a drag down closes, as on every sheet. The sheet moves when the finger lets go, not under it. The grab zone is for touch; with a keyboard the list scrolls at half.
-- **My beads** takes the Colors list's place at the detent it had: Back to Colors, the name with its (i), the count, Close, the catalog's line under the head.
+- **The full detent** is the Colors list's alone: a drag of 40 px up on the grab zone takes it there, the beads keep `--convert-preview-min` and fit 16 all round, and the bar on the beads is hidden. A drag down returns to half; let go in the page's lowest quarter it closes; from half a drag down closes, as on every sheet. The sheet moves when the finger lets go, not under it. The grab zone is for touch; with a keyboard the list scrolls at half.
 - **Clean up** has no box in a sheet: the switch's row (`touch-target`), strength over the three steps (`control-height`), the count, a `line-soft` rule, Small colors join with its stepper, what it joined. Sizes are in rem and the root is 112.5%, so the drawn 262 is 295 on screen: it fits under the half detent with no scroll at 390 × 844; at 360 × 640, and wherever the pixel art line shows or the name wraps to three lines, it scrolls inside by the half rule.
 - **Lighting** opens with Auto-fix lighting's switch (`touch-target` row) under the head, then the three sliders; each reset is `touch-target` square in a row as tall, on any pointer (the drawn 28 row would lay the reset's hit area over the track, ticket 0962).
 - **Tablet and Side** take the same content: the card at most 360 tall scrolling inside, the column scrolling inside.

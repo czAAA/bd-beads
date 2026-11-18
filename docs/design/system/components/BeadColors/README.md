@@ -25,15 +25,7 @@ The Color catalog of the Project's Bead, to add a maker's color to the Palette (
 - **States**, where the rows would be (in the right column when wide), as `Note` blocks because they change: "Loading the colors…" (`status`) and "The colors could not be loaded." (`alert`), each in place of the search, filters and rows; and the **empty state** (ticket 0713): the count line reads "codes: 0", then one `Note` sentence and, while any filter is on, one small `in-box` button **Clear filters** under it. The sentence names what is on: "No matte Blue codes match DB4." (several values of a part read "matte or luster"), "No matte Blue codes." with nothing typed, "No code matches DB4." with no filter. When the typed code is in the catalog but not in this Bead's size, it says which sizes have it instead: "4 exists in 15/0, 11/0, and 8/0, not in 6/0." There is no hint across catalogs: a DB code on a Miyuki Round Bead is simply not found.
 - A press adds the color as an added swatch; the list stays open.
 - **Foot row** (ticket 0700): under the list, in every state, the link **Wrong or missing color?** (Button card `link`, the `message` icon, in `accent-strong`, text and icon: the one accent-colored link, the way out when a color is wrong or missing, ticket 0749), at the right when wide and the left when narrow. It opens the FeedbackSheet's bead-color Report, Brand and catalog filled in and its Code from the row last focused in the list, else the active Palette color's code. The Convert image wizard's remap picker has no foot row.
-- The same list, filters included, is the body of the Convert image wizard's remap picker (FoundColorRow card), where it is narrow. There it opens with the converter's Finishes on, or on My beads when My beads is the source (DS-2).
-- **My beads** (DS-2, ticket 0899; built by 0902, 0903, and 0918 for this list): one list of owned codes per Color catalog, kept on the device.
-  - The same list is the picker in the converter's My beads view (ConvertImage card). There:
-    - each row is one button that ticks its code (a 20 tick box at its right);
-    - **Paste codes** and **Clear list** sit at its foot.
-  - In the Palette popover (ticket 0918):
-    - once the list holds a code, a small SegmentedControl "All codes | My beads" with counts stands over the search, opening on My beads;
-    - each row keeps its press (add to the Palette) and gains its own 28 tick button at its right, named "{code} in My beads", `aria-pressed`.
-  - As built (ticket 0918): the switch opens on My beads when the list has a code and keeps the rows it opened with, so an unticked code stays to be ticked again; the count line on My beads reads "codes: 40 · 17 measured"; the converter's Change picker lists every code of the catalog, with the same switch and ticks, even while My beads is the source.
-  - A tick in either place is in the other at once. There is no Menu entry: the list is reached through its Bead.
+- The same list, filters included, is the body of the Convert image wizard's remap picker (FoundColorRow card), where it is narrow. There it opens with the converter's Finishes on (DS-2).
+- **My beads** (DS-2; tickets 0902, 0903, 0918) is retired (ticket 1090): the list has no All codes | My beads switch and a row has no tick. A row's one press adds its color to the Palette.
 
 Hand-written from tickets 537, 0713 and 0745; the Vue component `BeadColorList.vue` is the real thing.

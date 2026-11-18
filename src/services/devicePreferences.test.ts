@@ -106,14 +106,11 @@ describe('the converter’s remembered choices (ticket 0893)', () => {
   })
 })
 
-describe('My beads (ticket 0902)', () => {
-  it('hold no codes at first, keep the list on the device, and forget it once it is empty', () => {
+describe('My beads, retired (ticket 1090)', () => {
+  it('drops the list a device still holds', () => {
     const storage = memory()
-    const list = createDevicePreferences(storage).get('myBeads')
-    expect(list.value).toEqual({})
-    list.value = { 'miyuki-delica': ['DB723'] }
-    expect(createDevicePreferences(storage).get('myBeads').value).toEqual({ 'miyuki-delica': ['DB723'] })
-    list.value = {}
+    storage.setItem('openbeads:my-beads', '{"miyuki-delica":["DB723"]}')
+    createDevicePreferences(storage)
     expect(storage.data.has('openbeads:my-beads')).toBe(false)
   })
 })
