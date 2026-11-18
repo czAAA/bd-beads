@@ -85,6 +85,8 @@ describe('what the build writes for crawlers (ticket 1055)', () => {
     expect(content('twitter:description')).toBe(ru.description)
     expect(content('og:url')).toBe('https://openbeads.com/ru/')
     expect(content('og:locale')).toBe('ru_RU')
+    const alternates = previewTags(ru, SITE_URL).filter(({ attrs = {} }) => attrs.property === 'og:locale:alternate').map(({ attrs = {} }) => attrs.content)
+    expect(alternates).toEqual(LOCALES.filter((locale) => locale !== 'ru').map((locale) => OPEN_GRAPH_LOCALES[locale]))
     expect(content('og:image')).toBe('https://openbeads.com/previews/welcome-ru.png')
     expect(content('twitter:image')).toBe(content('og:image'))
     expect(content('twitter:card')).toBe('summary_large_image')
