@@ -5,6 +5,7 @@ import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import { DRAG_SLOP_PX } from '../../domain/dragSlop'
 import { HOLD_MS } from '../../domain/hold'
+import { MIRROR_OFF } from '../../domain/mirror'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import { recordingContext } from '../../testUtils/recordingContext'
 
@@ -63,6 +64,13 @@ const PEN = { pointerType: 'pen', isPrimary: true, pointerId: 2 }
 const FINGER = { pointerType: 'touch', isPrimary: true, pointerId: 3 }
 const MOUSE = { pointerType: 'mouse', isPrimary: true, pointerId: 1 }
 const DOWN = { button: 0, buttons: 1 }
+
+/** An area of 2 x 3 beads at (1, 1), its box (20, 20) to (80, 60) on screen: a point inside it, on the bead (1, 2), and
+ * one on its bottom-left handle. */
+const SELECT = can({ tool: 'select', selects: true, selectsAnywhere: true })
+const AREA = { top: 1, left: 1, rows: 2, columns: 3 }
+const INSIDE = { clientX: 50, clientY: 30 }
+const ON_HANDLE = { clientX: 13, clientY: 67 }
 
 /** What a completed hold reports: the hairline goes, the press is dropped, then the ring is asked for where it was
  * pressed, on the bead position under it. */
@@ -215,15 +223,76 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
   })
 
   it('never times a press a handle takes: the Selection\'s', async () => {
-    const tools = can({ tool: 'select', selects: true, selectsAnywhere: true })
-    const { wrapper, surface, said } = await mountSurface({ tools, selection: { top: 0, left: 0, rows: 10, columns: 10 } })
-    await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
+    const { wrapper, surface, said } = await mountSurface({ tools: SELECT, selection: AREA })
+    await surface.trigger('pointerdown', { ...ON_HANDLE, ...PEN, ...DOWN })
     vi.advanceTimersByTime(HOLD_MS * 10)
-    expect(wrapper.emitted('selection-press')).toHaveLength(1)
+    expect(wrapper.emitted('selection-press')!.map(([target]) => target)).toEqual([{ kind: 'handle', edges: ['bottom', 'left'] }])
     expect(said).toEqual([])
     wrapper.unmount()
   })
+})
 
+describe('ProjectSurface: a hold inside an area opens the Radial toolbox (ticket 1084)', () => {
+  /** A completed hold inside the area: the same as anywhere else, on the bead position pressed. */
+  const INSIDE_POINT = { x: INSIDE.clientX, y: INSIDE.clientY }
+  const OPENED_INSIDE = [['hold', INSIDE_POINT], ['hold'], ['drop-press'], ['open-toolbox', INSIDE_POINT, { row: 1, column: 2 }]]
+  const MIRROR_MODE = { tools: can({ tool: 'select', selects: true, marksArea: true }), mirror: { ...MIRROR_OFF, mode: 'mirror' as const, place: { layer: 'canvas' as const, area: { row: 1, column: 1, rows: 2, columns: 3 } } } }
+
+  it.each([
+    ['the Selection', { tools: SELECT, selection: AREA }],
+    ['the Mirror\'s Area in Mirror mode', MIRROR_MODE],
+  ])('held still inside %s it starts the move, then drops it and asks for the ring; the lift releases nothing', async (_name, extra) => {
+    const { wrapper, surface, said } = await mountSurface(extra)
+    await surface.trigger('pointerdown', { ...INSIDE, ...PEN, ...DOWN })
+    expect(wrapper.emitted('selection-press')).toEqual([[{ kind: 'inside' }, { row: 1, column: 2 }]])
+    expect(said).toEqual([['hold', INSIDE_POINT]])
+
+    vi.advanceTimersByTime(HOLD_MS)
+    expect(said).toEqual(OPENED_INSIDE)
+
+    await surface.trigger('pointermove', { ...bead(6, 9), ...PEN, buttons: 1 })
+    await surface.trigger('pointerup', { ...PEN })
+    expect(wrapper.emitted('selection-drag')).toBeUndefined()
+    expect(wrapper.emitted('selection-release')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('a press inside that moves the drag slop before the hold is up moves the area as today and opens nothing', async () => {
+    const { wrapper, surface, said } = await mountSurface({ tools: SELECT, selection: AREA })
+    await surface.trigger('pointerdown', { ...INSIDE, ...PEN, ...DOWN })
+    await surface.trigger('pointermove', { ...bead(4, 6), ...PEN, buttons: 1 })
+    vi.advanceTimersByTime(HOLD_MS * 10)
+    await surface.trigger('pointerup', { ...PEN })
+    expect(said).toEqual([['hold', INSIDE_POINT], ['hold']])
+    expect(wrapper.emitted('selection-drag')).toEqual([[{ row: 4, column: 6 }]])
+    expect(wrapper.emitted('selection-release')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('a quick tap inside is released as today, for the tool\'s own tap', async () => {
+    // In Mouse mode the finger is the drawing pointer.
+    const { wrapper, surface, said } = await mountSurface({ tools: SELECT, selection: AREA, inputMode: 'mouse' })
+    await surface.trigger('pointerdown', { ...INSIDE, ...FINGER, ...DOWN })
+    await surface.trigger('pointerup', { ...FINGER })
+    vi.advanceTimersByTime(HOLD_MS * 10)
+    expect(said).toEqual([['hold', INSIDE_POINT], ['hold']])
+    expect(wrapper.emitted('selection-release')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('never times a mouse\'s left button inside, nor a press where the ring would not open', async () => {
+    for (const [pointer, extra] of [[MOUSE, { inputMode: 'mouse' }], [PEN, { holdOpens: false }]] as const) {
+      const { wrapper, surface, said } = await mountSurface({ tools: SELECT, selection: AREA, ...extra })
+      await surface.trigger('pointerdown', { ...INSIDE, ...pointer, ...DOWN })
+      vi.advanceTimersByTime(HOLD_MS * 10)
+      expect(wrapper.emitted('selection-press')).toHaveLength(1)
+      expect(said).toEqual([])
+      wrapper.unmount()
+    }
+  })
+})
+
+describe('ProjectSurface: where the ring would not open', () => {
   it('opens nothing when the ring stops being able to open during the hold (the Canvas turned read-only)', async () => {
     const { wrapper, surface, said } = await mountSurface()
     await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })

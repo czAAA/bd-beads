@@ -310,6 +310,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     beginAdjust,
     dragAdjust,
     endAdjust,
+    dropAdjust,
     resume: resumeSelectionDrag,
     pastePreviewCells,
     pastePreviewStamp,
@@ -1200,8 +1201,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
       pickRecent: toolPill.pickRecent,
       /** The Radial toolbox (ticket 1064): the ring a right click on the Canvas opens round the pointer. */
       radialToolbox,
-      /** A hold that opened the ring drops what its press started (ticket 1065), as a pinch drops its first finger's. */
-      onDropPress: () => cancelStroke(),
+      /** A hold that opened the ring drops what its press started (ticket 1065), as a pinch drops its first finger's, and
+       * the move of an area held by its inside (ticket 1084). */
+      onDropPress: () => {
+        cancelStroke()
+        dropAdjust()
+        mirror.dropArea()
+      },
       // Mirror (ADR 0082, ticket 0750): the Project's one Mirror and its bar, Mirror mode, the three ways to make one
       mirrorSetting: mirror.setting,
       mirrorOn: mirror.on,
