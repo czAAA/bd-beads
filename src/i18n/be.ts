@@ -1086,7 +1086,7 @@ export const be: Translations = {
       rowName: { one: '{hex} на {name}, {count} бісерына', few: '{hex} на {name}, {count} бісерыны', many: '{hex} на {name}, {count} бісерын', other: '{hex} на {name}, {count} бісерыны' },
       emptyTouchTitle: 'Тут з’явіцца ваша выява',
       emptyTouchLine: 'Выберыце файл, устаўце або сфатаграфуйце',
-      defaultPaletteNote: 'Простыя колеры з назвамі, без брэнда.',
+      defaultPaletteNote: 'Па колеры на кожную сям’ю, з сапраўдным кодам, дзе ён ёсць.',
       exactNote: 'Пакідае ўласныя колеры выявы. Гэта не бісер з крамы.',
       colorsHintExact: 'Кожны колер стане адным колерам бісеру. Макс. {n}: усе колеры выявы.',
       colorsHintExactCapped: 'Кожны колер стане адным колерам бісеру. Макс. {n}: у выяве колераў больш, яны зведзены да гэтага ліку.',

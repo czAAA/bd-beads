@@ -7,7 +7,7 @@ import { createProject } from './createProject'
 import { DEFAULT_COLOR_FILES } from './defaultColors'
 import { canvasTheme } from '../rendering/canvasBackgrounds'
 import type { ResolvedTheme } from '../theme/theme'
-import { BUILT_IN_COLORS, addUsedColor, brandColors, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, removeAllAddedColors, restoreAddedColor, startColorId, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
+import { BUILT_IN_COLORS, addUsedColor, brandColors, familyOf, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, removeAllAddedColors, restoreAddedColor, startColorId, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
@@ -324,15 +324,21 @@ describe('the first color on a new Project\'s Background (ticket 0838)', () => {
     return { canvas, color: palette.byId(startColorId(palette, canvas)) }
   }
 
-  // The family's default color (ticket 1070): yellow's where the Bead has no gold; a Bead with no red takes the
-  // swatch that stands off most, as the last test shows.
-  it.each(BEAD_CATALOG.filter((bead) => !bead.retired).map((bead) => bead.id))('starts %s on gold in dark, red in light and high contrast', (beadId) => {
-    const has = (family: string) => defaultPalette(beadId).some((color) => (color.family ?? color.id) === family)
-    const familyOf = (color: PaletteColor | undefined) => color?.family ?? color?.id
-    expect(familyOf(startOn(beadId, 'dark', 1).color)).toBe(has('gold') ? 'gold' : 'yellow')
-    if (!has('red')) return
-    expect(familyOf(startOn(beadId, 'light', 1).color)).toBe('red')
-    expect(familyOf(startOn(beadId, 'contrast', 1).color)).toBe('red')
+  const offered = BEAD_CATALOG.filter((bead) => !bead.retired).map((bead) => bead.id)
+  const has = (beadId: string, family: string) => defaultPalette(beadId).some((color) => familyOf(color) === family)
+  const familyAt = (beadId: string, theme: ResolvedTheme) => {
+    const color = startOn(beadId, theme, 1).color
+    return color && familyOf(color)
+  }
+
+  // The family's default color (ticket 1070), yellow's where the Bead has no gold.
+  it.each(offered)('starts %s on gold in dark, or yellow without one', (beadId) => {
+    expect(familyAt(beadId, 'dark')).toBe(has(beadId, 'gold') ? 'gold' : 'yellow')
+  })
+
+  it.each(offered.filter((beadId) => has(beadId, 'red')))('starts %s on red in light and high contrast', (beadId) => {
+    expect(familyAt(beadId, 'light')).toBe('red')
+    expect(familyAt(beadId, 'contrast')).toBe('red')
   })
 
   it.each(['light', 'dark', 'contrast'] as const)('stands the first color off every Background of %s at 3:1 or more, a swatch of the Bead\'s own', (theme) => {

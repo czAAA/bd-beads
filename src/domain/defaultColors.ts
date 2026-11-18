@@ -1,7 +1,7 @@
 import { findBead } from './beads'
-import miyukiDelica from '../data/defaultColors/miyuki-delica.json'
-import miyukiRound from '../data/defaultColors/miyuki-round.json'
-import toho from '../data/defaultColors/toho.json'
+import miyukiDelica from '../data/defaultColors/miyuki-delica.json' with { type: 'json' }
+import miyukiRound from '../data/defaultColors/miyuki-round.json' with { type: 'json' }
+import toho from '../data/defaultColors/toho.json' with { type: 'json' }
 
 /** One default color as a catalog names it: the maker's code and the color measured for it (ticket 1070). */
 interface NamedDefault {

@@ -41,6 +41,11 @@ export function familyHex(family: string, colors: readonly PaletteColor[]): stri
   return colors.find((color) => color.id === familyColorId(family))?.hex
 }
 
+/** The color family a built-in color is of (ticket 1070): a default color's own, or a generic color's id. */
+export function familyOf(color: Pick<PaletteColor, 'id' | 'family'>): string {
+  return color.family ?? color.id
+}
+
 /** The Palette color id a maker's color family is named by: `Gray` is `grey`, the rest are lowercase. */
 export function familyColorId(family: string): string {
   return family.toLowerCase() === 'gray' ? 'grey' : family.toLowerCase()
@@ -223,14 +228,14 @@ const START_COLOR_CONTRAST = 3
  * (yellow where the Palette has no gold, as the twelve), red on a light one; a family's default color (ticket 1070). */
 const START_COLORS = { dark: ['gold', 'yellow'], light: ['red'] } as const
 
-/** The swatch a new Project starts painting with on its Background's hex (ticket 0838): the default color of the gold
- * family on a dark one, the red family's on a light one (ticket 1070), so the first bead shows. Where neither of those is in the Palette or stands 3:1 off the Background (a
- * Custom color close to it), the swatch that stands off it most. Undefined for an empty Palette. */
+/** The swatch a new Project starts painting with on its Background's hex (ticket 0838): the gold family's default color
+ * on a dark one, the red family's on a light one (ticket 1070), so the first bead shows; where neither is there or stands
+ * 3:1 off it (a Custom color close to it), the swatch that stands off it most. Undefined for an empty Palette. */
 export function startColorId(palette: Palette, background: string): string | undefined {
   const under = channelsOf(background)
   const contrast = (color: PaletteColor) => contrastRatio(channelsOf(color.hex), under)
   const look = relativeLuminance(under) < BLACK_WHITE_BALANCE ? 'dark' : 'light'
-  const ofFamily = (family: string) => palette.colors.find((color) => !isAddedColorId(color.id) && (color.family ?? color.id) === family)
+  const ofFamily = (family: string) => palette.colors.find((color) => !isAddedColorId(color.id) && familyOf(color) === family)
   const picked = START_COLORS[look]
     .map(ofFamily)
     .find((color) => color !== undefined && contrast(color) >= START_COLOR_CONTRAST)

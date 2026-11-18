@@ -1085,7 +1085,7 @@ export const pl: Translations = {
       rowName: { one: '{hex} na {name}, {count} koralik', few: '{hex} na {name}, {count} koraliki', many: '{hex} na {name}, {count} koralików', other: '{hex} na {name}, {count} koralika' },
       emptyTouchTitle: 'Tu pojawi się twój obraz',
       emptyTouchLine: 'Wybierz plik, wklej albo zrób zdjęcie',
-      defaultPaletteNote: 'Proste nazwane kolory, bez marki.',
+      defaultPaletteNote: 'Jeden kolor na rodzinę kolorów, z prawdziwym kodem, gdzie jest.',
       exactNote: 'Zachowuje własne kolory obrazu. To nie są koraliki ze sklepu.',
       colorsHintExact: 'Każdy kolor to jeden kolor koralików. Maks. {n}: wszystkie kolory obrazu.',
       colorsHintExactCapped: 'Każdy kolor to jeden kolor koralików. Maks. {n}: obraz ma ich więcej, sprowadzone do tylu.',

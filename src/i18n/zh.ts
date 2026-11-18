@@ -1060,7 +1060,7 @@ export const zh: Translations = {
       rowName: { other: '{hex} 变为 {name}，{count} 颗' },
       emptyTouchTitle: '你的图片会显示在这里',
       emptyTouchLine: '选择文件、粘贴或拍照',
-      defaultPaletteNote: '有名称的普通颜色，不属于任何品牌。',
+      defaultPaletteNote: '每个色系一种颜色，有真实色号的就用真实色号。',
       exactNote: '保留图片自身的颜色。这些不是商店里卖的珠子。',
       colorsHintExact: '每种颜色就是一种珠子颜色。最大 {n}：图片的全部颜色。',
       colorsHintExactCapped: '每种颜色就是一种珠子颜色。最大 {n}：图片的颜色更多，已归并到这个数。',
