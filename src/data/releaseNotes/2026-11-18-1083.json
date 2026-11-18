@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "fixed",
+  "line": {
+    "en": "A duplicated Project opens with its reference image's picture, not just its settings",
+    "ru": "Копия проекта открывается с картинкой подложки, а не только с её настройками",
+    "uk": "Копія проєкту відкривається з картинкою підкладки, а не лише з її налаштуваннями",
+    "be": "Копія праекта адкрываецца з карцінкай падкладкі, а не толькі з яе наладамі",
+    "zh": "复制的项目打开时带有参考图的图片，而不只是它的设置",
+    "es": "Un proyecto duplicado se abre con la imagen de referencia, no solo con sus ajustes",
+    "pl": "Zduplikowany projekt otwiera się z obrazem pomocniczym, a nie tylko z jego ustawieniami"
+  }
+}

@@ -177,6 +177,29 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
     expect([...(await flow.picturesOf([harness.project.id, 'copy', 'none'])).keys()]).toEqual([harness.project.id, 'copy'])
   })
 
+  it.each([
+    ['before the device has kept it', false],
+    ['on a device that won\'t keep it', true],
+  ])('opens a duplicate with its picture drawn, %s (ticket 1083)', async (_case, refuses) => {
+    const store = memoryPictureStore({ refuses })
+    const { harness, flow } = setup(framed(), { store })
+    await flow.pick(file(), 'panel')
+    // The device takes its time: the copy opens while its picture is still being written.
+    let landed = () => {}
+    const put = store.put
+    store.put = (id, blob) => new Promise((resolve) => (landed = () => void put(id, blob).then(resolve)))
+    const copy = { ...harness.project, id: 'copy' }
+    const copying = flow.copyToDuplicate(copy)
+    harness.replaceProject(copy)
+    await flushPromises()
+    expect(flow.thumbnail.value).toBe('blob:picture')
+    expect(flow.drawn.value).toBeDefined()
+    landed()
+    await copying
+    expect(store.kept.has('copy')).toBe(!refuses)
+    expect(flow.notSaved.value).toBe(refuses)
+  })
+
   it('keeps an imported Project\'s picture', async () => {
     const { store, flow } = setup()
     const blob = new Blob(['imported'])
