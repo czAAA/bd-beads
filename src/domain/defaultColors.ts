@@ -1,4 +1,7 @@
 import { findBead } from './beads'
+import miyukiDelica from '../data/defaultColors/miyuki-delica.json'
+import miyukiRound from '../data/defaultColors/miyuki-round.json'
+import toho from '../data/defaultColors/toho.json'
 
 /** One default color as a catalog names it: the maker's code and the color measured for it (ticket 1070). */
 interface NamedDefault {
@@ -13,16 +16,14 @@ interface DefaultColorsFile {
   sizes: Readonly<Record<string, Readonly<Record<string, NamedDefault>>>>
 }
 
-const FOLDER = '../data/defaultColors/'
-// Small and needed before any catalog loads, so in the main bundle, unlike the lazy catalogs (ADR 0072). A new Color
-// catalog brings its file here: a test fails for one without.
-const FILES = import.meta.glob<DefaultColorsFile>('../data/defaultColors/*.json', { eager: true, import: 'default' })
+// Small and needed before any catalog loads, so in the main bundle, unlike the lazy catalogs (ADR 0072). Imported by
+// name, as the visual check reads this outside Vite: a new Color catalog brings its file and its line here, and a
+// test fails without them.
+const FILES: readonly DefaultColorsFile[] = [toho, miyukiDelica, miyukiRound]
 
 /** Every catalog's default colors file, by catalog id.
  * @internal The default colors' test checks each against its catalog; the app asks `namedDefaults`. */
-export const DEFAULT_COLOR_FILES: Readonly<Record<string, DefaultColorsFile>> = Object.fromEntries(
-  Object.entries(FILES).map(([path, file]) => [path.slice(FOLDER.length, -'.json'.length), file]),
-)
+export const DEFAULT_COLOR_FILES: Readonly<Record<string, DefaultColorsFile>> = Object.fromEntries(FILES.map((file) => [file.id, file]))
 
 /** The default colors a Bead's catalog names for its size, by family id; undefined for a Bead with no catalog or one
  * whose catalog lists no codes in its size (TOHO Round 10/0 and 7/0), which keeps the generic family colors. */
