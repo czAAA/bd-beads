@@ -22,7 +22,7 @@ import { createProject } from '../domain/createProject'
 import type { Project } from '../domain/project'
 import { rowProgressOf } from '../domain/rowProgress'
 import { withLayers } from '../testUtils/layerFields'
-import { frameOf } from '../domain/layerRecord'
+import { frameOf, withFrameSheet } from '../domain/layerRecord'
 
 // The strip, the Project and Menu panels, the dialogs and the forms, in every language at the layout's width edges
 // (ticket 552).
@@ -64,6 +64,13 @@ const unfoldThisProject = (root: HTMLElement): void => {
   if (header.getAttribute('aria-expanded') === 'false') header.click()
 }
 
+/** This Project and its Export row unfolded (ticket 1058): the export rows in the Project panel. */
+const unfoldProjectExport = async (root: HTMLElement): Promise<void> => {
+  unfoldThisProject(root)
+  await nextTick()
+  root.querySelector<HTMLElement>('[data-testid="project-export"]')?.click()
+}
+
 /** A component inside a panel shell's context, as the Menu panel needs; given a width, as wide as that panel's content
  * (the Export panel's small one, ticket 0652). */
 const inPanel = (component: Component, props: Record<string, unknown>, width?: string): Component =>
@@ -85,6 +92,8 @@ const CASES: FitCase[] = [
   ['ShortcutsHelp', ShortcutsHelp, {}],
   ['MenuPanel', inPanel(MenuPanel, { projectCount: 1, toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true, kept: false }), {}],
   ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, canSaveAs: true, lastFileName: 'Scarf for winter.openbeads' }, unfoldThisProject],
+  ['ProjectPanel (Export unfolded)', ProjectPanel, { project: painted, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, exporting: 'pdf' }, unfoldProjectExport],
+  ['ProjectPanel (Export unfolded, no Frame)', ProjectPanel, { project: withFrameSheet(painted, undefined), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }, unfoldProjectExport],
   ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
   ['ProjectPanel (technique locked)', ProjectPanel, { project: withLayers(project, { rowProgress: { ...rowProgressOf(project), currentRow: 1 } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['FramePanel', inPanel(FramePanel, { project: painted }), {}],

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, useId } from 'vue'
 import type { Layer } from '../../domain/grid'
 import { frameOf } from '../../domain/layerRecord'
 import type { Background, Project } from '../../domain/project'
@@ -9,6 +9,8 @@ import type { OpacityStep } from '../../domain/referenceImage'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
+import type { ExportChoice } from '../../composables/shell/openPanel'
+import ExportRows from '../canvas/ExportRows.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import LayerSettings from './LayerSettings.vue'
@@ -16,9 +18,9 @@ import ProjectHead from './ProjectHead.vue'
 import ReferenceImageSection from './ReferenceImageSection.vue'
 import { layerSettingsOf, layerSummary } from './layerSettingsOf'
 
-// The body of Project (spec 0440, tickets 443, 554, 0670; ProjectPanel card): everything about the open Project that no
-// tool already does. A head (title, name, maker), then three sections that fold shut: the Canvas's Layer settings, the
-// reference image (0790) and this project (the Project file first, one row to Export, 0956). It only asks.
+// The body of Project (spec 0440, tickets 443, 554, 0670; ProjectPanel card): what no tool already does about the open
+// Project. A head, then three folding sections: the Canvas's Layer settings, the reference image (0790) and this project
+// (the Project file first, then Export, which unfolds the export rows in place, 1058). It only asks.
 const props = defineProps<{
   project: Project
   saveFailed: boolean
@@ -33,6 +35,8 @@ const props = defineProps<{
   lastFileName?: string
   /** Save as is offered only where the browser can link a file (ADR 0090). */
   canSaveAs?: boolean
+  /** A PNG or PDF is being drawn (ticket 1058): the unfolded export rows wait, as in the Export panel. */
+  exporting?: ExportChoice
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -49,8 +53,11 @@ const emit = defineEmits<{
   /** Save and Save as (ADR 0090, ticket 0796), the actions the save ring and the keys also run. */
   'save-project-file': []
   'save-project-file-as': []
-  /** The one Export row (ticket 0956): open the Export panel, as the Canvas strip's Export button opens it. */
-  export: []
+  /** The rows the Export row unfolds (ticket 1058), the Export panel's: save a file, or set a Frame first. */
+  'export-png': []
+  'export-pdf': []
+  fit: []
+  'select-frame': []
   'save-maker-name': [name: string]
   duplicate: []
   clear: []
@@ -65,6 +72,10 @@ const clear = controlAction('clear-project')
 const save = controlAction('save-project-file')
 const saveAs = controlAction('save-project-file-as')
 const exportPanel = controlAction('strip-export')
+
+/** The Export row's rows (ticket 1058): folded every time the panel opens and kept nowhere, as the Frame panel's are. */
+const exportOpen = ref(false)
+const exportRowsId = useId()
 
 const canvas = computed(() => layerSettingsOf(props.project, 'canvas'))
 /** The Canvas section's header (ticket 0935): with a Frame on the Canvas it says it sets the Canvas outside it. */
@@ -113,7 +124,10 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       <PanelItem :icon="save.icon" :value="lastFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
       <PanelItem icon="copy" data-testid="project-duplicate" @select="emit('duplicate')">{{ duplicate.name(t) }}</PanelItem>
-      <PanelItem :icon="exportPanel.icon" sub data-testid="project-export" @select="emit('export')">{{ exportPanel.name(t) }}</PanelItem>
+      <PanelItem :icon="exportPanel.icon" :expanded="exportOpen" :aria-controls="exportRowsId" data-testid="project-export" @select="exportOpen = !exportOpen">{{ exportPanel.name(t) }}</PanelItem>
+      <div v-if="exportOpen" :id="exportRowsId" class="project-panel__export" role="group" :aria-label="exportPanel.name(t)" data-testid="project-export-rows">
+        <ExportRows :project="project" :exporting="exporting" @fit="emit('fit')" @select-frame="emit('select-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
+      </div>
       <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="project-delete" @select="emit('delete')">{{ remove.name(t) }}</PanelItem>
     </PanelSection>
@@ -125,6 +139,11 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
   display: flex;
   flex-direction: column;
   color: var(--ink);
+}
+
+.project-panel__export {
+  display: flex;
+  flex-direction: column;
 }
 
 .project-panel > :deep(.panel-section:first-of-type) {

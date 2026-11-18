@@ -1386,8 +1386,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSetLetters: exportFlow.onSetLetters,
       // Menu: whether the browser keeps the Projects, shown as a fact (tickets 0839, 0936)
       projectsKept: storageAsk.kept,
-      // Project's Picture and Printable chart open Export as the strip's button does, on their row (ticket 0843)
-      onSelectPanel: overlays.onSelectPanel,
+      // The row the Export panel opens on (ticket 0843)
       exportChoice: overlays.exportChoice,
     },
     /** The dialogs (AppDialogs): which one the registry shows, what each asks about, and its answers. */

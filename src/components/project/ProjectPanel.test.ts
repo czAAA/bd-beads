@@ -3,10 +3,11 @@ import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import ProjectPanel from './ProjectPanel.vue'
+import LoadingState from '../ui/LoadingState.vue'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { createProject } from '../../domain/createProject'
 import { en } from '../../i18n/en'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { TECHNIQUES } from '../../domain/weave'
 import { withLayers } from '../../testUtils/layerFields'
 import { withFrame } from '../../domain/frame'
@@ -44,16 +45,65 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}.openbeads`)
   })
 
-  it('leads to export in one Export row with the › mark, and names no picture or chart of its own (ticket 0956)', async () => {
+  it('unfolds the export rows under its Export row, with the fold mark, and folds them again (ticket 1058)', async () => {
     const wrapper = mountPanel()
     const row = wrapper.get('[data-testid="project-export"]')
     expect(row.text()).toBe(en.panels.project.exportHeading)
+    expect(row.attributes('aria-expanded')).toBe('false')
     expect(row.find('.panel-item__mark--sub').exists()).toBe(true)
-    expect(wrapper.text()).not.toContain(en.frame.exportPicture)
-    expect(wrapper.text()).not.toContain(en.frame.exportChart)
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
 
     await row.trigger('click')
-    expect(wrapper.emitted('export')).toEqual([[]])
+    expect(row.attributes('aria-expanded')).toBe('true')
+    expect(row.find('.panel-item__mark--sub').exists()).toBe(false)
+    const rows = wrapper.get('[data-testid="project-export-rows"]')
+    expect(row.attributes('aria-controls')).toBe(rows.attributes('id'))
+    for (const id of ['export-png', 'export-pdf', 'export-large-beads', 'export-row-by-row']) expect(rows.find(`[data-testid="${id}"]`).exists()).toBe(true)
+    expect(rows.text()).toContain(en.frame.exportQuality)
+    // No Letters, as in the Export panel.
+    expect(rows.text()).not.toContain(en.frame.lettersLabel)
+    // It sits between Duplicate and Clear all beads.
+    const html = wrapper.html()
+    expect(html.indexOf('project-duplicate')).toBeLessThan(html.indexOf('project-export-rows'))
+    expect(html.indexOf('project-export-rows')).toBeLessThan(html.indexOf('project-clear'))
+
+    await row.trigger('click')
+    expect(row.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="project-export-rows"]').exists()).toBe(false)
+  })
+
+  it('opens folded every time, keeping the unfolded export rows nowhere (ticket 1058)', async () => {
+    const first = mountPanel()
+    await first.get('[data-testid="project-export"]').trigger('click')
+    first.unmount()
+
+    const again = mountPanel()
+    expect(again.get('[data-testid="project-export"]').attributes('aria-expanded')).toBe('false')
+    expect(again.find('[data-testid="project-export-rows"]').exists()).toBe(false)
+  })
+
+  it('saves from the unfolded rows, which wait while an export runs (ticket 1058)', async () => {
+    const wrapper = mountPanel()
+    await wrapper.get('[data-testid="project-export"]').trigger('click')
+    await wrapper.get('[data-testid="export-png"]').trigger('click')
+    await wrapper.get('[data-testid="export-pdf"]').trigger('click')
+    expect(wrapper.emitted('export-png')).toEqual([[]])
+    expect(wrapper.emitted('export-pdf')).toEqual([[]])
+
+    await wrapper.setProps({ exporting: 'png' })
+    expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="project-export-rows"]').findComponent(LoadingState).exists()).toBe(true)
+  })
+
+  it('with no Frame, unfolds the line and the ways to set one, as the Export panel does (ticket 1058)', async () => {
+    const wrapper = mountPanel({ project: withFrameSheet(project, undefined) })
+    await wrapper.get('[data-testid="project-export"]').trigger('click')
+    const rows = wrapper.get('[data-testid="project-export-rows"]')
+    expect(rows.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
+    expect(rows.find('[data-testid="export-png"]').exists()).toBe(false)
+
+    await rows.get('[data-testid="export-select-frame"]').trigger('click')
+    expect(wrapper.emitted('select-frame')).toEqual([[]])
   })
 
   it('names the last saved file on the Save row, and offers Save as only where the browser can link a file (ADR 0090)', async () => {

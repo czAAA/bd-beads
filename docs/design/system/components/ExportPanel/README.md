@@ -54,7 +54,7 @@ Every string is the Frame panel's: Export, Picture, Printable chart, Export qual
 
 **From the Progress bar too (ticket 0847; ProgressBar card):** with beads and no Frame, its Fit a Frame and export a picture fits the Frame and opens this panel hung from the strip's button, focused on Picture.
 
-**From the Project panel too (tickets 0843, 0956; ProjectPanel card):** its one Export row (›) opens this panel as the strip's button does, hung from it; with no Frame the panel opens as usual, on its line and Select a frame. This panel is the one home of export: a row named Picture saves the picture at once wherever it is pressed, here and in the Frame panel's export section.
+**In the Project panel too (tickets 0956, 1058; ProjectPanel card):** its Export row unfolds this panel's rows in place, under the row, without the title line: the same shared component (ExportRows), with or without a Frame. It does not open this panel. A row named Picture saves the picture at once wherever it is pressed: here, under the Project panel's Export row and in the Frame panel's export section. The strip's Export button, the margin's Export button and the Progress bar's Fit a Frame and export a picture open this panel.
 
 **From the margin too (ticket 0655; MarginSheet card):** the Frame's margin carries an Export button (`export`, ticket 0847) in its top band. It opens this same panel, hanging 4px under that button with right edges aligned, kept inside the screen.
 
