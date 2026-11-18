@@ -18,7 +18,7 @@ All three are subpanels (MenuPanel card): the header is the Back icon button and
 
 ## Card
 
-- A `button` with the picture on top and the caption under it: `elevated` fill, 1px `line-strong` edge, `radius-lg` (12px: a picture card is a box, larger than the 8px `radius-md` of controls), no padding round the picture.
+- A `button` with the picture on top and the caption under it: `elevated` fill, 1px `line-strong` edge, `radius-lg` (16px: a picture card is a box, larger than the 12px `radius-md` of controls), no padding round the picture.
 - **Picture well:** square, as wide as the column, `surface` fill, a 1px `line` under it. The column is the panel's width less two 16px gutters and the 12px gap: 173px in a 390px phone, 236px in the 520px desktop panel.
 - **Caption:** padding 10 12 12, 2px between lines. The name in `control`, `ink`. On a step 2 card, two `meta` lines in `muted`: the size the design is made for ("10 rounds", "part size 5", "7 wide · eu 54", "11 wide · wrist 16 cm") and its bead count ("165 beads", "87 beads each", "≈ 125 beads": ≈ where the count is an estimate). The Kaleidocycle's card has a third line between them, "one face of 4: 6 of 24 triangles", and counts the face, "810 beads a face" (ticket 0876). A step 1 card has one `meta` line, the count of options.
 - **Grid:** two columns at every width, 12px gap. The cards in a row take the tallest caption's height; text wraps, nothing is cut.

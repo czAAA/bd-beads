@@ -247,7 +247,7 @@ const keyLabel = computed(() =>
   color: var(--ink);
   background: var(--margin-title);
   border: 1px solid var(--margin-line);
-  border-radius: 0 0 var(--radius-sm) 0;
+  border-radius: 0 0 var(--margin-border-radius) 0;
 }
 
 .margin-title--compact {

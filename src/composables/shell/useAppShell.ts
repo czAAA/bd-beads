@@ -1,5 +1,4 @@
 import { computed, inject, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
-import { beadColorAt } from '../../domain/layerBeads'
 import { provideI18n } from '../../i18n/useI18n'
 import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
@@ -7,7 +6,7 @@ import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
-import { layerAt, type Layer } from '../../domain/layers'
+import type { Layer } from '../../domain/layers'
 import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads, selectionLayer } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { SheetArea } from '../tools/selectionBarPlacement'
@@ -22,8 +21,6 @@ import { useProjectManageFlow } from '../project/useProjectManageFlow'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
 import { useCanvasPointer } from '../canvas/useCanvasPointer'
-import { useBeadCursor } from '../canvas/useBeadCursor'
-import { colorName } from '../../i18n/colorName'
 import { useConvertImageFlow } from '../import/useConvertImageFlow'
 import { loadColorCatalog } from '../../services/colorCatalogs'
 import { useEdit } from '../project/useEdit'
@@ -55,6 +52,7 @@ import { useOverlayVisibility } from './useOverlayVisibility'
 import { useSignInPrompt } from './useSignInPrompt'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
+import { usePickColor } from '../tools/usePickColor'
 import { usePinchPan } from '../canvas/usePinchPan'
 import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
@@ -305,7 +303,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     cut: cutSelected,
     armPaste,
     dismissPaste: leavePasteMode,
-    refuse: refuseSelection,
     fill: fillSelection,
     tapPiece,
     selectAll: selectAllBeads,
@@ -605,17 +602,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** Pick color from canvas (ticket 398): the next press on a bead takes its color (an empty cell does nothing); a
-   * tool choice or Escape ends it. */
-  function pickColorAt(row: number, column: number, layer?: Layer): boolean {
-    if (!pickingColor.value) return false
-    const project = currentProject()
-    const hex = project ? beadColorAt(project, row, column, layer) : null
-    if (hex) {
-      pickingColor.value = false
-      onSelectCustomColor(hex)
-    }
-    return true
-  }
+   * tool choice or Escape ends it. takeColorAt is the same step without arming (ticket 1073). */
+  const { pickColorAt } = usePickColor({ picking: pickingColor, currentProject, onSelectCustomColor })
   provideColorPick({ picking: pickingColor, toggle: () => (pickingColor.value = !pickingColor.value) })
 
   /** On touch, Mirror mode, paste mode and Pick color say in a toast what to tap next (ticket 0845). */
@@ -635,7 +623,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
-  const { strokeMode, fillRefusals, endStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
+  const { strokeMode, fillRefusals, endStroke, endCancelledStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
     activeTool: () => activeTool.value,
@@ -643,6 +631,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     cancelSelectPress,
     mirror: () => mirror.setting.value,
     onScreen: canvasOnScreen,
+    colorUsed: onPaintColorUsed,
     showToast,
     messages,
   })
@@ -692,7 +681,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     tapPiece,
     beginOrCommitPress: (mode, color, row, column, layer) => {
       // Before the press, so the Palette's Undo step comes before the stroke's own.
-      if (mode === 'paint' && color) onPaintColorUsed(color)
+      // A Fill's color joins at its lift (ticket 1075): a press a hold takes over leaves nothing behind.
+      if (mode === 'paint' && color && activeTool.value !== 'fill') onPaintColorUsed(color)
       beginOrCommitPress(mode, color, row, column, layer)
     },
     paintStrokeCells,
@@ -726,31 +716,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     centreOn,
     visibleCentre,
     dialogs,
-  })
-  /** The keyboard's bead cursor on the Pattern (ticket 0942, ADR 0093): a key-press tap is the pointer's own press and
-   * release, Shift + arrows its Select drag. */
-  const beadCursor = useBeadCursor({
-    currentProject,
-    messages,
-    activeTool: () => activeTool.value,
-    selectedColorHex,
-    visibleCentre,
-    showBead: (bead) => {
-      const project = currentProject()
-      if (project) bringIntoView((surface) => surface.beadBox({ ...bead, rows: 1, columns: 1 }, layerAt(project, bead)), { jump: true })
-    },
-    tapsBeads: () => !frameFlow.settingFrame.value,
-    press: onCellPrimaryDown,
-    release: endStroke,
-    beginSelect: (row, column) => beginSelectPress(row, column, undefined, mirror.marking.value),
-    extendSelect: extendSelection,
-    refuseSelection,
-    leavePasteMode,
-    selection: () => selection.value,
-    hover: onCellHover,
-    hoverEnd: onHoverEnd,
-    colorWords: (hex) => (hex ? colorName(t.value, palette.value.byHex(hex)) : t.value.beadCursor.empty),
-    announce,
   })
 
   /** The Frame kept clear of the Frame panel while it is open (ticket 0971). */
@@ -1099,6 +1064,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       saveFailed,
       announcement,
       endStroke,
+      endCancelledStroke,
       onSaveProjectFile: exportFlow.onSave,
       /** The notice of a Project that didn't open last time (ticket 0716), with its Remove and Export. */
       missedProject,
@@ -1228,12 +1194,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onCellsPrimaryMove,
       onCellHover,
       onHoverEnd,
-      /** The keyboard's bead cursor (ADR 0093): where it is while it shows, and the Pattern's focus and keys. */
-      beadCursor: computed(() => (beadCursor.shown.value ? beadCursor.cursor.value : undefined)),
-      onPatternKeyboardFocus: beadCursor.onKeyboardFocus,
-      onPatternBlur: beadCursor.onBlur,
-      onPatternKey: beadCursor.onKey,
-      onPatternKeyUp: beadCursor.onKeyUp,
       selection,
       selectionRefusals,
       fillRefusals,

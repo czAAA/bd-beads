@@ -21,6 +21,7 @@ function setup(tool: Tool = 'paint', initial?: Project, mirror: MirrorSetting = 
   const endSelectPress = vi.fn()
   const cancelSelectPress = vi.fn()
   const showToast = vi.fn()
+  const colorUsed = vi.fn()
   const stroke = usePaintStroke({
     currentProject: harness.currentProject,
     edit: harness.editing,
@@ -29,11 +30,12 @@ function setup(tool: Tool = 'paint', initial?: Project, mirror: MirrorSetting = 
     cancelSelectPress,
     mirror: () => mirror,
     onScreen: () => onScreen,
+    colorUsed,
     showToast,
     messages: () => en,
   })
   const at = (row: number, column: number) => beadColorAt(harness.project, frameOf(harness.project)!.row + row, frameOf(harness.project)!.column + column)
-  return { stroke, harness, endSelectPress, cancelSelectPress, showToast, at, frame: frameOf(harness.project)! }
+  return { stroke, harness, endSelectPress, cancelSelectPress, showToast, colorUsed, at, frame: frameOf(harness.project)! }
 }
 
 describe('usePaintStroke', () => {
@@ -148,6 +150,7 @@ describe('usePaintStroke', () => {
       const { stroke, harness, at, frame } = setup('fill', fourWide(), leftRight)
       harness.edit('drawing', (project) => paintAt(project, [{ row: frame.row, column: frame.column }, { row: frame.row, column: frame.column + 1 }], '#0000ff'))
       stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+      stroke.endStroke()
 
       expect([0, 1, 2, 3].map((column) => at(0, column))).toEqual(['#00ff00', '#00ff00', null, null])
       expect(at(1, 0)).toBeNull()
@@ -165,6 +168,7 @@ describe('usePaintStroke', () => {
       const { stroke, harness, frame } = setup('fill', six, mirror)
       harness.edit('drawing', (project) => paintAt(project, [{ row: frame.row, column: frame.column }, { row: frame.row, column: frame.column + 1 }], '#0000ff'))
       stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+      stroke.endStroke()
 
       expect(frameOf(harness.project)!.beads).toEqual({ 0: { 0: '#00ff00', 1: '#00ff00' } })
     })
@@ -179,6 +183,7 @@ describe('usePaintStroke', () => {
       const { stroke, harness } = setup('fill', painted, turns)
 
       stroke.beginOrCommitPress('paint', '#00ff00', row + 4, column, 'frame')
+      stroke.endStroke()
 
       expect(frameOf(harness.project)!.beads).toEqual({ 4: { 0: '#00ff00' } })
     })
@@ -209,6 +214,7 @@ describe('usePaintStroke', () => {
       const { stroke: fill, harness: filled } = setup('fill', framed, inArea)
       filled.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 2 }, { row: 20, column: 3 }], '#0000ff'))
       fill.beginOrCommitPress('paint', '#00ff00', 20, 2)
+      fill.endStroke()
       expect(beadsOfLayer(filled.project, 'canvas')[20]).toEqual({ 2: '#00ff00', 3: '#00ff00' })
     })
 
@@ -219,6 +225,7 @@ describe('usePaintStroke', () => {
       harness.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 12 }, { row: 20, column: 13 }], '#0000ff'))
 
       stroke.beginOrCommitPress('paint', '#00ff00', 20, 12)
+      stroke.endStroke()
 
       expect(beadsOfLayer(harness.project, 'canvas')[20]).toEqual({ 12: '#00ff00', 13: '#0000ff' })
     })
@@ -231,15 +238,63 @@ describe('usePaintStroke', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('commits Fill immediately as one undo step, without starting a stroke', () => {
-    const { stroke, harness, at, frame } = setup('fill')
-    stroke.beginOrCommitPress('paint', '#00ff00', frame.row + 1, frame.column + 1)
-    expect(stroke.strokeMode.value).toBeNull()
-    expect(at(1, 1)).toBe('#00ff00')
-    expect(harness.history.canUndo.value).toBe(true)
+  describe('Fill lands at the lift (ticket 1075)', () => {
+    it('changes nothing at the press and fills at the lift as one undo step, without starting a stroke', () => {
+      const { stroke, harness, at, frame, colorUsed } = setup('fill')
+      stroke.beginOrCommitPress('paint', '#00ff00', frame.row + 1, frame.column + 1)
+      expect(stroke.strokeMode.value).toBeNull()
+      expect(at(1, 1)).toBeNull()
+      expect(harness.history.canUndo.value).toBe(false)
+      expect(colorUsed).not.toHaveBeenCalled()
 
-    harness.history.onUndo()
-    expect(at(1, 1)).toBeNull()
+      stroke.endStroke()
+      expect(at(1, 1)).toBe('#00ff00')
+      expect(harness.history.canUndo.value).toBe(true)
+      expect(colorUsed).toHaveBeenCalledWith('#00ff00')
+
+      harness.history.onUndo()
+      expect(at(1, 1)).toBeNull()
+    })
+
+    it('fills the pressed position once: a second lift (mouseup after pointerup) adds no step', () => {
+      const { stroke, harness, at, frame } = setup('fill')
+      stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+      stroke.endStroke()
+      stroke.endStroke()
+
+      harness.history.onUndo()
+      expect(at(0, 0)).toBeNull()
+      expect(harness.history.canUndo.value).toBe(false)
+    })
+
+    it('fills nothing for a press that never lifts as a press: a pinch or a cancelled pointer', () => {
+      const { stroke, harness, at, frame, colorUsed } = setup('fill')
+
+      stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+      stroke.cancelStroke()
+      stroke.endStroke()
+      stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+      stroke.endCancelledStroke()
+      stroke.endStroke()
+
+      expect(at(0, 0)).toBeNull()
+      expect(harness.history.canUndo.value).toBe(false)
+      expect(colorUsed).not.toHaveBeenCalled()
+    })
+
+    it('says a refused Fill at the lift, not at the press', () => {
+      const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+      const far = withLayers(base, { frame: { ...frameOf(base)!, row: 2000, column: 2000 } })
+      const { stroke, showToast } = setup('fill', far, MIRROR_OFF, { row: -10, column: -10, rows: 30, columns: 30 })
+
+      stroke.beginOrCommitPress('paint', '#00ff00', 10, 10)
+      expect(stroke.fillRefusals.value).toBe(0)
+      expect(showToast).not.toHaveBeenCalled()
+
+      stroke.endStroke()
+      expect(stroke.fillRefusals.value).toBe(1)
+      expect(showToast).toHaveBeenCalledWith('fill-refused', 'Nothing encloses this spot. Select an area to fill it.', 'info')
+    })
   })
 
   it('erases just the pressed bead under the Eraser, not its same-color neighbours, as one undo step', () => {
@@ -257,9 +312,11 @@ describe('usePaintStroke', () => {
   it('flood-erases the connected region in one click under Fill, as one undo step', () => {
     const { stroke, harness, at, frame } = setup('fill')
     stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+    stroke.endStroke()
     expect(at(0, 2)).toBe('#00ff00')
 
     stroke.beginOrCommitPress('erase', null, frame.row + 1, frame.column + 1)
+    stroke.endStroke()
     expect(stroke.strokeMode.value).toBeNull()
     expect(at(0, 0)).toBeNull()
     expect(at(2, 2)).toBeNull()
@@ -318,6 +375,7 @@ describe('usePaintStroke', () => {
     it('fills and erases the layer the press is on, as one undo step each', () => {
       const { stroke, harness } = setup('fill', over())
       stroke.beginOrCommitPress('paint', '#00ff00', 21, 21)
+      stroke.endStroke()
       expect(Object.values(frameOf(harness.project)!.beads).flatMap((row) => Object.keys(row))).toHaveLength(9)
       expect(beadsOfLayer(harness.project, 'canvas')).toEqual({})
 
@@ -357,6 +415,7 @@ describe('usePaintStroke', () => {
       const { stroke, harness, showToast } = setup('fill', open(ring(5)), MIRROR_OFF, { row: -10, column: -10, rows: 30, columns: 30 })
 
       stroke.beginOrCommitPress('paint', '#00ff00', 2, 2)
+      stroke.endStroke()
 
       expect(beadsOfLayer(harness.project, 'canvas')[2]![2]).toBe('#00ff00')
       expect(harness.history.canUndo.value).toBe(true)
@@ -369,6 +428,7 @@ describe('usePaintStroke', () => {
       const before = harness.project
 
       stroke.beginOrCommitPress('paint', '#00ff00', 10, 10)
+      stroke.endStroke()
 
       expect(harness.project).toBe(before)
       expect(harness.history.canUndo.value).toBe(false)
@@ -382,6 +442,7 @@ describe('usePaintStroke', () => {
       const before = harness.project
 
       stroke.beginOrCommitPress('paint', '#00ff00', 10, 10)
+      stroke.endStroke()
 
       expect(harness.project).toBe(before)
       expect(stroke.fillRefusals.value).toBe(1)
@@ -392,6 +453,7 @@ describe('usePaintStroke', () => {
       const { stroke, harness, showToast } = setup('fill', open(ring(503)), MIRROR_OFF, { row: -10, column: -10, rows: 600, columns: 600 })
 
       stroke.beginOrCommitPress('paint', '#00ff00', 250, 250)
+      stroke.endStroke()
 
       expect(harness.history.canUndo.value).toBe(false)
       expect(stroke.fillRefusals.value).toBe(1)

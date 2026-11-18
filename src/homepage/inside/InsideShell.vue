@@ -29,14 +29,14 @@ const wired = provideAppShell(memoryServices(props.projects), {
 })
 // Its Frame's sheet shrinks rather than go bare: the demo's view is set for its box and the tour presses the band.
 provideMarginLeastScale(MARGIN_PX.scale.demo)
-const { announcement, endStroke } = wired.shell
+const { announcement, endStroke, endCancelledStroke } = wired.shell
 
 /** The wiring, for the tour to work the demo through the same flows a press reaches. */
 defineExpose({ wired })
 </script>
 
 <template>
-  <div class="inside-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
+  <div class="inside-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endCancelledStroke">
     <p class="inside-shell__announcer" role="status" aria-live="polite">{{ announcement }}</p>
     <div class="inside-shell__body">
       <CanvasPanel />

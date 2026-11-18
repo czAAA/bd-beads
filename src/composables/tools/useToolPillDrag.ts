@@ -1,9 +1,7 @@
 import { onBeforeUnmount, ref, type Ref } from 'vue'
 import { ownPoint } from '../ui/cssZoom'
+import { DRAG_SLOP_PX } from '../../domain/dragSlop'
 import { nearestPillEdge, type PillPosition } from '../../domain/toolPill'
-
-/** A press that moves this far (px) before it lifts is a drag; less is still a tap (ToolPill card). */
-const PILL_DRAG_THRESHOLD_PX = 8
 
 /** Dragging the Tool pill to another edge (ticket 439, ADR 0046): after 8px the pill lifts and follows the pointer, snaps
  * to the nearest edge of `layer` (the drawing area) on release, and the click ending the drag is swallowed. A finger or
@@ -37,7 +35,7 @@ export function useToolPillDrag(
     const area = layer.value?.getBoundingClientRect()
     if (!pressed || event.pointerId !== pressed.id || !area) return
     if (!dragging.value) {
-      if (Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) < PILL_DRAG_THRESHOLD_PX) return
+      if (Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) < DRAG_SLOP_PX) return
       dragging.value = true
       pill.value?.setPointerCapture?.(pressed.id)
       deps.onStart()

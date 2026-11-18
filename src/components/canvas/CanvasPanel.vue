@@ -119,11 +119,6 @@ const {
   onCellsPrimaryMove,
   onCellHover,
   onHoverEnd,
-  beadCursor,
-  onPatternKeyboardFocus,
-  onPatternBlur,
-  onPatternKey,
-  onPatternKeyUp,
   onRotate,
   onRotateCanvas,
   onSelectAll,
@@ -496,11 +491,6 @@ const drawingStyle = computed(() => {
                 :fill-refusals="fillRefusals"
                 :label="projectLabel"
                 :reference="pictureBar.converting.value ? undefined : referenceImage.drawn.value"
-                :cursor="beadCursor"
-                @keyboard-focus="onPatternKeyboardFocus"
-                @cursor-blur="onPatternBlur"
-                @cursor-key="onPatternKey"
-                @cursor-key-up="onPatternKeyUp"
                 @surface-view="surfaceView = $event"
                 @cell-primary-down="onCellPrimaryDown"
                 @cell-primary-move="onCellPrimaryMove"
@@ -590,7 +580,7 @@ const drawingStyle = computed(() => {
                 :size="pictureBar.size.value"
                 :source="pictureBar.source.value"
                 :bead-name="pictureBar.hasCatalog.value ? pictureBar.beadName.value : undefined"
-                :photo-colors="pictureBar.photoColors.value"
+                :measured-from="pictureBar.measuredFrom.value"
                 :colors="pictureBar.colors.value"
                 :colors-max="pictureBar.colorsMax.value"
                 :swatches="pictureBar.conversion.value?.colors ?? []"

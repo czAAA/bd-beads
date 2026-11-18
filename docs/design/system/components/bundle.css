@@ -261,6 +261,9 @@
   --frame-edit-hit: 44px;
   --margin-border-inset: 10px;
   --margin-border-inset-compact: 6px;
+  --margin-sheet-radius: 12px;
+  --margin-border-radius: 6px;
+  --piece-line-radius: 6px;
   --margin-tool: 28px;
   --margin-tool-compact: 24px;
   --margin-title-row: 23px;
@@ -1057,16 +1060,16 @@ body {
 .bb-frame-margin { position: absolute; box-sizing: border-box; border: 1px dashed var(--line-strong); border-radius: 12px; pointer-events: none; opacity: 1; transition: opacity var(--duration-fast, 120ms) var(--ease-standard, ease); }
 .bb-frame-margin[hidden] { display: block; opacity: 0; }
 /* Ticket 0655: the margin as a drafting sheet (MarginSheet card) */
-.bb-margin-sheet { position: absolute; box-sizing: border-box; border-radius: var(--radius-lg, 12px); box-shadow: 0 0 0 1px var(--margin-line); }
+.bb-margin-sheet { position: absolute; box-sizing: border-box; border-radius: var(--margin-sheet-radius); box-shadow: 0 0 0 1px var(--margin-line); }
 .bb-margin-sheet--editing { outline: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 3px; }
-.bb-margin-border { position: absolute; inset: var(--margin-border-inset); border: 1px solid var(--margin-line); border-radius: var(--radius-sm, 6px); pointer-events: none; }
-.bb-margin-tool { width: var(--margin-tool); height: var(--margin-tool); border: 0; border-radius: var(--radius-md, 8px); background: transparent; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.bb-margin-border { position: absolute; inset: var(--margin-border-inset); border: 1px solid var(--margin-line); border-radius: var(--margin-border-radius); pointer-events: none; }
+.bb-margin-tool { width: var(--margin-tool); height: var(--margin-tool); border: 0; border-radius: var(--radius-md, 12px); background: transparent; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 .bb-margin-tool:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
 .bb-margin-tool[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
 /* Rotate Frame's copy (ticket 1016): the band's button lifted off the paper where it was pressed; fades on leaving. */
-.bb-margin-rotate-copy { position: absolute; display: flex; margin: calc(-1 * (var(--space-4, 4px) + 1px)); padding: var(--space-4, 4px); background: var(--elevated); border: 1px solid var(--overlay-line); border-radius: var(--radius-lg, 12px); box-shadow: var(--elevation-3); transition: opacity var(--rotate-copy-fade) var(--ease-in); }
+.bb-margin-rotate-copy { position: absolute; display: flex; margin: calc(-1 * (var(--space-4, 4px) + 1px)); padding: var(--space-4, 4px); background: var(--elevated); border: 1px solid var(--overlay-line); border-radius: var(--radius-lg, 16px); box-shadow: var(--elevation-3); transition: opacity var(--rotate-copy-fade) var(--ease-in); }
 .bb-margin-rotate-copy.is-leaving { opacity: 0; }
-.bb-margin-title { position: absolute; right: var(--margin-border-inset); bottom: var(--margin-border-inset); display: grid; grid-template-rows: repeat(2, var(--margin-title-row)); background: var(--margin-title); border: 1px solid var(--margin-line); border-radius: 0 0 var(--radius-sm, 6px) 0; }
+.bb-margin-title { position: absolute; right: var(--margin-border-inset); bottom: var(--margin-border-inset); display: grid; grid-template-rows: repeat(2, var(--margin-title-row)); background: var(--margin-title); border: 1px solid var(--margin-line); border-radius: 0 0 var(--margin-border-radius) 0; }
 .bb-margin-title > * { display: flex; align-items: center; gap: 4px; padding: 0 6px 0 8px; border-right: 1px solid var(--margin-line); border-bottom: 1px solid var(--margin-line); white-space: nowrap; min-width: 0; }
 [data-theme="contrast"] .bb-frame-margin { border-width: 2px; }
 .bb-frame-num { min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--elevated); font: 400 12px/20px var(--font-mono); color: var(--ink); cursor: pointer; }
@@ -1173,7 +1176,7 @@ body {
 [data-theme="contrast"] .qs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
 
 /* Tickets 0721, 0733: an unframed Schema's name as a tag above its Piece's top-left corner, the Piece outlined (SchemaTag card) */
-.bb-schema-border { position: absolute; box-sizing: border-box; border: 1px solid var(--muted); border-radius: var(--radius-sm); pointer-events: none; }
+.bb-schema-border { position: absolute; box-sizing: border-box; border: 1px solid var(--muted); border-radius: var(--piece-line-radius); pointer-events: none; }
 [data-theme="contrast"] .bb-schema-border { border-color: var(--ink); }
 .bb-schema-tag { position: absolute; display: flex; align-items: center; height: var(--schema-tag-height); max-width: var(--schema-tag-max-width); box-sizing: border-box; padding: 0 12px 0 calc(var(--schema-tag-end) + 8px); border: 0; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: var(--ink); color: var(--canvas); font: var(--schema-tag-name); white-space: nowrap; cursor: pointer; transition: background-color var(--duration-fast) var(--ease-out); clip-path: polygon(var(--schema-tag-end) 0, 100% 0, 100% 100%, var(--schema-tag-end) 100%, 0 calc(100% - var(--schema-tag-end)), 0 var(--schema-tag-end)); -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at var(--schema-tag-end) 50%, transparent 95%, #000 100%); mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at var(--schema-tag-end) 50%, transparent 95%, #000 100%); }
 .bb-schema-tag > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }

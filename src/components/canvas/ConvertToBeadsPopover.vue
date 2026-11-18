@@ -3,8 +3,10 @@ import { computed, onMounted, ref, useId } from 'vue'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { convertPopoverPlace, type ScreenBox } from '../../composables/canvas/pictureBarPlacement'
+import type { MeasuredColorSource } from '../../domain/colorCatalog'
 import type { ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { beadPaletteNote } from '../../i18n/measuredColorWords'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
@@ -25,8 +27,8 @@ const props = defineProps<{
   source: ColorSource
   /** The Bead's name, for its palette's choice, with a Color catalog. */
   beadName?: string
-  /** The Bead's catalog has colors read from the maker's photographs (ticket 0886): the palette's note says so. */
-  photoColors?: boolean
+  /** Where the Bead's catalog's colors were read from (tickets 0886, 1068): the palette's note says so. */
+  measuredFrom?: MeasuredColorSource
   colors: number
   colorsMax: number
   /** The bead colors the conversion uses, most beads first. */
@@ -62,7 +64,7 @@ const sourceOptions = computed(() => [
 ])
 /** Convert image's own Note for the choice in hand. */
 const sourceNote = computed(() => {
-  if (props.source === 'bead-colors') return fillBlanks(props.photoColors ? wizard.value.beadPaletteNotePhotos : wizard.value.beadPaletteNote, { bead: props.beadName ?? '' })
+  if (props.source === 'bead-colors') return fillBlanks(beadPaletteNote(t.value, props.measuredFrom), { bead: props.beadName ?? '' })
   return props.source === 'default' ? wizard.value.defaultPaletteNote : wizard.value.exactNote
 })
 const countText = computed(() => fillBlanks(words.value.colorsCount, { count: props.colors, max: props.colorsMax }))
