@@ -89,6 +89,27 @@ describe('Bead colors read from photographs (ticket 0886)', () => {
   })
 })
 
+describe('TOHO colors read from its sample cards (ticket 1068)', () => {
+  /** Codes as the TOHO catalog lists them, one catalog for Cube and Round: two opaque yellows that one generated swatch
+   * would draw alike (42 and 42B, Round only), with the colors read from their cards, and a red with none. */
+  const toho: ColorCatalog = {
+    id: 'toho',
+    codes: [
+      { code: '42', family: ['Yellow'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0', '1.5mm'], hex: '#fff31b' },
+      { code: '42B', family: ['Yellow'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#ffd008' },
+      { code: '45', family: ['Red'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0', '1.5mm'] },
+    ],
+  }
+  const matchOf = (size: string, pictureHex: string) =>
+    matchFoundColors(reducedPicture({ [pictureHex]: 5 }), beadColorTargets(toho, size, BUILT_IN_COLORS), choices())[0]!.match
+
+  it('matches each yellow to the code whose read color is nearest, on a Round and on a Cube', () => {
+    expect(matchOf('11/0', '#fff020')).toMatchObject({ code: '42', hex: '#fff31b' })
+    expect(matchOf('11/0', '#ffcc00')).toMatchObject({ code: '42B', hex: '#ffd008' })
+    expect(matchOf('1.5mm', '#ffcc00')).toMatchObject({ code: '42', hex: '#fff31b' })
+  })
+})
+
 describe('matchFoundColors', () => {
   it('snaps every found color to the Default Palette, most beads first', () => {
     const found = matchFoundColors(reduced({ '#0000ff': 1, '#ff0000': 4 }), defaults, choices())

@@ -691,6 +691,8 @@ export interface Translations {
       approximate: string
       /** The same note for a catalog with measured colors (ticket 0886): they were read from the maker's photographs. */
       photoColors: string
+      /** The same note for TOHO's catalog (ticket 1068): its colors were read from TOHO's sample cards. */
+      cardColors: string
       inPalette: string
       takenNote: string
       discontinued: string
@@ -1302,6 +1304,8 @@ export interface Translations {
       beadPaletteNote: string
       /** The Bead palette's note for a catalog with measured colors (ticket 0886), as beadPaletteNote. */
       beadPaletteNotePhotos: string
+      /** The same for a catalog whose colors were read from TOHO's sample cards (ticket 1068). */
+      beadPaletteNoteCards: string
       defaultPalette: string
       exact: string
       codesInSize: PluralForms
