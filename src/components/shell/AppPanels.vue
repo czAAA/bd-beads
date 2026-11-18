@@ -88,7 +88,6 @@ const {
   onShowButtonNames,
   onOpenFeedback,
   projectsKept,
-  onSelectPanel,
   exportChoice,
 } = usePanelsContext()
 
@@ -215,6 +214,7 @@ const chosenStarter = ref<StarterId>()
       :reference="referencePanel"
       :last-file-name="lastFileName"
       :can-save-as="canSaveAs"
+      :exporting="exporting"
       @rename="onRenameProject"
       @pick-reference-image="referenceImage.pick($event, 'panel')"
       @set-reference-opacity="referenceImage.setOpacity"
@@ -227,7 +227,10 @@ const chosenStarter = ref<StarterId>()
       @save="saveNow"
       @save-project-file="onSaveProjectFile"
       @save-project-file-as="onSaveProjectFileAs"
-      @export="onSelectPanel('export')"
+      @export-png="onExportPng"
+      @export-pdf="onExportPdf"
+      @fit="onFitFrame"
+      @select-frame="onSelectFrame('export')"
       @save-maker-name="onSaveMakerName"
       @duplicate="onRequestDuplicate"
       @clear="onRequestDeleteAll"
