@@ -7,7 +7,7 @@ export interface FreeListMeasure {
   viewport: number
   /** Where the list starts, from the room's top. */
   top: number
-  /** The first rows' height, all the tile shows before the page is scrolled. */
+  /** The rows it starts with (`freeStartRows`): their height, all the tile shows before the page is scrolled. */
   start: number
   /** The whole list's height. */
   full: number
@@ -15,12 +15,24 @@ export interface FreeListMeasure {
   below: number
 }
 
-/** The room kept clear under the tile at the screen's foot. */
-const FOOT_ROOM = 40
+/** The room kept clear under the tile at the screen's foot.
+ * @internal Exported for the browser test, which checks the tile's foot keeps it. */
+export const FOOT_ROOM = 40
 /** `--free-growth`: how many times as fast as the page the tile grows, until its foot reaches the screen's. */
 export const FREE_GROWTH = 2.5
-/** `--free-start-rows`: the rows the tile shows before the page is scrolled. */
+/** `--free-start-rows`: the fewest rows the tile shows before the page is scrolled (ticket 1060). */
 export const FREE_START_ROWS = 4
+
+/** Where the list would stand in its room before the page is scrolled: what the rows it starts with are worked out from. */
+export type FreeListPlace = Pick<FreeListMeasure, 'viewport' | 'top' | 'below'>
+
+/** How many rows the tile starts with (ticket 1060): as many whole rows as fit above the room kept clear at the screen's
+ * foot, never fewer than `least`, and never more than the list has. `rowBottoms` are each row's foot, from the list's top. */
+export function freeStartRows(place: FreeListPlace, rowBottoms: readonly number[], least = FREE_START_ROWS): number {
+  const room = place.viewport - FOOT_ROOM - place.top - place.below
+  const fit = rowBottoms.findIndex((bottom) => bottom > room + 0.5)
+  return Math.min(rowBottoms.length, Math.max(least, fit === -1 ? rowBottoms.length : fit))
+}
 
 /** How far the tile's foot can run down before it reaches the screen's. */
 function gapBelow(m: FreeListMeasure): number {
