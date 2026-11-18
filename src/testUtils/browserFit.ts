@@ -1,7 +1,7 @@
 import { createApp, defineComponent, h, type Component } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
-import { HOLD_MS } from '../domain/hold'
+import { TOOLTIP_HOLD_MS } from '../domain/hold'
 import type { Locale } from '../domain/locale'
 import { browserDevicePreferences } from '../services/devicePreferences'
 import { measureOpenBubble } from './hoverInPage'
@@ -100,8 +100,8 @@ export async function fitProblems(name: string, locale: FitLocale, width: number
   return unexplainedFit(name, locale, width, await misfitsNow())
 }
 
-/** The Tooltip's own long-press time (the app's one hold), with a margin. */
-const LONG_PRESS_MS = HOLD_MS + 100
+/** The Tooltip's own long-press time, with a margin. */
+const LONG_PRESS_MS = TOOLTIP_HOLD_MS + 100
 
 /** A finger held on the Tooltip's trigger past the long-press time; the clock is faked for the wait, as a real half
  * second per Tooltip and language would triple the run. `triggers` all open together. */

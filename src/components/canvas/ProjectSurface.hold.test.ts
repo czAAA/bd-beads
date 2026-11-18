@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import { DRAG_SLOP_PX } from '../../domain/dragSlop'
-import { HOLD_MS } from '../../domain/hold'
+import { CANVAS_HOLD_MS } from '../../domain/hold'
 import { MIRROR_OFF } from '../../domain/mirror'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import { recordingContext } from '../../testUtils/recordingContext'
@@ -80,14 +80,14 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
   it('in Pen mode a held pen asks for the ring and a held finger never does', async () => {
     const pen = await mountSurface({ inputMode: 'pen' })
     await pen.surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
     expect(pen.said).toEqual(OPENED)
     pen.wrapper.unmount()
 
     // A resting palm is a long, still touch.
     const finger = await mountSurface({ inputMode: 'pen' })
     await finger.surface.trigger('pointerdown', { ...AT, ...FINGER, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS * 10)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
     expect(finger.said).toEqual([])
     finger.wrapper.unmount()
   })
@@ -95,13 +95,13 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
   it('in Mouse mode a held finger asks for the ring and a held pen never does', async () => {
     const finger = await mountSurface({ inputMode: 'mouse' })
     await finger.surface.trigger('pointerdown', { ...AT, ...FINGER, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
     expect(finger.said).toEqual(OPENED)
     finger.wrapper.unmount()
 
     const pen = await mountSurface({ inputMode: 'mouse' })
     await pen.surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS * 10)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
     expect(pen.said).toEqual([])
     pen.wrapper.unmount()
   })
@@ -110,7 +110,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     for (const inputMode of ['mouse', 'pen']) {
       const { wrapper, surface, said } = await mountSurface({ inputMode })
       await surface.trigger('pointerdown', { ...AT, ...MOUSE, ...DOWN })
-      vi.advanceTimersByTime(HOLD_MS * 10)
+      vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
       expect(said).toEqual([])
       wrapper.unmount()
     }
@@ -122,7 +122,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     expect(wrapper.emitted('cell-primary-down')).toEqual([[3, 5]])
     expect(said).toEqual([['hold', POINT]])
 
-    vi.advanceTimersByTime(HOLD_MS - 1)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS - 1)
     expect(said).toEqual([['hold', POINT]])
 
     vi.advanceTimersByTime(1)
@@ -141,7 +141,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     for (const tool of tools) {
       const { wrapper, surface, said } = await mountSurface({ tools: tool })
       await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-      vi.advanceTimersByTime(HOLD_MS)
+      vi.advanceTimersByTime(CANVAS_HOLD_MS)
       expect(said, tool.tool).toEqual(OPENED)
       await nextTick()
       // The Hand's pan is dropped with the rest.
@@ -154,13 +154,13 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
   it('a move of the drag slop inside the hold is a stroke as today and opens nothing', async () => {
     const { wrapper, surface, said } = await mountSurface()
     await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS - 100)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS - 100)
     await surface.trigger('pointermove', { clientX: AT.clientX + DRAG_SLOP_PX, clientY: AT.clientY, ...PEN, buttons: 1 })
     expect(said).toEqual([['hold', POINT], ['hold']])
 
     // The stroke goes on, and resting later in it opens nothing.
     await surface.trigger('pointermove', { ...bead(3, 7), ...PEN, buttons: 1 })
-    vi.advanceTimersByTime(HOLD_MS * 10)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
     expect(wrapper.emitted('cells-primary-move')).toEqual([[[{ row: 3, column: 6 }, { row: 3, column: 7 }]]])
     expect(said).toEqual([['hold', POINT], ['hold']])
     wrapper.unmount()
@@ -170,7 +170,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     const { wrapper, surface, said } = await mountSurface()
     await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
     await surface.trigger('pointermove', { clientX: AT.clientX + DRAG_SLOP_PX - 1, clientY: AT.clientY, ...PEN, buttons: 1 })
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
     expect(said).toEqual(OPENED)
     wrapper.unmount()
   })
@@ -179,7 +179,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     const heard = await mountSurface({ inputMode: 'mouse' })
     await heard.surface.trigger('pointerdown', { ...AT, ...FINGER, ...DOWN })
     await heard.surface.trigger('pointerdown', { ...bead(8, 8), pointerType: 'touch', isPrimary: false, pointerId: 4, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS * 10)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
     expect(heard.said).toEqual([['hold', POINT], ['hold']])
     heard.wrapper.unmount()
 
@@ -187,7 +187,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     const told = await mountSurface({ inputMode: 'mouse', holdEnds: 0 })
     await told.surface.trigger('pointerdown', { ...AT, ...FINGER, ...DOWN })
     await told.wrapper.setProps({ holdEnds: 1 })
-    vi.advanceTimersByTime(HOLD_MS * 10)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
     expect(told.said).toEqual([['hold', POINT], ['hold']])
     told.wrapper.unmount()
   })
@@ -196,9 +196,9 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     for (const end of ['pointerup', 'pointercancel']) {
       const { wrapper, surface, said } = await mountSurface()
       await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-      vi.advanceTimersByTime(HOLD_MS - 1)
+      vi.advanceTimersByTime(CANVAS_HOLD_MS - 1)
       await surface.trigger(end, { ...PEN })
-      vi.advanceTimersByTime(HOLD_MS * 10)
+      vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
       expect(said, end).toEqual([['hold', POINT], ['hold']])
       wrapper.unmount()
     }
@@ -207,7 +207,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
   it('after the hold the pointer still down is no tool\'s: it draws and hovers nothing, and its lift ends it', async () => {
     const { wrapper, surface, said } = await mountSurface()
     await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
     const count = () => Object.fromEntries(Object.entries(wrapper.emitted()).filter(([name]) => /^cell/.test(name)).map(([name, calls]) => [name, calls.length]))
     const before = count()
 
@@ -225,7 +225,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
   it('never times a press a handle takes: the Selection\'s', async () => {
     const { wrapper, surface, said } = await mountSurface({ tools: SELECT, selection: AREA })
     await surface.trigger('pointerdown', { ...ON_HANDLE, ...PEN, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS * 10)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
     expect(wrapper.emitted('selection-press')!.map(([target]) => target)).toEqual([{ kind: 'handle', edges: ['bottom', 'left'] }])
     expect(said).toEqual([])
     wrapper.unmount()
@@ -247,7 +247,7 @@ describe('ProjectSurface: a hold inside an area opens the Radial toolbox (ticket
     expect(wrapper.emitted('selection-press')).toEqual([[{ kind: 'inside' }, { row: 1, column: 2 }]])
     expect(said).toEqual([['hold', INSIDE_POINT]])
 
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
     expect(said).toEqual(OPENED_INSIDE)
 
     await surface.trigger('pointermove', { ...bead(6, 9), ...PEN, buttons: 1 })
@@ -261,7 +261,7 @@ describe('ProjectSurface: a hold inside an area opens the Radial toolbox (ticket
     const { wrapper, surface, said } = await mountSurface({ tools: SELECT, selection: AREA })
     await surface.trigger('pointerdown', { ...INSIDE, ...PEN, ...DOWN })
     await surface.trigger('pointermove', { ...bead(4, 6), ...PEN, buttons: 1 })
-    vi.advanceTimersByTime(HOLD_MS * 10)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
     await surface.trigger('pointerup', { ...PEN })
     expect(said).toEqual([['hold', INSIDE_POINT], ['hold']])
     expect(wrapper.emitted('selection-drag')).toEqual([[{ row: 4, column: 6 }]])
@@ -274,7 +274,7 @@ describe('ProjectSurface: a hold inside an area opens the Radial toolbox (ticket
     const { wrapper, surface, said } = await mountSurface({ tools: SELECT, selection: AREA, inputMode: 'mouse' })
     await surface.trigger('pointerdown', { ...INSIDE, ...FINGER, ...DOWN })
     await surface.trigger('pointerup', { ...FINGER })
-    vi.advanceTimersByTime(HOLD_MS * 10)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
     expect(said).toEqual([['hold', INSIDE_POINT], ['hold']])
     expect(wrapper.emitted('selection-release')).toHaveLength(1)
     wrapper.unmount()
@@ -284,7 +284,7 @@ describe('ProjectSurface: a hold inside an area opens the Radial toolbox (ticket
     for (const [pointer, extra] of [[MOUSE, { inputMode: 'mouse' }], [PEN, { holdOpens: false }]] as const) {
       const { wrapper, surface, said } = await mountSurface({ tools: SELECT, selection: AREA, ...extra })
       await surface.trigger('pointerdown', { ...INSIDE, ...pointer, ...DOWN })
-      vi.advanceTimersByTime(HOLD_MS * 10)
+      vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
       expect(wrapper.emitted('selection-press')).toHaveLength(1)
       expect(said).toEqual([])
       wrapper.unmount()
@@ -297,7 +297,7 @@ describe('ProjectSurface: where the ring would not open', () => {
     const { wrapper, surface, said } = await mountSurface()
     await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
     await wrapper.setProps({ holdOpens: false })
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
     expect(said).toEqual([['hold', POINT], ['hold']])
     wrapper.unmount()
   })
@@ -306,7 +306,7 @@ describe('ProjectSurface: where the ring would not open', () => {
     for (const extra of [{ holdOpens: false }, { tools: can({ tool: 'paint', picking: true }) }]) {
       const { wrapper, surface, said } = await mountSurface(extra)
       await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-      vi.advanceTimersByTime(HOLD_MS * 10)
+      vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
       expect(said).toEqual([])
       wrapper.unmount()
     }
@@ -319,7 +319,7 @@ describe('ProjectSurface: the slide after a hold (ticket 1077)', () => {
     const slid: unknown[][] = []
     const mounted = await mountSurface({ onSlide: (...at: unknown[]) => slid.push(['slide', ...at]), onSlideLift: (...at: unknown[]) => slid.push(['slide-lift', ...at]) })
     await mounted.surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
     return { ...mounted, slid }
   }
   const right = (px: number) => ({ clientX: AT.clientX + px, clientY: AT.clientY })
@@ -354,7 +354,7 @@ describe('ProjectSurface: the slide after a hold (ticket 1077)', () => {
     await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
     // The pen drifts during the hold, short of a stroke.
     await surface.trigger('pointermove', { ...right(DRAG_SLOP_PX - 1), ...PEN, buttons: 1 })
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
     await surface.trigger('pointermove', { ...right(DRAG_SLOP_PX + 2), ...PEN, buttons: 1 })
     await surface.trigger('pointerup', { ...right(DRAG_SLOP_PX + 2), ...PEN })
     expect(slid).toEqual([])

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { HOLD_MS } from './domain/hold'
+import { CANVAS_HOLD_MS } from './domain/hold'
 import { mountWithProject } from './testUtils/seedProject'
 import { beadColor, beadPoint, holdBead, hoverBead, outlinedBead, pressBead, rightClickBead } from './testUtils/beads'
 import { pickTool, pressBar, toolState } from './testUtils/pill'
@@ -141,7 +141,7 @@ describe('the Radial toolbox', () => {
       await surface.trigger('pointerdown', { ...finger, clientX: middle.clientX + half - 1, button: 0, buttons: 1 })
       await surface.trigger('pointermove', { ...finger, clientX: middle.clientX + half + 1, buttons: 1 })
       stepped()
-      vi.advanceTimersByTime(HOLD_MS)
+      vi.advanceTimersByTime(CANVAS_HOLD_MS)
     } finally {
       vi.useRealTimers()
     }

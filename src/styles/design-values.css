@@ -392,7 +392,7 @@
   --ease-out: cubic-bezier(.2, .8, .2, 1);
   --ease-in: cubic-bezier(.4, 0, 1, 1);
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
-  --hold-duration: 500ms; /* RadialToolbox card (ticket 1063): how long a hold is, on the Canvas for the ring and on a control for its Tooltip. */
+  --hold-duration: 450ms; /* RadialToolbox card (ticket 1063): how long a hold on the Canvas is before the ring opens (a control's Tooltip has its own long-press, 500ms). */
   --hold-quiet: 150ms; /* RadialToolbox card (ticket 1063): how long a hold on the Canvas shows nothing, so a tap never shows the hairline. */
   --radial-out: 150ms; /* RadialToolbox card (ticket 1064): the ring fades out, on --ease-in; --duration-fast under reduced motion. */
   /* ConvertImage card: outside the frame the picture is dimmed, black at 45% */

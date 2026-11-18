@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
-import { HOLD_MS } from '../../domain/hold'
+import { TOOLTIP_HOLD_MS } from '../../domain/hold'
 import { cssZoomOf } from '../../composables/ui/cssZoom'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
@@ -11,7 +11,7 @@ import type { TooltipProps } from './tooltipProps'
 
 // The design system's Tooltip (tickets 157, 327, 453; Menu card): name in bold, optional `hotkey` and `body`. Shows on
 // hover held HOVER_DELAY_MS (not again after a press until the pointer leaves), keyboard focus, a touch/pen press held
-// HOLD_MS (ticket 166, the Canvas's hold too) or a click on a disabled or `opensOnClick` control. Never clipped: a top-layer popover.
+// TOOLTIP_HOLD_MS (ticket 166) or a click on a disabled or `opensOnClick` control. Never clipped: a top-layer popover.
 const props = withDefaults(defineProps<TooltipProps>(), {
   body: undefined,
   placement: 'bottom',
@@ -211,7 +211,7 @@ function onPointerDown(event: PointerEvent) {
       longPressTimer = undefined
       heldOpen = true
       show()
-    }, HOLD_MS)
+    }, TOOLTIP_HOLD_MS)
   }
 }
 

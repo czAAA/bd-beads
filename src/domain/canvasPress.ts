@@ -1,5 +1,5 @@
 import { DRAG_SLOP_PX } from './dragSlop'
-import { HOLD_MS } from './hold'
+import { CANVAS_HOLD_MS } from './hold'
 import { pointerDraws, type InputMode } from './inputMode'
 
 /** What a press on the Canvas is so far (spec 1072, "what a press becomes"). The right button: */
@@ -59,7 +59,7 @@ function armedLift(over: RingPart | undefined): CanvasPress {
 
 /** What a press becomes at each step (tickets 1074, 1064, 1065, 1077; ADR 0098). The right button waits, pans once
  * moved `DRAG_SLOP_PX`, or opens the ring at its lift. The drawing pointer is held: moved as far or joined by a finger
- * it is a stroke, still for `HOLD_MS` it slides, armed once moved as far again. None for a press it does not decide. */
+ * it is a stroke, still for `CANVAS_HOLD_MS` it slides, armed once moved as far again. None for a press it does not decide. */
 export function pressBecomes(press: CanvasPress, step: Exclude<CanvasPressStep, { type: 'down' }>): CanvasPress
 export function pressBecomes(press: CanvasPress | undefined, step: CanvasPressStep): CanvasPress | undefined
 export function pressBecomes(press: CanvasPress | undefined, step: CanvasPressStep): CanvasPress | undefined {
@@ -67,7 +67,7 @@ export function pressBecomes(press: CanvasPress | undefined, step: CanvasPressSt
   if (press === undefined) return undefined
   if (step.type === 'lift') return press === 'waits' ? 'ring' : press === 'armed' ? armedLift(step.over) : 'nothing'
   if (step.type === 'finger') return press === 'held' ? 'stroke' : press
-  if (step.type === 'time') return press === 'held' && step.held >= HOLD_MS ? 'sliding' : press
+  if (step.type === 'time') return press === 'held' && step.held >= CANVAS_HOLD_MS ? 'sliding' : press
   if (step.moved < DRAG_SLOP_PX) return press
   return press === 'waits' ? 'pan' : press === 'held' ? 'stroke' : press === 'sliding' ? 'armed' : press
 }

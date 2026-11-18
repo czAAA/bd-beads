@@ -6,7 +6,7 @@ import { footprintOf } from '../../../domain/footprint'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
 import type { GridPosition, Layer, PreviewCell } from '../../../domain/grid'
-import { HOLD_MS } from '../../../domain/hold'
+import { CANVAS_HOLD_MS } from '../../../domain/hold'
 import { pointerDraws, type Handedness, type InputMode } from '../../../domain/inputMode'
 import { beadColorAt } from '../../../domain/layerBeads'
 import { isInFinishedRow } from '../../../domain/rowProgress'
@@ -427,7 +427,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   function timeHold(event: PointerEvent): void {
     clearTimeout(heldPress?.timer)
     const at = { x: event.clientX, y: event.clientY }
-    heldPress = { id: event.pointerId, ...at, is: 'held', timer: setTimeout(completeHold, HOLD_MS), at }
+    heldPress = { id: event.pointerId, ...at, is: 'held', timer: setTimeout(completeHold, CANVAS_HOLD_MS), at }
     emit('hold', { x: event.clientX, y: event.clientY })
   }
 
@@ -448,7 +448,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   function completeHold(): void {
     // The ring would no longer open (the Canvas turned read-only meanwhile): the press goes on as it was.
     if (!props.holdOpens) return stepHold({ type: 'finger' })
-    stepHold({ type: 'time', held: HOLD_MS })
+    stepHold({ type: 'time', held: CANVAS_HOLD_MS })
     if (heldPress?.is !== 'sliding') return
     heldPointer = undefined
     stroke = undefined

@@ -212,7 +212,7 @@
   --pill-tile-outline: 1.5px;
   --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink);
   --radial-swatch: 1.5rem; /* RadialToolbox card: a recent colour's round swatch on the ring, 24px. */
-  --hold-duration: 500ms; /* RadialToolbox card: how long a hold is, on the Canvas for the ring and on a control for its Tooltip. */
+  --hold-duration: 450ms; /* RadialToolbox card: how long a hold on the Canvas is before the ring opens (a control's Tooltip has its own long-press, 500ms). */
   --hold-quiet: 150ms; /* RadialToolbox card: how long a hold on the Canvas shows nothing. */
   --radial-out: 150ms; /* RadialToolbox card: the ring fades out, on --ease-in; --duration-fast under reduced motion. */
   --pill-tile-focus-offset: 1px;

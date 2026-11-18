@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { HOLD_MS } from '../domain/hold'
+import { CANVAS_HOLD_MS } from '../domain/hold'
 import { beadColorAt } from '../domain/layerBeads'
 import { projectDimensions } from '../domain/projectExtent'
 import { rowProgressOf, rowProgressOn } from '../domain/rowProgress'
@@ -94,7 +94,7 @@ export async function holdBead(wrapper: Anywhere, at: BeadAt, slide?: { x: numbe
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
   try {
     await pressBead(wrapper, at, { pointerType: 'touch' })
-    vi.advanceTimersByTime(HOLD_MS)
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
   } finally {
     vi.useRealTimers()
   }
