@@ -129,18 +129,19 @@ describe('the watchdog', () => {
       expect(body).toContain('Worker errors today (this Worker): 999 (warn level 10)')
     }))
 
-  it("applies dev's levels to dev and production's to production", async () => {
+  it("applies each Worker's own levels, as its dashboard variables set them", async () => {
     const today = { requests: 2000, rowsWritten: 2000 }
     await withWatchdog({ env: 'dev', today }, async (worker) => {
       await worker.scheduled(NOON)
       expect(onePing(worker).url).toBe(`${PING}/fail`)
     })
-    await withWatchdog({ env: 'production', today }, async (worker) => {
+    const vars = { WARN_API_REQUESTS: 5000, WARN_D1_ROWS_WRITTEN: '5000' }
+    await withWatchdog({ env: 'production', today, vars }, async (worker) => {
       await worker.scheduled(NOON)
       const ping = onePing(worker)
       expect(ping.url).toBe(PING)
       expect(ping.body).toContain('bd-beads watchdog, production Worker')
-      expect(ping.body).toContain('API requests today (whole account): 2,000 (warn level 55,000)')
+      expect(ping.body).toContain('API requests today (whole account): 2,000 (warn level 5,000)')
     })
   })
 
@@ -197,13 +198,15 @@ describe('the watchdog', () => {
     })
   })
 
-  it('reports a level that is not a number instead of never warning', () =>
-    withWatchdog({ vars: { WARN_API_REQUESTS: 'lots' } }, async (worker) => {
-      await worker.scheduled(NOON)
-      const ping = onePing(worker)
-      expect(ping.url).toBe(`${PING}/fail`)
-      expect(ping.body).toContain('API requests today (dev Worker only): its level WARN_API_REQUESTS is not a number')
-    }))
+  for (const [why, level] of [['not a number', 'lots'], ['not set', undefined]] as const) {
+    it(`reports a level that is ${why} instead of never warning`, () =>
+      withWatchdog({ vars: { WARN_API_REQUESTS: level } }, async (worker) => {
+        await worker.scheduled(NOON)
+        const ping = onePing(worker)
+        expect(ping.url).toBe(`${PING}/fail`)
+        expect(ping.body).toContain('API requests today (dev Worker only): its level WARN_API_REQUESTS is not a number')
+      }))
+  }
 
   it('runs the daily hook on the first run after 00:00 UTC only', () =>
     withWatchdog({}, async (worker) => {

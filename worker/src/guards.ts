@@ -32,17 +32,19 @@ export function turnstile(): Guard {
 }
 
 /** Refuses `413 too-large` (and the cap) a body over `cap` bytes: at once by declared length, else as the streamed
- * bytes pass it (`readBody` and the stores, body.ts). `cap` may depend on the request (the owner's plan). */
+ * bytes pass it (`readBody` and the stores, body.ts). `cap` may depend on the request (the owner's plan). A cap that
+ * isn't a number (a dashboard variable missing or mistyped) takes nothing: the safe reading. */
 export function sizeCap(cap: (rc: RequestContext) => number): Guard {
   return (rc) => {
-    const bytes = cap(rc)
+    const set = cap(rc)
+    const bytes = set >= 0 ? set : 0
     rc.bodyCap = bytes
     const declared = Number(rc.request.headers.get('Content-Length') ?? Number.NaN)
     if (declared > bytes) throw new ApiError('too-large', { cap: bytes })
   }
 }
 
-/** Refuses `507 storage-full` uploads to the blobs database past `BLOBS_STORAGE_LIMIT_MB`, under D1's 500 MB, so
+/** Refuses `507 storage-full` uploads to the blobs database past `BLOBS_STORAGE_LIMIT_MB`, under D1's size limit, so
  * deletes and View-link keepalive writes still fit (spec 385). Only on routes that add to that database; R2 has no
  * such limit. */
 export function blobStorageLimit(): Guard {

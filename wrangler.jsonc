@@ -3,11 +3,11 @@
 // `--env dev` or `--env production` (docs/deploy.md). Bindings and variables are NOT inherited between environments,
 // so each lists its own.
 //
-// Variables the maintainer sets in the dashboard, DISABLED_FEATURES above all, are never declared here: `keep_vars`
-// leaves them alone on deploy, but a value declared here would be put back by every deploy. Secrets (Turnstile key,
-// Healthchecks ping URL, analytics token, Google client secret) are set with `wrangler secret put`, never here.
-//
-// Sizes are in MB of 1,048,576 bytes; counts are per UTC day. The warn levels are spec 385's table.
+// Variables the maintainer sets in the dashboard are never declared here: `keep_vars` leaves them alone on deploy, but
+// a value declared here would be put back by every deploy. They are DISABLED_FEATURES, and every limit and warn level
+// (FEEDBACK_DAILY_LIMIT, UPLOAD_CAP_*, BLOBS_STORAGE_LIMIT_MB, WARN_*; their values are in the private runbook, and one
+// missing refuses or warns, worker/src/env.ts). Secrets (Turnstile key, Healthchecks ping URL, analytics token, Google
+// client secret) are set with `wrangler secret put`, never here.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bd-beads",
@@ -64,23 +64,7 @@
         "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
         // ADR 0081: the private repo a Report from the Feedback sheet becomes an issue in, the same for both Workers.
         // Its token is the secret GITHUB_TOKEN.
-        "FEEDBACK_REPO": "czAAA/bd-beads-docs",
-        // Ticket 1051: Reports this Worker takes per UTC day; past it the sheet says temporarily unavailable and the
-        // watchdog reports it. The per-minute limits below stop a burst, this a slow flood.
-        "FEEDBACK_DAILY_LIMIT": 30,
-        // Upload caps (ticket 323 sets the final numbers): just under D1's 2,000,000-byte row, and under Cloudflare's
-        // 100 MB request body.
-        "UPLOAD_CAP_D1_BYTES": 1990000,
-        "UPLOAD_CAP_R2_MB": 90,
-        // Uploads to the blobs database are refused with 507 storage-full past this size.
-        "BLOBS_STORAGE_LIMIT_MB": 50,
-        // Warn levels: the watchdog pings Healthchecks /fail when one is passed.
-        "WARN_API_REQUESTS": 1000,
-        "WARN_D1_ROWS_WRITTEN": 1000,
-        "WARN_BLOBS_DB_MB": 25,
-        "WARN_CORE_DB_MB": 25,
-        "WARN_R2_STORAGE_MB": 25,
-        "WARN_WORKER_ERRORS": 10
+        "FEEDBACK_REPO": "czAAA/bd-beads-docs"
       },
       "d1_databases": [
         {
@@ -124,17 +108,7 @@
         "BLOBS_BUCKET_NAME": "bd-beads",
         "GOOGLE_CLIENT_ID": "616858853393-fsl5tbh3829ejhh7vb4331rdoqk3m62v.apps.googleusercontent.com",
         "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
-        "FEEDBACK_REPO": "czAAA/bd-beads-docs",
-        "FEEDBACK_DAILY_LIMIT": 100,
-        "UPLOAD_CAP_D1_BYTES": 1990000,
-        "UPLOAD_CAP_R2_MB": 90,
-        "BLOBS_STORAGE_LIMIT_MB": 450,
-        "WARN_API_REQUESTS": 55000,
-        "WARN_D1_ROWS_WRITTEN": 55000,
-        "WARN_BLOBS_DB_MB": 350,
-        "WARN_CORE_DB_MB": 350,
-        "WARN_R2_STORAGE_MB": 5120,
-        "WARN_WORKER_ERRORS": 50
+        "FEEDBACK_REPO": "czAAA/bd-beads-docs"
       },
       "d1_databases": [
         {

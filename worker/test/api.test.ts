@@ -310,6 +310,19 @@ describe('the size cap', () => {
   })
 })
 
+describe('a limit not set in the dashboard', () => {
+  it('takes no upload, to either store, when its cap is not set', () =>
+    withWorker(
+      { entry: 'fixture', vars: { UPLOAD_CAP_D1_BYTES: undefined, UPLOAD_CAP_R2_MB: undefined, BLOBS_STORAGE_LIMIT_MB: undefined } },
+      async (worker) => {
+        const d1 = await worker.fetch('/api/test/free/blobs/one', change('PUT', { body: bytesOf(10) }))
+        expect(d1.status).toBe(413)
+        expect(await d1.json()).toEqual({ error: 'too-large', cap: 0 })
+        expect((await worker.fetch('/api/test/pro/blobs/one', change('PUT', { body: bytesOf(10) }))).status).toBe(413)
+      },
+    ))
+})
+
 describe('the blob storage limit', () => {
   it('refuses uploads to the blobs database past BLOBS_STORAGE_LIMIT_MB with 507, and never deletes or R2', () =>
     withWorker({ entry: 'fixture', vars: { BLOBS_STORAGE_LIMIT_MB: 1 } }, async (worker) => {

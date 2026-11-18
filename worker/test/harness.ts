@@ -24,8 +24,9 @@ export interface StartOptions {
   env?: 'dev' | 'production'
   /** `worker` is the deployed module; `fixture` adds the tests' own routes and daily hook. */
   entry?: 'worker' | 'fixture'
-  /** Variables and secrets, as the dashboard would set them, over the config's own. */
-  vars?: Record<string, string | number>
+  /** Variables and secrets, as the dashboard would set them, over the config's own and `TEST_LEVELS`; `undefined`
+   * leaves one unset. */
+  vars?: Record<string, string | number | undefined>
   /** Answers the Worker's outbound calls; each is recorded in `outbound` first. Default: `{}`. */
   reply?: (call: Outbound) => Response | Promise<Response>
   /** Rate Limiting bindings besides the environment's own `ratelimits`, which they replace by name. */
@@ -52,6 +53,21 @@ export interface RunningWorker {
   /** What the Worker wrote to its console, line by line, as the dashboard's logs would show it. */
   logs: string[]
   dispose(): Promise<void>
+}
+
+/** The limits and warn levels both Workers get in the tests, as the dashboard sets them in each deploy (they are not in
+ * `wrangler.jsonc`). Made-up values, the same for both: a test that needs another passes it in `vars`. */
+const TEST_LEVELS: Record<string, number> = {
+  FEEDBACK_DAILY_LIMIT: 30,
+  UPLOAD_CAP_D1_BYTES: 1_990_000,
+  UPLOAD_CAP_R2_MB: 90,
+  BLOBS_STORAGE_LIMIT_MB: 50,
+  WARN_API_REQUESTS: 1000,
+  WARN_D1_ROWS_WRITTEN: 1000,
+  WARN_BLOBS_DB_MB: 25,
+  WARN_CORE_DB_MB: 25,
+  WARN_R2_STORAGE_MB: 25,
+  WARN_WORKER_ERRORS: 10,
 }
 
 /** The Worker's origin in the tests; a changing request must name it in `Origin`. */
@@ -114,11 +130,14 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
     script: await bundle(options.entry ?? 'worker'),
     compatibilityDate: config.compatibility_date,
     compatibilityFlags: config.compatibility_flags,
-    bindings: {
-      ...vars,
-      ...options.vars,
-      ...(options.brokenDatabase ? { [options.brokenDatabase]: 'not a database' } : {}),
-    },
+    bindings: Object.fromEntries(
+      Object.entries({
+        ...vars,
+        ...TEST_LEVELS,
+        ...options.vars,
+        ...(options.brokenDatabase ? { [options.brokenDatabase]: 'not a database' } : {}),
+      }).filter(([, value]) => value !== undefined),
+    ),
     d1Databases: Object.fromEntries(databases.map((db) => [db.binding, db.database_name ?? db.binding])),
     r2Buckets: Object.fromEntries(config.r2_buckets.map((bucket) => [bucket.binding, bucket.bucket_name ?? bucket.binding])),
     ratelimits: Object.fromEntries(

@@ -1,6 +1,6 @@
 /** What the Worker is given (spec 385): bindings and variables in `wrangler.jsonc`, dashboard variables, and
- * secrets. A variable may arrive as a number or, once edited in the dashboard, a string, so limits and levels go
- * through `numberVar`. */
+ * secrets. Every limit and warn level is a dashboard variable, so it may be missing, or a string: it goes through
+ * `numberVar`. */
 export interface Env {
   /** Accounts, plan status, settings (ADR 0049); empty until ticket 78's first migration. */
   CORE: D1Database
@@ -46,18 +46,18 @@ export interface Env {
   FEEDBACK_RATE_ALL?: RateLimit
 
   /** Reports this Worker takes per UTC day (ticket 1051); the watchdog reports the day it was reached. */
-  FEEDBACK_DAILY_LIMIT: number | string
+  FEEDBACK_DAILY_LIMIT?: number | string
 
-  UPLOAD_CAP_D1_BYTES: number | string
-  UPLOAD_CAP_R2_MB: number | string
-  BLOBS_STORAGE_LIMIT_MB: number | string
+  UPLOAD_CAP_D1_BYTES?: number | string
+  UPLOAD_CAP_R2_MB?: number | string
+  BLOBS_STORAGE_LIMIT_MB?: number | string
 
-  WARN_API_REQUESTS: number | string
-  WARN_D1_ROWS_WRITTEN: number | string
-  WARN_BLOBS_DB_MB: number | string
-  WARN_CORE_DB_MB: number | string
-  WARN_R2_STORAGE_MB: number | string
-  WARN_WORKER_ERRORS: number | string
+  WARN_API_REQUESTS?: number | string
+  WARN_D1_ROWS_WRITTEN?: number | string
+  WARN_BLOBS_DB_MB?: number | string
+  WARN_CORE_DB_MB?: number | string
+  WARN_R2_STORAGE_MB?: number | string
+  WARN_WORKER_ERRORS?: number | string
 
   /** Secret: Turnstile's secret key (Cloudflare's dummy keys in tests). */
   TURNSTILE_SECRET_KEY?: string
@@ -85,7 +85,8 @@ export type NumberVar =
 /** A numeric variable's value; NaN when it is missing or not a number, which every caller treats as misconfigured. */
 export function numberVar(env: Env, name: NumberVar): number {
   const value = env[name]
-  return typeof value === 'number' ? value : value.trim() === '' ? Number.NaN : Number(value)
+  if (typeof value === 'number') return value
+  return value === undefined || value.trim() === '' ? Number.NaN : Number(value)
 }
 
 /** Bytes in one MB, as every `_MB` variable counts them. */
