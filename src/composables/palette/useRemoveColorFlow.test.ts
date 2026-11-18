@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import { addedColorId, defaultPaletteIds } from '../../domain/palette'
+import { addedColorId } from '../../domain/palette'
 import { createProject } from '../../domain/createProject'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
@@ -12,7 +12,7 @@ const A = addedColorId('#123456')
 const B = addedColorId('#abcdef')
 
 /** A Project whose Palette holds these ids, the real Palette and Edit over it, and `selected` as the chosen color. */
-function setup(ids: string[] = [...defaultPaletteIds(), A, B], selected?: string) {
+function setup(ids: string[] = [...[...base.palette], A, B], selected?: string) {
   const harness = editHarness({ ...base, palette: ids })
   const { palette, removeAdded, removeAllAdded } = useProjectPalette({ currentProject: harness.currentProject, edit: harness.edit })
   const selectedColorId = ref(selected)
@@ -43,7 +43,7 @@ describe('removing an added swatch (tickets 228, 304)', () => {
   })
 
   it('confirming removes it as one Edit, steps back to the default color, and the toast\'s Undo puts it back in its slot, selected', () => {
-    const [first, ...rest] = defaultPaletteIds()
+    const [first, ...rest] = [...base.palette]
     const ids = [first!, A, ...rest, B]
     const { harness, palette, deps, selectedColorId, undoInToast, onRequestRemoveAddedColor, onConfirmRemoveAddedColor } = setup(ids, A)
     onRequestRemoveAddedColor(A)
@@ -77,7 +77,7 @@ describe('removing an added swatch (tickets 228, 304)', () => {
 
 describe('removing every added color (ticket 0532)', () => {
   it('asks first, naming how many leave, and Cancel removes nothing', () => {
-    const { harness, removeAllColorsConfirmOpen, removeAllColorsMessage, onRequestRemoveAllAddedColors, onCancelRemoveAllAddedColors } = setup([A, ...defaultPaletteIds(), B, addedColorId('#fedcba')])
+    const { harness, removeAllColorsConfirmOpen, removeAllColorsMessage, onRequestRemoveAllAddedColors, onCancelRemoveAllAddedColors } = setup([A, ...[...base.palette], B, addedColorId('#fedcba')])
     onRequestRemoveAllAddedColors()
     expect(removeAllColorsConfirmOpen.value).toBe(true)
     expect(removeAllColorsMessage.value).toBe('3 colors will leave the Palette. Painted cells keep their color.')
@@ -87,13 +87,13 @@ describe('removing every added color (ticket 0532)', () => {
   })
 
   it('confirming removes them all as one Edit, steps back to the default color, and one Undo in the toast puts each back in its slot, selected', () => {
-    const [first, ...rest] = defaultPaletteIds()
+    const [first, ...rest] = [...base.palette]
     const ids = [A, first!, B, ...rest]
     const { harness, palette, deps, selectedColorId, undoInToast, onRequestRemoveAllAddedColors, onConfirmRemoveAllAddedColors, removeAllColorsConfirmOpen } = setup(ids, B)
     onRequestRemoveAllAddedColors()
     onConfirmRemoveAllAddedColors()
     expect(removeAllColorsConfirmOpen.value).toBe(false)
-    expect(harness.project.palette).toEqual(defaultPaletteIds())
+    expect(harness.project.palette).toEqual([...base.palette])
     expect(selectedColorId.value).toBe(palette.value.defaultColorId)
     expect(deps.showToast).toHaveBeenCalledWith('palette-removed-all', en.palette.removedAll, 'info', expect.objectContaining({ label: en.palette.undoButton }))
     harness.history.onUndo()
@@ -119,7 +119,7 @@ describe('removing every added color (ticket 0532)', () => {
   })
 
   it('is no Edit and shows no toast with no added color', () => {
-    const { harness, deps, onConfirmRemoveAllAddedColors } = setup(defaultPaletteIds())
+    const { harness, deps, onConfirmRemoveAllAddedColors } = setup([...base.palette])
     onConfirmRemoveAllAddedColors()
     expect(harness.history.canUndo.value).toBe(false)
     expect(deps.showToast).not.toHaveBeenCalled()

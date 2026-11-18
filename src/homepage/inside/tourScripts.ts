@@ -5,7 +5,7 @@ import type { ReferencePlace } from '../../domain/referenceImage'
 import { addedColorId } from '../../domain/palette'
 import { watch } from 'vue'
 import { TECHNIQUES } from '../../domain/weave'
-import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_STARTER, DEMO_TECHNIQUE, PEACOCK_COLORS, onCanvas, type DemoColor, type DemoFrame } from './demoProjects'
+import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_STARTER, DEMO_TECHNIQUE, PEACOCK_COLORS, demoSwatchId, onCanvas, type DemoColor, type DemoFrame } from './demoProjects'
 import { balloonFile } from './balloon'
 import { PEACOCK_CUFF } from './peacock'
 import { peacockFile } from './peacockPicture'
@@ -14,19 +14,9 @@ import { eyeByHand, eyeTrace, pupilMiddle, ringGroundFills, traceStart, wholeDra
 // What the ghost does for each row of What's inside (Homepage card, ticket 0797), in the demo editor, each row picking
 // up where the one before it left the editor.
 
-/** The Palette swatch of each color the tour draws with: Miyuki's color families, and Ring's own three, named as Custom
- * color names what it adds. */
-const SWATCH_IDS: Record<DemoColor, string> = {
-  W: 'white',
-  Y: 'yellow',
-  R: 'red',
-  B: 'blue',
-  G: 'green',
-  D: 'gold',
-  T: addedColorId(DEMO_COLORS.T),
-  N: addedColorId(DEMO_COLORS.N),
-  E: addedColorId(DEMO_COLORS.E),
-}
+/** The Palette swatch of each color the tour draws with: its Bead's default colors, and Ring's own three, named as
+ * Custom color names what it adds. */
+const SWATCH_IDS = Object.fromEntries((Object.keys(DEMO_COLORS) as DemoColor[]).map((color) => [color, demoSwatchId(color)])) as Record<DemoColor, string>
 
 /** Picks a Palette swatch by its id through the color popover. */
 async function pickSwatch(hand: Hand, id: string): Promise<void> {

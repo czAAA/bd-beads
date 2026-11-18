@@ -1,8 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { CANVAS_HOLD_MS } from './domain/hold'
 import { mountWithProject } from './testUtils/seedProject'
-import { beadColor, holdBead, outlinedBead, pressBead, rightClickBead } from './testUtils/beads'
-import { toolState } from './testUtils/pill'
+import { beadColor, beadPoint, holdBead, hoverBead, outlinedBead, pressBead, rightClickBead } from './testUtils/beads'
+import { pickTool, pressBar, toolState } from './testUtils/pill'
+import { loadProjects } from './services/libraryStore'
+import { frameOf } from './domain/layerRecord'
+import ProjectSurface from './components/canvas/ProjectSurface.vue'
 
 // The Radial toolbox's wiring (ticket 1064, spec 1072): a right click on the Canvas reaches the ring's flow, and a pick
 // reaches the handler its own control calls. The ring's places are in radialToolbox, what a pick does in
@@ -122,6 +126,67 @@ describe('the Radial toolbox', () => {
     await pressBead(wrapper, 5)
     await wrapper.get('[data-testid="project-surface"]').trigger('pointerup')
     expect(beadColor(wrapper, 5)).toBe('#1d3557')
+    wrapper.unmount()
+  })
+
+  /** Holds a finger inside an area while it wobbles onto the next bead, less than the drag slop away, so the area steps
+   * a bead with it before the hold is up; `stepped` is checked at that moment. Then the finger lifts. */
+  async function wobblyHold(wrapper: Mounted, at: { row: number; column: number }, stepped: () => void) {
+    const surface = wrapper.get('[data-testid="project-surface"]')
+    const middle = beadPoint(wrapper, at)
+    const half = (beadPoint(wrapper, { ...at, column: at.column + 1 }).clientX - middle.clientX) / 2
+    const finger = { clientY: middle.clientY, pointerType: 'touch', isPrimary: true }
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      await surface.trigger('pointerdown', { ...finger, clientX: middle.clientX + half - 1, button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { ...finger, clientX: middle.clientX + half + 1, buttons: 1 })
+      stepped()
+      vi.advanceTimersByTime(CANVAS_HOLD_MS)
+    } finally {
+      vi.useRealTimers()
+    }
+    await surface.trigger('pointerup', { ...finger, clientX: middle.clientX + half + 1 })
+    await flushPromises()
+  }
+
+  /** A Project with a Selection of 2 x 3 beads on the Canvas, above the Frame, and its top-left bead position. */
+  async function mountSelected() {
+    const wrapper = await mountWithProject(6, 6, { attachTo: document.body })
+    const frame = frameOf(loadProjects()[0]!)!
+    const top = { row: frame.row - 10, column: frame.column }
+    await pickTool(wrapper, 'select')
+    await pressBead(wrapper, top)
+    await hoverBead(wrapper, { row: top.row + 1, column: top.column + 2 }, { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    return { wrapper, top }
+  }
+
+  it('a hold inside the Selection opens the ring and leaves the Selection as it was (ticket 1084)', async () => {
+    const { wrapper, top } = await mountSelected()
+    const marked = () => wrapper.findComponent(ProjectSurface).props('selection')
+    const selected = marked()
+    expect(selected).toBeDefined()
+
+    // The hold puts the stepped Selection back, and the lift is no tap, which under Select would drop it.
+    await wobblyHold(wrapper, top, () => expect(marked()).not.toEqual(selected))
+    expect(ring(wrapper).isVisible()).toBe(true)
+    expect(marked()).toEqual(selected)
+    wrapper.unmount()
+  })
+
+  it('a hold inside the Mirror\'s Area in Mirror mode opens the ring and leaves the Area as it was (ticket 1084)', async () => {
+    const { wrapper, top } = await mountSelected()
+    await pressBar(wrapper, 'mirror-selection')
+    await flushPromises()
+    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
+    await flushPromises()
+    const drawn = () => wrapper.findComponent(ProjectSurface).props('mirror')?.place
+    const area = drawn()
+    expect(area).toBeDefined()
+
+    await wobblyHold(wrapper, top, () => expect(drawn()).not.toEqual(area))
+    expect(ring(wrapper).isVisible()).toBe(true)
+    expect(drawn()).toEqual(area)
     wrapper.unmount()
   })
 

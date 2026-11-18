@@ -13,6 +13,7 @@ import { createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites } from './testUtils/storageWrites'
 import { openPanel, openSavedProjects, pickColor } from './testUtils/pill'
 import { canvasOf } from './domain/layerRecord'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 beforeEach(() => {
   localStorage.clear()
@@ -111,7 +112,7 @@ describe('App import asks whether to open what came in (tickets 154, 0860)', () 
       const wrapper = mount(App)
       await createProjectViaForm(wrapper, 'Current')
       const spy = refuseStorageWrites('openbeads:patterns')
-      await pickColor(wrapper, 'red')
+      await pickColor(wrapper, defaultColorOf('red').id)
       await pressBead(wrapper, { row: 0, column: 0 })
       await wrapper.find('.app-shell').trigger('mouseup')
       expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(true)

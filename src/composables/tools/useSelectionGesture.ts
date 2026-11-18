@@ -313,6 +313,15 @@ export function useSelectionGesture(
     else selection.value = undefined
   }
 
+  /** Forgets a press inside the Selection whose hold opened the Radial toolbox (ticket 1084): unlike a release it runs no
+   * tap and lands no move, and the Selection is where it was at the press. */
+  function dropAdjust() {
+    const held = adjust
+    adjust = undefined
+    carried.value = undefined
+    if (held) selection.value = held.start
+  }
+
   /** Picks the last drag of this kind back up, as if it had never ended (ticket 0805): iPadOS ends a touch that slides
    * off the glass, and one sliding back on is a new press. Only while the Selection is still the one that drag made;
    * returns whether it was picked up. */
@@ -506,6 +515,7 @@ export function useSelectionGesture(
     beginAdjust,
     dragAdjust,
     endAdjust,
+    dropAdjust,
     resume,
     pastePreviewCells,
     pastePreviewStamp,

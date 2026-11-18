@@ -454,6 +454,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     stroke = undefined
     selectDrag = false
     dragging.value = false
+    // An area held by its inside (ticket 1084) is let go here, so the lift is no release of it; above, its move is dropped.
+    adjusting.value = false
     emit('drop-press')
     openToolbox(heldPress)
     heldPress.opened = heldPress.at
@@ -728,6 +730,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
         return
       }
     }
+    // Whether this press's hold is timed (ticket 1065): the drawing pointer's, where the ring would open. Not a second
+    // finger's, nor the press Pick color from Canvas waits for, which takes its colour at once.
+    const timesHold = press === 'held' && props.holdOpens && !props.tools.picking && !(event.pointerType === 'touch' && !event.isPrimary)
     const held = grabbed.value
     if ((props.tools.selects || areaGrab.value) && held && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
       // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it. A shape
@@ -748,13 +753,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = selectionViewLayer()
         emit('selection-press', target, cellUnder(event), ...(areaHandlesOnly.value ? ['mirror' as const] : []))
+        // A handle's press is the handle's and is never timed; the inside's is, while its move starts (ticket 1084).
+        if (target.kind === 'inside' && timesHold) timeHold(event)
         event.preventDefault()
         return
       }
     }
-    // No handle took the press: the drawing pointer's hold is timed while its tool starts (ticket 1065). Not a second
-    // finger's, nor the press Pick color from Canvas waits for, which takes its colour at once.
-    if (press === 'held' && props.holdOpens && !props.tools.picking && !(event.pointerType === 'touch' && !event.isPrimary)) timeHold(event)
+    // No handle took the press: the drawing pointer's hold is timed while its tool starts (ticket 1065).
+    if (timesHold) timeHold(event)
     if (startsDrag(event)) {
       startPan({ x: event.clientX, y: event.clientY })
       rootEl.value?.setPointerCapture?.(event.pointerId)

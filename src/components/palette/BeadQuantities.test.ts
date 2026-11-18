@@ -8,7 +8,7 @@ import { placedStarter, starterById } from '../../domain/starters'
 import type { Project } from '../../domain/project'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 import type { ColorCatalog } from '../../domain/colorCatalog'
-import { addedColorId, defaultPaletteIds } from '../../domain/palette'
+import { addedColorId, defaultPalette, defaultPaletteIds } from '../../domain/palette'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
@@ -16,6 +16,10 @@ import { withLayers } from '../../testUtils/layerFields'
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
+/** The Bead's default colors of two families (ticket 1070), the colors these Projects are painted with. */
+const familyColor = (family: string) => defaultPalette(cubeBead.id).find((color) => color.family === family)!
+const RED = familyColor('red')
+const BLUE = familyColor('blue')
 
 function project(): Project {
   return createProject({
@@ -31,20 +35,20 @@ function mountQuantities(project: Project | undefined) {
 
 describe('BeadQuantities', () => {
   it('has three columns: a color swatch, a bead count and its estimated weight', () => {
-    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'))
+    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], RED.hex))
 
     expect(wrapper.findAll('thead th')).toHaveLength(3)
     const row = wrapper.find('[data-testid="quantity-row"]')
     expect(row.findAll('td')).toHaveLength(3)
-    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
+    expect(wrapper.find(`[data-testid="quantity-count-${RED.id}"]`).text()).toBe('1')
   })
 
   it('reports how many beads each painted color needs', () => {
-    const withTwoColors = paintAt(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'), [{ row: 0, column: 1 }], '#2f6fed')
+    const withTwoColors = paintAt(paintAt(project(), [{ row: 0, column: 0 }], RED.hex), [{ row: 0, column: 1 }], BLUE.hex)
     const wrapper = mountQuantities(withTwoColors)
 
-    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
-    expect(wrapper.find('[data-testid="quantity-count-blue"]').text()).toBe('1')
+    expect(wrapper.find(`[data-testid="quantity-count-${RED.id}"]`).text()).toBe('1')
+    expect(wrapper.find(`[data-testid="quantity-count-${BLUE.id}"]`).text()).toBe('1')
   })
 
   it('lists only colors painted at least once, most-needed first', () => {
@@ -93,7 +97,7 @@ describe('BeadQuantities', () => {
   })
 
   it('shows no bead pickers', () => {
-    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'))
+    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], RED.hex))
 
     expect(wrapper.find('select').exists()).toBe(false)
   })
@@ -117,7 +121,7 @@ describe('BeadQuantities', () => {
 describe('BeadQuantities estimated weight (ticket 155)', () => {
   const cells = (count: number) => Array.from({ length: count }, (_, column) => ({ row: 0, column }))
   
-  function wide(beadId: string, painted: number, color = '#e63746'): Project {
+  function wide(beadId: string, painted: number, color = RED.hex): Project {
     const base = createProject({ technique: 'loom', beadId, size: { width: 1000, height: 5, unit: 'beads' } })
     return paintAt(base, cells(painted), color)
   }
@@ -127,18 +131,19 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     ['toho-round-11-0', '1.0 g', 'Round'],
     ['miyuki-delica-11-0', '0.5 g', 'Delica'],
   ])('shows a weight for 100 %s beads: %s (%s)', (beadId, weight) => {
-    const wrapper = mountQuantities(wide(beadId, 100))
+    const red = defaultPalette(beadId).find((color) => color.family === 'red')!
+    const wrapper = mountQuantities(wide(beadId, 100, red.hex))
 
-    expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe(weight)
+    expect(wrapper.find(`[data-testid="quantity-weight-${red.id}"]`).text()).toBe(weight)
     expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe(`100 · ≈ ${weight}`)
   })
 
   it('shows the weight per color and a total across colors', () => {
-    const two = paintAt(wide('toho-cube-1.5mm', 100), cells(50).map((cell) => ({ ...cell, row: 1 })), '#2f6fed')
+    const two = paintAt(wide('toho-cube-1.5mm', 100), cells(50).map((cell) => ({ ...cell, row: 1 })), BLUE.hex)
     const wrapper = mountQuantities(two)
 
-    expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('1.1 g')
-    expect(wrapper.find('[data-testid="quantity-weight-blue"]').text()).toBe('0.6 g')
+    expect(wrapper.find(`[data-testid="quantity-weight-${RED.id}"]`).text()).toBe('1.1 g')
+    expect(wrapper.find(`[data-testid="quantity-weight-${BLUE.id}"]`).text()).toBe('0.6 g')
     expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('150 · ≈ 1.7 g')
   })
 
@@ -156,7 +161,8 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
   })
 
   it('hides the weights, not shows zeros, when the Project\'s Bead has no weight', () => {
-    const unknown = withLayers(wide('toho-cube-1.5mm', 10), { beadId: 'a-bead-this-device-never-had', bead: undefined })
+    // A Bead nobody knows has the twelve generic colors, red among them.
+    const unknown = { ...withLayers(wide('toho-cube-1.5mm', 10, '#e63746'), { beadId: 'a-bead-this-device-never-had', bead: undefined }), palette: defaultPaletteIds() }
     const wrapper = mountQuantities(unknown)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('10')
@@ -173,7 +179,8 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
   })
 
   it('explains the estimate behind an Info button in the header, with the Bead\'s average weight and no advice (ticket 0852)', () => {
-    const wrapper = mountQuantities(wide('toho-round-11-0', 10))
+    // A color with no code, so the Info button also says why (a default color has its code, ticket 1070).
+    const wrapper = mountQuantities(wide('toho-round-11-0', 10, '#123456'))
     const info = wrapper.get('[data-testid="bead-quantities"] .panel-section__heading [data-testid="quantities-info"]')
 
     expect(info.attributes('aria-label')).toBe('About these counts')
@@ -201,7 +208,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
 
   describe('Show all (ticket 555)', () => {
     function withColors(count: number): Project {
-      const hexes = ['#e63746', '#2f6fed', '#22aa55', '#f5c518', '#8e44ad', '#ff8800', '#00bcd4']
+      const hexes = [RED.hex, BLUE.hex, '#22aa55', '#f5c518', '#8e44ad', '#ff8800', '#00bcd4']
       return hexes
         .slice(0, count)
         .reduce((p, hex, column) => paintAt(p, [{ row: 0, column }], hex), project())
@@ -229,15 +236,15 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
 
 describe('BeadQuantities and the Frame (ticket 233)', () => {
   it('counts the Frame only, leaving out beads that lie outside it', () => {
-    const framed = paintAt(project(), [{ row: 0, column: 0 }], '#e63746')
-    const withOutsider = withLayers(framed, { beads: { ...beadsOfLayer(framed, 'canvas'), 40: { 40: '#e63746' } } })
+    const framed = paintAt(project(), [{ row: 0, column: 0 }], RED.hex)
+    const withOutsider = withLayers(framed, { beads: { ...beadsOfLayer(framed, 'canvas'), 40: { 40: RED.hex } } })
     const wrapper = mountQuantities(withOutsider)
 
-    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
+    expect(wrapper.find(`[data-testid="quantity-count-${RED.id}"]`).text()).toBe('1')
   })
 
   it('keeps its header and says "Set Frame to count beads." with no Frame', () => {
-    const open = withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'), undefined)
+    const open = withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], RED.hex), undefined)
     const wrapper = mountQuantities(open)
 
     expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe('Set Frame to count beads.')
@@ -269,7 +276,7 @@ describe('BeadQuantities on a Kaleidocycle (ticket 0876)', () => {
   })
 
   it('says nothing of faces on any other Frame', () => {
-    expect(mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746')).find('[data-testid="quantities-piece"]').exists()).toBe(false)
+    expect(mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], RED.hex)).find('[data-testid="quantities-piece"]').exists()).toBe(false)
   })
 })
 
@@ -285,7 +292,7 @@ describe('BeadQuantities on a Star (ticket 0875)', () => {
   })
 
   it('says nothing of front and back on any other Frame', () => {
-    expect(mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746')).find('[data-testid="quantities-front-back"]').exists()).toBe(false)
+    expect(mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], RED.hex)).find('[data-testid="quantities-front-back"]').exists()).toBe(false)
   })
 })
 
@@ -294,19 +301,19 @@ describe('BeadQuantities names what to buy (ticket 0974)', () => {
   const coded = () => paintAt({ ...project(), palette: [...defaultPaletteIds(), added], paletteCodes: { '#123456': '49' } }, [{ row: 0, column: 0 }], '#123456')
 
   it('names the Frame\'s Bead under the heading', () => {
-    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'))
+    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], RED.hex))
 
     expect(wrapper.get('[data-testid="quantities-bead"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
   it('names no Bead with no Frame', () => {
-    const wrapper = mountQuantities(withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'), undefined))
+    const wrapper = mountQuantities(withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], RED.hex), undefined))
 
     expect(wrapper.find('[data-testid="quantities-bead"]').exists()).toBe(false)
   })
 
   it('says under the rows that Palette colors are not bead codes, and why behind the header\'s Info button', () => {
-    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'))
+    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#123456'))
 
     expect(wrapper.get('[data-testid="quantities-palette"]').text()).toBe('Palette colors, not bead codes')
     expect(wrapper.get('[data-testid="quantities-info"]').attributes('aria-label')).toBe('About these counts')

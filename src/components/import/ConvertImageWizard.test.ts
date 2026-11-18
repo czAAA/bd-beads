@@ -18,6 +18,7 @@ import { layersView } from '../../testUtils/layerFields'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { resetKeyHintsDevice } from '../../composables/ui/useKeyHints'
 import { NARROW_CONVERTER } from '../../composables/import/useConvertCompare'
+import { createPalette, defaultPalette } from '../../domain/palette'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 afterEach(() => {
@@ -282,7 +283,10 @@ describe('ConvertImageWizard rejections', () => {
     await matchTo(wrapper, 'bead-colors')
     expect(wrapper.get('[data-testid="convert-catalog-failed"]').text()).toBe(en.palette.beadColors.failed)
     await openColorByColor(wrapper)
-    expect(wrapper.get('[data-picture-hex~="#e63746"] [data-testid="found-color-source"]').text()).toBe(en.convertImage.wizard.defaultPalette)
+    // The Default Palette is the Bead's default colors, real codes (ticket 1070): the row names the nearest one's code.
+    const builtIns = defaultPalette(delica.beadId)
+    const nearest = createPalette(builtIns.map((color) => color.id), builtIns).nearest('#e63746')!
+    expect(wrapper.get('[data-picture-hex~="#e63746"]').text()).toContain(nearest.code)
   })
 
   it('keeps a picture already set when another is turned away, and clears the message once one goes through', async () => {

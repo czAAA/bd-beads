@@ -1,6 +1,6 @@
 import { beadsFromColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
-import { addUsedColor, defaultPalette } from '../../domain/palette'
+import { addUsedColor, addedColorId, defaultPalette, type PaletteColor } from '../../domain/palette'
 import { setPalette } from '../../domain/paletteEdits'
 import type { GridPosition } from '../../domain/grid'
 import { withLayer } from '../../domain/layerRecord'
@@ -17,15 +17,21 @@ import { PEACOCK_CUFF, PEACOCK_RING, type PeacockDrawing, type PeacockPart } fro
 /** The Bead every demo Project is on. */
 const DEMO_BEAD = 'miyuki/delica/11-0'
 
-/** The colors the demo draws with: Miyuki's own color families, each a swatch of the demo's Palette, and the three the
- * peacock needs that the families lack (teal, deep blue, deep green), which Ring's Palette starts with. */
+/** The demo Bead's default color of a color family (ticket 1070): a real Delica 11/0 code with its measured color. */
+function demoDefault(family: string): PaletteColor {
+  return defaultPalette(DEMO_BEAD).find((color) => color.family === family)!
+}
+
+/** The colors the demo draws with: its Bead's default colors of six families, each a swatch of the demo's Palette
+ * (ticket 1070), and the three the peacock needs that they lack (teal, deep blue, deep green), which Ring's Palette
+ * starts with. */
 export const DEMO_COLORS = {
-  W: '#ffffff',
-  Y: '#f2c94c',
-  R: '#e63746',
-  B: '#2f6fed',
-  G: '#27ae60',
-  D: '#d4af37',
+  W: demoDefault('white').hex,
+  Y: demoDefault('yellow').hex,
+  R: demoDefault('red').hex,
+  B: demoDefault('blue').hex,
+  G: demoDefault('green').hex,
+  D: demoDefault('gold').hex,
   T: '#17c3c9',
   N: '#1c1f6e',
   E: '#0c4a3a',
@@ -36,6 +42,11 @@ export type DemoColor = keyof typeof DEMO_COLORS
 /** Ring's own colors, added to its Palette as Custom color adds them: the eye's teal, its deep blue pupil and the deep
  * green ground. */
 const DEMO_OWN_COLORS: readonly DemoColor[] = ['T', 'N', 'E']
+
+/** The Palette swatch a demo color is: its Bead's default color, or for Ring's own three the Custom color it adds. */
+export function demoSwatchId(color: DemoColor): string {
+  return defaultPalette(DEMO_BEAD).find((builtIn) => builtIn.hex === DEMO_COLORS[color])?.id ?? addedColorId(DEMO_COLORS[color])
+}
 
 /** The color of each part of the feather: a barb is the eye's green, the ground deep green. */
 export const PEACOCK_COLORS: Record<PeacockPart, DemoColor> = { G: 'G', D: 'D', T: 'T', B: 'B', N: 'N', g: 'G', '.': 'E' }
