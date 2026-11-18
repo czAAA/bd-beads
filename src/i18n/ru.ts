@@ -371,8 +371,8 @@ export const ru: Translations = {
     projectButtonNamed: 'Проект: {name}',
   },
   homepage: {
-    pageTitle: 'Главная',
-    description: 'Бесплатный редактор схем для бисера: ткачество, мозаичное и кирпичное плетение. Фото в схему, бисер каждого цвета посчитан, сплетённые ряды отмечены.',
+    pageTitle: 'Бесплатный редактор схем для бисероплетения',
+    description: 'Схемы для бисера: ткачество, мозаичное и кирпичное плетение. Фото в схему, бисер каждого цвета посчитан, ряды отмечены. Бесплатно, без аккаунта.',
     makeFirstProject: 'Сделать первый проект',
     openEditor: 'Открыть редактор',
     whatsInside: 'Что внутри',
@@ -467,6 +467,8 @@ export const ru: Translations = {
       alone: { heading: 'Бесплатно', why: 'Аккаунты и Pro появятся позже; всё работает и без них.', info: 'Об аккаунтах и Pro' },
     },
     library: '{library}, {count}',
+    notFound: 'По этому адресу нет страницы.',
+    notFoundHomepage: 'На главную',
   },
   releaseNoteKinds: { new: 'Новое', changed: 'Изменено', fixed: 'Исправлено' },
   pieceName: {

@@ -372,8 +372,8 @@ export const be: Translations = {
     projectButtonNamed: 'Праект: {name}',
   },
   homepage: {
-    pageTitle: 'Галоўная',
-    description: 'Бясплатны рэдактар схем для бісеру: ткацтва, мазаічнае і цаглянае пляценне. Фота ў схему, бісер кожнага колеру палічаны, сплеценыя рады адзначаны.',
+    pageTitle: 'Бясплатны рэдактар схем для бісерапляцення',
+    description: 'Схемы для бісеру: ткацтва, мазаічнае і цаглянае пляценне. Фота ў схему, бісер кожнага колеру палічаны, рады адзначаны. Бясплатна, без акаўнта.',
     makeFirstProject: 'Стварыць першы праект',
     openEditor: 'Адкрыць рэдактар',
     whatsInside: 'Што ўнутры',
@@ -468,6 +468,8 @@ export const be: Translations = {
       alone: { heading: 'Бясплатна', why: 'Акаўнты і Pro з’явяцца пазней; усё працуе і без іх.', info: 'Пра акаўнты і Pro' },
     },
     library: '{library}, {count}',
+    notFound: 'Па гэтым адрасе няма старонкі.',
+    notFoundHomepage: 'На галоўную',
   },
   releaseNoteKinds: { new: 'Новае', changed: 'Зменена', fixed: 'Выпраўлена' },
   pieceName: {

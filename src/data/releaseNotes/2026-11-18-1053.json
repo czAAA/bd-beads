@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "new",
+  "line": {
+    "en": "A language's code in the address opens the app in it: openbeads.com/ru/ is the Homepage in Russian and /ru/app/ the editor, so a link you send opens in its reader's language",
+    "ru": "Код языка в адресе открывает приложение на нём: openbeads.com/ru/ открывает главную на русском, /ru/app/ редактор, так что отправленная ссылка открывается на языке получателя",
+    "uk": "Код мови в адресі відкриває застосунок нею: openbeads.com/uk/ відкриває головну українською, /uk/app/ редактор, тож надіслане посилання відкривається мовою отримувача",
+    "be": "Код мовы ў адрасе адкрывае праграму на ёй: openbeads.com/be/ адкрывае галоўную па-беларуску, /be/app/ рэдактар, так што дасланая спасылка адкрываецца на мове атрымальніка",
+    "zh": "地址中的语言代码会以该语言打开应用：openbeads.com/zh/ 是中文首页，/zh/app/ 是编辑器，发出的链接会以对方的语言打开",
+    "es": "El código de un idioma en la dirección abre la app en él: openbeads.com/es/ es el inicio en español y /es/app/ el editor, así un enlace que envíes se abre en el idioma de quien lo recibe",
+    "pl": "Kod języka w adresie otwiera aplikację w tym języku: openbeads.com/pl/ to strona główna po polsku, a /pl/app/ edytor, więc wysłany link otwiera się w języku odbiorcy"
+  }
+}

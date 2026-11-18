@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { applyTheme, followDeviceTheme, resolveTheme, type ThemePick } from './theme'
+import { LOCALES } from '../domain/locale'
 
 /** A stand-in for window.matchMedia whose answers a test can change, firing 'change' like a device setting would. */
 function fakeDevice(initial: { dark: boolean; moreContrast: boolean }) {
@@ -140,7 +141,7 @@ describe('followDeviceTheme', () => {
   })
 })
 
-describe.each(['index.html', 'app/index.html'])("%s's pre-paint script", (page) => {
+describe.each(['index.html', 'app/index.html', '404.html'])("%s's pre-paint script", (page) => {
   const html = readFileSync(resolve(__dirname, '../../', page), 'utf8')
   const script = /<script>([\s\S]*?)<\/script\s*>/i.exec(html)?.[1] ?? ''
 
@@ -169,6 +170,22 @@ describe.each(['index.html', 'app/index.html'])("%s's pre-paint script", (page) 
     runWith({ dark: true, moreContrast: true })
     expect(root.dataset.theme).toBe('light')
     expect(root.lang).toBe('en')
+  })
+
+  it('sets every language that can be saved, and leaves a language page’s own (ticket 1053)', () => {
+    for (const locale of LOCALES) {
+      localStorage.setItem('openbeads:locale', locale)
+      runWith({ dark: false, moreContrast: false })
+      expect(root.lang).toBe(locale)
+    }
+    root.lang = 'pl'
+    root.setAttribute('data-locale', '')
+    try {
+      runWith({ dark: false, moreContrast: false })
+      expect(root.lang).toBe('pl')
+    } finally {
+      root.removeAttribute('data-locale')
+    }
   })
   it("sets the browser's bar to the picked theme's surface, on a light device (ticket 0998)", () => {
     localStorage.setItem('openbeads:theme', 'dark')

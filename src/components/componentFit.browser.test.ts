@@ -4,6 +4,7 @@ import MenuPanel from './shell/MenuPanel.vue'
 import ProgressBar from './canvas/ProgressBar.vue'
 import ToolPill from './tools/ToolPill.vue'
 import SaveReminder from './canvas/SaveReminder.vue'
+import PageNotFound from './shell/PageNotFound.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { moveToRow, rowProgressPosition, toggleRowDirection } from '../domain/rowProgress'
@@ -30,6 +31,8 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['SaveReminder', SaveReminder, { beads: 12345, lastFileAt: Date.now() - 3 * 24 * 60 * 60 * 1000, labelOpen: true }],
   // Before a first file the label says why to save in place of the count (ticket 0987).
   ['SaveReminder with no file yet', SaveReminder, { beads: 170, labelOpen: true }],
+  // An address with no page (ticket 1053): the message and its way to the Homepage.
+  ['PageNotFound', PageNotFound, { homepage: '/' }],
 ]
 
 describeFits(CASES)

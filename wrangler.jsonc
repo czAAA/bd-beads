@@ -21,6 +21,9 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
+    // An address with no page, such as a language the app has none for (`/de/`, ticket 1053), gets the built
+    // `404.html`, which leads to the Homepage.
+    "not_found_handling": "404-page",
     // The Worker runs only for /api/*: loading the app never counts as a Worker request, and keeps working when /api
     // is over its daily cap or switched off.
     "run_worker_first": ["/api/*"]

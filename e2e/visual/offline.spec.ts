@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page, type Response } from '@playwright/test'
+import { LOCALES } from '../../src/domain/locale'
 import { openApp, openStripPanel, storedProjects } from '../support/app'
 import { startHost, type Host } from '../support/hostProxy'
 import { fixtureProject } from '../support/projects'
@@ -122,6 +123,20 @@ for (const [situation, breakIt] of failures) {
     await page.goto(host.url)
     await expect(page.getByTestId('homepage')).toBeVisible()
     await expect(page.getByRole('heading').first()).toBeVisible()
+  })
+
+  test(`every language's Homepage and editor open ${situation} (ticket 1053)`, async ({ page, context }) => {
+    await openAndInstall(page)
+    await breakIt(context, host)
+
+    for (const locale of LOCALES) {
+      await page.goto(new URL(`${locale}/`, host.url).href)
+      await expect(page.getByTestId('homepage')).toBeVisible()
+      await expect(page.locator('html')).toHaveAttribute('lang', locale)
+      await page.goto(new URL(`${locale}/app/`, host.url).href)
+      await expect(page.getByTestId('app-canvas')).toBeVisible()
+      await expect(page.locator('html')).toHaveAttribute('lang', locale)
+    }
   })
 
   // The notes files are built files (ticket 1047): What's new reads the page's own, in a language not shown before.

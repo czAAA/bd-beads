@@ -465,6 +465,8 @@ export const en: Translations = {
       alone: { heading: 'Free to use', why: 'Accounts and Pro come later; everything works without them.', info: 'About accounts and Pro' },
     },
     library: '{library}, {count}',
+    notFound: "There's no page at this address.",
+    notFoundHomepage: 'Go to the Homepage',
   },
   releaseNoteKinds: { new: 'New', changed: 'Changed', fixed: 'Fixed' },
   pieceName: {
