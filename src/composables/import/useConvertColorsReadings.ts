@@ -29,7 +29,6 @@ export function useConvertColorsReadings() {
     const source = wizard.source.value
     if (source === 'exact') return words.value.matchedExact
     if (source === 'default') return words.value.matchedDefault
-    if (source === 'my-beads') return plural(locale.value, wizard.myBeadsCodes.value.length, words.value.myBeads.matched)
     const bead = beadLabel(wizard.bead.value).toLocaleLowerCase(locale.value)
     const on = wizard.finishesApplied.value
     // With Finishes on (ticket 0901, DS-2): their names, or past three their count, so the line stays two lines at most.

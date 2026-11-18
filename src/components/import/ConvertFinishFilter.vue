@@ -27,7 +27,7 @@ const offBody = computed(() => {
 /** The Finishes the Bead's size has, in the shared order, each with its live count among the source's codes. */
 const finishes = computed(() => {
   const present = new Set(wizard.beadTargets.value.map((target) => target.finish))
-  const counts = beadColorFilterCounts(wizard.sourceBeadTargets.value, { families: [], finishes: wizard.finishes.value }).finishes
+  const counts = beadColorFilterCounts(wizard.beadTargets.value, { families: [], finishes: wizard.finishes.value }).finishes
   return FINISHES.filter((finish) => present.has(finish)).map((finish) => ({
     finish,
     name: listWords.value.finishes[finish],

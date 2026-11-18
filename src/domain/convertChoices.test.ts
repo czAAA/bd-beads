@@ -18,8 +18,8 @@ describe('the converter’s remembered choices (ticket 0893, ADR 0010 D-3)', () 
     expect(parseConvertChoices(writeConvertChoices(lastUsed))).toEqual(lastUsed)
   })
 
-  it('read back My beads as the last source (ticket 0902)', () => {
-    expect(parseConvertChoices(writeConvertChoices({ ...lastUsed, source: 'my-beads' }))?.source).toBe('my-beads')
+  it('read a last source of My beads, retired, as the Bead’s palette (ticket 1090)', () => {
+    expect(parseConvertChoices(JSON.stringify({ ...lastUsed, source: 'my-beads' }))?.source).toBe('bead-colors')
   })
 
   it('read nothing from a saved string that is not choices', () => {

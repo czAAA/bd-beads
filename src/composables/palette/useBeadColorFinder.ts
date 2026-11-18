@@ -23,9 +23,9 @@ export interface BeadColorFinderDeps<T extends Findable> {
   startFinishes?: readonly Finish[]
 }
 
-/** The Bead colors list's search and Color and Finish filters (BeadColors card, tickets 0713, 0746), one for the
- * Palette popover's list and the converter's My beads view (ticket 0903): the text typed, the values on, the rows they
- * leave and the empty sentence. The filters reset when another Bead's catalog comes, and with the list. */
+/** The Bead colors list's search and Color and Finish filters (BeadColors card, tickets 0713, 0746): the text
+ * typed, the values on, the rows they leave and the empty sentence. The filters reset when another Bead's catalog
+ * comes, and with the list. */
 export function useBeadColorFinder<T extends Findable>({ swatches, bead, catalog, startFinishes = [] }: BeadColorFinderDeps<T>) {
   const { t, locale } = useI18n()
   const words = computed(() => t.value.palette.beadColors)

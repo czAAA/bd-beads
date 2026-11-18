@@ -8,7 +8,7 @@ export interface ConvertFinishesDeps {
   /** The device's last Finishes (ticket 0893), none for every Finish. */
   start?: readonly Finish[]
   source: Ref<ColorSource>
-  /** The Bead's codes, or My beads' of them: what the filter keeps a part of. */
+  /** The Bead's codes: what the filter keeps a part of. */
   sourceTargets: Ref<readonly TargetColor[]>
 }
 
@@ -16,9 +16,9 @@ export interface ConvertFinishesDeps {
  * (`filterBeadColors`). It applies to a catalog source only; under Default Palette or Exact the Finishes are kept, off. */
 export function useConvertFinishes({ start = [], source, sourceTargets }: ConvertFinishesDeps) {
   const finishes = ref<Finish[]>(FINISHES.filter((finish) => start.includes(finish)))
-  const applies = computed(() => source.value === 'bead-colors' || source.value === 'my-beads')
+  const applies = computed(() => source.value === 'bead-colors')
   const kept = computed(() => (applies.value ? filterBeadColors(sourceTargets.value, { families: [], finishes: finishes.value }) : [...sourceTargets.value]))
-  // A filter that leaves no code (a Finish none of My beads has) matches to the whole source rather than to nothing.
+  // A filter that leaves no code matches to the whole source rather than to nothing.
   const targets = computed(() => (kept.value.length > 0 ? kept.value : [...sourceTargets.value]))
   return {
     finishes: readonly(finishes),

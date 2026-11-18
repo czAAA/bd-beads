@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "My beads is gone: the Palette's list of bead colors has no ticks, and the converter no longer matches a picture to a list of codes you own",
+    "ru": "«Мой бисер» убран: в списке цветов бисера в палитре больше нет галочек, а конвертер больше не подбирает цвета изображения по списку ваших кодов",
+    "uk": "«Мій бісер» прибрано: у списку кольорів бісеру в палітрі більше немає пташок, а конвертер більше не добирає кольори зображення за списком ваших кодів",
+    "be": "«Мой бісер» прыбраны: у спісе колераў бісеру ў палітры больш няма птушак, а канвертар больш не падбірае колеры выявы па спісе вашых кодаў",
+    "zh": "“我的珠子”已移除：调色板的珠子颜色列表不再有勾选框，转换器也不再按你拥有的色号清单匹配图片",
+    "es": "Mis cuentas ya no está: la lista de colores de cuentas de la paleta no tiene casillas y el conversor ya no ajusta una imagen a una lista de códigos que tienes",
+    "pl": "Moje koraliki zniknęły: lista kolorów koralików w palecie nie ma pól zaznaczenia, a konwerter nie dopasowuje już obrazu do listy kodów, które masz"
+  }
+}

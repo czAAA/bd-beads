@@ -9,7 +9,6 @@ import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPos
 import { normalizeHex } from '../domain/color'
 import { DEFAULT_EXPORT_QUALITY, parseExportQuality, type ExportQuality } from '../domain/exportQuality'
 import { FIRST_CONVERT_CHOICES, parseConvertChoices, writeConvertChoices, type ConvertChoices } from '../domain/convertChoices'
-import { parseMyBeads, writeMyBeads, type MyBeads } from '../domain/myBeads'
 import { readKey, removeKey } from './storageKeys'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
@@ -208,8 +207,6 @@ export const PREFERENCES = {
     parse: parseConvertChoices,
     write: writeConvertChoices,
   }),
-  /** My beads (ticket 0902, ADR 0010 D-3): the codes owned, one list per Color catalog; none until one is ticked. */
-  myBeads: preference<MyBeads>({ key: 'openbeads:my-beads', fallback: {}, parse: parseMyBeads, write: writeMyBeads }),
   /** The Tool pill tiles whose name a first tap on touch has said (ticket 0927): each says it once on this device. */
   pillTilesNamed: preference<readonly string[]>({
     key: 'openbeads:pill-tiles-named',
@@ -251,9 +248,17 @@ function movedFromEarlier<T>(spec: Preference<T>, storage: PreferenceStorage): T
   return undefined
 }
 
+/** Keys of preferences the app no longer has: My beads (retired by ticket 1090). What a device still holds is dropped. */
+const RETIRED_KEYS = ['openbeads:my-beads']
+
 /** Preferences over a storage of their own: the Homepage's demo keeps its in memory (ticket 0797). */
 export function createDevicePreferences(storage: PreferenceStorage): DevicePreferences {
   const refs = new Map<PreferenceName, Ref<unknown>>()
+  try {
+    for (const key of RETIRED_KEYS) storage.removeItem(key)
+  } catch {
+    // Storage can be blocked: there is nothing to drop then.
+  }
 
   function open<T>(spec: Preference<T>): Ref<T> {
     let value = spec.fallback

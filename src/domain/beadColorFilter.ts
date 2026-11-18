@@ -10,7 +10,7 @@ export interface BeadColorFilter {
   finishes: readonly Finish[]
 }
 
-/** What a search reads of a code: a swatch of the list, or a My beads code the catalog no longer knows (ticket 0903). */
+/** What a search reads of a code. */
 type Searched = Pick<CatalogSwatch, 'code'> & { family?: string }
 
 /** The codes of `swatches` that `typed` finds, in groups, each in catalog order (ticket 0713): the code `typed` names

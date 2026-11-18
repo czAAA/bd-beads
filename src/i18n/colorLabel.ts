@@ -37,9 +37,8 @@ export function colorLabel(t: Translations, color: LabelledColor, catalog?: Colo
   return { text: hex }
 }
 
-/** A catalog code's name after its code, its Finish and its color family ("Opaque Black"): the same words wherever a
- * code is listed, so a bead reads the same in Color by color and in My beads (ticket 0966). */
-export function catalogColorName(t: Translations, family: string, finish: Finish): string {
+/** A catalog code's name after its code, its Finish and its color family ("Opaque Black", ticket 0966). */
+function catalogColorName(t: Translations, family: string, finish: Finish): string {
   const familyWords = colorName(t, { id: familyColorId(family), hex: '' }) || family
   return fillBlanks(t.palette.catalogColorName, { finish: t.palette.beadColors.finishes[finish], family: familyWords })
 }

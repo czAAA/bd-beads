@@ -3,7 +3,6 @@ import { nextTick, ref } from 'vue'
 import { FIRST_CONVERT_CHOICES, type ConvertChoices } from '../../domain/convertChoices'
 import { NEW_PROJECT_DEFAULTS, type CreateProjectInput } from '../../domain/createProject'
 import type { PixelData } from '../../domain/imageConversion'
-import type { MyBeads } from '../../domain/myBeads'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { layersView } from '../../testUtils/layerFields'
@@ -17,15 +16,14 @@ const pixels = (width = 8, height = 8): PixelData => ({ width, height, data: new
 
 function setup(decoded = pixels(), remembered: ConvertChoices = FIRST_CONVERT_CHOICES) {
   const convertChoices = ref(remembered)
-  const myBeads = ref<MyBeads>({})
   const dialogs = useDialogs()
   const appPage = useAppPage()
   const addProject = vi.fn<(project: Project) => void>()
   const onClosed = vi.fn()
   const addToCanvas = vi.fn()
   const showToast = vi.fn()
-  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => decoded, loadCatalog: () => Promise.reject(new Error('none')), onClosed, addToCanvas, convertChoices, myBeads, showToast, messages: () => en })
-  return { dialogs, appPage, addProject, onClosed, addToCanvas, convertChoices, myBeads, showToast, flow }
+  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => decoded, loadCatalog: () => Promise.reject(new Error('none')), onClosed, addToCanvas, convertChoices, showToast, messages: () => en })
+  return { dialogs, appPage, addProject, onClosed, addToCanvas, convertChoices, showToast, flow }
 }
 
 /** Opens the converter and sets a picture, as the person does. */
@@ -133,22 +131,6 @@ describe('useConvertImageFlow', () => {
     expect(next.beadId.value).toBe('toho/round/11-0')
     expect(next.techniqueSettings.value).toEqual({ brickDrop: 2 })
     expect(next.source.value).toBe('exact')
-  })
-
-  it('ticks codes into the device’s My beads, and opens the next converter on My beads when it was the last source (ticket 0902)', async () => {
-    const { flow, convertChoices, myBeads } = setup()
-    flow.open({ ...NEW_PROJECT_DEFAULTS })
-    const first = flow.session.value!
-    first.toggleMyBeadsCode('DB723')
-    first.setSource('my-beads')
-    await first.setFile(picture)
-    flow.onCreate()
-    expect(myBeads.value).toEqual({ 'miyuki-delica': ['DB723'] })
-    expect(convertChoices.value.source).toBe('my-beads')
-
-    flow.onNewProjectDraft({ ...NEW_PROJECT_DEFAULTS })
-    flow.onPicture(picture)
-    expect(flow.session.value!.source.value).toBe('my-beads')
   })
 
   it('keeps the Finishes the match was kept to, and opens the next converter on them (ticket 0901)', async () => {

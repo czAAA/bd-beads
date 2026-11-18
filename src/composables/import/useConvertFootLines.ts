@@ -5,7 +5,7 @@ import { beadLabel } from '../../domain/beads'
 import { estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
-import { plural, pluralForm } from '../../i18n/plural'
+import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 
 /** The result the foot and the phone's dock show, and whether Create Project is on (DS-1, DS-4; tickets 0897, 0911). */
@@ -25,14 +25,12 @@ export function useConvertFootLines() {
     return fillBlanks(words.value.resultBeadsNeeded, { count, grams: formatGrams(grams, t.value.quantities.gramsUnit, locale.value) })
   })
 
-  /** Where fewer colors come out than asked and no list or Finish is the reason, the colors matched to that the picture
-   * has no more to give in (ticket 0928): the Bead, the Default Palette or My beads; none for Exact, whose colors are the
-   * picture's own. */
+  /** Where fewer colors come out than asked and no Finish is the reason, the colors matched to that the picture has no
+   * more to give in (ticket 0928): the Bead or the Default Palette; none for Exact, whose colors are the picture's own. */
   const givenIn = computed(() => {
     const source = wizard.source.value
     if (source === 'bead-colors') return beadLabel(wizard.bead.value)
     if (source === 'default') return words.value.defaultPalette
-    if (source === 'my-beads') return words.value.myBeads.name
     return undefined
   })
 
@@ -40,15 +38,13 @@ export function useConvertFootLines() {
   const lines = computed(() => {
     const shown = result.value?.kept ?? result.value
     if (!ready.value || !shown) return undefined
-    // Too few codes in the Finishes on (ticket 0901), or a My beads list shorter than the count asked (ticket 0902), says
-    // why fewer come out; with neither, that the picture has no more to give (ticket 0928).
+    // Too few codes in the Finishes on (ticket 0901) says why fewer come out; otherwise, that the picture has no more
+    // to give (ticket 0928).
     const used = wizard.usedColorCount.value
     const finish = words.value.finish
     const count = plural(locale.value, used, words.value.colorsCount)
     const colors = wizard.finishesShort.value
       ? fillBlanks(finish.colorsShort, { colors: count, codes: plural(locale.value, wizard.codesLeft.value, finish.codesLeft) })
-      : wizard.myBeadsShort.value
-      ? fillBlanks(pluralForm(locale.value, used, words.value.myBeads.fewerColors), { codes: groupThousands(wizard.myBeadsTargets.value.length, locale.value) }, { count: groupThousands(used, locale.value) })
       : wizard.foundColorCount.value < wizard.maxColors.value && givenIn.value
       ? fillBlanks(words.value.fewerFound.allGiven, { colors: count, bead: givenIn.value })
       : count

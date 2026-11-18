@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import type { ColorCatalog } from '../../domain/colorCatalog'
 import { fitProblems, mountAt } from '../../testUtils/browserFit'
 import ConvertPageHost from '../../testUtils/ConvertPageHost.vue'
 import { flatColorsPicture, pictureSet } from '../../testUtils/convertPicture'
@@ -11,16 +10,6 @@ const props = {
   decodeImage: async () => flatColorsPicture(),
   loadCatalog: async () => undefined,
   readClipboardImage: async () => undefined,
-}
-
-/** A Delica catalog of a few codes, so My beads is offered. */
-const catalog: ColorCatalog = {
-  id: 'miyuki-delica',
-  codes: [
-    { code: 'DB723', family: ['Red'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'] },
-    { code: 'DB726', family: ['Blue'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'] },
-    { code: 'DB721', family: ['Yellow'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'] },
-  ],
 }
 
 const SIZES = [
@@ -215,25 +204,6 @@ describe('the Colors list, Clean up and Lighting as sheets on a phone', () => {
     const was = autoFix().getAttribute('aria-checked')
     await press(root, 'convert-lighting-sheet-switch')
     expect(autoFix().getAttribute('aria-checked'), 'Auto-fix lighting switches in the sheet').not.toBe(was)
-  })
-
-  it('opens My beads in the Colors list\'s place at the same detents, and Back returns to the list', async () => {
-    const withCatalog = await mountAt(ConvertPageHost, { ...props, loadCatalog: async () => catalog }, { locale: 'en', width: 360 })
-    await page.viewport(360, 640)
-    const root = withCatalog.root
-    await pictureSet(root)
-    await settleForMeasuring()
-    await openColorsList(root)
-    await dragGrab(root, -60)
-    await press(root, 'convert-color-source')
-    await press(root, 'convert-edit-my-beads')
-    expect(byId(root, 'convert-my-beads')).not.toBeNull()
-    expect(previewHeight(root), 'still at the full detent').toBe(160)
-    expect(root.querySelectorAll('[data-testid="convert-sheet-close"]').length, 'one head').toBe(1)
-    expect(await fitProblems('Convert image page (My beads sheet)', 'en', 360)).toEqual([])
-    await press(root, 'convert-my-beads-back')
-    expect(byId(root, 'convert-my-beads')).toBeNull()
-    expect(byId(root, 'convert-colors-back')).not.toBeNull()
   })
 
   for (const locale of ['en', 'longest'] as const) {

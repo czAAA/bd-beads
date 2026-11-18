@@ -6,8 +6,7 @@ import AppIcon from '../ui/AppIcon.vue'
 import TextField from '../ui/form/TextField.vue'
 
 // The Bead colors list's find and filter row (BeadColors card, ticket 0746): the search field and, in the narrow layout,
-// the Filters disclosure with its count badge. The Palette popover's list and the converter's My beads view share it
-// (ticket 0903); the list hides the disclosure where its filters stand in a column.
+// the Filters disclosure with its count badge; the list hides the disclosure where its filters stand in a column.
 defineProps<{ filtersOnCount: number }>()
 const query = defineModel<string>('query', { required: true })
 const open = defineModel<boolean>('open', { required: true })

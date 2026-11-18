@@ -23,7 +23,7 @@ const FIRST_SETUP = { beadId: 'miyuki/delica/11-0', technique: 'peyote' } as con
 /** Where a device that has converted nothing starts: Miyuki Delica 11/0 in peyote, its Drop at its default. */
 export const FIRST_CONVERT_CHOICES: ConvertChoices = { ...FIRST_SETUP, techniqueSettings: weaveSettings(FIRST_SETUP) }
 
-const COLOR_SOURCES: readonly ColorSource[] = ['bead-colors', 'my-beads', 'default', 'exact']
+const COLOR_SOURCES: readonly ColorSource[] = ['bead-colors', 'default', 'exact']
 
 /** The choices a saved string stands for, or undefined when it is not choices at all. Each part that no longer reads (a
  * Bead that left the catalog, a Technique or source this build lacks) is the first-time choice for that part. */
@@ -38,7 +38,8 @@ export function parseConvertChoices(raw: string): ConvertChoices | undefined {
   const fields = saved as Record<string, unknown>
   const bead = typeof fields.beadId === 'string' ? findBead(fields.beadId) : undefined
   const technique = TECHNIQUES.find((known) => known === fields.technique)
-  const source = COLOR_SOURCES.find((known) => known === fields.source)
+  // A choice of My beads, retired by ticket 1090, is the Bead's palette it was a part of.
+  const source = fields.source === 'my-beads' ? 'bead-colors' : COLOR_SOURCES.find((known) => known === fields.source)
   const savedFinishes = Array.isArray(fields.finishes) ? (fields.finishes as unknown[]) : []
   const finishes = FINISHES.filter((finish) => savedFinishes.includes(finish))
   return {
