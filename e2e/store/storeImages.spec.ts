@@ -6,10 +6,9 @@ import { fixtureProject } from '../support/projects'
 import { LOCALES } from '../../src/domain/locale'
 import { PREVIEW_SIZE, previewFile } from '../../vite.crawler'
 
-// The installed app's PNG icons and its store screenshots (ticket 1057), and the link previews' pictures (ticket 1056),
-// remade by `npm run store:images`, never in CI. The icons are the design system's own app icon, drawn by the browser
-// at each size; the screenshots are the editor with a Starter's Project open; the previews are each language's Welcome
-// on a new device. The files land in public/, where the manifest and the Homepages' heads name them.
+// The installed app's icons and store screenshots (ticket 1057) and the link previews' pictures (ticket 1056), remade
+// by `npm run store:images`, never in CI: the app icon drawn at each size, the editor with a Starter's Project, each
+// language's Welcome on a new device. They land in public/, where the manifest and the Homepages' heads name them.
 
 const repo = resolve(import.meta.dirname, '../..')
 const APP_ICON = resolve(repo, 'docs/design/system/assets/Logos/bd-beads-app-icon.svg')
