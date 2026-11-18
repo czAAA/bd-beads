@@ -59,20 +59,19 @@ export function radialItemAt(point: { x: number; y: number }, hole: number): Rad
   return RADIAL_PLACES.find((place) => inTurn(angle - (place.angle - place.slice / 2)) < place.slice)?.id
 }
 
-/** What decides which items are off: the Undo list, the Tool pill's recent colours and the pressed bead's colour. */
+/** What decides which items are off: the Undo list and the Tool pill's recent colours. */
 export interface RadialItemsState {
   canUndo: boolean
   canRedo: boolean
   recents: readonly string[]
-  beadHex?: string | null
 }
 
 /** Whether an item is off (RadialToolbox card, States): Undo and Redo with nothing to undo or redo, a recent colour
- * that does not exist yet, Pick color from Canvas with no bead pressed. A tool is never off. */
+ * that does not exist yet. A tool is never off, nor is Pick color from Canvas (ticket 1089). */
 export function radialItemOff(id: RadialItemId, state: RadialItemsState): boolean {
   const place: RadialPlace = RADIAL_PLACES.find((each) => each.id === id)!
   if (place.recent !== undefined) return !state.recents[place.recent]
-  return id === 'undo' ? !state.canUndo : id === 'redo' ? !state.canRedo : id === 'pick-color' ? !state.beadHex : false
+  return id === 'undo' ? !state.canUndo : id === 'redo' ? !state.canRedo : false
 }
 
 /** How many straight steps stand for a slice's arc: at the ring's size they stay within a tenth of a px of it. */

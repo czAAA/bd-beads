@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "Pick color from Canvas in the tools round the pointer now waits for the bead you press next, so it works from an empty position too",
+    "ru": "«Взять цвет с холста» в инструментах у указателя теперь ждёт бисеринку, которую вы нажмёте следующей, и работает и с пустого места",
+    "uk": "«Взяти колір з полотна» в інструментах біля вказівника тепер чекає на бісерину, яку ви натиснете наступною, і працює й з порожнього місця",
+    "be": "«Узяць колер з палатна» ў інструментах каля паказальніка цяпер чакае пацерку, якую вы націснеце наступнай, і працуе і з пустога месца",
+    "zh": "指针旁工具中的“从画布取色”现在会等待你接下来点按的珠子，在空位上也能使用",
+    "es": "«Elegir color del lienzo» en las herramientas junto al puntero ahora espera la cuenta que pulses a continuación, y funciona también desde una posición vacía",
+    "pl": "„Pobierz kolor z płótna” w narzędziach przy wskaźniku czeka teraz na koralik, który naciśniesz jako następny, i działa też z pustego miejsca"
+  }
+}

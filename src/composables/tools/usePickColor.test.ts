@@ -22,41 +22,6 @@ function setup(picking = false, project: Project | null = framed) {
 }
 
 describe('usePickColor', () => {
-  describe('takeColorAt', () => {
-    it('chooses the colour of a Canvas bead and arms nothing', () => {
-      const { deps, takeColorAt } = setup()
-      expect(takeColorAt(2, 2)).toBe(true)
-      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith(GREEN)
-      expect(deps.picking.value).toBe(false)
-    })
-
-    it('chooses the colour of a bead in the Frame, the one seen over the Canvas\'s', () => {
-      const { deps, takeColorAt } = setup()
-      expect(takeColorAt(20, 20)).toBe(true)
-      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith(RED)
-    })
-
-    it('takes the colour of the layer it is told, where the two lie over each other', () => {
-      const { deps, takeColorAt } = setup()
-      takeColorAt(21, 21, 'canvas')
-      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith('#0000ff')
-    })
-
-    it('changes nothing on an empty position or with no Project', () => {
-      const { deps, takeColorAt } = setup()
-      expect(takeColorAt(0, 0)).toBe(false)
-      expect(takeColorAt(21, 22)).toBe(false)
-      expect(setup(false, null).takeColorAt(2, 2)).toBe(false)
-      expect(deps.onSelectCustomColor).not.toHaveBeenCalled()
-    })
-
-    it('leaves an armed pick armed', () => {
-      const { deps, takeColorAt } = setup(true)
-      takeColorAt(2, 2)
-      expect(deps.picking.value).toBe(true)
-    })
-  })
-
   describe('pickColorAt (the armed press)', () => {
     it('lets a press through while nothing is armed', () => {
       const { deps, pickColorAt } = setup()
@@ -73,6 +38,18 @@ describe('usePickColor', () => {
       expect(frame.pickColorAt(20, 20)).toBe(true)
       expect(frame.deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith(RED)
       expect(frame.deps.picking.value).toBe(false)
+    })
+
+    it('takes the colour of the layer it is told, where the two lie over each other', () => {
+      const { deps, pickColorAt } = setup(true)
+      pickColorAt(21, 21, 'canvas')
+      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith('#0000ff')
+    })
+
+    it('takes nothing with no Project', () => {
+      const { deps, pickColorAt } = setup(true, null)
+      expect(pickColorAt(2, 2)).toBe(true)
+      expect(deps.onSelectCustomColor).not.toHaveBeenCalled()
     })
 
     it('takes nothing from an empty position, keeps the pick armed and still consumes the press', () => {

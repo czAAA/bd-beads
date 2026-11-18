@@ -5,7 +5,7 @@ import { RADIAL_PLACES, RADIAL_RING } from '../../domain/radialToolbox'
 
 const RECENTS = ['#1f77b4', '#2ca02c', '#ff7f0e']
 const CENTER = { x: 400, y: 300 }
-const base = { open: true, center: CENTER, activeTool: 'paint', canUndo: true, canRedo: true, recents: RECENTS, beadHex: '#e63746' } as const
+const base = { open: true, center: CENTER, activeTool: 'paint', canUndo: true, canRedo: true, recents: RECENTS } as const
 
 const mountRing = (props: Record<string, unknown> = {}) => mount(RadialToolbox, { props: { ...base, ...props }, attachTo: document.body })
 type Ring = ReturnType<typeof mountRing>
@@ -72,19 +72,28 @@ describe('RadialToolbox (ticket 1064)', () => {
     const pressed = () => RADIAL_PLACES.filter((place) => item(wrapper!, place.id).attributes('aria-pressed') === 'true').map((place) => place.id)
     expect(pressed()).toEqual(['tool-select'])
     expect(item(wrapper, 'tool-select').classes()).toEqual(expect.arrayContaining(['icon-btn--selected', 'icon-btn--accent']))
-    // Undo, Redo and the colours are not toggles.
-    for (const id of ['undo', 'redo', 'pick-color', 'recent-1']) expect(item(wrapper, id).attributes('aria-pressed'), id).toBeUndefined()
+    // Undo, Redo and the recent colours are not toggles.
+    for (const id of ['undo', 'redo', 'recent-1']) expect(item(wrapper, id).attributes('aria-pressed'), id).toBeUndefined()
 
     await wrapper.setProps({ activeTool: undefined })
     expect(pressed()).toEqual([])
   })
 
-  it('turns Undo, Redo and Pick color off when they cannot run', async () => {
+  it('presses Pick color from Canvas while the pick waits for a bead, as its button in the Palette is (ticket 1089)', async () => {
+    wrapper = mountRing({ activeTool: undefined })
+    expect(item(wrapper, 'pick-color').attributes('aria-pressed')).toBe('false')
+
+    await wrapper.setProps({ picking: true })
+    expect(item(wrapper, 'pick-color').attributes('aria-pressed')).toBe('true')
+    expect(item(wrapper, 'pick-color').classes()).toEqual(expect.arrayContaining(['icon-btn--selected', 'icon-btn--accent']))
+  })
+
+  it('turns Undo and Redo off when they cannot run, and never Pick color from Canvas (ticket 1089)', async () => {
     wrapper = mountRing()
     expect(RADIAL_PLACES.filter((place) => off(wrapper!, place.id))).toEqual([])
 
-    await wrapper.setProps({ canUndo: false, canRedo: false, beadHex: null })
-    expect(RADIAL_PLACES.filter((place) => off(wrapper!, place.id)).map((place) => place.id)).toEqual(['pick-color', 'redo', 'undo'])
+    await wrapper.setProps({ canUndo: false, canRedo: false })
+    expect(RADIAL_PLACES.filter((place) => off(wrapper!, place.id)).map((place) => place.id)).toEqual(['redo', 'undo'])
   })
 
   it('keeps the place of a recent colour that does not exist yet as a dashed ring that is off', () => {
@@ -109,8 +118,8 @@ describe('RadialToolbox (ticket 1064)', () => {
   })
 
   it('emits nothing for an item that is off', async () => {
-    wrapper = mountRing({ canUndo: false, canRedo: false, beadHex: null, recents: [] })
-    for (const id of ['undo', 'redo', 'pick-color', 'recent-1', 'recent-2', 'recent-3']) await item(wrapper, id).trigger('click')
+    wrapper = mountRing({ canUndo: false, canRedo: false, recents: [] })
+    for (const id of ['undo', 'redo', 'recent-1', 'recent-2', 'recent-3']) await item(wrapper, id).trigger('click')
     expect(Object.keys(wrapper.emitted()).filter((name) => name !== 'click')).toEqual([])
   })
 
@@ -133,7 +142,7 @@ describe('RadialToolbox (ticket 1064)', () => {
     expect(wrapper.find('[data-testid="radial-name"]').exists()).toBe(false)
   })
 
-  it('writes a recent colour\'s hex and the pressed bead\'s hex after the name', async () => {
+  it('writes a recent colour\'s hex after the name, and nothing after Pick color from Canvas (ticket 1089)', async () => {
     wrapper = mountRing()
     await hover(wrapper, 17)
     expect(wrapper.get('[data-testid="radial-name"] strong').text()).toBe('Recent 2')
@@ -141,7 +150,7 @@ describe('RadialToolbox (ticket 1064)', () => {
 
     await hover(wrapper, 309)
     expect(wrapper.get('[data-testid="radial-name"] strong').text()).toBe('Pick color from Canvas')
-    expect(wrapper.get('.radial-toolbox__name-meta').text()).toBe('#e63746')
+    expect(wrapper.find('.radial-toolbox__name-meta').exists()).toBe(false)
   })
 
   it('names an item that is off without its hover look, and a finger has no hover', async () => {

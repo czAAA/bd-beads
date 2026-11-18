@@ -671,7 +671,7 @@ const drawingStyle = computed(() => {
               :can-undo="canUndo"
               :can-redo="canRedo"
               :recents="recentsInPill"
-              :bead-hex="radialToolbox.beadHex.value"
+              :picking="colorPick?.picking.value"
               :held="radialToolbox.held.value"
               @select-tool="radialToolbox.selectTool"
               @pick-recent="radialToolbox.pickRecent"

@@ -5,7 +5,6 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { RADIAL_HOLE, RADIAL_RING } from '../../domain/radialToolbox'
 import { withLayers } from '../../testUtils/layerFields'
-import { usePickColor } from './usePickColor'
 import { useRadialToolboxFlow } from './useRadialToolboxFlow'
 
 const GREEN = '#00aa00'
@@ -20,14 +19,12 @@ const framed: Project = withLayers(base, {
 
 const AT = { x: 300, y: 200 }
 
-/** The flow over one Project, with Pick color's real step (ticket 1073) and spies for the controls' handlers. */
+/** The flow over one Project, with spies for the controls' handlers. */
 function setup({ demo = false }: { demo?: boolean } = {}) {
   const project = shallowRef<Project | null>(framed)
   const readOnly = ref(false)
   const can = { undo: ref(true), redo: ref(true) }
   const recents = ref(['#111111', '#222222'])
-  const onSelectCustomColor = vi.fn()
-  const { takeColorAt } = usePickColor({ picking: ref(false), currentProject: () => project.value, onSelectCustomColor })
   const deps = {
     currentProject: () => project.value,
     readOnly: () => readOnly.value,
@@ -39,9 +36,9 @@ function setup({ demo = false }: { demo?: boolean } = {}) {
     pickRecent: vi.fn(),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
-    takeColorAt,
+    toggleColorPick: vi.fn(),
   }
-  return { project, readOnly, can, deps, onSelectCustomColor, ring: useRadialToolboxFlow(deps) }
+  return { project, readOnly, can, deps, ring: useRadialToolboxFlow(deps) }
 }
 
 describe('useRadialToolboxFlow (ticket 1064)', () => {
@@ -52,7 +49,7 @@ describe('useRadialToolboxFlow (ticket 1064)', () => {
     ring.openAt(AT, { row: 2, column: 2 })
     expect(ring.open.value).toBe(true)
     expect(ring.center.value).toEqual(AT)
-    expect(ring.beadHex.value).toBe(GREEN)
+    expect(ring.pressed.value).toEqual({ row: 2, column: 2 })
 
     ring.close()
     expect(ring.open.value).toBe(false)
@@ -125,40 +122,15 @@ describe('useRadialToolboxFlow (ticket 1064)', () => {
     expect(ring.open.value).toBe(true)
   })
 
-  it('Pick color from Canvas takes the pressed bead\'s colour, on the Canvas or in the Frame, and closes the ring', () => {
-    const { ring, onSelectCustomColor } = setup()
-    ring.openAt(AT, { row: 2, column: 2 })
-    ring.pickColor()
-    expect(onSelectCustomColor).toHaveBeenCalledExactlyOnceWith(GREEN)
-    expect(ring.open.value).toBe(false)
-
-    ring.openAt(AT, { row: 20, column: 20, layer: 'frame' })
-    expect(ring.beadHex.value).toBe(RED)
-    ring.pickColor()
-    expect(onSelectCustomColor).toHaveBeenLastCalledWith(RED)
-  })
-
-  it('Pick color from Canvas is off on an empty position, over the Frame\'s margin and off the beads: it takes nothing and the ring stays', () => {
-    const { ring, onSelectCustomColor } = setup()
-    for (const position of [{ row: 0, column: 0 }, { row: 18, column: 18 }, undefined]) {
+  it('Pick color from Canvas does what its button in the Palette does and closes the ring, wherever the ring was opened: on a bead, an empty position, the Frame\'s margin or off the beads (ticket 1089)', () => {
+    const { ring, deps } = setup()
+    const places = [{ row: 2, column: 2 }, { row: 20, column: 20, layer: 'frame' as const }, { row: 0, column: 0 }, { row: 18, column: 18 }, undefined]
+    for (const position of places) {
       ring.openAt(AT, position)
-      expect(ring.beadHex.value).toBeNull()
       ring.pickColor()
-      expect(ring.open.value).toBe(true)
+      expect(ring.open.value).toBe(false)
     }
-    expect(onSelectCustomColor).not.toHaveBeenCalled()
-  })
-
-  it('follows the pressed bead as the Project holds it now, so an Undo that changes it changes what Pick color takes', () => {
-    const { ring, project } = setup()
-    ring.openAt(AT, { row: 2, column: 2 })
-    expect(ring.beadHex.value).toBe(GREEN)
-
-    project.value = withLayers(framed, { beads: withColors({}, [{ row: 2, column: 2, color: RED }]) })
-    expect(ring.beadHex.value).toBe(RED)
-
-    project.value = withLayers(framed, { beads: {} })
-    expect(ring.beadHex.value).toBeNull()
+    expect(deps.toggleColorPick).toHaveBeenCalledTimes(places.length)
   })
 
   describe('the hold (ticket 1065)', () => {
@@ -300,11 +272,11 @@ describe('useRadialToolboxFlow: the slide (ticket 1077)', () => {
     expect(ring.open.value).toBe(false)
   })
 
-  it('a lift on Pick color from Canvas takes the pressed bead\'s colour and closes the ring', () => {
-    const { ring, onSelectCustomColor } = setup()
-    ring.openAt(AT, { row: 2, column: 2 })
+  it('a lift on Pick color from Canvas does what its button does and closes the ring, with no bead pressed too (ticket 1089)', () => {
+    const { ring, deps } = setup()
+    ring.openAt(AT)
     ring.slideLift(toward(PICK_COLOR))
-    expect(onSelectCustomColor).toHaveBeenCalledExactlyOnceWith(GREEN)
+    expect(deps.toggleColorPick).toHaveBeenCalledTimes(1)
     expect(ring.open.value).toBe(false)
   })
 
@@ -321,16 +293,15 @@ describe('useRadialToolboxFlow: the slide (ticket 1077)', () => {
   })
 
   it('a lift on an item that is off picks nothing and leaves the ring open', () => {
-    const { ring, deps, can, onSelectCustomColor } = setup()
+    const { ring, deps, can } = setup()
     can.undo.value = false
     can.redo.value = false
-    // No bead was pressed, and the Tool pill shows two recent colours only.
+    // The Tool pill shows two recent colours only.
     ring.openAt(AT)
-    for (const angle of [UNDO, REDO, PICK_COLOR, RECENT_3]) ring.slideLift(toward(angle))
+    for (const angle of [UNDO, REDO, RECENT_3]) ring.slideLift(toward(angle))
     expect(deps.onUndo).not.toHaveBeenCalled()
     expect(deps.onRedo).not.toHaveBeenCalled()
     expect(deps.pickRecent).not.toHaveBeenCalled()
-    expect(onSelectCustomColor).not.toHaveBeenCalled()
     expect(ring.open.value).toBe(true)
     expect(ring.held.value).toBeUndefined()
   })

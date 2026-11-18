@@ -9,7 +9,7 @@ import RadialToolbox from './RadialToolbox.vue'
 // hole lets a press through, and that the ring and its name fit a phone.
 
 const CENTER = { x: 195, y: 400 }
-const props = { open: true, center: CENTER, activeTool: 'paint', canUndo: true, canRedo: true, recents: ['#1f77b4', '#2ca02c', '#ff7f0e'], beadHex: '#e63746' }
+const props = { open: true, center: CENTER, activeTool: 'paint', canUndo: true, canRedo: true, recents: ['#1f77b4', '#2ca02c', '#ff7f0e'] }
 const ITEMS = RADIAL_PLACES.map((place) => `radial-${place.id}`)
 
 /** The item whose control answers a press at a point of the screen. */

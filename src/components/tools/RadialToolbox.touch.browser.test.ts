@@ -10,7 +10,7 @@ import RadialToolbox from './RadialToolbox.vue'
 describe('RadialToolbox hit areas on touch (ticket 1064)', () => {
   it('gives every item a touch-target hit area that lies over no other', async () => {
     expectTouchScreen()
-    const props = { open: true, center: { x: 195, y: 400 }, activeTool: 'paint', canUndo: true, canRedo: false, recents: ['#1f77b4'], beadHex: null }
+    const props = { open: true, center: { x: 195, y: 400 }, activeTool: 'paint', canUndo: true, canRedo: false, recents: ['#1f77b4'] }
     const { root } = await mountAt(RadialToolbox, props, { locale: 'en', width: 390, text: false })
     const tiles = byTestid(root, RADIAL_PLACES.map((place) => `radial-${place.id}`))
     // A tile's corners are round (`radius-lg`): its own drawing starts where they cross its box's diagonal.

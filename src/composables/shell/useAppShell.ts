@@ -604,9 +604,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** Pick color from canvas (ticket 398): the next press on a bead takes its color (an empty cell does nothing); a
-   * tool choice or Escape ends it. takeColorAt is the same step without arming (ticket 1073). */
-  const { takeColorAt, pickColorAt } = usePickColor({ picking: pickingColor, currentProject, onSelectCustomColor })
-  provideColorPick({ picking: pickingColor, toggle: () => (pickingColor.value = !pickingColor.value) })
+   * tool choice or Escape ends it. The Palette's button and the Radial toolbox arm it through one handler (ticket
+   * 1089). */
+  const { pickColorAt } = usePickColor({ picking: pickingColor, currentProject, onSelectCustomColor })
+  const toggleColorPick = () => {
+    pickingColor.value = !pickingColor.value
+  }
+  provideColorPick({ picking: pickingColor, toggle: toggleColorPick })
 
   /** The Radial toolbox (ticket 1064, ADR 0098): each pick goes to the handler its own control calls. */
   const radialToolbox = useRadialToolboxFlow({
@@ -620,7 +624,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     pickRecent: toolPill.pickRecent,
     onUndo,
     onRedo,
-    takeColorAt,
+    toggleColorPick,
     screen: radialScreenOfWindow,
   })
 
