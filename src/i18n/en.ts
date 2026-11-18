@@ -330,6 +330,7 @@ export const en: Translations = {
       hand: 'Hand',
       rulers: 'Rulers',
       rightClickForTools: 'right-click for tools',
+      holdCanvasForTools: 'hold the Canvas for tools',
       twoFingersToMove: 'two fingers to move',
       pinchToZoom: 'pinch to zoom',
       holdForName: 'hold a button for its name',

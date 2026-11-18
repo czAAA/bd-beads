@@ -2,7 +2,7 @@
 
 A ring of the ten most used drawing actions that opens round the pointer, so a maker changes tool or colour without travelling to the Tool pill. On a 13-inch screen the pill, docked at one edge, can be most of the screen away from the bead being drawn.
 
-**In the app since ticket 1064:** the ring, its opening by a right click and picking by a click. **Since ticket 1076:** the ring kept on the screen near an edge and the pressed bead's outline (Anatomy). **Approved 2026-11-18, not yet in the app:** the hold (ticket 1065), the slide (ticket 1077). The whole was signed off on mockups taken on the real editor, so its tickets build from this one text: each part below names its ticket, and that ticket removes the note when it lands. The decisions and what was turned down are in ADR 0098 (the Radial toolbox: ten actions in a ring round the pointer).
+**In the app since ticket 1064:** the ring, its opening by a right click and picking by a click; since ticket 1065 its opening by a hold. **Since ticket 1076:** the ring kept on the screen near an edge and the pressed bead's outline (Anatomy). **Approved 2026-11-18, not yet in the app:** the slide (ticket 1077). The whole was signed off on mockups taken on the real editor, so its tickets build from this one text: each part below names its ticket, and that ticket removes the note when it lands. The decisions and what was turned down are in ADR 0098 (the Radial toolbox: ten actions in a ring round the pointer).
 
 Sizes are this design system's px (1/16 rem in the app). Angles are degrees clockwise from straight up.
 
@@ -75,7 +75,9 @@ Every item runs the code path its existing control runs, so nothing is reachable
 - **How long:** `--hold-duration` (500ms), the same hold that shows a control's Tooltip, so "hold" is one length in the app.
 - **A move is still a stroke.** If the pointer moves 8px before the hold is up, the hold is off and the stroke goes on. That 8px is the Tool pill's drag threshold and the right button's above: one value. A second finger ends the hold too.
 - **What is seen:** nothing for `--hold-quiet` (150ms), so a tap never shows anything. Then a hairline in `ink`, `--pill-tile-outline` wide with round ends, is drawn once round the pressed point, clockwise from the top, on a circle of radius 60: where the ring's inner edge will be, and wider than a fingertip. It closes as the hold ends, and the ring comes in where it was.
-- **Nothing is left behind.** Paint, Eraser and Select start at the press, so a tap is as quick as without the hold; when the hold completes that start is dropped, as the first finger of a pinch is: no bead, no Selection, no Undo step. **Fill lands at the lift,** on the bead that was pressed, so a hold never flashes a fill.
+- **Nothing is left behind.** Paint, Eraser and Select start at the press, so a tap is as quick as without the hold; when the hold completes that start is dropped, as the first finger of a pinch is: no bead, no Selection, no Undo step. **Fill lands at the lift,** on the bead that was pressed, so a hold never flashes a fill. A Piece tap, which selects at the press, gives back the Selection it replaced.
+- **Not timed:** a press a handle takes, and the press Pick color from Canvas is waiting for, which takes its colour at once and cannot be taken back.
+- **After it opens** the pointer is still down and belongs to no tool. A lift leaves the ring open for a tap; the slide (ticket 1077) picks in the same gesture.
 
 ## Picking
 

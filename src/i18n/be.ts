@@ -333,6 +333,7 @@ export const be: Translations = {
       hand: 'Рука',
       rulers: 'Лінейкі',
       rightClickForTools: 'пстрычка правай кнопкай: інструменты',
+      holdCanvasForTools: 'утрыманне на палатне: інструменты',
       twoFingersToMove: 'два пальцы: зрух',
       pinchToZoom: 'звядзенне пальцаў: маштаб',
       holdForName: 'утрыманне кнопкі: яе назва',

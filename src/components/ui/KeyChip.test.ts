@@ -54,7 +54,7 @@ describe('hotkey chips follow the device (ticket 438)', () => {
     const dock = mount(ToolPill, { props: PILL_PROPS })
     const hint = mount(CanvasHint)
     expect(dock.find('.icon-btn__key').exists()).toBe(false)
-    expect(hint.findAll('span').map((part) => part.text())).toEqual(['two fingers to move', '·', 'pinch to zoom', '·', 'hold a button for its name'])
+    expect(hint.findAll('span').map((part) => part.text())).toEqual(['two fingers to move', '·', 'pinch to zoom', '·', 'hold a button for its name', '·', 'hold the Canvas for tools'])
     expect(hint.find('kbd').exists()).toBe(false)
   })
 })

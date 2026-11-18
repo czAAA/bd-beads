@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { HOLD_MS } from '../../domain/hold'
 import { cssZoomOf } from '../../composables/ui/cssZoom'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
@@ -10,7 +11,7 @@ import type { TooltipProps } from './tooltipProps'
 
 // The design system's Tooltip (tickets 157, 327, 453; Menu card): name in bold, optional `hotkey` and `body`. Shows on
 // hover held HOVER_DELAY_MS (not again after a press until the pointer leaves), keyboard focus, a touch/pen press held
-// LONG_PRESS_MS (ticket 166) or a click on a disabled or `opensOnClick` control. Never clipped: a top-layer popover.
+// HOLD_MS (ticket 166, the Canvas's hold too) or a click on a disabled or `opensOnClick` control. Never clipped: a top-layer popover.
 const props = withDefaults(defineProps<TooltipProps>(), {
   body: undefined,
   placement: 'bottom',
@@ -32,7 +33,6 @@ const VIEWPORT_MARGIN_PX = 8
 /** The bubble's gap to its trigger (the design system's space-6). */
 const TRIGGER_GAP_PX = 6
 
-const LONG_PRESS_MS = 500
 /** How long after the release of a long press that showed the tip its click may still come, and is swallowed. */
 const RELEASE_CLICK_MS = 1000
 /** How long a mouse or hovering pen rests on the trigger before the tip shows, so passing over it shows nothing. */
@@ -211,7 +211,7 @@ function onPointerDown(event: PointerEvent) {
       longPressTimer = undefined
       heldOpen = true
       show()
-    }, LONG_PRESS_MS)
+    }, HOLD_MS)
   }
 }
 
