@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
-import { beadColor, pressBead, rightClickBead } from './testUtils/beads'
+import { beadColor, holdBead, pressBead, rightClickBead } from './testUtils/beads'
 import { toolState } from './testUtils/pill'
 
 // The Radial toolbox's wiring (ticket 1064, spec 1072): a right click on the Canvas reaches the ring's flow, and a pick
@@ -81,6 +81,27 @@ describe('the Radial toolbox', () => {
     expect(beadColor(wrapper, 6)).toBeNull()
     await pick('redo')
     expect(beadColor(wrapper, 6)).toBe(first)
+    wrapper.unmount()
+  })
+
+  it('a hold on the Canvas opens the ring and places no bead, and a tap on a recent colour chooses it (ticket 1065)', async () => {
+    localStorage.setItem('openbeads:recent-colors', '#1d3557,#f1c453')
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+
+    await holdBead(wrapper, 40)
+    await flushPromises()
+    expect(ring(wrapper).isVisible()).toBe(true)
+    // The press's bead was taken back with no Undo step.
+    expect(beadColor(wrapper, 40)).toBeNull()
+    expect(ring(wrapper).get('[data-testid="radial-undo"]').attributes('aria-disabled')).toBe('true')
+
+    await ring(wrapper).get('[data-testid="radial-recent-1"]').trigger('click')
+    await flushPromises()
+    expect(ring(wrapper).isVisible()).toBe(false)
+
+    await pressBead(wrapper, 5)
+    await wrapper.get('[data-testid="project-surface"]').trigger('pointerup')
+    expect(beadColor(wrapper, 5)).toBe('#1d3557')
     wrapper.unmount()
   })
 })

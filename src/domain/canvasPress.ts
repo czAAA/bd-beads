@@ -2,11 +2,26 @@ import { DRAG_SLOP_PX } from './dragSlop'
 import { HOLD_MS } from './hold'
 import { pointerDraws, type InputMode } from './inputMode'
 
-/** What a press on the Canvas is so far (spec 1072, "what a press becomes"). The right button `waits` to be told a
- * click from a drag, is a `pan` until it lifts, or was a click that opens the `ring` (the Radial toolbox, ticket 1064).
- * The drawing pointer is `held` while its hold is timed (ticket 1065), a `stroke` as today once the hold is off, or
- * `sliding`: the hold opened the ring and the pointer is still down. `nothing`: over, with no more for this rule to do. */
-export type CanvasPress = 'waits' | 'pan' | 'ring' | 'nothing' | 'held' | 'stroke' | 'sliding'
+/** What a press on the Canvas is so far (spec 1072, "what a press becomes"). The right button: */
+type RightPress =
+  /** it has not yet told a click from a drag, */
+  | 'waits'
+  /** it moves the Canvas until it lifts, */
+  | 'pan'
+  /** or it was a click, which opens the Radial toolbox where it was pressed (ticket 1064). */
+  | 'ring'
+
+/** The drawing pointer (ticket 1065): */
+type HeldPress =
+  /** its hold is being timed while its tool has started, */
+  | 'held'
+  /** the hold is off and the press is a stroke as today, */
+  | 'stroke'
+  /** or the hold opened the ring and the pointer is still down. */
+  | 'sliding'
+
+/** What a press is so far; `nothing` once it is over, with no more for this rule to do. */
+export type CanvasPress = RightPress | HeldPress | 'nothing'
 
 /** What happens to a press: its button goes down (with the pointer's kind and the input mode, for a press that may be
  * a hold), its pointer is `moved` px (on screen) from where it went down, it has been `held` this many ms, a second
@@ -28,10 +43,9 @@ function timesHold(step: Extract<CanvasPressStep, { type: 'down' }>): boolean {
   return step.button === 0 && onGlass && (step.inputMode === undefined || pointerDraws(step.inputMode, step.pointerType ?? ''))
 }
 
-/** What a press becomes at each step (tickets 1074, 1064, 1065; ADR 0098). The right button waits; moved `DRAG_SLOP_PX`
- * it pans until it lifts; lifted before that it opens the ring. The drawing pointer is held; moved `DRAG_SLOP_PX` or
- * joined by a second finger it is a stroke; still for `HOLD_MS` it opens the ring and slides. None for a press this
- * rule does not decide: a mouse's other buttons, the pointer that moves the Canvas. */
+/** What a press becomes at each step (tickets 1074, 1064, 1065; ADR 0098). The right button waits, pans once moved
+ * `DRAG_SLOP_PX`, or opens the ring at its lift. The drawing pointer is held: moved as far or joined by a second finger
+ * it is a stroke, still for `HOLD_MS` it opens the ring and slides. None for a press this rule does not decide. */
 export function pressBecomes(press: CanvasPress, step: Exclude<CanvasPressStep, { type: 'down' }>): CanvasPress
 export function pressBecomes(press: CanvasPress | undefined, step: CanvasPressStep): CanvasPress | undefined
 export function pressBecomes(press: CanvasPress | undefined, step: CanvasPressStep): CanvasPress | undefined {

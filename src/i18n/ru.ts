@@ -332,6 +332,7 @@ export const ru: Translations = {
       hand: 'Рука',
       rulers: 'Линейки',
       rightClickForTools: 'щелчок правой кнопкой: инструменты',
+      holdCanvasForTools: 'удержание на холсте: инструменты',
       twoFingersToMove: 'два пальца: сдвиг',
       pinchToZoom: 'сведение пальцев: масштаб',
       holdForName: 'удержание кнопки: её название',

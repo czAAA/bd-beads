@@ -1,3 +1,5 @@
+import { vi } from 'vitest'
+import { HOLD_MS } from '../domain/hold'
 import { beadColorAt } from '../domain/layerBeads'
 import { projectDimensions } from '../domain/projectExtent'
 import { rowProgressOf, rowProgressOn } from '../domain/rowProgress'
@@ -83,6 +85,19 @@ export async function rightClickBead(wrapper: Anywhere, at: BeadAt): Promise<voi
   const point = beadPoint(wrapper, at)
   await surfaceRoot(wrapper).trigger('pointerdown', { ...point, button: 2, buttons: 2, isPrimary: true })
   await surfaceRoot(wrapper).trigger('pointerup', { ...point, button: 2, buttons: 0, isPrimary: true })
+}
+
+/** Holds a finger still on a bead for the hold's length and lifts it, which opens the Radial toolbox there in Mouse
+ * mode (ticket 1065); the clock is faked for the wait. */
+export async function holdBead(wrapper: Anywhere, at: BeadAt): Promise<void> {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  try {
+    await pressBead(wrapper, at, { pointerType: 'touch' })
+    vi.advanceTimersByTime(HOLD_MS)
+  } finally {
+    vi.useRealTimers()
+  }
+  await surfaceRoot(wrapper).trigger('pointerup', { ...beadPoint(wrapper, at), pointerType: 'touch', isPrimary: true })
 }
 
 /** Moves the pointer onto a bead, with a button held to continue a stroke (`{ buttons: 1 }`) or none for a plain

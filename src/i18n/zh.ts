@@ -332,6 +332,7 @@ export const zh: Translations = {
       hand: '抓手',
       rulers: '标尺',
       rightClickForTools: '右键点击打开工具',
+      holdCanvasForTools: '长按画布打开工具',
       twoFingersToMove: '双指移动',
       pinchToZoom: '双指捏合缩放',
       holdForName: '长按按钮查看名称',
