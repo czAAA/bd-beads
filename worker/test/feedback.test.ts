@@ -192,11 +192,13 @@ describe('POST /api/feedback', () => {
       expect(row?.reports).toBe(3)
     }))
 
-  it('refuses every Report when FEEDBACK_DAILY_LIMIT is not a number', () =>
-    withWorker({ vars: { FEEDBACK_DAILY_LIMIT: 'many' } }, async (worker) => {
-      expect((await send(worker, { kind: 'general', fields: { message: 'Hi' }, context })).status).toBe(503)
-      expect(postedIssue(worker)).toBeUndefined()
-    }))
+  for (const [why, limit] of [['not a number', 'many'], ['not set', undefined]] as const) {
+    it(`refuses every Report when FEEDBACK_DAILY_LIMIT is ${why}`, () =>
+      withWorker({ vars: { FEEDBACK_DAILY_LIMIT: limit } }, async (worker) => {
+        expect((await send(worker, { kind: 'general', fields: { message: 'Hi' }, context })).status).toBe(503)
+        expect(postedIssue(worker)).toBeUndefined()
+      }))
+  }
 
   it('answers 502 feedback-failed when GitHub refuses, and logs a 401 by name', async () => {
     await withWorker({ reply: fakes(401) }, async (worker) => {

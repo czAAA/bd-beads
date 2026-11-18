@@ -24,21 +24,25 @@ export interface StartOptions {
   env?: 'dev' | 'production'
   /** `worker` is the deployed module; `fixture` adds the tests' own routes and daily hook. */
   entry?: 'worker' | 'fixture'
-  /** Variables and secrets, as the dashboard would set them, over the config's own. */
-  vars?: Record<string, string | number>
+  /** Variables and secrets, as the dashboard would set them, over the config's own and `TEST_LEVELS`; `undefined`
+   * leaves one unset. */
+  vars?: Record<string, string | number | undefined>
   /** Answers the Worker's outbound calls; each is recorded in `outbound` first. Default: `{}`. */
   reply?: (call: Outbound) => Response | Promise<Response>
   /** Rate Limiting bindings besides the environment's own `ratelimits`, which they replace by name. */
   ratelimits?: Record<string, { limit: number; period: 10 | 60 }>
   /** Binds this database to something that isn't one, so every query on it throws. */
   brokenDatabase?: 'CORE' | 'BLOBS_DB'
+  /** Keeps dev's Access check (ticket 395) on; off by default, so the other tests need no Access token. */
+  access?: boolean
 }
 
 type D1 = Awaited<ReturnType<Miniflare['getD1Database']>>
 type R2 = Awaited<ReturnType<Miniflare['getR2Bucket']>>
 
 export interface RunningWorker {
-  /** A request to the Worker's origin (`http://localhost`), routed as the platform would: assets or the Worker. */
+  /** A request to the Worker's origin (`http://localhost`), or to a full URL such as another hostname of it, routed
+   * as the platform would: assets or the Worker. */
   fetch(path: string, init?: RequestInit): Promise<Response>
   /** Fires the Cron Trigger as if at `time`; says how the run ended ('ok' or 'exception'). */
   scheduled(time: Date): Promise<string>
@@ -51,6 +55,21 @@ export interface RunningWorker {
   dispose(): Promise<void>
 }
 
+/** The limits and warn levels both Workers get in the tests, as the dashboard sets them in each deploy (they are not in
+ * `wrangler.jsonc`). Made-up values, the same for both: a test that needs another passes it in `vars`. */
+const TEST_LEVELS: Record<string, number> = {
+  FEEDBACK_DAILY_LIMIT: 30,
+  UPLOAD_CAP_D1_BYTES: 1_990_000,
+  UPLOAD_CAP_R2_MB: 90,
+  BLOBS_STORAGE_LIMIT_MB: 50,
+  WARN_API_REQUESTS: 1000,
+  WARN_D1_ROWS_WRITTEN: 1000,
+  WARN_BLOBS_DB_MB: 25,
+  WARN_CORE_DB_MB: 25,
+  WARN_R2_STORAGE_MB: 25,
+  WARN_WORKER_ERRORS: 10,
+}
+
 /** The Worker's origin in the tests; a changing request must name it in `Origin`. */
 export const ORIGIN = 'http://localhost'
 
@@ -59,7 +78,7 @@ export const ORIGIN = 'http://localhost'
 interface WranglerEnvironment {
   compatibility_date?: string
   compatibility_flags: string[]
-  vars: Record<string, string | number>
+  vars: Record<string, string | number | Record<string, string>>
   d1_databases: Array<{ binding: string; database_name?: string; migrations_dir?: string }>
   r2_buckets: Array<{ binding: string; bucket_name?: string }>
   assets?: { binding?: string; run_worker_first?: boolean | string[] }
@@ -99,6 +118,8 @@ async function migrate(db: D1, dir: string): Promise<void> {
 /** Starts the Worker with fresh, migrated databases and an empty bucket. Call `dispose` when done. */
 export async function startWorker(options: StartOptions = {}): Promise<RunningWorker> {
   const config: WranglerEnvironment = unstable_readConfig({ config: join(root, 'wrangler.jsonc'), env: options.env ?? 'dev' })
+  const { ACCESS_AUD, ...vars } = config.vars
+  if (options.access && ACCESS_AUD !== undefined) vars.ACCESS_AUD = ACCESS_AUD
   const databases = config.d1_databases.filter((db) => db.binding !== options.brokenDatabase)
   const assetsDir = mkdtempSync(join(tmpdir(), 'bd-beads-assets-'))
   writeFileSync(join(assetsDir, 'index.html'), '<!doctype html><title>app</title>')
@@ -109,11 +130,14 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
     script: await bundle(options.entry ?? 'worker'),
     compatibilityDate: config.compatibility_date,
     compatibilityFlags: config.compatibility_flags,
-    bindings: {
-      ...config.vars,
-      ...options.vars,
-      ...(options.brokenDatabase ? { [options.brokenDatabase]: 'not a database' } : {}),
-    },
+    bindings: Object.fromEntries(
+      Object.entries({
+        ...vars,
+        ...TEST_LEVELS,
+        ...options.vars,
+        ...(options.brokenDatabase ? { [options.brokenDatabase]: 'not a database' } : {}),
+      }).filter(([, value]) => value !== undefined),
+    ),
     d1Databases: Object.fromEntries(databases.map((db) => [db.binding, db.database_name ?? db.binding])),
     r2Buckets: Object.fromEntries(config.r2_buckets.map((bucket) => [bucket.binding, bucket.bucket_name ?? bucket.binding])),
     ratelimits: Object.fromEntries(
@@ -153,7 +177,8 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
   await miniflare.ready
   for (const db of databases) await migrate(await miniflare.getD1Database(db.binding), db.migrations_dir ?? '')
   return {
-    fetch: (path, init) => miniflare.dispatchFetch(`${ORIGIN}${path}`, init as never) as unknown as Promise<Response>,
+    fetch: (path, init) =>
+      miniflare.dispatchFetch(path.startsWith('/') ? `${ORIGIN}${path}` : path, init as never) as unknown as Promise<Response>,
     async scheduled(time) {
       const worker = await miniflare.getWorker()
       return (await worker.scheduled({ scheduledTime: time, cron: config.triggers.crons?.[0] ?? '' })).outcome

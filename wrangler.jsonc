@@ -3,11 +3,11 @@
 // `--env dev` or `--env production` (docs/deploy.md). Bindings and variables are NOT inherited between environments,
 // so each lists its own.
 //
-// Variables the maintainer sets in the dashboard, DISABLED_FEATURES above all, are never declared here: `keep_vars`
-// leaves them alone on deploy, but a value declared here would be put back by every deploy. Secrets (Turnstile key,
-// Healthchecks ping URL, analytics token, Google client secret) are set with `wrangler secret put`, never here.
-//
-// Sizes are in MB of 1,048,576 bytes; counts are per UTC day. The warn levels are spec 385's table.
+// Variables the maintainer sets in the dashboard are never declared here: `keep_vars` leaves them alone on deploy, but
+// a value declared here would be put back by every deploy. They are DISABLED_FEATURES, and every limit and warn level
+// (FEEDBACK_DAILY_LIMIT, UPLOAD_CAP_*, BLOBS_STORAGE_LIMIT_MB, WARN_*; their values are in the private runbook, and one
+// missing refuses or warns, worker/src/env.ts). Secrets (Turnstile key, Healthchecks ping URL, analytics token, Google
+// client secret) are set with `wrangler secret put`, never here.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bd-beads",
@@ -25,7 +25,7 @@
     // `404.html`, which leads to the Homepage.
     "not_found_handling": "404-page",
     // The Worker runs only for /api/*: loading the app never counts as a Worker request, and keeps working when /api
-    // is over its daily cap or switched off.
+    // is down or switched off.
     "run_worker_first": ["/api/*"]
   },
   "env": {
@@ -43,6 +43,14 @@
         // this. One setting per Worker, never read off the request's Host, so a `workers.dev` address (which Google
         // refuses) can't make a redirect URI that isn't listed.
         "PUBLIC_ORIGIN": "https://dev.openbeads.com",
+        // Ticket 395: dev answers only a request that carries a valid Access token for the application of the host it
+        // came in on, so a mistake in the Access setup can't open it. Each host is its own Access application, with its
+        // own Audience tag (not secret). Production declares none, so it doesn't check.
+        "ACCESS_TEAM_DOMAIN": "https://bdbeads.cloudflareaccess.com",
+        "ACCESS_AUD": {
+          "bd-beads-dev.bd4beads.workers.dev": "a103488b0696e24e9db1ce7d23bb4a32b76a9ccb6a5b0b9af252df116fee7a06",
+          "dev.openbeads.com": "7a4eaa9a9c18a6b6695210fded5a9a8110a2404f319c061f18e2a1fb8708e2f3"
+        },
         // This Worker's own script, databases and bucket, which dev's watchdog filters Cloudflare's analytics by (it
         // counts only its own usage).
         "CF_ACCOUNT_ID": "925d034d8d4ae6552ded069d92010749",
@@ -56,23 +64,7 @@
         "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
         // ADR 0081: the private repo a Report from the Feedback sheet becomes an issue in, the same for both Workers.
         // Its token is the secret GITHUB_TOKEN.
-        "FEEDBACK_REPO": "czAAA/bd-beads-docs",
-        // Ticket 1051: Reports this Worker takes per UTC day; past it the sheet says temporarily unavailable and the
-        // watchdog reports it. The per-minute limits below stop a burst, this a slow flood.
-        "FEEDBACK_DAILY_LIMIT": 30,
-        // Upload caps (ticket 323 sets the final numbers): just under D1's 2,000,000-byte row, and under Cloudflare's
-        // 100 MB request body.
-        "UPLOAD_CAP_D1_BYTES": 1990000,
-        "UPLOAD_CAP_R2_MB": 90,
-        // Uploads to the blobs database are refused with 507 storage-full past this size.
-        "BLOBS_STORAGE_LIMIT_MB": 50,
-        // Warn levels: the watchdog pings Healthchecks /fail when one is passed.
-        "WARN_API_REQUESTS": 1000,
-        "WARN_D1_ROWS_WRITTEN": 1000,
-        "WARN_BLOBS_DB_MB": 25,
-        "WARN_CORE_DB_MB": 25,
-        "WARN_R2_STORAGE_MB": 25,
-        "WARN_WORKER_ERRORS": 10
+        "FEEDBACK_REPO": "czAAA/bd-beads-docs"
       },
       "d1_databases": [
         {
@@ -107,8 +99,8 @@
       "vars": {
         "WORKER_NAME": "production",
         "PUBLIC_ORIGIN": "https://openbeads.com",
-        // Production counts requests, D1 writes and R2 storage account-wide, the limits it shares with dev; its own
-        // script filters only its errors. The database ids are kept for the runbook.
+        // Production counts requests, D1 writes and R2 storage account-wide, dev's included; its own script filters
+        // only its errors. The database ids are kept for the runbook.
         "CF_ACCOUNT_ID": "925d034d8d4ae6552ded069d92010749",
         "WORKER_SCRIPT": "bd-beads",
         "CORE_DATABASE_ID": "a02970a6-6bca-44e4-a331-cacb03e5a1d5",
@@ -116,17 +108,7 @@
         "BLOBS_BUCKET_NAME": "bd-beads",
         "GOOGLE_CLIENT_ID": "616858853393-fsl5tbh3829ejhh7vb4331rdoqk3m62v.apps.googleusercontent.com",
         "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
-        "FEEDBACK_REPO": "czAAA/bd-beads-docs",
-        "FEEDBACK_DAILY_LIMIT": 100,
-        "UPLOAD_CAP_D1_BYTES": 1990000,
-        "UPLOAD_CAP_R2_MB": 90,
-        "BLOBS_STORAGE_LIMIT_MB": 450,
-        "WARN_API_REQUESTS": 55000,
-        "WARN_D1_ROWS_WRITTEN": 55000,
-        "WARN_BLOBS_DB_MB": 350,
-        "WARN_CORE_DB_MB": 350,
-        "WARN_R2_STORAGE_MB": 5120,
-        "WARN_WORKER_ERRORS": 50
+        "FEEDBACK_REPO": "czAAA/bd-beads-docs"
       },
       "d1_databases": [
         {
