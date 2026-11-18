@@ -76,7 +76,8 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
   /** The place a drag shows before it is let go and saved. */
   const draft = ref<ReferencePlace>()
   const loaded = shallowRef<LoadedPicture>()
-  /** Pictures the device refused to keep, by Project id: shown for the session from here. */
+  /** Pictures the device refused to keep, or hasn't kept yet (a duplicate's, ticket 1083), by Project id: shown for the
+   * session from here. */
   const session = new Map<string, Blob>()
   const unsaved = ref(new Set<string>())
   /** The picture lies over the beads, to compare them against it (ticket 1009): a view for the session, not saved, put
@@ -155,8 +156,13 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     unsaved.value = refused
   }
 
+  /** The Project's picture where this session already holds it, without asking the device. */
+  function heldPicture(projectId: string): Blob | undefined {
+    return session.get(projectId) ?? (loaded.value?.projectId === projectId ? loaded.value.blob : undefined)
+  }
+
   async function pictureOf(projectId: string): Promise<Blob | undefined> {
-    return session.get(projectId) ?? (loaded.value?.projectId === projectId ? loaded.value.blob : undefined) ?? (await deps.store.get(projectId))
+    return heldPicture(projectId) ?? (await deps.store.get(projectId))
   }
 
   /** A picked file (the strip button, Add reference image, Replace image in the panel or on the Adjust bar): made ready
@@ -279,11 +285,14 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     if (project?.referenceImage) commit(fittedPlace(project.referenceImage.picture, box(project)))
   }
 
-  /** Duplicate: the copy of the open Project gets its picture too, where it has one. */
+  /** Duplicate: the copy of the open Project gets its picture too, where it has one. The picture held for the open
+   * Project goes to the copy at once, as the copy opens before the device has kept it (ticket 1083). */
   async function copyToDuplicate(copy: Project): Promise<void> {
     const source = deps.currentProject()
     if (!source?.referenceImage || source.id === copy.id) return
-    const blob = await pictureOf(source.id)
+    const held = heldPicture(source.id)
+    if (held) session.set(copy.id, held)
+    const blob = held ?? (await pictureOf(source.id))
     if (blob) await keep(copy.id, blob)
   }
 
