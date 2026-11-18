@@ -200,7 +200,7 @@ const borderStyle = ({ box }: SchemaAnchor) => ({ left: px(box.left), top: px(bo
   position: absolute;
   box-sizing: border-box;
   border: 1px solid var(--muted);
-  border-radius: var(--radius-sm);
+  border-radius: var(--piece-line-radius);
 }
 
 :root[data-theme='contrast'] .schema-tags__border {
