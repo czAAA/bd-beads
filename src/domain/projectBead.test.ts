@@ -6,6 +6,7 @@ import { normalizeProject } from './storedProject'
 import { replaceBead, resolveProjectBead, projectCell } from './projectBead'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import type { Project } from './project'
+import { defaultPalette } from './palette'
 import { BEAD_CATALOG, beadCopy } from './beads'
 import { estimatedSizeMm } from './projectSize'
 import { paintAt } from '../testUtils/layers'
@@ -171,13 +172,13 @@ describe('each layer has its own Bead (ticket 0665, ADR 0079)', () => {
     const open = withLayers(made(), { frame: undefined })
     const replaced = replaceBead(open, delica, undefined, 'frame')
     expect(canvasOf(replaced).beadId).toBe(delica.id)
-    expect(replaced.palette).toContain('beige')
+    expect(replaced.palette).toContain(defaultPalette(delica.id).find((color) => color.family === 'beige')!.id)
   })
 
   it("moves the Palette with the Frame's Bead, and one Undo puts both back", () => {
     const before = made()
     const replaced = replaceBead(before, delica)
-    expect(replaced.palette).toContain('beige')
+    expect(replaced.palette).toContain(defaultPalette(delica.id).find((color) => color.family === 'beige')!.id)
     const undone = restoreSnapshot(replaced, snapshotOf(before))
     expect(frameOf(undone)!.beadId).toBe(roundBead.id)
     expect(undone.palette).toEqual(before.palette)

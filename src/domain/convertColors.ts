@@ -49,11 +49,11 @@ export function beadColorTargets(catalog: ColorCatalog, size: string, builtIns: 
     .map(({ hex, code, family, finish, approximate }) => ({ hex, code, family, finish, ...(approximate ? { approximate: true as const } : {}) }))
 }
 
-/** The colors a source matches to: the Bead colors given (the Bead's, or My beads' of them), the built-in colors, or
- * none for Exact. */
+/** The colors a source matches to: the Bead colors given (the Bead's, or My beads' of them), the built-in colors (the
+ * Bead's default colors with their codes, ticket 1070), or none for Exact. */
 export function sourceTargets(source: ColorSource, builtIns: readonly PaletteColor[], beadColors: readonly TargetColor[]): TargetColor[] | undefined {
   if (source === 'exact') return undefined
-  return source === 'default' ? builtIns.map((color) => ({ hex: color.hex, colorId: color.id })) : [...beadColors]
+  return source === 'default' ? builtIns.map((color) => ({ hex: color.hex, colorId: color.id, ...(color.code ? { code: color.code } : {}) })) : [...beadColors]
 }
 
 /** How far a measured code may lie from the color sought and still win over a nearer generated one (ticket 0887, D-1):

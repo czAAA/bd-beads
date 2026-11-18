@@ -9,6 +9,7 @@ import type { Project } from '../../domain/project'
 import type { ReferencePlace } from '../../domain/referenceImage'
 import type { InsideRowId } from '../../i18n/translations'
 import InsideEditor from './InsideEditor.vue'
+import { DEMO_COLORS, PEACOCK_COLORS } from './demoProjects'
 import { PEACOCK_CUFF, PEACOCK_RING, type PeacockDrawing } from './peacock'
 import { ROW_DONE_PASSES, TOUR_SCRIPTS } from './tourScripts'
 
@@ -36,7 +37,7 @@ async function applyThrough(editor: InstanceType<typeof InsideEditor>, last: Ins
 }
 
 /** The feather's colors by part, as the card names them: a barb is the eye's green, the ground deep green. */
-const COLORS: Record<string, string> = { G: '#27ae60', D: '#d4af37', T: '#17c3c9', B: '#2f6fed', N: '#1c1f6e', g: '#27ae60', '.': '#0c4a3a' }
+const COLORS: Record<string, string> = Object.fromEntries(Object.entries(PEACOCK_COLORS).map(([part, color]) => [part, DEMO_COLORS[color]]))
 
 /** The Frame's place and size, and nothing else of it. */
 function placeOf(project: Project) {

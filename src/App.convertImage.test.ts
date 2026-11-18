@@ -10,6 +10,7 @@ import { closePanel, openNewProject, openPanel, pickColor } from './testUtils/pi
 import { mountWithProject } from './testUtils/seedProject'
 import { chooseBeadInSection } from './testUtils/beadPicker'
 import { layersView } from './testUtils/layerFields'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 // Convert image end to end through the app shell (spec 0645, ADRs 0085, 0086): New Project's button, the Menu's row or a
 // dropped picture opens the page, the Progress bar steps it, Create adds the Project; leaving asks once a picture is set. Only the decode is stubbed (jsdom decodes no image bytes, see
@@ -222,7 +223,7 @@ describe('App Convert image leave guard (ADR 0085, ADR 0086)', () => {
 
   it('leaves on Leave, back to the Project that was open with its Undo and Redo as they were, and adds nothing', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     const before = drawnProject(wrapper)

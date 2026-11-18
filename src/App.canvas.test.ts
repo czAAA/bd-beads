@@ -9,12 +9,13 @@ import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/bea
 import { deleteAll, pickColor, pickTool } from './testUtils/pill'
 import { beadsOfLayer, frameOf, orientationOf } from './domain/layerRecord'
 import { type LayersChange, withLayers } from './testUtils/layerFields'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 /** The Canvas (ticket 233, ADR 0026) as the app shows it: an endless field to draw on, moved by wheel, Hand tool and
  * Space, read via rulers. */
 
-const RED = '#e63746'
-const BLUE = '#2f6fed'
+const RED = defaultColorOf('red').hex
+const BLUE = defaultColorOf('blue').hex
 
 beforeEach(() => {
   localStorage.clear()
@@ -103,7 +104,7 @@ describe('Undo and Redo in the Canvas strip', () => {
     expect(redo().attributes('aria-disabled')).toBeUndefined()
 
     await redo().trigger('click')
-    expect(beadsOfLayer(loadProjects()[0], 'canvas')[5]![5]).toBe('#1a1a1a') // the Palette's first color, picked at start
+    expect(beadsOfLayer(loadProjects()[0], 'canvas')[5]![5]).toBe(defaultColorOf('black').hex) // the Palette's first color, picked at start
   })
 })
 
@@ -112,7 +113,7 @@ describe('drawing anywhere', () => {
     saveProjects([unframedProject()])
     const wrapper = mountApp()
     await flushPromises()
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
 
     await pressBead(wrapper, { row: 4000, column: 9000 })
     await wrapper.trigger('mouseup')
@@ -136,7 +137,7 @@ describe('drawing anywhere', () => {
     saveProjects([unframedProject()])
     const wrapper = mountApp()
     await flushPromises()
-    await pickColor(wrapper, 'blue')
+    await pickColor(wrapper, defaultColorOf('blue').id)
     await pickTool(wrapper, 'fill')
 
     await pressBead(wrapper, { row: 0, column: 0 })
@@ -150,7 +151,7 @@ describe('drawing anywhere', () => {
     saveProjects([unframedProject()])
     const wrapper = mountApp()
     await flushPromises()
-    await pickColor(wrapper, 'blue')
+    await pickColor(wrapper, defaultColorOf('blue').id)
     await pickTool(wrapper, 'fill')
     const before = beadsOfLayer(loadProjects()[0], 'canvas')
 
@@ -181,7 +182,7 @@ describe('the Hand tool', () => {
     saveProjects([unframedProject()])
     const wrapper = mountApp()
     await flushPromises()
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
 
     await key({ key: '5' })
     expect(wrapper.find('[data-testid="pill-tool-hand"]').classes()).toContain('icon-btn--selected')

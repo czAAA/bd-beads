@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
-import { BUILT_IN_COLORS } from '../../src/domain/palette'
+import { defaultPalette } from '../../src/domain/palette'
 import { createProject } from '../../src/domain/createProject'
 import { parseProjectsFile } from '../../src/domain/projectFile'
 import { currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, savedProject, setConvertWidth, settle, convertPicture } from '../support/app'
@@ -14,7 +14,8 @@ import { frameOf } from '../../src/domain/layerRecord'
 // Ticket 108: with the size limit gone (ADR 0019), 70 × 250 and 250 × 250 Projects can be created, edited, saved,
 // reloaded, exported and undone, and a full device says so and keeps the edit on screen. Real browser, default
 // renderer.
-const RED = BUILT_IN_COLORS[0]!.hex
+/** The color an opened Project paints with: its Palette's first default color, TOHO Cube 1.5mm's black (ticket 1070). */
+const FIRST_COLOR = defaultPalette('toho-cube-1.5mm')[0]!.hex
 const SIZES = [
   { columns: 70, rows: 250 },
   { columns: 250, rows: 250 },
@@ -67,14 +68,14 @@ for (const { columns, rows } of SIZES) {
 
       const at = await firstBeadPoint(page, 2, 3)
       await page.mouse.click(at.x, at.y)
-      expect(frameGrid((await savedProject(page)))[2]![3]!.color).toBe(RED)
+      expect(frameGrid((await savedProject(page)))[2]![3]!.color).toBe(FIRST_COLOR)
 
       // Reloaded, it opens as it was left.
       await page.reload()
       await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
       const reloaded = await savedProject(page)
       expect([frameOf(reloaded)!.columns, frameOf(reloaded)!.rows]).toEqual([columns, rows])
-      expect(frameGrid(reloaded)[2]![3]!.color).toBe(RED)
+      expect(frameGrid(reloaded)[2]![3]!.color).toBe(FIRST_COLOR)
 
       // The whole Project goes out in a Project file, and reads back the same. Save all Projects to a Project file is in
       // the Projects library, a subpanel of Menu (tickets 0553, 0859).
@@ -87,7 +88,7 @@ for (const { columns, rows } of SIZES) {
       const file = gunzipSync(readFileSync((await (await download).path())!)).toString('utf8')
       const exported = parseProjectsFile(file).projects[0]!
       expect([frameOf(exported)!.columns, frameOf(exported)!.rows]).toEqual([columns, rows])
-      expect(frameGrid(exported)[2]![3]!.color).toBe(RED)
+      expect(frameGrid(exported)[2]![3]!.color).toBe(FIRST_COLOR)
       expect(frameGrid(exported).flat().filter((cell) => cell.color !== null)).toHaveLength(1)
     })
 
@@ -100,13 +101,13 @@ for (const { columns, rows } of SIZES) {
       await page.mouse.down()
       await page.mouse.move(end.x, end.y, { steps: 20 })
       await page.mouse.up()
-      expect(frameGrid((await savedProject(page))).flat().filter((cell) => cell.color === RED).length).toBeGreaterThan(3)
+      expect(frameGrid((await savedProject(page))).flat().filter((cell) => cell.color === FIRST_COLOR).length).toBeGreaterThan(3)
 
       await page.getByTestId('strip-undo').click()
       expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
 
       await page.getByTestId('strip-redo').click()
-      expect(frameGrid((await savedProject(page)))[2]![3]!.color).toBe(RED)
+      expect(frameGrid((await savedProject(page)))[2]![3]!.color).toBe(FIRST_COLOR)
     })
 
     test('a full device says the change is not saved, and keeps it on screen', async ({ page }) => {
@@ -134,7 +135,7 @@ for (const { columns, rows } of SIZES) {
       const x = Math.floor(now.x - Math.floor(box.x))
       const y = Math.floor(now.y - Math.floor(box.y))
       const pixel = [0, 1, 2].map((channel) => shot.data[(y * shot.width + x) * 4 + channel]!)
-      const expected = [1, 3, 5].map((index) => Number.parseInt(RED.slice(index, index + 2), 16))
+      const expected = [1, 3, 5].map((index) => Number.parseInt(FIRST_COLOR.slice(index, index + 2), 16))
       expect(pixel.every((value, index) => Math.abs(value - expected[index]!) <= 10)).toBe(true)
     })
   })

@@ -1079,7 +1079,7 @@ export const es: Translations = {
       rowName: { one: '{hex} a {name}, {count} cuenta', many: '{hex} a {name}, {count} de cuentas', other: '{hex} a {name}, {count} cuentas' },
       emptyTouchTitle: 'Tu imagen se verá aquí',
       emptyTouchLine: 'Elige un archivo, pega o haz una foto',
-      defaultPaletteNote: 'Colores sencillos con nombre, sin marca.',
+      defaultPaletteNote: 'Un color por familia de color, con su código real donde lo hay.',
       exactNote: 'Mantiene los colores propios de la imagen. No son cuentas de una tienda.',
       colorsHintExact: 'Cada color es un color de cuenta. Máx. {n}: todos los colores de la imagen.',
       colorsHintExactCapped: 'Cada color es un color de cuenta. Máx. {n}: la imagen tiene más, reducidos a esos.',

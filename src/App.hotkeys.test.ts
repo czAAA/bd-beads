@@ -8,6 +8,7 @@ import { withLayers } from './testUtils/layerFields'
 import App from './App.vue'
 import { frameGrid } from './testUtils/frameGrid'
 import { rowProgressOf } from './domain/rowProgress'
+import { defaultColorOf } from './testUtils/defaultColors'
 
 // The App's wiring for keys and the canvas pointer, one test per key → flow (docs/testing.md). Guards and variants are
 // in useAppShortcutTable, useSpaceDragPan, useCanvasPointer, usePaintStroke and ToolPill; Ctrl+Z is driven by App.frame,
@@ -42,7 +43,7 @@ async function click(wrapper: ReturnType<typeof mount>, index: number) {
 /** Two red beads, and a Selection of the first and its empty neighbour: not the whole drawing, which Del asks about
  * first (ticket 415). */
 async function selectPaintedBead(wrapper: ReturnType<typeof mount>) {
-  await pickColor(wrapper, 'red')
+  await pickColor(wrapper, defaultColorOf('red').id)
   await click(wrapper, 0)
   await click(wrapper, 3)
   await pickTool(wrapper, 'select')
@@ -65,13 +66,13 @@ describe('App Progress bar', () => {
 describe('App keyboard shortcuts', () => {
   it('Ctrl+Shift+Z brings back what Ctrl+Z undid', async () => {
     const wrapper = await mountApp(15, 30)
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
     await click(wrapper, 0)
 
     await pressKey({ key: 'z', ctrlKey: true })
     await pressKey({ key: 'z', ctrlKey: true, shiftKey: true })
 
-    expect(firstCellColor()).toBe('#e63746')
+    expect(firstCellColor()).toBe(defaultColorOf('red').hex)
   })
 
   it('Del empties the Selection', async () => {
@@ -154,7 +155,7 @@ describe('App keyboard shortcuts', () => {
 
   it('Space held stops painting and shows the grab cursor', async () => {
     const wrapper = await mountApp(15, 30)
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
 
     await pressKey({ key: ' ', code: 'Space', cancelable: true })
     await click(wrapper, 0)
@@ -182,10 +183,10 @@ describe('App keyboard shortcuts', () => {
 describe('App hover preview', () => {
   it('shows a faint preview of the selected color at the hovered cell, clearing on mouse leave', async () => {
     const wrapper = await mountApp(15, 30)
-    await pickColor(wrapper, 'red')
+    await pickColor(wrapper, defaultColorOf('red').id)
 
     await hoverBead(wrapper, 5)
-    expect(previewedBeads(wrapper)).toEqual([{ row: 0, column: 5, color: '#e63746' }])
+    expect(previewedBeads(wrapper)).toEqual([{ row: 0, column: 5, color: defaultColorOf('red').hex }])
 
     await leaveSurface(wrapper)
     expect(previewedBeads(wrapper)).toEqual([])
