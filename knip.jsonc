@@ -16,9 +16,11 @@
   // their own. 0078 gives them their caller and removes the `!` from the fixture Worker and the three entries after it.
   // The production run does not follow wrangler.jsonc's Worker past its entry, so the feedback route, the one route the
   // domain/ builder it shares with the app is read by, is an entry of its own (ticket 0699). The UX audit's walk config
-  // (ticket 0815) is run by hand through scripts/ux-walk.sh, so no plugin finds it.
+  // (ticket 0815) is run by hand through scripts/ux-walk.sh, and the store images' config (ticket 1057) through
+  // `npm run store:images`, so no plugin finds them.
   "entry": [
     "playwright.ux-audit.config.ts",
+    "playwright.store.config.ts",
     "index.html!",
     "app/index.html!",
     "src/browserSetup.ts",

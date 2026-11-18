@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { HEADERS_FILE } from './vite.headers.ts'
-import { filesBelow, HOST_FILES, REDIRECTS_FILE, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
+import { filesBelow, HOST_FILES, NOT_PRECACHED, REDIRECTS_FILE, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
 import { LOCALES } from './src/domain/locale.ts'
 import { readNotesFile } from './src/domain/notesFile.ts'
 
@@ -18,6 +18,9 @@ function precacheOf(source: string): string[] {
   if (!match) throw new Error('no precache list in the worker')
   return JSON.parse(match[1]) as string[]
 }
+
+/** What the installed app's PNG icons may weigh together in the offline copy (ticket 1057): a few fonts' worth. */
+const ICON_BUDGET = 100 * 1024
 
 const cacheNameOf = (source: string) => /const CACHE = "([^"]+)"/.exec(source)?.[1]
 
@@ -51,6 +54,11 @@ describe('renderServiceWorker', () => {
     expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['index.html'])
   })
 
+  it('leaves out the store screenshots, which only an install dialog or a store shows (ticket 1057)', () => {
+    const dir = folder({ 'index.html': 'a', 'screenshots/editor-wide.png': 'b', 'icons/bd-beads-app-icon-512.png': 'c' })
+    expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['icons/bd-beads-app-icon-512.png', 'index.html'])
+  })
+
   it('names the cache after the content, so a changed file is a new cache', () => {
     const before = cacheNameOf(renderServiceWorker(template, folder({ 'index.html': 'one' })).source)
     const same = cacheNameOf(renderServiceWorker(template, folder({ 'index.html': 'one' })).source)
@@ -81,7 +89,9 @@ describe('the production build (ticket 69)', () => {
 
   it('has every built file in the worker\'s offline list, and nothing else', () => {
     const precache = precacheOf(readFileSync(join(outDir, SERVICE_WORKER_FILE), 'utf8'))
-    expect(precache).toEqual(files.filter((path) => path !== SERVICE_WORKER_FILE && !HOST_FILES.includes(path)))
+    expect(precache).toEqual(
+      files.filter((path) => path !== SERVICE_WORKER_FILE && !HOST_FILES.includes(path) && !NOT_PRECACHED.some((folder) => path.startsWith(folder))),
+    )
     // The pieces the offline use needs, by name, so an empty list can't pass.
     expect(precache).toEqual(
       expect.arrayContaining(['index.html', 'app/index.html', 'manifest.webmanifest', 'icons/bd-beads-app-icon.svg']),
@@ -150,14 +160,47 @@ describe('the production build (ticket 69)', () => {
   it('links the manifest, whose icons and start page are in the build', () => {
     const html = readFileSync(join(outDir, 'index.html'), 'utf8')
     expect(html).toMatch(/<link rel="manifest" href="\/bd-beads\/manifest\.webmanifest"/)
-    const manifest = JSON.parse(readFileSync(join(outDir, 'manifest.webmanifest'), 'utf8')) as {
-      display: string
-      start_url: string
-      icons: { src: string }[]
-    }
+    const manifest = builtManifest()
     expect(manifest.display).toBe('standalone')
     expect(manifest.start_url).toBe('app/')
     expect(files).toContain(`${manifest.start_url}index.html`)
     for (const icon of manifest.icons) expect(files).toContain(icon.src)
+  })
+
+  /** The built manifest, as a browser or a store reads it. */
+  function builtManifest() {
+    return JSON.parse(readFileSync(join(outDir, 'manifest.webmanifest'), 'utf8')) as {
+      display: string
+      start_url: string
+      description: string
+      categories: string[]
+      icons: { src: string; sizes: string; type: string; purpose?: string }[]
+      screenshots: { src: string; sizes: string; type: string; form_factor?: string }[]
+    }
+  }
+
+  /** A PNG's width and height, from its header. */
+  function pngSize(path: string): string {
+    const bytes = readFileSync(join(outDir, path))
+    expect(bytes.subarray(1, 4).toString('ascii'), path).toBe('PNG')
+    return `${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`
+  }
+
+  it('has what a store listing needs, and every file it names is in the build at the size it says (ticket 1057)', () => {
+    const manifest = builtManifest()
+    expect(manifest.description).toMatch(/loom, peyote and brick stitch/)
+    expect(manifest.categories.length).toBeGreaterThan(0)
+    for (const { src, sizes, type } of [...manifest.icons, ...manifest.screenshots]) {
+      expect(files).toContain(src)
+      if (type === 'image/png') expect(pngSize(src), src).toBe(sizes)
+    }
+    const png = (size: string, purpose: string) => manifest.icons.some((icon) => icon.type === 'image/png' && icon.sizes === size && (icon.purpose ?? 'any') === purpose)
+    expect(png('192x192', 'any')).toBe(true)
+    expect(png('512x512', 'any')).toBe(true)
+    expect(png('512x512', 'maskable')).toBe(true)
+    expect(manifest.screenshots.map((shot) => shot.form_factor).sort()).toEqual(['narrow', 'wide'])
+    // The PNG icons are in the offline copy, so they keep the first visit's download about as it was.
+    const iconBytes = manifest.icons.filter((icon) => icon.type === 'image/png').reduce((sum, { src }) => sum + statSync(join(outDir, src)).size, 0)
+    expect(iconBytes).toBeLessThan(ICON_BUDGET)
   })
 })
