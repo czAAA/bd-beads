@@ -62,6 +62,7 @@
     "components/ProgressBar/README.md",
     "components/ProjectPanel/README.md",
     "components/QualitySlider/README.md",
+    "components/RadialToolbox/README.md",
     "components/ReferenceImage/README.md",
     "components/Rulers/README.md",
     "components/SaveBox/README.md",
@@ -401,6 +402,11 @@
       "name": "SaveReminder",
       "group": "Canvas",
       "summary": "The save ring on the Canvas strip, beside the Project button: appears once 50 beads are drawn since the last Project file, opens to \"Save Project file\", and runs Save (into the Linked file where the browser allows) in one press."
+    },
+    {
+      "name": "RadialToolbox",
+      "group": "Responsive",
+      "summary": "A ring of the ten most used drawing actions that opens round the pointer, by a right click or a hold on the Canvas."
     },
     {
       "name": "SaveStates",

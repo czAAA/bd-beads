@@ -1295,6 +1295,16 @@ On the iPad most buttons are icons, and only a half-second hold shows a name. Th
 | {name}: {line} (toast, a tile's first tap) | {name}: {line} | {name}: {line} | {name}: {line} | {name}：{line} | {name}: {line} | {name}: {line} |
 | What the buttons do (Menu › Help) | Что делают кнопки | Що роблять кнопки | Што робяць кнопкі | 按钮的作用 | Qué hace cada botón | Co robią przyciski |
 
+## The Radial toolbox's words (approved 2026-11-18, not yet in the app)
+
+The Canvas hint's last part, for the device in hand (CanvasHint and RadialToolbox cards): with a keyboard it says the right click (ticket 1064), on touch the hold (ticket 1065). "Tools" stands for the Tool pill, colours included, and keeps the line short. Keyboard shortcuts' row, "Tools at the pointer", carries both (ShortcutsHelp card). The ring's items have no words of their own: each takes its existing control's name. The owner approved the English; the other languages follow the hint's own patterns and are for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| right-click for tools (the keyboard hint's last part) | щелчок правой кнопкой: инструменты | клацання правою кнопкою: інструменти | пстрычка правай кнопкай: інструменты | 右键点击打开工具 | clic derecho para ver las herramientas | kliknij prawym przyciskiem, aby otworzyć narzędzia |
+| hold the Canvas for tools (the touch hint's last part) | удержание на холсте: инструменты | утримання на полотні: інструменти | утрыманне на палатне: інструменты | 长按画布打开工具 | mantén el lienzo para ver las herramientas | przytrzymaj płótno, aby otworzyć narzędzia |
+| Tools at the pointer (Keyboard shortcuts, Canvas group) | Инструменты у указателя | Інструменти біля вказівника | Інструменты каля паказальніка | 指针旁的工具 | Herramientas junto al puntero | Narzędzia przy wskaźniku |
+
 English follows the audit's proposal (UX-006); the other languages are proposals for review with the build.
 
 ## The converter in a first-timer's words (ticket 0966)

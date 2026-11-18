@@ -60,6 +60,7 @@
   --elevation-1: 0 4px 12px rgba(0,0,0,.04); /* Card: save box, Beads needed, Saved Patterns. Dark uses surface steps instead. */
   --elevation-2: 0 12px 24px -4px rgba(0,0,0,.08); /* The canvas box. */
   --elevation-3: 0 16px 48px -8px rgba(0,0,0,.12); /* Modals, menus, messages (Derived). Dark adds a 1px line-strong border instead. */
+  --elevation-float: 0 0.75px 2px rgba(0,0,0,.16), 0 3px 9px rgba(0,0,0,.2); /* What floats over the Canvas among the pieces: the Tool pill and the Radial toolbox. The Lifted piece's two shadows, a close one and a soft one, cast in dark too; none in high contrast. */
 }
 [data-theme="dark"] {
   --canvas: #141414;
@@ -122,6 +123,7 @@
   --elevation-1: none;
   --elevation-2: none;
   --elevation-3: none;
+  --elevation-float: 0 0.75px 2px rgba(0,0,0,.5), 0 3px 9px rgba(0,0,0,.6);
 }
 [data-theme="contrast"] {
   --canvas: #ffffff;
@@ -184,6 +186,7 @@
   --elevation-1: none;
   --elevation-2: none;
   --elevation-3: none;
+  --elevation-float: none;
 }
 :root {
   --space-2: 2px; /* Tight control groups (theme toggle padding and gap). */
@@ -217,6 +220,7 @@
   --float-edge: 12px; /* Screen edge to what floats over the screen (the colour popover): the canvas box itself is flush, with only env(safe-area-inset-*) round it. */
   --pill-gap: 6px; /* The Tool pill's inset from the drawing area's edge (between the Canvas strip and the Progress bar), and from the colour popover. */
   --pill-thickness: 48px; /* The Tool pill across its short side: 40px tiles plus 4px padding. */
+  --radial-radius: 84px; /* The Radial toolbox: from its centre to the centres of its tiles. With its 48px band (pill-thickness) the ring is 216px across round a 120px hole. */
   --panel-width: 520px; /* The Menu, Project and Frame panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
   --panel-width-small: 360px; /* The Export panel dropdown from the Canvas strip's Export button (ExportPanel card); held 8px from the screen's edge on a narrow one. */
   --item-height: 34px; /* A Menu or Project panel item, setting row or pencil row; 44px (touch-target) on a coarse pointer. */

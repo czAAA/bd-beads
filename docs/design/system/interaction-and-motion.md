@@ -34,6 +34,16 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 - Toasts leave after 5s unless hovered or focused; errors stay until closed.
 - **Reduced motion** (`prefers-reduced-motion: reduce`): nothing slides or scales. Sheets, menus and modals fade in 120ms, the row marker and the ruler pill jump, Rotate Frame jumps, the finished pass does not glint, the track spark does not flare, Pattern done does not play (the finished passes just show at full color), the loading beads stand still, the Homepage slogan stays on "openbeads", What's inside shows each row's end with no ghost, loop or Pause, its sections swap without sliding and its free list's roll appears without falling. Colour and opacity feedback stay.
 
+## Radial toolbox (approved 2026-11-18, not yet in the app)
+
+The RadialToolbox card has the whole design; this is how it answers and moves. Ticket 1064 builds the ring and ticket 1065 the hold and the slide.
+
+- **A hold on the Canvas** with the pointer that draws opens the ring after `--hold-duration` (500ms), the same hold that shows a control's Tooltip. It shows nothing for `--hold-quiet` (150ms), so a tap never shows anything; then a hairline in `ink` is drawn once round the pressed point and closes as the hold ends. A move of 8px before then is a stroke, and the hold is off.
+- **A hold leaves nothing behind:** what the press started is dropped as the first finger of a pinch is, and Fill lands at the lift.
+- **The item under the pointer** takes the tile's hover look under a mouse and the pressed look under a finger or the Pencil mid-slide; its name shows over the ring at once, with no hover delay.
+- **The ring arrives** over `--duration-base` with `--ease-out`, opacity and scale from 94%, after the hairline has finished: one thing moves at a time. It leaves over 150ms with `--ease-in`, the picked tile pressed. Nothing glows and nothing bounces.
+- **Reduced motion:** no hairline and no scale; the ring fades in and out in 120ms.
+
 ## Open canvas and Frame (v16)
 
 - **Moving the canvas** follows the pointer or the wheel directly, with no easing and no inertia of its own (the device's own scroll inertia is kept). Space + drag shows the grab cursor, and the grabbing cursor while dragging; the Hand tool shows its Tool pointer, `hand`, and `hand-grabbing` while dragging (`assets/Cursors/`, ticket 0542). A hovering Apple Pencil gets no CSS cursor from Safari, so the app draws the same Tool pointer (and the eyedropper's) at the Pencil's tip while it hovers: hidden on contact, lift, cancel and leave, the Hand's open hand for a Pencil that moves the canvas (Mouse mode), nothing over the Frame's margin or in Set Frame (ticket 546).

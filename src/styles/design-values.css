@@ -154,6 +154,7 @@
   --pattern-done-spark-4: #c3c8ce;
   --pattern-done-glow: rgba(95, 102, 112, .35); /* Motion section: the halo round a ray or star. */
   --pattern-done-shimmer-fill: rgba(255, 255, 255, .6); /* Motion section: the shimmer's band. */
+  --elevation-float-filter: drop-shadow(0 0.75px 2px rgba(0,0,0,.16)) drop-shadow(0 3px 9px rgba(0,0,0,.2)); /* RadialToolbox card (ticket 1063): `elevation-float` as a filter, for a shape that is not a box (the ring). */
 }
 
 :root[data-theme="dark"] {
@@ -181,6 +182,7 @@
   --pattern-done-spark-4: #a3a9b1;
   --pattern-done-glow: rgba(225, 230, 236, .55);
   --pattern-done-shimmer-fill: rgba(255, 255, 255, .45);
+  --elevation-float-filter: drop-shadow(0 0.75px 2px rgba(0,0,0,.5)) drop-shadow(0 3px 9px rgba(0,0,0,.6));
 }
 
 :root[data-theme="contrast"] {
@@ -209,6 +211,7 @@
   --pattern-done-spark-4: var(--ink);
   --pattern-done-glow: transparent;
   --pattern-done-shimmer-fill: transparent;
+  --elevation-float-filter: none;
 }
 
 /* KindLabel card (ticket 1047): a Release note's kind label is the kind's color at 12% behind its text, as the Demo
@@ -279,6 +282,7 @@
   --pill-tile-outline: 1.5px; /* ToolPill card (ticket 0926): the inset `ink` outline round a pressed tile; 2px in high contrast. */
   --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink); /* ToolPill card (ticket 0926): that outline, drawn inside the tile's edge. */
   --pill-tile-focus-offset: 1px; /* ToolPill card (ticket 0926): a pressed tile's focus ring, just outside its outline. */
+  --radial-swatch: 1.5rem; /* RadialToolbox card (ticket 1063): a recent colour's round swatch on the ring, 24px; the pill's is 18px. */
   --mirror-bar-control: 24px; /* ContextBar card, Mirror bar: the Mode switch, an Axis chip and a count button, on mouse and pen. */
   --mirror-bar-control-touch: 30px; /* ContextBar card, Mirror bar: the same on touch, in the 36px bar. */
   --mirror-axis-width: 1.25px; /* ContextBar card, Mirror bar: an Axis line on the overlay. */
@@ -390,6 +394,8 @@
   --ease-out: cubic-bezier(.2, .8, .2, 1);
   --ease-in: cubic-bezier(.4, 0, 1, 1);
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --hold-duration: 500ms; /* RadialToolbox card (ticket 1063): how long a hold is, on the Canvas for the ring and on a control for its Tooltip. */
+  --hold-quiet: 150ms; /* RadialToolbox card (ticket 1063): how long a hold on the Canvas shows nothing, so a tap never shows the hairline. */
   /* ConvertImage card: outside the frame the picture is dimmed, black at 45% */
   --framing-dim: rgba(0, 0, 0, .45);
   /* Homepage card: the slogan holds "openbeads" on arrival, then rolls once through its words back to it (ticket 0925) */
