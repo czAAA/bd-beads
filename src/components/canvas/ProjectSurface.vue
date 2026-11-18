@@ -66,6 +66,9 @@ const props = withDefaults(defineProps<{
   /** The color to preview, faintly, on beads that carry none of their own; null for a neutral outline when no
    * Palette color is selected. */
   previewColor?: string | null
+  /** The bead or empty position the open Radial toolbox was pressed on (ticket 1076): it keeps the hover's neutral
+   * outline, so it is clear which bead Pick color from Canvas means once the ring has moved off it. */
+  outlinedCell?: GridPosition
   /** The rectangle the Select tool has marked out, drawn as a marquee over those beads (ticket 31). */
   selection?: Selection
   /** The Project's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */

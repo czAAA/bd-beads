@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "fixed",
+  "line": {
+    "en": "The Radial toolbox stays whole near a screen edge",
+    "ru": "Инструменты и цвета у указателя видны целиком и у края экрана",
+    "uk": "Інструменти й кольори біля вказівника видно повністю і біля краю екрана",
+    "be": "Інструменты і колеры каля паказальніка відаць цалкам і каля краю экрана",
+    "zh": "指针旁的工具和颜色在屏幕边缘附近也能完整显示",
+    "es": "Las herramientas y los colores junto al puntero se ven enteros también cerca del borde de la pantalla",
+    "pl": "Narzędzia i kolory przy wskaźniku widać w całości także przy krawędzi ekranu"
+  }
+}

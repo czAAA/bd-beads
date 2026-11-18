@@ -495,6 +495,7 @@ const drawingStyle = computed(() => {
                 :preview-cells="previewCells"
                 :preview-stamp="previewStamp"
                 :preview-color="previewColor"
+                :outlined-cell="radialToolbox.pressed.value"
                 :mirror="mirrorOn ? mirrorSetting : undefined"
                 :selection="selection"
                 :selection-refusals="selectionRefusals"
