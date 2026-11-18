@@ -616,7 +616,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   position: absolute;
   box-sizing: border-box;
   color: var(--ink);
-  border-radius: var(--radius-lg);
+  border-radius: var(--margin-sheet-radius);
   pointer-events: none;
 }
 

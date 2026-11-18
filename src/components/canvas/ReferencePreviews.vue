@@ -46,12 +46,12 @@ const boxStyle = ({ left, top, width, height }: ScreenBox) => ({ left: `${left}p
 .reference-previews__sheet {
   background: color-mix(in srgb, var(--accent) 7%, transparent);
   border: var(--reference-outline) dashed var(--accent-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--piece-line-radius);
 }
 
 .reference-previews__line {
   border: var(--frame-preview-line) solid var(--accent-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--piece-line-radius);
 }
 
 .reference-previews__tag {
@@ -72,7 +72,7 @@ const boxStyle = ({ left, top, width, height }: ScreenBox) => ({ left: `${left}p
 /* Convert to beads' preview: a 1.5px dashed `ink` line on 6px corners, the pill inside its bottom-left corner. */
 .reference-previews__convert {
   border: var(--reference-outline) dashed var(--ink);
-  border-radius: var(--radius-sm);
+  border-radius: var(--piece-line-radius);
 }
 
 .reference-previews__pill {
