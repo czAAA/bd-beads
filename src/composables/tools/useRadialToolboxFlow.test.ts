@@ -158,3 +158,47 @@ describe('useRadialToolboxFlow (ticket 1064)', () => {
     expect(ring.beadHex.value).toBeNull()
   })
 })
+
+describe('useRadialToolboxFlow near a screen edge (ticket 1076)', () => {
+  /** A ring on a 1000 x 800 screen, at the given text size. */
+  const on = (scale = 1) => useRadialToolboxFlow({ ...setup().deps, screen: () => ({ width: 1000, height: 800, scale }) })
+
+  it('a press with room on every side opens the ring centred on it', () => {
+    const ring = on()
+    ring.openAt(AT)
+    expect(ring.center.value).toEqual(AT)
+  })
+
+  it('a press in a corner opens the ring as near it as keeps the whole ring and its name on the screen', () => {
+    const ring = on()
+    ring.openAt({ x: 5, y: 5 })
+    expect(ring.center.value).toEqual({ x: 120, y: 158 })
+    ring.openAt({ x: 995, y: 795 })
+    expect(ring.center.value).toEqual({ x: 880, y: 680 })
+  })
+
+  it('keeps its room in the screen px of a larger text size, where the ring is drawn larger', () => {
+    const ring = on(1.5)
+    ring.openAt({ x: 0, y: 400 })
+    expect(ring.center.value).toEqual({ x: 180, y: 400 })
+  })
+
+  it('with no screen given it opens on the pressed point', () => {
+    const { ring } = setup()
+    ring.openAt({ x: 5, y: 5 })
+    expect(ring.center.value).toEqual({ x: 5, y: 5 })
+  })
+
+  it('names the pressed position while the ring is open, moved or not, and none once it closes', () => {
+    const ring = on()
+    expect(ring.pressed.value).toBeUndefined()
+    ring.openAt({ x: 5, y: 5 }, { row: 2, column: 2 })
+    expect(ring.pressed.value).toEqual({ row: 2, column: 2 })
+    ring.close()
+    expect(ring.pressed.value).toBeUndefined()
+
+    // Between positions there is none to outline.
+    ring.openAt(AT)
+    expect(ring.pressed.value).toBeUndefined()
+  })
+})
