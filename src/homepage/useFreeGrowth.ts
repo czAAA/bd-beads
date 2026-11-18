@@ -1,5 +1,5 @@
 import { computed, ref, shallowRef, type Ref } from 'vue'
-import { FREE_GROWTH, FREE_START_ROWS, freeListHeight, freeListRoom, type FreeListMeasure } from './freeGrowth'
+import { FREE_GROWTH, FREE_START_ROWS, freeListHeight, freeListRoom, freeStartRows, type FreeListMeasure } from './freeGrowth'
 
 /** What the growth is measured from: the plans section the tiles are shown in, and No account's list and tile. */
 export interface FreeGrowthDeps {
@@ -47,19 +47,23 @@ export function useFreeGrowth({ section, freeWindow, freeTile, zoom }: FreeGrowt
       return
     }
     growth = designNumber('--free-growth', FREE_GROWTH)
-    const shown = Math.min(listEl.children.length, Math.round(designNumber('--free-start-rows', FREE_START_ROWS)))
+    const least = Math.round(designNumber('--free-start-rows', FREE_START_ROWS))
     const scale = zoom() * turnScale(plansEl)
     const plans = plansEl.getBoundingClientRect()
     const shownList = windowEl.getBoundingClientRect()
     const list = listEl.getBoundingClientRect()
-    const lastShown = listEl.children[shown - 1]!.getBoundingClientRect()
     const tile = tileEl.getBoundingClientRect()
-    measure.value = {
+    const place = {
       viewport: plans.height / scale,
       top: (shownList.top - plans.top) / scale + offset.value,
-      start: (lastShown.bottom - list.top) / scale,
-      full: list.height / scale,
       below: (tile.bottom - shownList.bottom) / scale,
+    }
+    // The rows' feet as laid out, whatever height the list is shown at: the room says how many it starts with (1060).
+    const rowBottoms = [...listEl.children].map((row) => (row.getBoundingClientRect().bottom - list.top) / scale)
+    measure.value = {
+      ...place,
+      start: rowBottoms[freeStartRows(place, rowBottoms, least) - 1]!,
+      full: list.height / scale,
     }
   }
 

@@ -19,7 +19,8 @@ The Homepage card (`docs/design/system/components/Homepage/README.md`) describes
   whole list needs (an absolute spacer, `.homepage__free-room`, so the growing list doesn't change the scroll range),
   its content scrolling up natively, and the list is as tall as
   `homepage/freeGrowth.ts` says, measured by `useFreeGrowth` from the section, the list and the tile in the section's
-  own px (the zoom and the section's turn scale divided out). The rows come from `homepage/freeList.ts`: the
+  own px (the zoom and the section's turn scale divided out); it starts with as many whole rows as fit the room
+  (`freeStartRows`, ticket 1060), never fewer than `--free-start-rows`. The rows come from `homepage/freeList.ts`: the
   Techniques from `TECHNIQUES`, the brands from the offered Beads' catalogs, the codes counted from the catalog files
   at build time (`__COLOR_CATALOG_CODES__`, so the Homepage fetches no catalog), the Starters from `categories.json`.
 - The two X1 marks are `AppLogo`, the design system's own file.
