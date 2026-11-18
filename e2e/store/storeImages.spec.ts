@@ -3,10 +3,13 @@ import { resolve } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 import { openApp, openStripPanel, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
+import { LOCALES } from '../../src/domain/locale'
+import { PREVIEW_SIZE, previewFile } from '../../vite.crawler'
 
-// The installed app's PNG icons and its store screenshots (ticket 1057), remade by `npm run store:images`, never in CI.
-// The icons are the design system's own app icon, drawn by the browser at each size; the screenshots are the editor
-// with a Starter's Project open. The files land in public/, where the manifest names them.
+// The installed app's PNG icons and its store screenshots (ticket 1057), and the link previews' pictures (ticket 1056),
+// remade by `npm run store:images`, never in CI. The icons are the design system's own app icon, drawn by the browser
+// at each size; the screenshots are the editor with a Starter's Project open; the previews are each language's Welcome
+// on a new device. The files land in public/, where the manifest and the Homepages' heads name them.
 
 const repo = resolve(import.meta.dirname, '../..')
 const APP_ICON = resolve(repo, 'docs/design/system/assets/Logos/bd-beads-app-icon.svg')
@@ -64,5 +67,19 @@ for (const { path, viewport, category, starter } of SCREENSHOTS) {
     await page.mouse.move(5, 5)
     await settle(page)
     await page.screenshot({ path: out(path) })
+  })
+}
+
+for (const locale of LOCALES) {
+  test(`the Welcome in ${locale} for a link preview, ${PREVIEW_SIZE.width} × ${PREVIEW_SIZE.height}`, async ({ page }) => {
+    await page.setViewportSize(PREVIEW_SIZE)
+    // A new device at the language's Homepage: what a person who follows the shared link sees first.
+    await openApp(page, [], locale === 'en' ? './' : `./${locale}/`, { canvasHidden: true })
+    await expect(page.getByTestId('homepage-welcome')).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', locale)
+    await page.evaluate(() => document.fonts.ready)
+    await page.mouse.move(5, 5)
+    await settle(page)
+    await page.screenshot({ path: out(previewFile(locale)) })
   })
 }

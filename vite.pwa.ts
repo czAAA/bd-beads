@@ -14,8 +14,9 @@ export const REDIRECTS_FILE = '_redirects'
 export const HOST_FILES: readonly string[] = [HEADERS_FILE, REDIRECTS_FILE]
 
 /** Folders the offline copy leaves out: the store screenshots (ticket 1057) are for an install dialog or a store, and
- * would only make the first visit's download larger. */
-export const NOT_PRECACHED: readonly string[] = ['screenshots/']
+ * the link previews' pictures (ticket 1056) for a site showing a shared link; either would only make the first visit's
+ * download larger. */
+export const NOT_PRECACHED: readonly string[] = ['screenshots/', 'previews/']
 
 /** Every file under `dir`, as `/`-separated paths from it, sorted. */
 export function filesBelow(dir: string): string[] {
