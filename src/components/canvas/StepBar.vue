@@ -229,7 +229,7 @@ onMounted(() => {
   height: var(--d);
   background: var(--track);
   border: 2px solid var(--box);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
 }
 
 .step-dot::before,

@@ -240,7 +240,7 @@ function onListKeydown(event: KeyboardEvent) {
 .menu-button__list--popover {
   width: var(--popover-width);
   padding: var(--space-14);
-  border-radius: var(--popover-radius);
+  border-radius: var(--radius-md);
 }
 
 .menu-button__list--start {

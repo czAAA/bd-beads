@@ -140,7 +140,8 @@ The SVG files carry a fixed `#1f1f1f` stroke because an `<img>` can't inherit co
 them. Every icon in the UI goes through `AppIcon`; no inline `<svg>`. `more` is reserved: no card places it, so the app
 doesn't draw it.
 
-When installed (ticket 69, ADR 0045) the app's icon is `bd-beads-app-icon.svg` and its window frame and launch
+When installed (ticket 69, ADR 0045) the app's icon is `bd-beads-app-icon.svg` (and its PNGs, drawn from it by
+`npm run store:images`, ticket 1057; `docs/deploy.md`) and its window frame and launch
 background are the light theme's `surface`; `public/manifest.webmanifest` and the `theme-color` tags in the two HTML
 pages hold those literal values (a manifest and a page's `<head>` can't use CSS tokens), and `src/styles/splash.test.ts`
 checks them against `tokens.json`. The splash in `index.html` is held to the same tokens by that test.
@@ -159,8 +160,11 @@ checks them against `tokens.json`. The splash in `index.html` is held to the sam
   keeps its names; renaming them would only churn.
 - Local stacking is deliberate: the size-estimate tooltip in the Frame rail uses `--z-canvas-overlay` (10) for the same
   "above its neighbours, inside its box" job.
-- Card sizes that aren't tokens (the Export prompt's 288px and 10px radius, `--popover-width` and `--popover-radius`)
-  live in `src/styles/controls.css`.
+- Card sizes that aren't tokens (the Export prompt's 288px, `--popover-width`) live in `src/styles/controls.css`.
+- Every UI corner is a step of the radius scale (`radius-*`), `0` or `inherit`, or a `calc()` made from a step
+  (ticket 1079; `src/styles/radiusScale.test.ts` fails on anything else). `--canvas-box-radius` names the step the canvas
+  box and its bars share. Three values that trace corners the Canvas draws (`--margin-sheet-radius`,
+  `--margin-border-radius`, `--piece-line-radius`) are drawing geometry, outside the scale.
 
 ### 4.7 The Homepage's scroll story
 

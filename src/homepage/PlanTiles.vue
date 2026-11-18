@@ -224,7 +224,7 @@ defineExpose({ freeWindow, freeTile })
   text-align: left;
   background: var(--canvas);
   border: 1px solid var(--line);
-  border-radius: var(--plan-radius);
+  border-radius: var(--radius-lg);
 }
 
 @container homepage (min-width: 1024px) {
@@ -292,7 +292,7 @@ defineExpose({ freeWindow, freeTile })
   width: 0.625rem;
   height: 0.625rem;
   background: var(--ink);
-  border-radius: var(--plan-bead-radius);
+  border-radius: var(--radius-2xs);
 }
 
 .plan__thread {

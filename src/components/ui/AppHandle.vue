@@ -89,7 +89,7 @@ const style = computed(() => ({
   height: calc(var(--arm) + var(--line) / 2);
   border-top: var(--line) solid var(--mark);
   border-left: var(--line) solid var(--mark);
-  border-top-left-radius: calc(var(--handle-radius) + var(--line) / 2);
+  border-top-left-radius: calc(var(--radius-xs) + var(--line) / 2);
 }
 
 /* An edge: a bar along the line's middle, just outside it. */
@@ -99,7 +99,7 @@ const style = computed(() => ({
   width: var(--handle-bar-length);
   height: var(--handle-bar-thickness);
   background: var(--mark);
-  border-radius: calc(var(--handle-bar-thickness) / 2);
+  border-radius: var(--radius-full);
 }
 
 /* The hot corner: under the pointer or being dragged, grown on a faint disc of its colour. */

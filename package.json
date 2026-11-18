@@ -23,6 +23,7 @@
     "visual:update": "playwright test --update-snapshots=changed",
     "perf": "playwright test -c playwright.perf.config.ts",
     "ux:walk": "bash scripts/ux-walk.sh",
+    "store:images": "E2E_PORT=${E2E_PORT:-4179} playwright test -c playwright.store.config.ts",
     "release": "node scripts/make-release.ts",
     "changelog": "node scripts/changelog.ts",
     "changelog:print": "node scripts/changelog.ts --print"

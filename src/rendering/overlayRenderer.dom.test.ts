@@ -854,7 +854,7 @@ describe('renderOverlay', () => {
       const { context, calls, named } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: { ...on({ radial: true }, inArea(0, 2, 3, 3)), mode: 'repeat', fold: 2 } })
 
-      expect(named('arc')[0]!.args.slice(0, 3)).toEqual([70, 30, 7])
+      expect(named('arc')[0]!.args.slice(0, 3)).toEqual([70, 30, 8])
       const drawn = lines(calls)
       expect(drawn).toHaveLength(2)
       expect(drawn.every(([from]) => from![0] === 70 && from![1] === 30)).toBe(true)
@@ -933,7 +933,7 @@ describe('renderOverlay', () => {
       renderOverlay(context, { project, region: whole(project, 2), zoom: 2, mirror: radial(4, 'mirror') })
 
       const ring = named('arc')[0]!
-      expect(ring.args.slice(0, 3)).toEqual([60, 60, 3.5])
+      expect(ring.args.slice(0, 3)).toEqual([60, 60, 4])
       expect(ring.strokeStyle).toBe(DEFAULT_THEME.mirror)
       expect(named('rect').map((call) => call.args)).toContainEqual([0, 0, 120, 120])
       expect(named('clip')).toHaveLength(1)

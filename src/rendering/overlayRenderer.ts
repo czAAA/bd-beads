@@ -160,7 +160,7 @@ interface AreaHandles {
   tooltip?: string
 }
 
-/** The Area sheet's look (ContextBar card): `--area-band-fill`, `--area-band-edge` and `--area-band-radius`. */
+/** The Area sheet's look (ContextBar card): `--area-band-fill`, `--area-band-edge`, and `radius-sm` corners. */
 const AREA_BAND_FILL = 0.16
 const AREA_BAND_EDGE = 0.55
 const AREA_BAND_RADIUS_PX = 8
@@ -819,9 +819,9 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Rect, z
 const MIRROR_AXIS_WIDTH_PX = 1.25
 const MIRROR_AXIS_DASH_PX = [5, 4]
 
-/** Radial's centre ring (ContextBar card's Mirror bar, `--mirror-ring-radius`): 7px radius, 2px `mirror`; the mirror lines after
- * the first at `--mirror-axis-soft`. */
-const MIRROR_RING_RADIUS_PX = 7
+/** Radial's centre ring (ContextBar card's Mirror bar): `radius-sm`, 8px, 2px `mirror`; the mirror lines after the first at
+ * `--mirror-axis-soft`. */
+const MIRROR_RING_RADIUS_PX = 8
 const MIRROR_RING_WIDTH_PX = 2
 const MIRROR_AXIS_SOFT = 0.45
 
