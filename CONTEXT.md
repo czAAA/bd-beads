@@ -43,7 +43,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | [Tool pill and controls](docs/glossary/toolbox.md) | Tool group, Tool pill layout, Tool pill, Panel, Menu, Subpanel, Canvas strip, Wordmark, Canvas footer, First-run welcome, Tool button, Tooltip, Note, Tab stop, Feedback sheet, Report kind, Report |
 | [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Piece tool, Select all, Copy, Paste, Mirror, Mirror bar, Mirror mode, Axis, Area, Fitting size, Mirror (Selection bar), Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer, Letters, Word chart, File size estimate, Clean up stray beads, Auto-fix lighting |
-| [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
+| [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Settings kept in step, Edit link, Locked Project, Sync pending, Surface view |
 | [Homepage](docs/glossary/homepage.md) | Homepage, Homepage zoom |
 
 ## How to run it
