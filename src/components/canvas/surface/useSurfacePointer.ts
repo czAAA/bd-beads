@@ -435,9 +435,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     stroke = undefined
     selectDrag = false
     dragging.value = false
-    if (!rootEl.value?.hasPointerCapture?.(heldPress.id)) rootEl.value?.setPointerCapture?.(heldPress.id)
     emit('drop-press')
     openToolbox(heldPress)
+    if (!rootEl.value?.hasPointerCapture?.(heldPress.id)) rootEl.value?.setPointerCapture?.(heldPress.id)
   }
   watch(() => props.holdEnds, () => stepHold({ type: 'finger' }))
 
