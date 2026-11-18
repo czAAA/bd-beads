@@ -1,63 +1,139 @@
-# bd-beads
-beads drawing app
+<div align="center">
 
-Copyright (C) 2026 czAAA (see [NOTICE](NOTICE)). Open source under the GNU Affero General Public License v3.0 or later (see [LICENSE](LICENSE)); AGPL because the app is served rather than distributed, so a modified copy hosted as a competing service must offer its users the modified source (AGPL §13); a permissive license or the GPL would not require that. Issues are welcome; outside contributions (pull requests) are not accepted yet (see [CONTRIBUTING](CONTRIBUTING.md)). Report security problems privately (see [SECURITY](SECURITY.md)). If it is useful to you, [Buy me a coffee](https://buymeacoffee.com/openbeads).
+<img src="docs/design/system/assets/Logos/bd-beads-app-icon.svg" width="96" height="96" alt="The openbeads logo">
 
-Hosted privately for now (tailnet only). The public deploy returns with the Cloudflare hosting ticket.
+# openbeads
 
-## Where the docs live
+**Bead patterns, drawn the way the beads sit.**
 
-This repo is code only. Tickets, architecture decision records (the `ADR NNNN` numbers in the code and in these docs), specs and research live in a private repo, `czAAA/bd-beads-docs`. The code builds, lints and tests without it. To work with the docs, clone it next to this checkout and link it in:
+A free bead pattern maker for loom, peyote and brick stitch.<br>
+It runs in your browser, works offline and keeps your work on your device.
 
+<a href="https://openbeads.com"><img src="https://img.shields.io/badge/Open%20openbeads-fa520f?style=for-the-badge" alt="Open openbeads"></a>
+<a href="https://buymeacoffee.com/openbeads"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
+
+<img src="public/screenshots/editor-wide.png" width="900" alt="The editor with a peyote band in Diamonds open">
+
+</div>
+
+openbeads is a pattern editor for people who weave with beads. You draw on a Canvas that has no edges, and each Technique shows its beads where they sit in the finished piece. Loom beads sit in a straight grid. Peyote and brick stitch beads sit staggered.
+
+You can turn a photo into a pattern and pick colors by their Miyuki and TOHO codes. openbeads counts the beads you need of each color, and you mark rows done as you weave. It exports a PDF to print and a PNG to share.
+
+Everything in openbeads is free. It has no account, no trial, no ads and no tracking.
+
+One family makes openbeads. If it helps your work, you can support its development through [Buy Me a Coffee](https://buymeacoffee.com/openbeads).
+
+**Open it at [openbeads.com](https://openbeads.com).** There is nothing to install. Your browser can also install openbeads as an app, and after the first visit it opens without a connection.
+
+## Run it locally
+
+You need Git and Node.js 22, the version CI runs.
+
+```sh
+git clone https://github.com/czAAA/bd-beads.git
+cd bd-beads
+npm ci
+npm run dev
 ```
-git clone git@github.com:czAAA/bd-beads-docs.git ../bd-beads-docs
-bash scripts/link-docs.sh
+
+`npm run dev` prints a local address. The Homepage is at `/` and the editor is at `/app/`. The editor needs no backend, because it keeps every Project in the browser.
+
+To use the production build, which includes the offline copy, run:
+
+```sh
+npm run build
+npm run preview
 ```
 
-`link-docs.sh` creates gitignored symlinks (`.scratch`, `docs/adr`, `docs/research`, `docs/specs`, `docs/operations.md`, `reports`, `research_notes`), so tickets, ADRs and the operations runbook keep their paths. It is safe to run again, and refuses to replace a real folder. To move a machine from the old single-repo checkout, run `bash scripts/migrate.sh`.
+The build reads the Version from the git history, so it fails in a shallow clone. Clone without `--depth`.
+
+## What is inside
+
+- **Canvas and Frame.** Draw anywhere on the Canvas. A Frame sets the size, the exports and the bead count.
+- **Techniques.** Loom, peyote and brick stitch, each drawn the way its beads sit.
+- **Editing.** Paint, fill, erase, select, copy, paste and undo. Every edit has its own key.
+- **Mirror.** Draw one side and the other follows.
+- **Convert image.** Turn a picture into a bead pattern.
+- **Reference image.** Put a picture under the beads and draw a new piece over it.
+- **Bead colors.** openbeads has the Miyuki and TOHO color codes built in, next to a Palette of your own.
+- **Letters.** Each color has its letter, on the beads and on the chart.
+- **Beads needed.** openbeads counts every color, in beads and in grams.
+- **Row progress.** Mark rows done as you weave.
+- **Exports.** A PDF to print, a PNG to share, a Word chart that writes the pattern out row by row, and the Project file.
+- **Starters.** A ready design becomes your Frame.
+- **iPad and Pencil.** Pen mode, Pencil hover and buttons big enough for a finger.
+- **Languages.** English, Russian, Ukrainian, Belarusian, Chinese, Spanish and Polish.
+- **Themes.** Light, dark and high contrast, following the device.
+
+Accounts, sync and View links are not open yet. Everything in this list works without them.
+
+[CHANGELOG.md](CHANGELOG.md) lists every change a maker can see, by release.
 
 ## Works offline
 
-bd-beads is local-first (ADR 0001): every Project lives in the browser, so the app opens and works with no internet, and when our hosting is down, from the copy the service worker cached (ticket 69). Only what needs the backend (View links, sync, accounts; ADR 0014) stops, and says so with a message (ticket 381). The first visit needs a network once. Limits that cost money are enforced on the server, never in this code (ADR 0044).
+openbeads is local-first. Every Project lives in the browser, so the app opens and works with no internet.
 
-To try it: open the built app (`npm run build && npm run preview`), load it once, switch the browser to offline in DevTools (Network), and reload. Chrome's Application tab shows the worker (`sw.js`), its cache and the manifest. The first visit needs the network once; the offline copy then downloads silently behind the app.
+- The first visit needs the network once. After that a service worker serves openbeads from its cached copy, also when the hosting is down.
+- A new version downloads in the background and shows "Update ready, Reload" in the open tab.
+- Only what needs the backend stops, and openbeads says so with a message.
+- Only a production build includes the service worker, so `npm run dev` never caches anything.
 
-The app can be installed from the browser (Chrome's install button, "Add to Home Screen" in iOS Safari) and then opens like any other app. A new version downloads in the background and shows "Update ready, Reload" in the open tab; it also arrives by itself the next time the app is opened. How it works and why it is hand-written: ADR 0045. The worker is only built and registered in production builds, so `npm run dev` never caches anything.
+[docs/offline.md](docs/offline.md) says how to try it by hand and which decisions are behind it.
 
+## How it is built
+
+The app is Vue 3 and TypeScript, built with Vite. The backend is a Cloudflare Worker in `worker/`, with D1 and R2 for storage. Vitest runs the unit and component tests, and Playwright runs the browser checks.
+
+| To learn | Read |
+| --- | --- |
+| The domain, its words and where to start in `src/` | [CONTEXT.md](CONTEXT.md) |
+| Where code goes and the rules every change keeps | [CODING_STANDARDS.md](CODING_STANDARDS.md) |
+| The design system | [DESIGN.md](DESIGN.md) |
+| How tests are written | [docs/testing.md](docs/testing.md) |
+| How the app reaches Cloudflare | [docs/deploy.md](docs/deploy.md) |
 
 ## Checks
 
 | Command | What it checks |
 | --- | --- |
-| `npm test` | Unit and component tests (Vitest, jsdom), and the backend Worker's tests (`worker/test/`, in Node against workerd; `docs/testing/worker.md`). Includes the stored-data compatibility test, `src/domain/compatibility.test.ts`, which opens libraries and Project files in every format the app has written (version 1 and 2 libraries, single-Project and whole-library files, a Project past the old 10,000-cell cap) from the literal fixtures in `src/domain/fixtures/` |
-| `npm run typecheck` | Type-checks the app, the build config, the browser checks and the Worker |
-| `npm run lint` | ESLint |
-| `npm run visual` | The visual check (below). Run on every pull request by CI (below) |
-| `npm run visual:update` | Rewrites the Convert image framing screenshots, the only ones the Playwright runner itself owns; the others are read from `e2e/visual/__screenshots__` as they are, and change only when the look is meant to (delete and regenerate them deliberately) |
-| `npm run perf` | The performance check (below). By hand, never in CI |
+| `npm run check` | Runs `npm run typecheck`, `npm run lint` and knip, which finds unused code. Run it before pushing |
+| `npm run test:related -- <changed files>` | The unit and component tests related to a change |
+| `npm run test:full` | Runs `npm test`, the whole unit suite with the backend Worker's tests. It skips itself on a slow machine, where CI runs the suite |
+| `npm run visual` | The [visual check](docs/testing/visual-check.md). Playwright draws fixture Projects in Chromium and compares the grid with reference screenshots. The first run needs `npx playwright install chromium` |
+| `npm run perf` | The [performance check](docs/testing/performance-check.md). It prints frames per second and main-thread time at a CPU slowdown. Run it by hand on an idle machine |
 
-### Visual check
+CI runs typecheck, lint, the unit tests and the visual check on every pull request to `main`. [docs/testing/ci.md](docs/testing/ci.md) lists the required checks.
 
-Renders fixture Projects in a real browser (Playwright, Chromium) and compares the drawn grid with the reference screenshots in `e2e/visual/__screenshots__`: loom, peyote and brick stitch; Row progress in both directions; a Selection; a paste preview; Mirror axes and the "Mirror current" dimming; hover previews; and the Convert image wizard's preview and layouts. Each Project scenario is shot at 25%, 100% and 300% zoom, upright and rotated. Only the grid is compared, not the rulers or other text, since fonts differ between machines and the beads do not.
+## Contributing
 
-Those references were made from the one-element-per-bead grid the renderer replaced (ticket 103), and are what the renderer is held to ("visually indistinguishable", ADR 0018). A canvas never lands on exactly the same pixels as the DOM did, so the comparison is two checks (`e2e/support/referenceCheck.ts`): a look check (both images reduced to the average color of blocks a fraction of a bead wide, at most a per-Technique share of blocks may differ) and a content check (every bead's centre is its color, finished rows' greys included). `e2e/visual/look.spec.ts` runs them on the app for every Technique, plain and with Row progress in both directions, at every zoom, upright and rotated; `overlays.spec.ts` for the Selection, paste preview, Mirror axes and dimming; `interaction.spec.ts` for the hover preview and for the pointer tools (paint, erase, Fill, Row progress lock, Mirror, Undo, Space-drag pan, a touch stroke); `convertImage.spec.ts` for the Convert image wizard's preview By size and its two layouts; `large-projects.spec.ts` for 70 × 250 and 250 × 250 Projects end to end. The check tests itself: `look.spec.ts` renders Projects with a bead recolored or missing, and a Row progress marker the reference does not have, and expects the comparison to fail.
+Issues are welcome. [Open an issue](https://github.com/czAAA/bd-beads/issues/new/choose) for a bug or an idea.
 
-The first run needs the browser: `npx playwright install chromium`. The references are made and checked on Linux, the platform CI runs; on another OS, small rendering differences can fail the check locally. To look at a failure, open `playwright-report/index.html` (`npx playwright show-report`). CI runs it on every pull request (see CI).
+The project does not accept pull requests from outside yet. [CONTRIBUTING.md](CONTRIBUTING.md) will say when that changes.
 
-### CI
+Report a security problem privately, the way [SECURITY.md](SECURITY.md) describes.
 
-CI is the gate (`docs/testing/ci.md`). Every pull request to `main` runs typecheck and lint, the unit tests and the visual check on GitHub, and branch protection requires the aggregate checks "Typecheck and lint", "Unit tests passed" and "Visual check passed". A PR that changes only Markdown skips them. A failed visual run uploads its report as an artifact. While working, run only the tests related to your change (`npx vitest related --run <files>`); a full unit run peaks near 1.5 GB of RAM, so leave the full suite to CI.
+## Ticket and ADR numbers
 
-### Performance check
+This repository is named `bd-beads`. The app it builds is openbeads.
 
-`npm run perf` builds the app and drives it at a chosen CPU slowdown, printing frames per second and main-thread time for hovering, painting a stroke, scrolling, a zoom step, opening a Project and dragging the Convert image framing preview, at 60×90, 70×250 and 250×250. It reports at 4× slowdown (a midrange Android tablet or Core i3 laptop, "the floor") and at 6×. Options are environment variables: `PERF_SLOWDOWNS=4`, `PERF_SIZES=70x250`, `PERF_ONLY=hover,paint`, `PERF_TECHNIQUES=loom,peyote,brick` for the framing drag (see the top of `e2e/perf/perf.spec.ts`). Run it on an otherwise idle machine; timings vary from run to run, so compare numbers taken the same way. Targets: 60 fps for hover, paint and pan at 250×250 on an iPad Air 13″; at least 30 fps at the floor at 70×250 and 250×250; opening a Project in about 200 ms; a smooth framing drag.
+The code and the docs cite tickets and architecture decision records by number, such as `ticket 69` and `ADR 0045`. Those live in a private repository, `czAAA/bd-beads-docs`, together with the specs and the research. This repository holds the code only, and it builds, lints and tests without the private one.
 
-The same run also measures the big Canvases (`e2e/perf/canvases.spec.ts`, ticket 0673): 50 scattered 40×40 Pieces, one 300×300 Piece unnamed and named, a 300×300 Frame over about 80,000 Canvas beads, a library of ten 300×300 Projects, a 300×300 Piece-shaped Selection and a 300×300 copied block, each in loom and peyote. It times a two-second Paint stroke, panning at fit and at 100%, one Fill, Paste and Undo, hovering the Paste and dragging across the shaped Selection, and counts the long animation frames (over 50 ms, with the scripts that took the time; Chromium only). Each line is printed against its budget: no long frame in a stroke, under 8 ms of script a pointer move, under 100 ms an edit. Options: `PERF_TECHNIQUES` (default `loom,peyote` here), `PERF_FIXTURES='piece,frame over canvas'`, `PERF_ONLY=stroke,edits`; `npm run perf -- canvases` runs it alone, and `PERF_ONLY` takes either spec's scenario names. Set `E2E_PORT` when another worktree's preview is running. The first run's output is the baseline later perf work compares against, kept in the docs repo next to the report ("Canvas performance for large patterns").
+Maintainers clone the private repository next to this checkout and link it in:
 
-Fill reach (`e2e/perf/fillReach.spec.ts`, ticket 0715) times a Fill tool press flooding a Piece as big as the Fill cap, with its redraw, save and Piece recount, and a press on empty space a screen away from the scattered Pieces at the Zoom floor, which must be refused and leave the saved beads as they were; each against the 100 ms an edit has. Options: `PERF_SLOWDOWNS` (default `4` here), `PERF_TECHNIQUES`, and `PERF_FILL_SIDE` to time a Piece of another side when looking for where the cap fits; `npm run perf -- fillReach` runs it alone.
+```sh
+git clone git@github.com:czAAA/bd-beads-docs.git ../bd-beads-docs
+bash scripts/link-docs.sh
+```
 
-A Project that won't open (`e2e/perf/hugeProject.spec.ts`, ticket 0716) stores a synthetic Project of one solid layer of millions of beads (never the maintainer's own library) and times opening the Projects library subpanel with it in the library, its open from the pick (Open anyway, over the size gate) to the first drawn frame, and a stroke, a Fill of an enclosed patch and Undo on it, against one second for the open and 100 ms a click. Options: `PERF_SLOWDOWNS` (default `4`), `PERF_HUGE_MILLIONS` (default `9`; a list such as `1,2,9,12` shows where the open passes a second); `npm run perf -- hugeProject` runs it alone.
+`link-docs.sh` creates gitignored symlinks: `.scratch`, `docs/adr`, `docs/research`, `docs/specs`, `docs/operations.md`, `reports` and `research_notes`. Tickets, ADRs and the operations runbook keep their paths that way. The script is safe to run again, and it refuses to replace a real folder. To move a machine from the old single-repo checkout, run `bash scripts/migrate.sh`.
 
-The Lifted piece (`e2e/perf/liftedPiece.spec.ts`, tickets 1034 and 1039) runs in Safari's engine at twice the pixel density, where an iPad draws the full look: the longest gap between two frames over a full redraw, a Progress bar step and zoom steps, against a quarter of a second, on a 130×231 Frame of square beads painted full, a Canvas Piece of that size, a checkered Frame of that size, a Frame of turned beads, a 130×231 Frame of round beads painted full and one in diagonal stairs (an inner corner at every step), and a 380×290 Frame of square beads painted full and checkered, at its fit zoom, where the full look is drawn; on the Frames of square beads painted full and checkered, of both sizes, also over a stroke painted across the Frame and a pan of the view. Option: `PERF_LIFT` (fixture names, comma separated, so each Project runs alone); `npm run perf -- liftedPiece` runs the check alone. Ticket 1035 adds a 130×231 Frame of square beads with many inner cuts (`inner cuts`).
+## License
 
-The performance check never reuses a preview that is already running, since that could be another worktree's build: where port 4173 is taken, pass a free one, `E2E_PORT=4391 npm run perf`.
+Copyright (C) 2026 czAAA. See [NOTICE](NOTICE).
+
+openbeads is open source under the GNU Affero General Public License, version 3.0 or later. See [LICENSE](LICENSE).
+
+The license is the AGPL because openbeads is served to its users, not distributed to them. Section 13 of the AGPL requires whoever hosts a modified copy as a service to offer its users the modified source. A permissive license or the GPL would not require that.
+
+You may build, run, change and host openbeads under those terms. A fork sets its own support link in `src/data/coffeeLink.ts` and `.github/FUNDING.yml`.

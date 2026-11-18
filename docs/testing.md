@@ -11,6 +11,8 @@ This page holds the rules every test follows. The reference pages in `docs/testi
 | [`testing/worker.md`](testing/worker.md) | The Worker's tests: the Miniflare harness and its two seams |
 | [`testing/ci.md`](testing/ci.md) | CI: what a pull request runs, the required checks, and why a pull request that changes only Markdown needs an admin merge |
 | [`testing/browser-checks.md`](testing/browser-checks.md) | The offline shell's check, and the manual check of popups in real Safari |
+| [`testing/visual-check.md`](testing/visual-check.md) | The visual check: what it draws, how it compares with the references, and which spec covers what |
+| [`testing/performance-check.md`](testing/performance-check.md) | The performance check: every spec `npm run perf` runs, its options and its budgets |
 
 ## Running them
 
@@ -73,7 +75,7 @@ A Custom frame's beads are saved by layout position (ADR 0078), so each Frame sh
 
 ## Visual baselines
 
-The visual check (`npm run visual`, README's Visual check) compares against the reference screenshots in `e2e/visual/__screenshots__/`. Update them only when the look is meant to change, never to make a failing run pass, and say so in the pull request.
+The visual check (`npm run visual`, [`testing/visual-check.md`](testing/visual-check.md)) compares against the reference screenshots in `e2e/visual/__screenshots__/`. Update them only when the look is meant to change, never to make a failing run pass, and say so in the pull request.
 
 - The Project-grid references (`look`, `overlays`, `interaction` specs, compared by `e2e/support/referenceCheck.ts`): `UPDATE_REFERENCES=1 npx playwright test <spec>`.
 - The `toHaveScreenshot` references (`convertImage`, `canvasColor`, `roundBeads`, `rulers*` specs): `npm run visual:update -- <spec>` (rewrites only the images that differ).
