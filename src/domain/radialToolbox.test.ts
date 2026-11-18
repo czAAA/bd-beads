@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, radialItemAt, radialSliceOutline } from './radialToolbox'
+import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, RADIAL_ROOM, radialCenterOnScreen, radialItemAt, radialNameCenter, radialSliceOutline } from './radialToolbox'
 import { PILL_TOOLS } from './toolPill'
 
 /** A point `distance` from the ring's centre at `angle`, degrees clockwise from straight up, y down as on screen. */
@@ -96,5 +96,65 @@ describe('radialSliceOutline', () => {
       expect(across, place.id).toBeGreaterThanOrEqual(TOUCH_TARGET)
     }
     expect(RADIAL_REACH - RADIAL_HOLE).toBeGreaterThanOrEqual(TOUCH_TARGET)
+  })
+})
+
+describe('radialCenterOnScreen (ticket 1076)', () => {
+  const { side, top } = RADIAL_ROOM
+  // A 13-inch tablet both ways and a desktop, in the design system's px.
+  const screens = [
+    { width: 1366, height: 1024 },
+    { width: 1024, height: 1366 },
+    { width: 1920, height: 1080 },
+  ]
+
+  it('keeps 120 from the sides and the bottom and 158 from the top: the reach, float-edge, and the room of the name', () => {
+    const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as { layout: { tokens: { name: string; value: string }[] } }
+    expect(RADIAL_ROOM.edge).toBe(parseFloat(tokens.layout.tokens.find((token) => token.name === 'float-edge')!.value))
+    expect(RADIAL_ROOM).toEqual({ side: 120, top: 158, edge: 12 })
+  })
+
+  it.each(screens)('a press with room on every side of a $width × $height screen opens the ring on it, not moved', (screen) => {
+    const middle = { x: screen.width / 2, y: screen.height / 2 }
+    expect(radialCenterOnScreen(middle, screen, RADIAL_ROOM)).toEqual(middle)
+    // The nearest presses that still fit: one px further would move it.
+    expect(radialCenterOnScreen({ x: side, y: top }, screen, RADIAL_ROOM)).toEqual({ x: side, y: top })
+    expect(radialCenterOnScreen({ x: screen.width - side, y: screen.height - side }, screen, RADIAL_ROOM)).toEqual({ x: screen.width - side, y: screen.height - side })
+  })
+
+  it.each(screens)('at an edge of a $width × $height screen it moves straight in from that edge, by the least', (screen) => {
+    const middle = { x: screen.width / 2, y: screen.height / 2 }
+    expect(radialCenterOnScreen({ x: 3, y: middle.y }, screen, RADIAL_ROOM)).toEqual({ x: side, y: middle.y })
+    expect(radialCenterOnScreen({ x: screen.width - 3, y: middle.y }, screen, RADIAL_ROOM)).toEqual({ x: screen.width - side, y: middle.y })
+    expect(radialCenterOnScreen({ x: middle.x, y: 3 }, screen, RADIAL_ROOM)).toEqual({ x: middle.x, y: top })
+    expect(radialCenterOnScreen({ x: middle.x, y: screen.height - 3 }, screen, RADIAL_ROOM)).toEqual({ x: middle.x, y: screen.height - side })
+  })
+
+  it.each(screens)('in a corner of a $width × $height screen it moves in from both edges', (screen) => {
+    expect(radialCenterOnScreen({ x: 0, y: 0 }, screen, RADIAL_ROOM)).toEqual({ x: side, y: top })
+    expect(radialCenterOnScreen({ x: screen.width, y: 0 }, screen, RADIAL_ROOM)).toEqual({ x: screen.width - side, y: top })
+    expect(radialCenterOnScreen({ x: 0, y: screen.height }, screen, RADIAL_ROOM)).toEqual({ x: side, y: screen.height - side })
+    expect(radialCenterOnScreen({ x: screen.width, y: screen.height }, screen, RADIAL_ROOM)).toEqual({ x: screen.width - side, y: screen.height - side })
+  })
+
+  it('takes its room in the px of the screen, so a larger text size keeps the same rule', () => {
+    const room = { side: side * 1.25, top: top * 1.25 }
+    expect(radialCenterOnScreen({ x: 0, y: 0 }, { width: 1000, height: 800 }, room)).toEqual({ x: 150, y: 197.5 })
+  })
+
+  it('on a screen too small for the ring and its room it stands in the middle', () => {
+    expect(radialCenterOnScreen({ x: 10, y: 10 }, { width: 200, height: 250 }, RADIAL_ROOM)).toEqual({ x: 100, y: (top + 250 - side) / 2 })
+  })
+})
+
+describe('radialNameCenter (ticket 1076)', () => {
+  it('a name with room stays over the middle of the ring', () => {
+    expect(radialNameCenter(400, 180, 1024, 12)).toBe(400)
+    expect(radialNameCenter(120, 216, 1024, 12)).toBe(120)
+  })
+
+  it('a long name near a side moves in by the least that keeps it float-edge inside', () => {
+    expect(radialNameCenter(120, 280, 1024, 12)).toBe(152)
+    expect(radialNameCenter(904, 280, 1024, 12)).toBe(872)
   })
 })
