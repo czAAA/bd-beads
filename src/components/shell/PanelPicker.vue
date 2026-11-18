@@ -334,6 +334,28 @@ function onListKeydown(event: KeyboardEvent) {
   cursor: pointer;
 }
 
+/* The first and last option run parallel to the list's corner (ticket 1080): `radius-md` less the 4px padding and the
+ * line (2px in high contrast). */
+.panel-picker__option:first-child {
+  border-top-left-radius: calc(var(--radius-md) - var(--space-4) - 1px);
+  border-top-right-radius: calc(var(--radius-md) - var(--space-4) - 1px);
+}
+
+.panel-picker__option:last-child {
+  border-bottom-right-radius: calc(var(--radius-md) - var(--space-4) - 1px);
+  border-bottom-left-radius: calc(var(--radius-md) - var(--space-4) - 1px);
+}
+
+:root[data-theme='contrast'] .panel-picker__option:first-child {
+  border-top-left-radius: calc(var(--radius-md) - var(--space-4) - var(--border-emphasis));
+  border-top-right-radius: calc(var(--radius-md) - var(--space-4) - var(--border-emphasis));
+}
+
+:root[data-theme='contrast'] .panel-picker__option:last-child {
+  border-bottom-right-radius: calc(var(--radius-md) - var(--space-4) - var(--border-emphasis));
+  border-bottom-left-radius: calc(var(--radius-md) - var(--space-4) - var(--border-emphasis));
+}
+
 /* Touch (ticket 0836): a list row is `panel-row-touch` wherever the picker sits, not only in a panel (the converter's
  * page sets no `--panel-item-height`, so its rows were 23px and their 44px hit areas overlapped), and each row is its
  * own hit area, as the rows touch (responsive.md). */

@@ -256,6 +256,32 @@ function onListKeydown(event: KeyboardEvent) {
   box-shadow: none;
 }
 
+/* The first and last item run parallel to the list's corner (ticket 1080): `radius-md` less the 4px padding and the
+ * line (2px in high contrast). A disabled item sits in its Tooltip's span. A popover's 14px keeps its items clear. */
+.menu-button__list:not(.menu-button__list--popover) > :deep(.app-menu-item:first-child),
+.menu-button__list:not(.menu-button__list--popover) > :deep(:first-child > .app-menu-item) {
+  border-top-left-radius: calc(var(--radius-md) - var(--space-4) - 1px);
+  border-top-right-radius: calc(var(--radius-md) - var(--space-4) - 1px);
+}
+
+.menu-button__list:not(.menu-button__list--popover) > :deep(.app-menu-item:last-child),
+.menu-button__list:not(.menu-button__list--popover) > :deep(:last-child > .app-menu-item) {
+  border-bottom-right-radius: calc(var(--radius-md) - var(--space-4) - 1px);
+  border-bottom-left-radius: calc(var(--radius-md) - var(--space-4) - 1px);
+}
+
+:root[data-theme='contrast'] .menu-button__list:not(.menu-button__list--popover) > :deep(.app-menu-item:first-child),
+:root[data-theme='contrast'] .menu-button__list:not(.menu-button__list--popover) > :deep(:first-child > .app-menu-item) {
+  border-top-left-radius: calc(var(--radius-md) - var(--space-4) - var(--border-emphasis));
+  border-top-right-radius: calc(var(--radius-md) - var(--space-4) - var(--border-emphasis));
+}
+
+:root[data-theme='contrast'] .menu-button__list:not(.menu-button__list--popover) > :deep(.app-menu-item:last-child),
+:root[data-theme='contrast'] .menu-button__list:not(.menu-button__list--popover) > :deep(:last-child > .app-menu-item) {
+  border-bottom-right-radius: calc(var(--radius-md) - var(--space-4) - var(--border-emphasis));
+  border-bottom-left-radius: calc(var(--radius-md) - var(--space-4) - var(--border-emphasis));
+}
+
 .menu-button__footer {
   margin-top: var(--space-4);
   padding-top: var(--space-4);

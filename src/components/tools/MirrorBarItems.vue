@@ -233,6 +233,17 @@ function step(axis: MirrorAxis, by: number) {
   border-radius: var(--radius-xs);
 }
 
+/* The end segments run parallel to the switch's corners (ticket 1080): `radius-sm` less its 1px padding and 1px line. */
+.mirror-bar__segment:first-child {
+  border-top-left-radius: calc(var(--radius-sm) - 2px);
+  border-bottom-left-radius: calc(var(--radius-sm) - 2px);
+}
+
+.mirror-bar__segment:last-child {
+  border-top-right-radius: calc(var(--radius-sm) - 2px);
+  border-bottom-right-radius: calc(var(--radius-sm) - 2px);
+}
+
 .mirror-bar__segment[aria-checked='true'] {
   font-weight: 600;
 }
@@ -271,6 +282,19 @@ function step(axis: MirrorAxis, by: number) {
   background: none;
   border: 0;
   border-radius: var(--radius-xs);
+}
+
+/* What fills a chip's ends runs parallel to its corners (ticket 1080): `radius-sm` less the 1px line. An on chip's
+ * cell meets its Stepper, whose last button takes the right-hand end. */
+.mirror-bar__chip :deep(.mirror-bar__chip-button) {
+  border-top-left-radius: calc(var(--radius-sm) - 1px);
+  border-bottom-left-radius: calc(var(--radius-sm) - 1px);
+}
+
+.mirror-bar__chip:not(.mirror-bar__chip--on) :deep(.mirror-bar__chip-button),
+.mirror-bar__count > :last-child > .mirror-bar__step {
+  border-top-right-radius: calc(var(--radius-sm) - 1px);
+  border-bottom-right-radius: calc(var(--radius-sm) - 1px);
 }
 
 .mirror-bar__chip--off :deep(.mirror-bar__chip-button) {

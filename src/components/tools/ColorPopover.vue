@@ -118,4 +118,10 @@ if (props.focusSwatch) {
 .color-popover--wide {
   width: min(var(--popover-width-wide), calc(100vw - 2 * var(--float-edge)));
 }
+
+/* Bead colors sits in the bottom-left corner while nothing opens under it, so that corner runs parallel to the
+ * popover's (ticket 1080): `radius-xl` less the 14px padding and the line. */
+.color-popover > :deep(.color-popover-body__section:last-child > .bead-colors-entry:last-child > .bead-colors-entry__button) {
+  border-bottom-left-radius: calc(var(--radius-xl) - var(--space-14) - 1px);
+}
 </style>
