@@ -1,6 +1,6 @@
 {
   "date": "2026-11-18",
-  "kind": "new",
+  "kind": "changed",
   "line": {
     "en": "A language's code in the address opens the app in it: openbeads.com/ru/ is the Homepage in Russian and /ru/app/ the editor, so a link you send opens in its reader's language",
     "ru": "Код языка в адресе открывает приложение на нём: openbeads.com/ru/ открывает главную на русском, /ru/app/ редактор, так что отправленная ссылка открывается на языке получателя",
