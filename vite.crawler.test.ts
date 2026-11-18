@@ -14,6 +14,10 @@ import {
   type HomepageCopy,
   homepageFile,
   HOMEPAGES,
+  OPEN_GRAPH_LOCALES,
+  PREVIEW_SIZE,
+  previewFile,
+  previewTags,
   robotsText,
   ROBOTS_FILE,
   SITE_URL,
@@ -70,6 +74,23 @@ describe('what the build writes for crawlers (ticket 1055)', () => {
     expect(homepageAddress(SITE_URL, 'ru')).toBe('https://openbeads.com/ru/')
     expect(sitemapAddresses(SITE_URL)).toEqual(['https://openbeads.com/', ...LOCALES.filter((l) => l !== 'en').map((l) => `https://openbeads.com/${l}/`)])
     expect(alternateAddresses(SITE_URL).at(-1)).toEqual({ lang: 'x-default', href: SITE_URL })
+  })
+
+  it('gives a link preview the page’s own title and description, its language’s address and Welcome picture (ticket 1056)', () => {
+    const ru = copies.get('ru')!
+    const content = (key: string) => previewTags(ru, SITE_URL).find(({ attrs = {} }) => attrs.property === key || attrs.name === key)?.attrs?.content
+    expect(content('og:title')).toBe(ru.title)
+    expect(content('twitter:title')).toBe(ru.title)
+    expect(content('og:description')).toBe(ru.description)
+    expect(content('twitter:description')).toBe(ru.description)
+    expect(content('og:url')).toBe('https://openbeads.com/ru/')
+    expect(content('og:locale')).toBe('ru_RU')
+    const alternates = previewTags(ru, SITE_URL).filter(({ attrs = {} }) => attrs.property === 'og:locale:alternate').map(({ attrs = {} }) => attrs.content)
+    expect(alternates).toEqual(LOCALES.filter((locale) => locale !== 'ru').map((locale) => OPEN_GRAPH_LOCALES[locale]))
+    expect(content('og:image')).toBe('https://openbeads.com/previews/welcome-ru.png')
+    expect(content('twitter:image')).toBe(content('og:image'))
+    expect(content('twitter:card')).toBe('summary_large_image')
+    expect(content('og:image:alt')).toBe(ru.sections[0]!.heading)
   })
 
   it('serves a language folder’s page from the dev server’s one page with none (ticket 1053)', () => {
@@ -158,6 +179,31 @@ describe('the built Homepage (ticket 1055)', () => {
     expect(new Set(LOCALES.map((locale) => copies.get(locale)!.description)).size).toBe(LOCALES.length)
     expect(page).toMatch(/<html lang="en">/)
     expect(built(editorFile())).toMatch(/<html lang="en">/)
+  })
+
+  /** A PNG's width and height, from its header. */
+  const pngSize = (bytes: Buffer) => ({ width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) })
+  /** The `content` of each meta tag in `html` named by `key` (`og:image`), by `property` or by `name`. */
+  const metaContents = (html: string, key: string) =>
+    [...html.matchAll(new RegExp(`<meta (?:property|name)="${key}" content="([^"]*)">`, 'g'))].map((match) => match[1])
+
+  it.each(HOMEPAGES.map((homepage) => ({ ...homepage, file: homepageFile(homepage.folder) })))('gives the Homepage at $file and its editor the link preview’s tags, with a picture the build holds (ticket 1056)', ({ locale, folder }) => {
+    const own = copies.get(locale)!
+    for (const file of [homepageFile(folder), editorFile(folder)]) {
+      const head = built(file).slice(0, built(file).indexOf('</head>'))
+      // The page's own title and description, the language's Homepage address, whichever page was shared.
+      expect(metaContents(head, 'og:title'), file).toEqual([escapeHtml(own.title)])
+      expect(metaContents(head, 'og:description'), file).toEqual([escapeHtml(own.description)])
+      expect(metaContents(head, 'twitter:title'), file).toEqual([escapeHtml(own.title)])
+      expect(metaContents(head, 'twitter:description'), file).toEqual([escapeHtml(own.description)])
+      expect(metaContents(head, 'og:url'), file).toEqual([homepageAddress(SITE_URL, locale)])
+      expect(metaContents(head, 'og:locale'), file).toEqual([OPEN_GRAPH_LOCALES[locale]])
+      expect(metaContents(head, 'twitter:card'), file).toEqual(['summary_large_image'])
+      const image = new URL(previewFile(locale), SITE_URL).href
+      expect(metaContents(head, 'og:image'), file).toEqual([image])
+      expect(metaContents(head, 'twitter:image'), file).toEqual([image])
+    }
+    expect(pngSize(readFileSync(join(outDir, previewFile(locale))))).toEqual(PREVIEW_SIZE)
   })
 
   it('has the page the host shows at an address with none, which asks not to be indexed', () => {

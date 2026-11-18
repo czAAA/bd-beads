@@ -332,6 +332,7 @@ export const es: Translations = {
       hand: 'Mano',
       rulers: 'Reglas',
       rightClickForTools: 'clic derecho para ver las herramientas',
+      holdCanvasForTools: 'mantén el lienzo para ver las herramientas',
       twoFingersToMove: 'dos dedos para mover',
       pinchToZoom: 'pellizca para hacer zoom',
       holdForName: 'mantén un botón para ver su nombre',

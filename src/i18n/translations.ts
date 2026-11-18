@@ -461,6 +461,7 @@ export interface Translations {
       rulers: string
       /** The keyboard line's last part (ticket 1064): how the Radial toolbox opens with a mouse. */
       rightClickForTools: string
+      holdCanvasForTools: string
       /** On touch (ticket 0846): the line in finger words, with no key chips. */
       twoFingersToMove: string
       pinchToZoom: string

@@ -332,6 +332,7 @@ export const pl: Translations = {
       hand: 'Ręka',
       rulers: 'Linijki',
       rightClickForTools: 'kliknij prawym przyciskiem, aby otworzyć narzędzia',
+      holdCanvasForTools: 'przytrzymaj płótno, aby otworzyć narzędzia',
       twoFingersToMove: 'dwa palce, aby przesunąć',
       pinchToZoom: 'uszczypnij, aby powiększyć',
       holdForName: 'przytrzymaj przycisk, aby zobaczyć nazwę',

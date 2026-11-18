@@ -59,6 +59,22 @@ export function radialItemAt(point: { x: number; y: number }, hole: number): Rad
   return RADIAL_PLACES.find((place) => inTurn(angle - (place.angle - place.slice / 2)) < place.slice)?.id
 }
 
+/** What decides which items are off: the Undo list, the Tool pill's recent colours and the pressed bead's colour. */
+export interface RadialItemsState {
+  canUndo: boolean
+  canRedo: boolean
+  recents: readonly string[]
+  beadHex?: string | null
+}
+
+/** Whether an item is off (RadialToolbox card, States): Undo and Redo with nothing to undo or redo, a recent colour
+ * that does not exist yet, Pick color from Canvas with no bead pressed. A tool is never off. */
+export function radialItemOff(id: RadialItemId, state: RadialItemsState): boolean {
+  const place: RadialPlace = RADIAL_PLACES.find((each) => each.id === id)!
+  if (place.recent !== undefined) return !state.recents[place.recent]
+  return id === 'undo' ? !state.canUndo : id === 'redo' ? !state.canRedo : id === 'pick-color' ? !state.beadHex : false
+}
+
 /** How many straight steps stand for a slice's arc: at the ring's size they stay within a tenth of a px of it. */
 const ARC_STEPS = 8
 
@@ -68,4 +84,32 @@ export function radialSliceOutline(id: RadialItemId, inner: number, outer: numbe
   const place = RADIAL_PLACES.find((each) => each.id === id)!
   const angles = Array.from({ length: ARC_STEPS + 1 }, (_, step) => place.angle - place.slice / 2 + (place.slice * step) / ARC_STEPS)
   return [...angles.map((angle) => pointAt(angle, outer)), ...angles.reverse().map((angle) => pointAt(angle, inner))]
+}
+
+/** The room the ring's centre keeps from the screen (ticket 1076, RadialToolbox card's Edges), in the design system's
+ * px: its reach and `float-edge` at the sides and the bottom, and 8 and the name's 30 more at the top. */
+const RADIAL_EDGE = 12
+const RADIAL_NAME_ROOM = 8 + 30
+export const RADIAL_ROOM = { side: RADIAL_REACH + RADIAL_EDGE, top: RADIAL_REACH + RADIAL_EDGE + RADIAL_NAME_ROOM, edge: RADIAL_EDGE } as const
+
+/** A place as near `wanted` as `from` and `to` allow; the middle of a span too short to hold both. */
+function keptWithin(wanted: number, from: number, to: number): number {
+  return from > to ? (from + to) / 2 : Math.min(Math.max(wanted, from), to)
+}
+
+/** Where the ring goes (spec 1072, ADR 0098): the centre nearest the pressed point that keeps the whole ring and its
+ * name on the screen, so it moves by the least and only for the screen. `room` is how far the centre stays from the
+ * sides and the bottom and from the top (`RADIAL_ROOM`), in the px of `pressed` and `screen`. */
+export function radialCenterOnScreen(
+  pressed: { x: number; y: number },
+  screen: { width: number; height: number },
+  room: { side: number; top: number },
+): { x: number; y: number } {
+  return { x: keptWithin(pressed.x, room.side, screen.width - room.side), y: keptWithin(pressed.y, room.top, screen.height - room.side) }
+}
+
+/** Where the name's middle goes along the screen (ticket 1076): over the ring's centre, moved by the least that keeps
+ * a name `width` wide `edge` inside the screen at each side. All in one px. */
+export function radialNameCenter(center: number, width: number, screenWidth: number, edge: number): number {
+  return keptWithin(center, edge + width / 2, screenWidth - edge - width / 2)
 }

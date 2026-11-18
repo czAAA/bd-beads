@@ -8,6 +8,7 @@ import ContextBar, { type MirrorBarState } from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ConvertImageWizard from '../import/ConvertImageWizard.vue'
+import HoldHairline from '../tools/HoldHairline.vue'
 import RadialToolbox from '../tools/RadialToolbox.vue'
 import ToolPill from '../tools/ToolPill.vue'
 import MarginSheet from './MarginSheet.vue'
@@ -190,6 +191,7 @@ const {
   surfaceProbe,
   onToolPillPlaced,
   radialToolbox,
+  onDropPress,
 } = useCanvasContext()
 
 const newProjectAction = controlAction('new-project')
@@ -495,6 +497,7 @@ const drawingStyle = computed(() => {
                 :preview-cells="previewCells"
                 :preview-stamp="previewStamp"
                 :preview-color="previewColor"
+                :outlined-cell="radialToolbox.pressed.value"
                 :mirror="mirrorOn ? mirrorSetting : undefined"
                 :selection="selection"
                 :selection-refusals="selectionRefusals"
@@ -523,7 +526,13 @@ const drawingStyle = computed(() => {
                 @frame-anchor="frameAnchor = $event"
                 @schema-anchors="schemaAnchors = $event"
                 @pressing="surfacePressing = $event"
+                :hold-opens="radialToolbox.canOpen.value"
+                :hold-ends="radialToolbox.holdEnds.value"
+                @hold="radialToolbox.hold"
+                @drop-press="onDropPress"
                 @open-toolbox="radialToolbox.openAt"
+                @slide="radialToolbox.slide"
+                @slide-lift="radialToolbox.slideLift"
                 @drawn="onSurfaceDrawn"
               />
               <!-- What Set Frame around the picture and Convert to beads would make, under the picture's handles (ticket 0883). -->
@@ -663,6 +672,7 @@ const drawingStyle = computed(() => {
               :can-redo="canRedo"
               :recents="recentsInPill"
               :bead-hex="radialToolbox.beadHex.value"
+              :held="radialToolbox.held.value"
               @select-tool="radialToolbox.selectTool"
               @pick-recent="radialToolbox.pickRecent"
               @pick-color="radialToolbox.pickColor"
@@ -670,6 +680,8 @@ const drawingStyle = computed(() => {
               @redo="radialToolbox.redo"
               @close="radialToolbox.close"
             />
+            <!-- The hairline a hold draws while it is timed (ticket 1065), where the ring's hole will be. -->
+            <HoldHairline :at="radialToolbox.holdAt.value" />
           </Teleport>
         </div>
 

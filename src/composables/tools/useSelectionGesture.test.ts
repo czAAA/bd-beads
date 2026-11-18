@@ -606,6 +606,23 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 2, columns: 2 })
     })
 
+    it('a Piece tap whose press is dropped (a pinch, a hold for the Radial toolbox) gives back the Selection it replaced (ticket 1065)', () => {
+      const { gesture } = twoPieces()
+      gesture.tapPiece(1, 1)
+      gesture.endPress()
+      const before = gesture.selection.value
+
+      gesture.tapPiece(3, 3)
+      gesture.cancelPress()
+      expect(gesture.selection.value).toEqual(before)
+
+      // Once a tap's press has ended it is kept: a later dropped press takes nothing back.
+      gesture.tapPiece(3, 3)
+      gesture.endPress()
+      gesture.cancelPress()
+      expect(gesture.selection.value?.cells).toEqual([{ row: 3, column: 3 }])
+    })
+
     it('the tap gives the Piece\'s exact cells, a Piece tap elsewhere replaces them, and Select all is a rectangle again (ticket 547)', () => {
       const { gesture } = twoPieces()
 

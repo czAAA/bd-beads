@@ -1,11 +1,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn, type Ref, type ShortEmitsToObject } from 'vue'
 import { ownLength, ownPoint } from '../../../composables/ui/cssZoom'
-import { pressBecomes, type CanvasPress } from '../../../domain/canvasPress'
+import { pressBecomes, type CanvasPress, type CanvasPressStep } from '../../../domain/canvasPress'
 import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
 import type { GridPosition, Layer, PreviewCell } from '../../../domain/grid'
+import { HOLD_MS } from '../../../domain/hold'
 import { pointerDraws, type Handedness, type InputMode } from '../../../domain/inputMode'
 import { beadColorAt } from '../../../domain/layerBeads'
 import { isInFinishedRow } from '../../../domain/rowProgress'
@@ -71,6 +72,16 @@ export interface SurfacePointerEvents {
   /** A right click asked for the Radial toolbox (ticket 1064): where it was pressed, in client px, and the bead position
    * under it, none between positions or off the grid. */
   'open-toolbox': [at: { x: number; y: number }, position?: GridPosition]
+  /** A hold is being timed at this point, in client px (ticket 1065): the hairline is drawn round it. With no point it
+   * stopped: the pointer moved or lifted, a second finger landed, or the hold is up and the ring opens. */
+  hold: [at?: { x: number; y: number }]
+  /** A hold is up: drop what its press started, as a pinch's first finger is dropped. `open-toolbox` follows. */
+  'drop-press': []
+  /** The pointer whose hold opened the ring, still down and armed (moved the drag slop since), is at this point, in
+   * client px (ticket 1077). With no point its press ended away from the ring (cancelled). */
+  slide: [at?: { x: number; y: number }]
+  /** That armed pointer lifted at this point, in client px: the ring's rule says what it picks. */
+  'slide-lift': [at: { x: number; y: number }]
 }
 
 /** What the pointer reads: the surface's props, its root and layout, and the margin cue it sets off. */
@@ -90,6 +101,10 @@ export interface SurfacePointerDeps {
     fillRefusals?: number
     /** The Mirror (ADR 0082): in Mirror mode its Canvas Area's handles take a press as the Selection's do. */
     mirror?: MirrorSetting
+    /** Whether a hold with the drawing pointer opens the Radial toolbox (ticket 1065): it is timed only then. */
+    holdOpens?: boolean
+    /** How many holds a pinch has ended: the surface never hears the second finger of one (usePinchPan). */
+    holdEnds?: number
   }
   emit: EmitFn<ShortEmitsToObject<SurfacePointerEvents>>
   root: Ref<HTMLElement | undefined>
@@ -393,6 +408,59 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
    * so far by `pressBecomes`. It waits, then a drag is the middle button's pan and a click opens the Radial toolbox. */
   let rightPress: { id: number; x: number; y: number; is: CanvasPress } | undefined
 
+  /** The drawing pointer's press while its hold is timed (ticket 1065), by `pressBecomes`: where it went down, on screen,
+   * and the hold's timer. Once the hold has opened the ring it is `sliding`, then `armed`, until it lifts, and no tool
+   * hears it; its moves are then measured from `opened`, where it was when the ring opened (ticket 1077). */
+  let heldPress:
+    | {
+        id: number
+        x: number
+        y: number
+        is: CanvasPress
+        timer: ReturnType<typeof setTimeout>
+        at: { x: number; y: number }
+        opened?: { x: number; y: number }
+      }
+    | undefined
+
+  /** Starts timing a press's hold; the hairline shows where. */
+  function timeHold(event: PointerEvent): void {
+    clearTimeout(heldPress?.timer)
+    const at = { x: event.clientX, y: event.clientY }
+    heldPress = { id: event.pointerId, ...at, is: 'held', timer: setTimeout(completeHold, HOLD_MS), at }
+    emit('hold', { x: event.clientX, y: event.clientY })
+  }
+
+  /** What happened to the held press; once its hold is no longer timed the timer and the hairline go. */
+  function stepHold(step: Exclude<CanvasPressStep, { type: 'down' }>): void {
+    if (!heldPress) return
+    const was = heldPress.is
+    heldPress.is = pressBecomes(was, step)
+    if (was === 'held' && heldPress.is !== 'held') {
+      clearTimeout(heldPress.timer)
+      emit('hold')
+    }
+    if (heldPress.is === 'nothing') heldPress = undefined
+  }
+
+  /** The hold is up: what the press started is dropped here and above, and the ring opens where it was pressed. The
+   * pointer, still down, stays captured (the slide, ticket 1077). */
+  function completeHold(): void {
+    // The ring would no longer open (the Canvas turned read-only meanwhile): the press goes on as it was.
+    if (!props.holdOpens) return stepHold({ type: 'finger' })
+    stepHold({ type: 'time', held: HOLD_MS })
+    if (heldPress?.is !== 'sliding') return
+    heldPointer = undefined
+    stroke = undefined
+    selectDrag = false
+    dragging.value = false
+    emit('drop-press')
+    openToolbox(heldPress)
+    heldPress.opened = heldPress.at
+    if (!rootEl.value?.hasPointerCapture?.(heldPress.id)) rootEl.value?.setPointerCapture?.(heldPress.id)
+  }
+  watch(() => props.holdEnds, () => stepHold({ type: 'finger' }))
+
   /** Asks for the Radial toolbox at a point on screen, on the bead position under it whatever the tool. */
   function openToolbox(at: { x: number; y: number }): void {
     const hit = surface.value.pointToHit(pointInDrawing({ clientX: at.x, clientY: at.y }))
@@ -621,7 +689,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     penAt.value = undefined
     touchInput.value = event.pointerType === 'touch'
     // A pinch moves the view itself: the edge scroll stops following the first finger.
-    if (event.pointerType === 'touch' && !event.isPrimary) heldPointer = undefined
+    if (event.pointerType === 'touch' && !event.isPrimary) {
+      heldPointer = undefined
+      stepHold({ type: 'finger' })
+    }
     if (frameOf(props.project) && event.pointerType === 'touch' && !event.isPrimary) {
       // A second finger is a pinch (usePinchPan): whatever the first was dragging is let go, uncommitted.
       if (framing.value) {
@@ -631,8 +702,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       return
     }
     // The right button's press waits to be a pan or a click (ticket 1074): no tool or handle gets it.
-    const press = pressBecomes(undefined, { type: 'down', button: event.button })
-    if (press) {
+    const press = pressBecomes(undefined, { type: 'down', button: event.button, pointerType: event.pointerType, inputMode: props.inputMode })
+    if (press === 'waits') {
       rightPress = { id: event.pointerId, x: event.clientX, y: event.clientY, is: press }
       rootEl.value?.setPointerCapture?.(event.pointerId)
       event.preventDefault()
@@ -681,6 +752,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
         return
       }
     }
+    // No handle took the press: the drawing pointer's hold is timed while its tool starts (ticket 1065). Not a second
+    // finger's, nor the press Pick color from Canvas waits for, which takes its colour at once.
+    if (press === 'held' && props.holdOpens && !props.tools.picking && !(event.pointerType === 'touch' && !event.isPrimary)) timeHold(event)
     if (startsDrag(event)) {
       startPan({ x: event.clientX, y: event.clientY })
       rootEl.value?.setPointerCapture?.(event.pointerId)
@@ -758,6 +832,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
         holdBarAway(rightPress.id)
         startPan(rightPress)
       }
+    }
+    if (event.pointerId === heldPress?.id) {
+      const from = heldPress.opened ?? heldPress
+      heldPress.at = { x: event.clientX, y: event.clientY }
+      stepHold({ type: 'move', moved: Math.hypot(event.clientX - from.x, event.clientY - from.y) })
+      // The ring is open under a pointer still down: its moves are not the tool's but the slide's, once armed.
+      if (heldPress.is === 'armed') emit('slide', heldPress.at)
+      if (heldPress.opened) return
     }
     if (adjusting.value) {
       dragTo(event)
@@ -857,6 +939,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       if (event?.type === 'pointerup' && rightPress && pressBecomes(rightPress.is, { type: 'lift' }) === 'ring') openToolbox(rightPress)
       rightPress = undefined
     }
+    // Capturing the sliding pointer takes it from the element it went down on: that loss is not its lift.
+    const recaptured = event?.type === 'lostpointercapture' && !!heldPress?.opened
+    if (!event || (event.pointerId === heldPress?.id && !recaptured)) {
+      // An armed lift lands on the ring, which says what it picks (ticket 1077); cancelled, it only ends the slide.
+      if (heldPress?.is === 'armed' && event?.type === 'pointerup') emit('slide-lift', { x: event.clientX, y: event.clientY })
+      else if (heldPress?.is === 'armed') emit('slide')
+      stepHold({ type: 'lift' })
+    }
     heldPointer = undefined
     resizing = false
     stroke = undefined
@@ -931,6 +1021,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   onBeforeUnmount(() => {
     clearTimeout(fillRefusedTimer)
     clearTimeout(wheelTimer)
+    clearTimeout(heldPress?.timer)
     if (edgeScrollFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(edgeScrollFrame)
     window.removeEventListener('blur', dropPressedPointers)
     window.removeEventListener('pointerup', onWindowPointerEnd)

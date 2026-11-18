@@ -1,3 +1,5 @@
+import { vi } from 'vitest'
+import { HOLD_MS } from '../domain/hold'
 import { beadColorAt } from '../domain/layerBeads'
 import { projectDimensions } from '../domain/projectExtent'
 import { rowProgressOf, rowProgressOn } from '../domain/rowProgress'
@@ -85,6 +87,28 @@ export async function rightClickBead(wrapper: Anywhere, at: BeadAt): Promise<voi
   await surfaceRoot(wrapper).trigger('pointerup', { ...point, button: 2, buttons: 0, isPrimary: true })
 }
 
+/** Holds a finger still on a bead for the hold's length and lifts it, which opens the Radial toolbox there in Mouse
+ * mode (ticket 1065); the clock is faked for the wait. With `slide`, the finger first slides that far from the ring's
+ * centre (px, x right, y down) and lifts there, which picks the item in that direction (ticket 1077). */
+export async function holdBead(wrapper: Anywhere, at: BeadAt, slide?: { x: number; y: number }): Promise<void> {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  try {
+    await pressBead(wrapper, at, { pointerType: 'touch' })
+    vi.advanceTimersByTime(HOLD_MS)
+  } finally {
+    vi.useRealTimers()
+  }
+  let lift = beadPoint(wrapper, at)
+  if (slide) {
+    await wrapper.vm.$nextTick()
+    const ring = document.querySelector<HTMLElement>('[data-testid="radial-toolbox"]')
+    if (!ring) throw new Error('No Radial toolbox to slide on: mount with attachTo: document.body')
+    lift = { clientX: parseFloat(ring.style.left) + slide.x, clientY: parseFloat(ring.style.top) + slide.y }
+    await surfaceRoot(wrapper).trigger('pointermove', { ...lift, buttons: 1, pointerType: 'touch', isPrimary: true })
+  }
+  await surfaceRoot(wrapper).trigger('pointerup', { ...lift, pointerType: 'touch', isPrimary: true })
+}
+
 /** Moves the pointer onto a bead, with a button held to continue a stroke (`{ buttons: 1 }`) or none for a plain
  * hover. */
 export async function hoverBead(wrapper: Anywhere, at: BeadAt, options: { buttons?: number; pointerType?: string } = {}): Promise<void> {
@@ -139,6 +163,11 @@ export function previewedBeads(wrapper: Anywhere): (GridPosition & { color: stri
     const color = cell.color ?? fallback
     return color ? [{ row: cell.row, column: cell.column, color }] : []
   })
+}
+
+/** The bead or empty position that keeps the outline while the Radial toolbox is open on it (ticket 1076). */
+export function outlinedBead(wrapper: Anywhere): GridPosition | undefined {
+  return surface(wrapper).props('outlinedCell')
 }
 
 // How far the weaver has got, as the surface draws it: the rows (or columns) behind the pointer are finished, dimmed;

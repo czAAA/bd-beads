@@ -55,3 +55,8 @@ The Homepage card (`docs/design/system/components/Homepage/README.md`) describes
   folder, so the way in from `/ru/` opens `/ru/app/` (its own addresses, `?project=` and the rest, after it) and the
   Menu's Homepage and the Wordmark lead back to `/ru/`. The pages' first script keeps a language page's `lang`
   (`data-locale`), so it never flashes the saved one. `npm run dev` serves `/ru/app/` as `/app/`.
+- A shared link shows a card (ticket 1056): each language's Homepage and editor carry Open Graph and Twitter card tags
+  with the Homepage's own title and description and a picture of its Welcome, `public/previews/welcome-<code>.png`
+  (1200 × 630). The pictures are screenshots of the real Homepage on a new device in the light theme, never drawn by
+  hand: after a change to how the Welcome looks or reads, run `npm run store:images` (`e2e/store/storeImages.spec.ts`;
+  `docs/deploy.md`, The installed app's icons and screenshots), look at them and commit what changed.

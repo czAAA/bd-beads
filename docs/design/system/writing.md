@@ -1298,7 +1298,7 @@ On the iPad most buttons are icons, and only a half-second hold shows a name. Th
 
 ## The Radial toolbox's words (approved 2026-11-18; the right click's are in the app, ticket 1064)
 
-The Canvas hint's last part, for the device in hand (CanvasHint and RadialToolbox cards): with a keyboard it says the right click (ticket 1064), on touch the hold (ticket 1065, not yet in the app). "Tools" stands for the Tool pill, colours included, and keeps the line short. Keyboard shortcuts' row, "Tools at the pointer", carries both (ShortcutsHelp card). The ring's items have no words of their own: each takes its existing control's name. The owner approved the English; the other languages follow the hint's own patterns and are for review with the build.
+The Canvas hint's last part, for the device in hand (CanvasHint and RadialToolbox cards): with a keyboard it says the right click (ticket 1064), on touch the hold (ticket 1065). "Tools" stands for the Tool pill, colours included, and keeps the line short. Keyboard shortcuts' row, "Tools at the pointer", carries both (ShortcutsHelp card). The ring's items have no words of their own: each takes its existing control's name. The owner approved the English; the other languages follow the hint's own patterns and are for review with the build.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

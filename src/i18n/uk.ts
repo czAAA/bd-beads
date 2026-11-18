@@ -332,6 +332,7 @@ export const uk: Translations = {
       hand: 'Рука',
       rulers: 'Лінійки',
       rightClickForTools: 'клацання правою кнопкою: інструменти',
+      holdCanvasForTools: 'утримання на полотні: інструменти',
       twoFingersToMove: 'два пальці: зсув',
       pinchToZoom: 'зведення пальців: масштаб',
       holdForName: 'утримання кнопки: її назва',
