@@ -197,8 +197,8 @@ function drawPositionMarks(
   context.imageSmoothingEnabled = false
 }
 
-/** The Position marks again in `cells`, over what is drawn there: the tiles of the Canvas's lifted cuts and rims (tickets
- * 1035, 1036). */
+/** The Position marks again in `cells`, over what is drawn there: the tiles of the Canvas's lifted gaps (tickets 1035,
+ * 1050). */
 function drawLiftedMarks(context: DrawingContext, cells: readonly LiftCell[], { project, zoom, pixelRatio, theme, tiles }: { project: DrawnProject; zoom: number; pixelRatio: number; theme: ProjectTheme; tiles: boolean }): void {
   if (!cells.length) return
   const pattern = positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...markLookOf(theme, tiles) })
@@ -347,7 +347,7 @@ interface LayerDraw {
   /** Whether painted beads lie on a Lifted piece where the look has one (ticket 1004): on the open Canvas in the full
    * look. */
   lift: boolean
-  /** The only positions drawn, where not every one in view is: a Frame's lifted cuts and rim, their tiles on the piece's
+  /** The only positions drawn, where not every one in view is: a Frame's lifted gaps, their tiles on the piece's
    * ground, or every other one, under it. */
   at?: (position: GridPosition) => boolean
 }
@@ -364,8 +364,8 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
     const collect = liftCollector(draw.drawBead, !geometry.grid)
     const weave = frameWeave(project)
     const taken = liftRows(band, cellSizePx(weave.technique, weave.cell).height)
-    // An inner cut close to the beads is part of the piece, and its rim a bead round it, their tiles drawn on the piece's
-    // ground (tickets 1035, 1036), not under it too.
+    // A gap less than two beads wide is part of the piece, its tiles drawn on the piece's ground (tickets 1035, 1050),
+    // not under it too.
     const lifted = frameLifted(project, geometry)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: taken, ...(lifted?.rows.size ? { at: ({ row, column }: GridPosition) => !lifted.has(row, column) } : {}) }, space, origin)
     const across = liftsAcross(weave)
@@ -778,7 +778,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
     if (lift && look.liftedPiece) {
       drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio, liftsAcross(canvasWeave(project)), area)
-      // The tiles of an inner cut close to the beads and of the rim, on the piece's ground (tickets 1035, 1036).
+      // The tiles of a gap less than two beads wide, on the piece's ground (tickets 1035, 1050).
       if (positionMarks) drawLiftedMarks(context, canvasLiftedCells(project, { area, rows: band, margin }, canvasLifted(project, margin)), { project, zoom, pixelRatio, theme, tiles })
     }
     drawCanvasLayer(context, draw, space)

@@ -88,8 +88,8 @@ describe('the reference image on the Canvas (ReferenceImage card, ticket 0790)',
     const without = render(framedProject())
     expect(without.beads.filter((bead) => bead.color === null)).toHaveLength(0)
     expect(canvasBlits(without.calls)).toBe(4)
-    // With one, the Frame's empty row is its piece's rim (ticket 1036): its three tiles are drawn again on the ground.
-    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(4 + 3)
+    // With one too: the Frame's empty row lies flat beside its piece, which has no rim, so no tile is drawn again.
+    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(4)
   })
 
   it('is never drawn where none is handed in, nor in the Frame on its own', () => {

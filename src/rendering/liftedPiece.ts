@@ -13,7 +13,7 @@ import { inGridPx } from './surfaceView'
 import { lookSideOf, pieceGroundOf } from './pieceGround'
 
 // The Lifted piece (ticket 1004, BeadBoard card, Canvas look): on the screen in light and dark, every Piece is one object
-// on the grid: its ground a bead past its beads (its rim, 1036), a contour a few px outside it, a soft shadow under it.
+// on the grid: its ground under its beads and narrow gaps (no rim, 1062), a contour a few px outside it, a soft shadow.
 // Part of the picture, so a pan moves it too; no canvas `filter` (missing on iPad Safari): the shadow is `shadowBlur`.
 
 /** How far outside a bead's body the contour's outer edge runs, and the line's width, in grid px. */
@@ -36,7 +36,7 @@ const SHADOWS = [
 ] as const
 
 /** How far from a cell of a piece (a bead's or a lifted position's) anything of it is drawn, in grid px: the contour, the
- * soft shadow's fall and three spreads of its blur; from a bead, a bead's step more (ticket 1036).
+ * soft shadow's fall and three spreads of its blur; from a bead, a bead's step more, where a lifted gap lies beside it.
  * @internal Tests check what a redraw takes in. */
 export const LIFT_REACH_PX = SHADOWS[0].down + SHADOWS[0].blur * 3 + CONTOUR_OUT_PX
 
@@ -650,16 +650,16 @@ function runsOf(stored: Record<number, string>): readonly (readonly [number, num
   return runs
 }
 
-/** The runs of a stored row with its lifted positions, its rim's and its narrow gaps' (tickets 1035, 1036, 1050), kept by
- * the row and those positions. */
+/** The runs of a stored row with its lifted positions, its narrow gaps' (tickets 1035, 1050), kept by the row and those
+ * positions. */
 const rowLiftedRuns = new WeakMap<Record<number, string>, { lifted: readonly number[]; runs: readonly (readonly [number, number])[] }>()
 
-/** The runs of a row of no bead, the rim's above and below a piece, kept by its lifted positions. */
-const rimRuns = new WeakMap<readonly number[], readonly (readonly [number, number])[]>()
+/** The runs of a row of no bead, a gap's between beads above and below it, kept by its lifted positions. */
+const gapRuns = new WeakMap<readonly number[], readonly (readonly [number, number])[]>()
 
 function runsWithLifted(stored: Record<number, string> | undefined, lifted: readonly number[] | undefined): readonly (readonly [number, number])[] {
   if (!lifted) return stored ? runsOf(stored) : []
-  const known = stored ? rowLiftedRuns.get(stored) : { lifted, runs: rimRuns.get(lifted) }
+  const known = stored ? rowLiftedRuns.get(stored) : { lifted, runs: gapRuns.get(lifted) }
   if (known?.lifted === lifted && known.runs) return known.runs
   const columns = [...(stored ? Object.keys(stored).map(Number) : []), ...lifted].sort((a, b) => a - b)
   const runs: [number, number][] = []
@@ -669,24 +669,23 @@ function runsWithLifted(stored: Record<number, string> | undefined, lifted: read
     else runs.push([column, column])
   }
   if (stored) rowLiftedRuns.set(stored, { lifted, runs })
-  else rimRuns.set(lifted, runs)
+  else gapRuns.set(lifted, runs)
   return runs
 }
 
-/** The Canvas's empty positions that lie in the lifted piece, its rim a bead round its beads (ticket 1036) and its gaps
- * less than two beads wide (1035, 1050): its keep-out margin lies outside every Piece, as its beads are not drawn. */
+/** The Canvas's empty positions that lie in the lifted piece, its gaps less than two beads wide (1035, 1050): its
+ * keep-out margin lies outside every Piece, as its beads are not drawn. */
 export function canvasLifted(project: Layered, margin: number): LiftedPositions {
   const covered = footprintOf(project)
   const keptOut: Rect | undefined = covered && withMargin(covered, margin)
   return liftedPositionsOf('canvas', {
     beads: beadsOfLayer(project, 'canvas'),
-    description: describeWeave(canvasWeave(project)),
     has: keptOut ? (row, column) => !frameContains(keptOut, { row, column }) : () => true,
     edge: keptOut ? `${keptOut.row},${keptOut.column},${keptOut.rows},${keptOut.columns}` : '',
   })
 }
 
-/** The rows a redraw of `rows` draws to take in the lifted positions an edit changed since the last draw (1035, 1036,
+/** The rows a redraw of `rows` draws to take in the lifted positions an edit changed since the last draw (1035,
  * 1050), in the Canvas's rows; what changed is forgotten once asked, so a whole draw
  * asks too. `geometry` is the Frame's. */
 export function withLiftedRows(rows: { first: number; last: number } | undefined, project: Layered, margin: number, geometry: LayerGeometry | undefined): { first: number; last: number } | undefined {
@@ -699,7 +698,7 @@ export function withLiftedRows(rows: { first: number; last: number } | undefined
 }
 
 /** The cells of the Canvas's lifted positions a draw covers, in grid px: where the tiles are drawn again on the piece's
- * ground (tickets 1035, 1036). */
+ * ground (ticket 1035). */
 export function canvasLiftedCells(project: Layered, { area, rows }: LiftView, lifted: LiftedPositions): LiftCell[] {
   if (!lifted.rows.size) return []
   const weave = canvasWeave(project)
@@ -716,16 +715,14 @@ export function canvasLiftedCells(project: Layered, { area, rows }: LiftView, li
   return cells
 }
 
-/** The Frame's empty positions that lie in the lifted piece, its narrow gaps' (1035, 1050) and its rim, which stops at
- * the Frame's edge (ticket 1036), on a Frame of rows and columns; a Custom frame's beads, each at its panel's angle, keep
- * every hole's border and have no rim. */
+/** The Frame's empty positions that lie in the lifted piece, its gaps less than two beads wide (1035, 1050), on a Frame
+ * of rows and columns; a Custom frame's beads, each at its panel's angle, keep every hole's border. */
 export function frameLifted(project: Layered, geometry: LayerGeometry): LiftedPositions | undefined {
   const beads = beadsOfLayer(project, 'frame')
   const frame = frameOf(project)
   if (!beads || !frame || !geometry.grid) return undefined
   return liftedPositionsOf('frame', {
     beads,
-    description: describeWeave(frameWeave(project)),
     has: (row, column) => geometry.hasPosition({ row, column }),
     edge: `${frame.rows},${frame.columns}`,
   })
@@ -795,8 +792,7 @@ export function canvasLiftCells(project: Layered, { area, rows, margin }: LiftVi
   const across = liftsAcross(weave)
   // A round bead's piece follows its half circle (ticket 1010).
   const round = hasHalfCircleCorner(beadRoundness(weave.technique, weave.cell)) ? { bead: cell.width } : {}
-  // An inner cut close to the beads is part of the piece (ticket 1035), and so is its rim a bead round it (ticket 1036),
-  // which lies on rows of no bead too.
+  // A gap less than two beads wide is part of the piece (tickets 1035, 1050), on rows of no bead too.
   const lifted = canvasLifted(project, margin).rows
   const rowsDrawn = new Set([...Object.keys(beads).map(Number), ...lifted.keys()].filter((row) => row >= first && row <= last))
   const cells: LiftCell[] = []
