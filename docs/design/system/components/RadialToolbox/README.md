@@ -2,7 +2,7 @@
 
 A ring of the ten most used drawing actions that opens round the pointer, so a maker changes tool or colour without travelling to the Tool pill. On a 13-inch screen the pill, docked at one edge, can be most of the screen away from the bead being drawn.
 
-**In the app since ticket 1064:** the ring, its opening by a right click and picking by a click; since ticket 1065 its opening by a hold. **Approved 2026-11-18, not yet in the app:** the slide (ticket 1077), the ring kept on the screen near an edge (ticket 1076) and the pressed bead's outline (Anatomy). The whole was signed off on mockups taken on the real editor, so its tickets build from this one text: each part below names its ticket, and that ticket removes the note when it lands. The decisions and what was turned down are in ADR 0098 (the Radial toolbox: ten actions in a ring round the pointer).
+**In the app since ticket 1064:** the ring, its opening by a right click and picking by a click; since ticket 1065 its opening by a hold. **Since ticket 1076:** the ring kept on the screen near an edge and the pressed bead's outline (Anatomy). **Approved 2026-11-18, not yet in the app:** the slide (ticket 1077). The whole was signed off on mockups taken on the real editor, so its tickets build from this one text: each part below names its ticket, and that ticket removes the note when it lands. The decisions and what was turned down are in ADR 0098 (the Radial toolbox: ten actions in a ring round the pointer).
 
 Sizes are this design system's px (1/16 rem in the app). Angles are degrees clockwise from straight up.
 
@@ -21,7 +21,7 @@ Every item runs the code path its existing control runs, so nothing is reachable
 ## Anatomy (ticket 1064)
 
 - **The band:** `pill-thickness` (48) across, on `radial-radius` (84, from the centre to the tiles' centres). Its inner edge is 60 from the centre and its outer edge 108, so the ring is 216 across round a hole of 120. It is one shape with a hole, in the Tool pill's material: `elevated`, a 1px `line` edge on both rims (`line-strong` in high contrast), and the shadow `--elevation-float-filter`, which is `elevation-float` for a shape that is not a box (ToolPill card, Material).
-- **The centre is empty.** The Canvas shows through the hole, so the pressed bead and the beads round it stay in sight, and a fingertip fits inside it: every item starts beyond the finger. Not yet in the app, and no ticket builds it yet: while the ring is open the pressed bead, or the empty position, keeps the Pattern's hover outline, 2px `bead-outline` (BeadHover card), so it is clear which bead Pick color from Canvas means once the pointer has left it or the ring has moved in from an edge.
+- **The centre is empty.** The Canvas shows through the hole, so the pressed bead and the beads round it stay in sight, and a fingertip fits inside it: every item starts beyond the finger. While the ring is open (ticket 1076) the pressed bead, or the empty position, keeps the Pattern's hover outline, 2px `bead-outline` (BeadHover card), so it is clear which bead Pick color from Canvas means once the pointer has left it or the ring has moved in from an edge.
 - **No names on the ring.** Icons only, as in the pill.
 - **Dividers** part the three groups: the pill's divider turned, 24 long centred on the 84 radius, 1px `line-soft`, at 68°, 112°, 248° and 292°.
 
@@ -87,9 +87,9 @@ Every item runs the code path its existing control runs, so nothing is reachable
 - **A tool or a colour closes the ring. Undo and Redo keep it open** (ticket 1064), since Undo is often wanted several times in a row. Undo goes off when nothing is left to undo; Redo comes on with the first Undo. If an undo changes the pressed bead, Pick color from Canvas follows the bead as it is now.
 - **Nothing picked:** sliding out and back and lifting in the hole closes the ring. With the ring left open, a press in the hole or anywhere outside it is an Outside press: it closes the ring and does nothing else, and nothing under the press acts. Escape closes it too.
 
-## Edges (ticket 1076, not yet in the app)
+## Edges (ticket 1076)
 
-- **The ring stays under the pointer as often as it can.** Until ticket 1076 lands the ring is always centred on the pressed point and the screen cuts it off near an edge. It moves whole, by the least that keeps it `float-edge` inside the screen with room for its name on top: its centre stays at least 120 from the left, right and bottom edges (108 and `float-edge`) and 158 from the top (8 and 30 more, for the name). It never changes shape, and every item keeps its place.
+- **The ring stays under the pointer as often as it can.** It opens centred on the pressed point wherever the screen has room for it. Else it moves whole, by the least that keeps it `float-edge` inside the screen with room for its name on top: its centre stays at least 120 from the left, right and bottom edges (108 and `float-edge`) and 158 from the top (8 and 30 more, for the name). It never changes shape, and every item keeps its place. The name moves along the ring's top by the least that keeps it `float-edge` inside the screen at each side.
 - **It lies over what is there:** the Canvas strip, the Tool pill docked at any edge, the Progress bar, the Selection bar and the Mirror bar. It never moves clear of them, and they take no press while it is open.
 - **Stacking (ticket 1064, in the app):** in the app shell at `z-popover`, as the colour popover is, so the canvas box never clips it (StackingOrder card). It is outside the Canvas's zoom, at a fixed size.
 

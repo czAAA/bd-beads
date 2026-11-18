@@ -156,6 +156,11 @@ export function previewedBeads(wrapper: Anywhere): (GridPosition & { color: stri
   })
 }
 
+/** The bead or empty position that keeps the outline while the Radial toolbox is open on it (ticket 1076). */
+export function outlinedBead(wrapper: Anywhere): GridPosition | undefined {
+  return surface(wrapper).props('outlinedCell')
+}
+
 // How far the weaver has got, as the surface draws it: the rows (or columns) behind the pointer are finished, dimmed;
 // the one at it is outlined.
 export function rowProgressView(wrapper: Anywhere) {

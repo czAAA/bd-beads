@@ -4,6 +4,7 @@ import type { GridPosition, Layer } from '../../domain/grid'
 import { beadColorAt } from '../../domain/layerBeads'
 import { inMargin } from '../../domain/margin'
 import type { Project } from '../../domain/project'
+import { RADIAL_ROOM, radialCenterOnScreen } from '../../domain/radialToolbox'
 import type { Tool } from '../../domain/tool'
 
 /** What the Radial toolbox needs from the shell (ticket 1064): the handlers its items' own controls call. */
@@ -24,6 +25,21 @@ export interface RadialToolboxDeps {
   onRedo: () => void
   /** Pick color from Canvas's one step (ticket 1073): takes the colour of the bead at a position. */
   takeColorAt: (row: number, column: number, layer?: Layer) => boolean
+  /** The screen the ring stays on (ticket 1076): its size in client px, and how many of them make one of the design
+   * system's px. Absent (a test's flow), the ring opens on the pressed point. */
+  screen?: () => RadialScreen
+}
+
+interface RadialScreen {
+  width: number
+  height: number
+  scale: number
+}
+
+/** The window as the ring's screen: the design system's px is 1/16 rem, which a larger text size draws larger. */
+export function radialScreenOfWindow(): RadialScreen {
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
+  return { width: window.innerWidth, height: window.innerHeight, scale: rem > 0 ? rem / 16 : 1 }
 }
 
 /** The Radial toolbox's flow (spec 1072, ADR 0098): it owns the ring's state (open, where on screen, on which bead
@@ -45,11 +61,17 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
     return beadColorAt(project, at.row, at.column, at.layer)
   })
 
-  /** Opens the ring centred on a point of the screen (client px), on the bead position pressed there. Not while the
-   * Canvas is read-only, with no Project open, or on the Homepage's demo. */
+  /** The pressed position while the ring is open, for its outline on the Canvas (ticket 1076): it says which bead Pick
+   * color from Canvas means once the ring has moved off it. */
+  const pressed = computed(() => (open.value ? position.value : undefined))
+
+  /** Opens the ring on a point of the screen (client px), on the bead position pressed there: centred on the point, or
+   * as near it as keeps the whole ring on the screen (ticket 1076). Not while the Canvas is read-only, with no Project
+   * open, or on the Homepage's demo. */
   function openAt(at: { x: number; y: number }, pressed?: GridPosition) {
     if (deps.demo || deps.readOnly() || !deps.currentProject()) return
-    center.value = { x: at.x, y: at.y }
+    const screen = deps.screen?.()
+    center.value = screen ? radialCenterOnScreen(at, screen, { side: RADIAL_ROOM.side * screen.scale, top: RADIAL_ROOM.top * screen.scale }) : { x: at.x, y: at.y }
     position.value = pressed
     open.value = true
   }
@@ -107,5 +129,5 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
     if (deps.canRedo()) deps.onRedo()
   }
 
-  return { open, center, beadHex, openAt, close, selectTool, pickRecent, pickColor, undo, redo, canOpen, holdAt, holdEnds, hold, endHold }
+  return { open, center, beadHex, openAt, close, selectTool, pickRecent, pickColor, undo, redo, pressed, canOpen, holdAt, holdEnds, hold, endHold }
 }
