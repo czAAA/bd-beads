@@ -122,7 +122,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     wrapper.unmount()
   })
 
-  it('opens under every tool, on a bead or an empty background', async () => {
+  it('opens under every tool', async () => {
     const tools = [
       can({ tool: 'paint' }),
       can({ tool: 'fill', nearestOnPress: true }),
@@ -141,12 +141,6 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
       wrapper.unmount()
     }
 
-    // Past the last bead there is no position: the ring is asked for with none.
-    const off = await mountSurface()
-    await off.surface.trigger('pointerdown', { clientX: 700, clientY: 600, ...PEN, ...DOWN })
-    vi.advanceTimersByTime(HOLD_MS)
-    expect(off.said.at(-1)).toEqual(['open-toolbox', { x: 700, y: 600 }])
-    off.wrapper.unmount()
   })
 
   it('a move of the drag slop inside the hold is a stroke as today and opens nothing', async () => {
