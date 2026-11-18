@@ -1,7 +1,7 @@
 import { computed, ref, shallowRef, watch } from 'vue'
 import { beadLabel, colorCatalogOf, DEFAULT_BEAD, findBead, type Bead } from '../../domain/beads'
 import type { Rect } from '../../domain/canvas'
-import { hasMeasuredColors, type ColorCatalog } from '../../domain/colorCatalog'
+import { measuredColorSource, type ColorCatalog } from '../../domain/colorCatalog'
 import { beadColorTargets, sourceTargets, type ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
@@ -252,8 +252,8 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
   const convertLabel = computed(() => plural(deps.locale(), conversion.value?.changes.length ?? 0, deps.messages().referenceImage.convert.button))
   const replacedLabel = computed(() => (replaced.value > 0 ? plural(deps.locale(), replaced.value, deps.messages().referenceImage.convert.replaces) : undefined))
   const beadName = computed(() => beadLabel(bead.value))
-  /** Whether the Bead's loaded catalog carries colors read from the maker's photographs: its note then says so (ticket 0886). */
-  const photoColors = computed(() => catalog.value?.id === colorCatalogOf(bead.value.id) && hasMeasuredColors(catalog.value))
+  /** Where the Bead's loaded catalog's colors were read from: its note then says so (tickets 0886, 1068). */
+  const measuredFrom = computed(() => (catalog.value?.id === colorCatalogOf(bead.value.id) ? measuredColorSource(catalog.value) : undefined))
 
   return {
     cover,
@@ -265,7 +265,7 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
     source,
     hasCatalog,
     beadName,
-    photoColors,
+    measuredFrom,
     colors,
     colorsMax,
     hideAfter,

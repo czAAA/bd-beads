@@ -1,3 +1,4 @@
+import { BEAD_CATALOG } from './beads'
 import { normalizeHex } from './color'
 
 /** The Finishes every Brand's wording is mapped onto (ADR 0072, ticket 536), in the order they are listed. */
@@ -86,6 +87,21 @@ export function catalogEntry(catalog: ColorCatalog, code: string): ColorCatalog[
 
 /** Whether any code of the catalog carries a measured color (tickets 0885, 0886): the app then says where they were read
  * from; a catalog with none keeps the words for generated swatches. */
-export function hasMeasuredColors(catalog: ColorCatalog | undefined): boolean {
+function hasMeasuredColors(catalog: ColorCatalog | undefined): boolean {
   return !!catalog?.codes.some((entry) => entry.hex !== undefined)
+}
+
+/** Where a catalog's measured colors were read from, the words the app names them by: MIYUKI's photographs of each code
+ * (ticket 0886) or TOHO's sample cards (ticket 1068). */
+export type MeasuredColorSource = 'photographs' | 'sample-cards'
+
+/** Each Brand's source, so every catalog of a Brand (both of Miyuki's) names the same one. */
+const MEASURED_FROM: Readonly<Record<string, MeasuredColorSource>> = { miyuki: 'photographs', toho: 'sample-cards' }
+
+/** Where the catalog's measured colors come from, by the Brand whose Form factors name it (ticket 1068); undefined for a
+ * catalog with no measured color, or none loaded, which keeps the words for generated swatches. */
+export function measuredColorSource(catalog: ColorCatalog | undefined): MeasuredColorSource | undefined {
+  if (!catalog || !hasMeasuredColors(catalog)) return undefined
+  const brand = BEAD_CATALOG.find((bead) => bead.formFactor.colorCatalog === catalog.id)?.brand.id
+  return brand ? MEASURED_FROM[brand] : undefined
 }

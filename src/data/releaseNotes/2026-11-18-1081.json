@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "The keyboard's bead cursor is gone: no ring appears on a bead and the view no longer jumps to it; beads are placed by pointer or touch",
+    "ru": "Курсора бусин для клавиатуры больше нет: кольцо на бусине не появляется, и вид к нему не перескакивает; бусины ставятся мышью или касанием",
+    "uk": "Курсора намистин для клавіатури більше немає: кільце на намистині не з'являється, і вид до нього не перестрибує; намистини ставляться мишею або дотиком",
+    "be": "Курсора пацерак для клавіятуры больш няма: кальцо на пацерцы не з'яўляецца, і від да яго не пераскоквае; пацеркі ставяцца мышшу або дотыкам",
+    "zh": "键盘的珠子光标已移除：珠子上不再出现圆环，视图也不再跳到那里；珠子用鼠标或触摸放置",
+    "es": "El cursor de cuentas del teclado ya no existe: no aparece ningún anillo sobre una cuenta y la vista ya no salta hasta él; las cuentas se colocan con el puntero o con el dedo",
+    "pl": "Kursor koralików dla klawiatury zniknął: na koraliku nie pojawia się pierścień, a widok już do niego nie przeskakuje; koraliki stawia się wskaźnikiem lub dotykiem"
+  }
+}

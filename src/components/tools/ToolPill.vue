@@ -388,7 +388,7 @@ watch(
   background: var(--elevated);
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
-  box-shadow: var(--elevation-2);
+  box-shadow: var(--elevation-float);
 }
 
 .tool-pill__tools {

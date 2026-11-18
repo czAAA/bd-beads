@@ -19,8 +19,8 @@ function closestButton(target: EventTarget | null): EventTarget | null {
 }
 
 // Holding Space and dragging pans the Canvas (tickets 95, 233), whatever the tool; callers guard their cell handlers
-// with `spaceHeld`. Bound to the window: focus may be anywhere (the Pattern keeps Space for its bead cursor, ADR 0093)
-// and a drag can wander anywhere; the page never scrolls (ticket 141). A boxed shell hears only Space in its box.
+// with `spaceHeld`. Bound to the window: focus may be anywhere and a drag can wander anywhere; the page never scrolls
+// (ticket 141). A boxed shell hears only Space in its box.
 export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
   const scope = useShellScope()
   /** Space is currently held down (not while typing) -- shows the grab cursor and arms panning on the next

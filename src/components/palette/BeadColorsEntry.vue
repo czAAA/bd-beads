@@ -2,14 +2,16 @@
 import { computed } from 'vue'
 import type { Bead } from '../../domain/beads'
 import { beadLabel } from '../../domain/beads'
+import type { MeasuredColorSource } from '../../domain/colorCatalog'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { beadColorsNote } from '../../i18n/measuredColorWords'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import InfoButton from '../ui/InfoButton.vue'
 
 // The entry to the Bead's palette (BeadColors card, ticket 0746): "Add {bead} colors" under the Palette grid, and while
 // its list is open the Info button after it, whose Tooltip holds the notes the list no longer shows.
-const props = defineProps<{ bead: Bead | undefined; open: boolean; testid: string; photoColors?: boolean }>()
+const props = defineProps<{ bead: Bead | undefined; open: boolean; testid: string; measuredFrom?: MeasuredColorSource }>()
 defineEmits<{ toggle: [] }>()
 
 const { t } = useI18n()
@@ -22,7 +24,7 @@ const name = computed(() => fillBlanks(words.value.open, { bead: props.bead ? be
     <AppButton class="bead-colors-entry__button" variant="in-box" size="sm" :trailing-icon="open ? 'chevron-up' : 'chevron-down'" :aria-expanded="open" :data-testid="testid" @click="$emit('toggle')">
       {{ name }}
     </AppButton>
-    <InfoButton v-if="open" :label="words.info" :body="`${photoColors ? words.photoColors : words.approximate} ${words.takenNote}`" data-testid="bead-colors-info" />
+    <InfoButton v-if="open" :label="words.info" :body="`${beadColorsNote(t, measuredFrom)} ${words.takenNote}`" data-testid="bead-colors-info" />
   </div>
 </template>
 

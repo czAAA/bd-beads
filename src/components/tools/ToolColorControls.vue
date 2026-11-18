@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { usePalette } from '../../composables/tools/usePalette'
-import { hasMeasuredColors } from '../../domain/colorCatalog'
+import { measuredColorSource } from '../../domain/colorCatalog'
 import { useClosePopoverOnPick } from '../shell/pickContext'
 import BeadColorList from '../palette/BeadColorList.vue'
 import BeadColorsEntry from '../palette/BeadColorsEntry.vue'
@@ -85,7 +85,7 @@ async function cancel() {
   <BeadColorsEntry
     v-if="beadColors?.available.value && !editing"
     :bead="beadColors.bead.value"
-    :photo-colors="hasMeasuredColors(beadColors.catalog.value)"
+    :measured-from="measuredColorSource(beadColors.catalog.value)"
     :open="catalogOpen"
     class="tool-color-controls__catalog"
     testid="bead-colors-toggle"
