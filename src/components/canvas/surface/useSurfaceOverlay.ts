@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
-import type { PreviewCell } from '../../../domain/grid'
+import type { GridPosition, PreviewCell } from '../../../domain/grid'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
 import type { PasteStamp, Selection } from '../../../domain/selection'
