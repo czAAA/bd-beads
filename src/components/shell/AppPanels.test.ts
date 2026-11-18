@@ -437,16 +437,29 @@ describe('Backgrounds (ticket 0666)', () => {
 })
 
 describe('The Export panel', () => {
-  it('opens from the Project panel\'s Export row, which closes Project and saves nothing (ticket 0956)', async () => {
+  it('is not opened by the Project panel\'s Export row, which unfolds the rows in Project and saves nothing (ticket 1058)', async () => {
     vi.mocked(downloadFile).mockClear()
     const mounted = mountPanels()
     await mounted.openPanel('project')
     await click(mounted, 'project-export')
     await nextTick()
 
-    expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
-    expect(mounted.wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
+    expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(true)
+    expect(mounted.wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
     expect(downloadFile).not.toHaveBeenCalled()
+  })
+
+  it('fits a frame from the Project panel\'s unfolded rows, which then show the exports with Project still open (ticket 1058)', async () => {
+    const open = withFrameSheet(moth(), undefined)
+    saveProjects([withLayers(open, { beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) })])
+    const mounted = mountPanels()
+    await mounted.openPanel('project')
+    await click(mounted, 'project-export')
+    await click(mounted, 'export-fit')
+
+    expect(frameOf(loadProjects()[0])).toBeDefined()
+    expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(true)
+    expect(mounted.wrapper.find('[data-testid="project-export-rows"] [data-testid="export-png"]').exists()).toBe(true)
   })
 
   it('opens on its first row, Picture, from its strip button (ticket 0939)', async () => {

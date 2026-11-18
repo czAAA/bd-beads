@@ -505,22 +505,23 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
   })
 
   describe('the free list (tickets 0742, 0801)', () => {
-    /** A layout for the plans: a section 500 tall, the list 300 down it, its four rows 100 tall, the whole list 700, the
-     * tile's padding 20 under it. The tile's foot may run 40 further down before it reaches the section's. */
-    function laidOut(wrapper: ReturnType<typeof page>) {
+    /** A layout for the plans: a section `room` tall (500 unless set), the list 300 down it, its first four rows 100 tall
+     * and every other 50, the whole list 700, the tile's padding 20 under it. The tile's foot may run 40 further down before
+     * it reaches the section's, so in 500 the rows may reach 140 down the list: the four, the least it starts with. */
+    function laidOut(wrapper: ReturnType<typeof page>, room = 500) {
       const rect = (el: Element, top: number, height: number) =>
         Object.defineProperty(el, 'getBoundingClientRect', { configurable: true, value: () => ({ top, bottom: top + height, height }) })
       const freeWindow = wrapper.get('[data-testid="free-window"]').element
       const list = freeWindow.firstElementChild!
-      rect(wrapper.get('[data-testid="homepage-section-plans"]').element, 0, 500)
+      rect(wrapper.get('[data-testid="homepage-section-plans"]').element, 0, room)
       rect(freeWindow, 300, 100)
       rect(list, 300, 700)
-      rect(list.children[3]!, 380, 20)
+      ;[...list.children].forEach((row, i) => rect(row, i < 4 ? 300 + 25 * i : 400 + 50 * (i - 4), i < 4 ? 25 : 50))
       rect(wrapper.get('[data-testid="plan-no-account"]').element, 0, 420)
     }
-    async function atThePlans() {
+    async function atThePlans(room?: number) {
       const wrapper = page(3)
-      laidOut(wrapper)
+      laidOut(wrapper, room)
       await step(wrapper, 2)
       await flushPromises()
       return wrapper
@@ -550,6 +551,20 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
       expect(list(wrapper).classes()).not.toContain('plan__free--fading')
       await scrollPlans(wrapper, 0)
       expect(list(wrapper).attributes('style')).toContain('height: 100px')
+    })
+
+    it('starts with as many whole rows as fit a taller room (ticket 1060)', async () => {
+      // In 700 the rows may reach 340 down the list: the four and the next four, 50 tall each.
+      const wrapper = await atThePlans(700)
+      expect(list(wrapper).attributes('style')).toContain('height: 300px')
+      expect(list(wrapper).classes()).toContain('plan__free--fading')
+    })
+
+    it('has nothing to grow where the whole list fits at the start (ticket 1060)', async () => {
+      const wrapper = await atThePlans(2000)
+      expect(list(wrapper).attributes('style')).toContain('height: 700px')
+      expect(list(wrapper).classes()).not.toContain('plan__free--fading')
+      expect(wrapper.get('.homepage__free-room').attributes('style')).toContain('calc(100% + 0px)')
     })
 
     it('has nothing to grow for a new visitor, so the section reaches no further than its room (ticket 0947)', async () => {

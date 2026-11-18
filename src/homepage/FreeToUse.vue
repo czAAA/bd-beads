@@ -9,7 +9,7 @@ import { freeListGroups } from './freeList'
 
 // Free to use for a new visitor (ticket 0947; Homepage card): with one plan there is no plan tile. The heading and the
 // way in on the left, the whole free list on the right in What's inside's four chapters, every row in view at once, so
-// nothing grows and the section never scrolls its heading or button away. Accounts and Pro wait in the Info button (0946).
+// nothing grows. Both on the list's plain ground (1060), centred in the room. Accounts and Pro wait in the Info button.
 const emit = defineEmits<{ makeFirstProject: [] }>()
 const { t, locale } = useI18n()
 const plans = computed(() => t.value.homepage.plans)
@@ -63,7 +63,8 @@ const lastId = computed(() => groups.value.at(-1)?.id)
 </template>
 
 <style scoped>
-/* Stacked in a tablet's narrow box; from 960 the lead `--free-lead-width` wide beside the list. */
+/* Stacked in a tablet's narrow box; from 960 the lead `--free-lead-width` wide beside the list, the two grounds as tall as
+ * each other so they read as one piece (ticket 1060). Centred in the room's height while it fits, by the plans section. */
 .free-to-use {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -74,7 +75,19 @@ const lastId = computed(() => groups.value.at(-1)?.id)
 @container homepage (min-width: 960px) {
   .free-to-use {
     grid-template-columns: var(--free-lead-width) minmax(0, 1fr);
+    align-items: stretch;
   }
+}
+
+/* The lead and the list on the same plain ground (ticket 1060): `panel`, a 1px `panel-rule` edge and `radius-lg`, so no
+ * line of the section stands on the bead grid. Not a plan tile: no `ink` edge, no strand, no "you are here" (0947). */
+.free-to-use__lead,
+.free-to-use__list {
+  min-width: 0;
+  padding: var(--space-20) var(--space-24) var(--space-24);
+  background: var(--panel);
+  border: 1px solid var(--panel-rule);
+  border-radius: var(--radius-lg);
 }
 
 .free-to-use__lead {
@@ -126,15 +139,6 @@ const lastId = computed(() => groups.value.at(-1)?.id)
   height: auto;
   min-height: var(--touch-target);
   white-space: normal;
-}
-
-/* The list on `panel`, a 1px `panel-rule` edge and `radius-lg`, as a phone's grouped lists: calm under the rows. */
-.free-to-use__list {
-  min-width: 0;
-  padding: var(--space-20) var(--space-24) var(--space-24);
-  background: var(--panel);
-  border: 1px solid var(--panel-rule);
-  border-radius: var(--radius-lg);
 }
 
 /* "forever free:" over the chapters. */

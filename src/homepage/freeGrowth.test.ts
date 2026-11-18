@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { freeListHeight, freeListRoom, type FreeListMeasure } from './freeGrowth'
+import { freeListHeight, freeListRoom, freeStartRows, type FreeListMeasure } from './freeGrowth'
 
 // A screen 800 tall, the list starting 300 down, four rows 100 tall, the whole list 700, 20 of padding under it: the
 // tile's foot starts at 420 and may run down to 760 (40 kept clear), a gap of 340.
@@ -36,5 +36,40 @@ describe('the free list growing with the scroll (ticket 0742)', () => {
 
   it('takes another speed where the design system sets one', () => {
     expect(freeListHeight(MEASURE, 100, 2)).toBe(300)
+  })
+})
+
+// The same room: the list 300 down, 20 of padding under it, 40 kept clear, so rows may reach 440 down the list.
+describe('the rows the free list starts with (ticket 1060)', () => {
+  const PLACE = { viewport: 800, top: 300, below: 20 }
+  /** Eighteen rows, each 30 tall: their feet from the list's top. */
+  const ROWS = Array.from({ length: 18 }, (_, i) => 30 * (i + 1))
+
+  it('starts with as many whole rows as fit above the room kept clear at the foot', () => {
+    expect(freeStartRows(PLACE, ROWS)).toBe(14)
+  })
+
+  it('takes a row whose foot is exactly at the room kept clear, and not one a pixel past it', () => {
+    expect(freeStartRows({ ...PLACE, viewport: 780 }, ROWS)).toBe(14)
+    expect(freeStartRows({ ...PLACE, viewport: 779 }, ROWS)).toBe(13)
+  })
+
+  it('never starts with fewer than four, however little room there is', () => {
+    expect(freeStartRows({ ...PLACE, viewport: 400 }, ROWS)).toBe(4)
+  })
+
+  it('starts with the whole list where it fits, and never more rows than the list has', () => {
+    expect(freeStartRows({ ...PLACE, viewport: 2000 }, ROWS)).toBe(18)
+    expect(freeStartRows({ ...PLACE, viewport: 400 }, ROWS.slice(0, 3))).toBe(3)
+  })
+
+  it('takes another least where the design system sets one', () => {
+    expect(freeStartRows({ ...PLACE, viewport: 400 }, ROWS, 6)).toBe(6)
+  })
+
+  it('needs nothing to grow once the list starts whole', () => {
+    const whole = { ...PLACE, viewport: 2000, start: 540, full: 540 }
+    expect(freeListHeight(whole, 0)).toBe(540)
+    expect(freeListRoom(whole)).toBe(0)
   })
 })

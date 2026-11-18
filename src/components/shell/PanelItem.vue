@@ -5,9 +5,9 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
 import { PANEL_CONTEXT } from './panelContext'
 
-// One row of a panel (MenuPanel card): icon, label, value, a trailing mark (› `sub`, ↗ `external`); `accent`, `accentIcon`,
-// `danger` color it, `secondary` makes it a small link under the row before (ticket 0700). A button, or a link with `href`;
-// a disabled item is `aria-disabled` so it keeps its Tooltip saying why.
+// One row of a panel (MenuPanel card): icon, label, value, a mark (› `sub`, ↗ `external`, a fold mark with `expanded`: it
+// unfolds rows under it, never closing the panel, 1058); `accent`, `accentIcon`, `danger` color it, `secondary` makes it a
+// small link under the row before (0700). A button, or a link with `href`; a disabled one is `aria-disabled`, for its Tooltip.
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
@@ -18,6 +18,8 @@ const props = withDefaults(
     accentIcon?: boolean
     /** It opens a subpanel. */
     sub?: boolean
+    /** It unfolds rows under it (ticket 1058): whether they show, said by `aria-expanded` and the fold mark. */
+    expanded?: boolean
     disabled?: boolean
     /** What a disabled item's Tooltip is named and says. */
     name?: string
@@ -28,18 +30,26 @@ const props = withDefaults(
     stays?: boolean
     secondary?: boolean
   }>(),
-  { icon: undefined, value: undefined, danger: false, accent: false, accentIcon: false, sub: false, disabled: false, name: undefined, disabledBody: undefined, href: undefined, external: false, stays: false, secondary: false },
+  { icon: undefined, value: undefined, danger: false, accent: false, accentIcon: false, sub: false, expanded: undefined, disabled: false, name: undefined, disabledBody: undefined, href: undefined, external: false, stays: false, secondary: false },
 )
 const emit = defineEmits<{ select: [] }>()
 const context = inject(PANEL_CONTEXT)
-const mark = computed(() => (props.external ? 'external' : props.sub ? 'chevron-left' : undefined))
+/** A fold row (ticket 1058): `expanded` given, true or false. */
+const folds = computed(() => props.expanded !== undefined)
+/** The design system draws one chevron-left: › (a subpanel, a folded row) is it turned, an unfolded row's is down. */
+const turned = computed(() => props.sub || props.expanded === false)
+const mark = computed(() => {
+  if (props.external) return 'external'
+  if (props.expanded) return 'chevron-down'
+  return turned.value ? 'chevron-left' : undefined
+})
 
 function onClick(event: Event) {
   if (props.disabled) {
     event.preventDefault()
     return
   }
-  if (!props.stays) context?.close()
+  if (!props.stays && !folds.value) context?.close()
   emit('select')
 }
 </script>
@@ -50,7 +60,7 @@ function onClick(event: Event) {
       <AppIcon v-if="icon" :name="icon" :size="16" :class="{ 'panel-item__icon--accent': accentIcon }" />
       <span class="panel-item__label"><slot /></span>
       <span v-if="value" class="panel-item__value">{{ value }}</span>
-      <AppIcon v-if="mark" :name="mark" :size="14" class="panel-item__mark" :class="{ 'panel-item__mark--sub': sub }" />
+      <AppIcon v-if="mark" :name="mark" :size="14" class="panel-item__mark" :class="{ 'panel-item__mark--sub': turned }" />
     </button>
   </AppTooltip>
   <component
@@ -64,12 +74,13 @@ function onClick(event: Event) {
     :target="external ? '_blank' : undefined"
     :rel="external ? 'noopener' : undefined"
     :aria-disabled="disabled || undefined"
+    :aria-expanded="expanded"
     @click="onClick"
   >
     <AppIcon v-if="icon" :name="icon" :size="16" :class="{ 'panel-item__icon--accent': accentIcon }" />
     <span class="panel-item__label"><slot /></span>
     <span v-if="value" class="panel-item__value">{{ value }}</span>
-    <AppIcon v-if="mark" :name="mark" :size="14" class="panel-item__mark" :class="{ 'panel-item__mark--sub': sub }" />
+    <AppIcon v-if="mark" :name="mark" :size="14" class="panel-item__mark" :class="{ 'panel-item__mark--sub': turned }" />
   </component>
 </template>
 
@@ -135,7 +146,7 @@ function onClick(event: Event) {
   color: var(--muted);
 }
 
-/* The design system draws one chevron-left; › is it turned. */
+/* The design system draws one chevron-left; › (and a folded row's mark) is it turned. */
 .panel-item__mark--sub {
   transform: rotate(180deg);
 }

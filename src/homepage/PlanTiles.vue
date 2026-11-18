@@ -41,6 +41,8 @@ const OFF = [
 ] as const
 /** The switched-off tiles shown: none to a new visitor (ticket 0871). */
 const offShown = computed(() => (props.isNew ? [] : OFF))
+/** A new visitor off a phone: Free to use, no tiles (ticket 0947), centred in the room (1060). */
+const alone = computed(() => props.isNew && !props.phone)
 /** The free list's window and its tile, for the page to measure the growth from. */
 const freeWindow = shallowRef<HTMLElement>()
 const freeTile = shallowRef<HTMLElement>()
@@ -48,8 +50,8 @@ defineExpose({ freeWindow, freeTile })
 </script>
 
 <template>
-  <section class="plans" :class="{ 'plans--phone': phone }" aria-labelledby="homepage-plans" data-testid="homepage-plans">
-    <FreeToUse v-if="isNew && !phone" @make-first-project="emit('makeFirstProject')" />
+  <section class="plans" :class="{ 'plans--phone': phone, 'plans--alone': alone }" aria-labelledby="homepage-plans" data-testid="homepage-plans">
+    <FreeToUse v-if="alone" @make-first-project="emit('makeFirstProject')" />
     <template v-else>
       <!-- A new visitor's Accounts and Pro line waits in an Info button beside the heading (ticket 0946). -->
       <header class="plans__head" :class="{ 'plans__head--alone': isNew }">
@@ -133,6 +135,14 @@ defineExpose({ freeWindow, freeTile })
 .plans {
   display: flex;
   flex-direction: column;
+}
+
+/* A new visitor's Free to use fills the section's room and stands in the middle of its height while it fits, at the top
+ * once it is taller, as Welcome and the coffee tile do (ticket 1060). */
+.plans--alone {
+  flex: 1 0 auto;
+  justify-content: center;
+  justify-content: safe center;
 }
 
 /* The heading on the left and the one reason on the right, wrapping under it where there is no room. */

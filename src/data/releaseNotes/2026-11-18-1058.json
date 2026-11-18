@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "Export in the Project panel now unfolds the picture and chart right there, instead of opening another panel",
+    "ru": "Экспорт в панели проекта теперь раскрывает картинку и схему прямо там, а не открывает другую панель",
+    "uk": "Експорт у панелі проєкту тепер розгортає картинку й схему просто там, а не відкриває іншу панель",
+    "be": "Экспарт у панэлі праекта цяпер раскрывае карцінку і схему проста там, а не адкрывае іншую панэль",
+    "zh": "项目面板中的导出现在直接在原处展开图片和图纸，而不再打开另一个面板",
+    "es": "Exportar en el panel del proyecto ahora despliega la imagen y el esquema ahí mismo, en lugar de abrir otro panel",
+    "pl": "Eksport w panelu projektu rozwija teraz obrazek i schemat w tym samym miejscu, zamiast otwierać inny panel"
+  }
+}
