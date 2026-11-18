@@ -101,8 +101,6 @@ const props = withDefaults(defineProps<{
   frameTurns?: number
   /** The reference image to draw under the beads (ticket 0790), none while it is hidden. */
   reference?: DrawnReference
-  /** The keyboard's bead cursor (ADR 0093), ringed while focus came by keyboard; none otherwise. */
-  cursor?: GridPosition
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -122,13 +120,6 @@ const emit = defineEmits<SurfacePointerEvents & {
   drawn: []
   /** The view the layers are drawn through, for what stands over the drawing in its px (Adjust, ticket 0790). */
   'surface-view': [view: SurfaceView]
-  /** Keyboard focus reached the Pattern by Tab (ADR 0093), not by a pointer press. */
-  'keyboard-focus': []
-  /** Focus left the Pattern, or a pointer press took it over: the ring hides. */
-  'cursor-blur': []
-  /** A key on the focused Pattern; `pressed` when a pointer press gave it focus, so Space pans as it always has. */
-  'cursor-key': [event: KeyboardEvent, pressed: boolean]
-  'cursor-key-up': [event: KeyboardEvent]
 }>()
 
 /** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
@@ -429,37 +420,6 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
 
 defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen })
 
-/** The bead cursor's ring (ADR 0093, KeyboardFocus card): round its bead on screen, upright while the drawing leans. */
-const cursorRing = computed(() => {
-  const at = props.cursor
-  if (!at || size.value.width === 0) return undefined
-  const box = leaning.value.screenBox(surface.value.beadBox({ row: at.row, column: at.column, rows: 1, columns: 1 }, layerAt(props.project, at)))
-  return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` }
-})
-
-// Set by a pointer press, cleared by an arrow key and by blur: focus a press gave shows no ring and leaves Space to pan.
-let pressed = false
-function onPress(event: PointerEvent): void {
-  if (props.cursor) emit('cursor-blur')
-  pressed = true
-  // A press that gave no focus (the Pattern already had it, or the browser kept it) must not hide the next Tab's ring.
-  setTimeout(() => {
-    if (document.activeElement !== rootEl.value) pressed = false
-  })
-  handlers.onPress(event)
-}
-function onFocus(): void {
-  if (!pressed) emit('keyboard-focus')
-}
-function onBlur(): void {
-  pressed = false
-  emit('cursor-blur')
-}
-function onKeydown(event: KeyboardEvent): void {
-  if (event.key.startsWith('Arrow')) pressed = false
-  emit('cursor-key', event, pressed)
-}
-
 onMounted(() => {
   measure()
   if (typeof ResizeObserver !== 'undefined' && rootEl.value) {
@@ -491,12 +451,7 @@ onBeforeUnmount(() => {
     :style="cursorStyle"
     role="img"
     :aria-label="label"
-    tabindex="0"
-    @focus="onFocus"
-    @blur="onBlur"
-    @keydown="onKeydown"
-    @keyup="emit('cursor-key-up', $event)"
-    @pointerdown.capture="onPress"
+    @pointerdown.capture="handlers.onPress"
     @pointerdown="handlers.onPointerDown"
     @pointermove="handlers.onPointerMove"
     @pointerup="handlers.onPointerEnd"
@@ -534,7 +489,6 @@ onBeforeUnmount(() => {
       data-testid="pick-chip"
       aria-hidden="true"
     ><span class="project-surface__pick-chip-swatch" />{{ pickChip.hex }}</span>
-    <span v-if="cursorRing" class="project-surface__cursor" :style="cursorRing" data-testid="bead-cursor" aria-hidden="true" />
   </div>
 </template>
 
@@ -548,22 +502,6 @@ onBeforeUnmount(() => {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-}
-
-/* The bead cursor's ring is the Pattern's focus indicator (ADR 0093). */
-.project-surface:focus {
-  outline: none;
-}
-
-/* The ring round the bead the keyboard is on (KeyboardFocus card): a bead may be any color, so it is the swatch's
- * two-tone ring, `focus-ring` outside a band of `surface`, standing clear of the bead. */
-.project-surface__cursor {
-  position: absolute;
-  border-radius: var(--radius-sm);
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: var(--focus-width);
-  box-shadow: 0 0 0 var(--focus-width) var(--focus-ring-band);
-  pointer-events: none;
 }
 
 /* Over the canvas's beads the OS pointer is hidden: the overlay draws a bead-shaped marker in its place (BeadHover
