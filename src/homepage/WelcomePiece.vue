@@ -73,13 +73,14 @@ watch(theme, draw)
 
 <style scoped>
 /* At most `--welcome-piece-width` wide. On a short screen it gives way, as tall as the screen leaves it and never under
- * `--welcome-piece-least-width` wide, so the tile fits whole from 1440 × 900 (Homepage card). */
+ * `--welcome-piece-least-width` wide, so the tile fits whole from 1440 × 900 (Homepage card); a grown box's screen is
+ * measured in its own grown px (ticket 1059). */
 .welcome-piece {
   display: block;
   width: 100%;
   max-width: clamp(
     var(--welcome-piece-least-width),
-    (100vh - var(--welcome-beside-piece)) * var(--welcome-piece-shape),
+    (100vh / var(--homepage-scale) - var(--welcome-beside-piece)) * var(--welcome-piece-shape),
     var(--welcome-piece-width)
   );
   height: auto;

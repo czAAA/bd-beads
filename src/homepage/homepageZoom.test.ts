@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useHomepageZoom } from './homepageZoom'
+import { homepageScale, useHomepageZoom } from './homepageZoom'
 
 beforeEach(() => localStorage.clear())
 
@@ -47,5 +47,40 @@ describe('useHomepageZoom', () => {
     zoom.zoomIn()
     expect(zoom.percent.value).toBe(110)
     vi.restoreAllMocks()
+  })
+})
+
+// A screen past 1440 × 900 grows the box and its sections (ticket 1059): by the smaller of its width and height against
+// that screen's, never under 1 and never more than a third.
+describe('homepageScale', () => {
+  it('leaves 1440 × 900 and anything under it as it is', () => {
+    expect(homepageScale(1440, 900)).toBe(1)
+    expect(homepageScale(1280, 800)).toBe(1)
+    expect(homepageScale(1366, 1024)).toBe(1)
+    expect(homepageScale(390, 844)).toBe(1)
+  })
+
+  it('grows past it, by the height where it is the smaller', () => {
+    expect(homepageScale(1920, 1080)).toBeCloseTo(1.2)
+    expect(homepageScale(1728, 1117)).toBeCloseTo(1.2)
+  })
+
+  it('grows by the width where it is the smaller', () => {
+    expect(homepageScale(1584, 1400)).toBeCloseTo(1.1)
+  })
+
+  it('stays at 1 where only one of the two is larger', () => {
+    expect(homepageScale(2560, 900)).toBe(1)
+    expect(homepageScale(1440, 1600)).toBe(1)
+  })
+
+  it('grows a third at most', () => {
+    expect(homepageScale(2560, 1440)).toBeCloseTo(4 / 3)
+    expect(homepageScale(3840, 2160)).toBeCloseTo(4 / 3)
+  })
+
+  it('is 1 for a window with no size yet', () => {
+    expect(homepageScale(0, 0)).toBe(1)
+    expect(homepageScale(Number.NaN, 900)).toBe(1)
   })
 })
