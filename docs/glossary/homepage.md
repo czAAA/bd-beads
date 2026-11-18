@@ -7,4 +7,4 @@ The page outside the editor, at the main address (`/`; the editor is at `/app/`,
 _Avoid_: landing page, home page, about page, marketing page
 
 **Homepage zoom**:
-The Canvas strip's zoom on the Homepage: it scales the page's content (75–200%, remembered on this device; Fit returns to 100%), reflowing text and never scrolling sideways.
+The Canvas strip's zoom on the Homepage: it scales the page's content (75–200%, remembered on this device; Fit returns to 100%), reflowing text and never scrolling sideways. On a screen larger than 1440 × 900, Fit is the grown size: the box and its sections are drawn up to a third larger, by the smaller of width ÷ 1440 and height ÷ 900, and 100% is that size, the steps going from it (ticket 1059).

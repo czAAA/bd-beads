@@ -35,7 +35,7 @@ import { useMoreBelow } from './useMoreBelow'
 import { useScrollNudge } from './useScrollNudge'
 import { useSectionInput } from './useSectionInput'
 import { provideI18n } from '../i18n/useI18n'
-import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageZoom } from './homepageZoom'
+import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageScale, useHomepageZoom } from './homepageZoom'
 import { fillBlanks } from '../domain/fillBlanks'
 import { findBead } from '../domain/beads'
 import { beadCell, type Technique } from '../domain/weave'
@@ -104,8 +104,12 @@ const bodySize = useElementSize(bodyEl)
 /** A phone's box (ticket 0827): its own bar in place of the Progress bar, the way in on it, and no zoom. */
 const phone = computed(() => (bodySize.width.value || window.innerWidth) < EDITOR_FROM)
 const zoomPercent = computed(() => (phone.value ? 100 : zoom.percent.value))
+/** A screen past 1440 × 900 grows the box and its sections by this (ticket 1059); the strip and the bar keep their size. */
+const screenScale = useHomepageScale()
+/** How much the sections are drawn larger: the beader's zoom, stepped from the grown size Fit is (ticket 1059). */
+const contentScale = computed(() => (zoomPercent.value / 100) * screenScale.value)
 /** The content's own width once zoomed: the width its layout is made for (the CSS asks the container the same). */
-const pageWidth = computed(() => (bodySize.width.value || window.innerWidth) / (zoomPercent.value / 100))
+const pageWidth = computed(() => (bodySize.width.value || window.innerWidth) / contentScale.value)
 /** The sections laid out for a phone's width: What's inside's and the promises' grouped lists, the plans stacked, and
  * each section's end saying what is next (ticket 0827). */
 const narrow = computed(() => pageWidth.value < EDITOR_FROM)
@@ -121,14 +125,13 @@ const DELICA_CELL = beadCell(findBead('miyuki/delica/11-0'), BACKGROUND.techniqu
 // Bead's real cell, as the theme marks them (tonal tiles in light and dark, ticket 1001), sized by the zoom.
 const boxStyle = computed(() => {
   const color = canvasBackground.background.value?.color
-  const zoomScale = zoomPercent.value / 100
   const pixelRatio = window.devicePixelRatio || 1
   const marks = positionMarkBackground({
     technique: BACKGROUND.technique,
     cell: DELICA_CELL,
-    deviceScale: zoomScale * pixelRatio,
+    deviceScale: contentScale.value * pixelRatio,
     pixelRatio,
-    ...markLookAt(canvasBackground.projectTheme.value, zoomScale * pixelRatio),
+    ...markLookAt(canvasBackground.projectTheme.value, contentScale.value * pixelRatio),
   })
   return {
     ...(color ? { '--canvas-bg': color } : undefined),
@@ -299,14 +302,14 @@ const freeGrowth = useFreeGrowth({
   section: plansSection,
   freeWindow: () => plans.value?.freeWindow,
   freeTile: () => plans.value?.freeTile,
-  zoom: () => zoomPercent.value / 100,
+  zoom: () => contentScale.value,
 })
 const remeasureFree = () => void nextTick(freeGrowth.remeasure)
 onMounted(() => {
   remeasureFree()
   void document.fonts?.ready.then(remeasureFree)
 })
-watch([locale, zoomPercent, bodySize.width, bodySize.height, () => section.value === plansIndex.value, isNew], remeasureFree)
+watch([locale, contentScale, bodySize.width, bodySize.height, () => section.value === plansIndex.value, isNew], remeasureFree)
 
 // More below (tickets 0826, 0870): only while the section shown scrolls further; a press scrolls it on.
 const moreBelow = useMoreBelow({ shown: shownSection })
@@ -359,7 +362,7 @@ function goIn() {
  * screen, the page's zoom taken in; the plain way in should the demo have none yet. */
 function openFromHere(snapshot: DemoSnapshot | undefined) {
   if (!snapshot) return emit('openEditor')
-  const scale = zoomPercent.value / 100
+  const scale = contentScale.value
   emit('openDemoCopy', snapshot.view ? { ...snapshot, view: { ...snapshot.view, zoom: snapshot.view.zoom * scale } } : snapshot)
 }
 /** The Menu row's action, whose name the strip's library button shows with the count (tickets 0716, 0822). */
@@ -378,7 +381,7 @@ const savedProjects = controlAction('saved-projects')
     @touchcancel.passive="input.onTouchCancel"
     @pointerdown="nudge.acted"
   >
-    <div class="homepage-page__stage" :style="{ '--progress': section / Math.max(1, sections.length - 1) }">
+    <div class="homepage-page__stage" :style="{ '--progress': section / Math.max(1, sections.length - 1), '--homepage-scale': screenScale }">
       <!-- The two faint X1 marks beside the box, drifting a little as the box turns. -->
       <span class="homepage-page__marks">
         <AppLogo class="homepage-page__mark homepage-page__mark--large" :size="420" data-testid="homepage-mark" />
@@ -462,7 +465,7 @@ const savedProjects = controlAction('saved-projects')
         <ToastRegion :toasts="toasts" @dismiss="dismissToast" />
 
         <div ref="bodyEl" class="homepage__body" data-testid="homepage-body">
-          <main class="homepage__page" :style="{ zoom: zoomPercent / 100 }">
+          <main class="homepage__page" :style="{ zoom: contentScale }">
             <div class="homepage__sections">
               <section
                 v-for="(entry, index) in sections"
@@ -563,14 +566,14 @@ const savedProjects = controlAction('saved-projects')
 
 .homepage-page__mark--large {
   top: 14%;
-  left: calc(50% - var(--homepage-box-width) / 2 - var(--homepage-mark-large) / 2 - var(--space-24));
+  left: calc(50% - var(--homepage-box-width) * var(--homepage-scale) / 2 - var(--homepage-mark-large) / 2 - var(--space-24));
   stroke-width: 1.4;
   opacity: 0.07;
   transform: translateY(calc(5rem - 13.75rem * var(--progress)));
 }
 
 .homepage-page__mark--small {
-  right: calc(50% - var(--homepage-box-width) / 2 - var(--homepage-mark-small) - var(--space-32));
+  right: calc(50% - var(--homepage-box-width) * var(--homepage-scale) / 2 - var(--homepage-mark-small) - var(--space-32));
   bottom: 10%;
   stroke-width: 2.6;
   opacity: 0.16;
@@ -586,9 +589,9 @@ const savedProjects = controlAction('saved-projects')
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: var(--homepage-box-width);
+  max-width: calc(var(--homepage-box-width) * var(--homepage-scale));
   height: 100%;
-  max-height: var(--homepage-box-height);
+  max-height: calc(var(--homepage-box-height) * var(--homepage-scale));
   overflow: hidden;
   color: var(--ink);
   background: var(--box);

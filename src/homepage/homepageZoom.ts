@@ -1,4 +1,4 @@
-import { ref, readonly, type Ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, readonly, type Ref } from 'vue'
 import { stepZoom } from '../domain/grid'
 
 /** The Homepage's zoom range in percent (ticket 540, ADR 0073): the page's content, not the Project canvas. */
@@ -47,4 +47,27 @@ export function useHomepageZoom(): {
     zoomOut: () => set(stepZoom(percent.value / 100, -1) * 100),
     reset: () => set(FIT_PERCENT),
   }
+}
+
+/** The screen the Homepage's layout is made to fit whole (ticket 1059): a 13–14" laptop's. */
+const FIT_SCREEN = { width: 1440, height: 900 }
+/** The most a large screen grows the box and its sections (ticket 1059): a third. */
+const MOST_SCALE = 4 / 3
+
+/** How much a screen larger than 1440 × 900 grows the Homepage's box and sections (ticket 1059): the smaller of its
+ * width and height against that screen's, never under 1 and never over a third more. The zoom's Fit is this size.
+ * @internal Exported for the test of the rule, which tries screens no browser test opens. */
+export function homepageScale(width: number, height: number): number {
+  const scale = Math.min(width / FIT_SCREEN.width, height / FIT_SCREEN.height)
+  return Number.isFinite(scale) ? Math.min(MOST_SCALE, Math.max(1, scale)) : 1
+}
+
+/** The Homepage's scale for the window it is in, regrown at once as the window is resized (ticket 1059). */
+export function useHomepageScale(): Readonly<Ref<number>> {
+  const measure = () => homepageScale(window.innerWidth, window.innerHeight)
+  const scale = ref(measure())
+  const onResize = () => (scale.value = measure())
+  onMounted(() => window.addEventListener('resize', onResize))
+  onBeforeUnmount(() => window.removeEventListener('resize', onResize))
+  return readonly(scale)
 }
