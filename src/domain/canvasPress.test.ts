@@ -26,8 +26,13 @@ describe('pressBecomes (spec 1072, the right button)', () => {
     expect(after(RIGHT_DOWN, { type: 'move', moved: 20 }, { type: 'move', moved: 0 })).toBe('pan')
   })
 
-  it('is nothing when the button lifts before the pointer has moved the drag slop', () => {
-    expect(after(RIGHT_DOWN, { type: 'move', moved: 3 }, { type: 'lift' })).toBe('nothing')
+  it('opens the ring when the button lifts before the pointer has moved the drag slop', () => {
+    expect(after(RIGHT_DOWN, { type: 'lift' })).toBe('ring')
+    expect(after(RIGHT_DOWN, { type: 'move', moved: 3 }, { type: 'lift' })).toBe('ring')
+  })
+
+  it('opens the ring once: a second lift is nothing', () => {
+    expect(after(RIGHT_DOWN, { type: 'lift' }, { type: 'lift' })).toBe('nothing')
   })
 
   it('is nothing more when the button lifts after a pan', () => {

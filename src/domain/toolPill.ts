@@ -17,6 +17,27 @@ export function pillTileKey(tile: PillTile): string {
   return String(PILL_TILES.indexOf(tile) + 1)
 }
 
+/** What decides which Tool tile is lit. */
+interface PillToolState {
+  activeTool: Tool
+  /** Whether Pick color from canvas waits for a bead. */
+  picking?: boolean
+  /** Whether paste mode is on, and whether the clipboard holds something to paste. */
+  pasteArmed?: boolean
+  hasClipboard?: boolean
+  /** Whether Mirror mode is on. */
+  mirrorMarking?: boolean
+}
+
+/** The Tool whose tile is lit, in the pill and in the Radial toolbox alike (ticket 1064): the active one, or none while
+ * the eyedropper waits (ticket 0845) and while paste mode or Mirror mode, which run under Select, light their own tile
+ * (tickets 447, 0750). */
+export function litPillTool(state: PillToolState): Tool | undefined {
+  if (state.picking) return undefined
+  if (state.activeTool === 'select' && ((state.pasteArmed && state.hasClipboard) || state.mirrorMarking)) return undefined
+  return state.activeTool
+}
+
 /** The four edges of the drawing area the Tool pill can dock to (ticket 439, ADR 0046). */
 export const PILL_POSITIONS = ['left', 'top', 'right', 'bottom'] as const
 /** One of the four edges the pill docks to. */

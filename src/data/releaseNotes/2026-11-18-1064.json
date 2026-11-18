@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "new",
+  "line": {
+    "en": "Right-click the Canvas for tools and colors at the pointer",
+    "ru": "Щелчок правой кнопкой по холсту открывает инструменты и цвета у указателя",
+    "uk": "Клацання правою кнопкою по полотну відкриває інструменти й кольори біля вказівника",
+    "be": "Пстрычка правай кнопкай па палатне адкрывае інструменты і колеры каля паказальніка",
+    "zh": "右键点击画布，在指针旁打开工具和颜色",
+    "es": "Haz clic derecho en el lienzo para ver las herramientas y los colores junto al puntero",
+    "pl": "Kliknij płótno prawym przyciskiem, aby otworzyć narzędzia i kolory przy wskaźniku"
+  }
+}

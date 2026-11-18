@@ -399,6 +399,7 @@
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
   --hold-duration: 500ms; /* RadialToolbox card (ticket 1063): how long a hold is, on the Canvas for the ring and on a control for its Tooltip. */
   --hold-quiet: 150ms; /* RadialToolbox card (ticket 1063): how long a hold on the Canvas shows nothing, so a tap never shows the hairline. */
+  --radial-out: 150ms; /* RadialToolbox card (ticket 1064): the ring fades out, on --ease-in; --duration-fast under reduced motion. */
   /* ConvertImage card: outside the frame the picture is dimmed, black at 45% */
   --framing-dim: rgba(0, 0, 0, .45);
   /* Homepage card: the slogan holds "openbeads" on arrival, then rolls once through its words back to it (ticket 0925) */

@@ -459,6 +459,8 @@ export interface Translations {
       scrollToZoom: string
       hand: string
       rulers: string
+      /** The keyboard line's last part (ticket 1064): how the Radial toolbox opens with a mouse. */
+      rightClickForTools: string
       /** On touch (ticket 0846): the line in finger words, with no key chips. */
       twoFingersToMove: string
       pinchToZoom: string
@@ -1555,6 +1557,8 @@ export interface Translations {
     /** The Canvas group (v16): its title and the zoom shortcut. */
     canvasGroup: string
     zoomCanvas: string
+    /** The Radial toolbox's row (ticket 1064): a right click on the Canvas, not a key. */
+    toolsAtPointer: string
     /** Ticket 88's whole Colors group, summarized as one row rather than one per swatch. */
     paletteColors: string
     /** The switch at the top of Keyboard shortcuts (ticket 438) and its two choices. */

@@ -132,8 +132,12 @@ test.describe('the pointer tools', () => {
     const before = await scrollX()
     const at = await pointOn(page, 'loom', false, 100, 4, 7)
     await page.mouse.click(at.x, at.y, { button: 'right' })
-    // A right click is not a drag: the Canvas stays (ticket 1074).
+    // A right click is not a drag: the Canvas stays (ticket 1074) and the Radial toolbox opens (ticket 1064), which
+    // Escape closes again.
     expect(await scrollX()).toBe(before)
+    await expect(page.getByTestId('radial-toolbox')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('radial-toolbox')).toBeHidden()
     const from = await pointOn(page, 'loom', false, 100, 4, 10)
     await page.mouse.move(from.x, from.y)
     await page.mouse.down({ button: 'right' })

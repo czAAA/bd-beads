@@ -690,6 +690,8 @@ export const CONTROLS: readonly ControlAction[] = [
 export const POINTER_HELP: readonly { group: ControlGroup; name: (t: Translations) => string; keys: readonly (readonly string[])[] }[] = [
   { group: 'canvas', name: (t) => t.shortcutsHelp.panCanvas, keys: [['Space', 'drag']] },
   { group: 'canvas', name: (t) => t.shortcutsHelp.zoomCanvas, keys: [[MOD_KEY, 'wheel']] },
+  // The Radial toolbox (ticket 1064, ShortcutsHelp card): the ring of tools and colours a right click on the Canvas opens.
+  { group: 'canvas', name: (t) => t.shortcutsHelp.toolsAtPointer, keys: [['right-click']] },
 ]
 
 /** Whether a key press is this chord. */
