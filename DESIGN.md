@@ -162,7 +162,8 @@ checks them against `tokens.json`. The splash in `index.html` is held to the sam
   "above its neighbours, inside its box" job.
 - Card sizes that aren't tokens (the Export prompt's 288px, `--popover-width`) live in `src/styles/controls.css`.
 - Every UI corner is a step of the radius scale (`radius-*`), `0` or `inherit`, or a `calc()` made from a step
-  (ticket 1079; `src/styles/radiusScale.test.ts` fails on anything else). `--canvas-box-radius` names the step the canvas
+  (ticket 1079; `src/styles/radiusScale.test.ts` fails on anything else). A nested corner is such a `calc()`: the outer
+  step less the gap (the design system's README, Radii; ticket 1080). `--canvas-box-radius` names the step the canvas
   box and its bars share. Three values that trace corners the Canvas draws (`--margin-sheet-radius`,
   `--margin-border-radius`, `--piece-line-radius`) are drawing geometry, outside the scale.
 

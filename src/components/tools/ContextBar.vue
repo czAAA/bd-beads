@@ -417,6 +417,50 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
   }
 }
 
+/* The move grip first and the button last run parallel to the bar's corners (ticket 1080): across, `radius-sm` less
+ * the side padding (and dark's line), never under `radius-xs`; up and down they reach the bar's edge, so `radius-sm`. */
+.context-bar > :deep(:first-child .area-move-grip) {
+  border-top-left-radius: calc(var(--radius-sm) - var(--space-2)) var(--radius-sm);
+  border-bottom-left-radius: calc(var(--radius-sm) - var(--space-2)) var(--radius-sm);
+}
+
+.context-bar > :deep(:last-child .context-bar__button) {
+  border-top-right-radius: calc(var(--radius-sm) - var(--space-2)) var(--radius-sm);
+  border-bottom-right-radius: calc(var(--radius-sm) - var(--space-2)) var(--radius-sm);
+}
+
+:root[data-theme='dark'] .context-bar > :deep(:first-child .area-move-grip) {
+  border-top-left-radius: calc(var(--radius-sm) - var(--space-2) - 1px) var(--radius-sm);
+  border-bottom-left-radius: calc(var(--radius-sm) - var(--space-2) - 1px) var(--radius-sm);
+}
+
+:root[data-theme='dark'] .context-bar > :deep(:last-child .context-bar__button) {
+  border-top-right-radius: calc(var(--radius-sm) - var(--space-2) - 1px) var(--radius-sm);
+  border-bottom-right-radius: calc(var(--radius-sm) - var(--space-2) - 1px) var(--radius-sm);
+}
+
+@media (pointer: coarse) {
+  .context-bar > :deep(:first-child .area-move-grip) {
+    border-top-left-radius: calc(var(--radius-sm) - (var(--touch-target) - var(--selbar-height-touch)) / 2) var(--radius-sm);
+    border-bottom-left-radius: calc(var(--radius-sm) - (var(--touch-target) - var(--selbar-height-touch)) / 2) var(--radius-sm);
+  }
+
+  .context-bar > :deep(:last-child .context-bar__button) {
+    border-top-right-radius: calc(var(--radius-sm) - (var(--touch-target) - var(--selbar-height-touch)) / 2) var(--radius-sm);
+    border-bottom-right-radius: calc(var(--radius-sm) - (var(--touch-target) - var(--selbar-height-touch)) / 2) var(--radius-sm);
+  }
+
+  :root[data-theme='dark'] .context-bar > :deep(:first-child .area-move-grip) {
+    border-top-left-radius: var(--radius-xs) var(--radius-sm);
+    border-bottom-left-radius: var(--radius-xs) var(--radius-sm);
+  }
+
+  :root[data-theme='dark'] .context-bar > :deep(:last-child .context-bar__button) {
+    border-top-right-radius: var(--radius-xs) var(--radius-sm);
+    border-bottom-right-radius: var(--radius-xs) var(--radius-sm);
+  }
+}
+
 .context-bar :deep(.context-bar__button--danger) {
   color: var(--selbar-danger);
 }
