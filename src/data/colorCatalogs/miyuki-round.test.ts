@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { BEAD_CATALOG } from '../../domain/beads'
+import { BEAD_CATALOG, findBead } from '../../domain/beads'
+import { swatchHex } from '../../domain/beadSwatch'
+import { hasMeasuredColors } from '../../domain/colorCatalog'
+import { createProject } from '../../domain/createProject'
+import { addedColorId, brandColors, defaultPaletteIds, projectPalette } from '../../domain/palette'
+import { setPalette } from '../../domain/paletteEdits'
+import { parseProjectsFile, serializeProject } from '../../domain/projectFile'
 import { loadColorCatalog } from '../../services/colorCatalogs'
+
+/** The Round codes that keep their generated swatch: their photograph's two halves read differently (ticket 1069). */
+const UNREAD = ['131F', '254L', '265', '271', '273', '4493']
 
 // The Miyuki Round catalog is Miyuki's seed-bead series read from its directory (ticket 0693): the number with its
 // letter suffix is the key, square-hole codes are marked in their wording, and each code names the sizes it comes in.
@@ -36,5 +45,27 @@ describe('the Miyuki Round color catalog', () => {
     expect(rare.length).toBeGreaterThan(0)
     expect(rare.every((code) => code.sizes.includes('6/0'))).toBe(true)
     expect(catalog.codes.find((code) => code.code === '596')).toBeUndefined()
+  })
+
+  it('has a color read from Miyuki’s photograph for every code but the ones ticket 1069 could not read', async () => {
+    const catalog = await loadColorCatalog('miyuki-round')
+    expect(catalog.codes.filter((code) => !code.hex).map((code) => code.code)).toEqual(UNREAD)
+    expect(catalog.codes.filter((code) => code.hex && !/^#[0-9a-f]{6}$/.test(code.hex)).map((code) => code.code)).toEqual([])
+    expect(hasMeasuredColors(catalog)).toBe(true)
+  })
+
+  it('leaves a Project made before as it was: its beads keep the hex they were painted with (ticket 1069)', async () => {
+    const catalog = await loadColorCatalog('miyuki-round')
+    // Round 10 as the generated swatch made it ("Silver-lined Red"), the color the Project was painted with.
+    const before = swatchHex('Red', 'silver-lined', brandColors('miyuki'))!
+    const now = catalog.codes.find((code) => code.code === '10')!.hex!
+    expect(now).not.toBe(before)
+
+    const made = createProject({ technique: 'peyote', beadId: findBead('miyuki/round/11-0')!.id, name: '', makerName: '' })
+    const old = setPalette(made, [...defaultPaletteIds(), addedColorId(before)], { [before]: '10' })
+    const opened = parseProjectsFile(serializeProject(old)).projects[0]!
+
+    expect(projectPalette(opened).colors.find((color) => color.hex === before)).toMatchObject({ hex: before, code: '10' })
+    expect(projectPalette(opened).colors.some((color) => color.hex === now)).toBe(false)
   })
 })
