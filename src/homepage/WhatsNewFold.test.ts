@@ -3,6 +3,9 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { BUILD_DATE, BUILD_VERSION } from '../data/build'
 import type { Locale } from '../domain/locale'
 import type { NotesFile, NotesFileNote, ReleaseNoteKind } from '../domain/notesFile'
+import type { WhatWaits } from '../domain/waitingBuild'
+import { browserDevicePreferences } from '../services/devicePreferences'
+import type { AppUpdates } from '../services/offlineShell'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
 import { shownDay } from './whatsNew'
@@ -30,8 +33,8 @@ const FILE: NotesFile = {
 const head = (wrapper: VueWrapper) => wrapper.get('[data-testid="homepage-whats-new-toggle"]')
 const body = (wrapper: VueWrapper) => wrapper.get('[data-testid="homepage-whats-new-notes"]')
 
-async function opened(notes: (locale: Locale) => Promise<NotesFile | null>) {
-  const wrapper = mount(WhatsNewFold, { props: { notes } })
+async function opened(notes: (locale: Locale) => Promise<NotesFile | null>, updates?: AppUpdates) {
+  const wrapper = mount(WhatsNewFold, { props: { notes, updates } })
   await head(wrapper).trigger('click')
   await flushPromises()
   return wrapper
@@ -131,5 +134,76 @@ describe("What's new from Update ready's link (ticket 1048)", () => {
     expect(room.scrollTop).toBe(320)
     wrapper.unmount()
     room.remove()
+  })
+})
+
+describe("What's new with an update waiting (ticket 1049)", () => {
+  /** The Offline copy's port as the toast hears it, telling each listener `waits` in the language it was asked in. */
+  function waitingUpdates(waits: (locale: Locale) => WhatWaits) {
+    const stops: Locale[] = []
+    const updates = {
+      onReady: vi.fn((locale: () => Locale, listener: (answer: WhatWaits) => void) => {
+        const asked = locale()
+        listener(waits(asked))
+        return () => void stops.push(asked)
+      }),
+      apply: vi.fn(),
+    }
+    return { updates, stops }
+  }
+  const NEXT: WhatWaits = {
+    version: '2.2.1',
+    notes: [
+      note('2026-12-05-0006', '2.2.1', 'fixed', 'Row done at once on a big Frame'),
+      note('2026-12-05-0005', '2.2.0', 'new', 'The title block names its Bead'),
+      note('2026-12-04-0004', '2.1.3', 'changed', 'A ground reaches a bead further'),
+    ],
+  }
+  const box = (wrapper: VueWrapper) => wrapper.find('[data-testid="homepage-whats-new-waiting"]')
+
+  it('draws one dashed box on top: the Version it reaches, its newest note’s day, the chip and Reload, then its notes by kind', async () => {
+    const { updates } = waitingUpdates(() => NEXT)
+    const wrapper = await opened(async () => FILE, updates)
+    expect(body(wrapper).get('section').attributes('data-testid'), 'on top').toBe('homepage-whats-new-waiting')
+    expect(wrapper.findAll('[data-testid="homepage-whats-new-waiting"]')).toHaveLength(1)
+    expect(box(wrapper).get('.whats-new__block-head').text()).toBe(`2.2.1Dec 5${en.homepage.whatsNew.arrives}${en.shell.updateReload}`)
+    expect(box(wrapper).attributes('aria-label')).toBe(en.homepage.whatsNew.arrives)
+    expect(box(wrapper).findAll('[data-testid="kind-label"]').map((label) => label.attributes('data-kind')), 'its notes, by kind').toEqual(['new', 'changed', 'fixed'])
+    expect(wrapper.findAll('[data-testid="homepage-whats-new-block"]'), 'the page’s own blocks stay as they are').toHaveLength(2)
+  })
+
+  it('takes the waiting Build with the toast’s own Reload', async () => {
+    const { updates } = waitingUpdates(() => NEXT)
+    const wrapper = await opened(async () => FILE, updates)
+    await box(wrapper).get('[data-testid="homepage-whats-new-reload"]').trigger('click')
+    expect(updates.apply).toHaveBeenCalledOnce()
+  })
+
+  it('draws no box when nothing waits, or what waits can’t be learned', async () => {
+    expect(box(await opened(async () => FILE, waitingUpdates(() => NEXT).updates)).exists()).toBe(true)
+    expect(box(await opened(async () => FILE)).exists(), 'nothing waits').toBe(false)
+    expect(box(await opened(async () => FILE, waitingUpdates(() => 'unknown').updates)).exists(), 'unknown').toBe(false)
+  })
+
+  it('keeps the Version the maker is on in the closed row', () => {
+    const wrapper = mount(WhatsNewFold, { props: { notes: async () => FILE, updates: waitingUpdates(() => NEXT).updates } })
+    expect(wrapper.get('[data-testid="homepage-whats-new-latest"]').text()).toBe(`${BUILD_VERSION} · ${shownDay(BUILD_DATE, 'en').when}`)
+  })
+
+  it('asks again in a language newly shown, and stops listening when it goes', async () => {
+    const lines = { en: 'The title block names its Bead', ru: 'Штамп рамки называет её бисер' }
+    const { updates, stops } = waitingUpdates((locale) => ({ version: '2.2.0', notes: [note('2026-12-05-0005', '2.2.0', 'new', lines[locale as 'en' | 'ru'])] }))
+    const wrapper = await opened(async () => FILE, updates)
+    expect(box(wrapper).get('.whats-new__line').text()).toBe(lines.en)
+    try {
+      browserDevicePreferences.get('locale').value = 'ru'
+      await flushPromises()
+      expect(stops).toEqual(['en'])
+      expect(box(wrapper).get('.whats-new__line').text()).toBe(lines.ru)
+      wrapper.unmount()
+      expect(stops).toEqual(['en', 'ru'])
+    } finally {
+      browserDevicePreferences.get('locale').value = 'en'
+    }
   })
 })

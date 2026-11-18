@@ -1,7 +1,7 @@
 import { newerFirst, readNotesFile, RELEASE_NOTE_KINDS, type NotesFileNote, type ReleaseNoteKind } from './notesFile'
 
 /** The Build that waits for Reload (ticket 1048, spec 1043): its Version and its notes numbered above the page's. */
-interface WaitingBuild {
+export interface WaitingBuild {
   version: string
   notes: NotesFileNote[]
 }

@@ -8,6 +8,7 @@ import GroupedList from './GroupedList.vue'
 import WhatsNewFold from './WhatsNewFold.vue'
 import { coffeeRows } from './coffeeCopy'
 import type { NotesSource } from '../services/notesFile'
+import type { AppUpdates } from '../services/offlineShell'
 
 /** The Homepage's coffee screen (tickets 0811, 0823, 0880, 0948; Homepage card): the band with its promises, then What's
  * new folded under it; on a phone the promises as a grouped list between them (0827). Send feedback only asks for the
@@ -21,6 +22,8 @@ const props = defineProps<{
   notes?: NotesSource
   /** What's new starts unfolded and in view, the first time it is drawn: "Update ready"'s link (ticket 1048). */
   whatsNewOpen?: boolean
+  /** What waits for Reload, and Reload itself, for What's new's box (ticket 1049). */
+  updates?: AppUpdates
 }>()
 const emit = defineEmits<{ feedback: [] }>()
 
@@ -46,7 +49,7 @@ watch(
       <template #action-openSource><CoffeeAction of="openSource" /></template>
       <template #action-sayHello><CoffeeAction of="sayHello" @feedback="emit('feedback')" /></template>
     </GroupedList>
-    <WhatsNewFold :key="leftTimes" :notes="notes" :start-open="whatsNewOpen && leftTimes === 0" />
+    <WhatsNewFold :key="leftTimes" :notes="notes" :start-open="whatsNewOpen && leftTimes === 0" :updates="updates" />
   </div>
 </template>
 

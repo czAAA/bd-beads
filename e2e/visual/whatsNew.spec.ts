@@ -24,6 +24,30 @@ const fileIn = (locale: 'en' | 'ru') => ({
   notes: NOTES.map(({ en, ru, ...rest }) => ({ ...rest, line: locale === 'ru' ? ru : en })),
 })
 
+/** What waits for Reload (ticket 1049): numbered far above any Build's, so a new Release note never moves a reference. */
+const WAITING = [
+  note('2099-01-02-0003', '99.2.1', 'fixed', 'On a big Frame Row done answers at once, as does every step along the Progress bar', 'На большой рамке «Ряд готов» срабатывает сразу, как и каждый шаг по полосе прогресса'),
+  note('2099-01-02-0002', '99.2.0', 'new', "Zoomed in, the Frame's title block names its Bead with a Change button and counts the beads of each color", 'При увеличении штамп рамки называет её бисер, даёт кнопку «Изменить» и считает бисеринки каждого цвета'),
+  note('2099-01-01-0001', '99.1.4', 'changed', "A piece's ground and outline now reach a bead past its outer beads, with the grid showing there", 'Подложка и контур детали теперь выходят на бисеринку за её крайние бусины, и там видна сетка'),
+]
+
+/** A newer Build waits behind the page: a stand-in worker that answers the page's question in the language asked. */
+async function waitingBuild(page: Page): Promise<void> {
+  const files = Object.fromEntries((['en', 'ru'] as const).map((locale) => [locale, { version: '99.2.1', releases: [], notes: WAITING.map(({ en, ru, ...rest }) => ({ ...rest, line: locale === 'ru' ? ru : en })) }]))
+  await page.addInitScript((files) => {
+    const worker = {
+      state: 'installed',
+      addEventListener() {},
+      postMessage(message: { type?: string; locale?: string }, ports?: MessagePort[]) {
+        if (message.type === 'NOTES') ports?.[0]?.postMessage(files[message.locale ?? 'en'])
+      },
+    }
+    const registration = { waiting: worker, installing: null, addEventListener() {}, update: () => Promise.resolve() }
+    const container = { controller: {}, register: () => Promise.resolve(registration), addEventListener() {} }
+    Object.defineProperty(Navigator.prototype, 'serviceWorker', { configurable: true, get: () => container })
+  }, files)
+}
+
 async function coffeeScreen(page: Page, locale: 'en' | 'ru', width: number): Promise<void> {
   await page.setViewportSize({ width, height: 1400 })
   await page.route('**/notes/*.json', (route) => route.fulfill({ json: fileIn(route.request().url().endsWith('/ru.json') ? 'ru' : 'en') }))
@@ -53,6 +77,24 @@ for (const scheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('homepage-whats-new-release').first()).toContainText('Выпуск 2.0.0')
       const fold = page.getByTestId('homepage-whats-new')
       await expect(fold).toHaveScreenshot(`whats-new-tablet-ru-${scheme}.png`, { mask: [page.getByTestId('homepage-whats-new-latest')], maxDiffPixelRatio: 0.01 })
+    })
+
+    test('open with a Build waiting for Reload (ticket 1049)', async ({ page }) => {
+      await waitingBuild(page)
+      await coffeeScreen(page, 'en', 1280)
+      await page.getByTestId('homepage-whats-new-toggle').click()
+      await expect(page.getByTestId('homepage-whats-new-waiting')).toContainText('99.2.1')
+      const fold = page.getByTestId('homepage-whats-new')
+      await expect(fold).toHaveScreenshot(`whats-new-waiting-${scheme}.png`, { mask: [page.getByTestId('homepage-whats-new-latest')], maxDiffPixelRatio: 0.01 })
+    })
+
+    test('open with a Build waiting, at tablet width in Russian (ticket 1049)', async ({ page }) => {
+      await waitingBuild(page)
+      await coffeeScreen(page, 'ru', 820)
+      await page.getByTestId('homepage-whats-new-toggle').click()
+      await expect(page.getByTestId('homepage-whats-new-waiting')).toContainText('Придёт после перезагрузки')
+      const fold = page.getByTestId('homepage-whats-new')
+      await expect(fold).toHaveScreenshot(`whats-new-waiting-tablet-ru-${scheme}.png`, { mask: [page.getByTestId('homepage-whats-new-latest')], maxDiffPixelRatio: 0.01 })
     })
   })
 }

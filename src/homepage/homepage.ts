@@ -11,7 +11,7 @@ import { currentThemePick } from '../theme/useThemePick'
 import { loadLocale } from '../i18n/useI18n'
 import { browserDevicePreferences } from '../services/devicePreferences'
 import { browserLibraryStore } from '../services/libraryStore'
-import { startOfflineShell } from '../services/offlineShell'
+import { browserAppUpdates, startOfflineShell } from '../services/offlineShell'
 import { browserOpeningNote } from '../services/openingNote'
 import { downloadFile } from '../services/fileDownload'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../services/projectFileCodec'
@@ -95,6 +95,8 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         notes: notesFromBase(base),
         // "Update ready"'s What's new (ticket 1048) opens the page at What's new, unfolded and in view.
         atWhatsNew: location.hash === WHATS_NEW_HASH,
+        // What waits for Reload, heard through the same port as the editor's "Update ready" (ticket 1049).
+        updates: browserAppUpdates,
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
         openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).

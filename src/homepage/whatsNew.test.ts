@@ -21,25 +21,25 @@ describe('whatsNewView (ticket 1047, spec 1043)', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('makes a block per second number, newest first, headed by its highest Version and its newest note’s day', () => {
-    const view = whatsNewView(file([note('1.2.1', 'fixed', '2026-11-20'), note('1.2.0', 'new', '2026-11-21'), note('1.1.0', 'new', '2026-11-18')]), [], 'en')
+    const view = whatsNewView(file([note('1.2.1', 'fixed', '2026-11-20'), note('1.2.0', 'new', '2026-11-21'), note('1.1.0', 'new', '2026-11-18')]), null, 'en')
     expect(view.items.map(heading)).toEqual(['1.2.1 · Nov 21', '1.1.0 · Nov 18', 'Release 1.0.0 · Nov 17'])
   })
 
   it('groups a block’s rows New, Changed, Fixed, newest first in each kind, with a gap where the kind changes', () => {
     const notes = [note('1.1.4', 'fixed', '2026-11-20'), note('1.1.3', 'changed', '2026-11-20'), note('1.1.2', 'fixed', '2026-11-19'), note('1.1.1', 'changed', '2026-11-19'), note('1.1.0', 'new', '2026-11-18')]
-    const [first] = blocks(whatsNewView(file(notes), [], 'en').items)
+    const [first] = blocks(whatsNewView(file(notes), null, 'en').items)
     expect(rows(first)).toEqual(['new 1.1.0', '| changed 1.1.3', 'changed 1.1.1', '| fixed 1.1.4', 'fixed 1.1.2'])
   })
 
   it('draws a block of one New row as one row with no gap', () => {
-    const [only] = blocks(whatsNewView(file([note('1.1.0', 'new', '2026-11-18')]), [], 'en').items)
+    const [only] = blocks(whatsNewView(file([note('1.1.0', 'new', '2026-11-18')]), null, 'en').items)
     expect(rows(only)).toEqual(['new 1.1.0'])
   })
 
   it('puts each release’s line above the blocks it released, and the older release’s line last', () => {
     const notes = [note('2.1.3', 'fixed', '2026-12-04'), note('2.1.0', 'new', '2026-12-03'), note('1.2.0', 'new', '2026-11-28'), note('1.1.13', 'fixed', '2026-11-27')]
     const releases = [{ version: '1.0.0', date: '2026-11-20' }, { version: '2.0.0', date: '2026-12-01' }]
-    expect(whatsNewView(file(notes, releases), [], 'en').items.map(heading)).toEqual([
+    expect(whatsNewView(file(notes, releases), null, 'en').items.map(heading)).toEqual([
       '2.1.3 · Dec 4',
       'Release 2.0.0 · Dec 1',
       '1.2.0 · Nov 28',
@@ -49,15 +49,21 @@ describe('whatsNewView (ticket 1047, spec 1043)', () => {
   })
 
   it('shows only the release lines when no note followed them', () => {
-    expect(whatsNewView(file([]), [], 'en').items.map(heading)).toEqual(['Release 1.0.0 · Nov 17'])
+    expect(whatsNewView(file([]), null, 'en').items.map(heading)).toEqual(['Release 1.0.0 · Nov 17'])
   })
 
-  it('makes what waits one block of its own, whatever its numbers, and none when nothing waits', () => {
+  it('makes what waits one block of its own, headed by the Version it reaches, whatever its notes’ numbers', () => {
     const page = file([note('1.1.0', 'new', '2026-11-18')])
-    expect(whatsNewView(page, [], 'en').waiting).toBeNull()
-    const waiting = whatsNewView(page, [note('1.2.1', 'fixed', '2026-11-20'), note('1.2.0', 'new', '2026-11-19'), note('1.1.1', 'changed', '2026-11-19')], 'en').waiting!
-    expect(`${waiting.version} · ${waiting.day.when}`).toBe('1.2.1 · Nov 20')
+    const notes = [note('1.2.1', 'fixed', '2026-11-20'), note('1.2.0', 'new', '2026-11-19'), note('1.1.1', 'changed', '2026-11-19')]
+    const waiting = whatsNewView(page, { version: '1.2.2', notes }, 'en').waiting!
+    expect(`${waiting.version} · ${waiting.day.when}`).toBe('1.2.2 · Nov 20')
     expect(rows(waiting)).toEqual(['new 1.2.0', '| changed 1.1.1', '| fixed 1.2.1'])
+  })
+
+  it('makes no waiting block when nothing waits, or what waits brings no note', () => {
+    const page = file([note('1.1.0', 'new', '2026-11-18')])
+    expect(whatsNewView(page, null, 'en').waiting).toBeNull()
+    expect(whatsNewView(page, { version: '1.1.1', notes: [] }, 'en').waiting).toBeNull()
   })
 
   it("writes each day in the language's short form, the same day wherever the beader is", () => {

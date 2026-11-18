@@ -46,6 +46,7 @@ import { useFeedbackFlow } from '../composables/shell/useFeedbackFlow'
 import { useToasts } from '../composables/ui/useToasts'
 import type { FeedbackService } from '../services/feedback'
 import type { NotesSource } from '../services/notesFile'
+import type { AppUpdates } from '../services/offlineShell'
 
 // The Homepage (ticket 77; Homepage card): one canvas box like the editor's (ticket 540, ADR 0073) mid-page: the Canvas
 // strip (its slogan and the way into the editor, ticket 0822), one section at a time, the Progress bar. Scrolling turns
@@ -63,6 +64,8 @@ const props = defineProps<{
   notes?: NotesSource
   /** Opened by "Update ready"'s What's new (ticket 1048): at the coffee screen, What's new unfolded and in view. */
   atWhatsNew?: boolean
+  /** The Offline copy's update: What's new shows what waits for Reload, with the toast's Reload (ticket 1049). */
+  updates?: AppUpdates
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
@@ -183,6 +186,7 @@ const sections = computed<HomepageSection[]>(() => [
       shown: sections.value[section.value]?.id === 'coffee',
       notes: props.notes,
       whatsNewOpen: props.atWhatsNew,
+      updates: props.updates,
       onFeedback: () => feedback.onOpenFeedback('general'),
     }),
   },
