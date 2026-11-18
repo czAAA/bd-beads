@@ -3,7 +3,7 @@ import { beadColorAt } from '../../domain/layerBeads'
 import type { Layer } from '../../domain/layers'
 import type { Project } from '../../domain/project'
 
-/** What Pick color from Canvas needs from the shell (ticket 1073). */
+/** What Pick color from Canvas needs from the shell. */
 export interface PickColorDeps {
   /** Whether Pick color from Canvas is armed: the next press on a bead takes its colour. */
   picking: Ref<boolean>
@@ -12,11 +12,11 @@ export interface PickColorDeps {
   onSelectCustomColor: (hex: string) => void
 }
 
-/** Pick color from Canvas (ticket 398) as one step, "take the colour of the bead at this position", that the armed
- * press and the Radial toolbox both call, so the two cannot differ (spec 1072). */
+/** Pick color from Canvas (ticket 398): the press that takes a bead's colour while the pick is armed. The Palette's
+ * button and the Radial toolbox arm it (ticket 1089). */
 export function usePickColor(deps: PickColorDeps) {
-  /** Chooses the colour of the bead you see at a Canvas position, on the Canvas or in the Frame, and arms nothing.
-   * An empty position changes nothing. Returns whether a colour was taken. */
+  /** Chooses the colour of the bead you see at a Canvas position, on the Canvas or in the Frame. An empty position
+   * changes nothing. Returns whether a colour was taken. */
   function takeColorAt(row: number, column: number, layer?: Layer): boolean {
     const project = deps.currentProject()
     const hex = project ? beadColorAt(project, row, column, layer) : null
@@ -33,5 +33,5 @@ export function usePickColor(deps: PickColorDeps) {
     return true
   }
 
-  return { takeColorAt, pickColorAt }
+  return { pickColorAt }
 }

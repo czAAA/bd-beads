@@ -274,7 +274,7 @@ const openSchemaTag = (root: HTMLElement) => root.querySelector<HTMLElement>('[a
 
 const CASES: FitCase[] = [
   // The ring with the name of the item under a held pointer over it, its longest: Pick color from Canvas and a hex.
-  ['RadialToolbox', RadialToolbox, { open: true, center: { x: 160, y: 300 }, activeTool: 'paint', canUndo: true, canRedo: false, recents: ['#1f77b4'], beadHex: '#e63746', held: 'pick-color' }],
+  ['RadialToolbox', RadialToolbox, { open: true, center: { x: 160, y: 300 }, activeTool: 'paint', canUndo: true, canRedo: false, recents: ['#1f77b4'], held: 'pick-color' }],
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],

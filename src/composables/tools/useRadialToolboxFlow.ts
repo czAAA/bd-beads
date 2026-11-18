@@ -1,8 +1,5 @@
 import { computed, ref, watch } from 'vue'
-import { footprintOf } from '../../domain/footprint'
-import type { GridPosition, Layer } from '../../domain/grid'
-import { beadColorAt } from '../../domain/layerBeads'
-import { inMargin } from '../../domain/margin'
+import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { pressBecomes } from '../../domain/canvasPress'
 import { RADIAL_HOLE, RADIAL_PLACES, RADIAL_ROOM, radialCenterOnScreen, radialItemAt, radialItemOff, type RadialItemId } from '../../domain/radialToolbox'
@@ -26,8 +23,8 @@ export interface RadialToolboxDeps {
   /** The Canvas strip's handlers. */
   onUndo: () => void
   onRedo: () => void
-  /** Pick color from Canvas's one step (ticket 1073): takes the colour of the bead at a position. */
-  takeColorAt: (row: number, column: number, layer?: Layer) => boolean
+  /** The Palette's handler for Pick color from Canvas (ticket 1089): arms the pick, or ends an armed one. */
+  toggleColorPick: () => void
   /** The screen the ring stays on (ticket 1076): its size in client px, and how many of them make one of the design
    * system's px. Absent (a test's flow), the ring opens on the pressed point. */
   screen?: () => RadialScreen
@@ -59,17 +56,8 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
    * 1077): it wears the pressed look. Kept through a pick that closes the ring, which leaves with it pressed. */
   const held = ref<RadialItemId>()
 
-  /** The colour of the pressed bead as the Project holds it now, so the ring follows it through an Undo; none on an
-   * empty position and over the Frame's margin, where Pick color from Canvas is off. */
-  const beadHex = computed(() => {
-    const project = deps.currentProject()
-    const at = position.value
-    if (!project || !at || inMargin(footprintOf(project), at)) return null
-    return beadColorAt(project, at.row, at.column, at.layer)
-  })
-
-  /** The pressed position while the ring is open, for its outline on the Canvas (ticket 1076): it says which bead Pick
-   * color from Canvas means once the ring has moved off it. */
+  /** The pressed position while the ring is open, for its outline on the Canvas (ticket 1076): it says where the ring
+   * was opened once the ring has moved off it. */
   const pressed = computed(() => (open.value ? position.value : undefined))
 
   /** Opens the ring on a point of the screen (client px), on the bead position pressed there: centred on the point, or
@@ -121,12 +109,11 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
     close()
   }
 
-  /** Pick color from Canvas: the pressed bead's colour, through the armed press's own step. Off, it does nothing and
-   * the ring stays. */
+  /** Pick color from Canvas: what its button in the Palette does (ticket 1089), so the next press on a bead takes its
+   * colour, wherever the ring was opened; picked while the pick is armed, it ends it. */
   function pickColor() {
-    const at = position.value
-    if (!at || beadHex.value === null) return
-    if (deps.takeColorAt(at.row, at.column, at.layer)) close()
+    deps.toggleColorPick()
+    close()
   }
 
   function undo() {
@@ -153,7 +140,7 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
   function slideLift(at: { x: number; y: number }) {
     if (!open.value) return
     const id = itemAt(at)
-    const off = id !== undefined && radialItemOff(id, { canUndo: deps.canUndo(), canRedo: deps.canRedo(), recents: deps.recents(), beadHex: beadHex.value })
+    const off = id !== undefined && radialItemOff(id, { canUndo: deps.canUndo(), canRedo: deps.canRedo(), recents: deps.recents() })
     const lift = pressBecomes('armed', { type: 'lift', over: id === undefined ? 'hole' : off ? 'off' : 'on' })
     held.value = lift === 'pick' ? id : undefined
     if (lift === 'close') close()
@@ -172,5 +159,5 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
     else redo()
   }
 
-  return { open, center, beadHex, openAt, close, selectTool, pickRecent, pickColor, undo, redo, pressed, canOpen, holdAt, holdEnds, hold, endHold, held, slide, slideLift }
+  return { open, center, openAt, close, selectTool, pickRecent, pickColor, undo, redo, pressed, canOpen, holdAt, holdEnds, hold, endHold, held, slide, slideLift }
 }

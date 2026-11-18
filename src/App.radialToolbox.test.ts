@@ -73,10 +73,14 @@ describe('the Radial toolbox', () => {
     await paint(5)
     expect(beadColor(wrapper, 5)).toBe('#1d3557')
 
-    // On the first bead: its colour is the one taken.
-    await rightClickBead(wrapper, 3)
+    // Opened on an empty position: Pick color from Canvas arms the pick, and the next press on a bead takes its colour
+    // (ticket 1089).
+    await rightClickBead(wrapper, 40)
     await pick('pick-color')
     expect(ring(wrapper).isVisible()).toBe(false)
+    expect(wrapper.findComponent(ProjectSurface).props('tools')?.picking).toBe(true)
+    await paint(3)
+    expect(wrapper.findComponent(ProjectSurface).props('tools')?.picking).toBe(false)
     await paint(6)
     expect(beadColor(wrapper, 6)).toBe(first)
 

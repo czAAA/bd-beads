@@ -160,10 +160,10 @@ describe('radialNameCenter (ticket 1076)', () => {
 })
 
 describe('radialItemOff (RadialToolbox card, States)', () => {
-  const all = { canUndo: true, canRedo: true, recents: ['#111111', '#222222', '#333333'], beadHex: '#444444' }
+  const all = { canUndo: true, canRedo: true, recents: ['#111111', '#222222', '#333333'] }
   const off = (state: Parameters<typeof radialItemOff>[1]) => RADIAL_PLACES.map((place) => place.id).filter((id) => radialItemOff(id, state))
 
-  it('nothing is off with steps to undo and redo, three recent colours and a bead pressed', () => {
+  it('nothing is off with steps to undo and redo, and three recent colours', () => {
     expect(off(all)).toEqual([])
   })
 
@@ -176,8 +176,7 @@ describe('radialItemOff (RadialToolbox card, States)', () => {
     expect(off({ ...all, recents: ['#111111'] })).toEqual(['recent-2', 'recent-3'])
   })
 
-  it('Pick color from Canvas is off with no bead pressed', () => {
-    expect(off({ ...all, beadHex: null })).toEqual(['pick-color'])
-    expect(off({ ...all, beadHex: undefined })).toEqual(['pick-color'])
+  it('Pick color from Canvas and the tools are never off (ticket 1089)', () => {
+    expect(off({ canUndo: false, canRedo: false, recents: [] })).toEqual(['recent-1', 'recent-2', 'recent-3', 'redo', 'undo'])
   })
 })

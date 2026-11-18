@@ -23,8 +23,9 @@ const props = defineProps<{
   canRedo: boolean
   /** The recent colours the Tool pill shows, in its order; a missing one keeps its place and is off. */
   recents: readonly string[]
-  /** The colour of the bead that was pressed; none on an empty position, where Pick color from Canvas is off. */
-  beadHex?: string | null
+  /** Whether Pick color from Canvas is armed, waiting for a bead: its item is pressed then, as its button in the
+   * Palette is (ticket 1089). */
+  picking?: boolean
   /** The item under the pointer a slide holds down, told by the ring's rule (ticket 1077): it wears the pressed look
    * and shows its name. */
   held?: RadialItemId
@@ -34,7 +35,7 @@ const emit = defineEmits<{
   /** What the Tool pill emits for a tool tile and a recent colour. */
   'select-tool': [tool: Tool]
   'pick-recent': [hex: string]
-  /** Pick color from Canvas, on the bead that was pressed. */
+  /** What the Palette's Pick color from Canvas button does: arms the pick, or ends an armed one. */
   'pick-color': []
   /** What the Canvas strip's Undo and Redo do. */
   undo: []
@@ -58,8 +59,8 @@ const items = computed(() =>
     }
     const action = controlAction(place.id)
     const off = radialItemOff(place.id, props)
-    const meta = place.id === 'pick-color' ? (props.beadHex ?? undefined) : undefined
-    return { place, icon: action.icon, name: action.name(t.value), meta, off, lit: 'tool' in place ? place.tool === props.activeTool : undefined }
+    const lit = 'tool' in place ? place.tool === props.activeTool : place.id === 'pick-color' ? !!props.picking : undefined
+    return { place, icon: action.icon, name: action.name(t.value), meta: undefined, off, lit }
   }),
 )
 
