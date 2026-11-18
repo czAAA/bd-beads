@@ -26,6 +26,7 @@ import { surfaceView, type Scroll, type SurfaceView } from '../../rendering/surf
 import { tiltedView, type TiltedView } from '../../rendering/tiltedView'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
+import { cssZoomOf } from '../../composables/ui/cssZoom'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
 import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
@@ -145,17 +146,22 @@ const fadeEl = ref<HTMLCanvasElement>()
 const turnEl = ref<HTMLCanvasElement>()
 const standInEl = ref<HTMLCanvasElement>()
 
-/** How big the surface is on screen, measured: the canvases are exactly this big. */
+/** How big the surface is in its own px, measured: the canvases are exactly this big. */
 const size = ref({ width: 0, height: 0 })
+/** The CSS zoom the surface is drawn at (ticket 1071): the Homepage draws its demo larger; the editor is at 1. */
+let drawnZoom = 1
 let resizeObserver: ResizeObserver | undefined
 
 function measure(): void {
   const root = rootEl.value
   if (!root) return
   const box = root.getBoundingClientRect()
-  const width = Math.round(box.width)
-  const height = Math.round(box.height)
-  if (width !== size.value.width || height !== size.value.height) {
+  const zoom = cssZoomOf(root)
+  const width = Math.round(box.width / zoom)
+  const height = Math.round(box.height / zoom)
+  // A new zoom alone draws the canvases again, at the device's pixels it now covers.
+  if (width !== size.value.width || height !== size.value.height || zoom !== drawnZoom) {
+    drawnZoom = zoom
     size.value = { width, height }
   }
 }
@@ -407,7 +413,7 @@ const patternDoneAt = computed(() => {
 })
 
 /** The empty Canvas laid under the drawing, at the view the beads are drawn at (ticket 0717). */
-const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme })
+const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme, root: rootEl })
 
 // Tests read what was drawn from the layout the surface built.
 /** Where a bead's middle is on screen, in client pixels: the Homepage's tour points its ghost there (ticket 0797). */
@@ -417,7 +423,8 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   const layer = layerAt(props.project, position)
   const bead = surface.value.beadBox({ row: position.row, column: position.column, rows: 1, columns: 1 }, layer)
   const shown = leaning.value.toScreen({ x: bead.x + bead.width / 2, y: bead.y + bead.height / 2 })
-  return { x: box.left + shown.x, y: box.top + shown.y }
+  const zoom = cssZoomOf(rootEl.value)
+  return { x: box.left + shown.x * zoom, y: box.top + shown.y * zoom }
 }
 
 defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen })

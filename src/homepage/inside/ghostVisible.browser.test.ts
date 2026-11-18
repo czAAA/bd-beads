@@ -4,6 +4,7 @@ import { cdp, page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
 import { fakeFeedback } from '../../testUtils/fakeFeedback'
 import { turnToSection } from '../../testUtils/homepageSection'
+import { cssZoomOf } from '../../composables/ui/cssZoom'
 import HomePage from '../HomePage.vue'
 
 // Everything the ghost presses or rests on is seen whole (ticket 0820): the tour played with motion, as a visitor
@@ -12,13 +13,16 @@ import HomePage from '../HomePage.vue'
 /** The slack of a measure, in px. */
 const SLACK = 1.5
 
-/** The ghost's tip in the screen, from its arrow's place in its layer (the arrow is drawn 4px right of, 2px below, it). */
+/** The ghost's tip in the screen, from its arrow's place in its layer (the arrow is drawn 4px right of, 2px below, it),
+ * in the layer's own px, which the Homepage's zoom draws larger (ticket 1071). */
 function ghostTip(editor: Element): { x: number; y: number } | undefined {
   const arrow = editor.querySelector<SVGElement>('[data-testid="inside-ghost"] .ghost--shown')
   const moved = arrow?.style.transform.match(/translate\((-?[\d.]+)px, (-?[\d.]+)px\)/)
   if (!moved) return undefined
-  const layer = arrow!.parentElement!.getBoundingClientRect()
-  return { x: layer.left + Number(moved[1]) + 4, y: layer.top + Number(moved[2]) + 2 }
+  const layer = arrow!.parentElement!
+  const box = layer.getBoundingClientRect()
+  const zoom = cssZoomOf(layer)
+  return { x: box.left + (Number(moved[1]) + 4) * zoom, y: box.top + (Number(moved[2]) + 2) * zoom }
 }
 
 /** Where a scroller's room starts: under the headers stuck at its top (a section's title, a table's head), which cover
@@ -130,8 +134,11 @@ async function withMotion(on: boolean): Promise<void> {
 
 afterEach(() => withMotion(false))
 
-/** A whole tour takes three minutes, so CI plays it on a desk; `VITE_GHOST_TOURS=all` adds a short laptop and a tablet. */
-const SIZES = import.meta.env.VITE_GHOST_TOURS === 'all' ? ([[1440, 900], [1180, 820], [834, 1194]] as const) : ([[1440, 900]] as const)
+/** A whole tour takes three minutes, so CI plays it on a desk and on a large screen, where the Homepage draws the demo
+ * larger (ticket 1071); `VITE_GHOST_TOURS=all` adds a short laptop, a tablet and a full-HD screen. */
+const SIZES = import.meta.env.VITE_GHOST_TOURS === 'all'
+  ? ([[1440, 900], [2560, 1440], [1920, 1080], [1180, 820], [834, 1194]] as const)
+  : ([[1440, 900], [2560, 1440]] as const)
 
 describe("What's inside: everything the ghost presses is seen whole (ticket 0820)", () => {
   for (const [width, height] of SIZES) {

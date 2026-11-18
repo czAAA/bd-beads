@@ -1,5 +1,6 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import { popoverPlacement, type PillPosition } from '../../domain/toolPill'
+import { cssZoomOf } from '../ui/cssZoom'
 import { PAGE_SCOPE, scopeRoom, useShellScope } from '../ui/shellScope'
 
 /** What a popover beside the Tool pill is placed against: the tile that opened it, the pill, and the pill's edge. */
@@ -27,15 +28,18 @@ export function usePillPopoverPlacement(root: Ref<HTMLElement | undefined>, anch
     // In a boxed shell (ticket 0797) the box is the screen, and the popover, teleported into it, is placed from its corner;
     // it is never taller than the box and scrolls inside itself past that, as it does past the screen (ticket 0820).
     const room = scopeRoom(scope)
-    const maxHeight = scope === PAGE_SCOPE ? undefined : `${room.bottom - room.top - 2 * px('--float-edge')}px`
+    // Measured on screen, placed in the popover's own px, which CSS zoom draws larger (ticket 1071).
+    const zoom = cssZoomOf(el)
+    const roomSize = { width: (room.right - room.left) / zoom, height: (room.bottom - room.top) / zoom }
+    const maxHeight = scope === PAGE_SCOPE ? undefined : `${roomSize.height - 2 * px('--float-edge')}px`
     if (maxHeight) el.style.maxHeight = maxHeight
-    const inRoom = (box: DOMRect) => ({ left: box.left - room.left, top: box.top - room.top, width: box.width, height: box.height })
+    const inRoom = (box: DOMRect) => ({ left: (box.left - room.left) / zoom, top: (box.top - room.top) / zoom, width: box.width / zoom, height: box.height / zoom })
     const { left, top } = popoverPlacement(
       inRoom(tileBox),
       inRoom(pillBox),
       { width: el.offsetWidth, height: el.offsetHeight },
       position,
-      { width: room.right - room.left, height: room.bottom - room.top },
+      roomSize,
       px('--pill-gap'),
       px('--float-edge'),
     )

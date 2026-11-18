@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { cssZoomOf } from '../ui/cssZoom'
 import type { Project } from '../../domain/project'
 import { NO_INSETS, pillInsets, type Insets, type PillPosition, type PillRect } from '../../domain/toolPill'
 import type { Size } from '../../rendering/cellSize'
@@ -47,6 +48,11 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     return box && box.width > 0 && box.height > 0 ? { x: box.left, y: box.top, width: box.width, height: box.height } : undefined
   }
 
+  /** The CSS zoom the drawing area is drawn at (ticket 1071): 1 in the editor, more in the Homepage's grown demo. */
+  function areaZoom(): number {
+    return cssZoomOf(canvasAreaEl.value)
+  }
+
   /** The Tool pill measured in the drawing area (`area`, its size at that moment) and the edge it docks to: a Fit leaves
    * the room it takes clear (ticket 0850). */
   function onToolPillPlaced(rect: PillRect | undefined, area: Size, position: PillPosition) {
@@ -72,6 +78,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     /** Takes back a move `bringIntoView` made, unless the view was moved since (ticket 0971). */
     putBack,
     areaOnScreen,
+    areaZoom,
     visibleCentre,
     canvasOnScreen,
     /** Whether the view still follows the fit, not a place the person moved it to. */

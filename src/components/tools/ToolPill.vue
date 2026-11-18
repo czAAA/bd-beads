@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { ownLength, ownPoint } from '../../composables/ui/cssZoom'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
@@ -148,11 +149,14 @@ function toggleColor(event: MouseEvent) {
   emit('update:popoverOpen', !props.popoverOpen)
 }
 
-/** The pill's rectangle in the layer's own pixels (the drawing area's), for the Selection bar to keep clear of. */
+/** The pill's rectangle in the layer's own pixels (the drawing area's, ticket 1071: not the screen's, which the Homepage's
+ * zoom enlarges), for the Selection bar to keep clear of. */
 function measure(): PillRect | undefined {
   const pill = pillEl.value?.getBoundingClientRect()
-  const layer = layerEl.value?.getBoundingClientRect()
-  return pill && layer && pill.width > 0 ? { left: pill.left - layer.left, top: pill.top - layer.top, width: pill.width, height: pill.height } : undefined
+  const layer = layerEl.value
+  if (!pill || !layer || pill.width === 0) return undefined
+  const corner = ownPoint(layer, { clientX: pill.left, clientY: pill.top })
+  return { left: corner.x, top: corner.y, width: ownLength(layer, pill.width), height: ownLength(layer, pill.height) }
 }
 
 // The pill shows the recents only while the whole pill fits along its edge (ticket 439), else the one swatch

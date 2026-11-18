@@ -1,4 +1,5 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
+import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import { changedRows } from '../../../domain/canvas'
 import { beadTotal } from '../../../domain/openingLimits'
 import { frameOf, layerOf } from '../../../domain/layerRecord'
@@ -225,7 +226,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       return
     }
 
-    const pixelRatio = globalThis.devicePixelRatio || 1
+    const pixelRatio = pixelRatioOf(canvasEl.value)
     // In the draft look the bitmap reaches past the drawing area, so a pan or pinch uncovers none of it (ticket 0717).
     const box = bitmapBox(size.value, drawsDraft(props.zoom * pixelRatio), pixelRatio)
     placeCanvas(canvas, box)
@@ -333,7 +334,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     const before = drawn
     const canvas = canvasEl.value
     const project = props.project
-    const pixelRatio = globalThis.devicePixelRatio || 1
+    const pixelRatio = pixelRatioOf(canvasEl.value)
     const onlyViewMoved =
       before &&
       canvas &&

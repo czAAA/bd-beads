@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { ownPoint } from '../../composables/ui/cssZoom'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { fillBlanks } from '../../domain/fillBlanks'
 import {
@@ -110,10 +111,9 @@ const handleLimit = computed(() => reachLimit(onScreen.value))
 const angleText = computed(() => `${Math.round(shown.value.angle)}°`)
 const groupName = computed(() => fillBlanks(words.value.groupName, { opacity: props.opacity, angle: Math.round(props.place.angle) }))
 
-/** A pointer's place on the drawing area, in its px. */
+/** A pointer's place on the drawing area, in its own px (ticket 1071). */
 function local(event: PointerEvent): { x: number; y: number } {
-  const box = rootEl.value?.getBoundingClientRect()
-  return { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) }
+  return ownPoint(rootEl.value, event)
 }
 
 function begin(event: PointerEvent, kind: 'move' | 'turn' | ReferenceCorner) {

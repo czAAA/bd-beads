@@ -15,6 +15,8 @@ export interface FrameBesidePanelDeps {
   panelOpen: () => boolean
   /** The drawing area on the screen, or none until it is laid out. */
   area: () => Region | undefined
+  /** The CSS zoom the drawing area is drawn at (ticket 1071): the view moves in its own px, the panel is placed on screen. */
+  areaZoom: () => number
 }
 
 /** Keeps the Frame clear of the Frame panel (ticket 0971): as the panel is placed over the Frame, the Canvas pans once,
@@ -28,9 +30,11 @@ export function useFrameBesidePanel(deps: FrameBesidePanelDeps) {
   function panelPlaced(panel: Region): void {
     const project = deps.currentProject()
     const area = deps.area()
-    const clear = area && roomBesidePanel(panel, area)
-    if (!project || !clear || made) return
-    const room = area.width - clear.left - clear.right
+    const onScreen = area && roomBesidePanel(panel, area)
+    if (!project || !onScreen || made) return
+    const zoom = deps.areaZoom()
+    const clear = { top: onScreen.top / zoom, right: onScreen.right / zoom, bottom: onScreen.bottom / zoom, left: onScreen.left / zoom }
+    const room = area.width / zoom - clear.left - clear.right
     const move = deps.bringIntoView((surface) => {
       const sheet = fitBox(project)
       const frame = placedFrame(project)

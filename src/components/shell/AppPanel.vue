@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useId, watch } from 'vue'
+import { ownLength } from '../../composables/ui/cssZoom'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useShellScope } from '../../composables/ui/shellScope'
@@ -174,7 +175,7 @@ function revealInBody(entry: HTMLElement) {
   const body = subBodyEl.value
   if (!body) return
   const below = entry.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom
-  if (below > 0) body.scrollTop += entry.getBoundingClientRect().top - body.getBoundingClientRect().top
+  if (below > 0) body.scrollTop += ownLength(body, entry.getBoundingClientRect().top - body.getBoundingClientRect().top)
 }
 
 /** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab and

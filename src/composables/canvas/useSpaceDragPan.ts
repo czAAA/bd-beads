@@ -1,4 +1,5 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { ownLength } from '../ui/cssZoom'
 import { isTypingInFormField } from '../shell/useKeyboardShortcuts'
 import { inScope, useShellScope } from '../ui/shellScope'
 
@@ -82,8 +83,10 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
     lastX = event.clientX
     lastY = event.clientY
 
-    // The canvas moves with the pointer, both ways: the page itself never scrolls (ticket 141).
-    panBy(dx, dy)
+    // The canvas moves with the pointer, both ways: the page itself never scrolls (ticket 141); in the px of what it is
+    // over, should CSS zoom draw it larger (ticket 1071).
+    const over = event.target instanceof Element ? event.target : undefined
+    panBy(ownLength(over, dx), ownLength(over, dy))
   }
 
   function onPointerEnd() {

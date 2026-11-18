@@ -1,4 +1,5 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn, type Ref, type ShortEmitsToObject } from 'vue'
+import { ownLength, ownPoint } from '../../../composables/ui/cssZoom'
 import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
 import { frameAllows } from '../../../domain/frameShape'
@@ -329,15 +330,13 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   function placePickChip(event: PointerEvent, bead: GridPosition | undefined): void {
     const shown = eyedropperShown.value && bead && event.pointerType !== 'touch' && !movesCanvas(event)
     const hex = shown ? beadColorAt(props.project, bead.row, bead.column, bead.layer) : null
-    const box = rootEl.value?.getBoundingClientRect()
-    if (!hex || !box) {
+    if (!hex || !rootEl.value) {
       pickChip.value = undefined
       return
     }
-    const x = event.clientX - box.left
-    const y = event.clientY - box.top
+    const { x, y } = pointOnScreen(event)
     // Near the right or bottom edge the chip goes to the other side of the tip instead of being cut off.
-    pickChip.value = { x, y, hex, flipX: x > box.width - PICK_CHIP_ROOM.x, flipY: y > box.height - PICK_CHIP_ROOM.y }
+    pickChip.value = { x, y, hex, flipX: x > size.value.width - PICK_CHIP_ROOM.x, flipY: y > size.value.height - PICK_CHIP_ROOM.y }
   }
 
   // A zoom, scroll or end of the pick leaves the chip showing a bead that is no longer under the pointer.
@@ -382,10 +381,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     return handMoves.value || event.button === 1 || movesCanvas(event)
   }
 
-  /** The point of the viewport a pointer is at on screen, in px from its top-left corner. */
+  /** The point of the viewport a pointer is at, in the surface's own px from its top-left corner (ticket 1071: the
+   * Homepage draws its demo larger with CSS zoom). */
   function pointOnScreen(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
-    const box = rootEl.value?.getBoundingClientRect()
-    return { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) }
+    return ownPoint(rootEl.value, event)
   }
 
   /** The point of the drawing a pointer is at: on screen, turned back by the Canvas's lean (ticket 0672). */
@@ -746,7 +745,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       return
     }
     if (dragging.value) {
-      emit('pan', event.clientX - lastPoint.x, event.clientY - lastPoint.y)
+      emit('pan', ownLength(rootEl.value, event.clientX - lastPoint.x), ownLength(rootEl.value, event.clientY - lastPoint.y))
       lastPoint = { x: event.clientX, y: event.clientY }
       return
     }
@@ -868,16 +867,17 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   function onWheel(event: WheelEvent): void {
     event.preventDefault()
     noteWheel()
-    const box = rootEl.value?.getBoundingClientRect()
     const dx = wheelPx(event.deltaX, event.deltaMode)
     const dy = wheelPx(event.deltaY, event.deltaMode)
     if (event.ctrlKey || event.metaKey) {
       const step = Math.max(-30, Math.min(30, dy))
-      emit('zoom-by', Math.exp(-step * 0.01), { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) })
+      emit('zoom-by', Math.exp(-step * 0.01), pointOnScreen(event))
       return
     }
     const sideways = event.shiftKey && dx === 0
-    emit('scroll', sideways ? dy : dx, sideways ? 0 : dy)
+    // A wheel in px moves the drawing as far on screen; one in lines or pages, by the surface's own lines or pages.
+    const own = (delta: number) => (event.deltaMode === 0 ? ownLength(rootEl.value, delta) : delta)
+    emit('scroll', own(sideways ? dy : dx), own(sideways ? 0 : dy))
   }
 
   onMounted(() => {

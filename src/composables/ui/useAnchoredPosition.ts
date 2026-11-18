@@ -1,5 +1,6 @@
 import { autoUpdate, computePosition, flip, offset, shift, type Placement } from '@floating-ui/vue'
 import { onBeforeUnmount, ref, type Ref } from 'vue'
+import { cssZoomOf } from './cssZoom'
 import { PAGE_SCOPE, scopeRoom, useShellScope } from './shellScope'
 
 /** `fixed` at a place; `right: auto` so a popup's own CSS `right` (an end-aligned Menu) doesn't stretch it. */
@@ -50,8 +51,10 @@ export function useAnchoredPosition(
     if (!button || !list) return
     raise(list)
     const room = scopeRoom(scope)
+    // Floating UI measures on screen; the popup is placed in its own px, which CSS zoom draws larger (ticket 1071).
+    const zoom = cssZoomOf(list)
     // At least as wide as the button it hangs from.
-    const minWidth = `${button.getBoundingClientRect().width}px`
+    const minWidth = `${button.getBoundingClientRect().width / zoom}px`
     if (list.style.minWidth !== minWidth) list.style.minWidth = minWidth
     const placement: Placement = `${side() === 'above' ? 'top' : 'bottom'}-${align() === 'end' ? 'end' : 'start'}`
     const mine = ++latest
@@ -67,11 +70,11 @@ export function useAnchoredPosition(
     if (mine !== latest) return
     // `y` is from the popup's containing block, which a boxed shell's box is (`contain`), the room's bottom from the
     // screen's top: the block's own top joins them.
-    const blockTop = list.getBoundingClientRect().top - (Number.parseFloat(list.style.top) || 0)
+    const blockTop = list.getBoundingClientRect().top - (Number.parseFloat(list.style.top) || 0) * zoom
     const lowest = floor()
     const bottom = lowest === undefined ? room.bottom : Math.min(room.bottom, lowest)
-    roomBelow.value = scope === PAGE_SCOPE && lowest === undefined ? undefined : bottom - (y + blockTop) - EDGE
-    style.value = { ...fixedAt(y, x), minWidth }
+    roomBelow.value = scope === PAGE_SCOPE && lowest === undefined ? undefined : (bottom - (y + blockTop)) / zoom - EDGE
+    style.value = { ...fixedAt(y / zoom, x / zoom), minWidth }
   }
 
   function follow() {

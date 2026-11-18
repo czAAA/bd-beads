@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { ownLength, ownPoint } from '../../composables/ui/cssZoom'
 import { useFittingForm } from '../../composables/canvas/useFittingForm'
 import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -185,7 +186,7 @@ const titleRoom = computed(() =>
 const title = useFittingForm({
   forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? titleForms.value.filter((shown) => shown === 'tab') : titleForms.value) : []),
   room: () => titleRoom.value / scale.value,
-  measure: () => (titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
+  measure: () => ownLength(titleEl.value, titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
   observed: () => [titleEl.value?.firstElementChild],
   // Its words: a shorter name, maker or language brings back the block it stepped down from (ticket 0851).
   labels: () => {
@@ -230,7 +231,7 @@ const bandLeft = computed(() => place.value.side + (corner.value.left ? titleTak
 /** The band row's width in drafting px: the Move bar centred, with room on each side for the wider of Row progress and
  * the tools. */
 function bandWidth(): number {
-  const [start = 0, move = 0, end = 0] = bandParts().map((part) => part.getBoundingClientRect().width / scale.value)
+  const [start = 0, move = 0, end = 0] = bandParts().map((part) => ownLength(part, part.getBoundingClientRect().width) / scale.value)
   return move ? move + 2 * Math.max(start, end) + 2 * MARGIN_PX.gap : 0
 }
 const rowFit = useFittingForm({
@@ -333,10 +334,11 @@ function notePress(event: PointerEvent): void {
 
 /** The Rotate Frame copy that waits where it was pressed (ticket 1016, MarginSheet card). */
 const rotateCopy = useRotateCopy()
-/** A screen point as a place in the sheet's parent, which the copy keeps however the sheet moves. */
+/** A screen point as a place in the sheet's parent, in its own px (ticket 1071), which the copy keeps however the sheet
+ * moves. */
 function inParent(x: number, y: number): { left: number; top: number } {
-  const box = sheetEl.value?.getBoundingClientRect()
-  return { left: x - (box?.left ?? 0) + props.anchor.sheet.left, top: y - (box?.top ?? 0) + props.anchor.sheet.top }
+  const at = ownPoint(sheetEl.value, { clientX: x, clientY: y })
+  return { left: at.x + props.anchor.sheet.left, top: at.y + props.anchor.sheet.top }
 }
 /** Rotate Frame from the band's button or its menu item: a pointer's press leaves the copy over the button, or a full
  * size one centred where the item was pressed. */
@@ -345,9 +347,10 @@ function rotateFromBand(): void {
   rotatePress = undefined
   emit('rotate')
   if (!press) return
+  const at = inParent(press.at.x, press.at.y)
   const place: RotateCopyPlace = press.button
     ? { ...inParent(press.button.left, press.button.top), scale: scale.value, small: small.value }
-    : { ...inParent(press.at.x - MARGIN_PX.tool / 2, press.at.y - MARGIN_PX.tool / 2), scale: 1, small: false }
+    : { left: at.left - MARGIN_PX.tool / 2, top: at.top - MARGIN_PX.tool / 2, scale: 1, small: false }
   rotateCopy.pressed(place, press.touch)
 }
 /** A press on the copy turns the Frame again, as the band's own button does. */

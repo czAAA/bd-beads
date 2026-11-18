@@ -1,3 +1,5 @@
+import { cssZoomOf } from '../../composables/ui/cssZoom'
+
 // The ghost above the demo editor's menus and pickers (Homepage card, What's inside, ticket 0820): they open in the
 // browser's top layer, over anything a z-index can lift, so while one is open the ghost's layer joins them there, last,
 // laid over the demo's box, and leaves again once none is.
@@ -15,7 +17,9 @@ export function keepAboveMenus(layer: HTMLElement, box: HTMLElement): () => void
 
   function place(): void {
     const room = box.getBoundingClientRect()
-    Object.assign(layer.style, { left: `${room.left}px`, top: `${room.top}px`, width: `${room.width}px`, height: `${room.height}px` })
+    // Fixed in its own px, which the Homepage's zoom draws larger (ticket 1071).
+    const zoom = cssZoomOf(layer)
+    Object.assign(layer.style, { left: `${room.left / zoom}px`, top: `${room.top / zoom}px`, width: `${room.width / zoom}px`, height: `${room.height / zoom}px` })
   }
 
   function lower(): void {

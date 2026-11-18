@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, type ComponentPublicInstance } from 'vue'
+import { ownLength } from '../../composables/ui/cssZoom'
 import { useShellScope } from '../../composables/ui/shellScope'
 import { toastsBelowPanel } from '../../composables/ui/toastPlacement'
 import { useElementSize } from '../../composables/ui/useElementSize'
@@ -33,10 +34,12 @@ function place() {
   // The box its `top` counts from (jsdom, which lays nothing out, has none: its parent there).
   const room = el?.offsetParent ?? el?.parentElement
   panelEl.value = props.clearOfPanel ? ((scope.root() ?? document).querySelector<HTMLElement>('.app-panel--dropdown') ?? undefined) : undefined
-  below.value =
+  const onScreen =
     el && room && panelEl.value && props.toasts.length
       ? toastsBelowPanel(panelEl.value.getBoundingClientRect(), el.getBoundingClientRect(), room.getBoundingClientRect())
       : undefined
+  // Measured on screen, set in the region's own px, which CSS zoom draws larger (ticket 1071).
+  below.value = onScreen === undefined ? undefined : ownLength(el, onScreen)
 }
 watch([() => props.toasts, () => props.clearOfPanel, panelSize.height], place, { flush: 'post' })
 
