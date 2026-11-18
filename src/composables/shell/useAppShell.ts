@@ -673,7 +673,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
     zoom: () => zoom.value,
     pinch: pinchStep,
     // The pinch ends the hold the first finger was timing too (ticket 1065).
-    cancelStroke: () => (cancelStroke(), radialToolbox.endHold()),
+    cancelStroke: () => {
+      cancelStroke()
+      radialToolbox.endHold()
+    },
     endTwist,
   })
 

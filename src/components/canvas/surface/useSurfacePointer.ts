@@ -429,6 +429,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   /** The hold is up: what the press started is dropped here and above, and the ring opens where it was pressed. The
    * pointer, still down, stays captured (the slide, ticket 1077). */
   function completeHold(): void {
+    // The ring would no longer open (the Canvas turned read-only meanwhile): the press goes on as it was.
+    if (!props.holdOpens) return stepHold({ type: 'finger' })
     stepHold({ type: 'time', held: HOLD_MS })
     if (heldPress?.is !== 'sliding') return
     heldPointer = undefined

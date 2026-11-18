@@ -200,11 +200,12 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     const { wrapper, surface, said } = await mountSurface()
     await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
     vi.advanceTimersByTime(HOLD_MS)
-    const before = { ...wrapper.emitted() }
+    const count = () => Object.fromEntries(Object.entries(wrapper.emitted()).filter(([name]) => /^cell/.test(name)).map(([name, calls]) => [name, calls.length]))
+    const before = count()
 
     await surface.trigger('pointermove', { ...bead(3, 9), ...PEN, buttons: 1 })
     await surface.trigger('pointerup', { ...PEN })
-    expect(Object.keys(wrapper.emitted()).filter((name) => /^cell/.test(name) && wrapper.emitted(name)!.length !== before[name]?.length)).toEqual([])
+    expect(count()).toEqual(before)
     expect(said).toEqual(OPENED)
 
     // The next press is a press as any other.
@@ -220,6 +221,15 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     vi.advanceTimersByTime(HOLD_MS * 10)
     expect(wrapper.emitted('selection-press')).toHaveLength(1)
     expect(said).toEqual([])
+    wrapper.unmount()
+  })
+
+  it('opens nothing when the ring stops being able to open during the hold (the Canvas turned read-only)', async () => {
+    const { wrapper, surface, said } = await mountSurface()
+    await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
+    await wrapper.setProps({ holdOpens: false })
+    vi.advanceTimersByTime(HOLD_MS)
+    expect(said).toEqual([['hold', POINT], ['hold']])
     wrapper.unmount()
   })
 

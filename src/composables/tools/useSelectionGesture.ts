@@ -98,11 +98,11 @@ export function useSelectionGesture(
     return layerAt(project, at) === 'frame' && (marking || !frameAllows(frameOf(project), 'select'))
   }
 
-  /** A Select press; `marking` for Mirror mode's (ADR 0082), the same drag marking out the Mirror's Area, which the shell
-   * takes from the Selection on release and which leaves the clipboard alone. */
   /** The Selection a Piece tap replaced, until its press ends: a press that was never a tap gives it back (ticket 1065). */
   let beforeTap: { selection: Selection | undefined } | undefined
 
+  /** A Select press; `marking` for Mirror mode's (ADR 0082), the same drag marking out the Mirror's Area, which the shell
+   * takes from the Selection on release and which leaves the clipboard alone. */
   function beginPress(row: number, column: number, named?: Layer, marking = false) {
     const project = currentProject()
     if (!project) {
