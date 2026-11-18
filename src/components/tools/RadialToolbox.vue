@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { ownLength } from '../../composables/ui/cssZoom'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, radialItemAt, radialSliceOutline, type RadialItemId } from '../../domain/radialToolbox'
+import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, RADIAL_ROOM, radialItemAt, radialNameCenter, radialSliceOutline, type RadialItemId } from '../../domain/radialToolbox'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -83,6 +83,21 @@ const hovered = ref<RadialItemId>()
 /** The item whose look and name show: the one a held pointer is on, else the hovered one. */
 const under = computed(() => props.held ?? hovered.value)
 const named = computed(() => items.value.find((item) => item.place.id === under.value))
+
+const nameEl = ref<HTMLElement>()
+/** How far the name stands from over the ring's centre, in the ring's own px: the least that keeps it `float-edge`
+ * inside the screen at each side, however long its language makes it (ticket 1076). */
+const nameShift = ref(0)
+function placeName() {
+  const root = rootEl.value
+  if (!root || !nameEl.value) return
+  const center = ownLength(root, props.center.x)
+  // `float-edge` in the ring's own px: its share of the ring's measured reach.
+  const edge = (root.offsetWidth / 2) * (RADIAL_ROOM.edge / RADIAL_REACH)
+  nameShift.value = radialNameCenter(center, nameEl.value.offsetWidth, ownLength(root, window.innerWidth), edge) - center
+}
+watch([named, () => props.center, () => props.open], placeName, { flush: 'post' })
+onMounted(placeName)
 
 function onPointerMove(event: PointerEvent) {
   if (event.pointerType === 'touch') return
@@ -185,7 +200,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rootEl.value, close: () 
         </IconButton>
       </span>
 
-      <span v-if="named" class="radial-toolbox__name" aria-hidden="true" data-testid="radial-name">
+      <span v-if="named" ref="nameEl" class="radial-toolbox__name" :style="{ '--radial-name-shift': `${nameShift}px` }" aria-hidden="true" data-testid="radial-name">
         <strong class="radial-toolbox__name-text">{{ named.name }}</strong>
         <span v-if="named.meta" class="radial-toolbox__name-meta">{{ named.meta }}</span>
       </span>
@@ -319,7 +334,8 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rootEl.value, close: () 
   background: var(--press-fill);
 }
 
-/* The name of the item under the pointer: the Tooltip's bubble, centred over the ring. */
+/* The name of the item under the pointer: the Tooltip's bubble, centred over the ring, or as near that as keeps it
+ * `float-edge` inside the screen (ticket 1076). */
 .radial-toolbox__name {
   position: absolute;
   bottom: calc(100% + var(--space-8));
@@ -329,7 +345,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rootEl.value, close: () 
   align-items: baseline;
   box-sizing: border-box;
   width: max-content;
-  max-width: min(var(--tooltip-max-width), calc(100vw - 2 * var(--space-8)));
+  max-width: min(var(--tooltip-max-width), calc(100vw - 2 * var(--float-edge)));
   padding: var(--space-6) var(--space-8);
   font: var(--type-small);
   line-height: var(--tooltip-line);
@@ -339,7 +355,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rootEl.value, close: () 
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
   box-shadow: var(--elevation-3);
-  transform: translateX(-50%);
+  transform: translateX(calc(-50% + var(--radial-name-shift, 0px)));
 }
 
 .radial-toolbox__name-text {
