@@ -372,6 +372,7 @@ export const es: Translations = {
   },
   homepage: {
     pageTitle: 'Inicio',
+    description: 'Creador gratis de patrones de cuentas para telar, peyote y punto ladrillo. Convierte una foto en patrón, cuenta cada color y marca las filas tejidas.',
     makeFirstProject: 'Crea tu primer proyecto',
     openEditor: 'Abrir el editor',
     whatsInside: 'Qué incluye',

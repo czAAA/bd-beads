@@ -371,6 +371,7 @@ export const zh: Translations = {
   },
   homepage: {
     pageTitle: '首页',
+    description: '免费的串珠图样制作工具，适用于织机、佩奥特编织和砖形。把照片变成串珠图样，统计每种颜色的珠子，边编边标记已完成的行。无需账户。',
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',
     whatsInside: '功能一览',
