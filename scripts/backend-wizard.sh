@@ -177,7 +177,7 @@ finish() {
 
 
 # STAGES: human steps of ticket 71 (spec 385), one phase per run (h1 account/R2/billing, h2 tokens, h3 Access/Google,
-# h4 backup age key, h5 remove Flint 2 secrets, h6 the domain, h7 dev behind Access only); run
+# h4 backup age key, h5 remove Flint 2 secrets, h6 the domain, h7 no health bypass); run
 # `bash scripts/backend-wizard.sh hN` only when the agent asks.
 # No secret goes in chat, a file or a log: only ids, site keys, host names and the age public key are saved.
 
@@ -332,18 +332,15 @@ phase_h3() {
   stage "Access (H3a): both Workers behind a sign-in"
   open_url "https://one.dash.cloudflare.com/"
   step "Once: Integrations → Identity providers → Add new → One-time PIN. Nothing to fill in; save."
-  step "Access controls → Applications → Add an application → Self-hosted. Three applications in all:"
-  step "  per host, one that asks for a sign-in, and for production a second that lets /api/health through."
+  step "Access controls → Applications → Add an application → Self-hosted, one per host, each asking for a sign-in."
   note "workers.dev isn't one of your domains, so the Domain list is empty: click 'Switch to custom input' and type"
   note "the host, without https://."
   step "Sign-in application, host $WORKER_HOST_DEV, Path empty:"
   step "  policy Allow, include Emails: yours, then each tester's;"
   step "  Authentication: tick One-time PIN only (refresh the page if it isn't listed)."
   step "The same sign-in application for $WORKER_HOST_PRODUCTION (pick the policy under 'Add current policies')."
-  step "Production's only: a health application, same host, Path api/health: policy Bypass, include Everyone."
-  note "The more specific path wins: production's health answers without a sign-in, and nothing else does."
-  note "Dev has no health bypass (ticket 395): CI reaches it with a service token, set up in phase h7."
-  step "Open each host in a private window: you get the Access sign-in everywhere but production's /api/health."
+  note "No health bypass on either (ticket 395): CI reaches /api/health with a service token, set up in phase h7."
+  step "Open each host in a private window: you get the Access sign-in everywhere, /api/health included."
   confirm "Does it behave like that on both hosts?" || warn "Not confirmed: fix it before telling the agent."
   say "Dev's Worker checks each request's Access token itself (ticket 395); wrangler.jsonc needs these, none secret:"
   ask ACCESS_TEAM_DOMAIN "Your team's address (Settings → Team name, as https://<team>.cloudflareaccess.com):"
@@ -385,13 +382,8 @@ phase_h3() {
   step "Copy the secret key; wrangler asks for it next, twice."
   put_secret_both TURNSTILE_SECRET_KEY
 
-  stage "UptimeRobot (H3d)"
-  open_url "https://dashboard.uptimerobot.com/monitors"
-  step "Sign in with the account whose inbox gets the alerts. Add an HTTP(s) monitor, interval 15 minutes:"
-  step "  https://$WORKER_HOST_PRODUCTION/api/health"
-  note "None for dev: it answers nobody outside Access; watchdog-dev (below) notices a dead dev Worker (ticket 395)."
-  step "Alert contacts: your email, and the UptimeRobot phone app (install it and sign in; it sends the push)."
-  pause "The monitor is up and green? Press Enter."
+  note "No UptimeRobot monitor before the release: neither Worker answers outside Access (ticket 395). The watchdog"
+  note "checks below notice a dead Worker; the release (ticket 391) adds production's monitor."
 
   stage "Healthchecks.io (H3d): three checks, email only"
   open_url "https://healthchecks.io/accounts/signup/"
@@ -481,8 +473,7 @@ phase_h6() {
   open_url "https://one.dash.cloudflare.com/"
   step "Access controls → Applications → Add an application → Self-hosted, for $DOMAIN_PRODUCTION and $DOMAIN_DEV."
   step "Each: policy Allow, include Emails: yours, then each tester's; Authentication: One-time PIN only."
-  step "Production's only: a second application, same host, Path api/health, policy Bypass, include Everyone."
-  step "Dev's has no health bypass (ticket 395)."
+  step "No health bypass on either (ticket 395); phase h7 lets CI's service token in."
   ask ACCESS_AUD_DEV "Dev's application: its Audience tag (Overview tab; not secret, it differs per application):"
   write_env ACCESS_AUD_DEV "$ACCESS_AUD_DEV"
   step "In a private window, both hostnames show the Access sign-in."
@@ -508,28 +499,34 @@ phase_h6() {
 phase_h7() {
   need_gh
   stage "Access: a service token for CI's smoke check (ticket 395)"
-  say "Dev answers nobody outside Access, not even /api/health. CI's smoke check signs in with a service token."
-  open_url "https://one.dash.cloudflare.com/"
-  step "Access controls → Service credentials → Create Service Token: name bd-beads-ci-smoke, duration 1 year."
-  note "Cloudflare shows the client secret once. Keep the page open: gh asks for the id, then the secret."
-  gh_env_secret CF_ACCESS_CLIENT_ID
-  gh_env_secret CF_ACCESS_CLIENT_SECRET
-  open_url "https://dash.cloudflare.com/?to=/:account/notifications"
-  step "Notifications → Add → Expiring Access Service Token, to your email: a month's warning before it runs out."
-  pause "Both secrets set and the alert added? Press Enter."
+  say "Neither Worker answers outside Access, not even /api/health. CI's smoke check signs in with a service token."
+  if confirm "Is the token bd-beads-ci-smoke already made, with both GitHub secrets set (an earlier run)?"; then
+    say "Kept as it is."
+  else
+    open_url "https://one.dash.cloudflare.com/"
+    step "Access controls → Service credentials → Create Service Token: name bd-beads-ci-smoke, duration 1 year."
+    note "Cloudflare shows the client secret once. Keep the page open: gh asks for the id, then the secret."
+    gh_env_secret CF_ACCESS_CLIENT_ID
+    gh_env_secret CF_ACCESS_CLIENT_SECRET
+    open_url "https://dash.cloudflare.com/?to=/:account/notifications"
+    step "Notifications → Add → Expiring Access Service Token, to your email: a month's warning before it runs out."
+    pause "Both secrets set and the alert added? Press Enter."
+  fi
 
-  stage "Access: dev's applications let only people and the token in"
+  stage "Access: every application lets only people and the token in"
   open_url "https://one.dash.cloudflare.com/"
-  step "Access controls → Applications. For each of dev's sign-in applications (its workers.dev host and dev.<domain>):"
+  step "Access controls → Applications. On each sign-in application, dev's and production's, both hosts each:"
   step "  Policies → Add a policy: action Service Auth, include Service Token bd-beads-ci-smoke. Save."
-  step "Delete dev's api/health application (the Bypass), if it has one. Production's stays until the release."
-  step "In a private window, every dev path shows the Access sign-in, /api/health and /api/health/x included."
+  note "A policy of its own: the Allow policy with the emails is shared, so the token never goes into it."
+  step "Delete every api/health application (the Bypasses), dev's and production's, on every host."
+  step "In a private window, every path on every host shows the Access sign-in, /api/health and /api/health/x too."
   confirm "Does it?" || warn "Not confirmed: fix it before telling the agent."
 
-  stage "UptimeRobot: dev's monitor goes"
+  stage "UptimeRobot: the monitors go until the release"
   open_url "https://dashboard.uptimerobot.com/monitors"
-  step "Delete the monitor on dev's /api/health. Production's stays."
-  note "watchdog-dev in Healthchecks still alerts on a dead dev Worker (no run for an hour) or an unreadable database."
+  step "Delete every monitor on /api/health. They would see only the sign-in page; the release (ticket 391) adds"
+  step "  production's back."
+  note "watchdog-dev and watchdog-production in Healthchecks still alert on a dead Worker or an unreadable database."
   pause "Deleted? Press Enter."
   say "Tell the agent: \"H7 done\"."
 }
@@ -537,11 +534,11 @@ phase_h7() {
 case "${1:-}" in
   h1) TOTAL_STAGES=6; banner "Backend H1: the Cloudflare account"; phase_h1 ;;
   h2) TOTAL_STAGES=4; banner "Backend H2: tokens"; phase_h2 ;;
-  h3) TOTAL_STAGES=8; banner "Backend H3: sign-in, bots and alerts"; phase_h3 ;;
+  h3) TOTAL_STAGES=7; banner "Backend H3: sign-in, bots and alerts"; phase_h3 ;;
   h4) TOTAL_STAGES=1; banner "Backend H4: the backup's key"; phase_h4 ;;
   h5) TOTAL_STAGES=4; banner "Backend H5: the old deploy's credentials, and billing"; phase_h5 ;;
   h6) TOTAL_STAGES=5; banner "Backend H6: the domain on both Workers, and Google sign-in"; phase_h6 ;;
-  h7) TOTAL_STAGES=3; banner "Backend H7: dev answers nobody outside Access"; phase_h7 ;;
+  h7) TOTAL_STAGES=3; banner "Backend H7: nobody outside Access reaches a Worker"; phase_h7 ;;
   *) echo "Usage: bash scripts/backend-wizard.sh h1|h2|h3|h4|h5|h6|h7   (ticket 71's human steps, in order)"; exit 2 ;;
 esac
 

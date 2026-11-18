@@ -88,22 +88,20 @@ jobs:
           url=$(jq -r 'select(.type == "deploy") | .targets[0] // empty' "$WRANGLER_OUTPUT_FILE_PATH" | tail -n 1)
           if [ -z "$url" ]; then echo "::error::Wrangler reported no address for the deploy"; exit 1; fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
-      # A new version can take a few seconds to reach every location, so the check retries for up to two minutes. Dev
-      # answers nobody outside Access, health included (ticket 395): the check signs in with the Access service token,
-      # whose two secrets only the smoke checks get. Production's health has a bypass until the release (ticket 391).
+      # A new version can take a few seconds to reach every location, so the check retries for up to two minutes. Neither
+      # Worker answers outside Access before the release, health included (ticket 395): the check signs in with the
+      # Access service token, whose two secrets only the smoke checks get.
       - name: Smoke check /api/health
         env:
           URL: ${{ steps.deploy.outputs.url }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
-          headers=()
-          if [ -n "$CF_ACCESS_CLIENT_ID" ]; then
-            headers=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
-          elif [ "$WORKER" = dev ]; then
-            echo "::error::No CF_ACCESS_CLIENT_ID in the production environment: dev's health answers only through Access (ticket 395)"
+          if [ -z "$CF_ACCESS_CLIENT_ID" ]; then
+            echo "::error::No CF_ACCESS_CLIENT_ID in the production environment: health answers only through Access (ticket 395)"
             exit 1
           fi
+          headers=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
           for attempt in $(seq 1 24); do
             body=$(curl -s --max-time 10 "${headers[@]}" "$URL/api/health" || true)
             if [ "$(jq -r '.ok' <<<"$body" 2>/dev/null)" = true ] && [ "$(jq -r '.version' <<<"$body")" = "$COMMIT" ]; then
