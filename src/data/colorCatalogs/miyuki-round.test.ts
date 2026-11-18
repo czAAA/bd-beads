@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, findBead } from '../../domain/beads'
 import { swatchHex } from '../../domain/beadSwatch'
-import { hasMeasuredColors } from '../../domain/colorCatalog'
+import { measuredColorSource } from '../../domain/colorCatalog'
 import { createProject } from '../../domain/createProject'
 import { addedColorId, brandColors, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import { setPalette } from '../../domain/paletteEdits'
@@ -51,7 +51,7 @@ describe('the Miyuki Round color catalog', () => {
     const catalog = await loadColorCatalog('miyuki-round')
     expect(catalog.codes.filter((code) => !code.hex).map((code) => code.code)).toEqual(UNREAD)
     expect(catalog.codes.filter((code) => code.hex && !/^#[0-9a-f]{6}$/.test(code.hex)).map((code) => code.code)).toEqual([])
-    expect(hasMeasuredColors(catalog)).toBe(true)
+    expect(measuredColorSource(catalog)).toBe('photographs')
   })
 
   it('leaves a Project made before as it was: its beads keep the hex they were painted with (ticket 1069)', async () => {
