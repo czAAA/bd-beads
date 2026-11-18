@@ -71,7 +71,7 @@ const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
 const save = controlAction('save-project-file')
 const saveAs = controlAction('save-project-file-as')
-const exportPanel = controlAction('strip-export')
+const exportAction = controlAction('strip-export')
 
 /** The Export row's rows (ticket 1058): folded every time the panel opens and kept nowhere, as the Frame panel's are. */
 const exportOpen = ref(false)
@@ -124,8 +124,8 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       <PanelItem :icon="save.icon" :value="lastFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
       <PanelItem icon="copy" data-testid="project-duplicate" @select="emit('duplicate')">{{ duplicate.name(t) }}</PanelItem>
-      <PanelItem :icon="exportPanel.icon" :expanded="exportOpen" :aria-controls="exportRowsId" data-testid="project-export" @select="exportOpen = !exportOpen">{{ exportPanel.name(t) }}</PanelItem>
-      <div v-if="exportOpen" :id="exportRowsId" class="project-panel__export" role="group" :aria-label="exportPanel.name(t)" data-testid="project-export-rows">
+      <PanelItem :icon="exportAction.icon" :expanded="exportOpen" :aria-controls="exportRowsId" data-testid="project-export" @select="exportOpen = !exportOpen">{{ exportAction.name(t) }}</PanelItem>
+      <div v-if="exportOpen" :id="exportRowsId" class="project-panel__export" role="group" :aria-label="exportAction.name(t)" data-testid="project-export-rows">
         <ExportRows :project="project" :exporting="exporting" @fit="emit('fit')" @select-frame="emit('select-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
       </div>
       <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>

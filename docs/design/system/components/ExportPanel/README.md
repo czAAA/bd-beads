@@ -36,7 +36,7 @@ No export buttons and no slider. Under the title line:
 - **Fit a Frame to the drawing** (`frame`; ticket 0944): first once something is drawn, as it is the one-tap way. While nothing is drawn it comes second, disabled with "Nothing is drawn yet to fit a Frame to.". It never carries `fit`, which is the zoom's Fit alone.
 - **Drag a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568). Once the Frame is set the notice about dragging closes and this panel opens again, hung from the strip's button, on Picture and Printable chart (ticket 0847). Escape or another tool cancels and the notice closes too; the panel stays shut. The notice reads "Drag over the Canvas to select the Frame. Escape cancels."; on touch, where there is no Escape key, it ends "Pick a tool to cancel." instead (ticket 0954), as the paste notice does.
 
-The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Drag a Frame closes it until the drag has set the Frame, then brings it back (ticket 0847), so both ways end at the export rows.
+The rows are the Frame panel's own (one shared component, ExportRows, which the Project panel's Export row also unfolds). Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Drag a Frame closes it until the drag has set the Frame, then brings it back (ticket 0847), so both ways end at the export rows.
 
 ## Copy
 

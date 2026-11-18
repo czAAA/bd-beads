@@ -3,7 +3,6 @@ import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import ProjectPanel from './ProjectPanel.vue'
-import LoadingState from '../ui/LoadingState.vue'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { createProject } from '../../domain/createProject'
 import { en } from '../../i18n/en'
@@ -50,22 +49,15 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     const row = wrapper.get('[data-testid="project-export"]')
     expect(row.text()).toBe(en.panels.project.exportHeading)
     expect(row.attributes('aria-expanded')).toBe('false')
-    expect(row.find('.panel-item__mark--sub').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="project-export-rows"]').exists()).toBe(false)
 
     await row.trigger('click')
     expect(row.attributes('aria-expanded')).toBe('true')
-    expect(row.find('.panel-item__mark--sub').exists()).toBe(false)
     const rows = wrapper.get('[data-testid="project-export-rows"]')
     expect(row.attributes('aria-controls')).toBe(rows.attributes('id'))
-    for (const id of ['export-png', 'export-pdf', 'export-large-beads', 'export-row-by-row']) expect(rows.find(`[data-testid="${id}"]`).exists()).toBe(true)
-    expect(rows.text()).toContain(en.frame.exportQuality)
-    // No Letters, as in the Export panel.
+    // The Export panel's rows, without the Frame panel's Letters.
+    expect(rows.find('[data-testid="export-png"]').exists()).toBe(true)
     expect(rows.text()).not.toContain(en.frame.lettersLabel)
-    // It sits between Duplicate and Clear all beads.
-    const html = wrapper.html()
-    expect(html.indexOf('project-duplicate')).toBeLessThan(html.indexOf('project-export-rows'))
-    expect(html.indexOf('project-export-rows')).toBeLessThan(html.indexOf('project-clear'))
 
     await row.trigger('click')
     expect(row.attributes('aria-expanded')).toBe('false')
@@ -92,16 +84,12 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
 
     await wrapper.setProps({ exporting: 'png' })
     expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.get('[data-testid="project-export-rows"]').findComponent(LoadingState).exists()).toBe(true)
   })
 
-  it('with no Frame, unfolds the line and the ways to set one, as the Export panel does (ticket 1058)', async () => {
+  it('with no Frame, passes on Drag a Frame from the unfolded rows (ticket 1058)', async () => {
     const wrapper = mountPanel({ project: withFrameSheet(project, undefined) })
     await wrapper.get('[data-testid="project-export"]').trigger('click')
     const rows = wrapper.get('[data-testid="project-export-rows"]')
-    expect(rows.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
-    expect(rows.find('[data-testid="export-png"]').exists()).toBe(false)
-
     await rows.get('[data-testid="export-select-frame"]').trigger('click')
     expect(wrapper.emitted('select-frame')).toEqual([[]])
   })

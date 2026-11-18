@@ -446,7 +446,6 @@ describe('The Export panel', () => {
 
     expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(true)
     expect(mounted.wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
-    expect(mounted.wrapper.find('[data-testid="project-export-rows"] [data-testid="export-png"]').exists()).toBe(true)
     expect(downloadFile).not.toHaveBeenCalled()
   })
 

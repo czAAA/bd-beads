@@ -34,10 +34,15 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ select: [] }>()
 const context = inject(PANEL_CONTEXT)
+/** A fold row (ticket 1058): `expanded` given, true or false. */
 const folds = computed(() => props.expanded !== undefined)
-const mark = computed(() => (props.external ? 'external' : props.expanded ? 'chevron-down' : props.sub || folds.value ? 'chevron-left' : undefined))
-/** The design system draws one chevron-left: › and a folded section's mark are it turned. */
+/** The design system draws one chevron-left: › (a subpanel, a folded row) is it turned, an unfolded row's is down. */
 const turned = computed(() => props.sub || props.expanded === false)
+const mark = computed(() => {
+  if (props.external) return 'external'
+  if (props.expanded) return 'chevron-down'
+  return turned.value ? 'chevron-left' : undefined
+})
 
 function onClick(event: Event) {
   if (props.disabled) {
