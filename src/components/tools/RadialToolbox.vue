@@ -325,8 +325,9 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rootEl.value, close: () 
   background: var(--hover-fill);
 }
 
-/* Under a held finger or Pencil, at a press, and on the picked tile while the ring leaves: one step stronger. */
-.radial-toolbox__place--held :deep(.icon-btn),
+/* Under a held finger or Pencil, at a press, and on the picked tile while the ring leaves: one step stronger. The
+ * held tile names its place twice, so it outweighs the hover look it also wears (ticket 1077). */
+.radial-toolbox__place.radial-toolbox__place--held :deep(.icon-btn),
 .radial-toolbox__place--held .radial-toolbox__recent,
 .radial-toolbox__recent:active:not([aria-disabled='true']),
 .radial-toolbox-leave-active .radial-toolbox__place--picked :deep(.icon-btn),

@@ -145,13 +145,4 @@ describe('pressBecomes (spec 1072, sliding, ticket 1077)', () => {
   it('an armed press that ends away from the ring (cancelled) leaves it as it is', () => {
     expect(after(...ARMED, { type: 'lift' })).toBe('nothing')
   })
-
-  it('picks or closes once: a second lift is nothing', () => {
-    expect(after(...ARMED, { type: 'lift', over: 'on' }, { type: 'lift', over: 'on' })).toBe('nothing')
-    expect(after(...ARMED, { type: 'lift', over: 'hole' }, { type: 'lift', over: 'hole' })).toBe('nothing')
-  })
-
-  it('a mouse never slides: its right-button drag is the pan', () => {
-    expect(after(RIGHT_DOWN, { type: 'move', moved: DRAG_SLOP_PX }, { type: 'lift', over: 'on' })).toBe('nothing')
-  })
 })

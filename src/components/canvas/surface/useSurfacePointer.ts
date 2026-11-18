@@ -412,13 +412,22 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
    * and the hold's timer. Once the hold has opened the ring it is `sliding`, then `armed`, until it lifts, and no tool
    * hears it; its moves are then measured from `opened`, where it was when the ring opened (ticket 1077). */
   let heldPress:
-    | { id: number; x: number; y: number; is: CanvasPress; timer: ReturnType<typeof setTimeout>; at: { x: number; y: number }; opened?: { x: number; y: number } }
+    | {
+        id: number
+        x: number
+        y: number
+        is: CanvasPress
+        timer: ReturnType<typeof setTimeout>
+        at: { x: number; y: number }
+        opened?: { x: number; y: number }
+      }
     | undefined
 
   /** Starts timing a press's hold; the hairline shows where. */
   function timeHold(event: PointerEvent): void {
     clearTimeout(heldPress?.timer)
-    heldPress = { id: event.pointerId, x: event.clientX, y: event.clientY, is: 'held', timer: setTimeout(completeHold, HOLD_MS), at: { x: event.clientX, y: event.clientY } }
+    const at = { x: event.clientX, y: event.clientY }
+    heldPress = { id: event.pointerId, ...at, is: 'held', timer: setTimeout(completeHold, HOLD_MS), at }
     emit('hold', { x: event.clientX, y: event.clientY })
   }
 

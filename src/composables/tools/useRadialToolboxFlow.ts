@@ -55,6 +55,10 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
   /** The bead position that was pressed; none between positions or off the grid. */
   const position = ref<GridPosition>()
 
+  /** The item under the pointer that opened the ring by a hold and is still down, once its lift would pick (ticket
+   * 1077): it wears the pressed look. Kept through a pick that closes the ring, which leaves with it pressed. */
+  const held = ref<RadialItemId>()
+
   /** The colour of the pressed bead as the Project holds it now, so the ring follows it through an Undo; none on an
    * empty position and over the Frame's margin, where Pick color from Canvas is off. */
   const beadHex = computed(() => {
@@ -132,10 +136,6 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
   function redo() {
     if (deps.canRedo()) deps.onRedo()
   }
-
-  /** The item under the pointer that opened the ring by a hold and is still down, once its lift would pick (ticket
-   * 1077): it wears the pressed look. Kept through a pick that closes the ring, which leaves with it pressed. */
-  const held = ref<RadialItemId>()
 
   /** The item a point of the screen (client px) is over, by the ring's rule: measured from where the ring stands,
    * which near a screen edge is not where it was pressed. */
