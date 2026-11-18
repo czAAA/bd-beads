@@ -17,7 +17,8 @@ interface Brand {
 type HoleDirection = 'along' | 'across'
 
 /** The shape of a family of Beads (ADR 0072): what is drawn for it and how it is threaded. A new shape is a new row,
- * not a new union member. */
+ * not a new union member, and brings its Rotate canvas drawing, `rotate-canvas-<id>` in the design system's icons
+ * (ticket 1082; a test fails without it): its outline as the Canvas draws it, one thread per hole, the way its holes run. */
 interface FormFactor {
   id: string
   nameKey: string

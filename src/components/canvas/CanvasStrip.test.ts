@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import CanvasStrip from './CanvasStrip.vue'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
-import { bareProject } from '../../testUtils/layerFields'
+import { BEAD_CATALOG } from '../../domain/beads'
+import { bareProject, withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
@@ -186,6 +187,18 @@ describe('CanvasStrip Rotate canvas (ticket 471)', () => {
     expect(button.attributes('aria-disabled')).toBe('true')
     await button.trigger('click')
     expect(wrapper.emitted('rotate-canvas')).toBeUndefined()
+  })
+
+  it("shows the woven Bead's Type, its thread turned on clockwise past 270 as the Canvas turns (ticket 1082)", async () => {
+    const delica = BEAD_CATALOG.find((bead) => bead.formFactor.id === 'delica')!
+    const project = bareProject({ beads: { 0: { 0: '#000000' } }, technique: 'loom', orientation: 270, beadId: delica.id, bead: delica })
+    const wrapper = mount(CanvasStrip, { props: { project } })
+    const icon = () => wrapper.get('[data-testid="strip-rotate-canvas"] svg')
+    expect(icon().attributes('data-icon')).toBe('rotate-canvas-delica')
+    expect(icon().attributes('style')).toContain('--icon-turn: 270deg')
+
+    await wrapper.setProps({ project: withLayers(project, { orientation: 0 }) })
+    expect(icon().attributes('style')).toContain('--icon-turn: 360deg')
   })
 })
 

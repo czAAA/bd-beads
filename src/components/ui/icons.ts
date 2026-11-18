@@ -75,6 +75,9 @@ export const ICON_NAMES = [
   'remove-line',
   'rotate',
   'rotate-canvas',
+  'rotate-canvas-cube',
+  'rotate-canvas-delica',
+  'rotate-canvas-round',
   'row-highlight',
   'ruler',
   'save',
@@ -93,6 +96,11 @@ export const ICON_NAMES = [
 ] as const
 
 export type IconName = (typeof ICON_NAMES)[number]
+
+/** Whether a name made from data (a Form factor's id, ticket 1082) is one of the set's icons. */
+export function isIconName(name: string): name is IconName {
+  return (ICON_NAMES as readonly string[]).includes(name)
+}
 
 /** The sizes the design system uses (README, Iconography): 12 the picker chevron, 14 expand, panel marks and saved check, 15 buttons, 16 links, rows,
  * zoom and messages, 17 the Edit row, 18 tool tabs, 22 the BottomToolbar and Dock (ticket 168, 79), 28 the Tool pill's colour tile, where the palette is the swatch (ticket 0829). */

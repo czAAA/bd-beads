@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestQuarterTurn, settledOrientation, turnedOrientation, tiltOf } from './canvasOrientation'
+import { nearestQuarterTurn, settledOrientation, shownTurnTowards, turnedOrientation, tiltOf } from './canvasOrientation'
 
 describe('the Canvas orientation (ticket 0672)', () => {
   it('turns by any angle, kept within one turn clockwise from upright', () => {
@@ -33,5 +33,19 @@ describe('the Canvas orientation (ticket 0672)', () => {
     expect(settledOrientation(262)).toBe(270)
     expect(settledOrientation(15)).toBe(15)
     expect(settledOrientation(135)).toBe(135)
+  })
+})
+
+describe('a turn shown as it goes (ticket 1082)', () => {
+  it('goes on clockwise a quarter at a time, from 270 on to a whole turn rather than unwinding', () => {
+    expect(shownTurnTowards(0, 90)).toBe(90)
+    expect(shownTurnTowards(270, 0)).toBe(360)
+    expect(shownTurnTowards(360, 90)).toBe(450)
+    expect(shownTurnTowards(0, 180)).toBe(180)
+  })
+
+  it('takes the shorter way to an angle a twist settled on, its lean included', () => {
+    expect(shownTurnTowards(0, 350)).toBe(-10)
+    expect(shownTurnTowards(450, 117)).toBe(477)
   })
 })
