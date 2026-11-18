@@ -99,9 +99,6 @@ const SHEET_MARGIN_LINES = 8
  * band was only from the further of the two). */
 const STARTER_ALONG = 0.75
 
-/** The zoom a fresh demo's editor starts at: the view is at most 3 times it, however often it is set (ticket 0821). */
-let ownZoom: number | undefined
-
 /** The view the tour plays in (ticket 0831): the cuff's Frame and `DEMO_VIEW_MARGIN` beads either side across nine
  * tenths of the area, its sheet clear of the Tool pill, its middle at the view's but for `STARTER_ALONG`. Set before
  * anything is drawn, and again only when Expand or Collapse resizes the demo. The Canvas is turned: rows run across. */
@@ -121,8 +118,10 @@ async function frameDrawings(): Promise<void> {
     const line = Math.abs(opposite.y - first.y) / (DEMO_CUFF.columns - 1)
     const wide = (area.width * 0.9) / ((DEMO_CUFF.rows + 2 * DEMO_VIEW_MARGIN) * along)
     const tall = room / ((DEMO_CUFF.columns + SHEET_MARGIN_LINES) * line)
-    ownZoom ??= canvas.zoom.value
-    canvas.setZoom(Math.min(canvas.zoom.value * Math.min(wide, tall), ownZoom * 3))
+    // The beads' step grows with the zoom, so the fit is the same zoom however often it is set (ticket 1061: no cap
+    // on it, which kept a large demo's piece small); an area not laid out yet leaves the view as it is.
+    const fit = Math.min(wide, tall)
+    if (Number.isFinite(fit) && fit > 0) canvas.setZoom(canvas.zoom.value * fit)
   }
   await settle()
   const corner = at(DEMO_CUFF.row, DEMO_CUFF.column)
@@ -137,7 +136,6 @@ async function frameDrawings(): Promise<void> {
 async function fresh(): Promise<void> {
   ghost.shown = false
   session.value += 1
-  ownZoom = undefined
   await settle()
   await frameDrawings()
   await settle()
