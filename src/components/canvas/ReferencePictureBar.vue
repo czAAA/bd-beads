@@ -270,7 +270,7 @@ function onFile(event: Event) {
   width: var(--picture-bar-grip-line);
   height: var(--frame-handle-thickness);
   background: var(--ink);
-  border-radius: var(--frame-handle-thickness);
+  border-radius: var(--radius-full);
 }
 
 .picture-bar__divider {

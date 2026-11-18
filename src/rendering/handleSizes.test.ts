@@ -8,13 +8,13 @@ const read = (path: string) => readFileSync(resolve(repo, path), 'utf8').replace
 const declared = (path: string) => new Map([...read(path).matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()]))
 const sheets = ['src/styles/design-values.css', 'docs/design/system/components/bundle.css'].map((path) => [path, declared(path)] as const)
 const families = Object.values(JSON.parse(read('docs/design/system/tokens.json')) as Record<string, { tokens?: { name: string; value: string }[] }>)
-const touchTarget = families.flatMap((family) => family.tokens ?? []).find(({ name }) => name === 'touch-target')?.value
+const token = (wanted: string) => families.flatMap((family) => family.tokens ?? []).find(({ name }) => name === wanted)?.value
+const touchTarget = token('touch-target')
 
 /** Each value of `HANDLE_PX` and the custom property AppHandle draws it from (Handle card). */
 const TWINS: [number | string, string][] = [
   [HANDLE_PX.bracket.arm, '--handle-arm'],
   [HANDLE_PX.bracket.line, '--handle-line'],
-  [HANDLE_PX.bracket.radius, '--handle-radius'],
   [HANDLE_PX.bracket.offset, '--handle-offset'],
   [HANDLE_PX.hot.arm, '--handle-hot-arm'],
   [HANDLE_PX.hot.line, '--handle-hot-line'],
@@ -28,6 +28,10 @@ const TWINS: [number | string, string][] = [
 describe('the handle (Handle card, ticket 0867)', () => {
   it.each(TWINS)('%s px is %s, in the app and the design system alike', (px, name) => {
     for (const [path, values] of sheets) expect(values.get(name), `${name} in ${path}`).toBe(`${px}px`)
+  })
+
+  it('rounds a bracket\'s corner by `radius-xs`, as AppHandle does (ticket 1079)', () => {
+    expect(`${HANDLE_PX.bracket.radius}px`).toBe(token('radius-xs'))
   })
 
   it('fills its hot disc as the CSS does', () => {

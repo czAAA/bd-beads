@@ -75,6 +75,6 @@ function onKeydown(event: KeyboardEvent): void {
   width: var(--area-move-grip);
   height: var(--space-4);
   background: var(--canvas);
-  border-radius: var(--space-4);
+  border-radius: var(--radius-full);
 }
 </style>

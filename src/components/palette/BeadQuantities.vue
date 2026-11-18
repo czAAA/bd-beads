@@ -234,7 +234,7 @@ const shown = computed(() => (expanded.value ? quantities.value : quantities.val
   flex: none;
   width: var(--swatch-dot);
   height: var(--swatch-dot);
-  border-radius: var(--swatch-dot-radius);
+  border-radius: var(--radius-2xs);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
 }
 

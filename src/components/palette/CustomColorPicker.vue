@@ -107,7 +107,7 @@ const tooltip = computed(() => ({ name: action.name(t.value), body: action.body?
 .custom-color-picker__swatch {
   position: absolute;
   inset: var(--space-4);
-  border-radius: var(--swatch-dot-radius);
+  border-radius: var(--radius-2xs);
   background: repeating-linear-gradient(45deg, var(--muted) 0 1px, transparent 1px var(--space-4));
 }
 
