@@ -108,7 +108,7 @@ The Frame's move grip (tickets 0452, 0455, 0473, ADR 0066): a horizontal line in
 _Avoid_: Frame drag, drag inside the Frame
 
 **Hand tool**:
-The tool (5) that moves the view by dragging and never changes a bead. Space + drag and the middle mouse button (ticket 541) do the same from any tool. The right mouse button does nothing under every tool (ticket 1054): it is kept for a radial Tool pill around the cursor, so makers don't come to rely on it.
+The tool (5) that moves the view by dragging and never changes a bead. Space + drag, the middle mouse button (ticket 541) and a right-button drag (ticket 1074, ADR 0098) do the same from any tool. A right-button press waits: once the pointer has moved 8 px with the button down (the Tool pill's drag threshold) it is the middle button's pan until the button lifts; lifted before that it is a right click, which does nothing until it opens the Radial toolbox (ticket 1064). A pen's barrel button reports the right button and follows the same rule.
 _Avoid_: pan mode, grab tool
 
 **Pen mode** / **Mouse mode**:

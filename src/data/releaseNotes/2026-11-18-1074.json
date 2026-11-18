@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-18",
+  "kind": "changed",
+  "line": {
+    "en": "A right-button drag moves the Canvas again",
+    "ru": "Правая кнопка мыши снова двигает холст, если тянуть",
+    "uk": "Права кнопка миші знову рухає полотно, якщо тягнути",
+    "be": "Правая кнопка мышы зноў рухае палатно, калі цягнуць",
+    "zh": "按住鼠标右键拖动可再次移动画布",
+    "es": "Arrastrar con el botón derecho del ratón vuelve a mover el lienzo",
+    "pl": "Przeciąganie prawym przyciskiem myszy znów przesuwa płótno"
+  }
+}

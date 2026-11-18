@@ -1,5 +1,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn, type Ref, type ShortEmitsToObject } from 'vue'
 import { ownLength, ownPoint } from '../../../composables/ui/cssZoom'
+import { pressBecomes, type CanvasPress } from '../../../domain/canvasPress'
 import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
 import { frameAllows } from '../../../domain/frameShape'
@@ -40,7 +41,7 @@ export interface SurfacePointerEvents {
   'cells-primary-move': [cells: GridPosition[]]
   'cell-hover': [row: number, column: number, layer?: Layer]
   'hover-end': []
-  /** The canvas was dragged by this many px (the Hand tool, the middle button). */
+  /** The canvas was dragged by this many px (the Hand tool, the middle button, a right-button drag). */
   pan: [dx: number, dy: number]
   /** The wheel or a trackpad scrolled the canvas by this many px. */
   scroll: [dx: number, dy: number]
@@ -225,10 +226,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   let wheelTimer: ReturnType<typeof setTimeout> | undefined
 
   function onPress(event: PointerEvent) {
-    // The right button does nothing (ticket 1054): not even holding the Selection bar away.
+    // The right button holds the Selection bar away only once its drag is a pan (ticket 1074).
     if (event.button === 2) return
+    holdBarAway(event.pointerId)
+  }
+
+  function holdBarAway(pointerId: number) {
     const was = activePointers.size > 0
-    activePointers.add(event.pointerId)
+    activePointers.add(pointerId)
     if (!was) emit('pressing', true)
   }
 
@@ -376,9 +381,23 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   }
 
   /** A press that moves the canvas instead of drawing: the Hand tool (or Space), the middle button on any tool
-   * (ticket 541), or the pointer the input mode keeps for moving. Not the right button (ticket 1054). */
+   * (ticket 541), or the pointer the input mode keeps for moving. The right button's waits first (`rightPress`). */
   function startsDrag(event: PointerEvent): boolean {
     return handMoves.value || event.button === 1 || movesCanvas(event)
+  }
+
+  /** The right-button press in progress, under any tool (ticket 1074): where it went down, on screen, and what it is
+   * so far by `pressBecomes`. It waits, then a drag is the middle button's pan and a click is nothing. */
+  let rightPress: { id: number; x: number; y: number; is: CanvasPress } | undefined
+
+  /** The canvas follows the pointer from `from` (on screen) until the press ends; the hover and the marker go. */
+  function startPan(from: { x: number; y: number }): void {
+    dragging.value = true
+    lastPoint = { x: from.x, y: from.y }
+    lastBead = undefined
+    overBead.value = false
+    overRefusedMargin.value = false
+    hideMarker()
   }
 
   /** The point of the viewport a pointer is at, in the surface's own px from its top-left corner (ticket 1071: the
@@ -601,9 +620,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       }
       return
     }
-    // The right button does nothing (ticket 1054): it is kept for a radial Tool pill around the cursor, so makers
-    // must not get used to it as a pan or anything else before that menu exists.
-    if (event.button === 2) return
+    // The right button's press waits to be a pan or a click (ticket 1074): no tool or handle gets it.
+    const press = pressBecomes(undefined, { type: 'down', button: event.button })
+    if (press) {
+      rightPress = { id: event.pointerId, x: event.clientX, y: event.clientY, is: press }
+      rootEl.value?.setPointerCapture?.(event.pointerId)
+      event.preventDefault()
+      return
+    }
     if (resumeOffTheGlass(event)) return
     selectionAtPress = props.selection
     if (frameOf(props.project) && !startsDrag(event) && event.button === 0) {
@@ -648,12 +672,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       }
     }
     if (startsDrag(event)) {
-      dragging.value = true
-      lastPoint = { x: event.clientX, y: event.clientY }
-      lastBead = undefined
-      overBead.value = false
-      overRefusedMargin.value = false
-      hideMarker()
+      startPan({ x: event.clientX, y: event.clientY })
       rootEl.value?.setPointerCapture?.(event.pointerId)
       event.preventDefault()
       return
@@ -722,6 +741,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   // stroke (ticket 24). `buttons` is 1 for touch/pen in contact, so one branch covers all three input kinds.
   function onPointerMove(event: PointerEvent): void {
     placePen(event)
+    if (rightPress?.is === 'waits' && event.pointerId === rightPress.id) {
+      rightPress.is = pressBecomes(rightPress.is, { type: 'move', moved: Math.hypot(event.clientX - rightPress.x, event.clientY - rightPress.y) })
+      // The pan starts from where the button went down, so the bead pressed stays under the pointer.
+      if (rightPress.is === 'pan') {
+        holdBarAway(rightPress.id)
+        startPan(rightPress)
+      }
+    }
     if (adjusting.value) {
       dragTo(event)
       return
@@ -815,6 +842,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
 
   function onPointerEnd(event?: PointerEvent): void {
     if (selectDrag || adjusting.value) noteOffTheGlass()
+    // A right click (lifted while it waited) does nothing; ticket 1064 opens the Radial toolbox on it, here.
+    if (!event || event.pointerId === rightPress?.id) rightPress = undefined
     heldPointer = undefined
     resizing = false
     stroke = undefined
