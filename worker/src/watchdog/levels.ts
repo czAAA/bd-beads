@@ -1,7 +1,7 @@
 import { MB, numberVar, type Env, type NumberVar } from '../env'
 
 /** What the watchdog measures (spec 385, "Warn levels on Free"). Counts are per UTC day; sizes are bytes. */
-type Measure = 'api-requests' | 'd1-rows-written' | 'worker-errors' | 'r2-storage' | 'core-db' | 'blobs-db'
+type Measure = 'api-requests' | 'd1-rows-written' | 'worker-errors' | 'r2-storage' | 'core-db' | 'blobs-db' | 'reports'
 
 /** Today's readings; a measure that couldn't be read is left out. */
 export type Usage = Partial<Record<Measure, number>>
@@ -27,6 +27,8 @@ const MEASURES: Record<Measure, MeasureSpec> = {
   'r2-storage': { level: 'WARN_R2_STORAGE_MB', unit: 'MB', label: (w) => `R2 storage (${scope(w)})` },
   'core-db': { level: 'WARN_CORE_DB_MB', unit: 'MB', label: () => 'core database size' },
   'blobs-db': { level: 'WARN_BLOBS_DB_MB', unit: 'MB', label: () => 'blobs database size' },
+  // Its level is the limit itself: the count passes it only by the Report that was refused (ticket 1051).
+  reports: { level: 'FEEDBACK_DAILY_LIMIT', unit: 'count', label: () => 'Reports today (this Worker; over means refused)' },
 }
 
 /** Whole numbers grouped by regex, not `toLocaleString`: the first `Intl` call in a fresh isolate initialises ICU

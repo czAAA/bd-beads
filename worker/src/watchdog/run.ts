@@ -1,5 +1,6 @@
 import { databaseSize } from '../d1'
 import type { Env } from '../env'
+import { reportsToday } from '../feedbackDay'
 import { graphqlUsageReader, type UsageReader } from './analytics'
 import { healthchecksHeartbeat, type Heartbeat } from './heartbeat'
 import { checkLevels, type Usage } from './levels'
@@ -53,6 +54,11 @@ export async function runWatchdog(env: Env, scheduledTime: number, deps: Watchdo
     } catch (error) {
       failures.push(`The ${name} database's size could not be read: ${message(error)}`)
     }
+  }
+  try {
+    usage.reports = await reportsToday(env, now)
+  } catch (error) {
+    failures.push(`The day's Reports could not be read: ${message(error)}`)
   }
   if (now.getTime() - midnight.getTime() < CRON_INTERVAL_MS) {
     for (const hook of deps.daily) {

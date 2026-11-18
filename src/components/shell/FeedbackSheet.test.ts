@@ -153,8 +153,8 @@ describe('FeedbackSheet', () => {
     await wrapper.get('[data-testid="feedback-copy"]').trigger('click')
     await flushPromises()
     const copied = copy.mock.calls[0]![0]
-    expect(copied.startsWith('# feedback: The Row progress bar jumps back.\n\n### Message\n\nThe Row progress bar jumps back.')).toBe(true)
-    expect(copied).toContain('| App version | 1.4.0 |')
+    expect(copied.startsWith('# feedback: The Row progress bar jumps back.\n\n### Message\n\n```text\nThe Row progress bar jumps back.\n```')).toBe(true)
+    expect(copied).toContain('- App version: `1.4.0`')
     expect(wrapper.get('[data-testid="feedback-copied"]').text()).toBe('Report copied.')
   })
 
