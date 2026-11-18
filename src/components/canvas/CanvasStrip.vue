@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
@@ -7,16 +7,19 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useScrollCut } from '../../composables/ui/useScrollCut'
 import type { Project } from '../../domain/project'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { projectNameOf } from '../../domain/layerRecord'
+import { orientationOf, projectNameOf } from '../../domain/layerRecord'
+import { shownTurnTowards } from '../../domain/canvasOrientation'
 import { useI18n } from '../../i18n/useI18n'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { homepageUrl } from '../../homepage/homepageRoute'
 import RollingSlogan from '../../homepage/RollingSlogan.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppLogo from '../ui/AppLogo.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import SaveReminder from './SaveReminder.vue'
+import { rotateCanvasIcon } from './rotateCanvasIcon'
 import { imageInputAccept } from '../../domain/imageConversion'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
@@ -105,6 +108,16 @@ const frameTooltip = computed(() => ({ body: beadsTotal.value ? fillBlanks(t.val
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 /** Rulers is lit only while it can be pressed: on an empty Canvas it is held and plain, whatever the device keeps (ticket 0921). */
 const rulersLit = computed(() => !!props.rulers && !!actions.rulers.enabled?.(deps.value))
+/** Rotate canvas shows the woven Bead's Type with its thread (ticket 1082), turned as the saved orientation has it: a
+ * twist moves it only once the fingers lift, and a press goes on a quarter clockwise, never unwinding from 270. */
+const rotateIcon = computed(() => (props.project ? rotateCanvasIcon(props.project) : 'rotate-canvas'))
+const rotateTurn = ref(orientationOf(props.project) ?? 0)
+watch(
+  () => orientationOf(props.project),
+  (orientation) => {
+    if (orientation !== undefined) rotateTurn.value = shownTurnTowards(rotateTurn.value, orientation)
+  },
+)
 const onHomepage = computed(() => props.page === 'homepage')
 /** The Brand is a link only on the editor. */
 const brandLinks = computed(() => !props.demo && (props.page === undefined || props.page === 'editor'))
@@ -257,7 +270,9 @@ function onControlsKeydown(event: KeyboardEvent) {
         </AppButton>
         <div v-if="project" class="canvas-strip__tools">
           <template v-if="!demo">
-            <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
+            <IconButton variant="plain" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')">
+              <AppIcon :name="rotateIcon" :size="18" :turn="rotateTurn" />
+            </IconButton>
             <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulersLit" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
           </template>
           <template v-if="referenceImage">
