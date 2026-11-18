@@ -13,6 +13,10 @@ export const REDIRECTS_FILE = '_redirects'
 /** What the host reads and never serves: fetching one would fail the worker's install (tickets 1024, 1052). */
 export const HOST_FILES: readonly string[] = [HEADERS_FILE, REDIRECTS_FILE]
 
+/** Folders the offline copy leaves out: the store screenshots (ticket 1057) are for an install dialog or a store, and
+ * would only make the first visit's download larger. */
+export const NOT_PRECACHED: readonly string[] = ['screenshots/']
+
 /** Every file under `dir`, as `/`-separated paths from it, sorted. */
 export function filesBelow(dir: string): string[] {
   return readdirSync(dir, { recursive: true, withFileTypes: true })
@@ -25,7 +29,9 @@ export function filesBelow(dir: string): string[] {
  * content, so a changed build is a new cache and the old one is dropped when the new worker takes over. */
 export function renderServiceWorker(template: string, dir: string): { source: string; precache: string[] } {
   // Not the host's own files either: it reads them and serves none, so fetching one would fail the install.
-  const precache = filesBelow(dir).filter((path) => path !== SERVICE_WORKER_FILE && !HOST_FILES.includes(path))
+  const precache = filesBelow(dir).filter(
+    (path) => path !== SERVICE_WORKER_FILE && !HOST_FILES.includes(path) && !NOT_PRECACHED.some((folder) => path.startsWith(folder)),
+  )
   // The worker's own text counts too, so a fixed worker is a new cache and a device drops what an older one kept.
   const hash = createHash('sha256').update(template).update('\0')
   for (const path of precache) hash.update(path).update('\0').update(readFileSync(join(dir, path)))
