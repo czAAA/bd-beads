@@ -2063,6 +2063,35 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
   })
 
+  it('under Piece, takes a press on a bead of the selected Piece as a drag of it, and leaves a press beside it to the tool', async () => {
+    const shape = { ...selection, cells: [{ row: 1, column: 1 }, { row: 2, column: 2 }] }
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'piece', selects: true }), selection: shape })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+
+    // (1, 1) is the Piece's; (1, 3) is inside its bounding rectangle but not one of its beads.
+    await surface.trigger('pointermove', { clientX: 30, clientY: 30, pointerId: 1, pointerType: 'mouse' })
+    expect(surface.attributes('style')).toContain('grab')
+    await surface.trigger('pointermove', { clientX: 70, clientY: 30, pointerId: 1, pointerType: 'mouse' })
+    expect(surface.attributes('style')).not.toContain('grab')
+    await surface.trigger('pointerdown', { button: 0, clientX: 30, clientY: 30, pointerId: 1 })
+    await surface.trigger('pointermove', { buttons: 1, clientX: 50, clientY: 50, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+    await surface.trigger('pointerdown', { button: 0, clientX: 70, clientY: 30, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+
+    expect(wrapper.emitted('selection-press')!.map(([target, , area]) => [target, area])).toEqual([[{ kind: 'inside' }, undefined]])
+    expect(wrapper.emitted('selection-drag')).toEqual([[{ row: 2, column: 2 }]])
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[1, 3]])
+  })
+
+  it('under Select, leaves a press on a bead of the selected Piece to the tool, which marks out a new Selection', async () => {
+    const shape = { ...selection, cells: [{ row: 1, column: 1 }, { row: 2, column: 2 }] }
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'select', selects: true, selectsAnywhere: true }), selection: shape })
+    await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { button: 0, clientX: 30, clientY: 30, pointerId: 1 })
+    expect(wrapper.emitted('selection-press')).toBeUndefined()
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[1, 1]])
+  })
+
   it('takes a press on the move grip of a Piece\'s shape as a drag too (ticket 1013)', async () => {
     const shape = { ...selection, cells: [{ row: 1, column: 1 }, { row: 2, column: 2 }] }
     const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can(), selection: shape })
