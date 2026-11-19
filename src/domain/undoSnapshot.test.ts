@@ -29,14 +29,15 @@ describe('snapshotOf and restoreSnapshot', () => {
     expect(frameSheetOf(restored)).toEqual(frameSheetOf(before))
   })
 
-  it('put back whole layers but keep the views as they are now: the name, the Canvas\'s orientation and Letters (ticket 0664)', () => {
+  it('put back whole layers but keep the views as they are now: the name, the Canvas\'s orientation and each layer\'s Letters (tickets 0664, 1092)', () => {
     const before = createProject({ name: 'Fox', technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 4, unit: 'beads' } })
     const snapshot = snapshotOf(before)
-    const viewed = withLetters(withLayers(deleteAll(withLayers(before, { beads: { 9: { 9: '#e63746' } } })), { name: 'Owl', orientation: 90 }), true)
+    const viewed = withLetters(withLayers(deleteAll(withLayers(before, { beads: { 9: { 9: '#e63746' } } })), { name: 'Owl', orientation: 90 }), 'frame', true)
 
     const restored = restoreSnapshot(viewed, snapshot)
 
-    expect(canvasOf(restored)).toMatchObject({ name: 'Owl', orientation: 90, letters: true, beads: {} })
+    expect(canvasOf(restored)).toMatchObject({ name: 'Owl', orientation: 90, beads: {} })
+    expect(canvasOf(restored)).not.toHaveProperty('letters')
     expect(frameOf(restored)).toMatchObject({ id: frameOf(before)!.id, letters: true })
     expect(restoreSnapshot(before, snapshot).layers[1]).toBe(before.layers[1])
   })

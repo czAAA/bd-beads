@@ -2,8 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { normalizeProject } from './storedProject'
+import { decodeProject, encodeProject } from './projectEncoding'
 import { replaceBead } from './projectBead'
-import { setPalette, shownLetters } from './paletteEdits'
+import { setPalette, setSwatchLetter, shownLetters, withLettersBack } from './paletteEdits'
 import { withLetters } from './layerRecord'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import type { Project } from './project'
@@ -177,17 +178,39 @@ describe('Swatch letters (ticket 0573)', () => {
   })
 
   it('keeps stored letters and the Letters choice through opening and through Undo', () => {
-    const start = withLetters(createProject(input), true)
+    const start = withLetters(createProject(input), 'canvas', true)
     const changed = setPalette(start, addUsedColor(start.palette, '#123456', defaultPalette(input.beadId)).ids)
-    expect(layersView(normalizeProject(JSON.parse(JSON.stringify(changed))))).toMatchObject({ letters: true, paletteLetters: changed.paletteLetters })
+    expect(layersView(normalizeProject(decodeProject(JSON.parse(JSON.stringify(encodeProject(changed))))))).toMatchObject({ letters: true, paletteLetters: changed.paletteLetters })
     expect(restoreSnapshot(changed, snapshotOf(start)).paletteLetters).toEqual(start.paletteLetters)
+  })
+
+  it('changes a color\'s letter as one Undo step, a color that had it taking this one\'s (ticket 1092)', () => {
+    const start = createProject(input)
+    const [first, second] = projectPalette(start).colors
+    const changed = setSwatchLetter(start, second!.hex, 'A')
+    expect([changed.paletteLetters![first!.hex], changed.paletteLetters![second!.hex]]).toEqual(['B', 'A'])
+    expect(restoreSnapshot(changed, snapshotOf(start)).paletteLetters).toEqual(start.paletteLetters)
+    expect(setSwatchLetter(start, first!.hex, 'A')).toBe(start)
+    // A swatch added later still gets the lowest letter nobody has.
+    const added = setPalette(changed, addUsedColor(changed.palette, '#123456', defaultPalette(input.beadId)).ids)
+    expect(Object.values(added.paletteLetters!).filter((letter) => letter === 'A')).toHaveLength(1)
+  })
+
+  it('gives a color back the letter it had, unless another color has taken it or the color is not in the Palette (ticket 1092)', () => {
+    const start = createProject(input)
+    const [first, second] = projectPalette(start).colors
+    expect(withLettersBack(start, { [second!.hex]: 'Q' }).paletteLetters![second!.hex]).toBe('Q')
+    expect(withLettersBack(start, { [second!.hex]: 'A' }).paletteLetters).toEqual(start.paletteLetters)
+    expect(withLettersBack(start, { '#123456': 'Q' }).paletteLetters).toEqual(start.paletteLetters)
+    expect(start.paletteLetters![first!.hex]).toBe('A')
   })
 
   it('turns Letters on and off, off being unsaved, and shows letters only while it is on', () => {
     const project = createProject(input)
-    expect(shownLetters(project)).toBeUndefined()
-    const on = withLetters(project, true)
-    expect(shownLetters(on)).toBe(on.paletteLetters)
-    expect('letters' in withLetters(on, false)).toBe(false)
+    expect(shownLetters(project, 'canvas')).toBeUndefined()
+    const on = withLetters(project, 'canvas', true)
+    expect(shownLetters(on, 'canvas')).toBe(on.paletteLetters)
+    expect(shownLetters(on, 'frame')).toBeUndefined()
+    expect('letters' in canvasOf(withLetters(on, 'canvas', false))).toBe(false)
   })
 })

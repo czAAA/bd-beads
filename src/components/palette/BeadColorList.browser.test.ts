@@ -59,16 +59,30 @@ describe('BeadColorList layout', () => {
 describe('BeadColorsEntry and the report link (ticket 0749)', () => {
   const host = (open: boolean) => defineComponent(() => () => h('div', { style: { width: '400px', display: 'flex', flexDirection: 'column' } }, [h(BeadColorsEntry, { bead: findBead('miyuki/delica/11-0'), open, testid: 'entry' })]))
 
-  it('fills its row while the list is open, with the Info button after it, and is a small pill closed', async () => {
+  it('is the same small pill open or closed, in the same place, with the Info button after it while open (ticket 1092)', async () => {
     const closed = await mountAt(host(false), {}, { locale: 'en', width: 1280 })
-    expect(closed.root.querySelector<HTMLElement>('[data-testid="entry"]')!.getBoundingClientRect().width).toBeLessThan(300)
+    const small = closed.root.querySelector<HTMLElement>('[data-testid="entry"]')!.getBoundingClientRect()
+    expect(small.width).toBeLessThan(300)
     unmountAll()
 
     const { root } = await mountAt(host(true), {}, { locale: 'en', width: 1280 })
     const button = root.querySelector<HTMLElement>('[data-testid="entry"]')!.getBoundingClientRect()
     const info = root.querySelector<HTMLElement>('[data-testid="bead-colors-info"]')!.getBoundingClientRect()
+    expect([button.left, button.top, button.width, button.height]).toEqual([small.left, small.top, small.width, small.height])
     expect(info.left).toBeGreaterThanOrEqual(button.right)
-    expect(info.right).toBeGreaterThan(400 - 8)
+  })
+
+  it('keeps the button\'s size where the row has no room for the Info button, which goes under it (ticket 1092)', async () => {
+    const narrow = (open: boolean) => defineComponent(() => () => h('div', { style: { width: '240px', display: 'flex', flexDirection: 'column' } }, [h(BeadColorsEntry, { bead: findBead('miyuki/delica/11-0'), open, testid: 'entry' })]))
+    const closed = await mountAt(narrow(false), {}, { locale: 'en', width: 1280 })
+    const small = closed.root.querySelector<HTMLElement>('[data-testid="entry"]')!.getBoundingClientRect()
+    unmountAll()
+
+    const { root } = await mountAt(narrow(true), {}, { locale: 'en', width: 1280 })
+    const button = root.querySelector<HTMLElement>('[data-testid="entry"]')!.getBoundingClientRect()
+    const info = root.querySelector<HTMLElement>('[data-testid="bead-colors-info"]')!.getBoundingClientRect()
+    expect([button.left, button.top, button.width, button.height]).toEqual([small.left, small.top, small.width, small.height])
+    expect(info.top).toBeGreaterThanOrEqual(button.bottom)
   })
 
   it('shows Wrong or missing color? in the accent color', async () => {

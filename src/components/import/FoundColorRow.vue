@@ -4,7 +4,7 @@ import { provideBeadColors, type BeadColors } from '../../composables/palette/us
 import { useConvertSheet } from '../../composables/import/convertSheet'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import { providePalette } from '../../composables/tools/usePalette'
+import { providePalette, providePaletteLetters } from '../../composables/tools/usePalette'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useRevealWhenOpen } from '../../composables/ui/useRevealWhenOpen'
 import type { BeadColorRow, TargetColor } from '../../domain/convertColors'
@@ -140,6 +140,8 @@ async function close() {
 // page, so a press elsewhere goes through and leaves it open.
 provide(PICK_CLOSE, () => {})
 providePalette(wizard.remapPalette)
+// The new Project has no Swatch letters to show yet: the open Project's are not this Palette's (ticket 1092).
+providePaletteLetters(undefined)
 provideBeadColors(beadColors)
 useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () => void close(), keepsPress: () => true })
 // The picker opens under the row, often under the pane's fold: the row and its picker scroll into view (ticket 0862).

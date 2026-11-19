@@ -50,11 +50,6 @@ function framesOf(project: Layered): FrameLayer[] {
   return project.layers.slice(1) as FrameLayer[]
 }
 
-/** The layer the Letters switch follows (ADR 0079): the Frame when there is one, else the Canvas. */
-function wovenLayer(project: Layered): LayerFields {
-  return frameOf(project) ?? canvasOf(project)
-}
-
 /** A new id for a layer (ADR 0079): unique within its Project. */
 export function newLayerId(): string {
   return crypto.randomUUID()
@@ -199,15 +194,20 @@ export function withPieceNames(project: Project, names: readonly PieceName[] | u
   return { ...project, layers: [{ ...canvas, ...(names?.length ? { pieceNames: [...names] } : {}) }, ...framesOf(project)] }
 }
 
-/** Whether the Letters switch is on (ticket 0573): the Frame's when there is one, else the Canvas's. */
-export function lettersOn(project: Layered): boolean {
-  return wovenLayer(project).letters === true
+/** Whether a layer's Letters switch is on (tickets 0573, 1092): the Canvas's letters its beads and the Palette's
+ * swatches, the Frame's its own beads. Off for a Frame the Project lacks. */
+export function lettersOn(project: Layered, layer: Layer): boolean {
+  return heldLayer(project, layer)?.letters === true
 }
 
-/** The Project with the Letters switch set on every layer, which share one until a layer is given its own. Not stamped. */
-export function withLetters(project: Project, on: boolean): Project {
-  const set = <T extends LayerFields>(layer: T): T => {
-    const { letters: _letters, ...rest } = layer
+/** The Project with a layer's Letters switch set (ticket 1092): each layer has its own. The same Project for a Frame
+ * it lacks. Not stamped. */
+export function withLetters(project: Project, layer: Layer, on: boolean): Project {
+  const held = heldLayer(project, layer)
+  if (!held || (held.letters === true) === on) return project
+  const set = <T extends LayerFields>(own: T): T => {
+    if (own !== held) return own
+    const { letters: _letters, ...rest } = own
     return (on ? { ...rest, letters: true } : rest) as T
   }
   return { ...project, layers: mapLayers(project.layers, set) }

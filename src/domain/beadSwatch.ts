@@ -47,18 +47,22 @@ export interface CatalogSwatch {
   discontinued: boolean
   /** The Palette already holds a swatch of this hex, so the code cannot be added a second time. */
   taken: boolean
+  /** The id of the Palette's swatch that carries this very code (ticket 1092): the row that is in the Palette, which a
+   * press takes out again. Absent where the Palette holds the hex under another code, or as a Custom color. */
+  heldAs?: string
 }
 
 /** The codes of `catalog` that exist in Bead size `size`, in catalog order, each with its swatch from the catalog's own
  * Brand's `colors` (`brandColors`, ADR 0078). A code whose families have no single color there (a Mix) is left out.
- * `paletteHexes` are the hexes the Palette already holds (ticket 0537). */
-export function catalogSwatches(catalog: ColorCatalog, size: string, paletteHexes: readonly string[], colors: readonly PaletteColor[]): CatalogSwatch[] {
-  const held = new Set(paletteHexes)
+ * `palette` are the swatches the Palette already holds (tickets 0537, 1092). */
+export function catalogSwatches(catalog: ColorCatalog, size: string, palette: readonly Pick<PaletteColor, 'id' | 'hex' | 'code'>[], colors: readonly PaletteColor[]): CatalogSwatch[] {
+  const held = new Map(palette.map((color) => [color.hex, color]))
   return catalog.codes.flatMap((entry) => {
     if (!entry.sizes.includes(size)) return []
     const family = entry.family.find((name) => familyHex(name, colors))
     const hex = entry.hex ?? (family ? swatchHex(family, entry.finish, colors) : undefined)
     if (!family || !hex) return []
-    return [{ code: entry.code, family, finish: entry.finish, hex, approximate: !entry.hex, discontinued: !!entry.discontinued, taken: held.has(hex) }]
+    const own = held.get(hex)
+    return [{ code: entry.code, family, finish: entry.finish, hex, approximate: !entry.hex, discontinued: !!entry.discontinued, taken: !!own, ...(own?.code === entry.code ? { heldAs: own.id } : {}) }]
   })
 }

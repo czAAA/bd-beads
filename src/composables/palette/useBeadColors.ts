@@ -13,7 +13,12 @@ import type { FeedbackPrefill } from '../shell/useFeedbackFlow'
 export interface BeadColorsDeps {
   currentProject: () => Project | undefined
   palette: Readonly<Ref<Palette>>
-  addUsed: (hex: string, code?: string) => { outcome: AddUsedColorOutcome }
+  addUsed: (hex: string, code?: string) => { outcome: AddUsedColorOutcome; colorId?: string }
+  /** Makes a swatch the current color: a code just added is painted with at once (ticket 1092). */
+  select?: (colorId: string) => void
+  /** Takes an added swatch out of the Palette with no question (ticket 1092): a row in the Palette is a toggle. Without
+   * it no row offers removal (the Convert image wizard's remap picker). */
+  remove?: (colorId: string) => void
   /** The active Palette color, whose code a color Report starts from when no swatch is highlighted (ticket 0700). */
   selectedColorId?: () => string | undefined
   /** Opens the Feedback sheet; without it the list offers no Report (the Convert image wizard's remap picker). */
@@ -22,7 +27,7 @@ export interface BeadColorsDeps {
 
 /** The Color catalog of the open Project's Bead as a list of swatches to add to its Palette (ticket 0537, ADR 0072).
  * The catalog is fetched on the first `load`, not when the Project opens. */
-export function useBeadColors({ currentProject, palette, addUsed, selectedColorId, report }: BeadColorsDeps) {
+export function useBeadColors({ currentProject, palette, addUsed, select, remove, selectedColorId, report }: BeadColorsDeps) {
   const loaded = shallowRef<ColorCatalog>()
   const state = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
 
@@ -58,7 +63,7 @@ export function useBeadColors({ currentProject, palette, addUsed, selectedColorI
   const swatches = computed(() => {
     const own = catalog.value
     return own && size.value
-      ? catalogSwatches(own, size.value, palette.value.colors.map((color) => color.hex), brandColors(bead.value?.brand.id))
+      ? catalogSwatches(own, size.value, palette.value.colors, brandColors(bead.value?.brand.id))
       : []
   })
 
@@ -76,9 +81,16 @@ export function useBeadColors({ currentProject, palette, addUsed, selectedColorI
     })
   }
 
+  /** A code joins the Palette and is the current color at once (ticket 1092); the popover it was pressed in stays open. */
+  function add(hex: string, code?: string): AddUsedColorOutcome {
+    const { outcome, colorId } = addUsed(hex, code)
+    if (outcome === 'added' && colorId) select?.(colorId)
+    return outcome
+  }
+
   // `bead` is handed out so the list reads a typed shop code as the Bead's own (ticket 0696); `catalog` so its empty
   // state can say which sizes a code exists in (ticket 0713).
-  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome, bead, catalog, ...(report ? { report: reportColor } : {}) }
+  return { available: computed(() => !!catalogId.value), state, swatches, load, add, bead, catalog, ...(remove ? { remove } : {}), ...(report ? { report: reportColor } : {}) }
 }
 
 export type BeadColors = ReturnType<typeof useBeadColors> & {

@@ -47,15 +47,14 @@ export function snapshotOf(project: Project, options: { mirrorBar?: boolean } = 
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry), keeping its name, the Canvas's
- * orientation, the Letters switch and each layer's Background (ticket 0666) as they are now. */
+ * orientation, each layer's Letters switch and its Background (ticket 0666) as they are now. */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, ...rest } = project
   const { name, orientation } = canvasOf(project)
   const restored = { ...rest, layers: entry.layers }
   // Each layer put back is the one recorded, the very object, unless a view changed since (ticket 0616).
   const viewed = name === canvasOf(entry).name && orientation === canvasOf(entry).orientation ? restored : withCanvas(restored, { name, orientation })
-  const on = lettersOn(project)
-  const lettered = viewed.layers.every((layer) => (layer.letters === true) === on) ? viewed : withLetters(viewed, on)
+  const lettered = (['canvas', 'frame'] as const).reduce((kept, layer) => withLetters(kept, layer, lettersOn(project, layer)), viewed)
   const layered = (['canvas', 'frame'] as const).reduce((kept, layer) => {
     const now = backgroundOf(project, layer)
     return now === undefined || now === backgroundOf(kept, layer) ? kept : withBackground(kept, layer, now)

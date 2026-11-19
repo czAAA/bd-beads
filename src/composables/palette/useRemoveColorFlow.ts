@@ -56,7 +56,11 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
   function onConfirmRemoveAddedColor() {
     const colorId = pendingColorRemovalId.value
     pendingColorRemovalId.value = undefined
-    if (!colorId) return
+    if (colorId) onRemoveAddedColor(colorId)
+  }
+  /** The removal itself, with no question (ticket 1092): what the confirmation runs, and what a press on a Bead colors
+   * row that is in the Palette runs at once, as a second press there puts the code back. */
+  function onRemoveAddedColor(colorId: string) {
     // One toast per swatch, so removing a second doesn't take the first one's Undo away.
     removeWithUndo((chosen) => chosen === colorId, () => deps.removeAdded(colorId), `palette-removed-${colorId}`, deps.messages().palette.removed)
   }
@@ -82,6 +86,7 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
     onRequestRemoveAddedColor,
     onCancelRemoveAddedColor,
     onConfirmRemoveAddedColor,
+    onRemoveAddedColor,
     removeAllColorsConfirmOpen,
     removeAllColorsMessage,
     onRequestRemoveAllAddedColors,

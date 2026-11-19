@@ -39,7 +39,7 @@ import { provideTitleBlockFold } from '../canvas/useTitleBlockFold'
 import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { canvasOf, frameOf, projectNameOf, withStartBackground } from '../../domain/layerRecord'
+import { canvasOf, frameOf, lettersOn, projectNameOf, withStartBackground } from '../../domain/layerRecord'
 import { canvasWeave } from '../../domain/layerWeave'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
@@ -75,7 +75,7 @@ import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
 import { useArmedToolToasts } from '../tools/useArmedToolToasts'
 import { usePillTileNames } from '../tools/usePillTileNames'
 import { provideButtonNames } from '../ui/useButtonNames'
-import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
+import { provideColorPick, provideMoveColor, providePaletteLetters, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
@@ -343,11 +343,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
-  const { palette, addUsed, removeAdded, removeAllAdded, moveColor } = useProjectPalette({ currentProject, edit })
+  const { palette, addUsed, removeAdded, removeAllAdded, moveColor, setLetter } = useProjectPalette({ currentProject, edit })
   /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
   const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs, accountEmail: () => accountFlow.account.value?.email })
   provideBeadColors(
-    useBeadColors({ currentProject, palette, addUsed, selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback }),
+    useBeadColors({ currentProject, palette, addUsed, select: (colorId) => onSelectColor(colorId), remove: (colorId) => removeColor.onRemoveAddedColor(colorId), selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback }),
   )
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
@@ -897,6 +897,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onFileSaved: sinceFile.fileSaved,
     onFileReached: storageAsk.onFileReached,
   })
+  // The Palette's letters (ticket 1092): its Letters switch is the Canvas's, saved as the Frame's is.
+  providePaletteLetters({
+    letters: computed(() => currentProject()?.paletteLetters ?? {}),
+    shown: computed(() => !!currentProject() && lettersOn(currentProject()!, 'canvas')),
+    setShown: (on) => exportFlow.onSetLetters(on, 'canvas'),
+    setLetter,
+  })
 
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
@@ -1303,7 +1310,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSetFrameSetting: (id: string, value: number) => frameFlow.setWeaveSetting('frame', id, value),
       onRequestFrameBead: (beadId: string) => replaceBead.onRequestReplaceBead('frame', beadId),
       onSaveMakerName: exportFlow.onSaveMakerName,
-      onSetLetters: exportFlow.onSetLetters,
+      // The Frame panel's and the title block's switch is the Frame's own (ticket 1092).
+      onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, 'frame'),
       exportOpener: overlays.exportOpener,
       onOpenExport: overlays.onOpenExport,
       /** The Homepage's demo (ticket 0797): its margin sheet's band has no Row not done. */
@@ -1410,7 +1418,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       exporting: exportFlow.exporting,
       onExportPng: exportFlow.onExportPng,
       onExportPdf: exportFlow.onExportPdf,
-      onSetLetters: exportFlow.onSetLetters,
+      // The Frame panel's and the title block's switch is the Frame's own (ticket 1092).
+      onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, 'frame'),
       // Menu: whether the browser keeps the Projects, shown as a fact (tickets 0839, 0936)
       projectsKept: storageAsk.kept,
       // The row the Export panel opens on (ticket 0843)

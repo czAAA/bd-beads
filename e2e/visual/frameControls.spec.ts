@@ -307,3 +307,69 @@ test('the Custom color picker beside a right-hand pill is drawn over the Progres
   expect(hex.y + hex.height).toBeLessThanOrEqual(shown.y + shown.height)
   await context.close()
 })
+
+// "Add {bead} colors" keeps its place on the screen while its list opens and closes (ticket 1092), so a second press in
+// the same place undoes the first: beside a pill at any edge, and on a screen too short for the whole list, where the
+// popover is cut at the screen's edge and scrolls inside itself.
+for (const [position, width, height] of [
+  ['bottom', 1400, 900],
+  ['top', 1400, 900],
+  ['left', 1024, 560],
+  ['right', 1024, 560],
+] as const) {
+  test(`Add colors stays under the press while its list opens and closes, pill at the ${position}, ${width}×${height}`, async ({ browser }) => {
+    const context = await browser.newContext({ colorScheme: 'light', viewport: { width, height }, reducedMotion: 'reduce' })
+    const page = await context.newPage()
+    await page.addInitScript((value) => localStorage.setItem('openbeads:tool-pill-position', value), position)
+    await openApp(page, [fixtureProject({ technique: 'loom' })])
+    await settle(page)
+    await openColorPopover(page)
+    const popover = page.getByTestId('color-popover')
+    await popover.evaluate((el) => Promise.all(el.getAnimations().map((animation) => animation.finished)))
+
+    const closed = await box(page, 'bead-colors-toggle')
+    const press = { x: closed.x + closed.width - 12, y: closed.y + closed.height / 2 }
+    await page.mouse.click(press.x, press.y)
+    await expect(page.getByTestId('bead-colors')).toBeVisible()
+    await settle(page)
+    const open = await box(page, 'bead-colors-toggle')
+    const shown = await box(page, 'color-popover')
+    for (const side of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(open[side] - closed[side]), `the button's ${side} with the list open`).toBeLessThanOrEqual(1)
+    expect(shown.y, 'the popover stays on the screen').toBeGreaterThanOrEqual(0)
+    expect(shown.y + shown.height).toBeLessThanOrEqual(height)
+
+    await page.mouse.click(press.x, press.y)
+    await expect(page.getByTestId('bead-colors')).toHaveCount(0)
+    await settle(page)
+    const again = await box(page, 'bead-colors-toggle')
+    for (const side of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(again[side] - closed[side]), `the button's ${side} with the list closed again`).toBeLessThanOrEqual(1)
+    await context.close()
+  })
+}
+
+// A code pressed in the Bead colors list is the current color at once and the popover stays open with its list; a second
+// press on the same row takes it out again (ticket 1092).
+test('a Bead color pressed in the list joins the Palette as the current color, the list staying open, and a second press takes it out', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom' })])
+  await settle(page)
+  await openColorPopover(page)
+  await page.getByTestId('bead-colors-toggle').click()
+  const row = page.locator('[data-testid="bead-color"]:not([data-taken])').first()
+  const code = (await row.getAttribute('data-code'))!
+  const held = page.locator(`[data-testid="bead-color"][data-code="${code}"]`)
+  const swatches = await page.getByTestId('palette-swatch').count()
+
+  await row.click()
+  await expect(held).toHaveAttribute('data-held', 'held')
+  await expect(page.getByTestId('color-popover-name')).toContainText(code)
+  await expect(page.getByTestId('bead-colors')).toBeVisible()
+  await expect(page.getByTestId('palette-swatch')).toHaveCount(swatches + 1)
+
+  await held.click()
+  await expect(held).not.toHaveAttribute('data-held')
+  await expect(page.getByTestId('palette-swatch')).toHaveCount(swatches)
+  await expect(page.getByTestId('bead-colors')).toBeVisible()
+  await context.close()
+})

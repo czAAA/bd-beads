@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import { usePalette, useRemoveAllAddedColors } from '../../composables/tools/usePalette'
+import { usePalette, usePaletteLetters, useRemoveAllAddedColors } from '../../composables/tools/usePalette'
 import { isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import BeadSwatchChip from '../palette/BeadSwatchChip.vue'
+import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import ToolColorControls from './ToolColorControls.vue'
 
@@ -41,14 +42,20 @@ const editing = defineModel<boolean>('editing', { default: false })
 const { t } = useI18n()
 const closeAction = controlAction('close')
 const editAction = controlAction('edit-palette')
+const doneAction = controlAction('done-editing-palette')
+const lettersAction = controlAction('palette-letters')
+// The Palette's Letters switch (ticket 1092): the Canvas's own, where the host has a Project to letter.
+const paletteLetters = usePaletteLetters()
 const removeAllAction = controlAction('remove-all-colors')
 const removeAll = useRemoveAllAddedColors()
 
-// The pencil is there while the Palette has an added color, and the mode ends with the last added color.
+// The pencil is there while Edit palette has something to change: an added color to remove, or the letters where the
+// host hands them out (ticket 1092). The mode ends when nothing is left to change.
 const palette = usePalette()
-const hasAdded = computed(() => props.editable && palette.value.colors.some((color) => isAddedColorId(color.id)))
-watch(hasAdded, (has) => {
-  if (!has) editing.value = false
+const hasAdded = computed(() => palette.value.colors.some((color) => isAddedColorId(color.id)))
+const canEdit = computed(() => props.editable && (hasAdded.value || !!paletteLetters))
+watch(canEdit, (can) => {
+  if (!can) editing.value = false
 })
 </script>
 
@@ -59,11 +66,11 @@ watch(hasAdded, (has) => {
     <span class="color-popover-body__name" data-testid="color-popover-name">{{ colorName }}</span>
     <span v-if="colorHex" class="color-popover-body__hex">{{ colorHex }}</span>
     <IconButton
-      v-if="hasAdded"
+      v-if="canEdit"
       class="color-popover-body__edit"
+      :class="{ 'color-popover-body__edit--done': editing }"
       variant="plain"
-      :action="editAction"
-      :label="editing ? t.palette.doneEditingPalette : t.palette.editPalette"
+      :action="editing ? doneAction : editAction"
       :icon-size="16"
       :pressed="editing"
       data-testid="color-popover-edit"
@@ -77,7 +84,7 @@ watch(hasAdded, (has) => {
     <span class="color-popover-body__label-row">
       <span class="color-popover-body__label">{{ paletteLabel ?? t.toolPill.palette }}</span>
       <IconButton
-        v-if="editing && removeAll"
+        v-if="editing && removeAll && hasAdded"
         variant="plain"
         :action="removeAllAction"
         :label="t.palette.removeAllColors"
@@ -85,6 +92,10 @@ watch(hasAdded, (has) => {
         data-testid="color-popover-remove-all"
         @click="removeAll()"
       />
+      <span v-if="editable && paletteLetters" class="color-popover-body__letters">
+        <span class="color-popover-body__label" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
+        <AppSwitch :model-value="paletteLetters.shown.value" :action="lettersAction" data-testid="palette-letters" @update:model-value="paletteLetters.setShown" />
+      </span>
     </span>
     <ToolColorControls
       :selected-color-id="selectedColorId"
@@ -133,7 +144,9 @@ watch(hasAdded, (has) => {
   margin-left: auto;
 }
 
-.color-popover-body__edit[aria-pressed='true'] {
+/* Done editing (ticket 1092): the check in the accent on the pressed fill, plainly not the pencil. The class is on the
+ * button inside IconButton, so it is reached through `:deep`. */
+.color-popover-body__head :deep(.color-popover-body__edit--done) {
   color: var(--accent);
   background: var(--press-fill);
 }
@@ -169,5 +182,13 @@ watch(hasAdded, (has) => {
 .color-popover-body__label {
   font: var(--type-meta-small);
   color: var(--muted);
+}
+
+/* The Letters switch at the row's end (ticket 1092), its word before it as in the margin's title block. */
+.color-popover-body__letters {
+  display: inline-flex;
+  gap: var(--space-6);
+  align-items: center;
+  margin-left: auto;
 }
 </style>

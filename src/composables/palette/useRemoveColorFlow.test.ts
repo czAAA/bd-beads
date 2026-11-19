@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { addedColorId } from '../../domain/palette'
 import { createProject } from '../../domain/createProject'
+import { lettersOfPalette } from '../../domain/paletteEdits'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useProjectPalette } from '../tools/usePalette'
@@ -13,7 +14,8 @@ const B = addedColorId('#abcdef')
 
 /** A Project whose Palette holds these ids, the real Palette and Edit over it, and `selected` as the chosen color. */
 function setup(ids: string[] = [...[...base.palette], A, B], selected?: string) {
-  const harness = editHarness({ ...base, palette: ids })
+  // Every swatch has its Swatch letter, as a Palette the app made does.
+  const harness = editHarness({ ...base, palette: ids, paletteLetters: lettersOfPalette(ids, 'toho-cube-1.5mm', base.paletteLetters) })
   const { palette, removeAdded, removeAllAdded } = useProjectPalette({ currentProject: harness.currentProject, edit: harness.edit })
   const selectedColorId = ref(selected)
   const deps = {
@@ -57,6 +59,33 @@ describe('removing an added swatch (tickets 228, 304)', () => {
     harness.history.onUndo()
     harness.history.onUndo()
     expect(harness.project.palette).toEqual(ids)
+  })
+
+  it('removes at once, with no question, where a press is a toggle: the same Edit, toast and Undo (ticket 1092)', () => {
+    const { harness, palette, deps, selectedColorId, undoInToast, pendingColorRemovalId, onRemoveAddedColor } = setup(undefined, A)
+    const before = harness.project.palette
+    onRemoveAddedColor(A)
+    expect(pendingColorRemovalId.value).toBeUndefined()
+    expect(harness.project.palette).toEqual(before.filter((id) => id !== A))
+    expect(selectedColorId.value).toBe(palette.value.defaultColorId)
+    expect(deps.showToast).toHaveBeenCalledWith(`palette-removed-${A}`, en.palette.removed, 'info', expect.objectContaining({ label: en.palette.undoButton }))
+    undoInToast()
+    expect(harness.project.palette).toEqual(before)
+  })
+
+  it('gives a color put back by the toast\'s Undo the letter the maker gave it, unless another color took it since (ticket 1092)', () => {
+    const { harness, undoInToast, onRemoveAddedColor } = setup()
+    const { setLetter } = useProjectPalette({ currentProject: harness.currentProject, edit: harness.edit })
+    setLetter('#123456', 'Q')
+    onRemoveAddedColor(A)
+    undoInToast()
+    expect(harness.project.paletteLetters!['#123456']).toBe('Q')
+
+    onRemoveAddedColor(A)
+    setLetter('#abcdef', 'Q')
+    undoInToast()
+    expect(harness.project.paletteLetters!['#abcdef']).toBe('Q')
+    expect(harness.project.paletteLetters!['#123456']).not.toBe('Q')
   })
 
   it('leaves the chosen color alone when another swatch is removed, and its Undo selects nothing', () => {

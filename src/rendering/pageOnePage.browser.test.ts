@@ -152,7 +152,7 @@ describe('page 1 of the PDF', () => {
 
 describe('the PDF of a piece cut into parts (ticket 0914)', () => {
   it('is the overview, then a page for each sheet, each counted in "1 / N"', async () => {
-    const project = withLetters(fixtureProject({ technique: 'loom', columns: 150, rows: 100 }), false)
+    const project = withLetters(fixtureProject({ technique: 'loom', columns: 150, rows: 100 }), 'frame', false)
     const words = wordsOf(project)
     const { plan } = pageOneLayout(project, words)
 

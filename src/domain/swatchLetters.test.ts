@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { letterAt, lettersFor, lowestFreeLetter } from './swatchLetters'
+import { letterAt, lettersFor, lowestFreeLetter, typedLetter, withLetter } from './swatchLetters'
 
 describe('letterAt', () => {
   it('counts A to Z, then AA, AB and on past AZ', () => {
@@ -33,5 +33,25 @@ describe('lettersFor', () => {
 
   it('drops an unreadable or repeated stored letter and gives that color another', () => {
     expect(lettersFor(['#111111', '#222222', '#333333'], { '#111111': 'B', '#222222': 'B', '#333333': 7 })).toEqual({ '#111111': 'B', '#222222': 'A', '#333333': 'C' })
+  })
+})
+
+describe('a letter the maker types (ticket 1092)', () => {
+  it('is one or two of A to Z in upper case, whatever else was typed', () => {
+    expect(['r', 'Rd', 'red', '2c', ' b ', 'я', ''].map(typedLetter)).toEqual(['R', 'RD', 'RE', 'C', 'B', '', ''])
+  })
+
+  it('gives a color a letter nobody has', () => {
+    expect(withLetter({ '#111111': 'A', '#222222': 'B' }, '#111111', 'R')).toEqual({ letters: { '#111111': 'R', '#222222': 'B' } })
+  })
+
+  it('trades letters with the color that has it, so no two colors share one', () => {
+    const changed = withLetter({ '#111111': 'A', '#222222': 'B', '#333333': 'C' }, '#333333', 'A')
+    expect(changed).toEqual({ letters: { '#111111': 'C', '#222222': 'B', '#333333': 'A' }, swapped: { hex: '#111111', letter: 'C' } })
+  })
+
+  it('changes nothing for the letter a color has, for no letter, and for a color the Palette lacks', () => {
+    const letters = { '#111111': 'A' }
+    expect([withLetter(letters, '#111111', 'A'), withLetter(letters, '#111111', ''), withLetter(letters, '#111111', '7'), withLetter(letters, '#999999', 'B')]).toEqual([undefined, undefined, undefined, undefined])
   })
 })

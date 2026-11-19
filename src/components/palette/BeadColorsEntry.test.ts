@@ -34,6 +34,18 @@ describe('BeadColorsEntry (ticket 0746)', () => {
     expect(open.text()).toContain("MIYUKI's photographs")
   })
 
+  it('points its chevron where the list is: down when it opens under the button, up when it opens above it (ticket 1092)', () => {
+    const icon = (open: boolean, opensAbove: boolean) => mount(BeadColorsEntry, { props: { bead: delica, open, opensAbove, testid: 'entry' } }).get('[data-testid="entry"] svg').attributes('data-icon')
+    expect([icon(false, false), icon(true, false)]).toEqual(['chevron-down', 'chevron-up'])
+    expect([icon(false, true), icon(true, true)]).toEqual(['chevron-up', 'chevron-down'])
+  })
+
+  it('says a press takes a code out again only where a row can be pressed out (ticket 1092)', () => {
+    const text = (removable: boolean) => mount(BeadColorsEntry, { props: { bead: delica, open: true, removable, testid: 'entry' } }).text()
+    expect(text(true)).toContain(en.palette.beadColors.removeNote)
+    expect(text(false)).not.toContain(en.palette.beadColors.removeNote)
+  })
+
   it('reports its open state and emits toggle', async () => {
     const wrapper = entry(true)
     const button = wrapper.get('[data-testid="entry"]')

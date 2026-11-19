@@ -232,7 +232,7 @@ describe('single-Project roundtrip', () => {
     expect(file.kind).toBe('openbeads/project')
     expect(file.version).toBe(14)
     expect(file.patterns).toBeUndefined()
-    expect(Object.keys(file.projects[0]).sort()).toEqual(['backgroundPositions', 'createdAt', 'id', 'layers', 'palette', 'paletteLetters', 'updatedAt'])
+    expect(Object.keys(file.projects[0]).sort()).toEqual(['backgroundPositions', 'createdAt', 'id', 'layers', 'lettersByLayer', 'palette', 'paletteLetters', 'updatedAt'])
     expect(file.projects[0].backgroundPositions).toBe(3)
     expect(file.projects[0].layers[0].beads).toBeUndefined()
     expect(file.projects[0].layers[0]).toMatchObject({ name: 'Fox', technique: 'peyote', orientation: 90, encodedBeads: { colors: [], rows: {} } })

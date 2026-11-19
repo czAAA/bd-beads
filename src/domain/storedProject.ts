@@ -45,6 +45,9 @@ export interface LayeredProject extends Omit<Project, 'layers'> {
   /** How many backgrounds the list its layers' Background positions are in held (ticket 1000): 3 since that ticket;
    * absent on one stored before it, whose positions are in the list of five and move to their nearest kept one. */
   backgroundPositions?: number
+  /** Whether each layer's Letters switch is its own (ticket 1092). Absent on one stored before it, whose layers shared
+   * the Frame's: its Canvas opens with Letters off, as it never showed any. */
+  lettersByLayer?: boolean
 }
 
 /** A Project in any shape a store or file has held it in, for normalizeProject to read. */
@@ -89,11 +92,11 @@ function legacyRotation(project: ProjectWithLegacyFields): Rotation {
  * wrote it, and never re-saves them. One saved before its layers opens looking as it did (`layeredOf`). */
 export function normalizeProject(stored: StoredProject): Project {
   const layered = isLayered(stored) ? stored : layeredOf(stored)
-  const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, mirror: storedMirror, referenceImage: storedReference, backgroundPositions, ...rest } = layered
+  const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, mirror: storedMirror, referenceImage: storedReference, backgroundPositions, lettersByLayer, ...rest } = layered
   const [storedCanvas, ...storedFrames] = storedLayers as [StoredLayer, ...StoredLayer[]]
   // Positions stored before ticket 1000 are in the list of five: read once, moved to their nearest kept one.
   const earlierBackgrounds = backgroundPositions !== BACKGROUND_POSITIONS
-  const canvas = readCanvas(storedCanvas, layered.id, earlierBackgrounds)
+  const canvas = readCanvas(lettersByLayer === true ? storedCanvas : { ...storedCanvas, letters: undefined }, layered.id, earlierBackgrounds)
   // Every Frame the list holds is kept, though the app makes and shows one (ADR 0079).
   const frames = storedFrames.map((stored, index) => readFrame(stored, canvas, `${layered.id}:frame${index > 0 ? index + 1 : ''}`, earlierBackgrounds))
 
