@@ -19,7 +19,7 @@ import { useI18n } from '../../i18n/useI18n'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
-import { pdfFileName } from '../../composables/export/pdfFileName'
+import { namedChoices, pdfFileName } from '../../composables/export/pdfFileName'
 import { MAX_PDF_FILE_NAME, typedPdfFileName } from '../../domain/projectFile'
 
 // The export rows (tickets 568, 0652, 0916, 1095, 1096, 1121; ExportPanel card): PNG, PDF and File (the .openbeads) in one
@@ -59,10 +59,10 @@ loadPrintCode().then(
 )
 /** What an export is made of, for its File size estimate (ticket 0588) and the PDF's page count: read once for the
  * buttons; none until the print code is here. */
-const exportFactsNow = computed(() => {
-  const code = printCode.value
-  return code?.exportFacts(props.project, code.printText(props.project, t.value, locale.value, new Date(), choices.value))
-})
+const wordsNow = computed(() => printCode.value?.printText(props.project, t.value, locale.value, new Date(), choices.value))
+const exportFactsNow = computed(() => wordsNow.value && printCode.value?.exportFacts(props.project, wordsNow.value))
+/** Large beads is offered only where it makes the chart's beads bigger (ticket 1125); hidden, it keeps its remembered state. */
+const largeBeadsShown = computed(() => !!exportFactsNow.value?.largeBeadsActs)
 /** A size as the buttons show it: "≈ 1.4 MB" (up to 0.1 MB, whole MB from 10 MB) or "< 0.1 MB". */
 function sizeText(bytes: number): string {
   const megabytes = shownMegabytes(bytes)
@@ -102,7 +102,7 @@ const qualityHint = computed(() => ({
  * shown, so closing the panel forgets it. */
 const typedName = ref<string>()
 /** The PDF's file name as it will be saved, changing at once with each switch. */
-const pdfName = computed(() => typedName.value ?? pdfFileName(props.project, choices.value, t.value))
+const pdfName = computed(() => typedName.value ?? pdfFileName(props.project, namedChoices(choices.value, wordsNow.value), t.value))
 const fileLine = computed(() => ({
   label: t.value.frame.savesAs,
   value: pdfName.value,
@@ -175,7 +175,7 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
     />
     <p v-if="highPngDpi" class="export-section__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
   </div>
-  <PanelSwitchRow v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
+  <PanelSwitchRow v-if="largeBeadsShown" v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
   <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
   <slot />
   <LoadingState v-if="exporting" class="export-section__loading" compact :text="exportingText" />

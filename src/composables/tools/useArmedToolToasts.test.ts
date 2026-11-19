@@ -4,7 +4,7 @@ import { en } from '../../i18n/en'
 import { useArmedToolToasts } from './useArmedToolToasts'
 
 function setup(touch: boolean) {
-  const modes = { mirrorMarking: ref(false), mirrorOn: ref(false), picking: ref(false), pasteArmed: ref(false) }
+  const modes = { mirrorMarking: ref(false), mirrorOn: ref(false), picking: ref(false), pictureShown: ref(false), pasteArmed: ref(false) }
   const showToast = vi.fn()
   const dismissToast = vi.fn()
   useArmedToolToasts({
@@ -15,6 +15,7 @@ function setup(touch: boolean) {
     mirrorMarking: () => modes.mirrorMarking.value,
     mirrorOn: () => modes.mirrorOn.value,
     picking: () => modes.picking.value,
+    pictureShown: () => modes.pictureShown.value,
     pasteArmed: () => modes.pasteArmed.value,
   })
   return { modes, showToast, dismissToast }
@@ -39,6 +40,14 @@ describe('useArmedToolToasts (ticket 0845)', () => {
     modes.picking.value = false
     await nextTick()
     expect(dismissToast.mock.calls.map(([id]) => id).sort()).toEqual(['mirror-armed', 'paste-armed', 'pick-armed'])
+  })
+
+  it('says the reference image can be tapped too while it is shown (ticket 1119)', async () => {
+    const { modes, showToast } = setup(true)
+    modes.pictureShown.value = true
+    modes.picking.value = true
+    await nextTick()
+    expect(showToast).toHaveBeenCalledExactlyOnceWith('pick-armed', 'Tap a bead or the reference image to use its color.', 'info')
   })
 
   it('says nothing on entering Mirror mode while the Mirror already has its Area (the whole Frame\'s, say)', async () => {

@@ -355,12 +355,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
-  const { palette, addUsed, removeAdded, removeAllAdded, moveColor, setLetter } = useProjectPalette({ currentProject, edit })
+  const { palette, addUsed, removeAdded, removeAllAdded, paintedBeads, moveColor, setLetter } = useProjectPalette({ currentProject, edit })
   /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
   const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs, accountEmail: () => accountFlow.account.value?.email })
-  provideBeadColors(
-    useBeadColors({ currentProject, palette, addUsed, select: (colorId) => onSelectColor(colorId), remove: (colorId) => removeColor.onRemoveAddedColor(colorId), selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback }),
-  )
+  const beadColors = useBeadColors({ currentProject, palette, addUsed, select: (colorId) => onSelectColor(colorId), remove: (colorId) => removeColor.onRemoveAddedColorOrAsk(colorId), selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback })
+  provideBeadColors(beadColors)
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
   const {
@@ -595,30 +594,30 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** Removing added colors from the Palette, one or all, each after a confirmation (tickets 228, 304, 0532). */
-  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeAllAdded, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale, dialogs })
+  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeAllAdded, paintedBeads, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale, dialogs })
   provideRemoveAddedColor(removeColor.onRequestRemoveAddedColor)
   provideRemoveAllAddedColors(removeColor.onRequestRemoveAllAddedColors)
 
   provideMoveColor(moveColor)
 
   /** A Custom color that is about to paint a cell joins the Palette on its first use (ticket 227). */
-  function onPaintColorUsed(hex: string) {
+  function onPaintColorUsed(hex: string, code?: string) {
     if (selectedColorId.value) return
-    const { outcome, colorId } = addUsed(hex)
+    const { outcome, colorId } = addUsed(hex, code)
     if (outcome === 'added' && colorId) onCustomColorAdded(colorId)
   }
 
   /** A Custom color was picked (ticket 398): it becomes the paint color and, with a slot free, joins the Palette at
-   * once. */
-  function onSelectCustomColor(hex: string) {
+   * once, with its catalog code when it is a bead color matched to the reference image (ticket 1119). */
+  function onSelectCustomColor(hex: string, code?: string) {
     selectCustomColor(hex)
-    onPaintColorUsed(hex)
+    onPaintColorUsed(hex, code)
   }
 
-  /** Pick color from canvas (ticket 398): the next press on a bead takes its color (an empty cell does nothing); a
-   * tool choice or Escape ends it. The Palette's button and the Radial toolbox arm it through one handler (ticket
-   * 1089). */
-  const { pickColorAt } = usePickColor({ picking: pickingColor, currentProject, onSelectCustomColor })
+  /** Pick color from canvas (ticket 398): the next press on a bead takes its color, on an empty cell the shown reference
+   * image's as the nearest bead color (ticket 1119); a tool choice or Escape ends it. The Palette's button and the
+   * Radial toolbox arm it through one handler (ticket 1089). */
+  const { pickColorAt } = usePickColor({ picking: pickingColor, currentProject, onSelectCustomColor, picture: shownPicture, decodePixels: services.decodeImage, beadColors })
   const toggleColorPick = () => {
     pickingColor.value = !pickingColor.value
   }
@@ -648,6 +647,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     mirrorMarking: () => mirror.marking.value,
     mirrorOn: () => mirror.on.value,
     picking: () => pickingColor.value,
+    pictureShown: () => !!shownPicture(),
     pasteArmed: () => pasteProjectionActive.value,
   })
   /** On touch a pill tile's first tap says its name (ticket 0927); Menu › Help shows every button's name at once. */
@@ -785,6 +785,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
     closePanel: () => void (openPanel.value = null),
     dialogs,
   })
+  /** The reference image while it is shown, as Pick color reads it (ticket 1119). */
+  function shownPicture() {
+    const drawn = referenceImage.drawn.value
+    const blob = referenceImage.blob.value
+    return drawn && blob ? { blob, place: drawn.place, height: drawn.height } : undefined
+  }
   /** The reference image's picture bar (ticket 0883): the size it covers, Set Frame around the picture and Convert to
    * beads, whose All settings opens Convert image to add to this Project. */
   const pictureBar = usePictureBarFlow({
@@ -1457,6 +1463,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onConfirmReplaceFrame: frameFlow.confirmReplace,
       onCancelReplaceFrame: frameFlow.cancelReplace,
       pendingColorRemovalHex: removeColor.pendingColorRemovalHex,
+      removeColorMessage: removeColor.removeColorMessage,
       onConfirmRemoveAddedColor: removeColor.onConfirmRemoveAddedColor,
       onCancelRemoveAddedColor: removeColor.onCancelRemoveAddedColor,
       removeAllColorsMessage: removeColor.removeAllColorsMessage,

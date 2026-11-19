@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { withColorsInPalette } from '../domain/paletteEdits'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject, createProjectFromImage } from '../domain/createProject'
 import { moveToRow } from '../domain/rowProgress'
@@ -36,7 +37,7 @@ describe('a .openbeads file', () => {
 
   it('round-trips a Custom colour and hexes outside the Palette', async () => {
     const painted = paintAt(makeProject(), [{ row: 1, column: 1 }, { row: 1, column: 2 }], '#123456')
-    expect(await roundTrip(painted)).toEqual(painted)
+    expect(await roundTrip(painted)).toEqual(withColorsInPalette(painted))
   })
 
   it('round-trips an empty canvas', async () => {
@@ -46,7 +47,7 @@ describe('a .openbeads file', () => {
 
   it('round-trips a single bead', async () => {
     const one = paintAt(withLayers(makeProject(), { beads: {}, frame: undefined }) as Project, [{ row: 5, column: 7 }], '#abcdef')
-    expect(await roundTrip(one)).toEqual(one)
+    expect(await roundTrip(one)).toEqual(withColorsInPalette(one))
   })
 
   it('round-trips a grid where every neighbour differs', async () => {
@@ -55,7 +56,7 @@ describe('a .openbeads file', () => {
     for (const [i, cell] of cells.entries()) {
       project = paintAt(project, [cell], `#${(i + 1).toString(16).repeat(6)}`)
     }
-    expect(await roundTrip(project)).toEqual(project)
+    expect(await roundTrip(project)).toEqual(withColorsInPalette(project))
   })
 
   it('round-trips a Russian name, a Frame, Row progress and a field this build does not know', async () => {
@@ -77,7 +78,7 @@ describe('a .openbeads file', () => {
       futureField: { a: 1 },
     } as Project
     const restored = await roundTrip(withFrame(project, frameOf(project)))
-    expect(restored).toEqual(project)
+    expect(restored).toEqual(withColorsInPalette(project))
     expect(canvasOf(restored).name).toBe('Лиса')
   })
 
@@ -109,7 +110,7 @@ describe('refusing a file', () => {
 
 describe('a plain .json file from before ADR 0048 (deprecated)', () => {
   it('still imports', async () => {
-    const project = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746')
+    const project = withColorsInPalette(paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746'))
     const file = JSON.stringify({ kind: 'bd-beads/pattern', version: 3, patterns: [legacyRecordOf(project)] }, null, 2)
     expect((await readProjectsFile(asFile(file))).projects.map(layersView)).toEqual([layersView(project)])
     const library = JSON.stringify({ kind: 'bd-beads/library', version: 2, patterns: [legacyRecordOf(project)] })

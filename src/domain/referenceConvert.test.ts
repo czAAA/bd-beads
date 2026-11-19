@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { beadsReplaced, convertSampled, sampledColors, withConvertedBeads } from './referenceConvert'
+import { beadsReplaced, convertSampled, pictureColorAt, sampledColors, withConvertedBeads } from './referenceConvert'
 import { NO_COLOR, type PixelData } from './imageConversion'
 import { beadsOfLayer } from './layerRecord'
 import { bareProject } from '../testUtils/layerFields'
@@ -25,6 +25,13 @@ describe('the beads Convert to beads makes (ReferenceImage card)', () => {
       { row: 0, column: 5, color: NO_COLOR },
       { row: 0, column: 6, color: BLUE },
     ])
+  })
+
+  it('reads one point of the picture as a bead centre is read, and none where it lets the Canvas through (ticket 1119)', () => {
+    const picture = strip([RED, NO_COLOR, BLUE])
+    expect(pictureColorAt(picture, { u: 0.1, v: 0.5 })).toBe('#ff0000')
+    expect(pictureColorAt(picture, { u: 0.5, v: 0.5 })).toBeUndefined()
+    expect(pictureColorAt(picture, { u: 1, v: 1 })).toBe('#0000ff')
   })
 
   it('keeps every colour of the picture under Exact at the most colours', () => {

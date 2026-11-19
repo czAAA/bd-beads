@@ -579,7 +579,7 @@ export interface Translations {
     coffee: { title: string; text: string; button: string; source: string }
     /** The coffee screen's promises (ticket 0823; Homepage card), in the order shown; the shortcuts one's {menu}, {help}
      * and {shortcuts} come from the app. */
-    promises: Record<'device' | 'offline' | 'noAds' | 'pencil' | 'free' | 'shortcuts', InsideCopy>
+    promises: Record<'device' | 'offline' | 'noAds' | 'tablets' | 'free' | 'shortcuts', InsideCopy>
     /** The coffee screen's Open source tile (ticket 0823); its View the source and star line are `coffee`'s. */
     openSource: { name: string; text: string }
     /** The coffee screen's Say hello tile (ticket 0823): {menu} and {feedback}, and its button, are the Menu's own labels. */
@@ -677,6 +677,10 @@ export interface Translations {
      * color. */
     removeConfirmTitle: string
     removeConfirmMessage: string
+    /** After removeConfirmMessage when beads are painted in the color: they leave with it (ticket 1124). */
+    removeConfirmBeads: PluralForms
+    /** After removeAllConfirmMessage when beads are painted in the colors: they leave with them (ticket 1124). */
+    removeAllConfirmBeads: PluralForms
     removeConfirmButton: string
     removeCancelButton: string
     /** Remove all custom colors (ticket 0532): the bin's name and Tooltip, the toast, and the confirmation; `{count}` in
@@ -779,6 +783,8 @@ export interface Translations {
     mirrorArmedHint: string
     pasteArmedHint: string
     pickArmedHint: string
+    /** Pick color's touch hint while the reference image is shown (ticket 1119). */
+    pickArmedPictureHint: string
   }
   /** The input mode toggle (ticket 325; CONTEXT.md: Pen mode, Mouse mode). */
   inputMode: {
@@ -923,9 +929,6 @@ export interface Translations {
     columnCode: string
     columnBeads: string
     columnGrams: string
-    columnToBuy: string
-    /** "2 × 5 g": the tubes to buy. */
-    tubes: string
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: string
     partPageShort: string

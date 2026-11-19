@@ -24,16 +24,15 @@ import type { SwatchLetters } from '../domain/swatchLetters'
 const RULE = pt(0.75)
 /** A row's swatch, drawn like a bead with its Swatch letter on it. */
 const SWATCH = mm(3.6)
-/** Within a column of Beads needed, from its right edge: to buy, grams and beads end at these, the code starts at the
+/** Within a column of Beads needed, from its right edge: grams end at the edge, beads at this, the code starts at the
  * last, the color name has the rest. */
-const GRAMS_RIGHT = mm(17)
-const BEADS_RIGHT = GRAMS_RIGHT + mm(12)
+const BEADS_RIGHT = mm(12)
 const CODE_LEFT = BEADS_RIGHT + mm(22)
 const CODE_ROOM = mm(12)
 const NAME_LEFT = mm(5.5)
 /** The room each column head has, the code's and the beads' shared between them.
  * @internal Its test checks every language's column heads against it. */
-export const NEEDED_ROOM = { toBuy: GRAMS_RIGHT - mm(1), grams: BEADS_RIGHT - GRAMS_RIGHT - mm(1), codeAndBeads: CODE_LEFT - BEADS_RIGHT - mm(1) }
+export const NEEDED_ROOM = { grams: BEADS_RIGHT - mm(1), codeAndBeads: CODE_LEFT - BEADS_RIGHT - mm(1) }
 
 /** Ruler numbers on the overview every 10 instead of every 5 when 5 beads are narrower than this. */
 const MIN_FIVE_STEP = mm(5.5)
@@ -98,14 +97,15 @@ function drawEmptyItem(context: CanvasRenderingContext2D, empty: string, right: 
   drawEmptySwatch(context, right - named - mm(1.6) - size, top + mm(3.5) - pt(2.8) - size / 2, size, pt(0.5))
 }
 
-/** Beads needed, one table printed once (ticket 0914): the colors of `slice` in two columns reading down, each a letter
- * swatch, color name, code, beads, grams and to buy; on the page it ends on, the Total with beads, grams and tubes and the
- * grams note. An unknown Bead has no grams, no tubes and no note. With `empty` its heading names the chart's cross. */
+/** Beads needed, printed once (ticket 0914): `slice` one to a row across the page or in two columns (ticket 1096), each a
+ * swatch, name, code, beads, grams; then the Total and the grams note. The heading names the Bead and, with `empty`, the
+ * chart's cross; an unknown Bead has no name, no grams and no note. */
 function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, letters: SwatchLetters, slice: ColorsSlice, top: number, empty?: string): void {
   const { labels } = words
   const x = PRINT_MARGIN
   const width = page.width - PRINT_MARGIN * 2
-  text(context, labels.beadsNeeded, x, top + mm(3.5), font('600', 8.5, SANS), PRINT_COLORS.ink)
+  const heading = text(context, labels.beadsNeeded, x, top + mm(3.5), font('600', 8.5, SANS), PRINT_COLORS.ink)
+  if (words.beadName) text(context, ` · ${words.beadName}`, x + heading, top + mm(3.5), font('500', 8.5, SANS), PRINT_COLORS.ink, 'left', width / 2)
   if (empty) drawEmptyItem(context, empty, x + width, top)
   rule(context, x, top + NEEDED_HEADING - mm(1), width, PRINT_COLORS.ink, RULE)
 
@@ -114,7 +114,7 @@ function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: Pr
     return
   }
 
-  const column = (width - TABLE_COLUMN_GAP) / 2
+  const column = slice.columns === 1 ? width : (width - TABLE_COLUMN_GAP) / 2
   const grams = words.colors.some((color) => color.grams)
   const codes = words.colors.some((color) => color.code)
   const head = font('400', 6.5, MONO)
@@ -124,10 +124,7 @@ function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: Pr
     text(context, labels.columnColor.toLowerCase(), left + NAME_LEFT, headY, head, PRINT_COLORS.muted)
     if (codes) text(context, labels.columnCode.toLowerCase(), right - CODE_LEFT, headY, head, PRINT_COLORS.muted)
     text(context, labels.columnBeads.toLowerCase(), right - BEADS_RIGHT, headY, head, PRINT_COLORS.muted, 'right')
-    if (grams) {
-      text(context, labels.columnGrams.toLowerCase(), right - GRAMS_RIGHT, headY, head, PRINT_COLORS.muted, 'right')
-      text(context, labels.columnToBuy.toLowerCase(), right, headY, head, PRINT_COLORS.muted, 'right')
-    }
+    if (grams) text(context, labels.columnGrams.toLowerCase(), right, headY, head, PRINT_COLORS.muted, 'right')
   }
 
   const rowsTop = top + NEEDED_HEADING + NEEDED_COLUMNS
@@ -155,8 +152,7 @@ function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: Pr
     text(context, named, left + NAME_LEFT, baseline, name, PRINT_COLORS.ink, 'left', column - CODE_LEFT - NAME_LEFT - mm(1.5))
     if (color.code) text(context, color.code, right - CODE_LEFT, baseline, number, PRINT_COLORS.muted, 'left', CODE_ROOM)
     text(context, color.beads, right - BEADS_RIGHT, baseline, number, PRINT_COLORS.ink, 'right')
-    if (color.grams) text(context, color.grams, right - GRAMS_RIGHT, baseline, number, PRINT_COLORS.ink, 'right')
-    if (color.tubes) text(context, color.tubes, right, baseline, number, PRINT_COLORS.ink, 'right')
+    if (color.grams) text(context, color.grams, right, baseline, number, PRINT_COLORS.ink, 'right')
   })
   if (!slice.total) return
 
@@ -164,7 +160,7 @@ function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: Pr
   rule(context, x, y, width, PRINT_COLORS.ink, RULE)
   y += mm(4.4)
   text(context, `${labels.total} · ${words.colorsCount}`, x, y, font('700', 8, SANS), PRINT_COLORS.ink, 'left', width / 2)
-  const sums = [words.totalBeads, words.totalGrams && `≈ ${words.totalGrams}`, words.totalTubes].filter(Boolean).join(' · ')
+  const sums = [words.totalBeads, words.totalGrams && `≈ ${words.totalGrams}`].filter(Boolean).join(' · ')
   text(context, sums, x + width, y, font('500', 7.5, MONO), PRINT_COLORS.ink, 'right')
   if (words.gramsNote) {
     y += mm(1)

@@ -62,7 +62,7 @@ Plan §7 is the rule; the mechanics: read the six findings files and every artif
 total, each area's `main` hash), the root-cause groups (title, severity, finding ids, evidence links, the proposed
 change) and the Dropped list; commit and push the docs repo; then run `/bd-tickets` on it, each ticket's "What to
 build" in the stranger's words with its finding ids and evidence linked. Tell the owner to implement with
-`/bd-implement -bulk`, P0/P1 first.
+`/bd-implement-bulk`, P0/P1 first.
 
 ## Verify
 

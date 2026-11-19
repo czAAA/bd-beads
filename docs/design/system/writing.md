@@ -197,7 +197,7 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | PNG ≈ {size} · {n} files · PDF ≈ {size} · {n} pages · < 0.1 MB | PNG ≈ {size} · файлов: {n} · PDF ≈ {size} · страниц: {n} · < 0,1 МБ |
 | High is {n} DPI in the picture on this device. | На этом устройстве «Высокое» для картинки — {n} DPI. |
 | Beads needed: {n} colors · {beads} beads · ≈ {g} · see page {p} | Нужно бисера: цветов — {n} · {beads} бисеринок · ≈ {g} · см. страницу {p} |
-| Color key · To buy · {n} × 5 g | Ключ цветов · Купить · {n} × 5 г |
+| Color key | Ключ цветов |
 | Continues right on page {n}, below on page {m} → · Last part · chart from page 2 → | Продолжение справа на странице {n}, ниже на странице {m} → · Последняя часть · схема со страницы 2 → |
 | No. · Custom | № · Свой цвет |
 | Match device · Light · Dark · High contrast | Как на устройстве · Светлая · Тёмная · Высокий контраст |
@@ -253,7 +253,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | Yours, on this device · Runs in your browser. No account, nothing to install. (ticket 0819: "and offline" went to its own promise) | Ваше, на вашем устройстве · Работает в браузере. Без аккаунта и установки. |
 | Works offline · Once open, it keeps working without a connection. (ticket 0819) | Работает офлайн · Однажды открытое, работает и без интернета. |
 | No ads or tracking · Nothing is sold to you, and nothing records what you do. (ticket 0819) | Без рекламы и слежки · Вам ничего не продают, и никто не записывает, что вы делаете. |
-| For iPad and Pencil · Pen mode, Pencil hover and big buttons for your finger. | Для iPad и Pencil · Режим пера, наведение Pencil и крупные кнопки под палец. |
+| For tablets and pens · Pen mode, pen hover and big buttons for your finger. On iPad, Android and Windows. (ticket 1120: it was For iPad and Pencil, which read as iPad only; Pen mode takes any pen) | Для планшетов и стилусов · Режим пера, наведение пера и крупные кнопки под палец. На iPad, Android и Windows. |
 | Free forever · All you need is free, and nothing is paid for now. Professional extras will come later. | Бесплатно навсегда · Всё нужное бесплатно, платного сейчас нет. Позже появятся профессиональные дополнения. |
 | Keyboard shortcuts · Every edit has its own key. Find them all in {menu} → {help} → {shortcuts}. | Горячие клавиши · У каждой правки есть своя клавиша. Все они в {menu} → {help} → {shortcuts}. |
 | Canvas and Frame · Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count. | Холст и рамка · Рисуйте где угодно: у холста нет краёв. Рамка задаёт размер, экспорт и количество бисеринок. |
@@ -273,7 +273,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | What's inside: the editor (the editor's region, for screen readers) | Что внутри: редактор |
 | Ring · Heart · Bracelet (the demo's Projects; Ring replaced Kaleidoscope, ticket 0819) | Кольцо · Сердце · Браслет |
 
-Since ticket 0819 the cards above are the coffee screen's promises, in this order: Yours, on this device · Works offline · No ads or tracking · For iPad and Pencil · Free forever · Keyboard shortcuts (left out on a phone). The rows were What's inside's tabs (ticket 0819); since ticket 0830 they play under four chapters, the caption showing the playing row's name and line, and a phone lists them. Ticket 0830 also moved Starters up to fifth, after Mirror.
+Since ticket 0819 the cards above are the coffee screen's promises, in this order: Yours, on this device · Works offline · No ads or tracking · For tablets and pens · Free forever · Keyboard shortcuts (left out on a phone). The rows were What's inside's tabs (ticket 0819); since ticket 0830 they play under four chapters, the caption showing the playing row's name and line, and a phone lists them. Ticket 0830 also moved Starters up to fifth, after Mirror.
 
 ### The Homepage rework (ticket 0819)
 
@@ -1198,7 +1198,7 @@ The export rows' third button, after PNG and PDF (ExportPanel card): **File** sa
 
 ## Cover page and Black and white copy (ticket 1096)
 
-Approved 2026-11-19, not yet in the app (ticket 1096). The two new switches of the Export panel and the Frame panel's export section (ExportPanel card), the line that shows the PDF's file name, and the word each switch adds to that name. "Cover page" was the owner's choice of name. English is approved; the other languages are proposals for review with the build. Beads needed's heading reuses "Beads needed" and the Bead's own name; once Picture saves the Cover page, Large beads' Info body ends at "A big piece takes more pages."
+Approved 2026-11-19, not yet in the app (ticket 1096). The two new switches of the Export panel and the Frame panel's export section (ExportPanel card), the line that shows the PDF's file name, and the word each switch adds to that name. "Cover page" was the owner's choice of name. English is approved; the other languages are proposals for review with the build. Beads needed's heading reuses "Beads needed" and the Bead's own name (in the app since ticket 1096; "To buy" and "{n} × 5 g" are gone from paper in every language); once Picture saves the Cover page, Large beads' Info body ends at "A big piece takes more pages."
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

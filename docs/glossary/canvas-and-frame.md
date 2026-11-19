@@ -92,7 +92,7 @@ _Avoid_: Frame toolbar, Frame sheet
 _Avoid_: Set Frame (the old mode, which also drew a Frame by dragging), crop, resize, set size, Edit Frame mode
 
 **Export panel**:
-The small panel the Canvas strip's **Export** button opens (the `export` icon, the strip's last button; tickets 0652, 0847), in the same shell as the Menu, Project and Frame panels and one of the four at a time. With a Frame it holds the Frame panel's Export section (Picture, then Printable chart with its page count, then Export quality and the Large beads and Row by row switches, tickets 0916, 0957, 1095), the same component; with no Frame it says to set a frame and offers Select a frame and Fit a frame to the drawing; a Frame selected from it brings it back once set (ticket 0847). Letters stays in the Frame panel.
+The small panel the Canvas strip's **Export** button opens (the `export` icon, the strip's last button; tickets 0652, 0847), in the same shell as the Menu, Project and Frame panels and one of the four at a time. With a Frame it holds the Frame panel's Export section (Picture, then Printable chart with its page count, then Export quality and the Large beads and Row by row switches, Large beads only where it makes the chart's beads bigger; tickets 0916, 0957, 1095, 1125), the same component; with no Frame it says to set a frame and offers Select a frame and Fit a frame to the drawing; a Frame selected from it brings it back once set (ticket 0847). Letters stays in the Frame panel.
 _Avoid_: Share panel (it only exports files), Export menu
 
 **Rotate Frame**:
@@ -148,7 +148,7 @@ The color a layer is drawn on, one of its Layer settings (ADR 0079, ticket 0666;
 _Avoid_: board color, background theme, Canvas color (for any layer's)
 
 **Reference image** (ticket 0790):
-One picture a Project may hold, laid on the Canvas over every layer's Background and under every bead, to bead over (tracing) or keep beside the pattern as an example. It pans, zooms and turns with the Canvas; its opacity is one of four steps (25, 50, 75, 100%). Shown and hidden from the Canvas strip, set in the Project panel; resized and turned from its corner and Turn handles whenever it is shown (ticket 0799), moved by its **Picture bar**'s Move grip (ticket 0883) or in **Adjust**, so no tool's press on the picture itself moves it. Replace image is in the Project panel and on the Adjust bar. A view, like Background: saved with the Project and in its file, not an Undo step, never printed. ReferenceImage card.
+One picture a Project may hold, laid on the Canvas over every layer's Background and under every bead, to bead over (tracing) or keep beside the pattern as an example. It pans, zooms and turns with the Canvas; its opacity is one of four steps (25, 50, 75, 100%). Shown and hidden from the Canvas strip, set in the Project panel; resized and turned from its corner and Turn handles whenever it is shown (ticket 0799), moved by its **Picture bar**'s Move grip (ticket 0883) or in **Adjust**, so no tool's press on the picture itself moves it. Replace image is in the Project panel and on the Adjust bar. A view, like Background: saved with the Project and in its file, not an Undo step, never printed. While it is shown, Pick color from Canvas takes the nearest bead color to it where there is no bead (ticket 1119). ReferenceImage card.
 _Avoid_: background image (Background is a layer's color), underlay, tracing image, template
 
 **Picture bar** (ticket 0883):

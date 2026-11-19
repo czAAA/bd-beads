@@ -1,8 +1,9 @@
-import { codesInPalette, defaultPalette, paletteColors, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
+import { addUsedColor, codesInPalette, defaultPalette, paletteColors, removedDefaultsAfter, type PaletteCodes, type PaletteColor, type PaletteIds } from './palette'
 import { touch, type Project } from './project'
 import type { Layer } from './grid'
+import { projectColors } from './layerBeads'
 import { lettersFor, withLetter, type SwatchLetters } from './swatchLetters'
-import { beadIdOfLayer, lettersOn } from './layerRecord'
+import { beadIdOfLayer, lettersOn, type Layered } from './layerRecord'
 
 // The Project's Palette (ADR 0002, ticket 0525): its swatches, the defaults removed, catalog codes and Swatch letters,
 // which change together.
@@ -23,6 +24,20 @@ export function setPalette(project: Project, palette: PaletteIds, codes: Palette
   return touch(rest, { palette, paletteLetters, ...(removed.length > 0 ? { removedDefaults: removed } : {}), ...(Object.keys(kept).length > 0 ? { paletteCodes: kept } : {}) })
 }
 
+/** The Palette with every color the layers show and it lacks added last, in the order the layers hold them (ticket
+ * 1124): every bead's color has a Swatch letter, so no export prints "?". The same ids when none is missing. */
+export function withUsedColors(palette: PaletteIds, project: Layered, builtIns: readonly PaletteColor[]): PaletteIds {
+  return projectColors(project).reduce((ids, hex) => addUsedColor(ids, hex, builtIns).ids, palette)
+}
+
+/** The Project with every color its beads show in its Palette (ticket 1124), as every Edit leaves it (a Paste from
+ * another Project, a Frame grown back over its Folded beads) and opening does. Not stamped: adding takes no code and
+ * removes no default. The same Project when none is missing. */
+export function withColorsInPalette(project: Project): Project {
+  const beadId = beadIdOfLayer(project, 'frame')
+  const palette = withUsedColors(project.palette, project, defaultPalette(beadId))
+  return palette === project.palette ? project : { ...project, palette, paletteLetters: lettersOfPalette(palette, beadId, project.paletteLetters) }
+}
 
 /** The Project with a Palette color's Swatch letter changed to one the maker typed (ticket 1092), a color that had it
  * taking this one's; the very same Project when nothing changes (see `withLetter`). */

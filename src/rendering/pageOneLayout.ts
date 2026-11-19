@@ -1,5 +1,5 @@
 import { planWithKey } from './chartPageKey'
-import { colorsHeight, COVER_FOOTER, coverLayout, listSlices, TABLE_SHARE, titleHeightOf, type ColorsSlice, type TableRows } from './coverLayout'
+import { colorsHeight, COVER_FOOTER, coverLayout, listSlices, oneToARow, TABLE_SHARE, titleHeightOf, type ColorsSlice, type TableRows } from './coverLayout'
 import { A4_PORTRAIT, chartOnPageOne, mm, PRINT_BEAD_LARGE_MM, PRINT_MARGIN, PRINT_PART_LABEL, PRINT_RULER, type PageSize, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
 import type { Project } from '../domain/project'
@@ -36,9 +36,23 @@ export interface PageOneLayout {
   lists: ColorsSlice[]
 }
 
+/** Slack for a plan held at exactly `print-bead-large`. */
+const BEAD_SLOP_MM = 1e-6
+
+/** Whether a plan prints a bead under `print-bead-large`, the only plans Large beads changes (ticket 1125). */
+export function underLargeBeads(plan: PrintPlan): boolean {
+  return plan.beadMm < PRINT_BEAD_LARGE_MM - BEAD_SLOP_MM
+}
+
+/** Whether Large beads changes this Project's PDF and picture (ticket 1125): only when its plan without it prints a bead
+ * under 3 mm. A piece that prints at 3 mm or more already is left as it is, so the switch is not offered there. */
+export function largeBeadsActs(project: Counted, words: PageOneWords, page: PageSize = A4_PORTRAIT): boolean {
+  return underLargeBeads(pageOneLayout(project, { ...words, largeBeads: false }, page).plan)
+}
+
 /** Page 1 of the PDF for a Project's words (ticket 0914): the chart whole when it fits at a working bead (planPrint; 3 mm
  * or more with Large beads, ticket 0916), Beads needed under it as far as its share of the page allows and the rest on list
- * pages. Otherwise page 1 is the overview, and the chart parts follow. */
+ * pages; one color to a row when all of it fits that way (ticket 1096). Otherwise page 1 is the overview, and the chart parts follow. */
 export function pageOneLayout(project: Counted, words: PageOneWords, page: PageSize = A4_PORTRAIT): PageOneLayout {
   const floorMm = words.largeBeads ? PRINT_BEAD_LARGE_MM : undefined
   const titleHeight = titleHeightOf(words)
@@ -64,10 +78,10 @@ export function pageOneLayout(project: Counted, words: PageOneWords, page: PageS
     const count = whole ? colors : Math.min(colors, fitting)
     const lists = whole ? [] : listSlices(words, NEEDED_TABLE, count, page)
     const plan = lists.length > 0 ? planWithKey(project, { page, floorMm, pageOne: chart.pageOne, listPages: lists.length }) : chart.plan
-    return { plan, titleHeight, area, needed: { from: 0, count, rowHeight: NEEDED_TABLE.row, rows: Math.ceil(count / 2), total: whole, y: top }, lists }
+    return { plan, titleHeight, area, needed: oneToARow({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top }, NEEDED_TABLE, bottom, FIT_SLOP), lists }
   }
 
   const cover = coverLayout(project, words, NEEDED_TABLE, page)
   const plan = planWithKey(project, { page, floorMm, pageOne: under(least), listPages: cover.lists.length })
-  return { plan, titleHeight, area, overview: { zoom: cover.zoom, extent: cover.extent, board: cover.board }, needed: cover.cover, lists: cover.lists }
+  return { plan, titleHeight, area, overview: { zoom: cover.zoom, extent: cover.extent, board: cover.board }, needed: oneToARow(cover.cover, NEEDED_TABLE, bottom, FIT_SLOP), lists: cover.lists }
 }

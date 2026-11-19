@@ -34,7 +34,7 @@ describe('printText (tickets 162, 164)', () => {
   it('writes Beads needed in beads and grams, the Total from the total count, with the note', () => {
     const text = printText(delicaProject(4800), en, 'en', at)
 
-    expect(text.colors).toEqual([{ hex: red.hex, name: `Red · ${red.code}`, code: red.code, beads: '4 800', grams: '24 g', tubes: '6 × 5 g', letter: 'C' }])
+    expect(text.colors).toEqual([{ hex: red.hex, name: `Red · ${red.code}`, code: red.code, beads: '4 800', grams: '24 g', letter: 'C' }])
     expect(text.totalBeads).toBe('4 800 beads')
     expect(text.totalGrams).toBe('24 g')
     expect(text.gramsNote).toBe('≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares.')
@@ -45,20 +45,9 @@ describe('printText (tickets 162, 164)', () => {
     expect(printText(delicaProject(4800), en, 'en', at).empty).toBeUndefined()
   })
 
-  it('buys tubes per color from its grams, a color under a gram is one, and the Total adds the rows (ticket 0581)', () => {
-    const red = delicaProject(4800)
-    const project = paintAt(red, [{ row: 59, column: 79 }, { row: 59, column: 78 }], '#2255aa')
-    const text = printText(project, en, 'en', at)
-
-    expect(text.colors.map((color) => [color.grams, color.tubes])).toEqual([['24\u00a0g', '6 × 5 g'], ['0.1\u00a0g', '1 × 5 g']])
-    expect(text.totalTubes).toBe('7 × 5 g')
-  })
-
-  it('has no tubes for an unknown Bead', () => {
-    const text = printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at)
-
-    expect(text.colors[0]!.tubes).toBeUndefined()
-    expect(text.totalTubes).toBeUndefined()
+  it('names the Bead for Beads needed\'s heading, and none for an unknown Bead (ticket 1096)', () => {
+    expect(printText(delicaProject(10), en, 'en', at).beadName).toBe('Miyuki Delica 11/0')
+    expect(printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at).beadName).toBeUndefined()
   })
 
   it('words the facts and the color count page 1 prints (ticket 580)', () => {
@@ -246,8 +235,11 @@ describe('printText Word chart (ticket 0574)', () => {
     }
   })
 
-  it('carries Large beads for the layout to plan with', () => {
-    expect(printText(delicaProject(3), en, 'en', at).largeBeads).toBeUndefined()
-    expect(printText(delicaProject(3), en, 'en', at, { largeBeads: true }).largeBeads).toBe(true)
+  it('carries Large beads for the layout to plan with, only where it makes the beads bigger (ticket 1125)', () => {
+    const big = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', name: 'Wall hanging', size: { width: 120, height: 120, unit: 'beads' } })
+    expect(printText(big, en, 'en', at).largeBeads).toBeUndefined()
+    expect(printText(big, en, 'en', at, { largeBeads: true }).largeBeads).toBe(true)
+    const small = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', name: 'Charm', size: { width: 20, height: 20, unit: 'beads' } })
+    expect(printText(small, en, 'en', at, { largeBeads: true }).largeBeads).toBeUndefined()
   })
 })
