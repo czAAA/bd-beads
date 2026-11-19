@@ -1,8 +1,8 @@
 import { colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type FrameSheet } from './canvas'
 import { rowOrderOf, type ShapedSheet } from './frameShape'
-import type { GridPosition } from './grid'
+import type { GridPosition, Rotation } from './grid'
 import { sameBeads } from './layerBeads'
-import { beadsOfLayer, frameOf, type Layered, touchFrameSheet, withLayer } from './layerRecord'
+import { beadsOfLayer, frameOf, type Layered, quarterTurnOf, touchFrameSheet, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
 import type { LayerGeometry } from './layerGeometry'
 import { frameWeave } from './layerWeave'
@@ -174,9 +174,26 @@ const CLOCKWISE: readonly ShownWay[] = ['down', 'left', 'up', 'right']
 
 /** Which way the rows run as the Frame lies (ticket 0667, ADR 0079): its own way (top to bottom, left to right and back),
  * turned with the Frame on the Canvas, whose own rows and pointers do not change. */
-export function shownWay({ direction, reversed }: Pick<RowProgress, 'direction' | 'reversed'>, quarterTurns = 0): ShownWay {
+function shownWay({ direction, reversed }: Pick<RowProgress, 'direction' | 'reversed'>, quarterTurns = 0): ShownWay {
   const own: ShownWay = direction === 'rows' ? (reversed ? 'up' : 'down') : reversed ? 'left' : 'right'
   return CLOCKWISE[(CLOCKWISE.indexOf(own) + quarterTurns) % 4]!
+}
+
+/** How the Frame's own rows lie as seen (ticket 1101): turned with the Frame on the Canvas, then with the Canvas's
+ * nearest quarter turn; the Progress bar and the Word chart both read it. */
+export function seenRotation(project: Layered): Rotation {
+  return ((quarterTurnOf(project) + 90 * (frameOf(project)?.quarterTurns ?? 0)) % 360) as Rotation
+}
+
+/** The same in quarter turns clockwise. */
+function seenTurns(project: Layered): number {
+  return seenRotation(project) / 90
+}
+
+/** Which way the Frame's rows run on screen (ticket 1101): turned with the Frame and with the Canvas, so the Progress
+ * bar's words and arrows say what the maker sees; the Row direction the Frame keeps never changes with either turn. */
+export function shownWayOf(project: Layered): ShownWay {
+  return shownWay(rowProgressOf(project), seenTurns(project))
 }
 
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
@@ -196,13 +213,12 @@ export function toggleRowDirection(project: Project): Project {
 /** The four ways Turn row direction lists, in the order a press of its `D` key steps through them (ticket 0973). */
 export const ROW_WAYS: readonly ShownWay[] = ['down', 'right', 'up', 'left']
 
-/** Points the weaver's rows the way they are to run as the Frame lies (ticket 0973, UX-060): each way keeps its own
- * pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
+/** Points the weaver's rows the way they are to run on screen (ticket 0973, UX-060; both turns, ticket 1101): each
+ * way keeps its own pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
  * Row order is worked one way only. */
 export function turnRowDirectionTo(project: Project, way: ShownWay): Project {
   if (!frameRowOrder(project).turns) return project
-  const quarterTurns = frameOf(project)?.quarterTurns ?? 0
-  const own = CLOCKWISE[(CLOCKWISE.indexOf(way) - (quarterTurns % 4) + 4) % 4]!
+  const own = CLOCKWISE[(CLOCKWISE.indexOf(way) - seenTurns(project) + 4) % 4]!
   const rowProgress = rowProgressOf(project)
   if (shownWay(rowProgress) === own) return project
   const direction = own === 'down' || own === 'up' ? 'rows' : 'columns'

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "fixed",
+  "line": {
+    "en": "On a turned Canvas, Row direction and the Row done arrows show the way the rows run on screen",
+    "ru": "На повёрнутом холсте направление рядов и стрелки «Ряд готов» показывают, куда ряды идут на экране",
+    "uk": "На повернутому полотні напрямок рядів і стрілки «Ряд готовий» показують, куди ряди йдуть на екрані",
+    "be": "На павернутым палатне кірунак радоў і стрэлкі «Рад гатовы» паказваюць, куды рады ідуць на экране",
+    "zh": "画布旋转后，行方向和“行已完成”的箭头会显示屏幕上各行的实际走向",
+    "es": "En un lienzo girado, la dirección de las filas y las flechas de Fila terminada muestran hacia dónde van las filas en pantalla",
+    "pl": "Na obróconym płótnie kierunek rzędów i strzałki Rząd gotowy pokazują, w którą stronę rzędy biegną na ekranie"
+  }
+}

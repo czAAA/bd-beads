@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { frameRowOrder, passLine, rowProgressOf, rowProgressPosition, shownWay, type ShownWay } from '../../domain/rowProgress'
+import { frameRowOrder, passLine, rowProgressOf, rowProgressPosition, shownWayOf, type ShownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { customPassWords, rowProgressCount } from '../../i18n/rowProgressWords'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -139,9 +139,9 @@ const goToUnit = computed(() => {
  * Frame shape. */
 const customPosition = computed(() => customPassWords(t.value.rowProgress, props.project, shownRow.value))
 
-/** The turn that points the down arrow along the rows: the arrows are drawn for top to bottom (ticket 0589). A turned
- * Frame's rows run turned with it (ticket 0667). */
-const arrowTurn = computed(() => shownWay(rowProgressOf(props.project), frameOf(props.project)?.quarterTurns))
+/** The turn that points the down arrow along the rows: the arrows are drawn for top to bottom (ticket 0589). The rows
+ * run as seen, turned with the Frame (ticket 0667) and with the Canvas (ticket 1101). */
+const arrowTurn = computed(() => shownWayOf(props.project))
 
 const directionLabel = computed(() => {
   const words = t.value.rowProgress
