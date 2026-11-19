@@ -71,7 +71,11 @@ export function useAccountFlow(deps: AccountFlowDeps) {
 
   const back = deps.account.takeReturn()
   if (back === 'signed-in') void check().then(showAccount)
-  else if (back) {
+  // The Homepage's Create free account (ticket 0391): the Sign in Subpanel, or who is signed in when someone is.
+  else if (back === 'sign-in') {
+    if (account.value) void check().then(showAccount)
+    else deps.openMenu('sign-in')
+  } else if (back) {
     refusal.value = back
     deps.openMenu('sign-in')
   } else if (account.value) void check()

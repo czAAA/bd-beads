@@ -594,7 +594,7 @@ export interface Translations {
       /** No account, then Free account and Pro, switched off (ticket 0742): those two list nothing, their line saying only
        * what they build on. */
       tiles: [PlanCopy & { meta: string }, PlanCopy, PlanCopy]
-      /** The stamp on Free account and Pro, written in capitals on it, and its image's name. */
+      /** The stamp on Pro, written in capitals on it, and its image's name. */
       comingSoon: string
       /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them; a
        * phone's Show all opens the rows past its first (ticket 0827). */

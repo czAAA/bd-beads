@@ -1,4 +1,4 @@
-import { parseAccount, parseSignInReturn, SIGN_IN_RETURN_PARAM, type Account, type SignInReturn } from '../domain/account'
+import { parseAccount, parseSignInReturn, SIGN_IN_RETURN_PARAM, type Account, type AccountMark } from '../domain/account'
 import { changedSince, parseAccountSettings, parseSettingsChanges, type AccountSettings, type KeptSettingName, type KeptSettings, type KeptValue } from '../domain/keptSettings'
 import { offline, retryAfterSeconds } from './backendAnswer'
 import { verify, type Verification } from './turnstile'
@@ -48,8 +48,8 @@ export interface AccountService {
   startSignIn: (token: string) => Promise<SignInStart>
   /** Ends this device's session and forgets the account, also when the backend can't be reached. */
   signOut: () => Promise<void>
-  /** How the sign-in the page came back from ended, read once; the mark is taken off the address. */
-  takeReturn: () => SignInReturn | undefined
+  /** What the address marks (how a sign-in ended, or the Homepage asking for Sign in), read once and taken off it. */
+  takeReturn: () => AccountMark | undefined
   /** Calls `listener` each time the tab comes back into view; returns the way to stop. */
   onBackInView: (listener: () => void) => () => void
   /** A setting kept in step was changed on this device: on a signed-in one it waits to be sent, with the time of the
@@ -227,7 +227,7 @@ async function signOut(): Promise<void> {
   }
 }
 
-function takeReturn(): SignInReturn | undefined {
+function takeReturn(): AccountMark | undefined {
   const back = parseSignInReturn(location.search)
   if (back) {
     const url = new URL(location.href)

@@ -435,11 +435,11 @@ export const es: Translations = {
     whatsNew: { name: 'Novedades', history: 'Todos los cambios', release: 'Lanzamiento {version}', arrives: 'Llega al recargar' },
     plans: {
       heading: 'Tres formas de usarlo',
-      why: 'Las cuentas de usuario y Pro aún no están abiertas. Todo funciona sin ellas.',
+      why: 'Pro aún no está abierto. Todo funciona sin cuenta.',
       youAreHere: 'estás aquí',
       tiles: [
         { name: 'Sin cuenta', price: 'Gratis', meta: 'sin registro', text: 'Dibuja, cuenta y teje en este dispositivo. Sin registrarte en nada.', button: 'Abrir el editor' },
-        { name: 'Cuenta gratuita', price: 'Gratis', text: 'Lo mismo que sin cuenta, y más', button: 'Crear cuenta gratuita' },
+        { name: 'Cuenta gratuita', price: 'Gratis', text: 'Lo mismo que sin cuenta, y tus ajustes en todos tus dispositivos', button: 'Crear cuenta gratuita' },
         { name: 'Pro', price: 'Precio más adelante', text: 'Lo mismo que la cuenta gratuita, y más', button: 'Próximamente' },
       ],
       comingSoon: 'Pronto',
@@ -467,7 +467,7 @@ export const es: Translations = {
         more: 'Y vendrá más',
         showAll: 'Mostrar las {count}',
       },
-      alone: { heading: 'De uso gratuito', why: 'Las cuentas de usuario y Pro llegarán más adelante; todo funciona sin ellas.', info: 'Sobre las cuentas y Pro' },
+      alone: { heading: 'De uso gratuito', why: 'Una cuenta mantiene tus ajustes iguales en todos tus dispositivos; Pro llegará más adelante. Todo funciona sin cuenta.', info: 'Sobre las cuentas y Pro' },
     },
     library: '{library}, {count}',
     notFound: 'No hay ninguna página en esta dirección.',

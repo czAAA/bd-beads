@@ -435,11 +435,11 @@ export const pl: Translations = {
     whatsNew: { name: 'Co nowego', history: 'Wszystkie zmiany', release: 'Wydanie {version}', arrives: 'Pojawi się po ponownym załadowaniu' },
     plans: {
       heading: 'Trzy sposoby użycia',
-      why: 'Konta i Pro nie są jeszcze otwarte. Wszystko działa bez nich.',
+      why: 'Pro nie jest jeszcze otwarte. Wszystko działa bez konta.',
       youAreHere: 'jesteś tutaj',
       tiles: [
         { name: 'Bez konta', price: 'Za darmo', meta: 'bez rejestracji', text: 'Rysuj, licz i pleć na tym urządzeniu. Nie musisz się nigdzie rejestrować.', button: 'Otwórz edytor' },
-        { name: 'Darmowe konto', price: 'Za darmo', text: 'To samo co bez konta, i więcej', button: 'Załóż konto' },
+        { name: 'Darmowe konto', price: 'Za darmo', text: 'To samo co bez konta, plus twoje ustawienia na wszystkich urządzeniach', button: 'Załóż konto' },
         { name: 'Pro', price: 'Cena później', text: 'To samo co darmowe konto, i więcej', button: 'Wkrótce' },
       ],
       comingSoon: 'Wkrótce',
@@ -467,7 +467,7 @@ export const pl: Translations = {
         more: 'Więcej w drodze',
         showAll: 'Pokaż wszystkie {count}',
       },
-      alone: { heading: 'Za darmo', why: 'Konta i Pro pojawią się później; wszystko działa bez nich.', info: 'O kontach i Pro' },
+      alone: { heading: 'Za darmo', why: 'Konto sprawia, że ustawienia są takie same na wszystkich twoich urządzeniach; Pro pojawi się później. Wszystko działa bez konta.', info: 'O kontach i Pro' },
     },
     library: '{library}, {count}',
     notFound: 'Pod tym adresem nie ma strony.',

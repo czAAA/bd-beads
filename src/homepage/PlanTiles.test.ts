@@ -17,7 +17,7 @@ describe('PlanTiles', () => {
     const wrapper = tiles()
     expect(wrapper.find('h2').text()).toBe('Three ways to use it')
     expect(wrapper.findAll('h3').map((h) => h.text())).toEqual(['No account', 'Free account', 'Pro'])
-    expect(wrapper.text().match(/aren't open yet/g)).toHaveLength(1)
+    expect(wrapper.text().match(/isn't open yet/g)).toHaveLength(1)
     expect(wrapper.find('[data-testid="plan-no-account"]').text()).toContain('Draw, count and weave on this device.')
     expect(wrapper.find('[data-testid="plan-pro"]').text()).toContain('Price later')
   })
@@ -59,29 +59,34 @@ describe('PlanTiles', () => {
     expect(wrapper.emitted('openEditor')).toHaveLength(1)
   })
 
-  it('greys Free account and Pro out: disabled, listing nothing, a Coming soon stamp where the list was', async () => {
+  it('opens Free account: what it adds, and Create free account, which asks for sign-in (ticket 0391)', async () => {
     const wrapper = tiles()
-    const lines = { 'plan-free-account': 'Same as No account, plus more', 'plan-pro': 'Same as Free account, plus more' }
-    for (const [id, line] of Object.entries(lines)) {
-      const tile = wrapper.get(`[data-testid="${id}"]`)
-      expect(tile.attributes('aria-disabled')).toBe('true')
-      expect(tile.classes()).toContain('plan--off')
-      expect(tile.text()).toContain(line)
-      expect(tile.text()).not.toContain('coming later')
-      expect(tile.find('ul').exists()).toBe(false)
-      expect(tile.get('[role="img"]').attributes('aria-label')).toBe('Coming soon')
-      expect(tile.get('[role="img"]').text()).toBe('COMING SOON')
-      const button = tile.get('button')
-      expect(button.attributes('aria-disabled')).toBe('true')
-      await button.trigger('click')
-    }
+    const tile = wrapper.get('[data-testid="plan-free-account"]')
+    expect(tile.attributes('aria-disabled')).toBeUndefined()
+    expect(tile.text()).toContain('Same as No account, plus your settings on all your devices')
+    expect(tile.find('[role="img"]').exists()).toBe(false)
+    const button = tile.get('[data-testid="plan-create-account"]')
+    expect(button.text()).toBe('Create free account')
+    await button.trigger('click')
+    expect(wrapper.emitted('createAccount')).toHaveLength(1)
     expect(wrapper.emitted('openEditor')).toBeUndefined()
   })
 
-  it('wears each stamp its own way', () => {
-    const filters = tiles().findAll('[role="img"] filter')
-    expect(new Set(filters.map((filter) => filter.attributes('id'))).size).toBe(2)
-    expect(new Set(filters.map((filter) => filter.get('feTurbulence').attributes('seed'))).size).toBe(2)
+  it('greys Pro out: disabled, listing nothing, a Coming soon stamp where the list was', async () => {
+    const wrapper = tiles()
+    const tile = wrapper.get('[data-testid="plan-pro"]')
+    expect(tile.attributes('aria-disabled')).toBe('true')
+    expect(tile.classes()).toContain('plan--off')
+    expect(tile.text()).toContain('Same as Free account, plus more')
+    expect(tile.find('ul').exists()).toBe(false)
+    expect(tile.get('[role="img"]').attributes('aria-label')).toBe('Coming soon')
+    expect(tile.get('[role="img"]').text()).toBe('COMING SOON')
+    expect(wrapper.findAll('[role="img"]')).toHaveLength(1)
+    const button = tile.get('button')
+    expect(button.attributes('aria-disabled')).toBe('true')
+    await button.trigger('click')
+    expect(wrapper.emitted('openEditor')).toBeUndefined()
+    expect(wrapper.emitted('createAccount')).toBeUndefined()
   })
 
   it('hides the "you are here" note from screen readers', () => {
@@ -113,10 +118,10 @@ describe('PlanTiles', () => {
         const wrapper = tiles('en', { isNew: true, phone })
         expect(wrapper.find('[data-testid="plans-why"]').exists()).toBe(false)
         const shown = wrapper.findAll('h2, p, li').filter((part) => part.find('[role="tooltip"]').exists() === false)
-        expect(shown.map((part) => part.text()).join(' ')).not.toMatch(/later/i)
+        expect(shown.map((part) => part.text()).join(' ')).not.toMatch(/comes later/i)
         const info = wrapper.get('[data-testid="plans-info"]')
         expect(info.attributes('aria-label')).toBe('About accounts and Pro')
-        expect(wrapper.getComponent(InfoButton).props('body')).toBe('Accounts and Pro come later; everything works without them.')
+        expect(wrapper.getComponent(InfoButton).props('body')).toBe(en.homepage.plans.alone.why)
       }
     })
 
@@ -187,14 +192,15 @@ describe('PlanTiles', () => {
       expect(wrapper.find('[data-testid="free-show-all"]').exists()).toBe(false)
     })
 
-    it('makes Free account and Pro a row each, with a Coming soon chip in place of the stamp and no button', () => {
+    it('makes Free account and Pro a row each: Free account with its small button, Pro with a Coming soon chip and no button', () => {
       const wrapper = phone()
-      for (const id of ['plan-free-account', 'plan-pro']) {
-        const tile = wrapper.get(`[data-testid="${id}"]`)
-        expect(tile.get('[data-testid="plan-coming-soon"]').text()).toBe('Coming soon')
-        expect(tile.find('[role="img"]').exists()).toBe(false)
-        expect(tile.find('button').exists()).toBe(false)
-      }
+      const free = wrapper.get('[data-testid="plan-free-account"]')
+      expect(free.find('[data-testid="plan-coming-soon"]').exists()).toBe(false)
+      expect(free.get('[data-testid="plan-create-account"]').classes()).toContain('app-button--sm')
+      const pro = wrapper.get('[data-testid="plan-pro"]')
+      expect(pro.get('[data-testid="plan-coming-soon"]').text()).toBe('Coming soon')
+      expect(pro.find('[role="img"]').exists()).toBe(false)
+      expect(pro.find('button').exists()).toBe(false)
     })
 
     it('has no chip, no Show all and the whole list off a phone', () => {
