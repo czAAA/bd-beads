@@ -140,9 +140,14 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           await next()
           insideTheSection()
           expect(el('[data-testid="phone-bar-next"]').getAttribute('aria-disabled')).toBe('true')
-          const offPlans = projectCount ? ['plan-free-account', 'plan-pro'] : []
+          // Free account is open (ticket 0391): its button under its name; Pro alone keeps the chip.
+          const offPlans = projectCount ? ['plan-pro'] : []
           expect(mounted.root.querySelectorAll('.plan--off')).toHaveLength(offPlans.length)
-          const plans = ['plan-no-account', ...offPlans].map((id) => box(`[data-testid="${id}"]`))
+          const plans = ['plan-no-account', ...(projectCount ? ['plan-free-account'] : []), ...offPlans].map((id) => box(`[data-testid="${id}"]`))
+          if (projectCount) {
+            const create = box('[data-testid="plan-create-account"]')
+            expect(create.top).toBeGreaterThanOrEqual(box('[data-testid="plan-free-account"] h3').bottom)
+          }
           for (const [i, plan] of plans.entries()) {
             expect(plan.left).toBeCloseTo(plans[0]!.left, 0)
             expect(plan.width).toBeCloseTo(plans[0]!.width, 0)

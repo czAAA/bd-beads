@@ -60,7 +60,7 @@ const emit = defineEmits<{
   fit: []
   'select-frame': []
   'export-png': []
-  'export-pdf': []
+  'export-pdf': [typedName?: string]
   'set-letters': [on: boolean]
   key: [event: KeyboardEvent]
   /** A Custom frame's shape settings (tickets 0592, 0640), from its Layer settings. */
@@ -283,7 +283,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
 
       <!-- Export (ticket 568), with a Frame only (ticket 0847), one closed row (ticket 0932): the strip's Export button shows these rows open. -->
       <PanelSection id="frame:export" :label="t.panels.project.exportHeading" closed-first data-testid="frame-export">
-        <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')">
+        <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)">
           <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads; saved with the Project. Printed charts are always lettered (ticket 0914). -->
           <PanelSwitchRow
             :model-value="lettersOn(project, 'frame')"

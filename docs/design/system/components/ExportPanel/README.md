@@ -27,6 +27,9 @@ The Frame panel's export section, the same component, under the title line:
 - While an export runs the buttons and the slider are disabled and the LoadingState line shows, as in the Frame panel.
 - Once the file is handed over, the saved-file toast names it ("Saved: sunflower.png", Message card) and starts 8px under this panel, never over its rows (ticket 0859), on a phone too.
 - Letters stays in the Frame panel only.
+- **The file name says which switches are on** (ticket 1096). After `{project}-{frame}-{maker}` the PDF's name takes, for each print switch that is on and in the panel's order, an underscore and the switch's file word (`writing.md`, in the app's language): `peacock-cuff-ada-lind_large-beads_row-by-row.pdf`. With every switch off it is the name it had before. The picture's name takes no word. (Cover page and Black and white add `_cover` and `_black-and-white` before them once they land, below.)
+- **A "Saves as" line** under the last switch (ticket 1096): "Saves as" in `meta-small` `muted`, then the PDF's file name as it will be, in DM Mono (`meta`) `ink`, breaking anywhere so a long name wraps inside the panel. It changes at once with each switch. The saved-file toast names the same file.
+  - **Its pencil renames the file** (`pencil`, Tooltip "Name this export yourself. …", name "Rename the file"), the ProjectPanel card's line edited in place: a TextField with Save and Cancel, Enter or a press outside saves, Escape cancels. A typed name is saved exactly as typed, ending in `.pdf` once and with the signs a file name cannot hold (`\ / : * ? " < > |`) turned into dashes; no switch adds its word to it while it stands. An emptied name brings the made name back. It is kept nowhere: it lives while the panel's rows are shown and is forgotten once the panel closes. It names the PDF only; the picture keeps its made name.
 
 ### Approved 2026-11-19, not yet in the app (ticket 1096)
 
@@ -36,8 +39,6 @@ Until ticket 1096 lands the panel is as written above. Then:
   - **Cover page** ("What Cover page does"): on at first. The PDF opens on the Cover page (PrintCover card); off, it opens on Page 1 as before. The page count and the File size estimate follow it at once.
   - **Black and white** ("What Black and white does"): off at first. Every page after the cover is drawn for a black-and-white printer (PrintBlackAndWhite card). It adds or removes no page.
 - **Picture saves the Cover page** (PrintCover card), whatever the Cover page switch says, always in color and always one file. No switch changes it, so Large beads' Info body loses "It changes the picture too: the picture is the chart’s first page."
-- **The file name says which switches are on.** After `{project}-{frame}-{maker}` the PDF's name takes, for each switch that is on and in the panel's order, an underscore and the switch's file word (`writing.md`): `peacock-cuff-ada-lind_cover.pdf`, `peacock-cuff-ada-lind_cover_black-and-white_large-beads_row-by-row.pdf`. With every switch off it is the name it has today. The picture's name takes no word.
-- **A "Saves as" line** under the last switch: "Saves as" in `meta-small` `muted`, then the PDF's file name as it will be, in DM Mono `ink`, breaking anywhere so a long name wraps inside the panel. It changes at once with each switch. The saved-file toast names the same file.
 
 ### With no Frame
 
@@ -62,6 +63,7 @@ Every string is the Frame panel's: Export, Picture, Printable chart, Export qual
 - [ ] Large beads and Row by row are off at first and remembered on the device; Letters adds or removes no page.
 - [ ] With no Frame: the line, then Fit a Frame to the drawing (`frame`) and Drag a Frame, Fit first once something is drawn; no export buttons.
 - [ ] The Frame panel's export section and this panel render one shared component.
+- [ ] "Saves as" names the PDF as it will be saved, a word for each switch that is on, at once; its pencil renames it for this export, with no word added, forgotten when the panel closes (ticket 1096).
 
 **From the Progress bar too (ticket 0847; ProgressBar card):** with beads and no Frame, its Fit a Frame and export a picture fits the Frame and opens this panel hung from the strip's button, focused on Picture.
 
