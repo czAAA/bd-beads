@@ -12,7 +12,7 @@ export interface CanvasFramingDeps {
   currentProject: () => Project | undefined
   /** Saves the Canvas's orientation a two-finger twist settled on (ticket 0672). */
   keepTwist?: (orientation: number) => void
-  /** The view a Project opens at this once, in place of its fit (ticket 0879). */
+  /** The view a Project opens at this once, in place of its fit: the address's (ticket 0879) or a reload's (1108). */
   opening?: CanvasViewOptions['opening']
 }
 
@@ -27,7 +27,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   /** What the Tool pill takes from the edge it docks to (ticket 0850), kept while it is away (the Adjust bar's turn). */
   const toolPillCover = ref<Insets>(NO_INSETS)
 
-  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, canvasOnScreen, isAtFit, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening })
+  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening })
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
    * threaded down as a second prop. */
@@ -80,6 +80,8 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     areaOnScreen,
     areaZoom,
     visibleCentre,
+    /** The view to open a reload at, none while it follows the fit (ticket 1108). */
+    keptView,
     canvasOnScreen,
     /** Whether the view still follows the fit, not a place the person moved it to. */
     isAtFit,
