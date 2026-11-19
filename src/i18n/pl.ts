@@ -427,7 +427,7 @@ export const pl: Translations = {
       device: { name: 'Twoje, na tym urządzeniu', text: 'Działa w przeglądarce. Bez konta i bez instalacji.' },
       offline: { name: 'Działa offline', text: 'Raz otwarte, działa także bez internetu.' },
       noAds: { name: 'Bez reklam i śledzenia', text: 'Nic ci nie sprzedajemy i nic nie zapisuje, co robisz.' },
-      pencil: { name: 'Dla iPada i Pencil', text: 'Tryb pióra, najechanie Pencil i duże przyciski pod palec.' },
+      tablets: { name: 'Dla tabletów i rysików', text: 'Tryb rysika, najechanie rysikiem i duże przyciski pod palec. Na iPadzie, Androidzie i Windows.' },
       free: { name: 'Za darmo na zawsze', text: 'Wszystko potrzebne jest darmowe, nic nie jest płatne. Dodatki dla zawodowców przyjdą później.' },
       shortcuts: { name: 'Skróty klawiszowe', text: 'Każda edycja ma swój klawisz. Wszystkie znajdziesz w {menu} → {help} → {shortcuts}.' },
     },

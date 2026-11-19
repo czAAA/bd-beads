@@ -62,7 +62,7 @@ The build reads the Version from the git history, so it fails in a shallow clone
 - **Row progress.** Mark rows done as you weave.
 - **Exports.** A PDF to print, a PNG to share, a Word chart that writes the pattern out row by row, and the Project file.
 - **Starters.** A ready design becomes your Frame.
-- **iPad and Pencil.** Pen mode, Pencil hover and buttons big enough for a finger.
+- **Tablets and pens.** Pen mode, pen hover and buttons big enough for a finger, on iPad, Android and Windows.
 - **Languages.** English, Russian, Ukrainian, Belarusian, Chinese, Spanish and Polish.
 - **Themes.** Light, dark and high contrast, following the device.
 

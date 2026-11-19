@@ -425,7 +425,7 @@ export const en: Translations = {
       device: { name: 'Yours, on this device', text: 'Runs in your browser. No account, nothing to install.' },
       offline: { name: 'Works offline', text: 'Once open, it keeps working without a connection.' },
       noAds: { name: 'No ads or tracking', text: 'Nothing is sold to you, and nothing records what you do.' },
-      pencil: { name: 'For iPad and Pencil', text: 'Pen mode, Pencil hover and big buttons for your finger.' },
+      tablets: { name: 'For tablets and pens', text: 'Pen mode, pen hover and big buttons for your finger. On iPad, Android and Windows.' },
       free: { name: 'Free forever', text: 'All you need is free, and nothing is paid for now. Professional extras will come later.' },
       shortcuts: { name: 'Keyboard shortcuts', text: 'Every edit has its own key. Find them all in {menu} → {help} → {shortcuts}.' },
     },

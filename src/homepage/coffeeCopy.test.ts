@@ -9,7 +9,7 @@ describe("The coffee screen's copy (ticket 0823)", () => {
       ['device', 'Yours, on this device'],
       ['cloud-off', 'Works offline'],
       ['eye-off', 'No ads or tracking'],
-      ['pen-mode', 'For iPad and Pencil'],
+      ['pen-mode', 'For tablets and pens'],
       ['check', 'Free forever'],
       ['keyboard', 'Keyboard shortcuts'],
     ])
@@ -25,7 +25,7 @@ describe("The coffee screen's copy (ticket 0823)", () => {
   })
 
   it('has the rows: the six promises, then Open source and Say hello (tickets 0880, 0948)', () => {
-    expect(coffeeRows(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'pencil', 'free', 'shortcuts', 'openSource', 'sayHello'])
+    expect(coffeeRows(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'tablets', 'free', 'shortcuts', 'openSource', 'sayHello'])
     expect(coffeeActs(en).map(({ icon, name }) => [icon, name])).toEqual([
       ['code', 'Open source'],
       ['message', 'Say hello'],
