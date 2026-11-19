@@ -197,7 +197,7 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | PNG ≈ {size} · {n} files · PDF ≈ {size} · {n} pages · < 0.1 MB | PNG ≈ {size} · файлов: {n} · PDF ≈ {size} · страниц: {n} · < 0,1 МБ |
 | High is {n} DPI in the picture on this device. | На этом устройстве «Высокое» для картинки — {n} DPI. |
 | Beads needed: {n} colors · {beads} beads · ≈ {g} · see page {p} | Нужно бисера: цветов — {n} · {beads} бисеринок · ≈ {g} · см. страницу {p} |
-| Color key · To buy · {n} × 5 g | Ключ цветов · Купить · {n} × 5 г |
+| Color key | Ключ цветов |
 | Continues right on page {n}, below on page {m} → · Last part · chart from page 2 → | Продолжение справа на странице {n}, ниже на странице {m} → · Последняя часть · схема со страницы 2 → |
 | No. · Custom | № · Свой цвет |
 | Match device · Light · Dark · High contrast | Как на устройстве · Светлая · Тёмная · Высокий контраст |
@@ -1189,7 +1189,7 @@ The Printable chart's two switches in the Export panel and the Frame panel's exp
 
 ## Cover page and Black and white copy (ticket 1096)
 
-Approved 2026-11-19, not yet in the app (ticket 1096). The two new switches of the Export panel and the Frame panel's export section (ExportPanel card), the line that shows the PDF's file name, and the word each switch adds to that name. "Cover page" was the owner's choice of name. English is approved; the other languages are proposals for review with the build. Beads needed's heading reuses "Beads needed" and the Bead's own name; once Picture saves the Cover page, Large beads' Info body ends at "A big piece takes more pages."
+Approved 2026-11-19, not yet in the app (ticket 1096). The two new switches of the Export panel and the Frame panel's export section (ExportPanel card), the line that shows the PDF's file name, and the word each switch adds to that name. "Cover page" was the owner's choice of name. English is approved; the other languages are proposals for review with the build. Beads needed's heading reuses "Beads needed" and the Bead's own name (in the app since ticket 1096; "To buy" and "{n} × 5 g" are gone from paper in every language); once Picture saves the Cover page, Large beads' Info body ends at "A big piece takes more pages."
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

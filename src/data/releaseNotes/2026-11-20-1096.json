@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "The PDF’s Beads needed lists one color to a row when they fit, names the Bead in its heading and no longer counts tubes",
+    "ru": "«Нужно бисера» в PDF ставит по одному цвету в строку, когда они помещаются, называет бисер в заголовке и больше не считает тубы",
+    "uk": "«Потрібно бісеру» в PDF ставить по одному кольору в рядок, коли вони вміщаються, називає бісер у заголовку й більше не рахує туби",
+    "be": "«Патрэбна бісеру» ў PDF ставіць па адным колеры ў радок, калі яны змяшчаюцца, называе бісер у загалоўку і больш не лічыць цюбікі",
+    "zh": "PDF 的所需珠子在放得下时每行列一种颜色，标题写明珠子，并且不再计算管数",
+    "es": "Cuentas necesarias del PDF pone un color por fila cuando caben, nombra la cuenta en su título y ya no cuenta tubos",
+    "pl": "Potrzebne koraliki w PDF podają jeden kolor w wierszu, gdy się mieszczą, nazywają koralik w nagłówku i nie liczą już tub"
+  }
+}

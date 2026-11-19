@@ -923,9 +923,6 @@ export interface Translations {
     columnCode: string
     columnBeads: string
     columnGrams: string
-    columnToBuy: string
-    /** "2 × 5 g": the tubes to buy. */
-    tubes: string
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: string
     partPageShort: string

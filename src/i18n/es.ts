@@ -723,8 +723,6 @@ export const es: Translations = {
     columnCode: 'Código',
     columnBeads: 'Cuentas',
     columnGrams: 'Gramos',
-    columnToBuy: 'A comprar',
-    tubes: '{count} × 5 g',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'parte {part} · pág. {page}',
     partPageShort: '{part} · p. {page}',
