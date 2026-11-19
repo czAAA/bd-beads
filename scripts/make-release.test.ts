@@ -53,14 +53,14 @@ beforeEach(() => {
 afterEach(() => rmSync(repo, { recursive: true, force: true }));
 
 describe('makeRelease', () => {
-  it('adds the next release with today’s date and the number and kind of every unreleased note; the Build after is 2.0.0', () => {
+  it('adds a release at its newest note’s Version, with today’s date and the number and kind of every unreleased note', () => {
     commit(note('2026-11-18-0002', 'new'));
     commit(note('2026-11-18-0001', 'fixed'));
     git('switch', '-q', '-c', 'release');
 
-    expect(makeRelease(repo, 'main', '2026-12-01')).toEqual({ version: '2.0.0', notes: 2 });
+    expect(makeRelease(repo, 'main', '2026-12-01')).toEqual({ version: '1.1.1', notes: 2 });
     expect(record().at(-1)).toEqual({
-      version: '2.0.0',
+      version: '1.1.1',
       date: '2026-12-01',
       notes: [
         { name: '2026-11-18-0002', version: '1.1.0', kind: 'new' },
@@ -69,13 +69,23 @@ describe('makeRelease', () => {
     });
     expect(readFileSync(join(repo, RELEASE_RECORD), 'utf8')).toBe(`[
   { "version": "1.0.0", "date": "2026-11-17", "notes": [] },
-  { "version": "2.0.0", "date": "2026-12-01", "notes": [
+  { "version": "1.1.1", "date": "2026-12-01", "notes": [
     { "name": "2026-11-18-0002", "version": "1.1.0", "kind": "new" },
     { "name": "2026-11-18-0001", "version": "1.1.1", "kind": "fixed" }
   ] }
 ]
 `);
-    expect(readFileSync(join(repo, CHANGELOG), 'utf8')).toContain('## Release 2.0.0 · 2026-12-01');
+    expect(readFileSync(join(repo, CHANGELOG), 'utf8')).toContain('## Release 1.1.1 · 2026-12-01');
+    commit();
+    expect(buildVersion(repo, true).version).toBe('1.1.1');
+  });
+
+  it('a major release, only when asked, steps the first number; the Build after is 2.0.0', () => {
+    commit(note('2026-11-18-0001', 'fixed'));
+    git('switch', '-q', '-c', 'release');
+
+    expect(makeRelease(repo, 'main', '2026-12-01', true)).toEqual({ version: '2.0.0', notes: 1 });
+    expect(released('2.0.0')).toEqual([{ name: '2026-11-18-0001', version: '1.0.1', kind: 'fixed' }]);
     commit();
     expect(buildVersion(repo, true).version).toBe('2.0.0');
   });
@@ -99,18 +109,18 @@ describe('makeRelease', () => {
 
     expect(() => makeRelease(repo, 'main', '2026-12-02')).toThrow(/merge main in/);
     git('merge', '-q', '--no-edit', 'main');
-    expect(makeRelease(repo, 'main', '2026-12-02')).toEqual({ version: '2.0.0', notes: 2 });
-    expect(record().map((release) => release.version)).toEqual(['1.0.0', '2.0.0']);
-    expect(released('2.0.0')).toEqual([
+    expect(makeRelease(repo, 'main', '2026-12-02')).toEqual({ version: '1.1.0', notes: 2 });
+    expect(record().map((release) => release.version)).toEqual(['1.0.0', '1.1.0']);
+    expect(released('1.1.0')).toEqual([
       { name: '2026-11-18-0001', version: '1.0.1', kind: 'fixed' },
       { name: '2026-11-19-0002', version: '1.1.0', kind: 'new' },
     ]);
   });
 
-  it('a note that slips in before the merge keeps its number from before the release, and the next release writes it down', () => {
+  it('a note that slips in before a major release’s merge keeps its number from before it, and the next release writes it down', () => {
     commit(note('2026-11-18-0001', 'fixed'));
     git('switch', '-q', '-c', 'release');
-    makeRelease(repo, 'main', '2026-12-01');
+    makeRelease(repo, 'main', '2026-12-01', true);
     commit();
     git('switch', '-q', 'main');
     commit(note('2026-11-19-0002', 'fixed'));
@@ -120,10 +130,29 @@ describe('makeRelease', () => {
     commit(note('2026-12-02-0003', 'fixed'));
     expect(buildVersion(repo, true).version).toBe('2.0.1');
     git('switch', '-q', '-c', 'release-3');
-    expect(makeRelease(repo, 'main', '2026-12-03')).toEqual({ version: '3.0.0', notes: 2 });
+    expect(makeRelease(repo, 'main', '2026-12-03', true)).toEqual({ version: '3.0.0', notes: 2 });
     expect(released('3.0.0')).toEqual([
       { name: '2026-11-19-0002', version: '1.0.2', kind: 'fixed' },
       { name: '2026-12-02-0003', version: '2.0.1', kind: 'fixed' },
+    ]);
+  });
+
+  it('a note that slips in before the merge of a release that kept its number gets the next number, never a repeat', () => {
+    commit(note('2026-11-18-0001', 'fixed'));
+    git('switch', '-q', '-c', 'release');
+    makeRelease(repo, 'main', '2026-12-01');
+    commit();
+    git('switch', '-q', 'main');
+    commit(note('2026-11-19-0002', 'fixed'));
+    mergeRelease();
+
+    expect(buildVersion(repo, true).version).toBe('1.0.2');
+    commit(note('2026-12-02-0003', 'fixed'));
+    git('switch', '-q', '-c', 'release-2');
+    expect(makeRelease(repo, 'main', '2026-12-03')).toEqual({ version: '1.0.3', notes: 2 });
+    expect(released('1.0.3')).toEqual([
+      { name: '2026-11-19-0002', version: '1.0.2', kind: 'fixed' },
+      { name: '2026-12-02-0003', version: '1.0.3', kind: 'fixed' },
     ]);
   });
 

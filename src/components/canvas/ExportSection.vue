@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
+import EditableLine from '../project/EditableLine.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
@@ -17,10 +18,12 @@ import { useI18n } from '../../i18n/useI18n'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
+import { pdfFileName } from '../../composables/export/pdfFileName'
+import { MAX_PDF_FILE_NAME, typedPdfFileName } from '../../domain/projectFile'
 
-// The export rows (tickets 568, 0652, 0916, 1095; ExportPanel card): Picture then Printable chart, one after the other,
-// then their options, Export quality, Large beads and Row by row. One component for the Frame panel's Export section and
-// the Export panel; the slot holds what a panel adds under the switches (the Frame panel's Letters).
+// The export rows (tickets 568, 0652, 0916, 1095, 1096; ExportPanel card): Picture, Printable chart, then Export quality,
+// Large beads, Row by row and "Saves as", the PDF's name with its pencil. One component for the Frame panel's Export
+// section and the Export panel; the slot holds what a panel adds under the switches (the Frame panel's Letters).
 const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
@@ -31,7 +34,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'export-png': []
-  'export-pdf': []
+  'export-pdf': [typedName?: string]
 }>()
 
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
@@ -88,13 +91,32 @@ const qualityHint = computed(() => ({
   label: t.value.frame.qualityHintLabel,
   body: fillBlanks(t.value.frame.qualityHint, { low: pngDpiFor('low'), medium: pngDpiFor('medium'), high: pngDpiFor('high') }),
 }))
+/** A name typed for the PDF (ticket 1096): saved as it is, with no switch's word added. It lives while the rows are
+ * shown, so closing the panel forgets it. */
+const typedName = ref<string>()
+/** The PDF's file name as it will be saved, changing at once with each switch. */
+const pdfName = computed(() => typedName.value ?? pdfFileName(props.project, choices.value, t.value))
+const fileLine = computed(() => ({
+  label: t.value.frame.savesAs,
+  value: pdfName.value,
+  editLabel: t.value.frame.fileNameEdit,
+  editTooltip: t.value.frame.fileNameTooltip,
+  maxlength: MAX_PDF_FILE_NAME,
+  normalize: (raw: string) => typedPdfFileName(raw) ?? '',
+  fileName: true,
+  testid: 'export-file-name',
+}))
+/** Empty brings the made name back. */
+function onRename(name: string) {
+  typedName.value = name || undefined
+}
 const exportBusy = computed(() => !!props.exporting)
 const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng, { name: projectNameOf(props.project) }))
 </script>
 
 <template>
   <PanelItem icon="image" :value="pngValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'png' || undefined" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
-  <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'pdf' || undefined" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
+  <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'pdf' || undefined" data-testid="export-pdf" @select="emit('export-pdf', typedName)">{{ t.frame.exportChart }}</PanelItem>
   <div class="export-section__quality">
     <QualitySlider
       :label="t.frame.exportQuality"
@@ -109,6 +131,9 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
   </div>
   <PanelSwitchRow v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
   <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
+  <div class="export-section__file">
+    <EditableLine v-bind="fileLine" @save="onRename" />
+  </div>
   <slot />
   <LoadingState v-if="exporting" class="export-section__loading" compact :text="exportingText" />
 </template>
@@ -123,6 +148,10 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
   padding: var(--space-4) 0 0;
   font: var(--type-meta-small);
   color: var(--muted);
+}
+
+.export-section__file {
+  padding: 0 var(--space-10);
 }
 
 .export-section__loading {

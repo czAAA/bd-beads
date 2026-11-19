@@ -73,6 +73,8 @@ const emit = defineEmits<{
   /** The first Project, made at once and opened on the Frame panel's Starter gallery (ticket 0953). */
   startFromStarter: []
   openEditor: []
+  /** Create free account: the editor, on the Sign in Subpanel (ticket 0391). */
+  createAccount: []
   /** The editor with no Project open and the Menu on Saved Projects (ticket 0716). */
   openSavedProjects: []
   /** The editor on the Project picked in the Menu's Saved Projects. */
@@ -208,6 +210,7 @@ const sections = computed<HomepageSection[]>(() => [
       freeOpen: narrow.value || freeGrowth.open.value,
       onMakeFirstProject: () => emit('makeFirstProject'),
       onOpenEditor: () => emit('openEditor'),
+      onCreateAccount: () => emit('createAccount'),
     }),
   },
 ])

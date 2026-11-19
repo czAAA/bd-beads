@@ -594,7 +594,7 @@ export interface Translations {
       /** No account, then Free account and Pro, switched off (ticket 0742): those two list nothing, their line saying only
        * what they build on. */
       tiles: [PlanCopy & { meta: string }, PlanCopy, PlanCopy]
-      /** The stamp on Free account and Pro, written in capitals on it, and its image's name. */
+      /** The stamp on Pro, written in capitals on it, and its image's name. */
       comingSoon: string
       /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them; a
        * phone's Show all opens the rows past its first (ticket 0827). */
@@ -1079,6 +1079,13 @@ export interface Translations {
     rowByRowLabel: string
     rowByRowInfoLabel: string
     rowByRowLine: string
+    /** The line under the print switches (ticket 1096, ExportPanel card), before the PDF's file name; the word each switch adds
+     * to that name, after an underscore; and the pencil that renames the file for this export, its name and Tooltip. */
+    savesAs: string
+    fileWordLargeBeads: string
+    fileWordRowByRow: string
+    fileNameEdit: string
+    fileNameTooltip: string
     /** The Frame panel's margin section and the margin color picker (ticket 0656, MarginSheet card): its heading, the
      * picker's name, the Auto swatch's name and accessible name, the name of the swatch that is the Canvas color, and the
      * line under the picker. */

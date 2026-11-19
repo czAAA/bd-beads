@@ -19,6 +19,8 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 
 **Large beads** (Export panel, ticket 0916) raises the smallest bead from `print-bead-min` to `print-bead-large` (3 mm, the chart size before ticket 0913), on page 1's whole chart, its strips and every chart page, at the cost of more pages: a 100 × 100 becomes the overview and parts. The Export panel's Printable chart row counts the pages before the export ("PDF ≈ 1.2 MB · 5 pages").
 
+The PDF's file name says which print switches are on, `{project}-{frame}-{maker}_large-beads_row-by-row.pdf`, and the Export panel shows it, renamable for one export, before the export (ExportPanel card, ticket 1096).
+
 There is no Cover that repeats the chart and no Specification that repeats the bead list (ticket 0914): Beads needed is one table, printed once, and the Schema's facts are page 1's tech line.
 
 ## Approved 2026-11-19, not yet in the app (ticket 1096)
@@ -30,7 +32,6 @@ Signed off on the canvas "PDF export: cover page". The cards have the detail; un
 - **Black and white** (PrintBlackAndWhite card), a switch that is off at first: every page after the cover is drawn in one ink, each bead on paper, a 10%, 20% or 30% tint or solid black, so letters and lines print sharp on an office printer.
 - **Beads needed** is one color to a row, in two columns only when it would not fit page 1 otherwise; it has no "to buy" column and no tubes, and its heading names the Bead again (PrintPage1 card).
 - **Row by row shows each run's bead**: the count, then the bead's own swatch with its letter, and an empty position as the empty swatch, in place of "3A, 2×" (PrintWordChart card).
-- **The PDF's file name says which switches are on**: `{project}-{frame}-{maker}_cover_row-by-row.pdf` (ExportPanel card).
 
 ## Page 1
 

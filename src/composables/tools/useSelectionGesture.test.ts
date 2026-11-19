@@ -974,6 +974,18 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toMatchObject({ top: 7, left: 4 })
     })
 
+    it('a Piece-tool tap on one of its beads keeps it selected and changes nothing', () => {
+      const { gesture, harness } = pieceSelected()
+      const before = harness.currentProject()
+      const selection = gesture.selection.value
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 5, column: 6 }, 'piece')
+      gesture.endAdjust()
+
+      expect(gesture.selection.value).toEqual(selection)
+      expect(harness.currentProject()).toBe(before)
+    })
+
     it('a press of the grip that goes nowhere, or comes back, changes nothing', () => {
       const { gesture, harness } = pieceSelected()
       const before = harness.currentProject()

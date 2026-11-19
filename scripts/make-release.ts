@@ -1,6 +1,6 @@
-// The release command (ticket 1046, spec 1043, ADR 0096), `npm run release` when the owner says "release": adds the
-// next Production release with the number and kind of every unreleased note, and writes CHANGELOG.md. The steps
-// around it are in docs/agents/pull-requests.md (The release PR).
+// The release command (ticket 1046, spec 1043, ADR 0096), `npm run release` when the owner says "release": the next
+// Production release, at its newest note's Version (`--major`, only when the owner says: the next X.0.0, ticket 1103),
+// with every unreleased note's number and kind, and CHANGELOG.md. The steps: docs/agents/pull-requests.md.
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +8,7 @@ import { CHANGELOG, changelog } from './changelog.ts';
 import { NOTES_DIR } from './noteOrder.ts';
 import { numberUnreleased, readNoteFiles } from './notes.ts';
 import { git, RELEASE_RECORD } from './release.ts';
-import { nextRelease, type Release } from './versions.ts';
+import { nextMajor, type Release } from './versions.ts';
 
 const inline = (fields: object): string =>
   `{ ${Object.entries(fields).map(([key, value]) => `${JSON.stringify(key)}: ${JSON.stringify(value)}`).join(', ')} }`;
@@ -28,10 +28,10 @@ function notesAt(root: string, ref: string): Set<string> {
   return new Set(paths.filter((path) => path.endsWith('.json')).map((path) => path.slice(0, -'.json'.length)));
 }
 
-/** Adds release X.0.0 dated `today` with every note `base` holds that no release lists, numbered in the order they
- * merged there, and writes CHANGELOG.md. Run again on the release branch, it makes that release again with the notes
- * merged meanwhile. Throws, writing nothing, when no note is unreleased or the branch is behind `base`. */
-export function makeRelease(root: string, base: string, today: string): { version: string; notes: number } {
+/** Adds a release dated `today`, at its newest note's Version (with `major`, the next `X.0.0`), with every note `base`
+ * holds that no release lists, in merge order, and writes CHANGELOG.md. Run again, it remakes it with the notes merged
+ * meanwhile. Throws, writing nothing, when no note is unreleased or the branch is behind `base`. */
+export function makeRelease(root: string, base: string, today: string, major = false): { version: string; notes: number } {
   const files = readNoteFiles(root);
   const onBase = JSON.parse(git(root, ['show', `${base}:${RELEASE_RECORD}`])) as Release[];
   const baseVersions = new Set(onBase.map((release) => release.version));
@@ -47,7 +47,7 @@ export function makeRelease(root: string, base: string, today: string): { versio
   const numbered = numberUnreleased(root, { ...files, record }, true, base);
   if (!numbered) throw new Error('A release needs git\'s whole history: `git fetch --unshallow`, and run again.');
   if (numbered.notes.length === 0) throw new Error('No Release note is unreleased, so there is nothing to release.');
-  const release = { version: nextRelease(record), date: today, notes: numbered.notes };
+  const release = { version: major ? nextMajor(record) : numbered.build, date: today, notes: numbered.notes };
   const after = [...record, release];
   writeFileSync(resolve(root, RELEASE_RECORD), formatRecord(after));
   writeFileSync(resolve(root, CHANGELOG), changelog({ ...files, record: after }));
@@ -56,9 +56,11 @@ export function makeRelease(root: string, base: string, today: string): { versio
 
 function main(args: string[]): void {
   try {
-    if (args.length > 0 && (args.length !== 2 || args[0] !== '--base')) throw new Error('usage: node scripts/make-release.ts [--base <ref>]');
-    const base = args[1] ?? 'origin/main';
-    const { version, notes } = makeRelease(process.cwd(), base, new Date().toISOString().slice(0, 10));
+    const major = args.includes('--major');
+    const rest = args.filter((arg) => arg !== '--major');
+    if (rest.length > 0 && (rest.length !== 2 || rest[0] !== '--base')) throw new Error('usage: node scripts/make-release.ts [--major] [--base <ref>]');
+    const base = rest[1] ?? 'origin/main';
+    const { version, notes } = makeRelease(process.cwd(), base, new Date().toISOString().slice(0, 10), major);
     console.log(`Release ${version} holds ${notes} Release note(s); ${RELEASE_RECORD} and ${CHANGELOG} are written.`);
     console.log(`Commit both and open the pull request \`release: ${version}\` (docs/agents/pull-requests.md, The release PR).`);
   } catch (error) {

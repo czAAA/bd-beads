@@ -13,7 +13,7 @@
 
 Example: `ref:[0189] Extract undo/redo history into useUndoHistory`
 
-The one exception is the release PR, titled `release: X.0.0` (Production releases, below).
+The one exception is the release PR, titled `release: X.Y.Z` (Production releases, below).
 
 ## What a pull request holds
 
@@ -39,7 +39,7 @@ The notes from before 1.0.0 sit apart in `src/data/releaseNotes/before-1.0.0/`, 
 
 ## Production releases
 
-The release record, `src/data/releases.json`, lists the Production releases, oldest first (spec 1043, ADR 0096). It is a JSON list that starts with release 1.0.0 (ticket 1045, with no notes); each release is `{ "version": "X.0.0", "date": "YYYY-MM-DD", "notes": [{ "name": "YYYY-MM-DD-NNNN", "version": "X.Y.Z", "kind": "new" | "changed" | "fixed" }, …] }`: its Version, the day it was made, and every Release note it released, by the note's file name, with the number and kind that note got. A release is only ever added at the end, never edited or removed. The commit on `main` that adds one is a **release commit**: merging it deploys production, and production takes no other commit (`docs/deploy.md`, Releasing to production). `scripts/release.ts` is the only code that decides which commit is a release.
+The release record, `src/data/releases.json`, lists the Production releases, oldest first (spec 1043, ADR 0096). It is a JSON list that starts with release 1.0.0 (ticket 1045, with no notes); each release is `{ "version": "X.Y.Z", "date": "YYYY-MM-DD", "notes": [{ "name": "YYYY-MM-DD-NNNN", "version": "X.Y.Z", "kind": "new" | "changed" | "fixed" }, …] }`: its Version, the day it was made, and every Release note it released, by the note's file name, with the number and kind that note got. A release is only ever added at the end, never edited or removed. The commit on `main` that adds one is a **release commit**: merging it deploys production, and production takes no other commit (`docs/deploy.md`, Releasing to production). `scripts/release.ts` is the only code that decides which commit is a release.
 
 The Build's Version is worked out at build time (`vite.version.ts`): the record gives the released notes their numbers, and the notes since are placed in the order their commits sit on `main` (`scripts/noteOrder.ts`) and numbered by `scripts/versions.ts`. A note that merged while a release PR was open, and so is not in its list, keeps the number it had before the release. A build (`vite build`) needs git's whole history and fails without it; the dev server and the unit tests place a note git can't place last, by file name, and a note not yet committed counts as the newest.
 
@@ -48,11 +48,12 @@ The Build's Version is worked out at build time (`vite.version.ts`): the record 
 A Production release is made by one command and one pull request (ticket 1046):
 
 - **When.** An agent opens a release PR only when the owner says "release", and never as part of a ticket or a bulk run.
-- **The command.** On a branch from fresh `main` (`git fetch origin main`, then a worktree `git worktree add -b release/YYYY-MM-DD ../bd-beads-worktrees/bd-beads-release origin/main` with its `npm ci`), run `npm run release`. It adds the next release to the record (the newest release's first number plus one, `.0.0`, today's date, and the number and kind of every Release note no release lists, numbered in the order they merged on `origin/main`) and writes `CHANGELOG.md`. It refuses, changing nothing, when no note is unreleased, and when the branch is behind `origin/main` (merge it in and run again). Run again on the release branch after `main` moved, it makes the same release again with the notes merged meanwhile.
+- **The command.** On a branch from fresh `main` (`git fetch origin main`, then a worktree `git worktree add -b release/YYYY-MM-DD ../bd-beads-worktrees/bd-beads-release origin/main` with its `npm ci`), run `npm run release`. It adds the next release to the record (the Version of its newest note, today's date, and the number and kind of every Release note no release lists, numbered in the order they merged on `origin/main`) and writes `CHANGELOG.md`. It refuses, changing nothing, when no note is unreleased, and when the branch is behind `origin/main` (merge it in and run again). Run again on the release branch after `main` moved, it makes the same release again with the notes merged meanwhile.
 - **What it holds.** Exactly what the command wrote: `src/data/releases.json` and `CHANGELOG.md`, nothing else. A release has a number and a date, no headline and no Release note of its own. A fix on production is another release.
-- **Its title** is `release: X.0.0`, the one title that names a Version. It has **no ticket**, so no ticket number in the title and no ticket to archive.
+- **Major only when the owner says.** A release keeps its newest note's Version; nothing steps the first number unless the owner asks for a major release ("release 2.0.0"): then run `npm run release -- --major`, which makes the newest release's first number plus one, `.0.0` (ticket 1103).
+- **Its title** is `release: X.Y.Z`, the one title that names a Version. It has **no ticket**, so no ticket number in the title and no ticket to archive.
 - **Only the owner merges it.** No skill merges one; the bulk run skips it and names it in its report. Its checks run (it changes the release record, not only Markdown). Merging it deploys production (`docs/deploy.md`, Releasing to production).
-- A note that merges after the last run and before the merge keeps the number it had before the release, and the next release writes it down.
+- A note that merges after the last run and before the merge keeps the number it had before the release, and the next release writes it down. The notes after it go on from the higher of its number and the release's, so none is given twice.
 
 ### The changelog
 

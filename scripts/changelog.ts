@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { newerFirst } from '../src/domain/notesFile.ts';
 import { numberUnreleased, readNoteFiles, type NoteFile, type NoteFiles } from './notes.ts';
-import { nextRelease, type Kind, type NumberedNote } from './versions.ts';
+import type { Kind, NumberedNote } from './versions.ts';
 
 /** The changelog's path in the repo, at its root where a reader of the public repo looks for it. */
 export const CHANGELOG = 'CHANGELOG.md';
@@ -51,7 +51,7 @@ function blocks(notes: readonly NumberedNote[], files: ReadonlyMap<string, NoteF
 export function changelog(files: NoteFiles, unreleased?: readonly NumberedNote[]): string {
   const byName = new Map(files.notes.map((note) => [note.name, note]));
   const waiting = unreleased
-    ? ['', `## Unreleased: what release ${nextRelease(files.record)} would hold`, ...(unreleased.length > 0 ? blocks(unreleased, byName) : ['', 'Nothing yet: the release command refuses until a Release note merges.'])]
+    ? ['', '## Unreleased: what the next release would hold', ...(unreleased.length > 0 ? blocks(unreleased, byName) : ['', 'Nothing yet: the release command refuses until a Release note merges.'])]
     : [];
   const releases = [...files.record].reverse().flatMap((release) => [
     '',

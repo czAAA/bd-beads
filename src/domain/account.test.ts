@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseAccount, parseSignInReturn, waitOf } from './account'
+import { parseAccount, parseSignInReturn, signInAddress, waitOf } from './account'
 
 describe('parseAccount', () => {
   it('reads an email and a plan, and a plan it does not know as the Free account', () => {
@@ -10,6 +10,14 @@ describe('parseAccount', () => {
 
   it('reads nothing from what is not an account', () => {
     for (const value of [null, undefined, 'ann@example.com', {}, { email: 7 }, { email: 'not an address' }]) expect(parseAccount(value)).toBeUndefined()
+  })
+})
+
+describe('signInAddress (ticket 0391)', () => {
+  it('marks the editor\'s address to open on the Sign in Subpanel, which the editor reads back', () => {
+    const address = signInAddress('/ru/app/')
+    expect(address).toBe('/ru/app/?account=sign-in')
+    expect(parseSignInReturn(address.slice(address.indexOf('?')))).toBe('sign-in')
   })
 })
 
