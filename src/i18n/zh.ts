@@ -397,6 +397,7 @@ export const zh: Translations = {
         canvas: { name: '画布和边框', text: '随处绘制：画布没有边界。边框决定尺寸、导出和珠子数量。' },
         techniques: { name: '编织技法', text: '织机、佩奥特编织和砖形，按珠子实际的排列方式绘制。' },
         editing: { name: '项目编辑', text: '涂色、填充、擦除、选择、复制、粘贴、撤销。' },
+        toolsAtPointer: { name: '指针旁的工具', text: '长按画布或右键点击：工具和颜色就在你绘制的地方打开。' },
         mirror: { name: '镜像', text: '画一边，另一边自动跟随。' },
         reference: { name: '参考图', text: '珠子下面的图片：照着它画新作品。' },
         convert: { name: '转换图片', text: '把图片变成图样，最多 {max} 种颜色。' },

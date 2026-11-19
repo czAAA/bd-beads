@@ -398,6 +398,7 @@ export const es: Translations = {
         canvas: { name: 'Lienzo y marco', text: 'Dibuja donde quieras: el Lienzo no tiene bordes. Un marco fija el tamaño, las exportaciones y el recuento de cuentas.' },
         techniques: { name: 'Técnicas', text: 'Telar, peyote y punto ladrillo, cada una dibujada como se colocan sus cuentas.' },
         editing: { name: 'Edición del proyecto', text: 'Pintar, rellenar, borrar, seleccionar, copiar, pegar, deshacer.' },
+        toolsAtPointer: { name: 'Herramientas junto al puntero', text: 'Mantén el Lienzo o haz clic derecho: las herramientas y los colores se abren donde dibujas.' },
         mirror: { name: 'Espejo', text: 'Dibuja un lado y el otro lo sigue.' },
         reference: { name: 'Imagen de referencia', text: 'Una imagen bajo las cuentas: dibuja encima una pieza nueva.' },
         convert: { name: 'Convertir imagen', text: 'Una imagen convertida en esquema, en hasta {max} colores.' },

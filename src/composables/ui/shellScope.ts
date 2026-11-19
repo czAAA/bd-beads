@@ -1,4 +1,5 @@
 import { hasInjectionContext, inject, provide, type InjectionKey } from 'vue'
+import { ownPoint } from './cssZoom'
 
 /** Where an editor shell lives on the page (ticket 0797). The editor fills the whole page; the Homepage's What's inside
  * holds a second one in a box of its own, which takes keys and presses only inside that box and keeps its overlays in
@@ -48,4 +49,12 @@ export function inScope(scope: ShellScope, target: EventTarget | null): boolean 
 export function scopeRoom(scope: ShellScope): ScopeRoom {
   const box = scope.root()?.getBoundingClientRect()
   return box ? { left: box.left, top: box.top, right: box.right, bottom: box.bottom } : { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }
+}
+
+/** Where a point of the screen (client px) is for a `fixed` part of the scope's shell, in the px its `left` and `top`
+ * take: from the window's corner, or from a boxed shell's box, the room of its `fixed` parts, in the box's own px
+ * (ticket 1114). */
+export function fixedPointIn(scope: ShellScope, point: { x: number; y: number }): { x: number; y: number } {
+  const root = scope.root()
+  return root ? ownPoint(root, { clientX: point.x, clientY: point.y }) : point
 }

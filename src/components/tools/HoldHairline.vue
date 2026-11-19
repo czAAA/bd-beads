@@ -1,20 +1,26 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { fixedPointIn, useShellScope } from '../../composables/ui/shellScope'
 import { RADIAL_HOLE } from '../../domain/radialToolbox'
 
 /** The hairline a hold on the Canvas draws round the pressed point while it is timed (RadialToolbox card, ticket
  * 1065): once round, clockwise from the top, where the ring's inner edge will be. It says the ring is coming; a tap
  * never shows it, and reduced motion shows none. */
-defineProps<{
+const props = defineProps<{
   /** The pressed point, in client px; none while no hold is timed. */
   at?: { x: number; y: number }
 }>()
+
+/** Placed in its shell's room, as the ring is: the window, or the Homepage demo's box (ticket 1114). */
+const scope = useShellScope()
+const place = computed(() => props.at && fixedPointIn(scope, props.at))
 
 /** The circle with room for its line's width, in the design system's px. */
 const viewBox = `${-RADIAL_HOLE - 2} ${-RADIAL_HOLE - 2} ${2 * RADIAL_HOLE + 4} ${2 * RADIAL_HOLE + 4}`
 </script>
 
 <template>
-  <svg v-if="at" class="hold-hairline" :style="{ left: `${at.x}px`, top: `${at.y}px` }" :viewBox="viewBox" aria-hidden="true" focusable="false" data-testid="hold-hairline">
+  <svg v-if="place" class="hold-hairline" :style="{ left: `${place.x}px`, top: `${place.y}px` }" :viewBox="viewBox" aria-hidden="true" focusable="false" data-testid="hold-hairline">
     <circle class="hold-hairline__line" :r="RADIAL_HOLE" pathLength="1" transform="rotate(-90)" />
   </svg>
 </template>

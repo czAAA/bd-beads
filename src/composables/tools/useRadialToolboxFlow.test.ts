@@ -20,7 +20,7 @@ const framed: Project = withLayers(base, {
 const AT = { x: 300, y: 200 }
 
 /** The flow over one Project, with spies for the controls' handlers. */
-function setup({ demo = false }: { demo?: boolean } = {}) {
+function setup() {
   const project = shallowRef<Project | null>(framed)
   const readOnly = ref(false)
   const can = { undo: ref(true), redo: ref(true) }
@@ -28,7 +28,6 @@ function setup({ demo = false }: { demo?: boolean } = {}) {
   const deps = {
     currentProject: () => project.value,
     readOnly: () => readOnly.value,
-    demo,
     canUndo: () => can.undo.value,
     canRedo: () => can.redo.value,
     recents: () => recents.value,
@@ -57,7 +56,7 @@ describe('useRadialToolboxFlow (ticket 1064)', () => {
     expect(ring.center.value).toEqual(AT)
   })
 
-  it('does not open on a read-only Canvas, with no Project open, or on the Homepage demo', () => {
+  it('does not open on a read-only Canvas or with no Project open', () => {
     const readOnly = setup()
     readOnly.readOnly.value = true
     readOnly.ring.openAt(AT, { row: 2, column: 2 })
@@ -67,10 +66,6 @@ describe('useRadialToolboxFlow (ticket 1064)', () => {
     empty.project.value = null
     empty.ring.openAt(AT)
     expect(empty.ring.open.value).toBe(false)
-
-    const demo = setup({ demo: true })
-    demo.ring.openAt(AT, { row: 2, column: 2 })
-    expect(demo.ring.open.value).toBe(false)
   })
 
   it('closes when the Canvas turns read-only or the Project closes under it', async () => {
@@ -155,12 +150,12 @@ describe('useRadialToolboxFlow (ticket 1064)', () => {
       expect(ring.holdEnds.value).toBe(1)
     })
 
-    it('times no hold where the ring would not open: a read-only Canvas, no Project, the Homepage demo', () => {
+    it('times no hold where the ring would not open: a read-only Canvas, no Project', () => {
       const readOnly = setup()
       readOnly.readOnly.value = true
       const empty = setup()
       empty.project.value = null
-      for (const { ring } of [readOnly, empty, setup({ demo: true })]) {
+      for (const { ring } of [readOnly, empty]) {
         expect(ring.canOpen.value).toBe(false)
         ring.hold(AT)
         expect(ring.holdAt.value).toBeUndefined()
@@ -191,6 +186,12 @@ describe('useRadialToolboxFlow near a screen edge (ticket 1076)', () => {
     const ring = on(1.5)
     ring.openAt({ x: 0, y: 400 })
     expect(ring.center.value).toEqual({ x: 180, y: 400 })
+  })
+
+  it("in a shell that lives in a box, the Homepage demo's, it stays inside the box (ticket 1114)", () => {
+    const ring = useRadialToolboxFlow({ ...setup().deps, screen: () => ({ left: 300, top: 200, width: 800, height: 500, scale: 1 }) })
+    ring.openAt({ x: 310, y: 210 })
+    expect(ring.center.value).toEqual({ x: 420, y: 358 })
   })
 
   it('with no screen given it opens on the pressed point', () => {

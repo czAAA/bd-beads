@@ -12,11 +12,12 @@ interface InsideCopy {
   text: string
 }
 
-/** What's inside's 13 rows, in the order the tour plays them (homepage/inside/insideCopy.ts). */
+/** What's inside's 14 rows, in the order the tour plays them (homepage/inside/insideCopy.ts). */
 export type InsideRowId =
   | 'canvas'
   | 'techniques'
   | 'editing'
+  | 'toolsAtPointer'
   | 'mirror'
   | 'starters'
   | 'reference'
@@ -552,13 +553,13 @@ export interface Translations {
       piece: string
       promises: Record<'free' | 'picture' | 'weave', InsideCopy>
     }
-    /** What's inside (ticket 0797; Homepage card): the 13 rows the tour plays, the editor's region, and the demo's
+    /** What's inside (ticket 0797; Homepage card): the 14 rows the tour plays, the editor's region, and the demo's
      * Projects. The colors row's {brands} and Convert image's {max} come from the app. */
     inside: {
       rows: Record<InsideRowId, InsideCopy>
       editor: string
       demo: { ring: string; heart: string; bracelet: string }
-      /** The playing row's place in the caption, "4 / 13" (ticket 0825). */
+      /** The playing row's place in the caption, "4 / 14" (ticket 0825). */
       place: string
       /** The four chapters, the tour's Pause and Play, Open editor from here (ticket 0879), and the demo's Expand and
        * Collapse (ticket 0830). */

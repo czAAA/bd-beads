@@ -49,6 +49,8 @@ export interface HandDeps {
   dragMs: number
   dragHoldMs: number
   roomPx: number
+  /** `--hold-duration`, in ms: how long a hold on the Canvas takes to open the Radial toolbox (ticket 1114). */
+  holdMs: number
 }
 
 /** A control: by its test id, or found some other way. */
@@ -66,7 +68,7 @@ const HOP_MS = 280
 const HOP_MS_PER_PX = 4.8
 /** What counts as a panel, popover, menu or dialog: on a control in one the ghost rests `--ghost-pause` before it
  * presses, so the beader sees what is pressed. */
-const PANEL = '.app-panel, .color-popover, .margin-sheet, .convert-page__step, [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]'
+const PANEL = '.app-panel, .color-popover, .margin-sheet, .convert-page__step, .radial-toolbox, [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]'
 /** A scroll that brings a control into view, eased as `--ease-standard`: its time grows with its length, within these. */
 const SCROLL_MS = { least: 200, most: 450, perPx: 1.2 }
 /** How many times the hand follows a control that moved under it before it presses, and how far it may be off it. */
@@ -424,12 +426,55 @@ export function createHand(deps: HandDeps) {
     await settle()
   }
 
+  /** Opens the Radial toolbox on a bead, as a beader does (RadialToolbox card, Opening; ticket 1114): by a hold with a
+   * finger or the Pencil, its hairline drawn round the ghost first, or by a right click, at once. Applied at once no
+   * ring is shown: the row picks through the handlers its items reach. */
+  async function openToolbox(position: GridPosition, by: 'hold' | 'click'): Promise<void> {
+    if (instant) return alive()
+    const ring = deps.canvas.radialToolbox
+    await moveToBead(position)
+    const at = await beadAt(position)
+    await wait(deps.pauseMs)
+    ripple()
+    if (by === 'hold') {
+      ring.hold(at)
+      await wait(deps.holdMs)
+      ring.hold()
+    }
+    ring.openAt(at, position)
+    await settle()
+  }
+
+  /** Picks an item of the open Radial toolbox as a hold's slide does (ticket 1077): the ghost slides onto it, it wears
+   * the pressed look and its name shows for `ms`, and the lift picks it. */
+  async function slideTo(target: Target, ms: number): Promise<void> {
+    const item = await find(target)
+    await steady(item)
+    const at = middleOf(item)
+    await moveTo(at)
+    deps.canvas.radialToolbox.slide(at)
+    await wait(ms)
+    deps.canvas.radialToolbox.slideLift(at)
+    await settle()
+  }
+
+  /** Closes the open Radial toolbox by a press in its hole, an Outside press (RadialToolbox card, Picking). */
+  async function closeToolbox(): Promise<void> {
+    if (instant) return alive()
+    const ring = deps.canvas.radialToolbox
+    await moveTo(ring.center.value)
+    await wait(deps.pauseMs)
+    ripple()
+    ring.close()
+    await settle()
+  }
+
   /** Hides the ghost. */
   function hide(): void {
     ghost.shown = false
   }
 
-  return { instant, wait, frame, find, moveTo, middleOf, press, pressWith, scroll, hover, beadAt, stroke, lay, drag, dragFrame, hide, canvas: deps.canvas, root }
+  return { instant, wait, frame, find, moveTo, middleOf, press, pressWith, scroll, hover, beadAt, stroke, lay, drag, dragFrame, openToolbox, slideTo, closeToolbox, hide, canvas: deps.canvas, root }
 }
 
 /** The ghost's hand in a run of the tour. */

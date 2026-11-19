@@ -259,6 +259,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | Canvas and Frame · Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count. | Холст и рамка · Рисуйте где угодно: у холста нет краёв. Рамка задаёт размер, экспорт и количество бисеринок. |
 | Techniques · Loom, peyote and brick stitch, each drawn the way its beads sit. | Техники плетения · Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер. |
 | Project editing · Paint, fill, erase, select, copy, paste, undo. | Правка проекта · Кисть, заливка, ластик, выделение, копирование, вставка, отмена. |
+| Tools at the pointer · Hold the Canvas, or right-click: tools and colors open where you draw. (ticket 1114; the name is Keyboard shortcuts' row for the Radial toolbox) | Инструменты у указателя · Удержите холст или щёлкните правой кнопкой: инструменты и цвета откроются там, где вы рисуете. |
 | Mirror · Draw one side, the other follows. | Отражение · Рисуете одну сторону, вторая повторяет. |
 | Reference image · A picture under the beads: draw a new piece over it. | Подложка · Картинка под бисером: рисуйте по ней новую работу. |
 | Convert image · A picture into a bead pattern, in up to {max} colors. | Из картинки · Превращает картинку в схему, до {max} цветов. |
@@ -278,7 +279,7 @@ Since ticket 0819 the cards above are the coffee screen's promises, in this orde
 
 | English | Russian |
 | --- | --- |
-| {i} / 13 (What's inside's caption, the playing row's place) | {i} / 13 |
+| {i} / 14 (What's inside's caption, the playing row's place; 13 until ticket 1114) | {i} / 14 |
 | More below (the hint on the section bar's edge) | Ниже ещё |
 | Next · {section} (a phone section's last line; `{section}` the next section's heading) | Дальше · {section} |
 | Projects library, {n} (the phone strip's library button, for screen readers) | Библиотека проектов, {n} |

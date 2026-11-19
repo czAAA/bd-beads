@@ -173,6 +173,7 @@ function hand(instant: boolean, signal: AbortSignal): Hand {
     dragMs: cssMs('--ghost-drag'),
     dragHoldMs: cssMs('--ghost-drag-hold'),
     roomPx: cssPx(rootEl.value, '--ghost-room'),
+    holdMs: cssMs('--hold-duration'),
   })
 }
 

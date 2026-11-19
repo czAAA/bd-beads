@@ -69,6 +69,7 @@ Every item runs the code path its existing control runs, so nothing is reachable
 - **With a finger or the Pencil (ticket 1065):** a hold on the Canvas with the pointer that draws: the pen in Pen mode, the finger in Mouse mode. In Pen mode a finger never opens it, since a resting palm is a long, still touch, and in Mouse mode the pen, which moves the Canvas, never opens it.
 - **Where:** under any tool, on a bead or on an empty position, on the Canvas or in the Frame, over the Frame's margin too. A press on a handle (the Frame's, a Selection's, the Mirror Area's) is the handle's and opens nothing. It does not open while the Canvas is read-only.
 - **No key opens it:** every item already has its key.
+- **On the Homepage's demo (ticket 1114):** only the tour's ghost opens it, in its Tools at the pointer row (Homepage card); a visitor's press opens nothing there, as it works nothing else in the demo.
 
 ### The hold (ticket 1065)
 
@@ -90,6 +91,7 @@ Every item runs the code path its existing control runs, so nothing is reachable
 ## Edges (ticket 1076)
 
 - **The ring stays under the pointer as often as it can.** It opens centred on the pressed point wherever the screen has room for it. Else it moves whole, by the least that keeps it `float-edge` inside the screen with room for its name on top: its centre stays at least 120 from the left, right and bottom edges (108 and `float-edge`) and 158 from the top (8 and 30 more, for the name). It never changes shape, and every item keeps its place. The name moves along the ring's top by the least that keeps it `float-edge` inside the screen at each side.
+- **In a shell that lives in a box** (the Homepage's demo, ticket 1114) the box is its screen: the ring is placed in it, keeps the same room from its edges, and is drawn at the box's zoom, as the hold's hairline is.
 - **It lies over what is there:** the Canvas strip, the Tool pill docked at any edge, the Progress bar, the Selection bar and the Mirror bar. It never moves clear of them, and they take no press while it is open.
 - **Stacking (ticket 1064, in the app):** in the app shell at `z-popover`, as the colour popover is, so the canvas box never clips it (StackingOrder card). It is outside the Canvas's zoom, at a fixed size.
 
@@ -102,7 +104,7 @@ Every item runs the code path its existing control runs, so nothing is reachable
 
 ## How a maker learns it exists
 
-One quiet place, the Canvas hint, which gains a part for the device in hand (CanvasHint card): "right-click for tools" with a keyboard (ticket 1064) and "hold the Canvas for tools" on touch (ticket 1065). "Tools" stands for the pill, colours included. Keyboard shortcuts carries the same as one row (ShortcutsHelp card). The First-run welcome does not grow.
+One quiet place, the Canvas hint, which gains a part for the device in hand (CanvasHint card): "right-click for tools" with a keyboard (ticket 1064) and "hold the Canvas for tools" on touch (ticket 1065). "Tools" stands for the pill, colours included. Keyboard shortcuts carries the same as one row (ShortcutsHelp card). The First-run welcome does not grow. Before the editor is open, the Homepage's tour shows it: its Tools at the pointer row opens the ring by a hold and by a click, and its caption names both (Homepage card, ticket 1114).
 
 ## Accessibility (ticket 1064)
 

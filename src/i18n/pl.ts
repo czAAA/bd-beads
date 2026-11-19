@@ -398,6 +398,7 @@ export const pl: Translations = {
         canvas: { name: 'Płótno i ramka', text: 'Rysuj gdziekolwiek: płótno nie ma krawędzi. Ramka ustala rozmiar, eksporty i liczbę koralików.' },
         techniques: { name: 'Techniki', text: 'Krosno, peyote i ścieg ceglasty, każda narysowana tak, jak układają się koraliki.' },
         editing: { name: 'Edycja projektu', text: 'Malowanie, wypełnianie, gumka, zaznaczanie, kopiowanie, wklejanie, cofanie.' },
+        toolsAtPointer: { name: 'Narzędzia przy wskaźniku', text: 'Przytrzymaj płótno lub kliknij prawym przyciskiem: narzędzia i kolory otwierają się tam, gdzie rysujesz.' },
         mirror: { name: 'Odbicie', text: 'Rysujesz jedną stronę, druga podąża.' },
         reference: { name: 'Obraz pomocniczy', text: 'Obraz pod koralikami: rysuj na nim nową pracę.' },
         convert: { name: 'Konwertuj obraz', text: 'Obraz w schemat, w maksymalnie {max} kolorach.' },

@@ -33,7 +33,7 @@ The Homepage card (`docs/design/system/components/Homepage/README.md`) describes
   the editor is the page's one primary button: `StepBar`'s `nextVariant` makes the Homepage's Next secondary, and
   Convert image's stays primary.
 - What's inside is a real editor (`inside/InsideShell`, the app's shell given its own stores), played by a tour
-  (`inside/useInsideTour.ts`: 13 rows, `inside/tourScripts.ts`) and shown as four chapters (`inside/insideCopy.ts`).
+  (`inside/useInsideTour.ts`: 14 rows, `inside/tourScripts.ts`) and shown as four chapters (`inside/insideCopy.ts`).
   A row pressed applies the rows before it at once, so every chapter starts on what the ones before it made. The list
   stands beside the demo from a 1000px homepage box (`LIST_FROM` in `HomePage.vue`, by the zoomed width) and is a band
   over it under that. Expand is the page's control drawn in the demo's own Canvas strip: the shell passes it through

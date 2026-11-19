@@ -107,7 +107,7 @@ describe("What's inside fits its room", () => {
         press('inside-chapter-draw')
         // The first row's end: its Frame on a Margin sheet whose band the later rows reach for.
         await expect.poll(() => mounted.root.querySelector('[data-testid="inside-editor"] [data-testid="margin-band"]'), { timeout: 30000 }).not.toBeNull()
-        expect(mounted.root.querySelector('[data-testid="inside-caption-shown"]')!.textContent).toContain('1 / 13')
+        expect(mounted.root.querySelector('[data-testid="inside-caption-shown"]')!.textContent).toContain('1 / 14')
         // The view is sized to the Frame's real sheet, so the sheet and its band are never cut nor under the Tool pill
         // (ticket 0821), in the list's narrower demo too.
         const area = boxOf(mounted.root, '[data-testid="inside-editor"] [data-testid="app-drawing-area"]')
@@ -191,10 +191,10 @@ describe('HomePage text fit with Projects saved', () => {
 })
 
 // The tour's own steps on the real editor (ticket 0797): under reduced motion, as these tests run, a press on the lit
-// chapter shows its next row's end (ticket 0830), so four presses on the last chapter apply all 13 at once, and a
+// chapter shows its next row's end (ticket 0830), so four presses on the last chapter apply all 14 at once, and a
 // control a row reaches for that has moved or gone fails here, not only in a browser by eye.
 describe("What's inside's tour on the real editor", () => {
-  it("applies all 13 rows, ending on the traced cuff with its first rows done", async () => {
+  it("applies all 14 rows, ending on the traced cuff with its first rows done", async () => {
     const warned = vi.spyOn(console, 'warn')
     const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
     await page.viewport(1440, 900)
@@ -208,7 +208,7 @@ describe("What's inside's tour on the real editor", () => {
       await nextTick()
     }
     expect(lit()).toBe('inside-chapter-weaveKeep')
-    expect(mounted.root.querySelector('[data-testid="inside-caption-shown"]')!.textContent).toContain('13 / 13')
+    expect(mounted.root.querySelector('[data-testid="inside-caption-shown"]')!.textContent).toContain('14 / 14')
     const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
     await expect.poll(() => editor.querySelector('[data-testid="progress-bar-position"]')?.textContent ?? '', { timeout: 30000 }).toMatch(new RegExp(`\\b${ROW_DONE_PASSES + 1}\\D`))
     expect(editor.querySelector('[data-testid="margin-sheet"]')).not.toBeNull()

@@ -137,6 +137,13 @@ describe('radialCenterOnScreen (ticket 1076)', () => {
     expect(radialCenterOnScreen({ x: screen.width, y: screen.height }, screen, RADIAL_ROOM)).toEqual({ x: screen.width - side, y: screen.height - side })
   })
 
+  it("stays inside a box that is not the whole screen, the Homepage demo's (ticket 1114)", () => {
+    const box = { left: 300, top: 200, width: 800, height: 500 }
+    expect(radialCenterOnScreen({ x: 700, y: 450 }, box, RADIAL_ROOM)).toEqual({ x: 700, y: 450 })
+    expect(radialCenterOnScreen({ x: 310, y: 210 }, box, RADIAL_ROOM)).toEqual({ x: 300 + side, y: 200 + top })
+    expect(radialCenterOnScreen({ x: 1095, y: 695 }, box, RADIAL_ROOM)).toEqual({ x: 1100 - side, y: 700 - side })
+  })
+
   it('takes its room in the px of the screen, so a larger text size keeps the same rule', () => {
     const room = { side: side * 1.25, top: top * 1.25 }
     expect(radialCenterOnScreen({ x: 0, y: 0 }, { width: 1000, height: 800 }, room)).toEqual({ x: 150, y: 197.5 })

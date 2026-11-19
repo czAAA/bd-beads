@@ -143,6 +143,10 @@ export const DEMO_MIRROR_STRIP = DEMO_RING_AXES - 1
  * eye, where the second eye leaves ground too. */
 export const DEMO_EDIT_BEADS: readonly (readonly [number, number])[] = [[4, 27], [4, 26], [4, 25]]
 
+/** Tools at the pointer's three beads (ticket 1114), by line and how far along: on the band's middle line, in the
+ * middle of its length, so the Radial toolbox opens with room all round it. */
+export const DEMO_TOOLBOX_BEADS: readonly (readonly [number, number])[] = [[3, 19], [3, 18], [3, 17]]
+
 /** A drawing's colors as its Frame holds them: a row of the Frame for each bead along the piece. */
 function frameColors(drawing: PeacockDrawing): string[][] {
   return Array.from({ length: drawing.length }, (_, along) => drawing.rows.map((line) => DEMO_COLORS[PEACOCK_COLORS[line[along] as PeacockPart]]))

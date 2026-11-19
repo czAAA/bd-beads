@@ -53,7 +53,7 @@ import { useSignInPrompt } from './useSignInPrompt'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
 import { usePickColor } from '../tools/usePickColor'
-import { radialScreenOfWindow, useRadialToolboxFlow } from '../tools/useRadialToolboxFlow'
+import { radialScreenOf, useRadialToolboxFlow } from '../tools/useRadialToolboxFlow'
 import { usePinchPan } from '../canvas/usePinchPan'
 import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
@@ -628,7 +628,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const radialToolbox = useRadialToolboxFlow({
     currentProject,
     readOnly: () => openElsewhere.value,
-    demo: !!demo,
     canUndo: () => canUndo.value,
     canRedo: () => canRedo.value,
     recents: () => toolPill.recentsInPill.value,
@@ -637,7 +636,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onUndo,
     onRedo,
     toggleColorPick,
-    screen: radialScreenOfWindow,
+    screen: () => radialScreenOf(scope),
   })
 
   /** On touch, Mirror mode, paste mode and Pick color say in a toast what to tap next (ticket 0845). */

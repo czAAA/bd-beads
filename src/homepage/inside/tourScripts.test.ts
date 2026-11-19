@@ -19,6 +19,8 @@ function fakeHand(controls: string = '') {
   /** The beads stroked by hand, and those laid at once. */
   const stroked: unknown[] = []
   const laid: unknown[] = []
+  /** What it did with the Radial toolbox, in order. */
+  const ring: string[] = []
   const name = (target: Target) => (typeof target === 'string' ? target : 'control')
   const hand = {
     instant: false,
@@ -37,8 +39,11 @@ function fakeHand(controls: string = '') {
     lay: (cells: unknown[]) => void laid.push(...cells),
     drag: async () => {},
     dragFrame: async () => {},
+    openToolbox: async (_bead: unknown, by: string) => void ring.push(by),
+    slideTo: async (_target: Target, ms: number) => void (ring.push('slide'), times.push(ms)),
+    closeToolbox: async () => void ring.push('close'),
   }
-  return { hand: hand as unknown as Hand, presses, times, stroked, laid }
+  return { hand: hand as unknown as Hand, presses, times, stroked, laid, ring }
 }
 
 describe("What's inside's Mirror row (ticket 0802)", () => {
@@ -54,6 +59,16 @@ describe("What's inside's Mirror row (ticket 0802)", () => {
     await TOUR_SCRIPTS.mirror(hand)
     expect(presses.slice(0, 2)).toEqual(['margin-frame-tools', 'margin-frame-tools-mirror'])
     expect(presses).not.toContain('margin-mirror-frame')
+  })
+})
+
+describe("What's inside's Tools at the pointer row (ticket 1114)", () => {
+  it('opens the Radial toolbox by a hold and picks a color by a slide, paints three beads, then opens it by a click, presses Undo and closes it', async () => {
+    const { hand, presses, stroked, ring } = fakeHand()
+    await TOUR_SCRIPTS.toolsAtPointer(hand)
+    expect(ring).toEqual(['hold', 'slide', 'click', 'close'])
+    expect(stroked).toHaveLength(3)
+    expect(presses).toEqual(['radial-undo'])
   })
 })
 

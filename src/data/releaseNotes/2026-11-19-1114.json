@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "The demo in What's inside shows the tools that open at the pointer: hold the Canvas, or right-click",
+    "ru": "Демо в «Что внутри» показывает инструменты у указателя: удержите холст или щёлкните правой кнопкой",
+    "uk": "Демо в «Що всередині» показує інструменти біля вказівника: утримайте полотно або клацніть правою кнопкою",
+    "be": "Дэма ў «Што ўнутры» паказвае інструменты каля паказальніка: утрымайце палатно або пстрыкніце правай кнопкай",
+    "zh": "“功能一览”中的演示展示了指针旁的工具：长按画布或右键点击",
+    "es": "La demo de Qué incluye muestra las herramientas junto al puntero: mantén el Lienzo o haz clic derecho",
+    "pl": "Demo w „Co jest w środku” pokazuje narzędzia przy wskaźniku: przytrzymaj płótno lub kliknij prawym przyciskiem"
+  }
+}

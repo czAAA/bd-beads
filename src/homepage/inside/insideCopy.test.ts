@@ -9,11 +9,12 @@ import type { Translations } from '../../i18n/translations'
 const rowsOf = (t: Translations, locale: 'en' | 'ru') => insideChapters(t, locale).flatMap((chapter) => chapter.rows)
 
 describe("What's inside's copy (ticket 0797)", () => {
-  it('lists the 13 rows in the order the tour plays them, each with the icon the editor uses for it', () => {
+  it('lists the 14 rows in the order the tour plays them, each with the icon the editor uses for it', () => {
     expect(rowsOf(en, 'en').map(({ id, icon }) => [id, icon])).toEqual([
       ['canvas', 'select'],
       ['techniques', 'grid'],
       ['editing', 'paint'],
+      ['toolsAtPointer', 'hand'],
       ['mirror', 'mirror'],
       ['convert', 'image'],
       ['starters', 'frame'],
@@ -36,7 +37,7 @@ describe("What's inside's copy (ticket 0797)", () => {
 
   it('groups the rows into four chapters in tour order, each with its icon and name (ticket 0830)', () => {
     expect(insideChapters(en, 'en').map(({ id, icon, name, rows }) => [id, icon, name, rows.map((row) => row.id)])).toEqual([
-      ['draw', 'paint', 'Draw', ['canvas', 'techniques', 'editing', 'mirror']],
+      ['draw', 'paint', 'Draw', ['canvas', 'techniques', 'editing', 'toolsAtPointer', 'mirror']],
       ['startFrom', 'image', 'Start from something', ['convert', 'starters', 'reference']],
       ['beadColors', 'palette', 'Real bead colors', ['colors', 'letters']],
       ['weaveKeep', 'turn-row-direction', 'Weave and keep', ['rowProgress', 'beadsNeeded', 'exports', 'savedProjects']],

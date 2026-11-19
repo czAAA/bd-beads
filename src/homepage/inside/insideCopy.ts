@@ -5,7 +5,7 @@ import { formatList } from '../../i18n/listFormat'
 import type { InsideChapterId, InsideRowId, Locale, Translations } from '../../i18n/translations'
 import type { IconName } from '../../components/ui/icons'
 
-// What's inside (Homepage card, tickets 0797, 0830): its 13 rows, each with the icon the editor uses for it, and the
+// What's inside (Homepage card, tickets 0797, 0830): its 14 rows, each with the icon the editor uses for it, and the
 // four chapters they are shown in. The names the copy points at come from the app, never typed into it: the catalog
 // brands and Convert image's most colors.
 
@@ -22,6 +22,8 @@ export const INSIDE_ROWS = [
   { id: 'canvas', icon: 'select' },
   { id: 'techniques', icon: 'grid' },
   { id: 'editing', icon: 'paint' },
+  // The Radial toolbox has no icon of its own: the hand that holds the Canvas for it (ticket 1114).
+  { id: 'toolsAtPointer', icon: 'hand' },
   { id: 'mirror', icon: 'mirror' },
   { id: 'convert', icon: 'image' },
   { id: 'starters', icon: 'frame' },
@@ -57,7 +59,7 @@ function catalogBrands(locale: Locale): string {
   return formatList(locale, uniqueBy(withCatalog, (bead) => bead.brand.id).map((bead) => bead.brand.name))
 }
 
-/** The 13 rows in a language. */
+/** The 14 rows in a language. */
 function insideRows(t: Translations, locale: Locale): InsideItem<InsideRowId>[] {
   const blanks: Partial<Record<InsideRowId, Record<string, string | number>>> = {
     convert: { max: MAX_IMAGE_COLORS },

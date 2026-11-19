@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { ownLength } from '../../composables/ui/cssZoom'
+import { fixedPointIn, scopeRoom, useShellScope } from '../../composables/ui/shellScope'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { RADIAL_DIVIDERS, RADIAL_HOLE, RADIAL_PLACES, RADIAL_REACH, RADIAL_RING, RADIAL_ROOM, radialItemAt, radialItemOff, radialNameCenter, radialSliceOutline, type RadialItemId } from '../../domain/radialToolbox'
@@ -77,8 +78,12 @@ function sliceShape(id: RadialItemId): string {
 }
 const sliceShapes = Object.fromEntries(RADIAL_PLACES.map((place) => [place.id, sliceShape(place.id)])) as Record<RadialItemId, string>
 
-/** The ring is placed on screen and drawn in its own px, which CSS zoom draws larger (ticket 1071). */
-const placeStyle = computed(() => ({ left: `${ownLength(rootEl.value, props.center.x)}px`, top: `${ownLength(rootEl.value, props.center.y)}px` }))
+/** The ring is placed in its shell's room: the window, or the box of a shell that lives in one (ticket 1114). */
+const scope = useShellScope()
+const placeStyle = computed(() => {
+  const at = fixedPointIn(scope, props.center)
+  return { left: `${at.x}px`, top: `${at.y}px` }
+})
 
 /** The item a mouse or a hovering pen is over, by the ring's rule; a finger has no hover. */
 const hovered = ref<RadialItemId>()
@@ -88,15 +93,16 @@ const named = computed(() => items.value.find((item) => item.place.id === under.
 
 const nameEl = ref<HTMLElement>()
 /** How far the name stands from over the ring's centre, in the ring's own px: the least that keeps it `float-edge`
- * inside the screen at each side, however long its language makes it (ticket 1076). */
+ * inside its shell's room at each side, however long its language makes it (ticket 1076). */
 const nameShift = ref(0)
 function placeName() {
   const root = rootEl.value
   if (!root || !nameEl.value) return
-  const center = ownLength(root, props.center.x)
+  const room = scopeRoom(scope)
+  const center = ownLength(root, props.center.x - room.left)
   // `float-edge` in the ring's own px: its share of the ring's measured reach.
   const edge = (root.offsetWidth / 2) * (RADIAL_ROOM.edge / RADIAL_REACH)
-  nameShift.value = radialNameCenter(center, nameEl.value.offsetWidth, ownLength(root, window.innerWidth), edge) - center
+  nameShift.value = radialNameCenter(center, nameEl.value.offsetWidth, ownLength(root, room.right - room.left), edge) - center
 }
 watch([named, () => props.center, () => props.open], placeName, { flush: 'post' })
 onMounted(placeName)

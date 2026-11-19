@@ -100,7 +100,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   it("describes each chapter by its rows' names", async () => {
     const wrapper = await section({ withEditor: true })
     const described = (id: string) => wrapper.get(`#${find(wrapper, id).attributes('aria-describedby')}`).text()
-    expect(described('inside-chapter-draw')).toBe('Canvas and Frame, Techniques, Project editing, and Mirror')
+    expect(described('inside-chapter-draw')).toBe('Canvas and Frame, Techniques, Project editing, Tools at the pointer, and Mirror')
     expect(described('inside-chapter-beadColors')).toBe('Colors built in and Letters')
   })
 
@@ -108,7 +108,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     const wrapper = await section({ withEditor: true })
     expect(caption(wrapper)).toContain('Canvas and Frame')
     expect(caption(wrapper)).toContain(en.homepage.inside.rows.canvas.text)
-    expect(caption(wrapper)).toContain('1 / 13')
+    expect(caption(wrapper)).toContain('1 / 14')
     expect(find(wrapper, 'inside-caption').attributes('aria-live')).toBeUndefined()
   })
 
@@ -118,7 +118,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(lit(wrapper)).toEqual(['inside-chapter-weaveKeep'])
     expect(caption(wrapper)).toContain('Row progress')
     expect(caption(wrapper)).toContain('Mark rows done as you weave.')
-    expect(caption(wrapper)).toContain('10 / 13')
+    expect(caption(wrapper)).toContain('11 / 14')
   })
 
   it('starts the tour by itself a moment after it first shows, the lit chapter following the row that plays', async () => {
@@ -128,21 +128,21 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     await vi.advanceTimersByTimeAsync(1)
     await flushPromises()
     expect(lit(wrapper)).toEqual(['inside-chapter-draw'])
-    // Draw is four rows: its fourth still lights it, the fifth lights Start from something.
-    await vi.advanceTimersByTimeAsync(ROW_MS * 3)
+    // Draw is five rows: its fifth still lights it, the sixth lights Start from something.
+    await vi.advanceTimersByTimeAsync(ROW_MS * 4)
     expect(lit(wrapper)).toEqual(['inside-chapter-draw'])
-    expect(caption(wrapper)).toContain('4 / 13')
+    expect(caption(wrapper)).toContain('5 / 14')
     await vi.advanceTimersByTimeAsync(ROW_MS)
     expect(lit(wrapper)).toEqual(['inside-chapter-startFrom'])
     expect(caption(wrapper)).toContain('Convert image')
-    expect(caption(wrapper)).toContain('5 / 13')
+    expect(caption(wrapper)).toContain('6 / 14')
   })
 
   it('Pause stops the tour at its row, the chapter still lit, and reads Play, which plays on from that row', async () => {
     const wrapper = await section({ withEditor: true })
     await press(wrapper, 'inside-chapter-startFrom')
     await vi.advanceTimersByTimeAsync(ROW_MS)
-    expect(caption(wrapper)).toContain('6 / 13')
+    expect(caption(wrapper)).toContain('7 / 14')
     const pause = find(wrapper, 'inside-pause')
     expect(pause.text()).toBe('Pause')
 
@@ -150,13 +150,13 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(pause.text()).toBe('Play')
     await vi.advanceTimersByTimeAsync(ROW_MS * 3)
     expect(lit(wrapper)).toEqual(['inside-chapter-startFrom'])
-    expect(caption(wrapper)).toContain('6 / 13')
+    expect(caption(wrapper)).toContain('7 / 14')
 
     await press(wrapper, 'inside-pause')
     expect(pause.text()).toBe('Pause')
-    expect(caption(wrapper)).toContain('6 / 13')
+    expect(caption(wrapper)).toContain('7 / 14')
     await vi.advanceTimersByTimeAsync(ROW_MS)
-    expect(caption(wrapper)).toContain('7 / 13')
+    expect(caption(wrapper)).toContain('8 / 14')
   })
 
   it('a chapter pressed while paused plays, and Play reads Pause again', async () => {
@@ -225,7 +225,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     await press(wrapper, 'strip-expand')
     expect(demo.fresh).toHaveBeenCalledTimes(1)
     expect(lit(wrapper)).toEqual(['inside-chapter-startFrom'])
-    expect(caption(wrapper)).toContain('6 / 13')
+    expect(caption(wrapper)).toContain('7 / 14')
     expect(find(wrapper, 'inside-pause').text()).toBe('Pause')
   })
 
@@ -269,31 +269,32 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(find(wrapper, 'inside-open-from-here').exists()).toBe(true)
     expect(find(wrapper, 'strip-expand').exists()).toBe(true)
     expect(lit(wrapper)).toEqual(['inside-chapter-draw'])
-    expect(caption(wrapper)).toContain('1 / 13')
+    expect(caption(wrapper)).toContain('1 / 14')
 
     await press(wrapper, 'inside-chapter-beadColors')
     expect(lit(wrapper)).toEqual(['inside-chapter-beadColors'])
-    expect(caption(wrapper)).toContain('8 / 13')
+    expect(caption(wrapper)).toContain('9 / 14')
     await press(wrapper, 'inside-chapter-beadColors')
-    expect(caption(wrapper)).toContain('9 / 13')
+    expect(caption(wrapper)).toContain('10 / 14')
     await press(wrapper, 'inside-chapter-beadColors')
-    expect(caption(wrapper)).toContain('8 / 13')
+    expect(caption(wrapper)).toContain('9 / 14')
     await vi.advanceTimersByTimeAsync(ROW_MS * 4)
-    expect(caption(wrapper)).toContain('8 / 13')
+    expect(caption(wrapper)).toContain('9 / 14')
   })
 
-  it('on a phone has no editor, no chapters and no tour: the heading over one grouped list of the 13 rows in the tour\'s order, nothing to press (ticket 0827)', async () => {
+  it('on a phone has no editor, no chapters and no tour: the heading over one grouped list of the 14 rows in the tour\'s order, nothing to press (ticket 0827)', async () => {
     const wrapper = await section({ withEditor: false, shown: true, wide: false })
     await vi.advanceTimersByTimeAsync(5000)
     expect(find(wrapper, 'inside-editor').exists()).toBe(false)
     expect(wrapper.get('h2#homepage-inside').text()).toBe("What's inside")
     const rows = wrapper.findAll('[data-testid^="inside-row-"]')
-    expect(rows).toHaveLength(13)
+    expect(rows).toHaveLength(14)
     expect(rows.every((row) => row.element.tagName === 'LI')).toBe(true)
     expect(wrapper.findAll('button')).toHaveLength(0)
     expect(rows[0].text()).toBe(`Canvas and Frame. ${en.homepage.inside.rows.canvas.text}`)
-    expect(rows[4].text()).toContain('Convert image')
-    expect(rows[12].text()).toContain('Saved Projects')
+    expect(rows[3].text()).toBe(`Tools at the pointer. ${en.homepage.inside.rows.toolsAtPointer.text}`)
+    expect(rows[5].text()).toContain('Convert image')
+    expect(rows[13].text()).toContain('Saved Projects')
     expect(rows.every((row) => row.find('.grouped-list__tile [data-icon]').exists())).toBe(true)
     expect(find(wrapper, 'inside-list').classes()).toContain('grouped-list')
     expect(lit(wrapper)).toEqual([])
