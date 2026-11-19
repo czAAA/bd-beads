@@ -92,7 +92,7 @@ _Avoid_: Frame toolbar, Frame sheet
 _Avoid_: Set Frame (the old mode, which also drew a Frame by dragging), crop, resize, set size, Edit Frame mode
 
 **Export panel**:
-The small panel the Canvas strip's **Export** button opens (the `export` icon, the strip's last button; tickets 0652, 0847), in the same shell as the Menu, Project and Frame panels and one of the four at a time. With a Frame it holds the Frame panel's Export section (Picture with Export quality under it, then Printable chart with its page count and its Large beads and Row by row switches, tickets 0916, 0957), the same component; with no Frame it says to set a frame and offers Select a frame and Fit a frame to the drawing; a Frame selected from it brings it back once set (ticket 0847). Letters stays in the Frame panel.
+The small panel the Canvas strip's **Export** button opens (the `export` icon, the strip's last button; tickets 0652, 0847), in the same shell as the Menu, Project and Frame panels and one of the four at a time. With a Frame it holds the Frame panel's Export section (Picture, then Printable chart with its page count, then Export quality and the Large beads and Row by row switches, tickets 0916, 0957, 1095), the same component; with no Frame it says to set a frame and offers Select a frame and Fit a frame to the drawing; a Frame selected from it brings it back once set (ticket 0847). Letters stays in the Frame panel.
 _Avoid_: Share panel (it only exports files), Export menu
 
 **Rotate Frame**:

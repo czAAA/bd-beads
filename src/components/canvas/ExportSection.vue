@@ -18,9 +18,9 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 
-// The export rows (tickets 568, 576, 0588, 0652, 0916, 0957; ExportPanel and QualitySlider cards), each under the file it
-// changes: Picture with Export quality, then Printable chart with Large beads and Row by row. One component for the Frame
-// panel's Export section and the Export panel; the slot holds what a panel adds under the switches (the Frame panel's Letters).
+// The export rows (tickets 568, 0652, 0916, 1095; ExportPanel card): Picture then Printable chart, one after the other,
+// then their options, Export quality, Large beads and Row by row. One component for the Frame panel's Export section and
+// the Export panel; the slot holds what a panel adds under the switches (the Frame panel's Letters).
 const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
@@ -94,6 +94,7 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
 
 <template>
   <PanelItem icon="image" :value="pngValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'png' || undefined" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
+  <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'pdf' || undefined" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
   <div class="export-section__quality">
     <QualitySlider
       :label="t.frame.exportQuality"
@@ -106,7 +107,6 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
     />
     <p v-if="highPngDpi" class="export-section__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
   </div>
-  <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'pdf' || undefined" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
   <PanelSwitchRow v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
   <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
   <slot />

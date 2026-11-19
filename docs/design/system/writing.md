@@ -1193,7 +1193,7 @@ The Printable chart's two switches in the Export panel and the Frame panel's exp
 
 ## Export options by file copy (ticket 0957)
 
-Export quality stands under Picture and the two switches under Printable chart (ExportPanel card). The stops are captioned in a crafter's words, the DPI figures move into the head's Info note, and the line under the stops says the slider is for the picture. Large beads' Info body says it changes the picture too. "Low saves memory: …" is gone, and so is "{n} DPI" under each stop. English is the ticket's; the other languages are proposals for review with the build.
+Export quality and the two switches stand under both files, Picture then Printable chart (ExportPanel card; until ticket 1095 each stood under its own file). The stops are captioned in a crafter's words, the DPI figures move into the head's Info note, and the line under the stops says the slider is for the picture. Large beads' Info body says it changes the picture too. "Low saves memory: …" is gone, and so is "{n} DPI" under each stop. English is the ticket's; the other languages are proposals for review with the build.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

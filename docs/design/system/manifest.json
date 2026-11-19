@@ -382,7 +382,7 @@
     {
       "name": "QualitySlider",
       "group": "Forms",
-      "summary": "Export quality: a three-stop slider right under the Picture button that sets the PNG only; each button shows its size and count (\"PDF ≈ 3.2 MB · 9 pages\")."
+      "summary": "Export quality: a three-stop slider under the Picture and Printable chart buttons that sets the PNG only; each button shows its size and count (\"PDF ≈ 3.2 MB · 9 pages\")."
     },
     {
       "name": "MarginSheet",
