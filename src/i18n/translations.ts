@@ -202,7 +202,8 @@ export interface Translations {
     shiftWide: string
     shiftTall: string
     shiftRadial: string
-    quarterNeedsStraight: string
+    /** Why Radial's + is off on a Technique with a half-bead shift: `{technique}`, its name (ticket 1094). */
+    twoPartsOnly: string
     /** Why an Axis count's + is off on a Canvas Area where no size fits more Axes (ticket 1027): the half-bead shift in
      * Mirror mode. */
     moreAxesShift: string

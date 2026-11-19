@@ -401,7 +401,7 @@ describe('a Canvas Area grows to fit (ticket 1027, ADR 0095)', () => {
     expect(grownToFit(grid('loom'), rect, radial(4, 'mirror', onCanvas(rect)))).toEqual({ area: area(0, 0, 8, 8), grewFor: { fold: 4 } })
     expect(grownToFit(grid('loom'), rect, radial(2, 'mirror', onCanvas(rect)))).toEqual({ area: rect, grewFor: {} })
     expect(mirrorReach(grid('loom'), rect, 'mirror')).toMatchObject({ folds: [2, 4], off: {} })
-    expect(mirrorReach(grid('peyote'), rect, 'mirror')).toMatchObject({ folds: [2], quarterOff: 'shift' })
+    expect(mirrorReach(grid('peyote'), rect, 'mirror')).toMatchObject({ folds: [2], quarterOff: { shift: 'peyote' } })
     // On peyote the half turn grows along the shift to a size it keeps.
     const peyote = area(0, 0, 13, 16)
     const grown = grownToFit(grid('peyote'), peyote, radial(2, 'mirror', onCanvas(peyote)))!
@@ -680,7 +680,7 @@ describe('Mirror on peyote and brick, by the bead\'s place (ticket 0775, spec 07
   })
 
   it('offers no quarter turn on peyote or brick, a Fold 4 turning a half; Radial in Mirror mode only where Left–right is offered; none where no half turn is exact', () => {
-    for (const technique of ['peyote', 'brick'] as const) expect(mirrorFit(canvas(technique).weave, area(0, 0, 9, 9), 'repeat')).toMatchObject({ folds: [2], quarterOff: 'shift' })
+    for (const technique of ['peyote', 'brick'] as const) expect(mirrorFit(canvas(technique).weave, area(0, 0, 9, 9), 'repeat')).toMatchObject({ folds: [2], quarterOff: { shift: technique } })
     const sheet = canvas('peyote')
     expect(cells(counterparts(sheet, inArea(area(0, 0, 9, 9), { radial: true }, 'repeat'), [at(0, 0)]))).toEqual(cells(counterparts(sheet, { ...inArea(area(0, 0, 9, 9), { radial: true }, 'repeat'), fold: 4 }, [at(0, 0)])))
     expect(mirrorFit(sheet.weave, area(0, 0, 8, 8), 'mirror')).toMatchObject({ folds: [], off: { radial: 'shift' } })
