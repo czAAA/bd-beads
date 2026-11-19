@@ -523,6 +523,15 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     if (gone) hotAreaHandle.value = undefined
   })
 
+  /** Whether the pointer is on one of the beads of the Piece the Piece tool selected: a press there drags the Piece
+   * with its beads, as its bar's move grip does. Under Select a press on it marks out a new Selection instead. */
+  function onHeldPiece(event: Pick<PointerEvent, 'clientX' | 'clientY'>, held: Selection): boolean {
+    if (!held.cells || props.tools.tool !== 'piece') return false
+    const bead = beadUnder(event)
+    if (!bead || (bead.layer ?? layerAt(props.project, bead)) !== selectionLayer(props.project, held)) return false
+    return held.cells.some((cell) => cell.row === bead.row && cell.column === bead.column)
+  }
+
   /** The layer a Selection acts on, for measuring a press on its handles. */
   function selectionViewLayer(): ViewLayer {
     return grabbed.value ? selectionLayer(props.project, grabbed.value) : 'canvas'
@@ -736,11 +745,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     const held = grabbed.value
     if ((props.tools.selects || areaGrab.value) && held && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
       // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it. A shape
-      // (ticket 547) can't be grabbed at all.
+      // (ticket 547) has no handles: only a Piece-tool press on one of its beads grabs it.
       const box = surface.value.beadBox(selectionFrame(held), selectionViewLayer())
       const point = pointInDrawing(event)
       const found: FramePress = held.cells
-        ? { kind: 'outside' }
+        ? { kind: onHeldPiece(event, held) ? 'inside' : 'outside' }
         : selectionHasHandles(held)
           ? areaPressAt(box, quarterTurnOf(props.project), point, touchInput.value, AREA_SHEET_OUTSET)
           : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
@@ -856,6 +865,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       const id = handleIdAt(surface.value.beadBox(selectionFrame(held), selectionViewLayer()), pointInDrawing(event), false, AREA_SHEET_OUTSET)
       hotAreaHandle.value = id
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
+    } else if (held && event.pointerType !== 'touch' && onHeldPiece(event, held)) {
+      hotAreaHandle.value = undefined
+      handleCursor.value = 'grab'
     } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
       hotAreaHandle.value = undefined
       const target = framePress(event)
