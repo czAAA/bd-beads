@@ -18,6 +18,7 @@ import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
 import { frameOf, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
 import { pieceFaceOf } from '../domain/pieceFaces'
+import { largeBeadsActs } from './pageOneLayout'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -80,7 +81,8 @@ export interface PrintText {
   /** Page 1's key's last item, "empty", when the Schema has empty positions (ticket 0963): the chart's cross named. */
   empty?: string
   wordChart?: PrintedWordChart
-  /** Large beads (ticket 0916): page 1's layout plans no bead under 3 mm. */
+  /** Large beads (ticket 0916): page 1's layout plans no bead under 3 mm. Only where it acts (ticket 1125): a piece that
+   * prints at 3 mm or more without it never carries it. */
   largeBeads?: boolean
   labels: Translations['print']
 }
@@ -179,7 +181,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(at)
   const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at)
 
-  return {
+  const text: PrintText = {
     locale,
     name: frameOf(project)?.name?.trim() || projectNameOf(project),
     techniqueWord: technique,
@@ -206,7 +208,8 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
         : undefined,
     ...(hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
-    ...(choices.largeBeads ? { largeBeads: true } : {}),
     labels: t.print,
   }
+  // Large beads only where it makes the beads bigger (ticket 1125): a remembered "on" does nothing on a small piece.
+  return choices.largeBeads && largeBeadsActs(project, text) ? { ...text, largeBeads: true } : text
 }

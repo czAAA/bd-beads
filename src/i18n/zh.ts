@@ -517,14 +517,16 @@ export const zh: Translations = {
     letterField: '{name} 的字母',
     letterSwapped: '{name} 的字母现在是 {letter}。{other} 原来用这个字母，现在是 {otherLetter}。',
     removeConfirmTitle: '移除颜色？',
-    removeConfirmMessage: '{hex} 将从调色板中移除。已涂的格子保留其颜色。',
+    removeConfirmMessage: '{hex} 将从调色板中移除。',
+    removeConfirmBeads: { other: '这种颜色的 {count} 颗珠子也会一并移除。' },
+    removeAllConfirmBeads: { other: '这些颜色的 {count} 颗珠子也会一并移除。' },
     removeConfirmButton: '移除',
     removeCancelButton: '取消',
     removeAllColors: '移除所有自定义颜色',
     removedAll: '自定义颜色已从调色板移除。',
     removeAllConfirmTitle: '移除所有自定义颜色？',
     removeAllConfirmMessage: {
-      other: '{count} 种颜色将从调色板移除。已涂色的格子保留原色。',
+      other: '{count} 种颜色将从调色板移除。',
     },
     removeAllConfirmButton: '全部移除',
     beadColors: {

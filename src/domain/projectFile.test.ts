@@ -21,7 +21,7 @@ import {
 import { createProject } from './createProject'
 import { encodeProject } from './projectEncoding'
 import { moveToRow, rowProgressOf } from './rowProgress'
-import { setPalette } from './paletteEdits'
+import { setPalette, withColorsInPalette } from './paletteEdits'
 import { withWeave } from './weaveSwitch'
 import type { Project } from './project'
 import { paintCells } from './drawing'
@@ -60,7 +60,7 @@ describe('single-Project roundtrip', () => {
   it('restores an identical Project from its exported file', () => {
     const project = decoratedProject()
 
-    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
+    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([withColorsInPalette(project)])
   })
 
   it('carries a Technique changed on an open Project through the file (ticket 351)', () => {
@@ -69,7 +69,7 @@ describe('single-Project roundtrip', () => {
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
     expect(canvasOf(restored).technique).toBe('brick')
-    expect(restored).toEqual(project)
+    expect(restored).toEqual(withColorsInPalette(project))
   })
 
   it('carries each layer\'s own background through the file, a position or a Custom color (ticket 0666)', () => {
@@ -79,7 +79,7 @@ describe('single-Project roundtrip', () => {
 
     expect(backgroundOf(restored, 'canvas')).toBe(3)
     expect(backgroundOf(restored, 'frame')).toBe('#336699')
-    expect(restored).toEqual(project)
+    expect(restored).toEqual(withColorsInPalette(project))
   })
 
   it('opens a layer whose background it cannot read without one, as a Project saved before backgrounds (ticket 0666)', () => {
@@ -131,7 +131,7 @@ describe('single-Project roundtrip', () => {
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
     expect(canvasOf(restored).techniqueSettings).toEqual({ brickDrop: 3 })
-    expect(restored).toEqual(project)
+    expect(restored).toEqual(withColorsInPalette(project))
 
     const one = withWeave(decoratedProject(), 'canvas', { technique: 'brick' })
     const file = JSON.parse(serializeProject(one))
@@ -147,7 +147,7 @@ describe('single-Project roundtrip', () => {
 
     const [restored] = parseProjectsFile(JSON.stringify(file)).projects
     expect(canvasOf(restored).techniqueSettings).toEqual({ brickDrop: 3, peyoteDrop: 2 })
-    expect(restored).toEqual(project)
+    expect(restored).toEqual(withColorsInPalette(project))
     expect(frameOf(parseProjectsFile(serializeProject(decoratedProject())).projects[0])!.techniqueSettings).toEqual({ peyoteDrop: 1 })
   })
 
@@ -246,7 +246,7 @@ describe('single-Project roundtrip', () => {
     const painted = withLayers(decoratedProject(), { beads: { 40: { 40: '#123456' } } })
     const both = withLayer(painted, 'frame', { name: 'Cherry' })
 
-    expect(parseProjectsFile(serializeProject(both)).projects).toEqual([both])
+    expect(parseProjectsFile(serializeProject(both)).projects).toEqual([withColorsInPalette(both)])
   })
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
@@ -260,11 +260,12 @@ describe('single-Project roundtrip', () => {
     const custom = setPalette(decoratedProject(), [first!, addedColorId('#123456'), ...rest])
     const file = JSON.parse(serializeProject(custom))
     expect(file.projects[0].palette).toEqual(custom.palette)
-    expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([custom])
+    expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([withColorsInPalette(custom)])
 
     const four = legacyFile([custom], 4)
     delete four.projects[0]!.palette
-    expect(parseProjectsFile(JSON.stringify(four)).projects[0]!.palette).toEqual(defaultPaletteIds(defaultPalette(cubeBead.id)))
+    // Then the color its bead is painted in, so the bead has a Swatch letter (ticket 1124).
+    expect(parseProjectsFile(JSON.stringify(four)).projects[0]!.palette).toEqual([...defaultPaletteIds(defaultPalette(cubeBead.id)), addedColorId('#e63746')])
   })
 
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
@@ -388,7 +389,7 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
     expect(stated).toContain('"kind":"rectangular"')
     for (const file of [serializeProject(project), older, stated, unknown, JSON.stringify(unknownNow)]) {
       const [restored] = parseProjectsFile(file).projects
-      expect(layersView(restored!)).toEqual(layersView(project))
+      expect(layersView(restored!)).toEqual(layersView(withColorsInPalette(project)))
       expect(frameOf(restored)).not.toHaveProperty('shape')
       expect(frameOf(restored)).not.toHaveProperty('kind')
     }
@@ -399,10 +400,10 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
     // Stored as its Frame shape since file version 12; an earlier file's `kind` still reads as one (tickets 0668, 0664).
     expect(JSON.parse(serializeProject(triangle)).projects[0].layers[1]).toMatchObject({ shape: 'triangle', settings: { rounds: 5 } })
     expect(JSON.parse(serializeProject(triangle)).projects[0].layers[1]).not.toHaveProperty('kind')
-    expect(parseProjectsFile(serializeProject(triangle)).projects).toEqual([triangle])
+    expect(parseProjectsFile(serializeProject(triangle)).projects).toEqual([withColorsInPalette(triangle)])
     expect(frameSheetOf(parseProjectsFile(JSON.stringify(legacyFile([triangle]))).projects[0]!)).toEqual(frameSheetOf(triangle))
     const plain = makeProject()
-    expect(parseProjectsFile(serializeLibrary([triangle, plain])).projects).toEqual([triangle, plain])
+    expect(parseProjectsFile(serializeLibrary([triangle, plain])).projects).toEqual([triangle, plain].map(withColorsInPalette))
   })
 
   it('reads a Custom frame\'s Rounds within its range, and a Frame without a shape without settings', () => {
@@ -418,7 +419,7 @@ describe('whole-library roundtrip', () => {
   it('restores every saved Project from one exported file', () => {
     const library = [decoratedProject(), makeProject('Owl')]
 
-    expect(parseProjectsFile(serializeLibrary(library))).toEqual({ projects: library, pictures: {} })
+    expect(parseProjectsFile(serializeLibrary(library))).toEqual({ projects: library.map(withColorsInPalette), pictures: {} })
   })
 
   it('exports to one predictable file name', () => {

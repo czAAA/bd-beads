@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Technique } from '../domain/weave'
-import { pageOneLayout } from './pageOneLayout'
+import { largeBeadsActs, pageOneLayout } from './pageOneLayout'
 import { A4_PORTRAIT, chartOnPageOne, mm, PRINT_MARGIN } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
 
@@ -143,5 +143,18 @@ describe('pageOneLayout: Large beads (ticket 0916)', () => {
 
     expect(chartOnPageOne(layout.plan)).toBe(true)
     expect(layout.plan.beadMm).toBeCloseTo(plain.plan.beadMm, 6)
+  })
+})
+
+describe('largeBeadsActs (ticket 1125)', () => {
+  it('says Large beads changes nothing for a piece that prints at 3 mm or more without it', () => {
+    expect(pageOneLayout(shape('loom', 40, 40), words(4)).plan.beadMm).toBeGreaterThanOrEqual(3)
+    expect(largeBeadsActs(shape('loom', 40, 40), words(4))).toBe(false)
+  })
+
+  it('says Large beads acts on a piece whose plan without it prints a bead under 3 mm, whatever the words ask', () => {
+    expect(pageOneLayout(shape('loom', 100, 100), words(8)).plan.beadMm).toBeLessThan(3)
+    expect(largeBeadsActs(shape('loom', 100, 100), words(8))).toBe(true)
+    expect(largeBeadsActs(shape('loom', 100, 100), { ...words(8), largeBeads: true })).toBe(true)
   })
 })
