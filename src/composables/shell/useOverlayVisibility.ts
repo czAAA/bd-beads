@@ -61,6 +61,28 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     phoneSavedProjectsOpen.value = true
   }
 
+  /** Whether Menu's subpanel is Sign in (ticket 0078), and whether Menu opens on its own list whatever the library
+   * holds (back from Google signed in, on the Account section). Both clear once the panel is gone or swapped. */
+  const signInOpen = ref(false)
+  const menuOpensOnList = ref(false)
+  watch(openPanel, () => {
+    signInOpen.value = false
+    menuOpensOnList.value = false
+  }, { flush: 'sync' })
+
+  /** Opens Menu straight on the Sign in Subpanel: back from Google refused. */
+  function openMenuOnSignIn() {
+    menuOpensOnForm.value = true
+    openPanel.value = 'menu'
+    signInOpen.value = true
+  }
+
+  /** Opens Menu on its list, where Account is the first section: back from Google signed in. */
+  function openMenuOnAccount() {
+    openPanel.value = 'menu'
+    menuOpensOnList.value = true
+  }
+
   /** Picking a Project from Menu's Saved Projects opens it and puts the panel away. */
   function onSelectProjectFromPhoneDrawer(id: string) {
     deps.selectProject(id, () => {
@@ -81,5 +103,9 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     openMenuOnSavedProjects,
     phoneSavedProjectsOpen,
     onSelectProjectFromPhoneDrawer,
+    signInOpen,
+    menuOpensOnList,
+    openMenuOnSignIn,
+    openMenuOnAccount,
   }
 }

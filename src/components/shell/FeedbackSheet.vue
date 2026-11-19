@@ -37,6 +37,8 @@ const problem = ref<'wrong' | 'missing'>(props.request.prefill.problem ?? 'wrong
 const code = ref(props.request.prefill.code ?? '')
 const looksLike = ref('')
 const email = ref(props.request.email)
+/** Signed in, the Email starts as the account's (ticket 0078): the hint says so while it is still that address. */
+const emailHint = computed(() => (props.request.email && email.value === props.request.email ? words.value.emailHintAccount : words.value.emailHint))
 
 const brandAndCatalog = computed(() => [props.request.prefill.brand, props.request.prefill.catalog].filter(Boolean).join(', '))
 
@@ -205,7 +207,7 @@ onBeforeUnmount(() => stopVerifying?.())
         <TextField id="feedback-note" v-model="note" multiline class="feedback-sheet__note" :maxlength="NOTE_MAX" :placeholder="t.fields.feedbackNote" data-testid="feedback-note" />
       </FormField>
 
-      <FormField :label="words.email" label-for="feedback-email" :aside="t.form.optional" :hint="words.emailHint" :error="shownError('email')">
+      <FormField :label="words.email" label-for="feedback-email" :aside="t.form.optional" :hint="emailHint" :error="shownError('email')">
         <TextField
           id="feedback-email"
           v-model="email"

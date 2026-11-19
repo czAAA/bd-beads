@@ -87,6 +87,7 @@ import { groupThousands } from '../../domain/formatNumber'
 import { useAppPage } from './useAppPage'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
+import { useAccountFlow } from './useAccountFlow'
 import { REFERENCE_SECTION_ID, useReferenceImageFlow } from '../project/useReferenceImageFlow'
 import { usePictureBarFlow } from '../project/usePictureBarFlow'
 
@@ -344,7 +345,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
   const { palette, addUsed, removeAdded, removeAllAdded, moveColor } = useProjectPalette({ currentProject, edit })
   /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
-  const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs })
+  const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs, accountEmail: () => accountFlow.account.value?.email })
   provideBeadColors(
     useBeadColors({ currentProject, palette, addUsed, selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback }),
   )
@@ -980,6 +981,16 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
   if (!activeProject.value && (projects.value.length > 0 || sealed.value.length > 0)) overlays.openMenuOnSavedProjects()
 
+  /** Signing in from the Menu (ticket 0078): who is signed in, the Sign in Subpanel, back from Google, Sign out. After
+   * the lines above, so a return from Google decides what the Menu opens on. */
+  const accountFlow = useAccountFlow({
+    account: services.account,
+    messages,
+    showToast,
+    openMenu: (on) => (on === 'sign-in' ? overlays.openMenuOnSignIn() : overlays.openMenuOnAccount()),
+    foldedSections: services.devicePreferences.get('panelSectionsClosed'),
+  })
+
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */
   const shortcutsHelpOpen = dialogs.flag('shortcuts')
   const onOpenShortcutsHelp = () => void (shortcutsHelpOpen.value = true)
@@ -1307,6 +1318,17 @@ function wireAppShell(services: Services, options: ShellOptions) {
       menuOpensOnForm: overlays.menuOpensOnForm,
       phoneSavedProjectsOpen: overlays.phoneSavedProjectsOpen,
       onSelectProjectFromPhoneDrawer: afterLeaving(overlays.onSelectProjectFromPhoneDrawer),
+      /** The Menu's Account section and its Sign in Subpanel (ticket 0078). */
+      signInOpen: overlays.signInOpen,
+      menuOpensOnList: overlays.menuOpensOnList,
+      account: accountFlow.account,
+      mayOpenSignIn: accountFlow.mayOpenSignIn,
+      signInRefusal: accountFlow.signInRefusal,
+      signInAsks: accountFlow.signInAsks,
+      signInLeaving: accountFlow.signInLeaving,
+      verifySignIn: accountFlow.verifySignIn,
+      onContinueWithGoogle: accountFlow.onContinueWithGoogle,
+      onSignOut: accountFlow.onSignOut,
       /** The page the box shows, and the Menu's way to leave it (the Menu knows nothing of which page asks). */
       page: appPage.page,
       onLeavePage: appPage.leave,

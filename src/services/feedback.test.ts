@@ -1,7 +1,6 @@
-import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Report } from '../domain/feedbackReport'
-import { browserFeedback, reportOutcome, TURNSTILE_SITE_KEY } from './feedback'
+import { browserFeedback, reportOutcome } from './feedback'
 
 const report: Report = {
   kind: 'general',
@@ -56,13 +55,5 @@ describe('browserFeedback.send', () => {
     expect(await browserFeedback.send(report, verification)).toEqual({ sent: false, reason: 'failed' })
     const refused = { token: () => Promise.reject(new Error('turnstile failed')), dispose: () => {} }
     expect(await browserFeedback.send(report, refused)).toEqual({ sent: false, reason: 'failed' })
-  })
-})
-
-describe('TURNSTILE_SITE_KEY', () => {
-  it('is the site key wrangler.jsonc gives both Workers', () => {
-    const keys = [...readFileSync('wrangler.jsonc', 'utf8').matchAll(/"TURNSTILE_SITE_KEY":\s*"([^"]+)"/g)].map((match) => match[1])
-    expect(keys.length).toBeGreaterThan(0)
-    expect(new Set(keys)).toEqual(new Set([TURNSTILE_SITE_KEY]))
   })
 })

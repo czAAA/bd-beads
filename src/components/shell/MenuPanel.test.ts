@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { provide, defineComponent, h } from 'vue'
 import MenuPanel from './MenuPanel.vue'
 import { PANEL_CONTEXT } from './panelContext'
@@ -26,15 +26,15 @@ function mountIn(props: Record<string, unknown> = {}, openSub = () => {}) {
   return mount(Host)
 }
 describe('MenuPanel (ticket 443)', () => {
-  it('has Projects, Preferences, Help and About in that order, each a named group', () => {
+  it('has Account, Projects, Preferences, Help and About in that order, each a named group', () => {
     const wrapper = mountIn()
     const groups = wrapper.findAll('[role="group"]').filter((group) => group.find('h3').exists())
-    expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.projects, en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
+    expect(groups.map((group) => group.get('h3').text())).toEqual([en.account.section, en.panels.menu.projects, en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
   })
 
   it('lists New Project, Convert image and the Projects library with its count, New Project and the library opening a subpanel', () => {
     const wrapper = mountIn()
-    const projects = wrapper.get('[data-testid="menu-panel"] section')
+    const projects = wrapper.findAll('[data-testid="menu-panel"] section')[1]!
     const rows = projects.findAll('.panel-item').map((row) => row.text())
     expect(rows).toEqual([en.projects.newProjectButton, en.convertImage.fileLabel, `${en.projects.heading}1`])
     expect(projects.findAll('.panel-item__mark--sub')).toHaveLength(2)
@@ -137,7 +137,7 @@ describe('MenuPanel (ticket 443)', () => {
   // Folding and remembering is PanelSection's; the Menu names each section for it.
   it('folds a section shut, remembered under the Menu\'s own name for it', async () => {
     const wrapper = mountIn()
-    await wrapper.get('[aria-expanded]').trigger('click')
+    await wrapper.findAll('[aria-expanded]')[1]!.trigger('click')
     expect(localStorage.getItem('openbeads:panel-sections-closed')).toBe('menu:projects')
   })
 })
@@ -228,6 +228,43 @@ describe('MenuPanel Convert image row and leaving (ticket 0756)', () => {
   })
 })
 
+describe('MenuPanel Account section (ticket 0078)', () => {
+  it('offers a Guest Sign in, first in the Menu, and passes on that its Subpanel opens', async () => {
+    const openSub = vi.fn()
+    const wrapper = mountIn({}, openSub)
+    expect(wrapper.get('[data-testid="menu-panel"] .panel-item').attributes('data-testid')).toBe('menu-sign-in')
+    await wrapper.get('[data-testid="menu-sign-in"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.getComponent(MenuPanel).emitted('sign-in')).toHaveLength(1)
+    expect(openSub).toHaveBeenCalledWith(en.account.signIn, { opener: 'menu-sign-in' })
+  })
+
+  it('opens nothing when it is told signing in can’t be done now', async () => {
+    const openSub = vi.fn()
+    const wrapper = mountIn({ mayOpenSignIn: async () => false }, openSub)
+    await wrapper.get('[data-testid="menu-sign-in"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.getComponent(MenuPanel).emitted('sign-in')).toBeUndefined()
+    expect(openSub).not.toHaveBeenCalled()
+  })
+
+  it('shows the signed-in account and passes on Sign out', async () => {
+    const wrapper = mountIn({ account: { email: 'ann@example.com', plan: 'free' } })
+    expect(wrapper.get('[data-testid="menu-account-email"]').text()).toBe('ann@example.com')
+    await wrapper.get('[data-testid="menu-sign-out"]').trigger('click')
+    expect(wrapper.getComponent(MenuPanel).emitted('sign-out')).toHaveLength(1)
+  })
+
+  it('is absent on the Homepage and in its demo editor, where the demo tour runs', () => {
+    for (const away of [{ page: 'homepage', projectCount: 3 }, { demo: true }, { demo: true, account: { email: 'ann@example.com', plan: 'free' } }]) {
+      const wrapper = mountIn(away)
+      expect(wrapper.find('[data-testid="menu-sign-in"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="menu-account"]').exists()).toBe(false)
+      expect(wrapper.text()).not.toContain(en.account.section)
+    }
+  })
+})
+
 describe("MenuPanel in What's inside's demo editor (ticket 0797)", () => {
   it('holds only the Projects section and Help\'s Keyboard shortcuts, so nothing in the demo changes the app', () => {
     const wrapper = mountIn({ demo: true, projectCount: 3 })
@@ -274,7 +311,7 @@ describe('MenuPanel Kept by this browser (tickets 0839, 0936)', () => {
 describe('MenuPanel Lifted pieces (ticket 1042)', () => {
   it('has a switch under Theme, on until switched off, with what it does behind an Info button, kept on this device', async () => {
     const wrapper = mountIn()
-    const preferences = wrapper.findAll('section')[1]!
+    const preferences = wrapper.findAll('section')[2]!
     const rows = preferences.findAll('[data-testid="theme-picker"], [data-testid="menu-lifted-pieces"], [data-testid="menu-tools-position"]').map((row) => row.attributes('data-testid'))
     expect(rows).toEqual(['theme-picker', 'menu-lifted-pieces', 'menu-tools-position'])
     const lifted = wrapper.get('[data-testid="menu-lifted-pieces"]')

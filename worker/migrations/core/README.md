@@ -1,5 +1,6 @@
 # `core` migrations
 
-The `core` database (binding `CORE`, ADR 0049) holds accounts, plan status, settings and later sessions. Ticket 71
-created it empty; its first table is the day's count of Reports (ticket 1051), and accounts come with ticket 78. Migrations only add: a column or table is dropped in a later
-deploy, once no deployed code uses it (`docs/deploy.md`).
+The `core` database (binding `CORE`, ADR 0049) holds accounts, their sessions, plan status and settings. Ticket 71
+created it empty; its first table is the day's count of Reports (ticket 1051), and ticket 0078 added accounts and
+sessions. Migrations only add: a column or table is dropped in a later deploy, once no deployed code uses it
+(`docs/deploy.md`).

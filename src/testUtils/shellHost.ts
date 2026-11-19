@@ -2,15 +2,21 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type Component } from 'vue'
 import { provideAppShell } from '../composables/shell/useAppShell'
 import type { OpenPanel } from '../composables/shell/openPanel'
+import { browserServices, type Services } from '../services'
 
 /** Mounts parts of the shell (AppPanels, AppDialogs) under the app's real wiring and nothing else of the App, so a
  * part's wiring, a control reaching its flow, is tested there and not in an App test (ticket 0618). Hands back the
  * wrapper and the wired contexts, to open a panel or answer for a part that isn't mounted (the strip's Undo). */
 export function mountShellParts(...parts: Component[]) {
+  return mountShellPartsOn({}, ...parts)
+}
+
+/** `mountShellParts` on services a test supplies in place of the browser's (the account's memory twin, ticket 0078). */
+export function mountShellPartsOn(services: Partial<Services>, ...parts: Component[]) {
   let wired!: ReturnType<typeof provideAppShell>
   const Host = defineComponent({
     setup() {
-      wired = provideAppShell()
+      wired = provideAppShell({ ...browserServices, ...services })
       return () => parts.map((part) => h(part))
     },
   })

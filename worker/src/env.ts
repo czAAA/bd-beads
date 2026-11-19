@@ -2,7 +2,7 @@
  * secrets. Every limit and warn level is a dashboard variable, so it may be missing, or a string: it goes through
  * `numberVar`. */
 export interface Env {
-  /** Accounts, plan status, settings (ADR 0049); empty until ticket 78's first migration. */
+  /** Accounts, their sessions, plan status, settings (ADR 0049). */
   CORE: D1Database
   /** View links' and Free accounts' ciphertext, with owner, size and expiry (ADR 0049). */
   BLOBS_DB: D1Database
@@ -45,6 +45,9 @@ export interface Env {
   /** Reports from every address together, 10 per 60 seconds at one Cloudflare location (ticket 1024). */
   FEEDBACK_RATE_ALL?: RateLimit
 
+  /** Sign-ins started and brought back from Google, per IP (ticket 0078); declared under `ratelimits`. */
+  SIGN_IN_RATE?: RateLimit
+
   /** Reports this Worker takes per UTC day (ticket 1051); the watchdog reports the day it was reached. */
   FEEDBACK_DAILY_LIMIT?: number | string
 
@@ -67,6 +70,8 @@ export interface Env {
   HEALTHCHECK_URL?: string
   /** Secret: a fine-grained GitHub token, Issues read and write on `FEEDBACK_REPO` only, renewed yearly (ADR 0081). */
   GITHUB_TOKEN?: string
+  /** Secret: the Google OAuth client's secret, which the Worker exchanges a sign-in's code with (ticket 0078). */
+  GOOGLE_CLIENT_SECRET?: string
 }
 
 /** The variables that hold a number: every limit and warn level. */

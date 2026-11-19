@@ -1,6 +1,6 @@
 # SignIn
 
-The Sign in Subpanel and the Google button: how a Guest signs in to openbeads. **Approved 2026-11-18, not yet in the app; ticket 0078 builds it and removes this note.** The Menu's Account section, which opens it, is in the MenuPanel card. (Ticket 1087; the design canvas link is on ticket 1087 in the private docs repo.)
+The Sign in Subpanel and the Google button: how a Guest signs in to openbeads. The Menu's Account section, which opens it, is in the MenuPanel card. (Designed in ticket 1087, built in ticket 0078; the design canvas link is on ticket 1087 in the private docs repo.)
 
 There are no pages and no modal: Sign in is a Subpanel of the Menu, pushed by the Account section's "Sign in" row the way New Project is (MenuPanel card, Subpanel). One flow: the first Google sign-in with an unknown email makes the account, so there is no "sign up" (glossary: Sign in / Sign out).
 
@@ -24,10 +24,10 @@ Room is left under the button for the email link (ticket 0388): an "or" rule and
 
 The one company mark in the app, and the one place a color is not a token: the README's "nothing borrowed" has this exception, because Google's sign-in button must carry Google's mark.
 
-- **Shape:** the app's secondary Button at the form's field height (`field-height`), the full width of the Subpanel, as Convert image is in New Project: `button` fill, 1px `button-line` (2px in high contrast), `radius-md`. Google's "G" at 18px (1.125rem) in its own four colors, 10 before the label; the label "Continue with Google" in `control` / `ink`, centred with the mark.
+- **Shape:** the app's secondary Button at the form's field height (`field-height`), the full width of the Subpanel, as Convert image is in New Project: `button` fill, 1px `button-line` (2px in high contrast), `radius-md`. Google's "G" at 18px (`--google-mark-size`, 1.125rem) in its own four colors, 10 before the label; the label "Continue with Google" in `control` / `ink`, centred with the mark.
 - **The mark** is Google's standard color "G", unaltered, in every theme and every state: never one ink, never recolored, never dimmed. It is not an icon of the set and does not go through `AppIcon`.
 - **Themes:** the button takes the theme's own `button` and `button-line`, so it is white in light and high contrast and `#202020` in dark; Google allows its mark on a light, a neutral and a dark button.
-- **States:** rest; hover `hover-fill`; pressed `press-fill`; focus the 2px `focus-ring`, as every Button. **Busy**, between the press and the page leaving for Google: the label reads "Opening Google…" in `muted` on `surface`, the mark stays, and the button is `aria-disabled` (as Send reads "Sending…" in the FeedbackSheet). The button also waits, the same way, until Cloudflare's check has given its token.
+- **States:** rest; hover `hover-fill`; pressed `press-fill`; focus the 2px `focus-ring`, as every Button. **Busy**, between the press and the page leaving for Google: the label reads "Opening Google…" in `muted` on `surface`, the mark stays, and the button is `aria-disabled` (as Send reads "Sending…" in the FeedbackSheet). A press made before Cloudflare's check has given its token waits for it the same way, busy from the press on: the button is never disabled as the Subpanel opens, so focus can enter on it.
 - A press starts a full-page redirect. The open Project is untouched (autosave).
 
 ## Cloudflare's check
@@ -42,7 +42,7 @@ Turnstile runs unseen as the Subpanel opens, through the loader the FeedbackShee
 | Reason | Tone | English |
 |---|---|---|
 | The person said no at Google | info | You are not signed in: the sign-in was cancelled at Google. |
-| Something failed | `danger` | Signing in did not work. Try again. |
+| Something failed: a check that didn't pass, Cloudflare's included, or sign-in switched off or limited while the person was at Google | `danger` | Signing in did not work. Try again. |
 | New accounts are paused (the `sign-up` switch) | `warning` | New accounts are paused. Try again later. |
 
 The Google button stays under it, ready for another try.
@@ -61,6 +61,6 @@ The Subpanel is a `dialog` named "Sign in", as every Subpanel. Focus enters on t
 
 ## Copy
 
-English above; every language is in `writing.md` (Sign-in copy). The owner approved the English on 2026-11-18; the other six are proposals for review with the build.
+English above; every language is in `writing.md` (Sign-in copy). The owner approved the English on 2026-11-18; the other six were reviewed with the build (ticket 0078).
 
 Hand-written from ticket 1087's canvas; static rendition.

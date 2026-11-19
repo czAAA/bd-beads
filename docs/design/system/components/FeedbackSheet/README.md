@@ -10,7 +10,7 @@ The one modal through which a beader sends a **Report** to the maintainer, with 
 | translation | Menu, Preferences: the link **Report a translation problem** under the Language row | Report a translation problem | Language (the app's language, changeable), Text as shown (required), Should say, Note |
 | bead-color | The Bead colors list's foot row **Wrong or missing color?** (BeadColors card) | Report a bead color | Problem (Wrong color \| Missing color), Brand and catalog (read-only), Code, Looks like, Note |
 
-Every kind then has **Email** (optional), then **Also sent**. Signed in, Email starts as the account's email, an ordinary value that can be changed or cleared, and its hint reads "From your account. Only to ask you about this report." (approved 2026-11-18, not yet in the app, ticket 0078; ticket 1087).
+Every kind then has **Email** (optional), then **Also sent**. Signed in, Email starts as the account's email, an ordinary value that can be changed or cleared, and its hint reads "From your account. Only to ask you about this report." while the field still holds that address (tickets 1087, 0078).
 
 ## Layout
 

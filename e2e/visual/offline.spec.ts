@@ -216,10 +216,10 @@ test('takes a page the device has no copy of from the network', async ({ page })
 // Cloudflare Access sends a request without a session to its sign-in page. A page from the device never meets it, so
 // the app notices and offers the way back (ticket 1041, reversing ticket 1017's rule).
 test.describe('once the Access sign-in has run out', () => {
-  /** The address Access returns to after signing in: the one Sign in asked for. */
+  /** The address Access returns to after signing in: the one Renew access asked for. */
   const afterSignIn = () => `${editorAddress()}?sign-in=`
 
-  /** Presses Sign in, meets the sign-in page, and comes back signed in, as Access returns to the address asked for. */
+  /** Presses Renew access, meets the sign-in page, and comes back signed in, as Access returns to the address asked for. */
   async function signIn(page: Page): Promise<void> {
     await page.getByTestId('sign-in').getByTestId('toast-action').click()
     await expect(page.getByRole('heading', { name: host.signInText })).toBeVisible()
@@ -228,12 +228,13 @@ test.describe('once the Access sign-in has run out', () => {
     await expect(page.getByTestId('app-canvas')).toBeVisible()
   }
 
-  test('the app opens from the device and offers Sign in, which keeps the library', async ({ page }) => {
+  test('the app opens from the device and offers Renew access, which keeps the library', async ({ page }) => {
     await openAndInstall(page)
     host.accessExpired = true
 
     await reloadsIntoTheApp(page)
-    await expect(page.getByTestId('sign-in')).toContainText('Your sign-in has run out.')
+    await expect(page.getByTestId('sign-in')).toContainText('Your access to this dev site has run out.')
+    await expect(page.getByTestId('sign-in').getByTestId('toast-action')).toHaveText('Renew access')
 
     const askedAgain = page.waitForResponse((response) => askedForSignIn(response) && response.ok())
     await signIn(page)
@@ -259,7 +260,7 @@ test.describe('once the Access sign-in has run out', () => {
   })
 })
 
-test('offers no Sign in with no network', async ({ page, context }) => {
+test('offers no Renew access with no network', async ({ page, context }) => {
   await openAndInstall(page)
   host.accessExpired = true
   await context.setOffline(true)
@@ -270,7 +271,7 @@ test('offers no Sign in with no network', async ({ page, context }) => {
   await expect(page.getByTestId('sign-in')).toHaveCount(0)
 })
 
-test('offers no Sign in on a host that asks for none', async ({ page }) => {
+test('offers no Renew access on a host that asks for none', async ({ page }) => {
   await openAndInstall(page)
 
   const asked = page.waitForResponse(askedForSignIn)

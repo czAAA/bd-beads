@@ -90,7 +90,8 @@ function base64urlBytes(text: string): Uint8Array | null {
   }
 }
 
-function decodeJson(text: string): unknown {
+/** One part of a token (base64url of JSON) read, or null when it is neither; Google's ID token is read with it too. */
+export function decodeJson(text: string): unknown {
   const bytes = base64urlBytes(text)
   if (!bytes) return null
   try {

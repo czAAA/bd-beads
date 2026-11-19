@@ -82,4 +82,17 @@ describe('useOverlayVisibility', () => {
     expect(phoneSavedProjectsOpen.value).toBe(false)
     expect(openPanel.value).toBeNull()
   })
+
+  it('opens Menu on the Sign in Subpanel, or on its own list, until the panel is gone or swapped (ticket 0078)', async () => {
+    const overlays = setup()
+    overlays.openMenuOnSignIn()
+    expect([overlays.openPanel.value, overlays.menuOpensOnForm.value, overlays.signInOpen.value]).toEqual(['menu', true, true])
+    overlays.onSelectPanel('project')
+    expect([overlays.menuOpensOnForm.value, overlays.signInOpen.value]).toEqual([false, false])
+
+    overlays.openMenuOnAccount()
+    expect([overlays.openPanel.value, overlays.menuOpensOnList.value, overlays.signInOpen.value]).toEqual(['menu', true, false])
+    overlays.onSelectPanel('menu')
+    expect([overlays.openPanel.value, overlays.menuOpensOnList.value]).toEqual([null, false])
+  })
 })
