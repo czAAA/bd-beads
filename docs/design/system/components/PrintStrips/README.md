@@ -7,6 +7,8 @@ Long thin framed Schemas (bracelets) and leftover parts stack several boards on 
 - Every bead carries its Swatch letter and the rulers count in fives, as on PrintChartPage; a chart page has one "Colors on this page" key, page 1 its Beads needed.
 - The PNG: the chart at full width; under it the technique word, name, maker, bead and size on the left, Beads needed in two columns with beads and grams on the right, and the brand and date at the bottom.
 
+**Approved 2026-11-19, not yet in the app (tickets 1126–1129; signed off in ticket 1123):** strips and shared parts are drawn as the new chart (PrintChartPage card): no lines between beads and no bold edge, one rounded rim round the beads with the numbers outside it while Chart border is on, empty positions as Empty grid says, the Schema trimmed to its beads before it is folded, and every row and column numbered. A strip counts on from the one before it: the second strip of a 35 × 120 bracelet numbers its rows 59, 60 (the overlap, `faint`), 61, 62… to 120. Every ruler number on the sheet, all strips together, is one size (PrintChartPage card), smaller than 6.5 pt only where the sheet's widest number needs it. Its label uses the same numbers.
+
 ## Acceptance
 
 - [ ] A 35 × 120 bracelet gives 1 × 2 parts side by side on page 1 at about 2.2 mm, each on its own outlined pad, 6 mm apart.
