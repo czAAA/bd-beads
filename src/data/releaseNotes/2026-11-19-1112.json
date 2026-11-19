@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "The Free account plan lists what it holds under its button, as No account's list does",
+    "ru": "Бесплатный аккаунт теперь перечисляет, что в нём есть, под своей кнопкой, как список без аккаунта",
+    "uk": "План з акаунтом тепер перелічує, що в ньому є, під своєю кнопкою, як список без акаунта",
+    "be": "План з акаўнтам цяпер пералічвае, што ў ім ёсць, пад сваёй кнопкай, як спіс без акаўнта",
+    "zh": "免费账户方案现在在按钮下方列出包含的内容，与无需账户的列表一样",
+    "es": "La cuenta gratuita ahora enumera lo que incluye bajo su botón, como la lista sin cuenta",
+    "pl": "Darmowe konto wymienia teraz pod przyciskiem, co zawiera, jak lista bez konta"
+  }
+}

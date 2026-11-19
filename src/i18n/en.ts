@@ -437,7 +437,7 @@ export const en: Translations = {
       youAreHere: 'you are here',
       tiles: [
         { name: 'No account', price: 'Free', meta: 'no sign-up', text: 'Draw, count and weave on this device. Nothing to sign up for.', button: 'Open the editor' },
-        { name: 'Free account', price: 'Free', text: 'Same as No account, plus your settings on all your devices', button: 'Create free account' },
+        { name: 'Free account', price: 'Free', rows: ['Everything in No account', 'Plus your settings, the same on all your devices'], button: 'Create free account' },
         { name: 'Pro', price: 'Price later', text: 'Same as Free account, plus more', button: 'Coming later' },
       ],
       comingSoon: 'Coming soon',

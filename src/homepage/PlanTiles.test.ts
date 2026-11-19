@@ -59,11 +59,15 @@ describe('PlanTiles', () => {
     expect(wrapper.emitted('openEditor')).toHaveLength(1)
   })
 
-  it('opens Free account: what it adds, and Create free account, which asks for sign-in (ticket 0391)', async () => {
+  it('opens Free account: Create free account, which asks for sign-in (ticket 0391), then what it holds as a list', async () => {
     const wrapper = tiles()
     const tile = wrapper.get('[data-testid="plan-free-account"]')
     expect(tile.attributes('aria-disabled')).toBeUndefined()
-    expect(tile.text()).toContain('Same as No account, plus your settings on all your devices')
+    const list = tile.get('[data-testid="plan-free-account-list"]')
+    expect(list.findAll('li').map((item) => item.text())).toEqual(['Everything in No account', 'Plus your settings, the same on all your devices'])
+    expect(tile.get(`#${list.get('ul').attributes('aria-labelledby')}`).text()).toBe('forever free:')
+    const order = tile.findAll('[data-testid="plan-create-account"], [data-testid="plan-free-account-list"]').map((el) => el.attributes('data-testid'))
+    expect(order).toEqual(['plan-create-account', 'plan-free-account-list'])
     expect(tile.find('[role="img"]').exists()).toBe(false)
     const button = tile.get('[data-testid="plan-create-account"]')
     expect(button.text()).toBe('Create free account')
