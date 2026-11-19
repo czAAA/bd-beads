@@ -120,16 +120,15 @@ describe('MenuPanel (ticket 443)', () => {
     expect(panel.emitted('feedback')).toEqual([['general'], ['translation']])
   })
 
-  it('asks for every button\'s name from Help\'s What the buttons do, in the editor only (ticket 0927)', async () => {
+  it('asks for every button\'s name from Help\'s What the buttons do, on every page but the demo (tickets 0927, 1113)', async () => {
     const wrapper = mountIn()
     const row = wrapper.get('[data-testid="menu-item-button-names"]')
     expect(row.text()).toBe(en.panels.menu.buttonNames)
     await row.trigger('click')
     expect(wrapper.getComponent(MenuPanel).emitted('button-names')).toHaveLength(1)
 
-    for (const away of [{ page: 'homepage' }, { page: 'convert-image' }, { demo: true }]) {
-      expect(mountIn(away).find('[data-testid="menu-item-button-names"]').exists()).toBe(false)
-    }
+    for (const page of ['homepage', 'convert-image']) expect(mountIn({ page }).find('[data-testid="menu-item-button-names"]').exists()).toBe(true)
+    expect(mountIn({ demo: true }).find('[data-testid="menu-item-button-names"]').exists()).toBe(false)
   })
 
   // Folding and remembering is PanelSection's; the Menu names each section for it.
@@ -140,38 +139,52 @@ describe('MenuPanel (ticket 443)', () => {
   })
 })
 
-describe('MenuPanel on the Homepage (ticket 540)', () => {
-  it('shows Homepage as the current page and leaves out what belongs to the editor', () => {
-    const wrapper = mountIn({ page: 'homepage', projectCount: undefined, toolsPosition: undefined, inputMode: undefined })
-    const groups = wrapper.findAll('[role="group"]').filter((group) => group.find('h3').exists())
-    expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
+describe('MenuPanel on every page (tickets 540, 1113)', () => {
+  /** Every row's and section's test id, in order, with the pen seen, the browser's keeping known and a signed-in account. */
+  const rowsOn = (props: Record<string, unknown>) =>
+    mountIn({ penSeen: true, kept: true, account: { email: 'ann@example.com', plan: 'free' }, ...props })
+      .findAll('[data-testid^="menu-"], [data-testid="theme-picker"]')
+      .map((row) => row.attributes('data-testid'))
 
-    expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBe('page')
-    expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="menu-tools-position"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="menu-item-feedback"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="menu-report-translation"]').exists()).toBe(true)
+  it('holds the same rows in the editor, on Convert image and on the Homepage', () => {
+    const editor = rowsOn({})
+    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-keep-projects', 'menu-lifted-pieces', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback', 'menu-item-homepage']))
+    expect(rowsOn({ page: 'convert-image' })).toEqual(editor)
+    expect(rowsOn({ page: 'homepage' })).toEqual(editor)
   })
 
-  it('links to the Homepage without marking it current in the editor, and has the shortcuts there', () => {
-    const wrapper = mountIn()
-    expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBeUndefined()
-    expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('href')).toBe(import.meta.env.BASE_URL)
-    expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
+  it('shows Homepage as the current page on the Homepage, and links to it unmarked in the editor', () => {
+    expect(mountIn({ page: 'homepage' }).get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBe('page')
+    const editor = mountIn()
+    expect(editor.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBeUndefined()
+    expect(editor.get('[data-testid="menu-item-homepage"]').attributes('href')).toBe(import.meta.env.BASE_URL)
   })
 
-  it('holds Saved Projects alone in its Projects section while the library is not empty, and opens its subpanel (ticket 0716)', () => {
+  it('holds Saved Projects with its count, opening its subpanel, also while the library is empty (ticket 0716)', () => {
     const openSub = vi.fn()
     const wrapper = mountIn({ page: 'homepage', projectCount: 3 }, openSub)
-
-    expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
     const row = wrapper.get('[data-testid="menu-saved-projects"]')
     expect(row.text()).toContain('3')
     row.trigger('click')
     expect(wrapper.getComponent(MenuPanel).emitted('saved-projects')).toHaveLength(1)
     expect(openSub).toHaveBeenCalledOnce()
 
-    expect(mountIn({ page: 'homepage', projectCount: 0 }).find('[data-testid="menu-saved-projects"]').exists()).toBe(false)
+    expect(mountIn({ page: 'homepage', projectCount: 0 }).get('[data-testid="menu-saved-projects"]').text()).toContain('0')
+  })
+
+  it('asks for New Project and Sign in on the Homepage with no Subpanel of its own: the editor opens on them', async () => {
+    const openSub = vi.fn()
+    const wrapper = mountIn({ page: 'homepage' }, openSub)
+    const newProject = wrapper.get('[data-testid="menu-new-project"]')
+    expect(newProject.find('.panel-item__mark--sub').exists()).toBe(false)
+    await newProject.trigger('click')
+    await wrapper.get('[data-testid="menu-sign-in"]').trigger('click')
+    await flushPromises()
+
+    const panel = wrapper.getComponent(MenuPanel)
+    expect(panel.emitted('new-project')).toHaveLength(1)
+    expect(panel.emitted('sign-in')).toHaveLength(1)
+    expect(openSub).not.toHaveBeenCalled()
   })
 })
 
@@ -252,8 +265,8 @@ describe('MenuPanel Account section (ticket 0078)', () => {
     expect(wrapper.getComponent(MenuPanel).emitted('sign-out')).toHaveLength(1)
   })
 
-  it('is absent on the Homepage and in its demo editor, where the demo tour runs', () => {
-    for (const away of [{ page: 'homepage', projectCount: 3 }, { demo: true }, { demo: true, account: { email: 'ann@example.com', plan: 'free' } }]) {
+  it('is absent in the Homepage\'s demo editor, where the demo tour runs', () => {
+    for (const away of [{ demo: true }, { demo: true, account: { email: 'ann@example.com', plan: 'free' } }]) {
       const wrapper = mountIn(away)
       expect(wrapper.find('[data-testid="menu-sign-in"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="menu-account"]').exists()).toBe(false)
@@ -298,9 +311,8 @@ describe('MenuPanel Kept by this browser (tickets 0839, 0936)', () => {
     expect(mountIn({ kept: true }).get('[data-testid="menu-keep-projects"]').text()).toContain(en.panels.menu.keepProjectsOn)
   })
 
-  it('is absent where the browser can\'t say, on the Homepage and in the demo', () => {
+  it('is absent where the browser can\'t say, and in the demo', () => {
     expect(mountIn().find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
-    expect(mountIn({ kept: false, page: 'homepage', projectCount: 3 }).find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
     expect(mountIn({ kept: false, demo: true }).find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
   })
 })
@@ -321,8 +333,7 @@ describe('MenuPanel Lifted pieces (ticket 1042)', () => {
     expect(localStorage.getItem('openbeads:lifted-pieces')).toBe('off')
   })
 
-  it('is absent in high contrast, which lifts no Piece, on the Homepage and in the demo', async () => {
-    expect(mountIn({ page: 'homepage' }).find('[data-testid="menu-lifted-pieces"]').exists()).toBe(false)
+  it('is absent in high contrast, which lifts no Piece, and in the demo', async () => {
     expect(mountIn({ demo: true }).find('[data-testid="menu-lifted-pieces"]').exists()).toBe(false)
     const wrapper = mountIn()
     document.documentElement.dataset.theme = 'contrast'

@@ -394,6 +394,8 @@
   --hint-storage-lead: 500 1rem/1.5 var(--font-sans); /* FirstRunHints card: the welcome's lead line, the next step, 16px, body (tickets 0795, 0920). */
   --hint-storage: 400 0.875rem/1.6 var(--font-sans); /* FirstRunHints card: the welcome's quiet line on where Projects are kept, 14px, muted (ticket 0920). */
   --save-ring-label-time: 4s; /* SaveReminder card: how long the label stays open at the threshold. */
+  --save-ring-inset-top: 8px; /* SaveReminder card: the ring sits this far under the Canvas strip (ticket 1111). */
+  --save-ring-inset-right: 12px; /* SaveReminder card: in from the drawing area's right edge, so its right edge is on Export's (ticket 1111). */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
   --duration-fast: 120ms;
@@ -424,6 +426,9 @@
   --winter-charm-clear: 1rem; /* The least room, 16px, between a Winter charm and the box or the screen's edge. */
   --winter-charm-room: 7.5rem; /* The least black beside the box, 120px, that holds Winter charms; under it there are none. */
   --winter-charm-drift: 1rem; /* How far each side's Winter charms and marks drift up or down, 16px, as the box turns (ticket 1102). */
+  --winter-charm-edge-clear: 0.375rem; /* The least room, 6px, between a small Winter charm and the screen's edge, the Canvas strip or the Progress bar (ticket 1109). */
+  --winter-charm-reach: 0.625rem; /* How far a small Winter charm may lie over the box's edge, 10px: short of What's inside's demo at the smallest zoom. */
+  --winter-charm-least-bead: 0.125rem; /* The least bead, 2px, a small Winter charm is drawn at; one that would be smaller is left out. */
   /* Homepage card, What's inside (ticket 0797). */
   --inside-main-least-height: 15rem; /* The demo editor's least height, 240px: on a shorter screen the section scrolls inside itself, so the editor is seen whole before the page turns (tickets 0802, 0825). */
   --inside-frame-edge: color-mix(in srgb, var(--ink) 22%, transparent); /* The demo editor's 1px edge (ticket 0825). */
@@ -494,9 +499,9 @@
   --strip-project-name-max: 12rem; /* CanvasStrip card (ticket 0858): the Project button's name is cut at 192px. */
   /* Rotate Frame motion (ticket 1016; interaction-and-motion.md, Rotate Frame; MarginSheet card) */
   --frame-turn-duration: 150ms; /* The Frame is seen turning a quarter about its middle, on --ease-standard. */
-  --rotate-copy-wait: 200ms; /* MarginSheet card: the Rotate copy stays this long after the pointer leaves it... */
+  --rotate-copy-wait: 200ms; /* MarginSheet and ContextBar cards: the Rotate copy stays this long after the pointer leaves it... */
   --rotate-copy-fade: 150ms; /* ...then fades out on --ease-in. */
-  --rotate-copy-tap-hold: 1600ms; /* MarginSheet card: on touch, the copy leaves this long after the last tap. */
+  --rotate-copy-tap-hold: 1600ms; /* MarginSheet and ContextBar cards: on touch, the copy leaves this long after the last tap. */
   /* Row progress motion (ticket 0729; interaction-and-motion.md, Row progress) */
   --row-glint-duration: 380ms; /* BeadBoard card: each bead of the finished pass washes in --row-glint and back. */
   --row-glint-step: 24ms; /* BeadBoard card: the gap between one bead's glint and the next, in the Row direction. */

@@ -234,13 +234,13 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | Pro isn't open yet. Everything works without an account. (ticket 0391) | Pro пока не открыт. Всё работает и без аккаунта. |
 | you are here (note) | вы здесь |
 | No account · Free · no sign-up · Draw, count and weave on this device. Nothing to sign up for. · Open the editor | Без аккаунта · Бесплатно · без регистрации · Рисуйте, считайте и плетите на этом устройстве. Регистрироваться не нужно. · Открыть редактор |
-| Free account · Free · Same as No account, plus your settings on all your devices · Create free account (ticket 0391: open, the way to sign in) | Бесплатный аккаунт · Бесплатно · Всё, что без аккаунта, и ваши настройки на всех устройствах · Создать бесплатный аккаунт |
+| Free account · Free · Create free account (ticket 0391: open, the way to sign in) · forever free: Everything in No account · Plus your settings, the same on all your devices | Бесплатный аккаунт · Бесплатно · Создать бесплатный аккаунт · бесплатно навсегда: Всё, что без аккаунта · И ваши настройки, одни и те же на всех устройствах |
 | Pro · Price later · Same as Free account, plus more · Coming later (ticket 0740: no "coming later" beside the price, no list) | Pro · Цена позже · Всё, что в бесплатном аккаунте, и больше · Появится позже |
 | COMING SOON (the stamp on Pro; its image name "Coming soon") | СКОРО (название картинки «Скоро») |
 | forever free: (No account's list; "what you get" and the two "everything in …, plus" lines are gone, ticket 0740) | бесплатно навсегда: |
 | Free to use · An account keeps your settings the same on all your devices; Pro comes later. Everything works without an account. (a new visitor's plans: No account alone, its heading and the line behind its Info button, tickets 0871, 0391) | Бесплатно · Аккаунт делает настройки одинаковыми на всех ваших устройствах; Pro появится позже. Всё работает и без аккаунта. |
 
-Pro lists nothing until its features are known: the stamp stands where the list was. Free account says what it adds, your settings on all your devices (ticket 0391).
+Pro lists nothing until its features are known: the stamp stands where the list was. Free account lists what it holds under its button, as No account does: everything in No account, plus your settings, the same on all your devices (tickets 0391, 1112).
 
 The "save. count. export" line with its "on us" note, and the carousel's seven lines and its arrow labels, went with ticket 0797.
 
@@ -1018,7 +1018,7 @@ The picture bar on the reference image and its two actions (ReferenceImage card)
 
 ## Save reminder copy (ticket 0796)
 
-The ring on the Canvas strip, beside the Project button, that offers to save a Project file (SaveReminder card). The words stay calm: they say where the work is and what keeps it, never "lost" or "deleted". "Beads since last file: {count}" is a Label: number, so no plural is needed; the button's accessible name is "Save Project file" (ticket 0859; it was "Save a copy") with the count line as its description for the same reason. `{when}` is `Intl.RelativeTimeFormat` with `numeric: "auto"` in the app's language. Every language but English and Russian is a draft, to be checked by a speaker.
+The ring at the drawing area's top-right, under Export, that offers to save a Project file (SaveReminder card). The words stay calm: they say where the work is and what keeps it, never "lost" or "deleted". "Beads since last file: {count}" is a Label: number, so no plural is needed; the button's accessible name is "Save Project file" (ticket 0859; it was "Save a copy") with the count line as its description for the same reason. `{when}` is `Intl.RelativeTimeFormat` with `numeric: "auto"` in the app's language. Every language but English and Russian is a draft, to be checked by a speaker.
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|

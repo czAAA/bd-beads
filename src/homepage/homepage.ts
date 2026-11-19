@@ -17,9 +17,8 @@ import { browserOpeningNote } from '../services/openingNote'
 import { downloadFile } from '../services/fileDownload'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../services/projectFileCodec'
 import { useProjectLibrary } from '../composables/project/useProjectLibrary'
-import { onSettingChange } from '../composables/shell/useKeptSettings'
 import { libraryFileName, projectFileName, projectFileNameOf } from '../domain/projectFile'
-import { firstProjectAddress, firstStarterAddress, projectAddress, savedProjectsAddress } from '../domain/openingAddress'
+import { convertImageAddress, firstProjectAddress, firstStarterAddress, newProjectAddress, projectAddress, savedProjectsAddress } from '../domain/openingAddress'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
 import { signInAddress } from '../domain/account'
@@ -27,6 +26,7 @@ import { browserAccount } from '../services/account'
 import { browserFeedback } from '../services/feedback'
 import { notesFromBase } from '../services/notesFile'
 import { browserPictureStore } from '../services/pictureStore'
+import { browserPersistentStorage } from '../services/persistentStorage'
 import { leaveWithBox } from './boxHandoff'
 import { keepDemoCopy, type DemoSnapshot } from './demoCopy'
 import { editorUrl, hasArrived, markArrived, shouldOpenEditor, WHATS_NEW_HASH } from './homepageRoute'
@@ -39,8 +39,6 @@ followDeviceTheme(window, document.documentElement, currentThemePick)
 const base = import.meta.env.BASE_URL
 // A language's code in the address (ticket 1053) is the device's language from now on, read before it is loaded.
 followAddressLocale(browserDevicePreferences.get('locale'))
-// A signed-in person's change of language or theme here waits on the device; the editor sends it (ticket 1086).
-onSettingChange({ language: () => browserDevicePreferences.get('locale').value, theme: () => browserDevicePreferences.get('theme').value }, browserAccount.settingChanged)
 /** The editor's address, under the address's language folder when it names one, so the way in keeps the code. */
 const editor = () => editorUrl(pagesBase())
 
@@ -113,6 +111,10 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         atWhatsNew: location.hash === WHATS_NEW_HASH,
         // What waits for Reload, heard through the same port as the editor's "Update ready" (ticket 1049).
         updates: browserAppUpdates,
+        // The Menu's Account section and Kept by this browser, as in the editor (ticket 1113); a signed-in person's
+        // change of language, theme or Lifted pieces here is sent as the editor sends it (ticket 1086).
+        account: browserAccount,
+        persistentStorage: browserPersistentStorage,
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
         openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).
@@ -123,6 +125,9 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         // Create free account (ticket 0391): the editor, opened on the Sign in Subpanel.
         onCreateAccount: () => goToEditor(signInAddress(editor())),
         onOpenSavedProjects: () => goToEditor(savedProjectsAddress(editor())),
+        // The Menu's rows only the editor can do (ticket 1113): the editor opens on the form, or on the page.
+        onNewProject: () => goToEditor(newProjectAddress(editor())),
+        onConvertImage: () => goToEditor(convertImageAddress(editor())),
         onOpenProject: (id: string) => goToEditor(projectAddress(editor(), id)),
         onOpenDemoCopy: openDemoCopy,
         onExportAll: exportAll,

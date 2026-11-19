@@ -440,7 +440,7 @@ export const pl: Translations = {
       youAreHere: 'jesteś tutaj',
       tiles: [
         { name: 'Bez konta', price: 'Za darmo', meta: 'bez rejestracji', text: 'Rysuj, licz i pleć na tym urządzeniu. Nie musisz się nigdzie rejestrować.', button: 'Otwórz edytor' },
-        { name: 'Darmowe konto', price: 'Za darmo', text: 'To samo co bez konta, plus twoje ustawienia na wszystkich urządzeniach', button: 'Załóż konto' },
+        { name: 'Darmowe konto', price: 'Za darmo', rows: ['Wszystko z planu Bez konta', 'Plus twoje ustawienia, te same na wszystkich urządzeniach'], button: 'Załóż konto' },
         { name: 'Pro', price: 'Cena później', text: 'To samo co darmowe konto, i więcej', button: 'Wkrótce' },
       ],
       comingSoon: 'Wkrótce',

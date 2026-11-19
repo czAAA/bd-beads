@@ -17,7 +17,7 @@ export interface KeptSettingsDeps {
 
 /** Calls `changed` at once for every change of the settings whose value is given here, however it was made: the
  * Menu, or anything else that sets one. */
-export function onSettingChange(
+function onSettingChange(
   values: { [N in KeptSettingName]?: () => KeptValue<N> },
   changed: <N extends KeptSettingName>(name: N, value: KeptValue<N>) => void,
 ): void {

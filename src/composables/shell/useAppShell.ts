@@ -997,7 +997,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onCreateFirstProject()
     if (openingAddress.starterGallery) frameFlow.openOnStarters()
   }
-  if (!activeProject.value && (projects.value.length > 0 || sealed.value.length > 0)) overlays.openMenuOnSavedProjects()
+  // The Homepage Menu's New Project and Convert image (ticket 1113): the editor opens on the form, or on the page.
+  if (openingAddress.newProject) overlays.openMenuOnForm()
+  else if (openingAddress.convertImage) convertImage.open()
+  else if (!activeProject.value && (projects.value.length > 0 || sealed.value.length > 0)) overlays.openMenuOnSavedProjects()
 
   /** Signing in from the Menu (ticket 0078): who is signed in, the Sign in Subpanel, back from Google, Sign out. After
    * the lines above, so a return from Google decides what the Menu opens on. */

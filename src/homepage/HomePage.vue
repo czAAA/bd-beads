@@ -43,6 +43,17 @@ import { fillBlanks } from '../domain/fillBlanks'
 import { findBead } from '../domain/beads'
 import { beadCell, type Technique } from '../domain/weave'
 import FeedbackSheet from '../components/shell/FeedbackSheet.vue'
+import ShortcutsHelp from '../components/shell/ShortcutsHelp.vue'
+import ConfirmModal from '../components/ui/ConfirmModal.vue'
+import { useAccountFlow } from '../composables/shell/useAccountFlow'
+import { usePenInputMode } from '../composables/shell/usePenInputMode'
+import { useStorageAskFlow } from '../composables/project/useStorageAskFlow'
+import { provideButtonNames } from '../composables/ui/useButtonNames'
+import { useThemePick } from '../theme/useThemePick'
+import { memoryAccount } from '../services/memoryAccount'
+import { useDevicePreferences } from '../services/devicePreferences'
+import type { AccountService } from '../services/account'
+import type { PersistentStorage } from '../services/persistentStorage'
 import ToastRegion from '../components/ui/ToastRegion.vue'
 import { useDialogs } from '../composables/shell/useDialogs'
 import { useFeedbackFlow } from '../composables/shell/useFeedbackFlow'
@@ -69,14 +80,22 @@ const props = defineProps<{
   atWhatsNew?: boolean
   /** The Offline copy's update: What's new shows what waits for Reload, with the toast's Reload (ticket 1049). */
   updates?: AppUpdates
+  /** The Menu's Account section (ticket 1113): who is signed in, Sign out and Delete account; a Guest's twin if none. */
+  account?: AccountService
+  /** Whether the browser keeps the Projects, for the Menu's Kept by this browser row; the row is absent without it. */
+  persistentStorage?: PersistentStorage
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
   /** The first Project, made at once and opened on the Frame panel's Starter gallery (ticket 0953). */
   startFromStarter: []
   openEditor: []
-  /** Create free account: the editor, on the Sign in Subpanel (ticket 0391). */
+  /** Create free account, and the Menu's Sign in: the editor, on the Sign in Subpanel (tickets 0391, 1113). */
   createAccount: []
+  /** The Menu's New Project: the editor, with Menu on the New Project form (ticket 1113). */
+  newProject: []
+  /** The Menu's Convert image: the editor, on the Convert image page (ticket 1113). */
+  convertImage: []
   /** The editor with no Project open and the Menu on Saved Projects (ticket 0716). */
   openSavedProjects: []
   /** The editor on the Project picked in the Menu's Saved Projects. */
@@ -91,7 +110,7 @@ const emit = defineEmits<{
 /** What the Homepage's Saved Projects needs of the library (ticket 0716). */
 type HomepageLibrary = Pick<ProjectLibrary, 'projects' | 'sealed' | 'removeProject' | 'restoreRemoved' | 'forgetRemoved' | 'addProjects' | 'entryOf'>
 
-const { t, locale } = provideI18n()
+const { t, locale, setLocale } = provideI18n()
 watchEffect(() => {
   document.title = homepageTitle(t.value)
 })
@@ -100,8 +119,38 @@ const menuOpen = ref(false)
 // The Homepage has no app shell: its dialogs, the Feedback sheet and Delete, have a registry and toasts of their own.
 const dialogs = useDialogs()
 const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
+const canvasBackground = useCanvasBackground()
 const feedback = useFeedbackFlow({ feedback: props.feedback, locale: () => locale.value, messages: () => t.value, showToast, dialogs })
 const zoom = useHomepageZoom()
+// The Menu holds the editor's rows (ticket 1113): the device's settings, Kept by this browser, the Shortcuts help, What
+// the buttons do and the Account section work here; New Project, Convert image and Sign in open the editor on them.
+const preferences = useDevicePreferences()
+const toolsPosition = preferences.get('toolPillPosition')
+const pen = usePenInputMode(preferences)
+const projectsKept = props.persistentStorage
+  ? useStorageAskFlow({ persistentStorage: props.persistentStorage, devicePreferences: preferences, messages: () => t.value, showToast }).kept
+  : undefined
+const shortcutsOpen = dialogs.flag('shortcuts')
+const buttonNames = provideButtonNames()
+const themePick = useThemePick()
+const accountFlow = useAccountFlow({
+  account: props.account ?? memoryAccount(),
+  messages: () => t.value,
+  showToast,
+  openMenu: (on) => (on === 'sign-in' ? emit('createAccount') : (menuOpen.value = true)),
+  foldedSections: preferences.get('panelSectionsClosed'),
+  settings: {
+    language: { value: () => locale.value, set: setLocale },
+    theme: { value: () => themePick.pick.value, set: themePick.setPick },
+    liftedPieces: { value: () => (canvasBackground.lift.on.value ? 'on' : 'off'), set: (lifted) => canvasBackground.lift.set(lifted === 'on') },
+  },
+  dialogs,
+})
+/** A Menu row that does its thing over the page: the panel goes first, as in the editor. */
+function fromMenu(act: () => void) {
+  menuOpen.value = false
+  act()
+}
 /** The width from which What's inside has its editor, as in the CSS (481px): a phone has the plain list (ticket 0797). */
 const EDITOR_FROM = 481
 const bodyEl = ref<HTMLElement>()
@@ -121,7 +170,6 @@ const narrow = computed(() => pageWidth.value < EDITOR_FROM)
 /** The width from which What's inside's list stands beside its demo, as the CSS's 1000px steps (ticket 0830). */
 const LIST_FROM = 1000
 const wide = computed(() => pageWidth.value >= LIST_FROM)
-const canvasBackground = useCanvasBackground()
 /** What the page's background is woven in (ticket 0734: its every other column hangs half a bead lower). */
 const BACKGROUND: { technique: Technique } = { technique: 'peyote' }
 /** The Delica 11/0's real cell, the one an editor Project in that Bead draws (ticket 0724). */
@@ -393,7 +441,7 @@ const savedProjects = controlAction('saved-projects')
     <div class="homepage-page__stage" :style="{ '--progress': section / Math.max(1, sections.length - 1), '--homepage-scale': screenScale }">
       <!-- The two faint X1 marks beside the box, drifting a little as the box turns; in winter the charms and theirs. -->
       <span class="homepage-page__marks">
-        <WinterCharms v-if="winter" :box="boxEl" :scale="screenScale" />
+        <WinterCharms v-if="winter" :box="boxEl" :drawing="bodyEl" :covered="menuOpen || !!dialogs.open.value" :scale="screenScale" />
         <template v-else>
           <AppLogo class="homepage-page__mark homepage-page__mark--large" :size="420" data-testid="homepage-mark" />
           <AppLogo class="homepage-page__mark homepage-page__mark--small" :size="120" data-testid="homepage-mark" />
@@ -444,7 +492,29 @@ const savedProjects = controlAction('saved-projects')
           </CanvasStrip>
         </div>
         <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="libraryFailed ? undefined : String(count)" @close="menuOpen = false">
-          <MenuPanel page="homepage" :project-count="count" :count-unknown="libraryFailed" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
+          <MenuPanel
+            v-model:tools-position="toolsPosition"
+            page="homepage"
+            :project-count="count"
+            :count-unknown="libraryFailed"
+            :input-mode="pen.inputMode.value"
+            :pen-seen="pen.inputModeAvailable.value"
+            :handedness="pen.handedness.value"
+            :kept="projectsKept"
+            :account="accountFlow.account.value"
+            :may-open-sign-in="accountFlow.mayOpenSignIn"
+            @new-project="emit('newProject')"
+            @convert-image="emit('convertImage')"
+            @saved-projects="showSavedProjects"
+            @sign-in="emit('createAccount')"
+            @sign-out="accountFlow.onSignOut"
+            @delete-account="accountFlow.onRequestDeleteAccount"
+            @update:input-mode="pen.setInputMode"
+            @update:handedness="pen.setHandedness"
+            @shortcuts="fromMenu(() => (shortcutsOpen = true))"
+            @button-names="fromMenu(buttonNames.show)"
+            @feedback="feedback.onOpenFeedback"
+          />
           <template #sub="{ depth }">
             <LibraryUnopened v-if="depth === 1 && libraryFailed" list />
             <LoadingState v-else-if="depth === 1 && libraryLoading" compact :text="t.projects.loading" />
@@ -473,6 +543,18 @@ const savedProjects = controlAction('saved-projects')
           :send="feedback.sendReport"
           :copy="feedback.copyReport"
           @cancel="feedback.onCloseFeedback"
+        />
+        <ShortcutsHelp v-if="dialogs.open.value === 'shortcuts'" @close="shortcutsOpen = false" />
+        <!-- Delete your account? (ticket 0082), asked from the Menu's Account section as in the editor. -->
+        <ConfirmModal
+          v-if="dialogs.open.value === 'delete-account'"
+          data-testid="delete-account-modal"
+          :title="t.account.deleteTitle"
+          :message="t.account.deleteMessage"
+          :confirm-label="t.account.deleteConfirm"
+          :cancel-label="t.panels.project.cancel"
+          @confirm="accountFlow.onConfirmDeleteAccount"
+          @cancel="accountFlow.onCancelDeleteAccount"
         />
         <ToastRegion :toasts="toasts" @dismiss="dismissToast" />
 

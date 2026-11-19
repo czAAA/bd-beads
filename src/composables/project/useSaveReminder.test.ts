@@ -36,42 +36,42 @@ async function setup(options: { since?: SinceFile; persisted?: boolean; createdA
 describe('useSaveReminder', () => {
   it('shows nothing below the threshold', async () => {
     const { ring, land } = await setup()
-    await land(49)
+    await land(149)
     await vi.advanceTimersByTimeAsync(10_000)
 
     expect(ring.shown.value).toBe(false)
   })
 
-  it('appears at 50 once nothing has landed for 3 s, with the label open for 4 s and said once', async () => {
+  it('appears at 150 once nothing has landed for 3 s, with the label open for 4 s and said once', async () => {
     const { ring, land, announce } = await setup()
-    await land(50)
+    await land(150)
     await vi.advanceTimersByTimeAsync(2999)
     expect(ring.shown.value).toBe(false)
 
     await vi.advanceTimersByTimeAsync(1)
     expect([ring.shown.value, ring.labelOpen.value]).toEqual([true, true])
-    expect(announce).toHaveBeenCalledExactlyOnceWith(50)
+    expect(announce).toHaveBeenCalledExactlyOnceWith(150)
 
     await vi.advanceTimersByTimeAsync(4000)
     expect([ring.shown.value, ring.labelOpen.value]).toEqual([true, false])
   })
 
-  it('waits for 100 where the browser keeps storage', async () => {
+  it('waits for 300 where the browser keeps storage', async () => {
     const { ring, land } = await setup({ persisted: true })
-    await land(99)
+    await land(299)
     await vi.advanceTimersByTimeAsync(3000)
     expect(ring.shown.value).toBe(false)
 
-    await land(100)
+    await land(300)
     await vi.advanceTimersByTimeAsync(3000)
     expect(ring.shown.value).toBe(true)
   })
 
   it('waits while more beads land, and while something is open', async () => {
     const { ring, land, busy } = await setup()
-    await land(50)
+    await land(150)
     await vi.advanceTimersByTimeAsync(2000)
-    await land(60)
+    await land(160)
     await vi.advanceTimersByTimeAsync(2000)
     expect(ring.shown.value).toBe(false)
 
@@ -86,25 +86,25 @@ describe('useSaveReminder', () => {
 
   it('opens the label again at every further 100 beads, not on its way back', async () => {
     const { ring, land, announce } = await setup()
-    await land(50)
+    await land(150)
     await vi.advanceTimersByTimeAsync(7000)
-    await land(149)
+    await land(249)
     await vi.advanceTimersByTimeAsync(7000)
     expect(announce).toHaveBeenCalledTimes(1)
 
-    await land(150)
+    await land(250)
     await vi.advanceTimersByTimeAsync(3000)
     expect(ring.labelOpen.value).toBe(true)
     await vi.advanceTimersByTimeAsync(4000)
-    await land(140)
-    await land(150)
+    await land(240)
+    await land(250)
     await vi.advanceTimersByTimeAsync(7000)
     expect(announce).toHaveBeenCalledTimes(2)
   })
 
   it('hides once a Project file is saved', async () => {
     const { ring, land } = await setup()
-    await land(50)
+    await land(150)
     await vi.advanceTimersByTimeAsync(3000)
     await land(0)
 
@@ -112,16 +112,16 @@ describe('useSaveReminder', () => {
   })
 
   it('shows at once for a Project opening past the threshold, opening the label only when its last file is 7 days old', async () => {
-    const recent = await setup({ since: { beads: 80, lastFileAt: Date.now() - 1000 } })
+    const recent = await setup({ since: { beads: 180, lastFileAt: Date.now() - 1000 } })
     expect([recent.ring.shown.value, recent.ring.labelOpen.value]).toEqual([true, false])
 
-    const behind = await setup({ since: { beads: 80, lastFileAt: Date.now() - STALE_FILE_MS } })
+    const behind = await setup({ since: { beads: 180, lastFileAt: Date.now() - STALE_FILE_MS } })
     expect([behind.ring.shown.value, behind.ring.labelOpen.value]).toEqual([true, true])
   })
 
   it('keeps the label open while held, and closes it 1 s after', async () => {
     const { ring, land } = await setup()
-    await land(50)
+    await land(150)
     await vi.advanceTimersByTimeAsync(3000)
     ring.hold(true)
     await vi.advanceTimersByTimeAsync(10_000)
@@ -135,7 +135,7 @@ describe('useSaveReminder', () => {
   })
 
   it('shows nothing with no Project open', async () => {
-    const { ring, project } = await setup({ since: { beads: 80 } })
+    const { ring, project } = await setup({ since: { beads: 180 } })
     project.value = undefined
     await nextTick()
 

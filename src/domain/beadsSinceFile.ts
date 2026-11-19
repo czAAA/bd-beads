@@ -19,9 +19,9 @@ export interface SinceFile {
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /** The ring shows from this many beads, or from {@link PERSISTED_THRESHOLD} where the browser keeps storage. */
-export const SAVE_THRESHOLD = 50
+export const SAVE_THRESHOLD = 150
 /** Storage pressure can't clear a persisted library (ticket 399), so the ring waits twice as long. */
-const PERSISTED_THRESHOLD = 100
+const PERSISTED_THRESHOLD = 300
 /** After the threshold, the label opens again every this many beads. */
 const LABEL_EVERY = 100
 /** A Project opening at the threshold with its last file this old opens the label once. @internal Tests date files by it. */

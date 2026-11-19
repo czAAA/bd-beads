@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "fixed",
+  "line": {
+    "en": "On the Homepage, a trackpad swipe over the plans turns to the next section without a pause first",
+    "ru": "На главной странице свайп по тачпаду над тарифами сразу листает к следующему разделу, без паузы",
+    "uk": "На головній сторінці свайп тачпадом над тарифами одразу гортає до наступного розділу, без паузи",
+    "be": "На галоўнай старонцы свайп тачпадам над тарыфамі адразу гартае да наступнага раздзела, без паўзы",
+    "zh": "在主页上，在方案上方用触控板滑动会直接翻到下一部分，无需先停顿",
+    "es": "En la página de inicio, deslizar en el trackpad sobre los planes pasa a la siguiente sección sin tener que esperar",
+    "pl": "Na stronie głównej przesunięcie na gładziku nad planami od razu przechodzi do następnej sekcji, bez pauzy"
+  }
+}

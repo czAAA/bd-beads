@@ -1,8 +1,8 @@
 import type { GridPosition } from './grid'
 
-// The editor's own addresses (ticket 0716): `?open=saved-projects` lands on Saved Projects; `?project=<id>` opens that
-// Project, at `&zoom=<zoom>&at=<row>,<column>` if given (0879); `?open=first-project` makes one on New Project's presets
-// while the library has none (0866), and `?open=first-project-starter` opens it on the Starter gallery too (0953).
+// The editor's own addresses (ticket 0716): `?open=saved-projects`, `?project=<id>` at `&zoom=&at=<row>,<column>` if
+// given (0879), `?open=first-project` (0866) and `-starter` (0953); from the Homepage's Menu (1113) `?open=new-project`
+// (Menu on the New Project form) and `?open=convert-image`.
 
 /** The view a Project opens at, this once: its zoom and the Canvas position in the middle of the drawing area. */
 export interface OpeningView {
@@ -14,6 +14,10 @@ export interface OpeningView {
 export interface OpeningAddress {
   savedProjects: boolean
   firstProject: boolean
+  /** Menu opens on the New Project form (ticket 1113). */
+  newProject?: true
+  /** The Convert image page opens (ticket 1113). */
+  convertImage?: true
   /** The first Project opens on the Frame panel's Starter gallery (ticket 0953). */
   starterGallery?: true
   project?: string
@@ -25,6 +29,8 @@ const OPEN_PARAM = 'open'
 const SAVED_PROJECTS = 'saved-projects'
 const FIRST_PROJECT = 'first-project'
 const FIRST_PROJECT_STARTER = 'first-project-starter'
+const NEW_PROJECT = 'new-project'
+const CONVERT_IMAGE = 'convert-image'
 const PROJECT_PARAM = 'project'
 const ZOOM_PARAM = 'zoom'
 const AT_PARAM = 'at'
@@ -47,6 +53,8 @@ export function parseOpeningAddress(search: string): OpeningAddress {
   return {
     savedProjects: open === SAVED_PROJECTS,
     firstProject: open === FIRST_PROJECT || starterGallery,
+    ...(open === NEW_PROJECT ? { newProject: true } : {}),
+    ...(open === CONVERT_IMAGE ? { convertImage: true } : {}),
     ...(starterGallery ? { starterGallery } : {}),
     ...(project ? { project } : {}),
     ...(view ? { view } : {}),
@@ -66,6 +74,16 @@ export function firstProjectAddress(base: string): string {
 /** The editor making the first Project at once and opening the Frame panel on its Starter gallery (ticket 0953). */
 export function firstStarterAddress(base: string): string {
   return `${base}?${OPEN_PARAM}=${FIRST_PROJECT_STARTER}`
+}
+
+/** The editor with Menu on the New Project form (ticket 1113). */
+export function newProjectAddress(base: string): string {
+  return `${base}?${OPEN_PARAM}=${NEW_PROJECT}`
+}
+
+/** The editor on the Convert image page (ticket 1113). */
+export function convertImageAddress(base: string): string {
+  return `${base}?${OPEN_PARAM}=${CONVERT_IMAGE}`
 }
 
 /** The editor on one Project, at `view` when one is given. */

@@ -25,9 +25,9 @@ import { PRIVACY_URL } from '../../data/privacyLink'
 import { SOURCE_URL } from '../../data/sourceLink'
 import { BUILD_MARK, BUILD_VERSION } from '../../data/build'
 
-// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in five folding sections, only
-// asking. The Homepage (540) leaves out the editor's parts but Saved Projects (0716), its demo all but the Projects and the
-// shortcuts (0797). A row that leaves the page awaits `leave` first; Convert image is the current page while open (0756).
+// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): five folding sections, the same rows on every page
+// (1113) but the demo's Projects and shortcuts (0797); the Homepage's New Project and Sign in open the editor, pushing no
+// Subpanel. A row that leaves the page awaits `leave` first; Convert image is the current page while open (0756).
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */
@@ -67,7 +67,10 @@ const props = withDefaults(
     mayOpenSignIn: () => Promise.resolve(true),
   },
 )
-const inEditor = computed(() => props.page !== 'homepage')
+/** On the Homepage New Project and Sign in open the editor (ticket 1113): the page goes, with no Subpanel pushed here. */
+const onHomepage = computed(() => props.page === 'homepage')
+/** Whether New Project opens its form here: not in the demo, which it empties, nor on the Homepage, which leaves. */
+const formHere = computed(() => !props.demo && !onHomepage.value)
 const converting = computed(() => props.page === 'convert-image')
 const emit = defineEmits<{
   'saved-projects': []
@@ -104,7 +107,8 @@ const actions = {
   shortcuts: controlAction('shortcuts-help'),
 }
 
-/** New Project leaves the page, so it opens its form once the page has let go. */
+/** New Project leaves the page, so it opens its form once the page has let go. The demo's empties the demo and the
+ * Homepage's opens the editor on the form, at once, as the panel goes. */
 async function openNewProject() {
   if (!(await props.leave())) return
   emit('new-project')
@@ -142,14 +146,13 @@ const inputOptions = computed(() => [
 
 <template>
   <div class="menu-panel" data-testid="menu-panel">
-    <!-- Account (ticket 0078), in the editor only: the Homepage's Menu, its demo and the demo tour have none. -->
-    <AccountSection v-if="inEditor && !demo" :account="account" :leave="leave" :may-open-sign-in="mayOpenSignIn" @sign-in="emit('sign-in')" @sign-out="emit('sign-out')" @delete-account="emit('delete-account')" />
-    <!-- On the Homepage only Saved Projects, while the library is not empty (ticket 0716). -->
-    <PanelSection v-if="inEditor || projectCount > 0 || countUnknown" id="menu:projects" :label="t.panels.menu.projects">
+    <!-- Account (ticket 0078): the demo and the demo tour have none. -->
+    <AccountSection v-if="!demo" :account="account" :leave="leave" :may-open-sign-in="mayOpenSignIn" :sign-in-here="!onHomepage" @sign-in="emit('sign-in')" @sign-out="emit('sign-out')" @delete-account="emit('delete-account')" />
+    <PanelSection id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
-      <PanelItem v-if="inEditor" icon="plus" accent :sub="!demo" :stays="!demo" data-testid="menu-new-project" @select="demo ? emit('new-project') : openNewProject()">{{ actions.newProject.name(t) }}</PanelItem>
+      <PanelItem icon="plus" accent :sub="formHere" :stays="formHere" data-testid="menu-new-project" @select="formHere ? openNewProject() : emit('new-project')">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Convert image is an App page (ADR 0086): while it is open, its row is the current page. -->
-      <PanelItem v-if="inEditor" icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" @select="converting || emit('convert-image')">
+      <PanelItem icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" @select="converting || emit('convert-image')">
         {{ actions.convertImage.name(t) }}
       </PanelItem>
       <PanelItem icon="library" :value="countUnknown ? undefined : String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
@@ -157,7 +160,7 @@ const inputOptions = computed(() => [
       </PanelItem>
       <!-- Whether the browser keeps the Projects, as a fact with its reason behind an Info button (tickets 0839, 0936). -->
       <PanelFactRow
-        v-if="inEditor && !demo && kept !== undefined"
+        v-if="!demo && kept !== undefined"
         icon="device"
         :label="t.panels.menu.keepProjects"
         :value="kept ? t.panels.menu.keepProjectsOn : t.panels.menu.keepProjectsOff"
@@ -179,7 +182,7 @@ const inputOptions = computed(() => [
       />
       <!-- Lifted pieces (ticket 1042): absent where the look lifts no Piece (high contrast). -->
       <PanelSwitchRow
-        v-if="inEditor && lift.offered.value"
+        v-if="lift.offered.value"
         :model-value="lift.on.value"
         icon="piece"
         :label="t.panels.menu.liftedPieces"
@@ -189,7 +192,6 @@ const inputOptions = computed(() => [
         @update:model-value="lift.set"
       />
       <PanelPicker
-        v-if="inEditor"
         :model-value="toolsPosition"
         :label="t.toolPill.position"
         icon="grid"
@@ -198,7 +200,7 @@ const inputOptions = computed(() => [
         @update:model-value="emit('update:toolsPosition', $event)"
       />
       <PanelPicker
-        v-if="inEditor && penSeen"
+        v-if="penSeen"
         :model-value="inputMode"
         :label="t.panels.menu.input"
         icon="pen-mode"
@@ -218,10 +220,10 @@ const inputOptions = computed(() => [
     </PanelSection>
 
     <PanelSection id="menu:help" :label="t.panels.menu.help">
-      <PanelItem v-if="inEditor" icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
-      <PanelItem v-if="page === 'editor' && !demo" icon="info" data-testid="menu-item-button-names" @select="emit('button-names')">{{ t.panels.menu.buttonNames }}</PanelItem>
+      <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
+      <PanelItem v-if="!demo" icon="info" data-testid="menu-item-button-names" @select="emit('button-names')">{{ t.panels.menu.buttonNames }}</PanelItem>
       <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
-      <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
+      <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="onHomepage ? 'page' : undefined" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>
 
     <PanelSection v-if="!demo" id="menu:about" :label="t.panels.menu.about">

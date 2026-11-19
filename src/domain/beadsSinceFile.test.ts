@@ -80,9 +80,9 @@ describe('countedBeads', () => {
 })
 
 describe('saveThreshold and labelStep', () => {
-  it('is 50 beads, or 100 where the browser keeps storage', () => {
-    expect(saveThreshold(false)).toBe(50)
-    expect(saveThreshold(true)).toBe(100)
+  it('is 150 beads, or 300 where the browser keeps storage', () => {
+    expect(saveThreshold(false)).toBe(150)
+    expect(saveThreshold(true)).toBe(300)
   })
 
   it('steps up at the threshold and every further 100 beads', () => {
