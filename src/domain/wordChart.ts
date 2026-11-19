@@ -1,8 +1,8 @@
 import { colorAt } from './canvas'
 import type { Rotation } from './grid'
-import { frameRowOrder, rowProgressOf } from './rowProgress'
+import { frameRowOrder, rowProgressOf, seenRotation } from './rowProgress'
 import { frameWeave } from './layerWeave'
-import { beadsOfLayer, frameOf, quarterTurnOf } from './layerRecord'
+import { beadsOfLayer, frameOf } from './layerRecord'
 import type { Project } from './project'
 import { describeWeave } from './weave'
 import type { PassDirection } from './weaveGeometry'
@@ -100,7 +100,7 @@ export function wordChartOf(project: Project): WordChart | undefined {
   const { direction, reversed } = rowProgressOf(project)
   const along = direction === 'rows' ? frame.columns : frame.rows
   // The Frame's own rows, as the picture shows them: turned on the Canvas (ticket 0667), then with the view.
-  const shown = ((quarterTurnOf(project) + 90 * (frame.quarterTurns ?? 0)) % 360) as Rotation
+  const shown = seenRotation(project)
   const ascends = ASCENDS[direction][shown]
   const beads = beadsOfLayer(project, 'frame')!
   let hasEmpty = false

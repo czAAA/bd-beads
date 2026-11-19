@@ -1,6 +1,6 @@
 import { colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type FrameSheet } from './canvas'
 import { rowOrderOf, type ShapedSheet } from './frameShape'
-import type { GridPosition } from './grid'
+import type { GridPosition, Rotation } from './grid'
 import { sameBeads } from './layerBeads'
 import { beadsOfLayer, frameOf, type Layered, quarterTurnOf, touchFrameSheet, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
@@ -179,10 +179,15 @@ function shownWay({ direction, reversed }: Pick<RowProgress, 'direction' | 'reve
   return CLOCKWISE[(CLOCKWISE.indexOf(own) + quarterTurns) % 4]!
 }
 
-/** The quarter turns between the Frame's own rows and the screen: the Frame's turn on the Canvas, then the Canvas's
- * nearest quarter turn (ticket 1101), as the Word chart counts them. */
+/** How the Frame's own rows lie as seen (ticket 1101): turned with the Frame on the Canvas, then with the Canvas's
+ * nearest quarter turn; the Progress bar and the Word chart both read it. */
+export function seenRotation(project: Layered): Rotation {
+  return ((quarterTurnOf(project) + 90 * (frameOf(project)?.quarterTurns ?? 0)) % 360) as Rotation
+}
+
+/** The same in quarter turns clockwise. */
 function seenTurns(project: Layered): number {
-  return ((frameOf(project)?.quarterTurns ?? 0) + quarterTurnOf(project) / 90) % 4
+  return seenRotation(project) / 90
 }
 
 /** Which way the Frame's rows run on screen (ticket 1101): turned with the Frame and with the Canvas, so the Progress
@@ -208,8 +213,8 @@ export function toggleRowDirection(project: Project): Project {
 /** The four ways Turn row direction lists, in the order a press of its `D` key steps through them (ticket 0973). */
 export const ROW_WAYS: readonly ShownWay[] = ['down', 'right', 'up', 'left']
 
-/** Points the weaver's rows the way they are to run on screen (ticket 0973, UX-060; both turns, ticket 1101): each way keeps its own
- * pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
+/** Points the weaver's rows the way they are to run on screen (ticket 0973, UX-060; both turns, ticket 1101): each
+ * way keeps its own pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
  * Row order is worked one way only. */
 export function turnRowDirectionTo(project: Project, way: ShownWay): Project {
   if (!frameRowOrder(project).turns) return project

@@ -214,11 +214,12 @@ describe('Row progress on a turned Canvas', () => {
   const bothTurned = turnedClockwise(turned)
 
   it('shows the way as seen: the Frame\'s turn plus the Canvas\'s', () => {
-    expect(shownWayOf(upright)).toBe('down')
-    expect(shownWayOf(turned)).toBe('left')
     expect(shownWayOf(canvasTurned)).toBe('left')
     expect(shownWayOf(bothTurned)).toBe('up')
     expect(rowProgressOf(canvasTurned)).toEqual(rowProgressOf(upright))
+    // Off a quarter turn it goes by the nearest one, as the drawing does.
+    expect(shownWayOf(withLayers(upright, { orientation: 100 }))).toBe('left')
+    expect(shownWayOf(withLayers(upright, { orientation: 30 }))).toBe('down')
   })
 
   it('runs the rows the way chosen on screen, whatever both turns are', () => {
