@@ -426,6 +426,9 @@
   --winter-charm-clear: 1rem; /* The least room, 16px, between a Winter charm and the box or the screen's edge. */
   --winter-charm-room: 7.5rem; /* The least black beside the box, 120px, that holds Winter charms; under it there are none. */
   --winter-charm-drift: 1rem; /* How far each side's Winter charms and marks drift up or down, 16px, as the box turns (ticket 1102). */
+  --winter-charm-edge-clear: 0.375rem; /* The least room, 6px, between a small Winter charm and the screen's edge, the Canvas strip or the Progress bar (ticket 1109). */
+  --winter-charm-reach: 0.625rem; /* How far a small Winter charm may lie over the box's edge, 10px: short of What's inside's demo at the smallest zoom. */
+  --winter-charm-least-bead: 0.125rem; /* The least bead, 2px, a small Winter charm is drawn at; one that would be smaller is left out. */
   /* Homepage card, What's inside (ticket 0797). */
   --inside-main-least-height: 15rem; /* The demo editor's least height, 240px: on a shorter screen the section scrolls inside itself, so the editor is seen whole before the page turns (tickets 0802, 0825). */
   --inside-frame-edge: color-mix(in srgb, var(--ink) 22%, transparent); /* The demo editor's 1px edge (ticket 0825). */
