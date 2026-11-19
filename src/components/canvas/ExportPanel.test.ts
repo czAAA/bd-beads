@@ -51,26 +51,54 @@ describe('ExportPanel (ticket 0652)', () => {
     }
   })
 
-  it('holds Picture, Printable chart and Export quality with a Frame, and passes each export on', async () => {
+  it('holds the PNG and PDF buttons in one row with a Frame, each naming its file and size, and passes each export on (ticket 1121)', async () => {
     const wrapper = await mountPanel(framed())
+    const png = wrapper.get('[data-testid="export-files"] [data-testid="export-png"]')
+    const pdf = wrapper.get('[data-testid="export-files"] [data-testid="export-pdf"]')
 
-    expect(wrapper.get('[data-testid="export-png"]').text()).toMatch(/^Picture.*PNG/)
-    expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/^Printable chart.*PDF/)
-    expect(has(wrapper, 'quality-range')).toBe(true)
+    expect([png.text(), pdf.text()]).toEqual(['PNG', 'PDF'])
+    expect(png.attributes('aria-label')).toMatch(/^Picture, PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
+    expect(pdf.attributes('aria-label')).toMatch(/^Printable chart, PDF (≈ \d+\.\d MB|< 0\.1 MB) · \d+ pages?$/)
     expect(['export-needs-frame', 'export-select-frame', 'export-fit', 'frame-letters'].filter((id) => has(wrapper, id))).toEqual([])
 
-    await wrapper.get('[data-testid="export-png"]').trigger('click')
-    await wrapper.get('[data-testid="export-pdf"]').trigger('click')
+    await png.trigger('click')
+    await pdf.trigger('click')
     expect(wrapper.emitted('export-png')).toHaveLength(1)
     expect(wrapper.emitted('export-pdf')).toHaveLength(1)
   })
 
-  it('puts the two files one after the other, Picture then Printable chart, and their options under both', async () => {
+  it('has a File button after PNG and PDF, in their row, that saves the Project file and says what it holds (ticket 1121)', async () => {
+    const wrapper = await mountPanel(framed())
+    const file = wrapper.get('[data-testid="export-files"] [data-testid="export-project-file"]')
+
+    expect(file.text()).toBe(en.frame.exportProjectFile)
+    expect(file.attributes('aria-label')).toBe(`${en.panels.project.saveFile}, ${en.frame.exportProjectFileBody}`)
+    await file.trigger('click')
+    expect(wrapper.emitted('save-project-file')).toHaveLength(1)
+  })
+
+  it('puts Saves as right under the buttons, then Export quality and the switches (ticket 1121)', async () => {
     const wrapper = await mountPanel(big())
-    const ids = ['export-png', 'export-pdf', 'quality-slider', 'export-large-beads', 'export-row-by-row']
+    const ids = ['export-png', 'export-pdf', 'export-project-file', 'export-file-name', 'quality-slider', 'export-large-beads', 'export-row-by-row']
     const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ids.includes(id!))
 
     expect(order).toEqual(ids)
+  })
+
+  it('folds Export quality every time the rows show, the chosen stop beside it, and a press unfolds the slider (ticket 1121)', async () => {
+    const wrapper = await mountPanel(framed())
+    const fold = () => wrapper.get('[data-testid="quality-fold"]')
+
+    expect(fold().attributes('aria-expanded')).toBe('false')
+    expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityMedium)
+    expect(has(wrapper, 'quality-range')).toBe(false)
+    await fold().trigger('click')
+    expect(fold().attributes('aria-expanded')).toBe('true')
+    expect(has(wrapper, 'quality-range')).toBe(true)
+
+    wrapper.unmount()
+    const again = await mountPanel(framed())
+    expect(again.get('[data-testid="quality-fold"]').attributes('aria-expanded')).toBe('false')
   })
 
   it('says to set a frame with none, offers Fit first with the Frame icon, then Drag a Frame, and shows no export rows (ticket 0944)', async () => {
@@ -101,7 +129,7 @@ describe('ExportPanel (ticket 0652)', () => {
 })
 
 describe('ExportPanel print choices (ticket 0916)', () => {
-  const pages = (wrapper: Panel) => /· (\d+) pages?$/.exec(wrapper.get('[data-testid="export-pdf"]').text())?.[1]
+  const pages = (wrapper: Panel) => /· (\d+) pages?$/.exec(wrapper.get('[data-testid="export-pdf"]').attributes('aria-label') ?? '')?.[1]
 
   it('offers Large beads and Row by row, both off, each with what it does behind its Info button', async () => {
     const wrapper = await mountPanel(big())
@@ -149,7 +177,7 @@ describe('ExportPanel Large beads only where it acts (ticket 1125)', () => {
     localStorage.setItem('openbeads:print-large-beads', 'on')
     const small = await mountPanel(withProjectName(framed(), 'Charm'))
 
-    expect(small.get('[data-testid="export-pdf"]').text()).toMatch(/· 1 page$/)
+    expect(small.get('[data-testid="export-pdf"]').attributes('aria-label')).toMatch(/· 1 page$/)
     expect(small.get('[data-testid="export-file-name"]').text()).toBe('charm.pdf')
     expect(localStorage.getItem('openbeads:print-large-beads')).toBe('on')
 

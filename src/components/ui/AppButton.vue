@@ -7,13 +7,13 @@ import { actionKey, type ControlActionLike } from './controlAction'
 import type { IconName } from './icons'
 
 // The one labelled button (tickets 157, 327, 331; Button card), with optional leading and trailing icons. Variants:
-// `primary` (one/region), `secondary`, `in-box`, `toolbox`, `box`, `text`, `danger`, `link`; `selected`=aria-pressed.
+// `primary` (one/region), `secondary`, `accent-2` (the export buttons, 1121), `in-box`, `toolbox`, `box`, `text`, `danger`, `link`; `selected`=aria-pressed.
 // A Tooltip shows when given `tooltip` or an `action` (ADR 0035); disabled is `aria-disabled`, `disabledBody` says why.
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
-    variant?: 'primary' | 'secondary' | 'in-box' | 'toolbox' | 'box' | 'text' | 'danger' | 'link'
+    variant?: 'primary' | 'secondary' | 'accent-2' | 'in-box' | 'toolbox' | 'box' | 'text' | 'danger' | 'link'
     size?: 'md' | 'lg' | 'sm'
     icon?: IconName
     trailingIcon?: IconName
@@ -162,6 +162,12 @@ function swallowClick(event: MouseEvent) {
   border-color: var(--accent);
 }
 
+.app-button--accent-2 {
+  color: var(--accent-2);
+  background: var(--accent-2-soft);
+  border-color: var(--accent-2);
+}
+
 .app-button--in-box {
   background: var(--elevated);
   border-color: var(--in-box-line);
@@ -247,6 +253,12 @@ function swallowClick(event: MouseEvent) {
     border-color: var(--accent-hover);
   }
 
+  /* The edge doubles, so the soft fill keeps its label's contrast. */
+  .app-button--accent-2:hover:not([aria-disabled='true']) {
+    background: var(--accent-2-soft);
+    box-shadow: var(--accent-2-ring);
+  }
+
   .app-button--in-box:hover:not([aria-disabled='true']),
   .app-button--toolbox:hover:not([aria-disabled='true']) {
     background: var(--elevated);
@@ -275,6 +287,11 @@ function swallowClick(event: MouseEvent) {
 .app-button--primary:active:not([aria-disabled='true']) {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+}
+
+.app-button--accent-2:active:not([aria-disabled='true']) {
+  background: var(--accent-2-soft);
+  box-shadow: var(--accent-2-ring);
 }
 
 .app-button--danger:active:not([aria-disabled='true']) {
