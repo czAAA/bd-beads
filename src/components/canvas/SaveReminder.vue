@@ -10,9 +10,9 @@ import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import { actionKey } from '../ui/controlAction'
 
-// The save ring (SaveReminder card, tickets 0796, 0922): on the Canvas strip beside the Project button once the open
+// The save ring (SaveReminder card, tickets 0796, 1111): at the drawing area's top-right, under Export, once the open
 // Project's Project file is well behind. A press runs Save; its label "Save Project file · n beads since the last file"
-// (before a first file, why to save, ticket 0987) hangs under it a moment, over the drawing area, covering no control.
+// (before a first file, why to save, ticket 0987) hangs under it a moment, right edges aligned.
 const props = defineProps<{
   /** The open Project's Beads since last file. */
   beads: number
@@ -39,7 +39,7 @@ const countOrWhy = computed(() =>
   props.lastFileAt === undefined ? t.value.saveReminder.noFileWhy : plural(locale.value, props.beads, t.value.saveReminder.since),
 )
 const countLine = computed(() => fillBlanks(t.value.saveReminder.count, { count: count.value }))
-/** How wide the label may be: from the ring's left edge to 8px short of the screen's right edge, so it is never cut;
+/** How wide the label may be: from the ring's right edge to 8px short of the screen's left edge, so it is never cut;
  * measured while it is open, again whenever the window is resized. A count with no room left on the line is left out,
  * so the label is as wide as the words it shows. */
 const buttonEl = ref<HTMLElement>()
@@ -49,9 +49,9 @@ const labelRoom = ref<string>()
 const countLeftOut = ref(false)
 const LABEL_MARGIN_PX = 8
 async function measureRoom() {
-  const left = buttonEl.value?.getBoundingClientRect().left
-  if (left === undefined) return
-  labelRoom.value = `${Math.max(0, document.documentElement.clientWidth - left - LABEL_MARGIN_PX)}px`
+  const right = buttonEl.value?.getBoundingClientRect().right
+  if (right === undefined) return
+  labelRoom.value = `${Math.max(0, right - LABEL_MARGIN_PX)}px`
   countLeftOut.value = false
   await nextTick()
   // On the hidden second line: below the words.
@@ -88,6 +88,7 @@ const lastLine = computed(() => {
     :hotkey="actionKey(save)"
     :body="t.saveReminder.body"
     :meta="[countLine, lastLine]"
+    align="end"
     :announce="false"
   >
     <!-- Open, the label's words are the ring's name (ticket 0940); closed, it is Save Project file, the count its description. -->
@@ -118,16 +119,19 @@ const lastLine = computed(() => {
 </template>
 
 <style scoped>
-/* In the Canvas strip's left slot, right after the Project button (ticket 0922): as tall as the strip's buttons, so the
- * strip keeps its height and nothing beside it moves when it comes, goes or opens its label. */
+/* At the drawing area's top-right, just under Export (ticket 1111): its right edge on Export's, as tall as the strip's
+ * buttons, still while the canvas pans, zooms or turns. */
 .save-ring {
   --ring-size: var(--strip-item-height);
 
-  flex: none;
+  position: absolute;
+  top: var(--save-ring-inset-top);
+  right: var(--save-ring-inset-right);
+  z-index: var(--z-chrome);
   animation: save-ring-in var(--duration-slow) var(--ease-standard);
 }
 
-/* The Tool pill's material, without its shadow: it sits in the strip like the buttons beside it. */
+/* The Tool pill's material, with its shadow: it floats over the drawing. */
 .save-ring__button {
   position: relative;
   display: inline-grid;
@@ -140,6 +144,7 @@ const lastLine = computed(() => {
   background: var(--elevated);
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
+  box-shadow: var(--elevation-2);
   cursor: pointer;
   transition: scale var(--duration-fast) var(--ease-standard);
 }
@@ -158,13 +163,13 @@ const lastLine = computed(() => {
   outline-offset: 2px;
 }
 
-/* The label hangs 6px under the ring, left edges aligned, over the drawing area: "Save Project file" then "n beads since
+/* The label hangs 6px under the ring, right edges aligned, over the drawing area: "Save Project file" then "n beads since
  * the last file". Part of the button, so a press on it saves too. At most as wide as the screen leaves it; a count with
  * no room wraps onto the hidden second line, leaving the words. */
 .save-ring__label {
   position: absolute;
   top: calc(100% + var(--space-6));
-  left: -1px;
+  right: -1px;
   z-index: var(--z-chrome);
   display: flex;
   box-sizing: border-box;

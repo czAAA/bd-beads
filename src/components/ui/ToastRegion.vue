@@ -17,6 +17,8 @@ const props = defineProps<{
   /** A strip panel is open (ticket 0859): one over the toasts' corner, the Export panel above all, puts them 8px
    * under it, so the saved-file toast never covers the row just pressed. */
   clearOfPanel?: boolean
+  /** The save ring shows (SaveReminder card, ticket 1111): toasts start 8px under it, so none covers it. */
+  underRing?: boolean
 }>()
 const emit = defineEmits<{ dismiss: [id: string] }>()
 
@@ -68,7 +70,7 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
     tag="div"
     name="toast"
     class="toast-region"
-    :class="{ 'toast-region--below-panel': below !== undefined }"
+    :class="{ 'toast-region--under-ring': underRing, 'toast-region--below-panel': below !== undefined }"
     :style="belowStyle"
     data-testid="toast-region"
   >
@@ -150,6 +152,11 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
 
 .toast-region > * {
   pointer-events: auto;
+}
+
+/* Under the save ring at the drawing area's top-right (ticket 1111). */
+.toast-region--under-ring {
+  top: calc(var(--strip-height) + var(--save-ring-inset-top) + var(--strip-item-height) + var(--space-8));
 }
 
 /* Under an open panel over the toasts' corner (ticket 0859), on every screen size. */
