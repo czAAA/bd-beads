@@ -18,7 +18,7 @@ const PROMISES = [
   { id: 'device', icon: 'device' },
   { id: 'offline', icon: 'cloud-off' },
   { id: 'noAds', icon: 'eye-off' },
-  { id: 'pencil', icon: 'pen-mode' },
+  { id: 'tablets', icon: 'pen-mode' },
   { id: 'free', icon: 'check' },
   { id: 'shortcuts', icon: 'keyboard' },
 ] as const satisfies readonly { id: CoffeePromise['id']; icon: IconName }[]

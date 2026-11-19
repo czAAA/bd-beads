@@ -426,7 +426,7 @@ export const zh: Translations = {
       device: { name: '属于你，留在本设备', text: '在浏览器中运行。无需账户，无需安装。' },
       offline: { name: '离线可用', text: '打开一次后，没有网络也能继续使用。' },
       noAds: { name: '无广告，无追踪', text: '不向你推销任何东西，也不记录你的操作。' },
-      pencil: { name: '为 iPad 和 Pencil 而做', text: '笔模式、Pencil 悬停，以及适合手指的大按钮。' },
+      tablets: { name: '为平板和手写笔而做', text: '手写笔模式、手写笔悬停，以及适合手指的大按钮。iPad、Android 和 Windows 设备都适用。' },
       free: { name: '永久免费', text: '你需要的一切都免费，现在没有任何付费内容。专业扩展以后会推出。' },
       shortcuts: { name: '键盘快捷键', text: '每项编辑都有自己的按键。全部列在 {menu} → {help} → {shortcuts} 中。' },
     },

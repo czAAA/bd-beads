@@ -15,7 +15,7 @@ describe('The promises under the band (tickets 0880, 0948)', () => {
     const wrapper = promises()
     const items = wrapper.get('[data-testid="homepage-coffee-promises"]').findAll('li')
     expect(items.map((item) => item.attributes('data-testid'))).toEqual(
-      ['device', 'offline', 'noAds', 'pencil', 'free', 'shortcuts'].map((id) => `homepage-coffee-promise-${id}`),
+      ['device', 'offline', 'noAds', 'tablets', 'free', 'shortcuts'].map((id) => `homepage-coffee-promise-${id}`),
     )
     expect(items[1].text()).toBe(`${en.homepage.promises.offline.name}. ${en.homepage.promises.offline.text}`)
     expect(wrapper.get('[data-testid="homepage-coffee-promises"]').find('button, a, [tabindex]').exists()).toBe(false)

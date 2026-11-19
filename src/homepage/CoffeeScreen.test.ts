@@ -41,7 +41,7 @@ describe('CoffeeScreen on a phone (tickets 0827, 0880)', () => {
     expect(list.classes()).toContain('grouped-list')
     const rows = list.findAll('[data-testid^="homepage-promise-"]')
     expect(rows.map((row) => row.attributes('data-testid'))).toEqual(
-      ['device', 'offline', 'noAds', 'pencil', 'free', 'openSource', 'sayHello'].map((id) => `homepage-promise-${id}`),
+      ['device', 'offline', 'noAds', 'tablets', 'free', 'openSource', 'sayHello'].map((id) => `homepage-promise-${id}`),
     )
     expect(rows[1].text()).toBe(`${en.homepage.promises.offline.name}. ${en.homepage.promises.offline.text}`)
     expect(rows[5].get('[data-testid="homepage-coffee-source"]').attributes('href')).toBe('https://github.com/czAAA/bd-beads')

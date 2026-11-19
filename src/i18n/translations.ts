@@ -579,7 +579,7 @@ export interface Translations {
     coffee: { title: string; text: string; button: string; source: string }
     /** The coffee screen's promises (ticket 0823; Homepage card), in the order shown; the shortcuts one's {menu}, {help}
      * and {shortcuts} come from the app. */
-    promises: Record<'device' | 'offline' | 'noAds' | 'pencil' | 'free' | 'shortcuts', InsideCopy>
+    promises: Record<'device' | 'offline' | 'noAds' | 'tablets' | 'free' | 'shortcuts', InsideCopy>
     /** The coffee screen's Open source tile (ticket 0823); its View the source and star line are `coffee`'s. */
     openSource: { name: string; text: string }
     /** The coffee screen's Say hello tile (ticket 0823): {menu} and {feedback}, and its button, are the Menu's own labels. */

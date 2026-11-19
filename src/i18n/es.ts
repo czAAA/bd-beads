@@ -427,7 +427,7 @@ export const es: Translations = {
       device: { name: 'Tuyo, en este dispositivo', text: 'Funciona en tu navegador. Sin cuenta, nada que instalar.' },
       offline: { name: 'Funciona sin conexión', text: 'Una vez abierto, sigue funcionando sin conexión.' },
       noAds: { name: 'Sin anuncios ni seguimiento', text: 'No se te vende nada, y nada registra lo que haces.' },
-      pencil: { name: 'Para iPad y Pencil', text: 'Modo lápiz, Pencil al pasar por encima y botones grandes para el dedo.' },
+      tablets: { name: 'Para tabletas y lápices', text: 'Modo lápiz, el lápiz al pasar por encima y botones grandes para el dedo. En iPad, Android y Windows.' },
       free: { name: 'Gratis para siempre', text: 'Todo lo necesario es gratis y nada es de pago. Los extras profesionales llegarán después.' },
       shortcuts: { name: 'Atajos de teclado', text: 'Cada edición tiene su propia tecla. Están todas en {menu} → {help} → {shortcuts}.' },
     },
