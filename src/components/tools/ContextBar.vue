@@ -4,6 +4,8 @@ import { useI18n } from '../../i18n/useI18n'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { useRotateCopy } from '../../composables/ui/useRotateCopy'
+import { ownPoint } from '../../composables/ui/cssZoom'
 import { areaBarPlacement, BAR_EDGE_PX, type BarBox, barOutOfView, type SelectionAnchor, selectionBarPlacement, type SheetArea } from '../../composables/tools/selectionBarPlacement'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -162,7 +164,7 @@ const items = computed<BarItem[]>(() => {
   // a Custom frame, whose Frame shape sets its outline (ticket 0592).
   if (frameAllows(frameOf(props.project), 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   // Disabled, saying why, where the Selection reaches into finished rows (ticket 0647).
-  list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
+  list.push({ id: 'rotate', action: actions.rotate, group: 2, run: rotateFromBar })
   // Always offered: the Selection's rectangle becomes the Mirror's Area (ADR 0082); on a Frame Selection it says why not.
   list.push({ id: 'mirror-selection', action: actions.mirrorSelection, group: 2, run: () => emit('mirror-selection') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
@@ -266,6 +268,84 @@ const disabledReason = (item: BarItem) => (armed.value && isDisabled(item) ? ite
 /** Gesturing with a size to show: only the readout, no buttons. */
 const compact = computed(() => !!props.gesturing && (mirrorShown.value ? !!props.mirrorSizeOnly : !!props.sizeOnly && props.selectionSummary !== undefined))
 const showing = computed(() => props.selectionSummary !== undefined || mirrorShown.value)
+
+/** The pointer press on the bar's Rotate or its "…" item, if the next Rotate came from one: a press from the keyboard
+ * leaves no copy, as focus goes with the bar (as Rotate Frame's, MarginSheet card). */
+let rotatePress: { button?: DOMRect; at: { x: number; y: number }; touch: boolean } | undefined
+function notePress(event: PointerEvent): void {
+  const pressed = event.target instanceof Element ? event.target.closest('[data-rotate]') : null
+  const button = pressed?.getAttribute('data-rotate') === 'bar' ? pressed.getBoundingClientRect() : undefined
+  rotatePress = pressed ? { button, at: { x: event.clientX, y: event.clientY }, touch: event.pointerType === 'touch' } : undefined
+}
+
+/** The Rotate copy that waits where it was pressed while the turned Selection takes the bar away (ticket 1110,
+ * ContextBar card).
+ * Nothing plays as the Selection turns, so the bar's own button takes over the moment it is back under the copy. */
+const rotateCopy = useRotateCopy({ handOverMs: 0 })
+/** A screen point in the px of the box the bar is placed in, which the copy keeps however the bar moves. */
+function inHost(x: number, y: number): { left: number; top: number } {
+  const at = ownPoint(hostEl.value, { clientX: x, clientY: y })
+  return { left: at.x, top: at.y }
+}
+/** Rotate from the bar's button or its "…" item: a pointer's press leaves the copy over the button, or centred where
+ * the item was pressed. */
+function rotateFromBar(): void {
+  const press = rotatePress
+  rotatePress = undefined
+  emit('rotate')
+  if (!press) return
+  const size = bar.height.value
+  const place = press.button ? inHost(press.button.left, press.button.top) : inHost(press.at.x, press.at.y)
+  const centred = press.button ? place : { left: place.left - size / 2, top: place.top - size / 2 }
+  rotateCopy.pressed({ ...centred, scale: 1, small: false }, press.touch)
+}
+/** A press on the copy turns the Selection again, as the bar's own button does; the bar's arming wait is for a tap that
+ * selects, which this is not. */
+let copyTouch = false
+function noteCopyPress(event: PointerEvent): void {
+  copyTouch = event.pointerType === 'touch'
+}
+function rotateFromCopy(): void {
+  emit('rotate')
+  rotateCopy.pressed(undefined, copyTouch)
+}
+const copyStyle = computed(() => {
+  const place = rotateCopy.place.value
+  return place ? { left: `${place.left}px`, top: `${place.top}px` } : {}
+})
+/** How near, in px, the bar's own button must come back to the copy to stand under it: the same place, less rounding. */
+const SAME_PLACE_PX = 1
+// Turned back, the bar's own Rotate is under the copy again: it takes over.
+watch(
+  placement,
+  () => {
+    const place = rotateCopy.place.value
+    const own = rootEl.value?.querySelector('[data-rotate="bar"]')?.getBoundingClientRect()
+    if (!place || !own) return
+    const at = inHost(own.left, own.top)
+    if (Math.abs(at.left - place.left) < SAME_PLACE_PX && Math.abs(at.top - place.top) < SAME_PLACE_PX) rotateCopy.handOver()
+  },
+  { flush: 'post' },
+)
+// It goes with the Selection, and with a press on the canvas (a new Selection, a drag, a pan), paste mode too.
+watch(
+  () => props.selectionSummary !== undefined && !props.gesturing && !props.pasteArmed,
+  (stays) => stays || rotateCopy.drop(),
+)
+// A pointer that left before the copy was drawn under it never enters or leaves it: each move tells it where it is.
+const copyEl = ref<HTMLElement>()
+function onPointerMove(event: PointerEvent): void {
+  const box = copyEl.value?.getBoundingClientRect()
+  if (!box) return
+  const over = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom
+  if (over) rotateCopy.enter(event)
+  else rotateCopy.leave(event)
+}
+watch(
+  () => !!rotateCopy.place.value,
+  (copied) => (copied ? window.addEventListener('pointermove', onPointerMove, { passive: true }) : window.removeEventListener('pointermove', onPointerMove)),
+)
+onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
 </script>
 
 <template>
@@ -281,6 +361,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
     :data-testid="mirrorShown ? 'mirror-bar' : 'context-bar'"
     @keydown="roving.onKeydown"
     @focusin="roving.onFocusin"
+    @pointerdown.capture="notePress"
   >
     <AreaMoveGrip v-if="gripArea" v-show="!compact" :area="gripArea" :piece="!!selection?.cells" @press="emit('move-press', $event, gripArea)" @key="emit('move-key', $event, gripArea)" />
     <span v-show="!mirrorShown || mirrorFit === 0 || compact" ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ readoutText }}</span>
@@ -305,6 +386,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
         :deps="deps"
         :disabled="armed ? undefined : true"
         :data-testid="`context-bar-${item.id}`"
+        :data-rotate="item.id === 'rotate' ? 'bar' : undefined"
         @click="item.run()"
       />
     </template>
@@ -319,12 +401,28 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
           :name="item.action.name(t)"
           :disabled-body="disabledReason(item)"
           :data-testid="`context-bar-more-${item.id}`"
+          :data-rotate="item.id === 'rotate' ? 'menu' : undefined"
           @select="item.run()"
         >
           {{ item.action.name(t) }}
         </AppMenuItem>
       </MenuButton>
     </template>
+  </div>
+  <!-- Rotate's copy, lifted off the bar where it was pressed (ticket 1110): no Tab stop and hidden from a screen
+       reader, so Rotate is there once; the bar's own button is the keyboard's. -->
+  <div
+    v-if="rotateCopy.place.value"
+    ref="copyEl"
+    class="context-bar__rotate-copy"
+    :class="{ 'context-bar__rotate-copy--leaving': rotateCopy.leaving.value }"
+    :style="copyStyle"
+    data-testid="context-bar-rotate-copy"
+    aria-hidden="true"
+    @pointerenter="rotateCopy.enter"
+    @pointerleave="rotateCopy.leave"
+  >
+    <IconButton class="context-bar__button" :icon-size="iconSize" :action="actions.rotate" :deps="deps" tabindex="-1" @pointerdown="noteCopyPress" @mousedown.prevent @click="rotateFromCopy" />
   </div>
 </template>
 
@@ -469,6 +567,77 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
   color: inherit;
   background: none;
   opacity: 0.5;
+}
+
+/* Rotate's copy (ContextBar card, ticket 1110): the bar's Rotate lifted off it, a one-button bar of its look (`ink`, `radius-sm`,
+ * `elevation-3`, dark's `line-strong` edge) with its button where the bar's was, over the bar; it fades on leaving. */
+.context-bar__rotate-copy {
+  --copy-side: var(--space-2);
+  --copy-edge: 0px;
+
+  position: absolute;
+  z-index: calc(var(--z-context-bar) + 1);
+  display: flex;
+  margin: calc(-1 * var(--copy-edge)) 0 0 calc(-1 * (var(--copy-side) + var(--copy-edge)));
+  padding: 0 var(--copy-side);
+  color: var(--canvas);
+  background: var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-3);
+  pointer-events: auto;
+  transition: opacity var(--rotate-copy-fade) var(--ease-in);
+}
+
+:root[data-theme='dark'] .context-bar__rotate-copy {
+  --copy-edge: 1px;
+
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+}
+
+@media (pointer: coarse) {
+  .context-bar__rotate-copy {
+    --copy-side: calc((var(--touch-target) - var(--selbar-height-touch)) / 2);
+  }
+}
+
+.context-bar__rotate-copy--leaving {
+  opacity: 0;
+}
+
+.context-bar__rotate-copy :deep(.context-bar__button) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--selbar-height);
+  min-width: var(--hit-min);
+  height: var(--selbar-height);
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: max(var(--radius-xs), var(--radius-sm) - var(--copy-side) - var(--copy-edge)) var(--radius-sm);
+}
+
+@media (pointer: coarse) {
+  .context-bar__rotate-copy :deep(.context-bar__button) {
+    width: var(--selbar-height-touch);
+    height: var(--selbar-height-touch);
+  }
+}
+
+.context-bar__rotate-copy :deep(.context-bar__button[aria-disabled='true']) {
+  opacity: 0.5;
+}
+
+@media (hover: hover) {
+  .context-bar__rotate-copy :deep(.context-bar__button:hover:not([aria-disabled='true'])) {
+    background: color-mix(in srgb, var(--canvas) 12%, transparent);
+  }
+}
+
+.context-bar__rotate-copy :deep(.context-bar__button:active:not([aria-disabled='true'])) {
+  background: color-mix(in srgb, var(--canvas) 20%, transparent);
 }
 
 /* One set of states for every control in either bar, written to win over the icon button's own hover fill. Hover and

@@ -523,3 +523,95 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     expect((wrapper.get('.mirror-bar__items').element as HTMLElement).style.display).toBe('none')
   })
 })
+
+describe('Rotate waits under the pointer, as Rotate Frame does (ticket 1110)', () => {
+  beforeEach(() => {
+    localStorage.setItem('openbeads:locale', 'en')
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const anchor = { box: { left: 100, top: 100, width: 40, height: 20 }, viewport: { width: 800, height: 600 } }
+  const mountBar = () =>
+    mount(ContextBar, { props: { project: drawn, selection, selectionSummary: '2×2', anchor, pasteArmed: false, canRemoveLine: false }, attachTo: document.body })
+  const copy = (wrapper: ReturnType<typeof mountBar>) => wrapper.find('[data-testid="context-bar-rotate-copy"]')
+  /** Rotate pressed with a pointer of a kind, its button at (300, 20) on screen. */
+  async function pressRotate(wrapper: ReturnType<typeof mountBar>, pointerType = 'mouse') {
+    const button = wrapper.get('[data-testid="context-bar-rotate"]')
+    button.element.getBoundingClientRect = () => new DOMRect(300, 20, 28, 28)
+    await button.trigger('pointerdown', { pointerType, clientX: 310, clientY: 30 })
+    await button.trigger('click')
+  }
+  const pressCopy = async (wrapper: ReturnType<typeof mountBar>, pointerType = 'mouse') => {
+    const button = copy(wrapper).get('button')
+    await button.trigger('pointerdown', { pointerType })
+    await button.trigger('click')
+  }
+
+  it('leaves a copy of the button where it was pressed, which turns the Selection again at once, without the arming wait', async () => {
+    const wrapper = mountBar()
+    await arm()
+    await pressRotate(wrapper)
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    expect(copy(wrapper).attributes('style')).toContain('left: 300px')
+    expect(copy(wrapper).attributes('style')).toContain('top: 20px')
+    // The turned Selection moves the bar and arms it afresh; the copy stays where it was and answers at once.
+    await wrapper.setProps({ selection: { ...selection, rows: 3 }, anchor: { ...anchor, box: { ...anchor.box, width: 20, height: 40 } } })
+    expect(copy(wrapper).attributes('style')).toContain('left: 300px')
+    for (let press = 0; press < 3; press++) await pressCopy(wrapper)
+    expect(wrapper.emitted('rotate')).toHaveLength(4)
+    const button = copy(wrapper).get('button')
+    expect([button.attributes('aria-label'), button.attributes('tabindex'), copy(wrapper).attributes('aria-hidden')]).toEqual(['Rotate', '-1', 'true'])
+    wrapper.unmount()
+  })
+
+  it('fades out 200ms after the pointer leaves it', async () => {
+    const wrapper = mountBar()
+    await arm()
+    await pressRotate(wrapper)
+    await copy(wrapper).trigger('pointerleave', { pointerType: 'mouse' })
+    vi.advanceTimersByTime(200)
+    await nextTick()
+    expect(copy(wrapper).classes()).toContain('context-bar__rotate-copy--leaving')
+    vi.advanceTimersByTime(150)
+    await nextTick()
+    expect(copy(wrapper).exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('gives way to the bar\'s own button as soon as it is back under the copy', async () => {
+    const wrapper = mountBar()
+    await arm()
+    await pressRotate(wrapper)
+    const button = wrapper.get('[data-testid="context-bar-rotate"]')
+    button.element.getBoundingClientRect = () => new DOMRect(280, 40, 28, 28)
+    await wrapper.setProps({ anchor: { ...anchor, box: { ...anchor.box, left: 80 } } })
+    expect(copy(wrapper).exists()).toBe(true)
+    button.element.getBoundingClientRect = () => new DOMRect(300, 20, 28, 28)
+    await wrapper.setProps({ anchor })
+    await nextTick()
+    expect(copy(wrapper).exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('goes with the Selection and with a gesture on the canvas, and a press from the keyboard leaves none', async () => {
+    const wrapper = mountBar()
+    await arm()
+    await pressRotate(wrapper)
+    await wrapper.setProps({ gesturing: true })
+    expect(copy(wrapper).exists()).toBe(false)
+    await wrapper.setProps({ gesturing: false })
+    await pressRotate(wrapper)
+    await wrapper.setProps({ selection: undefined, selectionSummary: undefined })
+    expect(copy(wrapper).exists()).toBe(false)
+    await wrapper.setProps({ selection, selectionSummary: '2×2' })
+    await arm()
+    await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
+    expect(wrapper.emitted('rotate')).toHaveLength(3)
+    expect(copy(wrapper).exists()).toBe(false)
+    wrapper.unmount()
+  })
+})

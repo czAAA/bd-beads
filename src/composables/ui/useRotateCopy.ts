@@ -1,7 +1,6 @@
 import { onBeforeUnmount, ref } from 'vue'
-import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 
-/** How the Rotate copy leaves, in ms (MarginSheet card).
+/** How the Rotate copy leaves, in ms (MarginSheet and ContextBar cards).
  * @internal Its test holds these to their CSS twins in design-values.css. */
 export const ROTATE_COPY = {
   /** After the pointer leaves it, the copy waits this long (`--rotate-copy-wait`)... */
@@ -12,8 +11,8 @@ export const ROTATE_COPY = {
   tapHold: 1600,
 } as const
 
-/** Where the copy's button stands, in the px of the sheet's parent, and the scale and form (compact or full) the band
- * drew the button it copies at. */
+/** Where the copy's button stands, in the px of the bar's parent, and the scale and form (compact or full) the bar drew
+ * the button it copies at. */
 export interface RotateCopyPlace {
   left: number
   top: number
@@ -21,10 +20,10 @@ export interface RotateCopyPlace {
   small: boolean
 }
 
-/** The Rotate Frame copy that waits where it was pressed as the band turns away (ticket 1016, MarginSheet card). It
- * leaves `wait` after the pointer does, fading over `fade` (coming back keeps it), on touch `tapHold` after the last
- * tap; once the band's own button is back under it, as soon as the turn has been seen. */
-export function useRotateCopy() {
+/** A Rotate button's copy that waits where it was pressed as its bar turns away: Rotate Frame's (ticket 1016) and the
+ * Selection bar's Rotate (ticket 1110). It leaves `wait` after the pointer does, fading over `fade`, on touch `tapHold`
+ * after the last tap; once the bar's own button is back under it, `handOverMs` later (the turn seen; 0 where none plays). */
+export function useRotateCopy(options: { handOverMs: number }) {
   const place = ref<RotateCopyPlace>()
   /** Fading out: its last `fade` ms. */
   const leaving = ref(false)
@@ -79,11 +78,12 @@ export function useRotateCopy() {
     timer = setTimeout(fadeOut, ROTATE_COPY.wait)
   }
 
-  /** The band's own Rotate Frame has come back under the copy: it takes over once the turn has been seen. */
+  /** The bar's own button has come back under the copy: it takes over once the turn has been seen. */
   function handOver(): void {
     if (!place.value) return
     clear()
-    timer = setTimeout(drop, FRAME_TURN_MS)
+    if (options.handOverMs > 0) timer = setTimeout(drop, options.handOverMs)
+    else drop()
   }
 
   onBeforeUnmount(clear)

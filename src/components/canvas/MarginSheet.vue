@@ -30,7 +30,8 @@ import { frameNameLine } from './marginFrameName'
 import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { frameOf } from '../../domain/layerRecord'
-import { useRotateCopy, type RotateCopyPlace } from './useRotateCopy'
+import { useRotateCopy, type RotateCopyPlace } from '../../composables/ui/useRotateCopy'
+import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 
 // The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658, 0728): Row progress, the Move bar and the
 // tools in its top band, the title block in the Frame's own bottom-right corner, laid over the sheet the canvas draws. The
@@ -333,7 +334,7 @@ function notePress(event: PointerEvent): void {
 }
 
 /** The Rotate Frame copy that waits where it was pressed (ticket 1016, MarginSheet card). */
-const rotateCopy = useRotateCopy()
+const rotateCopy = useRotateCopy({ handOverMs: FRAME_TURN_MS })
 /** A screen point as a place in the sheet's parent, in its own px (ticket 1071), which the copy keeps however the sheet
  * moves. */
 function inParent(x: number, y: number): { left: number; top: number } {

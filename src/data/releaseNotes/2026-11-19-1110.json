@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "fixed",
+  "line": {
+    "en": "Rotate on the Selection bar stays under the pointer as the Selection turns, as Rotate Frame does",
+    "ru": "Кнопка «Повернуть» на панели выделения остаётся под указателем, пока выделение поворачивается, как у «Повернуть рамку»",
+    "uk": "Кнопка «Повернути» на панелі виділення лишається під вказівником, поки виділення обертається, як у «Повернути рамку»",
+    "be": "Кнопка «Павярнуць» на панэлі вылучэння застаецца пад указальнікам, пакуль вылучэнне паварочваецца, як у «Павярнуць рамку»",
+    "zh": "选区栏上的“旋转”在选区旋转时停留在指针下，与“旋转边框”一样",
+    "es": "Girar en la barra de la selección se queda bajo el puntero mientras la selección gira, como Girar marco",
+    "pl": "Obróć na pasku zaznaczenia zostaje pod wskaźnikiem, gdy zaznaczenie się obraca, tak jak Obróć ramkę"
+  }
+}

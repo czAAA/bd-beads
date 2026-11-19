@@ -136,3 +136,28 @@ describe('ContextBar hit areas with a mouse (ticket 0962)', () => {
     expect(hitAreaProblems(byTestid(root, MIRROR_CONTROLS), tokenPx(document.body, '--hit-min'))).toEqual([])
   })
 })
+
+describe('Rotate\'s copy', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    it(`stands its button exactly over the one pressed, lifted over the bar (${theme})`, async () => {
+      document.documentElement.dataset.theme = theme
+      try {
+        const { root, unmount } = await mountBar(selectionProps)
+        // The box the canvas places the bar in is positioned, as the selection layer is.
+        root.style.position = 'relative'
+        await settleForMeasuring()
+        const button = root.querySelector('[data-testid="context-bar-rotate"]')!
+        const pressed = button.getBoundingClientRect()
+        await userEvent.click(button)
+        await vi.waitFor(() => expect(root.querySelector('[data-testid="context-bar-rotate-copy"]')).not.toBeNull())
+        const copy = root.querySelector('[data-testid="context-bar-rotate-copy"]')!
+        const copied = copy.querySelector('button')!.getBoundingClientRect()
+        expect([copied.left, copied.top, copied.width, copied.height]).toEqual([pressed.left, pressed.top, pressed.width, pressed.height])
+        expect(Number(getComputedStyle(copy).zIndex)).toBeGreaterThan(Number(getComputedStyle(root.querySelector('.context-bar')!).zIndex))
+        unmount()
+      } finally {
+        delete document.documentElement.dataset.theme
+      }
+    })
+  }
+})
