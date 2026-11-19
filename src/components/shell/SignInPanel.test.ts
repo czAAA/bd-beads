@@ -91,4 +91,11 @@ describe('SignInPanel (ticket 0078)', () => {
   it('shows no refusal on a first visit', () => {
     expect(panel().wrapper.find('[data-testid="sign-in-refusal"]').exists()).toBe(false)
   })
+
+  it('links to the privacy policy under what is kept, in a new tab (ticket 0082)', () => {
+    const link = panel().wrapper.get('[data-testid="sign-in-privacy"]')
+    expect(link.text()).toBe(en.account.privacy)
+    expect(link.attributes('href')).toBe('/privacy/')
+    expect(link.attributes('target')).toBe('_blank')
+  })
 })

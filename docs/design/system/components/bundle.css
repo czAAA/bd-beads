@@ -62,6 +62,7 @@
   --convert-neighbour-phone-width: 63px; /* ConvertImage card (ticket 0910): a neighbour's frame in the phone's Colors sheet (one fewer, shown, one more). */
   --convert-neighbour-phone-height: 76px; /* ConvertImage card (ticket 0910): its height. */
   --convert-sheet-card-width: 560px; /* ConvertImage card (ticket 0910): a sheet on a portrait tablet, a card above the dock. */
+  --privacy-measure: 640px; /* SignIn card (ticket 0082): the privacy policy page's column, a comfortable line to read. */
   --convert-sheet-card-max: 360px; /* ConvertImage card (ticket 0910): the tallest that card opens; taller content scrolls inside it. */
   --convert-side-column-width: 320px; /* ConvertImage card (ticket 0910): the dock's column (or a sheet) at the right of a phone on its side. */
   --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */

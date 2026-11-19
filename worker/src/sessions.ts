@@ -57,6 +57,11 @@ export async function startSession(env: Env, accountId: string, now: number): Pr
 export async function endSession({ request, env }: Pick<RequestContext, 'request' | 'env'>): Promise<string> {
   const id = readCookie(request, env, SESSION_COOKIE)
   if (id) await env.CORE.prepare('DELETE FROM sessions WHERE id_hash = ?1').bind(await hashOf(id)).run()
+  return clearedSession(env)
+}
+
+/** The `Set-Cookie` that clears this device's session cookie, once its session is gone. */
+export function clearedSession(env: Env): string {
   return setCookie(env, SESSION_COOKIE, '', 0)
 }
 

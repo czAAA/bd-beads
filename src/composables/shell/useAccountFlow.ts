@@ -5,6 +5,7 @@ import type { Translations } from '../../i18n/translations'
 import type { AccountService, SignInUnavailable } from '../../services/account'
 import type { Verification } from '../../services/turnstile'
 import type { MessageTone } from '../ui/useToasts'
+import { useDialogs, type Dialogs } from './useDialogs'
 import { useKeptSettings, type DeviceSettingControls } from './useKeptSettings'
 
 /** What signing in needs from the app shell. */
@@ -19,6 +20,8 @@ export interface AccountFlowDeps {
   /** The device's language, theme and Lifted pieces, which a signed-in person finds the same on all their devices
    * (ticket 1086): each as it shows now, and set the way the Menu sets it. */
   settings: DeviceSettingControls
+  /** The shell's dialog registry, which shows "Delete your account?"; a test's flow makes its own. */
+  dialogs?: Dialogs
 }
 
 /** The Account section's id among the Menu's folding sections. */
@@ -28,6 +31,8 @@ export const ACCOUNT_SECTION = 'menu:account'
 const TOKEN_FRESH_MS = 240_000
 /** One toast for "unavailable" and "offline": showing it again replaces it (Message card). */
 const UNAVAILABLE_TOAST = 'account-unavailable'
+/** The toast that says how Delete account went. */
+const DELETED_TOAST = 'account-deleted'
 
 /** Signing in from the Menu (ticket 0078; MenuPanel and SignIn cards): who is signed in on this device, the Sign in
  * Subpanel with its Google button, coming back from Google, and Sign out. A Guest's device asks the backend nothing
@@ -103,13 +108,14 @@ export function useAccountFlow(deps: AccountFlowDeps) {
     }),
   )
 
-  /** The toast for a sign-in that can't be started: no internet, or the backend's own wait as the time. */
-  function sayUnavailable(why: SignInUnavailable) {
+  /** The toast for what can't be done now: no internet, or the backend's own wait as the time. `words` are the
+   * sign-in's lines by default, Delete account's for a deletion. */
+  function sayUnavailable(why: SignInUnavailable, words = { offline: deps.messages().account.offline, unavailable: deps.messages().account.unavailable }) {
     const t = deps.messages().account
-    if (why.reason === 'offline') return deps.showToast(UNAVAILABLE_TOAST, t.offline, 'warning')
+    if (why.reason === 'offline') return deps.showToast(UNAVAILABLE_TOAST, words.offline, 'warning')
     const wait = waitOf(why.retryAfterSeconds)
     const time = fillBlanks(wait.unit === 'minutes' ? t.waitMinutes : t.waitSeconds, { count: wait.count })
-    deps.showToast(UNAVAILABLE_TOAST, fillBlanks(t.unavailable, { time }), 'warning')
+    deps.showToast(UNAVAILABLE_TOAST, fillBlanks(words.unavailable, { time }), 'warning')
   }
 
   /** A press on the Menu's Sign in: whether the Subpanel may open. When the backend can't be reached the row stays as
@@ -163,6 +169,37 @@ export function useAccountFlow(deps: AccountFlowDeps) {
     await deps.account.signOut()
   }
 
+  /** "Delete your account?" (ticket 0082; ConfirmDialogs card): asked before anything is deleted. */
+  const deleting = (deps.dialogs ?? useDialogs()).flag('delete-account')
+  /** Between the confirm and the backend's answer, so a second press asks the backend nothing. */
+  const deletingNow = ref(false)
+
+  function onRequestDeleteAccount() {
+    if (account.value) deleting.value = true
+  }
+
+  function onCancelDeleteAccount() {
+    deleting.value = false
+  }
+
+  /** Deletes the account. Once the backend says it is gone the device is a Guest's, with its Projects as they were;
+   * when the backend can't be reached nothing changes and a toast says so. */
+  async function onConfirmDeleteAccount() {
+    if (deletingNow.value) return
+    deletingNow.value = true
+    const result = await deps.account.deleteAccount()
+    deletingNow.value = false
+    deleting.value = false
+    const t = deps.messages().account
+    if (result.ok) {
+      account.value = undefined
+      deps.showToast(DELETED_TOAST, t.deleted, 'success')
+    } else if (result.reason === 'signed-out') {
+      account.value = undefined
+      deps.showToast(DELETED_TOAST, t.deleteSignedOut, 'info')
+    } else sayUnavailable(result, { offline: t.deleteOffline, unavailable: t.deleteUnavailable })
+  }
+
   return {
     account,
     signInRefusal: refusal,
@@ -172,5 +209,8 @@ export function useAccountFlow(deps: AccountFlowDeps) {
     verifySignIn,
     onContinueWithGoogle,
     onSignOut,
+    onRequestDeleteAccount,
+    onCancelDeleteAccount,
+    onConfirmDeleteAccount,
   }
 }

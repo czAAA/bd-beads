@@ -532,6 +532,30 @@ describe('Account (ticket 0078)', () => {
     expect(mounted.wrapper.find('[data-testid="sign-in-refusal"]').exists()).toBe(false)
   })
 
+  it('deletes the account from the Menu once “Delete your account?” is confirmed, and the Menu shows the Guest’s Sign in (ticket 0082)', async () => {
+    const account = memoryAccount({ remembered: ann, session: ann })
+    const mounted = mountOn(account)
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-delete-account')
+    expect(text(mounted, 'delete-account-modal')).toContain(en.account.deleteTitle)
+    await click(mounted, 'confirm-modal-cancel')
+    expect(account.state.session).toEqual(ann)
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-delete-account')
+    await click(mounted, 'confirm-modal-confirm')
+    expect(account.state.session).toBeUndefined()
+    await mounted.openPanel('menu')
+    expect(mounted.wrapper.find('[data-testid="menu-sign-in"]').exists()).toBe(true)
+  })
+
+  it('links About to the privacy policy, in a new tab (ticket 0082)', async () => {
+    const mounted = mountOn(memoryAccount())
+    await mounted.openPanel('menu')
+    const row = mounted.wrapper.get('[data-testid="menu-item-privacy"]')
+    expect(row.attributes('href')).toBe('/privacy/')
+    expect(row.attributes('target')).toBe('_blank')
+  })
+
   it('signs out from the Menu, which then shows the Guest’s Sign in, and New Project still opens its own subpanel', async () => {
     const account = memoryAccount({ remembered: ann, session: ann })
     const mounted = mountOn(account)

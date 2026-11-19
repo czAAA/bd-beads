@@ -22,6 +22,7 @@ import type { IconName } from '../ui/icons'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { COFFEE_URL } from '../../data/coffeeLink'
+import { PRIVACY_URL } from '../../data/privacyLink'
 import { SOURCE_URL } from '../../data/sourceLink'
 import { BUILD_MARK, BUILD_VERSION } from '../../data/build'
 
@@ -84,6 +85,7 @@ const emit = defineEmits<{
   /** The Sign in Subpanel is about to be pushed, and Sign out (ticket 0078). */
   'sign-in': []
   'sign-out': []
+  'delete-account': []
 }>()
 
 const { t, locale, setLocale } = useI18n()
@@ -143,7 +145,7 @@ const inputOptions = computed(() => [
 <template>
   <div class="menu-panel" data-testid="menu-panel">
     <!-- Account (ticket 0078), in the editor only: the Homepage's Menu, its demo and the demo tour have none. -->
-    <AccountSection v-if="inEditor && !demo" :account="account" :leave="leave" :may-open-sign-in="mayOpenSignIn" @sign-in="emit('sign-in')" @sign-out="emit('sign-out')" />
+    <AccountSection v-if="inEditor && !demo" :account="account" :leave="leave" :may-open-sign-in="mayOpenSignIn" @sign-in="emit('sign-in')" @sign-out="emit('sign-out')" @delete-account="emit('delete-account')" />
     <!-- On the Homepage only Saved Projects, while the library is not empty (ticket 0716). -->
     <PanelSection v-if="inEditor || projectCount > 0 || countUnknown" id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
@@ -235,6 +237,7 @@ const inputOptions = computed(() => [
     <PanelSection v-if="!demo" id="menu:about" :label="t.panels.menu.about">
       <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
       <PanelItem icon="code" :href="SOURCE_URL" external data-testid="menu-item-source">{{ t.header.sourceItem }}</PanelItem>
+      <PanelItem icon="eye-off" :href="PRIVACY_URL" external data-testid="menu-item-privacy">{{ t.account.privacy }}</PanelItem>
       <PanelItem v-if="COFFEE_URL" icon="coffee" accent-icon :href="COFFEE_URL" external data-testid="menu-item-coffee">{{ t.panels.menu.coffee }}</PanelItem>
       <div class="menu-panel__version" data-testid="menu-version">
         <span>{{ t.panels.menu.version }}</span>

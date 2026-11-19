@@ -1002,6 +1002,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       theme: { value: () => themePick.pick.value, set: themePick.setPick },
       liftedPieces: { value: () => (backgrounds.lift.on.value ? 'on' : 'off'), set: (lifted) => backgrounds.lift.set(lifted === 'on') },
     },
+    dialogs,
   })
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */
@@ -1343,6 +1344,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       verifySignIn: accountFlow.verifySignIn,
       onContinueWithGoogle: accountFlow.onContinueWithGoogle,
       onSignOut: accountFlow.onSignOut,
+      onRequestDeleteAccount: accountFlow.onRequestDeleteAccount,
       /** The page the box shows, and the Menu's way to leave it (the Menu knows nothing of which page asks). */
       page: appPage.page,
       onLeavePage: appPage.leave,
@@ -1481,6 +1483,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSaveFileBeforeDelete: deleteProject.onSaveFileBeforeDelete,
       onConfirmDeleteAllProjects: manageProject.onConfirmDeleteAllProjects,
       onCancelDeleteAllProjects: manageProject.onCancelDeleteAllProjects,
+      /** Delete account (ticket 0082): "Delete your account?". */
+      onConfirmDeleteAccount: accountFlow.onConfirmDeleteAccount,
+      onCancelDeleteAccount: accountFlow.onCancelDeleteAccount,
       // Delete all Projects? names how many go, sealed ones too, and saves them all first as the library's row does (ticket 0984)
       deleteAllCount: computed(() => projects.value.length + sealed.value.length),
       onSaveAllBeforeDeleteAll: exportFlow.onExportLibraryFile,

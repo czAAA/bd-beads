@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- The X1 mark, following the browser's light or dark setting; .ico and PNG for older browsers (DESIGN.md §3, favicon/). -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- The browser's bar around the installed app: the page background (`surface`) of the light or dark setting (tokens.json);
+         the script below and src/theme/theme.ts set both to the chosen theme's (ticket 0998). -->
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- The privacy policy (ticket 0082), in English only: the Menu, the Sign in Subpanel and Google's consent screen
+         link here. -->
+    <title>Privacy policy · openbeads</title>
+    <meta name="description" content="What openbeads keeps about you, and what it never does." />
+    <!-- Before first paint: the theme and the language, exactly as the Homepage's index.html does, so neither flashes. -->
+    <script>
+      (function () {
+        var root = document.documentElement
+        var pick = null
+        var locale = null
+        try {
+          // Ticket 392: the old bd-beads: key until the app has copied it forward.
+          pick = localStorage.getItem('openbeads:theme') || localStorage.getItem('bd-beads:theme')
+          locale = localStorage.getItem('openbeads:locale') || localStorage.getItem('bd-beads:locale')
+        } catch (e) {}
+        var theme =
+          pick === 'light' || pick === 'dark' || pick === 'contrast'
+            ? pick
+            : matchMedia('(prefers-contrast: more)').matches
+              ? 'contrast'
+              : matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+        root.dataset.theme = theme
+        root.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
+        // The browser's bar on this theme's `surface` (tokens.json, ticket 0998), so a picked theme beats the metas'
+        // device-keyed media; theme.ts keeps it after. The values are held in step by src/theme/theme.dom.test.ts.
+        var surface = { light: '#fafafa', dark: '#1a1a1a', contrast: '#f0f0f0' }[theme]
+        var bars = document.querySelectorAll('meta[name="theme-color"]')
+        for (var b = 0; b < bars.length; b++) bars[b].content = surface
+        // A page of a language's folder (ticket 1053) was built in that language, and keeps it whatever is saved; the
+        // saved language's code is one of LOCALES (src/domain/locale.ts, held in step by src/theme/theme.dom.test.ts).
+        if (!root.hasAttribute('data-locale')) root.lang = /^(en|ru|uk|be|zh|es|pl)$/.test(locale) ? locale : 'en'
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/privacy.ts"></script>
+  </body>
+</html>

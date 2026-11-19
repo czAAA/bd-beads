@@ -190,6 +190,34 @@ describe('browserAccount: Sign out', () => {
   })
 })
 
+describe('browserAccount: Delete account (ticket 0082)', () => {
+  it('asks the backend to delete the account, and forgets it once it is gone', async () => {
+    const fetch = backend(() => answer(200, { deleted: true }))
+    const account = await load()
+    remember(ann)
+    expect(await account.deleteAccount()).toEqual({ ok: true })
+    expect(fetch.mock.calls[0]?.[0]).toBe('/api/account/delete')
+    expect(fetch.mock.calls[0]?.[1]).toMatchObject({ method: 'POST' })
+    expect(account.remembered()).toBeUndefined()
+  })
+
+  it('keeps the account when the backend can’t delete now, with its wait', async () => {
+    backend(() => new Response(null, { status: 503, headers: { 'Retry-After': '300' } }))
+    const account = await load()
+    remember(ann)
+    expect(await account.deleteAccount()).toEqual({ ok: false, reason: 'unavailable', retryAfterSeconds: 300 })
+    expect(account.remembered()).toEqual(ann)
+  })
+
+  it('forgets an account whose session had already ended, and says so', async () => {
+    backend(() => answer(401, { error: 'signed-out' }))
+    const account = await load()
+    remember(ann)
+    expect(await account.deleteAccount()).toEqual({ ok: false, reason: 'signed-out' })
+    expect(account.remembered()).toBeUndefined()
+  })
+})
+
 describe('browserAccount: the tab back in view', () => {
   it('tells its listener when the tab becomes visible again, until stopped', async () => {
     const account = await load()
