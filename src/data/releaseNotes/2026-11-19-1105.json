@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "The save reminder is now just the floppy, with no circle round it",
+    "ru": "Напоминание о сохранении теперь просто дискета, без круга вокруг",
+    "uk": "Нагадування про збереження тепер просто дискета, без кола довкола",
+    "be": "Напамін пра захаванне цяпер проста дыскета, без кола вакол",
+    "zh": "保存提醒现在只显示软盘图标，周围不再有圆圈",
+    "es": "El recordatorio para guardar ahora es solo el disquete, sin círculo alrededor",
+    "pl": "Przypomnienie o zapisie to teraz sama dyskietka, bez kółka wokół"
+  }
+}

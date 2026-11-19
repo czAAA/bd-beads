@@ -20,11 +20,11 @@ Every Project lives in the browser's own storage (ADR 0001, ADR 0012), and a bro
 
 - **Shown** with a Project open once Beads since last file reaches the threshold. It stays until the Project file is saved, and the count going back to 0 hides it. It is hidden below the threshold, with no Project open, on the Homepage and in Convert image.
 - **Place:** the Canvas strip's left slot, right after the Project button and before Frame, 2px from each (the slot's gap; CanvasStrip card). Nothing shows at the drawing area's top-right any more, and the toasts keep their own place there (Message card). It stays put when the canvas pans, zooms or turns, and its coming and going moves only Frame, by its own width.
-- **Material:** the Tool pill's, without its shadow, since it sits in the strip like the buttons beside it: `elevated` fill, a 1px `line` edge, `radius-full`. It is as tall as the strip's buttons (`--strip-item-height`: 34px, 44px on a coarse pointer), so the strip never changes height, with the 26px halo (`--save-ring-halo`) centred in it.
-- **Halo:** a full circle in a 26px box, stroke `--save-ring-stroke` (2px), in `accent-strong`. The `save` icon (the floppy disk) sits in it at 16px, also `accent-strong`. There is no partial arc: the ring only exists once the file is behind. The floppy means the action, saving a Project file, here and on the Project panel's Save row alone; the saved state is a check (SaveStates card, ticket 0858).
+- **Material:** the Tool pill's, without its shadow, since it sits in the strip like the buttons beside it: `elevated` fill, a 1px `line` edge, `radius-full`. It is as tall as the strip's buttons (`--strip-item-height`: 34px, 44px on a coarse pointer), so the strip never changes height, with the floppy centred in it.
+- **Icon:** the `save` icon (the floppy disk) at 16px in `accent-strong`, alone: no circle round it (the 26px halo was taken off at the owner's word, 2026-11-19). The ring only exists once the file is behind. The floppy means the action, saving a Project file, here and on the Project panel's Save row alone; the saved state is a check (SaveStates card, ticket 0858).
 - **Appearing:** it scales from 0.6 and fades in over `--duration-slow`, with `--ease-standard`. Under reduced motion it only fades.
 - **Hover** adds `--hover-fill` over the `elevated` fill. **Pressed** adds `--press-fill` and the usual slight shrink. **Focus** is the 2px `focus-ring` (3px in High contrast).
-- **High contrast:** the halo and the icon are `ink`, and the edge is 2px `line-strong`.
+- **High contrast:** the icon is `ink`, and the edge is 2px `line-strong`.
 - **Stacking:** the ring is in the strip. Its open label hangs over the drawing area at `z-chrome` (20): over the beads, the Frame, the margin sheet and the rulers, under the Selection bar (`z-context-bar`), the strip's panels (`z-popover`), toasts and dialogs.
 
 ## The label
@@ -60,7 +60,7 @@ The Menu card's Tooltip, centred under the ring like the strip's other buttons',
 ## Sizes
 
 - **Fine pointer:** 34px, the strip's button height, as above.
-- **Coarse pointer** (tablets, touch laptops, phones): 44px, the strip's touch target, with the same 26px halo.
+- **Coarse pointer** (tablets, touch laptops, phones): 44px, the strip's touch target, with the same 16px floppy.
 - **Every width** (1366, 1470 and 375px checked, ticket 0922): the label is at most as wide as the screen leaves it, from the ring's left edge to 8px short of the screen's right edge (on any device at most 32rem); if the count wouldn't fit, only "Save Project file" shows (the count wraps onto a hidden second line). Under 1024px the strip's buttons drop their words, so the ring sits right after the Project icon.
 
 ## Copy
