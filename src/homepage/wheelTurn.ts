@@ -49,7 +49,7 @@ export function wheelPixels(event: { deltaY: number; deltaMode: number }, viewpo
 
 /** Whether a wheel event starts a new scroll inside a gesture that turned or scrolled a section: the other way, or a
  * fresh push once the gesture has gone on a turn's while. A trackpad's momentum keeps a gesture going for a second or
- * more, and the next swipe often starts before it goes quiet (ticket 1112). */
+ * more, and the next swipe often starts before it goes quiet (ticket 1116). */
 function pushesAgain(gesture: WheelGesture, wheel: Wheel): boolean {
   if (!(gesture.spent || gesture.scrolled) || !wheel.delta) return false
   if (Math.sign(wheel.delta) !== Math.sign(gesture.distance)) return true

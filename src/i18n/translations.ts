@@ -591,9 +591,9 @@ export interface Translations {
       heading: string
       why: string
       youAreHere: string
-      /** No account, then Free account and Pro, switched off (ticket 0742): those two list nothing, their line saying only
-       * what they build on. */
-      tiles: [PlanCopy & { meta: string }, PlanCopy, PlanCopy]
+      /** No account; Free account, its two rows listed under its button, under `free.heading`; and Pro, switched off
+       * (ticket 0742), its line saying only what it builds on. */
+      tiles: [PlanCopy & { meta: string }, Omit<PlanCopy, 'text'> & { rows: [string, string] }, PlanCopy]
       /** The stamp on Pro, written in capitals on it, and its image's name. */
       comingSoon: string
       /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them; a

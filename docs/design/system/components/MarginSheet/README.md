@@ -55,6 +55,7 @@ The Frame turns about its middle (ADR 0052, ADR 0079), seen turning over `--fram
 - **From the Frame tools menu** (a coarse pointer, or a band too narrow for its tools), the menu closes on the press and a full-size copy stands centred where the item was pressed, by the same rules.
 - **Keyboard and screen reader.** The copy has the button's name and Tooltip but is not a Tab stop, takes no focus and is hidden from a screen reader (`aria-hidden`), so Rotate Frame is there once: the keyboard's is the band's own button, whose focus goes with the band, and a press from the keyboard leaves no copy. Each turn is announced once.
 - Rotate Frame from the Frame panel, which does not move, leaves no copy.
+- The Selection bar's Rotate waits under the pointer by the same rules (ContextBar card, ticket 1110).
 
 ## Edit Frame: hot corners
 

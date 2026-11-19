@@ -102,17 +102,21 @@ defineExpose({ freeWindow, freeTile })
             {{ fillBlanks(t.homepage.plans.free.showAll, { count: rows.length }) }}
           </AppButton>
         </article>
-        <!-- Free account (ticket 0391): open, its button the way to sign in; on a phone under the name and price. -->
+        <!-- Free account (ticket 0391): open, its button the way to sign in, on a phone under the name and price; under it
+             what the account holds, listed as No account's is under "forever free:". -->
         <article v-if="laterPlansShown" class="plan plan--open" data-testid="plan-free-account">
           <span class="plan__strand" aria-hidden="true">
             <span class="plan__bead" /><span class="plan__thread" /><span class="plan__bead" />
           </span>
           <h3 class="plan__name">{{ t.homepage.plans.tiles[1].name }}</h3>
           <p class="plan__price"><b>{{ t.homepage.plans.tiles[1].price }}</b></p>
-          <p class="plan__text">{{ t.homepage.plans.tiles[1].text }}</p>
           <AppButton class="plan__button" :size="phone ? 'sm' : undefined" data-wrap-ok data-testid="plan-create-account" @click="emit('createAccount')">
             {{ t.homepage.plans.tiles[1].button }}
           </AppButton>
+          <div class="plan__account" data-testid="plan-free-account-list">
+            <p id="homepage-free-account" class="plan__free-head">{{ t.homepage.plans.free.heading }}</p>
+            <FreeList :rows="t.homepage.plans.tiles[1].rows" labelled-by="homepage-free-account" />
+          </div>
         </article>
         <article v-for="off in offShown" :key="off.id" class="plan plan--off" aria-disabled="true" :data-testid="`plan-${off.id}`">
           <span class="plan__strand" aria-hidden="true">
@@ -368,6 +372,13 @@ defineExpose({ freeWindow, freeTile })
   text-transform: lowercase;
 }
 
+/* Free account's list: its head and rows, a step apart as No account's are. */
+.plan__account {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+}
+
 /* No window of its own and no scroll bar: the page's scroll sets its height, the rest of the list faded at its foot. */
 .plan__free {
   overflow: hidden;
@@ -479,6 +490,11 @@ defineExpose({ freeWindow, freeTile })
   justify-self: start;
   width: auto;
   min-height: 0;
+  margin-top: var(--space-6);
+}
+
+.plans--phone .plan--open .plan__account {
+  grid-area: 4 / 1;
   margin-top: var(--space-6);
 }
 
