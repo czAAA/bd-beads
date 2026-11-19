@@ -202,8 +202,9 @@ export interface Translations {
     shiftWide: string
     shiftTall: string
     shiftRadial: string
-    /** Why Radial's + is off on a Technique with a half-bead shift: `{technique}`, its name (ticket 1094). */
-    twoPartsOnly: string
+    /** Why Radial's + is off on a Technique with a half-bead shift, at any size (ticket 1094): `{count}` the most Fold,
+     * `{mode}` the Mode's name, `{technique}` the Technique's. Says the Fold, not parts: in Mirror mode Fold 2 is four. */
+    foldMostOnTechnique: string
     /** Why an Axis count's + is off on a Canvas Area where no size fits more Axes (ticket 1027): the half-bead shift in
      * Mirror mode. */
     moreAxesShift: string

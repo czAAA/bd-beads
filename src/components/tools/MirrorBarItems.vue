@@ -64,7 +64,8 @@ const isOn = (axis: MirrorAxis) => props.setting.axes[axis] && !offReason(axis)
 const quarterReason = computed(() => {
   const off = props.fit?.quarterOff
   if (!off) return undefined
-  return off === 'square' ? t.value.mirror.quarterNeedsSquare : fillBlanks(t.value.mirror.twoPartsOnly, { technique: techniqueName(t.value, off.shift) })
+  if (off === 'square') return t.value.mirror.quarterNeedsSquare
+  return fillBlanks(t.value.mirror.foldMostOnTechnique, { count: MIN_FOLD, mode: modeName(props.setting.mode), technique: techniqueName(t.value, off.shift) })
 })
 
 /** Why a count's + is off (ticket 1027): radial's quarter turn, or on a Canvas Area in Mirror mode a direction where

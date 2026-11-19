@@ -483,8 +483,8 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     // The + names the Technique, not the size: no size gives peyote or brick a quarter turn (ticket 1094).
     for (const technique of ['peyote', 'brick'] as const) {
       const shifted = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, fit: fitOf(5, 5, technique) } } })
-      const twoParts = fillBlanks(en.mirror.twoPartsOnly, { technique: en.techniques[technique] })
-      expect(shifted.findAllComponents(AppTooltip).map((tip) => tip.props())).toContainEqual(expect.objectContaining({ name: en.mirror.moreFolds, disabledBody: twoParts }))
+      const most = fillBlanks(en.mirror.foldMostOnTechnique, { count: 2, mode: en.mirror.mirror, technique: en.techniques[technique] })
+      expect(shifted.findAllComponents(AppTooltip).map((tip) => tip.props())).toContainEqual(expect.objectContaining({ name: en.mirror.moreFolds, disabledBody: most }))
     }
     const radialOff = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, fit: fitOf(6, 6, 'peyote', 'mirror') } } })
     expect(offBody(radialOff, 'Radial')).toBe(en.mirror.shiftRadial)
