@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { changeFrame } from '../domain/changeFrame'
 import { rotateFrame } from '../domain/rotate'
-import { frameLayoutOf } from '../domain/frameShape'
+import { FRAME_SHAPE_IDS, type FrameShapeId, frameLayoutOf } from '../domain/frameShape'
 import { onLayer } from '../domain/layers'
 import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
@@ -9,11 +9,16 @@ import type { Project } from '../domain/project'
 import { TECHNIQUES, type Technique } from '../domain/weave'
 import { drawChartParts, K, letterColor, letterPt, placeBeads } from './chartVector'
 import { helveticaWidth } from '../domain/helvetica'
-import { PdfContent } from '../domain/pdfContent'
+import { type PageDrawing, PdfContent } from '../domain/pdfContent'
 import { acrossNumber, EMPTY_CROSS_SHARE } from './printPages'
-import { displayedGrid, partLetter, planPrint, mm } from './printPlan'
+import { chartOnPageOne, displayedGrid, partLetter, planPrint, mm, PRINT_RULER, type PrintPlan } from './printPlan'
+import { customChart } from './customChart'
+import { pageOneLayout } from './pageOneLayout'
+import { displayedExtentPx } from './surfaceView'
+import { frameWeave } from '../domain/layerWeave'
+import { projectDimensions } from '../domain/projectExtent'
 import { wordChartOf } from '../domain/wordChart'
-import { frameOf, withFrameSheet } from '../domain/layerRecord'
+import { frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 // The PrintChartPage card's Acceptance list, on a 100 × 100 loom Schema with an empty background, White beads and dark
@@ -427,5 +432,109 @@ describe('a turned Schema prints every bead in its place (ticket 1122)', () => {
     const frame = frameOf(project)!
 
     expect(printed(project)).toHaveLength(frame.columns * frame.rows)
+  })
+})
+
+describe('a Custom frame prints every bead (ticket 1132)', () => {
+  /** A Custom frame of `shape` at `size` on a loom Canvas in `beadId`, every bead painted. */
+  function customOf(shape: FrameShapeId, beadId: string, size: number): Project {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId, size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape, size, centre: { row: 100, column: 100 } } })
+    if (placed.kind !== 'changed') throw new Error(`expected a ${shape}`)
+    const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, [...frameLayoutOf(frameOf(placed.project)!)!.positions], DARK))
+    return withLayers(painted, { paletteLetters: LETTERS, letters: false })
+  }
+
+  /** Every painted bead each part draws: its centre and corners in the whole displayed chart, and whether it is the
+   * overlap's repeat, tinted. */
+  function beadsOnParts(project: Project, plan: PrintPlan, area?: { x: number; y: number }) {
+    return plan.parts.flatMap((part) => {
+      const drawn: { points: readonly (readonly [number, number])[]; fill: string }[] = []
+      const record: PageDrawing = {
+        fillRect() {},
+        lines() {},
+        roundRect() {},
+        text() {},
+        polygon(points, { fill }) {
+          if (fill) drawn.push({ points, fill })
+        },
+      }
+      const [pad] = drawChartParts(record, project, plan, [part], LETTERS, area)
+      const chart = { x: pad!.x + PRINT_RULER - part.region.x, y: pad!.y + PRINT_RULER - part.region.y }
+      return drawn.map(({ points, fill }) => {
+        const corners = points.map(([x, y]) => ({ x: x / K - chart.x, y: y / K - chart.y }))
+        const centre = { x: corners.reduce((sum, { x }) => sum + x, 0) / 4, y: corners.reduce((sum, { y }) => sum + y, 0) / 4 }
+        return { part, centre, corners, repeat: fill !== DARK }
+      })
+    })
+  }
+
+  /** Every bead of the Custom frame printed once across the plan's parts, the overlap's repeats aside: its centre inside
+   * its part, the whole of it inside the chart, and the parts together as big as the whole chart the overview draws. Gives
+   * where each one stands. */
+  function expectEveryBeadOnce(project: Project, plan: PrintPlan, area?: { x: number; y: number }): string[] {
+    const positions = frameLayoutOf(frameOf(project)!)!.positions.length
+    const beads = beadsOnParts(project, plan, area)
+    const own = beads.filter((bead) => !bead.repeat)
+    const whole = wholeChart(project, plan.zoom)
+
+    const places = own.map(({ centre }) => placeOf(centre))
+    expect(own).toHaveLength(positions)
+    expect(new Set(places).size).toBe(positions)
+    for (const { part, centre, corners } of beads) {
+      expect(centre.x).toBeGreaterThanOrEqual(part.region.x - 0.5)
+      expect(centre.y).toBeGreaterThanOrEqual(part.region.y - 0.5)
+      expect(centre.x).toBeLessThanOrEqual(part.region.x + part.region.width + 0.5)
+      expect(centre.y).toBeLessThanOrEqual(part.region.y + part.region.height + 0.5)
+      // Nothing past the chart's edge.
+      for (const { x, y } of corners) {
+        expect(x).toBeGreaterThanOrEqual(-0.5)
+        expect(y).toBeGreaterThanOrEqual(-0.5)
+        expect(x).toBeLessThanOrEqual(whole.width + 0.5)
+        expect(y).toBeLessThanOrEqual(whole.height + 0.5)
+      }
+    }
+    // A region is whole px, so the parts end within a px of the chart's edge.
+    const ends = { across: Math.max(...plan.parts.map(({ region }) => region.x + region.width)), down: Math.max(...plan.parts.map(({ region }) => region.y + region.height)) }
+    expect(ends.across - whole.width).toBeGreaterThanOrEqual(0)
+    expect(ends.across - whole.width).toBeLessThan(1)
+    expect(ends.down - whole.height).toBeGreaterThanOrEqual(0)
+    expect(ends.down - whole.height).toBeLessThan(1)
+    return places
+  }
+
+  /** The whole displayed chart's size at `zoom`, as the overview lays it. */
+  function wholeChart(project: Project, zoom: number) {
+    const { technique, cell } = frameWeave(project)
+    const { columns, rows } = projectDimensions(project)
+    return displayedExtentPx(technique, columns, rows, zoom, quarterTurnOf(project), cell)
+  }
+
+  /** A bead's centre to the px, in the whole displayed chart. */
+  const placeOf = ({ x, y }: { x: number; y: number }) => `${Math.round(x)}:${Math.round(y)}`
+
+  const words = { name: 'Triangle', maker: '', colors: [{ hex: DARK, name: 'Dark', beads: '1' }] }
+  const cases = FRAME_SHAPE_IDS.flatMap((shape) => ['toho-cube-1.5mm', 'miyuki-delica-11-0'].map((beadId) => [shape, beadId] as const))
+
+  it.each(cases)('draws every bead of a %s in %s once, inside the chart, on page 1 and the PNG', (shape, beadId) => {
+    const project = customOf(shape, beadId, 5)
+    const layout = pageOneLayout(project, words)
+
+    expect(chartOnPageOne(layout.plan)).toBe(true)
+    // The PNG is page 1 as a picture: the same plan drawn into the same area (ticket 0915).
+    expectEveryBeadOnce(project, layout.plan, layout.area)
+  })
+
+  it.each(cases)('draws every bead of a %s in %s once across its chart pages, inside the chart, as the overview does', (shape, beadId) => {
+    const project = customOf(shape, beadId, 9)
+    // A bead this large cuts every shape into parts.
+    const plan = planPrint(project, { keyRows: 2, floorMm: 12 })
+
+    expect(plan.parts.length).toBeGreaterThan(1)
+    const places = expectEveryBeadOnce(project, plan)
+    // The overview draws the whole chart, at its own zoom: the same beads in the same places.
+    const whole = wholeChart(project, plan.zoom)
+    const overview = customChart(project, { x: 0, y: 0, ...whole }, plan.zoom)!.beads.map(placeOf)
+    expect([...overview].sort()).toEqual([...places].sort())
   })
 })
