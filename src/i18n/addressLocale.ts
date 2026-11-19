@@ -2,7 +2,7 @@ import { type Ref, shallowRef, watch } from 'vue'
 import { LOCALES, type Locale } from '../domain/locale'
 
 // A language's code in the address (ticket 1053): `/ru/` is the Homepage in Russian and `/ru/app/` the editor, built
-// pages of their own (vite.crawler.ts). Opening one makes its language the device's; the Menu's language switch then
+// pages of their own (vite.crawler.ts). Opening one makes its language the device's; the strip's Language then
 // changes the code in place, and the links between the pages keep it. An address with no code is left as it is.
 
 /** The language a path names: its first folder under the base path, when that is one of the app's languages. */

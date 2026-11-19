@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "Language is now in the strip at the top, between Fit and Export",
+    "ru": "Язык интерфейса теперь в полосе сверху, между «Вписать» и «Экспортировать»",
+    "uk": "Мова інтерфейсу тепер у смузі вгорі, між «Вписати» й «Експортувати»",
+    "be": "Мова інтэрфейсу цяпер у паласе ўверсе, паміж «Упісаць» і «Экспартаваць»",
+    "zh": "界面语言现在在顶部栏中，位于“适应”和“导出”之间",
+    "es": "El idioma ahora está en la franja de arriba, entre «Ajustar» y «Exportar»",
+    "pl": "Język interfejsu jest teraz na pasku u góry, między „Dopasuj” a „Eksportuj”"
+  }
+}

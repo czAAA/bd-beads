@@ -107,9 +107,8 @@ export async function openThisProject(wrapper: Wrapper): Promise<void> {
   if (header.exists()) await header.trigger('click')
 }
 
-/** Picks a language in Menu (tickets 368, 443): the panel opens first, then the switcher. */
+/** Picks a language in the strip's Language picker (tickets 368, 443). */
 export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promise<void> {
-  await openPanel(wrapper, 'strip-menu')
   await chooseLanguage(wrapper, locale)
 }
 

@@ -144,7 +144,7 @@ describe('the control registry', () => {
     expect(controlAction('rulers').body?.(en)).toBe('Rulers number your beads.')
     expect(controlAction('tool-erase').body?.(en)).toBe('Drag over beads to remove them.')
     expect(controlAction('empty-selection').name(en)).toBe('Remove selected beads')
-    expect(controlAction('strip-menu').body?.(en)).toBe('New Project, Convert image, Projects library, Language, Theme.')
+    expect(controlAction('strip-menu').body?.(en)).toBe('New Project, Convert image, Projects library, Theme.')
   })
 
   it('writes the zoom chords for the keyboard, without a separator before the sign: Ctrl+ and Ctrl−, ⌘+ and ⌘−', () => {
