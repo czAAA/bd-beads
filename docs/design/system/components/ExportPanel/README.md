@@ -28,6 +28,17 @@ The Frame panel's export section, the same component, under the title line:
 - Once the file is handed over, the saved-file toast names it ("Saved: sunflower.png", Message card) and starts 8px under this panel, never over its rows (ticket 0859), on a phone too.
 - Letters stays in the Frame panel only.
 
+### Approved 2026-11-19, not yet in the app (ticket 1096)
+
+Until ticket 1096 lands the panel is as written above. Then:
+
+- **Two more switches** under Export quality, before Large beads: **Cover page**, then **Black and white**. Each is a PanelSwitchRow like the other two, with its Info button, remembered on the device. The order is Cover page, Black and white, Large beads, Row by row.
+  - **Cover page** ("What Cover page does"): on at first. The PDF opens on the Cover page (PrintCover card); off, it opens on Page 1 as before. The page count and the File size estimate follow it at once.
+  - **Black and white** ("What Black and white does"): off at first. Every page after the cover is drawn for a black-and-white printer (PrintBlackAndWhite card). It adds or removes no page.
+- **Picture saves the Cover page** (PrintCover card), whatever the Cover page switch says, always in color and always one file. No switch changes it, so Large beads' Info body loses "It changes the picture too: the picture is the chart’s first page."
+- **The file name says which switches are on.** After `{project}-{frame}-{maker}` the PDF's name takes, for each switch that is on and in the panel's order, an underscore and the switch's file word (`writing.md`): `peacock-cuff-ada-lind_cover.pdf`, `peacock-cuff-ada-lind_cover_black-and-white_large-beads_row-by-row.pdf`. With every switch off it is the name it has today. The picture's name takes no word.
+- **A "Saves as" line** under the last switch: "Saves as" in `meta-small` `muted`, then the PDF's file name as it will be, in DM Mono `ink`, breaking anywhere so a long name wraps inside the panel. It changes at once with each switch. The saved-file toast names the same file.
+
 ### With no Frame
 
 No export buttons and no slider. Under the title line:

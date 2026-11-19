@@ -54,7 +54,9 @@
     "components/PhoneForms/README.md",
     "components/PixelToBeadRatio/README.md",
     "components/PngExport/README.md",
+    "components/PrintBlackAndWhite/README.md",
     "components/PrintChartPage/README.md",
+    "components/PrintCover/README.md",
     "components/PrintPage1/README.md",
     "components/PrintStrips/README.md",
     "components/PrintWordChart/README.md",
@@ -335,9 +337,19 @@
       "summary": "The PNG export: page 1 of the PDF as a picture, drawn by the same code at the Export quality's dpi."
     },
     {
+      "name": "PrintBlackAndWhite",
+      "group": "Print",
+      "summary": "The PDF's pages after the cover drawn for a black-and-white printer: one ink, each bead on paper, a light tint or solid black, so letters and lines print sharp. Approved, not yet in the app."
+    },
+    {
       "name": "PrintChartPage",
       "group": "Print",
       "summary": "A chart page of the PDF, in vector: one part at 3 mm a bead, as many beads as fill the page, every bead lettered, rulers in fives."
+    },
+    {
+      "name": "PrintCover",
+      "group": "Print",
+      "summary": "The Cover page: the finished piece in color with its name, the PDF's first page while its switch is on and the page Picture saves. Approved, not yet in the app."
     },
     {
       "name": "PrintPage1",

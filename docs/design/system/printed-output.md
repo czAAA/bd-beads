@@ -21,6 +21,17 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 
 There is no Cover that repeats the chart and no Specification that repeats the bead list (ticket 0914): Beads needed is one table, printed once, and the Schema's facts are page 1's tech line.
 
+## Approved 2026-11-19, not yet in the app (ticket 1096)
+
+Signed off on the canvas "PDF export: cover page". The cards have the detail; until ticket 1096 lands the rest of this file describes the exports as they are.
+
+- **A Cover page opens the PDF** (PrintCover card): the finished piece in color on the board, with the technique word, the title, the maker, the piece's colors and the tech line. It is on at first and can be switched off in the Export panel. It counts as a page, so the chart's first page is "2 / 2". This brings back a first page that shows the piece, which ticket 0914 had removed; unlike that Cover it holds no chart parts and no Beads needed, so nothing is printed twice.
+- **Picture is the Cover page**, not page 1: one PNG file, in color.
+- **Black and white** (PrintBlackAndWhite card), a switch that is off at first: every page after the cover is drawn in one ink, each bead on paper, a 10%, 20% or 30% tint or solid black, so letters and lines print sharp on an office printer.
+- **Beads needed** is one color to a row, in two columns only when it would not fit page 1 otherwise; it has no "to buy" column and no tubes, and its heading names the Bead again (PrintPage1 card).
+- **Row by row shows each run's bead**: the count, then the bead's own swatch with its letter, and an empty position as the empty swatch, in place of "3A, 2×" (PrintWordChart card).
+- **The PDF's file name says which switches are on**: `{project}-{frame}-{maker}_cover_row-by-row.pdf` (ExportPanel card).
+
 ## Page 1
 
 One A4 portrait page inside a 10 mm margin on all four sides (`print-margin`), the PrintPage1 card.

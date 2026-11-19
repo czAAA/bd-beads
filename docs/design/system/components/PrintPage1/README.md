@@ -12,6 +12,16 @@
 - **Footer**, on page 1 and the list pages: the X1 mark, "openbeads" and the date and time on the left, the page number on the right in DM Mono `muted` ("1 / 1", "2 / 3"), counting the list pages, the chart pages and the Word chart.
 - No watermark: nothing behind or over the chart, the title or Beads needed.
 
+## Approved 2026-11-19, not yet in the app (ticket 1096)
+
+Until ticket 1096 lands this page is as written above. Then:
+
+- **It follows the Cover page.** With the Export panel's Cover page switch on (it is on at first) the PDF opens on the Cover page (PrintCover card) and this page is the second: its footer reads "2 / 2", and the pages its overview points at are one later ("part A · page 3"). The name Page 1 stays: it is the chart's first page.
+- **Beads needed is one color to a row.** One table as wide as the page: the letter swatch, the color name, the brand code, then beads and grams right-aligned at the page's edge, each row on its hairline. The room the chart gets is worked out as today, from the table in two columns, so the chart is never smaller for it. When all the colors then fit under the chart one to a row, that is how they are printed. Only when they do not is the table set in two columns that read down, as today, and what still does not fit goes to list pages, in two columns too.
+- **No "to buy".** The to buy column and the tubes in the Total are gone: the heads are color, code, beads, grams, and the Total reads "1 104 beads · ≈ 5.6 g". The grams note keeps its advice to buy about 10% more.
+- **The heading names the Bead again**: "Beads needed · Miyuki Delica 11/0", the Bead's name with its size after the heading in Inter 500 at the heading's size, on page 1 and on every list page. An unknown Bead leaves it out.
+- With Black and white on, this page is drawn in one ink (PrintBlackAndWhite card).
+
 ## Acceptance
 
 - [ ] A 20 × 20 and a 100 × 100 with Letters off export one page: the chart lettered and numbered, Beads needed under it, "1 / 1".

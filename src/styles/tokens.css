@@ -308,4 +308,9 @@
   --print-word-row: 10pt;
   --print-word-pitch: 5.6mm;
   --print-word-gap: 8mm;
+  --print-cover-board: 196mm;
+  --print-cover-pad: 8mm;
+  --print-tone-step: 10%;
+  --print-tone-max: 30%;
+  --print-black-share: 25%;
 }
