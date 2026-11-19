@@ -371,7 +371,6 @@ describe('FramePanel (ticket 473)', () => {
     expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
     expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toBe(`${en.frame.qualityMedium}, ${en.frame.qualityMediumCaption}`)
-    expect(small.get('[data-testid="quality-note"]').text()).toBe(en.frame.qualityNote)
     expect(small.get('[role="radiogroup"]').text()).not.toContain('DPI')
   })
 

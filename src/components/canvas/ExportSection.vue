@@ -122,7 +122,6 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
       :label="t.frame.exportQuality"
       :stops="qualityStops"
       :hint="qualityHint"
-      :note="t.frame.qualityNote"
       :model-value="quality"
       :disabled="exportBusy"
       @update:model-value="quality = parseExportQuality($event) ?? quality"

@@ -20,8 +20,6 @@ const props = defineProps<{
   hint?: { label: string; body: string }
   /** The info button beside the head while any stop is reduced: its accessible name and Tooltip. */
   reduced?: { label: string; body: string }
-  /** The line under the stops: what the slider sets ("For the picture. …"). */
-  note?: string
   /** The id of the chosen stop. */
   modelValue: string
   /** An export is running: the slider keeps its place but takes no input. */
@@ -83,7 +81,6 @@ function pick(next: number): void {
         </small>
       </button>
     </div>
-    <p v-if="note" class="qs-note" data-testid="quality-note">{{ note }}</p>
   </div>
 </template>
 
@@ -119,7 +116,6 @@ function pick(next: number): void {
   .qs-stop[aria-checked="true"] b { color: var(--ink); }
   .qs-stop:disabled { cursor: default; background: none; }
   .qs-stop small { font: var(--qs-small); color: var(--muted); }
-  .qs-note { margin: var(--space-4) 0 0; font: var(--qs-small); color: var(--muted); }
   .qs-stop .qs-was { color: var(--accent-strong); }
   .qs-label { display: inline-flex; align-items: center; gap: var(--space-4); margin-right: auto; }
   .qs-info { margin-right: 0; }

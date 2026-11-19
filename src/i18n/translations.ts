@@ -1159,8 +1159,6 @@ export interface Translations {
     qualityLowCaption: string
     qualityMediumCaption: string
     qualityHighCaption: string
-    /** The line under the Export quality stops: the slider sets the picture only (ticket 0957). */
-    qualityNote: string
     /** The Progress bar's line with no Frame, after its Select and Frame chips: what a Frame gives, then how to set one
      * (ticket 0944). The line is a button that picks the Select tool. */
     progressMarkPiece: string
