@@ -7,7 +7,7 @@ import { PANEL_CONTEXT } from './panelContext'
 
 // One row of a panel (MenuPanel card): icon, label, value, a mark (› `sub`, ↗ `external`, a fold mark with `expanded`: it
 // unfolds rows under it, never closing the panel, 1058); `accent`, `accentIcon`, `danger` color it, `secondary` makes it a
-// small link under the row before (0700). A button, or a link with `href`; a disabled one is `aria-disabled`, for its Tooltip.
+// small link under the row before (0700). A folded row's label and mark are in accent-2 (1121). A button, or a link with `href`; a disabled one is `aria-disabled`, for its Tooltip.
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
@@ -68,7 +68,7 @@ function onClick(event: Event) {
     v-else
     v-bind="$attrs"
     class="ui-control panel-item"
-    :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent, 'panel-item--secondary': secondary }"
+    :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent, 'panel-item--secondary': secondary, 'panel-item--folded': expanded === false }"
     :type="href ? undefined : 'button'"
     :href="href"
     :target="external ? '_blank' : undefined"
@@ -179,6 +179,12 @@ function onClick(event: Event) {
 
 .panel-item--accent {
   color: var(--accent-strong);
+}
+
+/* A folded row (ticket 1121): its label and mark in accent-2, as every folded part of a panel is. */
+.panel-item--folded,
+.panel-item--folded .panel-item__mark {
+  color: var(--accent-2);
 }
 
 /* The page the panel is opened on (the Homepage's own item on the Homepage). */

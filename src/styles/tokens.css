@@ -48,6 +48,8 @@
   --kind-new: #17693a;
   --kind-changed: #2452c2;
   --kind-fixed: #7a36b0;
+  --accent-2: #0f766e;
+  --accent-2-soft: #e2f1ee;
   --track: #e5e5e5;
   --word: #f1eadd;
   --print-board: #f7f3ec;
@@ -113,6 +115,8 @@
   --kind-new: #7ee2a0;
   --kind-changed: #8ab4ff;
   --kind-fixed: #d0a8ff;
+  --accent-2: #5eead4;
+  --accent-2-soft: #163a35;
   --track: #333333;
   --word: #202020;
   --print-board: #f7f3ec;
@@ -178,6 +182,8 @@
   --kind-new: #0b5227;
   --kind-changed: #0f3a94;
   --kind-fixed: #56208a;
+  --accent-2: #0b5750;
+  --accent-2-soft: #ffffff;
   --track: #d0d0d0;
   --word: #f5f5f5;
   --print-board: #f7f3ec;

@@ -169,7 +169,6 @@ for (const [situation, breakIt] of failures) {
 
     await reloadsIntoTheApp(page)
     await openStripPanel(page, 'strip-frame')
-    await page.locator('[data-testid="frame-export"] .panel-section__header').click()
     const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('export-pdf').click()])
     expect(download.suggestedFilename()).toMatch(/\.pdf$/)
   })

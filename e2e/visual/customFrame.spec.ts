@@ -80,8 +80,6 @@ test('a Selection over a Custom frame', async ({ page }) => {
 test('the PNG export of a Custom frame draws the whole shape', async ({ page }) => {
   await openApp(page, [customFramed('kaleidocycle', SIZES.kaleidocycle)])
   await openStripPanel(page, 'strip-frame')
-  // The Frame panel's Export opens closed (ticket 0932).
-  await page.locator('[data-testid="frame-export"] .panel-section__header').click()
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('export-png').click()])
   const png = PNG.sync.read(await readFile((await download.path())!))
   // The page's picture, a quarter of its size: its header and footer (the export time) left out.

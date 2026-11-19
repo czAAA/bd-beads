@@ -48,7 +48,6 @@ function mountApp() {
  * closed (ticket 0932). */
 async function openExportMenu(wrapper: ReturnType<typeof mount>) {
   await openPanel(wrapper, 'strip-frame')
-  await wrapper.get('[data-testid="frame-export"] .panel-section__header').trigger('click')
 }
 
 describe('App PNG and PDF export (tickets 73, 74)', () => {

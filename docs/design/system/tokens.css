@@ -44,6 +44,8 @@
   --kind-new: #17693a; /* A New Release note's kind label (KindLabel card, ticket 1047): its text, and its fill at --kind-label-tint. */
   --kind-changed: #2452c2; /* A Changed Release note's kind label (KindLabel card, ticket 1047). */
   --kind-fixed: #7a36b0; /* A Fixed Release note's kind label (KindLabel card, ticket 1047). */
+  --accent-2: #0f766e; /* The second accent (ticket 1121), never the one accent's yellow or orange: the edge and label of the export buttons (PNG, PDF), and what is folded in a panel (a closed section header, a closed fold row, the folded Export quality). */
+  --accent-2-soft: #e2f1ee; /* The fill under accent-2 on the export buttons (ticket 1121). */
   --track: #e5e5e5; /* Progress bar track. */
   --word: #f1eadd; /* The background technique word ("Loom") behind the board. */
   --print-board: #f7f3ec; /* The board behind the chart in PDF and PNG exports. Exports are always light, so it is the same in every theme. */
@@ -107,6 +109,8 @@
   --kind-new: #7ee2a0;
   --kind-changed: #8ab4ff;
   --kind-fixed: #d0a8ff;
+  --accent-2: #5eead4;
+  --accent-2-soft: #163a35;
   --track: #333333;
   --word: #202020;
   --print-board: #f7f3ec;
@@ -170,6 +174,8 @@
   --kind-new: #0b5227;
   --kind-changed: #0f3a94;
   --kind-fixed: #56208a;
+  --accent-2: #0b5750;
+  --accent-2-soft: #ffffff;
   --track: #d0d0d0;
   --word: #f5f5f5;
   --print-board: #f7f3ec;

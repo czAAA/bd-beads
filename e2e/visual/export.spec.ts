@@ -17,8 +17,6 @@ import { fixtureProject } from '../support/projects'
  * in the Frame panel (ticket 555). */
 async function downloadOf(page: Page, testId: string): Promise<{ name: string; bytes: Buffer }> {
   await openStripPanel(page, 'strip-frame')
-  // The Frame panel's Export opens closed (ticket 0932).
-  await page.locator('[data-testid="frame-export"] .panel-section__header').click()
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId(testId).click()])
   return { name: download.suggestedFilename(), bytes: await readFile((await download.path())!) }
 }
