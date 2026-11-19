@@ -20,19 +20,28 @@ export function parseAccount(value: unknown): Account | undefined {
 }
 
 /** How a sign-in ended, as Google's way back marks the editor's address (`worker/src/signIn.ts`). */
-export type SignInReturn = 'signed-in' | SignInRefusal
+type SignInReturn = 'signed-in' | SignInRefusal
 /** Why the person is not signed in after a try: they said no at Google, something failed, or new accounts are paused
  * (the `sign-up` switch). */
 export type SignInRefusal = 'cancelled' | 'failed' | 'paused'
 
-const RETURNS: readonly SignInReturn[] = ['signed-in', 'cancelled', 'failed', 'paused']
+/** What the editor's address marks: how a sign-in ended, or `sign-in`, the Homepage's Create free account asking for
+ * the Sign in Subpanel (ticket 0391). */
+export type AccountMark = SignInReturn | 'sign-in'
+
+const MARKS: readonly AccountMark[] = ['signed-in', 'cancelled', 'failed', 'paused', 'sign-in']
 /** The mark's name in the address: `?account=signed-in`. */
 export const SIGN_IN_RETURN_PARAM = 'account'
 
-/** How the sign-in a query string (`location.search`) marks ended; undefined for an address with no mark. */
-export function parseSignInReturn(search: string): SignInReturn | undefined {
+/** What a query string (`location.search`) marks; undefined for an address with no mark. */
+export function parseSignInReturn(search: string): AccountMark | undefined {
   const mark = new URLSearchParams(search).get(SIGN_IN_RETURN_PARAM)
-  return RETURNS.find((known) => known === mark)
+  return MARKS.find((known) => known === mark)
+}
+
+/** The editor's address that opens on the Sign in Subpanel: where the Homepage's Create free account leads. */
+export function signInAddress(editor: string): string {
+  return `${editor}?${SIGN_IN_RETURN_PARAM}=sign-in`
 }
 
 /** How long a wait reads in a toast, as the Worker's `Retry-After` gives it: seconds up to a minute, then minutes. */

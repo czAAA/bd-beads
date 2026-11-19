@@ -1,4 +1,4 @@
-import type { Account, SignInReturn } from '../domain/account'
+import type { Account, AccountMark } from '../domain/account'
 import { changedSince, KEPT_SETTING_NAMES, type AccountSettings, type KeptSettings } from '../domain/keptSettings'
 import type { AccountService, SignInUnavailable } from './account'
 
@@ -10,8 +10,8 @@ export interface MemoryAccountState {
   session?: Account
   /** Whether the backend answers: `up`, or why it doesn't. */
   backend: 'up' | SignInUnavailable
-  /** How the sign-in the page came back from ended, read once. */
-  returned?: SignInReturn
+  /** What the address marks: how a sign-in ended, or the Homepage asking for Sign in; read once. */
+  returned?: AccountMark
   /** The Turnstile token handed out; none is a check that fails. */
   token?: string
   /** The tokens sign-ins were started with: in a browser the page would have left for Google. */

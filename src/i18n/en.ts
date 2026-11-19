@@ -433,11 +433,11 @@ export const en: Translations = {
     whatsNew: { name: "What's new", history: 'Every change', release: 'Release {version}', arrives: 'Arrives with Reload' },
     plans: {
       heading: 'Three ways to use it',
-      why: "Accounts and Pro aren't open yet. Everything works without them.",
+      why: "Pro isn't open yet. Everything works without an account.",
       youAreHere: 'you are here',
       tiles: [
         { name: 'No account', price: 'Free', meta: 'no sign-up', text: 'Draw, count and weave on this device. Nothing to sign up for.', button: 'Open the editor' },
-        { name: 'Free account', price: 'Free', text: 'Same as No account, plus more', button: 'Create free account' },
+        { name: 'Free account', price: 'Free', text: 'Same as No account, plus your settings on all your devices', button: 'Create free account' },
         { name: 'Pro', price: 'Price later', text: 'Same as Free account, plus more', button: 'Coming later' },
       ],
       comingSoon: 'Coming soon',
@@ -465,7 +465,7 @@ export const en: Translations = {
         more: 'More on the way',
         showAll: 'Show all {count}',
       },
-      alone: { heading: 'Free to use', why: 'Accounts and Pro come later; everything works without them.', info: 'About accounts and Pro' },
+      alone: { heading: 'Free to use', why: 'An account keeps your settings the same on all your devices; Pro comes later. Everything works without an account.', info: 'About accounts and Pro' },
     },
     library: '{library}, {count}',
     notFound: "There's no page at this address.",

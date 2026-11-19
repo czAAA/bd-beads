@@ -72,6 +72,20 @@ describe('useAccountFlow: who is signed in', () => {
 })
 
 describe('useAccountFlow: back from Google', () => {
+  it('opens the Menu on the Sign in Subpanel when the Homepage’s Create free account asks, with no refusal (ticket 0391)', () => {
+    const { flow, openMenu, check } = setup({ returned: 'sign-in' })
+    expect(openMenu).toHaveBeenCalledWith('sign-in')
+    expect(flow.signInRefusal.value).toBeUndefined()
+    expect(check).not.toHaveBeenCalled()
+  })
+
+  it('shows who is signed in instead, when someone already is', async () => {
+    const { openMenu } = setup({ returned: 'sign-in', remembered: ann, session: ann })
+    await settled()
+    expect(openMenu).toHaveBeenCalledWith('account')
+    expect(openMenu).not.toHaveBeenCalledWith('sign-in')
+  })
+
   it('signed in: learns who from the backend, then opens the Menu on its Account section, unfolded, with no toast', async () => {
     const { flow, openMenu, showToast, foldedSections } = setup({ returned: 'signed-in', session: ann })
     expect(openMenu).not.toHaveBeenCalled()

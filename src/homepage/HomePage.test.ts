@@ -712,3 +712,14 @@ describe('HomePage background', () => {
     expect(style).toContain('--canvas-tile: 20px')
   })
 })
+
+describe('HomePage: Create free account (ticket 0391)', () => {
+  it('asks for the editor on the Sign in Subpanel from the plans’ Free account tile', async () => {
+    const wrapper = page(3)
+    await flushPromises()
+    await wrapper.get('[data-testid="plan-create-account"]').trigger('click')
+    expect(wrapper.emitted('createAccount')).toHaveLength(1)
+    expect(wrapper.emitted('openEditor')).toBeUndefined()
+    wrapper.unmount()
+  })
+})

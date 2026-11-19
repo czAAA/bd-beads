@@ -22,6 +22,7 @@ import { libraryFileName, projectFileName, projectFileNameOf } from '../domain/p
 import { firstProjectAddress, firstStarterAddress, projectAddress, savedProjectsAddress } from '../domain/openingAddress'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
+import { signInAddress } from '../domain/account'
 import { browserAccount } from '../services/account'
 import { browserFeedback } from '../services/feedback'
 import { notesFromBase } from '../services/notesFile'
@@ -119,6 +120,8 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         // Start from a ready design: the same, opened on the Frame panel's Starter gallery (ticket 0953).
         onStartFromStarter: () => goToEditor(firstStarterAddress(editor())),
         onOpenEditor: () => goToEditor(),
+        // Create free account (ticket 0391): the editor, opened on the Sign in Subpanel.
+        onCreateAccount: () => goToEditor(signInAddress(editor())),
         onOpenSavedProjects: () => goToEditor(savedProjectsAddress(editor())),
         onOpenProject: (id: string) => goToEditor(projectAddress(editor(), id)),
         onOpenDemoCopy: openDemoCopy,
