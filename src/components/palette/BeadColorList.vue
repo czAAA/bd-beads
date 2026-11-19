@@ -3,17 +3,19 @@ import { computed, onMounted, ref } from 'vue'
 import type { BeadColors } from '../../composables/palette/useBeadColors'
 import { SHOWN, useBeadColorFinder } from '../../composables/palette/useBeadColorFinder'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { isAddedColorId } from '../../domain/palette'
 import { groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import AppNote from '../ui/AppNote.vue'
 import BeadColorFilters from './BeadColorFilters.vue'
 import BeadColorFindRow from './BeadColorFindRow.vue'
 import BeadSwatchChip from './BeadSwatchChip.vue'
 
-// The Bead's Color catalog (ticket 0537, ADR 0072; BeadColors card): every code in the Bead's size, a code the Palette
-// holds taken; adding is an Edit. Color and Finish filters narrow the search (ticket 0713), reset on close, and stand
-// beside the rows or behind a Filters button by the list's width (ticket 0746).
+// The Bead's Color catalog (ticket 0537, ADR 0072; BeadColors card): every code in the Bead's size; a press adds a code
+// and a press on one the Palette holds takes it out again (ticket 1092), each an Edit. Color and Finish filters narrow
+// the search (ticket 0713), reset on close, and stand beside the rows or behind a Filters button (ticket 0746).
 const props = defineProps<{ colors: BeadColors }>()
 const emit = defineEmits<{ added: [hex: string] }>()
 
@@ -35,8 +37,40 @@ function rowName(entry: (typeof shown.value)[number]): string {
   return entry.discontinued ? fillBlanks(words.value.rowNote, { name, note: words.value.discontinued }) : name
 }
 
-function add(hex: string, code: string) {
-  if (props.colors.add(hex, code) === 'added') emit('added', hex)
+type Row = (typeof shown.value)[number]
+/** What a row is to the Palette (ticket 1092): `free` joins it on a press; `held` is in it under this very code and a
+ * press takes it out; `default` and `kept` are in it too but stay (a default color, or a host with no removal); `same`
+ * is a code whose color the Palette holds under another code, which cannot join twice. */
+type RowState = 'free' | 'held' | 'default' | 'kept' | 'same'
+
+function stateOf(entry: Row): RowState {
+  if (!entry.taken) return 'free'
+  if (!entry.heldAs) return 'same'
+  if (!props.colors.remove) return 'kept'
+  return isAddedColorId(entry.heldAs) ? 'held' : 'default'
+}
+
+/** A row's name by its state, and what it says of its place in the Palette at its right end. */
+const ROW_LABEL = { free: 'add', held: 'remove', default: 'defaultLabel', kept: 'heldLabel', same: 'takenLabel' } as const
+const ROW_MARK = { held: 'inPalette', default: 'defaultColor', kept: 'inPalette', same: 'sameColor' } as const
+
+/** The rows shown, each with its state, its name and its mark worked out once. */
+const rows = computed(() =>
+  shown.value.map((entry) => {
+    const state = stateOf(entry)
+    return {
+      entry,
+      state,
+      label: fillBlanks(words.value[ROW_LABEL[state]], { name: rowName(entry) }),
+      mark: state === 'free' ? undefined : words.value[ROW_MARK[state]],
+      pressable: state === 'free' || state === 'held',
+    }
+  }),
+)
+
+function press(entry: Row, state: RowState) {
+  if (state === 'held' && entry.heldAs) props.colors.remove?.(entry.heldAs)
+  else if (state === 'free' && props.colors.add(entry.hex, entry.code) === 'added') emit('added', entry.hex)
 }
 </script>
 
@@ -63,17 +97,18 @@ function add(hex: string, code: string) {
           <span v-if="matches.length > SHOWN">{{ fillBlanks(words.firstShown, { count: SHOWN }) }}</span>
         </p>
         <ul class="bead-color-list__rows">
-          <li v-for="entry in shown" :key="entry.code" class="bead-color-list__item">
+          <li v-for="{ entry, state, label, mark, pressable } in rows" :key="entry.code" class="bead-color-list__item">
             <button
               type="button"
               class="bead-color-list__row"
-              :class="{ 'bead-color-list__row--taken': entry.taken }"
-              :aria-disabled="entry.taken ? 'true' : undefined"
-              :aria-label="fillBlanks(entry.taken ? words.takenLabel : words.add, { name: rowName(entry) })"
+              :class="{ 'bead-color-list__row--taken': state === 'same', 'bead-color-list__row--held': !!entry.heldAs, 'bead-color-list__row--stays': state === 'default' || state === 'kept' }"
+              :aria-disabled="pressable ? undefined : 'true'"
+              :aria-label="label"
               data-testid="bead-color"
               :data-code="entry.code"
               :data-taken="entry.taken || undefined"
-              @click="!entry.taken && add(entry.hex, entry.code)"
+              :data-held="entry.heldAs ? state : undefined"
+              @click="press(entry, state)"
               @focus="highlighted = { code: entry.code, hex: entry.hex }"
             >
               <BeadSwatchChip class="bead-color-list__chip" :hex="entry.hex" :approximate="entry.approximate" :tip="false" />
@@ -86,7 +121,10 @@ function add(hex: string, code: string) {
                 </span>
               </span>
               {{ ' ' }}
-              <span v-if="entry.taken" class="bead-color-list__taken">{{ words.inPalette }}</span>
+              <span v-if="mark" class="bead-color-list__taken">
+                <AppIcon v-if="entry.heldAs" name="check" :size="14" />
+                {{ mark }}
+              </span>
             </button>
           </li>
         </ul>
@@ -236,6 +274,20 @@ function add(hex: string, code: string) {
   cursor: default;
 }
 
+/* A code the Palette holds (ticket 1092): a filled row in `ink` with a check, found at a glance; a press takes it out. */
+.bead-color-list__row--held,
+.bead-color-list__row--held:hover {
+  background: var(--press-fill);
+}
+
+.bead-color-list__row--held .bead-color-list__taken {
+  color: var(--ink);
+}
+
+.bead-color-list__row--stays {
+  cursor: default;
+}
+
 .bead-color-list__text {
   display: flex;
   flex: 1 1 auto;
@@ -255,7 +307,10 @@ function add(hex: string, code: string) {
 }
 
 .bead-color-list__taken {
+  display: inline-flex;
   flex: none;
+  gap: var(--space-4);
+  align-items: center;
   font: var(--type-meta);
 }
 

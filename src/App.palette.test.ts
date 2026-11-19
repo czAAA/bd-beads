@@ -4,6 +4,7 @@ import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { addedColorId, defaultPalette, defaultPaletteIds } from './domain/palette'
 import { createProject } from './domain/createProject'
+import { lettersOn } from './domain/layerRecord'
 import { en } from './i18n/en'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { pressBead } from './testUtils/beads'
@@ -123,5 +124,46 @@ describe('the Palette reaches its flows', () => {
     expect(wrapper.get('[data-testid="feedback-brand"]').text()).toContain(cubeBead.brand.name)
     wrapper.unmount()
   })
-})
 
+  it('a code pressed in the Bead colors list joins the Palette as the current color, and a second press takes it out with no question (ticket 1092)', async () => {
+    const wrapper = await openApp()
+    /** The list, opened again where this environment re-creates the popover after an Edit (a browser keeps it open; the visual check holds that). */
+    const openList = async () => {
+      if (!wrapper.find('[data-testid="bead-colors"]').exists()) await wrapper.get('[data-testid="bead-colors-toggle"]').trigger('click')
+      await vi.waitFor(() => wrapper.get('[data-testid="bead-color"]'))
+    }
+    await openList()
+    const row = wrapper.get('[data-testid="bead-color"]:not([data-taken])')
+    const code = row.attributes('data-code')!
+    const before = storedPalette()
+
+    await row.trigger('click')
+
+    const joined = storedPalette().find((id) => !before.includes(id))!
+    expect(wrapper.get(`[data-color-id="${joined}"]`).attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(true)
+
+    await openList()
+    await wrapper.get(`[data-testid="bead-color"][data-code="${code}"]`).trigger('click')
+
+    expect(storedPalette()).toEqual(before)
+    expect(wrapper.find('[data-testid="remove-color-modal"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain(en.palette.removed)
+    wrapper.unmount()
+  })
+
+  it('the Palette\'s Letters switch is the Canvas\'s own, saved with the Project, and a letter typed in Edit palette is saved too (ticket 1092)', async () => {
+    const wrapper = await openApp()
+    await wrapper.get('[data-testid="palette-letters"]').trigger('click')
+    expect([lettersOn(loadProjects()[0]!, 'canvas'), lettersOn(loadProjects()[0]!, 'frame')]).toEqual([true, false])
+    expect(wrapper.findAll('[data-testid="palette-swatch-letter"]').length).toBeGreaterThan(0)
+
+    await editPalette(wrapper)
+    await wrapper.get('[data-testid="swatch-letter"]').trigger('click')
+    await wrapper.get('[data-testid="swatch-letter-field"]').setValue('q')
+    await wrapper.get('.swatch-letter__form').trigger('submit')
+
+    expect(Object.values(loadProjects()[0]!.paletteLetters!)).toContain('Q')
+    wrapper.unmount()
+  })
+})

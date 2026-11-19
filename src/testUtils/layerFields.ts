@@ -39,7 +39,7 @@ export function withLayers(project: Project, change: LayersChange): Project {
   if (Object.keys(shared).length > 0) {
     next = { ...next, layers: next.layers.map((layer) => ({ ...layer, ...shared })) as Project['layers'] }
   }
-  return letters !== undefined ? withLetters(next, letters) : next
+  return letters !== undefined ? withLetters(withLetters(next, 'canvas', letters), 'frame', letters) : next
 }
 
 /** The Frame layer's sheet alone (ticket 0664): its place, Weave, beads, Folded beads, name, Frame shape, settings and

@@ -174,7 +174,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         theme: theme.value,
         frameTheme: frameTheme.value,
         rowMarks: marksShown.value,
-        letters: shownLetters(props.project),
+        letters: shownLetters(props.project, 'frame'),
         pointer: markerAt.value && !tools.tool && !tools.moves && !tools.markerHidden && !tools.picking && !tools.selects ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
         // The bead the open Radial toolbox was pressed on keeps the outline, in place of any hover preview (ticket 1076).
         preview: props.outlinedCell ? { cells: [props.outlinedCell], color: null } : !tools.picking && (props.previewStamp || (props.previewCells?.length ?? 0) > 0) ? { cells: props.previewCells ?? [], stamp: props.previewStamp, color: props.previewColor ?? null } : undefined,

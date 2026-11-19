@@ -175,3 +175,85 @@ describe('PalettePicker', () => {
     wrapper.unmount()
   })
 })
+
+describe('PalettePicker, Swatch letters (ticket 1092)', () => {
+  const lettersOf = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('[data-testid="palette-swatch-letter"]').map((letter) => letter.text())
+
+  it('shows each swatch its letter while Letters is on, in its name too, and none where no letters are handed out', async () => {
+    const shown = ref(false)
+    const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { letters: shown })
+    expect(lettersOf(wrapper)).toEqual([])
+
+    shown.value = true
+    await wrapper.vm.$nextTick()
+
+    expect(lettersOf(wrapper).slice(0, 3)).toEqual(['A', 'B', 'C'])
+    expect(wrapper.get('[data-testid="palette-swatch"]').attributes('aria-label')).toBe(fillBlanks(ru.palette.swatchLetter, { name: `${ru.palette.colorLabel} 1, ${ru.colorNames.black}`, letter: 'A' }))
+    expect(lettersOf(mount(PalettePicker))).toEqual([])
+  })
+
+  it('in Edit palette puts a letter button under every swatch, the default ones too, and the × only on the added one', () => {
+    const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], { editing: true }, { letters: ref(true) })
+
+    expect(wrapper.findAll('[data-testid="swatch-letter"]')).toHaveLength(BUILT_IN_COLORS.length + 1)
+    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1)
+    // The letter is on its button, not on the swatch, whose × is the picture of what a press there does.
+    expect(lettersOf(wrapper)).toEqual([])
+    expect(wrapper.get('[data-testid="swatch-letter"]').attributes('aria-label')).toBe(fillBlanks(ru.palette.changeLetter, { letter: 'A', name: ru.colorNames.black }))
+  })
+
+  it('changes a letter typed into its button\'s field, in upper case, as one Edit', async () => {
+    const { wrapper, harness } = mountWithPalette(PalettePicker, defaultPaletteIds(), { editing: true }, { letters: ref(false), attachTo: document.body })
+    const black = BUILT_IN_COLORS[0]!.hex
+
+    await wrapper.get('[data-testid="swatch-letter"]').trigger('click')
+    await wrapper.get('[data-testid="swatch-letter-field"]').setValue('q7')
+    await wrapper.get('.swatch-letter__form').trigger('submit')
+
+    expect(harness.currentProject()!.paletteLetters![black]).toBe('Q')
+    expect(wrapper.find('[data-testid="swatch-letter-field"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="palette-letter-swapped"]').exists()).toBe(false)
+    harness.history.onUndo()
+    expect(harness.currentProject()!.paletteLetters![black]).toBe('A')
+    wrapper.unmount()
+  })
+
+  it('says which color got which letter after a trade, until the letters change again', async () => {
+    const { wrapper, harness } = mountWithPalette(PalettePicker, defaultPaletteIds(), { editing: true }, { letters: ref(false), attachTo: document.body })
+
+    await wrapper.findAll('[data-testid="swatch-letter"]')[1]!.trigger('click')
+    await wrapper.get('[data-testid="swatch-letter-field"]').setValue('a')
+    await wrapper.get('.swatch-letter__form').trigger('submit')
+
+    expect(wrapper.get('[data-testid="palette-letter-swapped"]').text()).toBe(fillBlanks(ru.palette.letterSwapped, { name: ru.colorNames.white, letter: 'A', other: ru.colorNames.black, otherLetter: 'B' }))
+    // The line is about the letters as they stand: Undo takes it away with the trade.
+    harness.history.onUndo()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="palette-letter-swapped"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('saves what was typed when the field is left', async () => {
+    const { wrapper, harness } = mountWithPalette(PalettePicker, defaultPaletteIds(), { editing: true }, { letters: ref(false), attachTo: document.body })
+
+    await wrapper.get('[data-testid="swatch-letter"]').trigger('click')
+    await wrapper.get('[data-testid="swatch-letter-field"]').setValue('m')
+    await wrapper.get('[data-testid="swatch-letter-field"]').trigger('blur')
+
+    expect(harness.currentProject()!.paletteLetters![BUILT_IN_COLORS[0]!.hex]).toBe('M')
+    wrapper.unmount()
+  })
+
+  it('leaves the letter as it was on Escape, and keeps Edit palette on', async () => {
+    const { wrapper, harness } = mountWithPalette(PalettePicker, defaultPaletteIds(), { editing: true }, { letters: ref(false), attachTo: document.body })
+
+    await wrapper.get('[data-testid="swatch-letter"]').trigger('click')
+    await wrapper.get('[data-testid="swatch-letter-field"]').setValue('z')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    expect(harness.currentProject()!.paletteLetters![BUILT_IN_COLORS[0]!.hex]).toBe('A')
+    expect(wrapper.findAll('[data-testid="swatch-letter"]')).toHaveLength(BUILT_IN_COLORS.length)
+    wrapper.unmount()
+  })
+})

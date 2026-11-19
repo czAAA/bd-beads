@@ -3,6 +3,28 @@
  * reordering, a change of Bead and Undo. */
 export type SwatchLetters = Readonly<Record<string, string>>
 
+/** What a Swatch letter is: one to three of A to Z (the lettering reaches three past 702 colors). */
+const LETTER = /^[A-Z]{1,3}$/
+
+/** The most letters a maker types for one color (ticket 1092): two, which the lettering itself reaches at 27 colors. */
+export const TYPED_LETTER_LENGTH = 2
+
+/** What a maker typed as a Swatch letter (ticket 1092): its letters A to Z in upper case, the first two. A digit is
+ * dropped, as the Word chart writes a count before a letter (`2C`). Empty when nothing is left. */
+export function typedLetter(text: string): string {
+  return text.toUpperCase().replace(/[^A-Z]/g, '').slice(0, TYPED_LETTER_LENGTH)
+}
+
+/** The letters with the color `hex` given `letter` (ticket 1092). A color that has that letter trades it for this
+ * color's (`swapped` says which and what it got), so no two share one. Undefined when nothing changes: a color the
+ * Palette lacks, not a letter, or the one it has. */
+export function withLetter(letters: SwatchLetters, hex: string, letter: string): { letters: SwatchLetters; swapped?: { hex: string; letter: string } } | undefined {
+  const own = letters[hex]
+  if (own === undefined || own === letter || !LETTER.test(letter)) return undefined
+  const other = Object.keys(letters).find((key) => letters[key] === letter)
+  return { letters: { ...letters, [hex]: letter, ...(other ? { [other]: own } : {}) }, ...(other ? { swapped: { hex: other, letter: own } } : {}) }
+}
+
 /** The letter of the nth color: A to Z, then AA, AB… (AZ, then BA…).
  * @internal Its test checks the lettering past Z. */
 export function letterAt(index: number): string {
@@ -30,7 +52,7 @@ export function lettersFor(hexes: readonly string[], kept: unknown): SwatchLette
   const taken = new Set<string>()
   for (const hex of hexes) {
     const letter = stored[hex]
-    if (typeof letter === 'string' && /^[A-Z]{1,3}$/.test(letter) && !taken.has(letter)) {
+    if (typeof letter === 'string' && LETTER.test(letter) && !taken.has(letter)) {
       letters[hex] = letter
       taken.add(letter)
     }

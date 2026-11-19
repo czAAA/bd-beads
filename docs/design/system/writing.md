@@ -791,6 +791,24 @@ The BeadColors list made wider and quieter. The entry button is named for what i
 | Filters (the narrow layout's button) | Фильтры | Фільтри | Фільтры | 筛选 | Filtros | Filtry |
 | Filters, {count} on (its name while values are on) | Фильтры, включено: {count} | Фільтри, увімкнено: {count} | Фільтры, уключана: {count} | 筛选，已开启 {count} 个 | Filtros, activos: {count} | Filtry, włączone: {count} |
 
+## The Palette's letters and a Bead color pressed out (ticket 1092)
+
+The Palette's Letters switch reuses the Frame's word, "Letters". A letter another color has is traded, never refused, and one line says which color got which. A row of the Bead colors list that the Palette holds says "In the Palette"; a default color's says "Default color", and a row whose color the Palette holds under another code says "Same color". The names of rows and swatches start with the words shown (WCAG 2.5.3).
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Show each color's letter on its swatch and on the Canvas's beads; the Frame has its own switch. (the Palette's Letters Tooltip) | Показывать букву цвета на его образце и на бисеринках холста; у рамки свой переключатель. | Показувати літеру кольору на його зразку й на бісеринах полотна; рамка має свій перемикач. | Паказваць літару колеру на яго ўзоры і на бісерынках палатна; у рамкі свой пераключальнік. | 在色块和画布的珠子上显示每种颜色的字母；边框有自己的开关。 | Muestra la letra de cada color en su muestra y en las cuentas del lienzo; el marco tiene su propio interruptor. | Pokazuj literę koloru na jego próbce i na koralikach płótna; ramka ma własny przełącznik. |
+| {name}, letter {letter} (a swatch's name while it shows its letter) | {name}, буква {letter} | {name}, літера {letter} | {name}, літара {letter} | {name}，字母 {letter} | {name}, letra {letter} | {name}, litera {letter} |
+| {letter}, change the letter of {name} (the letter button in Edit Palette) | {letter}, изменить букву цвета {name} | {letter}, змінити літеру кольору {name} | {letter}, змяніць літару колеру {name} | {letter}，更改 {name} 的字母 | {letter}, cambiar la letra de {name} | {letter}, zmień literę koloru {name} |
+| Letter of {name} (its field) | Буква цвета {name} | Літера кольору {name} | Літара колеру {name} | {name} 的字母 | Letra de {name} | Litera koloru {name} |
+| {name} is now {letter}. {other} had it and is now {otherLetter}. (after a trade) | {name}: теперь буква {letter}. Раньше она была у цвета {other}, теперь у него {otherLetter}. | {name}: тепер літера {letter}. Раніше вона була в кольору {other}, тепер у нього {otherLetter}. | {name}: цяпер літара {letter}. Раней яна была ў колеру {other}, цяпер у яго {otherLetter}. | {name} 的字母现在是 {letter}。{other} 原来用这个字母，现在是 {otherLetter}。 | {name} ahora es {letter}. {other} la tenía y ahora es {otherLetter}. | {name} ma teraz literę {letter}. Miał ją {other}, który ma teraz {otherLetter}. |
+| Same color (a row whose color the Palette holds under another code) | Тот же цвет | Той самий колір | Той самы колер | 颜色相同 | Mismo color | Ten sam kolor |
+| Default color (a default color's row) | Стандартный цвет | Стандартний колір | Стандартны колер | 默认颜色 | Color predeterminado | Kolor domyślny |
+| {name}, in the Palette, a default color that can't be removed | {name}, в палитре, стандартный цвет, убрать нельзя | {name}, у палітрі, стандартний колір, прибрати не можна | {name}, у палітры, стандартны колер, прыбраць нельга | {name}，已在调色板，默认颜色无法移除 | {name}, en la paleta, un color predeterminado que no se puede quitar | {name}, w palecie, kolor domyślny, którego nie można usunąć |
+| {name}, remove from the Palette (a row the Palette holds) | {name}, убрать из палитры | {name}, прибрати з палітри | {name}, прыбраць з палітры | {name}，从调色板移除 | {name}, quitar de la paleta | {name}, usuń z palety |
+| {name}, in the Palette (the same row where nothing removes it) | {name}, в палитре | {name}, у палітрі | {name}, у палітры | {name}，已在调色板 | {name}, en la paleta | {name}, w palecie |
+| A press on a code that is in the Palette takes it out again. (the Info button's third note) | Нажатие на код, который уже в палитре, убирает его из неё. | Натискання на код, який уже в палітрі, прибирає його з неї. | Націск на код, які ўжо ў палітры, прыбірае яго з яе. | 再按一次已在调色板中的色号，可将它移除。 | Al pulsar un código que ya está en la paleta, se quita de ella. | Naciśnięcie kodu, który jest już w palecie, usuwa go z niej. |
+
 ## Schema tag copy (ticket 0721)
 
 An unframed Schema's name as a tag, opening into a paper tag (SchemaTag card). Rename, Frame and Close keep their existing words. The counts use `Intl.PluralRules` (Plurals and length): «96 бисеринок · 3 цвета», «1 бисеринка · 1 цвет».

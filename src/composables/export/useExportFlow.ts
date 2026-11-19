@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { withMakerName } from '../../domain/makerName'
+import type { Layer } from '../../domain/grid'
 import { lettersOn, withLetters } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf, projectListFileName } from '../../domain/projectFile'
@@ -68,11 +69,12 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
   }
 
-  /** Letters on or off (ticket 0573): saved with the Project, no Undo step, like the maker's name. */
-  function onSetLetters(on: boolean) {
+  /** A layer's Letters on or off (tickets 0573, 1092): the Frame's from its panel and title block, the Canvas's from
+   * the Palette. Saved with the Project, no Undo step, like the maker's name. */
+  function onSetLetters(on: boolean, layer: Layer) {
     const project = deps.currentProject()
-    if (project && lettersOn(project) !== on) {
-      deps.replaceProject(withLetters(project, on))
+    if (project && lettersOn(project, layer) !== on) {
+      deps.replaceProject(withLetters(project, layer, on))
     }
   }
 

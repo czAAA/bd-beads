@@ -143,7 +143,7 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
 
 describe('the layer list (ADR 0079, ticket 0664)', () => {
   it('lays a Frame anew as a copy of the Canvas\'s Bead and Letters, at the first row, under an id of its own', () => {
-    const canvas = withLetters(withLayer(open(), 'canvas', { bead: cube }), true)
+    const canvas = withLetters(withLayer(open(), 'canvas', { bead: cube }), 'canvas', true)
     const laid = withFrameSheet(canvas, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} })
     expect(frameOf(laid)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), letters: true, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 } })
     expect(frameOf(laid)!.id).not.toBe(canvasOf(laid).id)
@@ -158,12 +158,15 @@ describe('the layer list (ADR 0079, ticket 0664)', () => {
     expect(withFrameSheet(before, undefined).layers).toEqual([canvasOf(before)])
   })
 
-  it('reads the Letters switch from the Frame when there is one, else the Canvas, and sets it on every layer', () => {
-    const on = withLetters(framed(), true)
-    expect(on.layers.every((layer) => layer.letters === true)).toBe(true)
-    expect(lettersOn(on)).toBe(true)
-    expect(lettersOn(withLayers(on, { frame: { ...frameOf(on)!, letters: undefined } }))).toBe(false)
-    expect(lettersOn(withLetters(open(), true))).toBe(true)
+  it('gives each layer a Letters switch of its own, and a Project without a Frame none for it (ticket 1092)', () => {
+    const frame = withLetters(framed(), 'frame', true)
+    expect([lettersOn(frame, 'frame'), lettersOn(frame, 'canvas')]).toEqual([true, false])
+    const both = withLetters(frame, 'canvas', true)
+    expect([lettersOn(both, 'frame'), lettersOn(both, 'canvas')]).toEqual([true, true])
+    expect('letters' in canvasOf(withLetters(both, 'canvas', false))).toBe(false)
+    const bare = open()
+    expect(withLetters(bare, 'frame', true)).toBe(bare)
+    expect(lettersOn(bare, 'frame')).toBe(false)
   })
 
   it('leaves an empty list of Piece names unsaved', () => {

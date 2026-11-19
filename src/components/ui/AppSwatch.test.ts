@@ -72,8 +72,8 @@ describe('AppSwatch', () => {
     const dark = mount(AppSwatch, { props: { ...props, color: '#1a1a1a', removable: true } })
     const light = mount(AppSwatch, { props: { ...props, color: '#fafafa', removable: true } })
 
-    expect(dark.get('.swatch__remove').classes()).toContain('swatch__remove--light')
-    expect(light.get('.swatch__remove').classes()).toContain('swatch__remove--dark')
+    expect(dark.get('.swatch__remove').classes()).toContain('swatch__mark--light')
+    expect(light.get('.swatch__remove').classes()).toContain('swatch__mark--dark')
   })
 
   it('fades a locked swatch, marks it aria-disabled and says why in its Tooltip, which describes it', async () => {

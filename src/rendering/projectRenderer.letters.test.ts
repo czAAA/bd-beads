@@ -57,6 +57,26 @@ describe('Letters on the Frame (ticket 0573)', () => {
   })
 })
 
+describe('Letters on the Canvas (ticket 1092)', () => {
+  const region = { x: -1500, y: -1500, width: 3000, height: 3000 }
+  const letters = { '#1a1a1a': 'A', '#f2c94c': 'D', '#e63746': 'C' }
+  /** The Frame's two beads, and one bead on the Canvas well clear of its margin. */
+  const both = () => withLayers(framed(), { beads: { 12: { 12: '#e63746' } } })
+  const drawnWith = (input: { letters?: typeof letters; canvasLetters?: typeof letters }) => {
+    const project = both()
+    const { context, drawn } = recordingContext()
+    renderProject(context, { project, space: spaceOf(project, true), region, zoom: 1, rowMarks: false, ...input })
+    return drawn.map(({ text }) => text).sort()
+  }
+
+  it('prints the Canvas\'s beads their letters by the Canvas\'s own switch, and the Frame\'s by the Frame\'s', () => {
+    expect(drawnWith({ canvasLetters: letters })).toEqual(['C'])
+    expect(drawnWith({ letters })).toEqual(['A', 'D'])
+    expect(drawnWith({ letters, canvasLetters: letters })).toEqual(['A', 'C', 'D'])
+    expect(drawnWith({})).toEqual([])
+  })
+})
+
 /** A context that keeps its transform as a canvas does, and records how each letter is turned and mirrored on screen. */
 function turningContext() {
   type Matrix = [number, number, number, number, number, number]
