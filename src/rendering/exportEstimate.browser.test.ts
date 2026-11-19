@@ -11,9 +11,8 @@ import { exportProjectPdf, exportProjectPng, projectPageCount } from './projectE
 import { withLayers } from '../testUtils/layerFields'
 
 // The size each export shows against the real files (ticket 0588, ADR 0076): never less than the file and under about twice
-// it, for a small drawing, a long narrow one, a big symmetric one, a photograph, a conversion in many colors and a Schema
-// with a large empty background, with the print choices off and on (Cover page, Large beads and Row by row, tickets 0916, 1096),
-// at every Export quality.
+// it, for a small drawing, a long narrow one, a big symmetric one, a photograph, many colors and a large empty background,
+// with the print choices off and on (Cover page, Large beads, Row by row; tickets 0916, 1096), at every Export quality.
 
 const COLORS = BUILT_IN_COLORS.map((color) => color.hex)
 

@@ -29,7 +29,7 @@ Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai c
 
 Each stop is captioned in a crafter's words (ticket 0957); "300 DPI" means nothing to most people. The DPI figures are in the head's Info note ("What each quality gives"): "Quality is for the picture only. Low draws the picture at 150 DPI: a small file, and one a phone can always make. Medium is 300 DPI, for print. High is 450 DPI, the sharpest. The printable chart is drawn in lines and stays sharp at any zoom.", filled with the DPI this device draws each stop at. The stops carry no size: the Picture button's value slot is the one place the PNG's size is shown, and it follows the chosen stop.
 
-The PDF is not on the slider: its picture pages (the overview on page 1, list pages, Word chart) and the text picture under each chart page are 300 dpi (`print-dpi`), or 150 where a device cannot allocate a 300 dpi page. The choice is remembered per device; `print-png-bead` (60px) is the Medium PNG value.
+The PDF is not on the slider: its picture pages (the Cover page, the overview on page 1, list pages, Word chart) and the text picture under each chart page are 300 dpi (`print-dpi`), or 150 where a device cannot allocate a 300 dpi page. The choice is remembered per device; `print-png-bead` (60px) is the Medium PNG value.
 
 ## Parts
 

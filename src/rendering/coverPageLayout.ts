@@ -15,7 +15,7 @@ export const COVER_BOARD = mm(196)
  * @internal The token test holds it to the token. */
 export const COVER_PAD = mm(8)
 
-export interface Box {
+interface Box {
   x: number
   y: number
   width: number

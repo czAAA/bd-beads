@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "new",
+  "line": {
+    "en": "The PDF opens on a Cover page, the finished piece in color with its name, maker and size, and Export’s Cover page switch leaves it out",
+    "ru": "PDF открывается обложкой: готовое изделие в цвете с названием, автором и размером, а переключатель «Обложка» в «Экспорте» её убирает",
+    "uk": "PDF відкривається обкладинкою: готовий виріб у кольорі з назвою, автором і розміром, а перемикач «Обкладинка» в «Експорті» її прибирає",
+    "be": "PDF адкрываецца вокладкай: гатовы выраб у колеры з назвай, аўтарам і памерам, а пераключальнік «Вокладка» ў «Экспарце» яе прыбірае",
+    "zh": "PDF 以封面开头：彩色的成品，带名称、作者和尺寸；导出中的封面开关可以去掉它",
+    "es": "El PDF empieza con una portada, la pieza terminada en color con su nombre, autor y tamaño, y el interruptor Portada de Exportar la quita",
+    "pl": "PDF zaczyna się od okładki: gotowa praca w kolorze z nazwą, autorem i rozmiarem, a przełącznik Okładka w Eksporcie ją usuwa"
+  }
+}

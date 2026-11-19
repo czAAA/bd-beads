@@ -19,15 +19,16 @@ The Export panel: a small panel from the **Export** button in the Canvas strip's
 The Frame panel's export section, the same component, under the title line:
 
 - **Picture** (`image`) and **Printable chart** (`pdf`) PanelItems, each with its File size estimate in the value slot ("PNG ≈ 1.4 MB · 1 file", "PDF ≈ 3.2 MB · 9 pages"; QualitySlider card). The Printable chart's count is what will come out, "1 page", "3 pages", read from the PDF's own plan (`pdfPageCount`: page 1, its list pages, the chart pages, the Word chart pages), so it is the count the PDF's footers print. It changes at once with the Frame, the colors and either switch below (ticket 0916).
-- The two files stand one after the other, Picture then Printable chart, and their options under both (ticket 1095; ticket 0957 had put each option under its file): the **Export quality** QualitySlider (it sets the picture only, and its Info note says so), then the two switches.
-- **Large beads** and **Row by row** (ticket 0916), the Printable chart's two switches, right under Export quality: each a PanelSwitchRow, as Letters is in the Frame panel (the name in `control`, an Info button right after it, the AppSwitch at the right, the panel's item height and 10px side padding). Both off at first, and remembered on the device (not with the Project), so the next export of any Project keeps them. They stay live while an export runs: an export reads them when it starts. No line under either switch; what each does is behind its Info button (read once).
+- The two files stand one after the other, Picture then Printable chart, and their options under both (ticket 1095; ticket 0957 had put each option under its file): the **Export quality** QualitySlider (it sets the picture only, and its Info note says so), then the switches.
+- **Cover page** (ticket 1096), the first switch under Export quality, a PanelSwitchRow like the others, with its Info button ("What Cover page does"). On at first, and remembered on the device. The PDF opens on the Cover page (PrintCover card); off, it opens on Page 1 as before. The page count and the File size estimate follow it at once.
+- **Large beads** and **Row by row** (ticket 0916), under Cover page: each a PanelSwitchRow, as Letters is in the Frame panel (the name in `control`, an Info button right after it, the AppSwitch at the right, the panel's item height and 10px side padding). Both off at first, and remembered on the device (not with the Project), so the next export of any Project keeps them. They stay live while an export runs: an export reads them when it starts. No line under either switch; what each does is behind its Info button (read once).
   - **Large beads** ("What Large beads does"): every bead on the PDF's charts, page 1's whole chart and strips included, is `print-bead-large` (3 mm) or more, at the cost of more pages: a 100 × 100 becomes the overview and parts. The PNG is page 1, so it follows too, and the Info body says so: an option that changes both files says it does (ticket 0957).
   - **Row by row** ("What Row by row does"): the Word chart pages follow the chart (PrintWordChart card), whatever Letters says; off, there are none. PDF only.
 - No other print setting (paper, margins, overlap, symbols): those belong to pattern sellers' tools (research: PDF export rework, section 3).
 - While an export runs the buttons and the slider are disabled and the LoadingState line shows, as in the Frame panel.
 - Once the file is handed over, the saved-file toast names it ("Saved: sunflower.png", Message card) and starts 8px under this panel, never over its rows (ticket 0859), on a phone too.
 - Letters stays in the Frame panel only.
-- **The file name says which switches are on** (ticket 1096). After `{project}-{frame}-{maker}` the PDF's name takes, for each print switch that is on and in the panel's order, an underscore and the switch's file word (`writing.md`, in the app's language): `peacock-cuff-ada-lind_large-beads_row-by-row.pdf`. With every switch off it is the name it had before. The picture's name takes no word. (Cover page and Black and white add `_cover` and `_black-and-white` before them once they land, below.)
+- **The file name says which switches are on** (ticket 1096). After `{project}-{frame}-{maker}` the PDF's name takes, for each print switch that is on and in the panel's order, an underscore and the switch's file word (`writing.md`, in the app's language): `peacock-cuff-ada-lind_large-beads_row-by-row.pdf`. With every switch off it is the name it had before. The picture's name takes no word. Cover page's word comes first, `_cover`, so the name at first is `peacock-cuff-ada-lind_cover.pdf`. (Black and white adds `_black-and-white` after it once it lands, below.)
 - **A "Saves as" line** under the last switch (ticket 1096): "Saves as" in `meta-small` `muted`, then the PDF's file name as it will be, in DM Mono (`meta`) `ink`, breaking anywhere so a long name wraps inside the panel. It changes at once with each switch. The saved-file toast names the same file.
   - **Its pencil renames the file** (`pencil`, Tooltip "Name this export yourself. …", name "Rename the file"), the ProjectPanel card's line edited in place: a TextField with Save and Cancel, Enter or a press outside saves, Escape cancels. A typed name is saved exactly as typed, ending in `.pdf` once and with the signs a file name cannot hold (`\ / : * ? " < > |`) turned into dashes; no switch adds its word to it while it stands. An emptied name brings the made name back. It is kept nowhere: it lives while the panel's rows are shown and is forgotten once the panel closes. It names the PDF only; the picture keeps its made name.
 
@@ -35,10 +36,8 @@ The Frame panel's export section, the same component, under the title line:
 
 Until ticket 1096 lands the panel is as written above. Then:
 
-- **Two more switches** under Export quality, before Large beads: **Cover page**, then **Black and white**. Each is a PanelSwitchRow like the other two, with its Info button, remembered on the device. The order is Cover page, Black and white, Large beads, Row by row.
-  - **Cover page** ("What Cover page does"): on at first. The PDF opens on the Cover page (PrintCover card); off, it opens on Page 1 as before. The page count and the File size estimate follow it at once.
-  - **Black and white** ("What Black and white does"): off at first. Every page after the cover is drawn for a black-and-white printer (PrintBlackAndWhite card). It adds or removes no page.
-- **Picture saves the Cover page** (PrintCover card), whatever the Cover page switch says, always in color and always one file. No switch changes it, so Large beads' Info body loses "It changes the picture too: the picture is the chart’s first page."
+- **One more switch**, **Black and white** ("What Black and white does"), between Cover page and Large beads, a PanelSwitchRow like the others, with its Info button, remembered on the device. The order is then Cover page, Black and white, Large beads, Row by row. Off at first. Every page after the cover is drawn for a black-and-white printer (PrintBlackAndWhite card). It adds or removes no page.
+- **Picture saves the Cover page** (PrintCover card), whatever the Cover page switch says, always in color and always one file. No switch changes it, so Large beads' Info body loses "It changes the picture too: the picture is the chart’s first page." and Cover page's gains "It is the page Picture saves."
 
 ### With no Frame
 
@@ -58,9 +57,9 @@ Every string is the Frame panel's: Export, Picture, Printable chart, Export qual
 
 - [ ] The Export button is the strip's last button, `export` icon, Tooltip "Export", lit while its panel is open.
 - [ ] The panel is 360px, 4px under the button, right edges aligned, and closes Menu, Project and Frame (and they close it).
-- [ ] With a Frame: Picture, then Printable chart, then Export quality, Large beads and Row by row under them, all working as in the Frame panel.
-- [ ] Printable chart says how many pages the PDF will have, and the count changes at once with Large beads, Row by row, the Frame and the colors.
-- [ ] Large beads and Row by row are off at first and remembered on the device; Letters adds or removes no page.
+- [ ] With a Frame: Picture, then Printable chart, then Export quality, Cover page, Large beads and Row by row under them, all working as in the Frame panel.
+- [ ] Printable chart says how many pages the PDF will have, and the count changes at once with Cover page, Large beads, Row by row, the Frame and the colors.
+- [ ] Cover page is on at first, Large beads and Row by row off, all remembered on the device; Letters adds or removes no page.
 - [ ] With no Frame: the line, then Fit a Frame to the drawing (`frame`) and Drag a Frame, Fit first once something is drawn; no export buttons.
 - [ ] The Frame panel's export section and this panel render one shared component.
 - [ ] "Saves as" names the PDF as it will be saved, a word for each switch that is on, at once; its pencil renames it for this export, with no word added, forgotten when the panel closes (ticket 1096).

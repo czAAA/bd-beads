@@ -235,6 +235,11 @@ describe('printText Word chart (ticket 0574)', () => {
     }
   })
 
+  it('carries the Cover page for the PDF to open on (ticket 1096)', () => {
+    expect(printText(delicaProject(3), en, 'en', at).cover).toBeUndefined()
+    expect(printText(delicaProject(3), en, 'en', at, { cover: true }).cover).toBe(true)
+  })
+
   it('carries Large beads for the layout to plan with', () => {
     expect(printText(delicaProject(3), en, 'en', at).largeBeads).toBeUndefined()
     expect(printText(delicaProject(3), en, 'en', at, { largeBeads: true }).largeBeads).toBe(true)
