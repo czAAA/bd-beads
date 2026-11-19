@@ -30,11 +30,15 @@ const PRESSES = 'button, a[href], summary, [role="button"]'
 /** How much of its room More below scrolls a section on (ticket 0826; Homepage card). */
 const MORE_SHARE = 0.8
 
+/** How near its end, in px, an element is at it: sizes round by a pixel, and WebKit reads `scrollTop` 1 at the top of
+ * what is drawn under a zoom over 1, as the box is on a large screen, so a scroll up never turned there (ticket 1131). */
+const END_SLACK = 1
+
 /** Whether an element scrolls itself and has more to go that way: a section taller than its room, More below's fade. */
 export function canScroll(el: Element, way: Way): boolean {
   const { overflowY } = getComputedStyle(el)
   if (overflowY !== 'auto' && overflowY !== 'scroll') return false
-  return way > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0
+  return way > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - END_SLACK : el.scrollTop > END_SLACK
 }
 
 /** Whether something between `target` and the page scrolls that way itself: a section taller than its room, a list. */
@@ -72,13 +76,14 @@ export function useSectionInput({ section, count, page, shown, held, reducedMoti
     clearTimeout(due)
     due = undefined
     const next = turnDue(gesture, lastTurn)
-    const index = next && towards(next.way)
-    if (!next || index === undefined) return
+    if (!next) return
+    const index = towards(next.way)
     const wait = next.at - Date.now()
-    if (wait > 0) due = setTimeout(settle, wait)
+    if (index !== undefined && wait > 0) due = setTimeout(settle, wait)
     else {
+      // Past the first or last section it is spent on nothing, so a scroll back turns at once (ticket 1131).
       gesture = spend(gesture!)
-      turn(index)
+      if (index !== undefined) turn(index)
     }
   }
 
