@@ -34,7 +34,7 @@ describe('the free list (ticket 0742)', () => {
     const rows = freeListRows(ru, 'ru')
     expect(rows[2]).toBe('3 техники: ткачество, мозаичное плетение и кирпичное плетение')
     expect(rows[12]).toBe(`Цвета TOHO и Miyuki уже внутри, ${groupThousands(CODES, 'ru')} штук`)
-    expect(rows[16]).toBe('15 стартеров: фигуры, серьги, кольца и браслеты')
+    expect(rows[16]).toBe('15 шаблонов: фигуры, серьги, кольца и браслеты')
   })
 })
 

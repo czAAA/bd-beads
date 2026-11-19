@@ -265,7 +265,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | Convert image · A picture into a bead pattern, in up to {max} colors. | Из картинки · Превращает картинку в схему, до {max} цветов. |
 | Colors built in · {brands}, and a Palette of your own. | Цвета внутри · {brands} и ваша собственная палитра. |
 | Letters · Each color its letter, on the beads and on the chart. | Буквы · У каждого цвета своя буква, на бисере и на схеме. |
-| Starters · From the Frame panel: a ready design becomes your Frame. | Стартеры · Из панели «Рамка»: готовый дизайн становится вашей рамкой. |
+| Starters · From the Frame panel: a ready design becomes your Frame. | Шаблоны · Из панели «Рамка»: готовый дизайн становится вашей рамкой. |
 | Row progress · Mark rows done as you weave. | Прогресс по рядам · Отмечайте готовые ряды, пока плетёте. |
 | Beads needed · Every color counted, in grams too. | Нужно бисера · По каждому цвету и в граммах. |
 | Exports · PDF ready to print, PNG ready to share, and the Project file. | Экспорт · PDF для печати, PNG, чтобы поделиться, и файл проекта. |
@@ -319,7 +319,7 @@ The free list (ticket 0740), one row each, in this order. It names the app's fea
 | Your Projects as an .openbeads file | Ваши проекты в файле .openbeads |
 | Word chart: the pattern written out row by row | Ряд за рядом: схема, расписанная словами |
 | Mirror: draw one side, the other follows | Отражение: рисуете одну сторону, вторая повторяет |
-| {n} Starters for {categories} (a counted word) | {n} стартер / стартера / стартеров: {categories} |
+| {n} Starters for {categories} (a counted word) | {n} шаблон / шаблона / шаблонов: {categories} |
 | More on the way (muted, with a plus) | Скоро будет больше |
 
 The names are joined as the language joins a list (`formatList`): English with a serial comma, "loom, peyote, and brick stitch". The counted rows take the language's counted forms (ticket 0742; the Russian rows had an em dash, which the Russian copy never uses).
@@ -336,7 +336,7 @@ The Homepage's first section and What's inside's chapters (Homepage card). Engli
 | Bead patterns, drawn the way the beads sit. (the heading) | Схемы для бисера, нарисованные так, как ложится бисер. |
 | For loom, peyote and brick stitch. (the three Techniques, lowercase in a sentence as in the Techniques row) | Для ткачества, мозаичного и кирпичного плетения. |
 | See how it works (turns to What's inside) | Как это работает |
-| {codes} {brands} colors · {n} Starters ("3 817 TOHO and Miyuki colors · 15 Starters"; counted words) | {codes} цвет / цвета / цветов {brands} · {n} стартер / стартера / стартеров |
+| {codes} {brands} colors · {n} Starters ("3 817 TOHO and Miyuki colors · 15 Starters"; counted words) | {codes} цвет / цвета / цветов {brands} · {n} шаблон / шаблона / шаблонов |
 | {technique} · {size} (the piece's caption: "Peyote · 48×23") | {technique} · {size} |
 | Peacock feather eyes, in peyote (the piece, an image's name for screen readers) | Павлиньи перья, мозаичное плетение |
 | Draw · Start from something · Real bead colors · Weave and keep (What's inside's chapters) | Рисуйте · Начните с готового · Настоящие цвета бисера · Плетите и сохраняйте |
@@ -441,7 +441,7 @@ The copy of the two-step Starter gallery (StarterGallery card). Option and categ
 
 | English | Russian |
 | --- | --- |
-| Starter · Each Starter is a finished design for one Frame. Use it as it is, or start with its shape empty. | Стартер · Стартер даёт готовый дизайн для одной рамки. Используйте его как есть или начните с пустой формы. |
+| Starter · Each Starter is a finished design for one Frame. Use it as it is, or start with its shape empty. | Шаблон · Шаблон даёт готовый дизайн для одной рамки. Используйте его как есть или начните с пустой формы. |
 | Shapes · Earrings · Rings · Bands | Фигуры · Серьги · Кольца · Браслеты |
 | {n} shapes · {n} fringe styles · {n} motifs | фигур: {n} · видов бахромы: {n} · узоров: {n} |
 | Triangle · Warped Square · Kite · Star · Kaleidocycle | Треугольник · Изогнутый квадрат · Воздушный змей · Звезда · Калейдоцикл |
@@ -460,7 +460,7 @@ The copy of the two-step Starter gallery (StarterGallery card). Option and categ
 | EU, mm round · US · Snug · Comfortable · Loose | EU, мм по кругу · US · Плотно · Удобно · Свободно |
 | ø {d} mm inside · {w} mm wide · {n} rows round · 1.5 cm left for the clasp | ø {d} мм внутри · ширина {w} мм · рядов по кругу: {n} · 1,5 см на застёжку |
 | Create Project · Add Frame · Replace Frame | Создать проект · Добавить рамку · Заменить рамку |
-| Back to Starter · Back to {category} | Назад к стартерам · Назад: {category} |
+| Back to Starter · Back to {category} | Назад к шаблонам · Назад: {category} |
 
 Russian here is a proposal for review, like the section below.
 
