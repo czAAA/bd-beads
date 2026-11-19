@@ -157,6 +157,8 @@ export const PREFERENCES = {
     parse: parseExportQuality,
     write: (quality) => (quality === DEFAULT_EXPORT_QUALITY ? null : quality),
   }),
+  /** Cover page, the Export panel's first print choice (ticket 1096): on until switched off. */
+  printCover: onUntilOff('openbeads:print-cover'),
   /** Large beads and Row by row, the Export panel's print choices (ticket 0916): off until switched on. */
   printLargeBeads: offUntilOn('openbeads:print-large-beads'),
   printRowByRow: offUntilOn('openbeads:print-row-by-row'),

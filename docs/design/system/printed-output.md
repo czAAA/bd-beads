@@ -13,21 +13,21 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 
 ## The order of the pages
 
-1. **Page 1** (ticket 0914): the title block, the whole piece and Beads needed. When the chart fits there at a working bead it is the chart itself, and for most pieces (up to about 100 × 100, a bracelet in strips) **the PDF ends here**: a 20 × 20 is 1 page, not 3. Beads needed that does not fit continues on **list pages** straight after it.
-2. **Chart pages**, only when the chart does not fit page 1: the parts, in reading order (across, then down), after the overview on page 1.
-3. **Word chart** pages, only when **Row by row** is on in the Export panel (tickets 0574, 0916). Letters adds or removes no page: every printed chart is lettered.
+1. **The Cover page** (ticket 1096; PrintCover card), while the Export panel's **Cover page** switch is on (it is on at first): the finished piece in color on the board, with the technique word, the title, the maker, the piece's colors and the tech line. It counts as a page, so the chart's first page is "2 / 2". This brings back a first page that shows the piece, which ticket 0914 had removed; unlike that Cover it holds no chart parts and no Beads needed, so nothing is printed twice. Switched off, the PDF opens on page 1 as before.
+2. **Page 1** (ticket 0914): the title block, the whole piece and Beads needed. When the chart fits there at a working bead it is the chart itself, and for most pieces (up to about 100 × 100, a bracelet in strips) **the PDF ends here**: a 20 × 20 is the Cover page and 1 page, not 3. Beads needed that does not fit continues on **list pages** straight after it.
+3. **Chart pages**, only when the chart does not fit page 1: the parts, in reading order (across, then down), after the overview on page 1.
+4. **Word chart** pages, only when **Row by row** is on in the Export panel (tickets 0574, 0916). Letters adds or removes no page: every printed chart is lettered.
 
 **Large beads** (Export panel, ticket 0916) raises the smallest bead from `print-bead-min` to `print-bead-large` (3 mm, the chart size before ticket 0913), on page 1's whole chart, its strips and every chart page, at the cost of more pages: a 100 × 100 becomes the overview and parts. It acts, and is offered, only where the plan without it prints a bead under 3 mm (ticket 1125). The Export panel's Printable chart row counts the pages before the export ("PDF ≈ 1.2 MB · 5 pages").
 
 The PDF's file name says which print switches are on, `{project}-{frame}-{maker}_large-beads_row-by-row.pdf`, and the Export panel shows it, renamable for one export, before the export (ExportPanel card, ticket 1096).
 
-There is no Cover that repeats the chart and no Specification that repeats the bead list (ticket 0914): Beads needed is one table, printed once, and the Schema's facts are page 1's tech line.
+There is no cover that repeats the chart and no Specification that repeats the bead list (ticket 0914): Beads needed is one table, printed once, and the Schema's facts are page 1's tech line.
 
 ## Approved 2026-11-19, not yet in the app (ticket 1096)
 
 Signed off on the canvas "PDF export: cover page". The cards have the detail; until ticket 1096 lands the rest of this file describes the exports as they are.
 
-- **A Cover page opens the PDF** (PrintCover card): the finished piece in color on the board, with the technique word, the title, the maker, the piece's colors and the tech line. It is on at first and can be switched off in the Export panel. It counts as a page, so the chart's first page is "2 / 2". This brings back a first page that shows the piece, which ticket 0914 had removed; unlike that Cover it holds no chart parts and no Beads needed, so nothing is printed twice.
 - **Picture is the Cover page**, not page 1: one PNG file, in color.
 - **Black and white** (PrintBlackAndWhite card), a switch that is off at first: every page after the cover is drawn in one ink, each bead on paper, a 10%, 20% or 30% tint or solid black, so letters and lines print sharp on an office printer.
 - **Row by row shows each run's bead**: the count, then the bead's own swatch with its letter, and an empty position as the empty swatch, in place of "3A, 2×" (PrintWordChart card).
@@ -53,7 +53,7 @@ One A4 portrait page inside a 10 mm margin on all four sides (`print-margin`), t
 - **The overview** (it does not fit): the whole piece on the board, scaled to the room it has with no minimum bead, without letters, rulers with a number every 5 (10 when the beads are small) and a hairline every 10, an empty position bare board under a small `faint` cross. The chart parts are marked on it: solid 2 px `accent` lines with a white keyline, run through the rulers, with "101 →" and "101 ↓" in `accent-strong` where each cut is, and a white pill with an `accent` border on each part: "part A · page 2", "B · p 3". Beads needed takes at most 40% of the room under the title block.
 - **Beads needed**, one table (ticket 1096): the heading, "Beads needed · Miyuki Delica 11/0" (an unknown Bead leaves the name out), over a 1.5 px `ink` rule, then the heads (DM Mono 6.5 `muted`: color, code, beads, grams) and the rows on `line` hairlines: a letter swatch (the color with its Swatch letter, as every chart prints it), color name, brand code, beads, grams. One color to a row across the page when all the colors fit under the chart that way, else two columns that read down; the chart's room is worked out from the two columns, so it is never smaller for it. Under a 1.5 px rule the Total ("Total · 8 colors" on the left; "10 000 beads · ≈ 50 g" on the right) and the grams note. No to buy column and no tubes on paper. An unknown Bead shows no grams and no note.
 - **List pages**: colors that do not fit go on pages straight after page 1 (so chart pages start later), each with the title, small, and the same table in two columns; the Total and the grams note end the last.
-- **Footer**: the X1 mark, "openbeads" and the date and time on the left, the page number on the right ("1 / 1", "1 / 3"), on page 1 and the list pages.
+- **Footer**: the X1 mark, "openbeads" and the date and time on the left, the page number on the right ("1 / 1", "1 / 3"), on the Cover page, page 1 and the list pages, every one counted.
 
 ## Chart pages
 

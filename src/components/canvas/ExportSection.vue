@@ -23,7 +23,7 @@ import { namedChoices, pdfFileName } from '../../composables/export/pdfFileName'
 import { MAX_PDF_FILE_NAME, typedPdfFileName } from '../../domain/projectFile'
 
 // The export rows (tickets 568, 0652, 0916, 1095, 1096, 1121; ExportPanel card): PNG, PDF and File (the .openbeads) in one
-// row, each saying on hover what it gives, "Saves as" (the PDF's name with its pencil), Export quality folded, Large beads, Row by row. One component for the Frame panel's Export
+// row, each saying on hover what it gives, "Saves as" (the PDF's name with its pencil), Export quality folded, Cover page, Large beads, Row by row. One component for the Frame panel's Export
 // section and the Export panel; the slot holds what a panel adds under the switches (the Frame panel's Letters).
 const props = defineProps<{
   project: Project
@@ -48,8 +48,8 @@ const { t, locale } = useI18n()
 const frame = computed(() => frameOf(props.project))
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
 const quality = useExportQuality()
-/** Large beads and Row by row on this device (ticket 0916): the PDF's pages and its count follow them at once. */
-const { largeBeads, rowByRow, choices } = usePrintChoices()
+/** Cover page, Large beads and Row by row on this device (tickets 0916, 1096): the PDF's pages and its count follow them at once. */
+const { cover, largeBeads, rowByRow, choices } = usePrintChoices()
 /** The print code the estimate is worked out with (ticket 0991): asked for as the rows first show, not with the page. */
 const printCode = shallowRef<PrintCode>()
 loadPrintCode().then(
@@ -175,6 +175,7 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
     />
     <p v-if="highPngDpi" class="export-section__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
   </div>
+  <PanelSwitchRow v-model="cover" :label="t.frame.coverPageLabel" :info-label="t.frame.coverPageInfoLabel" :body="t.frame.coverPageLine" testid="export-cover-page" />
   <PanelSwitchRow v-if="largeBeadsShown" v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
   <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
   <slot />

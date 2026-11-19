@@ -84,6 +84,16 @@ describe('estimatePdf', () => {
     expect(estimatePdf(four, 300).bytes - estimatePdf(one, 300).bytes).toBeGreaterThan(3 * 90_000)
   })
 
+  it('counts and weighs the Cover page, as a picture page in color (ticket 1096)', () => {
+    const plain = factsOf('loom', 20, 30)
+    const covered = factsOf('loom', 20, 30, { cover: true })
+
+    expect(covered.pdfPages).toBe(plain.pdfPages + 1)
+    expect(estimatePdf(covered, 300).count).toBe(estimatePdf(plain, 300).count + 1)
+    expect(estimatePdf(covered, 300).bytes - estimatePdf(plain, 300).bytes).toBeGreaterThan(100_000)
+    expect(estimatePng(covered, 300)).toEqual(estimatePng(plain, 300))
+  })
+
   it('weighs the Word chart pages Row by row adds (ticket 0916)', () => {
     expect(estimatePdf(factsOf('loom', 20, 30, ROW_BY_ROW), 300).bytes).toBeGreaterThan(estimatePdf(factsOf('loom', 20, 30), 300).bytes)
   })

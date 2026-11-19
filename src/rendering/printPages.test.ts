@@ -6,6 +6,7 @@ import type { Technique } from '../domain/weave'
 import { loadPrintFonts, lineBetween, partLabel, rulerLevel } from './printPages'
 import { en } from '../i18n/en'
 import { PRINT_COLORS } from './printColors'
+import { COVER_BOARD, COVER_PAD } from './coverPageLayout'
 import { mm, planPrint, PRINT_BEAD_LARGE_MM, PRINT_BEAD_MAX_MM, PRINT_BEAD_MIN_MM, PRINT_BEAD_STRETCH_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
 
@@ -27,6 +28,8 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
     const size = (name: string) => mm(Number.parseFloat(String(print(name))))
     expect(PRINT_MARGIN).toBeCloseTo(size('print-margin'))
     expect(PRINT_HEADER).toBeCloseTo(size('print-header'))
+    expect(COVER_BOARD).toBeCloseTo(size('print-cover-board'))
+    expect(COVER_PAD).toBeCloseTo(size('print-cover-pad'))
     const bead = (name: string) => Number.parseFloat(String(print(name)))
     expect([PRINT_BEAD_MIN_MM, PRINT_BEAD_STRETCH_MM, PRINT_BEAD_LARGE_MM, PRINT_BEAD_MAX_MM]).toEqual(
       [bead('print-bead-min'), bead('print-bead-stretch'), bead('print-bead-large'), bead('print-bead-max')],

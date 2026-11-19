@@ -1,6 +1,6 @@
 # PrintCover
 
-**Approved 2026-11-19, not yet in the app (ticket 1096).** Until that ticket lands the PDF opens on Page 1 (PrintPage1) and the Picture export is Page 1 as a picture (PngExport).
+**In the PDF since ticket 1096.** Picture saving it is approved 2026-11-19, not yet in the app (ticket 1096): until then the Picture export is Page 1 as a picture (PngExport).
 
 The **Cover page**: one A4 portrait page that shows the finished piece in color, with its name. It is the PDF's first page while the Export panel's **Cover page** switch is on (it is on at first), and it is what **Picture** saves. It is the page a maker shows or sells the pattern with; the chart and Beads needed start on the page after it. Signed off on the canvas "PDF export: cover page", look A (Gallery).
 
@@ -23,18 +23,19 @@ An empty name leaves out the title, an empty maker the "by" line. An unknown Bea
 - The Cover page is the PDF's first page and counts as one: a piece that fitted one page is "1 / 2" and "2 / 2". Every page number after it moves on by one, and so does every page a page points at: the overview's pills ("part A · page 3") and a chart page's "Continues right on page 4".
 - The Export panel's page count and File size estimate include it.
 - It is a picture page at `print-dpi`, like the overview. The chart pages after it stay PDF drawing.
+- The piece is drawn in the light theme's bead, its own-color rim and satin light (BeadBoard card), not the flat bead of the charts: the cover shows the piece as it looks, the charts are for reading.
 - It is always in color, whatever **Black and white** says (PrintBlackAndWhite card).
 - With the switch off the PDF opens on Page 1, as before.
 
 ## As the Picture
 
-Picture saves this page as a PNG, at the Export quality's dpi (QualitySlider card), drawn by the same code as the PDF's. It is one file, whatever the piece's size and however many colors it has, and its footer reads "1 / 1". It is saved whether or not the Cover page switch is on: the switch is the PDF's. Its file name carries no option (ExportPanel card).
+Approved 2026-11-19, not yet in the app (ticket 1096). Picture saves this page as a PNG, at the Export quality's dpi (QualitySlider card), drawn by the same code as the PDF's. It is one file, whatever the piece's size and however many colors it has, and its footer reads "1 / 1". It is saved whether or not the Cover page switch is on: the switch is the PDF's. Its file name carries no option (ExportPanel card).
 
 ## Acceptance
 
-- [ ] With Cover page on, the PDF opens on the cover: the piece in color on the board, its technique word, title, maker, colors and tech line; the chart starts on the next page.
-- [ ] Every page number and every page a page points at counts the cover.
-- [ ] With Cover page off, the PDF is what it was before.
+- [x] With Cover page on, the PDF opens on the cover: the piece in color on the board, its technique word, title, maker, colors and tech line; the chart starts on the next page.
+- [x] Every page number and every page a page points at counts the cover.
+- [x] With Cover page off, the PDF is what it was before.
 - [ ] Picture saves the cover as one PNG file.
 - [ ] The cover is in color with Black and white on.
 
