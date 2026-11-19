@@ -1,0 +1,43 @@
+import { frameWeave } from '../domain/layerWeave'
+import { type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { projectDimensions } from '../domain/projectExtent'
+import { A4_PORTRAIT, mm, PRINT_MARGIN, type PageSize } from './printPlan'
+import { displayedExtentPx } from './surfaceView'
+
+// Where the Cover page's board and piece sit (ticket 1096; PrintCover card), worked out without a canvas: the board as wide
+// as the page inside its margins, the whole framed Schema scaled to fill it inside its pad, with no smallest and no largest
+// bead. Page px at 150 dpi, like the rest of the print layout.
+
+/** The board's height (`print-cover-board`).
+ * @internal The token test holds it to the token. */
+export const COVER_BOARD = mm(196)
+/** The board's pad round the piece on every side (`print-cover-pad`).
+ * @internal The token test holds it to the token. */
+export const COVER_PAD = mm(8)
+
+export interface Box {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface CoverPageLayout {
+  /** The pale board under the piece. */
+  board: Box
+  /** The piece's zoom, and where its beads' own top-left corner lands and how far they reach. */
+  zoom: number
+  piece: Box
+}
+
+/** The Cover page's board and the piece on it: turned as its Canvas is, as large as the board allows inside its pad, centred. */
+export function coverPageLayout(project: Layered, page: PageSize = A4_PORTRAIT): CoverPageLayout {
+  const board = { x: PRINT_MARGIN, y: PRINT_MARGIN, width: page.width - PRINT_MARGIN * 2, height: COVER_BOARD }
+  const weave = frameWeave(project)
+  const { columns, rows } = projectDimensions(project)
+  const whole = displayedExtentPx(weave.technique, columns, rows, 1, quarterTurnOf(project), weave.cell)
+  const zoom = Math.min((board.width - COVER_PAD * 2) / whole.width, (board.height - COVER_PAD * 2) / whole.height)
+  const width = whole.width * zoom
+  const height = whole.height * zoom
+  return { board, zoom, piece: { x: board.x + (board.width - width) / 2, y: board.y + (board.height - height) / 2, width, height } }
+}

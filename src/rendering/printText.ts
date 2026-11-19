@@ -50,9 +50,10 @@ interface PrintedWordChart {
   rows: PrintedWordRow[]
 }
 
-/** The Export panel's print choices (ticket 0916), both off until switched on and kept on the device: Large beads keeps
- * every bead of the chart at 3 mm or more, Row by row adds the Word chart's pages. */
+/** The Export panel's print choices (tickets 0916, 1096), kept on the device: Cover page (on at first) opens the PDF on the
+ * Cover page, Large beads keeps every bead of the chart at 3 mm or more, Row by row adds the Word chart's pages. */
 export interface PrintChoices {
+  cover?: boolean
   largeBeads?: boolean
   rowByRow?: boolean
 }
@@ -82,6 +83,8 @@ export interface PrintText {
   wordChart?: PrintedWordChart
   /** Large beads (ticket 0916): page 1's layout plans no bead under 3 mm. */
   largeBeads?: boolean
+  /** Cover page (ticket 1096): the PDF opens on the Cover page, and page 1 is its second page. */
+  cover?: boolean
   labels: Translations['print']
 }
 
@@ -207,6 +210,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     ...(hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
     ...(choices.largeBeads ? { largeBeads: true } : {}),
+    ...(choices.cover ? { cover: true } : {}),
     labels: t.print,
   }
 }

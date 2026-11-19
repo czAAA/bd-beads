@@ -145,3 +145,28 @@ describe('pageOneLayout: Large beads (ticket 0916)', () => {
     expect(layout.plan.beadMm).toBeCloseTo(plain.plan.beadMm, 6)
   })
 })
+
+describe('pageOneLayout: the Cover page (ticket 1096; PrintCover card)', () => {
+  const covered = (colors: number) => ({ ...words(colors), cover: true })
+
+  it('makes page 1 the second page and counts the cover, the chart and its size unchanged', () => {
+    const plain = pageOneLayout(shape('loom', 40, 40), words(4))
+    const layout = pageOneLayout(shape('loom', 40, 40), covered(4))
+
+    expect(plain.plan.pageOneNumber).toBe(1)
+    expect(layout.plan.pageOneNumber).toBe(2)
+    expect(chartOnPageOne(layout.plan)).toBe(true)
+    expect(layout.plan.parts.map((part) => part.page)).toEqual([2])
+    expect(layout.plan.pageCount).toBe(2)
+    expect(layout.plan.beadMm).toBeCloseTo(plain.plan.beadMm, 6)
+  })
+
+  it('moves every list page and chart part on by one', () => {
+    const plain = pageOneLayout(shape('loom', 150, 100), words(120))
+    const layout = pageOneLayout(shape('loom', 150, 100), covered(120))
+
+    expect(layout.lists).toEqual(plain.lists)
+    expect(layout.plan.parts.map((part) => part.page)).toEqual(plain.plan.parts.map((part) => part.page + 1))
+    expect(layout.plan.pageCount).toBe(plain.plan.pageCount + 1)
+  })
+})

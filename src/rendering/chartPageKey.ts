@@ -72,7 +72,7 @@ export function planWithKey(project: Counted, options: Omit<PlanOptions, 'keyRow
   if (floorMm !== askedFloorMm) plan = planPrint(project, { ...options, floorMm })
   for (;;) {
     const sheets = new Map<number, PrintPart[]>()
-    for (const part of plan.parts) if (part.page > 1) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
+    for (const part of plan.parts) if (part.page > plan.pageOneNumber) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
     const busiest = Math.max(0, ...[...sheets.values()].map((parts) => colorsOnPage(project, parts).length))
     const keyRows = Math.min(MAX_KEY_ROWS, Math.max(1, Math.ceil(busiest / KEY_COLUMNS)))
     if (keyRows <= plan.keyRows) return plan
