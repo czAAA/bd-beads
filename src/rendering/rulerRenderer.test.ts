@@ -242,6 +242,22 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     expect(textStyles.filter((_style, index) => texts[index] === '2')).toContain(LIGHT_THEME.canvas)
   })
 
+  it('leaves a Piece\'s ruler number on the Frame\'s current line plain (ticket 1115)', () => {
+    // A Piece well clear of the Frame and its margin, its rows running past the Frame's current line, row 11.
+    const beside = withLayers(base, {
+      frame: { ...frameOf(base)!, row: 10, column: 0 },
+      beads: withColors({}, [8, 9, 10, 11, 12, 13].map((row) => ({ row, column: 20, color: '#ff0000' }))),
+    })
+    const input = at(moveToRow(beside, 1), 'full')
+    const { context, fills } = fakeContext()
+    drawRulers(context, input)
+
+    const pieceNumbers = input.layout.labels.filter((label) => label.kind === 'piece' && label.axis === 'row')
+    expect(pieceNumbers.length).toBeGreaterThan(0)
+    expect(marks(fills)).toHaveLength(2)
+    for (const number of pieceNumbers) expect(marks(fills).some((fill) => holds(fill.rect, number))).toBe(false)
+  })
+
   it('sets the current column\'s number in the top band on its pill once the rows run down the columns', () => {
     const input = at(moveToRow(toggleRowDirection(base), 1), 'full')
     const { context, fills } = fakeContext()
@@ -261,6 +277,20 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     const done = fakeContext()
     drawRulers(done.context, at(moveToRow(base, 3), 'compact'))
     expect(marks(done.fills)).toEqual([])
+  })
+
+  it('still ticks the Frame\'s line where only a Piece numbers the current row (ticket 1115)', () => {
+    const beside = withLayers(base, {
+      frame: { ...frameOf(base)!, row: 10, column: 0 },
+      beads: withColors({}, [8, 9, 10, 11, 12, 13].map((row) => ({ row, column: 20, color: '#ff0000' }))),
+    })
+    const input = at(moveToRow(beside, 1), 'compact')
+    const { context, fills } = fakeContext()
+    drawRulers(context, input)
+
+    expect(input.layout.labels.some((label) => label.kind === 'piece' && label.axis === 'row' && label.position === 11)).toBe(true)
+    expect(marks(fills)).toHaveLength(2)
+    for (const [, , , height] of marks(fills).map((tick) => tick.rect)) expect(height).toBe(MARGIN_PX.pass.tick)
   })
 
   it.each(['compact', 'folded'] as const)('ticks the Frame\'s line at the current row on both sides in the %s form, inside the line', (sheet) => {
