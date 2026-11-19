@@ -1,4 +1,4 @@
-import { accountForGoogle } from './accounts'
+import { accountForGoogle, deleteAccount } from './accounts'
 import type { Route } from './api'
 import { readCookie, setCookie } from './cookies'
 import type { Env } from './env'
@@ -7,7 +7,7 @@ import { disabledFeatures, FEATURE_OFF_RETRY_SECONDS } from './features'
 import { googleAddress, googleIdentity, type GoogleClient } from './google'
 import { rateLimit, turnstile, type RateLimitRule } from './guards'
 import { randomId } from './secrets'
-import { endSession, requireAccount, startSession } from './sessions'
+import { clearedSession, endSession, requireAccount, startSession } from './sessions'
 import { settingsOf } from './settings'
 
 // Sign in with Google and Sign out (ticket 0078, spec 385). The app asks `start` for Google's address and sends the
@@ -145,5 +145,19 @@ const signOutRoute: Route = {
   },
 }
 
+/** `POST /api/account/delete`: deletes the signed-in account and all it holds, signs every device out and clears this
+ * one's cookie (ticket 0082). No switch stops it, as none stops Sign out: a person can always leave. */
+const deleteAccountRoute: Route = {
+  method: 'POST',
+  path: '/api/account/delete',
+  async handler(rc) {
+    const { id } = await requireAccount(rc)
+    await deleteAccount(rc.env, id)
+    const response = json({ deleted: true })
+    response.headers.append('Set-Cookie', clearedSession(rc.env))
+    return response
+  },
+}
+
 /** Every route of signing in, for the Worker's list. */
-export const signInRoutes: Route[] = [signInStatusRoute, signInStartRoute, signInCallbackRoute, meRoute, signOutRoute]
+export const signInRoutes: Route[] = [signInStatusRoute, signInStartRoute, signInCallbackRoute, meRoute, signOutRoute, deleteAccountRoute]

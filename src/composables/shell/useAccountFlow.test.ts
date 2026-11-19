@@ -4,6 +4,7 @@ import { en } from '../../i18n/en'
 import { memoryAccount, type MemoryAccountState } from '../../services/memoryAccount'
 import { memoryDeviceSettings } from '../../testUtils/deviceSettings'
 import { useAccountFlow } from './useAccountFlow'
+import { useDialogs } from './useDialogs'
 
 const ann = { email: 'ann@example.com', plan: 'free' } as const
 
@@ -15,8 +16,9 @@ function setup(start: Partial<MemoryAccountState> = {}) {
   const openMenu = vi.fn()
   const foldedSections = ref<readonly string[]>(['menu:account', 'menu:help'])
   const scope = effectScope()
-  const flow = scope.run(() => useAccountFlow({ account, messages: () => en, showToast, openMenu, foldedSections, settings: memoryDeviceSettings().controls }))!
-  return { account, check, showToast, openMenu, foldedSections, flow, scope }
+  const dialogs = useDialogs()
+  const flow = scope.run(() => useAccountFlow({ account, messages: () => en, showToast, openMenu, foldedSections, settings: memoryDeviceSettings().controls, dialogs }))!
+  return { account, check, showToast, openMenu, foldedSections, flow, scope, dialogs }
 }
 
 /** Lets the flow's awaited answers land. */
@@ -208,5 +210,66 @@ describe('useAccountFlow: Sign out', () => {
     await flow.onSignOut()
     expect(flow.account.value).toBeUndefined()
     expect(account.remembered()).toBeUndefined()
+  })
+})
+
+describe('useAccountFlow: Delete account (ticket 0082)', () => {
+  it('asks first, and deletes nothing when the person cancels', async () => {
+    const { account, flow, dialogs } = setup({ remembered: ann, session: ann })
+    await settled()
+    flow.onRequestDeleteAccount()
+    expect(dialogs.open.value).toBe('delete-account')
+    flow.onCancelDeleteAccount()
+    expect(dialogs.open.value).toBeUndefined()
+    expect(account.state.session).toEqual(ann)
+    expect(flow.account.value).toEqual(ann)
+  })
+
+  it('asks nothing on a Guest’s device', () => {
+    const { flow, dialogs } = setup()
+    flow.onRequestDeleteAccount()
+    expect(dialogs.open.value).toBeUndefined()
+  })
+
+  it('once confirmed, deletes the account, makes the device a Guest’s and says so', async () => {
+    const { account, flow, dialogs, showToast } = setup({ remembered: ann, session: ann })
+    await settled()
+    flow.onRequestDeleteAccount()
+    await flow.onConfirmDeleteAccount()
+    expect(dialogs.open.value).toBeUndefined()
+    expect(account.state.session).toBeUndefined()
+    expect(account.remembered()).toBeUndefined()
+    expect(flow.account.value).toBeUndefined()
+    expect(showToast).toHaveBeenCalledWith('account-deleted', en.account.deleted, 'success')
+  })
+
+  it('asks the backend once for two quick presses of the confirm', async () => {
+    const { account, flow } = setup({ remembered: ann, session: ann })
+    await settled()
+    const deleting = vi.spyOn(account, 'deleteAccount')
+    flow.onRequestDeleteAccount()
+    await Promise.all([flow.onConfirmDeleteAccount(), flow.onConfirmDeleteAccount()])
+    expect(deleting).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the account and says when to try again when the backend can’t delete now, or there is no internet', async () => {
+    const { account, flow, showToast } = setup({ remembered: ann, session: ann })
+    await settled()
+    account.state.backend = { ok: false, reason: 'unavailable', retryAfterSeconds: 120 }
+    flow.onRequestDeleteAccount()
+    await flow.onConfirmDeleteAccount()
+    expect(flow.account.value).toEqual(ann)
+    expect(showToast).toHaveBeenLastCalledWith('account-unavailable', 'Deleting the account is temporarily unavailable. Try again in 2 min.', 'warning')
+    account.state.backend = { ok: false, reason: 'offline' }
+    await flow.onConfirmDeleteAccount()
+    expect(showToast).toHaveBeenLastCalledWith('account-unavailable', en.account.deleteOffline, 'warning')
+  })
+
+  it('says to sign in again when the session had already ended, since nothing could be deleted', async () => {
+    const { flow, showToast } = setup({ remembered: ann })
+    flow.onRequestDeleteAccount()
+    await flow.onConfirmDeleteAccount()
+    expect(flow.account.value).toBeUndefined()
+    expect(showToast).toHaveBeenCalledWith('account-deleted', en.account.deleteSignedOut, 'info')
   })
 })

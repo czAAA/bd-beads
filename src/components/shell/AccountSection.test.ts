@@ -19,13 +19,14 @@ function mountIn(options: { account?: Ref<Account | undefined>; leave?: () => Pr
   const leave = vi.fn(options.leave ?? (async () => true))
   const onSignIn = vi.fn()
   const onSignOut = vi.fn()
+  const onDeleteAccount = vi.fn()
   const Host = defineComponent({
     setup() {
       provide(PANEL_CONTEXT, { close: () => {}, openSub })
-      return () => h(AccountSection, { account: account.value, leave, mayOpenSignIn, onSignIn, onSignOut })
+      return () => h(AccountSection, { account: account.value, leave, mayOpenSignIn, onSignIn, onSignOut, onDeleteAccount })
     },
   })
-  return { wrapper: mount(Host, { attachTo: document.body }), openSub, mayOpenSignIn, leave, onSignIn, onSignOut, account }
+  return { wrapper: mount(Host, { attachTo: document.body }), openSub, mayOpenSignIn, leave, onSignIn, onSignOut, onDeleteAccount, account }
 }
 
 describe('AccountSection (ticket 0078)', () => {
@@ -110,5 +111,20 @@ describe('AccountSection (ticket 0078)', () => {
     await flushPromises()
     expect(onSignOut).toHaveBeenCalledTimes(1)
     expect(document.activeElement).toBe(wrapper.get('[data-testid="menu-sign-in"]').element)
+  })
+
+  it('gives a signed-in person Delete account after Sign out, in the danger color, which asks the shell to confirm (ticket 0082)', async () => {
+    const { wrapper, onDeleteAccount } = mountIn({ account: ref<Account | undefined>({ email: 'ann@example.com', plan: 'free' }) })
+    const row = wrapper.get('[data-testid="menu-delete-account"]')
+    expect(row.text()).toBe(en.account.deleteAccount)
+    expect(row.classes()).toContain('panel-item--danger')
+    const rows = wrapper.findAll('.panel-item').map((item) => item.attributes('data-testid'))
+    expect(rows.indexOf('menu-delete-account')).toBe(rows.indexOf('menu-sign-out') + 1)
+    await row.trigger('click')
+    expect(onDeleteAccount).toHaveBeenCalledTimes(1)
+  })
+
+  it('gives a Guest no Delete account', () => {
+    expect(mountIn().wrapper.find('[data-testid="menu-delete-account"]').exists()).toBe(false)
   })
 })

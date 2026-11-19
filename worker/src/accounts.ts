@@ -1,3 +1,4 @@
+import { deleteBlobsOf } from './blobs'
 import type { Env } from './env'
 import { disabledFeatures } from './features'
 import type { Account } from './sessions'
@@ -41,4 +42,16 @@ export async function accountForGoogle(env: Env, identity: GoogleIdentity, now: 
   const made = await db.prepare(`SELECT ${FIELDS} FROM accounts WHERE email = ?1`).bind(email).first<Account>()
   if (!made) throw new Error('accounts: the new account could not be read back')
   return made
+}
+
+/** Deletes an account and everything kept for it (ticket 0082, ADR 0049): its blobs first, then its sessions, its
+ * Settings kept in step and the account in one batch. Each step is safe to repeat, so a retry finishes a deletion that
+ * failed halfway, and no blob is ever left without an account. */
+export async function deleteAccount(env: Env, id: string): Promise<void> {
+  await deleteBlobsOf(env, id)
+  await env.CORE.batch([
+    env.CORE.prepare('DELETE FROM sessions WHERE account_id = ?1').bind(id),
+    env.CORE.prepare('DELETE FROM settings WHERE account_id = ?1').bind(id),
+    env.CORE.prepare('DELETE FROM accounts WHERE id = ?1').bind(id),
+  ])
 }

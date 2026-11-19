@@ -10,9 +10,9 @@ import PanelItem from './PanelItem.vue'
 import PanelSection from './PanelSection.vue'
 import { PANEL_CONTEXT } from './panelContext'
 
-// The Menu's Account section (MenuPanel card, ticket 0078), the first one. A Guest gets Sign in, which pushes the Sign
-// in Subpanel, and the line that everything works without an account; a signed-in person the verified email and the
-// plan as a fact (no name, no picture: neither is stored), the settings line (ticket 1086) and Sign out, with no confirm.
+// The Menu's Account section (MenuPanel card, ticket 0078). A Guest gets Sign in and the line that everything works
+// without an account; a signed-in person the email and plan as a fact (neither name nor picture is stored), the settings
+// line (1086), Sign out with no confirm, and Delete account, which asks first (0082).
 const props = defineProps<{
   /** The signed-in account; none for a Guest. */
   account?: Account
@@ -25,6 +25,8 @@ const emit = defineEmits<{
   /** The Sign in Subpanel is about to be pushed. */
   'sign-in': []
   'sign-out': []
+  /** Delete account was pressed: the shell asks "Delete your account?" first (ticket 0082). */
+  'delete-account': []
 }>()
 
 const { t } = useI18n()
@@ -76,6 +78,7 @@ async function signOut() {
         <InfoButton :label="t.account.settingsInfoLabel" :body="t.account.settingsInfo" data-testid="menu-account-settings-info" />
       </p>
       <PanelItem icon="sign-out" stays data-testid="menu-sign-out" @select="signOut">{{ t.account.signOut }}</PanelItem>
+      <PanelItem icon="delete" danger stays data-testid="menu-delete-account" @select="emit('delete-account')">{{ t.account.deleteAccount }}</PanelItem>
     </template>
   </PanelSection>
 </template>

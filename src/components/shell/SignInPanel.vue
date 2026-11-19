@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import type { SignInRefusal } from '../../domain/account'
+import { PRIVACY_URL } from '../../data/privacyLink'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -51,6 +52,8 @@ onBeforeUnmount(() => stopVerifying?.())
         </li>
       </ul>
       <p class="sign-in__nothing">{{ words.keepsNothingElse }}</p>
+      <!-- The policy says the same as this list, at length (ticket 0082); it opens in a new tab, leaving the editor be. -->
+      <a class="sign-in__policy" :href="PRIVACY_URL" target="_blank" rel="noopener" data-testid="sign-in-privacy">{{ words.privacy }}</a>
     </section>
     <!-- Cloudflare's check runs unseen; its own widget shows here only when it asks the person something. -->
     <div class="sign-in__check" :class="{ 'sign-in__check--asks': asks }">
@@ -125,6 +128,17 @@ onBeforeUnmount(() => stopVerifying?.())
   margin: 0;
   font: var(--type-body);
   color: var(--body);
+}
+
+/* The policy's link under the list: small, muted, underlined; ink under the pointer, as a secondary link is. */
+.sign-in__policy {
+  align-self: start;
+  font: var(--type-small);
+  color: var(--muted);
+}
+
+.sign-in__policy:hover {
+  color: var(--ink);
 }
 
 /* Nothing of the check takes room until Cloudflare asks the person something. */

@@ -100,6 +100,7 @@ const {
   verifySignIn,
   onContinueWithGoogle,
   onSignOut,
+  onRequestDeleteAccount,
 } = usePanelsContext()
 
 /** The reference image's state the Project panel shows (ticket 0790). */
@@ -214,6 +215,7 @@ const chosenStarter = ref<StarterId>()
       @saved-projects="(phoneSavedProjectsOpen = true), (signInOpen = false)"
       @sign-in="signInOpen = true"
       @sign-out="onSignOut"
+      @delete-account="onRequestDeleteAccount"
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"

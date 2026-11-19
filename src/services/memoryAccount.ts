@@ -77,6 +77,17 @@ export function memoryAccount(
       forget()
       if (state.backend === 'up') state.session = undefined
     },
+    deleteAccount: async () => {
+      if (state.backend !== 'up') return state.backend
+      if (!state.session) {
+        forget()
+        return { ok: false, reason: 'signed-out' }
+      }
+      forget()
+      state.session = undefined
+      state.settings = {}
+      return { ok: true }
+    },
     takeReturn: () => {
       const back = state.returned
       state.returned = undefined

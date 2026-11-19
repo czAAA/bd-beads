@@ -110,3 +110,9 @@ function r2BlobStore(bucket: R2Bucket): BlobStore {
 export function blobStoreFor(env: Env, plan: Plan): BlobStore {
   return plan === 'pro' ? r2BlobStore(env.BLOBS) : d1BlobStore(env.BLOBS_DB)
 }
+
+/** Deletes every blob an account owns in the `blobs` database (ticket 0082), first in a deletion so none is left
+ * without an owner; safe to repeat. Pro's R2 blobs join this when Pro goes on sale (ticket 0084). */
+export async function deleteBlobsOf(env: Env, owner: string): Promise<void> {
+  await env.BLOBS_DB.prepare('DELETE FROM blobs WHERE owner = ?1').bind(owner).run()
+}

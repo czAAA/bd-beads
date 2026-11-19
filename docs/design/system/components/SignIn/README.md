@@ -18,7 +18,11 @@ Under the header (Back, the title "Sign in" in `title`), the body is one column,
 4. **Cloudflare's check**, only in the rare case it asks the person something (below).
 5. **The Google button**, then 8 under it one line in the form hint's style (`meta` size in the sans face, `muted`): "The first time you sign in, your free account is made."
 
-Room is left under the button for the email link (ticket 0388): an "or" rule and an email field, as New Project has under Create Project. The privacy policy's link (ticket 0082) goes under the closing line of what is kept.
+Room is left under the button for the email link (ticket 0388): an "or" rule and an email field, as New Project has under Create Project. Under the closing line of what is kept, the link **Privacy policy** (ticket 0082): `small` in `muted`, underlined, `ink` on hover, opening the policy page in a new tab so the editor stays.
+
+## The privacy policy page
+
+`/privacy/` (ticket 0082): the policy in English only (the owner's choice), so its words are the ones the maintainer checked. On `canvas`, one column at most `--privacy-measure` (640px) wide, centred, with 32 above and 16 at the sides; the title "Privacy policy" in `serif-heading`, the date under it in `meta` / `muted`, each part's heading in `title`, the text in `body`, links in the text's color, underlined. In any other language one line above the title in `small` / `muted`, in that language, says the policy is in English ("Эта политика доступна только на английском."). It ends with **Go to the Homepage** (a small secondary Button), as the page for an address with none does. It says only what the app does today and what an account keeps, the same as the list above; a ticket that keeps one more thing changes both.
 
 ## The Google button
 
