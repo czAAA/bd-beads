@@ -8,7 +8,7 @@ import { normalizedOrientation } from './canvasOrientation'
 import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
-import { lettersOfPalette } from './paletteEdits'
+import { lettersOfPalette, withUsedColors } from './paletteEdits'
 import { readMirrorArea, readMirrorSetting, withFittedArea } from './mirror'
 import { readPieceNames } from './pieceNames'
 import { readReferenceImage } from './referenceImage'
@@ -106,7 +106,8 @@ export function normalizeProject(stored: StoredProject): Project {
   const builtIns = defaultPalette(wovenBeadId)
   const removedDefaults = readRemovedDefaults(storedRemoved)
   // A Project saved before the Palette belonged to it (or with an unreadable one) starts from its Bead's built-in colors.
-  const palette = normalizePaletteIds(storedPalette, builtIns)
+  // A color its beads show and the Palette lacks joins it, so it has a Swatch letter (ticket 1124: exports printed "?").
+  const palette = withUsedColors(normalizePaletteIds(storedPalette, builtIns), { layers: [canvas, ...frames] }, builtIns)
   const paletteCodes = codesInPalette(normalizePaletteCodes(storedCodes), palette, builtIns)
 
   const mirror = readMirrorSetting(storedMirror, { canvasArea: readMirrorArea(storedCanvas.mirrorArea), framed: frames.length > 0 })

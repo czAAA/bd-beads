@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { withColorsInPalette } from './paletteEdits'
 import { computeColorQuantities } from './beadQuantities'
 import { beadCount, colorAt, type FrameSheet } from './canvas'
 import { changeFrame, relaidInBead, type FrameChange } from './changeFrame'
@@ -328,7 +329,7 @@ describe.each([
     const project = paintFrame(placed(), [name(inner()), name(outer())], RED)
     // A Star counts each bead front and back (ticket 0875); neither of these is a tip.
     expect(computeColorQuantities(project, projectPalette(project))).toMatchObject([{ hex: RED, count: shape === 'star' ? 4 : 2 }])
-    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
+    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([withColorsInPalette(project)])
   })
 })
 
@@ -385,7 +386,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       expect(frameOf(peyote)!.settings!.topWidth).toBe(5)
       // Saved and opened again, its settings are read in its own Weave.
       const tall = changed(peyote, { settings: { topRows: 6 } })
-      expect(parseProjectsFile(serializeProject(tall)).projects).toEqual([tall])
+      expect(parseProjectsFile(serializeProject(tall)).projects).toEqual([withColorsInPalette(tall)])
       // On 2-drop the base row's block is two rows of the Width.
       expect(frameLayoutOf(frameOf(changed(project, { techniqueSettings: { brickDrop: 2 } }))!)!.positions.filter(({ row }) => row === 1)).toHaveLength(6)
     })
@@ -521,6 +522,6 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     const removed = changed(project, { remove: true })
     expect(frameOf(removed)).toBeUndefined()
     expect(beadCount(beadsOfLayer(removed, 'canvas'))).toBe(2)
-    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
+    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([withColorsInPalette(project)])
   })
 })

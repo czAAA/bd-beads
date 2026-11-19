@@ -2,9 +2,15 @@ import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, ty
 import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteCodes, type PaletteColor, type PaletteIds } from '../../domain/palette'
 import { setPalette as withPalette, setSwatchLetter, withLettersBack } from '../../domain/paletteEdits'
 import { withLetter, type SwatchLetters } from '../../domain/swatchLetters'
+import { beadsInColors, withBeadsBackIn, withoutBeadsIn } from '../../domain/colorBeads'
 import { beadIdOfLayer } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
+
+/** The hexes of the swatches `colorIds` stand for. */
+function hexesOf(project: Project, colorIds: readonly string[]): Set<string> {
+  return new Set(projectPalette(project).colors.filter((color) => colorIds.includes(color.id)).map((color) => color.hex))
+}
 
 /** The catalog codes of the added swatches `colorIds` stand for, so putting a removed swatch back brings its code too (ticket 0538). */
 function codesOf(project: Project, colorIds: readonly string[]): PaletteCodes {
@@ -56,37 +62,40 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     return { outcome, colorId }
   }
 
-  /** An added swatch is taken out of the Palette (ticket 228). Hands back how to put it back, or undefined for a color
-   * that isn't an added one. */
+  /** An added swatch is taken out of the Palette (ticket 228), with every bead painted in it (ticket 1124). Hands back
+   * how to put it back, or undefined for a color that isn't an added one. */
   function removeAdded(colorId: string): (() => void) | undefined {
     const project = currentProject()
     const removal = project && removeAddedColor(project.palette, colorId, builtInsOf(project))
     if (!removal) return undefined
-    const codes = codesOf(project, [colorId])
-    const letters = lettersOf(project, [colorId])
-    setPalette(removal.ids)
-    return () => {
-      const now = currentProject()
-      if (now) setPalette(restoreAddedColor(now.palette, colorId, removal.slot, builtInsOf(now)), codes, letters)
-    }
+    return removeColors(project, removal.ids, [colorId], (now) => restoreAddedColor(now.palette, colorId, removal.slot, builtInsOf(now)))
   }
 
-  /** Every added swatch leaves the Palette in one Edit (ticket 0532). Hands back how to put them all back in their
-   * slots, or undefined when none is added. */
+  /** Every added swatch leaves the Palette in one Edit (ticket 0532), with the beads painted in them (ticket 1124).
+   * Hands back how to put them all back in their slots, or undefined when none is added. */
   function removeAllAdded(): (() => void) | undefined {
     const project = currentProject()
     const removal = project && removeAllAddedColors(project.palette, builtInsOf(project))
     if (!removal || removal.removed.length === 0) return undefined
-    const codes = codesOf(project, removal.removed.map(({ colorId }) => colorId))
-    const letters = lettersOf(project, removal.removed.map(({ colorId }) => colorId))
-    setPalette(removal.ids)
-    return () => {
-      const now = currentProject()
-      if (!now) return
-      const builtIns = builtInsOf(now)
-      const ids = removal.removed.reduce((acc, { colorId, slot }) => restoreAddedColor(acc, colorId, slot, builtIns), now.palette)
-      setPalette(ids, codes, letters)
-    }
+    const colorIds = removal.removed.map(({ colorId }) => colorId)
+    const restored = (now: Project) => removal.removed.reduce((ids, { colorId, slot }) => restoreAddedColor(ids, colorId, slot, builtInsOf(now)), now.palette)
+    return removeColors(project, removal.ids, colorIds, restored)
+  }
+
+  /** `colorIds` out of `project`'s Palette, leaving `ids`, and their beads off every layer, in one Edit (ticket 1124).
+   * Hands back their Undo: the Palette `restored` gives, their codes and letters, and their beads where still empty. */
+  function removeColors(project: Project, ids: PaletteIds, colorIds: readonly string[], restored: (now: Project) => PaletteIds): () => void {
+    const hexes = hexesOf(project, colorIds)
+    const codes = codesOf(project, colorIds)
+    const letters = lettersOf(project, colorIds)
+    edit('exempt', (now) => withoutBeadsIn(withPalette(now, ids), hexes))
+    return () => edit('exempt', (now) => withBeadsBackIn(withLettersBack(withPalette(now, restored(now), codes), letters), project, hexes))
+  }
+
+  /** How many beads the layers show in the swatches `colorIds` stand for: what removing them would take (ticket 1124). */
+  function paintedBeads(colorIds: readonly string[]): number {
+    const project = currentProject()
+    return project ? beadsInColors(project, hexesOf(project, colorIds)) : 0
   }
 
   /** A swatch dragged (or nudged) from one slot to another (ticket 398); its Shift+key follows the slot it lands in. */
@@ -104,7 +113,7 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     return changed.swapped
   }
 
-  return { palette, addUsed, removeAdded, removeAllAdded, moveColor, setLetter }
+  return { palette, addUsed, removeAdded, removeAllAdded, paintedBeads, moveColor, setLetter }
 }
 
 /** The color a typed letter was taken from, and the letter it got in trade (ticket 1092). */

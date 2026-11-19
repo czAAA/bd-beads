@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "fixed",
+  "line": {
+    "en": "The PDF prints every bead's letter, never a question mark; removing a color asks first and takes its beads with it",
+    "ru": "PDF печатает букву каждой бисеринки, а не вопросительный знак; удаление цвета сначала спрашивает и убирает его бисеринки",
+    "uk": "PDF друкує літеру кожної бісерини, а не знак питання; вилучення кольору спершу питає і забирає його бісерини",
+    "be": "PDF друкуе літару кожнай бісерыны, а не пытальнік; выдаленне колеру спачатку пытаецца і прыбірае яго бісерыны",
+    "zh": "PDF 为每颗珠子印出字母，不再出现问号；移除颜色前会先询问，并一并移除该颜色的珠子",
+    "es": "El PDF imprime la letra de cada cuenta, nunca un signo de interrogación; quitar un color pregunta antes y se lleva sus cuentas",
+    "pl": "PDF drukuje literę każdego koralika, nigdy znak zapytania; usunięcie koloru najpierw pyta i zabiera jego koraliki"
+  }
+}

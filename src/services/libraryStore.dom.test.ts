@@ -11,6 +11,7 @@ import { backgroundOf, canvasOf, frameOf, withBackground } from '../domain/layer
 import { layersView } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 import { encodeProject } from '../domain/projectEncoding'
+import { withColorsInPalette } from '../domain/paletteEdits'
 import { storeLibrary } from '../testUtils/hugeProject'
 
 // Counts the encodings a save makes (ticket 0677), passing each through to the real encoder.
@@ -223,7 +224,7 @@ describe('projectStorage', () => {
       const loaded = loadProjects()
       saveProjects(loaded)
 
-      expect(loaded.map(layersView)).toEqual([layersView(legacy)])
+      expect(loaded.map(layersView)).toEqual([layersView(withColorsInPalette(legacy))])
       expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(6)
       expect(storedBytes()).toBeLessThan(legacyBytes / 10)
     })
@@ -309,7 +310,7 @@ describe('projectStorage', () => {
       const exported = serializeLibrary(loadProjects())
 
       expect(JSON.parse(exported).projects[0].layers[0].encodedBeads).toBeDefined()
-      expect(parseProjectsFile(exported).projects).toEqual([project])
+      expect(parseProjectsFile(exported).projects).toEqual([withColorsInPalette(project)])
     })
 
     it('costs a painted 60x90 Project roughly 3KB rather than roughly 100KB', () => {
