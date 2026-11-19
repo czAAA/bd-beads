@@ -48,6 +48,11 @@ describe('ToastRegion (ticket 0859)', () => {
     wrapper.unmount()
   })
 
+  it('starts the toasts under the save ring only while it shows (ticket 1111)', () => {
+    expect(mount(ToastRegion, { props: { toasts: [saved], underRing: true } }).classes()).toContain('toast-region--under-ring')
+    expect(mount(ToastRegion, { props: { toasts: [saved] } }).classes()).not.toContain('toast-region--under-ring')
+  })
+
   it('puts two actions on their own line under the text, each running its own and closing the toast (ticket 0935)', async () => {
     const first = vi.fn()
     const second = vi.fn()

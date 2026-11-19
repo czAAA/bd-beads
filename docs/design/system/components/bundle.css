@@ -312,6 +312,8 @@
   --hint-storage-lead: 500 1rem/1.5 var(--font-sans);
   --hint-storage: 400 0.875rem/1.6 var(--font-sans);
   --save-ring-label-time: 4s;
+  --save-ring-inset-top: 8px;
+  --save-ring-inset-right: 12px;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
 [data-theme="contrast"] { --underline-width: 3px; --pill-tile-outline: 2px; }
@@ -1260,10 +1262,10 @@ body {
 }
 @media (prefers-reduced-motion:reduce){.bb-section-step--current::before{animation:none!important;transition:none}}
 
-/* SaveReminder card (tickets 0796, 0922): the save ring on the Canvas strip, the floppy alone in accent-strong. */
-.bb-save-ring { position: relative; display: inline-grid; place-items: center; width: var(--strip-item-height, 34px); height: var(--strip-item-height, 34px); border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--elevated); color: var(--accent-strong); }
+/* SaveReminder card (tickets 0796, 1111): the save ring at the drawing area's top-right under Export, the floppy alone in accent-strong. */
+.bb-save-ring { position: relative; display: inline-grid; place-items: center; width: var(--strip-item-height, 34px); height: var(--strip-item-height, 34px); border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--elevated); color: var(--accent-strong); box-shadow: var(--elevation-2); }
 .bb-save-ring:hover { background-image: linear-gradient(var(--hover-fill), var(--hover-fill)); }
-.bb-save-ring-label { position: absolute; top: calc(100% + 6px); left: -1px; z-index: var(--z-chrome); display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--elevated); box-shadow: var(--elevation-2); opacity: 0; visibility: hidden; translate: 0 -4px; white-space: nowrap; font: var(--type-tab); color: var(--ink); transition: opacity var(--duration-base) var(--ease-standard), translate var(--duration-slow) var(--ease-standard), visibility 0s linear var(--duration-base); }
+.bb-save-ring-label { position: absolute; top: calc(100% + 6px); right: -1px; z-index: var(--z-chrome); display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--elevated); box-shadow: var(--elevation-2); opacity: 0; visibility: hidden; translate: 0 -4px; white-space: nowrap; font: var(--type-tab); color: var(--ink); transition: opacity var(--duration-base) var(--ease-standard), translate var(--duration-slow) var(--ease-standard), visibility 0s linear var(--duration-base); }
 .bb-save-ring.is-open .bb-save-ring-label { opacity: 1; visibility: visible; translate: 0 0; transition: opacity var(--duration-base) var(--ease-standard), translate var(--duration-slow) var(--ease-standard); }
 .bb-save-ring-count { font: var(--type-meta-small); color: var(--muted); }
 [data-theme="contrast"] .bb-save-ring { border-width: 2px; border-color: var(--line-strong); }

@@ -120,13 +120,13 @@ describe('App empty, loading and failed states (ticket 158)', () => {
 
 describe('App save ring (ticket 0796)', () => {
   it('shows over a Project well behind its file, and its press runs Save, which hides it', async () => {
-    localStorage.setItem('openbeads:since-file', JSON.stringify({ [project.id]: { beads: 64, lastFileAt: Date.now() } }))
+    localStorage.setItem('openbeads:since-file', JSON.stringify({ [project.id]: { beads: 164, lastFileAt: Date.now() } }))
     const wrapper = mountApp()
     await flushPromises()
 
-    // Beside the Project button on the strip (ticket 0922), not in the drawing area.
-    expect(wrapper.find('[data-testid="canvas-strip"] [data-testid="save-ring"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="app-drawing-area"] [data-testid="save-ring"]').exists()).toBe(false)
+    // At the drawing area's top-right under Export (ticket 1111), not on the strip.
+    expect(wrapper.find('[data-testid="app-drawing-area"] [data-testid="save-ring"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="canvas-strip"] [data-testid="save-ring"]').exists()).toBe(false)
     await wrapper.get('[data-testid="save-ring"]').trigger('click')
 
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
