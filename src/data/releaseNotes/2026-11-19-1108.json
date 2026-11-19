@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "Reloading the page keeps the Canvas at the zoom and place you left it",
+    "ru": "После перезагрузки страницы холст остаётся в том же масштабе и на том же месте",
+    "uk": "Після перезавантаження сторінки полотно лишається в тому самому масштабі й на тому самому місці",
+    "be": "Пасля перазагрузкі старонкі палатно застаецца ў тым самым маштабе і на тым самым месцы",
+    "zh": "重新加载页面后，画布保持原来的缩放和位置",
+    "es": "Al recargar la página, el lienzo se queda con el mismo zoom y en el mismo lugar",
+    "pl": "Po przeładowaniu strony płótno zostaje w tym samym powiększeniu i miejscu"
+  }
+}

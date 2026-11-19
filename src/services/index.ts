@@ -9,6 +9,7 @@ import { browserPersistentStorage, type PersistentStorage } from './persistentSt
 import { browserFeedback, type FeedbackService } from './feedback'
 import { browserOpeningNote, type OpeningNoteStore } from './openingNote'
 import { takeOpeningAddress } from './openingAddress'
+import { browserKeptView, type KeptViewStore } from './keptView'
 import { browserPictureStore, type PictureStore } from './pictureStore'
 import { browserFileWriter, type FileWriter } from './fileWriter'
 import { browserLinkedFileStore, type LinkedFileStore } from './linkedFileStore'
@@ -37,6 +38,8 @@ export interface Services {
   openingNote: OpeningNoteStore
   /** What the address the editor opened at asks for, read once (ticket 0716). */
   openingAddress: () => OpeningAddress
+  /** The view the open Project was left at, for a reload in the same tab (ticket 1108). */
+  keptView: KeptViewStore
   /** Where reference images' pictures are kept, and how a picked one is made ready and a kept one read (ADR 0089). */
   pictureStore: PictureStore
   preparePicture: (file: File) => Promise<PreparedPicture>
@@ -64,6 +67,7 @@ export const browserServices: Services = {
   feedback: browserFeedback,
   openingNote: browserOpeningNote,
   openingAddress: takeOpeningAddress,
+  keptView: browserKeptView,
   pictureStore: browserPictureStore,
   preparePicture,
   drawablePicture,

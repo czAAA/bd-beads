@@ -312,6 +312,51 @@ describe('useCanvasView', () => {
     })
   })
 
+  describe('the view a reload opens at (ticket 1108)', () => {
+    it('keeps nothing while the view follows the fit, nor before the area is measured', async () => {
+      const { viewport, view } = setup(projectOf(20, 10), { width: 0, height: 0 })
+      view.zoomIn()
+      expect(view.keptView()).toBeUndefined()
+      viewport.value = { width: 1000, height: 800 }
+      await nextTick()
+      view.fit()
+      expect(view.keptView()).toBeUndefined()
+    })
+
+    it('opens a reloaded Project at the zoom and place it was left at', async () => {
+      const project = projectOf(20, 10)
+      const { view } = setup(project)
+      view.fit()
+      await nextTick()
+      view.setZoom(2.5)
+      view.panBy(-130, 70)
+      const left = { zoom: view.zoom.value, scroll: view.scroll.value }
+
+      const { viewport, view: reloaded } = setup(project, { width: 0, height: 0 }, NO_INSETS, { project: project.id, view: view.keptView()! })
+      reloaded.fit()
+      viewport.value = { width: 1000, height: 800 }
+      await nextTick()
+
+      expect(reloaded.zoom.value).toBe(left.zoom)
+      expect(reloaded.scroll.value).toEqual(left.scroll)
+      expect(reloaded.isAtFit.value).toBe(false)
+    })
+
+    it('keeps the same point in the middle in a window of another size', async () => {
+      const project = projectOf(20, 10)
+      const { view } = setup(project)
+      view.fit()
+      await nextTick()
+      view.setZoom(3)
+      view.panBy(200, -90)
+      const centre = view.visibleCentre()
+
+      const { view: reloaded } = setup(project, { width: 600, height: 900 }, NO_INSETS, { project: project.id, view: view.keptView()! })
+      reloaded.fit()
+      expect(reloaded.visibleCentre()).toEqual(centre)
+    })
+  })
+
   it('centres on a block of beads without changing the zoom', () => {
     const { view } = setup(projectOf(20, 10))
     view.fit()

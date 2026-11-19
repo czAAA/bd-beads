@@ -69,6 +69,7 @@ import { useFrameBesidePanel } from '../canvas/useFrameBesidePanel'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
 import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
+import { useKeepViewOnPageHide } from '../canvas/useKeepViewOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
 import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
@@ -226,13 +227,24 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
+  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
-      // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879).
-      opening: openingAddress.project && openingAddress.view ? { project: openingAddress.project, view: openingAddress.view } : undefined,
+      // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879); at the plain
+      // address, the view the tab left its Project at, for a reload (ticket 1108).
+      opening: openingAddress.project
+        ? openingAddress.view && { project: openingAddress.project, view: openingAddress.view }
+        : openingAddress.savedProjects || openingAddress.firstProject ? undefined : services.keptView.read(),
     })
+  useKeepViewOnPageHide(
+    services.keptView,
+    () => {
+      const view = keptView()
+      return activeProject.value && view && { project: activeProject.value.id, view }
+    },
+    () => activeProject.value !== undefined && viewPlaced.value,
+  )
 
   /** Every Project in the library, sealed ones too, and the one Delete holds for Undo (ticket 0983): what a Project's
    * records beside the library are kept for. */

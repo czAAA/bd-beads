@@ -99,6 +99,8 @@ export function memoryServices(projects: readonly Project[], options: MemoryServ
     feedback: browserFeedback,
     openingNote: { read: () => undefined, write: () => undefined, clear: () => undefined },
     openingAddress: () => ({ savedProjects: false, firstProject: false }),
+    // The demo opens at its fit on every visit.
+    keptView: { read: () => undefined, write: () => undefined },
     pictureStore: memoryKeyed<Blob>(),
     fileWriter: browserFileWriter,
     linkedFiles: memoryKeyed(),

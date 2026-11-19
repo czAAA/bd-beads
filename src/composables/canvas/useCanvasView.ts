@@ -8,6 +8,7 @@ import { withMargin } from '../../domain/margin'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
 import { nearestQuarterTurn, settledOrientation, tiltOf, turnedOrientation } from '../../domain/canvasOrientation'
 import { placedFrame } from '../../domain/layerWeave'
+import type { KeptView } from '../../domain/keptView'
 import type { OpeningView } from '../../domain/openingAddress'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
@@ -88,9 +89,10 @@ export interface CanvasViewOptions {
   keepTwist?: (orientation: number) => void
   /** What lies over the drawing area's edges (the Tool pill, ticket 0850): a fit leaves it clear. */
   covered?: () => Insets
-  /** The view a Project opens at in place of its fit, this once (What's inside's Open editor from here, ticket 0879):
-   * the first fit the view makes once measured takes it, if it is that Project's. */
-  opening?: { project: string; view: OpeningView }
+  /** The view a Project opens at in place of its fit, this once: the address's (What's inside's Open editor from here,
+   * ticket 0879) or the one kept for a reload (ticket 1108). The first fit the view makes once measured takes it, if it
+   * is that Project's. */
+  opening?: { project: string; view: OpeningView | KeptView }
 }
 
 // Where the Canvas is looked at from (ADR 0026): zoom and scroll over an endless field. `fit` shows the Frame (or all
@@ -168,9 +170,11 @@ export function useCanvasView(
       zoom.value = clampZoom(1)
       scroll.value = { x: 0, y: 0 }
     } else if (opening?.project === project.id) {
-      // The bead the opening names in the middle of the whole drawing area, as the middle of the view is counted.
-      zoom.value = clampZoom(opening.view.zoom)
-      scroll.value = surfaceOf(project).scrollToCentre({ ...opening.view.at, rows: 1, columns: 1 }, 'canvas')
+      // The bead the address names, or the point kept for a reload, in the middle of the whole drawing area, as the
+      // middle of the view is counted.
+      const { view } = opening
+      zoom.value = clampZoom(view.zoom)
+      scroll.value = 'at' in view ? surfaceOf(project).scrollToCentre({ ...view.at, rows: 1, columns: 1 }, 'canvas') : scrollAround(view.middle)
       opening = undefined
       isAtFit.value = false
       return
@@ -184,6 +188,19 @@ export function useCanvasView(
       scroll.value = { x: centred.x - corner.x, y: centred.y - corner.y }
     }
     isAtFit.value = true
+  }
+
+  /** The scroll that puts a point of the drawing (in its pixels at the zoom) in the middle of the drawing area. */
+  function scrollAround(middle: Scroll): Scroll {
+    return { x: middle.x - viewport.value.width / 2, y: middle.y - viewport.value.height / 2 }
+  }
+
+  /** The view to open a reload at (ticket 1108): none while it follows the fit, which a reload makes anew for the window
+   * as it is then, or before the area is measured. */
+  function keptView(): KeptView | undefined {
+    if (isAtFit.value || !measured()) return undefined
+    const at = gliding ?? scroll.value
+    return { zoom: zoom.value, middle: { x: at.x + viewport.value.width / 2, y: at.y + viewport.value.height / 2 } }
   }
 
   /** Moves the canvas under the viewport by a distance on screen (a drag, a wheel): the content follows the pointer,
@@ -428,6 +445,7 @@ export function useCanvasView(
     bringIntoView,
     putBack,
     visibleCentre,
+    keptView,
     canvasOnScreen,
     cellAt,
     isAtFit,
