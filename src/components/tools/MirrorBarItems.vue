@@ -17,6 +17,7 @@ import {
   type MirrorSetting,
   type ShapeAxes,
 } from '../../domain/mirror'
+import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -58,10 +59,13 @@ const offReason = (axis: MirrorAxis) => {
 }
 const isOn = (axis: MirrorAxis) => props.setting.axes[axis] && !offReason(axis)
 
-/** Why Radial's + is off: a quarter turn needs a square Area (ticket 0751) with no half-bead shift (ticket 0775). */
+/** Why Radial's + is off: a quarter turn needs a square Area (ticket 0751), and the Technique's half-bead shift has
+ * none at any size, so that reason names the Technique, not the size (tickets 0775, 1094). */
 const quarterReason = computed(() => {
   const off = props.fit?.quarterOff
-  return off === 'square' ? t.value.mirror.quarterNeedsSquare : off === 'shift' ? t.value.mirror.quarterNeedsStraight : undefined
+  if (!off) return undefined
+  if (off === 'square') return t.value.mirror.quarterNeedsSquare
+  return fillBlanks(t.value.mirror.foldMostOnTechnique, { count: MIN_FOLD, mode: modeName(props.setting.mode), technique: techniqueName(t.value, off.shift) })
 })
 
 /** Why a count's + is off (ticket 1027): radial's quarter turn, or on a Canvas Area in Mirror mode a direction where

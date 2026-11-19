@@ -7,6 +7,7 @@ import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import { paintAt } from '../../testUtils/layers'
 import { withFrame } from '../../domain/frame'
+import { fillBlanks } from '../../domain/fillBlanks'
 import type { Selection } from '../../domain/selection'
 import { en } from '../../i18n/en'
 import AppMenuItem from '../ui/AppMenuItem.vue'
@@ -432,6 +433,7 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     expect(square.emitted('update:mirror')).toEqual([[{ ...radialSetting, fold: 4 }]])
     const wide = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, rect: { row: 0, column: 0, rows: 4, columns: 6 }, fit: fitOf(4, 6) } } })
     expect(wide.get('[data-testid="mirror-bar-radial-more"]').attributes('aria-disabled')).toBe('true')
+    expect(wide.findAllComponents(AppTooltip).map((tip) => tip.props())).toContainEqual(expect.objectContaining({ name: en.mirror.moreFolds, disabledBody: en.mirror.quarterNeedsSquare }))
     await wide.get('[data-testid="mirror-bar-radial-more"]').trigger('click')
     expect(wide.emitted('update:mirror')).toBeUndefined()
   })
@@ -478,6 +480,12 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     const square = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, fit: fitOf(5, 5, 'peyote') } } })
     expect(square.get('[data-testid="mirror-bar-radial-value"]').text()).toBe('2')
     expect(square.get('[data-testid="mirror-bar-radial-more"]').attributes('aria-disabled')).toBe('true')
+    // The + names the Technique, not the size: no size gives peyote or brick a quarter turn (ticket 1094).
+    for (const technique of ['peyote', 'brick'] as const) {
+      const shifted = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, fit: fitOf(5, 5, technique) } } })
+      const most = fillBlanks(en.mirror.foldMostOnTechnique, { count: 2, mode: en.mirror.mirror, technique: en.techniques[technique] })
+      expect(shifted.findAllComponents(AppTooltip).map((tip) => tip.props())).toContainEqual(expect.objectContaining({ name: en.mirror.moreFolds, disabledBody: most }))
+    }
     const radialOff = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, fit: fitOf(6, 6, 'peyote', 'mirror') } } })
     expect(offBody(radialOff, 'Radial')).toBe(en.mirror.shiftRadial)
   })

@@ -6,7 +6,7 @@ import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet
 import { frameOf, type Layered } from './layerRecord'
 import { mayPlace } from './margin'
 import { touch, type Project } from './project'
-import { describeWeave, type Weave } from './weave'
+import { describeWeave, type Technique, type Weave } from './weave'
 
 // Mirror (ADR 0082, spec 0702; tickets 0703, 0750): the live mode that lands a drawing gesture at its counterparts,
 // one per Project, inside its Area. This module owns the record and the counterpart maths, positions in and positions
@@ -345,9 +345,9 @@ export interface MirrorFit {
   counts: Record<MirrorDirection, readonly number[]>
   off: Partial<Record<MirrorAxis, MirrorOffReason>>
   folds: readonly number[]
-  /** Why Radial offers no quarter turn: an Area that is not square, or the half-bead shift, which a quarter turn would
-   * turn from columns to rows. */
-  quarterOff?: 'square' | 'shift'
+  /** Why Radial offers no quarter turn: an Area that is not square, or a Technique's half-bead shift, which a quarter
+   * turn would turn from columns to rows at any size, so the Stepper's + names the Technique, not the size (ticket 1094). */
+  quarterOff?: 'square' | { shift: Technique }
   /** A direction on a Canvas Area whose counts stop short of beads across minus one, no size fitting more
    * (`mirrorReach`): its Stepper's + says why at the last. */
   capped?: Partial<Record<MirrorDirection, 'shift'>>
@@ -378,7 +378,7 @@ export function mirrorFit(weave: Weave, rect: Rect, mode: MirrorMode): MirrorFit
   const counts = { leftRight: countsOf('leftRight'), topBottom: countsOf('topBottom') }
   const halfTurn = !stagger || halfTurnKeepsShift(stagger, linesOf(rect, stagger.along), mode)
   if (!halfTurn) off.radial = 'shift'
-  const quarterOff = stagger ? 'shift' : isSquare(rect) ? undefined : 'square'
+  const quarterOff = stagger ? { shift: weave.technique } : isSquare(rect) ? undefined : 'square'
   const folds = !halfTurn ? [] : quarterOff ? [MIN_FOLD] : [MIN_FOLD, MAX_GRID_FOLD]
   return { counts, off, folds, ...(quarterOff ? { quarterOff } : {}) }
 }
@@ -472,7 +472,7 @@ export function mirrorReach(weave: Weave, rect: Rect, mode: MirrorMode): MirrorF
   const counts = { leftRight: countsOf('leftRight'), topBottom: countsOf('topBottom') }
   const folds = [MIN_FOLD, MAX_GRID_FOLD].filter((fold) => rectForFold(stagger, rect, fold, mode) !== undefined)
   if (folds.length === 0) off.radial = 'shift'
-  return { counts, off, folds, ...(stagger ? { quarterOff: 'shift' as const } : {}), ...(Object.keys(capped).length ? { capped } : {}) }
+  return { counts, off, folds, ...(stagger ? { quarterOff: { shift: weave.technique } } : {}), ...(Object.keys(capped).length ? { capped } : {}) }
 }
 
 /** What growing to fit does for a setting (ticket 1027): the Area it grows to, and what it grew for, the counts of the
