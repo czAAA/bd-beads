@@ -135,3 +135,50 @@ describe('ExportPanel print choices (ticket 0916)', () => {
     expect(again.get('[data-testid="export-row-by-row"]').attributes('aria-checked')).toBe('true')
   })
 })
+
+describe('ExportPanel "Saves as" (ticket 1096)', () => {
+  const named = (): Project => ({ ...withProjectName(framed(), 'Peacock cuff'), makerName: 'Ada Lind' })
+  const fileName = (wrapper: Panel) => wrapper.get('[data-testid="export-file-name"]').text()
+
+  async function rename(wrapper: Panel, typed: string) {
+    await wrapper.get('[data-testid="export-file-name-edit"]').trigger('click')
+    await wrapper.get('[data-testid="export-file-name-input"]').setValue(typed)
+    await wrapper.get('[data-testid="export-file-name-form"]').trigger('submit')
+  }
+
+  it('names the PDF under the switches, with a word for each switch that is on, at once', async () => {
+    const wrapper = await mountPanel(named())
+    expect(wrapper.get('[data-testid="export-file-name-row"]').text()).toMatch(/^Saves as/)
+    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind.pdf')
+
+    await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
+    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind_row-by-row.pdf')
+    await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
+    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind_large-beads_row-by-row.pdf')
+  })
+
+  it('takes a typed name, adds no switch’s word to it, and passes it on with the export', async () => {
+    const wrapper = await mountPanel(named())
+    await rename(wrapper, 'Cuff for Ada')
+    expect(fileName(wrapper)).toBe('Cuff for Ada.pdf')
+
+    await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
+    expect(fileName(wrapper)).toBe('Cuff for Ada.pdf')
+    await wrapper.get('[data-testid="export-pdf"]').trigger('click')
+    expect(wrapper.emitted('export-pdf')).toEqual([['Cuff for Ada.pdf']])
+  })
+
+  it('brings the made name back for an emptied name, and forgets a typed one once the panel closes', async () => {
+    const wrapper = await mountPanel(named())
+    await rename(wrapper, 'Cuff for Ada')
+    await rename(wrapper, '  ')
+    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind.pdf')
+
+    await rename(wrapper, 'Cuff for Ada')
+    wrapper.unmount()
+    const again = await mountPanel(named())
+    expect(fileName(again)).toBe('peacock-cuff-ada-lind.pdf')
+    await again.get('[data-testid="export-pdf"]').trigger('click')
+    expect(again.emitted('export-pdf')).toEqual([[undefined]])
+  })
+})

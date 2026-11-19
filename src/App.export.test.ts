@@ -57,7 +57,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
     await openExportMenu(wrapper)
 
     await wrapper.find('[data-testid="export-png"]').trigger('click')
-    // The print code is loaded on demand: a cold load outlasts one flush.
+    // The print code arrives by a dynamic import, which a flush of promises doesn't wait for.
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png'))
 
     expect(exportProjectPng).toHaveBeenCalledWith(
@@ -74,7 +74,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
     await openExportMenu(wrapper)
 
     await wrapper.find('[data-testid="export-pdf"]').trigger('click')
-    // The print code is loaded on demand: a cold load outlasts one flush.
+    // The print code arrives by a dynamic import, which a flush of promises doesn't wait for.
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith('my-scarf.pdf', expect.any(Blob), 'application/pdf'))
 
     expect(exportProjectPdf).toHaveBeenCalledWith(

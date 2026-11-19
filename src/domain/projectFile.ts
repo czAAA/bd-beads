@@ -108,9 +108,30 @@ export function projectFileNameOf(name: string, makerName?: string): string {
   return `${fileStem([name, makerName])}.openbeads`
 }
 
-/** The name a picture or document of the Project is saved under (tickets 73, 74, 0720), e.g. `summer-rose-ada.png`. */
-export function projectExportFileName(project: Project, extension: 'png' | 'pdf'): string {
-  return `${fileStem([projectNameOf(project), frameOf(project)?.name, project.makerName])}.${extension}`
+/** The name a picture or document of the Project is saved under (tickets 73, 74, 0720), e.g. `summer-rose-ada.png`;
+ * the PDF's takes an underscore and a word for each print switch that is on (ticket 1096), e.g.
+ * `summer-rose-ada_large-beads.pdf`. */
+export function projectExportFileName(project: Project, extension: 'png' | 'pdf', words: readonly string[] = []): string {
+  const stem = fileStem([projectNameOf(project), frameOf(project)?.name, project.makerName])
+  return `${[stem, ...words.map(fileNameSlug).filter(Boolean)].join('_')}.${extension}`
+}
+
+/** The signs a file name can't hold on some system, and control characters. */
+const UNSAFE_FILE_SIGNS = /[\\/:*?"<>|\u0000-\u001f]+/g
+
+/** The longest PDF name the Export panel's pencil takes (ticket 1096): above the longest made name (three names of
+ * `MAX_MAKER_NAME`, every switch's word and `.pdf`), so a made name can always be edited. */
+export const MAX_PDF_FILE_NAME = 200
+
+/** A PDF name typed in the Export panel (ticket 1096), kept as typed but for the signs a file can't hold, and ending in
+ * `.pdf` once; nothing when it leaves nothing to write, so the made name stands. */
+export function typedPdfFileName(raw: string): string | undefined {
+  const stem = raw
+    .trim()
+    .replace(/(\.pdf)+$/i, '')
+    .replace(UNSAFE_FILE_SIGNS, '-')
+    .replace(/^[-.\s]+|[-.\s]+$/g, '')
+  return stem ? `${stem}.pdf` : undefined
 }
 
 /** A further page of the PNG, a list page after page 1 (Beads needed running over, tickets 0583, 0915), e.g. `summer-rose-ada_2.png` for the second. */

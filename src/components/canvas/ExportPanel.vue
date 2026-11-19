@@ -19,7 +19,7 @@ const emit = defineEmits<{
   fit: []
   'select-frame': []
   'export-png': []
-  'export-pdf': []
+  'export-pdf': [typedName?: string]
 }>()
 
 const { t } = useI18n()
@@ -34,7 +34,7 @@ const { t } = useI18n()
         <span class="export-panel__project" data-user-text data-testid="export-panel-project">· {{ projectNameOf(project) }}</span>
       </span>
     </div>
-    <ExportRows :project="project" :exporting="exporting" :opens-on="opensOn" @fit="emit('fit')" @select-frame="emit('select-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
+    <ExportRows :project="project" :exporting="exporting" :opens-on="opensOn" @fit="emit('fit')" @select-frame="emit('select-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" />
   </div>
 </template>
 

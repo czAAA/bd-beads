@@ -14,6 +14,7 @@ import type { LinkedFileStore } from '../../services/linkedFileStore'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../../services/projectFileCodec'
 import { useExportQuality } from './useExportQuality'
 import { usePrintChoices } from './usePrintChoices'
+import { pdfFileName } from './pdfFileName'
 import { SAVED_FILE_TOAST, savedFileToast, savedPageToast } from './savedFileToast'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { frameOf } from '../../domain/layerRecord'
@@ -115,7 +116,13 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /** `more` are the files made, in order, after the first is handed over (the PNG's list pages after page 1, tickets 0583, 0915, and the
    * Word chart's PNG, ticket 0574): none when there is nothing more to make. */
-  async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, more?: (project: Project) => Promise<{ fileName: string; make: () => Promise<Blob> }[]>) {
+  async function runExport(
+    nameOf: (project: Project) => string,
+    make: (project: Project) => Promise<Blob>,
+    extension: 'png' | 'pdf',
+    type: string,
+    more?: (project: Project) => Promise<{ fileName: string; make: () => Promise<Blob> }[]>,
+  ) {
     const project = deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
     if (!project || !frameOf(project) || exporting.value) {
@@ -123,7 +130,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
     exporting.value = extension
     try {
-      const handed = await makeAndHandOver(projectExportFileName(project, extension), () => make(project), type)
+      const handed = await makeAndHandOver(nameOf(project), () => make(project), type)
       // Each further page stacks a toast of its own, so every name is read; the first is page 1.
       const further = handed ? ((await more?.(project)) ?? []) : []
       for (const [index, next] of further.entries()) {
@@ -241,6 +248,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     // 0586).
     const dpi = pngDpiFor(quality.value)
     return runExport(
+      (project) => projectExportFileName(project, 'png'),
       async (project) => {
         const code = await loadPrintCode()
         return code.exportProjectPng(project, wordsOf(code, project), dpi)
@@ -258,9 +266,12 @@ export function useExportFlow(deps: ExportFlowDeps) {
     )
   }
 
-  function onExportPdf() {
+  /** `typedName` is a name typed in the Export panel for this export (ticket 1096), saved as it is; without one the name
+   * says which print switches are on. */
+  function onExportPdf(typedName?: string) {
     // The words the pages print (ticket 162), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
+      (project) => typedName ?? pdfFileName(project, printChoices.value, deps.messages()),
       async (project) => {
         const code = await loadPrintCode()
         return code.exportProjectPdf(project, wordsOf(code, project), pdfPageDpi())

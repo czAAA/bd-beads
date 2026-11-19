@@ -1,6 +1,7 @@
-// The number rule (ticket 1045, spec 1043, ADR 0096), pure: the first number steps at a Production release, the second at
-// a New note, the third at a Changed or Fixed one, and a step sets the numbers after it to 0. Released notes keep the
-// number the release record holds; git order (scripts/noteOrder.ts) places only the notes merged since.
+// The number rule (ticket 1045, spec 1043, ADR 0096), pure: the first number steps at a major release (ticket 1103), the
+// second at a New note, the third at a Changed or Fixed one; a step zeroes the numbers after it. Another release keeps
+// its newest note's Version. Released notes keep the record's numbers; git order places only the notes merged since.
+import { newerFirst } from '../src/domain/notesFile.ts';
 
 /** A Release note's kind: the maker can do something new, something works differently, or something wrong now works. */
 export type Kind = 'new' | 'changed' | 'fixed';
@@ -31,9 +32,12 @@ function beforeNewest(record: readonly Release[]): string {
   return record.at(-1)?.notes.at(-1)?.version ?? record.at(-2)?.version ?? '0.0.0';
 }
 
-/** Every note's Version (the record's as it holds them, then the others in merge order) and the Build's. The first
- * `mergedBeforeNewest` of the others merged before the newest release's commit though its list doesn't hold them, so
- * they keep the number they had before it. */
+/** The higher of two Versions. */
+const higher = (a: string, b: string): string => (newerFirst(a, b) <= 0 ? a : b);
+
+/** Every note's Version (the record's, then the others in merge order) and the Build's. The first `mergedBeforeNewest`
+ * of the others merged before the newest release though its list lacks them, so they keep their number from before it;
+ * the notes after go on from the higher of theirs and the release's, so no number is given twice (ticket 1103). */
 export function numberNotes(
   record: readonly Release[],
   unreleased: readonly { name: string; kind: Kind }[],
@@ -44,15 +48,14 @@ export function numberNotes(
   const notes = record.flatMap((release) => release.notes);
   let version = beforeNewest(record);
   unreleased.forEach((note, i) => {
-    if (i === before) version = newest?.version ?? version;
+    if (i === before && newest) version = higher(version, newest.version);
     version = step(version, note.kind);
     notes.push({ name: note.name, version, kind: note.kind });
   });
-  const build = unreleased.length > before ? version : (newest?.version ?? version);
-  return { notes, build };
+  return { notes, build: newest ? higher(version, newest.version) : version };
 }
 
-/** The Version the next Production release gets: the newest release's first number plus one. */
-export function nextRelease(record: readonly Release[]): string {
+/** The Version of a major release, which only the owner calls for: the newest release's first number plus one. */
+export function nextMajor(record: readonly Release[]): string {
   return `${Number(record.at(-1)?.version.split('.')[0] ?? 0) + 1}.0.0`;
 }

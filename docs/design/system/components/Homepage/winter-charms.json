@@ -1,0 +1,333 @@
+{
+  "$comment": "Homepage card, Winter charms (ticket 1100). The winter charms and their arranged layout, signed off 2026-11-19. Bead colors, not tokens. Each row is read left to right, top to bottom; \".\" is no bead. `out` is the middle's distance from the box's edge as a share of the black beside it (0 at the box, 1 at the screen's edge), `down` its height as a share of the screen's, `turn` degrees clockwise, `size` times the charm's own size. A mark's `size` is px at the 1440 size, grown by --homepage-scale.",
+  "bead": "miyuki/delica/11-0",
+  "colors": {
+    "B": "#2a5cc6",
+    "D": "#cfa43c",
+    "E": "#17573a",
+    "F": "#f2c6a0",
+    "G": "#2c8c3c",
+    "J": "#a4761c",
+    "K": "#1d1c1f",
+    "L": "#a8752f",
+    "M": "#7b4625",
+    "O": "#f27a1a",
+    "Q": "#0f4527",
+    "R": "#d0182c",
+    "V": "#4fa843",
+    "W": "#f6f4ee",
+    "Y": "#f6cd27",
+    "k": "#f29bb3",
+    "r": "#8c1a24"
+  },
+  "charms": {
+    "star": {
+      "name": "Star",
+      "technique": "loom",
+      "width": 21,
+      "height": 16,
+      "rows": [
+        "..........Y..........",
+        "..........Y..........",
+        ".........JYY.........",
+        "........JJYYY........",
+        "........JJYYY........",
+        ".....JJJJJYYYYJJ.....",
+        ".YJJJJJJJJYYYJJJJJJY.",
+        "..YYYJJJJJYYJJJJYYY..",
+        "...YYYYYYJYJYYYYYY...",
+        "....YYYYJJDDDYYYY....",
+        ".....JJJJYDDDDDD.....",
+        ".....JJJYYDDDDDD.....",
+        ".....JJYYYDDDDDD.....",
+        ".....JYYYY.DDDDD.....",
+        "....JYYY.....DDDD....",
+        "....J...........D...."
+      ]
+    },
+    "tree": {
+      "name": "Tree",
+      "technique": "loom",
+      "width": 17,
+      "height": 20,
+      "rows": [
+        "........Y........",
+        ".......YYD.......",
+        ".......D.J.......",
+        "........G........",
+        ".......VGE.......",
+        "......VRGEE......",
+        ".....VYYDDDE.....",
+        "....VVVGGGEEE....",
+        ".....QQQQQQQ.....",
+        ".....VVGGGBE.....",
+        "....YRVGGGEED....",
+        "...VVYYYDDDDEE...",
+        "..VVVVGGGGGEEEE..",
+        "....QQQQQQQQQ....",
+        "...VVVVGGGEREE...",
+        "..YYBVGGGGGEEDD..",
+        ".VVVYYYYDDDDDREE.",
+        "VVVVVVGGGGGEEEEEE",
+        ".......MMr.......",
+        ".......MMr......."
+      ]
+    },
+    "gift": {
+      "name": "Gift",
+      "technique": "brick",
+      "width": 11,
+      "height": 12,
+      "rows": [
+        "..GG...GG..",
+        "...GG.GG...",
+        "....GGG....",
+        "RRRRRGRRRRR",
+        "RRWRRGRRWRR",
+        "RRRRRGRRRRR",
+        "GGGGGGGGGGG",
+        "RRRRRGRRRRR",
+        "RRWRRGRRWRR",
+        "RRRRRGRRRRR",
+        "RRRRRGRRRRR",
+        "RRWRRGRRWRR"
+      ]
+    },
+    "ornament": {
+      "name": "Bauble",
+      "technique": "brick",
+      "width": 11,
+      "height": 14,
+      "rows": [
+        "....DDD....",
+        "....D.D....",
+        "...RRRRR...",
+        "..RRRRRRR..",
+        ".RWRRRRRRR.",
+        ".RWRRRRRRR.",
+        "GGGGGGGGGGG",
+        "WWDWWDWWDWW",
+        "GGGGGGGGGGG",
+        "RRRRRRRRRRR",
+        ".RRRRRRRRR.",
+        ".RRRRRRRRR.",
+        "..RRRRRRR..",
+        "...RRRRR..."
+      ]
+    },
+    "santa": {
+      "name": "Santa",
+      "technique": "brick",
+      "width": 11,
+      "height": 14,
+      "rows": [
+        ".....W.....",
+        ".....R.....",
+        "....RRR....",
+        "...RRRRR...",
+        "..RRRRRRR..",
+        ".WWWWWWWWW.",
+        ".FFKFFFKFF.",
+        "WWWFFkFFWWW",
+        "WWWWWWWWWWW",
+        ".WWWWWWWWW.",
+        "..WWWWWWW..",
+        "...WWWWW...",
+        "....WWW....",
+        ".....W....."
+      ]
+    },
+    "wreath": {
+      "name": "Wreath",
+      "technique": "brick",
+      "width": 13,
+      "height": 13,
+      "rows": [
+        "....EGEGE....",
+        "..GEGRGEGEG..",
+        ".EGEG...GEGE.",
+        ".GRG.....RGE.",
+        "EGE.......GEG",
+        "GEG.......EGE",
+        "EGR.......GRG",
+        "GEG.......EGE",
+        ".GEG.....GER.",
+        ".EGEG...GEGE.",
+        "..GEGRRRGEG..",
+        "....RRRRR....",
+        "...RR...RR..."
+      ]
+    },
+    "snowman": {
+      "name": "Snowman",
+      "technique": "brick",
+      "width": 11,
+      "height": 14,
+      "rows": [
+        "....RRR....",
+        "...RRRRR...",
+        "..RRRRRRR..",
+        ".RRRRRRRRWW",
+        ".WWWWWWWWWW",
+        "WWWWWWWWWWW",
+        "WWWKWWWKWWW",
+        "WWWWWWWWWWW",
+        "WWWWWOWWWWW",
+        "WWWWWOOOWWW",
+        "WWWWWWWWWWW",
+        ".WWKWKWKWW.",
+        "..WWWWWWW..",
+        "...WWWWW..."
+      ]
+    },
+    "gingerbread": {
+      "name": "Gingerbread",
+      "technique": "brick",
+      "width": 11,
+      "height": 14,
+      "rows": [
+        "....LLL....",
+        "...LLLLL...",
+        "...LWLWL...",
+        "...LLLLL...",
+        "....LWL....",
+        ".LLLLLLLLL.",
+        "LLLLLRLLLLL",
+        "LL.LLLLL.LL",
+        "...LLRLL...",
+        "...LLLLL...",
+        "...LLRLL...",
+        "..LLL.LLL..",
+        "..LL...LL..",
+        ".LLL...LLL."
+      ]
+    },
+    "stocking": {
+      "name": "Stocking",
+      "technique": "brick",
+      "width": 11,
+      "height": 12,
+      "rows": [
+        "WWWWWWW....",
+        "WWWWWWW....",
+        ".RRRRR.....",
+        ".RRGRR.....",
+        ".RRRRR.....",
+        ".RGRGR.....",
+        ".RRRRR.....",
+        ".RRRRRR....",
+        ".RRRRRRRR..",
+        ".RRRRRRRRR.",
+        "..GGRRRRGG.",
+        "...GGGGGG.."
+      ]
+    }
+  },
+  "layout": {
+    "charms": [
+      {
+        "id": "wreath",
+        "side": "left",
+        "out": 0.549,
+        "down": 0.081,
+        "turn": 153,
+        "size": 1.15
+      },
+      {
+        "id": "gingerbread",
+        "side": "left",
+        "out": 0.353,
+        "down": 0.27,
+        "turn": -35,
+        "size": 0.6
+      },
+      {
+        "id": "ornament",
+        "side": "left",
+        "out": 0.451,
+        "down": 0.454,
+        "turn": 30,
+        "size": 0.9
+      },
+      {
+        "id": "star",
+        "side": "left",
+        "out": 0.637,
+        "down": 0.639,
+        "turn": 20,
+        "size": 0.45
+      },
+      {
+        "id": "tree",
+        "side": "left",
+        "out": 0.5,
+        "down": 0.838,
+        "turn": -154,
+        "size": 1
+      },
+      {
+        "id": "gift",
+        "side": "right",
+        "out": 0.373,
+        "down": 0.076,
+        "turn": 13,
+        "size": 1.3
+      },
+      {
+        "id": "stocking",
+        "side": "right",
+        "out": 0.696,
+        "down": 0.278,
+        "turn": -25,
+        "size": 0.6
+      },
+      {
+        "id": "snowman",
+        "side": "right",
+        "out": 0.471,
+        "down": 0.474,
+        "turn": 16,
+        "size": 1.2
+      },
+      {
+        "id": "santa",
+        "side": "right",
+        "out": 0.275,
+        "down": 0.674,
+        "turn": 40,
+        "size": 0.6
+      },
+      {
+        "id": "star",
+        "side": "right",
+        "out": 0.559,
+        "down": 0.88,
+        "turn": 83,
+        "size": 0.85
+      }
+    ],
+    "marks": [
+      {
+        "side": "right",
+        "out": 0.912,
+        "down": 0.675,
+        "size": 225,
+        "large": true
+      },
+      {
+        "side": "left",
+        "out": 0.956,
+        "down": 0.081,
+        "size": 123,
+        "large": false
+      },
+      {
+        "side": "right",
+        "out": 0.27,
+        "down": 0.119,
+        "size": 75,
+        "large": false
+      }
+    ]
+  }
+}

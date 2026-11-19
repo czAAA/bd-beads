@@ -114,6 +114,7 @@ export function usePillPopoverPlacement(root: Ref<HTMLElement | undefined>, anch
   }
 
   let resizeObserver: ResizeObserver | undefined
+  let contentObserver: MutationObserver | undefined
 
   onMounted(async () => {
     await nextTick()
@@ -122,9 +123,14 @@ export function usePillPopoverPlacement(root: Ref<HTMLElement | undefined>, anch
     // What opens inside the popover grows it (the Custom color picker, a Stepper row): place it again so it stays whole on screen.
     resizeObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(place)
     if (root.value) resizeObserver?.observe(root.value)
+    // A popover cut to the screen keeps its size while what is inside grows (the Bead colors arriving after their list
+    // opened, which scroll inside it), so content coming or going places it again too.
+    contentObserver = typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(place)
+    if (root.value) contentObserver?.observe(root.value, { childList: true, subtree: true })
   })
   onBeforeUnmount(() => {
     resizeObserver?.disconnect()
+    contentObserver?.disconnect()
     window.removeEventListener('resize', onWindowResize)
   })
 
