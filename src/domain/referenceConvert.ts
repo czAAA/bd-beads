@@ -25,12 +25,19 @@ export interface SampledPosition extends GridPosition {
 
 /** The picture's color under each position's centre (pixelPackedAt: see-through below half alpha). */
 export function sampledColors(pixels: PixelData, points: readonly PicturePoint[]): SampledPosition[] {
+  return points.map(({ row, column, u, v }) => ({ row, column, color: packedAt(pixels, u, v) }))
+}
+
+/** The picture's color at a point of it, as Convert to beads reads a bead's centre: a hex, or none where it lets the Canvas
+ * through. What Pick color from Canvas takes from the reference image before matching it (ticket 1119). */
+export function pictureColorAt(pixels: PixelData, { u, v }: { u: number; v: number }): string | undefined {
+  const color = packedAt(pixels, u, v)
+  return color === NO_COLOR ? undefined : packedToHex(color)
+}
+
+function packedAt(pixels: PixelData, u: number, v: number): number {
   const { width, height } = pixels
-  return points.map(({ row, column, u, v }) => ({
-    row,
-    column,
-    color: pixelPackedAt(pixels, Math.min(width - 1, Math.floor(u * width)), Math.min(height - 1, Math.floor(v * height))),
-  }))
+  return pixelPackedAt(pixels, Math.min(width - 1, Math.floor(u * width)), Math.min(height - 1, Math.floor(v * height)))
 }
 
 /** What a conversion makes: a bead for every position the picture doesn't let through, the bead colors it uses (most

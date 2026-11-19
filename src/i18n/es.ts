@@ -615,6 +615,7 @@ export const es: Translations = {
     mirrorArmedHint: 'Arrastra sobre el lienzo para marcar el área que se refleja.',
     pasteArmedHint: 'Toca el lienzo para colocar la copia. Elige una herramienta para terminar.',
     pickArmedHint: 'Toca una cuenta para usar su color.',
+    pickArmedPictureHint: 'Toca una cuenta o la imagen de referencia para usar su color.',
   },
   inputMode: {
     penLabel: 'Modo lápiz',
@@ -1290,7 +1291,7 @@ export const es: Translations = {
     namePieceDisabled: 'Selecciona primero un trozo.',
     clear: 'Vacía todo el lienzo.',
     customColor: 'Añade un color a la paleta; Enter toma el color.',
-    pickFromCanvas: 'Usa el color de una cuenta del lienzo. Se añade a la paleta.',
+    pickFromCanvas: 'Usa el color de una cuenta del lienzo, o el color de cuenta más cercano de la imagen de referencia. Se añade a la paleta.',
     nothingToUndo: 'No hay nada que deshacer.',
     zoomOutLimit: 'Ya está alejado al máximo.',
     zoomInLimit: 'Ya está acercado al máximo.',

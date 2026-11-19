@@ -14,6 +14,8 @@ export interface ArmedToolToastsDeps {
   /** Whether the Mirror has its Area: Mirror mode entered then has nothing to mark first. */
   mirrorOn: () => boolean
   picking: () => boolean
+  /** Whether the reference image is shown: Pick color then takes its color too (ticket 1119). */
+  pictureShown?: () => boolean
   pasteArmed: () => boolean
 }
 
@@ -23,7 +25,7 @@ export function useArmedToolToasts(deps: ArmedToolToastsDeps) {
   const modes = [
     { id: 'mirror-armed', armed: () => deps.mirrorMarking() && !deps.mirrorOn(), text: (t: Translations) => t.tools.mirrorArmedHint },
     { id: 'paste-armed', armed: deps.pasteArmed, text: (t: Translations) => t.tools.pasteArmedHint },
-    { id: 'pick-armed', armed: deps.picking, text: (t: Translations) => t.tools.pickArmedHint },
+    { id: 'pick-armed', armed: deps.picking, text: (t: Translations) => (deps.pictureShown?.() ? t.tools.pickArmedPictureHint : t.tools.pickArmedHint) },
   ]
   for (const mode of modes) {
     watch(mode.armed, (armed) => {

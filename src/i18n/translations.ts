@@ -779,6 +779,8 @@ export interface Translations {
     mirrorArmedHint: string
     pasteArmedHint: string
     pickArmedHint: string
+    /** Pick color's touch hint while the reference image is shown (ticket 1119). */
+    pickArmedPictureHint: string
   }
   /** The input mode toggle (ticket 325; CONTEXT.md: Pen mode, Mouse mode). */
   inputMode: {

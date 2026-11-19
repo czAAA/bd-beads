@@ -618,6 +618,7 @@ export const pl: Translations = {
     mirrorArmedHint: 'Przeciągnij po płótnie, by zaznaczyć obszar odbicia.',
     pasteArmedHint: 'Dotknij płótna, by położyć kopię. Wybierz narzędzie, by skończyć.',
     pickArmedHint: 'Dotknij koralika, by użyć jego koloru.',
+    pickArmedPictureHint: 'Dotknij koralika lub obrazu pomocniczego, by użyć koloru.',
   },
   inputMode: {
     penLabel: 'Tryb rysika',
@@ -1293,7 +1294,7 @@ export const pl: Translations = {
     namePieceDisabled: 'Najpierw zaznacz jeden kawałek.',
     clear: 'Czyści wszystko z płótna.',
     customColor: 'Dodaj kolor do palety; Enter przyjmuje kolor.',
-    pickFromCanvas: 'Użyj koloru koralika z płótna. Trafi do palety.',
+    pickFromCanvas: 'Użyj koloru koralika z płótna albo najbliższego koloru koralików z obrazu pomocniczego. Trafi do palety.',
     nothingToUndo: 'Nie ma czego cofnąć.',
     zoomOutLimit: 'Pomniejszono już maksymalnie.',
     zoomInLimit: 'Powiększono już maksymalnie.',
