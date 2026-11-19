@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import { useFittingForm } from '../composables/canvas/useFittingForm'
+import { useElementSize } from '../composables/ui/useElementSize'
 import { controlAction } from '../composables/shell/controlRegistry'
 import { useI18n } from '../i18n/useI18n'
 import GroupedList from './GroupedList.vue'
 import WelcomePiece from './WelcomePiece.vue'
 import { welcomeCaption, welcomeCounts, welcomePromises } from './welcomeCopy'
 
-// The Welcome section (Homepage card, ticket 0830): the heading and its line, the way into the editor (the one primary
-// button) with See how it works and, for a new visitor, Start from a ready design (0953) beside it, the counts, a piece
-// and three promises. On a phone the bar carries the way in, and the promises are a grouped list under the tile.
-defineProps<{
+// The Welcome section (Homepage card, ticket 0830): the heading, its line, the way in (two `2xl` buttons: the one primary
+// and Projects library or, new, Start from a ready design, 0953), the counts, a piece, three promises and See how it
+// works under them. On a phone the bar carries the way in, and the promises are a grouped list under the tile.
+const props = defineProps<{
   /** Drawn for a phone: no button, the promises apart from the tile. */
   phone?: boolean
   /** No Projects saved: the way in is Make your first Project. */
@@ -27,6 +29,31 @@ const caption = computed(() => welcomeCaption(t.value))
 const promises = computed(() => welcomePromises(t.value))
 /** The Menu row's action, whose name Projects library shows with the count, as the strip's does (ticket 0716). */
 const savedProjects = controlAction('saved-projects')
+
+const WAY_IN_SIZES = ['2xl', 'xl'] as const
+
+/** How wide a row's children stand with the gaps between them; centred, an overflow runs off both ends, so the row's
+ * own scroll width would count only half of it. */
+function rowWidth(row: HTMLElement | null): number {
+  if (!row) return 0
+  const children = [...row.children] as HTMLElement[]
+  const gap = parseFloat(getComputedStyle(row).columnGap) || 0
+  return children.reduce((width, child) => width + child.offsetWidth, 0) + gap * Math.max(0, children.length - 1)
+}
+
+/** The way in at twice `lg` where both buttons fit on one row, a size down where they don't (a longer language, a
+ * narrower tile), and wrapping only where neither fits (ticket 1130). */
+const wayIn = ref<HTMLElement | null>(null)
+const { width: wayInRoom } = useElementSize(wayIn)
+const wayInFit = useFittingForm({
+  forms: () => WAY_IN_SIZES,
+  room: () => wayInRoom.value,
+  measure: () => rowWidth(wayIn.value),
+  observed: () => [...(wayIn.value?.children ?? [])],
+  labels: () => `${locale.value} ${props.isNew} ${props.count}`,
+})
+/** Neither size fitting, the smaller one wraps. */
+const wayInSize = computed(() => wayInFit.value ?? 'xl')
 </script>
 
 <template>
@@ -37,27 +64,25 @@ const savedProjects = controlAction('saved-projects')
       <!-- The page's one h1 (ticket 0995): the sections under it are h2s. -->
       <h1 id="homepage-welcome" class="welcome__heading" data-wrap-ok>{{ t.homepage.welcome.heading }}</h1>
       <p class="welcome__line">{{ t.homepage.welcome.line }}</p>
-      <div v-if="!phone" class="welcome__ways">
-        <span class="welcome__way-in">
-          <AppButton v-if="isNew" variant="primary" size="lg" data-testid="welcome-make-first" @click="emit('makeFirstProject')">
+      <!-- The way in, twice the `lg` size: two buttons, so a new visitor's second is Start from a ready design. -->
+      <div v-if="!phone" ref="wayIn" class="welcome__way-in" :class="{ 'welcome__way-in--wraps': !wayInFit }">
+        <template v-if="isNew">
+          <AppButton variant="primary" :size="wayInSize" data-testid="welcome-make-first" @click="emit('makeFirstProject')">
             {{ t.homepage.makeFirstProject }}
           </AppButton>
-          <template v-else>
-            <AppButton variant="primary" size="lg" data-testid="welcome-open-editor" @click="emit('openEditor')">
-              {{ t.homepage.openEditor }}
-            </AppButton>
-            <AppButton size="lg" :action="savedProjects" data-testid="welcome-saved-projects" @click="emit('openSavedProjects')">
-              {{ savedProjects.name(t) }} · {{ count }}
-            </AppButton>
-          </template>
-        </span>
-        <!-- The first Project, made at once, open on the Frame panel's Starter gallery (ticket 0953). -->
-        <AppButton v-if="isNew" variant="text" size="lg" icon="frame" data-testid="welcome-start-from-starter" @click="emit('startFromStarter')">
-          {{ t.homepage.welcome.startFromStarter }}
-        </AppButton>
-        <AppButton variant="text" size="lg" trailing-icon="arrow-down" data-testid="welcome-see-how" @click="emit('seeHow')">
-          {{ t.homepage.welcome.seeHow }}
-        </AppButton>
+          <!-- The first Project, made at once, open on the Frame panel's Starter gallery (ticket 0953). -->
+          <AppButton :size="wayInSize" icon="frame" data-testid="welcome-start-from-starter" @click="emit('startFromStarter')">
+            {{ t.homepage.welcome.startFromStarter }}
+          </AppButton>
+        </template>
+        <template v-else>
+          <AppButton variant="primary" :size="wayInSize" data-testid="welcome-open-editor" @click="emit('openEditor')">
+            {{ t.homepage.openEditor }}
+          </AppButton>
+          <AppButton :size="wayInSize" :action="savedProjects" data-testid="welcome-saved-projects" @click="emit('openSavedProjects')">
+            {{ savedProjects.name(t) }} · {{ count }}
+          </AppButton>
+        </template>
       </div>
       <p class="welcome__counts" data-testid="welcome-counts">{{ counts }}</p>
       <div class="welcome__show">
@@ -76,6 +101,10 @@ const savedProjects = controlAction('saved-projects')
           </li>
         </ul>
       </div>
+      <!-- At the tile's foot, under the promises: it turns to What's inside, as Next does. -->
+      <AppButton v-if="!phone" class="welcome__see-how" variant="text" size="lg" trailing-icon="arrow-down" data-testid="welcome-see-how" @click="emit('seeHow')">
+        {{ t.homepage.welcome.seeHow }}
+      </AppButton>
     </div>
     <GroupedList v-if="phone" :rows="promises" testid="welcome-promises" row-testid="welcome-promise" />
   </section>
@@ -93,7 +122,7 @@ const savedProjects = controlAction('saved-projects')
   margin: 0 auto;
 }
 
-/* Under 744px: padding 24 20, the heading 34 on 38, the ways in and the promises one under another. */
+/* Under 744px: padding 24 20, the heading 34 on 38, the promises one under another. */
 .welcome__tile {
   display: flex;
   flex-direction: column;
@@ -121,19 +150,26 @@ const savedProjects = controlAction('saved-projects')
   color: var(--body);
 }
 
-.welcome__ways {
+/* The two big buttons 16px apart on one row, as wide as they need: a row too wide steps them a size down, and only
+   where neither size fits do they take a row each. */
+.welcome__way-in {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
-  align-items: center;
+  gap: var(--space-16);
+  justify-content: center;
+  width: 100%;
   margin-top: var(--space-24);
 }
 
-.welcome__way-in {
-  display: flex;
+.welcome__way-in > * {
+  flex: none;
+}
+
+.welcome__way-in--wraps {
   flex-wrap: wrap;
-  gap: var(--space-8);
-  justify-content: center;
+}
+
+.welcome__see-how {
+  margin-top: var(--space-20);
 }
 
 /* `meta-small`'s face and size, never lowercased: the counts hold brand names. */
@@ -212,7 +248,7 @@ const savedProjects = controlAction('saved-projects')
   white-space: nowrap;
 }
 
-/* From 744px: padding 28 32 24, the heading 44 on 48, the ways in side by side, the promises side by side 32px apart. */
+/* From 744px: padding 28 32 24, the heading 44 on 48, the promises side by side 32px apart. */
 @container homepage (min-width: 744px) {
   .welcome__tile {
     padding: 1.75rem var(--space-32) var(--space-24);
@@ -221,11 +257,6 @@ const savedProjects = controlAction('saved-projects')
   .welcome__heading {
     font-size: var(--welcome-heading-size);
     line-height: 3rem;
-  }
-
-  .welcome__ways {
-    flex-flow: row wrap;
-    justify-content: center;
   }
 
   .welcome__promises {
