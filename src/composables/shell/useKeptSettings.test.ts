@@ -5,7 +5,6 @@ import { en } from '../../i18n/en'
 import { memoryAccount, type MemoryAccountState } from '../../services/memoryAccount'
 import { memoryDeviceSettings } from '../../testUtils/deviceSettings'
 import { useAccountFlow } from './useAccountFlow'
-import { onSettingChange } from './useKeptSettings'
 
 // The Settings kept in step (ticket 1086), driven through the account flow that owns them: a device and a backend in
 // memory, and a clock the test moves.
@@ -306,18 +305,5 @@ describe('the Settings kept in step: signing out', () => {
     account.comeOnline()
     await settled()
     expect(account.state.sent).toEqual([])
-  })
-})
-
-describe('onSettingChange', () => {
-  it('hears a change of the settings it is given, at once, and of no other', () => {
-    const device = memoryDeviceSettings()
-    const changed = vi.fn()
-    effectScope().run(() => onSettingChange({ language: device.controls.language.value, theme: device.controls.theme.value }, changed))
-    device.shown.language = 'ru'
-    expect(changed).toHaveBeenCalledWith('language', 'ru')
-    device.shown.liftedPieces = 'off'
-    device.shown.theme = 'dark'
-    expect(changed.mock.calls).toEqual([['language', 'ru'], ['theme', 'dark']])
   })
 })

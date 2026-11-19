@@ -8,6 +8,9 @@ import { chooseLanguage } from '../testUtils/chooseLanguage'
 import { findBead } from '../domain/beads'
 import { beadCell } from '../domain/weave'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
+import { memoryAccount } from '../services/memoryAccount'
+import { choosePanelOption } from '../testUtils/choosePanelOption'
+import { hasOpenLayer } from '../composables/ui/useOverlayLayer'
 import type { NotesSource } from '../services/notesFile'
 
 /** What the stand-in What's inside's Open editor from here gives. */
@@ -199,18 +202,92 @@ describe('HomePage', () => {
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
   })
 
-  it('opens the editor\'s Menu panel from the strip, with Theme and Homepage as the current page', async () => {
+  it('opens the editor\'s Menu panel from the strip, with Homepage as the current page', async () => {
     const wrapper = page()
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
 
     expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-expanded')).toBe('true')
-    expect(wrapper.find('[data-testid="theme-picker"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
     const item = wrapper.get('[data-testid="menu-item-homepage"]')
     expect(item.attributes('aria-current')).toBe('page')
     expect(item.attributes('href')).toBe(import.meta.env.BASE_URL)
+  })
+
+  it.each([
+    ['menu-new-project', 'newProject'],
+    ['menu-convert-image', 'convertImage'],
+    ['menu-sign-in', 'createAccount'],
+  ])('opens the editor from the Menu\'s %s (ticket 1113)', async (row, asked) => {
+    const wrapper = page()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get(`[data-testid="${row}"]`).trigger('click')
+    await flushPromises()
+    expect(wrapper.emitted(asked)).toHaveLength(1)
+  })
+
+  it('shows the Shortcuts help over the page, the Menu put away, and keeps Tools position on the device (ticket 1113)', async () => {
+    const wrapper = page()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await choosePanelOption(wrapper, 'menu-tools-position', 'left')
+    expect(localStorage.getItem('openbeads:tool-pill-position')).toBe('left')
+
+    await wrapper.get('[data-testid="menu-item-shortcuts"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="shortcuts-help-close"]').trigger('click')
+    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(false)
+  })
+
+  it('names the strip\'s buttons from What the buttons do, until Escape (tickets 0927, 1113)', async () => {
+    const wrapper = page()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get('[data-testid="menu-item-button-names"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
+    expect(hasOpenLayer()).toBe(true)
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    expect(hasOpenLayer()).toBe(false)
+  })
+
+  it('asks before it deletes the account, from the Menu\'s Account section (ticket 1113)', async () => {
+    const account = memoryAccount({ remembered: { email: 'ann@example.com', plan: 'free' }, session: { email: 'ann@example.com', plan: 'free' } })
+    const wrapper = mount(HomePage, { props: { projectCount: 0, feedback: fakeFeedback(), account }, attachTo: document.body })
+    await flushPromises()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    expect(wrapper.get('[data-testid="menu-account-email"]').text()).toBe('ann@example.com')
+
+    await wrapper.get('[data-testid="menu-delete-account"]').trigger('click')
+    expect(wrapper.find('[data-testid="delete-account-modal"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="delete-account-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+    expect(account.state.session).toBeUndefined()
+    expect(wrapper.find('[data-testid="delete-account-modal"]').exists()).toBe(false)
+  })
+
+  it('signs out from the Menu, the Account section offering Sign in again (ticket 1113)', async () => {
+    const ann = { email: 'ann@example.com', plan: 'free' } as const
+    const account = memoryAccount({ remembered: ann, session: ann })
+    const wrapper = mount(HomePage, { props: { projectCount: 0, feedback: fakeFeedback(), account }, attachTo: document.body })
+    await flushPromises()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get('[data-testid="menu-sign-out"]').trigger('click')
+    await flushPromises()
+    expect(account.remembered()).toBeUndefined()
+    expect(wrapper.find('[data-testid="menu-sign-in"]').exists()).toBe(true)
+  })
+
+  it('sends a signed-in person\'s theme changed from the Homepage\'s Menu, as the editor does (ticket 1086)', async () => {
+    const ann = { email: 'ann@example.com', plan: 'free' } as const
+    const account = memoryAccount({ remembered: ann, session: ann })
+    const wrapper = mount(HomePage, { props: { projectCount: 0, feedback: fakeFeedback(), account }, attachTo: document.body })
+    await flushPromises()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await choosePanelOption(wrapper, 'theme-picker', 'dark')
+    await flushPromises()
+    expect(account.state.sent.some((sent) => sent.theme?.value === 'dark')).toBe(true)
   })
 
   it("opens the editor on a copy of What's inside's Project at the demo's bead size on screen, the page's zoom taken in (ticket 0879)", async () => {

@@ -5,7 +5,7 @@ import { createProject } from './domain/createProject'
 import type { Project } from './domain/project'
 import { downloadFile } from './services/fileDownload'
 import { loadProjects } from './services/libraryStore'
-import { firstProjectAddress, firstStarterAddress, projectAddress, savedProjectsAddress } from './domain/openingAddress'
+import { convertImageAddress, firstProjectAddress, firstStarterAddress, newProjectAddress, projectAddress, savedProjectsAddress } from './domain/openingAddress'
 import { storedHugeProject, storeLibrary } from './testUtils/hugeProject'
 import { withLayers } from './testUtils/layerFields'
 import { closePanel, openPanel, openSavedProjects, openThisProject } from './testUtils/pill'
@@ -137,6 +137,30 @@ describe('opening the editor (ticket 0716)', () => {
 
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="project-list"]').exists()).toBe(true)
+    expect(location.search).toBe('')
+  })
+
+  it('opens Menu on the New Project form at the Homepage Menu\'s New Project address, the open Project kept (ticket 1113)', async () => {
+    storeLibrary([project('Scarf', 1000)])
+    history.replaceState(null, '', newProjectAddress('/'))
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe('New Project')
+    expect(wrapper.find('[data-testid="new-project-technique"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Scarf')
+    expect(location.search).toBe('')
+  })
+
+  it('opens the Convert image page at the Homepage Menu\'s Convert image address (ticket 1113)', async () => {
+    storeLibrary([project('Scarf', 1000)])
+    history.replaceState(null, '', convertImageAddress('/'))
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="convert-image-wizard"]').exists()).toBe(true)
     expect(location.search).toBe('')
   })
 

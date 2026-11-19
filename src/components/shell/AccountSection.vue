@@ -13,14 +13,16 @@ import { PANEL_CONTEXT } from './panelContext'
 // The Menu's Account section (MenuPanel card, ticket 0078). A Guest gets Sign in and the line that everything works
 // without an account; a signed-in person the email and plan as a fact (neither name nor picture is stored), the settings
 // line (1086), Sign out with no confirm, and Delete account, which asks first (0082).
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   /** The signed-in account; none for a Guest. */
   account?: Account
   /** Leaves the current page first, as New Project does: signing in reloads the page. */
   leave: () => Promise<boolean>
   /** Whether the Sign in Subpanel may open: false after a toast said signing in can't be done now. */
   mayOpenSignIn: () => Promise<boolean>
-}>()
+  /** Whether Sign in pushes its Subpanel here; on the Homepage it opens the editor on it instead (ticket 1113). */
+  signInHere?: boolean
+}>(), { account: undefined, signInHere: true })
 const emit = defineEmits<{
   /** The Sign in Subpanel is about to be pushed. */
   'sign-in': []
@@ -43,7 +45,7 @@ async function openSignIn() {
   try {
     if (!(await props.leave()) || !(await props.mayOpenSignIn())) return
     emit('sign-in')
-    context?.openSub(t.value.account.signIn, { opener: 'menu-sign-in' })
+    if (props.signInHere) context?.openSub(t.value.account.signIn, { opener: 'menu-sign-in' })
   } finally {
     asking = false
   }
