@@ -27,7 +27,7 @@ DEPLOY_BASE=/ npm run build
 npx wrangler d1 migrations apply CORE --env dev --remote
 npx wrangler d1 migrations apply BLOBS_DB --env dev --remote
 npx wrangler deploy --env dev --var VERSION:$(git rev-parse HEAD)
-# Dev answers nobody outside Access (ticket 395): sign in with the CI service token, or open the address in a signed-in browser.
+# Neither Worker answers outside Access before the release (ticket 395): sign in with the CI service token, or open the address in a signed-in browser.
 curl -s -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
   https://bd-beads-dev.bd4beads.workers.dev/api/health   # or https://dev.openbeads.com/api/health
 ```
@@ -39,7 +39,7 @@ Production is the same with `--env production`, from a clean checkout of the new
 `.github/workflows/deploy.yml` does the same as the steps above; each Worker's deploy is `.github/workflows/deploy-worker.yml`, which it calls:
 
 - **When it runs.** A push to `main` deploys dev. When the pushed commit is a release commit, production follows (Releasing to production, below). A manual run (Actions → Deploy → Run workflow, on `main`) redeploys production only. A run from any other ref fails at once, and the `production` environment refuses it too.
-- **What it does.** One build, from `main`'s whole history (`fetch-depth: 0`), then for each Worker each database's migrations, then the code with `VERSION` set to the commit that was built, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy. Dev answers nobody outside Access, health included (ticket 395), so both checks send the Access service token (`CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`, in the `production` environment, given to the check steps alone); without it dev's deploy fails. A second check asks the custom domain (`dev.openbeads.com` or `openbeads.com`) the same. It is advisory: the zone's Bot Fight Mode challenges a runner, so a failure there only warns.
+- **What it does.** One build, from `main`'s whole history (`fetch-depth: 0`), then for each Worker each database's migrations, then the code with `VERSION` set to the commit that was built, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy. Neither Worker answers outside Access before the release, health included (ticket 395), so both checks send the Access service token (`CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`, in the `production` environment, given to the check steps alone); without it a deploy fails. A second check asks the custom domain (`dev.openbeads.com` or `openbeads.com`) the same. It is advisory: the zone's Bot Fight Mode challenges a runner, so a failure there only warns.
 - **Custom domains.** Each Worker's `routes` entry in `wrangler.jsonc` is a Custom Domain, so a deploy keeps it. `PUBLIC_ORIGIN` is the origin sign-in is tried on; Google's callback and the allowed origins come from it, never from the request's host. Each hostname has its own Access application (ticket 400), so a tester is added to both policies.
 - **Concurrency.** Dev and production each queue on their own: deploys of the same Worker run one behind another and are never cancelled halfway through. GitHub keeps only one waiting deploy per Worker, so a newer push replaces a dev deploy that is still waiting; if that was a release's, its production deploy doesn't run, and a manual run puts it there.
 - **What it skips.** A push that changes only Markdown deploys nothing. A release always changes the release record, so it never skips.
@@ -113,7 +113,7 @@ The steps that need the maintainer's login, card or judgment are in `scripts/bac
 Before the public release both Workers sit behind Cloudflare Access, which lets in only the emails its policies list, by a one-time PIN sent to that email (spec 385). To add a tester:
 
 1. [one.dash.cloudflare.com](https://one.dash.cloudflare.com/) → Access controls → Applications.
-2. Open the sign-in application of each host the tester needs (the one with an empty Path, not production's `api/health` one), then its Allow policy (not dev's Service Auth policy, which lets in CI's service token).
+2. Open the sign-in application of each host the tester needs then its Allow policy (not the Service Auth policy, which lets in CI's service token).
 3. Under Include → Emails, add the tester's address, and save. The policy is shared, so one edit can cover both hosts; check that both applications list it.
 4. Send the tester the address. They type their email at the Access page and the PIN that arrives.
 
@@ -125,7 +125,7 @@ Nothing in the code names this account, so a fork deploys its own copy with its 
 
 1. **Cloudflare.** Its own account. Create the four D1 databases (`npx wrangler d1 create <name>`, a `core` and a `blobs` per Worker) and the two R2 buckets (`npx wrangler r2 bucket create <name>`).
 2. **`wrangler.jsonc`.** For each environment: the Worker's `name` and `WORKER_SCRIPT`, `CF_ACCOUNT_ID`, each database's `database_name` and `database_id` (in `d1_databases` and in `CORE_DATABASE_ID` / `BLOBS_DATABASE_ID`), the bucket's `bucket_name`, and the fork's own `GOOGLE_CLIENT_ID` and `TURNSTILE_SITE_KEY`. For dev, its Access team as `ACCESS_TEAM_DOMAIN` and each dev host's Access Audience tag in `ACCESS_AUD`: without the right ones, dev refuses every request (ticket 395). Then, after the first deploy, each Worker's limits and warn levels as dashboard variables (above), at values of the fork's choosing: until they are set, uploads and Reports are refused and the watchdog reports each level as not a number.
-3. **Outside services.** Its own Google OAuth client, Turnstile widget, Healthchecks.io checks, an UptimeRobot monitor on production, and Access applications with a service token for CI (phase `h7`). `scripts/backend-wizard.sh` walks each one; its phases work for any account.
+3. **Outside services.** Its own Google OAuth client, Turnstile widget, Healthchecks.io checks, and Access applications with a service token for CI (phase `h7`). `scripts/backend-wizard.sh` walks each one; its phases work for any account.
 4. **Secrets.** The five in the table above, per Worker, with `wrangler secret put`.
 5. **GitHub.** A `production` environment limited to `main`, holding `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` (and, for the backup, `HEALTHCHECK_BACKUP_URL` and `AGE_PUBLIC_KEY`). Without them the deploy workflow fails at its first Wrangler step and touches nothing. GitHub keeps a fork's workflows off until its Actions tab turns them on.
 6. **First deploy.** By hand (above) or through the workflow; the smoke check reads the address from Wrangler, so nothing else names a host.
