@@ -5,23 +5,23 @@ import type { PrintText } from './printText'
 import { displayedExtentPx } from './surfaceView'
 import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
-// Where everything sits on page 1 when it is the overview of a piece cut into parts (tickets 0583, 0914; it began as the
-// Cover page, which the PNG was until ticket 0915), and how Beads needed is cut into list pages, worked out without a canvas
+// Where everything sits on page 1 when it is the overview of a piece cut into parts (tickets 0583, 0914; it began as the old
+// Cover of ticket 0583, which the PNG was until ticket 0915), and how Beads needed is cut into list pages, worked out without a canvas
 // so the drawing and the page count agree. Page px at 150 dpi, like the rest of the print layout.
 
 /** Between the framed Schema and Beads needed. */
-const COVER_GAP = mm(8)
+const OVERVIEW_GAP = mm(8)
 /** The band above the board's top ruler that the "101 →" cut labels of the PDF sit in. */
-export const COVER_CUT_LABEL = mm(3.5)
+export const OVERVIEW_CUT_LABEL = mm(3.5)
 /** The footer row (wordmark, date and time, page number) at the bottom of page 1 and the list pages. */
-export const COVER_FOOTER = mm(6)
+export const PAGE_FOOTER = mm(6)
 /** Beads needed takes at most this share of the room under the title block; the rest of the colors go on list pages. */
 export const TABLE_SHARE = 0.4
 /** Beads needed with no colors: the line saying so. */
 const TABLE_EMPTY = mm(6)
 export const TABLE_COLUMN_GAP = mm(8)
 
-type CoverWords = Pick<PrintText, 'name' | 'maker' | 'colors'>
+type OverviewWords = Pick<PrintText, 'name' | 'maker' | 'colors'>
 
 /** The heights of a Beads needed table: its head (over the first row), a row of colors, and the Total and grams note that
  * end it. */
@@ -44,7 +44,7 @@ export interface ColorsSlice {
   total: boolean
 }
 
-export interface CoverLayout {
+export interface OverviewLayout {
   /** The title block's height: the name, "by {maker}" and the tech line, each only when there is something to say. */
   titleHeight: number
   zoom: number
@@ -52,7 +52,7 @@ export interface CoverLayout {
   /** Where the beads' own top-left corner lands, the framed Schema centred in the room it has. */
   board: { x: number; y: number }
   /** Beads needed under the overview, and the top of it. */
-  cover: ColorsSlice & { y: number }
+  needed: ColorsSlice & { y: number }
   /** Beads needed on each list page that follows (none when it all fits). */
   lists: ColorsSlice[]
 }
@@ -92,9 +92,9 @@ export function oneToARow<Slice extends ColorsSlice & { y: number }>(slice: Slic
 
 /** The list pages that carry on Beads needed from color `from` on: as many colors as a page has room for, the Total
  * ending the last. */
-export function listSlices(words: CoverWords, table: TableRows, from: number, page: PageSize = A4_PORTRAIT): ColorsSlice[] {
+export function listSlices(words: OverviewWords, table: TableRows, from: number, page: PageSize = A4_PORTRAIT): ColorsSlice[] {
   const colors = words.colors.length
-  const rowsOnPage = Math.max(1, Math.floor((page.height - PRINT_MARGIN * 2 - COVER_FOOTER - listHeader(words) - table.head - table.end) / table.row))
+  const rowsOnPage = Math.max(1, Math.floor((page.height - PRINT_MARGIN * 2 - PAGE_FOOTER - listHeader(words) - table.head - table.end) / table.row))
   const lists: ColorsSlice[] = []
   for (let next = from; next < colors || lists.length === 0;) {
     const count = Math.min(colors - next, rowsOnPage * 2)
@@ -106,11 +106,11 @@ export function listSlices(words: CoverWords, table: TableRows, from: number, pa
 
 /** Page 1 as the overview (and its list pages) for a Project's words, with Beads needed as `table`: the whole piece as large
  * as the room the title block and Beads needed (at most its share) leave, centred in it. */
-export function coverLayout(project: Layered, words: CoverWords, table: TableRows, page: PageSize = A4_PORTRAIT): CoverLayout {
+export function overviewLayout(project: Layered, words: OverviewWords, table: TableRows, page: PageSize = A4_PORTRAIT): OverviewLayout {
   const rowHeight = table.row
   const titleHeight = titleHeightOf(words)
   const top = PRINT_MARGIN + titleHeight
-  const bottom = page.height - PRINT_MARGIN - COVER_FOOTER
+  const bottom = page.height - PRINT_MARGIN - PAGE_FOOTER
   const available = bottom - top
   const colors = words.colors.length
 
@@ -118,20 +118,20 @@ export function coverLayout(project: Layered, words: CoverWords, table: TableRow
   const budget = available * TABLE_SHARE
   const whole = colorsHeight(colors, table, true) <= budget
   const fitting = Math.max(1, Math.floor((budget - table.head) / rowHeight)) * 2
-  const onCover = whole ? colors : Math.min(colors, fitting)
-  const cover: ColorsSlice = { from: 0, count: onCover, rowHeight, columns: 2, rows: Math.ceil(onCover / 2), total: whole }
-  const tableHeight = colorsHeight(onCover, table, whole)
+  const onPageOne = whole ? colors : Math.min(colors, fitting)
+  const needed: ColorsSlice = { from: 0, count: onPageOne, rowHeight, columns: 2, rows: Math.ceil(onPageOne / 2), total: whole }
+  const tableHeight = colorsHeight(onPageOne, table, whole)
 
   const wide = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, quarterTurnOf(project), frameWeave(project).cell)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
-  const room = available - tableHeight - COVER_GAP
+  const room = available - tableHeight - OVERVIEW_GAP
   const widthRoom = page.width - PRINT_MARGIN * 2 - inset * 2
-  const zoom = Math.max(0.01, Math.min(widthRoom / wide.width, (room - COVER_CUT_LABEL - inset * 2) / wide.height))
+  const zoom = Math.max(0.01, Math.min(widthRoom / wide.width, (room - OVERVIEW_CUT_LABEL - inset * 2) / wide.height))
   const extent = { width: wide.width * zoom, height: wide.height * zoom }
-  const framed = COVER_CUT_LABEL + inset * 2 + extent.height
-  const board = { x: PRINT_MARGIN + inset + (widthRoom - extent.width) / 2, y: top + (room - framed) / 2 + COVER_CUT_LABEL + inset }
+  const framed = OVERVIEW_CUT_LABEL + inset * 2 + extent.height
+  const board = { x: PRINT_MARGIN + inset + (widthRoom - extent.width) / 2, y: top + (room - framed) / 2 + OVERVIEW_CUT_LABEL + inset }
 
-  const lists = whole ? [] : listSlices(words, table, onCover, page)
+  const lists = whole ? [] : listSlices(words, table, onPageOne, page)
 
-  return { titleHeight, zoom, extent, board, cover: { ...cover, y: board.y + extent.height + inset + COVER_GAP }, lists }
+  return { titleHeight, zoom, extent, board, needed: { ...needed, y: board.y + extent.height + inset + OVERVIEW_GAP }, lists }
 }

@@ -23,9 +23,14 @@ function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 /** How many pixels one strip of a page holds while it is compressed. */
 const STRIP_PIXELS = 1_000_000
 
+/** The words the PNG's pages print: the Cover page is the PDF's (ticket 1096), so the PNG is page 1 and its list pages. */
+function pictureWords({ cover: _cover, ...words }: PrintText): PrintText {
+  return words
+}
+
 /** The PNG's files (ticket 0915): page 1 of the PDF, then the list pages Beads needed runs over onto, in order after it. */
 export function projectPageCount(project: Project, words: PrintText): number {
-  return 1 + pageOneLayout(project, words).lists.length
+  return 1 + pageOneLayout(project, pictureWords(words)).lists.length
 }
 
 /** The page as a PNG, compressed strip by strip. */
@@ -37,7 +42,8 @@ function pngOf(canvas: HTMLCanvasElement): Promise<Blob> {
 
 // The Project as a PNG (tickets 164, 0583, 0915; printed-output.md): page 1 of the PDF as a picture, or list page `page`
 // (1, 2 ...) after it, drawn at `dpi`. It has no pages to point at, so its footer counts its own files.
-export async function exportProjectPng(project: Project, words: PrintText, dpi = PRINT_DPI, page = 0): Promise<Blob> {
+export async function exportProjectPng(project: Project, allWords: PrintText, dpi = PRINT_DPI, page = 0): Promise<Blob> {
+  const words = pictureWords(allWords)
   // Loaded when a PNG is asked for: the page drawing (and the mark it reads from the design system) isn't needed before.
   const { drawNeededListPage, drawPageOne } = await import('./pageOnePage')
   const { loadPrintFonts } = await import('./printPages')
@@ -61,8 +67,8 @@ function flateOf(canvas: HTMLCanvasElement): Promise<Uint8Array[]> {
   return deflateRgb(canvas.width, canvas.height, stripRows, (y, rows) => context.getImageData(0, y, canvas.width, rows).data)
 }
 
-// The Project as a PDF (tickets 162, 0914): page 1 (the chart whole, or the overview of its parts) and its list pages, the
-// chart pages when there are any, then the Word chart, drawn one at a time so memory stays bounded (ADR 0019). Pictures are
+// The Project as a PDF (tickets 162, 0914, 1096): the Cover page when it is asked for, page 1 (the chart whole, or the
+// overview of its parts) and its list pages, the chart pages when there are any, then the Word chart, drawn one at a time so memory stays bounded (ADR 0019). Pictures are
 // drawn at `dpi` (ADR 0076: the PDF has no Export quality); the sheet is the same size in points whatever it is.
 export async function exportProjectPdf(project: Project, words: PrintText, dpi = PDF_PAGE_DPI): Promise<Blob> {
   const layout = pageOneLayout(project, words)
@@ -72,6 +78,7 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   const { blankPage, loadPrintFonts } = await import('./printPages')
   const { drawChartPage } = await import('./chartPage')
   const { drawNeededListPage, drawPageOne } = await import('./pageOnePage')
+  const { drawCoverPage } = await import('./coverPage')
   await loadPrintFonts()
   // The Word chart (ticket 0574) follows the chart pages and counts in every page's "of N".
   const plan = { ...layout.plan, pageCount: pdfPageCount(layout.plan, words) }
@@ -85,6 +92,8 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
     canvas.height = 0
   }
 
+  // The Cover page is a picture, always in color (PrintCover card).
+  if (words.cover) await add(drawCoverPage(project, words, plan.page, 1, plan.pageCount, scale))
   // Page 1 is the lines and letters of a whole chart as PDF drawing (ADR 0043) over a picture of its text, as a chart page is.
   const first = drawPageOne(project, words, layout, plan, scale)
   await add(first.canvas, first.drawing)
@@ -92,7 +101,7 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   // Usually one part per page; PrintStrips can put several small parts on the same sheet, so pages come from grouping
   // them.
   const sheets = new Map<number, PrintPart[]>()
-  for (const part of plan.parts) if (part.page > 1) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
+  for (const part of plan.parts) if (part.page > plan.pageOneNumber) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
   for (const parts of sheets.values()) {
     // A chart page is the lines and letters as PDF drawing (ticket 0585, ADR 0043) over a picture of its text alone.
     const chart = drawChartPage(project, words, plan, parts, scale)

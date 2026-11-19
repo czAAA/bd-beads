@@ -29,6 +29,12 @@ describe('exportFacts', () => {
     expect(factsOf('loom', 20, 30, {}, true)).toMatchObject({ wordPages: 0, pdfPages: 1 })
   })
 
+  it('says whether Large beads would change the PDF, with it on or off (ticket 1125)', () => {
+    expect(factsOf('loom', 20, 30, { largeBeads: true }).largeBeadsActs).toBe(false)
+    expect(factsOf('loom', 100, 100).largeBeadsActs).toBe(true)
+    expect(factsOf('loom', 100, 100, { largeBeads: true }).largeBeadsActs).toBe(true)
+  })
+
   it('counts the chart pages Large beads adds (ticket 0916)', () => {
     const large = factsOf('loom', 100, 100, { largeBeads: true })
     expect(large.sheets).toBeGreaterThan(1)
@@ -76,6 +82,16 @@ describe('estimatePdf', () => {
     const one = factsOf('loom', 20, 20)
     const four = factsOf('loom', 150, 150)
     expect(estimatePdf(four, 300).bytes - estimatePdf(one, 300).bytes).toBeGreaterThan(3 * 90_000)
+  })
+
+  it('counts and weighs the Cover page, as a picture page in color (ticket 1096)', () => {
+    const plain = factsOf('loom', 20, 30)
+    const covered = factsOf('loom', 20, 30, { cover: true })
+
+    expect(covered.pdfPages).toBe(plain.pdfPages + 1)
+    expect(estimatePdf(covered, 300).count).toBe(estimatePdf(plain, 300).count + 1)
+    expect(estimatePdf(covered, 300).bytes - estimatePdf(plain, 300).bytes).toBeGreaterThan(100_000)
+    expect(estimatePng(covered, 300)).toEqual(estimatePng(plain, 300))
   })
 
   it('weighs the Word chart pages Row by row adds (ticket 0916)', () => {

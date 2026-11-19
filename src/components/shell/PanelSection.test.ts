@@ -38,6 +38,14 @@ describe('PanelSection (ticket 0553)', () => {
     expect(localStorage.getItem('openbeads:panel-sections-opened')).toBeNull()
   })
 
+  it('never folds when it is `always-open`: a heading with no button over rows always shown (ticket 1121)', () => {
+    const wrapper = mountSection({ alwaysOpen: true })
+    expect(wrapper.find('button').exists()).toBe(false)
+    expect(wrapper.get('h3').text()).toBe('Project')
+    expect(wrapper.get('[role="group"]').attributes('aria-labelledby')).toBe(wrapper.get('h3 span').attributes('id'))
+    expect(wrapper.find('[data-testid="row"]').exists()).toBe(true)
+  })
+
   it('shows its summary beside the chevron once folded', async () => {
     const wrapper = mountSection({ summary: 'Delica 11/0' })
     expect(wrapper.text()).not.toContain('Delica 11/0')

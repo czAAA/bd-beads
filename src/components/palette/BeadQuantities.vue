@@ -125,7 +125,7 @@ const shown = computed(() => (expanded.value ? quantities.value : quantities.val
           </tr>
         </tbody>
       </table>
-      <button v-if="quantities.length > SUMMARY_ROWS" class="ui-control bead-quantities__more" type="button" :aria-expanded="expanded" data-testid="quantities-toggle" @click="expanded = !expanded">
+      <button v-if="quantities.length > SUMMARY_ROWS" class="ui-control bead-quantities__more" :class="{ 'bead-quantities__more--folded': !expanded }" type="button" :aria-expanded="expanded" data-testid="quantities-toggle" @click="expanded = !expanded">
         <span>{{ expanded ? t.quantities.showFewer : fillBlanks(t.quantities.showAll, { count: quantities.length }) }}</span>
         <AppIcon name="chevron-down" :size="14" class="bead-quantities__chevron" :class="{ 'bead-quantities__chevron--up': expanded }" />
       </button>
@@ -271,6 +271,11 @@ const shown = computed(() => (expanded.value ? quantities.value : quantities.val
   border: 0;
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+/* The colors it holds folded (ticket 1121): in accent-2, as every folded part of a panel is. */
+.bead-quantities__more--folded {
+  color: var(--accent-2);
 }
 
 .bead-quantities__more:focus-visible {

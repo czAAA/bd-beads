@@ -1,6 +1,6 @@
 import { projectDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
-import { rotationSwapsAxes, type Rotation } from '../domain/grid'
+import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
 import { drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
@@ -15,7 +15,7 @@ import {
   type PrintPart,
   type PrintPlan,
 } from './printPlan'
-import { COVER_CUT_LABEL } from './coverLayout'
+import { OVERVIEW_CUT_LABEL } from './overviewLayout'
 import type { PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
 import { type Layered, quarterTurnOf } from '../domain/layerRecord'
@@ -234,6 +234,15 @@ export function downNumber(project: RulerShape, index: number): number {
   return downReversed(quarterTurnOf(project)) ? dimension - index : index + 1
 }
 
+/** Where a position stands in the displayed chart, across and down from 0: what acrossNumber and downNumber number, so a
+ * bead and the ruler number over it agree at every turn (ticket 1122). */
+export function displayedCellOf(project: RulerShape, { row, column }: GridPosition): { across: number; down: number } {
+  const rotation = quarterTurnOf(project)
+  const { columns, rows } = projectDimensions(project)
+  const [across, down, wide, tall] = rotationSwapsAxes(rotation) ? [row, column, rows, columns] : [column, row, columns, rows]
+  return { across: acrossReversed(rotation) ? wide - 1 - across : across, down: downReversed(rotation) ? tall - 1 - down : down }
+}
+
 // Page 1's rulers on all four sides in the Project's own numbers (a turned Project's rows run across, counted from the
 // far end), a number every `every` beads (page 1: 5, or 10 when the beads are small) and a hairline every 10; the chart
 // pages' own are `drawChartRulers`.
@@ -341,7 +350,7 @@ export function drawParts(context: CanvasRenderingContext2D, project: Project, p
   stroke(PRINT_COLORS.accent, 2)
   context.restore()
 
-  for (const index of across) pill(context, `${acrossNumber(project, index)} →`, xOf(index), board.y - reach - COVER_CUT_LABEL + mm(0.3), PRINT_COLORS.accentStrong, 'center')
+  for (const index of across) pill(context, `${acrossNumber(project, index)} →`, xOf(index), board.y - reach - OVERVIEW_CUT_LABEL + mm(0.3), PRINT_COLORS.accentStrong, 'center')
   for (const index of down) pill(context, `${downNumber(project, index)} ↓`, board.x + board.width - mm(1), yOf(index) - pt(5.5), PRINT_COLORS.accentStrong, 'right')
 
   for (const part of plan.parts) {

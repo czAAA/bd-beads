@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, useId } from 'vue'
+import AppIcon from './AppIcon.vue'
 import InfoButton from './InfoButton.vue'
 
 // A discrete slider of a few named stops (QualitySlider card; ticket 576): a native range input, so touch drag, arrows,
-// Home and End work, with a tappable button under each stop that mirrors it.
+// Home and End work, with a tappable button under each stop that mirrors it. `foldable` makes the head a fold row,
+// closed every time it mounts (ticket 1121): the slider shows once it is opened.
 const props = defineProps<{
   /** The accessible name and the head line. */
   label: string
@@ -24,12 +26,16 @@ const props = defineProps<{
   modelValue: string
   /** An export is running: the slider keeps its place but takes no input. */
   disabled?: boolean
+  /** The head folds the slider, closed every time it mounts and kept nowhere (ticket 1121). */
+  foldable?: boolean
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [id: string] }>()
 
 const index = computed(() => Math.max(0, props.stops.findIndex((stop) => stop.id === props.modelValue)))
 const chosen = computed(() => props.stops[index.value])
+const open = ref(!props.foldable)
+const bodyId = useId()
 const at = computed(() => (props.stops.length > 1 ? index.value / (props.stops.length - 1) : 0))
 
 function pick(next: number): void {
@@ -39,47 +45,62 @@ function pick(next: number): void {
 </script>
 
 <template>
-  <div class="qs" :style="{ '--qs-at': at, '--qs-n': stops.length }" data-testid="quality-slider">
-    <p class="qs-head">
-      <span class="qs-label">
-        {{ label }}
-        <InfoButton v-if="hint" :label="hint.label" :body="hint.body" data-testid="quality-hint" />
-      </span>
-      <InfoButton v-if="reduced && stops.some((stop) => stop.from)" class="qs-info" :label="reduced.label" :body="reduced.body" data-testid="quality-reduced-info" />
-      <span class="qs-chosen" data-testid="quality-chosen">{{ chosen?.word }}</span>
-    </p>
-    <input
-      class="qs-range"
-      type="range"
-      min="0"
-      :max="stops.length - 1"
-      step="1"
-      :value="index"
-      :disabled="disabled"
-      :aria-label="label"
-      :aria-valuetext="chosen?.spoken ?? chosen?.word"
-      data-testid="quality-range"
-      @input="pick(Number(($event.target as HTMLInputElement).value))"
-    />
-    <div class="qs-stops" role="radiogroup" :aria-label="label">
+  <div class="qs" :class="{ 'qs--fold': foldable }" :style="{ '--qs-at': at, '--qs-n': stops.length }" data-testid="quality-slider">
+    <!-- Folding (ticket 1121): the fold button lies under the head, so presses reach it but the Info buttons', as in a
+         PanelSection with an Info button. -->
+    <p class="qs-head" :class="{ 'qs-head--fold': foldable, 'qs-head--closed': !open }">
       <button
-        v-for="(stop, position) in stops"
-        :key="stop.id"
+        v-if="foldable"
+        class="ui-control qs-fold"
         type="button"
-        class="qs-stop"
-        role="radio"
-        tabindex="-1"
-        :aria-checked="stop.id === modelValue"
+        :aria-label="chosen ? `${label}, ${chosen.word}` : label"
+        :aria-expanded="open"
+        :aria-controls="bodyId"
+        data-testid="quality-fold"
+        @click="open = !open"
+      />
+      <span class="qs-label">
+        <span :aria-hidden="foldable || undefined">{{ label }}</span>
+        <InfoButton v-if="hint" class="qs-press" :label="hint.label" :body="hint.body" data-testid="quality-hint" />
+      </span>
+      <InfoButton v-if="reduced && stops.some((stop) => stop.from)" class="qs-info qs-press" :label="reduced.label" :body="reduced.body" data-testid="quality-reduced-info" />
+      <span class="qs-chosen" :aria-hidden="foldable || undefined" data-testid="quality-chosen">{{ chosen?.word }}</span>
+      <AppIcon v-if="foldable" :name="open ? 'chevron-down' : 'chevron-left'" :size="14" class="qs-chevron" :class="{ 'qs-chevron--closed': !open }" aria-hidden="true" />
+    </p>
+    <div v-if="open" :id="bodyId" class="qs-body">
+      <input
+        class="qs-range"
+        type="range"
+        min="0"
+        :max="stops.length - 1"
+        step="1"
+        :value="index"
         :disabled="disabled"
-        :data-testid="`quality-stop-${stop.id}`"
-        @click="pick(position)"
-      >
-        <b>{{ stop.word }}</b>
-        <small v-if="stop.detail" :data-testid="`quality-detail-${stop.id}`">
-          <template v-if="stop.from">{{ stop.from }} → <span class="qs-was">{{ stop.detail }}</span></template>
-          <template v-else>{{ stop.detail }}</template>
-        </small>
-      </button>
+        :aria-label="label"
+        :aria-valuetext="chosen?.spoken ?? chosen?.word"
+        data-testid="quality-range"
+        @input="pick(Number(($event.target as HTMLInputElement).value))"
+      />
+      <div class="qs-stops" role="radiogroup" :aria-label="label">
+        <button
+          v-for="(stop, position) in stops"
+          :key="stop.id"
+          type="button"
+          class="qs-stop"
+          role="radio"
+          tabindex="-1"
+          :aria-checked="stop.id === modelValue"
+          :disabled="disabled"
+          :data-testid="`quality-stop-${stop.id}`"
+          @click="pick(position)"
+        >
+          <b>{{ stop.word }}</b>
+          <small v-if="stop.detail" :data-testid="`quality-detail-${stop.id}`">
+            <template v-if="stop.from">{{ stop.from }} → <span class="qs-was">{{ stop.detail }}</span></template>
+            <template v-else>{{ stop.detail }}</template>
+          </small>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -90,6 +111,19 @@ function pick(next: number): void {
   .qs { --qs-small: 400 calc(12rem / 18) / calc(16rem / 18) var(--font-sans); display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-8) 0 0; font: var(--qs-small); color: var(--body); }
   .qs-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-8); margin: 0; font: var(--type-control); color: var(--ink); }
   .qs-chosen { font: var(--qs-small); color: var(--muted); }
+  /* The folding head (ticket 1121): a panel row, its fold button under it; closed, its name and chevron in accent-2,
+     as every folded part of a panel is. */
+  .qs--fold { padding: 0; }
+  .qs-head--fold { position: relative; align-items: center; min-height: var(--panel-item-height); }
+  .qs-head--fold > :not(.qs-fold) { position: relative; pointer-events: none; }
+  .qs-head--fold .qs-press { pointer-events: auto; }
+  .qs-fold { position: absolute; inset: 0 calc(-1 * var(--space-10)); padding: 0; background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
+  .qs-fold:focus-visible { outline: var(--focus-width) solid var(--focus-ring); outline-offset: var(--focus-offset); }
+  .qs-chevron { flex: none; color: var(--muted); }
+  .qs-chevron--closed { transform: rotate(180deg); }
+  .qs-head--closed .qs-label, .qs-head--closed .qs-chevron { color: var(--accent-2); }
+  .qs-body { display: contents; }
+  @media (hover: hover) { .qs-fold:hover { background: var(--hover-fill); } }
   .qs-range { -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box; height: var(--touch-target); margin: 0 calc(100% / (2 * var(--qs-n)) - var(--slider-thumb) / 2); width: calc(100% - 100% / var(--qs-n) + var(--slider-thumb)); background: transparent; cursor: pointer; --qs-line: calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * var(--qs-at)); }
   .qs-range::-webkit-slider-runnable-track { height: var(--slider-track); border-radius: var(--radius-full); background: linear-gradient(var(--accent), var(--accent)) 0 / var(--qs-line) 100% no-repeat, var(--track); }
   .qs-range::-moz-range-track { height: var(--slider-track); border-radius: var(--radius-full); background: var(--track); }

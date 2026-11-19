@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "Large beads shows in Export only on a piece big enough for it to make the chart’s beads bigger",
+    "ru": "«Крупные бисеринки» в «Экспорте» видны, только когда схема настолько велика, что они сделают бисеринки крупнее",
+    "uk": "«Великі бісерини» в «Експорті» видно, лише коли схема така велика, що вони зроблять бісерини більшими",
+    "be": "«Буйныя бісерынкі» ў «Экспарце» відаць, толькі калі схема такая вялікая, што яны зробяць бісерынкі буйнейшымі",
+    "zh": "只有图案大到“大珠子”能让图表上的珠子变大时，导出中才会显示“大珠子”",
+    "es": "Cuentas grandes aparece en Exportar solo cuando la pieza es tan grande que agranda las cuentas del gráfico",
+    "pl": "Duże koraliki widać w Eksporcie tylko przy pracy na tyle dużej, że powiększą koraliki na wykresie"
+  }
+}

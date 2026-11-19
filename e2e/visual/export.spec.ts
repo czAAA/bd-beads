@@ -17,8 +17,6 @@ import { fixtureProject } from '../support/projects'
  * in the Frame panel (ticket 555). */
 async function downloadOf(page: Page, testId: string): Promise<{ name: string; bytes: Buffer }> {
   await openStripPanel(page, 'strip-frame')
-  // The Frame panel's Export opens closed (ticket 0932).
-  await page.locator('[data-testid="frame-export"] .panel-section__header').click()
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId(testId).click()])
   return { name: download.suggestedFilename(), bytes: await readFile((await download.path())!) }
 }
@@ -29,8 +27,9 @@ function hex(png: PNG, x: number, y: number): string {
 }
 
 /** The PDF's plan as the export makes it: page 1 under the title block and Beads needed (ticket 0914). */
+/** The plan of the PDF the app exports with its switches as they are at first: the Cover page on (ticket 1096). */
 function pdfPlan(project: Project) {
-  return pageOneLayout(project, printText(project, en, 'en', new Date())).plan
+  return pageOneLayout(project, printText(project, en, 'en', new Date(), { cover: true })).plan
 }
 
 /** The pages the PDF says it has. */
@@ -102,7 +101,7 @@ test('PDF export holds the legend and the chart, and splits a large Project over
   const { name, bytes } = await downloadOf(page, 'export-pdf')
   const pdf = bytes.toString('latin1')
 
-  expect(name).toBe('fixture-brick.pdf')
+  expect(name).toBe('fixture-brick_cover.pdf')
   expect(pdf.startsWith('%PDF-1.4')).toBe(true)
   // The overview on page 1, then the chart: 120 × 120 does not fit page 1 at 1.6 mm a bead, so it is cut into parts.
   const plan = pdfPlan(project)
@@ -111,12 +110,12 @@ test('PDF export holds the legend and the chart, and splits a large Project over
   expect(pageCountOf(pdf)).toBe(plan.pageCount)
 })
 
-test('PDF export: a 100 × 100 with Letters off is one page, the chart whole on page 1 (ticket 0914)', async ({ page }) => {
+test('PDF export: a 100 × 100 with Letters off is the Cover page and one page, the chart whole on page 1 (tickets 0914, 1096)', async ({ page }) => {
   await openApp(page, [fixtureProject({ technique: 'loom', columns: 100, rows: 100 })])
 
   const { bytes } = await downloadOf(page, 'export-pdf')
 
-  expect(pageCountOf(bytes.toString('latin1'))).toBe(1)
+  expect(pageCountOf(bytes.toString('latin1'))).toBe(2)
 })
 
 /** The size (in pt) of the PDF's first page, from its MediaBox: [0 0 width height]. */

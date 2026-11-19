@@ -1,7 +1,9 @@
 import { forEachBead, type BeadMap, type Rect } from '../domain/canvas'
 import type { Project } from '../domain/project'
-import { pageOneLayout } from './pageOneLayout'
-import { chartOnPageOne } from './printPlan'
+import { CELL_SIZE_PX } from './cellSize'
+import { coverPageLayout } from './coverPageLayout'
+import { pageOneLayout, underLargeBeads } from './pageOneLayout'
+import { chartOnPageOne, PRINT_DPI } from './printPlan'
 import type { PrintText } from './printText'
 import { pdfPageCount } from './wordChartPages'
 import { beadsOfLayer, frameOf } from '../domain/layerRecord'
@@ -25,6 +27,8 @@ export interface ExportFacts {
   overviewZoom?: number
   chartZoom?: number
   lists: number[]
+  /** The Cover page's zoom, when the PDF opens on it (ticket 1096). */
+  coverZoom?: number
   /** The chart pages after page 1, and the area of every part of the chart, on page 1 or on them, in grid units. */
   sheets: number
   partArea: number
@@ -34,6 +38,9 @@ export interface ExportFacts {
   wordChars: number
   /** The PDF's pages, all of the above (pdfPageCount): the Printable chart row's count. */
   pdfPages: number
+  /** Whether Large beads changes this export (ticket 1125), so the Export rows offer it: on, the words carry it only
+   * where it acts; off, the plan prints a bead under 3 mm. */
+  largeBeadsActs: boolean
 }
 
 /** One export's size: its bytes and how many files (PNG) or pages (PDF) it comes to. */
@@ -72,12 +79,14 @@ export function exportFacts(project: Project, words: PrintText): ExportFacts | u
     pageOneColors: pageOne.needed.count,
     ...(pageOne.overview ? { overviewZoom: pageOne.overview.zoom } : { chartZoom: plan.zoom }),
     lists: pageOne.lists.map((list) => list.count),
+    ...(words.cover ? { coverZoom: coverPageLayout(project).zoom } : {}),
     sheets: chartOnPageOne(plan) ? 0 : new Set(plan.parts.map((part) => part.page)).size,
     partArea: plan.parts.reduce((sum, part) => sum + (part.lastAcross - part.firstAcross + 1) * (part.lastDown - part.firstDown + 1), 0),
     wordPages: pdfPages - plan.pageCount,
     wordRows: words.wordChart?.rows.length ?? 0,
     wordChars: words.wordChart?.rows.reduce((sum, row) => sum + row.runs.length, 0) ?? 0,
     pdfPages,
+    largeBeadsActs: !!words.largeBeads || underLargeBeads(plan),
   }
 }
 
@@ -91,11 +100,28 @@ function atDpi(figures: Readonly<Record<150 | 300 | 450, readonly number[]>>, dp
 /** The overview's bytes at a dpi (page 1 of a piece cut into parts; measured on the Cover page it began as, 2026-10-30): a
  * constant, the colors it lists, the board's cells, the beads and their edges, and the crosses on empty positions (ticket
  * 0719), the last four each by the bead's size on the page. */
-const COVER_BYTES = {
+const OVERVIEW_BYTES = {
   150: [22_755, 5_637, 31.54, 59.12, 66.82, 130],
   300: [83_519, 9_703, 38.82, 116.38, 132.67, 340],
   450: [155_841, 23_447, 45.09, 140.36, 143.94, 540],
 } as const
+
+/** The Cover page's bytes at a dpi (ticket 1096, measured 2026-11-19 on 13 pieces, 5 × 5 to 250 × 250, 1 to 90 colors): a
+ * constant, then by each bead's size on the page: the beads' area, the edges between colors and the beads' area again by
+ * how many colors there are (up to 100). 450 dpi is not measured: the PDF's pages are drawn at 300 dpi at most. */
+const COVER_PAGE_BYTES = {
+  150: [40_000, 0.135, 4.25, 1.45],
+  300: [105_000, 0.055, 4.25, 1.45],
+  450: [170_000, 0.055, 4.25, 1.45],
+} as const
+const COVER_COLORS = 100
+
+function coverBytes(facts: ExportFacts, dpi: number, zoom: number): number {
+  const [base, perArea, perEdge, perColorArea] = atDpi(COVER_PAGE_BYTES, dpi) as [number, number, number, number]
+  const bead = (CELL_SIZE_PX * zoom * dpi) / PRINT_DPI
+  const area = facts.filled * bead * bead
+  return base + perArea * area + perEdge * facts.edges * bead + (perColorArea * area * Math.min(facts.colors, COVER_COLORS)) / COVER_COLORS
+}
 
 /** What a page of text costs at a dpi, against 300 (the figures below). */
 const TEXT_AT_DPI = { 150: [0.46], 300: [1], 450: [1.74] } as const
@@ -134,7 +160,7 @@ const PDF_PAGE_OVERHEAD = 2_000
 
 /** The overview's bytes at a dpi, with its board at `zoom`; every empty position carries its cross (tickets 0719, 0818). */
 function overviewBytes(facts: ExportFacts, dpi: number, zoom: number): number {
-  const [base, perColor, perCell, perBead, perEdge, perCross] = atDpi(COVER_BYTES, dpi) as [number, number, number, number, number, number]
+  const [base, perColor, perCell, perBead, perEdge, perCross] = atDpi(OVERVIEW_BYTES, dpi) as [number, number, number, number, number, number]
   const board = (perCell * facts.cells + perBead * facts.filled + perEdge * facts.edges + perCross * (facts.cells - facts.filled)) * zoom
   return base + (perColor + PAGE_ONE_PER_COLOR * textAtDpi(dpi)) * facts.pageOneColors + board
 }
@@ -158,8 +184,9 @@ export function estimatePng(facts: ExportFacts, dpi: number): SizeEstimate {
   return { bytes: Math.ceil(pageOneBytes(facts, dpi, true) + listBytes(facts.lists, dpi) + count * PNG_OVERHEAD), count }
 }
 
-/** The PDF: page 1 (the chart as drawing over a picture of its text, or the overview as a picture), its list pages and the
- * Word chart as pictures drawn at `dpi`, and its chart pages vector over a picture of their text (ticket 0914). */
+/** The PDF: the Cover page as a picture (ticket 1096), page 1 (the chart as drawing over a picture of its text, or the
+ * overview as a picture), its list pages and the Word chart as pictures drawn at `dpi`, and its chart pages vector over a
+ * picture of their text (ticket 0914). */
 export function estimatePdf(facts: ExportFacts, dpi: number): SizeEstimate {
   const text = textAtDpi(dpi)
   const count = facts.pdfPages
@@ -167,5 +194,6 @@ export function estimatePdf(facts: ExportFacts, dpi: number): SizeEstimate {
   const charts = facts.sheets * (CHART_PICTURE * text + CHART_DRAWING) + CHART_PER_BEAD * facts.filled + CHART_PER_AREA * facts.partArea
   const wordPages = facts.wordPages * (WORD_PAGE + WORD_PAGE_PER_COLOR * Math.min(facts.colors, WORD_COLORS))
   const word = (wordPages + WORD_PER_ROW * facts.wordRows + WORD_PER_CHARACTER * facts.wordChars) * text
-  return { bytes: Math.ceil(pageOne + listBytes(facts.lists, dpi) + charts + word + count * PDF_PAGE_OVERHEAD), count }
+  const cover = facts.coverZoom === undefined ? 0 : coverBytes(facts, dpi, facts.coverZoom)
+  return { bytes: Math.ceil(cover + pageOne + listBytes(facts.lists, dpi) + charts + word + count * PDF_PAGE_OVERHEAD), count }
 }

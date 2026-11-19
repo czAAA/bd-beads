@@ -4,7 +4,7 @@ import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Weave } from '../domain/weave'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
-import { heldWeave, type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
 // PDF page layout (tickets 162, 185, 578, 0584, 0913, 0914): the chart whole on page 1 when it fits there, else page 1 is the
 // overview and equal parts follow, at the largest bead the sheets allow and the same on every chart page; page px at 150 dpi.
@@ -38,7 +38,7 @@ const PRINT_KEY_GAP = mm(3)
 function printKeyHeight(rows: number): number {
   return mm(6.5 + 4.5 * rows)
 }
-/** The rulers' band on each side of a chart; the cover's board also stands `PRINT_BOARD_PAD` in from its rulers, a chart
+/** The rulers' band on each side of a chart; the overview's board also stands `PRINT_BOARD_PAD` in from its rulers, a chart
  * page's pad does not. */
 export const PRINT_RULER = mm(5)
 export const PRINT_BOARD_PAD = mm(2.5)
@@ -97,8 +97,11 @@ export interface PrintPlan {
   partsAcross: number
   partsDown: number
   parts: PrintPart[]
-  /** Every page of the PDF but the Word chart's: page 1, its list pages and the chart pages (ticket 0914). */
+  /** Every page of the PDF but the Word chart's: the Cover page when there is one (ticket 1096), page 1, its list pages
+   * and the chart pages (ticket 0914). */
   pageCount: number
+  /** Page 1's own number: 2 when the Cover page opens the PDF (ticket 1096; PrintCover card), else 1. */
+  pageOneNumber: number
   /** How many rows of colors the key under the pads has room for, the same on every chart page. */
   keyRows: number
 }
@@ -208,14 +211,14 @@ type Block = Omit<PrintPart, 'page' | 'place'>
 
 function blocksOf(project: Shape, cut: Cut): Block[] {
   const grid = displayedGrid(project)
-  // Measured in the Canvas's Weave as held, without its Bead's cell.
-  const canvas = heldWeave(project, 'canvas')
+  // Measured in the Weave the chart is drawn in, with its Bead's cell, as the Project renderer lays the beads (ticket 1122).
+  const drawn = frameWeave(project)
   const blocks: Block[] = []
   cut.down.forEach(({ first: firstDown, last: lastDown }, down) => {
     cut.across.forEach(({ first: firstAcross, last: lastAcross }, across) => {
       const overlapAcross = Math.min(PRINT_PART_OVERLAP, firstAcross)
       const overlapDown = Math.min(PRINT_PART_OVERLAP, firstDown)
-      const extent = blockExtent(canvas, quarterTurnOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
+      const extent = blockExtent(drawn, quarterTurnOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
       const region = { x: (firstAcross - overlapAcross) * grid.stepAcross, y: (firstDown - overlapDown) * grid.stepDown, ...extent }
       blocks.push({ across, down, letter: partLetter(blocks.length), firstAcross, lastAcross, firstDown, lastDown, overlapAcross, overlapDown, region })
     })
@@ -289,7 +292,13 @@ export interface PlanOptions {
 
 /** Whether the plan puts the whole chart on page 1, so the PDF needs no chart pages (ticket 0914). */
 export function chartOnPageOne(plan: PrintPlan): boolean {
-  return plan.parts.every((part) => part.page === 1)
+  return plan.parts.every((part) => part.page === plan.pageOneNumber)
+}
+
+/** The plan with the Cover page before page 1 (ticket 1096; PrintCover card): it counts as a page, so every page number
+ * after it, and every page a page points at, moves on by one. The chart is planned as it was. */
+export function afterCoverPage(plan: PrintPlan): PrintPlan {
+  return { ...plan, pageOneNumber: plan.pageOneNumber + 1, pageCount: plan.pageCount + 1, parts: plan.parts.map((part) => ({ ...part, page: part.page + 1 })) }
 }
 
 /** The most strips a long narrow Schema is folded into, and the further part counts tried past the fewest that fit. */
@@ -382,7 +391,7 @@ export function planPrint(project: Shape, options: PlanOptions = {}): PrintPlan 
     return { ...block, region: regionAt(block, zoom), page: onPage, place: { x: centred ? Math.max(0, (room.width - size.width) / 2) : x, y, ...size } }
   })
   const pageCount = 1 + listPages + (best.onPageOne ? 0 : sheets)
-  return { page, zoom, beadMm: (zoom * CELL_SIZE_PX) / mm(1), partsAcross: cut.across.length, partsDown: cut.down.length, parts, pageCount, keyRows }
+  return { page, zoom, beadMm: (zoom * CELL_SIZE_PX) / mm(1), partsAcross: cut.across.length, partsDown: cut.down.length, parts, pageCount, pageOneNumber: 1, keyRows }
 }
 
 /** Where the chart goes on from a part: the page to its right and the page below, if there are any. */

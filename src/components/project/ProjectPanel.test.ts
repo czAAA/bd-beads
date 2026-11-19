@@ -58,6 +58,9 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     // The Export panel's rows, without the Frame panel's Letters.
     expect(rows.find('[data-testid="export-png"]').exists()).toBe(true)
     expect(rows.text()).not.toContain(en.frame.lettersLabel)
+    // Their File saves the Project file, as the Save Project file row does (ticket 1121).
+    await rows.get('[data-testid="export-project-file"]').trigger('click')
+    expect(wrapper.emitted('save-project-file')).toHaveLength(1)
 
     await row.trigger('click')
     expect(row.attributes('aria-expanded')).toBe('false')
