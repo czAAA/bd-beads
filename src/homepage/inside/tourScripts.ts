@@ -166,12 +166,6 @@ async function inFramePanel(hand: Hand, work: () => Promise<void>): Promise<void
   if (hand.root.querySelector('[data-testid="frame-panel"]')) await hand.press('strip-frame')
 }
 
-/** Unfolds the Frame panel's Export row (ticket 0932), which opens closed. */
-async function openFrameExport(hand: Hand): Promise<void> {
-  const header = () => hand.root.querySelector('[data-testid="frame-export"] .panel-section__header[aria-expanded="false"]')
-  if (header()) await hand.press(header)
-}
-
 /** A picker's own button: the one that opens its list. */
 function pickerButton(hand: Hand, testid: string) {
   return () => hand.root.querySelector(`[data-testid="${testid}"] .panel-picker__button`) ?? hand.root.querySelector(`[data-testid="${testid}"]`)
@@ -306,7 +300,6 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   /** Letters: each color's letter on its beads. */
   async letters(hand) {
     await inFramePanel(hand, async () => {
-      await openFrameExport(hand)
       await hand.press('frame-letters')
       await hand.wait(HOLD.letters)
     })
@@ -330,7 +323,6 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   /** The Frame panel's Export: the printable chart, shown and not downloaded. */
   async exports(hand) {
     await inFramePanel(hand, async () => {
-      await openFrameExport(hand)
       await hand.hover('export-pdf', HOLD.exports)
     })
   },

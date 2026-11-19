@@ -50,3 +50,15 @@ describe.each(THEMES)('the kind labels in %s', (theme) => {
     }
   })
 })
+
+// The second accent (ticket 1121): the export buttons' label and edge on their soft fill, and a folded part's label on
+// the panels; never the one accent.
+describe.each(THEMES)('accent-2 in %s', (theme) => {
+  it.each(['accent-2-soft', 'panel', 'elevated', 'canvas'])('reads at 4.5:1 or more on %s', (surface) => {
+    expect(ratio(color('accent-2', theme), color(surface, theme))).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('is not the one accent', () => {
+    expect([color('accent', theme), color('accent-strong', theme)]).not.toContain(color('accent-2', theme))
+  })
+})

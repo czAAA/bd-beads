@@ -1,22 +1,23 @@
 # QualitySlider
 
-**Export quality** is a three-stop discrete slider under the two export buttons (Picture, then Printable chart), in the Export panel and the Frame panel's export section (ticket 0957). It sets the **PNG** only (ADR 0076): the PDF's chart pages are vector and its other pages a fixed 300 dpi. Each export button shows the size of what it will give in its value slot ("PDF ≈ 3.2 MB · 9 pages").
+**Export quality** is a three-stop discrete slider under the two export buttons (PNG and PDF, ticket 1121), in the Export panel and the Frame panel's export section (ticket 0957). It sets the **PNG** only (ADR 0076): the PDF's chart pages are vector and its other pages a fixed 300 dpi. Each export button shows the size of what it will give in its Tooltip ("PDF ≈ 3.2 MB · 9 pages", ticket 1121).
 
 Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai canvas "Printed chart pages", option A).
 
 ## Where it sits
 
-- In the Export panel (`panel-width-small`, 360px; ExportPanel card, ticket 0652) and the Frame panel (`panel-width`, 520px, in the **export** PanelSection), as the same component, in this order (ticket 1095; ticket 0957 had put each option under its file): the Picture row, the Printable chart row, the slider, then `space-8` under the slider's last line the Printable chart's two switches. The two files stand one after the other. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
+- In the Export panel (`panel-width-small`, 360px; ExportPanel card, ticket 0652) and the Frame panel (`panel-width`, 520px, in the **export** PanelSection), as the same component, in this order (ticket 1095; ticket 0957 had put each option under its file): the PNG and PDF buttons in one row, "Saves as", the slider (folded, ticket 1121), then `space-8` under the slider's last line the Printable chart's two switches. The two files stand one after the other. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
+- **Folded every time (ticket 1121):** in the export rows the head is a fold row, closed each time the rows show and kept nowhere: "Export quality", its Info button, the chosen stop's word and a 14px chevron (right closed, down open), the name and chevron in `accent-2` while closed (MenuPanel card, Folded parts). The fold is a button under the row (`aria-expanded`, named "Export quality, Medium"), so the Info button still takes its own press. Open, the track and stops show under it.
 - The slider's head line: "Export quality" in `control` (Inter 500 14), `ink`: the same type as the switch rows' names under it (ticket 0957), its Info button right after it, and, right-aligned, the chosen stop's word (Inter 400 12, `muted`).
 - No note stands under the stops (only the Unavailable state's High line, below): that the slider sets the picture only, and that the printable chart stays sharp at any zoom, is said in the Info note.
 
 ## The size line (ticket 0588)
 
-- Each export button (PanelItem) shows its size in its **value slot**, replacing ".png" and ".pdf", in DM Mono 12 `muted`: "PNG ≈ 1.4 MB · 2 files" and "PDF ≈ 3.2 MB · 9 pages". The format word comes first, so the extension is still there.
+- Each export button shows its size in its **Tooltip** (ticket 1121; it was the PanelItem's value slot), under the file's name: "PNG ≈ 1.4 MB · 2 files" and "PDF ≈ 3.2 MB · 9 pages". The format word comes first, so the extension is still there.
 - The figure is the File size estimate (glossary), an upper bound. It is rounded **up** to 0.1 MB ("≈ 0.3 MB"); under 0.1 MB it reads "< 0.1 MB" with no "≈"; from 10 MB it is whole MB, rounded up ("≈ 12 MB").
 - The count is every file or page the button gives: "1 file", "2 files"; "4 pages", "9 pages", with singular and plural from the language.
 - The PNG line follows the slider's stop. The PDF line follows only the Frame, the colors (list pages) and the Printable chart's two switches (ticket 0916): Large beads (more chart pages) and Row by row (the Word chart pages). The PNG line follows Large beads too, as its picture is page 1. Letters changes neither.
-- With no Frame the buttons are disabled and the value slot shows ".png" and ".pdf" as before.
+- Until the print code has arrived (offline before the offline copy had it) the Tooltip says ".png" and ".pdf". With no Frame there are no buttons (ExportPanel card).
 - At narrow widths, a value that does not fit beside its label moves under it as a second line, left-aligned with the label, never truncated. The figures never wrap inside themselves.
 
 ## Stops
@@ -27,7 +28,7 @@ Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai c
 | **Medium** (default) | for print | 300 DPI |
 | High | sharpest | 450 DPI |
 
-Each stop is captioned in a crafter's words (ticket 0957); "300 DPI" means nothing to most people. The DPI figures are in the head's Info note ("What each quality gives"): "Quality is for the picture only. Low draws the picture at 150 DPI: a small file, and one a phone can always make. Medium is 300 DPI, for print. High is 450 DPI, the sharpest. The printable chart is drawn in lines and stays sharp at any zoom.", filled with the DPI this device draws each stop at. The stops carry no size: the Picture button's value slot is the one place the PNG's size is shown, and it follows the chosen stop.
+Each stop is captioned in a crafter's words (ticket 0957); "300 DPI" means nothing to most people. The DPI figures are in the head's Info note ("What each quality gives"): "Quality is for the picture only. Low draws the picture at 150 DPI: a small file, and one a phone can always make. Medium is 300 DPI, for print. High is 450 DPI, the sharpest. The printable chart is drawn in lines and stays sharp at any zoom.", filled with the DPI this device draws each stop at. The stops carry no size: the PNG button's Tooltip is the one place the PNG's size is shown, and it follows the chosen stop.
 
 The PDF is not on the slider: its picture pages (the overview on page 1, list pages, Word chart) and the text picture under each chart page are 300 dpi (`print-dpi`), or 150 where a device cannot allocate a 300 dpi page. The choice is remembered per device; `print-png-bead` (60px) is the Medium PNG value.
 
@@ -59,7 +60,7 @@ The PDF is not on the slider: its picture pages (the overview on page 1, list pa
 
 - [ ] The slider changes the PNG only. A PDF made at Low, Medium and High is the same file, apart from its date.
 - [ ] The stops show the word and its caption in words, with no size and no DPI; the DPI figures are in the Info note. `aria-valuetext` reads the word and the caption.
-- [ ] Picture's value slot reads "PNG ≈ {size} · {n} files" and Printable chart's reads "PDF ≈ {size} · {n} pages", with the counts equal to the files and pages the buttons give.
+- [ ] PNG's Tooltip and name read "PNG ≈ {size} · {n} files" and PDF's read "PDF ≈ {size} · {n} pages", with the counts equal to the files and pages the buttons give.
 - [ ] Sizes are rounded up to 0.1 MB, "< 0.1 MB" under 0.1 MB, and whole MB from 10 MB. Nothing ever shows a floor of "1 MB".
 - [ ] No line stands under the stops; the Info note opens with "Quality is for the picture only." and ends with "The printable chart is drawn in lines and stays sharp at any zoom." In the Unavailable state the High line sits under the stops.
 - [ ] At 320px, a value that does not fit moves under its label, and nothing is cut off or overflows.

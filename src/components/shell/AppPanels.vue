@@ -142,6 +142,7 @@ const chosenStarter = ref<StarterId>()
       @select-frame="onSelectFrame"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
+      @save-project-file="onSaveProjectFile"
       @set-letters="onSetLetters"
       @key="onFrameKey"
       @set-settings="onSetFrameSettings"
@@ -180,6 +181,7 @@ const chosenStarter = ref<StarterId>()
       @select-frame="onSelectFrame('export')"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
+      @save-project-file="onSaveProjectFile"
     />
   </PanelHost>
 

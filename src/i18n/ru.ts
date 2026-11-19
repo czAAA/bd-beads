@@ -840,6 +840,8 @@ export const ru: Translations = {
     sizeHeading: 'Размер',
     exportPicture: 'Картинка',
     exportChart: 'Схема для печати',
+    exportProjectFile: 'Файл',
+    exportProjectFileBody: 'Весь проект в одном файле .openbeads, с его цветами, рамкой и настройками, чтобы открыть его снова здесь или на другом устройстве.',
     exportQuality: 'Качество экспорта',
     qualityLow: 'Низкое',
     qualityMedium: 'Среднее',
