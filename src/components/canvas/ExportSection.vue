@@ -5,6 +5,7 @@ import AppButton from '../ui/AppButton.vue'
 import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
 import LoadingState from '../ui/LoadingState.vue'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useExportQuality } from '../../composables/export/useExportQuality'
 import { usePrintChoices } from '../../composables/export/usePrintChoices'
 import type { Project } from '../../domain/project'
@@ -21,8 +22,8 @@ import type { ExportChoice } from '../../composables/shell/openPanel'
 import { pdfFileName } from '../../composables/export/pdfFileName'
 import { MAX_PDF_FILE_NAME, typedPdfFileName } from '../../domain/projectFile'
 
-// The export rows (tickets 568, 0652, 0916, 1095, 1096, 1121; ExportPanel card): the PNG and PDF buttons in one row, each
-// naming its file and size on hover, "Saves as" (the PDF's name with its pencil), Export quality folded, Large beads, Row by row. One component for the Frame panel's Export
+// The export rows (tickets 568, 0652, 0916, 1095, 1096, 1121; ExportPanel card): PNG, PDF and File (the .openbeads) in one
+// row, each saying on hover what it gives, "Saves as" (the PDF's name with its pencil), Export quality folded, Large beads, Row by row. One component for the Frame panel's Export
 // section and the Export panel; the slot holds what a panel adds under the switches (the Frame panel's Letters).
 const props = defineProps<{
   project: Project
@@ -35,8 +36,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   'export-png': []
   'export-pdf': [typedName?: string]
+  /** File (ticket 1121): the Project's .openbeads file, as the Project panel's Save Project file. */
+  'save-project-file': []
 }>()
 
+/** Save Project file (ADR 0090): File runs it, so its name and Ctrl/⌘ S are the action's. */
+const saveFile = controlAction('save-project-file')
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
 const QUALITY_CAPTIONS = { low: 'qualityLowCaption', medium: 'qualityMediumCaption', high: 'qualityHighCaption' } as const
 const { t, locale } = useI18n()
@@ -144,6 +149,16 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
     >
       PDF
     </AppButton>
+    <AppButton
+      variant="accent-2"
+      :action="saveFile"
+      :tooltip="{ body: t.frame.exportProjectFileBody }"
+      :aria-label="spoken(saveFile.name(t), t.frame.exportProjectFileBody)"
+      data-testid="export-project-file"
+      @click="emit('save-project-file')"
+    >
+      {{ t.frame.exportProjectFile }}
+    </AppButton>
   </div>
   <div class="export-section__file">
     <EditableLine v-bind="fileLine" @save="onRename" />
@@ -167,10 +182,10 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
 </template>
 
 <style scoped>
-/* PNG and PDF side by side, each half the row (ticket 1121). */
+/* PNG, PDF and File side by side, a third of the row each (ticket 1121). */
 .export-section__files {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-8);
   padding: var(--space-4) var(--space-10);
 }

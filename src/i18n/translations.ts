@@ -1058,6 +1058,9 @@ export interface Translations {
     sizeHeading: string
     exportPicture: string
     exportChart: string
+    /** The export rows' third button (ticket 1121): the Project's .openbeads file, by the Save Project file action. */
+    exportProjectFile: string
+    exportProjectFileBody: string
     exportQuality: string
     qualityLow: string
     qualityMedium: string

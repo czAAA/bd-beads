@@ -65,9 +65,19 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(wrapper.emitted('export-pdf')).toHaveLength(1)
   })
 
-  it('puts Saves as right under the two buttons, then Export quality and the switches (ticket 1121)', async () => {
+  it('has a File button after PNG and PDF, in their row, that saves the Project file and says what it holds (ticket 1121)', async () => {
     const wrapper = await mountPanel(framed())
-    const ids = ['export-png', 'export-pdf', 'export-file-name', 'quality-slider', 'export-large-beads', 'export-row-by-row']
+    const file = wrapper.get('[data-testid="export-files"] [data-testid="export-project-file"]')
+
+    expect(file.text()).toBe(en.frame.exportProjectFile)
+    expect(file.attributes('aria-label')).toBe(`${en.panels.project.saveFile}, ${en.frame.exportProjectFileBody}`)
+    await file.trigger('click')
+    expect(wrapper.emitted('save-project-file')).toHaveLength(1)
+  })
+
+  it('puts Saves as right under the buttons, then Export quality and the switches (ticket 1121)', async () => {
+    const wrapper = await mountPanel(framed())
+    const ids = ['export-png', 'export-pdf', 'export-project-file', 'export-file-name', 'quality-slider', 'export-large-beads', 'export-row-by-row']
     const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ids.includes(id!))
 
     expect(order).toEqual(ids)

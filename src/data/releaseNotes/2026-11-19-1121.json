@@ -2,12 +2,12 @@
   "date": "2026-11-19",
   "kind": "changed",
   "line": {
-    "en": "Export has PNG and PDF as two buttons side by side, each showing its size on hover, and whatever a panel holds folded stands out in a color of its own",
-    "ru": "В экспорте PNG и PDF теперь две кнопки рядом, размер каждой видно при наведении, а всё свёрнутое в панелях выделено своим цветом",
-    "uk": "В експорті PNG і PDF тепер дві кнопки поруч, розмір кожної видно під час наведення, а все згорнуте в панелях виділено своїм кольором",
-    "be": "У экспарце PNG і PDF цяпер дзве кнопкі побач, памер кожнай відаць пры навядзенні, а ўсё згорнутае ў панэлях вылучана сваім колерам",
-    "zh": "导出中的 PNG 和 PDF 现在是并排的两个按钮，悬停即可看到文件大小；面板中折叠的部分会以单独的颜色突出显示",
-    "es": "Exportar muestra PNG y PDF como dos botones juntos, cada uno con su tamaño al pasar el puntero, y lo que un panel tiene plegado destaca con un color propio",
-    "pl": "W eksporcie PNG i PDF to teraz dwa przyciski obok siebie, każdy pokazuje rozmiar po najechaniu, a to, co panel ma zwinięte, wyróżnia się własnym kolorem"
+    "en": "Export has PNG, PDF and File (the Project's .openbeads file) as buttons side by side, each saying on hover what it gives, and whatever a panel holds folded stands out in a color of its own",
+    "ru": "В экспорте PNG, PDF и Файл (файл проекта .openbeads) теперь кнопки рядом, при наведении каждая говорит, что сохранит, а всё свёрнутое в панелях выделено своим цветом",
+    "uk": "В експорті PNG, PDF і Файл (файл проєкту .openbeads) тепер кнопки поруч, під час наведення кожна каже, що збереже, а все згорнуте в панелях виділено своїм кольором",
+    "be": "У экспарце PNG, PDF і Файл (файл праекта .openbeads) цяпер кнопкі побач, пры навядзенні кожная кажа, што захавае, а ўсё згорнутае ў панэлях вылучана сваім колерам",
+    "zh": "导出中的 PNG、PDF 和文件（项目的 .openbeads 文件）现在是并排的按钮，悬停即可看到各自保存的内容；面板中折叠的部分会以单独的颜色突出显示",
+    "es": "Exportar muestra PNG, PDF y Archivo (el archivo .openbeads del proyecto) como botones juntos, cada uno dice al pasar el puntero qué guarda, y lo que un panel tiene plegado destaca con un color propio",
+    "pl": "W eksporcie PNG, PDF i Plik (plik projektu .openbeads) to teraz przyciski obok siebie, każdy po najechaniu mówi, co zapisze, a to, co panel ma zwinięte, wyróżnia się własnym kolorem"
   }
 }

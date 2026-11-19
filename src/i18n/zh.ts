@@ -817,6 +817,8 @@ export const zh: Translations = {
     sizeHeading: '尺寸',
     exportPicture: '图片',
     exportChart: '可打印图表',
+    exportProjectFile: '文件',
+    exportProjectFileBody: '整个项目保存为一个 .openbeads 文件，包含颜色、边框和设置，可在这里或其他设备上再次打开。',
     exportQuality: '导出质量',
     qualityLow: '低',
     qualityMedium: '中',

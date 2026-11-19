@@ -829,6 +829,8 @@ export const pl: Translations = {
     sizeHeading: 'Rozmiar',
     exportPicture: 'Obraz',
     exportChart: 'Wykres do druku',
+    exportProjectFile: 'Plik',
+    exportProjectFileBody: 'Cały projekt w jednym pliku .openbeads, z kolorami, ramką i ustawieniami, by otworzyć go znowu tu lub na innym urządzeniu.',
     exportQuality: 'Jakość eksportu',
     qualityLow: 'Niska',
     qualityMedium: 'Średnia',
