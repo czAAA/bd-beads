@@ -41,10 +41,10 @@ const showAll = (root: HTMLElement): void => {
   if (!button) throw new Error('Beads needed has no Show all button')
   button.click()
 }
-/** The Frame panel's Export and margin unfolded, as each opens closed (ticket 0932). */
+/** The Frame panel's Export quality and margin unfolded, as each shows folded (tickets 0932, 1121). */
 const unfold = (root: HTMLElement): void => {
-  const headers = root.querySelectorAll<HTMLElement>('[data-testid="frame-export"] .panel-section__header, [data-testid="margin-section"] .panel-section__header')
-  if (headers.length !== 2) throw new Error('The Frame panel has no Export or margin header')
+  const headers = root.querySelectorAll<HTMLElement>('[data-testid="frame-export"] [data-testid="quality-fold"], [data-testid="margin-section"] .panel-section__header')
+  if (headers.length !== 2) throw new Error('The Frame panel has no Export quality or margin header')
   headers.forEach((header) => header.click())
 }
 /** A width and a height that each bring up their range line (ticket 0978). */
