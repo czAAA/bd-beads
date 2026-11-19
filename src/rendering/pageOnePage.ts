@@ -1,7 +1,7 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { CanvasDrawing } from './canvasDrawing'
 import { drawChartParts, K } from './chartVector'
-import { listHeader, TABLE_COLUMN_GAP, TITLE_MAKER_ROW, TITLE_NAME_ROW, titleRows, type ColorsSlice } from './coverLayout'
+import { listHeader, TABLE_COLUMN_GAP, TITLE_MAKER_ROW, TITLE_NAME_ROW, titleRows, type ColorsSlice } from './overviewLayout'
 import { NEEDED_COLUMNS, NEEDED_HEADING, type PageOneLayout } from './pageOneLayout'
 import { blankPage, drawBoard, drawEmptySwatch, drawMark, drawParts, drawRulers, font, MONO, partLabel, pt, SANS, SERIF, text, wrap } from './printPages'
 import { PRINT_COLORS } from './printColors'
@@ -69,9 +69,9 @@ function drawOverview(context: CanvasRenderingContext2D, project: Project, overv
   if (plan && plan.parts.length > 1) drawParts(context, project, plan, labels, overview.zoom, board)
 }
 
-/** The footer of page 1 and the list pages: the mark, the brand and the date and time on the left, the page number on the
- * right ("1 / 3"). */
-function drawFooter(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, pageNumber: number, pageCount: number): void {
+/** The footer of the Cover page, page 1 and the list pages: the mark, the brand and the date and time on the left, the page
+ * number on the right ("1 / 3"). */
+export function drawFooter(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, pageNumber: number, pageCount: number): void {
   const baseline = page.height - PRINT_MARGIN - mm(1)
   drawMark(context, PRINT_MARGIN, baseline - mm(3.4), mm(4), PRINT_COLORS.accent)
   const brand = text(context, 'openbeads', PRINT_MARGIN + mm(5.5), baseline, font('700', 7.5, SANS), PRINT_COLORS.ink)
@@ -190,7 +190,7 @@ export function drawPageOne(project: Project, words: PrintText, layout: PageOneL
     drawing = pdf?.toString()
   }
   drawNeeded(context, page, words, project.paletteLetters ?? {}, layout.needed, layout.needed.y, words.empty)
-  drawFooter(context, page, words, 1, plan.pageCount)
+  drawFooter(context, page, words, plan.pageOneNumber, plan.pageCount)
   return { canvas, ...(drawing === undefined ? {} : { drawing }) }
 }
 
@@ -201,6 +201,6 @@ export function drawNeededListPage(project: Project, words: PrintText, layout: P
   const { canvas, context } = blankPage(page, scale)
   if (listHeader(words) > 0) text(context, words.name.trim(), PRINT_MARGIN, PRINT_MARGIN + pt(12), font('700', 13, SANS), PRINT_COLORS.ink, 'left', page.width - PRINT_MARGIN * 2)
   drawNeeded(context, page, words, project.paletteLetters ?? {}, layout.lists[index]!, PRINT_MARGIN + listHeader(words))
-  drawFooter(context, page, words, index + 2, plan.pageCount)
+  drawFooter(context, page, words, plan.pageOneNumber + 1 + index, plan.pageCount)
   return canvas
 }

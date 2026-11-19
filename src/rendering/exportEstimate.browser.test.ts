@@ -11,8 +11,8 @@ import { exportProjectPdf, exportProjectPng, projectPageCount } from './projectE
 import { withLayers } from '../testUtils/layerFields'
 
 // The size each export shows against the real files (ticket 0588, ADR 0076): never less than the file and under about twice
-// it, for a small drawing, a long narrow one, a big symmetric one, a photograph, a conversion in many colors and a Schema
-// with a large empty background, with the print choices off and on (Large beads and Row by row, ticket 0916), at every Export quality.
+// it, for a small drawing, a long narrow one, a big symmetric one, a photograph, many colors and a large empty background,
+// with the print choices off and on (Cover page, Large beads, Row by row; tickets 0916, 1096), at every Export quality.
 
 const COLORS = BUILT_IN_COLORS.map((color) => color.hex)
 
@@ -70,7 +70,7 @@ describe('the File size estimate against real exports (QualitySlider card, ADR 0
     }
     for (const on of [false, true]) {
       const project = make()
-      const words = printText(project, en, 'en', new Date(), { largeBeads: on, rowByRow: on })
+      const words = printText(project, en, 'en', new Date(), { cover: on, largeBeads: on, rowByRow: on })
       const facts = exportFacts(project, words)!
       for (const [quality, dpi] of Object.entries(PNG_DPI_BY_QUALITY)) {
         const estimate = estimatePng(facts, dpi)

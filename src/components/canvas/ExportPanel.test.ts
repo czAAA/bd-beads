@@ -79,7 +79,7 @@ describe('ExportPanel (ticket 0652)', () => {
 
   it('puts Saves as right under the buttons, then Export quality and the switches (ticket 1121)', async () => {
     const wrapper = await mountPanel(big())
-    const ids = ['export-png', 'export-pdf', 'export-project-file', 'export-file-name', 'quality-slider', 'export-large-beads', 'export-row-by-row']
+    const ids = ['export-png', 'export-pdf', 'export-project-file', 'export-file-name', 'quality-slider', 'export-cover-page', 'export-large-beads', 'export-row-by-row']
     const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ids.includes(id!))
 
     expect(order).toEqual(ids)
@@ -128,20 +128,23 @@ describe('ExportPanel (ticket 0652)', () => {
   })
 })
 
-describe('ExportPanel print choices (ticket 0916)', () => {
+describe('ExportPanel print choices (tickets 0916, 1096)', () => {
   const pages = (wrapper: Panel) => /· (\d+) pages?$/.exec(wrapper.get('[data-testid="export-pdf"]').attributes('aria-label') ?? '')?.[1]
 
-  it('offers Large beads and Row by row, both off, each with what it does behind its Info button', async () => {
+  it('offers Cover page on and Large beads and Row by row off, each with what it does behind its Info button', async () => {
     const wrapper = await mountPanel(big())
+    const switches = [['export-cover-page', en.frame.coverPageInfoLabel, 'true'], ['export-large-beads', en.frame.largeBeadsInfoLabel, 'false'], ['export-row-by-row', en.frame.rowByRowInfoLabel, 'false']] as const
 
-    for (const [id, label] of [['export-large-beads', en.frame.largeBeadsInfoLabel], ['export-row-by-row', en.frame.rowByRowInfoLabel]] as const) {
-      expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-checked')).toBe('false')
+    for (const [id, label, on] of switches) {
+      expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-checked')).toBe(on)
       expect(wrapper.get(`[data-testid="${id}-info"]`).attributes('aria-label')).toBe(label)
     }
   })
 
   it('counts the PDF\'s pages on the Printable chart row, following each switch at once', async () => {
     const wrapper = await mountPanel(big())
+    expect(pages(wrapper)).toBe('2')
+    await wrapper.get('[data-testid="export-cover-page"]').trigger('click')
     expect(pages(wrapper)).toBe('1')
 
     await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
@@ -152,14 +155,16 @@ describe('ExportPanel print choices (ticket 0916)', () => {
     expect(Number(pages(wrapper))).toBeGreaterThan(large)
   })
 
-  it('remembers both switches on the device', async () => {
+  it('remembers every switch on the device', async () => {
     const wrapper = await mountPanel(big())
+    await wrapper.get('[data-testid="export-cover-page"]').trigger('click')
     await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
     await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
-    expect([localStorage.getItem('openbeads:print-large-beads'), localStorage.getItem('openbeads:print-row-by-row')]).toEqual(['on', 'on'])
+    expect(['cover', 'large-beads', 'row-by-row'].map((key) => localStorage.getItem(`openbeads:print-${key}`))).toEqual(['off', 'on', 'on'])
     wrapper.unmount()
 
     const again = await mountPanel(big())
+    expect(again.get('[data-testid="export-cover-page"]').attributes('aria-checked')).toBe('false')
     expect(again.get('[data-testid="export-large-beads"]').attributes('aria-checked')).toBe('true')
     expect(again.get('[data-testid="export-row-by-row"]').attributes('aria-checked')).toBe('true')
   })
@@ -177,8 +182,9 @@ describe('ExportPanel Large beads only where it acts (ticket 1125)', () => {
     localStorage.setItem('openbeads:print-large-beads', 'on')
     const small = await mountPanel(withProjectName(framed(), 'Charm'))
 
-    expect(small.get('[data-testid="export-pdf"]').attributes('aria-label')).toMatch(/· 1 page$/)
-    expect(small.get('[data-testid="export-file-name"]').text()).toBe('charm.pdf')
+    // The Cover page (on at first, ticket 1096) and page 1: Large beads adds no page and no word.
+    expect(small.get('[data-testid="export-pdf"]').attributes('aria-label')).toMatch(/· 2 pages$/)
+    expect(small.get('[data-testid="export-file-name"]').text()).toBe('charm_cover.pdf')
     expect(localStorage.getItem('openbeads:print-large-beads')).toBe('on')
 
     await small.setProps({ project: big() })
@@ -199,11 +205,13 @@ describe('ExportPanel "Saves as" (ticket 1096)', () => {
   it('names the PDF under the switches, with a word for each switch that is on, at once', async () => {
     const wrapper = await mountPanel(named())
     expect(wrapper.get('[data-testid="export-file-name-row"]').text()).toMatch(/^Saves as/)
-    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind.pdf')
+    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind_cover.pdf')
 
     await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
-    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind_row-by-row.pdf')
+    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind_cover_row-by-row.pdf')
     await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
+    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind_cover_large-beads_row-by-row.pdf')
+    await wrapper.get('[data-testid="export-cover-page"]').trigger('click')
     expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind_large-beads_row-by-row.pdf')
   })
 
@@ -222,12 +230,12 @@ describe('ExportPanel "Saves as" (ticket 1096)', () => {
     const wrapper = await mountPanel(named())
     await rename(wrapper, 'Cuff for Ada')
     await rename(wrapper, '  ')
-    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind.pdf')
+    expect(fileName(wrapper)).toBe('peacock-cuff-ada-lind_cover.pdf')
 
     await rename(wrapper, 'Cuff for Ada')
     wrapper.unmount()
     const again = await mountPanel(named())
-    expect(fileName(again)).toBe('peacock-cuff-ada-lind.pdf')
+    expect(fileName(again)).toBe('peacock-cuff-ada-lind_cover.pdf')
     await again.get('[data-testid="export-pdf"]').trigger('click')
     expect(again.emitted('export-pdf')).toEqual([[undefined]])
   })

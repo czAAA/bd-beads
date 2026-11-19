@@ -337,7 +337,8 @@ describe('FramePanel (ticket 473)', () => {
     const wrapper = await mountWithExport()
     const name = (id: string) => wrapper.get(`[data-testid="${id}"]`).attributes('aria-label')
     expect(name('export-png')).toMatch(/PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
-    expect(name('export-pdf')).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 1 page$/)
+    // The Cover page, on at first (ticket 1096), and page 1.
+    expect(name('export-pdf')).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 2 pages$/)
     // The PNG line follows the chosen stop; the PDF's does not.
     const lines = () => [name('export-png'), name('export-pdf')]
     const [medium, pdf] = lines()
