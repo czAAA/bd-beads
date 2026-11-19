@@ -32,6 +32,17 @@ Signed off on the canvas "PDF export: cover page". The cards have the detail; un
 - **Black and white** (PrintBlackAndWhite card), a switch that is off at first: every page after the cover is drawn in one ink, each bead on paper, a 10%, 20% or 30% tint or solid black, so letters and lines print sharp on an office printer.
 - **Row by row shows each run's bead**: the count, then the bead's own swatch with its letter, and an empty position as the empty swatch, in place of "3A, 2×" (PrintWordChart card).
 
+## Awaiting the owner's sign-off, not yet in the app (tickets 1126–1129)
+
+Drawn for the owner on 2026-11-19 (ticket 1123; the claude.ai page "PDF chart, beads only", linked on the ticket). The PrintChartPage card has the detail; until the owner signs it off and each ticket lands, the rest of this file describes the chart as it prints.
+
+- **Lines** (1126): no lines inside the chart and no edge. The lines every 5 and 10 (`print-line-five`, `print-line-ten`) and the chart's outer edge go; each colored bead keeps its own slim border, `print-line-cell` in `line-strong`, so neighbours share one hairline and a staggered row is outlined bead by bead.
+- **Empty grid** (1127), a new switch in the Export panel, off at first: off, an empty position on a chart or the overview is bare paper or bare board; on, it gets today's outline and small `faint` cross. Colored beads look the same either way.
+- **Trimmed to the beads** (1128): the chart, the overview, the PNG picture and the Cover page show only the rows and columns from the first bead to the last; empty positions inside the drawing stay. The tech line and Row by row give the trimmed size ("13 × 30", not "30 × 39"), and the plan sizes the bead from it. A Schema with no beads prints as today.
+- **Rulers** (1129): every row and column is numbered, on all four sides, 1, 2, 3… from the left and from the top for every turn, starting at the trimmed chart's first column and row; a part from column 61 counts on 61, 62…. Every 10th is Helvetica-Bold `ink`, the rest Helvetica `muted`. The part labels, the continuation line, the overview's cut pills and Row by row use these numbers; the editor keeps its own. The overview keeps a number every 5 (10 when the beads are small) and its hairline every 10, counted the same way.
+- **The 6.5 pt rule** (1129): nothing prints under 6.5 pt but a chart bead's Swatch letter, which scales with the bead, and a ruler number, which is set smaller only where it would not fit its bead (`print-ruler-fit`, 80% of its column's width or its row's height): about 3.7 pt for two digits and 2.4 pt for three on a 1.8 mm bead. Every number is printed.
+- **Letters always** is unchanged: every bead carries its Swatch letter. An empty position has no letter and no fill, and with Empty grid off no cross either: bare paper. A White bead keeps its border and its `ink` letter, which tell it from an empty position.
+
 ## Page 1
 
 One A4 portrait page inside a 10 mm margin on all four sides (`print-margin`), the PrintPage1 card.

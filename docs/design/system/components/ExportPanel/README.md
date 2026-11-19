@@ -40,6 +40,16 @@ Until ticket 1096 lands the panel is as written above. Then:
   - **Black and white** ("What Black and white does"): off at first. Every page after the cover is drawn for a black-and-white printer (PrintBlackAndWhite card). It adds or removes no page.
 - **Picture saves the Cover page** (PrintCover card), whatever the Cover page switch says, always in color and always one file. No switch changes it, so Large beads' Info body loses "It changes the picture too: the picture is the chart’s first page."
 
+### Awaiting the owner's sign-off, not yet in the app (ticket 1127)
+
+Drawn for the owner on 2026-11-19 (ticket 1123). It waits for ticket 1121's export rows. Then:
+
+- **One more switch, Empty grid** ("What Empty grid does"), right after Black and white, so the order is Cover page, Black and white, Empty grid, Large beads, Row by row. A PanelSwitchRow like the others, with its Info button; off at first and remembered on the device like them. Off, an empty position on the PDF's charts and overview is bare paper; on, it gets its outline and small cross (PrintChartPage card). It adds or removes no page.
+- **Its file word**, `empty-grid` in English (`writing.md`), comes after Black and white's in the name, in the panel's order: `peacock-cuff-ada-lind_cover_black-and-white_empty-grid.pdf`.
+- It changes the PDF only once Picture saves the Cover page, which shows no empty positions. If it lands while Picture is still page 1, the picture follows it too and its Info body adds that it does (ticket 0957's rule).
+
+The file word and the place after Black and white are the owner's choices to confirm with the sign-off (ticket 1123).
+
 ### With no Frame
 
 No export buttons and no slider. Under the title line:

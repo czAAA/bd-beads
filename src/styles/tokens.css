@@ -297,6 +297,7 @@
   --print-bead-max: 9mm;
   --print-ruler: 5mm;
   --print-letter: 6.5pt;
+  --print-ruler-fit: 80%;
   --print-line-cell: 0.1mm;
   --print-line-five: 0.18mm;
   --print-line-ten: 0.3mm;
