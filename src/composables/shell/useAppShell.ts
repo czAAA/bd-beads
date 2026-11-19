@@ -355,10 +355,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
-  const { palette, addUsed, removeAdded, removeAllAdded, moveColor, setLetter } = useProjectPalette({ currentProject, edit })
+  const { palette, addUsed, removeAdded, removeAllAdded, paintedBeads, moveColor, setLetter } = useProjectPalette({ currentProject, edit })
   /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
   const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs, accountEmail: () => accountFlow.account.value?.email })
-  const beadColors = useBeadColors({ currentProject, palette, addUsed, select: (colorId) => onSelectColor(colorId), remove: (colorId) => removeColor.onRemoveAddedColor(colorId), selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback })
+  const beadColors = useBeadColors({ currentProject, palette, addUsed, select: (colorId) => onSelectColor(colorId), remove: (colorId) => removeColor.onRemoveAddedColorOrAsk(colorId), selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback })
   provideBeadColors(beadColors)
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
@@ -594,7 +594,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** Removing added colors from the Palette, one or all, each after a confirmation (tickets 228, 304, 0532). */
-  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeAllAdded, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale, dialogs })
+  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeAllAdded, paintedBeads, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale, dialogs })
   provideRemoveAddedColor(removeColor.onRequestRemoveAddedColor)
   provideRemoveAllAddedColors(removeColor.onRequestRemoveAllAddedColors)
 
@@ -1463,6 +1463,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onConfirmReplaceFrame: frameFlow.confirmReplace,
       onCancelReplaceFrame: frameFlow.cancelReplace,
       pendingColorRemovalHex: removeColor.pendingColorRemovalHex,
+      removeColorMessage: removeColor.removeColorMessage,
       onConfirmRemoveAddedColor: removeColor.onConfirmRemoveAddedColor,
       onCancelRemoveAddedColor: removeColor.onCancelRemoveAddedColor,
       removeAllColorsMessage: removeColor.removeAllColorsMessage,
