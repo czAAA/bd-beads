@@ -5,13 +5,14 @@ import { ACCOUNT_SECTION } from '../../composables/shell/useAccountFlow'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import PanelItem from './PanelItem.vue'
 import PanelSection from './PanelSection.vue'
 import { PANEL_CONTEXT } from './panelContext'
 
 // The Menu's Account section (MenuPanel card, ticket 0078), the first one. A Guest gets Sign in, which pushes the Sign
 // in Subpanel, and the line that everything works without an account; a signed-in person the verified email and the
-// plan as a fact (no name, no picture: neither is stored) and Sign out, with no confirm.
+// plan as a fact (no name, no picture: neither is stored), the settings line (ticket 1086) and Sign out, with no confirm.
 const props = defineProps<{
   /** The signed-in account; none for a Guest. */
   account?: Account
@@ -69,6 +70,11 @@ async function signOut() {
           <span class="account-section__plan" data-testid="menu-account-plan">{{ plan }}</span>
         </div>
       </AppTooltip>
+      <!-- The line never changes; its Info button lists which settings are the same on every device (ticket 1086). -->
+      <p class="account-section__note account-section__settings" data-testid="menu-account-settings">
+        {{ t.account.settingsLine }}
+        <InfoButton :label="t.account.settingsInfoLabel" :body="t.account.settingsInfo" data-testid="menu-account-settings-info" />
+      </p>
       <PanelItem icon="sign-out" stays data-testid="menu-sign-out" @select="signOut">{{ t.account.signOut }}</PanelItem>
     </template>
   </PanelSection>
@@ -81,6 +87,12 @@ async function signOut() {
   padding: 0 var(--space-10) var(--space-6) calc(var(--space-10) + 16px + var(--space-8));
   font: var(--type-small);
   color: var(--muted);
+}
+
+/* The Info button ends the sentence, on its last line, without making that line taller than the others. */
+.account-section__settings :deep(.icon-btn-wrap) {
+  margin-block: calc(var(--space-8) * -1);
+  vertical-align: middle;
 }
 
 .account-section__tip {

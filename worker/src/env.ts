@@ -48,6 +48,9 @@ export interface Env {
   /** Sign-ins started and brought back from Google, per IP (ticket 0078); declared under `ratelimits`. */
   SIGN_IN_RATE?: RateLimit
 
+  /** Changes to the Settings kept in step, per account (ticket 1086); declared under `ratelimits`. */
+  SETTINGS_RATE?: RateLimit
+
   /** Reports this Worker takes per UTC day (ticket 1051); the watchdog reports the day it was reached. */
   FEEDBACK_DAILY_LIMIT?: number | string
 

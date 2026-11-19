@@ -2,6 +2,7 @@ import { effectScope, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { en } from '../../i18n/en'
 import { memoryAccount, type MemoryAccountState } from '../../services/memoryAccount'
+import { memoryDeviceSettings } from '../../testUtils/deviceSettings'
 import { useAccountFlow } from './useAccountFlow'
 
 const ann = { email: 'ann@example.com', plan: 'free' } as const
@@ -14,7 +15,7 @@ function setup(start: Partial<MemoryAccountState> = {}) {
   const openMenu = vi.fn()
   const foldedSections = ref<readonly string[]>(['menu:account', 'menu:help'])
   const scope = effectScope()
-  const flow = scope.run(() => useAccountFlow({ account, messages: () => en, showToast, openMenu, foldedSections }))!
+  const flow = scope.run(() => useAccountFlow({ account, messages: () => en, showToast, openMenu, foldedSections, settings: memoryDeviceSettings().controls }))!
   return { account, check, showToast, openMenu, foldedSections, flow, scope }
 }
 

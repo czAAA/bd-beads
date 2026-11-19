@@ -81,6 +81,22 @@ describe('AccountSection (ticket 0078)', () => {
     expect(wrapper.find('[data-testid="menu-sign-in"]').exists()).toBe(false)
   })
 
+  it('tells a signed-in person their settings are the same on all their devices, with which ones behind an Info button, between the email and Sign out', () => {
+    const { wrapper } = mountIn({ account: ref<Account | undefined>({ email: 'ann@example.com', plan: 'free' }) })
+    const line = wrapper.get('[data-testid="menu-account-settings"]')
+    expect(line.text().startsWith(en.account.settingsLine)).toBe(true)
+    expect(line.get('[data-testid="menu-account-settings-info"]').attributes('aria-label')).toBe(en.account.settingsInfoLabel)
+    expect(line.get('.app-tooltip__body').text()).toBe(en.account.settingsInfo)
+    const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid'))
+    expect(order.indexOf('menu-account')).toBeLessThan(order.indexOf('menu-account-settings'))
+    expect(order.indexOf('menu-account-settings')).toBeLessThan(order.indexOf('menu-sign-out'))
+  })
+
+  it('says nothing of settings to a Guest: theirs stay on the device', () => {
+    const { wrapper } = mountIn()
+    expect(wrapper.find('[data-testid="menu-account-settings"]').exists()).toBe(false)
+  })
+
   it('names the Pro plan', () => {
     const { wrapper } = mountIn({ account: ref<Account | undefined>({ email: 'ann@example.com', plan: 'pro' }) })
     expect(wrapper.get('[data-testid="menu-account-plan"]').text()).toBe(en.account.planPro)

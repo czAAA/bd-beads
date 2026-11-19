@@ -3,11 +3,12 @@ import { handleApi, healthRoute, type Route } from './api'
 import type { Env } from './env'
 import { feedbackRoute } from './feedback'
 import { deleteEndedSessions } from './sessions'
+import { settingsRoute } from './settings'
 import { signInRoutes } from './signIn'
 import { runWatchdog, watchdogDeps, type DailyHook } from './watchdog/run'
 
-/** What a Worker is built from: its routes besides health, feedback and signing in, and the work its watchdog does once
- * a day besides deleting the ended sessions. */
+/** What a Worker is built from: its routes besides health, feedback, signing in and settings, and the work its
+ * watchdog does once a day besides deleting the ended sessions. */
 interface WorkerParts {
   routes?: Route[]
   daily?: DailyHook[]
@@ -17,7 +18,7 @@ interface WorkerParts {
  * static assets. On dev, every request needs an Access token first (ticket 395). Built by a function so the tests can
  * add parts of their own. */
 export function createWorker({ routes = [], daily = [] }: WorkerParts = {}): ExportedHandler<Env> {
-  const all = [healthRoute, feedbackRoute, ...signInRoutes, ...routes]
+  const all = [healthRoute, feedbackRoute, ...signInRoutes, settingsRoute, ...routes]
   return {
     async fetch(request, env) {
       const refused = await accessRefusal(request, env)

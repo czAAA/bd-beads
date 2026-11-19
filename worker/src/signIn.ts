@@ -3,11 +3,12 @@ import type { Route } from './api'
 import { readCookie, setCookie } from './cookies'
 import type { Env } from './env'
 import { ApiError, json } from './errors'
-import { FEATURE_OFF_RETRY_SECONDS } from './features'
+import { disabledFeatures, FEATURE_OFF_RETRY_SECONDS } from './features'
 import { googleAddress, googleIdentity, type GoogleClient } from './google'
 import { rateLimit, turnstile, type RateLimitRule } from './guards'
 import { randomId } from './secrets'
 import { endSession, requireAccount, startSession } from './sessions'
+import { settingsOf } from './settings'
 
 // Sign in with Google and Sign out (ticket 0078, spec 385). The app asks `start` for Google's address and sends the
 // person there; Google sends them to `callback`, which starts the session and returns them to the editor with a mark
@@ -119,13 +120,16 @@ const signInCallbackRoute: Route = {
   },
 }
 
-/** `GET /api/me`: the signed-in account's email and plan, or `401 signed-out`. The account comes from the session. */
+/** `GET /api/me`: the signed-in account's email and plan, or `401 signed-out`. The account comes from the session. Its
+ * Settings kept in step ride along (ticket 1086), so a device that opens the app asks once; with the `settings` switch
+ * off the answer holds none. */
 const meRoute: Route = {
   method: 'GET',
   path: '/api/me',
   async handler(rc) {
-    const { email, plan } = await requireAccount(rc)
-    return json({ email, plan })
+    const { id, email, plan } = await requireAccount(rc)
+    const settings = disabledFeatures(rc.env).has('settings') ? undefined : await settingsOf(rc.env, id)
+    return json({ email, plan, settings })
   },
 }
 

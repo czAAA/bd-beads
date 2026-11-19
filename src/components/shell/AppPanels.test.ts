@@ -10,6 +10,7 @@ import { findBead } from '../../domain/beads'
 import { loadProjects, saveProjects } from '../../services/libraryStore'
 import { en } from '../../i18n/en'
 import { mountShellParts, mountShellPartsOn } from '../../testUtils/shellHost'
+import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 import { memoryAccount } from '../../services/memoryAccount'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
 import { backgroundOf, canvasOf, frameOf, layerOf, withFrameSheet } from '../../domain/layerRecord'
@@ -554,5 +555,44 @@ describe('Account (ticket 0078)', () => {
     await email.setValue('')
     expect(mounted.wrapper.text()).not.toContain(en.feedback.emailHintAccount)
     expect(mounted.wrapper.text()).toContain(en.feedback.emailHint)
+  })
+
+  describe('the Settings kept in step (ticket 1086)', () => {
+    const KEYS = ['openbeads:locale', 'openbeads:theme', 'openbeads:lifted-pieces']
+    afterEach(() => {
+      for (const key of KEYS) localStorage.removeItem(key)
+      for (const name of ['lang', 'data-theme', 'style']) document.documentElement.removeAttribute(name)
+    })
+
+    it('takes the account’s language, theme and Lifted pieces as the app opens, the way the Menu sets them', async () => {
+      const at = Date.now() - 1000
+      const settings = { language: { value: 'ru', changedAt: at }, theme: { value: 'dark', changedAt: at }, liftedPieces: { value: 'off', changedAt: at } } as const
+      const account = memoryAccount({ remembered: ann, session: ann, settings })
+      const mounted = mountOn(account)
+      await flushPromises()
+      expect(document.documentElement.lang).toBe('ru')
+      expect(document.documentElement.dataset.theme).toBe('dark')
+      expect(KEYS.map((key) => localStorage.getItem(key))).toEqual(['ru', 'dark', 'off'])
+      await mounted.openPanel('menu')
+      expect(panelOptionShown(mounted.wrapper, 'language-switcher')).toBe('Русский')
+      expect(mounted.wrapper.get('[data-testid="menu-lifted-pieces"]').attributes('aria-checked')).toBe('false')
+      expect(account.state.sent).toEqual([])
+      expect(mounted.canvas.toasts.value).toEqual([])
+    })
+
+    it('sends a signed-in person’s pick in the Menu at once', async () => {
+      const at = Date.now() - 1000
+      const settings = { language: { value: 'en', changedAt: at }, theme: { value: 'device', changedAt: at }, liftedPieces: { value: 'on', changedAt: at } } as const
+      const account = memoryAccount({ remembered: ann, session: ann, settings })
+      const mounted = mountOn(account)
+      await flushPromises()
+      await mounted.openPanel('menu')
+      await choosePanelOption(mounted.wrapper, 'theme-picker', 'dark')
+      await click(mounted, 'menu-lifted-pieces')
+      await choosePanelOption(mounted.wrapper, 'language-switcher', 'pl')
+      await flushPromises()
+      expect(account.state.settings).toMatchObject({ language: { value: 'pl' }, theme: { value: 'dark' }, liftedPieces: { value: 'off' } })
+      expect(account.state.waiting).toEqual({})
+    })
   })
 })

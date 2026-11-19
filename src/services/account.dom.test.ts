@@ -202,3 +202,144 @@ describe('browserAccount: the tab back in view', () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('browserAccount: the Settings kept in step (ticket 1086)', () => {
+  const dark = { theme: { value: 'dark', changedAt: 5 } } as const
+
+  it('reads the account’s settings from the same /api/me answer: a value from a newer build as unknown, none when the answer holds none', async () => {
+    const fetch = backend(() => answer(200, { ...ann, settings: { language: { value: 'ru', changedAt: 5 }, theme: { value: 'sepia', changedAt: 6 } } }))
+    const account = await load()
+    expect(await account.check()).toEqual({ state: 'signed-in', account: ann, settings: { language: { value: 'ru', changedAt: 5 }, theme: 'unknown' } })
+    expect(fetch).toHaveBeenCalledTimes(1)
+    backend(() => answer(200, ann))
+    expect(await account.check()).toEqual({ state: 'signed-in', account: ann, settings: undefined })
+  })
+
+  it('keeps a change made on a signed-in device, with its time, until it is sent; a Guest’s device keeps none', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(1000)
+    const account = await load()
+    account.settingChanged('theme', 'dark')
+    expect(account.waitingSettings()).toEqual({})
+    remember(ann)
+    account.settingChanged('theme', 'dark')
+    vi.setSystemTime(2000)
+    account.settingChanged('liftedPieces', 'off')
+    account.settingChanged('theme', 'light')
+    expect(account.waitingSettings()).toEqual({ theme: { value: 'light', changedAt: 2000 }, liftedPieces: { value: 'off', changedAt: 2000 } })
+    // A reload finds them still waiting.
+    expect((await load()).waitingSettings()).toEqual({ theme: { value: 'light', changedAt: 2000 }, liftedPieces: { value: 'off', changedAt: 2000 } })
+  })
+
+  it('drops what was waiting on Sign out, when the session has ended, and for any account but the one it waited for', async () => {
+    const account = await load()
+    remember(ann)
+    account.settingChanged('theme', 'dark')
+    backend(() => answer(200, { signedOut: true }))
+    await account.signOut()
+    remember(ann)
+    expect(account.waitingSettings()).toEqual({})
+
+    account.settingChanged('theme', 'dark')
+    backend(() => answer(401, { error: 'signed-out' }))
+    expect(await account.check()).toEqual({ state: 'signed-out' })
+    remember(ann)
+    expect(account.waitingSettings()).toEqual({})
+
+    account.settingChanged('theme', 'dark')
+    remember({ email: 'bea@example.com', plan: 'free' })
+    expect(account.waitingSettings()).toEqual({})
+  })
+
+  it('sends the changes to /api/settings and answers what the account now holds; those sent wait no more', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(1000)
+    const held = { theme: { value: 'contrast', changedAt: 3000 }, language: { value: 'ru', changedAt: 7 } }
+    const fetch = backend(() => answer(200, { settings: held }))
+    const account = await load()
+    remember(ann)
+    account.settingChanged('theme', 'dark')
+    const changes = account.waitingSettings()
+    expect(await account.sendSettings(changes)).toEqual({ state: 'kept', settings: held })
+    const [url, init] = fetch.mock.calls[0]!
+    expect(url).toBe('/api/settings')
+    expect(init).toMatchObject({ method: 'POST', body: JSON.stringify({ settings: { theme: { value: 'dark', changedAt: 1000 } } }) })
+    expect(account.waitingSettings()).toEqual({})
+  })
+
+  it('keeps waiting a setting changed again while the send was on its way', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(1000)
+    const account = await load()
+    remember(ann)
+    account.settingChanged('theme', 'dark')
+    const changes = account.waitingSettings()
+    backend(() => {
+      vi.setSystemTime(2000)
+      account.settingChanged('theme', 'light')
+      return answer(200, { settings: changes })
+    })
+    await account.sendSettings(changes)
+    expect(account.waitingSettings()).toEqual({ theme: { value: 'light', changedAt: 2000 } })
+  })
+
+  it('answers no-answer, and what waits still waits: offline, unreachable, a refusal, or an answer that holds no settings', async () => {
+    const account = await load()
+    remember(ann)
+    account.settingChanged('theme', 'dark')
+    const waiting = account.waitingSettings()
+    backend(() => {
+      throw new TypeError('Failed to fetch')
+    })
+    expect(await account.sendSettings(waiting)).toEqual({ state: 'no-answer' })
+    backend(() => new Response('<!doctype html><title>app</title>', { status: 200, headers: { 'Content-Type': 'text/html' } }))
+    expect(await account.sendSettings(waiting)).toEqual({ state: 'no-answer' })
+    backend(() => answer(400, { error: 'bad-request' }))
+    expect(await account.sendSettings(waiting)).toEqual({ state: 'no-answer' })
+    const fetch = backend(() => answer(200, { settings: dark }))
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    expect(await account.sendSettings(waiting)).toEqual({ state: 'no-answer' })
+    expect(fetch).not.toHaveBeenCalled()
+    expect(account.waitingSettings()).toEqual(waiting)
+  })
+
+  it('does not send again before the Retry-After of a 429 or 503 has passed', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    const account = await load()
+    remember(ann)
+    const fetch = backend(() => answer(503, { error: 'feature-off', feature: 'settings' }, { 'Retry-After': '900' }))
+    expect(await account.sendSettings(dark)).toEqual({ state: 'no-answer' })
+    vi.setSystemTime(Date.now() + 899_000)
+    expect(await account.sendSettings(dark)).toEqual({ state: 'no-answer' })
+    expect(fetch).toHaveBeenCalledTimes(1)
+    vi.setSystemTime(Date.now() + 2000)
+    backend(() => answer(429, { error: 'rate-limited' }, { 'Retry-After': '60' }))
+    expect(await account.sendSettings(dark)).toEqual({ state: 'no-answer' })
+    const again = backend(() => answer(200, { settings: dark }))
+    expect(await account.sendSettings(dark)).toEqual({ state: 'no-answer' })
+    expect(again).not.toHaveBeenCalled()
+    vi.setSystemTime(Date.now() + 61_000)
+    expect(await account.sendSettings(dark)).toEqual({ state: 'kept', settings: dark })
+  })
+
+  it('forgets the account, and what waited for it, when sending finds the session ended', async () => {
+    backend(() => answer(401, { error: 'signed-out' }))
+    const account = await load()
+    remember(ann)
+    account.settingChanged('theme', 'dark')
+    expect(await account.sendSettings(account.waitingSettings())).toEqual({ state: 'signed-out' })
+    expect(account.remembered()).toBeUndefined()
+    expect(localStorage.getItem('openbeads:settings-waiting')).toBeNull()
+  })
+
+  it('tells its listener when the device is online again, until stopped', async () => {
+    const account = await load()
+    const listener = vi.fn()
+    const stop = account.onOnline(listener)
+    window.dispatchEvent(new Event('online'))
+    expect(listener).toHaveBeenCalledTimes(1)
+    stop()
+    window.dispatchEvent(new Event('online'))
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+})

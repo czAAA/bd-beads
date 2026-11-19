@@ -5,6 +5,7 @@ import type { Translations } from '../../i18n/translations'
 import type { AccountService, SignInUnavailable } from '../../services/account'
 import type { Verification } from '../../services/turnstile'
 import type { MessageTone } from '../ui/useToasts'
+import { useKeptSettings, type DeviceSettingControls } from './useKeptSettings'
 
 /** What signing in needs from the app shell. */
 export interface AccountFlowDeps {
@@ -15,6 +16,9 @@ export interface AccountFlowDeps {
   openMenu: (on: 'account' | 'sign-in') => void
   /** The panel sections folded on this device, by id (`usePanelSection`). */
   foldedSections: Ref<readonly string[]>
+  /** The device's language, theme and Lifted pieces, which a signed-in person finds the same on all their devices
+   * (ticket 1086): each as it shows now, and set the way the Menu sets it. */
+  settings: DeviceSettingControls
 }
 
 /** The Account section's id among the Menu's folding sections. */
@@ -38,12 +42,25 @@ export function useAccountFlow(deps: AccountFlowDeps) {
   /** Between the press on the Google button and the page leaving for Google. */
   const leaving = ref(false)
 
-  /** Asks the backend who is signed in. A session that ended makes the device a Guest's quietly; with no answer
-   * (offline, the backend down) the remembered account stays as it is. */
+  /** The Settings kept in step (ticket 1086): a Guest's stay on the device, a signed-in person's follow the account. */
+  const keptSettings = useKeptSettings({
+    account: deps.account,
+    device: deps.settings,
+    signedIn: () => account.value !== undefined,
+    onSignedOut: () => (account.value = undefined),
+  })
+
+  /** Asks the backend who is signed in, and takes the account's settings from the same answer. A session that ended
+   * makes the device a Guest's quietly; with no answer (offline, the backend down) the remembered account stays as it
+   * is. */
   async function check() {
+    const takeSettings = keptSettings.asking()
     const answer = await deps.account.check()
-    if (answer.state === 'signed-in') account.value = answer.account
-    else if (answer.state === 'signed-out') account.value = undefined
+    if (answer.state === 'signed-in') {
+      account.value = answer.account
+      takeSettings(answer.settings)
+    } else if (answer.state === 'signed-out') account.value = undefined
+    else keptSettings.sendWaiting()
   }
 
   /** Back from Google signed in: the Menu opens on the Account section, unfolded, to show who is signed in. */

@@ -1407,7 +1407,7 @@ What's new's box of what waits for Reload (Homepage card) has one new string, it
 |---|---|---|---|---|---|---|
 | Arrives with Reload (the chip) | Придёт после перезагрузки | Прийде після перезавантаження | Прыйдзе пасля перазагрузкі | 重新加载后到来 | Llega al recargar | Pojawi się po ponownym załadowaniu |
 
-## Sign-in copy (tickets 1087, 0078; the settings line's three rows are not yet in the app: ticket 1086)
+## Sign-in copy (tickets 1087, 0078, 1086)
 
 The Menu's Account section, the Sign in Subpanel, the toasts and the Feedback sheet's hint (MenuPanel, SignIn, Message and FeedbackSheet cards). The words are **Sign in** and **Sign out**, never log in, sign up or register; the plans are **Free account** and **Pro**; someone not signed in is a Guest, a word the interface doesn't show. Settings are "the same on all your devices", never "synced": sync is for Projects (glossary). "Lifted pieces" is the Menu switch's own name in each language. The owner approved the English; the other six were reviewed with the build (ticket 0078): no dash, as in every language's copy; Spanish says "Vuelve a intentarlo en" as its Feedback sheet does; the Polish refusal names no gender; Chinese calls Pro 专业版, as its Homepage does.
 
