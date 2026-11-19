@@ -661,6 +661,14 @@ export interface Translations {
     doneEditingPalette: string
     /** The Tooltip of a built-in swatch in Edit palette. */
     defaultColorLocked: string
+    /** The Palette's Letters switch's Tooltip (ticket 1092). */
+    lettersLine: string
+    /** A swatch's name while it shows its letter. */
+    swatchLetter: string
+    /** The letter button under a swatch in Edit palette, its field, and what a letter taken from another color did. */
+    changeLetter: string
+    letterField: string
+    letterSwapped: string
     /** The confirmation before an added swatch is removed (ticket 304); `{hex}` in the message is the swatch's
      * color. */
     removeConfirmTitle: string
@@ -710,6 +718,13 @@ export interface Translations {
       rowNote: string
       add: string
       takenLabel: string
+      /** A row the Palette holds (ticket 1092): what it says at its end, its names, and the Info note on taking it out. */
+      sameColor: string
+      defaultColor: string
+      defaultLabel: string
+      remove: string
+      heldLabel: string
+      removeNote: string
       noMatch: string
       noMatchFiltered: string
       noneFiltered: string

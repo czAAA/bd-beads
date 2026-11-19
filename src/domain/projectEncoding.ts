@@ -37,7 +37,7 @@ export type EncodedLayer = Omit<StoredLayer, 'beads' | 'folded' | 'quarterTurns'
 
 /** A Project as a file (version 13) and the library (version 6) store it (ticket 0664): what is one per file, and its
  * layers in order, the Canvas first; how many backgrounds the list their positions are in held (ticket 1000). */
-export type EncodedProject = Omit<Project, 'layers'> & Pick<LayeredProject, 'backgroundPositions'> & { layers: EncodedLayer[] }
+export type EncodedProject = Omit<Project, 'layers'> & Pick<LayeredProject, 'backgroundPositions' | 'lettersByLayer'> & { layers: EncodedLayer[] }
 
 /** A Project as version 3 stored it (temporary, see versionThree.ts): all the beads together, the Frame a bare
  * rectangle, the beads it covered beside them. */
@@ -243,9 +243,9 @@ function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFra
 
 /** A Project as a file and the library store it (ticket 0664): each layer with its settings at their defaults left out
  * and its beads compact, a Frame's quarter turns as its orientation in degrees, its Background positions marked as in
- * the list of three (ticket 1000), so they are never moved again. */
+ * the list of three (ticket 1000), so they are never moved again, and each layer's Letters switch as its own (ticket 1092). */
 export function encodeProject(project: Project): EncodedProject {
-  return { ...project, backgroundPositions: BACKGROUND_POSITIONS, layers: project.layers.map(encodeLayer) }
+  return { ...project, backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: project.layers.map(encodeLayer) }
 }
 
 function encodeLayer(layer: Project['layers'][number]): EncodedLayer {

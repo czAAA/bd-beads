@@ -46,14 +46,21 @@ describe('catalogSwatches', () => {
 
   it('marks a code whose hex is already in the Palette as taken, and one that is discontinued', () => {
     const blue = swatchHex('Blue', 'opaque', families)!
-    const list = catalogSwatches(catalog([code({}), code({ code: 'DB2', family: ['Red'], discontinued: true })]), '11/0', [blue], families)
+    const list = catalogSwatches(catalog([code({}), code({ code: 'DB2', family: ['Red'], discontinued: true })]), '11/0', [{ id: 'added-1', hex: blue }], families)
     expect(list.map((entry) => [entry.taken, entry.discontinued])).toEqual([[true, false], [false, true]])
+  })
+
+  it('names the Palette\'s swatch only on the row of the very code it carries (ticket 1092)', () => {
+    const twins = catalog([code({ hex: '#223a70' }), code({ code: 'DB2', family: ['Black'], hex: '#223a70' })])
+    const held = (palette: Parameters<typeof catalogSwatches>[2]) => catalogSwatches(twins, '11/0', palette, families).map((entry) => [entry.taken, entry.heldAs])
+    expect(held([{ id: 'added-223a70', hex: '#223a70', code: 'DB2' }])).toEqual([[true, undefined], [true, 'added-223a70']])
+    expect(held([{ id: 'added-223a70', hex: '#223a70' }])).toEqual([[true, undefined], [true, undefined]])
   })
 
   it('marks two codes whose read colors are the same as taken once the Palette holds either, as two generated swatches are (ticket 0886)', () => {
     const twins = catalog([code({ hex: '#223a70' }), code({ code: 'DB2', family: ['Black'], finish: 'silver-lined', hex: '#223a70' }), code({ code: 'DB3', hex: '#223a71' })])
     expect(catalogSwatches(twins, '11/0', [], families).map((entry) => entry.taken)).toEqual([false, false, false])
-    expect(catalogSwatches(twins, '11/0', ['#223a70'], families).map((entry) => [entry.code, entry.taken])).toEqual([['DB1', true], ['DB2', true], ['DB3', false]])
+    expect(catalogSwatches(twins, '11/0', [{ id: 'added-223a70', hex: '#223a70' }], families).map((entry) => [entry.code, entry.taken])).toEqual([['DB1', true], ['DB2', true], ['DB3', false]])
   })
 
   it('takes the first family that has a color, and leaves out a code with none', () => {

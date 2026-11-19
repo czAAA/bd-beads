@@ -232,7 +232,8 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     placeCanvas(canvas, box)
     const region = { x: props.scroll.x + box.x, y: props.scroll.y + box.y, width: box.width, height: box.height }
     const project = props.project
-    const letters = shownLetters(project)
+    const letters = shownLetters(project, 'frame')
+    const canvasLetters = shownLetters(project, 'canvas')
     const resized = sizeCanvas(canvas, region.width, region.height, pixelRatio)
     const context = canvas.getContext('2d')
     if (!context) {
@@ -259,7 +260,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
           ? changedBands(before.project, project)
           : stepBands(before.project, project)
         : undefined
-    const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value }
+    const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, canvasLetters, draftWhenSmall: true, opaque: true, reference: reference.value }
 
     if (bands === undefined) {
       drawWholeScreen(() => renderProject(context, drawing))

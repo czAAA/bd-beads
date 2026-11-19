@@ -118,8 +118,8 @@ describe('printText with Letters (ticket 0573)', () => {
   it('gives each color of Beads needed its Swatch letter, Letters on or off: every printed chart is lettered (ticket 0916)', () => {
     const project = delicaProject(10)
     const letter = [project.paletteLetters![red.hex]]
-    expect(printText(withLetters(project, false), en, 'en', at).colors.map((color) => color.letter)).toEqual(letter)
-    expect(printText(withLetters(project, true), en, 'en', at).colors.map((color) => color.letter)).toEqual(letter)
+    expect(printText(withLetters(project, 'frame', false), en, 'en', at).colors.map((color) => color.letter)).toEqual(letter)
+    expect(printText(withLetters(project, 'frame', true), en, 'en', at).colors.map((color) => color.letter)).toEqual(letter)
   })
 })
 
@@ -127,7 +127,7 @@ describe('printText with Letters (ticket 0573)', () => {
 const ROW_BY_ROW = { rowByRow: true }
 
 describe('printText Word chart (ticket 0574)', () => {
-  const letters = (project: ReturnType<typeof delicaProject>) => withLetters({ ...project, paletteLetters: { [red.hex]: 'C' } }, true)
+  const letters = (project: ReturnType<typeof delicaProject>) => withLetters({ ...project, paletteLetters: { [red.hex]: 'C' } }, 'frame', true)
 
   it('writes the rows as words with the range, the notes and the runs', () => {
     const base = createProject({ technique: 'brick', beadId: 'miyuki-delica-11-0', size: { width: 3, height: 2, unit: 'beads' } })
@@ -240,7 +240,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('follows Row by row, whatever Letters says (ticket 0916)', () => {
     for (const on of [false, true]) {
-      const project = withLetters(delicaProject(3), on)
+      const project = withLetters(delicaProject(3), 'frame', on)
       expect(printText(project, en, 'en', at).wordChart).toBeUndefined()
       expect(printText(project, en, 'en', at, ROW_BY_ROW).wordChart).toBeDefined()
     }

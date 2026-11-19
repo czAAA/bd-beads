@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { beadCopy, DEFAULT_BEAD } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
@@ -81,6 +81,34 @@ describe('useBeadColors', () => {
     expect(add(entry.hex)).toBe('known')
     harness.history.onUndo()
     expect(harness.project.palette).not.toContain(`added-${entry.hex.slice(1)}`)
+  })
+
+  it('makes a code just added the current color, names its row as the Palette\'s own, and hands a row\'s removal on (ticket 1092)', async () => {
+    const harness = editHarness(delica)
+    const { palette, addUsed } = useProjectPalette({ currentProject: harness.currentProject, edit: harness.edit })
+    const select = vi.fn()
+    const remove = vi.fn()
+    const colors = useBeadColors({ currentProject: harness.currentProject, palette, addUsed, select, remove })
+    await colors.load()
+    const entry = colors.swatches.value.find((candidate) => !candidate.taken)!
+    const colorId = `added-${entry.hex.slice(1)}`
+
+    colors.add(entry.hex, entry.code)
+
+    expect(select).toHaveBeenCalledWith(colorId)
+    expect(colors.swatches.value.find((candidate) => candidate.code === entry.code)!.heldAs).toBe(colorId)
+    // A second add knew the color: nothing is chosen again.
+    colors.add(entry.hex, entry.code)
+    expect(select).toHaveBeenCalledTimes(1)
+    expect(colors.remove).toBe(remove)
+  })
+
+  it('offers no removal where none is handed in, and names a default color\'s row by its default swatch', async () => {
+    const { load, swatches, palette, ...colors } = setup(toho)
+    await load()
+    expect('remove' in colors).toBe(false)
+    const first = palette.value.colors[0]!
+    expect(swatches.value.find((candidate) => candidate.code === first.code)!.heldAs).toBe(first.id)
   })
 })
 

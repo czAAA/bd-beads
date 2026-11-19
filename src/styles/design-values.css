@@ -304,6 +304,7 @@
   --swatch-edit-remove-size: 16px;
   --swatch-edit-remove-stroke: 2.5;
   --swatch-faded-opacity: 0.35;
+  --swatch-letter-height: 28px; /* PaletteSwatches card (ticket 1092): the letter button under a swatch in Edit palette; the touch chip size on touch. */
   --swatch-mark-halo: 1px;
   --swatch-mark-dark: #000000;
   --swatch-mark-light: #ffffff;

@@ -38,6 +38,7 @@ import projectFileV11Turned from './fixtures/project-file-v11-frame-turned.json?
 import projectFileV12 from './fixtures/project-file-v12-layers.json?raw'
 import projectFileV12Backgrounds from './fixtures/project-file-v12-backgrounds.json?raw'
 import projectFileV14ThreeBackgrounds from './fixtures/project-file-v14-three-backgrounds.json?raw'
+import projectFileV14LettersByLayer from './fixtures/project-file-v14-letters-by-layer.json?raw'
 import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import projectFileV13Drops from './fixtures/project-file-v13-drops.json?raw'
 import projectFileV13Mirror from './fixtures/project-file-v13-mirror.json?raw'
@@ -56,7 +57,7 @@ import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
-import { backgroundOf, beadsOfLayer, canvasOf, frameOf } from './layerRecord'
+import { backgroundOf, beadsOfLayer, canvasOf, frameOf, lettersOn } from './layerRecord'
 import { currentPass, frameRowOrder, moveToRow, rowProgressOf } from './rowProgress'
 import { changeFrame } from './changeFrame'
 import { customFrameSize } from './frameShape'
@@ -99,15 +100,22 @@ const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => co
 /** A Project saved before it held its layers as it reads today (ticket 0664, ADR 0079): its Canvas from its own fields
  * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead and
  * Letters, each layer named by the Project's id. */
-/** A stored value as this build writes it back: without the Bead shape every layer is now drawn without (ticket 0724),
- * a Delica 11/0 copy with its sizes the right way round (ticket 0722), and each Project marked as holding its
- * Background positions in the list of three (ticket 1000). */
+/** A stored Project's layers as this build writes them back (ticket 1092): the Canvas without the Letters it only
+ * copied from the Frame, unless the Project is marked as holding each layer's own. */
+function ownLetters(project: { layers: Record<string, unknown>[]; lettersByLayer?: boolean }): unknown[] {
+  const [{ letters: _shared, ...canvas }, ...frames] = project.layers as [Record<string, unknown>, ...Record<string, unknown>[]]
+  return project.lettersByLayer === true ? project.layers : [canvas, ...frames]
+}
+
+/** A stored value as this build writes it back: no Bead shape (ticket 0724), a Delica 11/0 copy with its sizes the
+ * right way round (ticket 0722), each Project marked as holding its Background positions in the list of three (ticket
+ * 1000) and each layer's own Letters, the Canvas's off where it was the Frame's copy (ticket 1092). */
 function writtenBack(stored: string): unknown {
   return JSON.parse(stored, (key, value) => {
     // Written back as this build writes: file version 14 (ticket 0790).
     if (key === '' && typeof value?.version === 'number' && value.version >= 13) return { ...value, version: 14 }
     if (key === 'beadShape') return undefined
-    if (Array.isArray(value?.layers)) return { ...value, backgroundPositions: 3, ...genericAsAdded(value) }
+    if (Array.isArray(value?.layers)) return { ...value, backgroundPositions: 3, lettersByLayer: true, ...genericAsAdded(value), layers: ownLetters(value) }
     const oldDelica = value?.id === 'miyuki/delica/11-0' && value.widthMm === 1.6 && value.heightMm === 1.3
     return oldDelica ? { ...value, widthMm: 1.3, heightMm: 1.6 } : value
   })
@@ -354,7 +362,9 @@ describe('stored-data compatibility', () => {
 
       const [framed, open] = loadProjects()
       expect(framed!.layers.map((layer) => layer.id)).toEqual(['layer-canvas', 'layer-frame'])
-      expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, letters: true, orientation: 90 })
+      expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, orientation: 90 })
+      // Letters was the Frame's, copied onto the Canvas: the Frame keeps it, the Canvas's own is off (ticket 1092).
+      expect([lettersOn(framed!, 'canvas'), lettersOn(framed!, 'frame')]).toEqual([false, true])
       expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, name: 'Fox', rowProgress: { currentRow: 1 } })
       expect(open!.layers).toEqual([expect.objectContaining({ id: 'open-canvas', name: 'Open sketch', beads: { [-2]: { 4: '#1a1a1a' } }, orientation: 0 })])
       saveProjects(loadProjects())
@@ -519,7 +529,8 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV12).projects
       expect(opened!.id).toBe('v12-layers')
       expect(opened!.makerName).toBe('Maria')
-      expect(canvasOf(opened!)).toMatchObject({ id: 'layer-canvas', name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'miyuki/delica/11-0', letters: true, orientation: 90, pieceNames: [{ name: 'Tail', row: 30, column: 30 }] })
+      expect(canvasOf(opened!)).toMatchObject({ id: 'layer-canvas', name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'miyuki/delica/11-0', orientation: 90, pieceNames: [{ name: 'Tail', row: 30, column: 30 }] })
+      expect(lettersOn(opened!, 'canvas')).toBe(false)
       expect(beadsOfLayer(opened!, 'canvas')).toEqual({ 0: { 0: '#2fb6ae' }, 30: { 30: '#e63746', 31: '#e63746' } })
       expect(frameSheetOf(opened!)).toEqual({ row: 8, column: 6, rows: 3, columns: 4, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, quarterTurns: 1, name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#1a1a1a' }, 2: { 3: '#e63746' } }, folded: { 1: { 5: '#2f6fed' } } })
       expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
@@ -626,6 +637,18 @@ describe('stored-data compatibility', () => {
       expect(backgroundOf(opened!, 'frame')).toBe('#336699')
       expect(opened).not.toHaveProperty('backgroundPositions')
       expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV14ThreeBackgrounds))
+    })
+
+    it('opens a version 14 file that marks each layer\'s Letters as its own as they are, and writes it back the same (ticket 1092)', () => {
+      const [opened] = parseProjectsFile(projectFileV14LettersByLayer).projects
+      expect([lettersOn(opened!, 'canvas'), lettersOn(opened!, 'frame')]).toEqual([true, false])
+      expect(opened).not.toHaveProperty('lettersByLayer')
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV14LettersByLayer))
+    })
+
+    it('opens a version 14 file from before each layer had its own Letters with the Canvas\'s off and the Frame\'s as it was (ticket 1092)', () => {
+      const [opened] = parseProjectsFile(projectFileV14ThreeBackgrounds).projects
+      expect([lettersOn(opened!, 'canvas'), lettersOn(opened!, 'frame')]).toEqual([false, true])
     })
 
     it('opens a version 12 file from before Backgrounds with none, so each layer shows the device\'s last pick (ticket 0666)', () => {

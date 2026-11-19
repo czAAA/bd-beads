@@ -175,7 +175,7 @@ const keyLabel = computed(() =>
           <MarginBeadCell v-if="frameBead" :bead="frameBead" @pick="emit('replace-bead', $event)" />
           <span class="margin-title__letters">
             <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
-            <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+            <AppSwitch :model-value="lettersOn(project, 'frame')" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
           </span>
           <span class="margin-title__fold">
             <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />
@@ -227,7 +227,7 @@ const keyLabel = computed(() =>
       </div>
       <div class="margin-title__cell margin-title__letters" :style="form === 'full' ? grid.letters : undefined">
         <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
-        <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+        <AppSwitch :model-value="lettersOn(project, 'frame')" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
       </div>
       <div class="margin-title__cell margin-title__fold" :style="form === 'full' ? grid.fold : undefined">
         <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />

@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
-import { useMoveColor, usePalette, useRecentColors, useRemoveAddedColor } from '../../composables/tools/usePalette'
+import { useMoveColor, usePalette, usePaletteLetters, useRecentColors, useRemoveAddedColor } from '../../composables/tools/usePalette'
 import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
 import { PALETTE_SHORTCUTS, RECENT_SHORTCUTS, isAddedColorId, type PaletteColor } from '../../domain/palette'
 import { colorLabel } from '../../i18n/colorLabel'
 import { useI18n } from '../../i18n/useI18n'
+import AppNote from '../ui/AppNote.vue'
 import AppSwatch from '../ui/AppSwatch.vue'
 import PickColorButton from './PickColorButton.vue'
+import SwatchLetterField from './SwatchLetterField.vue'
 import { useClosePopoverOnPick } from '../shell/pickContext'
 import { fillBlanks } from '../../domain/fillBlanks'
 
@@ -45,6 +47,31 @@ function approximateOf(color: PaletteColor): boolean | undefined {
 const gridEl = ref<HTMLElement>()
 const roving = useRovingFocus(gridEl, { selector: '.palette-picker__swatch' })
 const removeAdded = useRemoveAddedColor()
+
+// Swatch letters (ticket 1092): on the swatches while the Palette's Letters is on; in Edit palette on a button under
+// each swatch, a Tab stop of their own with the arrows moving between them.
+const paletteLetters = usePaletteLetters()
+const letterOf = (color: PaletteColor) => paletteLetters?.letters.value[color.hex]
+const lettersShown = computed(() => !!paletteLetters?.shown.value && !props.editing)
+const lettersEdited = computed(() => !!props.editing && !!paletteLetters)
+const letterRoving = useRovingFocus(gridEl, { selector: '.swatch-letter__button', managesTabIndex: true })
+/** What the last letter typed did to another color: it had the letter, and got this color's in trade. */
+const swapNote = ref<string>()
+watch(lettersEdited, () => (swapNote.value = undefined))
+// The line is about the letters as they stand: any later change of them (an Undo, another letter) takes it away.
+watch(() => paletteLetters?.letters.value, () => (swapNote.value = undefined), { flush: 'sync' })
+
+function changeLetter(color: PaletteColor, letter: string) {
+  const swap = paletteLetters?.setLetter(color.hex, letter)
+  const other = swap && colors.value.find((held) => held.hex === swap.hex)
+  if (!swap || !other) return
+  swapNote.value = fillBlanks(t.value.palette.letterSwapped, { name: labelOf(color).text, letter, other: labelOf(other).text, otherLetter: swap.letter })
+}
+
+function onGridKeydown(event: KeyboardEvent) {
+  roving.onKeydown(event)
+  letterRoving.onKeydown(event)
+}
 
 function isStop(colorId: string, index: number): boolean {
   const selected = colors.value.some((color) => color.id === props.selectedColorId)
@@ -89,11 +116,14 @@ function pick(colorId: string) {
   closePanel()
 }
 
-/** A swatch's name; in Edit palette an added one's is the removal it would ask for. */
+/** A swatch's name, with its letter while the swatches show them; in Edit palette an added one's is the removal it
+ * would ask for. */
 function swatchLabel(color: PaletteColor, slot: number): string {
   const suffix = approximateOf(color) ? t.value.palette.beadColors.approximateSuffix : ''
-  if (!isAddedColorId(color.id)) return `${t.value.palette.colorLabel} ${slot + 1}, ${labelOf(color).text}${suffix}`
-  return props.editing && removeAdded ? fillBlanks(t.value.palette.removeSwatch, { hex: color.hex }) : labelOf(color).text + suffix
+  if (isAddedColorId(color.id) && props.editing && removeAdded) return fillBlanks(t.value.palette.removeSwatch, { hex: color.hex })
+  const name = isAddedColorId(color.id) ? labelOf(color).text + suffix : `${t.value.palette.colorLabel} ${slot + 1}, ${labelOf(color).text}${suffix}`
+  const letter = lettersShown.value ? letterOf(color) : undefined
+  return letter ? fillBlanks(t.value.palette.swatchLetter, { name, letter }) : name
 }
 
 function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number) {
@@ -111,34 +141,46 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
 </script>
 
 <template>
-  <div ref="gridEl" class="palette-picker" :class="{ 'palette-picker--wide': wide }" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
-    <AppSwatch
-      v-for="(color, index) in colors"
-      :key="color.id"
-      :color="color.hex"
-      :label="swatchLabel(color, index)"
-      :tooltip-name="color.code ? labelOf(color).text : undefined"
-      :selected="color.id === selectedColorId"
-      :approximate="approximateOf(color)"
-      :recent="isRecent(color)"
-      :hotkey="PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index] ? `Shift+${PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index]!.keyLabel}` : undefined"
-      :removable="editing && !!removeAdded && isAddedColorId(color.id)"
-      :locked-body="editing && !isAddedColorId(color.id) ? t.palette.defaultColorLocked : undefined"
-      class="palette-picker__swatch"
-      :class="{
-        'palette-picker__swatch--dragging': drag.draggingFrom.value === index,
-        'palette-picker__swatch--target': drag.draggingFrom.value !== undefined && drag.hoverSlot.value === index && drag.hoverSlot.value !== drag.draggingFrom.value,
-      }"
-      :aria-keyshortcuts="removeAdded && isAddedColorId(color.id) ? 'Delete Backspace' : undefined"
-      :tabindex="roving.tabIndexFor(isStop(color.id, index))"
-      data-testid="palette-swatch"
-      :data-color-id="color.id"
-      @select="pick(color.id)"
-      @pointerdown="drag.onPointerDown($event, index)"
-      @keydown="onSwatchKeydown($event, color.id, index)"
-    />
+  <div
+    ref="gridEl"
+    class="palette-picker"
+    :class="{ 'palette-picker--wide': wide, 'palette-picker--lettered': lettersEdited }"
+    role="group"
+    :aria-label="t.palette.pickerLabel"
+    data-testid="palette-picker"
+    @keydown="onGridKeydown"
+    @focusin="letterRoving.onFocusin"
+  >
+    <span v-for="(color, index) in colors" :key="color.id" class="palette-picker__cell">
+      <AppSwatch
+        :color="color.hex"
+        :label="swatchLabel(color, index)"
+        :tooltip-name="color.code ? labelOf(color).text : undefined"
+        :selected="color.id === selectedColorId"
+        :approximate="approximateOf(color)"
+        :recent="isRecent(color)"
+        :hotkey="PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index] ? `Shift+${PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index]!.keyLabel}` : undefined"
+        :letter="lettersShown ? letterOf(color) : undefined"
+        :removable="editing && !!removeAdded && isAddedColorId(color.id)"
+        :locked-body="editing && !isAddedColorId(color.id) ? t.palette.defaultColorLocked : undefined"
+        class="palette-picker__swatch"
+        :class="{
+          'palette-picker__swatch--dragging': drag.draggingFrom.value === index,
+          'palette-picker__swatch--target': drag.draggingFrom.value !== undefined && drag.hoverSlot.value === index && drag.hoverSlot.value !== drag.draggingFrom.value,
+        }"
+        :aria-keyshortcuts="removeAdded && isAddedColorId(color.id) ? 'Delete Backspace' : undefined"
+        :tabindex="roving.tabIndexFor(isStop(color.id, index))"
+        data-testid="palette-swatch"
+        :data-color-id="color.id"
+        @select="pick(color.id)"
+        @pointerdown="drag.onPointerDown($event, index)"
+        @keydown="onSwatchKeydown($event, color.id, index)"
+      />
+      <SwatchLetterField v-if="lettersEdited && letterOf(color)" :letter="letterOf(color)!" :name="labelOf(color).text" @change="changeLetter(color, $event)" />
+    </span>
     <PickColorButton class="palette-picker__pick" :disabled="editing" />
     <slot />
+    <AppNote v-if="swapNote" class="palette-picker__note" role="status" data-testid="palette-letter-swapped">{{ swapNote }}</AppNote>
   </div>
 </template>
 
@@ -148,6 +190,24 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: var(--space-6);
+}
+
+/* A slot: its swatch and, in Edit palette, its letter button under it, two targets that never overlap (ticket 1092). */
+.palette-picker__cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Edit palette with letters: the rows stand further apart, so a letter button is not pressed for the swatch under it. */
+.palette-picker--lettered {
+  align-items: start;
+  row-gap: var(--space-10);
+}
+
+.palette-picker__note {
+  grid-column: 1 / -1;
 }
 
 /* The wide colour popover (PaletteSwatches card): as many swatches of the usual size as fit, in fewer rows. */

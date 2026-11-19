@@ -286,7 +286,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
         <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')">
           <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads; saved with the Project. Printed charts are always lettered (ticket 0914). -->
           <PanelSwitchRow
-            :model-value="lettersOn(project)"
+            :model-value="lettersOn(project, 'frame')"
             :label="t.frame.lettersLabel"
             :info-label="t.frame.lettersInfoLabel"
             :body="t.frame.lettersLine"

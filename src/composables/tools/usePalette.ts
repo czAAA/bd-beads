@@ -1,6 +1,7 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteCodes, type PaletteColor, type PaletteIds } from '../../domain/palette'
-import { setPalette as withPalette } from '../../domain/paletteEdits'
+import { setPalette as withPalette, setSwatchLetter, withLettersBack } from '../../domain/paletteEdits'
+import { withLetter, type SwatchLetters } from '../../domain/swatchLetters'
 import { beadIdOfLayer } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
@@ -9,6 +10,12 @@ import type { EditFn } from '../project/useEdit'
 function codesOf(project: Project, colorIds: readonly string[]): PaletteCodes {
   const hexes = projectPalette(project).colors.filter((color) => colorIds.includes(color.id)).map((color) => color.hex)
   return Object.fromEntries(hexes.flatMap((hex) => (project.paletteCodes?.[hex] ? [[hex, project.paletteCodes[hex]!]] : [])))
+}
+
+/** The Swatch letters of the swatches `colorIds` stand for, so putting a removed swatch back brings its letter too (ticket 1092). */
+function lettersOf(project: Project, colorIds: readonly string[]): SwatchLetters {
+  const hexes = projectPalette(project).colors.filter((color) => colorIds.includes(color.id)).map((color) => color.hex)
+  return Object.fromEntries(hexes.flatMap((hex) => (project.paletteLetters?.[hex] ? [[hex, project.paletteLetters[hex]!]] : [])))
 }
 
 /** The Palette's built-in colors: the woven layer's Bead's, the Frame's when there is one (ADR 0079, ticket 0665). */
@@ -34,8 +41,9 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
   })
   provide(paletteKey, palette)
 
-  function setPalette(ids: PaletteIds, codes?: PaletteCodes) {
-    edit('exempt', (project) => withPalette(project, ids, codes))
+  /** `letters` are given back to the colors that had them: a removal's Undo (ticket 1092). */
+  function setPalette(ids: PaletteIds, codes?: PaletteCodes, letters?: SwatchLetters) {
+    edit('exempt', (project) => (letters ? withLettersBack(withPalette(project, ids, codes), letters) : withPalette(project, ids, codes)))
   }
 
   /** A Custom color has been chosen or painted: it joins the Palette on first use, in the last slot. Hands back whether
@@ -55,10 +63,11 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     const removal = project && removeAddedColor(project.palette, colorId, builtInsOf(project))
     if (!removal) return undefined
     const codes = codesOf(project, [colorId])
+    const letters = lettersOf(project, [colorId])
     setPalette(removal.ids)
     return () => {
       const now = currentProject()
-      if (now) setPalette(restoreAddedColor(now.palette, colorId, removal.slot, builtInsOf(now)), codes)
+      if (now) setPalette(restoreAddedColor(now.palette, colorId, removal.slot, builtInsOf(now)), codes, letters)
     }
   }
 
@@ -69,13 +78,14 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     const removal = project && removeAllAddedColors(project.palette, builtInsOf(project))
     if (!removal || removal.removed.length === 0) return undefined
     const codes = codesOf(project, removal.removed.map(({ colorId }) => colorId))
+    const letters = lettersOf(project, removal.removed.map(({ colorId }) => colorId))
     setPalette(removal.ids)
     return () => {
       const now = currentProject()
       if (!now) return
       const builtIns = builtInsOf(now)
       const ids = removal.removed.reduce((acc, { colorId, slot }) => restoreAddedColor(acc, colorId, slot, builtIns), now.palette)
-      setPalette(ids, codes)
+      setPalette(ids, codes, letters)
     }
   }
 
@@ -84,7 +94,45 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     setPalette(moveSlot(palette.value.colors.map((color) => color.id), from, to))
   }
 
-  return { palette, addUsed, removeAdded, removeAllAdded, moveColor }
+  /** A Palette color's Swatch letter typed by the maker (ticket 1092): one Edit. Hands back the color that had the
+   * letter and the one it got instead, or nothing when no other color had it. */
+  function setLetter(hex: string, letter: string): LetterSwap | undefined {
+    const letters = currentProject()?.paletteLetters
+    const changed = letters && withLetter(letters, hex, letter)
+    if (!changed) return undefined
+    edit('exempt', (project) => setSwatchLetter(project, hex, letter))
+    return changed.swapped
+  }
+
+  return { palette, addUsed, removeAdded, removeAllAdded, moveColor, setLetter }
+}
+
+/** The color a typed letter was taken from, and the letter it got in trade (ticket 1092). */
+export interface LetterSwap {
+  hex: string
+  letter: string
+}
+
+/** The Palette's Swatch letters as its controls need them (ticket 1092): each color's letter, whether the Canvas's
+ * Letters switch shows them on the swatches and the Canvas's beads, and how a letter is changed. */
+export interface PaletteLetters {
+  letters: Readonly<Ref<SwatchLetters>>
+  shown: Readonly<Ref<boolean>>
+  setShown: (on: boolean) => void
+  setLetter: (hex: string, letter: string) => LetterSwap | undefined
+}
+
+const lettersKey: InjectionKey<PaletteLetters | undefined> = Symbol('paletteLetters')
+
+/** The app shell hands out the open Project's Swatch letters to the Palette's controls; a host whose Palette is not
+ * that Project's (the Convert image wizard's remap picker) hands out none, so its swatches carry no letters. */
+export function providePaletteLetters(letters: PaletteLetters | undefined) {
+  provide(lettersKey, letters)
+}
+
+/** Absent (mounted alone, or the Convert image wizard's Palette) means no letters are shown or changed. */
+export function usePaletteLetters(): PaletteLetters | undefined {
+  return inject(lettersKey, undefined)
 }
 
 const removeKey: InjectionKey<(colorId: string) => void> = Symbol('removeAddedColor')

@@ -672,7 +672,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
    * marked taken. */
   const remapSwatches = computed(() => {
     if (!catalog.value || catalog.value.id !== catalogId.value) return []
-    return catalogSwatches(catalog.value, bead.value.size, remapPalette.value.colors.map((color) => color.hex), brandColors(bead.value.brand.id))
+    return catalogSwatches(catalog.value, bead.value.size, remapPalette.value.colors, brandColors(bead.value.brand.id))
   })
 
   /** The beads the Project would get at another number of colors, every other setting as it stands (the Colors

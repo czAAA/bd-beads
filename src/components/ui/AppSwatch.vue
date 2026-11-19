@@ -30,8 +30,10 @@ const props = withDefaults(
     recent?: boolean
     /** A Bead color of a catalog (ticket 0905): true is made from its family and Finish and carries the dashed mark; false is measured. Unset, no mark. */
     approximate?: boolean
+    /** Its Swatch letter, drawn on the chip while the Palette's Letters is on (ticket 1092). */
+    letter?: string
   }>(),
-  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined, tooltipName: undefined, recent: false, approximate: undefined },
+  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined, tooltipName: undefined, recent: false, approximate: undefined, letter: undefined },
 )
 const emit = defineEmits<{
   select: []
@@ -39,7 +41,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/** The × is black or white by the swatch's own hex, whatever the theme. */
+/** The × and the letter are black or white by the swatch's own hex, whatever the theme. */
 const mark = computed(() => markOn(props.color))
 const tooltip = computed(() => {
   const name = props.tooltipName ?? t.value.palette.colorLabel
@@ -71,11 +73,12 @@ const tooltip = computed(() => {
           :aria-describedby="describedby"
           @click="emit('select')"
         >
+          <span v-if="letter && !removable" class="swatch__letter" :class="`swatch__mark--${mark}`" aria-hidden="true" data-testid="palette-swatch-letter">{{ letter }}</span>
           <slot />
         </button>
       </template>
     </AppTooltip>
-    <span v-if="removable" class="swatch__remove" :class="`swatch__remove--${mark}`" aria-hidden="true" data-testid="palette-swatch-remove">
+    <span v-if="removable" class="swatch__remove" :class="`swatch__mark--${mark}`" aria-hidden="true" data-testid="palette-swatch-remove">
       <AppIcon class="swatch__remove-icon" name="close" :size="14" />
     </span>
   </span>
@@ -187,14 +190,21 @@ const tooltip = computed(() => {
   opacity: var(--swatch-faded-opacity);
 }
 
-.swatch__remove--dark {
+.swatch__mark--dark {
   --mark: var(--swatch-mark-dark);
   --mark-halo: var(--swatch-mark-light);
 }
 
-.swatch__remove--light {
+.swatch__mark--light {
   --mark: var(--swatch-mark-light);
   --mark-halo: var(--swatch-mark-dark);
+}
+
+/* The Swatch letter (ticket 1092): centered on the chip in the mark's color, as on a bead. */
+.swatch__letter {
+  font: var(--type-small);
+  color: var(--mark);
+  pointer-events: none;
 }
 
 .swatch__remove-icon {

@@ -21,7 +21,7 @@ vi.mock('../../rendering/projectExport', () => ({
 }))
 import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
 import { usePrintChoices } from './usePrintChoices'
-import { canvasOf, withFrameSheet } from '../../domain/layerRecord'
+import { canvasOf, frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
@@ -78,16 +78,18 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
   })
 })
 
-describe('useExportFlow Letters (ticket 0573)', () => {
-  it('turns Letters on and off on the open Project, saved with it', () => {
+describe('useExportFlow Letters (tickets 0573, 1092)', () => {
+  it('turns each layer\'s Letters on and off on its own, saved with the open Project', () => {
     const replaced: Project[] = []
     const flow = useExportFlow({ currentProject: () => replaced.at(-1) ?? project, projects: () => [project], messages: () => en, locale: () => 'en' as const, replaceProject: (next) => replaced.push(next), downloadFile })
-    flow.onSetLetters(true)
+    flow.onSetLetters(true, 'canvas')
     expect(canvasOf(replaced.at(-1)!).letters).toBe(true)
-    flow.onSetLetters(false)
+    flow.onSetLetters(false, 'canvas')
     expect(canvasOf(replaced.at(-1)!).letters).toBeUndefined()
-    flow.onSetLetters(false)
+    flow.onSetLetters(false, 'canvas')
     expect(replaced).toHaveLength(2)
+    flow.onSetLetters(true, 'frame')
+    expect([frameOf(replaced.at(-1)!)!.letters, canvasOf(replaced.at(-1)!).letters]).toEqual([true, undefined])
   })
 })
 

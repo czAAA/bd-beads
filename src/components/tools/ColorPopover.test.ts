@@ -35,6 +35,28 @@ describe('ColorPopover, Edit palette (tickets 531, 0532)', () => {
     wrapper.unmount()
   })
 
+  it('turns the pencil into a check named Done editing while the mode is on (ticket 1092)', async () => {
+    const { wrapper, pencil } = open()
+    expect([pencil().attributes('aria-label'), pencil().get('svg').attributes('data-icon')]).toEqual(['Edit Palette', 'pencil'])
+    await pencil().trigger('click')
+    expect([pencil().attributes('aria-label'), pencil().get('svg').attributes('data-icon')]).toEqual(['Done editing', 'check'])
+    wrapper.unmount()
+  })
+
+  it('offers the Palette\'s Letters switch where letters are handed out, and none where they are not (ticket 1092)', async () => {
+    const shown = ref(false)
+    const host = mountWithPalette(ColorPopover, defaultPaletteIds(), { tile: undefined, pill: undefined, position: 'bottom' }, { attachTo: document.body, letters: shown })
+    const letters = host.wrapper.get('[data-testid="palette-letters"]')
+    expect(letters.attributes('aria-checked')).toBe('false')
+    await letters.trigger('click')
+    expect(shown.value).toBe(true)
+    host.wrapper.unmount()
+
+    const bare = open()
+    expect(bare.wrapper.find('[data-testid="palette-letters"]').exists()).toBe(false)
+    bare.wrapper.unmount()
+  })
+
   it('disables Pick color and Custom color in the mode, so the picker does not open', async () => {
     const { wrapper, pencil } = open()
     await pencil().trigger('click')

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "new",
+  "line": {
+    "en": "Change a color's letter and show letters on the Palette and the Canvas; a second press on a Bead color takes it out again",
+    "ru": "Меняйте букву цвета и показывайте буквы на палитре и на холсте; повторное нажатие на цвет бисера убирает его из палитры",
+    "uk": "Змінюйте літеру кольору й показуйте літери на палітрі та на полотні; повторне натискання на колір бісеру прибирає його з палітри",
+    "be": "Змяняйце літару колеру і паказвайце літары на палітры і на палатне; паўторны націск на колер бісеру прыбірае яго з палітры",
+    "zh": "可更改颜色的字母，并在调色板和画布上显示字母；再按一次珠子颜色即可将它移出调色板",
+    "es": "Cambia la letra de un color y muestra las letras en la paleta y en el lienzo; al pulsar de nuevo un color de cuenta, se quita de la paleta",
+    "pl": "Zmieniaj literę koloru i pokazuj litery na palecie i na płótnie; ponowne naciśnięcie koloru koralika usuwa go z palety"
+  }
+}

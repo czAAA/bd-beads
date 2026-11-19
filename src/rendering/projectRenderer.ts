@@ -122,6 +122,8 @@ export interface RenderInput {
   drawBead?: BeadDrawer
   /** The Swatch letter of each color by hex (ticket 0573): given, the Frame's beads carry their letter. Absent, none. */
   letters?: Readonly<Record<string, string>>
+  /** The same for the Canvas's own beads (ticket 1092), by its own Letters switch; none in the draft look. */
+  canvasLetters?: Readonly<Record<string, string>>
   // Draw each layer as one draft image where its beads are too small to show their look (ticket 0676): the editor's
   // surface. An export or a picture keeps every bead's look at any size.
   draftWhenSmall?: boolean
@@ -332,6 +334,7 @@ interface LayerDraw {
   rows: { first: number; last: number } | undefined
   margin: number
   letters: Readonly<Record<string, string>> | undefined
+  canvasLetters: Readonly<Record<string, string>> | undefined
   /** Whether the layers are drawn in the draft look, a pixel a bead. */
   draft: boolean
   /** Where a Frame bead at a Canvas row and column is in Row progress, its Row order worked out once for the draw
@@ -553,7 +556,7 @@ const SEAM_WIDTH_PX = 1
 /** The Canvas's beads, bead by bead or as one draft image, with the Frame's footprint cut out so none shows over it.
  * What every bead shares (its Weave's description, cell, corners, the margin) is worked out once (ticket 0676). */
 function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
-  const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin } = draw
+  const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin, canvasLetters } = draw
   const rotation = quarterTurnOf(project)
   const beads = beadsOfLayer(project, 'canvas')
   const covered = footprintOf(project)
@@ -612,6 +615,8 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
       eachInView(row, first, last, (column, color) => {
         const { x, y } = description.box({ row, column }, cell.width, cell.height)
         drawBead(context, { x, y, size: CELL_SIZE_PX, ...sized, cornerRadius, color, dimmed: false, deviceScale, theme: look })
+        const letter = canvasLetters?.[color]
+        if (letter) drawBeadLetter(context, { x, y, size: CELL_SIZE_PX, ...sized, color, letter, dimmed: false, theme: look })
       })
     }
   }
@@ -700,7 +705,7 @@ function canvasLook(theme: ProjectTheme): ProjectTheme {
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, columns, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false, opaque = false, positionMarks = true, reference } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, columns, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, canvasLetters, draftWhenSmall = false, opaque = false, positionMarks = true, reference } = input
   const frameTheme = input.frameTheme ?? theme
   const frame = frameOf(project)
   const rotation = quarterTurnOf(project)
@@ -761,7 +766,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const seeThrough = drawn && EMPTY_BEAD_OPACITY[drawn.opacity]
   const tiles = space.open && !draft
   const lift = space.open && !draft
-  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit, seeThrough, tiles, lift }
+  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, canvasLetters, draft, passes: rowPassesOf(project), lit, seeThrough, tiles, lift }
 
   if (space.open) {
     // The reference image over the Canvas's Background and under every bead (ticket 0790): over its tonal tiles, so
