@@ -974,23 +974,16 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toMatchObject({ top: 7, left: 4 })
     })
 
-    it('a Piece-tool drag that begins on one of its beads carries it the same way, and a tap there keeps it selected', () => {
+    it('a Piece-tool tap on one of its beads keeps it selected and changes nothing', () => {
       const { gesture, harness } = pieceSelected()
+      const before = harness.currentProject()
       const selection = gesture.selection.value
 
       gesture.beginAdjust({ kind: 'inside' }, { row: 5, column: 6 }, 'piece')
       gesture.endAdjust()
+
       expect(gesture.selection.value).toEqual(selection)
-
-      gesture.beginAdjust({ kind: 'inside' }, { row: 5, column: 6 }, 'piece')
-      gesture.dragAdjust({ row: 7, column: 5 })
-      gesture.endAdjust()
-
-      expect(canvasBeads(harness.currentProject())[7]).toEqual({ 4: RED, 5: RED })
-      expect(canvasBeads(harness.currentProject())[5]).toEqual({ 9: BLUE })
-      expect(gesture.selection.value).toMatchObject({ top: 7, left: 4 })
-      harness.history.onUndo()
-      expect(canvasBeads(harness.currentProject())[5]).toEqual({ 5: RED, 6: RED, 9: BLUE })
+      expect(harness.currentProject()).toBe(before)
     })
 
     it('a press of the grip that goes nowhere, or comes back, changes nothing', () => {

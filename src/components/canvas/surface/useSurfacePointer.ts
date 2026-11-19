@@ -11,7 +11,7 @@ import { pointerDraws, type Handedness, type InputMode } from '../../../domain/i
 import { beadColorAt } from '../../../domain/layerBeads'
 import { isInFinishedRow } from '../../../domain/rowProgress'
 import type { Project } from '../../../domain/project'
-import { selectionFrame, selectionHasHandles, selectionLayer, stampCells, type PasteStamp, type Selection } from '../../../domain/selection'
+import { selectionFrame, selectionHasHandles, selectionLayer, selectionMask, stampCells, type PasteStamp, type Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
 import { AREA_SHEET_OUTSET, areaPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
 import type { SheetArea } from '../../../composables/tools/selectionBarPlacement'
@@ -529,7 +529,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     if (!held.cells || props.tools.tool !== 'piece') return false
     const bead = beadUnder(event)
     if (!bead || (bead.layer ?? layerAt(props.project, bead)) !== selectionLayer(props.project, held)) return false
-    return held.cells.some((cell) => cell.row === bead.row && cell.column === bead.column)
+    return selectionMask(held)?.(bead.row, bead.column) === true
   }
 
   /** The layer a Selection acts on, for measuring a press on its handles. */
@@ -865,7 +865,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       const id = handleIdAt(surface.value.beadBox(selectionFrame(held), selectionViewLayer()), pointInDrawing(event), false, AREA_SHEET_OUTSET)
       hotAreaHandle.value = id
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
-    } else if (held && event.pointerType !== 'touch' && onHeldPiece(event, held)) {
+    } else if (held && event.pointerType === 'mouse' && onHeldPiece(event, held)) {
+      // A mouse only: a hovering Pencil keeps the Piece tool's drawn pointer, which a CSS cursor would hide.
       hotAreaHandle.value = undefined
       handleCursor.value = 'grab'
     } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
