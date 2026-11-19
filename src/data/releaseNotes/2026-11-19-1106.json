@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "The line under Export quality is gone: its Info note now says quality is for the picture only",
+    "ru": "Строки под качеством экспорта больше нет: его подсказка теперь говорит, что качество влияет только на картинку",
+    "uk": "Рядка під якістю експорту більше немає: її підказка тепер каже, що якість впливає лише на картинку",
+    "be": "Радка пад якасцю экспарту больш няма: яе падказка цяпер кажа, што якасць уплывае толькі на карцінку",
+    "zh": "导出质量下方的那行文字已移除：其信息说明现在指出质量只影响图片",
+    "es": "La línea bajo la calidad de exportación ya no está: su nota de información dice ahora que la calidad solo afecta a la imagen",
+    "pl": "Wiersza pod jakością eksportu już nie ma: jej notka mówi teraz, że jakość dotyczy tylko obrazu"
+  }
+}
