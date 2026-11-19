@@ -538,16 +538,16 @@ describe('Rotate waits under the pointer, as Rotate Frame does (ticket 1110)', (
   const mountBar = () =>
     mount(ContextBar, { props: { project: drawn, selection, selectionSummary: '2×2', anchor, pasteArmed: false, canRemoveLine: false }, attachTo: document.body })
   const copy = (wrapper: ReturnType<typeof mountBar>) => wrapper.find('[data-testid="context-bar-rotate-copy"]')
-  /** Rotate pressed with a pointer of a kind, its button at (300, 20) on screen. */
-  async function pressRotate(wrapper: ReturnType<typeof mountBar>, pointerType = 'mouse') {
+  /** Rotate pressed with a mouse, its button at (300, 20) on screen. */
+  async function pressRotate(wrapper: ReturnType<typeof mountBar>) {
     const button = wrapper.get('[data-testid="context-bar-rotate"]')
     button.element.getBoundingClientRect = () => new DOMRect(300, 20, 28, 28)
-    await button.trigger('pointerdown', { pointerType, clientX: 310, clientY: 30 })
+    await button.trigger('pointerdown', { pointerType: 'mouse', clientX: 310, clientY: 30 })
     await button.trigger('click')
   }
-  const pressCopy = async (wrapper: ReturnType<typeof mountBar>, pointerType = 'mouse') => {
+  const pressCopy = async (wrapper: ReturnType<typeof mountBar>) => {
     const button = copy(wrapper).get('button')
-    await button.trigger('pointerdown', { pointerType })
+    await button.trigger('pointerdown', { pointerType: 'mouse' })
     await button.trigger('click')
   }
 
@@ -568,18 +568,29 @@ describe('Rotate waits under the pointer, as Rotate Frame does (ticket 1110)', (
     wrapper.unmount()
   })
 
-  it('fades out 200ms after the pointer leaves it', async () => {
-    const wrapper = mountBar()
-    await arm()
-    await pressRotate(wrapper)
-    await copy(wrapper).trigger('pointerleave', { pointerType: 'mouse' })
-    vi.advanceTimersByTime(200)
-    await nextTick()
-    expect(copy(wrapper).classes()).toContain('context-bar__rotate-copy--leaving')
-    vi.advanceTimersByTime(150)
-    await nextTick()
-    expect(copy(wrapper).exists()).toBe(false)
-    wrapper.unmount()
+  it('from the "…" menu stands centred where the item was pressed', async () => {
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    try {
+      // 200px of canvas: Rotate folds into "…" (as in the test of its disabled reason above).
+      const narrow = { box: { left: 0, top: 100, width: 40, height: 40 }, viewport: { width: 200, height: 400 } }
+      const wrapper = mount(ContextBar, { props: { project: drawn, selection, anchor: narrow, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false }, attachTo: document.body })
+      await nextTick()
+      const [bar, readout] = FakeResizeObserver.instances
+      bar!.trigger(240, 28)
+      readout!.trigger(40, 28)
+      await arm()
+      await wrapper.get('[data-testid="context-bar-more"]').trigger('click')
+      const item = wrapper.get('[data-testid="context-bar-more-rotate"]')
+      await item.trigger('pointerdown', { pointerType: 'mouse', clientX: 150, clientY: 60 })
+      await item.trigger('click')
+      expect(wrapper.emitted('rotate')).toHaveLength(1)
+      expect(copy(wrapper).attributes('style')).toContain('left: 136px')
+      expect(copy(wrapper).attributes('style')).toContain('top: 46px')
+      wrapper.unmount()
+    } finally {
+      FakeResizeObserver.reset()
+      vi.unstubAllGlobals()
+    }
   })
 
   it('gives way to the bar\'s own button as soon as it is back under the copy', async () => {
@@ -597,20 +608,28 @@ describe('Rotate waits under the pointer, as Rotate Frame does (ticket 1110)', (
     wrapper.unmount()
   })
 
-  it('goes with the Selection and with a gesture on the canvas, and a press from the keyboard leaves none', async () => {
+  it('goes with a press on the canvas, paste mode and the Selection', async () => {
     const wrapper = mountBar()
     await arm()
-    await pressRotate(wrapper)
-    await wrapper.setProps({ gesturing: true })
-    expect(copy(wrapper).exists()).toBe(false)
-    await wrapper.setProps({ gesturing: false })
-    await pressRotate(wrapper)
-    await wrapper.setProps({ selection: undefined, selectionSummary: undefined })
-    expect(copy(wrapper).exists()).toBe(false)
-    await wrapper.setProps({ selection, selectionSummary: '2×2' })
+    for (const away of [{ gesturing: true }, { pasteArmed: true }, { selection: undefined, selectionSummary: undefined }]) {
+      await pressRotate(wrapper)
+      expect(copy(wrapper).exists()).toBe(true)
+      await wrapper.setProps(away)
+      expect(copy(wrapper).exists()).toBe(false)
+      await wrapper.setProps({ gesturing: false, pasteArmed: false, selection, selectionSummary: '2×2' })
+      await arm()
+    }
+    wrapper.unmount()
+  })
+
+  it('leaves none for a press from the keyboard, even after a pointer\'s press that never clicked', async () => {
+    const wrapper = mountBar()
     await arm()
-    await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
-    expect(wrapper.emitted('rotate')).toHaveLength(3)
+    const button = wrapper.get('[data-testid="context-bar-rotate"]')
+    await button.trigger('pointerdown', { pointerType: 'mouse', clientX: 310, clientY: 30 })
+    await button.trigger('keydown', { key: 'Enter' })
+    await button.trigger('click')
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
     expect(copy(wrapper).exists()).toBe(false)
     wrapper.unmount()
   })

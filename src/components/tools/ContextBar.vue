@@ -269,83 +269,46 @@ const disabledReason = (item: BarItem) => (armed.value && isDisabled(item) ? ite
 const compact = computed(() => !!props.gesturing && (mirrorShown.value ? !!props.mirrorSizeOnly : !!props.sizeOnly && props.selectionSummary !== undefined))
 const showing = computed(() => props.selectionSummary !== undefined || mirrorShown.value)
 
-/** The pointer press on the bar's Rotate or its "…" item, if the next Rotate came from one: a press from the keyboard
- * leaves no copy, as focus goes with the bar (as Rotate Frame's, MarginSheet card). */
-let rotatePress: { button?: DOMRect; at: { x: number; y: number }; touch: boolean } | undefined
-function notePress(event: PointerEvent): void {
-  const pressed = event.target instanceof Element ? event.target.closest('[data-rotate]') : null
-  const button = pressed?.getAttribute('data-rotate') === 'bar' ? pressed.getBoundingClientRect() : undefined
-  rotatePress = pressed ? { button, at: { x: event.clientX, y: event.clientY }, touch: event.pointerType === 'touch' } : undefined
-}
-
 /** The Rotate copy that waits where it was pressed while the turned Selection takes the bar away (ticket 1110,
- * ContextBar card).
- * Nothing plays as the Selection turns, so the bar's own button takes over the moment it is back under the copy. */
+ * ContextBar card). Nothing plays as the Selection turns, so the bar's own button takes over the moment it is back under it. */
 const rotateCopy = useRotateCopy({ handOverMs: 0 })
 /** A screen point in the px of the box the bar is placed in, which the copy keeps however the bar moves. */
 function inHost(x: number, y: number): { left: number; top: number } {
   const at = ownPoint(hostEl.value, { clientX: x, clientY: y })
   return { left: at.x, top: at.y }
 }
-/** Rotate from the bar's button or its "…" item: a pointer's press leaves the copy over the button, or centred where
- * the item was pressed. */
+/** Rotate from the bar's button or its "…" item: a pointer's press leaves the copy over the button, or one centred where
+ * the item was pressed, a button as big as the bar is high. */
 function rotateFromBar(): void {
-  const press = rotatePress
-  rotatePress = undefined
+  const press = rotateCopy.takePress()
   emit('rotate')
   if (!press) return
   const size = bar.height.value
-  const place = press.button ? inHost(press.button.left, press.button.top) : inHost(press.at.x, press.at.y)
-  const centred = press.button ? place : { left: place.left - size / 2, top: place.top - size / 2 }
-  rotateCopy.pressed({ ...centred, scale: 1, small: false }, press.touch)
+  const at = inHost(press.at.x, press.at.y)
+  const place = press.button ? inHost(press.button.left, press.button.top) : { left: at.left - size / 2, top: at.top - size / 2 }
+  rotateCopy.pressed({ ...place, scale: 1, small: false }, press.touch)
 }
 /** A press on the copy turns the Selection again, as the bar's own button does; the bar's arming wait is for a tap that
  * selects, which this is not. */
-let copyTouch = false
-function noteCopyPress(event: PointerEvent): void {
-  copyTouch = event.pointerType === 'touch'
-}
 function rotateFromCopy(): void {
   emit('rotate')
-  rotateCopy.pressed(undefined, copyTouch)
+  rotateCopy.pressedAgain()
 }
 const copyStyle = computed(() => {
   const place = rotateCopy.place.value
   return place ? { left: `${place.left}px`, top: `${place.top}px` } : {}
 })
-/** How near, in px, the bar's own button must come back to the copy to stand under it: the same place, less rounding. */
-const SAME_PLACE_PX = 1
-// Turned back, the bar's own Rotate is under the copy again: it takes over.
-watch(
-  placement,
-  () => {
-    const place = rotateCopy.place.value
-    const own = rootEl.value?.querySelector('[data-rotate="bar"]')?.getBoundingClientRect()
-    if (!place || !own) return
-    const at = inHost(own.left, own.top)
-    if (Math.abs(at.left - place.left) < SAME_PLACE_PX && Math.abs(at.top - place.top) < SAME_PLACE_PX) rotateCopy.handOver()
-  },
-  { flush: 'post' },
-)
+/** Turned back, the bar's own Rotate is under the copy again: it takes over. */
+function handOverIfUnder(): void {
+  const own = rootEl.value?.querySelector('[data-rotate-from="button"]')?.getBoundingClientRect()
+  rotateCopy.ownAt(own && inHost(own.left, own.top))
+}
+watch(placement, handOverIfUnder, { flush: 'post' })
 // It goes with the Selection, and with a press on the canvas (a new Selection, a drag, a pan), paste mode too.
 watch(
   () => props.selectionSummary !== undefined && !props.gesturing && !props.pasteArmed,
   (stays) => stays || rotateCopy.drop(),
 )
-// A pointer that left before the copy was drawn under it never enters or leaves it: each move tells it where it is.
-const copyEl = ref<HTMLElement>()
-function onPointerMove(event: PointerEvent): void {
-  const box = copyEl.value?.getBoundingClientRect()
-  if (!box) return
-  const over = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom
-  if (over) rotateCopy.enter(event)
-  else rotateCopy.leave(event)
-}
-watch(
-  () => !!rotateCopy.place.value,
-  (copied) => (copied ? window.addEventListener('pointermove', onPointerMove, { passive: true }) : window.removeEventListener('pointermove', onPointerMove)),
-)
-onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
 </script>
 
 <template>
@@ -361,7 +324,8 @@ onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
     :data-testid="mirrorShown ? 'mirror-bar' : 'context-bar'"
     @keydown="roving.onKeydown"
     @focusin="roving.onFocusin"
-    @pointerdown.capture="notePress"
+    @pointerdown.capture="rotateCopy.notePress"
+    @keydown.capture="rotateCopy.forgetPress"
   >
     <AreaMoveGrip v-if="gripArea" v-show="!compact" :area="gripArea" :piece="!!selection?.cells" @press="emit('move-press', $event, gripArea)" @key="emit('move-key', $event, gripArea)" />
     <span v-show="!mirrorShown || mirrorFit === 0 || compact" ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ readoutText }}</span>
@@ -386,7 +350,7 @@ onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
         :deps="deps"
         :disabled="armed ? undefined : true"
         :data-testid="`context-bar-${item.id}`"
-        :data-rotate="item.id === 'rotate' ? 'bar' : undefined"
+        :data-rotate-from="item.id === 'rotate' ? 'button' : undefined"
         @click="item.run()"
       />
     </template>
@@ -401,7 +365,7 @@ onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
           :name="item.action.name(t)"
           :disabled-body="disabledReason(item)"
           :data-testid="`context-bar-more-${item.id}`"
-          :data-rotate="item.id === 'rotate' ? 'menu' : undefined"
+          :data-rotate-from="item.id === 'rotate' ? 'menu' : undefined"
           @select="item.run()"
         >
           {{ item.action.name(t) }}
@@ -413,7 +377,7 @@ onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
        reader, so Rotate is there once; the bar's own button is the keyboard's. -->
   <div
     v-if="rotateCopy.place.value"
-    ref="copyEl"
+    :ref="rotateCopy.copyEl"
     class="context-bar__rotate-copy"
     :class="{ 'context-bar__rotate-copy--leaving': rotateCopy.leaving.value }"
     :style="copyStyle"
@@ -422,7 +386,7 @@ onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
     @pointerenter="rotateCopy.enter"
     @pointerleave="rotateCopy.leave"
   >
-    <IconButton class="context-bar__button" :icon-size="iconSize" :action="actions.rotate" :deps="deps" tabindex="-1" @pointerdown="noteCopyPress" @mousedown.prevent @click="rotateFromCopy" />
+    <IconButton class="context-bar__button" :icon-size="iconSize" :action="actions.rotate" :deps="deps" tabindex="-1" @pointerdown="rotateCopy.noteCopyPress" @mousedown.prevent @click="rotateFromCopy" />
   </div>
 </template>
 
@@ -616,7 +580,14 @@ onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
   color: inherit;
   background: none;
   border: 0;
-  border-radius: max(var(--radius-xs), var(--radius-sm) - var(--copy-side) - var(--copy-edge)) var(--radius-sm);
+  border-radius: calc(var(--radius-sm) - var(--copy-side) - var(--copy-edge)) var(--radius-sm);
+}
+
+/* As the bar's end buttons: never under `radius-xs` across (touch's wider sides in dark). */
+@media (pointer: coarse) {
+  :root[data-theme='dark'] .context-bar__rotate-copy :deep(.context-bar__button) {
+    border-radius: var(--radius-xs) var(--radius-sm);
+  }
 }
 
 @media (pointer: coarse) {

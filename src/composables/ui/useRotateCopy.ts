@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
 /** How the Rotate copy leaves, in ms (MarginSheet and ContextBar cards).
  * @internal Its test holds these to their CSS twins in design-values.css. */
@@ -19,6 +19,17 @@ export interface RotateCopyPlace {
   scale: number
   small: boolean
 }
+
+/** A pointer's press on a bar's Rotate (`data-rotate-from="button"`) or its menu item (`data-rotate-from="menu"`): the
+ * button's box on screen, where the press was, and whether a finger made it. */
+export interface RotatePress {
+  button?: DOMRect
+  at: { x: number; y: number }
+  touch: boolean
+}
+
+/** How near, in px, the bar's own button must come back to the copy to stand under it: the same place, less rounding. */
+const SAME_PLACE_PX = 1
 
 /** A Rotate button's copy that waits where it was pressed as its bar turns away: Rotate Frame's (ticket 1016) and the
  * Selection bar's Rotate (ticket 1110). It leaves `wait` after the pointer does, fading over `fade`, on touch `tapHold`
@@ -86,6 +97,59 @@ export function useRotateCopy(options: { handOverMs: number }) {
     else drop()
   }
 
-  onBeforeUnmount(clear)
-  return { place, leaving, pressed, enter, leave, handOver, drop }
+  /** The press on the bar's Rotate or its menu item, if the next Rotate came from one: a press from the keyboard leaves
+   * no copy, as focus goes with the bar. */
+  let press: RotatePress | undefined
+  /** A pointer went down in the bar (listened to in the capture phase): noted if on Rotate, forgotten otherwise. */
+  function notePress(event: PointerEvent): void {
+    const pressed = event.target instanceof Element ? event.target.closest('[data-rotate-from]') : null
+    const button = pressed?.getAttribute('data-rotate-from') === 'button' ? pressed.getBoundingClientRect() : undefined
+    press = pressed ? { button, at: { x: event.clientX, y: event.clientY }, touch: event.pointerType === 'touch' } : undefined
+  }
+  /** A key in the bar: a Rotate it presses is the keyboard's, whatever press came before (one that never clicked). */
+  function forgetPress(): void {
+    press = undefined
+  }
+  /** The press the Rotate just run came from, once: none from the keyboard or Shift+R. */
+  function takePress(): RotatePress | undefined {
+    const taken = press
+    press = undefined
+    return taken
+  }
+
+  /** Whether the press on the copy was a finger's. */
+  let copyTouch = false
+  function noteCopyPress(event: PointerEvent): void {
+    copyTouch = event.pointerType === 'touch'
+  }
+  /** The copy was pressed: it turns again and stays where it is. */
+  function pressedAgain(): void {
+    pressed(undefined, copyTouch)
+  }
+
+  /** The bar's own button is now at `own`, in the copy's px: back under the copy, it takes over. */
+  function ownAt(own: { left: number; top: number } | undefined): void {
+    const at = place.value
+    if (at && own && Math.abs(own.left - at.left) < SAME_PLACE_PX && Math.abs(own.top - at.top) < SAME_PLACE_PX) handOver()
+  }
+
+  // A pointer that left before the copy was drawn under it never enters or leaves it: each move tells it where it is.
+  const copyEl = ref<HTMLElement>()
+  function onPointerMove(event: PointerEvent): void {
+    const box = copyEl.value?.getBoundingClientRect()
+    if (!box) return
+    const over = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom
+    if (over) enter(event)
+    else leave(event)
+  }
+  watch(
+    () => !!place.value,
+    (shown) => (shown ? window.addEventListener('pointermove', onPointerMove, { passive: true }) : window.removeEventListener('pointermove', onPointerMove)),
+  )
+
+  onBeforeUnmount(() => {
+    clear()
+    window.removeEventListener('pointermove', onPointerMove)
+  })
+  return { place, leaving, copyEl, pressed, pressedAgain, notePress, noteCopyPress, forgetPress, takePress, ownAt, enter, leave, drop }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ownLength, ownPoint } from '../../composables/ui/cssZoom'
 import { useFittingForm } from '../../composables/canvas/useFittingForm'
 import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
@@ -324,15 +324,6 @@ const colorHangsFrom = computed(() => (!row.value ? 'none' : colorShown.value ? 
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
 const sheetEl = ref<HTMLElement>()
-/** The pointer press on the band's Rotate Frame or its menu item, if the next Rotate Frame came from one: a press from
- * the keyboard leaves no copy, as focus goes with the band (ticket 1016). */
-let rotatePress: { button?: DOMRect; at: { x: number; y: number }; touch: boolean } | undefined
-function notePress(event: PointerEvent): void {
-  const pressed = event.target instanceof Element ? event.target.closest('[data-rotate-frame]') : null
-  const button = pressed?.getAttribute('data-rotate-frame') === 'band' ? pressed.getBoundingClientRect() : undefined
-  rotatePress = pressed ? { button, at: { x: event.clientX, y: event.clientY }, touch: event.pointerType === 'touch' } : undefined
-}
-
 /** The Rotate Frame copy that waits where it was pressed (ticket 1016, MarginSheet card). */
 const rotateCopy = useRotateCopy({ handOverMs: FRAME_TURN_MS })
 /** A screen point as a place in the sheet's parent, in its own px (ticket 1071), which the copy keeps however the sheet
@@ -344,8 +335,7 @@ function inParent(x: number, y: number): { left: number; top: number } {
 /** Rotate Frame from the band's button or its menu item: a pointer's press leaves the copy over the button, or a full
  * size one centred where the item was pressed. */
 function rotateFromBand(): void {
-  const press = rotatePress
-  rotatePress = undefined
+  const press = rotateCopy.takePress()
   emit('rotate')
   if (!press) return
   const at = inParent(press.at.x, press.at.y)
@@ -355,48 +345,25 @@ function rotateFromBand(): void {
   rotateCopy.pressed(place, press.touch)
 }
 /** A press on the copy turns the Frame again, as the band's own button does. */
-let copyTouch = false
-function noteCopyPress(event: PointerEvent): void {
-  copyTouch = event.pointerType === 'touch'
-}
 function rotateFromCopy(): void {
   emit('rotate')
-  rotateCopy.pressed(undefined, copyTouch)
+  rotateCopy.pressedAgain()
 }
 const copyStyle = computed(() => {
   const place = rotateCopy.place.value
   if (!place) return {}
   return { left: `${place.left - props.anchor.sheet.left}px`, top: `${place.top - props.anchor.sheet.top}px`, '--copy-scale': place.scale }
 })
-/** How near, in px, the band's own button must come back to the copy to stand under it: the same place, less rounding. */
-const SAME_PLACE_PX = 1
 // Turned back, the band's own Rotate Frame is under the copy again: it takes over.
 watch(
   () => props.anchor,
   () => {
-    const place = rotateCopy.place.value
-    const own = toolsEl.value?.querySelector('[data-rotate-frame="band"]')?.getBoundingClientRect()
-    if (!place || !own) return
-    const at = inParent(own.left, own.top)
-    if (Math.abs(at.left - place.left) < SAME_PLACE_PX && Math.abs(at.top - place.top) < SAME_PLACE_PX) rotateCopy.handOver()
+    const own = toolsEl.value?.querySelector('[data-rotate-from="button"]')?.getBoundingClientRect()
+    rotateCopy.ownAt(own && inParent(own.left, own.top))
   },
   { flush: 'post' },
 )
 watch(frame, (now) => now || rotateCopy.drop())
-// A pointer that left before the copy was drawn under it never enters or leaves it: each move tells it where it is.
-const copyEl = ref<HTMLElement>()
-function onPointerMove(event: PointerEvent): void {
-  const box = copyEl.value?.getBoundingClientRect()
-  if (!box) return
-  const over = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom
-  if (over) rotateCopy.enter(event)
-  else rotateCopy.leave(event)
-}
-watch(
-  () => !!rotateCopy.place.value,
-  (shown) => (shown ? window.addEventListener('pointermove', onPointerMove, { passive: true }) : window.removeEventListener('pointermove', onPointerMove)),
-)
-onBeforeUnmount(() => window.removeEventListener('pointermove', onPointerMove))
 
 /** Mirror the whole Frame's name: "Mirror off" while it is on (MarginSheet card). */
 const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOff : undefined))
@@ -450,7 +417,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         />
       </div>
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
-      <div ref="toolsEl" class="margin-sheet__tools" @keydown="toolsRoving.onKeydown" @focusin="toolsRoving.onFocusin" @pointerdown.capture="notePress">
+      <div ref="toolsEl" class="margin-sheet__tools" @keydown="toolsRoving.onKeydown" @focusin="toolsRoving.onFocusin" @pointerdown.capture="rotateCopy.notePress" @keydown.capture="rotateCopy.forgetPress">
         <template v-if="iconsShown">
           <IconButton
             v-if="rotatable"
@@ -464,7 +431,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
             data-testid="margin-mirror-frame"
             @click="emit('mirror')"
           />
-          <IconButton v-if="rotatable" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" data-rotate-frame="band" @click="rotateFromBand" />
+          <IconButton v-if="rotatable" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" data-rotate-from="button" @click="rotateFromBand" />
         </template>
         <IconButton
           v-if="editShown"
@@ -513,7 +480,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
             :disabled-body="itemDisabled(item.action) ? item.action.disabledBody?.(t, deps) : undefined"
             :checked="'checked' in item ? item.checked : undefined"
             :data-testid="`margin-frame-tools-${item.id}`"
-            :data-rotate-frame="item.id === 'rotate' ? 'menu' : undefined"
+            :data-rotate-from="item.id === 'rotate' ? 'menu' : undefined"
             @select="item.run()"
           >
             {{ item.action.name(t) }}
@@ -583,7 +550,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
          screen reader, so Rotate Frame is there once; the band's own button is the keyboard's. -->
     <div
       v-if="rotateCopy.place.value"
-      ref="copyEl"
+      :ref="rotateCopy.copyEl"
       class="margin-sheet__rotate-copy"
       :class="{ 'margin-sheet__rotate-copy--leaving': rotateCopy.leaving.value, 'margin-sheet__rotate-copy--small': rotateCopy.place.value.small }"
       :style="copyStyle"
@@ -599,7 +566,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         :action="actions.rotate"
         :deps="deps"
         tabindex="-1"
-        @pointerdown="noteCopyPress"
+        @pointerdown="rotateCopy.noteCopyPress"
         @mousedown.prevent
         @click="rotateFromCopy"
       />
