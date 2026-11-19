@@ -8,7 +8,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { pictureBarPlace, type ScreenBox } from '../../composables/canvas/pictureBarPlacement'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { imageInputAccept } from '../../domain/imageConversion'
-import { FINE_TURN_STEP, movedBy, OPACITY_STEPS, scaledBy, turnedBy, type OpacityStep, type ReferencePlace, type WidthLimits } from '../../domain/referenceImage'
+import { FINE_TURN_STEP, KEY_RESIZE_STEP, movedBy, OPACITY_STEPS, scaledBy, turnedBy, type OpacityStep, type ReferencePlace, type WidthLimits } from '../../domain/referenceImage'
 import { useI18n } from '../../i18n/useI18n'
 import { arrowMove, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
 import AppButton from '../ui/AppButton.vue'
@@ -18,7 +18,8 @@ import IconButton from '../ui/IconButton.vue'
 
 // The picture bar (ReferenceImage card, tickets 0883, 1009): a pill over the shown reference image's top edge, in screen
 // px: the Move grip, Set Frame around the picture, Convert to beads, Picture over the beads, Opacity, Replace and Remove,
-// all shown. One `toolbar` Tab stop; the grip's drag and arrows move the picture, saved on release with no Undo step.
+// all shown. One `toolbar` Tab stop; the grip's drag and arrows move the picture, its keys resize and turn it (ticket
+// 1118), saved on release with no Undo step.
 const props = defineProps<{
   place: ReferencePlace
   /** The picture's box on screen, the bar's height and where it stands (pictureBarPlacement). */
@@ -123,8 +124,8 @@ function onGripKey(event: KeyboardEvent) {
 function keyedChange(event: KeyboardEvent): [ReferencePlace, string] | undefined {
   const moved = arrowMove(props.view, props.bead, event)
   if (moved) return [movedBy(props.place, moved.x, moved.y), words.value.moved]
-  if (event.key === '+' || event.key === '=') return [scaledBy(props.place, 1.1, props.limits), words.value.resized]
-  if (event.key === '-' || event.key === '_' || event.key === '−') return [scaledBy(props.place, 1 / 1.1, props.limits), words.value.resized]
+  if (event.key === '+' || event.key === '=') return [scaledBy(props.place, KEY_RESIZE_STEP, props.limits), words.value.resized]
+  if (event.key === '-' || event.key === '_' || event.key === '−') return [scaledBy(props.place, 1 / KEY_RESIZE_STEP, props.limits), words.value.resized]
   if (event.key !== '[' && event.key !== ']') return undefined
   const turned = turnedBy(props.place, event.key === ']' ? FINE_TURN_STEP : -FINE_TURN_STEP)
   return [turned, fillBlanks(words.value.turned, { angle: Math.round(turned.angle) })]

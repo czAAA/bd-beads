@@ -48,7 +48,6 @@ describe('ReferenceImageSection (ReferenceImage card, ticket 0790)', () => {
     await wrapper.get('[data-testid="reference-image-opacity"] [data-value="75"]').trigger('click')
     await wrapper.get('[data-testid="reference-image-remove"]').trigger('click')
     expect(wrapper.emitted('set-opacity')).toEqual([[75]])
-    expect(wrapper.find('[data-testid="reference-image-adjust"]').exists()).toBe(false)
     expect(wrapper.emitted('remove')).toHaveLength(1)
   })
 

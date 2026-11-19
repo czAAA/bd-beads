@@ -60,6 +60,8 @@ export const REFERENCE_CORNERS: readonly ReferenceCorner[] = ['top-left', 'top-r
 /** Snaps to a quarter turn within this many degrees; Shift snaps to every `FINE_TURN_STEP`. */
 const QUARTER_SNAP_DEGREES = 4
 export const FINE_TURN_STEP = 15
+/** What `+` makes the picture's width, and `−` divides it by: a tenth more. */
+export const KEY_RESIZE_STEP = 1.1
 
 /** How tall the picture is drawn: its width in its own shape. */
 export function referenceHeight({ picture, place }: Pick<ReferenceImage, 'picture' | 'place'>): number {

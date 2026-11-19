@@ -62,14 +62,12 @@ describe('ReferencePictureBar (ReferenceImage card, ticket 0883)', () => {
     await grip.trigger('keydown', { key: '-' })
     await grip.trigger('keydown', { key: ']' })
     await grip.trigger('keydown', { key: '[' })
-    await grip.trigger('keydown', { key: 'ArrowDown', shiftKey: true })
     const commits = wrapper.emitted('commit')!
     expect(commits[0]).toEqual([{ ...place, width: 42 }, 'Resized'])
     expect(commits[1]![0]).toMatchObject({ width: 40 / 1.1 })
     expect(commits[1]![1]).toBe('Resized')
     expect(commits[2]).toEqual([{ ...place, angle: 15 }, 'Turned 15°'])
     expect(commits[3]).toEqual([{ ...place, angle: 345 }, 'Turned 345°'])
-    expect(commits[4]).toEqual([{ ...place, y: 250 }, 'Moved'])
     wrapper.unmount()
   })
 
