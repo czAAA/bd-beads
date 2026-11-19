@@ -104,7 +104,7 @@ const lastLine = computed(() => {
       @focus="emit('hold', true)"
       @blur="emit('hold', false)"
     >
-      <span class="save-ring__halo"><AppIcon name="save" :size="16" /></span>
+      <AppIcon name="save" :size="16" />
       <span class="save-ring__label" :style="labelRoom ? { '--label-room': labelRoom } : undefined" :aria-hidden="labelOpen ? undefined : 'true'" data-testid="save-ring-label">
         <span class="save-ring__line">
           <span ref="textEl" class="save-ring__text">{{ t.saveReminder.label }}</span>
@@ -156,16 +156,6 @@ const lastLine = computed(() => {
 .save-ring__button:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: 2px;
-}
-
-.save-ring__halo {
-  display: grid;
-  place-items: center;
-  box-sizing: border-box;
-  width: var(--save-ring-halo);
-  height: var(--save-ring-halo);
-  border: var(--save-ring-stroke) solid currentColor;
-  border-radius: var(--radius-full);
 }
 
 /* The label hangs 6px under the ring, left edges aligned, over the drawing area: "Save Project file" then "n beads since
