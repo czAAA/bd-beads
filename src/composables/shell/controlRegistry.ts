@@ -639,7 +639,7 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('strip-menu', (t) => t.header.menuButton, 'edit', {
     icon: 'menu',
-    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.convertImage.fileLabel, t.projects.heading, t.languageSwitcher.ariaLabel, t.theme.groupLabel]),
+    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.convertImage.fileLabel, t.projects.heading, t.theme.groupLabel]),
   }),
   unkeyed('strip-export', (t) => t.panels.project.exportHeading, 'edit', { icon: 'export' }),
   unkeyed('strip-coffee', (t) => t.panels.menu.coffee, 'edit', { icon: 'coffee' }),

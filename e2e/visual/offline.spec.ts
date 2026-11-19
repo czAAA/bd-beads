@@ -109,7 +109,6 @@ for (const [situation, breakIt] of failures) {
     await breakIt(context, host)
 
     await reloadsIntoTheApp(page)
-    await openStripPanel(page, 'strip-menu')
     await page.locator('[data-testid="language-switcher"] button[aria-haspopup]').click()
     await page.locator('[data-testid="language-switcher"] [role="menuitemradio"][data-value="ru"]').click()
     // The language changes only once its strings have arrived, from the offline copy here.

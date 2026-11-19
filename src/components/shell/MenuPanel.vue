@@ -7,7 +7,6 @@ import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { homepageUrl } from '../../homepage/homepageRoute'
-import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
 import type { ThemePick } from '../../theme/theme'
 import { useThemePick } from '../../theme/useThemePick'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -88,7 +87,7 @@ const emit = defineEmits<{
   'delete-account': []
 }>()
 
-const { t, locale, setLocale } = useI18n()
+const { t } = useI18n()
 const { pick, setPick } = useThemePick()
 /** Lifted pieces (ticket 1042): the device's choice, drawn by every Canvas at once. */
 const { lift } = useCanvasBackground()
@@ -119,7 +118,6 @@ async function openHomepage(event: MouseEvent) {
   if (await props.leave()) location.assign(homepageHref.value)
 }
 
-const languageOptions = LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], shortLabel: localeCode(code), lang: code }))
 const themeOptions = computed<{ value: ThemePick; icon: IconName; label: string }[]>(() => [
   { value: 'device', icon: 'device', label: t.value.theme.matchDevice },
   { value: 'light', icon: 'sun', label: t.value.panels.menu.themeLight },
@@ -170,14 +168,6 @@ const inputOptions = computed(() => [
     </PanelSection>
 
     <PanelSection v-if="!demo" id="menu:preferences" :label="t.panels.menu.preferences">
-      <PanelPicker
-        :model-value="locale"
-        :label="t.languageSwitcher.ariaLabel"
-        icon="globe"
-        :options="languageOptions"
-        data-testid="language-switcher"
-        @update:model-value="setLocale"
-      />
       <PanelItem secondary data-testid="menu-report-translation" @select="emit('feedback', 'translation')">{{ t.panels.menu.reportTranslation }}</PanelItem>
       <PanelPicker
         :model-value="pick"

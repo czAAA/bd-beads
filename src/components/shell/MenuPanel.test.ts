@@ -69,12 +69,10 @@ describe('MenuPanel (ticket 443)', () => {
     expect(version.text()).not.toContain('0.0.0')
   })
 
-  it('has the language and theme as pickers, and a language change is remembered', async () => {
+  it('has the theme as a picker, and no Language: that is in the strip', () => {
     const wrapper = mountIn()
-    expect(panelOptionShown(wrapper, 'language-switcher')).toBe('English')
     expect(panelOptionShown(wrapper, 'theme-picker')).toBe(en.theme.matchDevice)
-    await choosePanelOption(wrapper, 'language-switcher', 'pl')
-    expect(localStorage.getItem('openbeads:locale')).toBe('pl')
+    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(false)
   })
 
   // How a theme is stored, Match device as none, is devicePreferences'.
@@ -105,7 +103,7 @@ describe('MenuPanel (ticket 443)', () => {
     expect(panel.emitted('update:toolsPosition')).toEqual([['left']])
   })
 
-  it('opens the Feedback sheet from Help’s Send feedback, after Keyboard shortcuts, and from the link under Language (ticket 0700)', async () => {
+  it('opens the Feedback sheet from Help’s Send feedback, after Keyboard shortcuts, and from the first row of Preferences (ticket 0700)', async () => {
     const wrapper = mountIn()
     const panel = wrapper.getComponent(MenuPanel)
     const help = wrapper.findAll('[role="group"]').find((group) => group.find('h3').text() === en.panels.menu.help)!
@@ -116,7 +114,7 @@ describe('MenuPanel (ticket 443)', () => {
     expect(feedback.find('svg[data-icon="message"]').exists()).toBe(true)
     const link = wrapper.get('[data-testid="menu-report-translation"]')
     expect(link.text()).toBe(en.panels.menu.reportTranslation)
-    expect(link.element.previousElementSibling?.getAttribute('data-testid')).toBe('language-switcher')
+    expect(link.element.previousElementSibling).toBeNull()
     await feedback.trigger('click')
     await link.trigger('click')
     expect(panel.emitted('feedback')).toEqual([['general'], ['translation']])
@@ -151,7 +149,6 @@ describe('MenuPanel on the Homepage (ticket 540)', () => {
     expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBe('page')
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="menu-tools-position"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="menu-item-feedback"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="menu-report-translation"]').exists()).toBe(true)
   })
@@ -273,7 +270,7 @@ describe("MenuPanel in What's inside's demo editor (ticket 0797)", () => {
     expect(wrapper.findAll('[data-testid^="menu-"]').map((row) => row.attributes('data-testid'))).toEqual(
       expect.arrayContaining(['menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-item-shortcuts']),
     )
-    for (const gone of ['language-switcher', 'theme-picker', 'menu-item-feedback', 'menu-item-homepage', 'menu-item-source']) {
+    for (const gone of ['theme-picker', 'menu-item-feedback', 'menu-item-homepage', 'menu-item-source']) {
       expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
     }
   })

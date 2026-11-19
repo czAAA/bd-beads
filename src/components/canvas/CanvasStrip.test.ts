@@ -5,6 +5,7 @@ import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { bareProject, withLayers } from '../../testUtils/layerFields'
+import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
@@ -280,9 +281,9 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     await rulers.trigger('keydown', { key: 'ArrowRight' })
     expect(document.activeElement).toBe(wrapper.get('[data-testid="strip-undo"]').element)
     expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-undo'])
-    const reset = wrapper.get('[data-testid="zoom-reset"]')
-    ;(reset.element as HTMLElement).focus()
-    await reset.trigger('keydown', { key: 'ArrowRight' })
+    const language = wrapper.get('[data-testid="language-switcher"] button[aria-haspopup]')
+    ;(language.element as HTMLElement).focus()
+    await language.trigger('keydown', { key: 'ArrowRight' })
     const exportButton = wrapper.get('[data-testid="strip-export"]')
     expect(document.activeElement).toBe(exportButton.element)
     await exportButton.trigger('keydown', { key: 'ArrowRight' })
@@ -354,6 +355,40 @@ describe('CanvasStrip\'s Reference image button (ReferenceImage card, ticket 079
 
   it('is left out off the editor', () => {
     expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="strip-reference-image"]').exists()).toBe(false)
+  })
+})
+
+describe('CanvasStrip Language', () => {
+  const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
+  const ids = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid')).filter((id) => id === 'language-switcher' || id === 'zoom-reset' || id === 'strip-export')
+
+  it('sits between Fit and Export, shows the code, and a pick changes the language and is remembered', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
+    expect(ids(wrapper)).toEqual(['zoom-reset', 'language-switcher', 'strip-export'])
+    expect(wrapper.get('[data-testid="language-switcher"] .panel-picker__value').text()).toBe('EN')
+    expect(panelOptionShown(wrapper, 'language-switcher')).toBe('English')
+    await choosePanelOption(wrapper, 'language-switcher', 'pl')
+    expect(localStorage.getItem('openbeads:locale')).toBe('pl')
+  })
+
+  it('is there on the Homepage and Convert image, with no Project, and not in the demo', () => {
+    expect(mount(CanvasStrip, { props: { page: 'homepage', zoomPercent: 100 } }).find('[data-testid="language-switcher"]').exists()).toBe(true)
+    expect(mount(CanvasStrip, { props: { page: 'convert-image' } }).find('[data-testid="language-switcher"]').exists()).toBe(true)
+    expect(mount(CanvasStrip, { props: { project, demo: true } }).find('[data-testid="language-switcher"]').exists()).toBe(false)
+  })
+
+  it('is a step of the strip\'s ←/→ (on to Export: the Tab stops\' test), and ↓ opens its list', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 }, attachTo: document.body })
+    const reset = wrapper.get('[data-testid="zoom-reset"]')
+    const picker = wrapper.get('[data-testid="language-switcher"] button[aria-haspopup]')
+    ;(reset.element as HTMLElement).focus()
+    await reset.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(picker.element)
+    expect(wrapper.find('[role="menuitemradio"]').exists()).toBe(false)
+    await picker.trigger('keydown', { key: 'ArrowDown' })
+    expect(picker.attributes('aria-expanded')).toBe('true')
+    wrapper.unmount()
   })
 })
 

@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import AppDialogs from './AppDialogs.vue'
 import AppPanels from './AppPanels.vue'
+import CanvasStrip from '../canvas/CanvasStrip.vue'
 import { changeFrame } from '../../domain/changeFrame'
 import { createProject } from '../../domain/createProject'
 import { withColors } from '../../domain/canvas'
@@ -10,7 +11,7 @@ import { findBead } from '../../domain/beads'
 import { loadProjects, saveProjects } from '../../services/libraryStore'
 import { en } from '../../i18n/en'
 import { mountShellParts, mountShellPartsOn } from '../../testUtils/shellHost'
-import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
+import { choosePanelOption } from '../../testUtils/choosePanelOption'
 import { memoryAccount } from '../../services/memoryAccount'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
 import { backgroundOf, canvasOf, frameOf, layerOf, withFrameSheet } from '../../domain/layerRecord'
@@ -588,7 +589,7 @@ describe('Account (ticket 0078)', () => {
       for (const name of ['lang', 'data-theme', 'style']) document.documentElement.removeAttribute(name)
     })
 
-    it('takes the account’s language, theme and Lifted pieces as the app opens, the way the Menu sets them', async () => {
+    it('takes the account’s language, theme and Lifted pieces as the app opens, the way the Menu and the strip set them', async () => {
       const at = Date.now() - 1000
       const settings = { language: { value: 'ru', changedAt: at }, theme: { value: 'dark', changedAt: at }, liftedPieces: { value: 'off', changedAt: at } } as const
       const account = memoryAccount({ remembered: ann, session: ann, settings })
@@ -598,17 +599,17 @@ describe('Account (ticket 0078)', () => {
       expect(document.documentElement.dataset.theme).toBe('dark')
       expect(KEYS.map((key) => localStorage.getItem(key))).toEqual(['ru', 'dark', 'off'])
       await mounted.openPanel('menu')
-      expect(panelOptionShown(mounted.wrapper, 'language-switcher')).toBe('Русский')
+      expect(document.documentElement.lang).toBe('ru')
       expect(mounted.wrapper.get('[data-testid="menu-lifted-pieces"]').attributes('aria-checked')).toBe('false')
       expect(account.state.sent).toEqual([])
       expect(mounted.canvas.toasts.value).toEqual([])
     })
 
-    it('sends a signed-in person’s pick in the Menu at once', async () => {
+    it('sends a signed-in person’s pick in the Menu and the strip at once', async () => {
       const at = Date.now() - 1000
       const settings = { language: { value: 'en', changedAt: at }, theme: { value: 'device', changedAt: at }, liftedPieces: { value: 'on', changedAt: at } } as const
       const account = memoryAccount({ remembered: ann, session: ann, settings })
-      const mounted = mountOn(account)
+      const mounted = mountShellPartsOn({ account }, AppPanels, AppDialogs, CanvasStrip)
       await flushPromises()
       await mounted.openPanel('menu')
       await choosePanelOption(mounted.wrapper, 'theme-picker', 'dark')

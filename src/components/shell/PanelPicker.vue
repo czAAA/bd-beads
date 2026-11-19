@@ -26,6 +26,9 @@ const props = defineProps<{
   /** The list sits in the app shell, not beside its button: inside the margin sheet's scale, Safari keeps a top-layer
    * list where it first showed (the top-left corner). */
   inShell?: boolean
+  /** In a toolbar (the CanvasStrip's Language): no visible label, `icon` in the button, the strip buttons' plain look
+   * and height, `label` in its Tooltip, and ←/→ left to the toolbar's own stepping (↓, Enter or Space open it). */
+  toolbar?: boolean
   /** An Info button beside the label, holding what the setting decides (New Project's Technique, ticket 0951). */
   info?: { label: string; body: string; testid: string }
   options: readonly { value: T; label: string; icon?: IconName; lang?: string; /** What the button shows when the name is long (a language's code). */ shortLabel?: string }[]
@@ -43,7 +46,7 @@ const chosen = computed(() => props.options.find((option) => option.value === va
 /** The button's Tooltip: why it is off, or for a pencil its name. */
 const tooltip = computed(() => {
   if (props.disabled && props.disabledBody) return { name: props.label, disabled: true as const, disabledBody: props.disabledBody, announce: false }
-  return props.iconOnly ? { name: props.label, announce: false } : undefined
+  return props.iconOnly || props.toolbar ? { name: props.label, announce: false } : undefined
 })
 /** The button's text: a code or word shown for the value; the name always says label and value. */
 const shown = computed(() => chosen.value?.shortLabel ?? chosen.value?.label ?? '')
@@ -88,7 +91,7 @@ function onButtonClick() {
 }
 
 function onButtonKeydown(event: KeyboardEvent) {
-  if (props.disabled) return
+  if (props.disabled || props.toolbar) return
   // ↓/↑ are the panel's: they step past this row. →, Enter and Space open the list.
   if (event.key === 'ArrowRight' && !open.value) {
     event.preventDefault()
@@ -138,8 +141,8 @@ function onListKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div ref="rootEl" class="panel-picker" :class="{ 'panel-picker--bare': bare }">
-    <span v-if="!bare" class="panel-picker__label">
+  <div ref="rootEl" class="panel-picker" :class="{ 'panel-picker--bare': bare, 'panel-picker--toolbar': toolbar }">
+    <span v-if="!bare && !toolbar" class="panel-picker__label">
       <AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}
       <InfoButton v-if="info" class="panel-picker__info" :label="info.label" :body="info.body" :data-testid="info.testid" />
     </span>
@@ -163,9 +166,10 @@ function onListKeydown(event: KeyboardEvent) {
       >
         <AppIcon v-if="iconOnly" :name="iconOnly" :size="12" />
         <template v-else>
+          <AppIcon v-if="toolbar && icon" class="panel-picker__lead" :name="icon" :size="18" />
           <AppIcon v-if="chosen?.icon" :name="chosen.icon" :size="14" />
           <span class="panel-picker__value" :lang="chosen?.lang">{{ shown }}</span>
-          <AppIcon name="chevron-down" :size="12" />
+          <AppIcon class="panel-picker__chevron" name="chevron-down" :size="12" />
         </template>
       </button>
     </component>
@@ -264,6 +268,37 @@ function onListKeydown(event: KeyboardEvent) {
 
 .panel-picker__button--open {
   border-color: var(--ink);
+}
+
+/* In a toolbar (CanvasStrip card, Language): a plain strip button, 30px (44px on touch), no fill and no line. */
+.panel-picker--toolbar {
+  flex: none;
+  min-height: 0;
+  padding: 0;
+}
+
+.panel-picker--toolbar .panel-picker__button {
+  height: var(--control-height-plain);
+  padding: 0 var(--space-4) 0 var(--space-6);
+  background: none;
+  border-color: transparent;
+}
+
+@media (hover: hover) {
+  .panel-picker--toolbar .panel-picker__button:hover {
+    background: var(--hover-fill);
+  }
+}
+
+.panel-picker--toolbar .panel-picker__button--open {
+  color: var(--canvas);
+  background: var(--ink);
+}
+
+@media (pointer: coarse) {
+  .panel-picker--toolbar .panel-picker__button {
+    height: var(--touch-target);
+  }
 }
 
 /* The title block's pencil (ticket 0657): an 18px plain button holding a 12px icon (MarginSheet card), centred in its

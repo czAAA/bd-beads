@@ -184,11 +184,10 @@ describe('HomePage', () => {
     expect(wrapper.find('[data-testid="canvas-footer"]').exists()).toBe(false)
     expect(wrapper.find('.homepage__header').exists()).toBe(false)
     expect(wrapper.find('[data-testid="header-menu"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="theme-picker"]').exists()).toBe(false)
   })
 
-  it('has the strip with Menu, the Brand as the current page, and the zoom, but no Project controls', () => {
+  it('has the strip with Menu, the Brand as the current page, the zoom and Language, but no Project controls', () => {
     const wrapper = page()
     expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
@@ -197,15 +196,15 @@ describe('HomePage', () => {
     expect(brand.attributes('aria-current')).toBe('page')
     expect(brand.attributes('href')).toBeUndefined()
     expect(wrapper.find('[data-testid="zoom-reset"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
   })
 
-  it('opens the editor\'s Menu panel from the strip, with Language and Theme and Homepage as the current page', async () => {
+  it('opens the editor\'s Menu panel from the strip, with Theme and Homepage as the current page', async () => {
     const wrapper = page()
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
 
     expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-expanded')).toBe('true')
-    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="theme-picker"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
@@ -249,9 +248,8 @@ describe('HomePage', () => {
     wrapper.unmount()
   })
 
-  it('switches to Russian with the language switcher in the Menu, and remembers it', async () => {
+  it("switches to Russian with the strip's Language, and remembers it", async () => {
     const wrapper = page()
-    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="homepage-make-first"]').text()).toBe('Сделать первый проект')
     expect(wrapper.get('[data-step="inside"]').text()).toBe('Что внутри')

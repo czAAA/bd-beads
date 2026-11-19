@@ -19,6 +19,8 @@ import AppLogo from '../ui/AppLogo.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import FileButton from '../ui/form/FileButton.vue'
+import PanelPicker from '../shell/PanelPicker.vue'
+import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
 import SaveReminder from './SaveReminder.vue'
 import { rotateCanvasIcon } from './rotateCanvasIcon'
 import { imageInputAccept } from '../../domain/imageConversion'
@@ -81,7 +83,9 @@ const emit = defineEmits<{
   'hold-save-ring': [on: boolean]
 }>()
 
-const { t } = useI18n()
+const { t, locale, setLocale } = useI18n()
+/** Language, between Fit and Export: each language by its own name, the button showing its code ("EN"). */
+const languageOptions = LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], shortLabel: localeCode(code), lang: code }))
 
 /** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there (ADR 0035). */
 const actions = {
@@ -153,7 +157,7 @@ const centerEl = ref<HTMLElement>()
 const controlsEl = ref<HTMLElement>()
 const panelsRoving = useRovingFocus(panelsEl, { axis: () => 'horizontal', managesTabIndex: true })
 const centerRoving = useRovingFocus(centerEl, { selector: 'a[href]', axis: () => 'horizontal', managesTabIndex: true })
-const controlsRoving = useRovingFocus(controlsEl, { selector: 'button, a[href]', axis: () => 'horizontal', managesTabIndex: true })
+const controlsRoving = useRovingFocus(controlsEl, { selector: 'button:not([role="menuitemradio"]), a[href]', axis: () => 'horizontal', managesTabIndex: true })
 /** The right slot's scrolling row (ticket 0843): which of its edges cut a control, so that edge fades. */
 const scrollerEl = ref<HTMLElement>()
 const cut = useScrollCut(scrollerEl)
@@ -300,6 +304,17 @@ function onControlsKeydown(event: KeyboardEvent) {
           <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
           <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
         </div>
+        <!-- Language: the Menu's picker, moved here, after Fit and before Export; on every page but the demo. -->
+        <PanelPicker
+          v-if="!demo"
+          toolbar
+          :model-value="locale"
+          :label="t.languageSwitcher.ariaLabel"
+          icon="globe"
+          :options="languageOptions"
+          data-testid="language-switcher"
+          @update:model-value="setLocale"
+        />
       </div>
       <!-- Export (tickets 0652, 0843): the strip's last button, in its right corner, never scrolled away; lit while the
            Export panel is open. -->
@@ -614,11 +629,29 @@ a.canvas-strip__brand:focus-visible {
   }
 }
 
+/* Language under 1024px: the code alone ("EN"), as wide as an icon button at least, so the cluster still fits a
+ * tablet; the globe and the chevron come back from 1024px up. */
+@container shell (max-width: 1023px) {
+  .canvas-strip__controls :deep(:is(.panel-picker__lead, .panel-picker__chevron)) {
+    display: none;
+  }
+
+  .canvas-strip__controls :deep(.panel-picker--toolbar .panel-picker__button) {
+    justify-content: center;
+    min-width: var(--control-height-plain);
+    padding: 0 var(--space-4);
+  }
+}
+
 /* A finger needs a bigger target than the pointer's 30px (responsive.md "Input, not width"). */
 @media (pointer: coarse) {
   .canvas-strip__controls :deep(.icon-btn--plain) {
     width: var(--touch-target);
     height: var(--touch-target);
+  }
+
+  .canvas-strip__controls :deep(.panel-picker--toolbar .panel-picker__button) {
+    min-width: var(--touch-target);
   }
 }
 </style>
