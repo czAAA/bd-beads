@@ -491,15 +491,33 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     expect(document.activeElement).toBe(wrapper.get('[data-testid="homepage-page"]').element)
   })
 
-  it('has no drawn layer, only two faint X1 marks outside the box, hidden from screen readers', () => {
-    const wrapper = page()
-    const marks = wrapper.findAll('[data-testid="homepage-mark"]')
-    expect(marks).toHaveLength(2)
-    for (const mark of marks) {
-      expect(mark.attributes('aria-hidden')).toBe('true')
-      expect(wrapper.get('[data-testid="homepage"]').element.contains(mark.element)).toBe(false)
-    }
-    expect(wrapper.find('.drawn-layer').exists()).toBe(false)
+  describe('the marks around the box', () => {
+    afterEach(() => void vi.useRealTimers())
+    const on = (date: string) => vi.useFakeTimers({ toFake: ['Date'], now: new Date(date) })
+
+    it('has no drawn layer, only two faint X1 marks outside the box, hidden from screen readers', () => {
+      on('2026-11-30T12:00:00')
+      const wrapper = page()
+      const marks = wrapper.findAll('[data-testid="homepage-mark"]')
+      expect(marks).toHaveLength(2)
+      for (const mark of marks) {
+        expect(mark.attributes('aria-hidden')).toBe('true')
+        expect(wrapper.get('[data-testid="homepage"]').element.contains(mark.element)).toBe(false)
+      }
+      expect(wrapper.find('.drawn-layer').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="winter-charms"]').exists()).toBe(false)
+    })
+
+    it('in winter has the Winter charms and their three marks in place of the two, outside the box (ticket 1102)', async () => {
+      on('2026-12-01T12:00:00')
+      const wrapper = page()
+      await vi.waitFor(() => expect(wrapper.findAll('[data-testid="winter-mark"]')).toHaveLength(3))
+      expect(wrapper.find('[data-testid="homepage-mark"]').exists()).toBe(false)
+      const charms = wrapper.get('[data-testid="winter-charms"]')
+      expect(charms.attributes('aria-hidden')).toBe('true')
+      expect(charms.find('[tabindex]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="homepage"]').element.contains(charms.element)).toBe(false)
+    })
   })
 
   describe('the free list (tickets 0742, 0801)', () => {

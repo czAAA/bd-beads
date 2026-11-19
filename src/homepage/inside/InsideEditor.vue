@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { cssPx } from '../cssPx'
 import { cssZoomOf } from '../../composables/ui/cssZoom'
 import { provideShellScope } from '../../composables/ui/shellScope'
 import { useI18n } from '../../i18n/useI18n'
@@ -76,13 +77,6 @@ function cssMs(name: string): number {
   return Number.isNaN(amount) ? 0 : value.endsWith('ms') ? amount : amount * 1000
 }
 
-/** A length token in px: a `rem` one by the root's font size. */
-function cssPx(name: string): number {
-  const value = rootEl.value ? getComputedStyle(rootEl.value).getPropertyValue(name).trim() : ''
-  const amount = Number.parseFloat(value)
-  if (Number.isNaN(amount)) return 0
-  return value.endsWith('rem') ? amount * Number.parseFloat(getComputedStyle(document.documentElement).fontSize) : amount
-}
 
 /** Lets the shell draw: a frame or two once it is mounted. */
 async function settle(): Promise<void> {
@@ -178,7 +172,7 @@ function hand(instant: boolean, signal: AbortSignal): Hand {
     pauseMs: cssMs('--ghost-pause'),
     dragMs: cssMs('--ghost-drag'),
     dragHoldMs: cssMs('--ghost-drag-hold'),
-    roomPx: cssPx('--ghost-room'),
+    roomPx: cssPx(rootEl.value, '--ghost-room'),
   })
 }
 
