@@ -97,7 +97,7 @@
     },
     "production": {
       "name": "bd-beads",
-      // Stays on until the release switches it off (ticket 391).
+      // Stays on: the deploy's smoke check uses this address, the one Wrangler reports (ticket 391).
       "workers_dev": true,
       // Ticket 400. `www.openbeads.com` redirects to the apex in the dashboard (a Redirect Rule), not here.
       "routes": [{ "pattern": "openbeads.com", "custom_domain": true }],

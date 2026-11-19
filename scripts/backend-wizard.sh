@@ -177,7 +177,7 @@ finish() {
 
 
 # STAGES: human steps of ticket 71 (spec 385), one phase per run (h1 account/R2/billing, h2 tokens, h3 Access/Google,
-# h4 backup age key, h5 remove Flint 2 secrets, h6 the domain, h7 no health bypass); run
+# h4 backup age key, h5 remove Flint 2 secrets, h6 the domain, h7 no health bypass, h8 before the public release); run
 # `bash scripts/backend-wizard.sh hN` only when the agent asks.
 # No secret goes in chat, a file or a log: only ids, site keys, host names and the age public key are saved.
 
@@ -383,14 +383,14 @@ phase_h3() {
   put_secret_both TURNSTILE_SECRET_KEY
 
   note "No UptimeRobot monitor before the release: neither Worker answers outside Access (ticket 395). The watchdog"
-  note "checks below notice a dead Worker; the release (ticket 391) adds production's monitor."
+  note "checks below notice a dead Worker; phase h8 adds the monitor of production's Homepage (ticket 391)."
 
   stage "Healthchecks.io (H3d): three checks, email only"
   open_url "https://healthchecks.io/accounts/signup/"
   step "Sign up or log in: you land in your default project's checks."
   step "Add Check three times, schedule Simple, each alerting by email to you:"
   step "  watchdog-dev: period 15 minutes, grace 1 hour"
-  step "  watchdog-production: period 15 minutes, grace 1 hour"
+  step "  watchdog-production: period 15 minutes, grace 30 minutes"
   step "  backup-weekly: period 7 days, grace 1 day"
   say "The ping URLs (https://hc-ping.com/<uuid>, on each check's page) are secrets. Wrangler asks for"
   say "watchdog-dev's, then watchdog-production's;"
@@ -524,11 +524,84 @@ phase_h7() {
 
   stage "UptimeRobot: the monitors go until the release"
   open_url "https://dashboard.uptimerobot.com/monitors"
-  step "Delete every monitor on /api/health. They would see only the sign-in page; the release (ticket 391) adds"
-  step "  production's back."
+  step "Delete every monitor on /api/health. They would see only the sign-in page; phase h8 adds one on production's"
+  step "  Homepage instead (ticket 391)."
   note "watchdog-dev and watchdog-production in Healthchecks still alert on a dead Worker or an unreadable database."
   pause "Deleted? Press Enter."
   say "Tell the agent: \"H7 done\"."
+}
+
+# release_check KEY "question": a y/N confirm whose answer goes to the handoff file, so the agent can tick the ticket.
+release_check() {
+  if confirm "$2"; then
+    write_env "$1" done
+  else
+    write_env "$1" not-done
+    SKIPPED+=("$2")
+  fi
+}
+
+phase_h8() {
+  ask_host DOMAIN_PRODUCTION "Production host (e.g. openbeads.com):"
+  write_env DOMAIN_PRODUCTION "$DOMAIN_PRODUCTION"
+
+  stage "Cloudflare: privacy@$DOMAIN_PRODUCTION reaches you (ticket 82)"
+  say "The privacy policy's one contact. Email Routing forwards it to your own inbox, free."
+  open_url "https://dash.cloudflare.com/?to=/:account/:zone/email/routing/overview"
+  step "Pick $DOMAIN_PRODUCTION. Enable Email Routing and let it add its DNS records (MX and SPF)."
+  step "Destination addresses: add your own email and click the link Cloudflare mails you."
+  step "Routing rules → Create address: privacy@$DOMAIN_PRODUCTION, action Send to an email, your address."
+  step "Send a test mail to privacy@$DOMAIN_PRODUCTION from another account; it arrives in your inbox."
+  release_check RELEASE_EMAIL_ROUTING "Did the test mail arrive?"
+
+  stage "Google: the consent screen in production"
+  open_url "https://console.cloud.google.com/auth/branding"
+  step "Branding: Application home page https://$DOMAIN_PRODUCTION/ and"
+  step "  Application privacy policy link https://$DOMAIN_PRODUCTION/privacy/. Save."
+  open_url "https://console.cloud.google.com/auth/audience"
+  step "Audience: Publishing status → Publish app → Confirm. The status reads In production."
+  note "Sign-in asks only for your name, email and picture, which need no Google verification."
+  release_check RELEASE_GOOGLE_PRODUCTION "Does Audience say In production, with both links saved?"
+
+  stage "Cloudflare: the /api/* rate-limiting rule"
+  open_url "https://dash.cloudflare.com/?to=/:account/:zone/security/security-rules"
+  step "Rate limiting rules: delete \"Leaked credential check\". A Free zone has one slot."
+  step "Create rule, name api: field URI Path, operator starts with, value /api/, counted per IP."
+  step "  The rate and block time: docs/operations.md (The domain's rules). Deploy."
+  step "Settings → Bot Fight Mode is on."
+  release_check RELEASE_RATE_LIMIT "Is the rule api the zone's only rate-limiting rule, and Bot Fight Mode on?"
+
+  stage "Access: /api/health on $DOMAIN_PRODUCTION for CI only"
+  open_url "https://one.dash.cloudflare.com/"
+  step "Access controls → Applications → Add an application → Self-hosted."
+  step "  Name bd-beads-prod-health; domain $DOMAIN_PRODUCTION, Path api/health."
+  step "  One policy: action Service Auth, include Service Token bd-beads-ci-smoke. No Allow policy."
+  step "It stays when the release day removes the sign-in application."
+  release_check RELEASE_HEALTH_ACCESS "Is the application saved with the Service Auth policy alone?"
+
+  stage "Turnstile and Access list the domain"
+  open_url "https://dash.cloudflare.com/?to=/:account/turnstile"
+  step "The bd-beads widget's hostnames include $DOMAIN_PRODUCTION."
+  open_url "https://one.dash.cloudflare.com/"
+  step "Access controls → Applications: production's sign-in application covers $DOMAIN_PRODUCTION."
+  release_check RELEASE_TURNSTILE_ACCESS "Do both list $DOMAIN_PRODUCTION?"
+
+  stage "UptimeRobot: the Homepage, every 15 minutes"
+  open_url "https://dashboard.uptimerobot.com/monitors"
+  step "New monitor: HTTP(s), URL https://$DOMAIN_PRODUCTION/, interval 15 minutes, alert by email and the phone app."
+  step "Until the release the page answers with the Access sign-in; it turns green once the gate is off."
+  release_check RELEASE_UPTIME "Is the monitor saved?"
+
+  stage "Healthchecks: watchdog-production's grace"
+  open_url "https://healthchecks.io/"
+  step "watchdog-production → Change Schedule: period 15 minutes, grace 30 minutes. Dev's stays 1 hour."
+  release_check RELEASE_GRACE "Is the grace 30 minutes?"
+
+  stage "Cloudflare: billing"
+  open_url "https://dash.cloudflare.com/?to=/:account/billing/subscriptions"
+  step "Subscriptions list nothing paid but the domain's registration."
+  release_check RELEASE_BILLING "Nothing paid but the domain?"
+  say "Tell the agent: \"H8 done\"; it reads the answers from $ENV_FILE."
 }
 
 case "${1:-}" in
@@ -539,7 +612,8 @@ case "${1:-}" in
   h5) TOTAL_STAGES=4; banner "Backend H5: the old deploy's credentials, and billing"; phase_h5 ;;
   h6) TOTAL_STAGES=5; banner "Backend H6: the domain on both Workers, and Google sign-in"; phase_h6 ;;
   h7) TOTAL_STAGES=3; banner "Backend H7: nobody outside Access reaches a Worker"; phase_h7 ;;
-  *) echo "Usage: bash scripts/backend-wizard.sh h1|h2|h3|h4|h5|h6|h7   (ticket 71's human steps, in order)"; exit 2 ;;
+  h8) TOTAL_STAGES=8; banner "Backend H8: before the public release (ticket 391)"; phase_h8 ;;
+  *) echo "Usage: bash scripts/backend-wizard.sh h1|h2|h3|h4|h5|h6|h7|h8   (tickets 71 and 391's human steps, in order)"; exit 2 ;;
 esac
 
 finish

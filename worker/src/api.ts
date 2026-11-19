@@ -92,7 +92,8 @@ export async function handleApi(request: Request, env: Env, routes: Route[]): Pr
 }
 
 /** `GET /api/health`: name and version after one read of each database, so "up" means "can reach its storage".
- * Behind Access on both Workers until the release, with no bypass: CI reaches it with a service token (ticket 395). */
+ * Behind Access on both Workers, before the release and after it, with no bypass: CI reaches it with a service token
+ * (tickets 395, 391). */
 export const healthRoute: Route = {
   method: 'GET',
   path: '/api/health',

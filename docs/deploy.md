@@ -10,11 +10,11 @@ One Cloudflare account runs two Workers from one `wrangler.jsonc`:
 |---|---|---|
 | Worker | `bd-beads-dev` | `bd-beads` |
 | Deployed | on every push to `main` | on the merge of a release commit, after dev; a manual run redeploys the newest release |
-| Address | `https://dev.openbeads.com`, and `https://bd-beads-dev.bd4beads.workers.dev` | `https://openbeads.com`, and `https://bd-beads.bd4beads.workers.dev` until the release switches it off (ticket 391) |
+| Address | `https://dev.openbeads.com`, and `https://bd-beads-dev.bd4beads.workers.dev` | `https://openbeads.com`, and `https://bd-beads.bd4beads.workers.dev` for the deploy's smoke check (ticket 391) |
 | D1 `core` (binding `CORE`) | `bd-beads-dev-core` | `bd-beads-core` |
 | D1 `blobs` (binding `BLOBS_DB`) | `bd-beads-dev-blobs` | `bd-beads-blobs` |
 | R2 (binding `BLOBS`) | `bd-beads-dev` | `bd-beads` |
-| Access | always | until the public release (ticket 391) |
+| Access | always | until the public release; `/api/health` after it too (ticket 391) |
 
 Each Worker serves the Homepage (`/`) and the editor (`/app/`) as static assets at its root (ticket 1052, ADR 0097; `public/_redirects` sends the old `/homepage/` to `/`, read by Cloudflare and never served), and runs its code only for `/api/*` (`run_worker_first`), so loading the app never counts as a Worker request and keeps working when `/api` is down or switched off. The code is `worker/` (`CODING_STANDARDS.md`). The two databases are apart so a full `blobs` can't stop sign-in ([ADR 0049](adr/0049-core-and-blobs-are-separate-d1-databases.md)).
 
@@ -27,7 +27,7 @@ DEPLOY_BASE=/ npm run build
 npx wrangler d1 migrations apply CORE --env dev --remote
 npx wrangler d1 migrations apply BLOBS_DB --env dev --remote
 npx wrangler deploy --env dev --var VERSION:$(git rev-parse HEAD)
-# Neither Worker answers outside Access before the release (ticket 395): sign in with the CI service token, or open the address in a signed-in browser.
+# Health answers only through Access (tickets 395, 391): sign in with the CI service token, or open the address in a signed-in browser.
 curl -s -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
   https://bd-beads-dev.bd4beads.workers.dev/api/health   # or https://dev.openbeads.com/api/health
 ```
@@ -39,7 +39,7 @@ Production is the same with `--env production`, from a clean checkout of the new
 `.github/workflows/deploy.yml` does the same as the steps above; each Worker's deploy is `.github/workflows/deploy-worker.yml`, which it calls:
 
 - **When it runs.** A push to `main` deploys dev. When the pushed commit is a release commit, production follows (Releasing to production, below). A manual run (Actions → Deploy → Run workflow, on `main`) redeploys production only. A run from any other ref fails at once, and the `production` environment refuses it too.
-- **What it does.** One build, from `main`'s whole history (`fetch-depth: 0`), then for each Worker each database's migrations, then the code with `VERSION` set to the commit that was built, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy. Neither Worker answers outside Access before the release, health included (ticket 395), so both checks send the Access service token (`CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`, in the `production` environment, given to the check steps alone); without it a deploy fails. A second check asks the custom domain (`dev.openbeads.com` or `openbeads.com`) the same. It is advisory: the zone's Bot Fight Mode challenges a runner, so a failure there only warns.
+- **What it does.** One build, from `main`'s whole history (`fetch-depth: 0`), then for each Worker each database's migrations, then the code with `VERSION` set to the commit that was built, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy. Health answers only through Access, before the release and after it (tickets 395, 391), so both checks send the Access service token (`CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`, in the `production` environment, given to the check steps alone); without it a deploy fails. Production keeps its `workers.dev` address for this check.
 - **Custom domains.** Each Worker's `routes` entry in `wrangler.jsonc` is a Custom Domain, so a deploy keeps it. `PUBLIC_ORIGIN` is the origin sign-in is tried on; Google's callback and the allowed origins come from it, never from the request's host. Each hostname has its own Access application (ticket 400), so a tester is added to both policies.
 - **Concurrency.** Dev and production each queue on their own: deploys of the same Worker run one behind another and are never cancelled halfway through. GitHub keeps only one waiting deploy per Worker, so a newer push replaces a dev deploy that is still waiting; if that was a release's, its production deploy doesn't run, and a manual run puts it there.
 - **What it skips.** A push that changes only Markdown deploys nothing. A release always changes the release record, so it never skips.
@@ -106,7 +106,7 @@ Most search engines and AI crawlers read a page without running its scripts, so 
 
 ## The human steps
 
-The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h7`; h6 is ticket 400's domain, h7 ticket 395's service token), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.
+The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h8`; h6 is ticket 400's domain, h7 ticket 395's service token, h8 the steps before the public release, ticket 391), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.
 
 ## Adding a tester
 
