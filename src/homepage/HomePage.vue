@@ -269,7 +269,7 @@ const plansIndex = computed(() => sections.value.findIndex((entry) => entry.id =
 const wayInAway = computed(() => !phone.value && sections.value[section.value]?.id === 'welcome')
 const pageEl = ref<HTMLElement>()
 const boxEl = ref<HTMLElement>()
-/** From 1 December to 7 January the Winter charms and their three marks stand in for the two marks (ticket 1102). */
+/** From 19 November to 13 January the Winter charms and their three marks stand in for the two marks (ticket 1102). */
 const winter = winterShown(new Date(), window.location.search, import.meta.env.DEV)
 /** The section shown: the one truth of where the Homepage is, which every way of turning it sets (ticket 0801). */
 const section = ref(props.atWhatsNew ? Math.max(0, sections.value.findIndex((entry) => entry.id === 'coffee')) : 0)
