@@ -155,6 +155,21 @@ describe('the Homepage turned by wheel, swipe and keys (tickets 0784, 0801)', ()
       expect(turns).toEqual([1])
     })
 
+    it('turns on a trackpad\'s next swipe at a tall section\'s end, though the last one\'s momentum never went quiet', () => {
+      const { turns } = turning()
+      tall(100)
+      expect(wheel(60).defaultPrevented).toBe(false)
+      room.scrollTop = 100
+      for (let step = 0; step < 40; step += 1) {
+        vi.advanceTimersByTime(20)
+        wheel(step < 39 ? 30 : 8)
+      }
+      expect(turns).toEqual([])
+      vi.advanceTimersByTime(20)
+      expect(wheel(40).defaultPrevented).toBe(true)
+      expect(turns).toEqual([1])
+    })
+
     it('turns up from a tall section once it is back at its top', () => {
       const { turns } = turning({ at: 2 })
       tall(500, 40)
