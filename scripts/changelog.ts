@@ -1,12 +1,13 @@
-// CHANGELOG.md, the owner's history (ticket 1046, spec 1043): generated from the release record and the Release notes,
-// never edited by hand. `node scripts/changelog.ts` writes it; `--print` writes it to the terminal with the notes not
-// yet released on top, so the owner sees what the next release would hold.
+// CHANGELOG.md, the owner's history (ticket 1046, spec 1043): generated from the release record and the notes, never by
+// hand. `node scripts/changelog.ts` writes it; `--print` prints it with the unreleased notes on top; `--newest-release
+// <file>` prints the newest release's Version and writes its section to the file, for its GitHub Release (ticket 1134).
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { newerFirst } from '../src/domain/notesFile.ts';
 import { numberUnreleased, readNoteFiles, type NoteFile, type NoteFiles } from './notes.ts';
-import type { Kind, NumberedNote } from './versions.ts';
+import { RELEASE_RECORD } from './release.ts';
+import type { Kind, NumberedNote, Release } from './versions.ts';
 
 /** The changelog's path in the repo, at its root where a reader of the public repo looks for it. */
 export const CHANGELOG = 'CHANGELOG.md';
@@ -47,17 +48,31 @@ function blocks(notes: readonly NumberedNote[], files: ReadonlyMap<string, NoteF
   ]);
 }
 
+/** A release's section of the changelog, below its heading: its blocks, or a line saying it has no notes. */
+function section(release: Release, files: ReadonlyMap<string, NoteFile>): string[] {
+  return release.notes.length > 0 ? blocks(release.notes, files) : ['', 'No Release notes.'];
+}
+
+/** A Version as a tag and a shell take it safely: three numbers with no leading zero, and nothing else. */
+const PLAIN_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+
+/** The newest Production release's Version and its section of the changelog, below the heading, for its GitHub Release
+ * (ticket 1134). Refuses an empty record and a Version that is not plain `X.Y.Z`. */
+export function newestRelease(files: NoteFiles): { version: string; notes: string } {
+  const release = files.record.at(-1);
+  if (!release) throw new Error(`${RELEASE_RECORD} holds no release`);
+  if (!PLAIN_VERSION.test(release.version)) throw new Error(`${JSON.stringify(release.version)} is not a plain X.Y.Z Version`);
+  const byName = new Map(files.notes.map((note) => [note.name, note]));
+  return { version: release.version, notes: [...section(release, byName), ''].join('\n') };
+}
+
 /** The changelog's text: the released part, and with `unreleased` the notes the next release would hold on top. */
 export function changelog(files: NoteFiles, unreleased?: readonly NumberedNote[]): string {
   const byName = new Map(files.notes.map((note) => [note.name, note]));
   const waiting = unreleased
     ? ['', '## Unreleased: what the next release would hold', ...(unreleased.length > 0 ? blocks(unreleased, byName) : ['', 'Nothing yet: the release command refuses until a Release note merges.'])]
     : [];
-  const releases = [...files.record].reverse().flatMap((release) => [
-    '',
-    `## Release ${release.version} · ${release.date}`,
-    ...(release.notes.length > 0 ? blocks(release.notes, byName) : ['', 'No Release notes.']),
-  ]);
+  const releases = [...files.record].reverse().flatMap((release) => ['', `## Release ${release.version} · ${release.date}`, ...section(release, byName)]);
   const before = [
     '',
     '## Before 1.0.0',
@@ -76,7 +91,13 @@ function main(args: string[]): void {
     process.stdout.write(changelog(files, numberUnreleased(root, files, false)?.notes ?? []));
     return;
   }
-  if (args.length > 0) throw new Error('usage: node scripts/changelog.ts [--print]');
+  if (args[0] === '--newest-release' && args.length === 2) {
+    const { version, notes } = newestRelease(files);
+    writeFileSync(args[1], notes);
+    process.stdout.write(`${version}\n`);
+    return;
+  }
+  if (args.length > 0) throw new Error('usage: node scripts/changelog.ts [--print | --newest-release <notes file>]');
   writeFileSync(resolve(root, CHANGELOG), changelog(files));
 }
 

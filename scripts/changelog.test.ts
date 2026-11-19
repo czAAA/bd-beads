@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { CHANGELOG, changelog } from './changelog.ts';
+import { CHANGELOG, changelog, newestRelease } from './changelog.ts';
 import { readNoteFiles, type NoteFiles } from './notes.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -79,5 +79,42 @@ No Release notes.
 
   it('is committed as the generator writes it (after changing a released note or the record, run `npm run changelog`)', () => {
     expect(readFileSync(new URL(`../${CHANGELOG}`, import.meta.url), 'utf8')).toBe(changelog(readNoteFiles(ROOT)));
+  });
+});
+
+// The GitHub Release a Production release makes (ticket 1134): its Version and its section of CHANGELOG.md.
+describe('newestRelease', () => {
+  it('is the newest release’s Version and its section of the changelog, without the section’s heading', () => {
+    const { version, notes } = newestRelease(FILES);
+    expect(version).toBe('2.0.0');
+    expect(notes).toBe(`
+### 1.2.0 · 2026-11-20
+
+| Version | Kind | Change | Ticket |
+|---|---|---|---|
+| 1.2.0 | New | Lift a Piece | 0003 |
+
+### 1.1.1 · 2026-11-19
+
+| Version | Kind | Change | Ticket |
+|---|---|---|---|
+| 1.1.1 | Fixed | Undo \\| Redo keep the Frame | 0002 |
+| 1.1.0 | New | Mirror a Piece | 0001 |
+`);
+    expect(changelog(FILES)).toContain(`## Release 2.0.0 · 2026-12-01\n${notes}`);
+  });
+
+  it('says so for a release with no Release notes', () => {
+    expect(newestRelease({ ...FILES, record: FILES.record.slice(0, 1) })).toEqual({ version: '1.0.0', notes: '\nNo Release notes.\n' });
+  });
+
+  it('refuses a Version that is not plain X.Y.Z', () => {
+    for (const version of ['2.0', 'v2.0.0', '2.0.0-rc.1', '2.0.0; echo hi', '02.0.0\n']) {
+      expect(() => newestRelease({ ...FILES, record: [{ version, date: '2026-12-01', notes: [] }] })).toThrow(/is not a plain X\.Y\.Z Version/);
+    }
+  });
+
+  it('refuses an empty release record', () => {
+    expect(() => newestRelease({ ...FILES, record: [] })).toThrow(/no release/);
   });
 });
