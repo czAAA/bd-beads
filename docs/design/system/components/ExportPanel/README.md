@@ -47,11 +47,11 @@ Signed off by the owner on 2026-11-19 (ticket 1123). It waits for ticket 1121's 
 
 - **Two more switches, Empty grid, then Chart border**, right after Black and white, so the order is Cover page, Black and white, Empty grid, Chart border, Large beads (where it shows), Row by row.
   - **Empty grid** ("What Empty grid does"). A PanelSwitchRow like the others, with its Info button; off at first and remembered on the device like them. Off, an empty position on the PDF's charts and overview is bare paper; on, it gets its outline and small cross (PrintChartPage card). It adds or removes no page.
-  - **Chart border** ("What Chart border does"; name, default and copy proposed, not yet approved). The same kind of row, remembered on the device, **on at first**. On, every chart has its thin ruler line, a 0.1 mm line between each ruler and the beads with the numbers outside it (PrintChartPage card); off, the beads end the chart. It changes the PDF's charts only (not the overview, the Cover page or the picture) and adds or removes no page.
+  - **Chart border** ("What Chart border does"; name, default and copy proposed, not yet approved). The same kind of row, remembered on the device, **on at first**. On, every chart has its one rounded rim, 1 mm round the beads with the ruler numbers outside it (PrintChartPage card); off, nothing goes round the chart and the numbers keep their places. It changes the PDF's charts only (not the overview, the Cover page or the picture) and adds or removes no page.
 - **Their file words**, `empty-grid` and `chart-border` in English (`writing.md`), come after Black and white's in the name, in the panel's order, each while its switch is on: `peacock-cuff-ada-lind_cover_black-and-white_empty-grid_chart-border.pdf`. Chart border is on at first, so a name made with the switches as they start ends `_cover_chart-border`.
 - Empty grid changes the PDF only once Picture saves the Cover page, which shows no empty positions. If it lands while Picture is still page 1, the picture follows it too and its Info body adds that it does (ticket 0957's rule); the same holds for Chart border.
 
-The owner agreed to Empty grid's file word and its place after Black and white, and asked for the ruler line's switch, on 2026-11-19 (ticket 1123). Chart border's name, default, Info body and file word are proposed and wait for the owner's yes.
+The owner agreed to Empty grid's file word and its place after Black and white, and asked for the rim's switch, on 2026-11-19 (ticket 1123). Chart border's name, default, Info body and file word are proposed and wait for the owner's yes.
 
 ### With no Frame
 

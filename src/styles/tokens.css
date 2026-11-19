@@ -303,6 +303,7 @@
   --print-line-ten: 0.3mm;
   --print-pad-line: 0.2mm;
   --print-pad-radius: 2mm;
+  --print-rim-gap: 1mm;
   --print-overlap-tint: 60%;
   --print-overlap-line: 0.5mm;
   --print-key-columns: 6;

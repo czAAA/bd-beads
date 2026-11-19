@@ -1207,7 +1207,7 @@ Approved 2026-11-19, not yet in the app (ticket 1096). The two new switches of t
 
 ## Empty grid and Chart border copy (ticket 1127)
 
-Approved 2026-11-19, not yet in the app (signed off in ticket 1123; ticket 1127 builds both switches). The Export panel's two switches after Black and white (ExportPanel card), in the Frame panel's export section too, and the word each adds to the PDF's file name after `black-and-white`, in the panel's order. "Empty grid" is the owner's name, and the owner agreed to its file word. Chart border is the switch the owner asked for, for the thin line between the rulers and the chart; its name, its default (on) and all its copy are proposed and wait for the owner's yes. English is the ticket's; the other languages are proposals for review with the build. Russian, Ukrainian and Belarusian avoid «рамка», the Frame's word.
+Approved 2026-11-19, not yet in the app (signed off in ticket 1123; ticket 1127 builds both switches). The Export panel's two switches after Black and white (ExportPanel card), in the Frame panel's export section too, and the word each adds to the PDF's file name after `black-and-white`, in the panel's order. "Empty grid" is the owner's name, and the owner agreed to its file word. Chart border is the switch the owner asked for, for the chart's one rounded rim round the beads, the numbers outside it; its name, its default (on) and all its copy are proposed and wait for the owner's yes. English is the ticket's; the other languages are proposals for review with the build. Russian, Ukrainian and Belarusian avoid «рамка», the Frame's word.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
