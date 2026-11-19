@@ -844,6 +844,11 @@ export const ru: Translations = {
     rowByRowLabel: 'Ряд за рядом',
     rowByRowInfoLabel: 'Что делает Ряд за рядом',
     rowByRowLine: 'Добавляет страницы, где каждый ряд расписан буквами и числами, с квадратиком, чтобы отметить готовый ряд.',
+    savesAs: 'Сохранится как',
+    fileWordLargeBeads: 'крупные-бисеринки',
+    fileWordRowByRow: 'ряд-за-рядом',
+    fileNameEdit: 'Переименовать файл',
+    fileNameTooltip: 'Задайте имя этого экспорта сами. К нему ничего не добавится, а при закрытии панели оно забудется.',
     background: { label: 'Фон рамки' },
     margin: {
       heading: 'Поля',

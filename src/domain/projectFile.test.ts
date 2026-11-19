@@ -16,6 +16,7 @@ import {
   whyNotOpened,
   serializeStoredProject,
   projectFileNameOf,
+  typedPdfFileName,
 } from './projectFile'
 import { createProject } from './createProject'
 import { encodeProject } from './projectEncoding'
@@ -323,6 +324,30 @@ describe('the export file names (tickets 73, 74, 0708, 0720)', () => {
 
   it('falls back to a generic name when no part has anything filename-safe in it', () => {
     expect(projectExportFileName(makeProject('???'), 'png')).toBe('openbeads.png')
+  })
+
+  it('adds an underscore and a word for each switch that is on, in the order given (ticket 1096)', () => {
+    expect(projectExportFileName(rose, 'pdf', ['large-beads', 'row-by-row'])).toBe('summer-rose-ada-lovelace_large-beads_row-by-row.pdf')
+    expect(projectExportFileName(rose, 'pdf', ['ряд-за-рядом'])).toBe('summer-rose-ada-lovelace_ряд-за-рядом.pdf')
+    expect(projectExportFileName(rose, 'pdf', [])).toBe('summer-rose-ada-lovelace.pdf')
+  })
+})
+
+describe('a PDF name typed in the Export panel (ticket 1096)', () => {
+  it('keeps what was typed and ends it in .pdf once', () => {
+    expect(typedPdfFileName('  My Rose ')).toBe('My Rose.pdf')
+    expect(typedPdfFileName('rose.PDF')).toBe('rose.pdf')
+    expect(typedPdfFileName('rose.pdf.pdf')).toBe('rose.pdf')
+  })
+
+  it('turns the signs a file name cannot hold into dashes', () => {
+    expect(typedPdfFileName('a/b:c*?"<>|d')).toBe('a-b-c-d.pdf')
+  })
+
+  it('gives nothing for a name that leaves nothing to write, so the made name comes back', () => {
+    expect(typedPdfFileName('   ')).toBeUndefined()
+    expect(typedPdfFileName('.pdf')).toBeUndefined()
+    expect(typedPdfFileName('///')).toBeUndefined()
   })
 })
 

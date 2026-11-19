@@ -37,6 +37,9 @@ const props = defineProps<{
   /** Bare and with no pencil: only the empty text starts the edit, a value reads as text (the margin's compact row and
    * its folded tab, where there is no room for pencils, ticket 0803). */
   inviteOnly?: boolean
+  /** A file's name (ticket 1096, the Export panel's "Saves as" line): the label `meta-small`, the value in DM Mono `ink`,
+   * broken anywhere so a long name wraps inside the panel. */
+  fileName?: boolean
   testid: string
 }>()
 const emit = defineEmits<{ save: [value: string] }>()
@@ -119,7 +122,7 @@ useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: di
 </script>
 
 <template>
-  <div ref="rootEl" class="editable-line" :class="{ 'editable-line--small': small, 'editable-line--bare': bare }" :data-testid="`${testid}-row`">
+  <div ref="rootEl" class="editable-line" :class="{ 'editable-line--small': small, 'editable-line--bare': bare, 'editable-line--file': fileName }" :data-testid="`${testid}-row`">
     <span v-if="!bare" class="editable-line__label">{{ label }}</span>
     <div v-if="!editing" class="editable-line__body">
       <template v-if="value || bare">
@@ -272,6 +275,19 @@ useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: di
 .editable-line__invite:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+/* A file's name (ticket 1096): it wraps anywhere instead of being cut. */
+.editable-line--file .editable-line__label {
+  font: var(--type-meta-small);
+}
+
+.editable-line--file .editable-line__value {
+  overflow: visible;
+  font: var(--type-meta);
+  color: var(--ink);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* The title block's cell (ticket 0657): one line, the pencil 18px; the field floats over the sheet above the cell, on

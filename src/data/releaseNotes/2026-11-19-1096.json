@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "The PDF’s file name says which switches are on, Export shows it under them, and its pencil renames the file for that export",
+    "ru": "Имя PDF-файла называет включённые переключатели, «Экспорт» показывает его под ними, а карандаш переименовывает файл для этого экспорта",
+    "uk": "Назва PDF-файлу називає ввімкнені перемикачі, «Експорт» показує її під ними, а олівець перейменовує файл для цього експорту",
+    "be": "Назва PDF-файла называе ўключаныя пераключальнікі, «Экспарт» паказвае яе пад імі, а аловак перайменоўвае файл для гэтага экспарту",
+    "zh": "PDF 文件名会写明开启了哪些开关，导出在开关下方显示文件名，铅笔可为这次导出重命名文件",
+    "es": "El nombre del PDF dice qué interruptores están activados, Exportar lo muestra debajo de ellos y su lápiz cambia el nombre del archivo para esa exportación",
+    "pl": "Nazwa pliku PDF mówi, które przełączniki są włączone, Eksport pokazuje ją pod nimi, a ołówek zmienia nazwę pliku dla tego eksportu"
+  }
+}

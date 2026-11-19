@@ -844,6 +844,11 @@ export const uk: Translations = {
     rowByRowLabel: 'Рядок за рядком',
     rowByRowInfoLabel: 'Що робить Рядок за рядком',
     rowByRowLine: 'Додає сторінки, де кожен рядок розписано літерами й числами, з квадратиком, щоб позначити готовий рядок.',
+    savesAs: 'Збережеться як',
+    fileWordLargeBeads: 'великі-бісерини',
+    fileWordRowByRow: 'рядок-за-рядком',
+    fileNameEdit: 'Перейменувати файл',
+    fileNameTooltip: 'Задайте назву цього експорту самі. До неї нічого не додасться, а коли панель закриється, вона забудеться.',
     background: { label: 'Фон рамки' },
     margin: {
       heading: 'Поля',

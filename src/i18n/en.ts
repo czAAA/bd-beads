@@ -836,6 +836,11 @@ export const en: Translations = {
     rowByRowLabel: 'Row by row',
     rowByRowInfoLabel: 'What Row by row does',
     rowByRowLine: 'Adds pages that write out each row as counts of letters, with a box to tick as you finish it.',
+    savesAs: 'Saves as',
+    fileWordLargeBeads: 'large-beads',
+    fileWordRowByRow: 'row-by-row',
+    fileNameEdit: 'Rename the file',
+    fileNameTooltip: 'Name this export yourself. Nothing is added to the name, and it is forgotten when the panel closes.',
     background: { label: 'Frame background' },
     margin: {
       heading: 'Margin',

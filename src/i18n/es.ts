@@ -841,6 +841,11 @@ export const es: Translations = {
     rowByRowLabel: 'Fila por fila',
     rowByRowInfoLabel: 'Para qué sirve Fila por fila',
     rowByRowLine: 'Añade páginas que escriben cada fila con letras y números, con una casilla para marcarla al terminarla.',
+    savesAs: 'Se guarda como',
+    fileWordLargeBeads: 'cuentas-grandes',
+    fileWordRowByRow: 'fila-por-fila',
+    fileNameEdit: 'Cambiar el nombre del archivo',
+    fileNameTooltip: 'Pon tú el nombre de esta exportación. No se le añade nada y se olvida al cerrar el panel.',
     background: { label: 'Fondo del marco' },
     margin: {
       heading: 'Margen',

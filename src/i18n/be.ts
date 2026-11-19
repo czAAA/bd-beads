@@ -845,6 +845,11 @@ export const be: Translations = {
     rowByRowLabel: 'Рад за радам',
     rowByRowInfoLabel: 'Што робіць Рад за радам',
     rowByRowLine: 'Дадае старонкі, дзе кожны рад распісаны літарамі і лічбамі, з квадрацікам, каб адзначыць гатовы рад.',
+    savesAs: 'Захаваецца як',
+    fileWordLargeBeads: 'буйныя-бісерынкі',
+    fileWordRowByRow: 'рад-за-радам',
+    fileNameEdit: 'Перайменаваць файл',
+    fileNameTooltip: 'Задайце назву гэтага экспарту самі. Да яе нічога не дадасца, а калі панэль зачыніцца, яна забудзецца.',
     background: { label: 'Фон рамкі' },
     margin: {
       heading: 'Палі',

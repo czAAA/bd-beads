@@ -844,6 +844,11 @@ export const pl: Translations = {
     rowByRowLabel: 'Rząd po rzędzie',
     rowByRowInfoLabel: 'Do czego służy Rząd po rzędzie',
     rowByRowLine: 'Dodaje strony, na których każdy rząd jest rozpisany literami i liczbami, z polem do odhaczenia gotowego rzędu.',
+    savesAs: 'Zapisze się jako',
+    fileWordLargeBeads: 'duże-koraliki',
+    fileWordRowByRow: 'rząd-po-rzędzie',
+    fileNameEdit: 'Zmień nazwę pliku',
+    fileNameTooltip: 'Nadaj temu eksportowi własną nazwę. Nic nie zostanie do niej dodane, a po zamknięciu panelu zostanie zapomniana.',
     background: { label: 'Tło ramki' },
     margin: {
       heading: 'Margines',
