@@ -8,8 +8,8 @@ import { cssZoomOf } from '../composables/ui/cssZoom'
 import HomePage from '../homepage/HomePage.vue'
 
 // Everything the ghost presses or rests on is seen whole (ticket 0820): the tour played with motion, as a visitor
-// watches it, every press and rest checked against what clips its control, what covers it and where the ghost is. A
-// tour takes three minutes and a file's tests run one by one, so each size is a file: `ghostVisible.*.browser.test.ts`.
+// watches it, every press and rest checked against what clips its control, what covers it and where the ghost is. A tour
+// takes three minutes and a file's tests run one by one, so each size is a file, `.long.` to start first (vite.sequencer).
 
 /** The slack of a measure, in px. */
 const SLACK = 1.5
