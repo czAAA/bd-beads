@@ -25,6 +25,8 @@ import { canvasOf, frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
+/** Big enough that its chart prints under 3 mm, where Large beads acts (ticket 1125). */
+const wide = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 100, height: 100, unit: 'beads' } })
 
 /** A fake for the file hand-over, so nothing here touches the DOM. */
 const downloadFile = vi.fn()
@@ -113,8 +115,8 @@ describe('useExportFlow print choices (ticket 0916)', () => {
     const { largeBeads, rowByRow } = usePrintChoices()
     largeBeads.value = true
     rowByRow.value = true
-    await setup().onExportPdf()
-    await setup().onExportPng()
+    await setup({ project: wide }).onExportPdf()
+    await setup({ project: wide }).onExportPng()
     expect(exportProjectPdf).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ largeBeads: true, wordChart: expect.anything() }), 300)
     expect(exportProjectPng).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ largeBeads: true }), expect.anything())
   })
@@ -215,8 +217,15 @@ describe('useExportFlow', () => {
       const { largeBeads, rowByRow } = usePrintChoices()
       rowByRow.value = true
       largeBeads.value = true
-      await setup().onExportPdf()
+      await setup({ project: wide }).onExportPdf()
       expect(downloadFile).toHaveBeenCalledWith('my-scarf_large-beads_row-by-row.pdf', expect.any(Blob), 'application/pdf')
+    })
+
+    it('names no Large beads, and prints none, where it changes nothing (ticket 1125)', async () => {
+      usePrintChoices().largeBeads.value = true
+      await setup().onExportPdf()
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf.pdf', expect.any(Blob), 'application/pdf')
+      expect(vi.mocked(exportProjectPdf).mock.lastCall![1].largeBeads).toBeUndefined()
     })
 
     it('saves the PDF under a name typed in the panel as it is, with no words added (ticket 1096)', async () => {

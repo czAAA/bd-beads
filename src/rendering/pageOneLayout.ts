@@ -36,6 +36,20 @@ export interface PageOneLayout {
   lists: ColorsSlice[]
 }
 
+/** Slack for a plan held at exactly `print-bead-large`. */
+const BEAD_SLOP_MM = 1e-6
+
+/** Whether a plan prints a bead under `print-bead-large`, the only plans Large beads changes (ticket 1125). */
+export function underLargeBeads(plan: PrintPlan): boolean {
+  return plan.beadMm < PRINT_BEAD_LARGE_MM - BEAD_SLOP_MM
+}
+
+/** Whether Large beads changes this Project's PDF and picture (ticket 1125): only when its plan without it prints a bead
+ * under 3 mm. A piece that prints at 3 mm or more already is left as it is, so the switch is not offered there. */
+export function largeBeadsActs(project: Counted, words: PageOneWords, page: PageSize = A4_PORTRAIT): boolean {
+  return underLargeBeads(pageOneLayout(project, { ...words, largeBeads: false }, page).plan)
+}
+
 /** Page 1 of the PDF for a Project's words (ticket 0914): the chart whole when it fits at a working bead (planPrint; 3 mm
  * or more with Large beads, ticket 0916), Beads needed under it as far as its share of the page allows and the rest on list
  * pages; one color to a row when all of it fits that way (ticket 1096). Otherwise page 1 is the overview, and the chart parts follow. */
