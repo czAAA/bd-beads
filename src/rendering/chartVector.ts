@@ -5,7 +5,7 @@ import type { SwatchLetters } from '../domain/swatchLetters'
 import { beadRoundness, describeWeave } from '../domain/weave'
 import { frameWeave } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
-import { acrossNumber, downNumber, emptyCrossArms, lineBetween, rulerLevel } from './printPages'
+import { acrossNumber, displayedCellOf, downNumber, emptyCrossArms, lineBetween, rulerLevel } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
 import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
@@ -92,7 +92,8 @@ interface PlacedBead {
  * geometry places it, through the page's transform.
  * @internal Its test checks where each bead lands on its own. */
 export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): PlacedBead[] {
-  const grid = displayedGrid(project)
+  const first = { across: part.firstAcross - part.overlapAcross, down: part.firstDown - part.overlapDown }
+  const last = { across: part.lastAcross - first.across, down: part.lastDown - first.down }
   const weave = frameWeave(project)
   const description = describeWeave(weave)
   const size = cellSizePx(weave.technique, weave.cell)
@@ -105,8 +106,6 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
     const [x2, y2] = at(x + width, y + height)
     return { x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) }
   }
-  const stepAcross = grid.stepAcross * plan.zoom
-  const stepDown = grid.stepDown * plan.zoom
   const geometry = geometryDrawnAlone(project)
   const seen = regionInGridSpace(space.extent, part.region, plan.zoom, quarterTurnOf(project))
   const inView = { x: seen.left / CELL_SIZE_PX, y: seen.top / CELL_SIZE_PX, width: (seen.right - seen.left) / CELL_SIZE_PX, height: (seen.bottom - seen.top) / CELL_SIZE_PX }
@@ -114,16 +113,16 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
   for (const position of geometry.positionsIn(inView)) {
     const { x, y, width, height } = inGridPx(geometry.place(position)!.box)
     const box = rectOf(x, y, width, height)
-    // A bead's cell ends where the bead below it starts, and the unshifted cell's middle names its position, so a
-    // staggered row (brick stitch) or column (peyote, ticket 0734) stays in its own.
+    // A bead's cell ends where the bead below it starts. Its position names its column and row, through the turn, so a
+    // staggered row (brick stitch) or column (peyote, ticket 0734) stays in its own (ticket 1122).
     const below = { row: position.row + 1, column: position.column }
     const share = Math.min(height, description.box(below, size.width, size.height).y - y)
     const cell = rectOf(x, y, width, share)
-    const middle = at(x - description.rowOffset(position.row, size.width) + width / 2, y - description.columnOffset(position.column, size.height) + share / 2)
-    const across = Math.floor(middle[0] / stepAcross)
-    const down = Math.floor(middle[1] / stepDown)
+    const shown = displayedCellOf(project, position)
+    const across = shown.across - first.across
+    const down = shown.down - first.down
     // Beads past the part's edge belong to its neighbour.
-    if (across < 0 || down < 0 || middle[0] > part.region.width || middle[1] > part.region.height) continue
+    if (across < 0 || down < 0 || across > last.across || down > last.down) continue
     placed.push({ box, cell, color: beadInSpace(project, space, position.row, position.column), across, down })
   }
   return placed
