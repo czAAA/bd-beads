@@ -284,6 +284,8 @@
   --pill-tile-outline: 1.5px; /* ToolPill card (ticket 0926): the inset `ink` outline round a pressed tile; 2px in high contrast. */
   --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink); /* ToolPill card (ticket 0926): that outline, drawn inside the tile's edge. */
   --pill-tile-focus-offset: 1px; /* ToolPill card (ticket 0926): a pressed tile's focus ring, just outside its outline. */
+  --key-notch-ring: 0 0 0 var(--space-2) var(--elevated); /* ToolPill card (ticket 1093): the ring of the pill's fill round a tile's hotkey digit; with its 10px box, a notch 14px across. */
+  --key-notch-layer: 1; /* ToolPill card (ticket 1093): the notch lies above its tile's focus ring, which stops short of the digit too. */
   --radial-swatch: 1.5rem; /* RadialToolbox card (ticket 1063): a recent colour's round swatch on the ring, 24px; the pill's is 18px. */
   --mirror-bar-control: 24px; /* ContextBar card, Mirror bar: the Mode switch, an Axis chip and a count button, on mouse and pen. */
   --mirror-bar-control-touch: 30px; /* ContextBar card, Mirror bar: the same on touch, in the 36px bar. */
@@ -309,7 +311,6 @@
   --swatch-mark-light: #ffffff;
   --tab-width: 3.5rem;
   --tab-height: 4.5rem;
-  --key-corner-top: 3px;
   --tool-key-up: 1.4375rem;
   --tool-key-right: 0.9375rem;
   --tooltip-max-width: 15rem;

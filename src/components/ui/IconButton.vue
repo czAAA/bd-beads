@@ -252,13 +252,22 @@ function swallowClick(event: MouseEvent) {
   color: var(--accent-strong);
 }
 
-/* The hotkey corner: the top-right of the tile, `meta-tiny`, `muted`, `accent-strong` on the active tile. */
+/* The hotkey digit's notch (ToolPill card, ticket 1093): a 10px round box in the tile's top-right corner and a ring, both
+ * in the pill's fill and above the focus ring, so a pressed tile's outline and that ring stop short of the digit. The
+ * ring is drawn only: a box overhanging the tile would make the pill's tools scroll. `accent-strong` on the active tile. */
 .icon-btn--pill .icon-btn__key {
-  top: var(--key-corner-top);
-  right: var(--space-4);
+  top: 0;
+  right: 0;
   left: auto;
-  font: var(--type-meta-tiny);
+  z-index: var(--key-notch-layer);
+  display: grid;
+  place-items: center;
+  width: var(--space-10);
+  height: var(--space-10);
   color: var(--muted);
+  background: var(--elevated);
+  border-radius: var(--radius-full);
+  box-shadow: var(--key-notch-ring);
 }
 
 .icon-btn--pill.icon-btn--accent .icon-btn__key {
