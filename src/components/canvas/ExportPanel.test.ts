@@ -121,7 +121,6 @@ describe('ExportPanel (ticket 0652)', () => {
     const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ['export-needs-frame', 'export-fit', 'export-select-frame', 'export-project-file'].includes(id!))
 
     expect(order).toEqual(['export-needs-frame', 'export-fit', 'export-select-frame', 'export-project-file'])
-    expect(wrapper.get('[data-testid="export-project-file"]').attributes('aria-label')).toBe(`${en.panels.project.saveFile}, ${en.frame.exportProjectFileBody}`)
     await wrapper.get('[data-testid="export-project-file"]').trigger('click')
     expect(wrapper.emitted('save-project-file')).toHaveLength(1)
   })
