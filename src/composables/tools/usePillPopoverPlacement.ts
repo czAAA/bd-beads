@@ -104,6 +104,9 @@ export function usePillPopoverPlacement(root: Ref<HTMLElement | undefined>, anch
       roomAbove.value = top - edge >= roomSize.height - edge - (top + el.offsetHeight)
     }
     style.value = { left: `${left}px`, top: `${top}px`, ...(maxHeight ? { maxHeight } : {}) }
+    // Cut to a height, the popover keeps its size while what is inside it goes on growing (the Bead colors list as its
+    // rows come in): its parts are watched too, so it is placed again once they have grown.
+    for (const part of el.children) resizeObserver?.observe(part)
   }
 
   /** A new window size is a new room: nothing is kept in place across it. */
