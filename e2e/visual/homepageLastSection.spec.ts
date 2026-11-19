@@ -10,6 +10,8 @@ const SCHEMES = { light: { colorScheme: 'light' }, dark: { colorScheme: 'dark' }
 async function lastSection(page: Page, withProjects: boolean, scheme: keyof typeof SCHEMES): Promise<void> {
   await page.setViewportSize({ width: 1920, height: 1080 })
   await page.emulateMedia(SCHEMES[scheme])
+  // Out of the Winter charms' season (ticket 1102), which has a look of its own.
+  await page.clock.setFixedTime(new Date('2026-11-19T12:00:00'))
   await openApp(page, withProjects ? [fixtureProject({ technique: 'loom' })] : [], './', { canvasHidden: true })
   await page.locator('[data-testid="section-step"][data-step="plans"]').click()
   await expect(page.getByTestId(withProjects ? 'plan-no-account' : 'free-to-use')).toBeVisible()

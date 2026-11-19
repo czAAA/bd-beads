@@ -29,6 +29,8 @@ import PhoneBar from './PhoneBar.vue'
 import PlanTiles from './PlanTiles.vue'
 import SectionBar from './SectionBar.vue'
 import WelcomeTile from './WelcomeTile.vue'
+import WinterCharms from './WinterCharms.vue'
+import { winterShown } from './winterCharms'
 import { homepageTitle } from './pageCopy'
 import { stepName, type HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
@@ -218,6 +220,9 @@ const plansIndex = computed(() => sections.value.findIndex((entry) => entry.id =
 /** On Welcome the way in is the section's own, so the strip's is away (ticket 0830); a phone's strip has none to hide. */
 const wayInAway = computed(() => !phone.value && sections.value[section.value]?.id === 'welcome')
 const pageEl = ref<HTMLElement>()
+const boxEl = ref<HTMLElement>()
+/** From 1 December to 7 January the Winter charms and their three marks stand in for the two marks (ticket 1102). */
+const winter = winterShown(new Date(), window.location.search, import.meta.env.DEV)
 /** The section shown: the one truth of where the Homepage is, which every way of turning it sets (ticket 0801). */
 const section = ref(props.atWhatsNew ? Math.max(0, sections.value.findIndex((entry) => entry.id === 'coffee')) : 0)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -386,13 +391,16 @@ const savedProjects = controlAction('saved-projects')
     @pointerdown="nudge.acted"
   >
     <div class="homepage-page__stage" :style="{ '--progress': section / Math.max(1, sections.length - 1), '--homepage-scale': screenScale }">
-      <!-- The two faint X1 marks beside the box, drifting a little as the box turns. -->
+      <!-- The two faint X1 marks beside the box, drifting a little as the box turns; in winter the charms and theirs. -->
       <span class="homepage-page__marks">
-        <AppLogo class="homepage-page__mark homepage-page__mark--large" :size="420" data-testid="homepage-mark" />
-        <AppLogo class="homepage-page__mark homepage-page__mark--small" :size="120" data-testid="homepage-mark" />
+        <WinterCharms v-if="winter" :box="boxEl" :scale="screenScale" />
+        <template v-else>
+          <AppLogo class="homepage-page__mark homepage-page__mark--large" :size="420" data-testid="homepage-mark" />
+          <AppLogo class="homepage-page__mark homepage-page__mark--small" :size="120" data-testid="homepage-mark" />
+        </template>
       </span>
 
-      <div class="homepage" :style="boxStyle" data-testid="homepage">
+      <div ref="boxEl" class="homepage" :style="boxStyle" data-testid="homepage">
         <div class="homepage__strip">
           <CanvasStrip
             page="homepage"

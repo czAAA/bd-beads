@@ -422,6 +422,7 @@
   --winter-charm-bead: 0.3125rem; /* A Winter charm's bead, 5px at the 1440 size, times --homepage-scale and the charm's own size (ticket 1100). */
   --winter-charm-clear: 1rem; /* The least room, 16px, between a Winter charm and the box or the screen's edge. */
   --winter-charm-room: 7.5rem; /* The least black beside the box, 120px, that holds Winter charms; under it there are none. */
+  --winter-charm-drift: 1rem; /* How far each side's Winter charms and marks drift up or down, 16px, as the box turns (ticket 1102). */
   /* Homepage card, What's inside (ticket 0797). */
   --inside-main-least-height: 15rem; /* The demo editor's least height, 240px: on a shorter screen the section scrolls inside itself, so the editor is seen whole before the page turns (tickets 0802, 0825). */
   --inside-frame-edge: color-mix(in srgb, var(--ink) 22%, transparent); /* The demo editor's 1px edge (ticket 0825). */

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { mountAt, unmountAll, type FitLocale } from '../testUtils/browserFit'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
@@ -13,6 +13,7 @@ const SECTIONS = ['welcome', 'inside', 'coffee', 'plans'] as const
 const LARGE = [[1920, 1080], [2560, 1440]] as const
 
 afterEach(() => {
+  vi.useRealTimers()
   unmountAll()
   localStorage.clear()
 })
@@ -86,6 +87,8 @@ describe('On a large screen the box grows (ticket 1059)', () => {
   })
 
   it('keeps the two marks by the box\'s edge', async () => {
+    // Out of the Winter charms' season, which has marks of its own (ticket 1102).
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-19T12:00:00') })
     const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
     const gaps = () => {
       const box = sizeOf(mounted.root, '[data-testid="homepage"]')
