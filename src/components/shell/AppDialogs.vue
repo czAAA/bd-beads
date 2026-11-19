@@ -35,6 +35,7 @@ const {
   onCancelReplaceFrame,
   onConfirmReplaceFrame,
   pendingColorRemovalHex,
+  removeColorMessage,
   removeAllColorsMessage,
   onConfirmRemoveAllAddedColors,
   onCancelRemoveAllAddedColors,
@@ -194,7 +195,7 @@ const importMessage = computed(() => {
     v-if="open === 'remove-color' && pendingColorRemovalHex"
     data-testid="remove-color-modal"
     :title="t.palette.removeConfirmTitle"
-    :message="fillBlanks(t.palette.removeConfirmMessage, { hex: pendingColorRemovalHex })"
+    :message="removeColorMessage"
     :confirm-label="t.palette.removeConfirmButton"
     :cancel-label="t.palette.removeCancelButton"
     @confirm="onConfirmRemoveAddedColor"

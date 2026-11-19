@@ -6,6 +6,7 @@ import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSn
 import { sameBeads, sameLayers } from '../../domain/layerBeads'
 import { frameOf, layerOf, type Layered } from '../../domain/layerRecord'
 import { sameMirrorBar } from '../../domain/mirror'
+import { withColorsInPalette } from '../../domain/paletteEdits'
 import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
@@ -58,7 +59,7 @@ export interface EditDeps {
 }
 
 // Edit (ADR 0036): every undoable change to the open Project goes through here, which applies the rules (row lock,
-// beads where the Weave has none, one Undo step, session resets). Outside Edit: Row progress toggles, Row direction and the pointer.
+// beads where the Weave has none, their colors in the Palette, one Undo step, session resets). Outside Edit: Row progress toggles, Row direction and the pointer.
 // Deps are read lazily.
 export function useEdit(deps: EditDeps) {
   /** What a stroke started from, taken at its start; undefined when none is in progress. */
@@ -98,10 +99,12 @@ export function useEdit(deps: EditDeps) {
 
     const made = (command as EditCommands['drawing'])(project)
     if (kind === 'drawing') tellRowsHeld(project, made)
-    const updated = kind === 'drawing' ? keepAllowedEdits(project, made) : made
-    if (updated === project) {
+    // A color the beads now show and the Palette lacks (a Paste from another Project) joins it (ticket 1124).
+    const kept = kind === 'drawing' ? keepAllowedEdits(project, made) : made
+    if (kept === project) {
       return { kind: 'unchanged' }
     }
+    const updated = withColorsInPalette(kept)
     // A change that took the Mirror bar's settings too (an Area grown to fit them, ticket 1027) puts them back with it.
     step(snapshotOf(project, { mirrorBar: !sameMirrorBar(project.mirror, updated.mirror) }), updated)
     deps.replaceProject(updated)
@@ -136,7 +139,7 @@ export function useEdit(deps: EditDeps) {
       return { kind: 'unchanged' }
     }
     before()
-    deps.replaceProject(result.project)
+    deps.replaceProject(withColorsInPalette(result.project))
     deps.resetAfterFrameChange()
     return { kind: 'applied' }
   }

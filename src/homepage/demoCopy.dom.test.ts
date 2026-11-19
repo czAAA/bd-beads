@@ -3,6 +3,7 @@ import { effectScope } from 'vue'
 import { createProject } from '../domain/createProject'
 import { projectNameOf } from '../domain/layerRecord'
 import { MIRROR_OFF } from '../domain/mirror'
+import { withColorsInPalette } from '../domain/paletteEdits'
 import { newReferenceImage } from '../domain/referenceImage'
 import { useProjectLibrary } from '../composables/project/useProjectLibrary'
 import { browserLibraryStore, loadProjects } from '../services/libraryStore'
@@ -38,7 +39,8 @@ describe("What's inside's Open editor from here keeps a copy of the demo's Proje
     expect(id).not.toBe(ring.id)
     expect(projectNameOf(kept!)).toBe('Ring')
     expect(kept!.layers).toEqual(ring.layers)
-    expect(kept!.palette).toEqual(ring.palette)
+    // With the color its beads are painted in, as opening adds it (ticket 1124).
+    expect(kept!.palette).toEqual(withColorsInPalette(ring).palette)
     expect(kept!.mirror).toEqual(ring.mirror)
     expect(kept!.referenceImage).toEqual(ring.referenceImage)
     expect(pictures.kept.get(id)).toBe(picture)

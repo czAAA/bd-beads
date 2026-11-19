@@ -14,7 +14,7 @@ import type { LinkedFileStore } from '../../services/linkedFileStore'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../../services/projectFileCodec'
 import { useExportQuality } from './useExportQuality'
 import { usePrintChoices } from './usePrintChoices'
-import { pdfFileName } from './pdfFileName'
+import { namedChoices, pdfFileName } from './pdfFileName'
 import { SAVED_FILE_TOAST, savedFileToast, savedPageToast } from './savedFileToast'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { frameOf } from '../../domain/layerRecord'
@@ -117,7 +117,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   /** `more` are the files made, in order, after the first is handed over (the PNG's list pages after page 1, tickets 0583, 0915, and the
    * Word chart's PNG, ticket 0574): none when there is nothing more to make. */
   async function runExport(
-    nameOf: (project: Project) => string,
+    nameOf: (project: Project) => string | Promise<string>,
     make: (project: Project) => Promise<Blob>,
     extension: 'png' | 'pdf',
     type: string,
@@ -130,7 +130,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
     exporting.value = extension
     try {
-      const handed = await makeAndHandOver(nameOf(project), () => make(project), type)
+      const handed = await makeAndHandOver(await nameOf(project), () => make(project), type)
       // Each further page stacks a toast of its own, so every name is read; the first is page 1.
       const further = handed ? ((await more?.(project)) ?? []) : []
       for (const [index, next] of further.entries()) {
@@ -271,7 +271,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportPdf(typedName?: string) {
     // The words the pages print (ticket 162), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
-      (project) => typedName ?? pdfFileName(project, printChoices.value, deps.messages()),
+      // Large beads is named only where it acts (ticket 1125), which takes the print code to know.
+      async (project) => typedName ?? pdfFileName(project, namedChoices(printChoices.value, wordsOf(await loadPrintCode(), project)), deps.messages()),
       async (project) => {
         const code = await loadPrintCode()
         return code.exportProjectPdf(project, wordsOf(code, project), pdfPageDpi())

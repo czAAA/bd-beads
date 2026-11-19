@@ -8,6 +8,7 @@ import { moveToRow, rowProgressOf, rowProgressOn } from '../../domain/rowProgres
 import { replaceBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { BEAD_CATALOG } from '../../domain/beads'
+import { addedColorId } from '../../domain/palette'
 import { editHarness } from '../../testUtils/editHarness'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer, canvasOf, frameOf } from '../../domain/layerRecord'
@@ -36,6 +37,15 @@ describe('useEdit', () => {
   })
 
   describe('a drawing edit', () => {
+    it('adds a color its beads show and the Palette lacks (a Paste from another Project), in the same Undo step (ticket 1124)', () => {
+      const ctx = editHarness(base)
+      ctx.edit('drawing', (project) => paint(project, inside(0, 0), '#123456'))
+      expect(ctx.project.palette).toContain(addedColorId('#123456'))
+      expect(ctx.project.paletteLetters?.['#123456']).toBeDefined()
+      ctx.history.onUndo()
+      expect(ctx.project.palette).toEqual(base.palette)
+    })
+
     it('lands on the Project, and Undo brings it back', () => {
       const ctx = editHarness(base)
       const outcome = ctx.edit('drawing', (project) => paint(project, inside(0, 0)))

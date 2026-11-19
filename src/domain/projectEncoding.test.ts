@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { withColorsInPalette } from './paletteEdits'
 import { BEAD_CATALOG } from './beads'
 import { BUILT_IN_COLORS } from './palette'
 import { createProject } from './createProject'
@@ -92,7 +93,7 @@ describe('the encoded beads', () => {
     const project = withLayers(makeProject(2, 2), { beads: { [-40000]: { [-90000]: '#ff0000' }, 0: { 0: '#00ff00' } } })
 
     expect(encodedCells(project).rows).toEqual({ '-40000': '-90000:1', 0: '0:2' })
-    expect(roundTrip(project)).toEqual(project)
+    expect(roundTrip(project)).toEqual(withColorsInPalette(project))
   })
 })
 
@@ -102,7 +103,7 @@ describe('encodeProject / decodeProject', () => {
       (row + column) % 3 === 0 ? BUILT_IN_COLORS[0]!.hex : null,
     )
 
-    expect(roundTrip(project)).toEqual(project)
+    expect(roundTrip(project)).toEqual(withColorsInPalette(project))
   })
 
   it('round-trips a Custom color the Palette has never had', () => {
@@ -110,7 +111,7 @@ describe('encodeProject / decodeProject', () => {
     expect(BUILT_IN_COLORS.some((color) => color.hex === custom)).toBe(false)
     const project = paint(makeProject(4, 4), (row, column) => (row === column ? custom : null))
 
-    expect(roundTrip(project)).toEqual(project)
+    expect(roundTrip(project)).toEqual(withColorsInPalette(project))
   })
 
   it('round-trips an imported Project painted entirely in hexes outside the Palette', () => {
@@ -118,29 +119,29 @@ describe('encodeProject / decodeProject', () => {
     expect(imported.every((hex) => !BUILT_IN_COLORS.some((color) => color.hex === hex))).toBe(true)
     const project = paint(makeProject(6, 6), (row, column) => imported[(row + column) % imported.length]!)
 
-    expect(roundTrip(project)).toEqual(project)
+    expect(roundTrip(project)).toEqual(withColorsInPalette(project))
   })
 
   it('round-trips a fully empty grid', () => {
     const project = makeProject(20, 20)
 
-    expect(roundTrip(project)).toEqual(project)
+    expect(roundTrip(project)).toEqual(withColorsInPalette(project))
   })
 
   it('round-trips a single-cell grid', () => {
     const empty = makeProject(1, 1)
     expect({ columns: frameOf(empty)!.columns, rows: frameOf(empty)!.rows }).toEqual({ columns: 1, rows: 1 })
 
-    expect(roundTrip(empty)).toEqual(empty)
+    expect(roundTrip(empty)).toEqual(withColorsInPalette(empty))
     const painted = paint(empty, () => '#ff00ff')
-    expect(roundTrip(painted)).toEqual(painted)
+    expect(roundTrip(painted)).toEqual(withColorsInPalette(painted))
   })
 
   it('round-trips a grid where every neighbouring cell differs', () => {
     const hexes = ['#111111', '#222222', '#333333', '#444444', '#555555']
     const project = paint(makeProject(9, 7), (row, column) => hexes[(row * 9 + column) % hexes.length]!)
 
-    expect(roundTrip(project)).toEqual(project)
+    expect(roundTrip(project)).toEqual(withColorsInPalette(project))
   })
 
   it('never loses to the plain-JSON grid, even on a worst-case grid', () => {
@@ -187,7 +188,7 @@ describe('encodeProject / decodeProject', () => {
       frame: { ...frameOf(base)!, row: 1, column: 1, name: 'Cherry' },
     })
 
-    expect(roundTrip(project)).toEqual(project)
+    expect(roundTrip(project)).toEqual(withColorsInPalette(project))
   })
 
   it('writes the Frame\'s beads inside the Frame, and the Canvas\'s beside it', () => {
