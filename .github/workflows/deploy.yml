@@ -79,7 +79,6 @@ jobs:
     with:
       worker: dev
       commit: ${{ needs.build.outputs.commit }}
-      domain: https://dev.openbeads.com
     secrets: inherit
 
   # On a push, only after dev's deploy of the same build passed its smoke check; on a manual run, straight from the build.
@@ -93,5 +92,4 @@ jobs:
     with:
       worker: production
       commit: ${{ needs.build.outputs.commit }}
-      domain: https://openbeads.com
     secrets: inherit

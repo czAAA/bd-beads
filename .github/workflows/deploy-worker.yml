@@ -1,8 +1,8 @@
 name: Deploy a Worker
 
 # One Worker's deploy, called by deploy.yml after its build (docs/deploy.md): each database's migrations, then the code,
-# then a smoke check that /api/health answers with the commit deployed. Production first refuses any commit that is not
-# the newest release commit on main (ticket 1044, `scripts/release.ts`).
+# then a smoke check that /api/health, on the address Wrangler reports, answers with the commit deployed. Production
+# first refuses any commit that is not the newest release commit on main (ticket 1044, `scripts/release.ts`).
 #
 # The Cloudflare token and account id live only in the `production` GitHub environment. Only the steps that run
 # Wrangler get the token, and this job installs with `--ignore-scripts`: an install script could otherwise write to
@@ -19,10 +19,6 @@ on:
         required: true
       commit:
         description: The commit the build was made from, which this deploys and the smoke check expects.
-        type: string
-        required: true
-      domain:
-        description: The Worker's custom domain, for the advisory smoke check.
         type: string
         required: true
 
@@ -88,9 +84,8 @@ jobs:
           url=$(jq -r 'select(.type == "deploy") | .targets[0] // empty' "$WRANGLER_OUTPUT_FILE_PATH" | tail -n 1)
           if [ -z "$url" ]; then echo "::error::Wrangler reported no address for the deploy"; exit 1; fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
-      # A new version can take a few seconds to reach every location, so the check retries for up to two minutes. Neither
-      # Worker answers outside Access before the release, health included (ticket 395): the check signs in with the
-      # Access service token, whose two secrets only the smoke checks get.
+      # A new version can take a few seconds to reach every location, so the check retries for up to two minutes. It
+      # signs in with the service token (ticket 395), whose two secrets only the smoke checks get.
       - name: Smoke check /api/health
         env:
           URL: ${{ steps.deploy.outputs.url }}
@@ -112,25 +107,3 @@ jobs:
           done
           echo "::error::$URL/api/health didn't answer ok with version $COMMIT; last answer: $body"
           exit 1
-      # Ticket 400: the same check on the custom domain, advisory only. The zone's Bot Fight Mode answers a runner with
-      # a "Just a moment..." challenge, which a Free zone can't exempt a path from, so a failure here warns and never
-      # fails a deploy that the check above already proved. Dev is asked with the service token, as above (ticket 395).
-      - name: Smoke check /api/health on the custom domain (advisory)
-        env:
-          URL: ${{ inputs.domain }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-        run: |
-          headers=()
-          if [ -n "$CF_ACCESS_CLIENT_ID" ]; then
-            headers=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
-          fi
-          for attempt in $(seq 1 6); do
-            body=$(curl -s --max-time 10 "${headers[@]}" "$URL/api/health" || true)
-            if [ "$(jq -r '.ok' <<<"$body" 2>/dev/null)" = true ] && [ "$(jq -r '.version' <<<"$body")" = "$COMMIT" ]; then
-              echo "$URL/api/health: $body"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::warning::$URL/api/health didn't answer ok with version $COMMIT (a bot challenge page is expected until ticket 391 decides); last answer: ${body:0:200}"
