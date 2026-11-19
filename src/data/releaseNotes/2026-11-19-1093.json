@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "The key hint on a tool sits in its own notch, clear of the outline of the tool that is on",
+    "ru": "Подсказка клавиши на инструменте стоит в своей выемке и не касается рамки выбранного инструмента",
+    "uk": "Підказка клавіші на інструменті стоїть у своїй виїмці й не торкається рамки вибраного інструмента",
+    "be": "Падказка клавішы на інструменце стаіць у сваёй выемцы і не кранае рамку выбранага інструмента",
+    "zh": "工具上的按键提示有了自己的缺口，不再贴着所选工具的边框",
+    "es": "El atajo de cada herramienta queda en su propia muesca, sin tocar el borde de la herramienta elegida",
+    "pl": "Podpowiedź klawisza na narzędziu ma własne wcięcie i nie dotyka obrysu wybranego narzędzia"
+  }
+}

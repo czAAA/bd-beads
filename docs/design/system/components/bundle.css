@@ -219,6 +219,8 @@
   --hold-quiet: 150ms; /* RadialToolbox card: how long a hold on the Canvas shows nothing. */
   --radial-out: 150ms; /* RadialToolbox card: the ring fades out, on --ease-in; --duration-fast under reduced motion. */
   --pill-tile-focus-offset: 1px;
+  --key-notch-ring: 0 0 0 var(--space-2) var(--elevated); /* ToolPill card: the ring of the pill's fill round a tile's hotkey digit; with its 10px box, a notch 14px across. */
+  --key-notch-layer: 1; /* ToolPill card: the notch lies above its tile's focus ring. */
   /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview; the Area sheet a Selection and a Canvas Area share */
   --mirror-bar-control: 24px;
   --mirror-bar-control-touch: 30px;
@@ -244,7 +246,6 @@
   --swatch-mark-light: #ffffff;
   --tab-width: 3.5rem;
   --tab-height: 4.5rem;
-  --key-corner-top: 3px;
   --tool-key-up: 1.4375rem;
   --tool-key-right: 0.9375rem;
   --tooltip-max-width: 15rem;
