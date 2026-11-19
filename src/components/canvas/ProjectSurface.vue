@@ -503,7 +503,9 @@ onBeforeUnmount(() => {
 .project-surface {
   position: absolute;
   inset: 0;
+  /* Clip, not hidden: a hidden box can still be scrolled, which slid the drawing away from its overlays (ticket 1107). */
   overflow: hidden;
+  overflow: clip;
   /* Without this (ticket 60), the browser may treat a touch/pen drag as scroll/pan instead of delivering
    * pointermove. */
   touch-action: none;

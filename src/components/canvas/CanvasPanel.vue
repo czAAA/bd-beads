@@ -43,6 +43,7 @@ import type { SurfaceView } from '../../rendering/surfaceView'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { seenSize } from '../../domain/frameOrientation'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { useDrawingScrollGuard } from '../../composables/shell/useDrawingScrollGuard'
 
 const {
   t,
@@ -378,6 +379,8 @@ function bindDrawing(el: unknown) {
   drawingEl.value = el instanceof HTMLElement ? el : undefined
 }
 const drawingSize = useElementSize(drawingEl)
+// Nothing in the drawing area scrolls the drawn Canvas away from what sits on it (ticket 1107).
+useDrawingScrollGuard(drawingEl)
 /** The Tool pill where it now stands: the Selection bar keeps clear of it, and a Fit too (ticket 0850), in the drawing
  * area as it is now. */
 function onPillRect(rect: PillRect | undefined) {
@@ -474,7 +477,7 @@ const drawingStyle = computed(() => {
           </Transition>
 
           <div class="app-shell__canvas-row">
-            <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject }">
+            <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" data-no-scroll data-testid="canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject }">
               <ProjectSurface
                 v-if="activeProject"
                 ref="surfaceRef"
@@ -883,7 +886,9 @@ const drawingStyle = computed(() => {
   grid-row: 2;
   flex-direction: column;
   min-height: 0;
+  /* Clip, not hidden: a hidden box can still be scrolled, which slid the drawing away from its overlays (ticket 1107). */
   overflow: hidden;
+  overflow: clip;
 }
 
 .app-shell__drawing--behind {
@@ -948,7 +953,8 @@ const drawingStyle = computed(() => {
   min-height: 0;
 }
 
-/* Fills the drawing area: the Canvas's surface is laid over all of it. */
+/* Fills the drawing area: the Canvas's surface is laid over all of it. It stays a scroller for `overscroll-behavior`,
+ * which keeps a trackpad swipe from going Back, but never scrolls: `data-no-scroll` puts it back (ticket 1107). */
 .app-shell__canvas-scroll {
   position: absolute;
   inset: 0;
