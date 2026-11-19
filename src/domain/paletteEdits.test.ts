@@ -4,7 +4,7 @@ import { createProject } from './createProject'
 import { normalizeProject } from './storedProject'
 import { decodeProject, encodeProject } from './projectEncoding'
 import { replaceBead } from './projectBead'
-import { setPalette, setSwatchLetter, shownLetters, withLettersBack } from './paletteEdits'
+import { setPalette, setSwatchLetter, shownLetters, withColorsInPalette, withLettersBack } from './paletteEdits'
 import { withLetters } from './layerRecord'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import type { Project } from './project'
@@ -212,5 +212,29 @@ describe('Swatch letters (ticket 0573)', () => {
     expect(shownLetters(on, 'canvas')).toBe(on.paletteLetters)
     expect(shownLetters(on, 'frame')).toBeUndefined()
     expect('letters' in canvasOf(withLetters(on, 'canvas', false))).toBe(false)
+  })
+})
+
+describe('every color a bead shows is in the Palette (ticket 1124)', () => {
+  const base = createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 3, height: 3, unit: 'beads' } })
+  const pasted = paintAt(paintAt(base, [{ row: 0, column: 0 }], '#123456'), [{ row: 1, column: 1 }], '#abcdef')
+
+  it('adds a color the beads show and the Palette lacks, last, with a Swatch letter', () => {
+    const fixed = withColorsInPalette(pasted)
+    expect(fixed.palette).toEqual([...base.palette, addedColorId('#123456'), addedColorId('#abcdef')])
+    expect(fixed.paletteLetters?.['#123456']).toBeDefined()
+    expect(fixed.paletteLetters?.['#abcdef']).toBeDefined()
+  })
+
+  it('is the same Project when none is missing', () => {
+    const fixed = withColorsInPalette(pasted)
+    expect(withColorsInPalette(fixed)).toBe(fixed)
+    expect(withColorsInPalette(base)).toBe(base)
+  })
+
+  it('gives a Project saved with such beads their colors when it opens', () => {
+    const reopened = normalizeProject(JSON.parse(JSON.stringify(pasted)))
+    expect(reopened.palette).toContain(addedColorId('#123456'))
+    expect(reopened.paletteLetters?.['#abcdef']).toBeDefined()
   })
 })

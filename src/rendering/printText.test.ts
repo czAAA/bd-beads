@@ -240,8 +240,11 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(printText(delicaProject(3), en, 'en', at, { cover: true }).cover).toBe(true)
   })
 
-  it('carries Large beads for the layout to plan with', () => {
-    expect(printText(delicaProject(3), en, 'en', at).largeBeads).toBeUndefined()
-    expect(printText(delicaProject(3), en, 'en', at, { largeBeads: true }).largeBeads).toBe(true)
+  it('carries Large beads for the layout to plan with, only where it makes the beads bigger (ticket 1125)', () => {
+    const big = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', name: 'Wall hanging', size: { width: 120, height: 120, unit: 'beads' } })
+    expect(printText(big, en, 'en', at).largeBeads).toBeUndefined()
+    expect(printText(big, en, 'en', at, { largeBeads: true }).largeBeads).toBe(true)
+    const small = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', name: 'Charm', size: { width: 20, height: 20, unit: 'beads' } })
+    expect(printText(small, en, 'en', at, { largeBeads: true }).largeBeads).toBeUndefined()
   })
 })

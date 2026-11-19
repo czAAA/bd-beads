@@ -29,6 +29,12 @@ describe('exportFacts', () => {
     expect(factsOf('loom', 20, 30, {}, true)).toMatchObject({ wordPages: 0, pdfPages: 1 })
   })
 
+  it('says whether Large beads would change the PDF, with it on or off (ticket 1125)', () => {
+    expect(factsOf('loom', 20, 30, { largeBeads: true }).largeBeadsActs).toBe(false)
+    expect(factsOf('loom', 100, 100).largeBeadsActs).toBe(true)
+    expect(factsOf('loom', 100, 100, { largeBeads: true }).largeBeadsActs).toBe(true)
+  })
+
   it('counts the chart pages Large beads adds (ticket 0916)', () => {
     const large = factsOf('loom', 100, 100, { largeBeads: true })
     expect(large.sheets).toBeGreaterThan(1)

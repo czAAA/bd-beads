@@ -28,6 +28,8 @@ function empty(): Project {
 }
 const drawn = (): Project => (withLayers(empty(), { beads: withColors({}, [{ row: 1, column: 1, color: '#ff0000' }]) }))
 const framed = (): Project => (withLayers(empty(), { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom', beads: {} } }))
+/** A Frame big enough that its chart prints under 3 mm, so Large beads shows (ticket 1125). */
+const big = (): Project => withLayers(empty(), { frame: { row: 0, column: 0, rows: 100, columns: 100, technique: 'loom', beads: {} } })
 
 /** The panel with its File size estimates there: the print code they are worked out with comes after (ticket 0991). */
 async function mountPanel(project: Project) {
@@ -64,7 +66,7 @@ describe('ExportPanel (ticket 0652)', () => {
   })
 
   it('puts the two files one after the other, Picture then Printable chart, and their options under both', async () => {
-    const wrapper = await mountPanel(framed())
+    const wrapper = await mountPanel(big())
     const ids = ['export-png', 'export-pdf', 'quality-slider', 'export-cover-page', 'export-large-beads', 'export-row-by-row']
     const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ids.includes(id!))
 
@@ -100,10 +102,9 @@ describe('ExportPanel (ticket 0652)', () => {
 
 describe('ExportPanel print choices (tickets 0916, 1096)', () => {
   const pages = (wrapper: Panel) => /· (\d+) pages?$/.exec(wrapper.get('[data-testid="export-pdf"]').text())?.[1]
-  const big = (): Project => withLayers(empty(), { frame: { row: 0, column: 0, rows: 100, columns: 100, technique: 'loom', beads: {} } })
 
   it('offers Cover page on and Large beads and Row by row off, each with what it does behind its Info button', async () => {
-    const wrapper = await mountPanel(framed())
+    const wrapper = await mountPanel(big())
     const switches = [['export-cover-page', en.frame.coverPageInfoLabel, 'true'], ['export-large-beads', en.frame.largeBeadsInfoLabel, 'false'], ['export-row-by-row', en.frame.rowByRowInfoLabel, 'false']] as const
 
     for (const [id, label, on] of switches) {
@@ -127,22 +128,44 @@ describe('ExportPanel print choices (tickets 0916, 1096)', () => {
   })
 
   it('remembers every switch on the device', async () => {
-    const wrapper = await mountPanel(framed())
+    const wrapper = await mountPanel(big())
     await wrapper.get('[data-testid="export-cover-page"]').trigger('click')
     await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
     await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
     expect(['cover', 'large-beads', 'row-by-row'].map((key) => localStorage.getItem(`openbeads:print-${key}`))).toEqual(['off', 'on', 'on'])
     wrapper.unmount()
 
-    const again = await mountPanel(framed())
+    const again = await mountPanel(big())
     expect(again.get('[data-testid="export-cover-page"]').attributes('aria-checked')).toBe('false')
     expect(again.get('[data-testid="export-large-beads"]').attributes('aria-checked')).toBe('true')
     expect(again.get('[data-testid="export-row-by-row"]').attributes('aria-checked')).toBe('true')
   })
 })
 
+describe('ExportPanel Large beads only where it acts (ticket 1125)', () => {
+  it('leaves Large beads out for a piece that already prints at 3 mm or more, Row by row still there', async () => {
+    const wrapper = await mountPanel(framed())
+
+    expect(has(wrapper, 'export-large-beads')).toBe(false)
+    expect(has(wrapper, 'export-row-by-row')).toBe(true)
+  })
+
+  it('keeps a remembered Large beads on, doing nothing and naming nothing, until the piece is big enough', async () => {
+    localStorage.setItem('openbeads:print-large-beads', 'on')
+    const small = await mountPanel(withProjectName(framed(), 'Charm'))
+
+    // The Cover page (on at first, ticket 1096) and page 1: Large beads adds no page and no word.
+    expect(small.get('[data-testid="export-pdf"]').text()).toMatch(/· 2 pages$/)
+    expect(small.get('[data-testid="export-file-name"]').text()).toBe('charm_cover.pdf')
+    expect(localStorage.getItem('openbeads:print-large-beads')).toBe('on')
+
+    await small.setProps({ project: big() })
+    expect(small.get('[data-testid="export-large-beads"]').attributes('aria-checked')).toBe('true')
+  })
+})
+
 describe('ExportPanel "Saves as" (ticket 1096)', () => {
-  const named = (): Project => ({ ...withProjectName(framed(), 'Peacock cuff'), makerName: 'Ada Lind' })
+  const named = (): Project => ({ ...withProjectName(big(), 'Peacock cuff'), makerName: 'Ada Lind' })
   const fileName = (wrapper: Panel) => wrapper.get('[data-testid="export-file-name"]').text()
 
   async function rename(wrapper: Panel, typed: string) {

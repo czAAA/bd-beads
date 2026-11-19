@@ -677,6 +677,10 @@ export interface Translations {
      * color. */
     removeConfirmTitle: string
     removeConfirmMessage: string
+    /** After removeConfirmMessage when beads are painted in the color: they leave with it (ticket 1124). */
+    removeConfirmBeads: PluralForms
+    /** After removeAllConfirmMessage when beads are painted in the colors: they leave with them (ticket 1124). */
+    removeAllConfirmBeads: PluralForms
     removeConfirmButton: string
     removeCancelButton: string
     /** Remove all custom colors (ticket 0532): the bin's name and Tooltip, the toast, and the confirmation; `{count}` in

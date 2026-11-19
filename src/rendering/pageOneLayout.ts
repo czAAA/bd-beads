@@ -36,6 +36,20 @@ export interface PageOneLayout {
   lists: ColorsSlice[]
 }
 
+/** Slack for a plan held at exactly `print-bead-large`. */
+const BEAD_SLOP_MM = 1e-6
+
+/** Whether a plan prints a bead under `print-bead-large`, the only plans Large beads changes (ticket 1125). */
+export function underLargeBeads(plan: PrintPlan): boolean {
+  return plan.beadMm < PRINT_BEAD_LARGE_MM - BEAD_SLOP_MM
+}
+
+/** Whether Large beads changes this Project's PDF and picture (ticket 1125): only when its plan without it prints a bead
+ * under 3 mm. A piece that prints at 3 mm or more already is left as it is, so the switch is not offered there. */
+export function largeBeadsActs(project: Counted, words: PageOneWords, page: PageSize = A4_PORTRAIT): boolean {
+  return underLargeBeads(pageOneLayout(project, { ...words, largeBeads: false }, page).plan)
+}
+
 /** Page 1 of the PDF for a Project's words, after the Cover page when the words ask for one (ticket 1096). */
 export function pageOneLayout(project: Counted, words: PageOneWords, page: PageSize = A4_PORTRAIT): PageOneLayout {
   const layout = chartFirstLayout(project, words, page)

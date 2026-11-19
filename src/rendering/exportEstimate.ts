@@ -2,7 +2,7 @@ import { forEachBead, type BeadMap, type Rect } from '../domain/canvas'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX } from './cellSize'
 import { coverPageLayout } from './coverPageLayout'
-import { pageOneLayout } from './pageOneLayout'
+import { pageOneLayout, underLargeBeads } from './pageOneLayout'
 import { chartOnPageOne, PRINT_DPI } from './printPlan'
 import type { PrintText } from './printText'
 import { pdfPageCount } from './wordChartPages'
@@ -38,6 +38,9 @@ export interface ExportFacts {
   wordChars: number
   /** The PDF's pages, all of the above (pdfPageCount): the Printable chart row's count. */
   pdfPages: number
+  /** Whether Large beads changes this export (ticket 1125), so the Export rows offer it: on, the words carry it only
+   * where it acts; off, the plan prints a bead under 3 mm. */
+  largeBeadsActs: boolean
 }
 
 /** One export's size: its bytes and how many files (PNG) or pages (PDF) it comes to. */
@@ -83,6 +86,7 @@ export function exportFacts(project: Project, words: PrintText): ExportFacts | u
     wordRows: words.wordChart?.rows.length ?? 0,
     wordChars: words.wordChart?.rows.reduce((sum, row) => sum + row.runs.length, 0) ?? 0,
     pdfPages,
+    largeBeadsActs: !!words.largeBeads || underLargeBeads(plan),
   }
 }
 

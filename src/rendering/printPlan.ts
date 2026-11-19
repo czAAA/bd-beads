@@ -4,7 +4,7 @@ import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Weave } from '../domain/weave'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
-import { heldWeave, type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
 // PDF page layout (tickets 162, 185, 578, 0584, 0913, 0914): the chart whole on page 1 when it fits there, else page 1 is the
 // overview and equal parts follow, at the largest bead the sheets allow and the same on every chart page; page px at 150 dpi.
@@ -211,14 +211,14 @@ type Block = Omit<PrintPart, 'page' | 'place'>
 
 function blocksOf(project: Shape, cut: Cut): Block[] {
   const grid = displayedGrid(project)
-  // Measured in the Canvas's Weave as held, without its Bead's cell.
-  const canvas = heldWeave(project, 'canvas')
+  // Measured in the Weave the chart is drawn in, with its Bead's cell, as the Project renderer lays the beads (ticket 1122).
+  const drawn = frameWeave(project)
   const blocks: Block[] = []
   cut.down.forEach(({ first: firstDown, last: lastDown }, down) => {
     cut.across.forEach(({ first: firstAcross, last: lastAcross }, across) => {
       const overlapAcross = Math.min(PRINT_PART_OVERLAP, firstAcross)
       const overlapDown = Math.min(PRINT_PART_OVERLAP, firstDown)
-      const extent = blockExtent(canvas, quarterTurnOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
+      const extent = blockExtent(drawn, quarterTurnOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
       const region = { x: (firstAcross - overlapAcross) * grid.stepAcross, y: (firstDown - overlapDown) * grid.stepDown, ...extent }
       blocks.push({ across, down, letter: partLetter(blocks.length), firstAcross, lastAcross, firstDown, lastDown, overlapAcross, overlapDown, region })
     })
