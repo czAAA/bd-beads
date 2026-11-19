@@ -14,7 +14,7 @@ const place = { x: 50, y: 50, width: 40, angle: 0 }
 
 function mountBar(props: Record<string, unknown> = {}) {
   return mount(ReferencePictureBar, {
-    props: { place, picture: { left: 70, top: 100, width: 80, height: 40 }, barHeight: 40, view, bead: 20, opacity: 50, frameBody: 'A 4×2 Frame where the picture lies.', convertBody: 'Turns the picture into 4×2 beads.', converting: false, over: false, ...props },
+    props: { place, picture: { left: 70, top: 100, width: 80, height: 40 }, barHeight: 40, view, bead: 20, limits: { min: 10, max: 400 }, opacity: 50, frameBody: 'A 4×2 Frame where the picture lies.', convertBody: 'Turns the picture into 4×2 beads.', converting: false, over: false, ...props },
     attachTo: document.body,
   })
 }
@@ -52,6 +52,24 @@ describe('ReferencePictureBar (ReferenceImage card, ticket 0883)', () => {
       [{ ...place, x: 60 }, 'Moved'],
       [{ ...place, x: 70 }, 'Moved'],
     ])
+    wrapper.unmount()
+  })
+
+  it('resizes the picture by a tenth with + and − on the Move grip, and turns it 15° with [ and ], within its limits (ticket 1118)', async () => {
+    const wrapper = mountBar({ limits: { min: 10, max: 42 } })
+    const grip = wrapper.get('[data-testid="picture-bar-move"]')
+    await grip.trigger('keydown', { key: '+' })
+    await grip.trigger('keydown', { key: '-' })
+    await grip.trigger('keydown', { key: ']' })
+    await grip.trigger('keydown', { key: '[' })
+    await grip.trigger('keydown', { key: 'ArrowDown', shiftKey: true })
+    const commits = wrapper.emitted('commit')!
+    expect(commits[0]).toEqual([{ ...place, width: 42 }, 'Resized'])
+    expect(commits[1]![0]).toMatchObject({ width: 40 / 1.1 })
+    expect(commits[1]![1]).toBe('Resized')
+    expect(commits[2]).toEqual([{ ...place, angle: 15 }, 'Turned 15°'])
+    expect(commits[3]).toEqual([{ ...place, angle: 345 }, 'Turned 345°'])
+    expect(commits[4]).toEqual([{ ...place, y: 250 }, 'Moved'])
     wrapper.unmount()
   })
 

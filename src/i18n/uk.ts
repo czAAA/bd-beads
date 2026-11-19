@@ -1425,8 +1425,6 @@ export const uk: Translations = {
     kilobytes: '{count} КБ',
     opacity: 'Непрозорість',
     percent: '{count}%',
-    adjust: 'Налаштувати на полотні',
-    adjustValue: 'зсув · розмір · поворот',
     replace: 'Замінити зображення',
     remove: 'Прибрати зображення',
     removeTitle: 'Прибрати підкладку?',
@@ -1443,9 +1441,6 @@ export const uk: Translations = {
       decodeFailed: 'його не вдалося прочитати',
     },
     preparing: 'Готуємо зображення…',
-    fit: 'Вписати в полотно',
-    fitShort: 'Вписати',
-    done: 'Готово',
     groupName: 'Підкладка, {opacity}%, повернута на {angle}°',
     corners: {
       'top-left': 'Змінити розмір за лівий верхній кут',

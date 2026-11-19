@@ -86,7 +86,7 @@ export function screenToGrid(view: ReferenceView, point: ScreenPoint): ScreenPoi
   return { x: (px * dy - py * dx) / det, y: (ax * py - ay * px) / det }
 }
 
-/** How the picture lies on screen in Adjust: its centre, its size and its angle there in degrees (its own turn and the
+/** How the picture lies on screen, for its handles: its centre, its size and its angle there in degrees (its own turn and the
  * Canvas's). */
 export function placeOnScreen(view: ReferenceView, place: ReferencePlace, height: number): { centre: ScreenPoint; width: number; height: number; angle: number } {
   const centre = view.gridToPoint(place.x, place.y)

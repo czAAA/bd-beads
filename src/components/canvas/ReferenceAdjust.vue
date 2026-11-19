@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { ownPoint } from '../../composables/ui/cssZoom'
-import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { fillBlanks } from '../../domain/fillBlanks'
 import {
-  FINE_TURN_STEP,
-  movedBy,
   radians,
   REFERENCE_CORNERS,
   resizedFromCorner,
-  scaledBy,
-  turnedBy,
   turnedToward,
   type OpacityStep,
   type ReferenceCorner,
@@ -19,13 +14,13 @@ import {
 } from '../../domain/referenceImage'
 import { useI18n } from '../../i18n/useI18n'
 import { reachLimit } from '../../rendering/handleSizes'
-import { arrowMove, placeOnScreen, REFERENCE_TURN_OFFSET_PX, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
+import { placeOnScreen, REFERENCE_TURN_OFFSET_PX, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
 import AppHandle from '../ui/AppHandle.vue'
 import AppIcon from '../ui/AppIcon.vue'
 
-// The reference image's handles (ReferenceImage card, tickets 0790, 0799), in screen px: whenever it is shown a corner
-// resizes it and the Turn handle turns it, any tool in hand; the picture itself takes no press. In Adjust the outline
-// joins them: a drag inside moves it, the keys work, and Escape or a press outside ends it, as an overlay layer does.
+// The reference image's handles (ReferenceImage card, tickets 0790, 0799, 1118), in screen px: whenever it is shown a
+// corner resizes it and the Turn handle turns it, any tool in hand; the picture itself takes no press, its picture bar
+// moves it.
 const props = defineProps<{
   place: ReferencePlace
   /** The picture's height over its width. */
@@ -34,10 +29,6 @@ const props = defineProps<{
   opacity: OpacityStep
   /** The surface's view, which the picture's grid px are drawn through. */
   view: ReferenceView & { viewport: { width: number; height: number } }
-  /** One bead across, in grid px: what an arrow key moves it. */
-  bead: number
-  /** Adjust is on: the outline, the move, the keys, and Escape or a press outside to end it. */
-  adjusting: boolean
   /** While a corner is dragged, the beads the picture covers and their measure (ticket 0883). */
   size?: { beads: string; measure: string }
   /** The Frame's margin sheet on screen: the Turn handle stands below it where the picture lies under it (ticket 0883). */
@@ -48,7 +39,6 @@ const emit = defineEmits<{
   preview: [place: ReferencePlace]
   /** A change to save, and what to announce of it. */
   commit: [place: ReferencePlace, announcement: string]
-  done: []
   /** A handle is pressed or let go: the picture bar hides meanwhile (ticket 0883). */
   pressing: [on: boolean]
 }>()
@@ -56,10 +46,9 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const words = computed(() => t.value.referenceImage)
 const rootEl = ref<HTMLElement>()
-const groupEl = ref<HTMLElement>()
 
-/** The press under way: what it works, where it started and the place it started from. */
-const press = ref<{ kind: 'move' | 'turn' | ReferenceCorner; pointer: number; start: { x: number; y: number }; at: { x: number; y: number }; from: ReferencePlace; place: ReferencePlace }>()
+/** The press under way: what it works, where the pointer is and the place it started from. */
+const press = ref<{ kind: 'turn' | ReferenceCorner; pointer: number; at: { x: number; y: number }; from: ReferencePlace; place: ReferencePlace }>()
 const shown = computed(() => press.value?.place ?? props.place)
 const onScreen = computed(() => placeOnScreen(props.view, shown.value, shown.value.width * props.aspect))
 
@@ -93,7 +82,7 @@ const sizeChipStyle = computed(() => {
   const at = press.value?.at
   return at && { left: `${at.x + 16}px`, top: `${at.y + 16}px` }
 })
-const resizing = computed(() => !!press.value && press.value.kind !== 'move' && press.value.kind !== 'turn')
+const resizing = computed(() => !!press.value && press.value.kind !== 'turn')
 
 const pictureStyle = computed(() => {
   const { centre, width, height, angle } = onScreen.value
@@ -116,8 +105,8 @@ function local(event: PointerEvent): { x: number; y: number } {
   return ownPoint(rootEl.value, event)
 }
 
-function begin(event: PointerEvent, kind: 'move' | 'turn' | ReferenceCorner) {
-  if (event.button !== 0 || (kind === 'move' && !props.adjusting)) return
+function begin(event: PointerEvent, kind: 'turn' | ReferenceCorner) {
+  if (event.button !== 0) return
   // A second finger is a pinch, which moves the view: the drag gives way and the picture goes back.
   if (press.value) {
     if (event.pointerId !== press.value.pointer) cancel()
@@ -125,7 +114,7 @@ function begin(event: PointerEvent, kind: 'move' | 'turn' | ReferenceCorner) {
   }
   event.stopPropagation()
   ;(event.currentTarget as Element).setPointerCapture?.(event.pointerId)
-  press.value = { kind, pointer: event.pointerId, start: local(event), at: local(event), from: props.place, place: props.place }
+  press.value = { kind, pointer: event.pointerId, at: local(event), from: props.place, place: props.place }
   emit('pressing', true)
 }
 
@@ -134,10 +123,7 @@ function drag(event: PointerEvent) {
   if (!pressed || event.pointerId !== pressed.pointer) return
   const point = screenToGrid(props.view, local(event))
   let place: ReferencePlace
-  if (pressed.kind === 'move') {
-    const start = screenToGrid(props.view, pressed.start)
-    place = movedBy(pressed.from, point.x - start.x, point.y - start.y)
-  } else if (pressed.kind === 'turn') {
+  if (pressed.kind === 'turn') {
     place = turnedToward(pressed.from, point, { below: turnBelow.value, fine: event.shiftKey })
   } else {
     place = resizedFromCorner(pressed.from, props.aspect, pressed.kind, point, props.limits)
@@ -152,7 +138,7 @@ function end(event: PointerEvent) {
   press.value = undefined
   emit('pressing', false)
   if (pressed.place === pressed.from) return
-  emit('commit', pressed.place, announcementOf(pressed.kind === 'move' ? 'move' : pressed.kind === 'turn' ? 'turn' : 'resize', pressed.place))
+  emit('commit', pressed.place, pressed.kind === 'turn' ? fillBlanks(words.value.turned, { angle: Math.round(pressed.place.angle) }) : words.value.resized)
 }
 
 function cancel() {
@@ -162,66 +148,19 @@ function cancel() {
   emit('pressing', false)
   emit('preview', pressed.from)
 }
-
-function announcementOf(change: 'move' | 'resize' | 'turn', place: ReferencePlace): string {
-  if (change === 'turn') return fillBlanks(words.value.turned, { angle: Math.round(place.angle) })
-  return change === 'move' ? words.value.moved : words.value.resized
-}
-
-/** An arrow moves the picture a bead the way it points on screen (Shift: ten); `+`/`−` resize it by a tenth, `[`/`]`
- * turn it 15°. */
-function onKeydown(event: KeyboardEvent) {
-  if (!props.adjusting) return
-  const moved = arrowMove(props.view, props.bead, event)
-  let change: { place: ReferencePlace; kind: 'move' | 'resize' | 'turn' } | undefined
-  if (moved) {
-    change = { place: movedBy(props.place, moved.x, moved.y), kind: 'move' }
-  } else if (event.key === '+' || event.key === '=') {
-    change = { place: scaledBy(props.place, 1.1, props.limits), kind: 'resize' }
-  } else if (event.key === '-' || event.key === '_' || event.key === '−') {
-    change = { place: scaledBy(props.place, 1 / 1.1, props.limits), kind: 'resize' }
-  } else if (event.key === '[' || event.key === ']') {
-    change = { place: turnedBy(props.place, event.key === ']' ? FINE_TURN_STEP : -FINE_TURN_STEP), kind: 'turn' }
-  }
-  if (!change) return
-  event.preventDefault()
-  event.stopPropagation()
-  emit('commit', change.place, announcementOf(change.kind, change.place))
-}
-
-useOverlayLayer({
-  isOpen: () => props.adjusting,
-  root: () => groupEl.value,
-  close: () => emit('done'),
-  // Fit to Canvas and Done are the Adjust bar's, which is part of Adjust.
-  keepsPress: (event) => event.target instanceof Element && event.target.closest('[data-testid="reference-adjust-bar"]') !== null,
-})
-
-const focus = () => groupEl.value?.focus({ preventScroll: true })
-onMounted(() => props.adjusting && focus())
-watch(
-  () => props.adjusting,
-  (adjusting) => adjusting && focus(),
-  { flush: 'post' },
-)
 </script>
 
 <template>
   <div ref="rootEl" class="reference-adjust" data-testid="reference-adjust">
     <div
-      ref="groupEl"
       class="reference-adjust__picture"
-      :class="{ 'reference-adjust__picture--moving': press?.kind === 'move', 'reference-adjust__picture--handles-only': !adjusting }"
       :style="pictureStyle"
       role="group"
       :aria-label="groupName"
-      :tabindex="adjusting ? 0 : undefined"
       data-testid="reference-adjust-picture"
-      @pointerdown="begin($event, 'move')"
       @pointermove="drag"
       @pointerup="end"
       @pointercancel="cancel"
-      @keydown="onKeydown"
     >
       <AppHandle
         v-for="corner in REFERENCE_CORNERS"
@@ -272,30 +211,16 @@ watch(
 .reference-adjust__picture {
   position: absolute;
   box-sizing: border-box;
-  border: var(--reference-outline) solid var(--ink);
-  cursor: grab;
-  pointer-events: auto;
-  touch-action: none;
-}
-
-/* Outside Adjust only the handles stand on the picture: no outline over the beads, and a press on it is the tool's. */
-.reference-adjust__picture--handles-only {
-  border-color: transparent;
+  /* Only the handles stand on the picture: no outline over the beads, and a press on it is the tool's. The border keeps
+     the handles' place on its edge. */
+  border: var(--reference-outline) solid transparent;
   pointer-events: none;
+  touch-action: none;
 }
 
 .reference-adjust__corner,
 .reference-adjust__turn-handle {
   pointer-events: auto;
-}
-
-.reference-adjust__picture--moving {
-  cursor: grabbing;
-}
-
-.reference-adjust__picture:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: var(--focus-offset);
 }
 
 /* A corner handle: the shared handle (Handle card) in `ink`, on the picture's corner, turned with it. */

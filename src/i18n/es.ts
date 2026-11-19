@@ -1422,8 +1422,6 @@ export const es: Translations = {
     kilobytes: '{count} KB',
     opacity: 'Opacidad',
     percent: '{count}%',
-    adjust: 'Ajustar en el lienzo',
-    adjustValue: 'mover · tamaño · girar',
     replace: 'Reemplazar imagen',
     remove: 'Quitar imagen',
     removeTitle: '¿Quitar la imagen de referencia?',
@@ -1440,9 +1438,6 @@ export const es: Translations = {
       decodeFailed: 'no se pudo leer',
     },
     preparing: 'Preparando la imagen…',
-    fit: 'Ajustar al lienzo',
-    fitShort: 'Ajustar',
-    done: 'Listo',
     groupName: 'Imagen de referencia, {opacity}%, girada {angle}°',
     corners: {
       'top-left': 'Cambiar el tamaño desde la esquina superior izquierda',

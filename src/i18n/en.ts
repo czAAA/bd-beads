@@ -1409,8 +1409,6 @@ export const en: Translations = {
     kilobytes: '{count} KB',
     opacity: 'Opacity',
     percent: '{count}%',
-    adjust: 'Adjust on Canvas',
-    adjustValue: 'move · resize · turn',
     replace: 'Replace image',
     remove: 'Remove image',
     removeTitle: 'Remove the reference image?',
@@ -1427,9 +1425,6 @@ export const en: Translations = {
       decodeFailed: 'it couldn\'t be read',
     },
     preparing: 'Preparing the picture…',
-    fit: 'Fit to Canvas',
-    fitShort: 'Fit',
-    done: 'Done',
     groupName: 'Reference image, {opacity}%, turned {angle}°',
     corners: {
       'top-left': 'Resize from the top-left corner',

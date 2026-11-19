@@ -1426,8 +1426,6 @@ export const be: Translations = {
     kilobytes: '{count} КБ',
     opacity: 'Непразрыстасць',
     percent: '{count}%',
-    adjust: 'Наладзіць на палатне',
-    adjustValue: 'зрух · памер · паварот',
     replace: 'Замяніць выяву',
     remove: 'Прыбраць выяву',
     removeTitle: 'Прыбраць падкладку?',
@@ -1444,9 +1442,6 @@ export const be: Translations = {
       decodeFailed: 'яго не ўдалося прачытаць',
     },
     preparing: 'Рыхтуем выяву…',
-    fit: 'Упісаць у палатно',
-    fitShort: 'Упісаць',
-    done: 'Гатова',
     groupName: 'Падкладка, {opacity}%, павернута на {angle}°',
     corners: {
       'top-left': 'Змяніць памер за левы верхні кут',

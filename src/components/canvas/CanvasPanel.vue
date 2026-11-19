@@ -15,7 +15,6 @@ import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ReferenceAdjust from './ReferenceAdjust.vue'
-import ReferenceAdjustBar from './ReferenceAdjustBar.vue'
 import ReferencePictureBar from './ReferencePictureBar.vue'
 import ReferencePreviews from './ReferencePreviews.vue'
 import ConvertToBeadsPopover from './ConvertToBeadsPopover.vue'
@@ -238,10 +237,7 @@ const litTool = computed(() =>
  * release. */
 /** What the tool in hand and the modes on let the Drawing surface do (ticket 0619): one value, worked out once. */
 const surfaceTools = computed(() =>
-  // While the reference image is adjusted the tools rest (ticket 0790): a drag beside it moves the view.
-  referenceImage.adjusting.value
-    ? toolCapabilities('hand')
-    : toolCapabilities(activeTool.value, { picking: colorPick?.picking.value, spaceHeld: spaceHeld.value, settingFrame: settingFrame.value, pasteArmed: pasteProjectionActive.value, markingArea: mirrorMarking.value }),
+  toolCapabilities(activeTool.value, { picking: colorPick?.picking.value, spaceHeld: spaceHeld.value, settingFrame: settingFrame.value, pasteArmed: pasteProjectionActive.value, markingArea: mirrorMarking.value }),
 )
 
 /** The strip's Reference image button (ticket 0790): none yet, shown or hidden. */
@@ -251,14 +247,13 @@ const referenceState = computed(() => {
 })
 /** The surface's view, which the picture's handles are laid through. */
 const surfaceView = shallowRef<SurfaceView>()
-/** What the handles work, whenever the picture is drawn (ticket 0799) and in Adjust: the picture as it is saved, its
- * shape and limits, and one bead's width. */
+/** What the handles and the picture bar work, whenever the picture is drawn on the editor (ticket 0799): the picture as
+ * it is saved, its shape and limits, and one bead's width. */
 const handled = computed(() => {
   const image = referenceImage.image.value
   const limits = referenceImage.limits.value
   const project = activeProject.value
-  const standing = referenceImage.adjusting.value || (onEditor.value && referenceImage.drawn.value !== undefined)
-  if (!standing || !image || !limits || !project || !surfaceView.value) return undefined
+  if (!onEditor.value || !referenceImage.drawn.value || !image || !limits || !project || !surfaceView.value) return undefined
   const weave = canvasWeave(project)
   return { image, limits, aspect: image.picture.height / image.picture.width, bead: cellSizePx(weave.technique, weave.cell).width, view: surfaceView.value }
 })
@@ -287,9 +282,9 @@ const pictureLayout = usePictureBarLayout({
   converting: () => pictureBar.converting.value,
   messages: () => t.value,
 })
-/** The shown picture's own controls stand outside Adjust (ticket 0883): Convert to beads' popover and preview stay
- * through a corner drag, which updates them live; the bar hides while a handle is dragged. */
-const pictureOnEditor = computed(() => !!handled.value && onEditor.value && !referenceImage.adjusting.value && !!pictureLayout.picture.value)
+/** The shown picture's own controls (ticket 0883): Convert to beads' popover and preview stay through a corner drag,
+ * which updates them live; the bar hides while a handle is dragged. */
+const pictureOnEditor = computed(() => !!handled.value && !!pictureLayout.picture.value)
 const barShown = computed(() => pictureOnEditor.value && !referencePressing.value)
 watch(barShown, (shown) => shown || (framePreviewOn.value = false))
 /** The size while a corner is dragged: "28×19 beads" over its measure. */
@@ -553,8 +548,8 @@ const drawingStyle = computed(() => {
                 :frame="pictureLayout.framePreview.value"
                 :convert="pictureLayout.convertPreview.value"
               />
-              <!-- The reference image's handles over the drawing whenever it is shown, its outline in Adjust (tickets 0790,
-                0799), outside its image role. -->
+              <!-- The reference image's handles over the drawing whenever it is shown (tickets 0790, 0799, 1118), outside its
+                image role. -->
               <ReferenceAdjust
                 v-if="handled"
                 :place="handled.image.place"
@@ -562,13 +557,10 @@ const drawingStyle = computed(() => {
                 :limits="handled.limits"
                 :opacity="handled.image.opacity"
                 :view="handled.view"
-                :bead="handled.bead"
-                :adjusting="referenceImage.adjusting.value"
                 @preview="referenceImage.preview"
                 @commit="referenceImage.commit"
                 :size="referenceSize"
                 :sheet="frameAnchor?.sheet"
-                @done="referenceImage.endAdjust"
                 @pressing="referencePressing = $event"
               />
               <EmptyCanvas v-else-if="!activeProject" :deleted="deletedProjectName" :quiet="openPanel !== null" @library="openMenuOnSavedProjects">
@@ -587,6 +579,7 @@ const drawingStyle = computed(() => {
                 :sheet="frameAnchor?.sheet"
                 :view="handled.view"
                 :bead="handled.bead"
+                :limits="handled.limits"
                 :opacity="handled.image.opacity"
                 :frame-body="barTooltips.frame"
                 :frame-off="barTooltips.frameOff"
@@ -641,15 +634,8 @@ const drawingStyle = computed(() => {
           </div>
 
           <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
-          <!-- The Adjust bar takes the Tool pill's place while the reference image is adjusted (ticket 0790). -->
-          <ReferenceAdjustBar
-            v-if="handled && referenceImage.adjusting.value"
-            @replace="referenceImage.pick($event, 'adjust')"
-            @fit="referenceImage.fit"
-            @done="referenceImage.endAdjust"
-          />
           <ToolPill
-            v-else-if="activeProject"
+            v-if="activeProject"
             v-model:position="toolPillPosition"
             v-model:popover-open="toolPillPopoverOpen"
             :mirror-on="mirrorOn"
@@ -954,7 +940,7 @@ const drawingStyle = computed(() => {
 /*
  * The row takes the whole drawing area; the surface inside it fills it, so the Canvas has no box of its own to centre.
  * It is the drawing area's one child in the flow and positions itself (relative, the canvas scroll laid over it): what
- * floats over the drawing (the save ring, the hints, the Tool pill, the Adjust bar) sets its own `position: absolute`,
+ * floats over the drawing (the save ring, the hints, the Tool pill) sets its own `position: absolute`,
  * so a new overlay touches only its own component (ticket 0800).
  */
 .app-shell__canvas-row {

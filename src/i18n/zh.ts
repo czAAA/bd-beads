@@ -1400,8 +1400,6 @@ export const zh: Translations = {
     kilobytes: '{count} KB',
     opacity: '不透明度',
     percent: '{count}%',
-    adjust: '在画布上调整',
-    adjustValue: '移动 · 缩放 · 旋转',
     replace: '替换图片',
     remove: '移除图片',
     removeTitle: '移除参考图？',
@@ -1418,9 +1416,6 @@ export const zh: Translations = {
       decodeFailed: '无法读取',
     },
     preparing: '正在准备图片…',
-    fit: '适合画布',
-    fitShort: '适合',
-    done: '完成',
     groupName: '参考图，{opacity}%，旋转 {angle}°',
     corners: {
       'top-left': '从左上角调整大小',
