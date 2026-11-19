@@ -49,6 +49,24 @@ describe('a wheel gesture turning the Homepage (tickets 0784, 0801)', () => {
     expect(turnDue(addWheel(turned, { delta: -4, time: 40 }), -Infinity)).toEqual({ way: -1, at: 40 })
   })
 
+  it('starts a new scroll inside the momentum of one that scrolled a section, so a trackpad\'s next swipe turns', () => {
+    /** A scroll of a tall section, its momentum fading to 8px an event by `until`, never quiet for 300ms. */
+    const fadingUntil = (until: number) => {
+      let momentum = scrolling(gesture([60, 0]))
+      for (let time = 20; time <= until; time += 20) momentum = addWheel(momentum, { delta: time === until ? 8 : 30, time })
+      return momentum
+    }
+    expect(turnDue(addWheel(fadingUntil(700), { delta: 40, time: 720 }), -Infinity)).toEqual({ way: 1, at: 720 })
+    // Its own fading momentum, or a push no stronger than the fade, is still the old scroll.
+    expect(addWheel(fadingUntil(700), { delta: 12, time: 720 }).scrolled).toBe(true)
+    expect(addWheel(fadingUntil(300), { delta: 40, time: 320 }).scrolled).toBe(true)
+  })
+
+  it('starts a new scroll the other way at once after one that scrolled a section', () => {
+    const scrolled = scrolling(gesture([60, 0], [50, 20]))
+    expect(turnDue(addWheel(scrolled, { delta: -4, time: 40 }), -Infinity)).toEqual({ way: -1, at: 40 })
+  })
+
   it('starts a new scroll after a 300ms quiet', () => {
     expect(addWheel(spend(gesture([60, 0])), { delta: 4, time: 300 }).spent).toBe(false)
   })

@@ -6,10 +6,10 @@
 export const TURN_REST = 600
 /** The quiet that ends a gesture, in ms: a trackpad's momentum keeps one going, a pause between notches ends it. */
 export const GESTURE_GAP = 300
-/** A push this many times as strong as the event before it, in a gesture that turned, is a new scroll riding on the
- * old one's momentum (which only ever fades). */
+/** A push this many times as strong as the event before it, in a gesture that turned or scrolled a section, is a new
+ * scroll riding on the old one's momentum (which only ever fades). */
 const NEW_PUSH = 2
-/** The least push, in px, that can start a new scroll inside a turned one's momentum. */
+/** The least push, in px, that can start a new scroll inside a turned or scrolled one's momentum. */
 const NEW_PUSH_LEAST = 20
 /** A notch, in px, in most browsers. */
 const NOTCH = 100
@@ -26,7 +26,8 @@ export interface WheelGesture {
   lastDelta: number
   /** It has turned the box: the rest of it turns nothing and scrolls nothing. */
   spent: boolean
-  /** It scrolled something itself, a section taller than its room: it turns nothing, even once that reaches its end. */
+  /** It scrolled something itself, a section taller than its room: it turns nothing, even once that reaches its end; a
+   * new push riding on its momentum starts a new gesture. */
   scrolled: boolean
 }
 
@@ -46,10 +47,11 @@ export function wheelPixels(event: { deltaY: number; deltaMode: number }, viewpo
   return event.deltaY
 }
 
-/** Whether a wheel event starts a new scroll inside a gesture that turned: the other way, or a fresh push once the turn
- * has stood its while. */
+/** Whether a wheel event starts a new scroll inside a gesture that turned or scrolled a section: the other way, or a
+ * fresh push once the gesture has gone on a turn's while. A trackpad's momentum keeps a gesture going for a second or
+ * more, and the next swipe often starts before it goes quiet (ticket 1116). */
 function pushesAgain(gesture: WheelGesture, wheel: Wheel): boolean {
-  if (!gesture.spent || !wheel.delta) return false
+  if (!(gesture.spent || gesture.scrolled) || !wheel.delta) return false
   if (Math.sign(wheel.delta) !== Math.sign(gesture.distance)) return true
   const strength = Math.abs(wheel.delta)
   return wheel.time - gesture.start >= TURN_REST && strength >= NEW_PUSH_LEAST && strength > NEW_PUSH * Math.abs(gesture.lastDelta)
