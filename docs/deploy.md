@@ -55,7 +55,7 @@ Production holds only Production releases (spec 1043, ADR 0096). A release is a 
 
 ## Migrations
 
-Each database has its own folder: `worker/migrations/core/` (the day's count of Reports, ticket 1051; accounts come with ticket 78) and `worker/migrations/blobs/`. A migration is a numbered `.sql` file, applied in order by `wrangler d1 migrations apply <binding>`, before the code that needs it.
+Each database has its own folder: `worker/migrations/core/` (the day's count of Reports, ticket 1051; accounts and sessions, ticket 0078; the Settings kept in step, ticket 1086) and `worker/migrations/blobs/`. A migration is a numbered `.sql` file, applied in order by `wrangler d1 migrations apply <binding>`, before the code that needs it.
 
 **Add, then remove.** A migration only adds: a new table, a new nullable column. A column or table is dropped in a later deploy, once no deployed code reads it. A deploy that fails after its migration then leaves the running code working on the new schema. `wrangler rollback` brings back old code but never undoes a migration; D1 Time Travel does (`docs/operations.md`, restore).
 

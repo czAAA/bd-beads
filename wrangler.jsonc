@@ -89,7 +89,10 @@
         { "name": "FEEDBACK_RATE_ALL", "namespace_id": "1003", "simple": { "limit": 10, "period": 60 } },
         // Ticket 0078: per IP, the requests that start a sign-in and those that come back from Google, counted
         // together: a sign-in takes one of each, so this is about three a minute.
-        { "name": "SIGN_IN_RATE", "namespace_id": "1005", "simple": { "limit": 6, "period": 60 } }
+        { "name": "SIGN_IN_RATE", "namespace_id": "1005", "simple": { "limit": 6, "period": 60 } },
+        // Ticket 1086: per account, the changes to the Settings kept in step (language, theme, Lifted pieces). Each
+        // change is one request; a device past the limit sends its last change later.
+        { "name": "SETTINGS_RATE", "namespace_id": "1007", "simple": { "limit": 20, "period": 60 } }
       ]
     },
     "production": {
@@ -132,7 +135,9 @@
         { "name": "FEEDBACK_RATE", "namespace_id": "1002", "simple": { "limit": 2, "period": 60 } },
         { "name": "FEEDBACK_RATE_ALL", "namespace_id": "1004", "simple": { "limit": 10, "period": 60 } },
         // About five sign-ins a minute per IP, two requests each; dev's is tighter (spec 0385).
-        { "name": "SIGN_IN_RATE", "namespace_id": "1006", "simple": { "limit": 10, "period": 60 } }
+        { "name": "SIGN_IN_RATE", "namespace_id": "1006", "simple": { "limit": 10, "period": 60 } },
+        // Changes to the Settings kept in step, per account; dev's is tighter (spec 0385).
+        { "name": "SETTINGS_RATE", "namespace_id": "1008", "simple": { "limit": 30, "period": 60 } }
       ]
     }
   }

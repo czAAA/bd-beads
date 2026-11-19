@@ -168,7 +168,7 @@ describe('signing in with Google', () => {
 
       const answer = await me(worker, session)
       expect(answer.status).toBe(200)
-      expect(await answer.json()).toEqual({ email: 'ann@example.com', plan: 'free' })
+      expect(await answer.json()).toEqual({ email: 'ann@example.com', plan: 'free', settings: {} })
 
       // Nothing else of the person is stored: no name, no picture, no token; and the session's id only as its hash.
       const accounts = await rows<Record<string, unknown>>(worker, 'SELECT * FROM accounts')
@@ -184,11 +184,11 @@ describe('signing in with Google', () => {
       google.person = ann({ email: 'Ann@Example.com' })
       await signIn(worker)
       const again = await signIn(worker)
-      expect(await (await me(worker, again.session)).json()).toEqual({ email: 'ann@example.com', plan: 'free' })
+      expect(await (await me(worker, again.session)).json()).toEqual({ email: 'ann@example.com', plan: 'free', settings: {} })
 
       google.person = ann({ email: 'ann.new@example.com' })
       const moved = await signIn(worker)
-      expect(await (await me(worker, moved.session)).json()).toEqual({ email: 'ann.new@example.com', plan: 'free' })
+      expect(await (await me(worker, moved.session)).json()).toEqual({ email: 'ann.new@example.com', plan: 'free', settings: {} })
       expect(await rows(worker, 'SELECT email, google_sub FROM accounts')).toEqual([{ email: 'ann.new@example.com', google_sub: 'google-sub-ann' }])
     }))
 
@@ -204,7 +204,7 @@ describe('signing in with Google', () => {
     withSite({}, async ({ worker }) => {
       await worker.coreDb.prepare("INSERT INTO accounts (id, email, google_sub, plan, created_at) VALUES ('account-1', 'ann@example.com', 'google-sub-earlier', 'free', 1)").run()
       const { session } = await signIn(worker)
-      expect(await (await me(worker, session)).json()).toEqual({ email: 'ann@example.com', plan: 'free' })
+      expect(await (await me(worker, session)).json()).toEqual({ email: 'ann@example.com', plan: 'free', settings: {} })
       expect(await rows(worker, 'SELECT id, google_sub FROM accounts')).toEqual([{ id: 'account-1', google_sub: 'google-sub-earlier' }])
     }))
 
@@ -268,7 +268,7 @@ describe('signing in with Google', () => {
       google.person = ann({ sub: 'google-sub-bea', email: 'bea@example.com' })
       const known = await signIn(worker)
       expect(known.response.headers.get('Location')).toBe('/app/?account=signed-in')
-      expect(await (await me(worker, known.session)).json()).toEqual({ email: 'bea@example.com', plan: 'free' })
+      expect(await (await me(worker, known.session)).json()).toEqual({ email: 'bea@example.com', plan: 'free', settings: {} })
     }))
 
   it('with sign-in switched off, nobody signs in: start and status answer 503, and Google’s way back returns to the editor', () =>
@@ -366,8 +366,8 @@ describe('GET /api/me and Sign out', () => {
       expect(cookiesOf(response)[SESSION]!.line).toMatch(/^__Host-openbeads-session=; Path=\/; Max-Age=0; HttpOnly; Secure; SameSite=Lax$/)
 
       expect((await me(worker, phone.session)).status).toBe(401)
-      expect(await (await me(worker, laptop.session)).json()).toEqual({ email: 'ann@example.com', plan: 'free' })
-      expect(await (await me(worker, bea.session)).json()).toEqual({ email: 'bea@example.com', plan: 'free' })
+      expect(await (await me(worker, laptop.session)).json()).toEqual({ email: 'ann@example.com', plan: 'free', settings: {} })
+      expect(await (await me(worker, bea.session)).json()).toEqual({ email: 'bea@example.com', plan: 'free', settings: {} })
       expect(await rows(worker, 'SELECT id_hash FROM sessions ORDER BY created_at')).toHaveLength(2)
     }))
 

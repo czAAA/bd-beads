@@ -1,6 +1,6 @@
 import { parseReport, reportIssue } from '../../src/domain/feedbackReport'
-import type { RequestContext, Route } from './api'
-import { readBody, upload } from './body'
+import type { Route } from './api'
+import { readJson } from './body'
 import { ApiError, json } from './errors'
 import { FEATURE_OFF_RETRY_SECONDS } from './features'
 import { takeReport } from './feedbackDay'
@@ -9,16 +9,6 @@ import { rateLimit, sizeCap, turnstile } from './guards'
 /** Not a tuning knob: a valid Report is at most about 7,000 characters (domain/feedbackReport.ts's limits), so this only
  * keeps a flood's body out of memory. */
 const FEEDBACK_BODY_CAP_BYTES = 64 * 1024
-
-/** The body as JSON, or `400 bad-request` when it isn't. */
-async function readJson(rc: RequestContext): Promise<unknown> {
-  const bytes = await readBody(upload(rc))
-  try {
-    return JSON.parse(new TextDecoder().decode(bytes))
-  } catch {
-    throw new ApiError('bad-request')
-  }
-}
 
 /** `POST /api/feedback` (ADR 0081, spec 0698): a Report becomes one issue in `FEEDBACK_REPO`, built here from its
  * fields, never from a client's title or labels; the dev Worker's are labelled `dev`. Every GitHub failure is `502

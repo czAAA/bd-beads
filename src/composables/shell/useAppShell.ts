@@ -107,9 +107,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const demo = options.demo
   /** Where this shell lives: the whole page for the editor, a box for the Homepage's demo (ticket 0797). */
   const scope = useShellScope()
-  const { t, locale } = provideI18n(services.devicePreferences)
+  const { t, locale, setLocale } = provideI18n(services.devicePreferences)
   // The theme pick is shared by the header's controls; this is where it is first read, from this device's preferences.
-  useThemePick(services.devicePreferences)
+  const themePick = useThemePick(services.devicePreferences)
 
   /** Which dialog shows (ticket 0618): every flow that asks a question opens it here, so the root holds one value. */
   const dialogs = useDialogs()
@@ -989,6 +989,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
     showToast,
     openMenu: (on) => (on === 'sign-in' ? overlays.openMenuOnSignIn() : overlays.openMenuOnAccount()),
     foldedSections: services.devicePreferences.get('panelSectionsClosed'),
+    // The Settings kept in step (ticket 1086), read as they show and set by the Menu's own setters.
+    settings: {
+      language: { value: () => locale.value, set: setLocale },
+      theme: { value: () => themePick.pick.value, set: themePick.setPick },
+      liftedPieces: { value: () => (backgrounds.lift.on.value ? 'on' : 'off'), set: (lifted) => backgrounds.lift.set(lifted === 'on') },
+    },
   })
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */

@@ -44,3 +44,13 @@ export async function readBody(source: Upload): Promise<Uint8Array> {
   }
   return bytes
 }
+
+/** The body as JSON, under the size-cap guard's cap, or `400 bad-request` when it isn't JSON. */
+export async function readJson(rc: RequestContext): Promise<unknown> {
+  const bytes = await readBody(upload(rc))
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes))
+  } catch {
+    throw new ApiError('bad-request')
+  }
+}

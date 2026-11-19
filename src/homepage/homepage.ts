@@ -17,10 +17,12 @@ import { browserOpeningNote } from '../services/openingNote'
 import { downloadFile } from '../services/fileDownload'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../services/projectFileCodec'
 import { useProjectLibrary } from '../composables/project/useProjectLibrary'
+import { onSettingChange } from '../composables/shell/useKeptSettings'
 import { libraryFileName, projectFileName, projectFileNameOf } from '../domain/projectFile'
 import { firstProjectAddress, firstStarterAddress, projectAddress, savedProjectsAddress } from '../domain/openingAddress'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
+import { browserAccount } from '../services/account'
 import { browserFeedback } from '../services/feedback'
 import { notesFromBase } from '../services/notesFile'
 import { browserPictureStore } from '../services/pictureStore'
@@ -36,6 +38,8 @@ followDeviceTheme(window, document.documentElement, currentThemePick)
 const base = import.meta.env.BASE_URL
 // A language's code in the address (ticket 1053) is the device's language from now on, read before it is loaded.
 followAddressLocale(browserDevicePreferences.get('locale'))
+// A signed-in person's change of language or theme here waits on the device; the editor sends it (ticket 1086).
+onSettingChange({ language: () => browserDevicePreferences.get('locale').value, theme: () => browserDevicePreferences.get('theme').value }, browserAccount.settingChanged)
 /** The editor's address, under the address's language folder when it names one, so the way in keeps the code. */
 const editor = () => editorUrl(pagesBase())
 

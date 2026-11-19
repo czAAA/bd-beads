@@ -1859,6 +1859,11 @@ export interface Translations {
     guestNote: string
     planFree: string
     planPro: string
+    /** Signed in, under the email: the settings line (ticket 1086), its Info button's name and the note that lists
+     * which settings are the same on every device. A setting added later changes the note, never the line. */
+    settingsLine: string
+    settingsInfoLabel: string
+    settingsInfo: string
     /** The Subpanel's first line: what signing in is for, and that Projects stay. */
     purpose: string
     /** What is kept: the heading, one row per thing kept, and the line under the list. */
