@@ -1,6 +1,6 @@
 import { projectDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
-import { rotationSwapsAxes, type Rotation } from '../domain/grid'
+import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
 import { drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
@@ -232,6 +232,15 @@ export function acrossNumber(project: RulerShape, index: number): number {
 export function downNumber(project: RulerShape, index: number): number {
   const dimension = rotationSwapsAxes(quarterTurnOf(project)) ? projectDimensions(project).columns : projectDimensions(project).rows
   return downReversed(quarterTurnOf(project)) ? dimension - index : index + 1
+}
+
+/** Where a position stands in the displayed chart, across and down from 0: what acrossNumber and downNumber number, so a
+ * bead and the ruler number over it agree at every turn (ticket 1122). */
+export function displayedCellOf(project: RulerShape, { row, column }: GridPosition): { across: number; down: number } {
+  const rotation = quarterTurnOf(project)
+  const { columns, rows } = projectDimensions(project)
+  const [across, down, wide, tall] = rotationSwapsAxes(rotation) ? [row, column, rows, columns] : [column, row, columns, rows]
+  return { across: acrossReversed(rotation) ? wide - 1 - across : across, down: downReversed(rotation) ? tall - 1 - down : down }
 }
 
 // Page 1's rulers on all four sides in the Project's own numbers (a turned Project's rows run across, counted from the

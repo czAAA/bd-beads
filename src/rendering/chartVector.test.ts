@@ -10,8 +10,9 @@ import { TECHNIQUES, type Technique } from '../domain/weave'
 import { drawChartParts, K, letterColor, letterPt, placeBeads } from './chartVector'
 import { helveticaWidth } from '../domain/helvetica'
 import { PdfContent } from '../domain/pdfContent'
-import { EMPTY_CROSS_SHARE } from './printPages'
-import { displayedGrid, planPrint, mm } from './printPlan'
+import { acrossNumber, EMPTY_CROSS_SHARE } from './printPages'
+import { displayedGrid, partLetter, planPrint, mm } from './printPlan'
+import { wordChartOf } from '../domain/wordChart'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
@@ -323,13 +324,14 @@ describe('every bead shape at the smallest and the largest bead (ticket 0913)', 
     return withLayers(base, { frame: { ...frameOf(base)!, beads: { 0: Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, DARK])) } }, paletteLetters: LETTERS, letters: false })
   }
 
-  // A Triangle is at most 81 beads wide, 2.2 mm a bead whole: its 1.8 mm page is drawn on a 100 × 100's plan.
+  // A Triangle is at most 81 beads wide, 2.2 mm a bead whole: its 1.8 mm page is drawn on a 100 × 100's plan. A round
+  // bead on the loom is half again as tall as it is wide, so 66 of its rows fill the sheet as 100 square ones do.
   it.each<[string, number, () => Project, (() => Project)?]>([
     ['round', 9, () => round(12, 12)],
     ['brick', 9, () => schema('brick', 12, 12)],
     ['peyote', 9, () => schema('peyote', 12, 12)],
     ['Custom frame', 9, () => triangleOf(9)],
-    ['round', 1.8, () => round(100, 100)],
+    ['round', 1.8, () => round(100, 66)],
     ['brick', 1.8, () => schema('brick', 100, 100)],
     ['peyote', 1.8, () => schema('peyote', 100, 100)],
     ['Custom frame', 1.8, () => triangleOf(50), () => schema('loom', 100, 100)],
@@ -346,5 +348,84 @@ describe('every bead shape at the smallest and the largest bead (ticket 0913)', 
     expect(letters.length).toBeGreaterThan(0)
     expect(letters.every((text) => (helveticaWidth(text.value, 'bold', text.size) * text.scale) / 100 <= cell)).toBe(true)
     expect(letters.every((text) => Math.abs(text.size - letterPt(plan.beadMm)) < 0.01)).toBe(true)
+  })
+})
+
+describe('a turned Schema prints every bead in its place (ticket 1122)', () => {
+  /** A Schema of `columns` × `rows` with every position painted. */
+  function full(technique: Technique, beadId: string, columns: number, rows: number, orientation: number, techniqueSettings?: Record<string, number>): Project {
+    const base = createProject({ technique, beadId, ...(techniqueSettings ? { techniqueSettings } : {}), size: { width: columns, height: rows, unit: 'beads' } })
+    const { columns: wide, rows: tall } = frameOf(base)!
+    const beads = Object.fromEntries(Array.from({ length: tall }, (_, row) => [row, Object.fromEntries(Array.from({ length: wide }, (_, column) => [column, DARK]))]))
+    return withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation, paletteLetters: LETTERS, letters: false })
+  }
+
+  /** Every part's beads, each where it stands in the whole displayed chart, the overlap's repeats left out. */
+  function printed(project: Project) {
+    const plan = planPrint(project, { keyRows: 2 })
+    return plan.parts.flatMap((part) => placeBeads(project, plan, part).map((bead) => ({ ...bead, part, across: part.firstAcross - part.overlapAcross + bead.across, down: part.firstDown - part.overlapDown + bead.down })))
+      .filter(({ part, across, down }) => across >= part.firstAcross && down >= part.firstDown)
+  }
+
+  const cases = TECHNIQUES.flatMap((technique) => ['toho-cube-1.5mm', 'miyuki-delica-11-0'].flatMap((beadId) => [0, 90, 180, 270].map((turn) => [technique, beadId, turn] as const)))
+  it.each(cases)('places every bead of a full %s Schema in %s turned %s° once, in its own column and row, inside its part', (technique, beadId, turn) => {
+    const project = full(technique, beadId, 13, 30, turn)
+    const grid = displayedGrid(project)
+    const beads = printed(project)
+    const { columns, rows } = frameOf(project)!
+
+    expect(beads).toHaveLength(columns * rows)
+    expect(new Set(beads.map(({ across, down }) => `${across}:${down}`)).size).toBe(columns * rows)
+    expect(new Set(beads.map((bead) => bead.across)).size).toBe(grid.across)
+    expect(new Set(beads.map((bead) => bead.down)).size).toBe(grid.down)
+    expect([Math.min(...beads.map((bead) => bead.across)), Math.max(...beads.map((bead) => bead.across))]).toEqual([0, grid.across - 1])
+    expect([Math.min(...beads.map((bead) => bead.down)), Math.max(...beads.map((bead) => bead.down))]).toEqual([0, grid.down - 1])
+    // The beads reach each part's far edges: its region is as big as they are.
+    for (const part of new Set(beads.map((bead) => bead.part))) {
+      const own = beads.filter((bead) => bead.part === part)
+      expect(Math.max(...own.map(({ box }) => box.x + box.width))).toBeGreaterThan(part.region.width - 1)
+      expect(Math.max(...own.map(({ box }) => box.y + box.height))).toBeGreaterThan(part.region.height - 1)
+    }
+    for (const { box, part } of beads) {
+      expect(box.x).toBeGreaterThanOrEqual(-0.5)
+      expect(box.y).toBeGreaterThanOrEqual(-0.5)
+      expect(box.x + box.width).toBeLessThanOrEqual(part.region.width + 0.5)
+      expect(box.y + box.height).toBeLessThanOrEqual(part.region.height + 0.5)
+    }
+    // Each bead stands under its own ruler number, within the half bead a staggered row or column is shifted by.
+    const { zoom } = planPrint(project, { keyRows: 2 })
+    const step = { across: grid.stepAcross * zoom, down: grid.stepDown * zoom }
+    for (const { cell, part, across, down } of beads) {
+      expect(Math.abs(cell.x - (across - part.firstAcross + part.overlapAcross) * step.across)).toBeLessThanOrEqual(step.across / 2 + 0.5)
+      expect(Math.abs(cell.y - (down - part.firstDown + part.overlapDown) * step.down)).toBeLessThanOrEqual(step.down / 2 + 0.5)
+    }
+    // Further across is further right, further down is lower: the rulers stand over the beads they count.
+    const sorted = (key: 'across' | 'down', other: 'across' | 'down', side: 'x' | 'y') => [...beads].filter((bead) => bead[other] === 0).sort((p, q) => p[key] - q[key]).map((bead) => bead.box[side])
+    expect(sorted('across', 'down', 'x')).toEqual([...sorted('across', 'down', 'x')].sort((p, q) => p - q))
+    expect(sorted('down', 'across', 'y')).toEqual([...sorted('down', 'across', 'y')].sort((p, q) => p - q))
+  })
+
+  it.each([['loom', 90], ['loom', 270], ['brick', 90], ['brick', 270]] as const)('numbers a turned %s Schema\'s rows over the beads of those rows, as Row by row names them (%s°)', (technique, turn) => {
+    // Each row its own color, so a bead tells its row.
+    const base = full(technique, 'miyuki-delica-11-0', 13, 30, turn)
+    const { columns, rows } = frameOf(base)!
+    const hexOf = (row: number) => `#0000${row.toString(16).padStart(2, '0')}`
+    const beads = Object.fromEntries(Array.from({ length: rows }, (_, row) => [row, Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, hexOf(row)]))]))
+    const project = withLayers(base, { frame: { ...frameOf(base)!, beads }, paletteLetters: Object.fromEntries(Array.from({ length: rows }, (_, row) => [hexOf(row), partLetter(row)])) })
+    const numbered = printed(project).map((bead) => ({ ruler: acrossNumber(project, bead.across), row: parseInt(bead.color!.slice(1), 16) + 1 }))
+
+    expect(numbered.every(({ ruler, row }) => ruler === row)).toBe(true)
+    expect(wordChartOf(project)!.rows.map((row) => row.number).sort((p, q) => p - q)).toEqual([...new Set(numbered.map(({ ruler }) => ruler))].sort((p, q) => p - q))
+  })
+
+  // The shapes of the owner's exports the cases above leave out (a loom 13 × 30 is one of them).
+  it.each([
+    ['loom', 30, 39, undefined],
+    ['peyote', 13, 24, { peyoteDrop: 2 }],
+  ] as const)('prints a %s %s × %s Delica Schema turned 90° whole', (technique, columns, rows, settings) => {
+    const project = full(technique, 'miyuki-delica-11-0', columns, rows, 90, settings)
+    const frame = frameOf(project)!
+
+    expect(printed(project)).toHaveLength(frame.columns * frame.rows)
   })
 })
