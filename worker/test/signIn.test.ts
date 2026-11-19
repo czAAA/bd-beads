@@ -390,3 +390,68 @@ describe('GET /api/me and Sign out', () => {
       expect(cookiesOf(cleared)['openbeads-session']!.line).toBe('openbeads-session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax')
     }))
 })
+
+const deleteAccount = (worker: RunningWorker, session?: string, headers: Record<string, string> = { Origin: SITE }) =>
+  worker.fetch(`${SITE}/api/account/delete`, {
+    method: 'POST',
+    headers: { ...(session === undefined ? {} : { Cookie: cookieHeader({ [SESSION]: session }) }), ...headers },
+  })
+
+// Ticket 0082: Delete account removes the account and everything kept for it, and nobody else's.
+describe('deleting an account', () => {
+  it('deletes the account, its blobs, settings and every session, signs every device out, and leaves another account untouched', () =>
+    withSite({}, async ({ worker, google }) => {
+      const phone = await signIn(worker)
+      const laptop = await signIn(worker)
+      google.person = ann({ sub: 'google-sub-bea', email: 'bea@example.com' })
+      const bea = await signIn(worker)
+      const [annRow, beaRow] = await rows<{ id: string }>(worker, "SELECT id FROM accounts ORDER BY email")
+      const now = Date.now()
+      for (const owner of [annRow!.id, beaRow!.id]) {
+        await worker.coreDb.prepare("INSERT INTO settings (account_id, name, value, changed_at) VALUES (?1, 'theme', '\"dark\"', ?2)").bind(owner, now).run()
+        await worker.blobsDb.prepare("INSERT INTO blobs (id, owner, size, expires_at, created_at, data) VALUES (?1, ?2, 1, NULL, ?3, x'00')").bind(`blob-${owner}`, owner, now).run()
+      }
+
+      const response = await deleteAccount(worker, phone.session)
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ deleted: true })
+      expect(cookiesOf(response)[SESSION]!.line).toMatch(/^__Host-openbeads-session=; Path=\/; Max-Age=0;/)
+
+      expect((await me(worker, phone.session)).status).toBe(401)
+      expect((await me(worker, laptop.session)).status).toBe(401)
+      expect(await (await me(worker, bea.session)).json()).toMatchObject({ email: 'bea@example.com' })
+      expect(await rows(worker, 'SELECT email FROM accounts')).toEqual([{ email: 'bea@example.com' }])
+      expect(await rows(worker, 'SELECT account_id FROM sessions')).toEqual([{ account_id: beaRow!.id }])
+      expect(await rows(worker, 'SELECT account_id FROM settings')).toEqual([{ account_id: beaRow!.id }])
+      expect((await worker.blobsDb.prepare('SELECT owner FROM blobs').all()).results).toEqual([{ owner: beaRow!.id }])
+    }))
+
+  it('makes a new account, with nothing of the old one, when the same person signs in again', () =>
+    withSite({}, async ({ worker }) => {
+      const first = await signIn(worker)
+      const [before] = await rows<{ id: string }>(worker, 'SELECT id FROM accounts')
+      await deleteAccount(worker, first.session)
+      const again = await signIn(worker)
+      expect(await (await me(worker, again.session)).json()).toEqual({ email: 'ann@example.com', plan: 'free', settings: {} })
+      const [after] = await rows<{ id: string }>(worker, 'SELECT id FROM accounts')
+      expect(after!.id).not.toBe(before!.id)
+    }))
+
+  it('answers 401 signed-out with no session, and refuses a deletion from another origin', () =>
+    withSite({}, async ({ worker }) => {
+      const { session } = await signIn(worker)
+      expect((await deleteAccount(worker)).status).toBe(401)
+      expect((await deleteAccount(worker, session, { Origin: 'https://evil.example' })).status).toBe(403)
+      expect(await rows(worker, 'SELECT email FROM accounts')).toHaveLength(1)
+    }))
+
+  it('works while sign-in and sign-up are switched off', () =>
+    withSite({ vars: { DISABLED_FEATURES: 'sign-in,sign-up,settings' } }, async ({ worker }) => {
+      const now = Date.now()
+      await worker.coreDb.prepare("INSERT INTO accounts (id, email, google_sub, plan, created_at) VALUES ('a1', 'ann@example.com', 'google-sub-ann', 'free', ?1)").bind(now).run()
+      await worker.coreDb.prepare("INSERT INTO sessions (id_hash, account_id, created_at, expires_at) VALUES (?1, 'a1', ?2, ?3)").bind(hashOf('kept-session'), now, now + 60_000).run()
+      const response = await deleteAccount(worker, 'kept-session')
+      expect(response.status).toBe(200)
+      expect(await rows(worker, 'SELECT email FROM accounts')).toHaveLength(0)
+    }))
+})

@@ -1,13 +1,13 @@
 # QualitySlider
 
-**Export quality** is a three-stop discrete slider right under the Picture button, the file it changes, in the Export panel and the Frame panel's export section (ticket 0957). It sets the **PNG** only (ADR 0076): the PDF's chart pages are vector and its other pages a fixed 300 dpi. Each export button shows the size of what it will give in its value slot ("PDF ≈ 3.2 MB · 9 pages").
+**Export quality** is a three-stop discrete slider under the two export buttons (Picture, then Printable chart), in the Export panel and the Frame panel's export section (ticket 0957). It sets the **PNG** only (ADR 0076): the PDF's chart pages are vector and its other pages a fixed 300 dpi. Each export button shows the size of what it will give in its value slot ("PDF ≈ 3.2 MB · 9 pages").
 
 Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai canvas "Printed chart pages", option A).
 
 ## Where it sits
 
-- In the Export panel (`panel-width-small`, 360px; ExportPanel card, ticket 0652) and the Frame panel (`panel-width`, 520px, in the **export** PanelSection), as the same component, in this order (ticket 0957): the Picture row, the slider `space-8` under it, then `space-8` under the slider's last line the Printable chart row with its two switches. Each option stands under the file it changes. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
-- The slider's head line: "Export quality" in `control` (Inter 500 14), `ink`: the same type as the switch rows' names under Printable chart (ticket 0957), its Info button right after it, and, right-aligned, the chosen stop's word (Inter 400 12, `muted`).
+- In the Export panel (`panel-width-small`, 360px; ExportPanel card, ticket 0652) and the Frame panel (`panel-width`, 520px, in the **export** PanelSection), as the same component, in this order (ticket 1095; ticket 0957 had put each option under its file): the Picture row, the Printable chart row, the slider, then `space-8` under the slider's last line the Printable chart's two switches. The two files stand one after the other. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
+- The slider's head line: "Export quality" in `control` (Inter 500 14), `ink`: the same type as the switch rows' names under it (ticket 0957), its Info button right after it, and, right-aligned, the chosen stop's word (Inter 400 12, `muted`).
 - Under the stops, `space-8` below them: one line (Inter 400 12) in `muted`, "For the picture. The printable chart is drawn in lines and stays sharp at any zoom." (writing.md).
 
 ## The size line (ticket 0588)

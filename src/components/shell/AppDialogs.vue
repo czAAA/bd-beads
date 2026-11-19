@@ -67,6 +67,8 @@ const {
   onSaveFileBeforeDelete,
   onConfirmDeleteAllProjects,
   onCancelDeleteAllProjects,
+  onConfirmDeleteAccount,
+  onCancelDeleteAccount,
   deleteAllCount,
   onSaveAllBeforeDeleteAll,
   naming,
@@ -308,6 +310,18 @@ const importMessage = computed(() => {
     @confirm="onConfirmDeleteAllProjects"
     @cancel="onCancelDeleteAllProjects"
     @extra="onSaveAllBeforeDeleteAll"
+  />
+
+  <!-- Delete your account? (ticket 0082): asked from the Menu's Account section; the Projects on the device stay. -->
+  <ConfirmModal
+    v-if="open === 'delete-account'"
+    data-testid="delete-account-modal"
+    :title="t.account.deleteTitle"
+    :message="t.account.deleteMessage"
+    :confirm-label="t.account.deleteConfirm"
+    :cancel-label="t.panels.project.cancel"
+    @confirm="onConfirmDeleteAccount"
+    @cancel="onCancelDeleteAccount"
   />
 
   <NamePieceModal v-if="open === 'name-piece' && naming" :name="naming.name" @save="onSavePieceName" @cancel="onCancelPieceName" />

@@ -1904,5 +1904,25 @@ export interface Translations {
     waitMinutes: string
     /** The toast with no internet. */
     offline: string
+    /** The Menu's About row, and the Sign in Subpanel's link, to the privacy policy (ticket 0082). */
+    privacy: string
+    /** The Account section's row that asks "Delete your account?" (ticket 0082). */
+    deleteAccount: string
+    deleteTitle: string
+    deleteMessage: string
+    deleteConfirm: string
+    /** The toast once the account is gone. */
+    deleted: string
+    /** The toast when the session had already ended, so nothing was deleted. */
+    deleteSignedOut: string
+    /** The toast when the backend can't delete now; `{time}` is its wait. */
+    deleteUnavailable: string
+    /** The toast with no internet. */
+    deleteOffline: string
+  }
+  /** The privacy policy's page (ticket 0082), which is in English only. */
+  privacy: {
+    /** The one line in the device's language above the English policy; not shown in English. */
+    englishOnly: string
   }
 }

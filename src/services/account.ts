@@ -32,6 +32,9 @@ export type SignInUnavailable = { ok: false; reason: 'offline' } | { ok: false; 
 type SignInAvailability = { ok: true } | SignInUnavailable
 /** How starting a sign-in went: on `ok` the page is leaving for Google; `failed` is a check that didn't pass. */
 type SignInStart = SignInAvailability | { ok: false; reason: 'failed' }
+/** How Delete account went (ticket 0082): on `ok` the account is gone; `signed-out` is a session that had already
+ * ended, so nothing was deleted and the person signs in again to delete it. */
+type AccountDeletion = { ok: true } | SignInUnavailable | { ok: false; reason: 'signed-out' }
 
 /** What the account flow needs from outside the page; `memoryAccount` is its twin for tests and the demo. */
 export interface AccountService {
@@ -48,6 +51,8 @@ export interface AccountService {
   startSignIn: (token: string) => Promise<SignInStart>
   /** Ends this device's session and forgets the account, also when the backend can't be reached. */
   signOut: () => Promise<void>
+  /** Deletes the signed-in account and all the backend keeps for it; the device forgets it once that is done. */
+  deleteAccount: () => Promise<AccountDeletion>
   /** What the address marks (how a sign-in ended, or the Homepage asking for Sign in), read once and taken off it. */
   takeReturn: () => AccountMark | undefined
   /** Calls `listener` each time the tab comes back into view; returns the way to stop. */
@@ -227,6 +232,23 @@ async function signOut(): Promise<void> {
   }
 }
 
+async function deleteAccount(): Promise<AccountDeletion> {
+  if (offline()) return { ok: false, reason: 'offline' }
+  try {
+    const response = await fetch('/api/account/delete', { method: 'POST', headers: { Accept: 'application/json' } })
+    if (response.status === 401) {
+      remember(undefined)
+      return { ok: false, reason: 'signed-out' }
+    }
+    const deleted = response.ok && ((await response.json().catch(() => undefined)) as { deleted?: unknown } | undefined)?.deleted === true
+    if (!deleted) return { ok: false, reason: 'unavailable', retryAfterSeconds: notNowFor(response) ?? DEFAULT_RETRY_SECONDS }
+    remember(undefined)
+    return { ok: true }
+  } catch {
+    return offline() ? { ok: false, reason: 'offline' } : { ok: false, reason: 'unavailable', retryAfterSeconds: DEFAULT_RETRY_SECONDS }
+  }
+}
+
 function takeReturn(): AccountMark | undefined {
   const back = parseSignInReturn(location.search)
   if (back) {
@@ -269,6 +291,7 @@ export const browserAccount: AccountService = {
   verify: (container, onAsks) => verify(container, { action: TURNSTILE_ACTION, onAsks }),
   startSignIn,
   signOut,
+  deleteAccount,
   takeReturn,
   onBackInView,
   settingChanged,

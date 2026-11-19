@@ -1510,5 +1510,17 @@ export const en: Translations = {
     waitSeconds: '{count} s',
     waitMinutes: '{count} min',
     offline: 'You are offline. Sign in once you are back online.',
+    privacy: 'Privacy policy',
+    deleteAccount: 'Delete account',
+    deleteTitle: 'Delete your account?',
+    deleteMessage: 'Your email address and your settings are deleted from openbeads, and every device is signed out. Your Projects stay on this device.',
+    deleteConfirm: 'Delete account',
+    deleted: 'Your account is deleted. Your Projects are still here.',
+    deleteSignedOut: 'You were already signed out. Sign in again to delete your account.',
+    deleteUnavailable: 'Deleting the account is temporarily unavailable. Try again in {time}.',
+    deleteOffline: 'You are offline. Delete the account once you are back online.',
+  },
+  privacy: {
+    englishOnly: 'This policy is in English.',
   },
 }

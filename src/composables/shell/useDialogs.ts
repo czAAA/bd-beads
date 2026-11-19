@@ -21,6 +21,7 @@ type DialogId =
   | 'feedback'
   | 'open-large-project'
   | 'remove-reference-image'
+  | 'delete-account'
 
 interface Asked {
   id: DialogId

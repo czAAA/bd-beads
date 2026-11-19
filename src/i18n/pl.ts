@@ -1526,5 +1526,17 @@ export const pl: Translations = {
     waitSeconds: '{count} s',
     waitMinutes: '{count} min',
     offline: 'Jesteś offline. Zaloguj się, gdy wrócisz do sieci.',
+    privacy: 'Polityka prywatności',
+    deleteAccount: 'Usuń konto',
+    deleteTitle: 'Usunąć konto?',
+    deleteMessage: 'Twój adres e-mail i ustawienia zostaną usunięte z openbeads, a wszystkie urządzenia zostaną wylogowane. Projekty zostają na tym urządzeniu.',
+    deleteConfirm: 'Usuń konto',
+    deleted: 'Konto usunięte. Projekty nadal są tutaj.',
+    deleteSignedOut: 'Już się wylogowano. Zaloguj się ponownie, aby usunąć konto.',
+    deleteUnavailable: 'Usunięcie konta jest chwilowo niedostępne. Spróbuj ponownie za {time}.',
+    deleteOffline: 'Jesteś offline. Usuń konto, gdy wrócisz do sieci.',
+  },
+  privacy: {
+    englishOnly: 'Ta polityka jest dostępna tylko po angielsku.',
   },
 }

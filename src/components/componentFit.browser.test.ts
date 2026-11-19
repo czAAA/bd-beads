@@ -5,6 +5,7 @@ import ProgressBar from './canvas/ProgressBar.vue'
 import ToolPill from './tools/ToolPill.vue'
 import SaveReminder from './canvas/SaveReminder.vue'
 import PageNotFound from './shell/PageNotFound.vue'
+import PrivacyPolicy from './shell/PrivacyPolicy.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { moveToRow, rowProgressPosition, toggleRowDirection } from '../domain/rowProgress'
@@ -33,6 +34,8 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['SaveReminder with no file yet', SaveReminder, { beads: 170, labelOpen: true }],
   // An address with no page (ticket 1053): the message and its way to the Homepage.
   ['PageNotFound', PageNotFound, { homepage: '/' }],
+  // The privacy policy (ticket 0082): its line in the device's language, and the way back to the Homepage.
+  ['PrivacyPolicy', PrivacyPolicy, { homepage: '/' }],
 ]
 
 describeFits(CASES)

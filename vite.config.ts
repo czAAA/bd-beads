@@ -63,14 +63,15 @@ export default defineConfig(({ mode }) => ({
   // What About and a Report show (ticket 1045); the catalogs' code counts the Homepage names (ticket 0742).
   define: { ...versionDefines(), __COLOR_CATALOG_CODES__: JSON.stringify(COLOR_CATALOG_CODES) },
   build: {
-    // Three pages: the Homepage at the main address and the editor (tickets 77, 1052), which is a folder with its own
-    // index.html so a static host serves /app/ with no rewrite rules (ADR 0014, ADR 0097), and the page the host shows
-    // at an address with none (ticket 1053). Each language's copies of the first two are written by `crawlerPages`.
+    // Four pages: the Homepage, the editor in a folder of its own so a static host serves /app/ with no rewrite rules
+    // (tickets 77, 1052, ADR 0097), the page shown at an address with none (1053) and the privacy policy (0082, also a
+    // folder). Each language's copies of the first two are written by `crawlerPages`.
     rollupOptions: {
       input: {
         homepage: resolve(import.meta.dirname, 'index.html'),
         main: resolve(import.meta.dirname, 'app/index.html'),
         notFound: resolve(import.meta.dirname, '404.html'),
+        privacy: resolve(import.meta.dirname, 'privacy/index.html'),
       },
     },
   },

@@ -19,14 +19,25 @@ The Export panel: a small panel from the **Export** button in the Canvas strip's
 The Frame panel's export section, the same component, under the title line:
 
 - **Picture** (`image`) and **Printable chart** (`pdf`) PanelItems, each with its File size estimate in the value slot ("PNG ≈ 1.4 MB · 1 file", "PDF ≈ 3.2 MB · 9 pages"; QualitySlider card). The Printable chart's count is what will come out, "1 page", "3 pages", read from the PDF's own plan (`pdfPageCount`: page 1, its list pages, the chart pages, the Word chart pages), so it is the count the PDF's footers print. It changes at once with the Frame, the colors and either switch below (ticket 0916).
-- Each option stands under the file it changes (ticket 0957): Picture, the **Export quality** QualitySlider `space-8` under it (it sets the picture only, and the line under its stops says so), then Printable chart with its two switches.
-- **Large beads** and **Row by row** (ticket 0916), the Printable chart's two switches, right under it: each a PanelSwitchRow, as Letters is in the Frame panel (the name in `control`, an Info button right after it, the AppSwitch at the right, the panel's item height and 10px side padding). Both off at first, and remembered on the device (not with the Project), so the next export of any Project keeps them. They stay live while an export runs: an export reads them when it starts. No line under either switch; what each does is behind its Info button (read once).
+- The two files stand one after the other, Picture then Printable chart, and their options under both (ticket 1095; ticket 0957 had put each option under its file): the **Export quality** QualitySlider (it sets the picture only, and the line under its stops says so), then the two switches.
+- **Large beads** and **Row by row** (ticket 0916), the Printable chart's two switches, right under Export quality: each a PanelSwitchRow, as Letters is in the Frame panel (the name in `control`, an Info button right after it, the AppSwitch at the right, the panel's item height and 10px side padding). Both off at first, and remembered on the device (not with the Project), so the next export of any Project keeps them. They stay live while an export runs: an export reads them when it starts. No line under either switch; what each does is behind its Info button (read once).
   - **Large beads** ("What Large beads does"): every bead on the PDF's charts, page 1's whole chart and strips included, is `print-bead-large` (3 mm) or more, at the cost of more pages: a 100 × 100 becomes the overview and parts. The PNG is page 1, so it follows too, and the Info body says so: an option that changes both files says it does (ticket 0957).
   - **Row by row** ("What Row by row does"): the Word chart pages follow the chart (PrintWordChart card), whatever Letters says; off, there are none. PDF only.
 - No other print setting (paper, margins, overlap, symbols): those belong to pattern sellers' tools (research: PDF export rework, section 3).
 - While an export runs the buttons and the slider are disabled and the LoadingState line shows, as in the Frame panel.
 - Once the file is handed over, the saved-file toast names it ("Saved: sunflower.png", Message card) and starts 8px under this panel, never over its rows (ticket 0859), on a phone too.
 - Letters stays in the Frame panel only.
+
+### Approved 2026-11-19, not yet in the app (ticket 1096)
+
+Until ticket 1096 lands the panel is as written above. Then:
+
+- **Two more switches** under Export quality, before Large beads: **Cover page**, then **Black and white**. Each is a PanelSwitchRow like the other two, with its Info button, remembered on the device. The order is Cover page, Black and white, Large beads, Row by row.
+  - **Cover page** ("What Cover page does"): on at first. The PDF opens on the Cover page (PrintCover card); off, it opens on Page 1 as before. The page count and the File size estimate follow it at once.
+  - **Black and white** ("What Black and white does"): off at first. Every page after the cover is drawn for a black-and-white printer (PrintBlackAndWhite card). It adds or removes no page.
+- **Picture saves the Cover page** (PrintCover card), whatever the Cover page switch says, always in color and always one file. No switch changes it, so Large beads' Info body loses "It changes the picture too: the picture is the chart’s first page."
+- **The file name says which switches are on.** After `{project}-{frame}-{maker}` the PDF's name takes, for each switch that is on and in the panel's order, an underscore and the switch's file word (`writing.md`): `peacock-cuff-ada-lind_cover.pdf`, `peacock-cuff-ada-lind_cover_black-and-white_large-beads_row-by-row.pdf`. With every switch off it is the name it has today. The picture's name takes no word.
+- **A "Saves as" line** under the last switch: "Saves as" in `meta-small` `muted`, then the PDF's file name as it will be, in DM Mono `ink`, breaking anywhere so a long name wraps inside the panel. It changes at once with each switch. The saved-file toast names the same file.
 
 ### With no Frame
 
@@ -46,7 +57,7 @@ Every string is the Frame panel's: Export, Picture, Printable chart, Export qual
 
 - [ ] The Export button is the strip's last button, `export` icon, Tooltip "Export", lit while its panel is open.
 - [ ] The panel is 360px, 4px under the button, right edges aligned, and closes Menu, Project and Frame (and they close it).
-- [ ] With a Frame: Picture with Export quality under it, then Printable chart with Large beads and Row by row under it, all working as in the Frame panel.
+- [ ] With a Frame: Picture, then Printable chart, then Export quality, Large beads and Row by row under them, all working as in the Frame panel.
 - [ ] Printable chart says how many pages the PDF will have, and the count changes at once with Large beads, Row by row, the Frame and the colors.
 - [ ] Large beads and Row by row are off at first and remembered on the device; Letters adds or removes no page.
 - [ ] With no Frame: the line, then Fit a Frame to the drawing (`frame`) and Drag a Frame, Fit first once something is drawn; no export buttons.

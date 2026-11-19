@@ -1501,5 +1501,17 @@ export const zh: Translations = {
     waitSeconds: '{count} 秒',
     waitMinutes: '{count} 分钟',
     offline: '你已离线。联网后再登录。',
+    privacy: '隐私政策',
+    deleteAccount: '删除账户',
+    deleteTitle: '删除你的账户？',
+    deleteMessage: '你的邮箱地址和设置将从 openbeads 删除，所有设备都会退出登录。项目仍保留在这台设备上。',
+    deleteConfirm: '删除账户',
+    deleted: '账户已删除。你的项目仍在这里。',
+    deleteSignedOut: '你已经退出登录。请重新登录后再删除账户。',
+    deleteUnavailable: '暂时无法删除账户。请在 {time} 后重试。',
+    deleteOffline: '你已离线。联网后再删除账户。',
+  },
+  privacy: {
+    englishOnly: '本政策仅提供英文版。',
   },
 }
