@@ -11,6 +11,8 @@ import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
 import type { ThemePick } from '../../theme/theme'
 import { useThemePick } from '../../theme/useThemePick'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
+import type { Account } from '../../domain/account'
+import AccountSection from './AccountSection.vue'
 import PanelFactRow from './PanelFactRow.vue'
 import PanelItem from './PanelItem.vue'
 import PanelPicker from './PanelPicker.vue'
@@ -23,7 +25,7 @@ import { COFFEE_URL } from '../../data/coffeeLink'
 import { SOURCE_URL } from '../../data/sourceLink'
 import { BUILD_MARK, BUILD_VERSION } from '../../data/build'
 
-// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections, only
+// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in five folding sections, only
 // asking. The Homepage (540) leaves out the editor's parts but Saved Projects (0716), its demo all but the Projects and the
 // shortcuts (0797). A row that leaves the page awaits `leave` first; Convert image is the current page while open (0756).
 const props = withDefaults(
@@ -46,8 +48,24 @@ const props = withDefaults(
     demo?: boolean
     /** Whether the browser keeps the Projects (tickets 0839, 0936): the row shows it; absent where it can't say. */
     kept?: boolean
+    /** The signed-in account (ticket 0078); none for a Guest. */
+    account?: Account
+    /** A press on Sign in: whether its Subpanel may open, false once a toast said signing in can't be done now. */
+    mayOpenSignIn?: () => Promise<boolean>
   }>(),
-  { page: 'editor', demo: false, leave: () => Promise.resolve(true), projectCount: 0, toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false, kept: undefined },
+  {
+    page: 'editor',
+    demo: false,
+    leave: () => Promise.resolve(true),
+    projectCount: 0,
+    toolsPosition: 'left',
+    inputMode: 'mouse',
+    handedness: 'right',
+    penSeen: false,
+    kept: undefined,
+    account: undefined,
+    mayOpenSignIn: () => Promise.resolve(true),
+  },
 )
 const inEditor = computed(() => props.page !== 'homepage')
 const converting = computed(() => props.page === 'convert-image')
@@ -63,6 +81,9 @@ const emit = defineEmits<{
   'button-names': []
   /** Opens the Feedback sheet with its Report kind (ticket 0700). */
   feedback: [kind: 'general' | 'translation']
+  /** The Sign in Subpanel is about to be pushed, and Sign out (ticket 0078). */
+  'sign-in': []
+  'sign-out': []
 }>()
 
 const { t, locale, setLocale } = useI18n()
@@ -121,6 +142,8 @@ const inputOptions = computed(() => [
 
 <template>
   <div class="menu-panel" data-testid="menu-panel">
+    <!-- Account (ticket 0078), in the editor only: the Homepage's Menu, its demo and the demo tour have none. -->
+    <AccountSection v-if="inEditor && !demo" :account="account" :leave="leave" :may-open-sign-in="mayOpenSignIn" @sign-in="emit('sign-in')" @sign-out="emit('sign-out')" />
     <!-- On the Homepage only Saved Projects, while the library is not empty (ticket 0716). -->
     <PanelSection v-if="inEditor || projectCount > 0 || countUnknown" id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->

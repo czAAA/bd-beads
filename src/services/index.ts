@@ -16,6 +16,7 @@ import { browserSinceFileStore, type SinceFileStore } from './sinceFileStore'
 import { drawablePicture, preparePicture, type DrawablePicture, type PreparedPicture } from './referencePicture'
 import type { OpeningAddress } from '../domain/openingAddress'
 import { browserProjectLocks, type ProjectLocks } from './projectLocks'
+import { browserAccount, type AccountService } from './account'
 
 // Everything reaching outside the page's memory (ADR 0020), as one bundle for the app shell; a test fakes the fields it
 // cares about.
@@ -47,6 +48,8 @@ export interface Services {
   sinceFiles: SinceFileStore
   /** Which tab has a Project open first, so the same Project in a second tab keeps the first one's beads (ticket 0834). */
   projectLocks: ProjectLocks
+  /** The openbeads account: who is signed in, Sign in with Google and Sign out (ticket 0078). Not `appSignIn`. */
+  account: AccountService
 }
 
 export const browserServices: Services = {
@@ -68,4 +71,5 @@ export const browserServices: Services = {
   linkedFiles: browserLinkedFileStore,
   sinceFiles: browserSinceFileStore,
   projectLocks: browserProjectLocks,
+  account: browserAccount,
 }

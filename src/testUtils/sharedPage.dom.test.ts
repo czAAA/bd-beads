@@ -10,9 +10,10 @@ describe('the shared page each page test file starts on (ticket 0608)', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('starts in English with key chips shown, whatever the file before left', () => {
-    // What a file left: a Russian page on a touch device, its fake assigned straight onto window.
+    // What a file left: a Russian page in high contrast on a touch device, its fake assigned straight onto window.
     localStorage.setItem('openbeads:locale', 'ru')
     document.documentElement.lang = 'ru'
+    document.documentElement.dataset.theme = 'contrast'
     window.matchMedia = fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia
 
     resetSharedPage()
@@ -21,6 +22,7 @@ describe('the shared page each page test file starts on (ticket 0608)', () => {
 
     expect(browserDevicePreferences.get('locale').value).toBe('en')
     expect(document.documentElement.hasAttribute('lang')).toBe(false)
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
     expect(useKeyHints().shown.value).toBe(true)
   })
 

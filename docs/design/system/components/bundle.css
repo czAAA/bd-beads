@@ -121,6 +121,7 @@
   --focus-ring-on-accent: var(--on-accent); /* KeyboardFocus card (ticket 0938): the ring on an accent fill (a primary button, an on switch), the fill's own label color. */
   --focus-ring-on-danger: var(--on-danger); /* KeyboardFocus card (ticket 0938): the ring on the danger button, its label color. */
   --focus-ring-band: var(--surface); /* KeyboardFocus card (ticket 0938): on a swatch, whose fill is any color, the band inside the ring, so one of the two shows. */
+  --google-mark-size: 1.125rem; /* SignIn card (ticket 0078): Google's "G" on the Google button, 18px. */
 }
 :root, [data-theme="light"] {
   --track-fill: linear-gradient(90deg, #fa520f, #ffa110);

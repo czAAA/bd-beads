@@ -86,7 +86,10 @@
       // FEEDBACK_RATE_ALL (ticket 1024) counts every address's Reports together, for a sender with many addresses.
       "ratelimits": [
         { "name": "FEEDBACK_RATE", "namespace_id": "1001", "simple": { "limit": 2, "period": 60 } },
-        { "name": "FEEDBACK_RATE_ALL", "namespace_id": "1003", "simple": { "limit": 10, "period": 60 } }
+        { "name": "FEEDBACK_RATE_ALL", "namespace_id": "1003", "simple": { "limit": 10, "period": 60 } },
+        // Ticket 0078: per IP, the requests that start a sign-in and those that come back from Google, counted
+        // together: a sign-in takes one of each, so this is about three a minute.
+        { "name": "SIGN_IN_RATE", "namespace_id": "1005", "simple": { "limit": 6, "period": 60 } }
       ]
     },
     "production": {
@@ -127,7 +130,9 @@
       "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads" }],
       "ratelimits": [
         { "name": "FEEDBACK_RATE", "namespace_id": "1002", "simple": { "limit": 2, "period": 60 } },
-        { "name": "FEEDBACK_RATE_ALL", "namespace_id": "1004", "simple": { "limit": 10, "period": 60 } }
+        { "name": "FEEDBACK_RATE_ALL", "namespace_id": "1004", "simple": { "limit": 10, "period": 60 } },
+        // About five sign-ins a minute per IP, two requests each; dev's is tighter (spec 0385).
+        { "name": "SIGN_IN_RATE", "namespace_id": "1006", "simple": { "limit": 10, "period": 60 } }
       ]
     }
   }

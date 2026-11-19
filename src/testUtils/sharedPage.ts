@@ -1,10 +1,11 @@
 /** What a page test file leaves on the page the next one shares (ticket 420): its mounted elements, its styles, the
- * attributes on `<html>` (`lang` among them), its title, its storage and a `matchMedia` it assigned. `src/testSetup.ts`
- * empties it before every file, so each starts as if it ran first: in English, on a desk with a mouse (ticket 0608). */
+ * attributes on `<html>` (`lang` and the theme among them), its title, its storage and a `matchMedia` it assigned.
+ * `src/testSetup.ts` empties it before every file, so each starts as if it ran first: in English, at a desk (0608). */
 export function resetSharedPage(): void {
   document.body.replaceChildren()
   document.head.querySelectorAll('style').forEach((node) => node.remove())
-  for (const name of ['class', 'style', 'lang']) document.documentElement.removeAttribute(name)
+  // `data-theme` too: a file that ends in high contrast otherwise hands it to the next one (found in ticket 0078).
+  for (const name of ['class', 'style', 'lang', 'data-theme']) document.documentElement.removeAttribute(name)
   document.title = ''
   window.localStorage.clear()
   window.sessionStorage.clear()

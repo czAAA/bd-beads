@@ -26,6 +26,8 @@ export interface Route {
   feature?: FeatureName
   guards?: Guard[]
   handler(rc: RequestContext): Response | Promise<Response>
+  /** How a refusal is answered when not as JSON: a page load (Google's way back, ticket 0078) returns to the app. */
+  refuse?(error: ApiError, request: Request, env: Env): Response
 }
 
 /** Methods that change nothing, so they skip the Origin check. */
@@ -65,6 +67,7 @@ function decoded(segment: string): string | null {
  * `ApiError`s become refusals; anything else is rethrown as the crash it is. */
 export async function handleApi(request: Request, env: Env, routes: Route[]): Promise<Response> {
   const url = new URL(request.url)
+  let route: Route | undefined
   try {
     if (!SAFE_METHODS.has(request.method) && request.headers.get('Origin') !== url.origin) {
       throw new ApiError('forbidden-origin')
@@ -72,6 +75,7 @@ export async function handleApi(request: Request, env: Env, routes: Route[]): Pr
     const found = routes
       .map((route) => ({ route, params: match(route, request.method, url.pathname) }))
       .find((candidate) => candidate.params !== null)
+    route = found?.route
     if (found?.route !== healthRoute) {
       const off = disabledFeatures(env)
       const feature = off.has('api') ? 'api' : found?.route.feature
@@ -82,7 +86,7 @@ export async function handleApi(request: Request, env: Env, routes: Route[]): Pr
     for (const guard of found.route.guards ?? []) await guard(rc)
     return await found.route.handler(rc)
   } catch (error) {
-    if (error instanceof ApiError) return error.toResponse()
+    if (error instanceof ApiError) return route?.refuse?.(error, request, env) ?? error.toResponse()
     throw error
   }
 }

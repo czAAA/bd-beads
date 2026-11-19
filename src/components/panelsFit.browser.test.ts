@@ -4,6 +4,7 @@ import { LOCALES } from '../domain/locale'
 import { describeFits, fitProblems, inShell, mountAt, tooltipProblems, type FitCase } from '../testUtils/browserFit'
 import ShortcutsHelp from './shell/ShortcutsHelp.vue'
 import MenuPanel from './shell/MenuPanel.vue'
+import SignInPanel from './shell/SignInPanel.vue'
 import { PANEL_CONTEXT } from './shell/panelContext'
 import CanvasStrip from './canvas/CanvasStrip.vue'
 import ExportPanel from './canvas/ExportPanel.vue'
@@ -91,6 +92,10 @@ const CASES: FitCase[] = [
   ['CanvasStrip (in its shell)', inShell(CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }), {}],
   ['ShortcutsHelp', ShortcutsHelp, {}],
   ['MenuPanel', inPanel(MenuPanel, { projectCount: 1, toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true, kept: false }), {}],
+  // Signed in (ticket 0078): a long address cuts at its end beside the plan, which stays whole.
+  ['MenuPanel (signed in)', inPanel(MenuPanel, { projectCount: 1, account: { email: 'a.very.long.name.of.a.maker@a-long-mail-domain.example.com', plan: 'free' } }), {}],
+  ['SignInPanel', SignInPanel, { asks: false, leaving: false, verify: () => () => {} }],
+  ['SignInPanel (refused, Cloudflare asking, leaving)', SignInPanel, { refusal: 'cancelled', asks: true, leaving: true, verify: () => () => {} }],
   ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, canSaveAs: true, lastFileName: 'Scarf for winter.openbeads' }, unfoldThisProject],
   ['ProjectPanel (Export unfolded)', ProjectPanel, { project: painted, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, exporting: 'pdf' }, unfoldProjectExport],
   ['ProjectPanel (Export unfolded, no Frame)', ProjectPanel, { project: withFrameSheet(painted, undefined), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }, unfoldProjectExport],

@@ -2,6 +2,7 @@
 import ExportPanel from '../canvas/ExportPanel.vue'
 import FramePanel from '../canvas/FramePanel.vue'
 import MenuPanel from './MenuPanel.vue'
+import SignInPanel from './SignInPanel.vue'
 import PanelHost from './PanelHost.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import StarterGallery from '../project/StarterGallery.vue'
@@ -14,7 +15,7 @@ import { starterById, type StarterCategoryId, type StarterId } from '../../domai
 import { usePanelsContext } from '../../composables/shell/useAppShell'
 import { frameOf } from '../../domain/layerRecord'
 
-// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library as another. Each panel only asks; the app shell does the work.
+// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library and Sign in as others. Each panel only asks; the app shell does the work.
 const {
   t,
   projects,
@@ -89,6 +90,16 @@ const {
   onOpenFeedback,
   projectsKept,
   exportChoice,
+  signInOpen,
+  menuOpensOnList,
+  account,
+  mayOpenSignIn,
+  signInRefusal,
+  signInAsks,
+  signInLeaving,
+  verifySignIn,
+  onContinueWithGoogle,
+  onSignOut,
 } = usePanelsContext()
 
 /** The reference image's state the Project panel shows (ticket 0790). */
@@ -180,9 +191,9 @@ const chosenStarter = ref<StarterId>()
     v-if="openPanel === 'menu' || (openPanel === 'project' && activeProject)"
     :open="openPanel"
     :only="['menu', 'project']"
-    :sub-title="phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
-    :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen ? String(projects.length + sealed.length) : undefined"
-    :start-in-sub="page !== 'convert-image' && (menuOpensOnForm || projects.length + sealed.length === 0)"
+    :sub-title="signInOpen ? t.account.signIn : phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
+    :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen && !signInOpen ? String(projects.length + sealed.length) : undefined"
+    :start-in-sub="page !== 'convert-image' && !menuOpensOnList && (menuOpensOnForm || projects.length + sealed.length === 0)"
     @close="openPanel = null"
   >
     <MenuPanel
@@ -196,9 +207,13 @@ const chosenStarter = ref<StarterId>()
       :handedness="handedness"
       :demo="demo"
       :kept="projectsKept"
-      @new-project="demo ? onStartDemoAfresh() : (phoneSavedProjectsOpen = false)"
+      :account="account"
+      :may-open-sign-in="mayOpenSignIn"
+      @new-project="demo ? onStartDemoAfresh() : ((phoneSavedProjectsOpen = false), (signInOpen = false))"
       @convert-image="onOpenConvertImage()"
-      @saved-projects="phoneSavedProjectsOpen = true"
+      @saved-projects="(phoneSavedProjectsOpen = true), (signInOpen = false)"
+      @sign-in="signInOpen = true"
+      @sign-out="onSignOut"
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"
@@ -237,9 +252,18 @@ const chosenStarter = ref<StarterId>()
       @delete="onRequestDelete"
     />
     <template #sub="{ depth }">
+      <!-- Sign in (ticket 0078): the Account section's subpanel, also what Menu opens on back from Google refused. -->
+      <SignInPanel
+        v-if="signInOpen && depth === 1"
+        :refusal="signInRefusal"
+        :asks="signInAsks"
+        :leaving="signInLeaving"
+        :verify="verifySignIn"
+        @continue="onContinueWithGoogle"
+      />
       <!-- The Projects library: Menu's other subpanel. Picking a Project opens it and closes the panel. -->
       <ProjectsLibrary
-        v-if="phoneSavedProjectsOpen && depth === 1"
+        v-else-if="phoneSavedProjectsOpen && depth === 1"
         :projects="projects"
         :sealed="sealed"
         :active-project-id="activeProjectId"

@@ -11,6 +11,7 @@ import { browserFileWriter } from './fileWriter'
 import type { SinceFiles } from './sinceFileStore'
 import type { Services } from './index'
 import { soleProjectLocks } from './projectLocks'
+import { memoryAccount } from './memoryAccount'
 
 /** The page's own choices the demo shows live and never changes: it has no Language or Theme of its own. */
 const LIVE: readonly PreferenceName[] = ['locale', 'theme']
@@ -105,5 +106,7 @@ export function memoryServices(projects: readonly Project[], options: MemoryServ
     projectLocks: soleProjectLocks,
     preparePicture,
     drawablePicture,
+    // A Guest's, with no backend behind it: the demo's Menu has no Account section.
+    account: memoryAccount(),
   }
 }

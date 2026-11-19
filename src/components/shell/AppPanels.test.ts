@@ -9,7 +9,8 @@ import { withColors } from '../../domain/canvas'
 import { findBead } from '../../domain/beads'
 import { loadProjects, saveProjects } from '../../services/libraryStore'
 import { en } from '../../i18n/en'
-import { mountShellParts } from '../../testUtils/shellHost'
+import { mountShellParts, mountShellPartsOn } from '../../testUtils/shellHost'
+import { memoryAccount } from '../../services/memoryAccount'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
 import { backgroundOf, canvasOf, frameOf, layerOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
@@ -481,5 +482,77 @@ describe('The Export panel', () => {
 
     expect(frameOf(loadProjects()[0])).toBeDefined()
     expect(mounted.wrapper.find('[data-testid="export-png"]').exists()).toBe(true)
+  })
+})
+
+describe('Account (ticket 0078)', () => {
+  const ann = { email: 'ann@example.com', plan: 'free' } as const
+  const mountOn = (account: ReturnType<typeof memoryAccount>) => mountShellPartsOn({ account }, AppPanels, AppDialogs)
+
+  it('opens the Sign in Subpanel from the Menu’s Sign in, and Continue with Google starts the sign-in with the check’s token', async () => {
+    const account = memoryAccount()
+    const mounted = mountOn(account)
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-sign-in')
+    expect(text(mounted, 'panel-sub-title')).toBe(en.account.signIn)
+    expect(document.activeElement).toBe(mounted.wrapper.get('[data-testid="sign-in-google"]').element)
+    await click(mounted, 'sign-in-google')
+    expect(account.state.started).toEqual(['memory-token'])
+    expect(text(mounted, 'sign-in-google')).toBe(en.account.openingGoogle)
+  })
+
+  it('opens nothing and shows the toast when the backend can’t be reached, the row still enabled', async () => {
+    const mounted = mountOn(memoryAccount({ backend: { ok: false, reason: 'unavailable', retryAfterSeconds: 900 } }))
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-sign-in')
+    expect(mounted.wrapper.find('[data-testid="sign-in-panel"]').exists()).toBe(false)
+    expect(mounted.wrapper.get('[data-testid="menu-sign-in"]').attributes('aria-disabled')).toBeUndefined()
+    expect(mounted.canvas.toasts.value.map((toast) => [toast.text, toast.tone])).toEqual([['Signing in is temporarily unavailable. Try again in 15 min.', 'warning']])
+  })
+
+  it('opens the Menu on its Account section back from Google signed in, with no toast, also when the section was folded and the library is empty', async () => {
+    saveProjects([])
+    localStorage.setItem('openbeads:panel-sections-closed', 'menu:account')
+    const mounted = mountOn(memoryAccount({ returned: 'signed-in', session: ann }))
+    await flushPromises()
+    expect(mounted.panels.openPanel.value).toBe('menu')
+    expect(text(mounted, 'menu-account-email')).toBe('ann@example.com')
+    expect(mounted.wrapper.find('[data-testid="create-project"]').exists()).toBe(false)
+    expect(mounted.canvas.toasts.value).toEqual([])
+  })
+
+  it('opens the Menu on the Sign in Subpanel back from Google refused, with the reason, and forgets it once the Subpanel is left', async () => {
+    const mounted = mountOn(memoryAccount({ returned: 'paused' }))
+    await flushPromises()
+    expect(text(mounted, 'panel-sub-title')).toBe(en.account.signIn)
+    expect(text(mounted, 'sign-in-refusal')).toBe(en.account.paused)
+    await click(mounted, 'panel-back')
+    await click(mounted, 'menu-sign-in')
+    expect(mounted.wrapper.find('[data-testid="sign-in-refusal"]').exists()).toBe(false)
+  })
+
+  it('signs out from the Menu, which then shows the Guest’s Sign in, and New Project still opens its own subpanel', async () => {
+    const account = memoryAccount({ remembered: ann, session: ann })
+    const mounted = mountOn(account)
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-sign-out')
+    expect(account.state.session).toBeUndefined()
+    expect(mounted.wrapper.find('[data-testid="menu-account"]').exists()).toBe(false)
+    await click(mounted, 'menu-sign-in')
+    await click(mounted, 'panel-back')
+    await click(mounted, 'menu-new-project')
+    expect(text(mounted, 'panel-sub-title')).toBe(en.projects.newProjectButton)
+  })
+
+  it('starts the Feedback sheet’s Email as the account’s, with its hint, until the address is changed', async () => {
+    const mounted = mountOn(memoryAccount({ remembered: ann, session: ann }))
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-item-feedback')
+    const email = mounted.wrapper.get('[data-testid="feedback-email"]')
+    expect((email.element as HTMLInputElement).value).toBe('ann@example.com')
+    expect(mounted.wrapper.text()).toContain(en.feedback.emailHintAccount)
+    await email.setValue('')
+    expect(mounted.wrapper.text()).not.toContain(en.feedback.emailHintAccount)
+    expect(mounted.wrapper.text()).toContain(en.feedback.emailHint)
   })
 })

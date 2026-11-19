@@ -13,6 +13,7 @@ type ApiErrorCode =
   | 'feedback-failed' // 502: GitHub did not take the Report (ADR 0081); the app offers Copy report
   | 'feature-off' // 503: switched off by the maintainer (`feature`, `Retry-After`)
   | 'storage-full' // 507: the blobs database is past BLOBS_STORAGE_LIMIT_MB
+  | 'signed-out' // 401: no session, an unknown one or one past its time (ticket 0078); the device is a Guest's again
 
 const STATUS: Record<ApiErrorCode, number> = {
   'bad-request': 400,
@@ -26,6 +27,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   'feedback-failed': 502,
   'feature-off': 503,
   'storage-full': 507,
+  'signed-out': 401,
 }
 
 /** A refusal a guard or handler throws; `handleApi` turns it into its JSON response. */

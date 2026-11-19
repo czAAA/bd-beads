@@ -484,9 +484,10 @@ export interface Translations {
     updateReload: string
     /** Under "Update ready"'s open list, the link to the notes it leaves out (ticket 1091); no plural forms. */
     updateMore: string
-    /** The toast for a host sign-in (Cloudflare Access) that has run out, and its button (ticket 1041). */
-    signInRunOut: string
-    signIn: string
+    /** The dev site's toast for a host sign-in (Cloudflare Access) that has run out, and its button (ticket 1041). Never
+     * "Sign in": that is the openbeads account's alone (ticket 0078). */
+    accessRunOut: string
+    renewAccess: string
     /** The hint's second sentence, how to move the Canvas: its own key so a touch device can say its own (ticket 0840). */
     canvasPlaceholderPan: string
     /** The empty Canvas after a delete left no Project open (ticket 0840): “{name}” was deleted, and what to do next. */
@@ -1681,6 +1682,8 @@ export interface Translations {
     looksLikeHint: string
     email: string
     emailHint: string
+    /** The Email hint when the field starts as the signed-in account's email (ticket 0078). */
+    emailHintAccount: string
     messageRequired: string
     shownRequired: string
     emailInvalid: string
@@ -1845,5 +1848,39 @@ export interface Translations {
     feedbackEmail: string
     /** Under a name edited in place that is longer than the limit, with {max}. */
     tooLong: string
+  }
+  /** Signing in (ticket 0078; MenuPanel and SignIn cards, `writing.md` Sign-in copy): the Menu's Account section, the
+   * Sign in Subpanel and its toasts. The words are Sign in and Sign out; the plans Free account and Pro. */
+  account: {
+    section: string
+    signIn: string
+    signOut: string
+    /** Under Sign in, for a Guest. */
+    guestNote: string
+    planFree: string
+    planPro: string
+    /** The Subpanel's first line: what signing in is for, and that Projects stay. */
+    purpose: string
+    /** What is kept: the heading, one row per thing kept, and the line under the list. */
+    keepsHeading: string
+    keepsEmail: string
+    keepsSettings: string
+    keepsNothingElse: string
+    /** The Google button, at rest and between the press and the page leaving; and the line under it. */
+    continueWithGoogle: string
+    openingGoogle: string
+    firstTime: string
+    /** Above Cloudflare's widget, in the rare case it asks the person something. */
+    oneMoreCheck: string
+    /** Back from Google not signed in: the person said no there, something failed, new accounts are paused. */
+    cancelled: string
+    failed: string
+    paused: string
+    /** The toast when signing in can't be done for now, with {time} from `waitSeconds` or `waitMinutes` ({count}). */
+    unavailable: string
+    waitSeconds: string
+    waitMinutes: string
+    /** The toast with no internet. */
+    offline: string
   }
 }

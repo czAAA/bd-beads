@@ -31,7 +31,7 @@ describe('useSignInPrompt', () => {
     const showToast = vi.fn()
     effectScope().run(() => useSignInPrompt({ signIn, messages: () => en, showToast }))
     runOut()
-    expect(showToast).toHaveBeenCalledWith('sign-in', en.shell.signInRunOut, 'info', expect.objectContaining({ label: en.shell.signIn }), { persistent: true })
+    expect(showToast).toHaveBeenCalledWith('sign-in', en.shell.accessRunOut, 'info', expect.objectContaining({ label: en.shell.renewAccess }), { persistent: true })
     showToast.mock.calls[0][3].run()
     expect(signIn.signIn).toHaveBeenCalledOnce()
   })
@@ -43,7 +43,7 @@ describe('useSignInPrompt', () => {
     effectScope().run(() => useSignInPrompt({ signIn, messages: () => language, showToast }))
     language = ru
     runOut()
-    expect(showToast.mock.calls[0][1]).toBe(ru.shell.signInRunOut)
+    expect(showToast.mock.calls[0][1]).toBe(ru.shell.accessRunOut)
   })
 
   it('stops listening when the app is torn down', () => {

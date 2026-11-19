@@ -9,9 +9,9 @@ const TURNSTILE_HEADER = 'X-Turnstile-Token'
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 
 /** Refuses `403 turnstile-failed` unless the request carries a Turnstile token Cloudflare confirms (spec 385: sign-up,
- * sign-in, View link, never sync: a token is single-use), made on a page of the host the request came to (ticket 1024:
- * the widget lists localhost, so one made on anyone's own page is no proof). No verifier or no secret refuses too. */
-export function turnstile(): Guard {
+ * sign-in, View link, never sync: a token is single-use), made on a page of the host the request came to (ticket 1024)
+ * and, where the route names an `action`, for that form's widget (ticket 0078). No verifier or no secret refuses too. */
+export function turnstile(action?: string): Guard {
   return async (rc) => {
     const { request, env, url } = rc
     const token = request.headers.get(TURNSTILE_HEADER)
@@ -22,8 +22,9 @@ export function turnstile(): Guard {
     let success = false
     try {
       const response = await fetch(SITEVERIFY_URL, { method: 'POST', body: form })
-      const verdict = (await response.json()) as { success?: boolean; hostname?: string }
-      success = response.ok && verdict.success === true && verdict.hostname === url.hostname
+      const verdict = (await response.json()) as { success?: boolean; hostname?: string; action?: string }
+      const forThisForm = action === undefined || verdict.action === action
+      success = response.ok && verdict.success === true && verdict.hostname === url.hostname && forThisForm
     } catch (error) {
       console.error('Turnstile could not be verified', error)
     }

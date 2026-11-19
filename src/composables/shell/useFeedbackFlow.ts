@@ -3,7 +3,8 @@ import type { Report, ReportContext, ReportKind, ReportSent } from '../../domain
 import type { Locale } from '../../domain/locale'
 import { browserAndSystem } from '../../domain/userAgent'
 import type { Translations } from '../../i18n/translations'
-import type { FeedbackService, Verification } from '../../services/feedback'
+import type { FeedbackService } from '../../services/feedback'
+import type { Verification } from '../../services/turnstile'
 import type { MessageTone } from '../ui/useToasts'
 import { useDialogs, type Dialogs } from './useDialogs'
 
@@ -33,7 +34,7 @@ export interface FeedbackFlowDeps {
   locale: () => Locale
   messages: () => Translations
   showToast: (id: string, text: string, tone?: MessageTone) => void
-  /** The signed-in account's email; none until accounts exist (ticket 78). */
+  /** The signed-in account's email, which the sheet's Email starts as (ticket 0078); none for a Guest. */
   accountEmail?: () => string | undefined
   /** The dialog registry the sheet opens through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
