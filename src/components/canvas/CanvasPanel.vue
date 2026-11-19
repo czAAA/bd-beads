@@ -924,7 +924,8 @@ const drawingStyle = computed(() => {
   pointer-events: none;
 }
 
-.app-shell__selection-layer > .context-bar {
+/* The bars take the pointer; ContextBar has two roots (the bar and Rotate's copy), so its bar is reached by `:deep`. */
+.app-shell__selection-layer > :deep(.context-bar) {
   pointer-events: auto;
 }
 
