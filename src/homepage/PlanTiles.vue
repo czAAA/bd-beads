@@ -10,7 +10,7 @@ import FreeToUse from './FreeToUse.vue'
 import { freeListRows } from './freeList'
 
 // The plan tiles (ticket 220; Homepage card): "Three ways to use it". No account opens the editor and lists everything
-// free, grown as the page scrolls (0742); Free account and Pro greyed out, a Coming soon stamp each; stacked on a phone.
+// free, grown as the page scrolls (0742); Free account leads to sign-in (0391); Pro greyed out, stamped Coming soon.
 // A new visitor off a phone has one plan, so no tiles: Free to use, the whole list beside its way in (ticket 0947).
 const props = defineProps<{
   /** The free list's height, in the tile's own px, as far as the page has grown it; unset, the whole list. */
@@ -23,7 +23,12 @@ const props = defineProps<{
    * 0871); Free account and Pro come back once the visitor has stayed. */
   isNew?: boolean
 }>()
-const emit = defineEmits<{ makeFirstProject: []; openEditor: [] }>()
+const emit = defineEmits<{
+  makeFirstProject: []
+  openEditor: []
+  /** Create free account: the editor, on the Sign in Subpanel (ticket 0391). */
+  createAccount: []
+}>()
 const { t, locale } = useI18n()
 /** The heading: the three plans', or No account's alone. */
 const heading = computed(() => (props.isNew ? t.value.homepage.plans.alone : t.value.homepage.plans).heading)
@@ -34,13 +39,11 @@ const allShown = ref(false)
 const cut = computed(() => props.phone && !allShown.value && rows.value.length > PHONE_ROWS)
 const shownRows = computed(() => (cut.value ? rows.value.slice(0, PHONE_ROWS) : rows.value))
 
-/** Free account and Pro: their ids, and the noise each stamp's ink is worn by, so the two don't look pasted. */
-const OFF = [
-  { id: 'free-account', frequency: '0.85 0.6', seed: 4 },
-  { id: 'pro', frequency: '0.8 0.65', seed: 11 },
-] as const
-/** The switched-off tiles shown: none to a new visitor (ticket 0871). */
-const offShown = computed(() => (props.isNew ? [] : OFF))
+/** Pro, still switched off (ticket 0391): its id, its index among the tiles and the noise its stamp's ink is worn by. */
+const OFF = [{ id: 'pro', tileIndex: 2, frequency: '0.8 0.65', seed: 11 }] as const
+/** Free account and Pro after No account: neither to a new visitor (ticket 0871). */
+const laterPlansShown = computed(() => !props.isNew)
+const offShown = computed(() => (laterPlansShown.value ? OFF : []))
 /** A new visitor off a phone: Free to use, no tiles (ticket 0947), centred in the room (1060). */
 const alone = computed(() => props.isNew && !props.phone)
 /** The free list's window and its tile, for the page to measure the growth from. */
@@ -99,17 +102,29 @@ defineExpose({ freeWindow, freeTile })
             {{ fillBlanks(t.homepage.plans.free.showAll, { count: rows.length }) }}
           </AppButton>
         </article>
-        <article v-for="(off, i) in offShown" :key="off.id" class="plan plan--off" aria-disabled="true" :data-testid="`plan-${off.id}`">
+        <!-- Free account (ticket 0391): open, its button the way to sign in; on a phone under the name and price. -->
+        <article v-if="laterPlansShown" class="plan plan--open" data-testid="plan-free-account">
           <span class="plan__strand" aria-hidden="true">
-            <template v-for="bead in i + 2" :key="bead">
+            <span class="plan__bead" /><span class="plan__thread" /><span class="plan__bead" />
+          </span>
+          <h3 class="plan__name">{{ t.homepage.plans.tiles[1].name }}</h3>
+          <p class="plan__price"><b>{{ t.homepage.plans.tiles[1].price }}</b></p>
+          <p class="plan__text">{{ t.homepage.plans.tiles[1].text }}</p>
+          <AppButton class="plan__button" :size="phone ? 'sm' : undefined" data-wrap-ok data-testid="plan-create-account" @click="emit('createAccount')">
+            {{ t.homepage.plans.tiles[1].button }}
+          </AppButton>
+        </article>
+        <article v-for="off in offShown" :key="off.id" class="plan plan--off" aria-disabled="true" :data-testid="`plan-${off.id}`">
+          <span class="plan__strand" aria-hidden="true">
+            <template v-for="bead in off.tileIndex + 1" :key="bead">
               <span v-if="bead > 1" class="plan__thread" />
               <span class="plan__bead" />
             </template>
           </span>
-          <h3 class="plan__name">{{ t.homepage.plans.tiles[i + 1]!.name }}</h3>
-          <p class="plan__price"><b>{{ t.homepage.plans.tiles[i + 1]!.price }}</b></p>
-          <p class="plan__text">{{ t.homepage.plans.tiles[i + 1]!.text }}</p>
-          <AppButton v-if="!phone" class="plan__button" disabled>{{ t.homepage.plans.tiles[i + 1]!.button }}</AppButton>
+          <h3 class="plan__name">{{ t.homepage.plans.tiles[off.tileIndex].name }}</h3>
+          <p class="plan__price"><b>{{ t.homepage.plans.tiles[off.tileIndex].price }}</b></p>
+          <p class="plan__text">{{ t.homepage.plans.tiles[off.tileIndex].text }}</p>
+          <AppButton v-if="!phone" class="plan__button" disabled>{{ t.homepage.plans.tiles[off.tileIndex].button }}</AppButton>
           <!-- The stamp: a rubber stamp's two borders and its word, the ink worn by noise where the paper didn't take it; on
                a phone a chip in its place. -->
           <span v-if="phone" class="plan__soon" data-testid="plan-coming-soon">{{ t.homepage.plans.comingSoon }}</span>
@@ -391,7 +406,7 @@ defineExpose({ freeWindow, freeTile })
   transform: rotate(var(--coming-soon-tilt));
 }
 
-.plan--off + .plan--off .plan__stamp {
+.plan--off .plan__stamp {
   --coming-soon-tilt: -5deg;
 }
 
@@ -430,8 +445,9 @@ defineExpose({ freeWindow, freeTile })
   border-radius: var(--radius-full);
 }
 
-/* Free account and Pro a row each: the name, 24px, over the price, and a Coming soon chip on the right. */
-.plans--phone .plan--off {
+/* Free account and Pro a row each: the name, 24px, over the price; Free account's button under them (ticket 0391), Pro's
+   Coming soon chip on the right. */
+.plans--phone :is(.plan--off, .plan--open) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: var(--space-12);
@@ -440,18 +456,30 @@ defineExpose({ freeWindow, freeTile })
   padding: var(--space-14) var(--space-16);
 }
 
-.plans--phone .plan--off :is(.plan__strand, .plan__text) {
+.plans--phone :is(.plan--off, .plan--open) :is(.plan__strand, .plan__text) {
   display: none;
 }
 
-.plans--phone .plan--off .plan__name {
+.plans--phone :is(.plan--off, .plan--open) .plan__name {
   grid-area: 1 / 1;
   font-size: var(--plan-name-size-phone);
   line-height: var(--plan-name-line-phone);
 }
 
-.plans--phone .plan--off .plan__price {
+.plans--phone :is(.plan--off, .plan--open) .plan__price {
   grid-area: 2 / 1;
+}
+
+.plans--phone .plan--open {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.plans--phone .plan--open .plan__button {
+  grid-area: 3 / 1;
+  justify-self: start;
+  width: auto;
+  min-height: 0;
+  margin-top: var(--space-6);
 }
 
 .plan__soon {
@@ -467,7 +495,7 @@ defineExpose({ freeWindow, freeTile })
 
 /* The narrowest phones have no room for the chip beside the name: it goes under the price. */
 @container homepage (max-width: 340px) {
-  .plans--phone .plan--off {
+  .plans--phone :is(.plan--off, .plan--open) {
     grid-template-columns: minmax(0, 1fr);
   }
 

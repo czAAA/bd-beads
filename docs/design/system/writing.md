@@ -232,16 +232,16 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | View the source | Исходный код |
 | Buy me a coffee | Угостить кофе |
 | Three ways to use it (the "plans" label is gone, ticket 0739) | Три способа работать |
-| Accounts and Pro aren't open yet. Everything works without them. | Аккаунты и Pro пока не открыты. Всё работает и без них. |
+| Pro isn't open yet. Everything works without an account. (ticket 0391) | Pro пока не открыт. Всё работает и без аккаунта. |
 | you are here (note) | вы здесь |
 | No account · Free · no sign-up · Draw, count and weave on this device. Nothing to sign up for. · Open the editor | Без аккаунта · Бесплатно · без регистрации · Рисуйте, считайте и плетите на этом устройстве. Регистрироваться не нужно. · Открыть редактор |
-| Free account · Free · Same as No account, plus more · Create free account (ticket 0740: no "coming later", no list) | Бесплатный аккаунт · Бесплатно · Всё, что без аккаунта, и больше · Создать бесплатный аккаунт |
+| Free account · Free · Same as No account, plus your settings on all your devices · Create free account (ticket 0391: open, the way to sign in) | Бесплатный аккаунт · Бесплатно · Всё, что без аккаунта, и ваши настройки на всех устройствах · Создать бесплатный аккаунт |
 | Pro · Price later · Same as Free account, plus more · Coming later (ticket 0740: no "coming later" beside the price, no list) | Pro · Цена позже · Всё, что в бесплатном аккаунте, и больше · Появится позже |
-| COMING SOON (the stamp on Free account and Pro; its image name "Coming soon") | СКОРО (название картинки «Скоро») |
+| COMING SOON (the stamp on Pro; its image name "Coming soon") | СКОРО (название картинки «Скоро») |
 | forever free: (No account's list; "what you get" and the two "everything in …, plus" lines are gone, ticket 0740) | бесплатно навсегда: |
-| Free to use · Accounts and Pro come later; everything works without them. (a new visitor's plans: No account alone, its heading and the line in the reason's place, ticket 0871) | Бесплатно · Аккаунты и Pro появятся позже; всё работает и без них. |
+| Free to use · An account keeps your settings the same on all your devices; Pro comes later. Everything works without an account. (a new visitor's plans: No account alone, its heading and the line behind its Info button, tickets 0871, 0391) | Бесплатно · Аккаунт делает настройки одинаковыми на всех ваших устройствах; Pro появится позже. Всё работает и без аккаунта. |
 
-Free account and Pro list nothing until their features are known: the stamp stands where the list was.
+Pro lists nothing until its features are known: the stamp stands where the list was. Free account says what it adds, your settings on all your devices (ticket 0391).
 
 The "save. count. export" line with its "on us" note, and the carousel's seven lines and its arrow labels, went with ticket 0797.
 

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "On the Homepage, Create free account is open and takes you to sign-in",
+    "ru": "На главной странице кнопка «Создать бесплатный аккаунт» работает и ведёт ко входу",
+    "uk": "На головній сторінці кнопка «Створити акаунт» працює й веде до входу",
+    "be": "На галоўнай старонцы кнопка «Стварыць акаўнт» працуе і вядзе да ўваходу",
+    "zh": "主页上的“创建免费账户”已开放，可直接前往登录",
+    "es": "En la página de inicio, Crear cuenta gratuita ya funciona y te lleva a iniciar sesión",
+    "pl": "Na stronie głównej przycisk Załóż konto działa i prowadzi do logowania"
+  }
+}
