@@ -35,6 +35,20 @@ describe("What's inside: the demo answers a press and lets a swipe through (tick
     expect(shownSection(mounted.root)).toBe('homepage-section-inside')
   })
 
+  it("a right click in the demo opens no Radial toolbox: only the tour's ghost opens it (ticket 1114)", async () => {
+    const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
+    await page.viewport(1440, 900)
+    await turnToSection(mounted.root, 'inside')
+    const ring = mounted.root.querySelector<HTMLElement>('[data-testid="inside-editor"] [data-testid="radial-toolbox"]')!
+    const { x, y } = middleOf(mounted.root)
+    const arrived = new Promise<Event>((resolve) => document.addEventListener('contextmenu', resolve, { once: true }))
+    for (const type of ['mousePressed', 'mouseReleased'] as const) await cdp().send('Input.dispatchMouseEvent', { type, x, y, button: 'right', clickCount: 1 })
+    // The click passes over the inert Canvas, as every press does; the ring, which opens at the lift, stays shut.
+    expect(mounted.root.querySelector('[data-testid="inside-editor"] [data-testid="app-drawing-area"]')!.contains((await arrived).target as Node)).toBe(false)
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    expect(ring.style.display).toBe('none')
+  })
+
   it('a swipe up of 48px over the demo turns to the next section', async () => {
     const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
     await page.viewport(1440, 900)

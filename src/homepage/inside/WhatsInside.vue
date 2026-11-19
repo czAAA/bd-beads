@@ -17,7 +17,7 @@ import { useInsideTour } from './useInsideTour'
 
 // What's inside (Homepage card, tickets 0797, 0825, 0830, 0879): the heading, chapters, caption, Pause and Open editor
 // from here, in a list beside the framed demo editor from 1000px and in a band over it under that or while expanded. The
-// editor plays the 13 rows in turn, only to watch. On a phone there is no editor: the rows are one list.
+// editor plays the 14 rows in turn, only to watch. On a phone there is no editor: the rows are one list.
 const props = defineProps<{
   /** Whether there is room for the editor: none on a phone. */
   withEditor: boolean

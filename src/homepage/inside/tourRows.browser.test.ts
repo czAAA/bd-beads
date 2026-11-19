@@ -9,6 +9,7 @@ import type { Project } from '../../domain/project'
 import type { ReferencePlace } from '../../domain/referenceImage'
 import type { InsideRowId } from '../../i18n/translations'
 import InsideEditor from './InsideEditor.vue'
+import { DEMO_COLORS } from './demoProjects'
 import { PEACOCK_CUFF, PEACOCK_RING } from './peacock'
 import { ROW_DONE_PASSES, TOUR_SCRIPTS } from './tourScripts'
 
@@ -61,6 +62,20 @@ describe("What's inside's first rows on the ring (ticket 0831)", () => {
     const hand = editor.hand(true, new AbortController().signal)
     await TOUR_SCRIPTS.editing(hand)
     expect(linesOf(hand.canvas.activeProject.value!)).toEqual(before)
+  }, 60000)
+
+  it("leaves the band as it was after Tools at the pointer, its beads undone and the eye's blue picked, the Radial toolbox never opened (ticket 1114)", async () => {
+    const editor = await demoEditor()
+    const before = linesOf(await applyThrough(editor, 'editing'))
+    const hand = editor.hand(true, new AbortController().signal)
+    let opened = 0
+    const stop = watch(hand.canvas.radialToolbox.open, (open) => open && (opened += 1), { flush: 'sync' })
+    await TOUR_SCRIPTS.toolsAtPointer(hand)
+    stop()
+    expect(linesOf(hand.canvas.activeProject.value!)).toEqual(before)
+    expect(opened, 'applied at once, the ring is never shown').toBe(0)
+    expect(hand.canvas.selectedColorHex()).toBe(DEMO_COLORS.B)
+    expect(hand.canvas.canRedo.value, 'its three beads were painted, then undone').toBe(true)
   }, 60000)
 
   it('has four eyes after the Mirror row drew the second: Repeat lays it in every strip', async () => {

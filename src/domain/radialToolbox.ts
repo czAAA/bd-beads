@@ -96,15 +96,21 @@ function keptWithin(wanted: number, from: number, to: number): number {
   return from > to ? (from + to) / 2 : Math.min(Math.max(wanted, from), to)
 }
 
+/** The room the ring stays in, in client px: the window, or the box of a shell that lives in one (the Homepage's demo,
+ * ticket 1114), `left` and `top` from the window's corner. */
+export interface RadialScreen {
+  width: number
+  height: number
+  left?: number
+  top?: number
+}
+
 /** Where the ring goes (spec 1072, ADR 0098): the centre nearest the pressed point that keeps the whole ring and its
  * name on the screen, so it moves by the least and only for the screen. `room` is how far the centre stays from the
  * sides and the bottom and from the top (`RADIAL_ROOM`), in the px of `pressed` and `screen`. */
-export function radialCenterOnScreen(
-  pressed: { x: number; y: number },
-  screen: { width: number; height: number },
-  room: { side: number; top: number },
-): { x: number; y: number } {
-  return { x: keptWithin(pressed.x, room.side, screen.width - room.side), y: keptWithin(pressed.y, room.top, screen.height - room.side) }
+export function radialCenterOnScreen(pressed: { x: number; y: number }, screen: RadialScreen, room: { side: number; top: number }): { x: number; y: number } {
+  const { left = 0, top = 0 } = screen
+  return { x: keptWithin(pressed.x, left + room.side, left + screen.width - room.side), y: keptWithin(pressed.y, top + room.top, top + screen.height - room.side) }
 }
 
 /** Where the name's middle goes along the screen (ticket 1076): over the ring's centre, moved by the least that keeps

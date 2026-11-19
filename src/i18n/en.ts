@@ -396,6 +396,7 @@ export const en: Translations = {
         canvas: { name: 'Canvas and Frame', text: 'Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count.' },
         techniques: { name: 'Techniques', text: 'Loom, peyote and brick stitch, each drawn the way its beads sit.' },
         editing: { name: 'Project editing', text: 'Paint, fill, erase, select, copy, paste, undo.' },
+        toolsAtPointer: { name: 'Tools at the pointer', text: 'Hold the Canvas, or right-click: tools and colors open where you draw.' },
         mirror: { name: 'Mirror', text: 'Draw one side, the other follows.' },
         reference: { name: 'Reference image', text: 'A picture under the beads: draw a new piece over it.' },
         convert: { name: 'Convert image', text: 'A picture into a bead pattern, in up to {max} colors.' },

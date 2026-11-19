@@ -99,7 +99,7 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           insideTheSection()
           const list = box('[data-testid="inside-list"]')
           const rows = [...mounted.root.querySelectorAll('[data-testid="inside-list"] > li')]
-          expect(rows).toHaveLength(13)
+          expect(rows).toHaveLength(14)
           for (const row of rows) {
             const tile = row.querySelector('.grouped-list__tile')!.getBoundingClientRect()
             const rowName = row.querySelector('.grouped-list__name')!.getBoundingClientRect()

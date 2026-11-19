@@ -5,7 +5,7 @@ import type { ReferencePlace } from '../../domain/referenceImage'
 import { addedColorId } from '../../domain/palette'
 import { watch } from 'vue'
 import { TECHNIQUES } from '../../domain/weave'
-import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_STARTER, DEMO_TECHNIQUE, PEACOCK_COLORS, demoSwatchId, onCanvas, type DemoColor, type DemoFrame } from './demoProjects'
+import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_TOOLBOX_BEADS, DEMO_STARTER, DEMO_TECHNIQUE, PEACOCK_COLORS, demoSwatchId, onCanvas, type DemoColor, type DemoFrame } from './demoProjects'
 import { balloonFile } from './balloon'
 import { PEACOCK_CUFF } from './peacock'
 import { peacockFile } from './peacockPicture'
@@ -120,6 +120,9 @@ export const HOLD = {
   technique: 1380,
   /** Project editing's three beads, before Undo. */
   undo: 600,
+  /** Tools at the pointer: the Radial toolbox open before the ghost moves, and its rest on the item it picks. */
+  toolbox: 720,
+  toolboxItem: 720,
   /** Convert image's picture converted, then its found colors. */
   convertPicture: 1800,
   convertColors: 2400,
@@ -146,6 +149,15 @@ export const ROW_DONE_PASSES = 10
  * opaque one such as DB660: the catalog draws those in their family's color, which Miyuki's Palette holds from the
  * start, so the list reads them In Palette and adds nothing. */
 const PUPIL_COLOR: CatalogPick = { code: 'DB799', family: 'Purple' }
+
+/** The color Tools at the pointer picks in the Radial toolbox: the eye's blue, a recent color since the first row
+ * and bright on the band's deep green. */
+const TOOLBOX_COLOR: DemoColor = 'B'
+
+/** The Radial toolbox's item that holds a recent color. */
+function toolboxColor(hand: Hand, color: DemoColor) {
+  return () => [...hand.root.querySelectorAll('[data-radial-item^="recent-"]')].find((item) => item.getAttribute('aria-label')?.toLowerCase().includes(DEMO_COLORS[color]))
+}
 
 /** Opens the Frame panel, if it isn't open, and closes it after `work`. */
 async function inFramePanel(hand: Hand, work: () => Promise<void>): Promise<void> {
@@ -202,6 +214,23 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.stroke(beadsOn(DEMO_FRAME, DEMO_EDIT_BEADS))
     await hand.wait(HOLD.undo)
     await hand.press('strip-undo')
+  },
+  /** The Radial toolbox both ways (ticket 1114). A hold on the band's ground: its hairline, the ring, a slide to a
+   * recent color and a lift, three beads painted in it. Then a click on the last, as a right click: the ring at once,
+   * Undo in it (the beads go, the ring stays), and a press in its hole closes it. */
+  async toolsAtPointer(hand) {
+    const ring = hand.canvas.radialToolbox
+    const beads = beadsOn(DEMO_FRAME, DEMO_TOOLBOX_BEADS)
+    await hand.openToolbox(beads[0]!, 'hold')
+    await hand.wait(HOLD.toolbox)
+    await pickInToolbox(hand, () => hand.slideTo(toolboxColor(hand, TOOLBOX_COLOR), HOLD.toolboxItem), () => ring.pickRecent(DEMO_COLORS[TOOLBOX_COLOR]))
+    await hand.stroke(beads)
+    await hand.wait(HOLD.undo)
+    await hand.openToolbox(beads.at(-1)!, 'click')
+    await hand.wait(HOLD.toolbox)
+    await pickInToolbox(hand, () => hand.press('radial-undo'), () => ring.undo())
+    await hand.wait(HOLD.undo)
+    await hand.closeToolbox()
   },
   /** Mirror over the whole Frame in Repeat, its band cut into strips an eye long: the eye drawn again in the second
    * strip, and the ring has it all round. */
@@ -313,6 +342,17 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.wait(HOLD.savedProjects)
     await hand.press('strip-menu')
   },
+}
+
+/** A pick in the Radial toolbox, the ghost's own way while it plays. Applied at once no ring is shown, so the hand
+ * does what the item does through the handler it reaches (`run`), as `pressSelectionBar` does. */
+async function pickInToolbox(hand: Hand, pick: () => Promise<unknown>, run: () => void): Promise<void> {
+  if (!hand.instant) {
+    await pick()
+    return
+  }
+  run()
+  await hand.wait(0)
 }
 
 /** A Selection bar button. The bar arms itself a moment after a Selection (ticket 499), so a stylus tap that selects

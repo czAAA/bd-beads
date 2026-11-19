@@ -2,16 +2,16 @@ import { computed, ref, watch } from 'vue'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { pressBecomes } from '../../domain/canvasPress'
-import { RADIAL_HOLE, RADIAL_PLACES, RADIAL_ROOM, radialCenterOnScreen, radialItemAt, radialItemOff, type RadialItemId } from '../../domain/radialToolbox'
+import { RADIAL_HOLE, RADIAL_PLACES, RADIAL_ROOM, radialCenterOnScreen, radialItemAt, radialItemOff, type RadialItemId, type RadialScreen } from '../../domain/radialToolbox'
 import type { Tool } from '../../domain/tool'
+import { cssZoomOf } from '../ui/cssZoom'
+import { scopeRoom, type ShellScope } from '../ui/shellScope'
 
 /** What the Radial toolbox needs from the shell (ticket 1064): the handlers its items' own controls call. */
 export interface RadialToolboxDeps {
   currentProject: () => Project | null | undefined
   /** Whether the Canvas takes no press (open in another tab, ticket 0937): the ring does not open then. */
   readOnly: () => boolean
-  /** Whether this shell is the Homepage's demo, which is only to watch: the ring never opens there. */
-  demo: boolean
   canUndo: () => boolean
   canRedo: () => boolean
   /** The recent colours the Tool pill shows, in its order: what the ring's three colour places hold. */
@@ -25,21 +25,20 @@ export interface RadialToolboxDeps {
   onRedo: () => void
   /** The Palette's handler for Pick color from Canvas (ticket 1089): arms the pick, or ends an armed one. */
   toggleColorPick: () => void
-  /** The screen the ring stays on (ticket 1076): its size in client px, and how many of them make one of the design
-   * system's px. Absent (a test's flow), the ring opens on the pressed point. */
-  screen?: () => RadialScreen
+  /** The screen the ring stays on (ticket 1076): its place and size in client px, and how many of them make one of
+   * the design system's px. Absent (a test's flow), the ring opens on the pressed point. */
+  screen?: () => ScaledScreen
 }
 
-interface RadialScreen {
-  width: number
-  height: number
-  scale: number
-}
+/** The ring's screen and how many of its px make one of the design system's. */
+type ScaledScreen = RadialScreen & { scale: number }
 
-/** The window as the ring's screen: the design system's px is 1/16 rem, which a larger text size draws larger. */
-export function radialScreenOfWindow(): RadialScreen {
+/** The room of a shell as the ring's screen: the window, or the box a shell lives in (the Homepage's demo, ticket
+ * 1114). The design system's px is 1/16 rem, which a larger text size draws larger, and the Homepage's zoom again. */
+export function radialScreenOf(scope: ShellScope): ScaledScreen {
+  const room = scopeRoom(scope)
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
-  return { width: window.innerWidth, height: window.innerHeight, scale: rem > 0 ? rem / 16 : 1 }
+  return { left: room.left, top: room.top, width: room.right - room.left, height: room.bottom - room.top, scale: (rem > 0 ? rem / 16 : 1) * cssZoomOf(scope.root()) }
 }
 
 /** The Radial toolbox's flow (spec 1072, ADR 0098): it owns the ring's state (open, where on screen, on which bead
@@ -61,10 +60,10 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
   const pressed = computed(() => (open.value ? position.value : undefined))
 
   /** Opens the ring on a point of the screen (client px), on the bead position pressed there: centred on the point, or
-   * as near it as keeps the whole ring on the screen (ticket 1076). Not while the Canvas is read-only, with no Project
-   * open, or on the Homepage's demo. */
+   * as near it as keeps the whole ring on the screen (ticket 1076). Not while the Canvas is read-only or with no
+   * Project open. On the Homepage's demo only the tour's ghost reaches it (ticket 1114): the demo's box is inert. */
   function openAt(at: { x: number; y: number }, pressed?: GridPosition) {
-    if (deps.demo || deps.readOnly() || !deps.currentProject()) return
+    if (deps.readOnly() || !deps.currentProject()) return
     const screen = deps.screen?.()
     center.value = screen ? radialCenterOnScreen(at, screen, { side: RADIAL_ROOM.side * screen.scale, top: RADIAL_ROOM.top * screen.scale }) : { x: at.x, y: at.y }
     position.value = pressed
@@ -77,7 +76,7 @@ export function useRadialToolboxFlow(deps: RadialToolboxDeps) {
   }
 
   /** Whether a hold on the Canvas would open the ring (ticket 1065): the surface times one only then. */
-  const canOpen = computed(() => !deps.demo && !deps.readOnly() && !!deps.currentProject())
+  const canOpen = computed(() => !deps.readOnly() && !!deps.currentProject())
   /** Where a hold is being timed, in client px: the hairline is drawn round it. None when no hold is. */
   const holdAt = ref<{ x: number; y: number }>()
   /** How many holds a pinch has ended: the surface, which never hears the second finger, stops timing its own. */
