@@ -841,7 +841,7 @@ export const uk: Translations = {
     exportPicture: 'Картинка',
     exportChart: 'Схема для друку',
     exportProjectFile: 'Файл',
-    exportProjectFileBody: 'Увесь проєкт в одному файлі .openbeads, з його кольорами, рамкою й налаштуваннями, щоб відкрити його знову тут або на іншому пристрої.',
+    exportProjectFileBody: 'Увесь проєкт в одному файлі .openbeads: бісерини, кольори, рамка, підкладка й налаштування, щоб відкрити його знову тут або на іншому пристрої.',
     exportQuality: 'Якість експорту',
     qualityLow: 'Низька',
     qualityMedium: 'Середня',

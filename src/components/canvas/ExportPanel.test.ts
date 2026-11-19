@@ -116,6 +116,16 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(wrapper.emitted('fit')).toHaveLength(1)
   })
 
+  it('offers File with no Frame too, after the ways to a Frame, and it saves the Project file (ticket 1133)', async () => {
+    const wrapper = await mountPanel(drawn())
+    const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ['export-needs-frame', 'export-fit', 'export-select-frame', 'export-project-file'].includes(id!))
+
+    expect(order).toEqual(['export-needs-frame', 'export-fit', 'export-select-frame', 'export-project-file'])
+    expect(wrapper.get('[data-testid="export-project-file"]').attributes('aria-label')).toBe(`${en.panels.project.saveFile}, ${en.frame.exportProjectFileBody}`)
+    await wrapper.get('[data-testid="export-project-file"]').trigger('click')
+    expect(wrapper.emitted('save-project-file')).toHaveLength(1)
+  })
+
   it('has Fit off, with its reason, and second while nothing is drawn', async () => {
     const wrapper = await mountPanel(empty())
     const fit = wrapper.get('[data-testid="export-fit"]')

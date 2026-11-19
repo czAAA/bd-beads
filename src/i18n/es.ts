@@ -836,7 +836,7 @@ export const es: Translations = {
     exportPicture: 'Imagen',
     exportChart: 'Gráfico para imprimir',
     exportProjectFile: 'Archivo',
-    exportProjectFileBody: 'Todo el proyecto en un archivo .openbeads, con sus colores, marco y ajustes, para volver a abrirlo aquí o en otro dispositivo.',
+    exportProjectFileBody: 'Todo el proyecto en un archivo .openbeads: sus cuentas, colores, marco, imagen de referencia y ajustes, para volver a abrirlo aquí o en otro dispositivo.',
     exportQuality: 'Calidad de exportación',
     qualityLow: 'Baja',
     qualityMedium: 'Media',

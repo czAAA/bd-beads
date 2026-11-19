@@ -823,7 +823,7 @@ export const en: Translations = {
     exportPicture: 'Picture',
     exportChart: 'Printable chart',
     exportProjectFile: 'File',
-    exportProjectFileBody: 'The whole Project in one .openbeads file, with its colors, Frame and settings, to open again here or on another device.',
+    exportProjectFileBody: 'The whole Project in one .openbeads file: its beads, colors, Frame, reference image and settings, to open again here or on another device.',
     exportQuality: 'Export quality',
     qualityLow: 'Low',
     qualityMedium: 'Medium',
