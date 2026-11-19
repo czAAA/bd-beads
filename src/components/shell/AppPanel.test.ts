@@ -337,3 +337,45 @@ describe('AppPanel placed (ticket 0971)', () => {
     expect(wrapper.emitted('placed')).toHaveLength(1)
   })
 })
+
+describe('AppPanel taller than its room shows that it scrolls', () => {
+  /** Gives the body a scroll of `whole` px shown `shown` px at a time, at `scrolled`, and tells it it scrolled. */
+  async function scrollBody(wrapper: ReturnType<typeof mountShell>, { shown, whole, scrolled }: { shown: number; whole: number; scrolled: number }) {
+    const body = wrapper.get('[data-testid="panel-body"]').element as HTMLElement
+    Object.defineProperty(body, 'clientHeight', { configurable: true, value: shown })
+    Object.defineProperty(body, 'scrollHeight', { configurable: true, value: whole })
+    Object.defineProperty(body, 'scrollTop', { configurable: true, value: scrolled })
+    body.dispatchEvent(new Event('scroll'))
+    await nextTick()
+    return body
+  }
+
+  it('fades no edge and shows no thumb when everything fits', async () => {
+    const wrapper = mountShell()
+    const body = await scrollBody(wrapper, { shown: 400, whole: 400, scrolled: 0 })
+    expect(body.dataset.cut).toBe('none')
+    expect(wrapper.find('[data-testid="panel-scroll-thumb"]').exists()).toBe(false)
+  })
+
+  it('fades the foot and shows a thumb, its share of the rail what shows, at the top before it is scrolled', async () => {
+    const wrapper = mountShell()
+    const body = await scrollBody(wrapper, { shown: 400, whole: 1000, scrolled: 0 })
+    expect(body.dataset.cut).toBe('end')
+    const thumb = wrapper.get('[data-testid="panel-scroll-thumb"]').element as HTMLElement
+    expect(thumb.getAttribute('aria-hidden')).toBe('true')
+    expect(thumb.style.getPropertyValue('--thumb-size')).toBe('0.4')
+    expect(thumb.style.getPropertyValue('--thumb-at')).toBe('0')
+  })
+
+  it("fades both edges and moves the thumb down as it scrolls, to the rail's foot at the end", async () => {
+    const wrapper = mountShell()
+    const body = await scrollBody(wrapper, { shown: 400, whole: 1000, scrolled: 300 })
+    expect(body.dataset.cut).toBe('both')
+    const thumb = wrapper.get('[data-testid="panel-scroll-thumb"]').element as HTMLElement
+    expect(thumb.style.getPropertyValue('--thumb-at')).toBe('0.5')
+
+    await scrollBody(wrapper, { shown: 400, whole: 1000, scrolled: 600 })
+    expect(body.dataset.cut).toBe('start')
+    expect(thumb.style.getPropertyValue('--thumb-at')).toBe('1')
+  })
+})

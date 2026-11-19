@@ -102,6 +102,9 @@
   --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
   --panel-item-secondary-height: 22px; /* MenuPanel card: a secondary link under a row (Report a translation problem). */
   --library-thumbnail-size: 44px; /* MenuPanel card (ticket 0982): a Projects library row's thumbnail, the SavedProjects card's circle size. */
+  --panel-edge-fade: 1.5rem; /* MenuPanel card: the fade on each edge of a panel's body where more of it scrolls, 24px. */
+  --panel-thumb-width: 3px; /* MenuPanel card: the scroll thumb in the panel's right padding, in line-strong. */
+  --panel-thumb-min: 1.5rem; /* MenuPanel card: the scroll thumb is never shorter than 24px. */
   --convert-thumb-width: 44px; /* ConvertImage card (ticket 0896): the picture row's thumbnail, the picture cover-fitted. */
   --convert-thumb-height: 54px; /* ConvertImage card: the thumbnail's height. */
   /* ConvertImage card (ticket 0997): the converter page's own layers, named once, lowest first. They stack inside the page, under the app's --z-* layers. */
