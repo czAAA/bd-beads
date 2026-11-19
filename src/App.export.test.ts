@@ -44,8 +44,7 @@ function mountApp() {
   return wrapper
 }
 
-/** The Picture and the Printable chart are rows of the Frame panel (tickets 443, 555), under its Export row, which opens
- * closed (ticket 0932). */
+/** The PNG and PDF buttons are in the Frame panel (tickets 443, 555), its Export always open (ticket 1121). */
 async function openExportMenu(wrapper: ReturnType<typeof mount>) {
   await openPanel(wrapper, 'strip-frame')
 }
