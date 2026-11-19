@@ -1,5 +1,5 @@
 {
-  "$comment": "Homepage card, Winter charms (ticket 1100). The winter charms and their arranged layout, signed off 2026-11-19. Bead colors, not tokens. Each row is read left to right, top to bottom; \".\" is no bead. `out` is the middle's distance from the box's edge as a share of the black beside it (0 at the box, 1 at the screen's edge), `down` its height as a share of the screen's, `turn` degrees clockwise, `size` times the charm's own size. A mark's `size` is px at the 1440 size, grown by --homepage-scale.",
+  "$comment": "Homepage card, Winter charms (ticket 1100). The winter charms and their arranged layout, signed off 2026-11-19. Bead colors, not tokens. Each row is read left to right, top to bottom; \".\" is no bead. `out` is the middle's distance from the box's edge as a share of the black beside it (0 at the box, 1 at the screen's edge), `down` its height as a share of the screen's, `turn` degrees clockwise, `size` times the charm's own size. A mark's `size` is px at the 1440 size, grown by --homepage-scale. `small` is the layout where the black beside the box is too narrow for the ten (ticket 1109): each lies across the box's edge, its `down` a share of the drawing area's height, between the Canvas strip and the Progress bar.",
   "bead": "miyuki/delica/11-0",
   "colors": {
     "B": "#2a5cc6",
@@ -304,6 +304,31 @@
         "down": 0.88,
         "turn": 83,
         "size": 0.85
+      }
+    ],
+    "small": [
+      { "id": "gift", "side": "left", "down": 0.14, "turn": -12, "size": 0.6 },
+      { "id": "star", "side": "left", "down": 0.5, "turn": 18, "size": 0.6 },
+      {
+        "id": "snowman",
+        "side": "left",
+        "down": 0.84,
+        "turn": 8,
+        "size": 0.65
+      },
+      {
+        "id": "ornament",
+        "side": "right",
+        "down": 0.3,
+        "turn": 14,
+        "size": 0.6
+      },
+      {
+        "id": "gingerbread",
+        "side": "right",
+        "down": 0.7,
+        "turn": -10,
+        "size": 0.6
       }
     ],
     "marks": [

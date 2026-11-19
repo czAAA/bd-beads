@@ -11,11 +11,15 @@ import { afterPaint } from './afterPaint'
 import { cssPx } from './cssPx'
 import { charmProject, placeWinter, type PlacedCharm, type PlacedMark, type Side } from './winterCharms'
 
-// The Winter charms and their three marks around the Homepage's box (Homepage card, ticket 1102), placed and drawn
-// after the first paint so the page opens no slower, and placed again as the screen is resized. Decoration only.
+// The Winter charms and their three marks around the Homepage's box (Homepage card, tickets 1102, 1109), placed and
+// drawn after the first paint so the page opens no slower, and placed again as the screen is resized. Decoration only.
 const props = defineProps<{
   /** The canvas box they lie around. */
   box: HTMLElement | undefined
+  /** The box's drawing area, between the Canvas strip and the Progress bar: the small charms keep to its height. */
+  drawing: HTMLElement | undefined
+  /** The Menu or a dialog is open in the box: the small charms, drawn above it, step away. */
+  covered: boolean
   /** `--homepage-scale`: a screen past 1440 × 900 grows them with the box (ticket 1059). */
   scale: number
 }>()
@@ -30,18 +34,25 @@ const marks = shallowRef<PlacedMark[]>([])
 const canvases = new Map<number, HTMLCanvasElement>()
 
 function place() {
-  if (!rootEl.value || !props.box) return
+  if (!rootEl.value || !props.box || !props.drawing) return
   const page = rootEl.value.getBoundingClientRect()
   const box = props.box.getBoundingClientRect()
+  const drawing = props.drawing.getBoundingClientRect()
   const placed = placeWinter({
     width: page.width,
     height: page.height,
     box: { left: box.left - page.left, right: box.right - page.left },
+    drawing: { top: drawing.top - page.top, bottom: drawing.bottom - page.top },
     bead: cssPx(rootEl.value, '--winter-charm-bead') * props.scale,
     scale: props.scale,
     clear: cssPx(rootEl.value, '--winter-charm-clear'),
     least: cssPx(rootEl.value, '--winter-charm-room'),
     drift: cssPx(rootEl.value, '--winter-charm-drift'),
+    small: {
+      clear: cssPx(rootEl.value, '--winter-charm-edge-clear'),
+      reach: cssPx(rootEl.value, '--winter-charm-reach'),
+      leastBead: cssPx(rootEl.value, '--winter-charm-least-bead'),
+    },
   })
   marks.value = placed.marks
   charms.value = placed.charms
@@ -110,7 +121,7 @@ watch(theme, draw)
 </script>
 
 <template>
-  <span ref="rootEl" class="winter-charms" aria-hidden="true" data-testid="winter-charms">
+  <span ref="rootEl" class="winter-charms" :class="{ 'winter-charms--covered': covered }" aria-hidden="true" data-testid="winter-charms">
     <AppLogo
       v-for="(mark, index) in marks"
       :key="`mark-${index}`"
@@ -125,6 +136,7 @@ watch(theme, draw)
       :key="`charm-${index}`"
       :ref="(el) => (el ? canvases.set(index, el as HTMLCanvasElement) : canvases.delete(index))"
       class="winter-charms__item"
+      :class="{ 'winter-charms__item--over': charm.over }"
       :style="placeStyle(charm, drawnSize(charm), charm.turn)"
       :data-charm="charm.id"
       data-testid="winter-charm"
@@ -162,6 +174,25 @@ watch(theme, draw)
 .winter-charms__mark--small {
   stroke-width: 2.6;
   opacity: 0.16;
+}
+
+/* A small charm lies over the box's edge (ticket 1109), so above the box, and steps away while the Menu or a dialog
+ * is open in it. The marks and the ten stay under the box. */
+.winter-charms__item--over {
+  z-index: 2;
+  transition:
+    transform var(--section-turn) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard),
+    visibility 0s;
+}
+
+.winter-charms--covered .winter-charms__item--over {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    transform var(--section-turn) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard),
+    visibility 0s linear var(--duration-fast);
 }
 
 /* Reduced motion: they stand still at their places. */

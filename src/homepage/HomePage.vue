@@ -393,7 +393,7 @@ const savedProjects = controlAction('saved-projects')
     <div class="homepage-page__stage" :style="{ '--progress': section / Math.max(1, sections.length - 1), '--homepage-scale': screenScale }">
       <!-- The two faint X1 marks beside the box, drifting a little as the box turns; in winter the charms and theirs. -->
       <span class="homepage-page__marks">
-        <WinterCharms v-if="winter" :box="boxEl" :scale="screenScale" />
+        <WinterCharms v-if="winter" :box="boxEl" :drawing="bodyEl" :covered="menuOpen || !!dialogs.open.value" :scale="screenScale" />
         <template v-else>
           <AppLogo class="homepage-page__mark homepage-page__mark--large" :size="420" data-testid="homepage-mark" />
           <AppLogo class="homepage-page__mark homepage-page__mark--small" :size="120" data-testid="homepage-mark" />
