@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "fixed",
+  "line": {
+    "en": "The current row's mark shows only on the Frame's ruler, no longer on the rulers of pieces beside it",
+    "ru": "Метка текущего ряда видна только на линейке рамки, а не на линейках деталей рядом с ней",
+    "uk": "Позначка поточного ряду видна лише на лінійці рамки, а не на лінійках деталей поруч із нею",
+    "be": "Пазнака бягучага рада бачная толькі на лінейцы рамкі, а не на лінейках дэталей побач з ёй",
+    "zh": "当前行的标记只显示在边框的标尺上，不再出现在旁边作品的标尺上",
+    "es": "La marca de la fila actual solo aparece en la regla del marco, ya no en las reglas de las piezas de al lado",
+    "pl": "Znacznik bieżącego rzędu widać tylko na linijce ramki, już nie na linijkach elementów obok niej"
+  }
+}

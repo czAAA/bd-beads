@@ -132,11 +132,12 @@ function passOnScreen({ project, surface, layout }: RulerDrawInput, pass = curre
   return { line, across, first, box }
 }
 
-/** Whether a ruler number is the current pass's own. A turned Frame's rulers count the cells it covers, not its own
- * rows (ticket 0667): none of its numbers is. */
+/** Whether a ruler number is the current pass's own: only the Frame's can be, never a Piece's on the same Canvas line
+ * (ticket 1115). A turned Frame's rulers count the cells it covers, not its own rows (ticket 0667): none of its
+ * numbers is. */
 function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProject): boolean {
   const frame = frameOf(project)
-  if (!frame || frame.quarterTurns) return false
+  if (label.kind !== 'frame' || !frame || frame.quarterTurns) return false
   const columns = rowProgressOf(project).direction === 'columns'
   return label.axis === (columns ? 'column' : 'row') && label.position - (columns ? frame.column : frame.row) === pass.line
 }
