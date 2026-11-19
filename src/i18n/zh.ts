@@ -832,6 +832,11 @@ export const zh: Translations = {
     rowByRowLabel: '逐行说明',
     rowByRowInfoLabel: '逐行说明的作用',
     rowByRowLine: '添加几页，把每一行写成字母和数量，并附一个方框，完成后打勾。',
+    savesAs: '将保存为',
+    fileWordLargeBeads: '大珠子',
+    fileWordRowByRow: '逐行说明',
+    fileNameEdit: '重命名文件',
+    fileNameTooltip: '自己为这次导出命名。名称后不会再添加任何词，关闭面板后即被忘记。',
     background: { label: '边框背景' },
     margin: {
       heading: '边距',

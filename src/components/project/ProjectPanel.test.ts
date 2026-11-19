@@ -80,7 +80,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     await wrapper.get('[data-testid="export-png"]').trigger('click')
     await wrapper.get('[data-testid="export-pdf"]').trigger('click')
     expect(wrapper.emitted('export-png')).toEqual([[]])
-    expect(wrapper.emitted('export-pdf')).toEqual([[]])
+    expect(wrapper.emitted('export-pdf')).toEqual([[undefined]])
 
     await wrapper.setProps({ exporting: 'png' })
     expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')

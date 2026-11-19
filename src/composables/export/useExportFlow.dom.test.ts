@@ -211,6 +211,20 @@ describe('useExportFlow', () => {
       expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'pdf'), expect.any(Blob), 'application/pdf')
     })
 
+    it('names the PDF with a word for each print switch that is on, in the panel’s order (ticket 1096)', async () => {
+      const { largeBeads, rowByRow } = usePrintChoices()
+      rowByRow.value = true
+      largeBeads.value = true
+      await setup().onExportPdf()
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf_large-beads_row-by-row.pdf', expect.any(Blob), 'application/pdf')
+    })
+
+    it('saves the PDF under a name typed in the panel as it is, with no words added (ticket 1096)', async () => {
+      usePrintChoices().rowByRow.value = true
+      await setup().onExportPdf('Scarf for Ada.pdf')
+      expect(downloadFile).toHaveBeenCalledWith('Scarf for Ada.pdf', expect.any(Blob), 'application/pdf')
+    })
+
     it('says which export is being drawn until it is done, and refuses a second one meanwhile', async () => {
       const flow = setup()
       const first = flow.onExportPng()
