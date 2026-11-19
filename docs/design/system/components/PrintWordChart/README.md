@@ -32,6 +32,16 @@ Signed off in the design session of 2026-10-27 (the claude.ai canvas "Printed ch
 - **A round side by side** (ticket 0873): a round of a part worked in rounds (Triangle, Warped Square, a Kaleidocycle's triangle, a Star's square) starts with its corner pair after the step-up and is written a side at a time: the side's corner pair in brackets, `(2A)` for two beads of A, `(1A 1B)` for two colors in the order they are picked up, then its singles in the run notation, the sides apart at ` | ` ("Round 3: (2A), 1A | (2A), 1A | (2A), 1A | (2A), 1A"). The bracket and the bar are plain DM Mono 400 `ink`, like the runs, so they read in black and white. A pair's two runs are joined by a no-break space and the `|` by one to the side it ends, so a wrapped row never splits a pair or starts a line with a bar. Round 1, the ring, is a plain run ("Round 1: 4A"). When any row has a pair the notes end with what a pair and a `|` are ("(2A) is a corner pair: two beads picked up together. A side ends at |."). Each side is written out, never "×4": the weaver follows the beads one side at a time.
 - **A Kite's row** (ticket 0874): worked back and forth from the point, so each line carries (L) or (R) after its number as peyote's do (row 1 (L), row 2 (R) …), and its middle pair, the spine pair, is in brackets as a corner pair is, `(2A)` or `(1A 1B)` in the order picked up, between the runs of the wing it starts on and of the other: "Row 1: (2A)", "Row 3: 1A, (2A), 1A", "Row 5: 2A, (2A), 2A". The notes say "Row 1 is the pair at the point; the rows go back and forth.", what (L) and (R) are, and end with what the middle pair is.
 
+## Approved 2026-11-19, not yet in the app (ticket 1096)
+
+Until ticket 1096 lands the runs are written as above ("3A, 7B, 2×"). Then **each run shows its bead**:
+
+- A run is its count in DM Mono 400 `print-word-row` (10 pt) `ink`, then 0.6 mm, then **the bead's swatch**: the key's own swatch (3 mm, drawn like a chart bead: its fill, a 0.1 mm `line-strong` edge, its Swatch letter on it by PrintChartPage's white-or-black rule), its middle on the middle of the digits. No letter is written beside it and no comma follows: the next run starts 2.4 mm after the swatch.
+- **An empty position has a swatch too**: the key's empty swatch (the 0.1 mm `line-strong` edge, no fill, the chart's small `faint` cross), in place of the `×` character. So every run, bead or no bead, ends in a bead-shaped mark, and a row reads as counts and beads: "53 ☐ 2 ■ 40 ☐".
+- A row still wraps at a run, a run never splits from its swatch, and the pitch and the hairlines are as above.
+- The line under the key shows it: "A run is a count and a bead: 2 ▢ is two beads of C.", the mark being an outlined swatch with the letter C (`writing.md`).
+- With Black and white on, a swatch is its bead's tone inside a black hairline (PrintBlackAndWhite card).
+
 ## Two columns
 
 - When the longest row's line (number, marker and runs) fits **91 mm**, the page runs in two columns: the left from 10 mm, the right from 109 mm, a `print-word-gap` (8 mm) gutter between them, **no rule** between them. The rows read down the left column, then down the right.
