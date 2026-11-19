@@ -16,10 +16,9 @@ import FileButton from '../ui/form/FileButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import IconButton from '../ui/IconButton.vue'
 
-// The picture bar (ReferenceImage card, tickets 0883, 1009): a pill over the shown reference image's top edge, in screen
-// px: the Move grip, Set Frame around the picture, Convert to beads, Picture over the beads, Opacity, Replace and Remove,
-// all shown. One `toolbar` Tab stop; the grip's drag and arrows move the picture, its keys resize and turn it (ticket
-// 1118), saved on release with no Undo step.
+// The picture bar (ReferenceImage card, tickets 0883, 1009, 1118): a pill over the shown reference image's top edge: the
+// Move grip, Set Frame around the picture, Convert to beads, Picture over the beads, Opacity, Replace and Remove. One
+// `toolbar` Tab stop; the grip's drag and arrows move the picture, its keys resize and turn it, no Undo step.
 const props = defineProps<{
   place: ReferencePlace
   /** The picture's box on screen, the bar's height and where it stands (pictureBarPlacement). */
