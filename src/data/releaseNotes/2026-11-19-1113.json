@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "changed",
+  "line": {
+    "en": "Menu holds the same rows in the editor, in Convert image and on the Homepage",
+    "ru": "В меню одни и те же пункты в редакторе, на странице «Из картинки» и на главной",
+    "uk": "У меню ті самі пункти в редакторі, на сторінці «З картинки» і на головній",
+    "be": "У меню тыя самыя пункты ў рэдактары, на старонцы «З малюнка» і на галоўнай",
+    "zh": "菜单在编辑器、转换图片页面和首页中的选项都一样",
+    "es": "El menú tiene las mismas opciones en el editor, en Convertir imagen y en Inicio",
+    "pl": "Menu ma te same pozycje w edytorze, na stronie Konwertuj obraz i na stronie głównej"
+  }
+}

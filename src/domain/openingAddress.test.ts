@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { firstProjectAddress, firstStarterAddress, parseOpeningAddress, projectAddress, savedProjectsAddress } from './openingAddress'
+import { convertImageAddress, firstProjectAddress, firstStarterAddress, newProjectAddress, parseOpeningAddress, projectAddress, savedProjectsAddress } from './openingAddress'
 
 describe('the editor\'s addresses (ticket 0716)', () => {
   it('reads back what each address asks for', () => {
@@ -7,6 +7,11 @@ describe('the editor\'s addresses (ticket 0716)', () => {
     expect(parseOpeningAddress(new URL(projectAddress('/', 'a b/c'), 'https://x.test').search)).toEqual({ savedProjects: false, firstProject: false, project: 'a b/c' })
     expect(parseOpeningAddress(new URL(firstProjectAddress('/app/'), 'https://x.test').search)).toEqual({ savedProjects: false, firstProject: true })
     expect(parseOpeningAddress(new URL(firstStarterAddress('/app/'), 'https://x.test').search)).toEqual({ savedProjects: false, firstProject: true, starterGallery: true })
+  })
+
+  it('opens Menu on the New Project form, or the Convert image page, from the Homepage\'s Menu (ticket 1113)', () => {
+    expect(parseOpeningAddress(new URL(newProjectAddress('/app/'), 'https://x.test').search)).toEqual({ savedProjects: false, firstProject: false, newProject: true })
+    expect(parseOpeningAddress(new URL(convertImageAddress('/app/'), 'https://x.test').search)).toEqual({ savedProjects: false, firstProject: false, convertImage: true })
   })
 
   it('asks for nothing at the plain address', () => {
