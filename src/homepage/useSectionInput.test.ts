@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
+import { trackpadSwipes } from '../testUtils/trackpad'
 import { useSectionInput } from './useSectionInput'
+import type { Wheel } from './wheelTurn'
 
 describe('the Homepage turned by wheel, swipe and keys (tickets 0784, 0801)', () => {
   const scopes: ReturnType<typeof effectScope>[] = []
@@ -59,6 +61,16 @@ describe('the Homepage turned by wheel, swipe and keys (tickets 0784, 0801)', ()
     const event = new WheelEvent('wheel', { deltaY: delta, bubbles: true, cancelable: true, ...init })
     target.dispatchEvent(event)
     return event
+  }
+
+  /** A trackpad's wheels as the page gets them, each at its time, counted from `from` ms. */
+  function swiped(wheels: Wheel[], from = 0) {
+    let now = from
+    for (const { delta, time } of wheels) {
+      vi.advanceTimersByTime(time - now)
+      wheel(delta)
+      now = time
+    }
   }
 
   /** A scroll: `count` wheels of `delta`, 20ms apart, then the quiet that ends it. */
@@ -155,19 +167,40 @@ describe('the Homepage turned by wheel, swipe and keys (tickets 0784, 0801)', ()
       expect(turns).toEqual([1])
     })
 
+    it('turns a section a swipe on a trackpad, though the last swipe\'s momentum never goes quiet (ticket 1131)', () => {
+      const { turns } = turning()
+      swiped(trackpadSwipes({ at: 0 }, { at: 900 }))
+      expect(turns).toEqual([1, 2])
+      swiped(trackpadSwipes({ at: 3000, way: -1 }, { at: 3900, way: -1 }), 3000)
+      expect(turns).toEqual([1, 2, 1, 0])
+    })
+
     it('turns on a trackpad\'s next swipe at a tall section\'s end, though the last one\'s momentum never went quiet', () => {
       const { turns } = turning()
       tall(100)
-      expect(wheel(60).defaultPrevented).toBe(false)
+      const [first, ...rest] = trackpadSwipes({ at: 0 }, { at: 900 })
+      expect(wheel(first!.delta).defaultPrevented).toBe(false)
       room.scrollTop = 100
-      for (let step = 0; step < 40; step += 1) {
-        vi.advanceTimersByTime(20)
-        wheel(step < 39 ? 30 : 8)
-      }
+      swiped(rest.filter(({ time }) => time < 900))
       expect(turns).toEqual([])
-      vi.advanceTimersByTime(20)
-      expect(wheel(40).defaultPrevented).toBe(true)
+      swiped(rest.filter(({ time }) => time >= 900), 900)
       expect(turns).toEqual([1])
+    })
+
+    it('turns on a swipe back from a swipe past the first section, still in its momentum (ticket 1131)', () => {
+      const { turns } = turning()
+      const wheels = trackpadSwipes({ at: 0, way: -1 }, { at: 500 })
+      swiped(wheels.filter(({ time }) => time <= 500))
+      expect(turns).toEqual([1])
+      swiped(wheels.filter(({ time }) => time > 500), 500)
+      expect(turns).toEqual([1])
+    })
+
+    it('turns up from a section WebKit reads a pixel down at its top, drawn under the box\'s zoom (ticket 1131)', () => {
+      const { turns } = turning({ at: 1 })
+      tall(1, 1)
+      expect(wheel(-60).defaultPrevented).toBe(true)
+      expect(turns).toEqual([0])
     })
 
     it('turns up from a tall section once it is back at its top', () => {

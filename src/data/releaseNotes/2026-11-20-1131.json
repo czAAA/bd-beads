@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "fixed",
+  "line": {
+    "en": "On the Homepage in Safari, a scroll up turns back to the section before, and each trackpad swipe turns a section",
+    "ru": "На главной странице в Safari прокрутка вверх возвращает к предыдущему разделу, а каждый свайп по тачпаду листает на один раздел",
+    "uk": "На головній сторінці в Safari прокручування вгору повертає до попереднього розділу, а кожен свайп тачпадом гортає на один розділ",
+    "be": "На галоўнай старонцы ў Safari прагортка ўверх вяртае да папярэдняга раздзела, а кожны свайп тачпадам гартае на адзін раздзел",
+    "zh": "在 Safari 的主页上，向上滚动会翻回上一部分，每次用触控板滑动都会翻一部分",
+    "es": "En la página de inicio en Safari, desplazarse hacia arriba vuelve a la sección anterior, y cada deslizamiento en el trackpad pasa una sección",
+    "pl": "Na stronie głównej w Safari przewinięcie w górę wraca do poprzedniej sekcji, a każde przesunięcie na gładziku przechodzi o jedną sekcję"
+  }
+}

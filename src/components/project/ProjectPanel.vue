@@ -124,7 +124,7 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       <PanelItem icon="copy" data-testid="project-duplicate" @select="emit('duplicate')">{{ duplicate.name(t) }}</PanelItem>
       <PanelItem :icon="exportAction.icon" :expanded="exportOpen" :aria-controls="exportRowsId" data-testid="project-export" @select="exportOpen = !exportOpen">{{ exportAction.name(t) }}</PanelItem>
       <div v-if="exportOpen" :id="exportRowsId" class="project-panel__export" role="group" :aria-label="exportAction.name(t)" data-testid="project-export-rows">
-        <ExportRows :project="project" :exporting="exporting" @fit="emit('fit')" @select-frame="emit('select-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" />
+        <ExportRows :project="project" :exporting="exporting" @fit="emit('fit')" @select-frame="emit('select-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" @save-project-file="emit('save-project-file')" />
       </div>
       <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="project-delete" @select="emit('delete')">{{ remove.name(t) }}</PanelItem>

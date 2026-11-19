@@ -40,7 +40,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  const { largeBeads, rowByRow } = usePrintChoices()
+  const { cover, largeBeads, rowByRow } = usePrintChoices()
+  cover.value = true
   largeBeads.value = false
   rowByRow.value = false
 })
@@ -104,11 +105,17 @@ describe('useExportFlow Word chart (ticket 0586)', () => {
   })
 })
 
-describe('useExportFlow print choices (ticket 0916)', () => {
-  it('prints neither with both off, as they are at first', async () => {
+describe('useExportFlow print choices (tickets 0916, 1096)', () => {
+  it('prints the Cover page and neither Large beads nor Row by row, as they are at first', async () => {
     await setup().onExportPdf()
     const [, words] = vi.mocked(exportProjectPdf).mock.lastCall!
-    expect([words.largeBeads, words.wordChart]).toEqual([undefined, undefined])
+    expect([words.cover, words.largeBeads, words.wordChart]).toEqual([true, undefined, undefined])
+  })
+
+  it('prints no Cover page with its switch off', async () => {
+    usePrintChoices().cover.value = false
+    await setup().onExportPdf()
+    expect(vi.mocked(exportProjectPdf).mock.lastCall![1].cover).toBeUndefined()
   })
 
   it('prints with Large beads and Row by row as this device has them, page 1 of the PNG with Large beads too', async () => {
@@ -210,6 +217,12 @@ describe('useExportFlow', () => {
     it('draws the open Project as a PDF', async () => {
       await setup().onExportPdf()
       expect(exportProjectPdf).toHaveBeenCalled()
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover.pdf', expect.any(Blob), 'application/pdf')
+    })
+
+    it('names the PDF as it was with every print switch off (ticket 1096)', async () => {
+      usePrintChoices().cover.value = false
+      await setup().onExportPdf()
       expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'pdf'), expect.any(Blob), 'application/pdf')
     })
 
@@ -218,13 +231,13 @@ describe('useExportFlow', () => {
       rowByRow.value = true
       largeBeads.value = true
       await setup({ project: wide }).onExportPdf()
-      expect(downloadFile).toHaveBeenCalledWith('my-scarf_large-beads_row-by-row.pdf', expect.any(Blob), 'application/pdf')
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_large-beads_row-by-row.pdf', expect.any(Blob), 'application/pdf')
     })
 
     it('names no Large beads, and prints none, where it changes nothing (ticket 1125)', async () => {
       usePrintChoices().largeBeads.value = true
       await setup().onExportPdf()
-      expect(downloadFile).toHaveBeenCalledWith('my-scarf.pdf', expect.any(Blob), 'application/pdf')
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover.pdf', expect.any(Blob), 'application/pdf')
       expect(vi.mocked(exportProjectPdf).mock.lastCall![1].largeBeads).toBeUndefined()
     })
 
@@ -309,7 +322,7 @@ describe('useExportFlow toasts (ticket 523)', () => {
     await flow.onExportPdf()
     await flow.onSave()
 
-    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf.pdf'], ['saved-file', `Saved: ${projectFileName(project)}`]])
+    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf_cover.pdf'], ['saved-file', `Saved: ${projectFileName(project)}`]])
   })
 
   it('gives each further page its own toast, so every file is named', async () => {

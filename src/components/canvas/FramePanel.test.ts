@@ -51,10 +51,10 @@ function mountPanel(project = framed()) {
 }
 const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent(PanelHost).emitted('close')
 
-/** The bar with its Export row unfolded, as it opens closed (ticket 0932). */
+/** The bar with Export quality unfolded, as it shows folded (ticket 1121). */
 async function mountWithExport(project = framed()) {
   const wrapper = mountBar(project)
-  await wrapper.get('[data-testid="frame-export"] .panel-section__header').trigger('click')
+  await wrapper.get('[data-testid="frame-export"] [data-testid="quality-fold"]').trigger('click')
   // The File size estimates' print code comes after the rows (ticket 0991).
   await vi.dynamicImportSettled()
   await flushPromises()
@@ -313,7 +313,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-estimate"]').text()).toContain('≈')
     expect(wrapper.get('[data-testid="frame-estimate-info"]').attributes('aria-label')).toBe(en.size.estimateLabel)
     expect(wrapper.text()).toContain(en.frame.estimateInfo)
-    await wrapper.findAll('.panel-section__header')[2]!.trigger('click')
+    await wrapper.findAll('.panel-section__header').find((header) => header.get('.panel-section__label').text() === en.frame.sizeHeading)!.trigger('click')
     expect(wrapper.findAll('[data-testid="frame-estimate"]')).toHaveLength(0)
     expect(wrapper.get('.panel-section__summary').text()).toMatch(/^5 × 6 · ≈ /)
   })
@@ -333,12 +333,14 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
   })
 
-  it('shows what each export gives in its value slot: the size and its count (ticket 0588)', async () => {
+  it('says what each export gives in its name and Tooltip: the size and its count (tickets 0588, 1121)', async () => {
     const wrapper = await mountWithExport()
-    expect(wrapper.get('[data-testid="export-png"]').text()).toMatch(/PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
-    expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 1 page$/)
+    const name = (id: string) => wrapper.get(`[data-testid="${id}"]`).attributes('aria-label')
+    expect(name('export-png')).toMatch(/PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
+    // The Cover page, on at first (ticket 1096), and page 1.
+    expect(name('export-pdf')).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 2 pages$/)
     // The PNG line follows the chosen stop; the PDF's does not.
-    const lines = () => [wrapper.get('[data-testid="export-png"]').text(), wrapper.get('[data-testid="export-pdf"]').text()]
+    const lines = () => [name('export-png'), name('export-pdf')]
     const [medium, pdf] = lines()
     await wrapper.get('[data-testid="quality-stop-low"]').trigger('click')
     expect(lines()[0]).not.toBe(medium)
@@ -407,16 +409,11 @@ describe('FramePanel (ticket 473)', () => {
     expect(sections.at(-1)!.attributes('data-testid')).toBe('margin-section')
   })
 
-  it('opens Export closed every time, and a press unfolds it (ticket 0932)', async () => {
+  it('shows Export always open, its heading with no fold (ticket 1121)', () => {
     const wrapper = mountBar()
-    const header = (id: string) => wrapper.get(`[data-testid="${id}"] .panel-section__header`)
-    expect(header('frame-export').attributes('aria-expanded')).toBe('false')
-    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
-    await header('frame-export').trigger('click')
+    expect(wrapper.find('[data-testid="frame-export"] .panel-section__header').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-export"] h3').text()).toBe(en.panels.project.exportHeading)
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(true)
-    wrapper.unmount()
-    const again = mountBar()
-    expect(again.get('[data-testid="frame-export"] .panel-section__header').attributes('aria-expanded')).toBe('false')
   })
 
   it('shows Beads needed\'s total on the title line once a bead is painted, as the section counts it (ticket 0932)', () => {

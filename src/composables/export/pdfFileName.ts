@@ -13,6 +13,6 @@ export function namedChoices(choices: PrintChoices, words: Pick<PrintText, 'larg
  * language for each print switch that is on, in the panel's order. One place, so the "Saves as" line, the file and its
  * saved-file toast name the same file. */
 export function pdfFileName(project: Project, choices: PrintChoices, t: Translations): string {
-  const words = [choices.largeBeads && t.frame.fileWordLargeBeads, choices.rowByRow && t.frame.fileWordRowByRow]
+  const words = [choices.cover && t.frame.fileWordCover, choices.largeBeads && t.frame.fileWordLargeBeads, choices.rowByRow && t.frame.fileWordRowByRow]
   return projectExportFileName(project, 'pdf', words.filter((word): word is string => !!word))
 }

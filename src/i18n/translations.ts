@@ -1061,6 +1061,9 @@ export interface Translations {
     sizeHeading: string
     exportPicture: string
     exportChart: string
+    /** The export rows' third button (ticket 1121): the Project's .openbeads file, by the Save Project file action. */
+    exportProjectFile: string
+    exportProjectFileBody: string
     exportQuality: string
     qualityLow: string
     qualityMedium: string
@@ -1076,7 +1079,10 @@ export interface Translations {
     lettersLabel: string
     lettersLine: string
     lettersInfoLabel: string
-    /** The Printable chart's two switches (ticket 0916, ExportPanel card): each name, its Info button's name and what it does. */
+    /** The Printable chart's switches (tickets 0916, 1096, ExportPanel card): each name, its Info button's name and what it does. */
+    coverPageLabel: string
+    coverPageInfoLabel: string
+    coverPageLine: string
     largeBeadsLabel: string
     largeBeadsInfoLabel: string
     largeBeadsLine: string
@@ -1086,6 +1092,7 @@ export interface Translations {
     /** The line under the print switches (ticket 1096, ExportPanel card), before the PDF's file name; the word each switch adds
      * to that name, after an underscore; and the pencil that renames the file for this export, its name and Tooltip. */
     savesAs: string
+    fileWordCover: string
     fileWordLargeBeads: string
     fileWordRowByRow: string
     fileNameEdit: string

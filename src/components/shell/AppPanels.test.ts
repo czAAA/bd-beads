@@ -440,6 +440,15 @@ describe('Backgrounds (ticket 0666)', () => {
 })
 
 describe('The Export panel', () => {
+  it.each(['export', 'frame'] as const)('saves the Project file from the %s panel\'s File, as Save Project file does (ticket 1121)', async (panel) => {
+    vi.mocked(downloadFile).mockClear()
+    saveProjects([moth()])
+    const mounted = mountPanels()
+    await mounted.openPanel(panel)
+    await click(mounted, 'export-project-file')
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileNameOf('Moth'), expect.any(Uint8Array), 'application/json'))
+  })
+
   it('is not opened by the Project panel\'s Export row, which unfolds the rows in Project and saves nothing (ticket 1058)', async () => {
     vi.mocked(downloadFile).mockClear()
     const mounted = mountPanels()

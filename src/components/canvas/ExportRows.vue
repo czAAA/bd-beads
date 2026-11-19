@@ -24,6 +24,7 @@ const emit = defineEmits<{
   'select-frame': []
   'export-png': []
   'export-pdf': [typedName?: string]
+  'save-project-file': []
 }>()
 
 const { t } = useI18n()
@@ -32,7 +33,7 @@ const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 </script>
 
 <template>
-  <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" :opens-on="opensOn" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" />
+  <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" :opens-on="opensOn" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" @save-project-file="emit('save-project-file')" />
   <template v-else>
     <p class="export-rows__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
     <!-- The one-tap way first once something is drawn (ticket 0944); `frame`, as `fit` is the zoom's. -->

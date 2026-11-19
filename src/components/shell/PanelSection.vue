@@ -5,7 +5,7 @@ import AppIcon from '../ui/AppIcon.vue'
 
 // A named section of a panel (MenuPanel card): a header button with the `label`, an optional `summary` (text, or the `summary` slot for a swatch) and a chevron,
 // then rows, split by a 1px `line-soft` rule; a named group for screen readers. It folds shut, and stays so on this
-// device: `id` is the panel and the section ("menu:projects"), every section open on a first visit; `info`, ticket 0790.
+// device: `id` is the panel and the section ("menu:projects"), open on a first visit; `info`, 0790; closed, its header is accent-2 (1121).
 const props = defineProps<{
   label: string
   id: string
@@ -16,12 +16,14 @@ const props = defineProps<{
   closedFirst?: boolean
   /** Folded until it is opened, then kept per device by `id` (the Project panel's This Project, ticket 0971). */
   folded?: boolean
+  /** Never folds: a heading with no button or chevron over its rows (the Frame panel's Export, ticket 1121). */
+  alwaysOpen?: boolean
 }>()
 const labelId = useId()
 const bodyId = useId()
 const kept = usePanelSection(() => props.id, () => props.folded)
 const local = ref(false)
-const open = computed(() => (props.closedFirst ? local.value : kept.open.value))
+const open = computed(() => props.alwaysOpen || (props.closedFirst ? local.value : kept.open.value))
 const toggle = () => (props.closedFirst ? (local.value = !local.value) : kept.toggle())
 /** The summary shows while folded, and open too when it is kept (Beads needed's total beside its Info button, ticket 0852). */
 const summaryShown = computed(() => !open.value || props.keepSummary)
@@ -29,8 +31,13 @@ const summaryShown = computed(() => !open.value || props.keepSummary)
 
 <template>
   <section class="panel-section" role="group" :aria-labelledby="labelId">
-    <h3 v-if="!$slots.info" class="panel-section__heading">
-      <button :id="labelId" class="ui-control panel-section__header" :class="{ 'panel-section__header--kept': keepSummary }" type="button" :aria-expanded="open" :aria-controls="bodyId" @click="toggle">
+    <h3 v-if="alwaysOpen" class="panel-section__heading panel-section__heading--fixed">
+      <span :id="labelId" class="panel-section__label">{{ label }}</span>
+      <span v-if="keepSummary && (summary || $slots.summary)" class="panel-section__summary panel-section__summary--kept"><slot name="summary">{{ summary }}</slot></span>
+      <span v-if="$slots.info" class="panel-section__info"><slot name="info" /></span>
+    </h3>
+    <h3 v-else-if="!$slots.info" class="panel-section__heading">
+      <button :id="labelId" class="ui-control panel-section__header" :class="{ 'panel-section__header--kept': keepSummary, 'panel-section__header--closed': !open }" type="button" :aria-expanded="open" :aria-controls="bodyId" @click="toggle">
         <span class="panel-section__label">{{ label }}</span>
         <span v-if="(summary || $slots.summary) && summaryShown" class="panel-section__summary" :class="{ 'panel-section__summary--kept': keepSummary }"><slot name="summary">{{ summary }}</slot></span>
         <AppIcon :name="open ? 'chevron-down' : 'chevron-left'" :size="14" class="panel-section__chevron" :class="{ 'panel-section__chevron--closed': !open }" />
@@ -39,7 +46,7 @@ const summaryShown = computed(() => !open.value || props.keepSummary)
     <!-- With an Info button (ticket 0790): the header button lies under the row, so the Info button can stand after the label. -->
     <h3 v-else class="panel-section__heading panel-section__heading--info">
       <button :id="labelId" class="ui-control panel-section__header panel-section__header--under" type="button" :aria-label="summary && summaryShown ? `${label}, ${summary}` : label" :aria-expanded="open" :aria-controls="bodyId" @click="toggle" />
-      <span class="panel-section__row" :class="{ 'panel-section__row--kept': keepSummary }">
+      <span class="panel-section__row" :class="{ 'panel-section__row--kept': keepSummary, 'panel-section__header--closed': !open }">
         <span class="panel-section__label panel-section__label--short" aria-hidden="true">{{ label }}</span>
         <span class="panel-section__info"><slot name="info" /></span>
         <span v-if="(summary || $slots.summary) && summaryShown" class="panel-section__summary panel-section__summary--end" :class="{ 'panel-section__summary--kept': keepSummary }" aria-hidden="true"><slot name="summary">{{ summary }}</slot></span>
@@ -61,6 +68,25 @@ const summaryShown = computed(() => !open.value || props.keepSummary)
 
 .panel-section__heading {
   margin: 0;
+}
+
+/* Never folding (ticket 1121): the header's look, with nothing to press. */
+.panel-section__heading--fixed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  box-sizing: border-box;
+  min-height: var(--panel-item-height);
+  padding: 0 var(--space-10);
+  font: var(--type-label);
+  color: var(--muted);
+  text-transform: lowercase;
+}
+
+/* Folded (ticket 1121): the label and chevron in accent-2, so what a panel holds shut stands out. */
+.panel-section__header--closed .panel-section__label,
+.panel-section__header--closed .panel-section__chevron {
+  color: var(--accent-2);
 }
 
 /* With an Info button: the header button fills the row under its content, which lets presses through but the Info
