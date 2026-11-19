@@ -1,7 +1,7 @@
 // The number rule (ticket 1045, spec 1043, ADR 0096): a release record and the notes merged since, in merge order, in;
 // every note's Version and the Build's out.
 import { describe, expect, it } from 'vitest';
-import { nextRelease, numberNotes, type Kind, type Release } from './versions.ts';
+import { nextMajor, numberNotes, type Kind, type Release } from './versions.ts';
 
 const release = (version: string, notes: Release['notes'] = []): Release => ({ version, date: '2026-11-17', notes });
 const merged = (...kinds: Kind[]) => kinds.map((kind, i) => ({ name: `2026-11-18-${String(i + 1).padStart(4, '0')}`, kind }));
@@ -24,7 +24,7 @@ describe('numberNotes', () => {
     expect(result.build).toBe(build);
   });
 
-  it('a release steps the first number and sets the others to 0', () => {
+  it('a major release steps the first number and sets the others to 0', () => {
     const record = [
       release('1.0.0'),
       release('2.0.0', [
@@ -53,14 +53,39 @@ describe('numberNotes', () => {
     expect(result.build).toBe('2.0.1');
   });
 
+  it('a release that kept its newest note’s number: the notes after go on from it', () => {
+    const record = [
+      release('1.0.0'),
+      release('1.1.1', [
+        { name: '2026-11-18-0001', version: '1.1.0', kind: 'new' },
+        { name: '2026-11-18-0002', version: '1.1.1', kind: 'fixed' },
+      ]),
+    ];
+    const result = numberNotes(record, merged('fixed', 'new'), 0);
+    expect(versionsOf(result.notes).slice(2)).toEqual(['1.1.2', '1.2.0']);
+    expect(result.build).toBe('1.2.0');
+  });
+
+  it('after a release that kept its number, a note not in its list keeps its number and the next never repeats it', () => {
+    const record = [release('1.0.0'), release('1.0.1', [{ name: '2026-11-18-0001', version: '1.0.1', kind: 'fixed' }])];
+    const unreleased = [
+      { name: '2026-11-19-0002', kind: 'fixed' as const },
+      { name: '2026-11-19-0003', kind: 'fixed' as const },
+    ];
+    expect(numberNotes(record, unreleased.slice(0, 1), 1).build).toBe('1.0.2');
+    const result = numberNotes(record, unreleased, 1);
+    expect(versionsOf(result.notes)).toEqual(['1.0.1', '1.0.2', '1.0.3']);
+    expect(result.build).toBe('1.0.3');
+  });
+
   it('with no release yet, notes count from 0.0.0', () => {
     expect(numberNotes([], merged('fixed', 'new'), 0).build).toBe('0.1.0');
   });
 });
 
-describe('nextRelease', () => {
+describe('nextMajor', () => {
   it('is the newest release’s first number plus one', () => {
-    expect(nextRelease([release('1.0.0')])).toBe('2.0.0');
-    expect(nextRelease([release('1.0.0'), release('2.0.0')])).toBe('3.0.0');
+    expect(nextMajor([release('1.0.0')])).toBe('2.0.0');
+    expect(nextMajor([release('1.0.0'), release('1.4.2')])).toBe('2.0.0');
   });
 });

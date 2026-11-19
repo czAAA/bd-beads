@@ -68,7 +68,7 @@ No Release notes.
   it('holds only the released part; printed, the notes the next release would hold come first', () => {
     expect(changelog(FILES)).not.toContain('The grid is lighter');
     const printed = released(changelog(FILES, [{ name: '2026-12-02-0004', version: '2.0.1', kind: 'changed' }]));
-    expect(printed.startsWith('\n## Unreleased: what release 3.0.0 would hold\n\n### 2.0.1 · 2026-12-02\n')).toBe(true);
+    expect(printed.startsWith('\n## Unreleased: what the next release would hold\n\n### 2.0.1 · 2026-12-02\n')).toBe(true);
     expect(printed.indexOf('| 2.0.1 | Changed | The grid is lighter | 0004 |')).toBeLessThan(printed.indexOf('## Release 2.0.0'));
     expect(changelog(FILES, [])).toContain('Nothing yet: the release command refuses until a Release note merges.');
   });
