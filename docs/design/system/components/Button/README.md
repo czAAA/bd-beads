@@ -14,7 +14,7 @@ Every clickable action in openbeads: primary, primary select, secondary, seconda
 - **Danger fill** (`bb-btn--danger`): the confirm button of a destructive modal only.
 
 ## Anatomy
-Height 34 (38 in the save box and Edit row, 32 in the Saved Patterns footer). Icon 15px, stroke 1.75, then the label (`control` role), 8px apart, padding 0 12, radius-md. Focus: the `focus-ring` outline, 2px, inside the edge (`--focus-offset`).
+Height 34 (38 in the save box and Edit row, 32 in the Saved Patterns footer). Icon 15px, stroke 1.75, then the label (`control` role), 8px apart, padding 0 12, radius-md. Two sizes more, for the Homepage Welcome tile's way in alone (ticket 1130): `2xl`, twice as tall as `lg` with its words only half again as big, so it stays calm: height 76 (`--control-height-2xl`), the label Inter 500 21 on 30 (`--type-control-2xl`), a 22px icon 12px from it, padding 0 32, radius-xl (`.bb-btn--76`); and `xl`, half again as tall as `lg`: height 57 (`--control-height-xl`), Inter 500 18 on 26 (`--type-control-xl`), an 18px icon 10px from it, padding 0 24, radius-lg (`.bb-btn--57`). Focus: the `focus-ring` outline, 2px, inside the edge (`--focus-offset`).
 
 ## Labelled button
 One component covers every labelled button (ticket 331, ADR 0035), the Link included: an optional leading icon, the label, an optional trailing icon. It shows a Tooltip only when given one, and then only a sentence the label doesn't already say ("Start an empty Canvas."), or from a control-registry action, which supplies its label, key chip, enabled state and, when disabled, the reason. A disabled button is `aria-disabled`, still hoverable and focusable, a click does nothing, and its Tooltip says why.

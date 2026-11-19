@@ -1,9 +1,14 @@
 /* Sizes the component cards give that tokens.json has no token for (ticket 157), in rem; take them from here, not
    a number in a component. */
 :root {
-  /* Button card: 34 default, 38 in the save box and Edit row, 32 in a panel footer */
+  /* Button card: 34 default, 38 in the save box and Edit row, 32 in a panel footer; the Homepage Welcome tile's way in
+     alone is `2xl`, twice as tall as `lg` (76, its label Inter 500 21 on 30), or `xl`, half again (57, Inter 500 18 on 26) */
   --control-height: 2.125rem;
   --control-height-lg: 2.375rem;
+  --control-height-xl: 3.5625rem;
+  --control-height-2xl: 4.75rem;
+  --type-control-xl: 500 1.125rem/1.625rem var(--font-sans);
+  --type-control-2xl: 500 1.3125rem/1.875rem var(--font-sans);
   --control-height-sm: 2rem;
   /* CanvasStrip card: zoom and fit buttons, no fill; the strip itself; the zoom level's fixed width */
   --control-height-plain: 1.875rem;

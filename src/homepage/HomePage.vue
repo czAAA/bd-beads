@@ -637,7 +637,7 @@ const savedProjects = controlAction('saved-projects')
 
 @media (min-width: 744px) {
   .homepage-page__stage {
-    padding: var(--space-24);
+    padding: var(--homepage-box-margin);
   }
 }
 

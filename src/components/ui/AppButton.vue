@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
 import { actionKey, type ControlActionLike } from './controlAction'
-import type { IconName } from './icons'
+import type { IconName, IconSize } from './icons'
 
 // The one labelled button (tickets 157, 327, 331; Button card), with optional leading and trailing icons. Variants:
 // `primary` (one/region), `secondary`, `in-box`, `toolbox`, `box`, `text`, `danger`, `link`; `selected`=aria-pressed.
@@ -14,7 +14,8 @@ defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
     variant?: 'primary' | 'secondary' | 'in-box' | 'toolbox' | 'box' | 'text' | 'danger' | 'link'
-    size?: 'md' | 'lg' | 'sm'
+    /** `2xl` is twice `lg` and `xl` half as big again, for the Homepage Welcome tile's way in alone. */
+    size?: 'md' | 'lg' | 'sm' | 'xl' | '2xl'
     icon?: IconName
     trailingIcon?: IconName
     /** `link` only: the destructive color. */
@@ -59,6 +60,10 @@ const { t } = useI18n()
 
 const name = computed(() => props.label ?? props.action?.name(t.value) ?? '')
 const iconName = computed(() => props.icon ?? props.action?.icon)
+/** Each size's icon (Button card): 15px beside a `control` label, growing with the big sizes' words; a link's is 16px. */
+const ICON_SIZE = { sm: 15, md: 15, lg: 15, xl: 18, '2xl': 22 } as const satisfies Record<NonNullable<typeof props.size>, IconSize>
+const trailingIconSize = computed(() => ICON_SIZE[props.size])
+const leadingIconSize = computed(() => (props.variant === 'link' ? 16 : ICON_SIZE[props.size]))
 const isDisabled = computed(() => props.disabled ?? (props.action?.enabled ? !props.action.enabled(props.deps as never) : false))
 const reason = computed(
   () => props.disabledBody ?? (props.action?.disabledBody && props.deps ? props.action.disabledBody(t.value, props.deps as never) : undefined),
@@ -97,15 +102,15 @@ function swallowClick(event: MouseEvent) {
 <template>
   <!-- Without a Tooltip the button is the root, so a parent's scoped styles on it still apply. -->
   <component :is="href ? 'a' : 'button'" v-if="!tooltipProps" v-bind="mergeProps(buttonAttrs, $attrs)" @click.capture="swallowClick">
-    <AppIcon v-if="iconName" :name="iconName" :size="variant === 'link' ? 16 : 15" />
+    <AppIcon v-if="iconName" :name="iconName" :size="leadingIconSize" />
     <slot>{{ name }}</slot>
-    <AppIcon v-if="trailingIcon" class="app-button__trailing" :name="trailingIcon" :size="15" />
+    <AppIcon v-if="trailingIcon" class="app-button__trailing" :name="trailingIcon" :size="trailingIconSize" />
   </component>
   <AppTooltip v-else v-bind="tooltipProps" class="app-button-wrap">
     <component :is="href ? 'a' : 'button'" v-bind="mergeProps(buttonAttrs, $attrs)" @click.capture="swallowClick">
-      <AppIcon v-if="iconName" :name="iconName" :size="variant === 'link' ? 16 : 15" />
+      <AppIcon v-if="iconName" :name="iconName" :size="leadingIconSize" />
       <slot>{{ name }}</slot>
-      <AppIcon v-if="trailingIcon" class="app-button__trailing" :name="trailingIcon" :size="15" />
+      <AppIcon v-if="trailingIcon" class="app-button__trailing" :name="trailingIcon" :size="trailingIconSize" />
     </component>
   </AppTooltip>
 </template>
@@ -140,6 +145,23 @@ function swallowClick(event: MouseEvent) {
 
 .app-button--lg {
   height: var(--control-height-lg);
+}
+
+.app-button--xl {
+  gap: var(--space-10);
+  height: var(--control-height-xl);
+  padding: 0 var(--space-24);
+  font: var(--type-control-xl);
+  border-radius: var(--radius-lg);
+}
+
+/* Twice as tall as `lg`, the words only half again as big, with room round them: big, and still calm. */
+.app-button--2xl {
+  gap: var(--space-12);
+  height: var(--control-height-2xl);
+  padding: 0 var(--space-32);
+  font: var(--type-control-2xl);
+  border-radius: var(--radius-xl);
 }
 
 .app-button--sm {
