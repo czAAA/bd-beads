@@ -24,7 +24,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   const canvasAreaEl = ref<HTMLElement | null>(null)
   const { width, height } = useElementSize(canvasAreaEl)
   const viewport = computed(() => ({ width: width.value, height: height.value }))
-  /** What the Tool pill takes from the edge it docks to (ticket 0850), kept while it is away (the Adjust bar's turn). */
+  /** What the Tool pill takes from the edge it docks to (ticket 0850), kept while it is away. */
   const toolPillCover = ref<Insets>(NO_INSETS)
 
   const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening })

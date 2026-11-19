@@ -28,7 +28,6 @@ const emit = defineEmits<{
   /** A file picked by Add reference image or Replace image. */
   pick: [file: File]
   'set-opacity': [opacity: OpacityStep]
-  adjust: []
   remove: []
 }>()
 
@@ -96,7 +95,6 @@ function onFile(event: Event) {
           @update:model-value="emit('set-opacity', Number($event) as OpacityStep)"
         />
       </div>
-      <PanelItem icon="size" :value="words.adjustValue" data-testid="reference-image-adjust" @select="emit('adjust')">{{ words.adjust }}</PanelItem>
       <PanelItem icon="image" stays data-testid="reference-image-replace" @select="choose">{{ words.replace }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="reference-image-remove" @select="emit('remove')">{{ words.remove }}</PanelItem>
     </template>

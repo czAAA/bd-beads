@@ -31,15 +31,14 @@ describe('ReferenceImageSection (ReferenceImage card, ticket 0790)', () => {
     expect(info.attributes('aria-label')).toBe(en.referenceImage.name)
   })
 
-  it('with a picture shows its row, then Opacity, Adjust on canvas, Replace image and Remove image', async () => {
+  it('with a picture shows its row, then Opacity, Replace image and Remove image (no Adjust, ticket 1118)', async () => {
     const wrapper = mount(ReferenceImageSection, { props: { image, thumbnail: 'blob:rose' } })
     expect(wrapper.get('[data-testid="reference-image-row"]').text().replace(/\s+/g, ' ')).toBe('rose.webp 2048 × 1536 · 412 KB')
     expect(wrapper.get('[data-testid="reference-image-row"] img').attributes('src')).toBe('blob:rose')
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => ['reference-image-row', 'reference-image-opacity', 'reference-image-adjust', 'reference-image-replace', 'reference-image-remove'].includes(id!))).toEqual([
+    expect(order.filter((id) => ['reference-image-row', 'reference-image-opacity', 'reference-image-replace', 'reference-image-remove'].includes(id!))).toEqual([
       'reference-image-row',
       'reference-image-opacity',
-      'reference-image-adjust',
       'reference-image-replace',
       'reference-image-remove',
     ])
@@ -47,10 +46,8 @@ describe('ReferenceImageSection (ReferenceImage card, ticket 0790)', () => {
     expect(wrapper.get('[data-testid="reference-image-opacity"] [aria-checked="true"]').text()).toBe('50%')
 
     await wrapper.get('[data-testid="reference-image-opacity"] [data-value="75"]').trigger('click')
-    await wrapper.get('[data-testid="reference-image-adjust"]').trigger('click')
     await wrapper.get('[data-testid="reference-image-remove"]').trigger('click')
     expect(wrapper.emitted('set-opacity')).toEqual([[75]])
-    expect(wrapper.emitted('adjust')).toHaveLength(1)
     expect(wrapper.emitted('remove')).toHaveLength(1)
   })
 

@@ -35,6 +35,7 @@ const Area = defineComponent({
           barHeight: 40,
           view,
           bead: 20,
+          limits: { min: 10, max: 400 },
           opacity: 50,
           frameBody: fillBlanks(words.value.frameAround.body, { size: '26×18' }),
           convertBody: fillBlanks(words.value.convert.body, { size: '26×18' }),

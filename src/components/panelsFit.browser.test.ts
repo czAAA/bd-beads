@@ -11,7 +11,6 @@ import ExportPanel from './canvas/ExportPanel.vue'
 import FramePanel from './canvas/FramePanel.vue'
 import { rotateFrame } from '../domain/rotate'
 import ProjectPanel from './project/ProjectPanel.vue'
-import ReferenceAdjustBar from './canvas/ReferenceAdjustBar.vue'
 import { newReferenceImage, withReferenceImage } from '../domain/referenceImage'
 import NewProjectForm from './project/NewProjectForm.vue'
 import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
@@ -128,7 +127,6 @@ const CASES: FitCase[] = [
       reference: { preparing: false, refusal: 'tooManyPixels', notSaved: true },
     },
   ],
-  ['ReferenceAdjustBar', ReferenceAdjustBar, {}],
   ['NewProjectForm', NewProjectForm, { namePlaceholder: 'Project 1' }],
   ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],
 ]

@@ -47,7 +47,6 @@ const emit = defineEmits<{
   'replace-bead': [layer: Layer, beadId: string]
   'pick-reference-image': [file: File]
   'set-reference-opacity': [opacity: OpacityStep]
-  'adjust-reference-image': []
   'remove-reference-image': []
   save: []
   /** Save and Save as (ADR 0090, ticket 0796), the actions the save ring and the keys also run. */
@@ -116,7 +115,6 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       :refusal="reference?.refusal"
       @pick="emit('pick-reference-image', $event)"
       @set-opacity="emit('set-reference-opacity', $event)"
-      @adjust="emit('adjust-reference-image')"
       @remove="emit('remove-reference-image')"
     />
 

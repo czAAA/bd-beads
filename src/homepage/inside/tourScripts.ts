@@ -287,7 +287,6 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     if (await present(hand, 'delete-all-modal')) await hand.press('confirm-modal-confirm')
     await pressSelectionBar(hand, 'frame', () => hand.canvas.onFrameFromSelection())
     await growReference(hand, await peacockFile())
-    await hand.press('reference-adjust-done')
     // Picking the color takes Paint from Select, as it does in the editor, so Paint needs no press of its own.
     const start = traceStart(eyeTrace(PEACOCK_CUFF, CUFF_TRACE_STRIP)[0]!, TRACED_BY_HAND)
     await pickColor(hand, PEACOCK_COLORS[start.part])

@@ -3,7 +3,6 @@ import type { Rect } from '../../domain/canvas'
 import { ImageConversionError, type ImageRejection } from '../../domain/imageConversion'
 import { touch, type Project } from '../../domain/project'
 import {
-  fittedPlace,
   newReferenceImage,
   referenceHeight,
   replacedPicture,
@@ -40,7 +39,7 @@ export interface ReferenceImageFlowDeps {
   announce: (text: string) => void
   /** Opens the Project panel, where a refusal of a file picked from the strip button is told. */
   openProjectPanel: () => void
-  /** Puts the open panel away, as Adjust opens. */
+  /** Puts the open panel away, as a new picture lands, so it shows (ticket 1118). */
   closePanel: () => void
   /** The dialog registry Remove image asks through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
@@ -49,9 +48,8 @@ export interface ReferenceImageFlowDeps {
 /** The Project panel's reference image section, by its fold id (usePanelSection). */
 export const REFERENCE_SECTION_ID = 'project:reference'
 
-/** Where a file was picked: the strip button, the Project panel's section, the Adjust bar's Replace image, or the
- * picture bar's Replace (ticket 0883). */
-export type PickedFrom = 'strip' | 'panel' | 'adjust' | 'bar'
+/** Where a file was picked: the strip button, the Project panel's section, or the picture bar's Replace (ticket 0883). */
+export type PickedFrom = 'strip' | 'panel' | 'bar'
 
 /** The open Project's picture as the flow holds it: its bytes, and once decoded, what draws it. */
 interface LoadedPicture {
@@ -61,7 +59,7 @@ interface LoadedPicture {
 }
 
 /** The reference image (ReferenceImage card, ticket 0790, ADR 0089): its picture, kept on the device by Project id, shown,
- * hidden, its opacity and Adjust. A view like Background: saved through `replaceProject`, never an Undo step nor held by
+ * hidden, its opacity and place. A view like Background: saved through `replaceProject`, never an Undo step nor held by
  * Row progress; a device that won't keep the picture shows it for the session. */
 export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
   const dialogs = deps.dialogs ?? useDialogs()
@@ -71,8 +69,6 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
   const preparing = ref(false)
   /** Why the last picked file was refused, told in the Project panel's section. */
   const refusal = ref<ImageRejection>()
-  /** Adjust is on: the picture's outline and handles show, and the tools rest. */
-  const adjusting = ref(false)
   /** The place a drag shows before it is let go and saved. */
   const draft = ref<ReferencePlace>()
   const loaded = shallowRef<LoadedPicture>()
@@ -165,9 +161,9 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     return heldPicture(projectId) ?? (await deps.store.get(projectId))
   }
 
-  /** A picked file (the strip button, Add reference image, Replace image in the panel or on the Adjust bar): made ready
-   * and kept; a new picture is fitted and opens in Adjust, a replacement keeps the place. A refused file changes nothing
-   * and says why in the Project panel's section, which opens for it, ending Adjust, when picked outside the panel. */
+  /** A picked file (the strip button, Add reference image, Replace image in the panel or on the picture bar): made ready
+   * and kept; a new picture is fitted and shown, the panel put away (ticket 1118), a replacement keeps the place. A refused
+   * file changes nothing and says why in the Project panel's section, which opens for it when picked outside the panel. */
   async function pick(file: File, from: PickedFrom): Promise<void> {
     const started = deps.currentProject()
     if (!started) return
@@ -178,10 +174,7 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
       prepared = await deps.prepare(file)
     } catch (error) {
       refusal.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
-      if (from !== 'panel') {
-        adjusting.value = false
-        deps.openProjectPanel()
-      }
+      if (from !== 'panel') deps.openProjectPanel()
       return
     } finally {
       preparing.value = false
@@ -194,7 +187,7 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     await keep(project.id, prepared.blob)
     const opened = hold(project.id, prepared.blob)
     save(deps.currentProject() ?? project, next)
-    if (!existing) startAdjust()
+    if (!existing) deps.closePanel()
     await opened
   }
 
@@ -202,7 +195,6 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
   function toggleShown(): void {
     const project = deps.currentProject()
     if (!project?.referenceImage) return
-    if (project.referenceImage.shown) adjusting.value = false
     save(project, { ...project.referenceImage, shown: !project.referenceImage.shown })
     const { picture, place, shown } = project.referenceImage
     if (!shown) deps.bringIntoView((surface) => {
@@ -215,7 +207,6 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
   function setShown(shown: boolean): void {
     const project = deps.currentProject()
     if (!project?.referenceImage || project.referenceImage.shown === shown) return
-    if (!shown) adjusting.value = false
     save(project, { ...project.referenceImage, shown })
   }
 
@@ -242,7 +233,6 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     removing.value = false
     const project = deps.currentProject()
     if (!project?.referenceImage) return
-    adjusting.value = false
     draft.value = undefined
     release()
     session.delete(project.id)
@@ -250,39 +240,18 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     await deps.store.remove(project.id)
   }
 
-  /** Adjust on canvas, and a new picture: shows a hidden picture first, so Adjust never handles an unseen one. */
-  function startAdjust(): void {
-    const project = deps.currentProject()
-    if (!project?.referenceImage) return
-    if (!project.referenceImage.shown) save(project, { ...project.referenceImage, shown: true })
-    deps.closePanel()
-    adjusting.value = true
-  }
-
-  /** Done, Escape or a press outside the picture. */
-  function endAdjust(): void {
-    if (draft.value) commit(draft.value)
-    adjusting.value = false
-  }
-
-  /** A drag in Adjust, drawn as it goes and saved once it is let go. */
+  /** A handle's or the Move grip's drag, drawn as it goes and saved once it is let go. */
   function preview(place: ReferencePlace): void {
     draft.value = place
   }
 
-  /** A change Adjust makes, saved: a drag let go, a key, Fit to Canvas; announced where it says so. */
+  /** A change to the picture's place, saved: a drag let go or a key; announced where it says so. */
   function commit(place: ReferencePlace, announcement?: string): void {
     draft.value = undefined
     const project = deps.currentProject()
     if (!project?.referenceImage) return
     save(project, { ...project.referenceImage, place })
     if (announcement) deps.announce(announcement)
-  }
-
-  /** Fit to Canvas: back to the new picture's fit, upright; Adjust stays on. */
-  function fit(): void {
-    const project = deps.currentProject()
-    if (project?.referenceImage) commit(fittedPlace(project.referenceImage.picture, box(project)))
   }
 
   /** Duplicate: the copy of the open Project gets its picture too, where it has one. The picture held for the open
@@ -314,7 +283,6 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
       return project?.referenceImage ? project.id : undefined
     },
     async (projectId) => {
-      adjusting.value = adjusting.value && projectId !== undefined && loaded.value?.projectId === projectId
       draft.value = undefined
       if (projectId === undefined) return release()
       if (loaded.value?.projectId === projectId) return
@@ -346,7 +314,6 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     notSaved,
     preparing,
     refusal,
-    adjusting,
     limits,
     removing,
     pick,
@@ -360,11 +327,8 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     requestRemove,
     cancelRemove,
     confirmRemove,
-    startAdjust,
-    endAdjust,
     preview,
     commit,
-    fit,
     copyToDuplicate,
     picturesOf,
     keepImported,

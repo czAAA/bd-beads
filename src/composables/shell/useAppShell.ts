@@ -810,8 +810,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     messages,
     locale: () => locale.value,
   })
-  // Adjust has its own bar: the popover folds away as it opens.
-  watch(referenceImage.adjusting, (on) => on && pictureBar.close())
   /** Imported Projects bring their reference images' pictures, kept under the ids they came in under. */
   const onImportProjects = (imported: Project[], pictures: ReadonlyMap<string, Blob> = new Map()) => {
     void referenceImage.keepImported(pictures)
@@ -1029,7 +1027,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     project: () => activeProject.value && { id: activeProject.value.id, createdAt: activeProject.value.createdAt },
     since: () => sinceFile.current.value,
     persistentStorage: services.persistentStorage,
-    busy: () => strokeMode.value !== null || hasOpenLayer(scope) || dialogs.open.value !== undefined || openPanel.value !== null || referenceImage.adjusting.value,
+    busy: () => strokeMode.value !== null || hasOpenLayer(scope) || dialogs.open.value !== undefined || openPanel.value !== null,
     announce: (beads) => announce(fillBlanks(t.value.saveReminder.announce, { count: groupThousands(beads, locale.value) })),
   })
 

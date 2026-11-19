@@ -1425,8 +1425,6 @@ export const ru: Translations = {
     kilobytes: '{count} КБ',
     opacity: 'Непрозрачность',
     percent: '{count}%',
-    adjust: 'Настроить на холсте',
-    adjustValue: 'сдвиг · размер · поворот',
     replace: 'Заменить картинку',
     remove: 'Убрать картинку',
     removeTitle: 'Убрать подложку?',
@@ -1443,9 +1441,6 @@ export const ru: Translations = {
       decodeFailed: 'его не удалось прочитать',
     },
     preparing: 'Готовим картинку…',
-    fit: 'Вписать в холст',
-    fitShort: 'Вписать',
-    done: 'Готово',
     groupName: 'Подложка, {opacity}%, повёрнута на {angle}°',
     corners: {
       'top-left': 'Изменить размер за левый верхний угол',

@@ -1761,7 +1761,7 @@ export interface Translations {
     addTooltip: string
     showTooltip: string
     hideTooltip: string
-    /** The Project panel section's label, also the Adjust bar's. */
+    /** The Project panel section's label. */
     section: string
     /** The folded section's summary: "50% · shown", with {opacity} and {state}. */
     summary: string
@@ -1777,8 +1777,6 @@ export interface Translations {
     opacity: string
     /** One opacity choice, "50%", with {count}. */
     percent: string
-    adjust: string
-    adjustValue: string
     replace: string
     remove: string
     removeTitle: string
@@ -1797,11 +1795,7 @@ export interface Translations {
       decodeFailed: string
     }
     preparing: string
-    fit: string
-    /** Fit on a phone. */
-    fitShort: string
-    done: string
-    /** The picture's name in Adjust for a screen reader, with {opacity} and {angle}. */
+    /** The picture's name on the Canvas for a screen reader, with {opacity} and {angle}. */
     groupName: string
     corners: {
       'top-left': string

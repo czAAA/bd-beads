@@ -60,14 +60,16 @@ export const REFERENCE_CORNERS: readonly ReferenceCorner[] = ['top-left', 'top-r
 /** Snaps to a quarter turn within this many degrees; Shift snaps to every `FINE_TURN_STEP`. */
 const QUARTER_SNAP_DEGREES = 4
 export const FINE_TURN_STEP = 15
+/** What `+` makes the picture's width, and `−` divides it by: a tenth more. */
+export const KEY_RESIZE_STEP = 1.1
 
 /** How tall the picture is drawn: its width in its own shape. */
 export function referenceHeight({ picture, place }: Pick<ReferenceImage, 'picture' | 'place'>): number {
   return (place.width * picture.height) / picture.width
 }
 
-/** The place that fits a picture inside a box, centred and upright: a new picture's, and Fit to Canvas's. */
-export function fittedPlace(picture: ReferencePicture, box: ReferenceBox): ReferencePlace {
+/** The place that fits a picture inside a box, centred and upright: a new picture's. */
+function fittedPlace(picture: ReferencePicture, box: ReferenceBox): ReferencePlace {
   const scale = Math.min(box.width / picture.width, box.height / picture.height)
   return { x: box.x + box.width / 2, y: box.y + box.height / 2, width: picture.width * scale, angle: 0 }
 }
@@ -103,12 +105,12 @@ export function movedBy(place: ReferencePlace, dx: number, dy: number): Referenc
   return { ...place, x: place.x + dx, y: place.y + dy }
 }
 
-/** The picture resized by a factor about its centre, within the limits (`+` and `−` in Adjust). */
+/** The picture resized by a factor about its centre, within the limits (`+` and `−` on the picture bar's Move grip). */
 export function scaledBy(place: ReferencePlace, factor: number, limits: WidthLimits): ReferencePlace {
   return { ...place, width: clampWidth(place.width * factor, limits) }
 }
 
-/** The picture turned by some degrees (`[` and `]` in Adjust). */
+/** The picture turned by some degrees (`[` and `]` on the picture bar's Move grip). */
 export function turnedBy(place: ReferencePlace, degrees: number): ReferencePlace {
   return { ...place, angle: normalized(place.angle + degrees) }
 }

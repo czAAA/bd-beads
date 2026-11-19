@@ -8,7 +8,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { pictureBarPlace, type ScreenBox } from '../../composables/canvas/pictureBarPlacement'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { imageInputAccept } from '../../domain/imageConversion'
-import { movedBy, OPACITY_STEPS, type OpacityStep, type ReferencePlace } from '../../domain/referenceImage'
+import { FINE_TURN_STEP, KEY_RESIZE_STEP, movedBy, OPACITY_STEPS, scaledBy, turnedBy, type OpacityStep, type ReferencePlace, type WidthLimits } from '../../domain/referenceImage'
 import { useI18n } from '../../i18n/useI18n'
 import { arrowMove, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
 import AppButton from '../ui/AppButton.vue'
@@ -16,9 +16,9 @@ import FileButton from '../ui/form/FileButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import IconButton from '../ui/IconButton.vue'
 
-// The picture bar (ReferenceImage card, tickets 0883, 1009): a pill over the shown reference image's top edge, in screen
-// px: the Move grip, Set Frame around the picture, Convert to beads, Picture over the beads, Opacity, Replace and Remove,
-// all shown. One `toolbar` Tab stop; the grip's drag and arrows move the picture, saved on release with no Undo step.
+// The picture bar (ReferenceImage card, tickets 0883, 1009, 1118): a pill over the shown reference image's top edge: the
+// Move grip, Set Frame around the picture, Convert to beads, Picture over the beads, Opacity, Replace and Remove. One
+// `toolbar` Tab stop; the grip's drag and arrows move the picture, its keys resize and turn it, no Undo step.
 const props = defineProps<{
   place: ReferencePlace
   /** The picture's box on screen, the bar's height and where it stands (pictureBarPlacement). */
@@ -28,6 +28,8 @@ const props = defineProps<{
   view: ReferenceView & { viewport: { width: number; height: number } }
   /** One bead across, in grid px: what an arrow moves the picture. */
   bead: number
+  /** How narrow and wide the picture may be made: what `+` and `−` stay within. */
+  limits: WidthLimits
   opacity: OpacityStep
   /** Set Frame around the picture's Tooltip body, or why it is off. */
   frameBody: string
@@ -108,13 +110,24 @@ function cancel() {
   if (pressed) emit('preview', pressed.from)
 }
 
-/** The grip's arrows move the picture a bead the way they point on screen, Shift ten, as in Adjust. */
+/** The grip's keys (ticket 1118): an arrow moves the picture a bead the way it points on screen (Shift: ten), `+`/`−`
+ * resize it by a tenth, `[`/`]` turn it 15°. */
 function onGripKey(event: KeyboardEvent) {
-  const moved = arrowMove(props.view, props.bead, event)
-  if (!moved) return
+  const changed = keyedChange(event)
+  if (!changed) return
   event.preventDefault()
   event.stopPropagation()
-  emit('commit', movedBy(props.place, moved.x, moved.y), words.value.moved)
+  emit('commit', ...changed)
+}
+
+function keyedChange(event: KeyboardEvent): [ReferencePlace, string] | undefined {
+  const moved = arrowMove(props.view, props.bead, event)
+  if (moved) return [movedBy(props.place, moved.x, moved.y), words.value.moved]
+  if (event.key === '+' || event.key === '=') return [scaledBy(props.place, KEY_RESIZE_STEP, props.limits), words.value.resized]
+  if (event.key === '-' || event.key === '_' || event.key === '−') return [scaledBy(props.place, 1 / KEY_RESIZE_STEP, props.limits), words.value.resized]
+  if (event.key !== '[' && event.key !== ']') return undefined
+  const turned = turnedBy(props.place, event.key === ']' ? FINE_TURN_STEP : -FINE_TURN_STEP)
+  return [turned, fillBlanks(words.value.turned, { angle: Math.round(turned.angle) })]
 }
 
 /** Convert to beads' popover gives focus back to its button as it closes. */

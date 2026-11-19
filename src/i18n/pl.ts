@@ -1425,8 +1425,6 @@ export const pl: Translations = {
     kilobytes: '{count} KB',
     opacity: 'Krycie',
     percent: '{count}%',
-    adjust: 'Dopasuj na płótnie',
-    adjustValue: 'przesuń · rozmiar · obróć',
     replace: 'Zamień obraz',
     remove: 'Usuń obraz',
     removeTitle: 'Usunąć obraz pomocniczy?',
@@ -1443,9 +1441,6 @@ export const pl: Translations = {
       decodeFailed: 'nie udało się go odczytać',
     },
     preparing: 'Przygotowujemy obraz…',
-    fit: 'Dopasuj do płótna',
-    fitShort: 'Dopasuj',
-    done: 'Gotowe',
     groupName: 'Obraz pomocniczy, {opacity}%, obrócony o {angle}°',
     corners: {
       'top-left': 'Zmień rozmiar z lewego górnego rogu',

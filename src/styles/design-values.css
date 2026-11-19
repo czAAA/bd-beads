@@ -331,9 +331,8 @@
   --frame-edit-chip: 32px;
   --frame-edit-hit: 44px;
   --frame-control-offset: 48px;
-  --reference-outline: 1.5px; /* ReferenceImage card: the picture's outline in Adjust, and the Turn handle's and its stem's lines. */
+  --reference-outline: 1.5px; /* ReferenceImage card: the Turn handle's and its stem's lines, and the picture's edge the handles stand on. */
   --reference-turn: 28px; /* ReferenceImage card: the Turn handle's circle, a 12px turning arrow inside (AppIcon's 12 size). */
-  --reference-bar-bottom: 14px; /* ReferenceImage card: the Adjust bar above the drawing area's bottom, over the Tool pill's place. */
   --picture-bar-height: 40px; /* ReferenceImage card (ticket 0883): the picture bar, the Tool pill's look; 52 on a coarse pointer. */
   --picture-bar-button: 32px; /* ReferenceImage card: the bar's round icon buttons and the Move grip's height; 44 on a coarse pointer. */
   --picture-bar-grip: 52px; /* ReferenceImage card: the Move grip's hit width, its 32 × 6 pill inside. */

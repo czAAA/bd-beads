@@ -43,12 +43,11 @@ function setup(project: Project | undefined = framed(), { refuses = false, prepa
 }
 
 describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
-  it('fits a picked picture inside the Canvas\'s box, shown at 50%, keeps it on the device and opens Adjust, no Undo step', async () => {
+  it('fits a picked picture inside the Canvas\'s box, shown at 50%, keeps it on the device and puts the panel away to show it, no Undo step (ticket 1118)', async () => {
     const { harness, store, flow, deps } = setup()
     await flow.pick(file(), 'strip')
     expect(harness.project.referenceImage).toEqual({ picture, place: { x: 40, y: 40, width: 80, angle: 0 }, opacity: 50, shown: true })
     expect(store.kept.has(harness.project.id)).toBe(true)
-    expect(flow.adjusting.value).toBe(true)
     expect(deps.closePanel).toHaveBeenCalled()
     expect(flow.drawn.value).toMatchObject({ place: { x: 40, y: 40, width: 80, angle: 0 }, height: 40, opacity: 50 })
     expect(harness.history.canUndo.value).toBe(false)
@@ -65,24 +64,21 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
     expect(harness.replaceProject).not.toHaveBeenCalled()
   })
 
-  it('replaces the picture in its place, turn and width, without opening Adjust', async () => {
-    const placed = withReferenceImage(framed(), { ...newReferenceImage(picture, { x: 0, y: 0, width: 80, height: 80 }), place: { x: 5, y: 6, width: 30, angle: 45 } })
-    const { harness, flow } = setup(placed, { prepared: tall })
-    await flow.pick(file('tall.png'), 'panel')
-    expect(harness.project.referenceImage).toMatchObject({ picture: tall, place: { x: 5, y: 6, width: 30, angle: 45 } })
-    expect(flow.adjusting.value).toBe(false)
-  })
-
-  it('replaces the picture from the Adjust bar, staying in Adjust; a refusal there ends Adjust and opens the Project panel on it (ticket 0799)', async () => {
+  it('replaces the picture in its place, turn and width, leaving the panel open', async () => {
     const placed = withReferenceImage(framed(), { ...newReferenceImage(picture, { x: 0, y: 0, width: 80, height: 80 }), place: { x: 5, y: 6, width: 30, angle: 45 } })
     const { harness, flow, deps } = setup(placed, { prepared: tall })
-    flow.startAdjust()
-    await flow.pick(file('tall.png'), 'adjust')
+    await flow.pick(file('tall.png'), 'panel')
     expect(harness.project.referenceImage).toMatchObject({ picture: tall, place: { x: 5, y: 6, width: 30, angle: 45 } })
-    expect(flow.adjusting.value).toBe(true)
-    await flow.pick(file('photo.heic'), 'adjust')
+    expect(deps.closePanel).not.toHaveBeenCalled()
+  })
+
+  it('replaces the picture from the picture bar; a refusal there opens the Project panel on it (ticket 0883)', async () => {
+    const placed = withReferenceImage(framed(), { ...newReferenceImage(picture, { x: 0, y: 0, width: 80, height: 80 }), place: { x: 5, y: 6, width: 30, angle: 45 } })
+    const { harness, flow, deps } = setup(placed, { prepared: tall })
+    await flow.pick(file('tall.png'), 'bar')
+    expect(harness.project.referenceImage).toMatchObject({ picture: tall, place: { x: 5, y: 6, width: 30, angle: 45 } })
+    await flow.pick(file('photo.heic'), 'bar')
     expect(flow.refusal.value).toBe('heic')
-    expect(flow.adjusting.value).toBe(false)
     expect(deps.openProjectPanel).toHaveBeenCalled()
   })
 
@@ -207,32 +203,15 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
     expect(store.kept.get('imported')).toBe(blob)
   })
 
-  describe('Adjust', () => {
-    it('shows a hidden picture first, and puts the panel away', async () => {
-      const { harness, flow, deps } = setup()
-      await flow.pick(file(), 'panel')
-      flow.endAdjust()
-      flow.toggleShown()
-      flow.startAdjust()
-      expect(harness.project.referenceImage!.shown).toBe(true)
-      expect(deps.closePanel).toHaveBeenCalled()
-    })
-
-    it('draws a drag as it goes and saves it once, on release; Fit puts it back and stays in Adjust', async () => {
-      const { harness, flow, deps } = setup()
-      await flow.pick(file(), 'strip')
-      const saves = harness.replaceProject.mock.calls.length
-      flow.preview({ x: 100, y: 100, width: 80, angle: 10 })
-      expect(flow.drawn.value!.place).toEqual({ x: 100, y: 100, width: 80, angle: 10 })
-      expect(harness.replaceProject.mock.calls.length).toBe(saves)
-      flow.commit({ x: 100, y: 100, width: 80, angle: 10 }, 'Turned 10°')
-      expect(harness.project.referenceImage!.place).toEqual({ x: 100, y: 100, width: 80, angle: 10 })
-      expect(deps.announce).toHaveBeenCalledWith('Turned 10°')
-      flow.fit()
-      expect(harness.project.referenceImage!.place).toEqual({ x: 40, y: 40, width: 80, angle: 0 })
-      expect(flow.adjusting.value).toBe(true)
-      flow.endAdjust()
-      expect(flow.adjusting.value).toBe(false)
-    })
+  it('draws a handle\'s drag as it goes and saves it once, on release, announced', async () => {
+    const { harness, flow, deps } = setup()
+    await flow.pick(file(), 'strip')
+    const saves = harness.replaceProject.mock.calls.length
+    flow.preview({ x: 100, y: 100, width: 80, angle: 10 })
+    expect(flow.drawn.value!.place).toEqual({ x: 100, y: 100, width: 80, angle: 10 })
+    expect(harness.replaceProject.mock.calls.length).toBe(saves)
+    flow.commit({ x: 100, y: 100, width: 80, angle: 10 }, 'Turned 10°')
+    expect(harness.project.referenceImage!.place).toEqual({ x: 100, y: 100, width: 80, angle: 10 })
+    expect(deps.announce).toHaveBeenCalledWith('Turned 10°')
   })
 })

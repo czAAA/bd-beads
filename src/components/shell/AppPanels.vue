@@ -235,7 +235,6 @@ const chosenStarter = ref<StarterId>()
       @rename="onRenameProject"
       @pick-reference-image="referenceImage.pick($event, 'panel')"
       @set-reference-opacity="referenceImage.setOpacity"
-      @adjust-reference-image="referenceImage.startAdjust"
       @remove-reference-image="referenceImage.requestRemove"
       @set-technique="onSetTechnique"
       @set-weave-setting="onSetWeaveSetting"
