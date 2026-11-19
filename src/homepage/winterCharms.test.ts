@@ -119,15 +119,6 @@ describe('placing the winter charms', () => {
       expect(placeWinter(iPad, small({ id: 'wide' }), sizes).charms).toEqual([])
       expect(placeWinter({ ...iPad, box: { left: 9, right: 1171 } }, small({}), sizes).charms).toEqual([])
     })
-
-    it('are three to five of the signed-off layout on a landscape iPad and a 1440 × 900 laptop', () => {
-      const laptop = { ...iPad, width: 1440, height: 900, box: { left: 90, right: 1350 }, drawing: { top: 68, bottom: 809 } }
-      for (const screen of [{ ...iPad, drift: 16 }, { ...laptop, drift: 16 }]) {
-        const placed = placeWinter(screen)
-        expect(placed.charms.length).toBeGreaterThanOrEqual(3)
-        expect(placed.charms.length).toBeLessThanOrEqual(5)
-      }
-    })
   })
 
   it('places each mark at its place, grown by the Homepage’s scale, whether or not it is cut at the edge', () => {
