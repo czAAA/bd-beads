@@ -606,6 +606,7 @@ export const zh: Translations = {
     mirrorArmedHint: '在画布上拖动，框出要镜像的区域。',
     pasteArmedHint: '点按画布放置副本。选择一个工具即可停止。',
     pickArmedHint: '点按一颗珠子即可使用它的颜色。',
+    pickArmedPictureHint: '点按珠子或参考图即可取用颜色。',
   },
   inputMode: {
     penLabel: '手写笔模式',
@@ -1266,7 +1267,7 @@ export const zh: Translations = {
     namePieceDisabled: '请先选择一个小块。',
     clear: '清除画布上的所有内容。',
     customColor: '向调色板添加颜色；按 Enter 确认颜色。',
-    pickFromCanvas: '使用画布上一颗珠子的颜色，它会加入调色板。',
+    pickFromCanvas: '使用画布上一颗珠子的颜色，或参考图上最接近的珠子颜色，它会加入调色板。',
     nothingToUndo: '没有可撤销的操作。',
     zoomOutLimit: '已缩小到最小。',
     zoomInLimit: '已放大到最大。',

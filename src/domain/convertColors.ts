@@ -89,13 +89,23 @@ function matchOf(hex: string, targets: readonly TargetColor[] | undefined, pool:
   return targets.find((target) => target.hex === chosen) ?? { hex }
 }
 
-/** Each found color's match, kept the least distance apart for a reduced picture (ticket 0890): a color whose match is
- * that close to a bigger color's match takes it, so two codes that look alike never both come out. */
-function apartMatches(reduced: ReducedColors, targets: readonly TargetColor[] | undefined): TargetColor[] {
-  const pool: MatchPool = {
+/** The target one color is matched to (ticket 1119, Pick color from the reference image): what a found color of that hex
+ * is matched to before a picture's colors are kept apart. Itself under Exact. */
+export function nearestTarget(hex: string, targets: readonly TargetColor[] | undefined): TargetColor {
+  return matchOf(hex, targets, matchPool(targets))
+}
+
+function matchPool(targets: readonly TargetColor[] | undefined): MatchPool {
+  return {
     all: targets?.map((target) => target.hex) ?? [],
     measured: targets && isPartMeasured(targets) ? targets.filter((target) => !target.approximate).map((target) => target.hex) : undefined,
   }
+}
+
+/** Each found color's match, kept the least distance apart for a reduced picture (ticket 0890): a color whose match is
+ * that close to a bigger color's match takes it, so two codes that look alike never both come out. */
+function apartMatches(reduced: ReducedColors, targets: readonly TargetColor[] | undefined): TargetColor[] {
+  const pool = matchPool(targets)
   const kept: { match: TargetColor; lab: Oklab }[] = []
   return reduced.colors.map(({ hex }) => {
     const match = matchOf(hex, targets, pool)

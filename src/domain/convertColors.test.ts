@@ -10,6 +10,7 @@ import {
   convertFrame,
   MEASURED_REACH,
   matchFoundColors,
+  nearestTarget,
   reduceDelivering,
   newProjectPalette,
   NO_LEAST_COLOR_BEADS,
@@ -394,6 +395,13 @@ describe('a part measured catalog (ticket 0887)', () => {
       const [found] = matchFoundColors(reducedPicture({ [aim]: 5 }), targets, choices())
       expect(found!.match.code).toBe('A')
     }
+  })
+
+  it('matches one color alone as a found color of it is matched (Pick color from the reference image, ticket 1119)', () => {
+    const targets = [target('NEAR', near, false), target('MEAS', insideReach, true)]
+    expect(nearestTarget(aim, targets).code).toBe('MEAS')
+    expect(nearestTarget(aim, [target('A', near, true), target('B', outsideReach, true)]).code).toBe('A')
+    expect(nearestTarget(aim, undefined)).toEqual({ hex: aim })
   })
 
   it('says whether the bead color a found color became is measured or approximate', () => {

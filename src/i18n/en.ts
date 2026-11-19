@@ -610,6 +610,7 @@ export const en: Translations = {
     mirrorArmedHint: 'Drag over the Canvas to mark the area to mirror.',
     pasteArmedHint: 'Tap the Canvas to place the copy. Pick a tool to stop.',
     pickArmedHint: 'Tap a bead to use its color.',
+    pickArmedPictureHint: 'Tap a bead or the reference image to use its color.',
   },
   inputMode: {
     penLabel: 'Pen mode',
@@ -1275,7 +1276,7 @@ export const en: Translations = {
     namePieceDisabled: 'Select one Piece first.',
     clear: 'Clear everything from the Canvas.',
     customColor: 'Add a color to the Palette; Enter takes the color.',
-    pickFromCanvas: 'Use a color from a bead on the Canvas. It joins the Palette.',
+    pickFromCanvas: 'Use a color from a bead on the Canvas, or the nearest bead color from the reference image. It joins the Palette.',
     nothingToUndo: 'Nothing to undo.',
     zoomOutLimit: 'Already zoomed out as far as it goes.',
     zoomInLimit: 'Already zoomed in as far as it goes.',

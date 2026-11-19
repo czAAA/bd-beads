@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-19",
+  "kind": "new",
+  "line": {
+    "en": "Pick color from Canvas takes a color from your reference image too, as the nearest real bead color with its code",
+    "ru": "«Взять цвет с холста» берёт цвет и с подложки: ближайший настоящий цвет бисера, с его кодом",
+    "uk": "«Взяти колір з полотна» бере колір і з підкладки: найближчий справжній колір бісеру, з його кодом",
+    "be": "«Узяць колер з палатна» бярэ колер і з падкладкі: найбліжэйшы сапраўдны колер бісеру, з яго кодам",
+    "zh": "「从画布取色」现在也能从参考图取色，取的是最接近的真实珠子颜色，并带有色号",
+    "es": "Elegir color del lienzo también toma un color de tu imagen de referencia, como el color de cuenta real más cercano con su código",
+    "pl": "Pobierz kolor z płótna bierze też kolor z obrazu pomocniczego: najbliższy prawdziwy kolor koralików z jego kodem"
+  }
+}
