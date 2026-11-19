@@ -31,8 +31,10 @@ const TECH_GAP = mm(5.8)
 /** Between the rows of the title block, and between the title and the colors beside it. */
 const ROW_GAP = mm(1.6)
 const COLUMN_GAP = mm(6)
-/** The colors as plain squares, the most used first. */
+/** The colors as plain squares, the most used first, rounded as a letter swatch is. */
 const SQUARE = mm(5)
+const SQUARE_GAP = mm(1.6)
+const SQUARE_CORNER = 0.28
 const MOST_SQUARES = 12
 /** A title runs to two lines at most, then an ellipsis. */
 const TITLE_LINES = 2
@@ -43,10 +45,16 @@ const DESCENT = 0.22
 /** The tech line's rule, Page 1's table rule. */
 const RULE = pt(0.75)
 
-const TECHNIQUE_FONT = font('italic 400', 18, SERIF)
-const TITLE_FONT = font('700', 39, SANS)
-const MAKER_FONT = font('italic 400', 17, SERIF)
-const META_FONT = font('400', 8, MONO)
+/** The type sizes, in points: the technique word, the title, "by {maker}", and the Total's words and the tech line. */
+const SIZE = { technique: 18, title: 39, maker: 17, meta: 8 }
+const TECHNIQUE_FONT = font('italic 400', SIZE.technique, SERIF)
+const TITLE_FONT = font('700', SIZE.title, SANS)
+const MAKER_FONT = font('italic 400', SIZE.maker, SERIF)
+const META_FONT = font('400', SIZE.meta, MONO)
+/** The board's corner, the overview's; the colors' hairline edge; the tech line under its rule. */
+const BOARD_CORNER = mm(4)
+const SQUARE_EDGE = pt(0.5)
+const TECH_LINE_GAP = mm(1.6)
 
 function shadowColor(): string {
   const ink = parseColor(PRINT_COLORS.ink)!
@@ -58,7 +66,7 @@ function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: 
   const { board, piece, zoom } = layout
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
-  context.roundRect(board.x, board.y, board.width, board.height, mm(4))
+  context.roundRect(board.x, board.y, board.width, board.height, BOARD_CORNER)
   context.fill()
 
   const scale = context.getTransform().a
@@ -96,21 +104,21 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
   const squares = words.colors.slice(0, MOST_SQUARES)
   const sums = [words.colorsCount, words.totalBeads, words.totalGrams && `≈ ${words.totalGrams}`].filter(Boolean).join(' · ')
   context.font = META_FONT
-  const columnWidth = Math.max(squares.length * SQUARE + Math.max(0, squares.length - 1) * ROW_GAP, context.measureText(sums).width)
+  const columnWidth = Math.max(squares.length * SQUARE + Math.max(0, squares.length - 1) * SQUARE_GAP, context.measureText(sums).width)
   const columnLeft = right - columnWidth
   const titleWidth = columnLeft - COLUMN_GAP - PRINT_MARGIN
 
   // The tracking is the title's alone: −0.02 em, set before its lines are measured.
   context.save()
-  context.letterSpacing = `${TITLE_TRACKING * pt(39)}px`
+  context.letterSpacing = `${TITLE_TRACKING * pt(SIZE.title)}px`
   const title = words.name.trim() ? titleLines(context, words.name.trim(), titleWidth) : []
   const rows = [
-    { value: words.techniqueWord, style: TECHNIQUE_FONT, size: pt(18), color: PRINT_COLORS.accentStrong },
-    ...title.map((value) => ({ value, style: TITLE_FONT, size: pt(39), color: PRINT_COLORS.ink })),
-    ...(words.maker ? [{ value: fillBlanks(words.labels.byMaker, { maker: words.maker }), style: MAKER_FONT, size: pt(17), color: PRINT_COLORS.muted }] : []),
+    { value: words.techniqueWord, style: TECHNIQUE_FONT, size: pt(SIZE.technique), color: PRINT_COLORS.accentStrong },
+    ...title.map((value) => ({ value, style: TITLE_FONT, size: pt(SIZE.title), color: PRINT_COLORS.ink })),
+    ...(words.maker ? [{ value: fillBlanks(words.labels.byMaker, { maker: words.maker }), style: MAKER_FONT, size: pt(SIZE.maker), color: PRINT_COLORS.muted }] : []),
   ]
   const leftHeight = rows.reduce((sum, row) => sum + row.size, 0) + (rows.length - 1) * ROW_GAP
-  const rightHeight = (squares.length > 0 ? SQUARE + ROW_GAP : 0) + pt(8)
+  const rightHeight = (squares.length > 0 ? SQUARE + ROW_GAP : 0) + pt(SIZE.meta)
   const bottom = top + Math.max(leftHeight, rightHeight)
 
   let y = bottom - leftHeight
@@ -122,18 +130,18 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
   }
   context.restore()
 
-  const squaresTop = bottom - pt(8) - ROW_GAP - SQUARE
+  const squaresTop = bottom - pt(SIZE.meta) - ROW_GAP - SQUARE
   squares.forEach((color, index) => {
-    const x = columnLeft + index * (SQUARE + ROW_GAP)
+    const x = columnLeft + index * (SQUARE + SQUARE_GAP)
     context.fillStyle = color.hex
     context.beginPath()
-    context.roundRect(x, squaresTop, SQUARE, SQUARE, SQUARE * 0.28)
+    context.roundRect(x, squaresTop, SQUARE, SQUARE, SQUARE * SQUARE_CORNER)
     context.fill()
     context.strokeStyle = PRINT_COLORS.lineStrong
-    context.lineWidth = pt(0.5)
+    context.lineWidth = SQUARE_EDGE
     context.stroke()
   })
-  text(context, sums, columnLeft, bottom - pt(8) * DESCENT, META_FONT, PRINT_COLORS.muted)
+  text(context, sums, columnLeft, bottom - pt(SIZE.meta) * DESCENT, META_FONT, PRINT_COLORS.muted)
   return bottom
 }
 
@@ -151,7 +159,7 @@ export function drawCoverPage(project: Project, words: PrintText, page: PageSize
   context.moveTo(PRINT_MARGIN, ruleY)
   context.lineTo(page.width - PRINT_MARGIN, ruleY)
   context.stroke()
-  text(context, words.metaLine, PRINT_MARGIN, ruleY + mm(1.6) + pt(8) * (1 - DESCENT), META_FONT, PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
+  text(context, words.metaLine, PRINT_MARGIN, ruleY + TECH_LINE_GAP + pt(SIZE.meta) * (1 - DESCENT), META_FONT, PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
 
   drawFooter(context, page, words, pageNumber, pageCount)
   return canvas

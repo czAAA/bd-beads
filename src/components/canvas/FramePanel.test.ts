@@ -336,7 +336,8 @@ describe('FramePanel (ticket 473)', () => {
   it('shows what each export gives in its value slot: the size and its count (ticket 0588)', async () => {
     const wrapper = await mountWithExport()
     expect(wrapper.get('[data-testid="export-png"]').text()).toMatch(/PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
-    expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 1 page$/)
+    // The Cover page, on at first (ticket 1096), and page 1.
+    expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 2 pages$/)
     // The PNG line follows the chosen stop; the PDF's does not.
     const lines = () => [wrapper.get('[data-testid="export-png"]').text(), wrapper.get('[data-testid="export-pdf"]').text()]
     const [medium, pdf] = lines()

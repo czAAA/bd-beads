@@ -24,7 +24,6 @@ describe('coverPageLayout', () => {
     const top = piece.y - board.y
 
     expect(Math.min(left, top)).toBeCloseTo(COVER_PAD, 6)
-    expect(Math.max(left, top)).toBeGreaterThanOrEqual(COVER_PAD - 1e-6)
     expect(board.x + board.width - (piece.x + piece.width)).toBeCloseTo(left, 6)
     expect(board.y + board.height - (piece.y + piece.height)).toBeCloseTo(top, 6)
   })

@@ -1,6 +1,6 @@
 {
   "date": "2026-11-21",
-  "kind": "new",
+  "kind": "changed",
   "line": {
     "en": "The PDF opens on a Cover page, the finished piece in color with its name, maker and size, and Export’s Cover page switch leaves it out",
     "ru": "PDF открывается обложкой: готовое изделие в цвете с названием, автором и размером, а переключатель «Обложка» в «Экспорте» её убирает",
