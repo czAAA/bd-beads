@@ -99,6 +99,7 @@ onMounted(() =>
   afterPaint(() => {
     if (!rootEl.value) return
     place()
+    if (typeof ResizeObserver === 'undefined') return // A test page without one: placed once.
     resized = new ResizeObserver(place)
     resized.observe(rootEl.value)
     if (props.box) resized.observe(props.box)
