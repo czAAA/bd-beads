@@ -18,15 +18,15 @@ Until ticket 1096 lands this page is as written above. Then:
 - **It follows the Cover page.** With the Export panel's Cover page switch on (it is on at first) the PDF opens on the Cover page (PrintCover card) and this page is the second: its footer reads "2 / 2", and the pages its overview points at are one later ("part A · page 3"). The name Page 1 stays: it is the chart's first page.
 - With Black and white on, this page is drawn in one ink (PrintBlackAndWhite card).
 
-## The new chart: awaiting the owner's sign-off, not yet in the app (tickets 1126–1129)
+## The new chart: approved 2026-11-19, not yet in the app (tickets 1126–1129)
 
-Drawn for the owner on 2026-11-19 (ticket 1123). Until it is signed off and built, this page is as written above. Then:
+Signed off by the owner on 2026-11-19 (ticket 1123). Until it is built, this page is as written above. Then:
 
-- **The chart** on this page, whole or in strips, is the new chart (PrintChartPage card): no lines between beads and no edge (1126), empty positions bare unless Empty grid is on (1127), trimmed to the beads (1128), and every row and column numbered from 1 (1129).
+- **The chart** on this page, whole or in strips, is the new chart (PrintChartPage card): no lines between beads and no bold edge, the thin ruler line on at first (1126; its switch Chart border, 1127), empty positions bare unless Empty grid is on (1127), trimmed to the beads (1128), and every row and column numbered from 1 (1129).
 - **The tech line gives the trimmed size** (1128): a 13-wide piece on a 30 × 39 Frame reads "13 × 30", and its chart gets the room a 13 × 30 needs.
 - **The overview** is trimmed the same way (1128) and follows Empty grid (1127): off, an empty position is bare board; on, it carries the small `faint` cross. It keeps a number every 5 (every 10 when the beads are small) and its hairline every 10, counted as the chart's rulers count (1129): from 1 at the trimmed piece's left and top, whichever way it is turned. Its cut pills use those numbers ("76 →", "51 ↓").
 
-These overview rules are the owner's choices to confirm with the sign-off (ticket 1123).
+The owner agreed to these overview rules on 2026-11-19 (ticket 1123). The overview has no ruler line: its board and its rulers stay as they are, whatever Chart border says.
 
 ## Acceptance
 
