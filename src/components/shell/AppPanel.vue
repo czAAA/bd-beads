@@ -4,6 +4,7 @@ import { ownLength } from '../../composables/ui/cssZoom'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useShellScope } from '../../composables/ui/shellScope'
+import { scrollCut, useScrollPosition } from '../../composables/ui/useScrollCut'
 import { PANEL_CONTEXT } from './panelContext'
 import { PANEL_OPENERS } from './panels'
 import IconButton from '../ui/IconButton.vue'
@@ -54,6 +55,15 @@ const openedInSub = props.startInSub ?? false
 const currentTitle = computed(() => stack.value.at(-1)?.title ?? props.subTitle)
 const currentMeta = computed(() => stack.value.at(-1)?.meta ?? props.subMeta)
 const subBodyEl = ref<HTMLElement>()
+/** Where the body is scrolled: the edge where more lies fades, and a thumb in the panel's padding shows how much of it
+ * shows and where, since a tablet shows no scrollbar (MenuPanel card). */
+const bodyScroll = useScrollPosition(subBodyEl, () => 'vertical')
+const bodyCut = computed(() => scrollCut(bodyScroll.value))
+const thumbStyle = computed(() => {
+  const { scrolled, shown, whole } = bodyScroll.value
+  if (bodyCut.value === 'none') return undefined
+  return { '--thumb-size': String(shown / whole), '--thumb-at': String(Math.min(1, scrolled / (whole - shown))) }
+})
 function openSub(title?: string, level: { meta?: string; opener?: string } = {}) {
   stack.value.push({ title, meta: level.meta, returnTestId: level.opener ?? document.activeElement?.getAttribute('data-testid') ?? null })
   void nextTick(focusEntry)
@@ -252,9 +262,12 @@ onBeforeUnmount(() => {
       <span v-if="currentMeta" class="app-panel__meta" data-testid="panel-sub-meta">{{ currentMeta }}</span>
     </div>
     <h2 v-else :id="titleId" class="app-panel__title">{{ title }}</h2>
-    <div ref="subBodyEl" class="app-panel__body" data-testid="panel-body">
-      <slot v-if="inSub" name="sub" :depth="depth" />
-      <slot v-else />
+    <div class="app-panel__scroll">
+      <div ref="subBodyEl" class="app-panel__body" :data-cut="bodyCut" data-testid="panel-body">
+        <slot v-if="inSub" name="sub" :depth="depth" />
+        <slot v-else />
+      </div>
+      <div v-if="thumbStyle" class="app-panel__thumb" :style="thumbStyle" aria-hidden="true" data-testid="panel-scroll-thumb" />
     </div>
     <div v-if="inSub && $slots.footer" class="app-panel__footer" data-testid="panel-footer">
       <slot name="footer" :depth="depth" />
@@ -326,7 +339,18 @@ onBeforeUnmount(() => {
   border-top: 1px solid var(--panel-rule);
 }
 
+/* The body and its scroll thumb: the body scrolls with no scrollbar of its own (a tablet shows none). */
+.app-panel__scroll {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .app-panel__body {
+  --fade-start: 0px;
+  --fade-end: 0px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -336,6 +360,34 @@ onBeforeUnmount(() => {
 
 .app-panel__body::-webkit-scrollbar {
   display: none;
+}
+
+/* The edge where more of the body lies fades over `panel-edge-fade`, as the Canvas strip's and the Tool pill's do. */
+.app-panel__body:not([data-cut='none']) {
+  mask-image: linear-gradient(to bottom, transparent, var(--ink) var(--fade-start), var(--ink) calc(100% - var(--fade-end)), transparent);
+}
+
+.app-panel__body:is([data-cut='start'], [data-cut='both']) {
+  --fade-start: var(--panel-edge-fade);
+}
+
+.app-panel__body:is([data-cut='end'], [data-cut='both']) {
+  --fade-end: var(--panel-edge-fade);
+}
+
+/* A slim `line-strong` thumb, centred in the panel's right padding: its share of the body's height is the share that
+ * shows, and it runs from the body's top to its foot as the body scrolls. Only a look: the body scrolls under a
+ * finger, the wheel or the keys. */
+.app-panel__thumb {
+  --thumb-height: max(var(--panel-thumb-min), var(--thumb-size) * 100%);
+  position: absolute;
+  top: calc((100% - var(--thumb-height)) * var(--thumb-at));
+  right: calc(-0.5 * (var(--space-8) + var(--panel-thumb-width)));
+  width: var(--panel-thumb-width);
+  height: var(--thumb-height);
+  background: var(--line-strong);
+  border-radius: var(--radius-full);
+  pointer-events: none;
 }
 
 /* The dropdown (MenuPanel card): `panel-width`, under the button, over everything but dialogs; taller than the
