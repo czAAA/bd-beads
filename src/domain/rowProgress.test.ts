@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, shownWay, stepLines, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
+import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, shownWayOf, stepLines, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
 import { changeFrame } from './changeFrame'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
@@ -177,11 +177,11 @@ describe('row direction', () => {
       const onRowSix = moveToRow(tallProject(), 6)
       const upward = turnRowDirectionTo(onRowSix, 'up')
 
-      expect(shownWay(rowProgressOf(upward))).toBe('up')
+      expect(shownWayOf(upward)).toBe('up')
       expect(rowProgressPosition(upward)).toEqual({ current: 0, total: 20 })
       expect(rowProgressPosition(turnRowDirectionTo(upward, 'down'))).toEqual({ current: 6, total: 20 })
-      expect(shownWay(rowProgressOf(turnRowDirectionTo(onRowSix, 'right')))).toBe('right')
-      expect(shownWay(rowProgressOf(turnRowDirectionTo(onRowSix, 'left')))).toBe('left')
+      expect(shownWayOf(turnRowDirectionTo(onRowSix, 'right'))).toBe('right')
+      expect(shownWayOf(turnRowDirectionTo(onRowSix, 'left'))).toBe('left')
     })
 
     it('leaves the Project as it is for the way the rows run already', () => {
@@ -192,10 +192,10 @@ describe('row direction', () => {
     it('reads the way as the Frame lies on a turned Frame', () => {
       const project = tallProject()
       const turned = withFrameSheet(project, { ...frameOf(project)!, quarterTurns: 1 })
-      expect(shownWay(rowProgressOf(turned), 1)).toBe('left')
+      expect(shownWayOf(turned)).toBe('left')
 
       const chosen = turnRowDirectionTo(turned, 'down')
-      expect(shownWay(rowProgressOf(chosen), 1)).toBe('down')
+      expect(shownWayOf(chosen)).toBe('down')
       expect(turnRowDirectionTo(turned, 'left')).toBe(turned)
     })
   })

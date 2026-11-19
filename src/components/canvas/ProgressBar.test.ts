@@ -10,6 +10,7 @@ import { rotateFrame } from '../../domain/rotate'
 import { ru } from '../../i18n/ru'
 import { frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { turnedClockwise } from '../../testUtils/rotated'
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
@@ -131,6 +132,19 @@ describe('ProgressBar', () => {
     expect(wrapper.find('.row-progress__steps--left').exists()).toBe(true)
     expect(wrapper.text()).toContain(ru.rowProgress.rightToLeft)
     expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
+  })
+
+  it('shows the rows running as seen on a turned Canvas, the Frame upright or turned on it (ticket 1101)', async () => {
+    const canvasTurned = turnedClockwise(moveToRow(makeProject(), 4))
+    const wrapper = mount(ProgressBar, { props: { project: canvasTurned } })
+    expect(wrapper.find('.row-progress__steps--left').exists()).toBe(true)
+    expect(wrapper.text()).toContain(ru.rowProgress.rightToLeft)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
+
+    const both = mount(ProgressBar, { props: { project: turnedClockwise(rotateFrame(makeProject())!) } })
+    expect(both.find('.row-progress__steps--up').exists()).toBe(true)
+    await both.get('[data-testid="progress-bar-direction"]').trigger('click')
+    expect(both.get('[data-testid="progress-bar-direction-up"]').attributes('aria-checked')).toBe('true')
   })
 
   it('shows the last row as the current one on it, and Pattern done with a check once every pass is done (tickets 411, 0849)', () => {

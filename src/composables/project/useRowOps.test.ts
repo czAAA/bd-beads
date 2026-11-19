@@ -9,6 +9,7 @@ import { withLayers } from '../../testUtils/layerFields'
 import { frameOf } from '../../domain/layerRecord'
 import { editHarness } from '../../testUtils/editHarness'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
+import { turnedClockwise } from '../../testUtils/rotated'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } })
 const tracking = base
@@ -60,6 +61,22 @@ describe('useRowOps', () => {
     const leftward = toggleRowDirection(upward)
     useRowOps({ ...deps, currentProject: () => leftward }).onToggleRowDirection()
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
+  })
+
+  it('names the way the rows now run as seen, the Canvas turned, in the Frame\'s own rows or columns (ticket 1101)', () => {
+    const showToast = vi.fn()
+    const replaceProject = vi.fn()
+    const turned = turnedClockwise(tracking)
+    const deps = { currentProject: () => turned, replaceProject, showToast, messages: () => en }
+    useRowOps(deps).onSetRowDirection('down')
+    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toMatchObject({ direction: 'columns' })
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumnsTopToBottom, 'success')
+    useRowOps(deps).onSetRowDirection('right')
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRowsLeftToRight, 'success')
+    useRowOps(deps).onSetRowDirection('up')
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumnsBottomToTop, 'success')
+    useRowOps({ ...deps, currentProject: () => toggleRowDirection(turned) }).onSetRowDirection('left')
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRowsRightToLeft, 'success')
   })
 
   it('turns the rows the way chosen from Turn row direction\'s list, with its toast, and the way they run already turns nothing (ticket 0973)', () => {

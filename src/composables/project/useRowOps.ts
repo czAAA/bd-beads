@@ -1,7 +1,7 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
-import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, toggleRowDirection, turnRowDirectionTo, type ShownWay } from '../../domain/rowProgress'
+import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, shownWayOf, toggleRowDirection, turnRowDirectionTo, type ShownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { rowProgressAnnouncement } from '../../i18n/rowProgressWords'
 import type { Translations } from '../../i18n/translations'
@@ -62,11 +62,12 @@ export function useRowOps(deps: RowOpsDeps) {
       deps.replaceProject(turned)
       // Said once per change, whether the list or the key turned it (ticket 411).
       const t = deps.messages().rowProgress
-      const { direction, reversed } = rowProgressOf(turned)
-      const toast = {
-        rows: reversed ? t.directionToastRowsReversed : t.directionToastRows,
-        columns: reversed ? t.directionToastColumnsReversed : t.directionToastColumns,
-      }[direction]
+      // The Frame's own rows or columns, running the way they are seen, the Frame and the Canvas turned (ticket 1101).
+      const toasts = {
+        rows: { down: t.directionToastRows, up: t.directionToastRowsReversed, right: t.directionToastRowsLeftToRight, left: t.directionToastRowsRightToLeft },
+        columns: { right: t.directionToastColumns, left: t.directionToastColumnsReversed, down: t.directionToastColumnsTopToBottom, up: t.directionToastColumnsBottomToTop },
+      }
+      const toast = toasts[rowProgressOf(turned).direction][shownWayOf(turned)]
       // The way left keeps its own pointer: said, so its rows marked done don't look lost (ticket 0849, F-04-04).
       const kept = rowProgressPosition(project).current > 0 ? (rowProgressOf(project).direction === 'columns' ? t.columnsKeptToast : t.rowsKeptToast) : undefined
       deps.showToast('row-direction', kept ? fillBlanks(t.directionKeptToast, { toast, kept }) : toast, 'success')

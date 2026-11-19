@@ -14,7 +14,8 @@ import { mayPlace } from './margin'
 import type { Project } from './project'
 import { removeLineRefusal } from './removeLine'
 import { rotateFrame } from './rotate'
-import { shownWay } from './rowProgress'
+import { rowProgressOf, shownWayOf, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
+import { turnedClockwise } from '../testUtils/rotated'
 import { copyLayerSelection, paintLayerSelection, pasteOnLayer } from './selection'
 import { wordChartOf } from './wordChart'
 import { beadsOfLayer, frameOf } from './layerRecord'
@@ -191,10 +192,11 @@ describe("a turned Frame's handles, steppers and typed size (ticket 1016)", () =
 
 describe('Row progress on a turned Frame', () => {
   it('runs as its own rows do, turned with it', () => {
-    expect(shownWay({ direction: 'rows' })).toBe('down')
-    expect(shownWay({ direction: 'rows' }, 1)).toBe('left')
-    expect(shownWay({ direction: 'columns' }, 1)).toBe('down')
-    expect(shownWay({ direction: 'rows', reversed: true }, 3)).toBe('left')
+    const thrice = rotateFrame(rotateFrame(turned)!)!
+    expect(shownWayOf(upright)).toBe('down')
+    expect(shownWayOf(turned)).toBe('left')
+    expect(shownWayOf(toggleRowDirection(turned))).toBe('down')
+    expect(shownWayOf(toggleRowDirection(toggleRowDirection(thrice)))).toBe('left')
   })
 
   it('puts Row 1 of the Word chart on the edge its first row lies along', () => {
@@ -202,5 +204,36 @@ describe('Row progress on a turned Frame', () => {
     expect(wordChartOf(withLayers(upright, { letters: true }))!.firstEdge).toBe('top')
     expect(wordChartOf(lettered)!.firstEdge).toBe('right')
     expect(wordChartOf(lettered)!.rows).toHaveLength(4)
+  })
+})
+
+// Rotate canvas turns the whole picture, the Frame with it (ticket 1101): the way the rows run on screen counts both
+// turns, while the Row direction the Frame keeps never changes.
+describe('Row progress on a turned Canvas', () => {
+  const canvasTurned = turnedClockwise(upright)
+  const bothTurned = turnedClockwise(turned)
+
+  it('shows the way as seen: the Frame\'s turn plus the Canvas\'s', () => {
+    expect(shownWayOf(upright)).toBe('down')
+    expect(shownWayOf(turned)).toBe('left')
+    expect(shownWayOf(canvasTurned)).toBe('left')
+    expect(shownWayOf(bothTurned)).toBe('up')
+    expect(rowProgressOf(canvasTurned)).toEqual(rowProgressOf(upright))
+  })
+
+  it('runs the rows the way chosen on screen, whatever both turns are', () => {
+    for (const project of [upright, turned, canvasTurned, bothTurned, turnedClockwise(bothTurned)]) {
+      for (const way of ['down', 'right', 'up', 'left'] as const) {
+        expect([way, shownWayOf(turnRowDirectionTo(project, way))]).toEqual([way, way])
+      }
+    }
+  })
+
+  it('agrees with the Word chart on the edge Row 1 lies along', () => {
+    const firstEdgeOf = { down: 'top', left: 'right', up: 'bottom', right: 'left' } as const
+    for (const project of [upright, turned, canvasTurned, bothTurned]) {
+      const lettered = withLayers(project, { letters: true })
+      expect(wordChartOf(lettered)!.firstEdge).toBe(firstEdgeOf[shownWayOf(lettered)])
+    }
   })
 })
