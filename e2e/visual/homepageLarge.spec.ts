@@ -7,7 +7,7 @@ for (const scheme of ['light', 'dark', 'contrast'] as const) {
     await page.setViewportSize({ width: 2560, height: 1440 })
     await page.emulateMedia(scheme === 'contrast' ? { colorScheme: 'light', contrast: 'more' } : { colorScheme: scheme })
     // Out of the Winter charms' season (ticket 1102), which has a look of its own.
-    await page.clock.setFixedTime(new Date('2026-11-19T12:00:00'))
+    await page.clock.setFixedTime(new Date('2026-11-18T12:00:00'))
     await page.goto('./')
     await expect(page.getByTestId('homepage-welcome')).toBeVisible()
     await expect(page.getByTestId('welcome-piece')).toBeVisible()

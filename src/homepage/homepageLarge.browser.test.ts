@@ -88,7 +88,7 @@ describe('On a large screen the box grows (ticket 1059)', () => {
 
   it('keeps the two marks by the box\'s edge', async () => {
     // Out of the Winter charms' season, which has marks of its own (ticket 1102).
-    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-19T12:00:00') })
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-18T12:00:00') })
     const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
     const gaps = () => {
       const box = sizeOf(mounted.root, '[data-testid="homepage"]')

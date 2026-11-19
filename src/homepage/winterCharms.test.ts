@@ -4,16 +4,19 @@ import { placeWinter, winterShown, type WinterLayout, type WinterRoom } from './
 describe('the winter season', () => {
   const day = (month: number, date: number) => new Date(2026, month - 1, date, 12)
 
-  it('runs from 1 December to 7 January, by the device’s date', () => {
+  it('runs from 19 November to 13 January, by the device’s date', () => {
+    expect(winterShown(day(11, 19), '', false)).toBe(true)
+    expect(winterShown(day(11, 30), '', false)).toBe(true)
     expect(winterShown(day(12, 1), '', false)).toBe(true)
     expect(winterShown(day(12, 25), '', false)).toBe(true)
     expect(winterShown(day(1, 1), '', false)).toBe(true)
-    expect(winterShown(day(1, 7), '', false)).toBe(true)
+    expect(winterShown(day(1, 13), '', false)).toBe(true)
   })
 
-  it('is not on 30 November or 8 January, nor the rest of the year', () => {
-    expect(winterShown(day(11, 30), '', false)).toBe(false)
-    expect(winterShown(day(1, 8), '', false)).toBe(false)
+  it('is not on 18 November or 14 January, nor the rest of the year', () => {
+    expect(winterShown(day(11, 18), '', false)).toBe(false)
+    expect(winterShown(day(11, 1), '', false)).toBe(false)
+    expect(winterShown(day(1, 14), '', false)).toBe(false)
     expect(winterShown(day(7, 15), '', false)).toBe(false)
   })
 

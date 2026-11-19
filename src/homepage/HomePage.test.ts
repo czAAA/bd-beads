@@ -496,7 +496,7 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     const on = (date: string) => vi.useFakeTimers({ toFake: ['Date'], now: new Date(date) })
 
     it('has no drawn layer, only two faint X1 marks outside the box, hidden from screen readers', () => {
-      on('2026-11-30T12:00:00')
+      on('2026-11-18T12:00:00')
       const wrapper = page()
       const marks = wrapper.findAll('[data-testid="homepage-mark"]')
       expect(marks).toHaveLength(2)
@@ -509,7 +509,7 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     })
 
     it('in winter has the Winter charms and their three marks in place of the two, outside the box (ticket 1102)', async () => {
-      on('2026-12-01T12:00:00')
+      on('2026-11-19T12:00:00')
       const wrapper = page()
       await vi.waitFor(() => expect(wrapper.findAll('[data-testid="winter-mark"]')).toHaveLength(3))
       expect(wrapper.find('[data-testid="homepage-mark"]').exists()).toBe(false)

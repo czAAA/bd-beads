@@ -1,4 +1,4 @@
-// The Homepage's Winter charms (Homepage card, tickets 1100, 1102): from 1 December to 7 January the page around the box
+// The Homepage's Winter charms (Homepage card, tickets 1100, 1102): from 19 November to 13 January the page around the box
 // holds the card's ten bead charms and three faint X1 marks in place of the two marks.
 import file from '../../docs/design/system/components/Homepage/winter-charms.json'
 import { beadsFromColors } from '../domain/canvas'
@@ -8,16 +8,23 @@ import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
 import { CELL_SIZE_PX } from '../rendering/cellSize'
 import { spaceOf } from '../rendering/space'
+/** The season's first day in November. */
+const FIRST_NOVEMBER_DAY = 19
 /** The season's last day in January. */
-const LAST_JANUARY_DAY = 7
-/** December, as `Date.getMonth` counts from January's 0. */
-const DECEMBER = 11
+const LAST_JANUARY_DAY = 13
+/** The season's months, as `Date.getMonth` counts from January's 0. */
+const [JANUARY, NOVEMBER, DECEMBER] = [0, 10, 11]
 
 /** Whether the Homepage shows its winter, by the device's date; `?winter` previews it in the dev build alone. */
 export function winterShown(today: Date, search: string, dev: boolean): boolean {
   if (dev && new URLSearchParams(search).has('winter')) return true
   const month = today.getMonth()
-  return month === DECEMBER || (month === 0 && today.getDate() <= LAST_JANUARY_DAY)
+  const date = today.getDate()
+  return (
+    month === DECEMBER ||
+    (month === NOVEMBER && date >= FIRST_NOVEMBER_DAY) ||
+    (month === JANUARY && date <= LAST_JANUARY_DAY)
+  )
 }
 
 /** Which side of the box a charm or mark lies on. */
