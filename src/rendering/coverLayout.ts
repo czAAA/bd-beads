@@ -36,7 +36,9 @@ export interface ColorsSlice {
   from: number
   count: number
   rowHeight: number
-  /** Rows in each of the two columns, which read down. */
+  /** One color to a row as wide as the page, or two columns that read down (ticket 1096). */
+  columns: 1 | 2
+  /** Rows in each column. */
   rows: number
   /** Whether the Total line and the grams note end this page. */
   total: boolean
@@ -76,9 +78,16 @@ export function listHeader(words: Pick<PrintText, 'name'>): number {
   return words.name.trim() === '' ? 0 : mm(9)
 }
 
-/** The height of a Beads needed block listing `count` colors in two columns. */
-export function colorsHeight(count: number, table: TableRows, total: boolean): number {
-  return table.head + (count === 0 ? TABLE_EMPTY : Math.ceil(count / 2) * table.row) + (total ? table.end : 0)
+/** The height of a Beads needed block listing `count` colors in two columns, or one to a row. */
+export function colorsHeight(count: number, table: TableRows, total: boolean, columns: 1 | 2 = 2): number {
+  return table.head + (count === 0 ? TABLE_EMPTY : Math.ceil(count / columns) * table.row) + (total ? table.end : 0)
+}
+
+/** `slice` one color to a row when it holds every color, with the Total, and that still fits above `bottom` (ticket 1096;
+ * PrintPage1 card): the room was worked out from the table in two columns, so the chart is never smaller for it. */
+export function oneToARow<Slice extends ColorsSlice & { y: number }>(slice: Slice, table: TableRows, bottom: number, slop: number): Slice {
+  const fits = slice.from === 0 && slice.total && slice.y + colorsHeight(slice.count, table, true, 1) <= bottom + slop
+  return fits ? { ...slice, columns: 1, rows: slice.count } : slice
 }
 
 /** The list pages that carry on Beads needed from color `from` on: as many colors as a page has room for, the Total
@@ -89,7 +98,7 @@ export function listSlices(words: CoverWords, table: TableRows, from: number, pa
   const lists: ColorsSlice[] = []
   for (let next = from; next < colors || lists.length === 0;) {
     const count = Math.min(colors - next, rowsOnPage * 2)
-    lists.push({ from: next, count, rowHeight: table.row, rows: Math.ceil(count / 2), total: next + count >= colors })
+    lists.push({ from: next, count, rowHeight: table.row, columns: 2, rows: Math.ceil(count / 2), total: next + count >= colors })
     next += count
   }
   return lists
@@ -110,7 +119,7 @@ export function coverLayout(project: Layered, words: CoverWords, table: TableRow
   const whole = colorsHeight(colors, table, true) <= budget
   const fitting = Math.max(1, Math.floor((budget - table.head) / rowHeight)) * 2
   const onCover = whole ? colors : Math.min(colors, fitting)
-  const cover: ColorsSlice = { from: 0, count: onCover, rowHeight, rows: Math.ceil(onCover / 2), total: whole }
+  const cover: ColorsSlice = { from: 0, count: onCover, rowHeight, columns: 2, rows: Math.ceil(onCover / 2), total: whole }
   const tableHeight = colorsHeight(onCover, table, whole)
 
   const wide = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, quarterTurnOf(project), frameWeave(project).cell)

@@ -727,8 +727,6 @@ export const be: Translations = {
     columnCode: 'Код',
     columnBeads: 'Бісерын',
     columnGrams: 'Грамы',
-    columnToBuy: 'Купіць',
-    tubes: '{count} × 5 г',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'частка {part} · стар. {page}',
     partPageShort: '{part} · с. {page}',

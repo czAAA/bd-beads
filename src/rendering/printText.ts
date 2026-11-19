@@ -8,7 +8,7 @@ import { frameWeave } from '../domain/layerWeave'
 import { resolveProjectBead } from '../domain/projectBead'
 import type { Project } from '../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../domain/projectSize'
-import { beadsPerGram, formatPrintedGrams, printedGrams, tubesToBuy } from '../domain/printGrams'
+import { beadsPerGram, formatPrintedGrams, printedGrams } from '../domain/printGrams'
 import { groupThousands } from '../domain/formatNumber'
 import { plural } from '../i18n/plural'
 import { techniqueName } from '../i18n/techniqueName'
@@ -27,8 +27,6 @@ interface PrintedColor {
   grams?: string
   /** The catalog code, which page 1's Beads needed prints in its own column (it is also in `name`). */
   code?: string
-  /** "2 × 5 g": tubes to buy; none for an unknown Bead. */
-  tubes?: string
   /** The color's Swatch letter (ticket 0573), printed on its swatch: every printed chart is lettered (ticket 0914). */
   letter?: string
 }
@@ -70,14 +68,14 @@ export interface PrintText {
   /** "Sep 26, 2026 · 14:32" */
   exportedAt: string
   metaLine: string
+  /** "Miyuki Delica 11/0", after Beads needed's heading (ticket 1096); none for an unknown Bead. */
+  beadName?: string
   colors: PrintedColor[]
   /** "22 colors" */
   colorsCount: string
   /** "4 800 beads" and "≈ 24 g": the Total both ways. */
   totalBeads: string
   totalGrams?: string
-  /** The Total row's tubes: the colors' tubes added up. */
-  totalTubes?: string
   gramsNote?: string
   /** Page 1's key's last item, "empty", when the Schema has empty positions (ticket 0963): the chart's cross named. */
   empty?: string
@@ -173,16 +171,9 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)
   }
 
-  const tubes = (count: number) => fillBlanks(t.print.tubes, { count: groupThousands(count, locale) })
   const wordChart = choices.rowByRow ? wordChartOf(project) : undefined
   const palette = projectPalette(project)
   const quantities = computeColorQuantities(project, palette)
-  // Tubes come from each color's rounded grams and the Total adds the rows up (ticket 0581).
-  const tubeCounts = quantities.map((quantity) => {
-    const weight = printedGrams(quantity.count, bead)
-    return weight === undefined ? undefined : tubesToBuy(weight)
-  })
-  const tubeTotal = tubeCounts.some((count) => count === undefined) ? undefined : tubeCounts.reduce((sum, count) => sum! + count!, 0)
   const total = quantities.reduce((sum, quantity) => sum + quantity.count, 0)
   const perGram = bead && beadsPerGram(bead)
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(at)
@@ -197,19 +188,18 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     metaLine: estimate
       ? fillBlanks(t.print.metaLine, { size, bead: beadName, estimate })
       : fillBlanks(t.print.metaLineNoEstimate, { size, bead: beadName }),
-    colors: quantities.map((quantity, index) => ({
+    ...(bead ? { beadName } : {}),
+    colors: quantities.map((quantity) => ({
       hex: quantity.hex,
       name: listedColorName(t, palette.byId(quantity.colorId), quantity.hex),
       beads: groupThousands(quantity.count, locale),
       grams: grams(quantity.count),
       ...(palette.byId(quantity.colorId)?.code ? { code: palette.byId(quantity.colorId)!.code } : {}),
-      ...(tubeCounts[index] === undefined ? {} : { tubes: tubes(tubeCounts[index]!) }),
       ...(project.paletteLetters?.[quantity.hex] ? { letter: project.paletteLetters[quantity.hex] } : {}),
     })),
     colorsCount: plural(locale, quantities.length, t.a11y.colorsCount),
     totalBeads: plural(locale, total, t.print.beadsCount),
     totalGrams: grams(total),
-    ...(tubeTotal === undefined ? {} : { totalTubes: tubes(tubeTotal) }),
     gramsNote:
       perGram && bead
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor)} ${bead.size}` })} ${t.print.spares}`

@@ -714,8 +714,6 @@ export const zh: Translations = {
     columnCode: '编号',
     columnBeads: '珠数',
     columnGrams: '克数',
-    columnToBuy: '需购买',
-    tubes: '{count} × 5 克',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: '第 {part} 部分 · 第 {page} 页',
     partPageShort: '{part} · {page} 页',

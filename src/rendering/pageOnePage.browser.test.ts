@@ -77,32 +77,49 @@ describe('page 1 of the PDF', () => {
 
   it('draws a list page for the colors page 1 has no room for', () => {
     const project = fixtureProject({ technique: 'loom', columns: 100, rows: 100 })
-    const many = { ...wordsOf(project), colors: Array.from({ length: 90 }, (_, index) => ({ hex: '#123456', name: `Color ${index}`, beads: '10', grams: '0.1 g', tubes: '1 × 5 g' })) }
+    const many = { ...wordsOf(project), colors: Array.from({ length: 90 }, (_, index) => ({ hex: '#123456', name: `Color ${index}`, beads: '10', grams: '0.1 g' })) }
     const layout = pageOneLayout(project, many)
 
     expect(layout.lists.length).toBeGreaterThan(0)
     expect(drawNeededListPage(project, many, layout, 0, layout.plan)).toMatchObject({ width: A4_PORTRAIT.width, height: A4_PORTRAIT.height })
   })
 
-  it('prints grams, tubes and the grams note for a known Bead, and none of them for an unknown one', () => {
-    const drawn = (project: ReturnType<typeof fixtureProject>) => {
-      const words = wordsOf(project)
-      const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
-      drawPageOne(project, words, pageOneLayout(project, words), pageOneLayout(project, words).plan)
-      const texts = fillText.mock.calls.map(([value]) => value)
-      fillText.mockRestore()
-      return { texts, words }
-    }
-    const known = drawn(withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { beadId: 'miyuki-delica-11-0', bead: findBead('miyuki-delica-11-0') }))
-    expect(known.texts).toEqual(expect.arrayContaining(['to buy', 'grams']))
-    expect(known.texts.some((value) => value.startsWith(known.words.gramsNote!.slice(0, 12)))).toBe(true)
-    expect(known.texts.some((value) => value.includes(known.words.totalTubes!))).toBe(true)
+  const drawn = (project: ReturnType<typeof fixtureProject>) => {
+    const words = wordsOf(project)
+    const layout = pageOneLayout(project, words)
+    const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
+    drawPageOne(project, words, layout, layout.plan)
+    const calls = fillText.mock.calls.map(([value, x]) => ({ value, x }))
+    fillText.mockRestore()
+    return { texts: calls.map(({ value }) => value), calls, words, layout }
+  }
+  const delica = () => withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { beadId: 'miyuki-delica-11-0', bead: findBead('miyuki-delica-11-0') })
+  const unknownBead = () => withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { beadId: 'a-bead-this-device-never-had', bead: undefined })
 
-    const unknown = drawn(withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { beadId: 'a-bead-this-device-never-had', bead: undefined }))
+  it('prints grams and the grams note for a known Bead, and none of them for an unknown one; no to buy column (ticket 1096)', () => {
+    const known = drawn(delica())
+    expect(known.texts).toContain('grams')
+    expect(known.texts.some((value) => value.startsWith(known.words.gramsNote!.slice(0, 12)))).toBe(true)
+
+    const unknown = drawn(unknownBead())
     expect(unknown.words.gramsNote).toBeUndefined()
-    expect(unknown.texts).not.toContain('to buy')
     expect(unknown.texts).not.toContain('grams')
     expect(unknown.texts.some((value) => / g\b/.test(value))).toBe(false)
+  })
+
+  it('names the Bead after the heading, and leaves it out for an unknown Bead (ticket 1096)', () => {
+    expect(drawn(delica()).texts).toContain(' · Miyuki Delica 11/0')
+    expect(drawn(unknownBead()).texts.some((value) => value.startsWith(' · '))).toBe(false)
+  })
+
+  it('sets the colors one to a row as wide as the page when they fit, grams at the page edge (ticket 1096)', () => {
+    const { calls, words, layout } = drawn(withLayers(fixtureProject({ technique: 'loom', columns: 40, rows: 20 }), { beadId: 'miyuki-delica-11-0', bead: findBead('miyuki-delica-11-0') }))
+    const right = A4_PORTRAIT.width - PRINT_MARGIN
+
+    expect(layout.needed.columns).toBe(1)
+    const grams = calls.filter(({ value }) => words.colors.some((color) => color.grams === value))
+    expect(grams.length).toBeGreaterThan(0)
+    expect(grams.every(({ x }) => Math.abs(x - right) < 0.5)).toBe(true)
   })
 
   it('ends its key with the cross and "empty" when the Schema has empty positions, in the PDF and the PNG (ticket 0963)', () => {
@@ -146,7 +163,6 @@ describe('page 1 of the PDF', () => {
     const { print } = messages
     expect(width(print.columnCode) + width(print.columnBeads), `${print.columnCode} ${print.columnBeads}`).toBeLessThanOrEqual(NEEDED_ROOM.codeAndBeads)
     expect(width(print.columnGrams), print.columnGrams).toBeLessThanOrEqual(NEEDED_ROOM.grams)
-    expect(width(print.columnToBuy), print.columnToBuy).toBeLessThanOrEqual(NEEDED_ROOM.toBuy)
   })
 })
 

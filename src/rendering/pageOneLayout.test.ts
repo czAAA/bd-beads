@@ -74,6 +74,37 @@ describe('pageOneLayout: the chart whole on page 1', () => {
   })
 })
 
+describe('pageOneLayout: Beads needed one color to a row (ticket 1096)', () => {
+  it('sets the colors one to a row when they all fit under the chart that way', () => {
+    const layout = pageOneLayout(shape('loom', 40, 20), words(6))
+
+    expect(layout.needed).toMatchObject({ from: 0, count: 6, rows: 6, columns: 1, total: true })
+    expect(bottomOf(layout)).toBeLessThanOrEqual(A4_PORTRAIT.height - PRINT_MARGIN - mm(6) + 1)
+  })
+
+  it('keeps two columns when one to a row would run past the footer, the chart the size it was', () => {
+    const layout = pageOneLayout(shape('loom', 20, 20), words(24))
+
+    expect(layout.needed).toMatchObject({ count: 24, rows: 12, columns: 2, total: true })
+    expect(layout.plan.pageCount).toBe(1)
+  })
+
+  it('sets the list pages in two columns', () => {
+    const layout = pageOneLayout(shape('loom', 100, 100), words(60))
+
+    expect(layout.needed.columns).toBe(2)
+    expect(layout.lists.every((list) => list.columns === 2)).toBe(true)
+  })
+
+  it('sets the overview\'s colors one to a row when they fit under it that way', () => {
+    const layout = pageOneLayout(shape('loom', 300, 60), words(4))
+
+    expect(layout.overview).toBeDefined()
+    expect(layout.needed).toMatchObject({ count: 4, rows: 4, columns: 1, total: true })
+    expect(bottomOf(layout)).toBeLessThanOrEqual(A4_PORTRAIT.height - PRINT_MARGIN - mm(6) + 1)
+  })
+})
+
 describe('pageOneLayout: the overview', () => {
   it('makes page 1 the overview of a piece that does not fit it, and numbers the parts after it', () => {
     const layout = pageOneLayout(shape('loom', 150, 100), words(8))

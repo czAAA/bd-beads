@@ -726,8 +726,6 @@ export const ru: Translations = {
     columnCode: 'Код',
     columnBeads: 'Бисеринок',
     columnGrams: 'Граммы',
-    columnToBuy: 'Купить',
-    tubes: '{count} × 5 г',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'часть {part} · стр. {page}',
     partPageShort: '{part} · с. {page}',
