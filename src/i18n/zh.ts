@@ -438,7 +438,7 @@ export const zh: Translations = {
       youAreHere: '你在这里',
       tiles: [
         { name: '无需账户', price: '免费', meta: '无需注册', text: '在此设备上绘制、计数和编织。无需注册。', button: '打开编辑器' },
-        { name: '免费账户', price: '免费', text: '包含无需账户的全部功能，并让设置在你所有设备上保持一致', button: '创建免费账户' },
+        { name: '免费账户', price: '免费', rows: ['无需账户的全部功能', '还有在你所有设备上保持一致的设置'], button: '创建免费账户' },
         { name: '专业版', price: '价格待定', text: '包含免费账户的全部功能，还有更多', button: '稍后推出' },
       ],
       comingSoon: '即将推出',
