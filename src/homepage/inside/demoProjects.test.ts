@@ -5,7 +5,7 @@ import { frameOf, orientationOf, projectNameOf, weaveOfLayer } from '../../domai
 import { hasProjectBeads } from '../../domain/layerBeads'
 import { defaultPalette, projectPalette } from '../../domain/palette'
 import { frameGrid } from '../../testUtils/frameGrid'
-import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_TECHNIQUE, demoLibrary, finishedCuff, onCanvas } from './demoProjects'
+import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_TECHNIQUE, demoLibrary, wovenCuff, onCanvas } from './demoProjects'
 import { PEACOCK_RING } from './peacock'
 
 describe("What's inside's demo Projects (ticket 0797)", () => {
@@ -57,11 +57,11 @@ describe("What's inside's demo Projects (ticket 0797)", () => {
   })
 })
 
-describe("the Welcome section's piece (ticket 0831)", () => {
+describe("the Welcome section's piece (tickets 0831, 1157)", () => {
   const [GREEN, GOLD, TEAL, BLUE, PUPIL, GROUND] = (['G', 'D', 'T', 'B', 'N', 'E'] as const).map((color) => DEMO_COLORS[color])
 
   it('is the traced cuff finished: a peyote Frame 48 long and 23 wide on a turned Canvas, every bead woven', () => {
-    const piece = finishedCuff()
+    const piece = wovenCuff()
     expect(frameOf(piece)).toMatchObject({ rows: 48, columns: 23 })
     expect(weaveOfLayer(piece, 'frame')?.technique).toBe('peyote')
     expect(orientationOf(piece)).toBe(90)
@@ -71,7 +71,7 @@ describe("the Welcome section's piece (ticket 0831)", () => {
   })
 
   it('has three eyes alike, each ringed green, gold, teal and blue round a deep blue pupil, with no purple yet', () => {
-    const grid = frameGrid(finishedCuff())
+    const grid = frameGrid(wovenCuff())
     const along = (line: number, from: number) => grid.slice(from, from + 16).map((row) => row[line]!.color)
     const middle = [GREEN, GREEN, GOLD, TEAL, TEAL, BLUE, BLUE, PUPIL, PUPIL, BLUE, BLUE, TEAL, TEAL, GOLD, GREEN, GREEN]
     for (const eye of [0, 16, 32]) expect(along(12, eye)).toEqual(middle)

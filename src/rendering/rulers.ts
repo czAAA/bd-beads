@@ -29,7 +29,7 @@ const DOT_BAND_HALF_MAX = 0.6
 const RULER_NUMBER_GAP_PX = 4
 // Below this zoom a ruler drops the Ruler step and shows only its last number (ADR 0033, ticket 303); from it up the
 // step applies.
-const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
+export const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
 
 /** Something rulers hang from: a rectangle of beads, the line round it, and which of its sides carry numbers. */
 export interface RuledBox extends Rect {

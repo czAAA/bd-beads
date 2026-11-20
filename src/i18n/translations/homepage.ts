@@ -68,19 +68,18 @@ export interface HomepageTranslations {
     makeFirstProject: string
     openEditor: string
     whatsInside: string
-    /** The Welcome section (ticket 0830; Homepage card): its heading and line, See how it works, the counts line's two
-     * counted parts ({codes} and {brands} from the app), the piece's caption and its name as an image; its three promises
-     * (ticket 0946): free and local as one, then what the app does, in the page's chapter words. */
+    /** The Welcome section (tickets 0830, 1157; Homepage card): its heading, counted by the app's Techniques, whose
+     * {count} is a word of `countWords`; its line, whose {techniques} lists them; the cuff's name as an image, {counter}
+     * the counter's words; its four promises: free and local as one, then what the app does (ticket 0946). */
     welcome: {
-      heading: string
+      heading: PluralForms
+      /** A count as the heading's sentence puts it, from one up, in the case its words ask for ("three", «трёх»). */
+      countWords: readonly string[]
       line: string
-      seeHow: string
-      colors: PluralForms
-      /** The text button beside See how it works (ticket 0953). */
+      /** The way in's second button for a new visitor (ticket 0953). */
       startFromStarter: string
-      caption: string
-      piece: string
-      promises: Record<'free' | 'picture' | 'weave', InsideCopy>
+      cuff: string
+      promises: Record<'free' | 'picture' | 'weave' | 'export', InsideCopy>
     }
     /** What's inside (ticket 0797; Homepage card): the 14 rows the tour plays, the editor's region, and the demo's
      * Projects. The colors row's {brands} and Convert image's {max} come from the app. */

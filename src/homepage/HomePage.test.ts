@@ -12,6 +12,7 @@ import { memoryAccount } from '../services/memoryAccount'
 import { choosePanelOption } from '../testUtils/choosePanelOption'
 import { hasOpenLayer } from '../composables/ui/useOverlayLayer'
 import type { NotesSource } from '../services/notesFile'
+import WelcomeCuff from './WelcomeCuff.vue'
 
 /** What the stand-in What's inside's Open editor from here gives. */
 const demoSnapshot = vi.hoisted(() => ({ value: undefined as unknown }))
@@ -439,7 +440,7 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('1/4')
     // Welcome's heading is a sentence, so its step has a name of its own.
     expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe('1/4 · Welcome')
-    expect(wrapper.get('[data-testid="homepage-section-welcome"] h1').text()).toBe('Bead patterns, drawn the way the beads sit.')
+    expect(wrapper.get('[data-testid="homepage-section-welcome"] h1').text()).toBe('A free bead pattern editor that works in three techniques')
   })
 
   it('turns with Next and Back, the bar following, the page itself never scrolled', async () => {
@@ -518,10 +519,12 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
   describe('Welcome (ticket 0830)', () => {
     const wayIn = (wrapper: ReturnType<typeof page>) => wrapper.get('[data-testid="strip-way-in"]')
 
-    it("turns to What's inside from See how it works, as Next does", async () => {
+    it('weaves its cuff while Welcome is shown, and stops once the page turns from it (ticket 1157)', async () => {
       const wrapper = page()
-      await wrapper.get('[data-testid="welcome-see-how"]').trigger('click')
+      expect(wrapper.getComponent(WelcomeCuff).props('shown')).toBe(true)
+      await wrapper.get('[data-testid="section-next"]').trigger('click')
       expect(shown(wrapper)).toEqual(['inside'])
+      expect(wrapper.findComponent(WelcomeCuff).exists() && wrapper.getComponent(WelcomeCuff).props('shown')).toBe(false)
     })
 
     it("goes into the editor from its tile's way in, as the strip's does", async () => {
@@ -776,8 +779,9 @@ describe('HomePage on a phone (ticket 0827)', () => {
 
   it('lays the sections out for it: no editor, the promises listed, the plans stacked with no growing', () => {
     const wrapper = page()
-    // Welcome has no button of its own: the bar's main button is the way in (ticket 0830).
-    expect(wrapper.findAll('[data-testid="homepage-welcome"] button')).toHaveLength(0)
+    // Welcome has no way in of its own: the bar's main button is the way in (ticket 0830); its cuff keeps its moves.
+    const buttons = wrapper.findAll('[data-testid="homepage-welcome"] button').map((button) => button.attributes('data-testid'))
+    expect(buttons).toEqual(['welcome-cuff-previous', 'welcome-cuff-next'])
     expect(wrapper.get('[data-testid="homepage-welcome"] > [data-testid="welcome-promises"]').classes()).toContain('grouped-list')
     expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-with-editor')).toBe('false')
     expect(wrapper.get('[data-testid="homepage-coffee"] > [data-testid="homepage-promises"]').classes()).toContain('grouped-list')

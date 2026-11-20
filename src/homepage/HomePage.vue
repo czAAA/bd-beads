@@ -29,6 +29,7 @@ import PhoneBar from './PhoneBar.vue'
 import PlanTiles from './PlanTiles.vue'
 import SectionBar from './SectionBar.vue'
 import WelcomeTile from './WelcomeTile.vue'
+import { welcomeHeading } from './welcomeCopy'
 import WinterCharms from './WinterCharms.vue'
 import { winterShown } from './winterCharms'
 import { homepageTitle } from './pageCopy'
@@ -205,14 +206,14 @@ const isNew = computed(() => count.value === 0 && !libraryFailed.value)
 // its steps.
 const sections = computed<HomepageSection[]>(() => [
   {
-    // Welcome (ticket 0830): the way in is its own, the same reports as the strip's; See how it works turns as Next does.
+    // Welcome (tickets 0830, 1157): the way in is its own, the same reports as the strip's; its cuff weaves while shown.
     id: 'welcome',
-    heading: t.value.homepage.welcome.heading,
+    heading: welcomeHeading(t.value, locale.value),
     step: t.value.homepage.sections.welcome,
     title: 'inside',
     centred: true,
     shows: WelcomeTile,
-    with: () => ({
+    with: (): Record<string, unknown> => ({
       phone: narrow.value,
       isNew: isNew.value,
       count: count.value,
@@ -220,7 +221,7 @@ const sections = computed<HomepageSection[]>(() => [
       onOpenEditor: () => emit('openEditor'),
       onOpenSavedProjects: () => emit('openSavedProjects'),
       onStartFromStarter: () => emit('startFromStarter'),
-      onSeeHow: () => goTo(section.value + 1),
+      shown: sections.value[section.value]?.id === 'welcome',
     }),
   },
   {
