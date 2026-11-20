@@ -54,6 +54,9 @@ const project = woven.project
 const drawingEl = ref<HTMLElement>()
 const { width: shownWidth } = useElementSize(drawingEl)
 const view = computed(() => shownCuffView(project.value, LAST_NUMBER_ONLY_BELOW_ZOOM, shownWidth.value))
+/** The drawing's box keeps the first view's shape, so measuring it never moves what is under it as the page arrives; a
+ * view drawn for another width fits inside it (ticket 0991's "holds still"). */
+const shape = (({ width, height }) => width / height)(view.value.size)
 const region = computed(() => ({ ...view.value.scroll, ...view.value.size }))
 /** Drawn at twice its size, so it stays sharp as wide as `--welcome-cuff-width` on a 2× screen. */
 const PIXEL_RATIO = 2
@@ -118,9 +121,9 @@ onMounted(() => {
 
 const name = computed(() => cuffName(t.value, project.value))
 
-/** The bar's forms, best first: the counter in its words, "Pass 7 of 95 · row 4"; short, "7/95 · row 4", as the
- * editor's narrow bar has it; and stacked, short with Back a row and Row done on a row of their own, as on a phone. */
-const COUNTER_FORMS = ['words', 'short', 'stacked'] as const
+/** The bar's forms, best first: the counter's words, "Pass 7 of 95 · row 4"; short, "7/95 · row 4", as the editor's
+ * narrow bar has it; shortest, "7/95"; and stacked, short with the moves on a row of their own, as on a phone. */
+const COUNTER_FORMS = ['words', 'short', 'shortest', 'stacked'] as const
 const barEl = ref<HTMLElement>()
 const { width: barRoom } = useElementSize(barEl)
 /** What the bar's first row needs: the counter, the track at its least, and the moves where they share the row (on a
@@ -144,7 +147,7 @@ const counterForm = computed(() => counterFit.value ?? 'stacked')
 </script>
 
 <template>
-  <div ref="rootEl" class="welcome-cuff" :style="{ '--welcome-cuff-shape': view.size.width / view.size.height }" data-testid="welcome-cuff">
+  <div ref="rootEl" class="welcome-cuff" :style="{ '--welcome-cuff-shape': shape }" data-testid="welcome-cuff">
     <div ref="drawingEl" class="welcome-cuff__drawing" role="img" :aria-label="name" data-testid="welcome-cuff-drawing">
       <canvas ref="beadsEl" class="welcome-cuff__layer" aria-hidden="true" />
       <canvas ref="overlayEl" class="welcome-cuff__layer" aria-hidden="true" />
@@ -185,6 +188,7 @@ const counterForm = computed(() => counterFit.value ?? 'stacked')
   inset: 0;
   width: 100%;
   height: 100%;
+  object-fit: contain;
 }
 
 /* The Progress bar's row, as wide as the cuff: the counter, the track, then Back a row and Row done. */
@@ -198,11 +202,14 @@ const counterForm = computed(() => counterFit.value ?? 'stacked')
 
 /* The counter's short form, where its words don't fit beside the track and the moves. */
 .welcome-cuff__bar--short :deep(.row-progress__woven-step),
+.welcome-cuff__bar--shortest :deep(.row-progress__woven-step),
+.welcome-cuff__bar--shortest :deep(.row-progress__woven-line),
 .welcome-cuff__bar--stacked :deep(.row-progress__woven-step) {
   display: none;
 }
 
 .welcome-cuff__bar--short :deep(.row-progress__woven-short),
+.welcome-cuff__bar--shortest :deep(.row-progress__woven-short),
 .welcome-cuff__bar--stacked :deep(.row-progress__woven-short) {
   display: inline;
 }
