@@ -120,6 +120,7 @@ In `index.html`:
 - Dark theme: Palette Black #1a1a1a matches the dark `board` closely, so black beads sit close to the board (the white `bead-rim` outlines them).
 - Plans, accounts and the support link on the Homepage are designs only, switched off, with no integration.
 - **The Canvas look** (approved 2026-11-14) is ahead of the app until tickets 1000 to 1004 and 1010 land: three Canvas colors per theme, tonal tiles, the calm gap, the own-color rim with the satin light (Open weave, no rim, for round beads), and the Lifted piece. The BeadBoard card's Canvas look section holds the drawing; the CanvasBackground, CanvasStrip, Rulers, Frame, MarginSheet, LayerSettings and ShortcutsHelp cards each say which ticket builds their part.
+- **Keyboard shortcuts as a Menu Subpanel** (approved 2026-11-20) is ahead of the app until ticket 1159 lands: the ShortcutsHelp card (a wider Subpanel, each group in two even columns filled down the left first, one chord per row, the keys in a fixed track next to the name, the rows the Modal never listed) and the MenuPanel card's Help row and Subpanel width.
 
 ## Version
 
