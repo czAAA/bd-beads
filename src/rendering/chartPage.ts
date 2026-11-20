@@ -81,12 +81,12 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const word = text(context, words.techniqueWord, PRINT_MARGIN, mm(16.4), font('italic 400', 14, SERIF), PRINT_COLORS.accent)
   text(context, words.name, PRINT_MARGIN + word + mm(1.6), mm(16.4), font('600', 13, SANS), PRINT_COLORS.ink, 'left', Math.max(mm(20), room - word - mm(1.6)))
   const by = words.maker ? fillBlanks(labels.byMaker, { maker: headerMaker(words.maker) }) : ''
-  const line = parts.length === 1 ? [partLabel(project, labels, here), by].filter(Boolean).join(' · ') : by
+  const line = parts.length === 1 ? [partLabel(plan.trim, labels, here), by].filter(Boolean).join(' · ') : by
   if (line) text(context, line, PRINT_MARGIN, mm(21.4), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', room)
 
   // A sheet shared by several parts labels each above its pad.
   if (parts.length > 1) {
-    parts.forEach((part, index) => text(context, partLabel(project, labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
+    parts.forEach((part, index) => text(context, partLabel(plan.trim, labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
   }
 
   // Colors on this page: swatches are drawing, the names are text.

@@ -18,6 +18,7 @@ import { A4_PORTRAIT, PRINT_MARGIN } from './printPlan'
 import { printText } from './printText'
 import { exportProjectPdf, exportProjectPng, projectPageCount } from './projectExport'
 import { K } from './chartVector'
+import { PRINT_COLORS } from './printColors'
 import { toHex } from '../domain/color'
 import { fillBlanks } from '../domain/fillBlanks'
 
@@ -213,6 +214,28 @@ describe('the PNG is page 1 as a picture (ticket 0915; PngExport card)', () => {
     expect(layout.overview).toBeDefined()
     expect(texts('pdf').some((value) => value.endsWith('→'))).toBe(true)
     expect(texts('png').some((value) => value.endsWith('→'))).toBe(false)
+  })
+
+  it('numbers the overview from 1 at its left and top, every 5th or 10th, all regular and muted in one size (ticket 1129)', () => {
+    const project = fixtureProject({ technique: 'loom', columns: 150, rows: 100 })
+    const words = wordsOf(project)
+    const layout = pageOneLayout(project, words)
+    const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
+    const drawn: { value: string; font: string; color: string }[] = []
+    fillText.mockImplementation(function (this: CanvasRenderingContext2D, value: string) {
+      drawn.push({ value, font: this.font, color: String(this.fillStyle) })
+    })
+    drawPageOne(project, words, layout, layout.plan, 1, 'png')
+    fillText.mockRestore()
+    const numbers = drawn.filter((text) => /^\d+$/.test(text.value) && text.color === PRINT_COLORS.muted)
+    const values = new Set(numbers.map((text) => Number(text.value)))
+
+    expect(layout.overview).toBeDefined()
+    expect(values.has(1)).toBe(true)
+    expect([...values].every((value) => value === 1 || value % 5 === 0)).toBe(true)
+    expect(Math.max(...values)).toBe(150)
+    expect(new Set(numbers.map((text) => text.font)).size).toBe(1)
+    expect(numbers[0]!.font).not.toMatch(/^(bold|700)/)
   })
 
   it('is drawn at the dpi asked, one file for a short list', async () => {

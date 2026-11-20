@@ -5,7 +5,7 @@ import type { SwatchLetters } from '../domain/swatchLetters'
 import { beadRoundness, describeWeave } from '../domain/weave'
 import { frameWeave } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
-import { acrossNumber, displayedCellOf, downNumber, emptyCrossArms, lineBetween, rulerLevel } from './printPages'
+import { acrossNumber, displayedCellOf, downNumber, emptyCrossArms, RULER_FIT } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
 import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
@@ -24,18 +24,26 @@ export const K = 72 / PRINT_DPI
 export const mmPt = (value: number) => (value * 72) / 25.4
 
 const LINE_CELL = mmPt(0.1)
+/** `print-line-five`: a Custom frame's Seams. */
 const LINE_FIVE = mmPt(0.18)
-const LINE_TEN = mmPt(0.3)
+/** `print-pad-line` and `print-pad-radius`: the chart's one rim (ticket 1126). */
 const PAD_LINE = mmPt(0.2)
+const PAD_RADIUS = mmPt(2)
 const OVERLAP_LINE = mmPt(0.5)
-/** `print-letter`, in points: the ruler numbers, and the Swatch letter on a 3 mm bead. The share of its bead a round
- * bead's circle takes (2.6 of 3 mm). */
+/** `print-letter`, in points: the most a ruler number takes, and the Swatch letter on a 3 mm bead. The share of its bead
+ * a round bead's circle takes (2.6 of 3 mm). */
 const LETTER_PT = 6.5
 const ROUND_SHARE = 2.6 / 3
 /** The key's swatch, drawn like a 3 mm bead whatever the chart's bead. */
 const KEY_SWATCH_MM = 3
-/** Rulers number every 5th row and column from this bead up, and every 10th under it (ticket 0913). */
-const RULER_FIVES_FROM_MM = 2.2
+/** How far a column number's baseline stands above the chart (its cap top below it at the bottom), and a row number
+ * from its side, in mm. */
+const COLUMN_NUMBER_GAP_MM = 1.5
+const ROW_NUMBER_GAP_MM = 1.3
+/** `print-rim-gap`, in mm: how far the rim stands clear of the outermost beads (ticket 1126). */
+const RIM_GAP_MM = 1
+/** The room a row number has in its band, in mm: `print-ruler` less the rim's gap and its own (2.7 mm). */
+const ROW_NUMBER_ROOM_MM = PRINT_RULER / mm(1) - RIM_GAP_MM - ROW_NUMBER_GAP_MM
 /** `print-overlap-tint`: how far toward white an overlap bead is mixed. */
 const OVERLAP_TINT = 0.6
 /** `--print-letter-squeeze`: horizontal scale of a two-letter Swatch letter. */
@@ -200,8 +208,23 @@ export function drawKeySwatch(content: PageDrawing, x: number, y: number, hex: s
   letterAt(content, letter, { x, y, width: size, height: size }, letterColor(hex), letterPt(KEY_SWATCH_MM))
 }
 
-/** One part: its pad outline, beads, lines, letters, rulers and the overlap line, on the page at `pad`. */
-function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters): void {
+/** What a chart draws besides its colored beads (PrintChartPage card): the one rim round them (ticket 1126) and the empty
+ * positions' outline and cross. Both are on until ticket 1127's Chart border and Empty grid switches. */
+interface ChartLook {
+  rim: boolean
+  emptyGrid: boolean
+}
+
+const DEFAULT_LOOK: ChartLook = { rim: true, emptyGrid: true }
+
+/** A box grown by `by` on every side. */
+function outset(box: Box, by: number): Box {
+  return { x: box.x - by, y: box.y - by, width: box.width + by * 2, height: box.height + by * 2 }
+}
+
+/** One part: its rim, beads, their borders, letters, rulers (their numbers at the page's `rulerPt`, outside the rim) and the
+ * overlap line, on the page at `pad`. */
+function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters, rulerPt: number, look: ChartLook): void {
   const grid = displayedGrid(project)
   const stepAcross = grid.stepAcross * plan.zoom
   const stepDown = grid.stepDown * plan.zoom
@@ -212,18 +235,19 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
   const firstIndexDown = part.firstDown - part.overlapDown
   const inOverlap = (bead: PlacedBead) => bead.across < part.overlapAcross || bead.down < part.overlapDown
 
-  content.roundRect(pad.x * K, pad.y * K, pad.width * K, pad.height * K, mmPt(2), { stroke: PRINT_COLORS.faint, lineWidth: PAD_LINE })
+  // The chart's one rim, `print-rim-gap` clear of its outermost beads; the ruler numbers stand outside it (ticket 1126).
+  const rim = outset(chart, mm(RIM_GAP_MM))
+  if (look.rim) content.roundRect(rim.x * K, rim.y * K, rim.width * K, rim.height * K, PAD_RADIUS, { stroke: PRINT_COLORS.faint, lineWidth: PAD_LINE })
 
   const custom = customChart(project, part.region, plan.zoom)
   if (custom) {
-    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm))
+    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm), look.emptyGrid)
     drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
     return
   }
 
   const beads = placeBeads(project, plan, part)
   const round = beadsAreRound(project)
-  const offset = beads.some((bead) => Math.abs(bead.cell.x - bead.across * stepAcross) > 0.5 || Math.abs(bead.cell.y - bead.down * stepDown) > 0.5)
 
   // Fills, one colour after another.
   const filled = beads.filter((bead) => bead.color !== null).sort((p, q) => (p.color! < q.color! ? -1 : 1))
@@ -243,35 +267,20 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
     }
   }
 
-  // Lines over the fills: cell lines, then every 5th, every 10th and the chart's edge.
-  const cellLines = new Edges()
-  const fiveLines = new Edges()
-  const tenLines = new Edges()
-  for (const { cell, across, down } of beads) {
-    const acrossIndex = firstIndexAcross + across
-    const downIndex = firstIndexDown + down
-    if (!round) {
-      cellLines.add(false, cell.x, cell.y, cell.y + cell.height)
-      cellLines.add(false, cell.x + cell.width, cell.y, cell.y + cell.height)
-      cellLines.add(true, cell.y, cell.x, cell.x + cell.width)
-      cellLines.add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
-    }
-    const right = across < lastAcross && lineBetween(acrossNumber(project, acrossIndex), acrossNumber(project, acrossIndex + 1))
-    if (right) (right === 'tenth' ? tenLines : fiveLines).add(false, cell.x + cell.width, cell.y, cell.y + cell.height)
-    const below = down < lastDown && lineBetween(downNumber(project, downIndex), downNumber(project, downIndex + 1))
-    if (below) (below === 'tenth' ? tenLines : fiveLines).add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
+  // Over the fills, each square bead's own border round its cell (ticket 1126), an empty one's too while Empty grid is on;
+  // a shared edge is one hairline. No line every 5th or 10th and no edge: a round bead carries its circle's alone.
+  const borders = new Edges()
+  for (const { cell, color } of beads) {
+    if (round || (color === null && !look.emptyGrid)) continue
+    borders.add(false, cell.x, cell.y, cell.y + cell.height)
+    borders.add(false, cell.x + cell.width, cell.y, cell.y + cell.height)
+    borders.add(true, cell.y, cell.x, cell.x + cell.width)
+    borders.add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
   }
-  content.lines(cellLines.segments(chart.x, chart.y), LINE_CELL, PRINT_COLORS.lineStrong)
-  content.lines(fiveLines.segments(chart.x, chart.y), LINE_FIVE, PRINT_COLORS.fieldLine)
-  content.lines(tenLines.segments(chart.x, chart.y), LINE_TEN, PRINT_COLORS.ink)
-  if (!offset) {
-    const right = chart.x + chart.width
-    const bottom = chart.y + chart.height
-    content.lines([[chart.x * K, chart.y * K, right * K, chart.y * K], [right * K, chart.y * K, right * K, bottom * K], [right * K, bottom * K, chart.x * K, bottom * K], [chart.x * K, bottom * K, chart.x * K, chart.y * K]], LINE_TEN, PRINT_COLORS.ink)
-  }
+  content.lines(borders.segments(chart.x, chart.y), LINE_CELL, PRINT_COLORS.lineStrong)
 
   // An empty position's small faint cross (ticket 0818), on the paper the fills leave.
-  content.lines(beads.filter((bead) => bead.color === null).flatMap((bead) => {
+  content.lines(beads.filter((bead) => bead.color === null && look.emptyGrid).flatMap((bead) => {
     const { x, y, width, height } = round ? bead.box : bead.cell
     return emptyCross(chart.x + x + width / 2, chart.y + y + height / 2, Math.min(width, height))
   }), LINE_CELL, PRINT_COLORS.faint)
@@ -285,30 +294,58 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
 
   drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
 
-  // Rulers: upright numbers at every 5th (every 10th on a small bead), on all four sides, tens bold in ink, fives regular
-  // in muted, overlap faint.
-  const shown = (value: number) => rulerLevel(value) === 'tenth' || (rulerLevel(value) === 'fifth' && plan.beadMm >= RULER_FIVES_FROM_MM)
-  const size = LETTER_PT
+  // Rulers: every row and column numbered (ticket 1129), outside the rim, where they stay with Chart border off (1126).
+  const columns = Array.from({ length: lastAcross + 1 }, (_, index) => ({
+    value: acrossNumber(plan.trim, firstIndexAcross + index),
+    at: chart.x + index * stepAcross + (grid.beadAcross * plan.zoom) / 2,
+    overlap: index < part.overlapAcross,
+  }))
+  const rows = Array.from({ length: lastDown + 1 }, (_, index) => ({
+    value: downNumber(plan.trim, firstIndexDown + index),
+    at: chart.y + index * stepDown + (grid.beadDown * plan.zoom) / 2,
+    overlap: index < part.overlapDown,
+  }))
+  drawRulerNumbers(content, rim, columns, rows, rulerPt)
+}
+
+/** One number on a part's ruler: its printed number, the middle of its column or row in px, and whether it is the overlap. */
+interface RulerNumber {
+  value: number
+  at: number
+  overlap: boolean
+}
+
+/** The one size of a page's ruler numbers (PrintChartPage card): the largest, at most `print-letter`, at which its widest
+ * column number fits `print-ruler-fit` of a column and its widest row number's digits of a row, and its band's width.
+ * @internal Its test checks the card's sizes on their own. */
+export function rulerNumberPt(project: Layered, plan: PrintPlan, parts: readonly PrintPart[]): number {
+  const grid = displayedGrid(project)
+  const widestColumn = String(Math.max(...parts.map((part) => acrossNumber(plan.trim, part.lastAcross))))
+  const widestRow = String(Math.max(...parts.map((part) => downNumber(plan.trim, part.lastDown))))
+  const columnPt = grid.stepAcross * plan.zoom * K
+  const rowPt = grid.stepDown * plan.zoom * K
+  return Math.min(
+    LETTER_PT,
+    (RULER_FIT * columnPt) / helveticaWidth(widestColumn, 'regular', 1),
+    (RULER_FIT * rowPt) / HELVETICA_CAP_HEIGHT,
+    mmPt(ROW_NUMBER_ROOM_MM) / helveticaWidth(widestRow, 'regular', 1),
+  )
+}
+
+/** A part's ruler numbers round `edge`, the chart's rim (PrintChartPage card, Rulers), Helvetica regular `muted` (the
+ * overlap `faint`): a column centred, 1.5 mm out from `edge`; a row on its letter baseline, 1.3 mm out. */
+function drawRulerNumbers(content: PageDrawing, edge: Box, columns: readonly RulerNumber[], rows: readonly RulerNumber[], size: number): void {
   const cap = HELVETICA_CAP_HEIGHT * size
-  const number = (value: number, x: number, baseline: number, align: 'left' | 'center' | 'right', overlap: boolean) => {
-    const level = rulerLevel(value)
-    content.text(String(value), x, baseline, { face: level === 'tenth' ? 'bold' : 'regular', size, color: overlap ? PRINT_COLORS.faint : level === 'tenth' ? PRINT_COLORS.ink : PRINT_COLORS.muted }, align)
+  const number = ({ value, overlap }: RulerNumber, x: number, baseline: number, align: 'left' | 'center' | 'right') =>
+    content.text(String(value), x, baseline, { face: 'regular', size, color: overlap ? PRINT_COLORS.faint : PRINT_COLORS.muted }, align)
+  for (const column of columns) {
+    number(column, column.at * K, (edge.y - mm(COLUMN_NUMBER_GAP_MM)) * K, 'center')
+    number(column, column.at * K, (edge.y + edge.height + mm(COLUMN_NUMBER_GAP_MM)) * K + cap, 'center')
   }
-  for (let index = 0; index <= lastAcross; index += 1) {
-    const value = acrossNumber(project, firstIndexAcross + index)
-    if (!shown(value)) continue
-    const x = (chart.x + index * stepAcross + (grid.beadAcross * plan.zoom) / 2) * K
-    const overlap = index < part.overlapAcross
-    number(value, x, (chart.y - mm(1.5)) * K, 'center', overlap)
-    number(value, x, (chart.y + chart.height + mm(1.5)) * K + cap, 'center', overlap)
-  }
-  for (let index = 0; index <= lastDown; index += 1) {
-    const value = downNumber(project, firstIndexDown + index)
-    if (!shown(value)) continue
-    const baseline = (chart.y + index * stepDown + (grid.beadDown * plan.zoom) / 2) * K + cap / 2
-    const overlap = index < part.overlapDown
-    number(value, (chart.x - mm(1.3)) * K, baseline, 'right', overlap)
-    number(value, (chart.x + chart.width + mm(1.3)) * K, baseline, 'left', overlap)
+  for (const row of rows) {
+    const baseline = row.at * K + cap / 2
+    number(row, (edge.x - mm(ROW_NUMBER_GAP_MM)) * K, baseline, 'right')
+    number(row, (edge.x + edge.width + mm(ROW_NUMBER_GAP_MM)) * K, baseline, 'left')
   }
 }
 
@@ -344,9 +381,9 @@ function emptyCross(x: number, y: number, size: number): [number, number, number
 }
 
 /** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls in the part's cells, turned as it lies, with
- * its Swatch letter upright; empty positions outlined so the shape reads, each with its cross; its Seams as lines. No cell lines or rulers:
- * its beads keep no rows and columns. */
-function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number): void {
+ * its Swatch letter upright; while `emptyGrid`, empty positions outlined so the shape reads, each with its cross; its Seams
+ * as lines. No cell lines or rulers: its beads keep no rows and columns. */
+function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number, emptyGrid: boolean): void {
   // A part's region reaches past its last cell by a staggered Weave's half bead, onto the next part's: each bead belongs
   // to the part whose cells hold its centre, as the page's key counts it, so none is printed on two pages (ticket 1132).
   const cellOf = (bead: ChartBead) => chartCellOf({ x: part.region.x + bead.x, y: part.region.y + bead.y }, step.across, step.down)
@@ -359,7 +396,7 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
     return across < part.firstAcross || down < part.firstDown
   }
   const round = beadsAreRound(project)
-  const beads = custom.beads.filter(own)
+  const beads = custom.beads.filter((bead) => own(bead) && (emptyGrid || bead.color !== null))
   for (const bead of beads) {
     const fill = bead.color === null ? undefined : inOverlap(bead) ? tint(bead.color, OVERLAP_TINT) : bead.color
     const paint = { ...(fill ? { fill } : {}), stroke: fill ? PRINT_COLORS.lineStrong : PRINT_COLORS.faint, lineWidth: LINE_CELL }
@@ -390,10 +427,12 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
 }
 
 /** Every part on a chart page, or page 1's whole chart from `area`'s top left corner, into `content` (PDF operators, or the
- * PNG's canvas), and where each pad sits (the caller's labels and key go by them). */
-export function drawChartParts(content: PageDrawing, project: Project, plan: PrintPlan, parts: PrintPart[], letters: SwatchLetters, area = CHART_PAGE_AREA): Box[] {
+ * PNG's canvas), and where each pad sits (the caller's labels and key go by them). `look` stays the default until ticket 1127's switches. */
+export function drawChartParts(content: PageDrawing, project: Project, plan: PrintPlan, parts: PrintPart[], letters: SwatchLetters, area = CHART_PAGE_AREA, look = DEFAULT_LOOK): Box[] {
   const shared = parts.length > 1
   const pads = parts.map((part) => padOf(part, shared, area))
-  parts.forEach((part, index) => drawPart(content, project, plan, part, pads[index]!, letters))
+  // One size for every ruler number on the page, its parts or strips together.
+  const rulerPt = rulerNumberPt(project, plan, parts)
+  parts.forEach((part, index) => drawPart(content, project, plan, part, pads[index]!, letters, rulerPt, look))
   return pads
 }
