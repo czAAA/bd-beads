@@ -24,6 +24,7 @@ The tools as a floating pill over the canvas, replacing the Dock (picked from th
 - **Phones under 400px**, top or bottom: tiles stay 40px and the tools between Paint and the colour control scroll rather than shrinking (On a phone, below).
 - **No Project open:** New Project and Import sit under the EmptyCanvas message and there is no pill.
 - **Fit keeps clear of it (ticket 0850).** Fit, on Create Project, a new Project and the strip's Fit, lays the Frame's Margin sheet whole (or, with no Frame, the drawn beads and their rulers) in the drawing area less the pill's band: from the edge it docks to, to its far side. The sheet keeps 18px of air above and below and 36px at the sides (its band holds the rulers), the drawn beads 46 and 64. The drawing area itself ends above the Progress bar, so nothing of the Frame lies under either bar.
+- **Hidden while the Frame is expanded (ticket 1168).** Expand the Frame (MarginSheet card) fades the pill out over `duration-fast` and it is neither drawn nor reached until Back to the Canvas fades it in again; the active tool stays active and its key still changes it.
 
 ## On a phone (ticket 0837)
 
