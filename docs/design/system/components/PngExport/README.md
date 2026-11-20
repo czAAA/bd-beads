@@ -1,20 +1,21 @@
 # PngExport
 
-The PNG export: **page 1 of the PDF as a picture** (ticket 0915; PrintPage1 card), one A4 portrait page drawn by the same code as the PDF's page 1. The page is described once and drawn twice: its chart as PDF operators in the PDF and painted on the canvas in the PNG, from the same calls, so at the same size the two show the same bead size, letters, rulers and Beads needed table.
-
-**Approved 2026-11-19, not yet in the app (ticket 1096):** Picture will save the **Cover page** (PrintCover card) in place of page 1: the finished piece in color with its name, one file whatever the piece, with no list pages after it and no option in its name. What follows describes the picture until that ticket lands.
+The PNG export: **the Cover page as a picture** (ticket 1096; PrintCover card), one A4 portrait page drawn by the same code as the PDF's Cover page: the technique word, the title, the maker, the piece's colors and the tech line at the top (ticket 1141), then the finished piece in color on the pale board.
 
 **Trimmed to the beads** (ticket 1128): the picture shows only the rows and columns from the first bead to the last, across and down, empty positions between beads kept, and its tech line gives that trimmed size. A Schema with no beads shows whole.
 
-**Approved 2026-11-19 (tickets 1126, 1127; signed off in ticket 1123; in the app):** while the picture is page 1, its chart and overview are the new chart (PrintChartPage and PrintPage1 cards): no lines between beads and no bold edge, one rounded rim round the beads with the numbers outside it while Chart border is on (1126), empty positions as Empty grid says (1127), and every row and column numbered from 1 (1129). The Cover page shows no empty positions whatever Empty grid says, so once Picture saves it (ticket 1096) Empty grid changes the PDF only.
-
-- A piece that fits page 1 is the chart itself, as page 1 prints it: lettered (a Swatch letter on every bead, whatever the Letters toggle says), numbered on all four sides, the lines every 5 and 10, a bracelet folded into strips each under its label; Beads needed at the foot of the page with the chart centred over it (ticket 1141; letter swatch, color name, code, beads, grams, to buy, the Total and the grams note), the title block over it and the footer.
-- A piece cut into parts is page 1's overview: the whole piece, trimmed to its beads, on the board without letters, its rulers, an empty position bare board (under its small `faint` cross with Empty grid on, ticket 1127). The PNG has no pages to point at, so the lines where the chart parts meet and their page pills are not drawn; the PDF's chart pages carry the detail.
-- The footer is page 1's (the mark, "openbeads" and the date and time on the left), its number counting the PNG's own files ("1 / 1", "1 / 2").
+- **One file, whatever the piece**: however big it is and however many colors it has, there are no list pages and no further files. Its footer reads "1 / 1".
+- **Whatever the switches say**: it is saved whether or not the Cover page switch is on (that switch is the PDF's). Large beads, Row by row, Empty grid and Chart border change only the PDF (the Cover page has no chart and shows no empty positions, ticket 1127); the picture is always in color.
+- The footer is the Cover page's (the mark, "openbeads" and the date and time on the left, the page number on the right).
 - Drawn at 150, 300 or 450 dpi by the Export quality (QualitySlider card): 1240 × 1754, 2480 × 3508 or 3720 × 5262 px. A device that cannot hold a 450 dpi page draws High at 300. The PDF is not affected.
-- The chart's Swatch letters and ruler numbers are set in the PDF's Helvetica, or the face the device has in its place (Arial, Liberation Sans), as a PDF viewer would take; the rest of the text is the print fonts (Inter, DM Mono, Instrument Serif).
-- Beads needed that does not fit continues on list pages, page 1's: further PNG files, `{project}-{frame}-{maker}_2.png`, `_3.png`, handed over in order after page 1. One page still gives one file.
-- No wide layout, no watermark. Drawn in the app's language. File name `{project}-{frame}-{maker}.png` (ticket 0720, printed-output.md).
-- Once handed over, the one saved-file toast names it, "Saved to Downloads: {file}" or where else it went (Message card, tickets 0859, 1139), as for the PDF and the Project file; each further list page stacks a toast of its own. "Export" names the PNG and PDF only; the Project file is saved, never exported.
+- Set in the print fonts (Inter, DM Mono, Instrument Serif), in the app's language. No wide layout, no watermark.
+- File name `{project}-{frame}-{maker}.png` (ticket 0720, printed-output.md), with no switch's word in it (ExportPanel card).
+- Once handed over, the one saved-file toast names it, "Saved to Downloads: {file}" or where else it went (Message card, tickets 0859, 1139), as for the PDF and the Project file. "Export" names the PNG and PDF only; the Project file is saved, never exported.
 
-Rewritten in ticket 0915: until then the PNG was the Cover page (the whole Schema on the board at up to `print-cover-bead-max`, 6 mm a bead, no Swatch letters, Beads needed as swatch, name, beads and grams), drawn apart from the PDF. Ticket 0583's earlier card (one tall picture, the story under the chart) and the Cover's are in git history.
+## Acceptance
+
+- [x] Picture saves the Cover page as one PNG at the Export quality's dpi, with the Cover page switch on or off.
+- [x] No list-page files follow it, and its size line says "1 file".
+- [x] Its footer reads "1 / 1".
+
+Rewritten in ticket 1096: from ticket 0915 until then the PNG was page 1 of the PDF as a picture (its chart painted from the PDF's drawing, the overview without the parts' lines and pills, list pages as further files `_2.png`, `_3.png`); before that it was the old Cover page (ticket 0583's tall picture, then the whole Schema on the board at up to 6 mm a bead). Those cards are in git history.
