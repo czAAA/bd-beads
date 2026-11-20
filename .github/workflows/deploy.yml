@@ -108,25 +108,34 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      COMMIT: ${{ needs.build.outputs.commit }}
-      GH_TOKEN: ${{ github.token }}
     steps:
-      # The commit production runs, with its tags, so an existing one is found. No credential is left in the checkout.
+      # The commit production runs, with its tags so an existing one is found: its record and notes give the Release.
+      # The generator comes from the run's own commit on main, which a manual run's older release may predate.
+      # No credential is left in either checkout.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.build.outputs.commit }}
+          path: release
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: tools
           persist-credentials: false
       # Plain Node runs the generator: no install.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
       - name: Tag the release and make its GitHub Release
+        working-directory: release
+        env:
+          COMMIT: ${{ needs.build.outputs.commit }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           notes="$RUNNER_TEMP/release-notes.md"
-          version=$(node scripts/changelog.ts --newest-release "$notes")
+          version=$(node ../tools/scripts/changelog.ts --newest-release "$notes")
+          # The generator refuses it too; checked again here, where it becomes a tag and a title.
           if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
             echo "::error::The newest release's Version is not plain X.Y.Z"
             exit 1

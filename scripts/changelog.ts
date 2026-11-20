@@ -48,6 +48,9 @@ function blocks(notes: readonly NumberedNote[], files: ReadonlyMap<string, NoteF
   ]);
 }
 
+/** Every note file, by its name. */
+const notesByName = (files: NoteFiles): Map<string, NoteFile> => new Map(files.notes.map((note) => [note.name, note]));
+
 /** A release's section of the changelog, below its heading: its blocks, or a line saying it has no notes. */
 function section(release: Release, files: ReadonlyMap<string, NoteFile>): string[] {
   return release.notes.length > 0 ? blocks(release.notes, files) : ['', 'No Release notes.'];
@@ -62,13 +65,13 @@ export function newestRelease(files: NoteFiles): { version: string; notes: strin
   const release = files.record.at(-1);
   if (!release) throw new Error(`${RELEASE_RECORD} holds no release`);
   if (!PLAIN_VERSION.test(release.version)) throw new Error(`${JSON.stringify(release.version)} is not a plain X.Y.Z Version`);
-  const byName = new Map(files.notes.map((note) => [note.name, note]));
+  const byName = notesByName(files);
   return { version: release.version, notes: [...section(release, byName), ''].join('\n') };
 }
 
 /** The changelog's text: the released part, and with `unreleased` the notes the next release would hold on top. */
 export function changelog(files: NoteFiles, unreleased?: readonly NumberedNote[]): string {
-  const byName = new Map(files.notes.map((note) => [note.name, note]));
+  const byName = notesByName(files);
   const waiting = unreleased
     ? ['', '## Unreleased: what the next release would hold', ...(unreleased.length > 0 ? blocks(unreleased, byName) : ['', 'Nothing yet: the release command refuses until a Release note merges.'])]
     : [];
