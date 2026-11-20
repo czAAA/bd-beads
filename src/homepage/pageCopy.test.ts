@@ -10,7 +10,7 @@ import { zh } from '../i18n/zh'
 import { freeListGroups } from './freeList'
 import { insideChapters } from './inside/insideCopy'
 import { homepageCopy, homepageTitle } from './pageCopy'
-import { welcomePromises } from './welcomeCopy'
+import { welcomeHeading, welcomeLine, welcomePromises } from './welcomeCopy'
 
 describe('the Homepage’s words as its page carries them (ticket 1055)', () => {
   it('has a title in the words people search with, ending on the app’s name, which the tab shows too', () => {
@@ -32,8 +32,8 @@ describe('the Homepage’s words as its page carries them (ticket 1055)', () => 
   it('holds the copy the drawn sections show, from the functions they draw from, and nothing else', () => {
     const [welcome, inside, free] = homepageCopy(en, 'en').sections
     expect(welcome).toEqual({
-      heading: en.homepage.welcome.heading,
-      line: en.homepage.welcome.line,
+      heading: welcomeHeading(en, 'en'),
+      line: welcomeLine(en, 'en'),
       named: welcomePromises(en).map(({ name, text }) => ({ name, text })),
     })
     expect(inside!.heading).toBe(en.homepage.whatsInside)

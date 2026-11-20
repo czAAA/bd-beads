@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { ru } from '../../src/i18n/ru'
 import { uk } from '../../src/i18n/uk'
+import { welcomeHeading } from '../../src/homepage/welcomeCopy'
 
 // A language's code in the address (ticket 1053): `ru/` is the Homepage in Russian and `ru/app/` the editor, on a
 // device that saved no language; the way in keeps the code, and the strip's Language changes it in place.
@@ -17,7 +18,7 @@ async function switchTo(page: Page, locale: string): Promise<void> {
 
 test('ru/ is the Russian Homepage on a new device, its way in opens the Russian editor at ru/app/, and the switch changes the code', async ({ page, baseURL }) => {
   await page.goto('./ru/')
-  await expect(page.locator('#homepage-welcome')).toHaveText(ru.homepage.welcome.heading)
+  await expect(page.locator('#homepage-welcome')).toHaveText(welcomeHeading(ru, 'ru'))
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
   expect(await page.evaluate(() => localStorage.getItem('openbeads:locale'))).toBe('ru')
 
@@ -40,7 +41,7 @@ test('an address with no code keeps the saved language and stays as it is when t
     if (localStorage.getItem('openbeads:locale') === null) localStorage.setItem('openbeads:locale', 'uk')
   })
   await page.goto('./')
-  await expect(page.locator('#homepage-welcome')).toHaveText(uk.homepage.welcome.heading)
+  await expect(page.locator('#homepage-welcome')).toHaveText(welcomeHeading(uk, 'uk'))
 
   await switchTo(page, 'es')
   expect(pathOf(page, baseURL!)).toBe('')

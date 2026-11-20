@@ -8,17 +8,16 @@ export const homepage: HomepageTranslations = {
     openEditor: 'Abrir el editor',
     whatsInside: 'Qué incluye',
     welcome: {
-      heading: 'Patrones de cuentas, dibujados como se colocan las cuentas.',
-      line: 'Para telar, peyote y punto ladrillo.',
-      seeHow: 'Mira cómo funciona',
-      colors: { one: '{codes} color de {brands}', many: '{codes} colores de {brands}', other: '{codes} colores de {brands}' },
+      heading: { one: 'Un editor gratuito de patrones de cuentas que funciona en {count} técnica', many: 'Un editor gratuito de patrones de cuentas que funciona en {count} técnicas', other: 'Un editor gratuito de patrones de cuentas que funciona en {count} técnicas' },
+      countWords: ['una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'],
+      line: '{techniques}.',
       startFromStarter: 'Empieza con un diseño terminado',
-      caption: '{technique} · {size}',
-      piece: 'Ojos de pluma de pavo real, en peyote',
+      cuff: 'Brazalete de plumas de pavo real en peyote, tejiéndose: {counter}',
       promises: {
         free: { name: 'Aquí todo es gratis', text: 'Sin cuenta y sin periodo de prueba. Tu trabajo se queda en este navegador.' },
         picture: { name: 'Empieza con una imagen', text: 'Convierte una foto en un patrón de cuentas.' },
         weave: { name: 'Cuenta y teje', text: 'Cada color contado; marca las filas terminadas mientras tejes.' },
+        export: { name: 'Exportación gratis', text: 'PDF y PNG con toda su calidad.' },
       },
     },
     inside: {

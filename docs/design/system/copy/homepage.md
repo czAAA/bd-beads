@@ -123,29 +123,24 @@ The Homepage's first section and What's inside's chapters (Homepage card). Engli
 | English | Russian |
 | --- | --- |
 | Welcome (the section's step on the Progress bar; its heading is a sentence, too long for a step) | Начало |
-| Bead patterns, drawn the way the beads sit. (the heading) | Схемы для бисера, нарисованные так, как ложится бисер. |
-| For loom, peyote and brick stitch. (the three Techniques, lowercase in a sentence as in the Techniques row) | Для ткачества, мозаичного и кирпичного плетения. |
-| See how it works (turns to What's inside) | Как это работает |
-| {codes} {brands} colors · {n} Starters ("3 817 TOHO and Miyuki colors · 15 Starters"; counted words) | {codes} цвет / цвета / цветов {brands} · {n} шаблон / шаблона / шаблонов |
-| {technique} · {size} (the piece's caption: "Peyote · 48×23") | {technique} · {size} |
-| Peacock feather eyes, in peyote (the piece, an image's name for screen readers) | Павлиньи перья, мозаичное плетение |
 | Draw · Start from something · Real bead colors · Weave and keep (What's inside's chapters) | Рисуйте · Начните с готового · Настоящие цвета бисера · Плетите и сохраняйте |
 | Pause · Play (the tour) | Пауза · Продолжить |
 | Open editor from here (into the editor on a copy of the demo's Project) | Открыть редактор отсюда |
 | Expand · Collapse (the demo's width) | Развернуть · Свернуть |
 
-The way in (Make your first Project, Open the editor, Projects library · {n}) and the three promises (Yours, on this device · Works offline · Free forever, with their lines) are the strings the Homepage already has. A phone's "Next · What's inside" is "Next · {section}". A chapter is described to screen readers by its rows' names, joined as the language joins a list.
+The heading, its line, See how it works, the counts and the piece's caption and name were here until ticket 1157, which replaced them (below). The way in (Make your first Project, Open the editor, Projects library · {n}) and the three promises (Yours, on this device · Works offline · Free forever, with their lines) are the strings the Homepage already has. A phone's "Next · What's inside" is "Next · {section}". A chapter is described to screen readers by its rows' names, joined as the language joins a list.
 
 ### The cuff woven (ticket 1157)
 
-Welcome's heading, its line and a fourth promise, signed off with the cuff being woven (Homepage card). English and Russian here; the other shipped languages are written when it is built. The number of Techniques is the app's own count, written as a word in the language's counted form ("three", «трёх»), and the line lists the same Techniques by name, joined as the language joins a list, so neither is typed. The rows they replace are struck from the table above in the PR that builds them: the old heading and line, See how it works, the counts and the caption.
+Welcome's heading, its line and a fourth promise, signed off with the cuff being woven (Homepage card). English and Russian were signed off; the other shipped languages were written from them with the build and are proposals for review. The number of Techniques is the app's own count, written as a word in the counted form the sentence asks for ("three", «трёх»; each language lists its words from one to nine, and a larger count is its digits), and the heading takes the counted form of "techniques" too. The line lists the same Techniques by name, lowercased and joined as the language joins a list, the first capitalised, as the free list's Techniques row names them, so neither is typed: in English the list comes with its serial comma ("Loom, peyote, and brick stitch."), and in Russian each Technique keeps its whole name («Ткачество, мозаичное плетение и кирпичное плетение.»), not the shared «плетение» the sign-off had.
 
-| English | Russian |
-| --- | --- |
-| A free bead pattern editor that works in {count} techniques (the heading; {count} in words) | Бесплатный редактор схем для плетения бисером, работающий в {count} техниках |
-| Loom, peyote and brick stitch. (the line: the Techniques, the first capitalised) | Ткачество, мозаичное и кирпичное плетение. |
-| Free export · PDF and PNG in full quality. (the fourth promise) | Бесплатный экспорт · PDF и PNG в полном качестве. |
-| Peacock feather cuff in peyote, being woven: {counter} (the cuff, an image's name; {counter} the Progress bar's own words) | Браслет «Павлинье перо» мозаичным плетением, в работе: {counter} |
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+| --- | --- | --- | --- | --- | --- | --- |
+| A free bead pattern editor that works in {count} techniques (the heading; {count} in words) | Бесплатный редактор схем для плетения бисером, работающий в {count} техниках | Безкоштовний редактор схем для плетіння бісером, що працює в {count} техніках | Бясплатны рэдактар схем для пляцення бісерам, які працуе ў {count} тэхніках | 支持{count}种编织技法的免费串珠图样编辑器 | Un editor gratuito de patrones de cuentas que funciona en {count} técnicas | Darmowy edytor wzorów z koralików, który działa w {count} technikach |
+| three (the count's word, as the heading puts it) | трёх | трьох | трох | 三 | tres | trzech |
+| {techniques}. (the line) | {techniques}. | {techniques}. | {techniques}. | {techniques}。 | {techniques}. | {techniques}. |
+| Free export · PDF and PNG in full quality. (the fourth promise) | Бесплатный экспорт · PDF и PNG в полном качестве. | Безкоштовний експорт · PDF і PNG у повній якості. | Бясплатны экспарт · PDF і PNG у поўнай якасці. | 免费导出 · 全画质的 PDF 和 PNG。 | Exportación gratis · PDF y PNG con toda su calidad. | Darmowy eksport · PDF i PNG w pełnej jakości. |
+| Peacock feather cuff in peyote, being woven: {counter} (the cuff, an image's name; {counter} the announcer's words for the counter) | Браслет «Павлинье перо» мозаичным плетением, в работе: {counter} | Браслет «Павине перо» мозаїчним плетінням, у роботі: {counter} | Бранзалет «Паўлінава пяро» мазаічным пляценнем, у рабоце: {counter} | 孔雀羽毛手镯，佩奥特编织，编织中：{counter} | Brazalete de plumas de pavo real en peyote, tejiéndose: {counter} | Bransoletka z pawimi piórami w peyote, w trakcie plecenia: {counter} |
 
 The cuff's bar says what the editor's Progress bar says (Pass, row, Back a row, Row done): the Homepage has no words of its own for it.
 

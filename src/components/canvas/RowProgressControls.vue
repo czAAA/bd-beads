@@ -18,13 +18,13 @@ import { frameOf } from '../../domain/layerRecord'
 import { pieceFaceOf } from '../../domain/pieceFaces'
 
 // Row progress's controls (ProgressBar and MarginSheet cards; tickets 144, 411, 0657, 0658): one component in the
-// Progress bar and the margin sheet's top band, so a press in either moves the one pointer the Project carries. `bar`
-// spells the row out; on the margin, `margin` is the full form, `compact` and `folded` its smaller ones.
+// Progress bar and the margin sheet's top band, so a press in either moves the one pointer. `bar` spells the row out;
+// `margin`, `compact` and `folded` are the margin's forms; `woven` the Homepage cuff's counter, track and moves (1157).
 const props = withDefaults(defineProps<{
   project: Project
   /** Whether the Canvas draws the Row progress look (ticket 474): the Switch is on while it does. */
   rowHighlight?: boolean
-  form: 'bar' | 'margin' | 'compact' | 'folded'
+  form: 'bar' | 'margin' | 'compact' | 'folded' | 'woven'
   /** On the margin, what a row too narrow for the whole form gives up (ticket 0698): 1 the track, 2 the counter too, so
    * Row done and Row highlight go last. */
   drop?: 0 | 1 | 2
@@ -58,9 +58,14 @@ const actions = {
   reset: controlAction('reset-progress'),
   direction: controlAction('row-direction'),
   rowHighlight: controlAction('row-highlight'),
-  notDone: controlAction('row-not-done'),
-  done: controlAction('row-done'),
+  notDone: keyedHere(controlAction('row-not-done')),
+  done: keyedHere(controlAction('row-done')),
   goToRow: controlAction('go-to-row'),
+}
+
+/** On the Homepage's cuff Enter and Shift+Enter stay the page's (ticket 1157), so its moves show no key. */
+function keyedHere<Action extends { chords: readonly unknown[] }>(action: Action): Action {
+  return props.form === 'woven' ? { ...action, chords: [] } : action
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
@@ -171,6 +176,7 @@ const ITEMS: Record<typeof props.form, readonly Item[]> = {
   margin: ['direction', 'reset', 'divider', 'counter', 'track', 'divider', 'steps'],
   compact: ['highlight', 'counter', 'track', 'steps'],
   folded: ['highlight', 'counter', 'steps'],
+  woven: ['counter', 'track', 'steps'],
 }
 /** What each drop leaves out: the track, then the counter with the divider that set it off. */
 const DROPPED: Record<0 | 1 | 2, readonly Item[]> = { 0: [], 1: ['track'], 2: ['track', 'counter'] }
@@ -179,7 +185,7 @@ const items = computed(() => {
   const left = ITEMS[props.form].filter(kept)
   return left.filter((item, index) => item !== 'divider' || left[index + 1] !== 'divider')
 })
-const margin = computed(() => props.form !== 'bar')
+const margin = computed(() => props.form !== 'bar' && props.form !== 'woven')
 /** The smaller forms keep Row done alone: Back a row is the Progress bar's there. */
 const small = computed(() => props.form === 'compact' || props.form === 'folded')
 </script>
@@ -223,7 +229,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     </p>
     <!-- In the bar the counter is Go to row's button (ticket 0849), and once every pass is done it reads Pattern done. -->
     <AppButton
-      v-else-if="item === 'counter' && !margin"
+      v-else-if="item === 'counter' && form === 'bar'"
       class="row-progress__counter-button"
       variant="text"
       size="sm"
@@ -244,6 +250,13 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
         >&nbsp;{{ count.line }}</span>
       </template>
     </AppButton>
+    <!-- The cuff's counter (ticket 1157): the bar's words, nothing to press; the cuff picks which of them it has room for. -->
+    <p v-else-if="item === 'counter' && form === 'woven'" class="row-progress__counter-text" :data-testid="`${testid}-compact-position`">
+      <span class="row-progress__woven-step">{{ count.step }}</span><span class="row-progress__woven-short">{{ count.short }}</span><span
+        v-if="count.line"
+        class="row-progress__woven-line"
+      >&nbsp;{{ count.line }}</span>
+    </p>
     <!-- The compact counter (ticket 188): "1/222" in place of the spelled-out row count; the buttons keep their text (ticket 411). -->
     <p v-else-if="item === 'counter'" class="row-progress__counter" :data-testid="`${testid}-compact-position`">
       {{ shownRow }}/{{ position.total }}
@@ -329,7 +342,8 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
 
 <style scoped>
 /* In the bar its controls are the bar's own flex items; on the margin they are one row, 4px apart. */
-.row-progress--bar {
+.row-progress--bar,
+.row-progress--woven {
   display: contents;
 }
 
@@ -372,6 +386,21 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   padding-inline: var(--space-6);
   gap: var(--space-4);
   font: var(--type-title);
+}
+
+/* The cuff's counter (ticket 1157): the bar's counter's words and type, as text. */
+.row-progress__counter-text {
+  flex: none;
+  margin: 0;
+  padding-inline: var(--space-6);
+  font: var(--type-title);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* Its short form only where the cuff asks for it (WelcomeCuff). */
+.row-progress__woven-short {
+  display: none;
 }
 
 /* From 40rem up it names its step, "Row 7 of 10"; a narrower bar keeps the short "7/10" (ticket 0972). */
