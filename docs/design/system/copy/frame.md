@@ -108,6 +108,16 @@ The Russian and Ukrainian line is built without the dash ("Поля ширино
 
 Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.
 
+## Expand the Frame copy (ticket 1168)
+
+The margin sheet's Expand the Frame button (MarginSheet card, Expand the Frame). Its name is its Tooltip and changes with the state; the announcement is said once after each press. Belarusian, Spanish and Chinese are written with the build (ticket 1169).
+
+| English | Русский | Українська | Polski |
+|---|---|---|---|
+| Expand the Frame (the button, the Frame on the Canvas) | Развернуть рамку | Розгорнути рамку | Rozwiń ramkę |
+| Back to the Canvas (the button while expanded) | Вернуться к холсту | Повернутися до полотна | Wróć do płótna |
+| Frame expanded (announced) | Рамка развёрнута | Рамку розгорнуто | Ramka rozwinięta |
+
 ## Print choices copy (ticket 0916)
 
 The Printable chart's two switches in the Export panel and the Frame panel's export section (ExportPanel card), each with its Info button. "Row by row" is the Word chart's own title in every language, so the switch and the pages it adds share a name. Letters no longer changes the PDF, so its Info body says what it does now. The page count reuses "{count} page" / "{count} pages"; no new copy. English is the ticket's; the other languages are proposals for review with the build.
