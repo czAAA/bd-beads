@@ -49,7 +49,8 @@ export interface OverviewLayout {
   titleHeight: number
   zoom: number
   extent: { width: number; height: number }
-  /** Where the beads' own top-left corner lands, the framed Schema centred in the room it has. */
+  /** Where the beads' own top-left corner lands, the framed Schema at the top of the room it has (page 1 centres it once
+   * Beads needed is at the foot of the page, atTheFoot). */
   board: { x: number; y: number }
   /** Beads needed under the overview, and the top of it. */
   needed: ColorsSlice & { y: number }
@@ -90,6 +91,13 @@ export function oneToARow<Slice extends ColorsSlice & { y: number }>(slice: Slic
   return fits ? { ...slice, columns: 1, rows: slice.count } : slice
 }
 
+/** Beads needed set at the foot of the page, right over the footer (ticket 1138): `slice.y` is its top straight under the
+ * chart, and `drop` how far the chart over it moves down to sit centred in the room between the title block and the table. */
+export function atTheFoot<Slice extends ColorsSlice & { y: number }>(slice: Slice, table: TableRows, bottom: number): { needed: Slice; drop: number } {
+  const y = Math.max(slice.y, bottom - colorsHeight(slice.count, table, slice.total, slice.columns))
+  return { needed: { ...slice, y }, drop: (y - slice.y) / 2 }
+}
+
 /** The list pages that carry on Beads needed from color `from` on: as many colors as a page has room for, the Total
  * ending the last. */
 export function listSlices(words: OverviewWords, table: TableRows, from: number, page: PageSize = A4_PORTRAIT): ColorsSlice[] {
@@ -105,7 +113,8 @@ export function listSlices(words: OverviewWords, table: TableRows, from: number,
 }
 
 /** Page 1 as the overview (and its list pages) for a Project's words, with Beads needed as `table`: the whole piece as large
- * as the room the title block and Beads needed (at most its share) leave, centred in it. */
+ * as the room the title block and Beads needed (at most its share) leave, at its top and centred across, Beads needed
+ * straight under it. */
 export function overviewLayout(project: Layered, words: OverviewWords, table: TableRows, page: PageSize = A4_PORTRAIT): OverviewLayout {
   const rowHeight = table.row
   const titleHeight = titleHeightOf(words)
@@ -128,8 +137,7 @@ export function overviewLayout(project: Layered, words: OverviewWords, table: Ta
   const widthRoom = page.width - PRINT_MARGIN * 2 - inset * 2
   const zoom = Math.max(0.01, Math.min(widthRoom / wide.width, (room - OVERVIEW_CUT_LABEL - inset * 2) / wide.height))
   const extent = { width: wide.width * zoom, height: wide.height * zoom }
-  const framed = OVERVIEW_CUT_LABEL + inset * 2 + extent.height
-  const board = { x: PRINT_MARGIN + inset + (widthRoom - extent.width) / 2, y: top + (room - framed) / 2 + OVERVIEW_CUT_LABEL + inset }
+  const board = { x: PRINT_MARGIN + inset + (widthRoom - extent.width) / 2, y: top + OVERVIEW_CUT_LABEL + inset }
 
   const lists = whole ? [] : listSlices(words, table, onPageOne, page)
 

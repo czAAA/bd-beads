@@ -9,8 +9,8 @@ const shape = (technique: Technique, columns: number, rows: number, rotation: Ro
 
 // The Cover page's board and piece (ticket 1096; PrintCover card).
 describe('coverPageLayout', () => {
-  it('puts the board inside the margins, as wide as the page allows and 196 mm tall', () => {
-    expect(coverPageLayout(shape('loom', 20, 20)).board).toEqual({ x: PRINT_MARGIN, y: PRINT_MARGIN, width: A4_PORTRAIT.width - PRINT_MARGIN * 2, height: mm(196) })
+  it('puts the board at its top, under the title block, as wide as the page allows inside the margins and 196 mm tall', () => {
+    expect(coverPageLayout(shape('loom', 20, 20), A4_PORTRAIT, mm(70)).board).toEqual({ x: PRINT_MARGIN, y: mm(70), width: A4_PORTRAIT.width - PRINT_MARGIN * 2, height: mm(196) })
   })
 
   it.each([

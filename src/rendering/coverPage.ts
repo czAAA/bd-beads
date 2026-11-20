@@ -10,9 +10,9 @@ import { spaceOf } from './space'
 import { fillBlanks } from '../domain/fillBlanks'
 import type { Project } from '../domain/project'
 
-// The Cover page (ticket 1096; PrintCover card): the finished piece in color on the pale board, then its technique word,
-// title and maker beside its colors, the tech line and the footer. It opens the PDF while the Cover page switch is on; the
-// page a maker shows or sells the pattern with, so it holds no chart and no Beads needed.
+// The Cover page (ticket 1096; PrintCover card): its technique word, title, maker, colors and tech line at the top (ticket
+// 1138), then the finished piece in color on the pale board, and the footer. It opens the PDF while the Cover page switch
+// is on; the page a maker shows or sells the pattern with, so it holds no chart and no Beads needed.
 
 /** The piece as the app draws it in the light theme (its own-color rim and satin light) on the print board, with nothing
  * behind its beads, so the board shows through the gaps and the piece casts its shadow on it. */
@@ -25,8 +25,8 @@ const paintedOnly: BeadDrawer = (context, bead) => {
 
 /** The piece's one soft shadow on the board: 2.6 mm down, 3.7 mm of blur, `ink` at 16%. */
 const SHADOW = { down: mm(2.6), blur: mm(3.7), alpha: 0.16 }
-/** Between the board and the title block, and between the title block and the tech line's rule. */
-const TITLE_GAP = mm(9.5)
+/** Between the tech line and the board under it, and between the title block and the tech line's rule. */
+const BOARD_GAP = mm(9.5)
 const TECH_GAP = mm(5.8)
 /** Between the rows of the title block, and between the title and the colors beside it. */
 const ROW_GAP = mm(1.6)
@@ -148,9 +148,7 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
 /** The Cover page (ticket 1096; PrintCover card), `pageNumber` of `pageCount`, `scale` times the layout's px. */
 export function drawCoverPage(project: Project, words: PrintText, page: PageSize, pageNumber: number, pageCount: number, scale = 1): HTMLCanvasElement {
   const { canvas, context } = blankPage(page, scale)
-  const layout = coverPageLayout(project, page)
-  drawPiece(context, project, layout)
-  const bottom = drawTitleBlock(context, page, words, layout.board.y + layout.board.height + TITLE_GAP)
+  const bottom = drawTitleBlock(context, page, words, PRINT_MARGIN)
 
   const ruleY = bottom + TECH_GAP
   context.strokeStyle = PRINT_COLORS.ink
@@ -160,6 +158,7 @@ export function drawCoverPage(project: Project, words: PrintText, page: PageSize
   context.lineTo(page.width - PRINT_MARGIN, ruleY)
   context.stroke()
   text(context, words.metaLine, PRINT_MARGIN, ruleY + TECH_LINE_GAP + pt(SIZE.meta) * (1 - DESCENT), META_FONT, PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
+  drawPiece(context, project, coverPageLayout(project, page, ruleY + TECH_LINE_GAP + pt(SIZE.meta) + BOARD_GAP))
 
   drawFooter(context, page, words, pageNumber, pageCount)
   return canvas

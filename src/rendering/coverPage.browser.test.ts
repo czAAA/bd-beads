@@ -21,6 +21,13 @@ const pixel = (canvas: HTMLCanvasElement, x: number, y: number) => {
   return toHex({ r: r!, g: g!, b: b! })
 }
 
+/** The board's top: the first row down the middle of the page in the board's color. */
+const boardTopOf = (canvas: HTMLCanvasElement) => {
+  let y = 0
+  while (y < canvas.height && pixel(canvas, canvas.width / 2, y) !== PRINT_COLORS.board) y += 1
+  return y
+}
+
 /** What a drawing writes, in order. */
 async function written(draw: () => unknown): Promise<string[]> {
   const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
@@ -44,7 +51,7 @@ describe('the Cover page', () => {
     // The top row empty: nothing above it casts a shadow there.
     const project = fixtureProject({ technique: 'loom', columns: 6, rows: 6, override: Array.from({ length: 6 }, (_, column) => ({ row: 0, column, color: null })) })
     const canvas = drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2)
-    const { board, piece } = coverPageLayout(project)
+    const { board, piece } = coverPageLayout(project, A4_PORTRAIT, boardTopOf(canvas))
     const bead = piece.width / 6
 
     expect(pixel(canvas, board.x + board.width / 2, board.y + 4)).toBe(PRINT_COLORS.board)
@@ -60,6 +67,22 @@ describe('the Cover page', () => {
     expect(values).toEqual(expect.arrayContaining([words.techniqueWord, 'Peacock cuff', 'by Ada Lind', words.metaLine, '1 / 2']))
     expect(values.find((value) => value.startsWith(words.colorsCount))).toContain(words.totalBeads)
     expect(values.filter((value) => /^[A-Z]{1,2}$/.test(value))).toEqual([])
+  })
+
+  it('sets the title block and the tech line over the board, as page 1 sets its heading over the chart', async () => {
+    const project = fixtureProject({ technique: 'loom', columns: 20, rows: 10 })
+    const words = wordsOf(project)
+    const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
+    const canvas = drawCoverPage(project, words, A4_PORTRAIT, 1, 2)
+    const calls = [...fillText.mock.calls]
+    fillText.mockRestore()
+    const at = (value: string) => calls.find(([written]) => written === value)?.[2] ?? Number.NaN
+    const top = boardTopOf(canvas)
+
+    expect(at(words.techniqueWord)).toBeLessThan(at('Peacock cuff'))
+    expect(at('Peacock cuff')).toBeLessThan(at(words.metaLine))
+    expect(at(words.metaLine)).toBeLessThan(top)
+    expect(top).toBeLessThan(at('1 / 2'))
   })
 
   it('runs a long title to two lines, then an ellipsis', async () => {

@@ -1,12 +1,13 @@
 import { planWithKey } from './chartPageKey'
-import { colorsHeight, PAGE_FOOTER, overviewLayout, listSlices, oneToARow, TABLE_SHARE, titleHeightOf, type ColorsSlice, type TableRows } from './overviewLayout'
+import { atTheFoot, colorsHeight, PAGE_FOOTER, overviewLayout, listSlices, oneToARow, TABLE_SHARE, titleHeightOf, type ColorsSlice, type TableRows } from './overviewLayout'
 import { A4_PORTRAIT, afterCoverPage, chartOnPageOne, mm, PRINT_BEAD_LARGE_MM, PRINT_MARGIN, PRINT_PART_LABEL, PRINT_RULER, type PageSize, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
 import type { Project } from '../domain/project'
 import type { Layered } from '../domain/layerRecord'
 
 // Where everything sits on the PDF's page 1 (ticket 0914; PrintPage1 card), worked out without a canvas so the drawing,
-// the page count and the File size estimate agree: the title block, the whole piece, one Beads needed table, the footer.
+// the page count and the File size estimate agree: the title block, the whole piece, one Beads needed table at the foot of
+// the page with the piece centred over it (ticket 1138), the footer.
 
 /** Beads needed on page 1 and its list pages: the heading and its rule, the column heads, a row of colors (its letter
  * swatch), and the Total and the grams note. */
@@ -25,7 +26,8 @@ export interface PageOneLayout {
   /** The PDF's plan: the chart whole on page 1 (`chartOnPageOne`), or its parts on the chart pages after it. */
   plan: PrintPlan
   titleHeight: number
-  /** The top left corner of page 1's chart area, under the title block. */
+  /** The top left corner of page 1's chart area: under the title block, moved down so the chart sits centred between it
+   * and Beads needed. */
   area: { x: number; y: number }
   /** Page 1 as the overview of a chart cut into parts (no letters, the parts marked): its zoom, size and where its beads
    * begin (overviewLayout). */
@@ -84,10 +86,13 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
     const count = whole ? colors : Math.min(colors, fitting)
     const lists = whole ? [] : listSlices(words, NEEDED_TABLE, count, page)
     const plan = lists.length > 0 ? planWithKey(project, { page, floorMm, pageOne: chart.pageOne, listPages: lists.length }) : chart.plan
-    return { plan, titleHeight, area, needed: oneToARow({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top }, NEEDED_TABLE, bottom, FIT_SLOP), lists }
+    const { needed, drop } = atTheFoot(oneToARow({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top }, NEEDED_TABLE, bottom, FIT_SLOP), NEEDED_TABLE, bottom)
+    return { plan, titleHeight, area: { x: area.x, y: area.y + drop }, needed, lists }
   }
 
   const overview = overviewLayout(project, words, NEEDED_TABLE, page)
   const plan = planWithKey(project, { page, floorMm, pageOne: under(least), listPages: overview.lists.length })
-  return { plan, titleHeight, area, overview: { zoom: overview.zoom, extent: overview.extent, board: overview.board }, needed: oneToARow(overview.needed, NEEDED_TABLE, bottom, FIT_SLOP), lists: overview.lists }
+  const { needed, drop } = atTheFoot(oneToARow(overview.needed, NEEDED_TABLE, bottom, FIT_SLOP), NEEDED_TABLE, bottom)
+  const board = { x: overview.board.x, y: overview.board.y + drop }
+  return { plan, titleHeight, area, overview: { zoom: overview.zoom, extent: overview.extent, board }, needed, lists: overview.lists }
 }

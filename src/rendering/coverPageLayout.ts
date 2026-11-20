@@ -30,9 +30,10 @@ export interface CoverPageLayout {
   piece: Box
 }
 
-/** The Cover page's board and the piece on it: turned as its Canvas is, as large as the board allows inside its pad, centred. */
-export function coverPageLayout(project: Layered, page: PageSize = A4_PORTRAIT): CoverPageLayout {
-  const board = { x: PRINT_MARGIN, y: PRINT_MARGIN, width: page.width - PRINT_MARGIN * 2, height: COVER_BOARD }
+/** The Cover page's board from `top` down (under the title block and the tech line, ticket 1138) and the piece on it: turned
+ * as its Canvas is, as large as the board allows inside its pad, centred. */
+export function coverPageLayout(project: Layered, page: PageSize = A4_PORTRAIT, top = PRINT_MARGIN): CoverPageLayout {
+  const board = { x: PRINT_MARGIN, y: top, width: page.width - PRINT_MARGIN * 2, height: COVER_BOARD }
   const weave = frameWeave(project)
   const { columns, rows } = projectDimensions(project)
   const whole = displayedExtentPx(weave.technique, columns, rows, 1, quarterTurnOf(project), weave.cell)

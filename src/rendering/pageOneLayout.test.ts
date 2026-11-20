@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { Technique } from '../domain/weave'
 import { largeBeadsActs, pageOneLayout } from './pageOneLayout'
-import { A4_PORTRAIT, chartOnPageOne, mm, PRINT_MARGIN } from './printPlan'
+import { A4_PORTRAIT, chartOnPageOne, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
 
 const shape = (technique: Technique, columns: number, rows: number) => bareProject({ technique, orientation: 0, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
 const words = (colors: number, name = 'Mandala', maker = 'Anna K.') => ({ name, maker, colors: Array.from({ length: colors }, (_, index) => ({ hex: '#000000', name: `Color ${index}`, beads: '10' })) })
+const FOOTER_TOP = A4_PORTRAIT.height - PRINT_MARGIN - mm(6)
 const bottomOf = (layout: ReturnType<typeof pageOneLayout>) => layout.needed.y + mm(10.5) + layout.needed.rows * layout.needed.rowHeight + (layout.needed.total ? mm(14) : 0)
 
 // Page 1 of the PDF (ticket 0914; PrintPage1 card): the title block, the whole piece and one Beads needed table.
@@ -33,14 +34,18 @@ describe('pageOneLayout: the chart whole on page 1', () => {
     expect(place.x).toBeCloseTo((A4_PORTRAIT.width - PRINT_MARGIN * 2 - place.width) / 2, 3)
   })
 
-  it('sets Beads needed under the chart, at the top of the room it leaves', () => {
-    const layout = pageOneLayout(shape('loom', 40, 20), words(3))
-    const [part] = layout.plan.parts
-    // The pad: the beads and a ruler band on each side.
-    const chartBottom = layout.area.y + part!.place.y + part!.region.height + mm(10)
+  it('sets Beads needed at the foot of the page, right over the footer, and centres the chart in the room over it', () => {
+    for (const [columns, rows, colors] of [[5, 5, 2], [6, 7, 4], [40, 20, 3], [40, 20, 6]] as const) {
+      const layout = pageOneLayout(shape('loom', columns, rows), words(colors))
+      const [part] = layout.plan.parts
+      // The pad: the beads and a ruler band on each side.
+      const chartTop = layout.area.y + part!.place.y
+      const chartBottom = chartTop + part!.region.height + mm(10)
 
-    expect(layout.area.y).toBeCloseTo(PRINT_MARGIN + layout.titleHeight)
-    expect(layout.needed.y - chartBottom).toBeCloseTo(mm(4))
+      expect(bottomOf(layout)).toBeCloseTo(FOOTER_TOP, 3)
+      expect(chartTop - (PRINT_MARGIN + layout.titleHeight)).toBeCloseTo(layout.needed.y - mm(4) - chartBottom, 3)
+      expect(layout.needed.y - chartBottom).toBeGreaterThanOrEqual(mm(4) - 1e-6)
+    }
   })
 
   it('keeps a small piece in many colors on one page, its bead smaller, while Beads needed takes no more than its share', () => {
@@ -102,6 +107,20 @@ describe('pageOneLayout: Beads needed one color to a row (ticket 1096)', () => {
     expect(layout.overview).toBeDefined()
     expect(layout.needed).toMatchObject({ count: 4, rows: 4, columns: 1, total: true })
     expect(bottomOf(layout)).toBeLessThanOrEqual(A4_PORTRAIT.height - PRINT_MARGIN - mm(6) + 1)
+  })
+
+  it('sets the overview\'s Beads needed at the foot of the page and centres the board in the room over it', () => {
+    for (const [columns, rows, colors] of [[300, 60, 4], [300, 24, 12], [150, 100, 8]] as const) {
+      const layout = pageOneLayout(shape('loom', columns, rows), words(colors))
+      const { board, extent } = layout.overview!
+      // The framed board: the cut labels' band over it, then a ruler and the pad round the beads.
+      const inset = PRINT_RULER + PRINT_BOARD_PAD
+      const boardTop = board.y - inset - mm(3.5)
+      const boardBottom = board.y + extent.height + inset
+
+      expect(bottomOf(layout)).toBeCloseTo(FOOTER_TOP, 3)
+      expect(boardTop - (PRINT_MARGIN + layout.titleHeight)).toBeCloseTo(layout.needed.y - mm(8) - boardBottom, 3)
+    }
   })
 })
 
