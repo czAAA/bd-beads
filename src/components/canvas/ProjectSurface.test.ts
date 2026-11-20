@@ -3,6 +3,7 @@ import { MIRROR_OFF } from '../../domain/mirror'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
+import { FRAME_WAIT_MS } from './surface/useSurfaceDrawing'
 import { createProject } from '../../domain/createProject'
 import { changeFrame } from '../../domain/changeFrame'
 import type { Project, RowProgress } from '../../domain/project'
@@ -116,6 +117,44 @@ describe('ProjectSurface', () => {
 
     expect(draws()).toBe(1)
     expect(wrapper.attributes('data-zoom')).toBe('0.6')
+  })
+
+  it('draws although the animation frame it asked for never comes, and goes on drawing after (ticket 1152)', async () => {
+    vi.useFakeTimers()
+    try {
+      // A browser may drop the frames it was asked for (an iPad's does around its file picker): none is ever delivered.
+      vi.stubGlobal('requestAnimationFrame', () => 1)
+      vi.stubGlobal('cancelAnimationFrame', () => undefined)
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1)
+      expect(wrapper.emitted('drawn')).toBeUndefined()
+
+      vi.advanceTimersByTime(FRAME_WAIT_MS)
+      expect(wrapper.emitted('drawn')).toHaveLength(1)
+
+      context.calls.length = 0
+      await wrapper.setProps({ zoom: 0.5 })
+      vi.advanceTimersByTime(FRAME_WAIT_MS)
+      expect(draws()).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('draws once where the frame comes in time: the wait for it draws nothing more (ticket 1152)', async () => {
+    vi.useFakeTimers()
+    try {
+      const frames: (() => void)[] = []
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+      vi.stubGlobal('cancelAnimationFrame', () => undefined)
+      await mountSurface(projectOf(20, 10), 1)
+      frames.splice(0).forEach((frame) => frame())
+      expect(draws()).toBe(1)
+
+      vi.advanceTimersByTime(FRAME_WAIT_MS * 2)
+      expect(draws()).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('says when every bead in view is drawn, for the safe start (ticket 0716)', async () => {
