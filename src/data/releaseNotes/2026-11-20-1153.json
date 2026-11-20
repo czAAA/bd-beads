@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "Fill shows the whole area it will fill before you press, and with the Mirror on only that area",
+    "ru": "Заливка ещё до нажатия показывает всю область, которую зальёт, а с включённым отражением только её",
+    "uk": "Заливка ще до натискання показує всю область, яку заллє, а з увімкненим відображенням тільки її",
+    "be": "Заліўка яшчэ да націскання паказвае ўсю вобласць, якую зальле, а з уключаным адлюстраваннем толькі яе",
+    "zh": "填充会在按下前显示将要填充的整个区域，开启镜像时也只显示该区域",
+    "es": "El relleno muestra toda la zona que va a rellenar antes de pulsar, y con el espejo activado solo esa zona",
+    "pl": "Wypełnienie jeszcze przed naciśnięciem pokazuje cały obszar, który wypełni, a z włączonym odbiciem tylko ten obszar"
+  }
+}

@@ -1,13 +1,14 @@
 import { ref } from 'vue'
 import { layerAt, onLayer, type Layer, type OnLayerOptions } from '../../domain/layers'
-import { fillArea, isFillRefusal, type FillRefusal } from '../../domain/fill'
+import { isFillRefusal, type FillRefusal } from '../../domain/fill'
+import { fillPressed, fillPreview, inFilledRegion, type FillPress, type FillPressReach } from '../../domain/fillPress'
 import { paintCells } from '../../domain/drawing'
 import { canvasMirrors, counterparts, type MirrorSetting } from '../../domain/mirror'
-import type { GridPosition } from '../../domain/grid'
+import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Edit } from '../project/useEdit'
-import type { Rect } from '../../domain/canvas'
+import { sameFrame, type Rect } from '../../domain/canvas'
 import type { Translations } from '../../i18n/translations'
 import type { MessageTone } from '../ui/useToasts'
 
@@ -42,7 +43,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   /** How many Fill presses Fill reach has refused (ticket 0715): the canvas shows the not-allowed cue each time it grows. */
   const fillRefusals = ref(0)
   /** The Fill a press began, waiting for its lift (ticket 1075, ADR 0098): the position and layer that were pressed. */
-  let pendingFill: { color: string | null; row: number; column: number; layer: Layer } | undefined
+  let pendingFill: FillPress | undefined
 
   function beginStroke(mode: 'paint' | 'erase', layer: Layer) {
     strokeMode.value = mode
@@ -137,22 +138,15 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     if (!pending || !deps.currentProject()) {
       return
     }
-    const { color, row, column, layer } = pending
-    // The Mirror's Canvas Area is a border on the Canvas: the frame's own edge already bounds a Fill there.
-    const place = deps.mirror().place
-    const border = layer === 'canvas' && place?.layer === 'canvas' ? place.area : undefined
     let refused: FillRefusal | undefined
-    if (color) deps.colorUsed(color)
-    deps.edit.edit('drawing', (current) =>
-      onLayer(current, layer, (sheet, local) => {
-        const at = local({ row, column })
-        const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen(), border })
-        if (!isFillRefusal(filled)) return filled
-        // Refused, it lands nowhere: the beads as they were leave no Undo step, nothing saved.
-        refused = filled
-        return sheet.beads
-      }),
-    )
+    if (pending.color) deps.colorUsed(pending.color)
+    deps.edit.edit('drawing', (current) => {
+      const made = fillPressed(current, pending, fillReach())
+      if (!isFillRefusal(made)) return made
+      // Refused, it lands nowhere: the beads as they were leave no Undo step, nothing saved.
+      refused = made
+      return current
+    })
     if (refused) {
       fillRefusals.value += 1
       const t = deps.messages().tools
@@ -160,5 +154,31 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     }
   }
 
-  return { strokeMode, fillRefusals, beginStroke, endStroke, endCancelledStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
+  function fillReach(): FillPressReach {
+    return { mirror: deps.mirror(), onScreen: deps.onScreen() }
+  }
+
+  /** The last Fill preview made, and what it was made from: a hover anywhere in its region floods nothing again. */
+  let lastPreview: { project: Project; color: string; layer: Layer; reach: FillPressReach; region: Project; cells: PreviewCell[] } | undefined
+
+  /** The beads a Fill pressed at `hovered` in `color` would change (ticket 1153): what the hover preview shows, by the
+   * press's own command and rules. */
+  function fillPreviewCells(project: Project, hovered: GridPosition, color: string): PreviewCell[] {
+    const layer = layerAt(project, hovered)
+    const reach = fillReach()
+    const last = lastPreview
+    if (last && last.project === project && last.color === color && last.layer === layer && sameReach(last.reach, reach) && inFilledRegion(project, last.region, layer, hovered)) {
+      return last.cells
+    }
+    const { cells, region } = fillPreview(project, { row: hovered.row, column: hovered.column, layer, color }, reach)
+    lastPreview = { project, color, layer, reach, region, cells }
+    return cells
+  }
+
+  return { strokeMode, fillRefusals, fillPreviewCells, beginStroke, endStroke, endCancelledStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
+}
+
+/** Whether two Fill reaches bound a flood alike: the same Mirror and the same screen. */
+function sameReach(a: FillPressReach, b: FillPressReach): boolean {
+  return a.mirror === b.mirror && sameFrame(a.onScreen, b.onScreen)
 }

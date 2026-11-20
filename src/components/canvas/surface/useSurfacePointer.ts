@@ -878,8 +878,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     if (event.button === 0) {
       stroke = { from: pointInDrawing(event), last: bead }
     }
-    // A press also lands where the pasted block under the pointer goes (the preview cells).
-    const pasted = [...(props.previewCells ?? []), ...(props.previewStamp ? stampCells(props.previewStamp) : [])]
+    // A press also lands where the pasted block under the pointer goes (the preview cells). A Fill's preview is its
+    // region, already clear of the margin (ticket 1153), so its maybe thousands of beads are not asked again.
+    const previewed = props.tools.tool === 'fill' ? [] : (props.previewCells ?? [])
+    const pasted = [...previewed, ...(props.previewStamp ? stampCells(props.previewStamp) : [])]
     if (event.button === 0 && (refusesMargin(bead) || pasted.some((cell) => refusesMargin(cell)))) {
       refusePress()
       if (refusesSelectionStart(bead)) return

@@ -39,6 +39,7 @@ function setup(options: Options = {}) {
       columns: 4,
       lands: () => true,
     })),
+    fillPreviewCells: vi.fn(() => [{ row: 7, column: 7 }, { row: 7, column: 8 }]),
     beginSelectPress: vi.fn(),
     extendSelection: vi.fn(),
     tapPiece: vi.fn(),
@@ -129,12 +130,19 @@ describe('useCanvasPointer', () => {
       expect(deps.pastePreviewCells).toHaveBeenCalled()
     })
 
-    it('shows only the hovered cell under Fill, no counterparts under Mirror either (ticket 1025)', () => {
-      const { row, column } = frameOf(base)!
+    it('shows the region a Fill would flood under Fill, in the chosen color (ticket 1153)', () => {
       const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
-      const { previewCells, onCellHover } = setup({ tool: 'fill', mirror })
-      onCellHover(row + 3, column, 'frame')
-      expect(previewCells.value).toEqual([{ row: row + 3, column, layer: 'frame' }])
+      const { deps, previewCells, onCellHover } = setup({ tool: 'fill', mirror, color: '#00ff00' })
+      onCellHover(3, 0, 'frame')
+      expect(previewCells.value).toEqual([{ row: 7, column: 7 }, { row: 7, column: 8 }])
+      expect(deps.fillPreviewCells).toHaveBeenCalledWith(base, { row: 3, column: 0, layer: 'frame' }, '#00ff00')
+    })
+
+    it('shows the hovered bead alone under Fill with no color chosen, as a press there fills nothing', () => {
+      const { deps, previewCells, onCellHover } = setup({ tool: 'fill', color: null })
+      onCellHover(1, 2)
+      expect(previewCells.value).toEqual([{ row: 1, column: 2 }])
+      expect(deps.fillPreviewCells).not.toHaveBeenCalled()
     })
 
     it('leaves out beads in rows already woven', () => {
