@@ -258,8 +258,8 @@ export function useCanvasView(
   }
 
   /** Pans the shortest way that brings a part of the drawing into the room the Tool pill (and `clear`, the Frame panel,
-   * ticket 0971) leaves, zoom untouched (ticket 0934), gliding or a jump. One in the room, or missing it by `slack` px at
-   * most, or none, moves nothing and the view keeps following the fit. Returns the move, for `putBack`. */
+   * ticket 0971) leaves, zoom untouched (ticket 0934), gliding or a jump. One in the room, or missing it by `slack` at most
+   * (px, as `clear`), or none, moves nothing and the view keeps following the fit. Returns the move, for `putBack`. */
   function bringIntoView(locate: (surface: SurfaceView) => Region | undefined, { jump = false, clear = NO_INSETS, slack = 0 }: { jump?: boolean; clear?: Insets; slack?: number } = {}): ViewMove | undefined {
     const project = currentProject()
     const found = project && measured() ? locate(surfaceOf(project)) : undefined
@@ -268,11 +268,11 @@ export function useCanvasView(
     const shown = screenBox({ ...found, x: found.x + offset.x, y: found.y + offset.y })
     const move = panInto(shown, clear)
     if (Math.abs(move.x) <= slack && Math.abs(move.y) <= slack) return undefined
-    const from = scroll.value
-    const to = scrollAfter(from, move)
+    const before = scroll.value
+    const to = scrollAfter(before, move)
     // Back where it was, or, where the move brought the part into view, only as far as keeps it there.
-    const back = scrollAfter(from, panInto(shown))
-    const made = { back, to, zoom: zoom.value, atFit: isAtFit.value && back.x === from.x && back.y === from.y }
+    const back = scrollAfter(before, panInto(shown))
+    const made = { back, to, zoom: zoom.value, atFit: isAtFit.value && back.x === before.x && back.y === before.y }
     isAtFit.value = false
     glideTo(to, jump)
     return made
