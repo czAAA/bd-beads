@@ -8,7 +8,7 @@ const REACH_SAME = [0, 0] as const
 
 /** Beads laid on columns (peyote, ticket 0734): every other column, or block of `block` columns, sits `shift` of a
  * bead down, and columns and rows sit a full bead apart, so nothing nests. The thread runs along a row, where passes
- * are lines: the first in one pass, every later one in two (even beads, then odd). */
+ * are lines: the first in one pass, every later one in two (the level columns' beads, then the shifted ones'). */
 export const columnsGeometry: GeometryStrategy<ColumnsGeometry> = (geometry, cell) => {
   const { shift, passes, block } = geometry
   const columnCycle = 2 * block
@@ -116,7 +116,8 @@ export const columnsGeometry: GeometryStrategy<ColumnsGeometry> = (geometry, cel
     },
     spans: { along: 'column', reach },
     twoPasses,
-    passes: linePasses(twoPasses),
+    // Along a row the shifted columns' beads hang half a bead lower; down a column every bead is level.
+    passes: linePasses(twoPasses, (along, direction) => (direction === 'rows' ? isShiftedColumn(along) : undefined)),
     turned: ({ row, column }, blockSize) => ({ row: column, column: blockSize.rows - 1 - row }),
   }
 }
