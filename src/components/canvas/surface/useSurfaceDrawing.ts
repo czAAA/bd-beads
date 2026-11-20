@@ -18,29 +18,51 @@ import type { Space } from '../../../rendering/space'
 import type { Region, Scroll } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
 
-/** The Drawing surface's draw scheduler (ticket 0619): a draw asked for any number of times waits for the next
- * animation frame and runs once there (a pinch or wheel burst); without frames it draws at once. Frames still asked
- * for are cancelled with the surface. */
+/** How long a draw waits for its animation frame before it draws without one, in ms (ticket 1152): far longer than a
+ * frame takes to come, short enough that the wait is hardly seen.
+ * @internal The tests wait it out. */
+export const FRAME_WAIT_MS = 250
+
+interface Wait {
+  frame?: number
+  timer: ReturnType<typeof setTimeout>
+}
+
+/** The Drawing surface's draw scheduler (ticket 0619): a draw asked for any number of times runs once at the next
+ * animation frame, or at once without frames. A frame not come after FRAME_WAIT_MS is waited for no longer (ticket
+ * 1152): a browser may drop it, and the draw left waiting would hold back every draw after it. */
 export function useFrameScheduler(): { oncePerFrame: (draw: () => void) => () => void } {
-  const pendingFrames = new Set<number>()
-  onBeforeUnmount(() => pendingFrames.forEach((frame) => cancelAnimationFrame(frame)))
+  const waits = new Set<() => void>()
+  onBeforeUnmount(() => waits.forEach((drop) => drop()))
 
   function oncePerFrame(draw: () => void): () => void {
-    let frame: number | undefined
+    /** The draw asked for and not yet run: its frame, once asked for, and the end of the wait for it. */
+    let waiting: Wait | undefined
+    function drop(): void {
+      if (!waiting) return
+      if (waiting.frame !== undefined) cancelAnimationFrame(waiting.frame)
+      clearTimeout(waiting.timer)
+      waiting = undefined
+      waits.delete(drop)
+    }
+    function run(): void {
+      if (!waiting) return
+      drop()
+      draw()
+    }
     return () => {
       if (typeof requestAnimationFrame !== 'function') {
         draw()
         return
       }
-      if (frame !== undefined) {
+      if (waiting) {
         return
       }
-      frame = requestAnimationFrame(() => {
-        pendingFrames.delete(frame!)
-        frame = undefined
-        draw()
-      })
-      pendingFrames.add(frame)
+      // The wait is set before the frame is asked for: a frame given at once finds it and ends it.
+      const asked: Wait = { timer: setTimeout(run, FRAME_WAIT_MS) }
+      waiting = asked
+      waits.add(drop)
+      asked.frame = requestAnimationFrame(run)
     }
   }
   return { oncePerFrame }
