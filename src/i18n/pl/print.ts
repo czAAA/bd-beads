@@ -63,7 +63,7 @@ export const print: PrintTranslations = {
       evenCount: 'Parzysta liczba koralików.',
       oddCount: 'Nieparzysta liczba koralików.',
       sides: '(L) zaczyna się z lewej, (R) z prawej.',
-      runNote: 'Odcinek to liczba i litera: 2C to dwa koraliki C.',
+      runNote: 'Odcinek to liczba i koralik: 2 {bead} to dwa koraliki C.',
       firstCentre: 'Okrążenie 1 jest w środku; każde okrąża kształt.',
       firstPoint: 'Rząd 1 to para przy czubku; rzędy idą tam i z powrotem.',
       firstBase: 'Rząd 1 to dolny rząd góry; każdy rząd czyta się od lewej do prawej, potem każdą nitkę od lewej, z góry na dół.',

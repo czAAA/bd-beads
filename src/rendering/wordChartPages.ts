@@ -1,8 +1,8 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
-import { drawEmptySwatch, drawMark, font, MONO, SANS, SERIF, text, wrap } from './printPages'
+import { drawEmptySwatch, drawMark, font, MONO, pt, SANS, SERIF, text } from './printPages'
 import { mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
-import { headerMaker, type PrintedWordRow, type PrintText } from './printText'
+import { headerMaker, RUN_NOTE_BEAD, type PrintedRunPart, type PrintedRunUnit, type PrintedWordRow, type PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
 
 // The Word chart as PDF pages (tickets 0574, 0586; PrintWordChart card): a header naming the page's own rows, the color
@@ -27,11 +27,28 @@ const SWATCH = mm(3)
 const NOTE_LINE = mm(3.4)
 const BOTTOM = mm(20)
 const NOTE_STYLE = font('400', 7.5, SANS)
+/** A run (ticket 1096; PrintWordChart card): its count, 0.6 mm, the bead's swatch, and 2.4 mm to the next run. */
+const COUNT_GAP = mm(0.6)
+const RUN_GAP = mm(2.4)
+/** How far above the baseline the middle of the row's digits is (DM Mono's figures stand about 0.7 em tall). */
+const DIGIT_MIDDLE = pt(3.5)
+/** The bead on the key line's run ("2 ▢"), and how far above that line's baseline its middle is. */
+const NOTE_SWATCH = mm(2.6)
+const NOTE_MIDDLE = pt(2.7)
+/** The letter on the key line's bead: "2 ▢ is two beads of C". */
+const NOTE_LETTER = 'C'
+
+/** A part of a row where it is drawn: its printed line and how far from the runs' start. */
+interface PlacedPart {
+  part: PrintedRunPart
+  line: number
+  x: number
+}
 
 interface PlacedRow {
   row: PrintedWordRow
-  /** The runs wrapped to the room beside the number, one entry per printed line. */
-  lines: string[]
+  /** The runs wrapped to the room beside the number, at a run: never a run from its swatch, a pair or a side's bar. */
+  parts: PlacedPart[]
   height: number
 }
 
@@ -47,6 +64,8 @@ interface Layout {
   runsX: number
   notes: string[]
   keyColors: PrintText['colors']
+  /** Each Swatch letter's color, which a run's swatch is drawn in. */
+  byLetter: Map<string, PrintText['colors'][number]>
   keyHeight: number
   /** Where the first row's top is, from the top of the page. */
   rowsTop: number
@@ -67,6 +86,70 @@ function inLetterOrder(colors: PrintText['colors']): PrintText['colors'] {
   return [...colors].sort((a, b) => (a.letter ?? '').length - (b.letter ?? '').length || (a.letter ?? '').localeCompare(b.letter ?? ''))
 }
 
+function partWidth(context: CanvasRenderingContext2D, part: PrintedRunPart): number {
+  context.font = ROW_STYLE
+  return 'text' in part ? context.measureText(part.text).width : context.measureText(String(part.count)).width + COUNT_GAP + SWATCH
+}
+
+/** The room between two parts: after a swatch the run gap (a closing bracket hugs it), after an opening bracket none,
+ * after other words a space. */
+function gapBetween(context: CanvasRenderingContext2D, before: PrintedRunPart, after: PrintedRunPart): number {
+  if ('count' in before) return 'text' in after && after.text === ')' ? COUNT_GAP : RUN_GAP
+  if (before.text.endsWith('(')) return 0
+  context.font = ROW_STYLE
+  return context.measureText(' ').width
+}
+
+function unitWidth(context: CanvasRenderingContext2D, unit: PrintedRunUnit): number {
+  return unit.reduce((width, part, index) => width + partWidth(context, part) + (index > 0 ? gapBetween(context, unit[index - 1]!, part) : 0), 0)
+}
+
+/** A row's parts placed on lines `room` wide (unbounded: one line), wrapping only between units.
+ * @internal Its test wraps a row on its own. */
+export function placeRuns(context: CanvasRenderingContext2D, units: readonly PrintedRunUnit[], room = Infinity): { parts: PlacedPart[]; lines: number; width: number } {
+  const parts: PlacedPart[] = []
+  let line = 0
+  let x = 0
+  let width = 0
+  let last: PrintedRunPart | undefined
+  for (const unit of units) {
+    const gap = last ? gapBetween(context, last, unit[0]!) : 0
+    if (last && x + gap + unitWidth(context, unit) > room) {
+      line += 1
+      x = 0
+    } else {
+      x += gap
+    }
+    unit.forEach((part, index) => {
+      if (index > 0) x += gapBetween(context, unit[index - 1]!, part)
+      parts.push({ part, line, x })
+      x += partWidth(context, part)
+    })
+    width = Math.max(width, x)
+    last = unit.at(-1)
+  }
+  return { parts, lines: line + 1, width }
+}
+
+/** The Word chart's notes wrapped to `width`, the key line's bead taking a swatch's room. */
+function wrapNotes(context: CanvasRenderingContext2D, notes: readonly string[], width: number): string[] {
+  context.font = NOTE_STYLE
+  const measure = (value: string) => context.measureText(value.replaceAll(RUN_NOTE_BEAD, '')).width + value.split(RUN_NOTE_BEAD).length * NOTE_SWATCH - NOTE_SWATCH
+  const lines: string[] = []
+  let line = ''
+  for (const word of notes.join(' ').split(' ')) {
+    const next = line ? `${line} ${word}` : word
+    if (line && measure(next) > width) {
+      lines.push(line)
+      line = word
+    } else {
+      line = next
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
 function rangeOf(rows: PlacedRow[]): string {
   const first = rows[0]!.row.first
   const last = rows[rows.length - 1]!.row.last
@@ -80,19 +163,19 @@ function layoutWordChart(context: CanvasRenderingContext2D, words: PrintText, pa
   context.font = ROW_STYLE
   const markerWidth = marked ? context.measureText('(L)').width : 0
   const runsX = marked ? NUMBER_RIGHT + MARKER_GAP + markerWidth + mm(2) : RUNS_LEFT
-  const longest = Math.max(...chart.rows.map((row) => context.measureText(row.runs).width), 0)
+  const longest = Math.max(...chart.rows.map((row) => placeRuns(context, row.runs).width), 0)
   const columnWidth = runsX + longest <= COLUMN ? COLUMN : width
 
   const keyColors = inLetterOrder(words.colors)
   const items = keyColors.length + (chart.empty ? 1 : 0)
   const perRow = Math.max(1, Math.floor((width - KEY_INSET) / KEY_STEP))
   const keyHeight = KEY_ONE_ROW + KEY_NEXT_ROW * (Math.max(1, Math.ceil(items / perRow)) - 1)
-  const notes = wrap(context, chart.notes.join(' '), NOTE_STYLE, width)
+  const notes = wrapNotes(context, chart.notes, width)
   const rowsTop = KEY_TOP + keyHeight + mm(6) + NOTE_LINE * (notes.length - 1) + mm(3.4)
 
   const placed = chart.rows.map((row): PlacedRow => {
-    const lines = wrap(context, row.runs, ROW_STYLE, columnWidth - runsX)
-    return { row, lines, height: Math.max(1, lines.length) * PITCH }
+    const { parts, lines } = placeRuns(context, row.runs, columnWidth - runsX)
+    return { row, parts, height: lines * PITCH }
   })
   const bottom = page.height - BOTTOM
   const perPage = columnWidth === COLUMN ? 2 : 1
@@ -117,7 +200,8 @@ function layoutWordChart(context: CanvasRenderingContext2D, words: PrintText, pa
     y += next.height
   }
   close()
-  return { columnWidth, runsX, notes, keyColors, keyHeight, rowsTop, pages }
+  const byLetter = new Map(keyColors.flatMap((color) => (color.letter ? [[color.letter, color] as const] : [])))
+  return { columnWidth, runsX, notes, keyColors, byLetter, keyHeight, rowsTop, pages }
 }
 
 /** How many sheets the Word chart takes in the PDF (0 when there is none). @internal Its browser test counts the sheets it
@@ -143,6 +227,41 @@ function drawHeader(context: CanvasRenderingContext2D, words: PrintText, range: 
   text(context, String(pageNumber), right - of - mm(1), mm(18.6), font('600', 18, SANS), PRINT_COLORS.ink, 'right')
 }
 
+/** A bead's swatch, the key's and a run's (ticket 1096): its fill, a 0.1 mm `line-strong` edge and its Swatch letter;
+ * with no color, the empty swatch with the chart's small cross. */
+function drawSwatch(context: CanvasRenderingContext2D, x: number, top: number, color: PrintText['colors'][number] | undefined): void {
+  if (!color) {
+    drawEmptySwatch(context, x, top, SWATCH, mm(0.1))
+    return
+  }
+  context.fillStyle = color.hex
+  context.beginPath()
+  context.roundRect(x, top, SWATCH, SWATCH, SWATCH * 0.28)
+  context.fill()
+  context.strokeStyle = PRINT_COLORS.lineStrong
+  context.lineWidth = mm(0.1)
+  context.stroke()
+  if (color.letter) drawBeadLetter(context, { x, y: top, size: SWATCH, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
+}
+
+/** A line of the notes, the key line's bead drawn as an outlined swatch with the letter C. */
+function drawNoteLine(context: CanvasRenderingContext2D, line: string, x: number, baseline: number): void {
+  let at = x
+  line.split(RUN_NOTE_BEAD).forEach((piece, index) => {
+    if (index > 0) {
+      const top = baseline - NOTE_MIDDLE - NOTE_SWATCH / 2
+      context.beginPath()
+      context.roundRect(at, top, NOTE_SWATCH, NOTE_SWATCH, NOTE_SWATCH * 0.28)
+      context.strokeStyle = PRINT_COLORS.lineStrong
+      context.lineWidth = mm(0.1)
+      context.stroke()
+      drawBeadLetter(context, { x: at, y: top, size: NOTE_SWATCH, color: PRINT_COLORS.paper, letter: NOTE_LETTER, dimmed: false, theme: PRINT_THEME })
+      at += NOTE_SWATCH
+    }
+    at += text(context, piece, at, baseline, NOTE_STYLE, PRINT_COLORS.muted)
+  })
+}
+
 function drawKey(context: CanvasRenderingContext2D, words: PrintText, layout: Layout, left: number, width: number): void {
   const chart = words.wordChart!
   context.strokeStyle = PRINT_COLORS.faint
@@ -160,28 +279,21 @@ function drawKey(context: CanvasRenderingContext2D, words: PrintText, layout: La
   }
   layout.keyColors.forEach((color, index) => {
     const at = place(index)
-    context.fillStyle = color.hex
-    context.beginPath()
-    context.roundRect(at.x, at.top, SWATCH, SWATCH, SWATCH * 0.28)
-    context.fill()
-    context.strokeStyle = PRINT_COLORS.lineStrong
-    context.lineWidth = mm(0.1)
-    context.stroke()
-    if (color.letter) drawBeadLetter(context, { x: at.x, y: at.top, size: SWATCH, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
+    drawSwatch(context, at.x, at.top, color)
     text(context, color.name, at.name, at.baseline, font('400', 7, SANS), PRINT_COLORS.ink, 'left', nameRoom)
   })
   if (chart.empty) {
     const at = place(layout.keyColors.length)
-    drawEmptySwatch(context, at.x, at.top, SWATCH, mm(0.1))
+    drawSwatch(context, at.x, at.top, undefined)
     text(context, chart.empty, at.name, at.baseline, font('400', 7, SANS), PRINT_COLORS.ink, 'left', nameRoom)
   }
 
   const noteTop = KEY_TOP + layout.keyHeight + mm(6)
-  layout.notes.forEach((line, index) => text(context, line, left, noteTop + index * NOTE_LINE, NOTE_STYLE, PRINT_COLORS.muted))
+  layout.notes.forEach((line, index) => drawNoteLine(context, line, left, noteTop + index * NOTE_LINE))
 }
 
 function drawRow(context: CanvasRenderingContext2D, layout: Layout, placed: PlacedRow, x: number, y: number): void {
-  const { row, lines } = placed
+  const { row, parts } = placed
   context.strokeStyle = PRINT_COLORS.fieldLine
   context.lineWidth = mm(0.2)
   context.beginPath()
@@ -190,7 +302,17 @@ function drawRow(context: CanvasRenderingContext2D, layout: Layout, placed: Plac
   const baseline = y + mm(3.9)
   text(context, row.label, x + NUMBER_RIGHT, baseline, NUMBER_STYLE, PRINT_COLORS.ink, 'right')
   if (row.marker) text(context, `(${row.marker})`, x + NUMBER_RIGHT + MARKER_GAP, baseline, ROW_STYLE, PRINT_COLORS.muted)
-  lines.forEach((line, index) => text(context, line, x + layout.runsX, baseline + index * PITCH, ROW_STYLE, PRINT_COLORS.ink))
+  for (const { part, line, x: along } of parts) {
+    const left = x + layout.runsX + along
+    const lineBaseline = baseline + line * PITCH
+    if ('text' in part) {
+      text(context, part.text, left, lineBaseline, ROW_STYLE, PRINT_COLORS.ink)
+      continue
+    }
+    // A run's count, then its bead's swatch, the swatch's middle on the middle of the digits.
+    const count = text(context, String(part.count), left, lineBaseline, ROW_STYLE, PRINT_COLORS.ink)
+    drawSwatch(context, left + count + COUNT_GAP, lineBaseline - DIGIT_MIDDLE - SWATCH / 2, part.letter === undefined ? undefined : layout.byLetter.get(part.letter))
+  }
 
   const fifth = row.last % 5 === 0
   context.strokeStyle = fifth ? PRINT_COLORS.lineStrong : PRINT_COLORS.lineSoft

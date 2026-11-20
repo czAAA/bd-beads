@@ -32,13 +32,20 @@ interface PrintedColor {
   letter?: string
 }
 
-/** One line of the Word chart: its number (`3`, `1&2`) and the rows it holds, the end it starts from and its runs (`2C, 1A, 3×`). */
+/** A piece of a written row (ticket 1096; PrintWordChart card): words, or a run, its count printed with its bead's swatch
+ * (the Swatch letter's), an empty position's swatch when it has no letter. */
+export type PrintedRunPart = { text: string } | { count: number; letter?: string }
+
+/** The parts a row never wraps apart: a run, a corner pair in its brackets, or a side's last run with the bar after it. */
+export type PrintedRunUnit = readonly PrintedRunPart[]
+
+/** One line of the Word chart: its number (`3`, `1&2`) and the rows it holds, the end it starts from and its runs. */
 export interface PrintedWordRow {
   label: string
   first: number
   last: number
   marker?: 'L' | 'R'
-  runs: string
+  runs: PrintedRunUnit[]
 }
 
 /** The Word chart as words (ticket 0574), only with Row by row on (ticket 0916). */
@@ -100,32 +107,38 @@ const FIRST_ROW_KEY = { top: 'firstTop', right: 'firstRight', bottom: 'firstBott
 /** Where a Custom frame's Word chart starts, as its note (ticket 0594). */
 const START_KEY = { centre: 'firstCentre', point: 'firstPoint', base: 'firstBase', parts: 'partsThenJoins' } as const
 
-/** An empty position in a run: the cross the chart draws there (ticket 0963), so both pages use one sign for it. */
-const EMPTY_SIGN = '×'
+/** Where the Word chart's line on runs draws a bead (ticket 1096): an outlined swatch with the letter C. */
+export const RUN_NOTE_BEAD = '\ufffc'
 
-/** Runs in the 0574 notation: `2C, 1A, 3×`. */
-function runsText(runs: readonly WordRun[]): string {
-  return runs.map((run) => `${run.count}${run.letter ?? EMPTY_SIGN}`).join(', ')
+/** Each run on its own: its count and its bead, `2 ▢` (ticket 1096; it was `2C, 1A, 3×`, ticket 0574). */
+function runUnits(runs: readonly WordRun[]): PrintedRunUnit[] {
+  return runs.map((run) => [{ count: run.count, ...(run.letter ? { letter: run.letter } : {}) }])
 }
 
-// Kept together when a row wraps at its spaces: a corner pair's two colors, and a side's mark with the side it ends.
-const NO_BREAK_SPACE = '\u00a0'
-
-/** A pair's beads in brackets, `(2A)` or `(1A 1B)` (ticket 0873); none for no pair. */
-function pairText(runs: readonly WordRun[]): string {
-  return runs.length > 0 ? `(${runs.map((run) => runsText([run])).join(NO_BREAK_SPACE)})` : ''
+/** A pair's beads in brackets, `(2 ▢)` or `(1 ▢ 1 ▢)` (ticket 0873), kept together; none for no pair. */
+function pairUnits(runs: readonly WordRun[]): PrintedRunUnit[] {
+  return runs.length > 0 ? [[{ text: '(' }, ...runUnits(runs).flat(), { text: ')' }]] : []
 }
 
-/** A round side by side (ticket 0873): each side its corner pair in brackets, `(2A)` or `(1A 1B)`, then its singles'
- * runs, the sides apart at a `|`. */
-function sidesText(sides: readonly WordSide[]): string {
-  return sides.map(({ corner, singles }) => [pairText(corner), runsText(singles)].filter(Boolean).join(', ')).join(`${NO_BREAK_SPACE}| `)
+/** A round side by side (ticket 0873): each side its corner pair in brackets, then its singles' runs, the sides apart at
+ * a `|` kept with the side it ends. */
+function sidesUnits(sides: readonly WordSide[]): PrintedRunUnit[] {
+  return sides.flatMap(({ corner, singles }, index) => {
+    const units = [...pairUnits(corner), ...runUnits(singles)]
+    if (index === sides.length - 1 || units.length === 0) return units
+    return [...units.slice(0, -1), [...units.at(-1)!, { text: '|' }]]
+  })
 }
 
-/** A Kite row (ticket 0874): its runs up to the middle pair, the pair in brackets as a corner pair is, then the rest:
- * `1A, (2B), 1A`. */
-function spineText({ before, pair, after }: WordSpine): string {
-  return [runsText(before), pairText(pair), runsText(after)].filter(Boolean).join(', ')
+/** A Kite row (ticket 0874): its runs up to the middle pair, the pair in brackets as a corner pair is, then the rest. */
+function spineUnits({ before, pair, after }: WordSpine): PrintedRunUnit[] {
+  return [...runUnits(before), ...pairUnits(pair), ...runUnits(after)]
+}
+
+/** A line's runs, led by a Custom frame's pass in words ("Round 3:"), or the pass alone where it lists no beads (a join). */
+function rowUnits(step: string | undefined, runs: PrintedRunUnit[]): PrintedRunUnit[] {
+  if (!step) return runs
+  return runs.length > 0 ? [[{ text: `${step}:` }], ...runs] : [[{ text: step }]]
 }
 
 /** The Word chart's words in the app's language; letters and numbers stay as they are. A Custom frame's line names its
@@ -135,7 +148,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
   if (!chart.marked && !chart.start) notes.push(t.loomRead)
   if (chart.count) notes.push(chart.count === 'even' ? t.evenCount : t.oddCount)
   if (chart.marked) notes.push(t.sides)
-  notes.push(t.runNote)
+  notes.push(fillBlanks(t.runNote, { bead: RUN_NOTE_BEAD }))
   if (chart.rows.some((row) => row.sides)) notes.push(t.pairNote)
   if (chart.rows.some((row) => row.spine)) notes.push(t.middlePairNote)
   return {
@@ -147,7 +160,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
       first: row.number,
       last: row.both ? 2 : row.number,
       ...(row.marker ? { marker: row.marker } : {}),
-      runs: [row.step && orderStepLabel(steps, row.step), row.sides ? sidesText(row.sides) : row.spine ? spineText(row.spine) : runsText(row.runs)].filter(Boolean).join(': '),
+      runs: rowUnits(row.step && orderStepLabel(steps, row.step), row.sides ? sidesUnits(row.sides) : row.spine ? spineUnits(row.spine) : runUnits(row.runs)),
     })),
   }
 }

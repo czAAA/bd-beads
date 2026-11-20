@@ -4,7 +4,7 @@ import { CELL_SIZE_PX } from './cellSize'
 import { coverPageLayout } from './coverPageLayout'
 import { pageOneLayout, underLargeBeads } from './pageOneLayout'
 import { chartOnPageOne, PRINT_DPI, wholeArea, type TrimmedArea } from './printPlan'
-import type { PrintText } from './printText'
+import type { PrintedWordRow, PrintText } from './printText'
 import { pdfPageCount } from './wordChartPages'
 import { beadsOfLayer, frameOf } from '../domain/layerRecord'
 
@@ -69,6 +69,14 @@ function cellsIn(area: TrimmedArea): number {
   return (area.lastAcross - area.firstAcross + 1) * (area.lastDown - area.firstDown + 1)
 }
 
+/** What a run's swatch weighs on a Word chart page, in characters of its text (ticket 1096). */
+const SWATCH_CHARACTERS = 8
+
+/** A Word chart row's characters: its words and counts, each swatch as `SWATCH_CHARACTERS`. */
+function rowCharacters(row: PrintedWordRow): number {
+  return row.runs.flat().reduce((sum, part) => sum + ('text' in part ? part.text.length : String(part.count).length + SWATCH_CHARACTERS), 0)
+}
+
 /** The facts of an export of this Project in these words, or nothing without a Frame. */
 export function exportFacts(project: Project, words: PrintText): ExportFacts | undefined {
   const frame = frameOf(project)
@@ -90,7 +98,7 @@ export function exportFacts(project: Project, words: PrintText): ExportFacts | u
     partArea: plan.parts.reduce((sum, part) => sum + (part.lastAcross - part.firstAcross + 1) * (part.lastDown - part.firstDown + 1), 0),
     wordPages: pdfPages - plan.pageCount,
     wordRows: words.wordChart?.rows.length ?? 0,
-    wordChars: words.wordChart?.rows.reduce((sum, row) => sum + row.runs.length, 0) ?? 0,
+    wordChars: words.wordChart?.rows.reduce((sum, row) => sum + rowCharacters(row), 0) ?? 0,
     pdfPages,
     largeBeadsActs: !!words.largeBeads || underLargeBeads(plan),
   }
