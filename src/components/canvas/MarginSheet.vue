@@ -19,11 +19,10 @@ import { marginForm, marginScale, type MarginForm } from '../../rendering/margin
 import { MARGIN_PX } from '../../rendering/marginSizes'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import AppButton from '../ui/AppButton.vue'
-import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
-import MenuButton from '../ui/MenuButton.vue'
 import EditableLine from '../project/EditableLine.vue'
 import MarginColorPopover from './MarginColorPopover.vue'
+import MarginFrameTools, { type FrameToolItem } from './MarginFrameTools.vue'
 import MarginMoveBar from './MarginMoveBar.vue'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import { frameNameLine } from './marginFrameName'
@@ -280,9 +279,11 @@ const bandYields = computed(() => yields(bandBox.value))
 const handleShown = computed(() => form.value === 'bare' || !row.value)
 const handleAt = computed(() => ({ left: props.anchor.box.left - props.anchor.sheet.left + props.anchor.box.width / 2, top: props.anchor.box.top - props.anchor.sheet.top }))
 const handleStyle = computed(() => ({ left: `${handleAt.value.left}px`, top: `${handleAt.value.top}px` }))
+/** The Move bar and the Frame tools button beside it (ticket 1164), each 24 high, as one box that gives way. */
+const handleWidth = MARGIN_PX.moveWidth + MARGIN_PX.gap + MARGIN_PX.tab
 const handleYields = computed(() => {
   const { sheet } = props.anchor
-  return yields({ left: sheet.left + handleAt.value.left - MARGIN_PX.moveWidth / 2, top: sheet.top + handleAt.value.top - MARGIN_PX.tab, width: MARGIN_PX.moveWidth, height: MARGIN_PX.tab })
+  return yields({ left: sheet.left + handleAt.value.left - MARGIN_PX.moveWidth / 2, top: sheet.top + handleAt.value.top - MARGIN_PX.tab, width: handleWidth, height: MARGIN_PX.tab })
 })
 const titleYields = computed(() => titleSize.width.value > 0 && yields(titleBox.value))
 
@@ -308,19 +309,21 @@ function onMovePress(event: PointerEvent): void {
  * narrow row shows none. */
 const iconsShown = computed(() => !touch.value && (row.value === 'full' || row.value === 'compact'))
 const editShown = computed(() => editable.value && (iconsShown.value || (touch.value && row.value !== 'narrow')))
-const colorShown = computed(() => !touch.value && row.value !== 'narrow')
+const colorShown = computed(() => !touch.value && !!row.value && row.value !== 'narrow')
 
 /** The Margin color popover, hung from its button, or from the Frame tools menu where that holds it. */
 const toolsEl = ref<HTMLElement>()
+/** The Frame tools button beside the lone Move bar (ticket 1164). */
+const handleToolsEl = ref<HTMLElement>()
 /** The tools are one Tab stop too, ←/→ along them (ticket 0857), so the title block's name is the next stop. */
 const toolsRoving = useRovingFocus(toolsEl, { selector: '.margin-sheet__tool', axis: () => 'horizontal', managesTabIndex: true })
 const colorOpen = ref(false)
 const colorButton = computed(() =>
-  colorOpen.value ? (toolsEl.value?.querySelector<HTMLElement>('[data-testid="margin-color"], [data-testid="margin-frame-tools"]') ?? undefined) : undefined,
+  colorOpen.value ? ((toolsEl.value ?? handleToolsEl.value)?.querySelector<HTMLElement>('[data-testid="margin-color"], [data-testid="margin-frame-tools"]') ?? undefined) : undefined,
 )
 // It hangs from its button as a dropdown does (ticket 0698): where the zoom or the width takes that button away (into
-// the Frame tools menu, or the row with it), it closes rather than float.
-const colorHangsFrom = computed(() => (!row.value ? 'none' : colorShown.value ? 'button' : 'menu'))
+// the Frame tools menu, the row's or the lone Move bar's), it closes rather than float.
+const colorHangsFrom = computed(() => (!row.value ? 'handle' : colorShown.value ? 'button' : 'menu'))
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
 const sheetEl = ref<HTMLElement>()
@@ -370,7 +373,7 @@ const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOf
 
 /** The Frame tools menu holds the tools the band shows no button for (MarginSheet card, Zoom forms); Mirror the whole
  * Frame first, checked while on, shown as Rotate Frame is. */
-const menuItems = computed(() =>
+const menuItems = computed<FrameToolItem[]>(() =>
   [
     rotatable.value && { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
     rotatable.value && { id: 'rotate', action: actions.rotate, run: rotateFromBand },
@@ -380,7 +383,6 @@ const menuItems = computed(() =>
     { id: 'remove', action: actions.remove, run: () => emit('remove') },
   ].filter((item) => !!item),
 )
-const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action.enabled ? !action.enabled(deps.value) : false)
 </script>
 
 <template>
@@ -470,27 +472,23 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           <span class="margin-sheet__divider" aria-hidden="true" />
           <IconButton variant="plain" :icon-size="iconSize" :action="actions.remove" :deps="deps" class="margin-sheet__tool margin-sheet__remove" data-testid="frame-chrome-remove" @click="emit('remove')" />
         </template>
-        <MenuButton v-else variant="plain" class="margin-sheet__tool" icon="more" icon-only :label="t.frame.margin.frameTools" align="end" data-testid="margin-frame-tools">
-          <AppMenuItem
-            v-for="item in menuItems"
-            :key="item.id"
-            :icon="item.action.icon"
-            :disabled="itemDisabled(item.action)"
-            :name="item.action.name(t)"
-            :disabled-body="itemDisabled(item.action) ? item.action.disabledBody?.(t, deps) : undefined"
-            :checked="'checked' in item ? item.checked : undefined"
-            :data-testid="`margin-frame-tools-${item.id}`"
-            :data-rotate-from="item.id === 'rotate' ? 'menu' : undefined"
-            @select="item.run()"
-          >
-            {{ item.action.name(t) }}
-          </AppMenuItem>
-        </MenuButton>
+        <MarginFrameTools v-else :items="menuItems" :deps="deps" />
       </div>
     </div>
 
-    <div v-if="handleShown" class="margin-sheet__handle" :class="{ 'margin-sheet__yielding': handleYields }" :style="handleStyle" data-testid="margin-handle">
+    <!-- Bare, or too narrow for even the narrowest row, the Move bar stands alone with the Frame tools button beside it, so
+         every Frame tool is a press away at any zoom (ticket 1164). -->
+    <div
+      v-if="handleShown"
+      class="margin-sheet__handle"
+      :class="{ 'margin-sheet__yielding': handleYields }"
+      :style="handleStyle"
+      data-testid="margin-handle"
+      @pointerdown.capture="rotateCopy.notePress"
+      @keydown.capture="rotateCopy.forgetPress"
+    >
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
+      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools :items="menuItems" :deps="deps" /></span>
     </div>
 
     <div
@@ -632,22 +630,26 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 }
 
 /* 28px icon buttons, no fill, hover `ink` at 10%; Edit Frame on is `ink` with a `canvas` icon (IconButton selected). */
-.margin-sheet__tools :deep(.icon-btn) {
+.margin-sheet__tools :deep(.icon-btn),
+.margin-sheet__handle-tools :deep(.icon-btn) {
   width: var(--margin-tool);
   height: var(--margin-tool);
   border-radius: var(--radius-md);
 }
 
-.margin-sheet__tools :deep(.icon-btn:not(.icon-btn--selected):hover) {
+.margin-sheet__tools :deep(.icon-btn:not(.icon-btn--selected):hover),
+.margin-sheet__handle-tools :deep(.icon-btn:hover) {
   background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
-/* Compact and folded, the tools are 24px with 14px icons, 2px apart (MarginSheet card, Zoom forms). */
+/* Compact and folded, the tools are 24px with 14px icons, 2px apart (MarginSheet card, Zoom forms); so is the Frame tools
+ * button beside the lone Move bar. */
 .margin-sheet__band:not(.margin-sheet__band--full) .margin-sheet__tools {
   gap: var(--space-2);
 }
 
-.margin-sheet__band:not(.margin-sheet__band--full) .margin-sheet__tools :deep(.icon-btn) {
+.margin-sheet__band:not(.margin-sheet__band--full) .margin-sheet__tools :deep(.icon-btn),
+.margin-sheet__handle-tools :deep(.icon-btn) {
   width: var(--margin-tool-compact);
   height: var(--margin-tool-compact);
 }
@@ -716,6 +718,25 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 @media (pointer: coarse) {
   .margin-sheet__handle {
     transform: translate(-50%, calc(-100% - (var(--touch-target) - var(--margin-tab)) / 2 - var(--space-16)));
+  }
+}
+
+/* Beside it, the Frame tools button (ticket 1164): 24px, as folded, out to the Move bar's right so the bar stays centred
+ * on the Frame; 4px from it, or on a coarse pointer by what its 44px hit area reaches past its drawn size, so the two
+ * hit areas never overlap. */
+.margin-sheet__handle-tools {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-inline-start: var(--space-4);
+}
+
+@media (pointer: coarse) {
+  .margin-sheet__handle-tools {
+    margin-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2);
   }
 }
 
