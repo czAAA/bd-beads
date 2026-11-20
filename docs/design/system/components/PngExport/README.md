@@ -10,7 +10,7 @@ The PNG export: **the Cover page as a picture** (ticket 1096; PrintCover card), 
 - Drawn at 150, 300 or 450 dpi by the Export quality (QualitySlider card): 1240 × 1754, 2480 × 3508 or 3720 × 5262 px. A device that cannot hold a 450 dpi page draws High at 300. The PDF is not affected.
 - Set in the print fonts (Inter, DM Mono, Instrument Serif), in the app's language. No wide layout, no watermark.
 - File name `{project}-{frame}-{maker}.png` (ticket 0720, printed-output.md), with no switch's word in it (ExportPanel card).
-- Once handed over, the one saved-file toast names it, "Saved: {file}" (Message card, ticket 0859), as for the PDF and the Project file. "Export" names the PNG and PDF only; the Project file is saved, never exported.
+- Once handed over, the one saved-file toast names it, "Saved to Downloads: {file}" or where else it went (Message card, tickets 0859, 1139), as for the PDF and the Project file. "Export" names the PNG and PDF only; the Project file is saved, never exported.
 
 ## Acceptance
 

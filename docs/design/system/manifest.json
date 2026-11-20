@@ -351,7 +351,7 @@
     {
       "name": "PrintBlackAndWhite",
       "group": "Print",
-      "summary": "The PDF's pages after the cover drawn for a black-and-white printer: one ink, each bead on paper, a light tint or solid black, so letters and lines print sharp. Approved, not yet in the app."
+      "summary": "The PDF's pages after the cover drawn for a black-and-white printer: one ink, each bead on paper, a light tint or solid black, so letters and lines print sharp."
     },
     {
       "name": "PrintChartPage",

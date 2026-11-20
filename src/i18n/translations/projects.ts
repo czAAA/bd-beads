@@ -108,9 +108,9 @@ export interface ProjectsTranslations {
     /** While an export is drawn (Loading card): what is happening, to which Project. */
     makingPng: string
     makingPdf: string
-    /** The one toast once any file reached the device, a Project file, PNG or PDF, by download or into a picked file
-     * (ticket 0859), with {file}. */
-    savedFile: string
+    /** The one toast once any file reached the device, a Project file, PNG or PDF (ticket 0859), with {file}, saying
+     * where by its route (ticket 1139): a download, the share sheet, or written into a picked or Linked file. */
+    savedFile: { downloaded: string; shared: string; written: string }
     /** The action of a file whose share needs a fresh tap (iPhone, iPad; ticket 306). */
     readySave: string
     /** The Export menu's last row and its modal (NameOnExports card). */

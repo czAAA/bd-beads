@@ -37,6 +37,6 @@ Picture saves (ticket 1096; PngExport card) this page as a PNG, at the Export qu
 - [x] Every page number and every page a page points at counts the cover.
 - [x] With Cover page off, the PDF is what it was before.
 - [x] Picture saves the cover as one PNG file.
-- [ ] The cover is in color with Black and white on.
+- [x] The cover is in color with Black and white on.
 
 Hand-written from the signed-off canvas; static rendition.

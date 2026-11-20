@@ -9,6 +9,7 @@ import { PRINT_COLORS } from './printColors'
 import { COVER_BOARD, COVER_PAD } from './coverPageLayout'
 import { mm, planPrint, PRINT_BEAD_LARGE_MM, PRINT_BEAD_MAX_MM, PRINT_BEAD_MIN_MM, PRINT_BEAD_STRETCH_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
+import { PRINT_TONE } from '../domain/printTones'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => bareProject({ technique, orientation: rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
@@ -22,6 +23,11 @@ const print = (name: string) => tokens.print.tokens.find((entry) => entry.name =
 describe('the printed pages keep to the tokens (ticket 162)', () => {
   it('uses the light colors and the print board', () => {
     expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), faint: color('faint'), line: color('line'), lineSoft: color('line-soft'), lineStrong: color('line-strong'), fieldLine: color('field-line'), accent: color('accent'), accentStrong: color('accent-strong'), board: color('print-board') })
+  })
+
+  it('draws Black and white in the print tones', () => {
+    const share = (name: string) => parseFloat(String(print(name))) / 100
+    expect(PRINT_TONE).toEqual({ step: share('print-tone-step'), max: share('print-tone-max'), blackShare: share('print-black-share') })
   })
 
   it('uses the print sizes', () => {
