@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "The Radial toolbox opens sooner when you hold the Canvas",
+    "ru": "Инструменты и цвета у указателя открываются быстрее, когда вы удерживаете холст",
+    "uk": "Інструменти й кольори біля вказівника відкриваються швидше, коли ви утримуєте полотно",
+    "be": "Інструменты і колеры каля паказальніка адкрываюцца хутчэй, калі вы ўтрымліваеце палатно",
+    "zh": "按住画布时，指针旁的工具和颜色会更快打开",
+    "es": "Las herramientas y los colores junto al puntero se abren antes al mantener pulsado el lienzo",
+    "pl": "Narzędzia i kolory przy wskaźniku otwierają się szybciej po przytrzymaniu płótna"
+  }
+}

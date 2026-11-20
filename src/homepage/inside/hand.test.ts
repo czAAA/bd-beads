@@ -28,7 +28,7 @@ function playingHand({ dragHoldMs = 0 } = {}) {
     dragMs: 0,
     dragHoldMs,
     roomPx: 24,
-    holdMs: 450,
+    holdMs: 350,
   })
   return { hand, calls, ended }
 }
@@ -80,7 +80,7 @@ describe("What's inside's hand: a press applied at once (ticket 0924)", () => {
       dragMs: 0,
       dragHoldMs: 0,
       roomPx: 24,
-      holdMs: 450,
+      holdMs: 350,
     })
     const pressed = hand.press('confirm')
     // The clock stands still: a press now would be stamped in the millisecond a dialog's button was attached in.
