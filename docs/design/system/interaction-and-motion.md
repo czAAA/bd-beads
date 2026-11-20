@@ -38,7 +38,7 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 
 The RadialToolbox card has the whole design; this is how it answers and moves. The ring, by a right click (ticket 1064) and by a hold (ticket 1065), and the slide (ticket 1077) are in the app.
 
-- **A hold on the Canvas** with the pointer that draws opens the ring after `--hold-duration` (450ms), a little shorter than the long-press that shows a control's Tooltip (500ms). It shows nothing for `--hold-quiet` (150ms), so a tap never shows anything; then a hairline in `ink` is drawn once round the pressed point and closes as the hold ends. A move of 8px before then is a stroke, and the hold is off.
+- **A hold on the Canvas** with the pointer that draws opens the ring after `--hold-duration` (350ms), a little shorter than the long-press that shows a control's Tooltip (500ms). It shows nothing for `--hold-quiet` (150ms), so a tap never shows anything; then a hairline in `ink` is drawn once round the pressed point and closes as the hold ends. A move of 8px before then is a stroke, and the hold is off.
 - **A hold leaves nothing behind:** what the press started is dropped as the first finger of a pinch is, and Fill lands at the lift.
 - **The item under the pointer** takes the tile's hover look under a mouse and the pressed look under a finger or the Pencil mid-slide; its name shows over the ring at once, with no hover delay.
 - **The ring arrives** over `--duration-base` with `--ease-out`, opacity and scale from 94%, after the hairline has finished: one thing moves at a time. It leaves over `--radial-out` (150ms) with `--ease-in`, the picked tile pressed. Nothing glows and nothing bounces.
