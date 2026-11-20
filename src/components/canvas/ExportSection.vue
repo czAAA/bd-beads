@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, useId } from 'vue'
 import EditableLine from '../project/EditableLine.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectFileButton from './ProjectFileButton.vue'
 import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
+import ChipRadioGroup from '../ui/form/ChipRadioGroup.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import { useExportQuality } from '../../composables/export/useExportQuality'
 import { usePrintChoices } from '../../composables/export/usePrintChoices'
@@ -18,6 +19,7 @@ import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
+import { frameRowOrder, ROW_WAYS } from '../../domain/rowProgress'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 import { namedChoices, pdfFileName } from '../../composables/export/pdfFileName'
 import { MAX_PDF_FILE_NAME, typedPdfFileName } from '../../domain/projectFile'
@@ -48,7 +50,7 @@ const frame = computed(() => frameOf(props.project))
 const quality = useExportQuality()
 /** Cover page, Black and white, Empty grid, Chart border, Large beads and Row by row on this device (tickets 0916, 1096,
  * 1127): the PDF's pages, its count and its look follow them at once. */
-const { cover, blackAndWhite, emptyGrid, chartBorder, largeBeads, rowByRow, choices } = usePrintChoices()
+const { cover, blackAndWhite, emptyGrid, chartBorder, largeBeads, rowByRow, rowByRowWay, choices } = usePrintChoices()
 /** The print code the estimate is worked out with (ticket 0991): asked for as the rows first show, not with the page. */
 const printCode = shallowRef<PrintCode>()
 loadPrintCode().then(
@@ -62,6 +64,15 @@ const wordsNow = computed(() => printCode.value?.printText(props.project, t.valu
 const exportFactsNow = computed(() => wordsNow.value && printCode.value?.exportFacts(props.project, wordsNow.value))
 /** Large beads is offered only where it makes the chart's beads bigger (ticket 1125); hidden, it keeps its remembered state. */
 const largeBeadsShown = computed(() => !!exportFactsNow.value?.largeBeadsActs)
+/** Which way Row by row's rows run is asked only with Row by row on, for a Frame whose weaver may turn its rows (a Custom
+ * frame's Row order runs one way); hidden, it keeps its remembered choice. */
+const rowWayShown = computed(() => rowByRow.value && !!frame.value && frameRowOrder(props.project).turns)
+const WAY_WORDS = { down: 'topToBottom', right: 'leftToRight', up: 'bottomToTop', left: 'rightToLeft' } as const
+const rowWayLabelId = useId()
+const rowWayOptions = computed(() => [
+  { value: 'progress' as const, label: t.value.frame.rowByRowWayProgress, testid: 'export-row-by-row-way-progress', action: { name: () => t.value.frame.rowByRowWayProgress, body: () => t.value.frame.rowByRowWayLine, chords: [] } },
+  ...ROW_WAYS.map((way) => ({ value: way, label: t.value.rowProgress[WAY_WORDS[way]], testid: `export-row-by-row-way-${way}`, action: { name: () => t.value.rowProgress[WAY_WORDS[way]], chords: [] } })),
+])
 /** A size as the buttons show it: "≈ 1.4 MB" (up to 0.1 MB, whole MB from 10 MB) or "< 0.1 MB". */
 function sizeText(bytes: number): string {
   const megabytes = shownMegabytes(bytes)
@@ -171,6 +182,15 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
   <PanelSwitchRow v-model="chartBorder" :label="t.frame.chartBorderLabel" :info-label="t.frame.chartBorderInfoLabel" :body="t.frame.chartBorderLine" testid="export-chart-border" />
   <PanelSwitchRow v-if="largeBeadsShown" v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
   <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
+  <div v-if="rowWayShown" class="export-section__way" data-testid="export-row-by-row-way">
+    <span :id="rowWayLabelId" class="export-section__way-label">{{ t.frame.rowByRowWayLabel }}</span>
+    <ChipRadioGroup
+      :model-value="rowByRowWay"
+      :options="rowWayOptions"
+      :labelledby="rowWayLabelId"
+      @update:model-value="rowByRowWay = $event ?? rowByRowWay"
+    />
+  </div>
   <slot />
   <LoadingState v-if="exporting" class="export-section__loading" compact :text="exportingText" />
 </template>
@@ -187,6 +207,18 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
 .export-section__files > *,
 .export-section__files :deep(.app-button) {
   width: 100%;
+}
+
+.export-section__way {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-10);
+}
+
+.export-section__way-label {
+  font: var(--type-meta);
+  color: var(--muted);
 }
 
 .export-section__quality {

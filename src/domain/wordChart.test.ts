@@ -8,7 +8,7 @@ import type { Project } from './project'
 import type { Technique } from './weave'
 import { wordChartOf } from './wordChart'
 import { frameOf, withFrameSheet } from './layerRecord'
-import { type LayersChange, withLayers } from '../testUtils/layerFields'
+import { type LayersChange, ROWS_DOWN, withLayers } from '../testUtils/layerFields'
 
 const HEX: Record<string, string> = { A: '#111111', B: '#222222', C: '#333333' }
 
@@ -22,7 +22,7 @@ function framed(technique: Technique, rows: string[], changes: LayersChange = {}
       if (letter !== '.') (beads[r] ??= {})[c] = HEX[letter]
     })
   })
-  return withLayers(base, { frame: { ...frameOf(base)!, beads }, letters: true, paletteLetters: { [HEX.A]: 'A', [HEX.B]: 'B', [HEX.C]: 'C' }, ...changes })
+  return withLayers(base, { frame: { ...frameOf(base)!, beads }, rowProgress: ROWS_DOWN, letters: true, paletteLetters: { [HEX.A]: 'A', [HEX.B]: 'B', [HEX.C]: 'C' }, ...changes })
 }
 
 const lines = (project: Project) => wordChartOf(project)!.rows.map((row) => `${row.both ? '1&2' : row.number}${row.marker ? `(${row.marker})` : ''}: ${row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(',')}`)

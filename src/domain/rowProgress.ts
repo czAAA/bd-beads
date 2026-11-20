@@ -8,6 +8,7 @@ import type { LayerGeometry } from './layerGeometry'
 import { frameWeave } from './layerWeave'
 import type { Project, RowProgress } from './project'
 import type { RowOrder, RowWay } from './rowOrder'
+import { CLOCKWISE, type ShownWay } from './rowWays'
 import type { AreaLine } from './removeLine'
 import type { PassDirection } from './weaveGeometry'
 
@@ -29,12 +30,12 @@ function withRowProgress(project: Project, rowProgress: RowProgress): Project {
   return frame ? touchFrameSheet(project, { ...frame, rowProgress }) : project
 }
 
-/** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has
- * nothing left to reset. */
-export function isInitialRowProgress(rowProgress: RowProgress): boolean {
+/** Whether Row progress is already exactly the just-created state of a Frame like this one (see startingRowProgress, or
+ * INITIAL_ROW_PROGRESS with no Frame), so deleteAll has nothing left to reset. */
+export function isInitialRowProgress(rowProgress: RowProgress, start: RowProgress = INITIAL_ROW_PROGRESS): boolean {
   return (
-    rowProgress.direction === INITIAL_ROW_PROGRESS.direction &&
-    !rowProgress.reversed &&
+    rowProgress.direction === start.direction &&
+    !rowProgress.reversed === !start.reversed &&
     !rowProgress.currentRowBack &&
     !rowProgress.currentColumnBack &&
     rowProgress.currentRow === INITIAL_ROW_PROGRESS.currentRow &&
@@ -166,11 +167,7 @@ export function resetRowProgress(project: Project): Project {
   return withRowProgress(project, firstPasses(rowProgressOf(project)))
 }
 
-/** Which way the rows run on the Canvas, as an arrow points: down is top to bottom. */
-export type ShownWay = 'down' | 'left' | 'up' | 'right'
-
-/** The ways in the order a quarter turn clockwise takes each to the next. */
-const CLOCKWISE: readonly ShownWay[] = ['down', 'left', 'up', 'right']
+export type { ShownWay }
 
 /** Which way the rows run as the Frame lies (ticket 0667, ADR 0079): its own way (top to bottom, left to right and back),
  * turned with the Frame on the Canvas, whose own rows and pointers do not change. */
