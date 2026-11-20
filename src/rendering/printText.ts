@@ -13,6 +13,7 @@ import { groupThousands } from '../domain/formatNumber'
 import { plural } from '../i18n/plural'
 import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
+import { turnRowDirectionTo, type ShownWay } from '../domain/rowProgress'
 import { wordChartOf, type WordChart, type WordRun, type WordSide, type WordSpine } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
@@ -71,6 +72,8 @@ export interface PrintChoices {
   chartBorder?: boolean
   largeBeads?: boolean
   rowByRow?: boolean
+  /** The way Row by row's rows run, as seen; none: the way Row progress runs them. */
+  rowByRowWay?: ShownWay
 }
 
 // Everything the PDF and PNG print, worked out as words before drawing (tickets 162, 164); maker's name omitted when
@@ -206,7 +209,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)
   }
 
-  const wordChart = choices.rowByRow ? wordChartOf(project) : undefined
+  const wordChart = choices.rowByRow ? wordChartOf(choices.rowByRowWay ? turnRowDirectionTo(project, choices.rowByRowWay) : project) : undefined
   const palette = projectPalette(project)
   const quantities = computeColorQuantities(project, palette)
   const total = quantities.reduce((sum, quantity) => sum + quantity.count, 0)

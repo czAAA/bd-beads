@@ -6,7 +6,7 @@ import { addedColorId, defaultPalette } from './palette'
 import { frameGrid } from '../testUtils/frameGrid'
 import { backgroundOf, canvasOf, frameOf } from './layerRecord'
 import { rotateCanvas } from './rotate'
-import { rowProgressOf } from './rowProgress'
+import { rowProgressOf, shownWayOf } from './rowProgress'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -249,5 +249,19 @@ describe('createProjectFromImage', () => {
     expect(project.paletteCodes).toEqual({ '#00ff00': '55' })
     expect(Object.keys(project.paletteLetters ?? {})).toHaveLength(builtIns.length + 1)
     expect(project).not.toHaveProperty('imageColors')
+  })
+})
+
+describe('createProject starting way of the rows', () => {
+  const made = (technique: 'peyote' | 'loom' | 'brick') => createProject({ technique, beadId: cubeBead.id, size: { width: 4, height: 4, unit: 'beads' } })
+
+  it('starts a loom Frame top to bottom, peyote left to right and brick stitch bottom to top as seen, at the first pass', () => {
+    expect((['loom', 'peyote', 'brick'] as const).map((technique) => shownWayOf(made(technique)))).toEqual(['down', 'right', 'up'])
+  })
+
+  it('keeps each Frame\'s own way as the Technique\'s starting Canvas turn takes it: peyote\'s Canvas starts turned a quarter', () => {
+    expect(rowProgressOf(made('loom'))).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(made('peyote'))).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(made('brick'))).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 })
   })
 })

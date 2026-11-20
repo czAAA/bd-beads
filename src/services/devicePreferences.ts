@@ -9,6 +9,7 @@ import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPos
 import { normalizeHex } from '../domain/color'
 import { DEFAULT_EXPORT_QUALITY, parseExportQuality, type ExportQuality } from '../domain/exportQuality'
 import { FIRST_CONVERT_CHOICES, parseConvertChoices, writeConvertChoices, type ConvertChoices } from '../domain/convertChoices'
+import { parseRowByRowWay, type RowByRowWay } from '../domain/rowByRowWay'
 import { readKey, removeKey } from './storageKeys'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
@@ -167,6 +168,13 @@ export const PREFERENCES = {
   /** Large beads and Row by row, the Export panel's print choices (ticket 0916): off until switched on. */
   printLargeBeads: offUntilOn('openbeads:print-large-beads'),
   printRowByRow: offUntilOn('openbeads:print-row-by-row'),
+  /** The way Row by row's rows run, under its switch: as Row progress runs them until another way is picked. */
+  printRowByRowWay: preference<RowByRowWay>({
+    key: 'openbeads:print-row-by-row-way',
+    fallback: 'progress',
+    parse: parseRowByRowWay,
+    write: (way) => (way === 'progress' ? null : way),
+  }),
   // Which edge the Tool pill is docked to (ticket 439): bottom until it is moved, and a stored value that is not an
   // edge is bottom too.
   toolPillPosition: preference<PillPosition>({
