@@ -74,7 +74,8 @@ const SWATCH_CHARACTERS = 8
 
 /** A Word chart row's characters: its words and counts, each swatch as `SWATCH_CHARACTERS`. */
 function rowCharacters(row: PrintedWordRow): number {
-  return row.runs.flat().reduce((sum, part) => sum + ('text' in part ? part.text.length : String(part.count).length + SWATCH_CHARACTERS), 0)
+  const characters = (part: PrintedWordRow['runs'][number][number]) => ('text' in part ? part.text.length : String(part.count).length + SWATCH_CHARACTERS)
+  return row.runs.flat().reduce((sum, part) => sum + characters(part), 0)
 }
 
 /** The facts of an export of this Project in these words, or nothing without a Frame. */

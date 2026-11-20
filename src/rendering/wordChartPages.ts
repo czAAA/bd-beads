@@ -24,6 +24,8 @@ const KEY_NEXT_ROW = mm(4.5)
 const KEY_STEP = mm(31)
 const KEY_INSET = mm(3)
 const SWATCH = mm(3)
+/** A swatch's corner, as a share of its side: a letter swatch's, as on page 1. */
+const SWATCH_CORNER = 0.28
 const NOTE_LINE = mm(3.4)
 const BOTTOM = mm(20)
 const NOTE_STYLE = font('400', 7.5, SANS)
@@ -229,19 +231,19 @@ function drawHeader(context: CanvasRenderingContext2D, words: PrintText, range: 
 
 /** A bead's swatch, the key's and a run's (ticket 1096): its fill, a 0.1 mm `line-strong` edge and its Swatch letter;
  * with no color, the empty swatch with the chart's small cross. */
-function drawSwatch(context: CanvasRenderingContext2D, x: number, top: number, color: PrintText['colors'][number] | undefined): void {
+function drawSwatch(context: CanvasRenderingContext2D, x: number, top: number, color: Pick<PrintText['colors'][number], 'hex' | 'letter'> | undefined, size = SWATCH): void {
   if (!color) {
-    drawEmptySwatch(context, x, top, SWATCH, mm(0.1))
+    drawEmptySwatch(context, x, top, size, mm(0.1))
     return
   }
   context.fillStyle = color.hex
   context.beginPath()
-  context.roundRect(x, top, SWATCH, SWATCH, SWATCH * 0.28)
+  context.roundRect(x, top, size, size, size * SWATCH_CORNER)
   context.fill()
   context.strokeStyle = PRINT_COLORS.lineStrong
   context.lineWidth = mm(0.1)
   context.stroke()
-  if (color.letter) drawBeadLetter(context, { x, y: top, size: SWATCH, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
+  if (color.letter) drawBeadLetter(context, { x, y: top, size, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
 }
 
 /** A line of the notes, the key line's bead drawn as an outlined swatch with the letter C. */
@@ -249,13 +251,7 @@ function drawNoteLine(context: CanvasRenderingContext2D, line: string, x: number
   let at = x
   line.split(RUN_NOTE_BEAD).forEach((piece, index) => {
     if (index > 0) {
-      const top = baseline - NOTE_MIDDLE - NOTE_SWATCH / 2
-      context.beginPath()
-      context.roundRect(at, top, NOTE_SWATCH, NOTE_SWATCH, NOTE_SWATCH * 0.28)
-      context.strokeStyle = PRINT_COLORS.lineStrong
-      context.lineWidth = mm(0.1)
-      context.stroke()
-      drawBeadLetter(context, { x: at, y: top, size: NOTE_SWATCH, color: PRINT_COLORS.paper, letter: NOTE_LETTER, dimmed: false, theme: PRINT_THEME })
+      drawSwatch(context, at, baseline - NOTE_MIDDLE - NOTE_SWATCH / 2, { hex: PRINT_COLORS.paper, letter: NOTE_LETTER }, NOTE_SWATCH)
       at += NOTE_SWATCH
     }
     at += text(context, piece, at, baseline, NOTE_STYLE, PRINT_COLORS.muted)
