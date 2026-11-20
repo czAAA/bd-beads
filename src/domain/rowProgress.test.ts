@@ -10,7 +10,7 @@ import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'
-import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
+import { beadsOfLayer, frameOf, withCanvas, withFrameSheet } from './layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { type RowProgress } from './project'
 
@@ -407,7 +407,8 @@ describe('resetRowProgress (ticket 455)', () => {
 
 describe('passLine (ticket 0849)', () => {
   it('names the ruler line of the pass where a line takes two passes, on peyote only (ticket 0849, F-04-03)', () => {
-    const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } })
+    // A new peyote Project's Canvas is turned a quarter: looked at upright first.
+    const peyote = withCanvas(createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }), { orientation: 0 })
     const lines = frameOf(peyote)!.rows
     expect(rowProgressPosition(peyote).total).toBe(1 + (lines - 1) * 2)
     // Pass 1 is the first line; passes 2 and 3 the second; pass 4 the third.
@@ -415,12 +416,22 @@ describe('passLine (ticket 0849)', () => {
     expect(passLine(moveToRow(peyote, 1))).toEqual({ line: 2, lines })
     expect(passLine(moveToRow(peyote, 2))).toEqual({ line: 2, lines })
     expect(passLine(moveToRow(peyote, 3))).toEqual({ line: 3, lines })
-    // Counted as the rulers number them: from the edge the weaving starts at (ticket 1154).
+    // Counted as the rulers number them: from the top and the left as seen, whichever way the rows run (ticket 1165).
     const upward = toggleRowDirection(toggleRowDirection(peyote))
-    expect(passLine(upward)).toEqual({ line: 1, lines })
-    expect(passLine(moveToRow(upward, 3))).toEqual({ line: 3, lines })
+    expect(passLine(upward)).toEqual({ line: lines, lines })
+    expect(passLine(moveToRow(upward, 3))).toEqual({ line: lines - 2, lines })
+    const columns = frameOf(peyote)!.columns
     const leftward = toggleRowDirection(upward)
-    expect(passLine(moveToRow(leftward, 1))).toEqual({ line: 2, lines: frameOf(peyote)!.columns })
+    expect(passLine(moveToRow(leftward, 1))).toEqual({ line: columns - 1, lines: columns })
+    // A Canvas turned half round shows the rows the other way up, and a quarter turn their first one at the right.
+    expect(passLine(withCanvas(peyote, { orientation: 180 }))).toEqual({ line: lines, lines })
+    expect(passLine(withCanvas(upward, { orientation: 180 }))).toEqual({ line: 1, lines })
+    expect(passLine(withCanvas(peyote, { orientation: 90 }))).toEqual({ line: lines, lines })
+    expect(passLine(withCanvas(peyote, { orientation: 270 }))).toEqual({ line: 1, lines })
+    // A Frame lying a quarter round shows its first row at the right: its own rows are counted as seen too.
+    const lying = withFrameSheet(peyote, { ...frameOf(peyote)!, quarterTurns: 1 })
+    expect(passLine(lying)).toEqual({ line: lines, lines })
+    expect(passLine(withCanvas(lying, { orientation: 180 }))).toEqual({ line: 1, lines })
     // None once every pass is done, and none where a pass is a whole line.
     expect(passLine(moveToRow(peyote, rowProgressPosition(peyote).total))).toBeUndefined()
     expect(passLine(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }))).toBeUndefined()

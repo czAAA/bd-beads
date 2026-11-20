@@ -8,6 +8,7 @@ import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
 import { bareProject } from '../testUtils/layerFields'
 import { canvasOf } from '../domain/layerRecord'
+import { frameRowOrder, moveToRow, passLine } from '../domain/rowProgress'
 
 const R = '#e63746'
 interface Look {
@@ -472,41 +473,75 @@ describe('a Frame lying turned (ticket 0667)', () => {
   })
 })
 
-describe('the Frame\'s numbers count from the edge the weaving starts at (ticket 1154)', () => {
+describe('every ruler counts left to right and top to bottom as seen (ticket 1165)', () => {
   const sheet = { row: 0, column: 0, rows: 3, columns: 4, technique: 'loom' as const, beads: {} }
-  const numbers = (frame: typeof sheet & { quarterTurns?: 1 }, way: { direction: 'rows' | 'columns'; reversed?: true }, rotation: Rotation = 0) => {
+  const TURNS: Rotation[] = [0, 90, 180, 270]
+  const WAYS = [{ direction: 'rows' }, { direction: 'columns' }, { direction: 'rows', reversed: true }, { direction: 'columns', reversed: true }] as const
+  /** Each ruler's numbers in the order they stand on screen, from the left or from the top, one side of each. */
+  const asSeen = (labels: RulerLabel[], kind: RulerLabel['kind']) => (['row', 'column'] as const).map((axis) => {
+    const own = labels.filter((label) => label.kind === kind && label.axis === axis)
+    // A ruler stands on one side or on two facing ones: it runs along the way its numbers take more places.
+    const places = (of: (label: RulerLabel) => number) => new Set(own.map((label) => Math.round(of(label)))).size
+    const across = places((label) => label.x) > places((label) => label.y)
+    const along = (label: RulerLabel) => Math.round(across ? label.x : label.y)
+    return [...new Map(own.sort((a, b) => along(a) - along(b)).map((label) => [along(label), label.text])).values()]
+  })
+  const framed = (frame: typeof sheet & { quarterTurns?: 1 }, way: (typeof WAYS)[number], rotation: Rotation) => {
     const subject = bareProject({ technique: 'loom', frame, rowProgress: { ...way, currentRow: 0, currentColumn: 0 } })
     // A turn carries the Frame off the top-left corner: look at it in the middle of a viewport that holds it.
     const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
-    const { labels } = rulerLayout(subject, view(view().scrollToCentre(sheet)), { fontPx: 11, numbers: true })
-    // One side's numbers each, in the order of the Frame's own lines.
-    const side = (axis: 'row' | 'column') => [...new Map(labels.filter((label) => label.axis === axis).map((label) => [label.index, label.text])).values()]
-    return { rows: side('row'), columns: side('column') }
+    return rulerLayout(subject, view(view().scrollToCentre(sheet)), { fontPx: 11, numbers: true }).labels
   }
 
-  it('counts rows from the top and columns from the left while the rows run down or to the right', () => {
-    expect(numbers(sheet, { direction: 'rows' })).toEqual({ rows: ['1', '2', '3'], columns: ['1', '2', '3', '4'] })
-    expect(numbers(sheet, { direction: 'columns' })).toEqual({ rows: ['1', '2', '3'], columns: ['1', '2', '3', '4'] })
+  it('counts the Frame\'s from 1 at the left and at the top at every Canvas turn, whichever way it is woven', () => {
+    for (const rotation of TURNS) {
+      for (const way of WAYS) {
+        const sides = asSeen(framed(sheet, way, rotation), 'frame')
+        expect(sides.map((numbers) => numbers.length).sort(), `${rotation}° ${way.direction}`).toEqual([3, 4])
+        for (const numbers of sides) {
+          expect(numbers, `${rotation}° ${way.direction}`).toEqual(numbers.map((_, index) => String(index + 1)))
+        }
+      }
+    }
   })
 
-  it('counts the rows from the bottom woven bottom to top, and the columns from the right woven right to left', () => {
-    expect(numbers(sheet, { direction: 'rows', reversed: true })).toEqual({ rows: ['3', '2', '1'], columns: ['1', '2', '3', '4'] })
-    expect(numbers(sheet, { direction: 'columns', reversed: true })).toEqual({ rows: ['1', '2', '3'], columns: ['4', '3', '2', '1'] })
+  it('counts a Frame lying a quarter round the same way, at every Canvas turn', () => {
+    for (const rotation of TURNS) {
+      for (const numbers of asSeen(framed({ ...sheet, quarterTurns: 1 }, WAYS[2], rotation), 'frame')) {
+        expect(numbers, `${rotation}°`).toEqual(numbers.map((_, index) => String(index + 1)))
+      }
+    }
   })
 
-  it('keeps counting from that edge on a turned Canvas, where the rows run across the screen', () => {
-    expect(numbers(sheet, { direction: 'rows', reversed: true }, 90)).toEqual({ rows: ['3', '2', '1'], columns: ['1', '2', '3', '4'] })
-  })
-
-  it('counts a Frame lying a quarter round from the edge its first row lies at: the right', () => {
-    expect(numbers({ ...sheet, quarterTurns: 1 }, { direction: 'rows' })).toEqual({ rows: ['1', '2', '3', '4'], columns: ['3', '2', '1'] })
-    expect(numbers({ ...sheet, quarterTurns: 1 }, { direction: 'rows', reversed: true })).toEqual({ rows: ['1', '2', '3', '4'], columns: ['1', '2', '3'] })
+  it('counts a Piece area\'s the same way, on the sides it stood on', () => {
+    for (const rotation of TURNS) {
+      const { labels } = layoutOf(project(block(2, 2, 3, 4)), { rotation, centred: { row: 2, column: 2, rows: 3, columns: 4 } })
+      expect(asSeen(labels, 'piece').map((numbers) => numbers.join()).sort(), `${rotation}°`).toEqual(['1,2,3', '1,2,3,4'])
+    }
+    // Turned half round the rulers are still its own top and left ones, now below and to the right.
+    const { labels, boxes } = layoutOf(project(block(2, 2, 3, 4)), { rotation: 180, centred: { row: 2, column: 2, rows: 3, columns: 4 } })
+    expect(boxes).toHaveLength(1)
+    expect(labels.filter((label) => label.axis === 'column').map((label) => `${label.index}:${label.text}`)).toEqual(['0:4', '1:3', '2:2', '3:1'])
   })
 
   it('makes every 5th number counted that way the bold one', () => {
     const tall = { ...sheet, rows: 7 }
-    const subject = bareProject({ technique: 'loom', frame: tall, rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
-    const { labels } = rulerLayout(subject, surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: tall, rotation: 0, zoom: 1 }), { fontPx: 11, numbers: true })
+    const labels = framed(tall, WAYS[0], 180)
     expect([...new Set(labels.filter((label) => label.axis === 'row' && label.fifth).map((label) => `${label.index}:${label.text}`))]).toEqual(['2:5'])
+  })
+
+  it('gives the counter the number the ruler shows on the current pass\'s line (ticket 0849)', () => {
+    const peyote = { ...sheet, rows: 5, technique: 'peyote' as const }
+    for (const rotation of TURNS) {
+      for (const way of WAYS) {
+        const subject = moveToRow(bareProject({ technique: 'peyote', frame: peyote, orientation: rotation, rowProgress: { ...way, currentRow: 0, currentColumn: 0 } }), 3)
+        const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame: peyote, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
+        const { labels } = rulerLayout(subject, view(view().scrollToCentre(peyote)), { fontPx: 11, numbers: true })
+        // The number the pill stands on (rulerRenderer's `numbersPass`): the line's own, on the ruler across the rows.
+        const line = frameRowOrder(subject).lineOf(3)
+        const shown = new Set(labels.filter((label) => label.kind === 'frame' && label.axis === (way.direction === 'columns' ? 'column' : 'row') && label.position === line).map((label) => label.text))
+        expect([...shown], `${rotation}° ${way.direction}`).toEqual([String(passLine(subject)!.line)])
+      }
+    }
   })
 })

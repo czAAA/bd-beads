@@ -11,7 +11,6 @@ import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
 import { frameOf, type Layered } from '../domain/layerRecord'
-import { laidWayOf } from '../domain/rowProgress'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's sides but the bottom one
 // (ticket 0657), or each Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -40,8 +39,6 @@ export interface RuledBox extends Rect {
   sides: 'sheet' | 'start'
   /** False for the box round every bead of a layer whose Pieces aren't counted yet (ticket 0716): numbers, no line. */
   outlined?: false
-  /** The axis numbered from the box's far end: the Frame's lines woven from its bottom or its right (ticket 1154). */
-  fromEnd?: 'row' | 'column'
 }
 
 /** One number on a ruler, where it is in the viewport and what a click on it selects. */
@@ -77,10 +74,7 @@ function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPiece
   const own: RuledBox[] = []
   if (frame && !frameShapeOf(frame)) {
     const { row, column, rows, columns } = laidRect({ ...frame, cell: frameWeave(project).cell })
-    // Its lines are numbered from the edge the weaving starts at, as it lies (ticket 1154).
-    const way = laidWayOf(project)
-    const fromEnd = way === 'up' ? { fromEnd: 'row' as const } : way === 'left' ? { fromEnd: 'column' as const } : {}
-    own.push({ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet', ...fromEnd })
+    own.push({ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' })
   }
   return [
     ...own,
@@ -248,6 +242,10 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1])
     return { x, y, nx, ny }
   }
+  // A ruler counts left to right or top to bottom as seen (ticket 1165): from its far end where a turned Canvas shows
+  // the box's own columns or rows running the other way, a step along them pointing left or up (a quarter turn's unit).
+  const backwards = ({ x, y }: { x: number; y: number }) => x + y < 0
+  const fromEnd = { column: backwards(surface.gridDirection(1, 0)), row: backwards(surface.gridDirection(0, 1)) }
   const seen = (label: { x: number; y: number; width: number; height: number }) =>
     label.x + label.width / 2 > -margin && label.x - label.width / 2 < viewport.width + margin && label.y + label.height / 2 > -margin && label.y - label.height / 2 < viewport.height + margin
   const dotSeen = (spot: { x: number; y: number }) => spot.x > -margin && spot.x < viewport.width + margin && spot.y > -margin && spot.y < viewport.height + margin
@@ -263,7 +261,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     position: number,
   ) => {
     const column = axis === 'column'
-    const number = box.fromEnd === axis ? (column ? count.columns : count.rows) - index : index + 1
+    const number = fromEnd[axis] ? (column ? count.columns : count.rows) - index : index + 1
     const text = String(number)
     const turned = column && number >= TURNED_FROM
     const band = column ? columnBand : rowSize
