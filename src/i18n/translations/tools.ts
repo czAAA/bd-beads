@@ -146,7 +146,7 @@ export interface ToolsTranslations {
       rowProgress: string
     }
   }
-  /** The `?` shortcuts help overlay (ticket 96): every keyboard shortcut, grouped by Tool group. Key labels
+  /** Keyboard shortcuts, Menu's Subpanel (tickets 96, 1159): every key and gesture, grouped as in the Toolbox. Key labels
    * themselves (digits, letters, "⌘C" or "Ctrl+C") are locale-neutral and built inline in ShortcutsHelp.vue rather than
    * translated here — only the description of what each one does needs a translation. */
   shortcutsHelp: {
@@ -160,15 +160,30 @@ export interface ToolsTranslations {
     zoomCanvas: string
     /** The Radial toolbox's row (ticket 1064): a right click on the Canvas, not a key. */
     toolsAtPointer: string
-    /** Ticket 88's whole Colors group, summarized as one row rather than one per swatch. */
+    /** The Colors group's rows (ticket 1159): Shift+1…3, Shift+4…9 and Shift+0. */
+    recentColor: string
     paletteColors: string
-    /** The switch at the top of Keyboard shortcuts (ticket 438) and its two choices. */
+    paletteColorSeven: string
+    /** The switch at the top of Keyboard shortcuts (ticket 438). */
     keyHints: string
-    keyHintsOn: string
-    keyHintsOff: string
     /** The two Pastes named apart in the list (ticket 0993): the pill's tool and the clipboard's key. */
     pasteTool: string
     pasteClipboard: string
+    /** The Canvas's gestures the list names (ticket 1159, ShortcutsHelp card), each a row of its own way. */
+    panAnyTool: string
+    scrollCanvas: string
+    scrollSideways: string
+    pinchZoom: string
+    toolsAtTouch: string
+    /** The keys a focused handle answers: the group, its condition line and its rows. */
+    handleGroup: string
+    handleHint: string
+    moveArea: string
+    moveFrame: string
+    resizeFrame: string
+    moveReference: string
+    tenAtATime: string
+    movePaletteColor: string
   }
   /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One
    * imperative sentence ending in a full stop; keys never appear (they are the key chip). */

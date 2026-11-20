@@ -164,7 +164,7 @@ describe('App keyboard shortcuts', () => {
     expect(firstCellColor()).toBeNull()
   })
 
-  it('? opens the shortcuts help and Escape closes it without backing out of Select', async () => {
+  it('? opens Menu on Keyboard shortcuts, ? again closes it, and Escape closes it without backing out of Select (ticket 1159)', async () => {
     const wrapper = await mountApp(6, 6)
     await pickTool(wrapper, 'select')
     await pressBead(wrapper, 0)
@@ -172,10 +172,13 @@ describe('App keyboard shortcuts', () => {
     await wrapper.trigger('mouseup')
 
     await pressKey({ key: '?' })
-    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="shortcuts-help"]').exists()).toBe(true)
+    await pressKey({ key: '?' })
+    expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(false)
 
+    await pressKey({ key: '?' })
     await pressKey({ key: 'Escape' })
-    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(false)
     expect(selectedBeadCount(wrapper)).toBe(2)
   })
 })

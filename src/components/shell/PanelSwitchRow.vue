@@ -10,9 +10,9 @@ import type { IconName } from '../ui/icons'
 defineProps<{
   icon?: IconName
   label: string
-  /** The Info button's name ("What Letters does") and its Tooltip. */
-  infoLabel: string
-  body: string
+  /** The Info button's name ("What Letters does") and its Tooltip; a row with none has no Info button (Show key hints). */
+  infoLabel?: string
+  body?: string
   /** The switch's test id; its Info button's is the same with `-info`. */
   testid: string
 }>()
@@ -24,7 +24,7 @@ const on = defineModel<boolean>({ required: true })
     <AppIcon v-if="icon" :name="icon" :size="16" class="panel-switch-row__icon" />
     <span class="panel-switch-row__label">
       {{ label }}
-      <InfoButton :label="infoLabel" :body="body" :data-testid="`${testid}-info`" />
+      <InfoButton v-if="infoLabel && body" :label="infoLabel" :body="body" :data-testid="`${testid}-info`" />
     </span>
     <AppSwitch v-model="on" :label="label" :data-testid="testid" />
   </div>

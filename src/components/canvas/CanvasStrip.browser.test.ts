@@ -18,6 +18,8 @@ describe('CanvasStrip on a phone (ticket 0843)', () => {
     const { root } = await mountAt(InShell, {}, { locale: 'en', width })
     const strip = rectOf(root, '[data-testid="canvas-strip"]')
     const exportButton = rectOf(root, '[data-testid="strip-export"]')
+    const undo = rectOf(root, '[data-testid="strip-undo"]')
+    const redo = rectOf(root, '[data-testid="strip-redo"]')
 
     expect(exportButton.left).toBeGreaterThanOrEqual(0)
     expect(exportButton.right).toBeLessThanOrEqual(Math.min(strip.right, window.innerWidth))
@@ -38,6 +40,11 @@ describe('CanvasStrip on a phone (ticket 0843)', () => {
     expect(row.dataset.cut).toBe('start')
     expect(rectOf(root, '[data-testid="zoom-reset"]').right).toBeLessThanOrEqual(exportButton.left)
     expect(rectOf(root, '[data-testid="strip-export"]')).toEqual(exportButton)
+    // Undo and Redo stay put and whole before the scrolling row, as Export does after it.
+    expect(rectOf(root, '[data-testid="strip-undo"]')).toEqual(undo)
+    expect(rectOf(root, '[data-testid="strip-redo"]')).toEqual(redo)
+    expect(redo.right).toBeLessThanOrEqual(row.getBoundingClientRect().left)
+    expect(undo.left).toBeGreaterThanOrEqual(0)
   })
 
   it('is unchanged on tablets and laptops: nothing cut, nothing faded, Export last in the right corner', async () => {
