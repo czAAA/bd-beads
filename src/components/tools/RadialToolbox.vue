@@ -30,6 +30,9 @@ const props = defineProps<{
   /** The item under the pointer a slide holds down, told by the ring's rule (ticket 1077): it wears the pressed look
    * and shows its name. */
   held?: RadialItemId
+  /** Whether a press outside is the one that opens the ring where it lands, a right click or a hold on the Canvas (ticket
+   * 1147): it goes through with the ring still open, and the Canvas closes it and opens it again there. */
+  movesOn?: (event: PointerEvent) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -41,7 +44,7 @@ const emit = defineEmits<{
   /** What the Canvas strip's Undo and Redo do. */
   undo: []
   redo: []
-  /** Escape or a press outside, the hole included. */
+  /** Escape or a press outside, the hole included, but for the one `movesOn` says. */
   close: []
 }>()
 
@@ -141,7 +144,7 @@ async function onClick(event: MouseEvent) {
   if (props.open) picked.value = undefined
 }
 
-useOverlayLayer({ isOpen: () => props.open, root: () => rootEl.value, close: () => emit('close') })
+useOverlayLayer({ isOpen: () => props.open, root: () => rootEl.value, close: () => emit('close'), keepsPress: (event) => !!props.movesOn?.(event) })
 </script>
 
 <template>

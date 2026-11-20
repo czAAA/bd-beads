@@ -87,6 +87,7 @@ Every item runs the code path its existing control runs, so nothing is reachable
 - **Both live together (ticket 1077):** a hold lifted without sliding leaves the ring open for a tap. A lift picks only after the pointer has moved 8px since the ring opened, measured from where it was at that moment; this also covers a ring that has moved in from an edge, where the pointer may already be over a tile when it opens.
 - **A tool or a colour closes the ring. Undo and Redo keep it open** (ticket 1064), since Undo is often wanted several times in a row. Undo goes off when nothing is left to undo; Redo comes on with the first Undo.
 - **Nothing picked:** sliding out and back and lifting in the hole closes the ring. With the ring left open, a press in the hole or anywhere outside it is an Outside press: it closes the ring and does nothing else, and nothing under the press acts. Escape closes it too.
+- **Opened again elsewhere (ticket 1147):** with the ring open, the press that opens it moves it. A right click on the Canvas closes the ring at the press and opens it again where it was pressed; a right-button drag pans with the ring closed. A hold with the drawing pointer closes the ring at the press, draws the hairline round the new point and opens the ring there, ready for the slide; lifted early or moved 8px first, the ring stays closed. Like an Outside press, that press is no tool's and no handle's. Every other press is an Outside press, as above.
 
 ## Edges (ticket 1076)
 

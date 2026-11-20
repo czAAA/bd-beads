@@ -112,6 +112,36 @@ describe('the Radial toolbox', () => {
     wrapper.unmount()
   })
 
+  it('a second right click or hold on the Canvas moves the open ring there, and draws nothing (ticket 1147)', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    const stands = () => ({ style: ring(wrapper).attributes('style'), on: outlinedBead(wrapper) })
+
+    await rightClickBead(wrapper, 40)
+    const first = stands()
+    await rightClickBead(wrapper, 200)
+    await flushPromises()
+    expect(ring(wrapper).isVisible()).toBe(true)
+    const second = stands()
+    expect(second.on).not.toEqual(first.on)
+    expect(second.style).not.toEqual(first.style)
+
+    await holdBead(wrapper, 40)
+    await flushPromises()
+    expect(ring(wrapper).isVisible()).toBe(true)
+    expect(stands()).toEqual(first)
+    expect(beadColor(wrapper, 40)).toBeNull()
+    expect(beadColor(wrapper, 200)).toBeNull()
+    expect(ring(wrapper).get('[data-testid="radial-undo"]').attributes('aria-disabled')).toBe('true')
+
+    // A left click still only closes it.
+    await pressBead(wrapper, 200)
+    await wrapper.get('[data-testid="project-surface"]').trigger('pointerup')
+    await flushPromises()
+    expect(ring(wrapper).isVisible()).toBe(false)
+    expect(beadColor(wrapper, 200)).toBeNull()
+    wrapper.unmount()
+  })
+
   it('a hold on the Canvas opens the ring and places no bead, and a tap on a recent colour chooses it (ticket 1065)', async () => {
     localStorage.setItem('openbeads:recent-colors', '#1d3557,#f1c453')
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })

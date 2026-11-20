@@ -363,6 +363,8 @@ const schemaAnchors = ref<SchemaAnchors>()
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 // The surface tells the shell where it draws a bead (ticket 0797).
 watch(surfaceRef, (shown) => (surfaceProbe.value = shown ?? undefined))
+/** Whether a press outside the open ring is the Canvas's press that opens it, so it moves the ring there (ticket 1147). */
+const surfaceOpensToolbox = (event: PointerEvent) => surfaceRef.value?.opensToolbox(event) ?? false
 const surfacePressing = ref(false)
 
 /** The Canvas's Background (tickets 252, 0666) as the drawing area's fill; the device's last pick with no Project open. */
@@ -535,6 +537,8 @@ const drawingStyle = computed(() => {
                 @pressing="surfacePressing = $event"
                 :hold-opens="radialToolbox.canOpen.value"
                 :hold-ends="radialToolbox.holdEnds.value"
+                :toolbox-open="radialToolbox.open.value"
+                @close-toolbox="radialToolbox.close"
                 @hold="radialToolbox.hold"
                 @drop-press="onDropPress"
                 @open-toolbox="radialToolbox.openAt"
@@ -671,6 +675,7 @@ const drawingStyle = computed(() => {
               :recents="recentsInPill"
               :picking="colorPick?.picking.value"
               :held="radialToolbox.held.value"
+              :moves-on="surfaceOpensToolbox"
               @select-tool="radialToolbox.selectTool"
               @pick-recent="radialToolbox.pickRecent"
               @pick-color="radialToolbox.pickColor"

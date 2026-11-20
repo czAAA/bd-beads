@@ -33,7 +33,7 @@ afterEach(() => {
 const can = (on: Partial<ToolCapabilities> = {}): ToolCapabilities => ({ ...toolCapabilities(undefined), ...on })
 const PAINT = can({ tool: 'paint' })
 
-/** The surface with the hold on, and what it reported upward about the hold, in order. */
+/** The surface with the hold on, and what it reported upward about the hold and the ring, in order. */
 async function mountSurface(extra: Record<string, unknown> = {}) {
   const said: unknown[][] = []
   const wrapper = mount(ProjectSurface, {
@@ -46,6 +46,7 @@ async function mountSurface(extra: Record<string, unknown> = {}) {
       holdOpens: true,
       onHold: (...at: unknown[]) => said.push(['hold', ...at]),
       onDropPress: () => said.push(['drop-press']),
+      onCloseToolbox: () => said.push(['close-toolbox']),
       onOpenToolbox: (...where: unknown[]) => said.push(['open-toolbox', ...where]),
       ...extra,
     },
@@ -377,5 +378,95 @@ describe('ProjectSurface: the slide after a hold (ticket 1077)', () => {
     await surface.trigger('pointerup', { ...right(90), ...MOUSE, button: 2 })
     expect(slid).toEqual([])
     wrapper.unmount()
+  })
+})
+
+describe('ProjectSurface: a press with the ring open moves it there (ticket 1147)', () => {
+  /** The surface under an open ring, and what it reported upward about the ring, in order. */
+  const underRing = (extra: Record<string, unknown> = {}) => mountSurface({ toolboxOpen: true, ...extra })
+  const drawn = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
+    Object.keys(wrapper.emitted()).filter((name) => /^(cell|cells|selection|frame)-/.test(name) && !name.endsWith('-anchor'))
+  const OTHER = bead(8, 12)
+  const OTHER_POINT = { x: OTHER.clientX, y: OTHER.clientY }
+
+  it('a held drawing pointer closes the ring at the press and opens it where it is held, drawing nothing', async () => {
+    const { wrapper, surface, said } = await underRing()
+    await surface.trigger('pointerdown', { ...OTHER, ...PEN, ...DOWN })
+    expect(said).toEqual([['close-toolbox'], ['hold', OTHER_POINT]])
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
+    expect(said).toEqual([['close-toolbox'], ['hold', OTHER_POINT], ['hold'], ['drop-press'], ['open-toolbox', OTHER_POINT, { row: 8, column: 12 }]])
+    await surface.trigger('pointerup', { ...OTHER, ...PEN })
+    expect(drawn(wrapper)).toEqual([])
+    wrapper.unmount()
+  })
+
+  it('the hold that moved it slides on to an item and picks at the lift (ticket 1077)', async () => {
+    const slid: unknown[][] = []
+    const { wrapper, surface } = await underRing({ onSlideLift: (...at: unknown[]) => slid.push(['slide-lift', ...at]) })
+    await surface.trigger('pointerdown', { ...OTHER, ...PEN, ...DOWN })
+    vi.advanceTimersByTime(CANVAS_HOLD_MS)
+    const lift = { clientX: OTHER.clientX + 90, clientY: OTHER.clientY }
+    await surface.trigger('pointermove', { ...lift, ...PEN, buttons: 1 })
+    await surface.trigger('pointerup', { ...lift, ...PEN })
+    expect(slid).toEqual([['slide-lift', { x: lift.clientX, y: lift.clientY }]])
+    wrapper.unmount()
+  })
+
+  it('a tap, or a stroke-long move, only closes it: no tool or handle hears the press', async () => {
+    for (const { tools, selection } of [{ tools: PAINT }, { tools: SELECT, selection: AREA }]) {
+      const tap = await underRing({ tools, selection })
+      await tap.surface.trigger('pointerdown', { ...INSIDE, ...PEN, ...DOWN })
+      await tap.surface.trigger('pointerup', { ...INSIDE, ...PEN })
+      vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
+      expect(tap.said).toEqual([['close-toolbox'], ['hold', { x: INSIDE.clientX, y: INSIDE.clientY }], ['hold']])
+      expect(drawn(tap.wrapper)).toEqual([])
+      tap.wrapper.unmount()
+
+      const stroke = await underRing({ tools, selection })
+      await stroke.surface.trigger('pointerdown', { ...ON_HANDLE, ...PEN, ...DOWN })
+      await stroke.surface.trigger('pointermove', { ...bead(9, 9), ...PEN, buttons: 1 })
+      await stroke.surface.trigger('pointermove', { ...bead(12, 12), ...PEN, buttons: 1 })
+      await stroke.surface.trigger('pointerup', { ...bead(12, 12), ...PEN })
+      vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
+      expect(stroke.said.map(([name]) => name)).toEqual(['close-toolbox', 'hold', 'hold'])
+      expect(drawn(stroke.wrapper).filter((name) => name !== 'cell-hover')).toEqual([])
+      stroke.wrapper.unmount()
+    }
+  })
+
+  it('a right click closes it at the press and opens it where it lifts; a right drag pans with it closed', async () => {
+    const click = await underRing()
+    await click.surface.trigger('pointerdown', { ...OTHER, ...MOUSE, button: 2, buttons: 2 })
+    expect(click.said).toEqual([['close-toolbox']])
+    await click.surface.trigger('pointerup', { ...OTHER, ...MOUSE, button: 2 })
+    expect(click.said).toEqual([['close-toolbox'], ['open-toolbox', OTHER_POINT, { row: 8, column: 12 }]])
+    click.wrapper.unmount()
+
+    const drag = await underRing()
+    await drag.surface.trigger('pointerdown', { ...OTHER, ...MOUSE, button: 2, buttons: 2 })
+    await drag.surface.trigger('pointermove', { clientX: OTHER.clientX + 40, clientY: OTHER.clientY, ...MOUSE, buttons: 2 })
+    await drag.surface.trigger('pointerup', { clientX: OTHER.clientX + 40, clientY: OTHER.clientY, ...MOUSE, button: 2 })
+    expect(drag.said).toEqual([['close-toolbox']])
+    expect(drag.wrapper.emitted('pan')).toBeTruthy()
+    drag.wrapper.unmount()
+  })
+
+  it('tells the ring which presses on it open the ring: the right button and the drawing pointer that times a hold', async () => {
+    const { wrapper, surface } = await underRing()
+    const opens = (event: Record<string, unknown>, target: Element = surface.element) =>
+      (wrapper.vm as unknown as { opensToolbox: (event: PointerEvent) => boolean }).opensToolbox({ ...event, target } as unknown as PointerEvent)
+    expect(opens({ ...MOUSE, button: 2 })).toBe(true)
+    expect(opens({ ...PEN, button: 0 })).toBe(true)
+    // A mouse's left click, the finger that moves the Canvas in Pen mode, a second finger, and a press off the surface.
+    expect(opens({ ...MOUSE, button: 0 })).toBe(false)
+    expect(opens({ ...FINGER, button: 0 })).toBe(false)
+    expect(opens({ ...PEN, isPrimary: false, pointerType: 'touch', button: 0 })).toBe(false)
+    expect(opens({ ...MOUSE, button: 2 }, document.body)).toBe(false)
+    wrapper.unmount()
+
+    // The press Pick color from Canvas waits for takes its colour; it is not timed.
+    const picking = await underRing({ tools: can({ tool: 'paint', picking: true }) })
+    expect((picking.wrapper.vm as unknown as { opensToolbox: (event: PointerEvent) => boolean }).opensToolbox({ ...PEN, button: 0, target: picking.surface.element } as unknown as PointerEvent)).toBe(false)
+    picking.wrapper.unmount()
   })
 })
