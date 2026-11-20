@@ -17,7 +17,7 @@ async function box(page: Page, testid: string): Promise<Box> {
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 
 // The sheet's full form, from 51% (tickets 0658, 0698): a loom bead is 20px at 100%, so the band is 80px there and the
-// scale 80 / 72; from 135% it is held at 1.5. Under 23% only the Move bar is left (ticket 0682).
+// scale 80 / 72; from 135% it is held at 1.5. Under 23% only the Move bar and the Frame tools button are left (tickets 0682, 1164).
 for (const [zoom, scale] of [[100, 80 / 72], [400, 1.5]] as const) {
   test(`the handle and pencil are drawn at the sheet's scale and clear each other, and the bar keeps its size, at ${zoom}%`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
@@ -133,11 +133,12 @@ async function tap(page: Page, at: { x: number; y: number }): Promise<void> {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
 }
 
-// Under 0.6 of a 31px band nothing of the sheet is drawn but the Move bar, on the Frame's top edge (ticket 0682): it still
-// drags the Frame, and a press on the Frame's first row, by mouse or by finger, reaches the bead, not the bar.
+// Under 0.6 of a 31px band nothing of the sheet is drawn but the Move bar, on the Frame's top edge (ticket 0682), and the
+// Frame tools button beside it (ticket 1164): the bar still drags the Frame, the button opens every Frame tool, and a
+// press on the Frame's first row, by mouse or by finger, reaches the bead, not either of them.
 for (const touch of [false, true]) {
   for (const zoom of [10, 20]) {
-    test(`the bare sheet's Move bar drags the Frame and leaves its first row to the beads, at ${zoom}%${touch ? ', by touch' : ''}`, async ({ browser }) => {
+    test(`the bare sheet's Move bar drags the Frame, its Frame tools button opens, and both leave the first row to the beads, at ${zoom}%${touch ? ', by touch' : ''}`, async ({ browser }) => {
       const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce', hasTouch: touch })
       const page = await context.newPage()
       await openApp(page, [fixtureProject({ technique: 'loom', columns: 40, rows: 12, blank: true })])
@@ -153,6 +154,26 @@ for (const touch of [false, true]) {
       if (touch) await tap(page, bead)
       else await page.mouse.click(bead.x, bead.y)
       await expect.poll(async () => frameGrid(await savedProject(page))[0]![20]!.color).not.toBeNull()
+
+      // So does a press on the first row's bead under the Frame tools button (at 10% it stands past the Frame's 40
+      // columns, over no bead), which opens its menu itself.
+      const tools = page.getByTestId('margin-handle').getByTestId('margin-frame-tools')
+      const toolsBox = (await tools.boundingBox())!
+      const grid = await gridBox(page)
+      const centreOf = (column: number) => beadCentre({ technique: 'loom', rotation: 0 }, grid, zoom / 100, { row: before.row, column: before.column + column })
+      const pitch = centreOf(1).x - centreOf(0).x
+      const under = Math.round((toolsBox.x + toolsBox.width / 2 - centreOf(0).x) / pitch)
+      // 4px right of the Move bar, 10px on a coarse pointer so the two 44px hit areas never overlap.
+      expect(under).toBe({ 10: touch ? 46 : 42, 20: touch ? 33 : 31 }[zoom])
+      if (under < 40) {
+        const beadUnder = centreOf(under)
+        if (touch) await tap(page, beadUnder)
+        else await page.mouse.click(beadUnder.x, beadUnder.y)
+        await expect.poll(async () => frameGrid(await savedProject(page))[0]![under]!.color).not.toBeNull()
+      }
+      await tools.click()
+      await expect(page.getByTestId('margin-frame-tools-color')).toBeVisible()
+      await page.keyboard.press('Escape')
 
       // The Move bar drags the Frame 10 beads right (a bead is 20px at 100%).
       const handle = await box(page, 'frame-move-handle')

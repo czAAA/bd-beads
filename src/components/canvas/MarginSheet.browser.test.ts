@@ -96,9 +96,10 @@ function problems(root: HTMLElement): string[] {
   const title = root.querySelector<HTMLElement>('[data-testid="margin-title"] > *')
   const parts = [...band, ...(title ? [title] : [])].map((element) => ({ name: element.getAttribute('aria-label') || element.dataset.testid || element.className, rect: element.getBoundingClientRect() }))
   const found: string[] = []
-  // Bare, the Move bar alone may stand outside where the sheet would be, but never over the Frame's line or beads.
-  const handle = root.querySelector<HTMLElement>('[data-testid="margin-handle"] button')
-  if (handle && overlap(handle.getBoundingClientRect(), line)) found.push('the bare Move bar lies over the Frame\'s line or beads')
+  // Bare, the Move bar and the Frame tools button beside it may stand outside where the sheet would be, but never over
+  // the Frame's line or beads (ticket 1164).
+  for (const button of root.querySelectorAll<HTMLElement>('[data-testid="margin-handle"] button'))
+    if (overlap(button.getBoundingClientRect(), line)) found.push(`the bare ${button.getAttribute('aria-label')} lies over the Frame's line or beads`)
   for (const [index, part] of parts.entries()) {
     if (!inside(part.rect, sheet)) found.push(`${part.name} stands outside the sheet`)
     if (overlap(part.rect, line)) found.push(`${part.name} lies over the Frame's line or beads`)
@@ -286,6 +287,13 @@ describe('the bare margin sheet, under a 31px band (tickets 0682, 0698, 0851)', 
         expect([bar.width, bar.height], name).toEqual([56, 24])
         expect(bar.left + bar.width / 2, name).toBeCloseTo(line.left + line.width / 2, 1)
         expect(bar.bottom, name).toBeCloseTo(line.top, 1)
+        // The Frame tools button stands 4px to its right, 24px, on the same line (ticket 1164).
+        const tools = root.querySelector<HTMLElement>('[data-testid="margin-handle"] [data-testid="margin-frame-tools"]')!.getBoundingClientRect()
+        expect([tools.width, tools.height], name).toEqual([24, 24])
+        // 4px apart, give or take the half pixel the centring rounds by, so neither press reaches the other.
+        expect(tools.left - bar.right, name).toBeGreaterThanOrEqual(4 - 0.05)
+        expect(tools.left - bar.right, name).toBeLessThanOrEqual(5)
+        expect(tools.bottom, name).toBeCloseTo(bar.bottom, 1)
 
         // What a press lands on: the Move bar at its middle, the canvas under the sheet at the first row's first bead.
         const pressAt = (x: number, y: number) => {
@@ -420,7 +428,7 @@ describe('the margin sheet readable at any zoom (ticket 0851)', () => {
     expect(found[40]).toBe('bare')
   })
 
-  it('on Full HD at Fit shows a big tapestry\'s and a converted piece\'s sheet bare, the Move bar alone', async () => {
+  it('on Full HD at Fit shows a big tapestry\'s and a converted piece\'s sheet bare, the Move bar and Frame tools alone', async () => {
     onTestFinished(() => {
       rows.value = 11
     })
