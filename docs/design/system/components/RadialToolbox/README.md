@@ -73,7 +73,7 @@ Every item runs the code path its existing control runs, so nothing is reachable
 
 ### The hold (ticket 1065)
 
-- **How long:** `--hold-duration` (450ms), a little shorter than the long-press that shows a control's Tooltip (500ms), so the ring comes quickly.
+- **How long:** `--hold-duration` (350ms), a little shorter than the long-press that shows a control's Tooltip (500ms), so the ring comes quickly.
 - **A move is still a stroke.** If the pointer moves 8px before the hold is up, the hold is off and the stroke goes on. That 8px is the Tool pill's drag threshold and the right button's above: one value. A second finger ends the hold too.
 - **What is seen:** nothing for `--hold-quiet` (150ms), so a tap never shows anything. Then a hairline in `ink`, `--pill-tile-outline` wide with round ends, is drawn once round the pressed point, clockwise from the top, on a circle of radius 60: where the ring's inner edge will be, and wider than a fingertip. It closes as the hold ends, and the ring comes in where it was.
 - **Nothing is left behind.** Paint, Eraser and Select start at the press, so a tap is as quick as without the hold; when the hold completes that start is dropped, as the first finger of a pinch is: no bead, no Selection, no Undo step. **Fill lands at the lift,** on the bead that was pressed, so a hold never flashes a fill. A Piece tap, which selects at the press, gives back the Selection it replaced.
