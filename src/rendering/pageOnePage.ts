@@ -180,7 +180,7 @@ export function drawPageOne(project: Project, words: PrintText, layout: PageOneL
     const pdf = as === 'pdf' ? new PdfContent(page.height * K) : undefined
     const pads = drawChartParts(pdf ?? new CanvasDrawing(context, scale), project, plan, plan.parts, project.paletteLetters ?? {}, layout.area)
     if (plan.parts.length > 1) {
-      plan.parts.forEach((part, index) => text(context, partLabel(project, words.labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
+      plan.parts.forEach((part, index) => text(context, partLabel(plan.trim, words.labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
     }
     drawing = pdf?.toString()
   }

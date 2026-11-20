@@ -42,9 +42,9 @@ Until ticket 1096 lands the runs are written as above ("3A, 7B, 2×"). Then **ea
 - The line under the key shows it: "A run is a count and a bead: 2 ▢ is two beads of C.", the mark being an outlined swatch with the letter C (`copy/frame.md`).
 - With Black and white on, a swatch is its bead's tone inside a black hairline (PrintBlackAndWhite card).
 
-**Trimmed to the beads** (ticket 1128): Row by row writes the trimmed chart (PrintChartPage card): only the rows from the first bead to the last, each across the trimmed chart's columns only, so a row starts and ends where the chart does and its empty runs are the ones inside the drawing. A Custom frame's rounds and rows are written whole. Each row keeps the Schema's own number until ticket 1129.
+**Trimmed to the beads** (ticket 1128): Row by row writes the trimmed chart (PrintChartPage card): only the rows from the first bead to the last, each across the trimmed chart's columns only, so a row starts and ends where the chart does and its empty runs are the ones inside the drawing. A Custom frame's rounds and rows are written whole.
 
-**Approved 2026-11-19, not yet in the app (ticket 1129; signed off in ticket 1123):** each row carries the number the chart's ruler gives it, counted from 1, so a maker reads one number for a row on the chart and here; the page title's range ("Row by row 1–30") uses the same numbers.
+**The ruler's numbers** (ticket 1129; signed off in ticket 1123): each row carries the number the chart's ruler gives it, counted from 1 at the trimmed chart's top (or left, for rows down the picture), so a maker reads one number for a row on the chart and here; the page title's range ("Row by row 1–30") and the footer use the same numbers. Rows worked from the bottom or the right of the picture (the Schema turned, or Row direction turned) count down: "Row by row 30–1", and the note under the key says where the first is by its number ("Row 30 is at the bottom of the picture."). (L) and (R) alternate from the first row written, which is (L). Peyote is the exception: its rows are its passes, two to a ruler line, so it counts them from "1&2" at the trimmed chart's first line, that line woven in one pass even where the Frame's own first lines are trimmed away, then 3, 4…
 
 ## Two columns
 

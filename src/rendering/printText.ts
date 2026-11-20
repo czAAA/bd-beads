@@ -131,7 +131,9 @@ function spineText({ before, pair, after }: WordSpine): string {
 /** The Word chart's words in the app's language; letters and numbers stay as they are. A Custom frame's line names its
  * round, row, part or join before its runs (ticket 0594). */
 function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], steps: Translations['rowProgress']): PrintedWordChart {
-  const notes = [chart.start ? t[START_KEY[chart.start]] : t[FIRST_ROW_KEY[chart.firstEdge]]]
+  // Where the first row is, by its number: the ruler's, so a Schema worked from the bottom or the right starts at its
+  // last row (ticket 1129).
+  const notes = [chart.start ? t[START_KEY[chart.start]] : fillBlanks(t[FIRST_ROW_KEY[chart.firstEdge]], { row: chart.rows[0]?.number ?? 1 })]
   if (!chart.marked && !chart.start) notes.push(t.loomRead)
   if (chart.count) notes.push(chart.count === 'even' ? t.evenCount : t.oddCount)
   if (chart.marked) notes.push(t.sides)
