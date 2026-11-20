@@ -136,6 +136,19 @@ The Homepage's first section and What's inside's chapters (Homepage card). Engli
 
 The way in (Make your first Project, Open the editor, Projects library · {n}) and the three promises (Yours, on this device · Works offline · Free forever, with their lines) are the strings the Homepage already has. A phone's "Next · What's inside" is "Next · {section}". A chapter is described to screen readers by its rows' names, joined as the language joins a list.
 
+### The cuff woven (ticket 1157)
+
+Welcome's heading, its line and a fourth promise, signed off with the cuff being woven (Homepage card). English and Russian here; the other shipped languages are written when it is built. The number of Techniques is the app's own count, written as a word in the language's counted form ("three", «трёх»), and the line lists the same Techniques by name, joined as the language joins a list, so neither is typed. The rows they replace are struck from the table above in the PR that builds them: the old heading and line, See how it works, the counts and the caption.
+
+| English | Russian |
+| --- | --- |
+| A free bead pattern editor that works in {count} techniques (the heading; {count} in words) | Бесплатный редактор схем для плетения бисером, работающий в {count} техниках |
+| Loom, peyote and brick stitch. (the line: the Techniques, the first capitalised) | Ткачество, мозаичное и кирпичное плетение. |
+| Free export · PDF and PNG in full quality. (the fourth promise) | Бесплатный экспорт · PDF и PNG в полном качестве. |
+| Peacock feather cuff in peyote, being woven: {counter} (the cuff, an image's name; {counter} the Progress bar's own words) | Браслет «Павлинье перо» мозаичным плетением, в работе: {counter} |
+
+The cuff's bar says what the editor's Progress bar says (Pass, row, Back a row, Row done): the Homepage has no words of its own for it.
+
 ## What's new by Version (ticket 1047)
 
 What's new on the Homepage lists every note under its Version (Homepage card): each row's kind label (KindLabel card, lowercase as `meta-small` draws it) and a Production release's line. The kind words are adjectives for "this change", one word each; "Update ready" (ticket 1048) uses the same. Every change now opens `CHANGELOG.md`; its words are unchanged.
