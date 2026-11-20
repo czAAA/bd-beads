@@ -34,7 +34,7 @@ interface PlanCopy {
   button: string
 }
 
-/** The Homepage's free list, a row each (ticket 0742; `writing.md`, the free list). The blanks are the app's own counts
+/** The Homepage's free list, a row each (ticket 0742; `copy/homepage.md`, the free list). The blanks are the app's own counts
  * and names, never typed in: `{names}` the Techniques', `{brands}` and `{codes}` the Color catalogs', `{categories}` the
  * Starters'. */
 interface FreeRows {

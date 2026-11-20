@@ -444,7 +444,19 @@
       "project/interaction-and-motion.md",
       "project/printed-output.md",
       "project/responsive.md",
-      "project/writing.md"
+      "project/writing.md",
+      "project/copy/shell.md",
+      "project/copy/homepage.md",
+      "project/copy/account.md",
+      "project/copy/tools.md",
+      "project/copy/colors.md",
+      "project/copy/panels.md",
+      "project/copy/projects.md",
+      "project/copy/canvas.md",
+      "project/copy/print.md",
+      "project/copy/frame.md",
+      "project/copy/convert.md",
+      "project/copy/reference.md"
     ]
   },
   "groups": [

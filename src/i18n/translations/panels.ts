@@ -138,7 +138,7 @@ export interface PanelsTranslations {
     changeFrameToo: string
     openFrame: string
   }
-  /** An unframed Schema's name as a tag, opening into a paper tag (SchemaTag card, ticket 0721; `writing.md`,
+  /** An unframed Schema's name as a tag, opening into a paper tag (SchemaTag card, ticket 0721; `copy/panels.md`,
    * Schema tag copy). */
   schemaTag: {
     /** The tags' one Tab stop. */

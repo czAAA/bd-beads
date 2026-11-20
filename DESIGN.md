@@ -31,7 +31,7 @@ The design system's [README](docs/design/system/README.md) states these in full.
 | Tokens (color in three themes, type, spacing, radii, elevation, layout and touch target, z-index, print) | `docs/design/system/tokens.json` (and its CSS form, `tokens.css`) | points at it |
 | Values that can't be tokens: motion (`--duration-*`, `--ease-*`), `--hover-fill`, `--press-fill`, `--track-fill`, scrims | the top of `docs/design/system/components/bundle.css` and each theme block in it | points at it |
 | Component specs, states, layout, responsive tiers | the design system's guideline docs and component cards | points at them |
-| Copy: voice, glossary, numbers and units, the Russian strings | `docs/design/system/writing.md` | points at it |
+| Copy: voice, glossary, numbers and units, the Russian strings | `docs/design/system/writing.md` (the rules) and `docs/design/system/copy/` (each area's approved copy) | points at them |
 | Artwork: logo, favicon, icons | the SVG and PNG files in `docs/design/system/assets/` and `favicon/` | points at them |
 | How the app wires the design in (§4) | this file | **wins** |
 
@@ -62,6 +62,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | Contrast, high contrast, never color alone, text and zoom, keyboard, beads and the keyboard, screen readers, stacking order | [`accessibility.md`](docs/design/system/accessibility.md) |
 | PDF and PNG exports: page 1, chart pages, beads and grams, the maker's name, wide and long Patterns | [`printed-output.md`](docs/design/system/printed-output.md) |
 | Voice, sentence patterns, plurals, glossary, color names, numbers and units, strings to fix, Russian | [`writing.md`](docs/design/system/writing.md) |
+| The copy approved for each ticket, in every language, one file per area: shell, homepage, account, tools, colors, panels, projects, canvas, print, frame, convert, reference | [`copy/<area>.md`](docs/design/system/copy) |
 | One card per component (91): a short written guideline | [`components/<Name>/`](docs/design/system/components) |
 | Logo and app icons | [`assets/Logos/`](docs/design/system/assets/Logos) |
 | The theme-aware favicon set for `public/` | [`favicon/`](docs/design/system/favicon) |
@@ -203,7 +204,8 @@ When a change touches how something looks, reads or behaves, edit `docs/design/s
 3. Values that can't be tokens: the top of `components/bundle.css`, and `src/styles/design-values.css` to match
    (§4.6).
 4. Guideline files (`accessibility.md`, `responsive.md`, `interaction-and-motion.md`, `forms-and-states.md`,
-   `printed-output.md`, `writing.md`) when a rule changes, and `writing.md` for any new or changed copy.
+   `printed-output.md`, `writing.md`) when a rule changes, and the area's `copy/<area>.md` for any new or changed copy
+   (the area its strings are in, `src/i18n/translations/<area>.ts`).
 5. The `ProjectTheme` check (§4.2) fails if a canvas token changed without the renderer; run the tests related to the
    change.
 

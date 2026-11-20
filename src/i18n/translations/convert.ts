@@ -23,7 +23,7 @@ export interface ConvertTranslations {
       confirmButton: string
       cancelButton: string
     }
-    /** The Convert image wizard (spec 0645; ConvertImage, ValueSlider, FoundColorRow cards; writing.md). */
+    /** The Convert image wizard (spec 0645; ConvertImage, ValueSlider, FoundColorRow cards; `copy/convert.md`). */
     wizard: {
       title: string
       /** Why Width, Colors, their buttons and Create Project are off until a picture is set. */

@@ -30,7 +30,7 @@ Signed off on 2026-11-12 in the design canvas "Quiet Convert image" (link on tic
 
 **States.** No picture: the drop zone (inset 24, 1.5px dashed `line-strong`) with "Drop a picture here" and its (i) "What pictures work" (what kind of picture works, "A drawing, a logo, pixel art or a photo of one thing on a plain ground works best.", then the formats; ticket 0966), "or paste one with ⌘V" (on touch "Your picture shows here", "choose a file, paste or take a photo"), Choose file (primary), Paste, Take photo; Width and Colors off, Create Project off; 9 controls (10 on touch). A slow picture (after 300 ms): the Loading card's three beads, "Reading the picture", "{file} · {size}". An error: the inline Message in the drop zone. A control off: `aria-disabled`, still focusable, its reason in the Tooltip's `disabledBody`.
 
-**Retired with ticket 0896:** the step pane and its `convert-sections-width`, `--convert-sections-width-narrow`, `--convert-band-height`, `--convert-step-head`, `--convert-step-end` and `--step-disc`; the band; the five steps' headers and summaries; the converter's Progress bar (the Homepage keeps its own, ProgressBar card); Review's Name, Maker's name and Beads needed box. New values: `--convert-column-width`, `--convert-column-width-narrow`, `--convert-fit-top` (72), `--convert-fit-side` (40), `--convert-fit-bottom` (90), `--convert-fit-bottom-touch` (96), `--convert-setting-popover-width`, `--convert-colors-popover-width`, `--convert-colors-popover-width-narrow`, `--convert-background-popover-width`, `--convert-background-popover-width-touch`. The thumbnail becomes 44 × 54 (`--convert-thumb-width`, `--convert-thumb-height` change with 0896). Copy: writing.md, "Quiet converter copy (ticket 0895)".
+**Retired with ticket 0896:** the step pane and its `convert-sections-width`, `--convert-sections-width-narrow`, `--convert-band-height`, `--convert-step-head`, `--convert-step-end` and `--step-disc`; the band; the five steps' headers and summaries; the converter's Progress bar (the Homepage keeps its own, ProgressBar card); Review's Name, Maker's name and Beads needed box. New values: `--convert-column-width`, `--convert-column-width-narrow`, `--convert-fit-top` (72), `--convert-fit-side` (40), `--convert-fit-bottom` (90), `--convert-fit-bottom-touch` (96), `--convert-setting-popover-width`, `--convert-colors-popover-width`, `--convert-colors-popover-width-narrow`, `--convert-background-popover-width`, `--convert-background-popover-width-touch`. The thumbnail becomes 44 × 54 (`--convert-thumb-width`, `--convert-thumb-height` change with 0896). Copy: `copy/convert.md`, "Quiet converter copy (ticket 0895)".
 
 ## Colors that are real beads (DS-2, ticket 0899)
 
@@ -79,7 +79,7 @@ When fewer colors come out than asked, the result's second line at the column's 
 - Tooltips: "Approximate color" ("Made from the color family and the Finish. The real bead may look different.") and "Measured color" ("Read from a photo of this bead.").
 - A row's accessible name gains ", approximate color".
 
-New values: `--convert-neighbour-width` (96), `--convert-count-field-width` (64), `--convert-finish-list-width` (232). Copy: writing.md, "Colors that are real beads copy (ticket 0899)".
+New values: `--convert-neighbour-width` (96), `--convert-count-field-width` (64), `--convert-finish-list-width` (232). Copy: `copy/convert.md`, "Colors that are real beads copy (ticket 0899)".
 
 ## Before and after, and Clean up (DS-3, ticket 0900)
 
@@ -106,7 +106,7 @@ Pressed, the **Clean up** popover (`--convert-setting-popover-width`, 340) opens
 
 **Undo and Redo do not cover the helpers.** Each helper is a setting that shows its state and puts itself back (a switch, a step, a number, a reset), as Width and Colors do; Undo and Redo stay in the Background popover, for the background's decisions only.
 
-New values: `--convert-result-button-height`, `--convert-result-button-height-touch`, `--convert-cleaned-ring`, `--convert-compare-side`, `--convert-chip-height`, `--convert-chip-height-touch`. New icon: `clean-up` (Icons card). Copy: writing.md, "Before and after and Clean up copy (ticket 0900)".
+New values: `--convert-result-button-height`, `--convert-result-button-height-touch`, `--convert-cleaned-ring`, `--convert-compare-side`, `--convert-chip-height`, `--convert-chip-height-touch`. New icon: `clean-up` (Icons card). Copy: `copy/convert.md`, "Before and after and Clean up copy (ticket 0900)".
 
 ## On a phone and a tablet (DS-4, ticket 0910)
 
@@ -130,7 +130,7 @@ Signed off on 2026-11-12 in the design canvas "Converter on a phone and tablet" 
 
 **Side** (landscape under 1024, a phone on its side): the beads at the left, a `--convert-side-column-width` (320) column at the right on `canvas` with a 1px `panel-rule`: DS-1's three result lines at its top, the settings and Create Project at its foot. A sheet takes the column's place and scrolls inside it; the beads (430 × 313 at 844 × 390) never move.
 
-New values: `--convert-tablet-min`, `--convert-settings-height`, `--convert-sheet-grab`, `--convert-sheet-head`, `--convert-fit-phone`, `--convert-fit-bottom-phone`, `--convert-fit-tablet`, `--convert-fit-bottom-tablet`, `--convert-tools-lift-phone`, `--convert-neighbour-phone-width`, `--convert-neighbour-phone-height`, `--convert-sheet-card-width`, `--convert-sheet-card-max`, `--convert-side-column-width`, `--convert-sheet-shadow`, and ticket 0919's `--found-columns-sheet`. Going with ticket 0911: `--convert-preview-phone` and `--convert-preview-tablet`. No token value, colour or icon changes. Copy: writing.md, "Converter on a phone copy (ticket 0910)".
+New values: `--convert-tablet-min`, `--convert-settings-height`, `--convert-sheet-grab`, `--convert-sheet-head`, `--convert-fit-phone`, `--convert-fit-bottom-phone`, `--convert-fit-tablet`, `--convert-fit-bottom-tablet`, `--convert-tools-lift-phone`, `--convert-neighbour-phone-width`, `--convert-neighbour-phone-height`, `--convert-sheet-card-width`, `--convert-sheet-card-max`, `--convert-side-column-width`, `--convert-sheet-shadow`, and ticket 0919's `--found-columns-sheet`. Going with ticket 0911: `--convert-preview-phone` and `--convert-preview-tablet`. No token value, colour or icon changes. Copy: `copy/convert.md`, "Converter on a phone copy (ticket 0910)".
 
 ## Frame
 

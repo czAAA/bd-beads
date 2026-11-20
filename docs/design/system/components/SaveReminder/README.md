@@ -65,6 +65,6 @@ The Menu card's Tooltip under the ring, its right edge on the ring's (`align: en
 
 ## Copy
 
-English, with the other languages in `writing.md` (Save reminder copy): Save Project file · {count} beads since the last file (one: {count} bead since the last file) · the browser can clear your work, a file stays (in place of the count before a first file) · The browser keeps your work but can clear it. A Project file stays. · Beads since last file: {count} · Last file: {when} · No Project file yet · Beads since last file: {count}. Save a Project file to keep them. · Saved: {file} · Save Project file as…. "Save a copy" is gone (ticket 0859): a copy is what Duplicate makes.
+English, with the other languages in `copy/projects.md` (Save reminder copy): Save Project file · {count} beads since the last file (one: {count} bead since the last file) · the browser can clear your work, a file stays (in place of the count before a first file) · The browser keeps your work but can clear it. A Project file stays. · Beads since last file: {count} · Last file: {when} · No Project file yet · Beads since last file: {count}. Save a Project file to keep them. · Saved: {file} · Save Project file as…. "Save a copy" is gone (ticket 0859): a copy is what Duplicate makes.
 
 Built in ticket 0796, moved to the strip in ticket 0922 and back under Export in ticket 1111: `src/components/canvas/SaveReminder.vue` (in `CanvasPanel.vue`'s drawing area), its timing in `useSaveReminder`, the count in `useBeadsSinceFile` and `domain/beadsSinceFile.ts`, Save and Save as in `useExportFlow`.

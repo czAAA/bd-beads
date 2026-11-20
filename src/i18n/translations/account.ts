@@ -53,7 +53,7 @@ export interface AccountTranslations {
     failed: string
     sent: string
   }
-  /** Signing in (ticket 0078; MenuPanel and SignIn cards, `writing.md` Sign-in copy): the Menu's Account section, the
+  /** Signing in (ticket 0078; MenuPanel and SignIn cards, `copy/account.md` Sign-in copy): the Menu's Account section, the
    * Sign in Subpanel and its toasts. The words are Sign in and Sign out; the plans Free account and Pro. */
   account: {
     section: string

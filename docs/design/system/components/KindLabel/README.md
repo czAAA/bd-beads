@@ -6,7 +6,7 @@ A Release note's kind, **New**, **Changed** or **Fixed**, as a small label besid
 - **Colors:** one role-named token per kind, `kind-new` (green), `kind-changed` (blue), `kind-fixed` (violet), in all three themes (`tokens.json`). Each reads at 4.5:1 or more on its own tint over `panel` and `elevated` (light 5.0, 5.1, 5.2; dark 6.9, 5.4, 5.7). They differ in lightness as well as hue, and the word is always there, so the kind never rests on color alone.
 - **High contrast:** no fill (`--kind-label-tint` is 0%) and a 1px edge in the kind's color (`--kind-label-edge`), the kind's darker token at 9:1 and more on white.
 - **Order:** where several kinds are listed, always New, Changed, Fixed: the biggest first, as a Version steps.
-- **Copy:** writing.md, "What's new by Version (ticket 1047)": New, Changed, Fixed; Новое, Изменено, Исправлено; Nuevo, Cambiado, Corregido.
+- **Copy:** `copy/homepage.md`, "What's new by Version (ticket 1047)": New, Changed, Fixed; Новое, Изменено, Исправлено; Nuevo, Cambiado, Corregido.
 - Not a button and not a filter: it only names the kind.
 
 Hand-written from the claude.ai canvas "Versioning and What's new", artboard "Kind labels · three new colors".

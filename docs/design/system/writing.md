@@ -211,3 +211,22 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | Buy about 10% more for spares. | Возьмите примерно на 10 % больше про запас. |
 | Printed on this Project's PDF and PNG exports. | Печатается на PDF и PNG этого проекта. |
 | made by · by {maker} | автор · автор: {maker} |
+
+## Where a ticket's approved copy goes
+
+This file holds the rules. The copy approved for a ticket, in every language, goes at the end of its area's file in [`copy/`](copy), never here: the area its strings are in (`src/i18n/translations/<area>.ts`, ticket 1135), so tickets on different screens edit different files. The areas, each named after its screen:
+
+- [`shell`](copy/shell.md): the app around the Canvas, New Project's form and fields, the header, theme and language, storage, opening a Project, "Update ready"
+- [`homepage`](copy/homepage.md): the Homepage and What's new
+- [`account`](copy/account.md): signing in, the privacy policy, the Feedback sheet
+- [`tools`](copy/tools.md): the Tool pill, Mirror, the tools, the Toolbox and Radial toolbox, the ContextBar, Keyboard shortcuts, Tooltips
+- [`colors`](copy/colors.md): the Palette, its color names, the Bead colors list, Replace bead
+- [`panels`](copy/panels.md): the Menu and Project panels, Techniques and their settings, Layer settings, the Schema tag
+- [`projects`](copy/projects.md): the Projects library, Starters, saving, the Save reminder, Project files
+- [`canvas`](copy/canvas.md): the Canvas, its hints, Row progress, removing a line
+- [`print`](copy/print.md): what the PDF and PNG print, Beads needed
+- [`frame`](copy/frame.md): the Frame, its panel, its margin and its export section
+- [`convert`](copy/convert.md): Convert image
+- [`reference`](copy/reference.md): the Reference image
+
+A section that names strings of several areas goes in the area most of its rows' strings are in.
