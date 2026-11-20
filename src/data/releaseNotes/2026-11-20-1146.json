@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "The Frame panel's margin section says what the margin is: the space around the Frame where you can't draw, holding the Frame's tools, name and size",
+    "ru": "Раздел полей на панели рамки объясняет, что такое поля: место вокруг рамки, где нельзя рисовать, с инструментами рамки, её именем и размером",
+    "uk": "Розділ полів на панелі рамки пояснює, що таке поля: місце навколо рамки, де не можна малювати, з інструментами рамки, її назвою й розміром",
+    "be": "Раздзел палёў на панэлі рамкі тлумачыць, што такое палі: месца вакол рамкі, дзе нельга маляваць, з інструментамі рамкі, яе імем і памерам",
+    "zh": "边框面板的边距部分说明了边距是什么：边框周围不能绘制的区域，放着边框工具、名称和尺寸",
+    "es": "La sección del margen del panel del marco explica qué es el margen: el espacio alrededor del marco donde no se puede dibujar, con las herramientas, el nombre y el tamaño del marco",
+    "pl": "Sekcja marginesu w panelu ramki wyjaśnia, czym jest margines: miejscem wokół ramki, na którym nie można rysować, z narzędziami ramki, jej nazwą i rozmiarem"
+  }
+}
