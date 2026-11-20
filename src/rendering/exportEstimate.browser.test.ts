@@ -70,7 +70,7 @@ describe('the File size estimate against real exports (QualitySlider card, ADR 0
     }
     for (const on of [false, true]) {
       const project = make()
-      const words = printText(project, en, 'en', new Date(), { cover: on, emptyGrid: on, chartBorder: on, largeBeads: on, rowByRow: on })
+      const words = printText(project, en, 'en', new Date(), { cover: on, blackAndWhite: on, emptyGrid: on, chartBorder: on, largeBeads: on, rowByRow: on })
       const facts = exportFacts(project, words)!
       for (const [quality, dpi] of Object.entries(PNG_DPI_BY_QUALITY)) {
         const estimate = estimatePng(facts, dpi)

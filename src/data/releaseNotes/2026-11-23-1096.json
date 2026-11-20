@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-23",
+  "kind": "changed",
+  "line": {
+    "en": "Export’s Black and white switch draws the PDF for a black-and-white printer, light tints and solid black so every letter prints sharp, and the cover stays in color",
+    "ru": "Переключатель «Чёрно-белая» в «Экспорте» рисует PDF для чёрно-белого принтера: светлые тона и сплошной чёрный, чтобы каждая буква печаталась чётко, а обложка остаётся цветной",
+    "uk": "Перемикач «Чорно-біла» в «Експорті» малює PDF для чорно-білого принтера: світлі тони й суцільний чорний, щоб кожна літера друкувалася чітко, а обкладинка лишається кольоровою",
+    "be": "Пераключальнік «Чорна-белая» ў «Экспарце» малюе PDF для чорна-белага прынтара: светлыя тоны і суцэльны чорны, каб кожная літара друкавалася выразна, а вокладка застаецца каляровай",
+    "zh": "导出中的黑白开关为黑白打印机绘制 PDF：浅灰与纯黑，让每个字母都打印清晰，封面仍为彩色",
+    "es": "El interruptor Blanco y negro de Exportar dibuja el PDF para una impresora en blanco y negro, con tonos claros y negro pleno para que cada letra salga nítida, y la portada sigue en color",
+    "pl": "Przełącznik Czarno-biały w Eksporcie rysuje PDF dla drukarki czarno-białej, jasne odcienie i pełna czerń, by każda litera była ostra, a okładka zostaje w kolorze"
+  }
+}

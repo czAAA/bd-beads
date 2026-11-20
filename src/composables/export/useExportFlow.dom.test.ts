@@ -132,7 +132,7 @@ describe('useExportFlow print choices (tickets 0916, 1096)', () => {
   it('prints the Cover page and neither Large beads nor Row by row, as they are at first', async () => {
     await setup().onExportPdf()
     const [, words] = vi.mocked(exportProjectPdf).mock.lastCall!
-    expect([words.cover, words.largeBeads, words.wordChart]).toEqual([true, undefined, undefined])
+    expect([words.cover, words.tones, words.largeBeads, words.wordChart]).toEqual([true, undefined, undefined, undefined])
   })
 
   it('prints no Cover page with its switch off', async () => {
@@ -251,11 +251,13 @@ describe('useExportFlow', () => {
     })
 
     it('names the PDF with a word for each print switch that is on, in the panel’s order (ticket 1096)', async () => {
-      const { largeBeads, rowByRow } = usePrintChoices()
+      const { blackAndWhite, largeBeads, rowByRow } = usePrintChoices()
       rowByRow.value = true
       largeBeads.value = true
+      blackAndWhite.value = true
       await setup({ project: wide }).onExportPdf()
-      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_chart-border_large-beads_row-by-row.pdf', expect.any(Blob), 'application/pdf')
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_black-and-white_chart-border_large-beads_row-by-row.pdf', expect.any(Blob), 'application/pdf')
+      expect(vi.mocked(exportProjectPdf).mock.lastCall![1].tones).toBeDefined()
     })
 
     it('names no Large beads, and prints none, where it changes nothing (ticket 1125)', async () => {

@@ -1,6 +1,6 @@
 # PrintBlackAndWhite
 
-**Approved 2026-11-19, not yet in the app (ticket 1096).**
+**In the app since ticket 1096.**
 
 The PDF's chart and list pages drawn for a black-and-white printer, with the Export panel's **Black and white** switch on (off at first). It changes every page after the Cover page: Page 1, the list pages, the chart pages and the Word chart. The Cover page and the Picture stay in color.
 
@@ -21,7 +21,7 @@ Every bead on a chart keeps its Swatch letter (Helvetica-Bold, scaled with the b
 
 The tones are given to the piece's own colors by how dark they are, so the picture stays readable in the chart:
 
-- The colors are put in order of their grey (the app's grey of a color). **The order is kept**: a lighter color never prints darker than a darker one.
+- The colors are put in order of their grey (the app's grey of a color, its `luma`). **The order is kept**: a lighter color never prints darker than a darker one.
 - The lightest tone is paper. With as many colors as tones or fewer, each color has its own tone, spread evenly from paper to the darkest. With more, the colors are cut into as many groups as there are tones, at the widest gaps in their grey; the colors of a group share its tone and are told apart by their letters, as always.
 - **Solid black is for accents.** The darkest group prints solid black only when its colors are dark (their letter is white on the color pages) and together cover no more than `print-black-share` (25%) of the beads. Otherwise there is no black tone, and the darkest group takes the 30% tint. A piece with a large dark ground therefore prints as light tints, not as a sheet of toner.
 - **A black bead stands apart**: the hairlines round it are left out and 0.2 mm of paper shows instead, so two black beads never run together.
@@ -41,10 +41,10 @@ Measured on a simulated 600 dpi printer with a 106 lines-an-inch screen, at the 
 
 ## Acceptance
 
-- [ ] With Black and white on, no page after the cover holds any color or any grey text or line.
-- [ ] Every chart bead is paper, a 10%, 20% or 30% tint with a black letter, or solid black with a white letter.
-- [ ] A lighter color never prints darker than a darker one.
-- [ ] A piece whose darkest colors cover more than a quarter of the beads has no solid black beads.
-- [ ] The Cover page and the Picture are in color.
+- [x] With Black and white on, no page after the cover holds any color or any grey text or line.
+- [x] Every chart bead is paper, a 10%, 20% or 30% tint with a black letter, or solid black with a white letter.
+- [x] A lighter color never prints darker than a darker one.
+- [x] A piece whose darkest colors cover more than a quarter of the beads has no solid black beads.
+- [x] The Cover page and the Picture are in color.
 
 Hand-written from the signed-off canvas; static rendition.

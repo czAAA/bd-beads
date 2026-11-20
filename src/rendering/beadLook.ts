@@ -629,6 +629,8 @@ export interface BeadLetter {
   letter: string
   dimmed: boolean
   theme: ProjectTheme
+  /** The letter's color where the page sets it (Black and white, ticket 1096); else white or `ink` by the bead. */
+  ink?: string
 }
 
 /** The Swatch letter's color on a bead of `color`: white on a dark one, `ink` on a light one (ticket 0573). The margin's
@@ -641,14 +643,14 @@ export function letterInk(color: string): string {
 /** The Swatch letter centred on a bead (ticket 0573): white on a dark bead, `ink` on a light one, judged on the color
  * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. It reads
  * upright on screen however the Canvas, the Frame or the bead is turned (ticket 0728). */
-export function drawBeadLetter(context: DrawingContext, { x, y, size, width = size, height = size, color, letter, dimmed, theme }: BeadLetter): void {
+export function drawBeadLetter(context: DrawingContext, { x, y, size, width = size, height = size, color, letter, dimmed, theme, ink }: BeadLetter): void {
   const shown = dimmed ? finishedColor(color, theme) : color
   const side = Math.min(width, height)
   const fontSize = (side * LETTER_HEIGHT_SHARE) / Math.max(1, letter.length * LETTER_WIDTH_EM + LETTER_BASE_EM)
   context.font = `600 ${fontSize}px Inter, system-ui, sans-serif`
   context.textAlign = 'center'
   context.textBaseline = 'middle'
-  context.fillStyle = letterInk(shown)
+  context.fillStyle = ink ?? letterInk(shown)
   // Undo the turn (and any mirror) the bead is drawn at, keeping its size: the letter stands upright on the screen.
   const { a, b, c, d } = context.getTransform()
   const det = a * d - b * c
