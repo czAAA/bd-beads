@@ -26,12 +26,6 @@ The PDF's file name says which print switches are on, `{project}-{frame}-{maker}
 
 There is no cover that repeats the chart and no Specification that repeats the bead list (ticket 0914): Beads needed is one table, printed once, and the Schema's facts are page 1's tech line.
 
-## Approved 2026-11-19, not yet in the app (ticket 1096)
-
-Signed off on the canvas "PDF export: cover page". The cards have the detail; until ticket 1096 lands the rest of this file describes the exports as they are.
-
-- **Row by row shows each run's bead**: the count, then the bead's own swatch with its letter, and an empty position as the empty swatch, in place of "3A, 2×" (PrintWordChart card).
-
 ## Trimmed to the beads (ticket 1128)
 
 The chart, the overview, the PNG picture and the Cover page show only the rows and columns from the first bead to the last; empty positions inside the drawing stay. The tech line, Row by row, the page count and the File size estimate give the trimmed size ("13 × 30", not "30 × 39"), and the plan sizes the bead from it. A Custom frame's chart, overview and Cover page are trimmed to the rectangle round its colored beads, while its tech line keeps its shape's size and Row by row its whole rounds and rows; a Schema with no beads prints whole.
@@ -71,7 +65,7 @@ One A4 portrait page inside a 10 mm margin on all four sides (`print-margin`), t
 
 ## Word chart
 
-- With Row by row on (ticket 0916; it was Letters until then), one or more pages of written rows follow the chart (format: ticket 0574 and the glossary's Word chart; PDF only, no PNG). Each page is titled with its own rows ("Row by row 56–79"). An outlined strip with the color key sits at the top; each row is one line at `print-word-row` (10 pt), `print-word-pitch` apart: a tick box, the row number in DM Mono 500 and its runs, a hairline under it (stronger every 5th). When the longest row fits half the width the page runs in two columns of 91 mm with a `print-word-gap` gutter and no rule. A long row wraps with a hanging indent and never splits across columns or pages. Exact layout: the PrintWordChart card.
+- With Row by row on (ticket 0916; it was Letters until then), one or more pages of written rows follow the chart (format: ticket 0574 and the glossary's Word chart; PDF only, no PNG). Each page is titled with its own rows ("Row by row 56–79"). An outlined strip with the color key sits at the top; each row is one line at `print-word-row` (10 pt), `print-word-pitch` apart: a tick box, the row number in DM Mono 500 and its runs, each its count and its bead's swatch with its letter, an empty position the empty swatch (ticket 1096), a hairline under it (stronger every 5th). When the longest row fits half the width the page runs in two columns of 91 mm with a `print-word-gap` gutter and no rule. A long row wraps with a hanging indent and never splits across columns or pages. Exact layout: the PrintWordChart card.
 
 ## Beads and grams
 

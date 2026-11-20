@@ -63,7 +63,7 @@ export const print: PrintTranslations = {
       evenCount: 'Número par de cuentas.',
       oddCount: 'Número impar de cuentas.',
       sides: '(L) empieza por la izquierda, (R) por la derecha.',
-      runNote: 'Un tramo es un número y una letra: 2C son dos cuentas C.',
+      runNote: 'Un tramo es un número y una cuenta: 2 {bead} son dos cuentas C.',
       firstCentre: 'La vuelta 1 está en el centro; cada vuelta rodea la forma.',
       firstPoint: 'La fila 1 es el par de la punta; las filas van de ida y vuelta.',
       firstBase: 'La fila 1 es la base de la parte superior; cada fila se lee de izquierda a derecha, y luego cada fleco desde la izquierda, de arriba abajo.',
