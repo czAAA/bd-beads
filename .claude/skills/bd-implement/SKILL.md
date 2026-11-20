@@ -12,7 +12,7 @@ Start with the `bd-worktree` skill: it removes the stale worktrees and sets up t
 
 Use /bd-tdd where possible, at pre-agreed seams.
 
-Run typechecking regularly and single test files regularly. At the end run `npm run check` and `npm run test:related -- <changed files>`; then `npm run test:full` before opening the PR (it skips itself on a slow machine, where the full suite is CI's).
+Run typechecking regularly and single test files regularly. At the end, and again before opening the PR, run the checks `CLAUDE.md`'s Context hygiene gives for each moment: the related tests, the check before pushing, the full suite before the PR.
 
 Once done, use /bd-review to review the work.
 
