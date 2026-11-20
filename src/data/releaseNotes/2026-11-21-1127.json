@@ -1,6 +1,6 @@
 {
   "date": "2026-11-21",
-  "kind": "new",
+  "kind": "changed",
   "line": {
     "en": "Export has two new switches for the PDF chart: Empty grid outlines each empty position and marks it with a small cross, and Chart border shows or hides the line round the chart; at first empty positions print as bare paper",
     "ru": "В «Экспорте» два новых переключателя для схемы PDF: «Пустая сетка» обводит каждое пустое место и отмечает его крестиком, а «Контур схемы» показывает или прячет линию вокруг схемы; сначала пустые места печатаются чистой бумагой",
