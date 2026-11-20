@@ -500,6 +500,7 @@
   --step-ring: 3px; /* The current step's ring line, in accent-strong. */
   --step-name-max: 5.75rem; /* A step's name on a phone wraps at 92px. */
   /* CanvasStrip card, the phone strip (ticket 0843). */
+  --strip-divider-height: 1.125rem; /* The strip's 1px divider between Undo · Redo, the scrolling tools and Export, 18px. */
   --strip-fade: 1.5rem; /* The fade on the edge where the strip's scrolling controls are cut, 24px. */
   --strip-project-name-max: 12rem; /* CanvasStrip card (ticket 0858): the Project button's name is cut at 192px. */
   /* Rotate Frame motion (ticket 1016; interaction-and-motion.md, Rotate Frame; MarginSheet card) */
