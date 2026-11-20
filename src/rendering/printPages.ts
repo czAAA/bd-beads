@@ -324,11 +324,13 @@ function pill(context: CanvasRenderingContext2D, value: string, x: number, y: nu
  * rulers, "101 →" and "101 ↓" where each cut is, and a pill on each part saying which page it prints on. */
 export function drawParts(context: CanvasRenderingContext2D, project: Project, plan: PrintPlan, labels: PrintText['labels'], zoom: number, board: Board): void {
   const grid = displayedGrid(project)
-  const across = [...new Set(plan.parts.map((part) => part.firstAcross).filter(Boolean))]
-  const down = [...new Set(plan.parts.map((part) => part.firstDown).filter(Boolean))]
+  // The board begins where the plan's trimmed chart does (ticket 1128).
+  const { trim } = plan
+  const across = [...new Set(plan.parts.map((part) => part.firstAcross).filter((first) => first !== trim.firstAcross))]
+  const down = [...new Set(plan.parts.map((part) => part.firstDown).filter((first) => first !== trim.firstDown))]
   const reach = PRINT_BOARD_PAD + PRINT_RULER
-  const xOf = (index: number) => board.x + index * grid.stepAcross * zoom
-  const yOf = (index: number) => board.y + index * grid.stepDown * zoom
+  const xOf = (index: number) => board.x + (index - trim.firstAcross) * grid.stepAcross * zoom
+  const yOf = (index: number) => board.y + (index - trim.firstDown) * grid.stepDown * zoom
 
   context.save()
   context.lineCap = 'butt'

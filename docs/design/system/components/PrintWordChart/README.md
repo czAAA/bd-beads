@@ -42,7 +42,9 @@ Until ticket 1096 lands the runs are written as above ("3A, 7B, 2×"). Then **ea
 - The line under the key shows it: "A run is a count and a bead: 2 ▢ is two beads of C.", the mark being an outlined swatch with the letter C (`copy/frame.md`).
 - With Black and white on, a swatch is its bead's tone inside a black hairline (PrintBlackAndWhite card).
 
-**Approved 2026-11-19, not yet in the app (tickets 1128, 1129; signed off in ticket 1123):** Row by row writes the trimmed chart (PrintChartPage card): only the rows from the first bead to the last, each across the trimmed chart's columns only, so a row starts and ends where the chart does and its empty runs are the ones inside the drawing. Each row carries the number the chart's ruler gives it, counted from 1, so a maker reads one number for a row on the chart and here; the page title's range ("Row by row 1–30") uses the same numbers.
+**Trimmed to the beads** (ticket 1128): Row by row writes the trimmed chart (PrintChartPage card): only the rows from the first bead to the last, each across the trimmed chart's columns only, so a row starts and ends where the chart does and its empty runs are the ones inside the drawing. A Custom frame's rounds and rows are written whole. Each row keeps the Schema's own number until ticket 1129.
+
+**Approved 2026-11-19, not yet in the app (ticket 1129; signed off in ticket 1123):** each row carries the number the chart's ruler gives it, counted from 1, so a maker reads one number for a row on the chart and here; the page title's range ("Row by row 1–30") uses the same numbers.
 
 ## Two columns
 

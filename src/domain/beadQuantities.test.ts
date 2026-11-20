@@ -85,7 +85,12 @@ describe('computeColorQuantities', () => {
 describe('hasEmptyPositions (ticket 0963)', () => {
   it('finds an empty position in a Frame painted only in part', () => {
     expect(hasEmptyPositions(blankProject())).toBe(true)
-    expect(hasEmptyPositions(painted([[0, 0, RED]]))).toBe(true)
+    expect(hasEmptyPositions(painted([[0, 0, RED], [2, 2, BLUE]]))).toBe(true)
+  })
+
+  it('looks only between the beads, where the printed chart is trimmed to (ticket 1128)', () => {
+    expect(hasEmptyPositions(painted([[0, 0, RED]]))).toBe(false)
+    expect(hasEmptyPositions(painted([[3, 3, RED], [3, 4, BLUE]]))).toBe(false)
   })
 
   it('finds none once every position of the Frame holds a bead', () => {
