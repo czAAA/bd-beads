@@ -1,5 +1,5 @@
-import { colorAt } from './canvas'
-import type { Rotation } from './grid'
+import { colorAt, type Rect } from './canvas'
+import type { GridPosition, Rotation } from './grid'
 import { frameRowOrder, rowProgressOf, seenRotation } from './rowProgress'
 import { frameWeave } from './layerWeave'
 import { beadsOfLayer, frameOf } from './layerRecord'
@@ -34,7 +34,8 @@ export interface WordSpine {
 }
 
 interface WordRow {
-  /** The row's number; the first row of a peyote chart holds rows 1 and 2 and is numbered 1. */
+  /** The row's number: the printed chart's ruler's for its line (ticket 1129), or peyote's count of its passes from 1, its
+   * first row holding rows 1 and 2. */
   number: number
   /** Peyote's first line, `Rows 1&2`. */
   both: boolean
@@ -108,22 +109,36 @@ export function wordChartOf(project: Project): WordChart | undefined {
   const beads = beadsOfLayer(project, 'frame')!
   let hasEmpty = false
 
-  const rows: WordRow[] = []
+  // The passes with beads in the trimmed chart; peyote's first is the one that weaves its whole first line (Rows 1&2), so
+  // where the Frame's own first line is trimmed away the first kept line's two passes become one (ticket 1129).
+  const kept: { pass: number; positions: GridPosition[] }[] = []
   for (let pass = 0; pass < order.count; pass += 1) {
     const positions = order.positionsOf(pass).filter((position) => inBox(box, position))
-    if (positions.length === 0) continue
+    if (positions.length > 0) kept.push({ pass, positions })
+  }
+  if (twoPasses && kept.length > 1 && kept[0]!.pass > 0 && order.lineOf(kept[0]!.pass) === order.lineOf(kept[1]!.pass)) {
+    const key = (position: GridPosition) => (direction === 'rows' ? position.column : position.row)
+    const [first, second] = [kept[0]!, kept[1]!]
+    kept.splice(0, 2, { pass: first.pass, positions: [...first.positions, ...second.positions].sort((p, q) => key(p) - key(q)) })
+  }
+  const rulerNumber = rulerNumberOf(direction, shown, box, frame)
+
+  const rows: WordRow[] = kept.map(({ pass, positions }, index) => {
     const colors = positions.map(({ row, column }) => {
       const hex = colorAt(beads, row, column)
       return hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?')
     })
-    const marker = wordChart.marked ? (pass % 2 === 0 ? 'L' : 'R') : undefined
+    // (L) and (R) alternate from the first line kept.
+    const marker = wordChart.marked ? (index % 2 === 0 ? 'L' : 'R') : undefined
     // A loom row, and an L row, read left to right; an R row right to left.
     const leftToRight = marker !== 'R'
     if (leftToRight !== ascends) colors.reverse()
     hasEmpty ||= colors.includes(undefined)
-    const first = twoPasses && pass === 0
-    rows.push({ number: twoPasses && pass > 0 ? pass + 2 : pass + 1, both: first, ...(marker ? { marker } : {}), runs: runsOf(colors) })
-  }
+    const line = order.lineOf(pass)
+    // Peyote counts its passes, two a line, from Rows 1&2; a line woven in one pass carries its ruler's number.
+    const number = twoPasses ? (index === 0 ? 1 : index + 2) : line === undefined ? index + 1 : rulerNumber(line)
+    return { number, both: twoPasses && index === 0, ...(marker ? { marker } : {}), runs: runsOf(colors) }
+  })
 
   return {
     marked: wordChart.marked,
@@ -133,6 +148,14 @@ export function wordChartOf(project: Project): WordChart | undefined {
     lastNumber: rows[rows.length - 1]?.number ?? 0,
     hasEmpty,
   }
+}
+
+/** The number the printed chart's ruler gives a Frame line (ticket 1129; PrintChartPage card): counted from 1 at the
+ * trimmed chart's top (lines across the picture) or left (lines down it), whichever way it is turned. */
+function rulerNumberOf(direction: PassDirection, shown: Rotation, box: Rect | undefined, frame: { rows: number; columns: number }): (line: number) => number {
+  const [first, count] = direction === 'rows' ? [box?.row ?? 0, box?.rows ?? frame.rows] : [box?.column ?? 0, box?.columns ?? frame.columns]
+  const edge = FIRST_EDGE[direction][shown]
+  return edge === 'top' || edge === 'left' ? (line) => line - first + 1 : (line) => first + count - line
 }
 
 /** A pass's letters in order as runs of one letter: `undefined` for an empty position. */

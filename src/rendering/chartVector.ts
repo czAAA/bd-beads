@@ -5,7 +5,7 @@ import type { SwatchLetters } from '../domain/swatchLetters'
 import { beadRoundness, describeWeave } from '../domain/weave'
 import { frameWeave } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
-import { acrossNumber, displayedCellOf, downNumber, emptyCrossArms, lineBetween, rulerLevel } from './printPages'
+import { acrossNumber, displayedCellOf, downNumber, emptyCrossArms, lineBetween, RULER_FIT } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
 import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
@@ -28,14 +28,20 @@ const LINE_FIVE = mmPt(0.18)
 const LINE_TEN = mmPt(0.3)
 const PAD_LINE = mmPt(0.2)
 const OVERLAP_LINE = mmPt(0.5)
-/** `print-letter`, in points: the ruler numbers, and the Swatch letter on a 3 mm bead. The share of its bead a round
- * bead's circle takes (2.6 of 3 mm). */
+/** `print-letter`, in points: the most a ruler number takes, and the Swatch letter on a 3 mm bead. The share of its bead
+ * a round bead's circle takes (2.6 of 3 mm). */
 const LETTER_PT = 6.5
 const ROUND_SHARE = 2.6 / 3
 /** The key's swatch, drawn like a 3 mm bead whatever the chart's bead. */
 const KEY_SWATCH_MM = 3
-/** Rulers number every 5th row and column from this bead up, and every 10th under it (ticket 0913). */
-const RULER_FIVES_FROM_MM = 2.2
+/** How far a column number's baseline stands above the chart (its cap top below it at the bottom), and a row number
+ * from its side, in mm. */
+const COLUMN_NUMBER_GAP_MM = 1.5
+const ROW_NUMBER_GAP_MM = 1.3
+/** `print-rim-gap`, in mm: how far the rim ticket 1126 draws stands clear of the beads. */
+const RIM_GAP_MM = 1
+/** The room a row number has in its band, in mm: `print-ruler` less the rim's gap and its own (2.7 mm). */
+const ROW_NUMBER_ROOM_MM = PRINT_RULER / mm(1) - RIM_GAP_MM - ROW_NUMBER_GAP_MM
 /** `print-overlap-tint`: how far toward white an overlap bead is mixed. */
 const OVERLAP_TINT = 0.6
 /** `--print-letter-squeeze`: horizontal scale of a two-letter Swatch letter. */
@@ -200,8 +206,9 @@ export function drawKeySwatch(content: PageDrawing, x: number, y: number, hex: s
   letterAt(content, letter, { x, y, width: size, height: size }, letterColor(hex), letterPt(KEY_SWATCH_MM))
 }
 
-/** One part: its pad outline, beads, lines, letters, rulers and the overlap line, on the page at `pad`. */
-function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters): void {
+/** One part: its pad outline, beads, lines, letters, rulers (their numbers at the page's `rulerPt`) and the overlap line,
+ * on the page at `pad`. */
+function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters, rulerPt: number): void {
   const grid = displayedGrid(project)
   const stepAcross = grid.stepAcross * plan.zoom
   const stepDown = grid.stepDown * plan.zoom
@@ -256,9 +263,9 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
       cellLines.add(true, cell.y, cell.x, cell.x + cell.width)
       cellLines.add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
     }
-    const right = across < lastAcross && lineBetween(acrossNumber(project, acrossIndex), acrossNumber(project, acrossIndex + 1))
+    const right = across < lastAcross && lineBetween(acrossNumber(plan.trim, acrossIndex), acrossNumber(plan.trim, acrossIndex + 1))
     if (right) (right === 'tenth' ? tenLines : fiveLines).add(false, cell.x + cell.width, cell.y, cell.y + cell.height)
-    const below = down < lastDown && lineBetween(downNumber(project, downIndex), downNumber(project, downIndex + 1))
+    const below = down < lastDown && lineBetween(downNumber(plan.trim, downIndex), downNumber(plan.trim, downIndex + 1))
     if (below) (below === 'tenth' ? tenLines : fiveLines).add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
   }
   content.lines(cellLines.segments(chart.x, chart.y), LINE_CELL, PRINT_COLORS.lineStrong)
@@ -285,30 +292,59 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
 
   drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
 
-  // Rulers: upright numbers at every 5th (every 10th on a small bead), on all four sides, tens bold in ink, fives regular
-  // in muted, overlap faint.
-  const shown = (value: number) => rulerLevel(value) === 'tenth' || (rulerLevel(value) === 'fifth' && plan.beadMm >= RULER_FIVES_FROM_MM)
-  const size = LETTER_PT
+  // Rulers: every row and column numbered (ticket 1129), round the chart's own box until the rim (1126) moves them out.
+  const columns = Array.from({ length: lastAcross + 1 }, (_, index) => ({
+    value: acrossNumber(plan.trim, firstIndexAcross + index),
+    at: chart.x + index * stepAcross + (grid.beadAcross * plan.zoom) / 2,
+    overlap: index < part.overlapAcross,
+  }))
+  const rows = Array.from({ length: lastDown + 1 }, (_, index) => ({
+    value: downNumber(plan.trim, firstIndexDown + index),
+    at: chart.y + index * stepDown + (grid.beadDown * plan.zoom) / 2,
+    overlap: index < part.overlapDown,
+  }))
+  drawRulerNumbers(content, chart, columns, rows, rulerPt)
+}
+
+/** One number on a part's ruler: its printed number, the middle of its column or row in px, and whether it is the overlap. */
+interface RulerNumber {
+  value: number
+  at: number
+  overlap: boolean
+}
+
+/** The one size of a page's ruler numbers (PrintChartPage card): the largest, at most `print-letter`, at which its widest
+ * column number fits `print-ruler-fit` of a column and its widest row number's digits of a row, and its band's width.
+ * @internal Its test checks the card's sizes on their own. */
+export function rulerNumberPt(project: Layered, plan: PrintPlan, parts: readonly PrintPart[]): number {
+  const grid = displayedGrid(project)
+  const widestColumn = String(Math.max(...parts.map((part) => acrossNumber(plan.trim, part.lastAcross))))
+  const widestRow = String(Math.max(...parts.map((part) => downNumber(plan.trim, part.lastDown))))
+  const columnPt = grid.stepAcross * plan.zoom * K
+  const rowPt = grid.stepDown * plan.zoom * K
+  return Math.min(
+    LETTER_PT,
+    (RULER_FIT * columnPt) / helveticaWidth(widestColumn, 'regular', 1),
+    (RULER_FIT * rowPt) / HELVETICA_CAP_HEIGHT,
+    mmPt(ROW_NUMBER_ROOM_MM) / helveticaWidth(widestRow, 'regular', 1),
+  )
+}
+
+/** A part's ruler numbers round `edge` (PrintChartPage card, Rulers), Helvetica regular `muted` (the overlap `faint`): a
+ * column centred, 1.5 mm out from `edge`; a row on its letter baseline, 1.3 mm out. `edge` is where the numbers stand
+ * round: the chart's own box, until the rim (ticket 1126) moves it out. */
+function drawRulerNumbers(content: PageDrawing, edge: Box, columns: readonly RulerNumber[], rows: readonly RulerNumber[], size: number): void {
   const cap = HELVETICA_CAP_HEIGHT * size
-  const number = (value: number, x: number, baseline: number, align: 'left' | 'center' | 'right', overlap: boolean) => {
-    const level = rulerLevel(value)
-    content.text(String(value), x, baseline, { face: level === 'tenth' ? 'bold' : 'regular', size, color: overlap ? PRINT_COLORS.faint : level === 'tenth' ? PRINT_COLORS.ink : PRINT_COLORS.muted }, align)
+  const number = ({ value, overlap }: RulerNumber, x: number, baseline: number, align: 'left' | 'center' | 'right') =>
+    content.text(String(value), x, baseline, { face: 'regular', size, color: overlap ? PRINT_COLORS.faint : PRINT_COLORS.muted }, align)
+  for (const column of columns) {
+    number(column, column.at * K, (edge.y - mm(COLUMN_NUMBER_GAP_MM)) * K, 'center')
+    number(column, column.at * K, (edge.y + edge.height + mm(COLUMN_NUMBER_GAP_MM)) * K + cap, 'center')
   }
-  for (let index = 0; index <= lastAcross; index += 1) {
-    const value = acrossNumber(project, firstIndexAcross + index)
-    if (!shown(value)) continue
-    const x = (chart.x + index * stepAcross + (grid.beadAcross * plan.zoom) / 2) * K
-    const overlap = index < part.overlapAcross
-    number(value, x, (chart.y - mm(1.5)) * K, 'center', overlap)
-    number(value, x, (chart.y + chart.height + mm(1.5)) * K + cap, 'center', overlap)
-  }
-  for (let index = 0; index <= lastDown; index += 1) {
-    const value = downNumber(project, firstIndexDown + index)
-    if (!shown(value)) continue
-    const baseline = (chart.y + index * stepDown + (grid.beadDown * plan.zoom) / 2) * K + cap / 2
-    const overlap = index < part.overlapDown
-    number(value, (chart.x - mm(1.3)) * K, baseline, 'right', overlap)
-    number(value, (chart.x + chart.width + mm(1.3)) * K, baseline, 'left', overlap)
+  for (const row of rows) {
+    const baseline = row.at * K + cap / 2
+    number(row, (edge.x - mm(ROW_NUMBER_GAP_MM)) * K, baseline, 'right')
+    number(row, (edge.x + edge.width + mm(ROW_NUMBER_GAP_MM)) * K, baseline, 'left')
   }
 }
 
@@ -394,6 +430,8 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
 export function drawChartParts(content: PageDrawing, project: Project, plan: PrintPlan, parts: PrintPart[], letters: SwatchLetters, area = CHART_PAGE_AREA): Box[] {
   const shared = parts.length > 1
   const pads = parts.map((part) => padOf(part, shared, area))
-  parts.forEach((part, index) => drawPart(content, project, plan, part, pads[index]!, letters))
+  // One size for every ruler number on the page, its parts or strips together.
+  const rulerPt = rulerNumberPt(project, plan, parts)
+  parts.forEach((part, index) => drawPart(content, project, plan, part, pads[index]!, letters, rulerPt))
   return pads
 }
