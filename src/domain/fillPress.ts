@@ -1,8 +1,8 @@
-import { colorAt, forEachChangedPosition, type Rect } from './canvas'
+import { colorAt, forEachChangedPosition, type BeadMap, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
 import { fillArea, isFillRefusal, type FillRefusal } from './fill'
 import type { GridPosition, Layer, PreviewCell } from './grid'
-import { beadsOfLayer } from './layerRecord'
+import { beadsOfLayer, withLayer } from './layerRecord'
 import { onLayer, positionInLayer, positionOnCanvas } from './layers'
 import type { MirrorSetting } from './mirror'
 import type { Project } from './project'
@@ -25,14 +25,14 @@ export interface FillPressReach {
 
 /** The Project a Fill press makes (ADR 0026, tickets 0715, 1025), or why Fill reach refused it: the one command both
  * the press and its hover preview run (ticket 1153). Edit's rules are applied after it, as for every drawing. */
-export function fillPressed(project: Project, { row, column, layer, color }: FillPress, { mirror, onScreen }: FillPressReach): Project | FillRefusal {
+export function fillPressed(project: Project, { row, column, layer, color }: FillPress, { mirror, onScreen }: FillPressReach, refusedAfter?: (painted: BeadMap) => void): Project | FillRefusal {
   const place = mirror.place
   // The Mirror's Canvas Area is a border on the Canvas: the frame's own edge already bounds a Fill there.
   const border = layer === 'canvas' && place?.layer === 'canvas' ? place.area : undefined
   let refused: FillRefusal | undefined
   const made = onLayer(project, layer, (sheet, local) => {
     const at = local({ row, column })
-    const filled = fillArea(sheet, at.row, at.column, color, { onScreen, border })
+    const filled = fillArea(sheet, at.row, at.column, color, { onScreen, border, refusedAfter })
     if (!isFillRefusal(filled)) return filled
     refused = filled
     return sheet.beads
@@ -42,10 +42,12 @@ export function fillPressed(project: Project, { row, column, layer, color }: Fil
 
 /** The beads a Fill press would change (ticket 1153), as Canvas positions, those on the Frame named so: exactly what
  * the press lands once Edit's rules keep rows marked done, the margin and the Frame's covered beads. None when Fill
- * reach would refuse it or it changes nothing. `region` is the Project it makes, for `inFilledRegion`. */
+ * reach would refuse it or it changes nothing. `region` marks the beads the flood reached, for `inFilledRegion`. */
 export function fillPreview(project: Project, press: FillPress, reach: FillPressReach): { cells: PreviewCell[]; region: Project } {
-  const made = fillPressed(project, press, reach)
-  if (isFillRefusal(made)) return { cells: [], region: project }
+  let reached: BeadMap | undefined
+  const made = fillPressed(project, press, reach, (painted) => (reached = painted))
+  // A press anywhere the refused flood reached is refused too, so the region it reached is kept, with nothing to show.
+  if (isFillRefusal(made)) return { cells: [], region: reached ? withLayer(project, press.layer, { beads: reached }) : project }
   const kept = keepAllowedEdits(project, made)
   const before = beadsOfLayer(project, press.layer) ?? {}
   const after = beadsOfLayer(kept, press.layer) ?? {}
@@ -58,7 +60,7 @@ export function fillPreview(project: Project, press: FillPress, reach: FillPress
 }
 
 /** Whether a Fill pressed at `at` on `layer` would flood the very region a preview made `region` from (ticket 1153):
- * the press changed its bead, so any press inside it floods the same beads, and the preview needs no new flood. */
+ * the flood reached its bead, so any press inside it floods the same beads, or is refused alike, with no new flood. */
 export function inFilledRegion(project: Project, region: Project, layer: Layer, at: GridPosition): boolean {
   if (region === project) return false
   const local = positionInLayer(project, layer, at)

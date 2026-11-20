@@ -66,4 +66,21 @@ describe('inFilledRegion (ticket 1153)', () => {
     expect(inFilledRegion(project, region, 'frame', { row, column: column + 2 })).toBe(false)
     expect(inFilledRegion(project, project, 'frame', { row, column })).toBe(false)
   })
+
+  it('holds where a refused Fill\'s flood reached, refused there alike, so the hover floods no more (ticket 0715)', () => {
+    // A ring enclosing 501 x 501 empty positions, over the Fill cap, far from the Frame.
+    const side = 503
+    const ring: BeadChange[] = Array.from({ length: side }, (_cell, at) => [
+      { row: 0, column: at, color: '#000000' },
+      { row: side - 1, column: at, color: '#000000' },
+      { row: at, column: 0, color: '#000000' },
+      { row: at, column: side - 1, color: '#000000' },
+    ]).flat()
+    const project = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 5000, column: 5000 }, beads: withColors({}, ring) })
+    const big = reach(MIRROR_OFF, { row: -10, column: -10, rows: 600, columns: 600 })
+    const { cells, region } = fillPreview(project, { row: 250, column: 250, layer: 'canvas', color: '#00ff00' }, big)
+    expect(cells).toEqual([])
+    expect(inFilledRegion(project, region, 'canvas', { row: 250, column: 251 })).toBe(true)
+    expect(inFilledRegion(project, region, 'canvas', { row: 0, column: 0 })).toBe(false)
+  })
 })

@@ -8,7 +8,7 @@ import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Edit } from '../project/useEdit'
-import type { Rect } from '../../domain/canvas'
+import { sameFrame, type Rect } from '../../domain/canvas'
 import type { Translations } from '../../i18n/translations'
 import type { MessageTone } from '../ui/useToasts'
 
@@ -180,7 +180,5 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
 
 /** Whether two Fill reaches bound a flood alike: the same Mirror and the same screen. */
 function sameReach(a: FillPressReach, b: FillPressReach): boolean {
-  const [x, y] = [a.onScreen, b.onScreen]
-  const sameScreen = x === y || (!!x && !!y && x.row === y.row && x.column === y.column && x.rows === y.rows && x.columns === y.columns)
-  return a.mirror === b.mirror && sameScreen
+  return a.mirror === b.mirror && sameFrame(a.onScreen, b.onScreen)
 }

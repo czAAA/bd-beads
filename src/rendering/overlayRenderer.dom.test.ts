@@ -1207,7 +1207,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     expect(far.named('drawImage').map((call) => [call.globalAlpha, ...call.args.slice(1)])).toEqual([[0.6, 0, 0, 300, 300, 0, 0, 6000, 6000]])
   })
 
-  it('keeps the Mirror\'s outline on a zoomed-out preview inside its Area, drawn bead by bead (tickets 0806, 1153)', () => {
+  it('draws a zoomed-out preview inside the Mirror\'s Area bead by bead, keeping its outline, and one outside it as a draft image (tickets 0806, 1153)', () => {
     const scratch = { createImageData: (width: number, height: number) => ({ width, height, data: new Uint8ClampedArray(width * height * 4) }), putImageData: vi.fn() }
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(scratch as unknown as CanvasRenderingContext2D)
     const project = canvas()
