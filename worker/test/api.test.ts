@@ -270,11 +270,16 @@ describe('the rate limit', () => {
     }))
 })
 
+/** The R2 cap the size cap's tests set, in bytes. */
+const R2_CAP = MB / 16
+
 describe('the size cap', () => {
   let worker: RunningWorker
   beforeAll(async () => {
-    // Small caps, so the tests send small bodies: the D1 cap in bytes, the R2 cap in MB.
-    worker = await startWorker({ entry: 'fixture', vars: { UPLOAD_CAP_D1_BYTES: 300_000, UPLOAD_CAP_R2_MB: 1 } })
+    // Small caps, so the tests send small bodies: the D1 cap in bytes, the R2 cap in MB, a sixteenth of one. A refusal
+    // by declared length answers before the body is read, and a body still being written when the Worker hangs up
+    // breaks the pipe: a whole MB did on a busy machine (ticket 1143).
+    worker = await startWorker({ entry: 'fixture', vars: { UPLOAD_CAP_D1_BYTES: 300_000, UPLOAD_CAP_R2_MB: R2_CAP / MB } })
   })
   afterAll(() => worker.dispose())
 
@@ -300,9 +305,9 @@ describe('the size cap', () => {
   })
 
   it('refuses an R2 upload over its cap by declared length, and one without a length', async () => {
-    const declared = await worker.fetch('/api/test/pro/blobs/big', change('PUT', { body: bytesOf(MB + 1) }))
+    const declared = await worker.fetch('/api/test/pro/blobs/big', change('PUT', { body: bytesOf(R2_CAP + 1) }))
     expect(declared.status).toBe(413)
-    expect(await declared.json()).toEqual({ error: 'too-large', cap: MB })
+    expect(await declared.json()).toEqual({ error: 'too-large', cap: R2_CAP })
     const streamed = await worker.fetch('/api/test/pro/blobs/big', change('PUT', chunked(bytesOf(1000))))
     expect(streamed.status).toBe(411)
     expect(await streamed.json()).toEqual({ error: 'length-required' })

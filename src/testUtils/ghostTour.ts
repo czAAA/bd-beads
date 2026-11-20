@@ -135,8 +135,9 @@ async function withMotion(on: boolean): Promise<void> {
 }
 
 /** How many times faster the page's clock runs while a tour plays (ticket 1143): at 4 a tour takes about a minute, not
- * over three, and still passed with the CPU slowed 3×. The test's own waits and limits are real seconds, untouched. */
-const TOUR_SPEED = 4
+ * over three, and still passed with the CPU slowed 3×. `VITE_TOUR_SPEED` sets another, to measure one before choosing it.
+ * The test's own waits and limits are real seconds, untouched. */
+const TOUR_SPEED = Number(import.meta.env.VITE_TOUR_SPEED) || 4
 
 /** A screen size the tour plays at, in px. */
 type TourSize = readonly [width: number, height: number]
