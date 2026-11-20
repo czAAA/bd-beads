@@ -12,7 +12,7 @@ import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, bitmapBox, coversArea, gestureTransform, mayRedrawMidGesture, SETTLE_MS, GESTURE_BEAD_LIMIT, type View } from '../../../rendering/gestureView'
 import { draftPixelRatio, drawsDraft } from '../../../rendering/draftRenderer'
 import { drawWholeScreen } from '../../../rendering/liftedPiece'
-import { renderProject } from '../../../rendering/projectRenderer'
+import { renderProject, type SlimSheet } from '../../../rendering/projectRenderer'
 import type { DrawnReference } from '../../../rendering/referenceImage'
 import type { Space } from '../../../rendering/space'
 import type { Region, Scroll } from '../../../rendering/surfaceView'
@@ -110,6 +110,8 @@ export interface BeadLayerDeps {
   onDrawn?: () => void
   /** The reference image to draw under the beads (ticket 0790), none while it is hidden. */
   reference: Ref<DrawnReference | undefined>
+  /** The expanded Frame's slim sheet (ticket 1169), drawn in place of the 4-position sheet; none unexpanded. */
+  slimSheet?: Ref<SlimSheet | undefined>
 }
 
 /** Whether two reference images draw the same: the same picture in the same place at the same opacity, over the beads
@@ -236,9 +238,11 @@ function beadCost(project: Project): number {
 
 /** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
-export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn, reference }: BeadLayerDeps): void {
+export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn, reference, slimSheet }: BeadLayerDeps): void {
+  /** The slim sheet as one value a draw can be compared by. */
+  const slimKey = () => JSON.stringify(slimSheet?.value ?? null)
   /** What the cells were last drawn from, to draw only what an edit changed. */
-  let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean; reference: DrawnReference | undefined } | undefined
+  let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean; reference: DrawnReference | undefined; slim: string } | undefined
 
   /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just
    * those. */
@@ -263,7 +267,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     }
 
     const before = drawn
-    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, box, width: size.value.width, height: size.value.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, reference: reference.value }
+    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, box, width: size.value.width, height: size.value.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, reference: reference.value, slim: slimKey() }
     const bands =
       !resized &&
       before &&
@@ -277,12 +281,13 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       before.frameTheme === frameTheme.value &&
       before.showFinished === showFinished.value &&
       before.rowMarks === marksShown.value &&
+      before.slim === drawn.slim &&
       sameReference(before.reference, reference.value)
         ? sameDrawing(before.project, project)
           ? changedBands(before.project, project)
           : stepBands(before.project, project)
         : undefined
-    const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, canvasLetters, draftWhenSmall: true, opaque: true, reference: reference.value }
+    const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, canvasLetters, draftWhenSmall: true, opaque: true, reference: reference.value, slimSheet: slimSheet?.value }
 
     if (bands === undefined) {
       drawWholeScreen(() => renderProject(context, drawing))
@@ -323,7 +328,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     placeCanvas(canvas, box)
     const region = { x: props.scroll.x + box.x, y: props.scroll.y + box.y, width: box.width, height: box.height }
     sizeCanvas(canvas, region.width, region.height, pixelRatio)
-    renderProject(context, { project: props.project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, draftWhenSmall: true, positionMarks: !!reference.value, reference: reference.value })
+    renderProject(context, { project: props.project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, draftWhenSmall: true, positionMarks: !!reference.value, reference: reference.value, slimSheet: slimSheet?.value })
     canvas.style.transform = ''
     canvas.style.visibility = 'visible'
     standInView = { zoom: props.zoom, scroll: { ...props.scroll }, box }
@@ -403,6 +408,6 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
 
   // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make
   // the draw depend on every bead's property.
-  watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, frameTheme, showFinished, marksShown, reference], oncePerFrame(drawCellsOrMove), { flush: 'post' })
+  watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, frameTheme, showFinished, marksShown, reference, slimKey], oncePerFrame(drawCellsOrMove), { flush: 'post' })
   onBeforeUnmount(() => clearTimeout(settleTimer))
 }

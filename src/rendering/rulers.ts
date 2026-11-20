@@ -156,6 +156,9 @@ export interface RulerLayoutOptions {
   /** The margin sheet's scale (`marginScale`, ticket 0698): a Frame's numbers stand on its sheet and are drawn at it in
    * place of the zoom's own rule; a Piece's keep the zoom's. Left out, the zoom's rule for both. */
   sheetScale?: number
+  /** The Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): its numbers are the 100% ones at every
+   * zoom, the Ruler step always kept, never only the last number. */
+  expanded?: boolean
   /** The Pieces to rule, when the caller holds them through a stroke (`ruledPieces`, ticket 0674); counted from the
    * beads otherwise. */
   pieces?: RuledPieces
@@ -195,7 +198,7 @@ interface BoxLayout {
 // Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
 // number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
 // from 100 up turn. The Ruler step is worked out once per axis.
-function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; offset: GridPosition; layer: ViewLayer; size?: number }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
+function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; offset: GridPosition; layer: ViewLayer; size?: number; stepped?: boolean }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   // The box counted from the layer's first position, and where that sits in grid px (ticket 492).
   const start = { row: box.row - place.offset.row, column: box.column - place.offset.column }
@@ -226,7 +229,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   // 2-digit one.
   const columnBand = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
   const { column: columnStepOnScreen, row: rowStepOnScreen } = surface.beadStep(place.layer)
-  const lastOnly = surface.zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
+  const lastOnly = !place.stepped && surface.zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
   const columnStep = lastOnly ? count.columns : rulerStep(columnStepOnScreen, columnSizes)
   const rowStep = lastOnly ? count.rows : rulerStep(rowStepOnScreen, [rowSize])
   const columnPitch = Math.hypot(columnStepOnScreen.x, columnStepOnScreen.y)
@@ -319,12 +322,14 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
-export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
+export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
   const scale = rulerScale(surface.zoom, fontPx)
-  // The Frame's numbers stand on its sheet, and grow and shrink with it (ticket 0698).
-  const frameScale = sheetScale !== undefined ? { ...scale, fontPx: fontPx * sheetScale } : scale
+  // The Frame's numbers stand on its sheet, and grow and shrink with it (ticket 0698); expanded, the sheet is at 1 and
+  // they are the 100% ones, their gap too, whatever the zoom (ticket 1169).
+  const atFull = rulerScale(1, fontPx)
+  const frameScale = expanded ? { ...scale, fontPx: atFull.fontPx, gap: atFull.gap } : sheetScale !== undefined ? { ...scale, fontPx: fontPx * sheetScale } : scale
   const scaleOf = (kind: RuledBox['kind']) => (kind === 'frame' ? frameScale : scale)
   const reachOf = (kind: RuledBox['kind']) => scaleOf(kind).fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
   const boxes = ruledBoxes(project, scale, pieces).filter((box) => {
@@ -335,11 +340,11 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   const laid = boxes.map((box) => ({
     kind: box.kind,
     ...(box.kind === 'frame'
-      ? layBox(box, frameWeave(project), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame', size: frameBeadScale(project) }, surface, viewport, frameScale)
+      ? layBox(box, frameWeave(project), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame', size: frameBeadScale(project), stepped: expanded }, surface, viewport, frameScale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
   // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.
-  const numbered = laid.filter((box) => (box.kind === 'frame' ? sheet === 'full' : numbers))
+  const numbered = laid.filter((box) => (box.kind === 'frame' ? expanded || sheet === 'full' : numbers))
   const everyLabel = numbered.flatMap((box) => box.labels)
   const everyBead = numbered.flatMap((box) => box.beads)
 
@@ -349,9 +354,22 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     numbers,
     boxes,
     step: Math.max(1, ...laid.map((box) => box.step)),
-    passMark: sheet !== 'bare',
-    sheetScale: sheetScale ?? 1,
+    passMark: expanded || sheet !== 'bare',
+    sheetScale: expanded ? 1 : (sheetScale ?? 1),
     labels: everyLabel,
     dots: everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)),
   }
+}
+
+/** How thick the Frame's numbers stand on the left and on the top as seen, at `fontPx` (ticket 1169): the slim sheet of
+ * an expanded Frame is as wide there as they are. `across` is a Canvas turned a quarter, whose left side then numbers
+ * the Frame's columns and its top its rows. None for a Custom frame, which has no rulers. */
+export function frameNumberBands(project: RuledProject, across: boolean, fontPx: number): { left: number; top: number } {
+  const frame = frameOf(project)
+  if (!frame || frameShapeOf(frame)) return { left: 0, top: 0 }
+  const { rows, columns } = laidRect({ ...frame, cell: frameWeave(project).cell })
+  const row = labelBox(String(rows), false, fontPx)
+  const columnSizes = [labelBox(String(Math.min(columns, TURNED_FROM - 1)), false, fontPx), ...(columns >= TURNED_FROM ? [labelBox(String(columns), true, fontPx)] : [])]
+  const column = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
+  return across ? { left: column.width, top: row.height } : { left: row.width, top: column.height }
 }

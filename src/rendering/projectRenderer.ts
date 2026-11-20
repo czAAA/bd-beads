@@ -117,6 +117,10 @@ export interface RenderInput {
   // How many positions wide the keep-out margin is drawn (ticket 459): the surface widens it when zoomed out. Defaults
   // to `MARGIN`.
   margin?: number
+  /** The expanded Frame's slim sheet (MarginSheet card, Expand the Frame; ticket 1169): its box in grid px and its
+   * corners in screen px, drawn at scale 1 with no inner border in place of the 4-position sheet. The keep-out margin
+   * is unchanged. */
+  slimSheet?: SlimSheet
   // How one bead is drawn. Defaults to today's look; a richer one is handed in here, and never has to know about rows,
   // zoom, rotation or what is on screen.
   drawBead?: BeadDrawer
@@ -652,18 +656,28 @@ export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: 
   return { sheet, footprint, band }
 }
 
+/** The expanded Frame's slim sheet as drawn (ticket 1169): its box in grid px and its outer corners in screen px. */
+export interface SlimSheet {
+  sheet: Region
+  radius: number
+}
+
 /** The keep-out margin as drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the Frame's
  * footprint left out, a hairline edge and an inner border; folded, no border; none bare, which keeps only the Move bar and
  * the Frame tools button (tickets 0682, 1164). In grid space: its `MARGIN_PX` at the sheet's scale (ticket 0698), over the zoom. */
-function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
-  const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
+function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook, slim?: SlimSheet): void {
+  const kept = marginSheetPx(project, margin)!
+  const { footprint } = kept
+  const sheet = slim?.sheet ?? kept.sheet
+  const gridBand = slim ? Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height) : kept.band
   const band = gridBand * zoom
-  const form = marginForm(band, look.leastScale)
+  // Expanded, the sheet is full at scale 1 at every zoom, with no inner border.
+  const form = slim ? 'slim' : marginForm(band, look.leastScale)
   if (form === 'bare') return
-  const px = marginScale(band, look.leastScale) / zoom
+  const px = slim ? 1 / zoom : marginScale(band, look.leastScale) / zoom
   const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
-  const radius = Math.min(MARGIN_PX.sheetRadius[drawn] * px, gridBand)
+  const radius = Math.min(slim ? slim.radius / zoom : MARGIN_PX.sheetRadius[drawn] * px, gridBand)
   context.save()
   context.beginPath()
   context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)
@@ -788,7 +802,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     }
     drawCanvasLayer(context, draw, space)
     if (frame && frameBox) {
-      drawMarginSheet(context, project, margin, zoom, theme.margin)
+      drawMarginSheet(context, project, margin, zoom, theme.margin, input.slimSheet)
       drawFrameGround(context, { project, box: frameBox, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: under, tiles })
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
