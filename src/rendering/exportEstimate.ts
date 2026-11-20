@@ -21,6 +21,9 @@ export interface ExportFacts {
   cells: number
   filled: number
   edges: number
+  /** The empty positions that carry a cross (and a square chart's cell line): all of them with Empty grid on, else none
+   * (ticket 1127). */
+  crosses: number
   /** Page 1 (ticket 0914): the colors its Beads needed lists, and the overview's zoom when the chart is cut into parts; the
    * list pages after it, with the colors on each. */
   pageOneColors: number
@@ -76,11 +79,13 @@ export function exportFacts(project: Project, words: PrintText): ExportFacts | u
   const { plan } = pageOne
   const { filled, edges } = beadsOf(frame, beadsOfLayer(project, 'frame')!)
   const pdfPages = pdfPageCount(plan, words)
+  const cells = Math.max(filled, Math.round((frame.columns * frame.rows * cellsIn(plan.trim)) / cellsIn(wholeArea(project))))
   return {
     colors: words.colors.length,
-    cells: Math.max(filled, Math.round((frame.columns * frame.rows * cellsIn(plan.trim)) / cellsIn(wholeArea(project)))),
+    cells,
     filled,
     edges,
+    crosses: words.emptyGrid ? cells - filled : 0,
     pageOneColors: pageOne.needed.count,
     ...(pageOne.overview ? { overviewZoom: pageOne.overview.zoom } : {}),
     lists: pageOne.lists.map((list) => list.count),
@@ -160,10 +165,11 @@ const WORD_PER_CHARACTER = 113
 const PNG_OVERHEAD = 200
 const PDF_PAGE_OVERHEAD = 2_000
 
-/** The overview's bytes at a dpi, with its board at `zoom`; every empty position carries its cross (tickets 0719, 0818). */
+/** The overview's bytes at a dpi, with its board at `zoom`; an empty position carries its cross with Empty grid on
+ * (tickets 0719, 0818, 1127). */
 function overviewBytes(facts: ExportFacts, dpi: number, zoom: number): number {
   const [base, perColor, perCell, perBead, perEdge, perCross] = atDpi(OVERVIEW_BYTES, dpi) as [number, number, number, number, number, number]
-  const board = (perCell * facts.cells + perBead * facts.filled + perEdge * facts.edges + perCross * (facts.cells - facts.filled)) * zoom
+  const board = (perCell * facts.cells + perBead * facts.filled + perEdge * facts.edges + perCross * facts.crosses) * zoom
   return base + (perColor + PAGE_ONE_PER_COLOR * textAtDpi(dpi)) * facts.pageOneColors + board
 }
 

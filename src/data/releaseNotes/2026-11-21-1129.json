@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "The PDF numbers every row and column, 1, 2, 3… from the top left of the chart, and Row by row uses the same numbers",
+    "ru": "PDF нумерует каждый ряд и столбец, 1, 2, 3… от левого верхнего угла схемы, а «Ряд за рядом» использует те же номера",
+    "uk": "PDF нумерує кожен ряд і стовпець, 1, 2, 3… від лівого верхнього кута схеми, а «Рядок за рядком» використовує ті самі номери",
+    "be": "PDF нумаруе кожны рад і слупок, 1, 2, 3… ад левага верхняга кута схемы, а «Рад за радам» выкарыстоўвае тыя ж нумары",
+    "zh": "PDF 给每一行和每一列编号，从图表左上角起 1、2、3…，“逐行说明”也用同样的编号",
+    "es": "El PDF numera cada fila y columna, 1, 2, 3… desde la esquina superior izquierda del esquema, y Fila por fila usa los mismos números",
+    "pl": "PDF numeruje każdy rząd i kolumnę, 1, 2, 3… od lewego górnego rogu schematu, a „Rząd po rzędzie” używa tych samych numerów"
+  }
+}

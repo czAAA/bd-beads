@@ -1,6 +1,6 @@
 import { projectDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
-import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
+import { rotationSwapsAxes, type GridPosition } from '../domain/grid'
 import type { Project } from '../domain/project'
 import { drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
@@ -14,6 +14,7 @@ import {
   type PageSize,
   type PrintPart,
   type PrintPlan,
+  type TrimmedArea,
 } from './printPlan'
 import { OVERVIEW_CUT_LABEL } from './overviewLayout'
 import type { PrintText } from './printText'
@@ -143,12 +144,13 @@ export function emptyCrossArms(x: number, y: number, size: number): [number, num
   return [[x - arm, y - arm, x + arm, y + arm], [x + arm, y - arm, x - arm, y + arm]]
 }
 
-/** A bead drawn as the flat look draws it, except an empty position, which carries a small `faint` cross on the bare
- * board (tickets 0719, 0818): the mark a chart reader knows as "no bead here", never taken for a pale bead. `lineWidth`
- * is in the bead's own px. */
-function crossWhereEmpty(lineWidth: number): BeadDrawer {
+/** A bead drawn as the flat look draws it, except an empty position: the bare board, or with `crosses` (Empty grid,
+ * ticket 1127) a small `faint` cross on it (tickets 0719, 0818), the mark a chart reader knows as "no bead here", never
+ * taken for a pale bead. `lineWidth` is in the bead's own px. */
+function crossWhereEmpty(lineWidth: number, crosses: boolean): BeadDrawer {
   return (context, bead) => {
     if (bead.color !== null) return drawFlatBead(context, bead)
+    if (!crosses) return
     const width = bead.width ?? bead.size
     const height = bead.height ?? bead.size
     context.beginPath()
@@ -183,8 +185,8 @@ export function drawEmptySwatch(context: CanvasRenderingContext2D, x: number, y:
 }
 
 /** The pale rounded board and the beads of `region` on it, without letters: page 1's overview (ticket 0914). An empty
- * position is the bare board under a faint cross (tickets 0587, 0719, 0818). */
-export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board): void {
+ * position is the bare board, under a faint cross with `emptyGrid` (tickets 0587, 0719, 0818, 1127). */
+export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, emptyGrid: boolean): void {
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
@@ -200,7 +202,7 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
   const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
   // The cross's line is `print-line-cell` and at least a device pixel, so it prints at 150 dpi too.
   const crossLine = Math.max(CROSS_LINE * scale, 1) / (zoom * scale)
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, drawBead: crossWhereEmpty(crossLine) })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, drawBead: crossWhereEmpty(crossLine, emptyGrid) })
   context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
@@ -211,64 +213,73 @@ export interface Span {
 
 type RulerShape = Layered
 
-// Each quarter turn reverses one axis and swaps columns/rows (composing gridToRegion's per-turn mapping): across reads
-// reversed at 90°/180°, down at 180°/270°.
-function acrossReversed(rotation: Rotation): boolean {
-  return rotation === 90 || rotation === 180
+/** The number paper gives a displayed column (ticket 1129; PrintChartPage card, Rulers): counted from 1 at the trimmed
+ * chart's left, whichever way the Schema is turned, so a part from column 61 counts on 61, 62…. The editor keeps its own. */
+export function acrossNumber(trim: TrimmedArea, index: number): number {
+  return index - trim.firstAcross + 1
 }
 
-function downReversed(rotation: Rotation): boolean {
-  return rotation === 180 || rotation === 270
+/** The same for a displayed row, counted from 1 at the trimmed chart's top. */
+export function downNumber(trim: TrimmedArea, index: number): number {
+  return index - trim.firstDown + 1
 }
 
-/** The Project's own number for a bead at this across-axis index (a turned Project's rows may run across), counted
- * from its far end when the turn reverses this axis. */
-export function acrossNumber(project: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(quarterTurnOf(project)) ? projectDimensions(project).rows : projectDimensions(project).columns
-  return acrossReversed(quarterTurnOf(project)) ? dimension - index : index + 1
-}
-
-/** The down-axis equivalent of acrossNumber. */
-export function downNumber(project: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(quarterTurnOf(project)) ? projectDimensions(project).columns : projectDimensions(project).rows
-  return downReversed(quarterTurnOf(project)) ? dimension - index : index + 1
-}
-
-/** Where a position stands in the displayed chart, across and down from 0: what acrossNumber and downNumber number, so a
+/** Where a position stands in the displayed chart, across and down from 0: each quarter turn swaps columns and rows and
+ * reverses one axis (composing gridToRegion's per-turn mapping), across at 90° and 180°, down at 180° and 270°, so a
  * bead and the ruler number over it agree at every turn (ticket 1122). */
 export function displayedCellOf(project: RulerShape, { row, column }: GridPosition): { across: number; down: number } {
   const rotation = quarterTurnOf(project)
   const { columns, rows } = projectDimensions(project)
   const [across, down, wide, tall] = rotationSwapsAxes(rotation) ? [row, column, rows, columns] : [column, row, columns, rows]
-  return { across: acrossReversed(rotation) ? wide - 1 - across : across, down: downReversed(rotation) ? tall - 1 - down : down }
+  const acrossReversed = rotation === 90 || rotation === 180
+  const downReversed = rotation === 180 || rotation === 270
+  return { across: acrossReversed ? wide - 1 - across : across, down: downReversed ? tall - 1 - down : down }
 }
 
-// Page 1's rulers on all four sides in the Project's own numbers (a turned Project's rows run across, counted from the
-// far end), a number every `every` beads (page 1: 5, or 10 when the beads are small) and a hairline every 10; the chart
-// pages' own are `drawChartRulers`.
+/** `print-ruler-fit`: the most of its room the widest ruler number on a page takes, so neighbours keep a gap. */
+export const RULER_FIT = 0.8
+/** DM Mono's digits' height (its cap height), as a share of its size: what the overview's row numbers must fit between
+ * two numbers. */
+const MONO_DIGIT_HEIGHT = 0.7
+/** The overview's numbers' largest size, `print-letter`, in points. */
+const OVERVIEW_NUMBER_PT = 6.5
+
+// Page 1's overview rulers (PrintPage1 card), counted as the chart's are from 1 at `across.first` and `down.first` (ticket
+// 1129): the first and every `every`th number (5, or 10 on small beads), regular `muted` in one size, 6.5 pt or less where
+// the widest misses `print-ruler-fit` of the room between two numbers, and a hairline every 10.
 export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10 = 10): void {
   const grid = displayedGrid(project)
   const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
+  const numberOf = (span: Span, index: number) => index - span.first + 1
+  const shown = (value: number) => value === 1 || value % every === 0
+  // The widest number across, measured at the largest size: the size shrinks with it where it would not fit.
+  const widest = (span: Span) => {
+    const count = numberOf(span, span.last)
+    return count - (count % every) || 1
+  }
+  context.font = font('400', OVERVIEW_NUMBER_PT, MONO)
+  const wide = context.measureText(String(widest(across))).width
+  const fitAcross = wide > 0 ? (RULER_FIT * every * grid.stepAcross * zoom) / wide : 1
+  const fitDown = (RULER_FIT * every * grid.stepDown * zoom) / (MONO_DIGIT_HEIGHT * pt(OVERVIEW_NUMBER_PT))
+  const size = OVERVIEW_NUMBER_PT * Math.min(1, fitAcross, fitDown)
 
   context.save()
   context.textBaseline = 'middle'
+  context.font = font('400', size, MONO)
+  context.fillStyle = PRINT_COLORS.muted
+  context.textAlign = 'center'
   const label = (value: number, x: number, y: number) => {
-    const tenth = value % 10 === 0
-    if (!tenth && (every === 10 || value % 5 !== 0) && value !== 1) return
-    context.font = font(tenth ? '700' : '400', 6.5, MONO)
-    context.fillStyle = tenth ? PRINT_COLORS.ink : PRINT_COLORS.muted
-    context.textAlign = 'center'
-    context.fillText(String(value), x, y)
+    if (shown(value)) context.fillText(String(value), x, y)
   }
   for (let index = across.first; index <= across.last; index += 1) {
     const x = at.x + (index - across.first) * grid.stepAcross * zoom + (grid.beadAcross * zoom) / 2
-    label(acrossNumber(project, index), x, at.y - gap)
-    label(acrossNumber(project, index), x, at.y + at.height + gap)
+    label(numberOf(across, index), x, at.y - gap)
+    label(numberOf(across, index), x, at.y + at.height + gap)
   }
   for (let index = down.first; index <= down.last; index += 1) {
     const y = at.y + (index - down.first) * grid.stepDown * zoom + (grid.beadDown * zoom) / 2
-    label(downNumber(project, index), at.x - gap, y)
-    label(downNumber(project, index), at.x + at.width + gap, y)
+    label(numberOf(down, index), at.x - gap, y)
+    label(numberOf(down, index), at.x + at.width + gap, y)
   }
 
   // A hairline every 10 beads, in the gap between the 10th and the 11th.
@@ -277,31 +288,19 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
   context.lineWidth = pt(0.5)
   context.beginPath()
   for (let index = across.first + 1; index <= across.last; index += 1) {
-    if (index % 10 !== 0) continue
+    if ((index - across.first) % 10 !== 0) continue
     const x = at.x + (index - across.first) * grid.stepAcross * zoom
     context.moveTo(x, at.y - PRINT_BOARD_PAD)
     context.lineTo(x, at.y + at.height + PRINT_BOARD_PAD)
   }
   for (let index = down.first + 1; index <= down.last; index += 1) {
-    if (index % 10 !== 0) continue
+    if ((index - down.first) % 10 !== 0) continue
     const y = at.y + (index - down.first) * grid.stepDown * zoom
     context.moveTo(at.x - PRINT_BOARD_PAD, y)
     context.lineTo(at.x + at.width + PRINT_BOARD_PAD, y)
   }
   context.stroke()
   context.restore()
-}
-
-/** How a chart page's ruler sets a number: every 10th bold and `ink`, every 5th regular and `muted`, the rest none. */
-export function rulerLevel(value: number): 'tenth' | 'fifth' | 'plain' {
-  return value % 10 === 0 ? 'tenth' : value % 5 === 0 ? 'fifth' : 'plain'
-}
-
-/** Whether the line between two neighbouring beads (their Schema numbers) closes a block of 5 or 10: a fine line every
- * 5 beads, a heavier one every 10, counted in the Schema's own numbers whichever way it is turned. */
-export function lineBetween(a: number, b: number): 'tenth' | 'fifth' | undefined {
-  const level = rulerLevel(Math.min(a, b))
-  return level === 'plain' ? undefined : level
 }
 
 /** A white pill with an accent border holding `value`, its top left at (x, y); returns its width. */
@@ -352,8 +351,8 @@ export function drawParts(context: CanvasRenderingContext2D, project: Project, p
   stroke(PRINT_COLORS.accent, 2)
   context.restore()
 
-  for (const index of across) pill(context, `${acrossNumber(project, index)} →`, xOf(index), board.y - reach - OVERVIEW_CUT_LABEL + mm(0.3), PRINT_COLORS.accentStrong, 'center')
-  for (const index of down) pill(context, `${downNumber(project, index)} ↓`, board.x + board.width - mm(1), yOf(index) - pt(5.5), PRINT_COLORS.accentStrong, 'right')
+  for (const index of across) pill(context, `${acrossNumber(trim, index)} →`, xOf(index), board.y - reach - OVERVIEW_CUT_LABEL + mm(0.3), PRINT_COLORS.accentStrong, 'center')
+  for (const index of down) pill(context, `${downNumber(trim, index)} ↓`, board.x + board.width - mm(1), yOf(index) - pt(5.5), PRINT_COLORS.accentStrong, 'right')
 
   for (const part of plan.parts) {
     const x = xOf(part.firstAcross)
@@ -366,12 +365,10 @@ export function drawParts(context: CanvasRenderingContext2D, project: Project, p
   }
 }
 
-/** "Part B · columns 101–130 · rows 1–100": the Project's own numbers, lowest first (a turned Project's rows run
- * across). */
-export function partLabel(project: Project, labels: PrintText['labels'], part: PrintPart): string {
-  const range = (a: number, b: number) => `${Math.min(a, b)}–${Math.max(a, b)}`
-  const across = range(acrossNumber(project, part.firstAcross), acrossNumber(project, part.lastAcross))
-  const down = range(downNumber(project, part.firstDown), downNumber(project, part.lastDown))
-  const turned = rotationSwapsAxes(quarterTurnOf(project))
-  return fillBlanks(labels.partArea, { part: part.letter, columns: turned ? down : across, rows: turned ? across : down })
+/** "Part B · columns 101–130 · rows 1–100": the part's own columns and rows (its overlap left out) as the rulers number
+ * them (ticket 1129), columns across and rows down whichever way the Schema is turned. */
+export function partLabel(trim: TrimmedArea, labels: PrintText['labels'], part: PrintPart): string {
+  const columns = `${acrossNumber(trim, part.firstAcross)}–${acrossNumber(trim, part.lastAcross)}`
+  const rows = `${downNumber(trim, part.firstDown)}–${downNumber(trim, part.lastDown)}`
+  return fillBlanks(labels.partArea, { part: part.letter, columns, rows })
 }

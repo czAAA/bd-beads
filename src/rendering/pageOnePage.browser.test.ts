@@ -17,6 +17,7 @@ import { font, loadPrintFonts, MONO, SERIF } from './printPages'
 import { A4_PORTRAIT, PRINT_MARGIN } from './printPlan'
 import { printText } from './printText'
 import { exportProjectPdf } from './projectExport'
+import { PRINT_COLORS } from './printColors'
 import { fillBlanks } from '../domain/fillBlanks'
 
 // Page 1 of the PDF drawn for real (ticket 0914; PrintPage1 card): the whole piece and Beads needed, and for most pieces
@@ -50,6 +51,33 @@ describe('page 1 of the PDF', () => {
 
     expect(layout.overview).toBeDefined()
     expect(drawPageOne(project, words, layout, layout.plan).drawing).toBeUndefined()
+  })
+
+  it('draws its chart with the rim only with Chart border on, and its overview\'s crosses only with Empty grid on (ticket 1127)', () => {
+    const small = fixtureProject({ technique: 'loom', columns: 20, rows: 20 })
+    const chart = (chartBorder: boolean) => {
+      const words = printText(small, en, 'en', new Date(), { chartBorder })
+      return drawPageOne(small, words, pageOneLayout(small, words), pageOneLayout(small, words).plan).drawing!.split('\n').filter((line) => line.includes(' c ') && line.endsWith(' S')).length
+    }
+    expect(chart(true) - chart(false)).toBe(1)
+
+    const big = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
+    const crosses = (emptyGrid: boolean) => {
+      const words = printText(big, en, 'en', new Date(), { emptyGrid })
+      const layout = pageOneLayout(big, words)
+      const stroke = vi.spyOn(CanvasRenderingContext2D.prototype, 'stroke')
+      const faint: number[] = []
+      stroke.mockImplementation(function (this: CanvasRenderingContext2D) {
+        if (this.strokeStyle === PRINT_COLORS.faint) faint.push(1)
+      })
+      drawPageOne(big, words, layout, layout.plan)
+      stroke.mockRestore()
+      expect(layout.overview).toBeDefined()
+      return faint.length
+    }
+    // Off, the only faint stroke is the key's empty swatch (ticket 0963); on, every empty position's cross too.
+    expect(crosses(false)).toBe(1)
+    expect(crosses(true)).toBeGreaterThan(1)
   })
 
   it('draws a list page for the colors page 1 has no room for', () => {
@@ -150,4 +178,30 @@ describe('the PDF of a piece cut into parts (ticket 0914)', () => {
     expect(plan.pageCount).toBe(3)
     expect(await pdfPages(await exportProjectPdf(project, words, 150))).toBe(3)
   }, 60_000)
+})
+
+describe('the overview\'s rulers', () => {
+  beforeAll(loadPrintFonts)
+
+  it('numbers the overview from 1 at its left and top, every 5th or 10th, all regular and muted in one size (ticket 1129)', () => {
+    const project = fixtureProject({ technique: 'loom', columns: 150, rows: 100 })
+    const words = wordsOf(project)
+    const layout = pageOneLayout(project, words)
+    const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
+    const drawn: { value: string; font: string; color: string }[] = []
+    fillText.mockImplementation(function (this: CanvasRenderingContext2D, value: string) {
+      drawn.push({ value, font: this.font, color: String(this.fillStyle) })
+    })
+    drawPageOne(project, words, layout, layout.plan)
+    fillText.mockRestore()
+    const numbers = drawn.filter((text) => /^\d+$/.test(text.value) && text.color === PRINT_COLORS.muted)
+    const values = new Set(numbers.map((text) => Number(text.value)))
+
+    expect(layout.overview).toBeDefined()
+    expect(values.has(1)).toBe(true)
+    expect([...values].every((value) => value === 1 || value % 5 === 0)).toBe(true)
+    expect(Math.max(...values)).toBe(150)
+    expect(new Set(numbers.map((text) => text.font)).size).toBe(1)
+    expect(numbers[0]!.font).not.toMatch(/^(bold|700)/)
+  })
 })

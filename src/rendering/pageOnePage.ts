@@ -1,5 +1,5 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
-import { drawChartParts, K } from './chartVector'
+import { chartLookOf, drawChartParts, K } from './chartVector'
 import { listHeader, TABLE_COLUMN_GAP, TITLE_MAKER_ROW, TITLE_NAME_ROW, titleRows, type ColorsSlice } from './overviewLayout'
 import { NEEDED_COLUMNS, NEEDED_HEADING, type PageOneLayout } from './pageOneLayout'
 import { blankPage, drawBoard, drawEmptySwatch, drawMark, drawParts, drawRulers, font, MONO, partLabel, pt, SANS, SERIF, text, wrap } from './printPages'
@@ -48,13 +48,13 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
   text(context, [words.techniqueWord, words.metaLine].join(' · '), PRINT_MARGIN, y + pt(6), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', width)
 }
 
-/** The overview (ticket 0914): the whole piece, trimmed to `trim` (ticket 1128), on its board without letters, rulers with
- * a number every 5 (10 when the beads are too small for that), an empty position under its cross, and the lines where the
- * chart parts meet with their page pills. */
-function drawOverview(context: CanvasRenderingContext2D, project: Project, overview: NonNullable<PageOneLayout['overview']>, trim: TrimmedArea, plan: PrintPlan, labels: PrintText['labels']): void {
+/** The overview (ticket 0914): the piece trimmed to `trim` (ticket 1128) on its board, no letters, rulers every 5 (10 when
+ * the beads are small), an empty position bare board, under its cross with `emptyGrid` (ticket 1127), and the lines where
+ * the chart parts meet with their page pills. */
+function drawOverview(context: CanvasRenderingContext2D, project: Project, overview: NonNullable<PageOneLayout['overview']>, trim: TrimmedArea, plan: PrintPlan, labels: PrintText['labels'], emptyGrid: boolean): void {
   const board = { ...overview.board, ...overview.extent }
   const piece = areaRegion(project, trim)
-  drawBoard(context, project, { x: piece.x * overview.zoom, y: piece.y * overview.zoom, width: piece.width * overview.zoom, height: piece.height * overview.zoom }, overview.zoom, board)
+  drawBoard(context, project, { x: piece.x * overview.zoom, y: piece.y * overview.zoom, width: piece.width * overview.zoom, height: piece.height * overview.zoom }, overview.zoom, board, emptyGrid)
   const grid = displayedGrid(project)
   const every = grid.stepAcross * overview.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
   // A Custom frame's beads keep no rows and columns to number (ticket 0594).
@@ -172,12 +172,12 @@ export function drawPageOne(project: Project, words: PrintText, layout: PageOneL
   drawTitleBlock(context, page, words)
   let drawing: string | undefined
   if (layout.overview) {
-    drawOverview(context, project, layout.overview, plan.trim, plan, words.labels)
+    drawOverview(context, project, layout.overview, plan.trim, plan, words.labels, !!words.emptyGrid)
   } else {
     const pdf = new PdfContent(page.height * K)
-    const pads = drawChartParts(pdf, project, plan, plan.parts, project.paletteLetters ?? {}, layout.area)
+    const pads = drawChartParts(pdf, project, plan, plan.parts, project.paletteLetters ?? {}, layout.area, chartLookOf(words))
     if (plan.parts.length > 1) {
-      plan.parts.forEach((part, index) => text(context, partLabel(project, words.labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
+      plan.parts.forEach((part, index) => text(context, partLabel(plan.trim, words.labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
     }
     drawing = pdf.toString()
   }
