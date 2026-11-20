@@ -5,15 +5,15 @@ import { describeWeave, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave, frameScale as frameBeadScale, frameWeave } from '../domain/layerWeave'
 import { hasGuides, type Selection } from '../domain/selection'
-import { titleBlockCorner, type MarginForm } from './marginForm'
+import type { MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
 import { frameOf, type Layered } from '../domain/layerRecord'
 
-// The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's sides but the bottom one
-// (ticket 0657), or each Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
+// The rulers and their lines on the Canvas (ADR 0026): row and column numbers along the left and the top of the Frame
+// and of each Piece as seen, whatever is turned (ticket 1170). Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
 // Numbers are display-only (ticket 447).
 
 // From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than
@@ -30,13 +30,11 @@ const RULER_NUMBER_GAP_PX = 4
 // step applies.
 export const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
 
-/** Something rulers hang from: a rectangle of beads, the line round it, and which of its sides carry numbers. */
+/** Something rulers hang from: a rectangle of beads and the line round it. */
 export interface RuledBox extends Rect {
   kind: 'frame' | 'piece'
   /** How far outside its beads its line sits. */
   outset: number
-  /** The Frame's sides but the one shown at the bottom (`sheet`, ticket 0657), or only above and to the left (a Piece). */
-  sides: 'sheet' | 'start'
   /** False for the box round every bead of a layer whose Pieces aren't counted yet (ticket 0716): numbers, no line. */
   outlined?: false
 }
@@ -74,13 +72,13 @@ function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPiece
   const own: RuledBox[] = []
   if (frame && !frameShapeOf(frame)) {
     const { row, column, rows, columns } = laidRect({ ...frame, cell: frameWeave(project).cell })
-    own.push({ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' })
+    own.push({ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset })
   }
   return [
     ...own,
     ...(pieces.areas ?? [])
       .filter(hasGuides)
-      .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const, ...(pieces.uncounted ? { outlined: false as const } : {}) })),
+      .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, ...(pieces.uncounted ? { outlined: false as const } : {}) })),
   ]
 }
 
@@ -306,12 +304,11 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     }
   }
 
-  // A Frame's sides are the ones its margin sheet shows on screen but along the edge its title block is on, the bottom
-  // or, on a Canvas turned 180° or 270°, the top (MarginSheet card, tickets 0657, 0728).
-  const titleEdge = titleBlockCorner(surface).top ? -1 : 1
-  const alongTitle = (normal: [number, number]) => surface.gridDirection(normal[0], normal[1]).y * titleEdge > 0.5
+  // Every box's rulers stand along its left and its top as seen, whichever way the Canvas or the Frame is turned
+  // (ticket 1170): the sides whose outward step points more left than up or down, or more up than across.
   const side = (normal: [number, number], lay: () => void) => {
-    if (box.sides === 'start' ? normal[0] + normal[1] < 0 : !alongTitle(normal)) lay()
+    const { x, y } = surface.gridDirection(normal[0], normal[1])
+    if (-x > Math.abs(y) || -y > Math.abs(x)) lay()
   }
   side([0, -1], () => columnsAt(start.row, area.y, [0, -1]))
   side([-1, 0], () => rowsAt(start.column, left, [-1, 0]))
