@@ -10,7 +10,6 @@ import {
   parseProjectsFile,
   projectExportFileName,
   projectFileName,
-  projectListFileName,
   serializeLibrary,
   serializeProject,
   whyNotOpened,
@@ -307,9 +306,8 @@ describe('single-Project roundtrip', () => {
 describe('the export file names (tickets 73, 74, 0708, 0720)', () => {
   const rose = { ...withLayer(makeProject('Summer'), 'frame', { name: 'Rose' }), makerName: 'Ada Lovelace' }
 
-  it('names the PNG, its further pages and the PDF {project}-{frame}-{maker}', () => {
+  it('names the PNG and the PDF {project}-{frame}-{maker}', () => {
     expect(projectExportFileName(rose, 'png')).toBe('summer-rose-ada-lovelace.png')
-    expect(projectListFileName(rose, 2)).toBe('summer-rose-ada-lovelace_2.png')
     expect(projectExportFileName(rose, 'pdf')).toBe('summer-rose-ada-lovelace.pdf')
   })
 

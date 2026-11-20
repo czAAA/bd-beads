@@ -48,7 +48,7 @@ function nonWhiteIn(png: PNG, x: number, y: number, width: number, height: numbe
   return false
 }
 
-test('PNG export is page 1 of the PDF: one A4 portrait picture, drawn on the print paper (tickets 164, 0583, 0915)', async ({ page }) => {
+test('PNG export is the Cover page: one A4 portrait picture, drawn on the print paper (tickets 164, 0583, 1096)', async ({ page }) => {
   const project = fixtureProject({ technique: 'loom', columns: 60, rows: 8 })
   await openApp(page, [project])
 
@@ -62,7 +62,7 @@ test('PNG export is page 1 of the PDF: one A4 portrait picture, drawn on the pri
   expect(dpi).toBeCloseTo(300, 3)
   // Exports are always light, on the print paper (DESIGN.md §4.3), whatever the app's theme.
   expect(hex(png, 5, 5)).toBe(PRINT_COLORS.paper)
-  // The Schema, Beads needed and the footer are drawn: not all of the page is blank.
+  // The piece, its title block and the footer are drawn: not all of the page is blank.
   expect(nonWhiteIn(png, 0, 0, png.width, png.height)).toBe(true)
   expect(nonWhiteIn(png, 0, png.height - 260, png.width, 140)).toBe(true)
 })
