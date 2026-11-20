@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "fixed",
+  "line": {
+    "en": "A click anywhere on a panel's title row goes back, not only on the arrow",
+    "ru": "Нажатие в любом месте заголовка панели возвращает назад, а не только на стрелке",
+    "uk": "Натискання будь-де на заголовку панелі повертає назад, а не лише на стрілці",
+    "be": "Націск у любым месцы загалоўка панэлі вяртае назад, а не толькі на стрэлцы",
+    "zh": "点击面板标题行的任何位置都会返回，而不只是箭头",
+    "es": "Un clic en cualquier parte del título de un panel vuelve atrás, no solo en la flecha",
+    "pl": "Kliknięcie w dowolnym miejscu tytułu panelu wraca wstecz, a nie tylko na strzałce"
+  }
+}

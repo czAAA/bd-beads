@@ -471,3 +471,42 @@ describe('a Frame lying turned (ticket 0667)', () => {
     expect(Math.max(...laid.labels.filter((label) => label.axis === 'row').map((label) => Number(label.text)))).toBe(6)
   })
 })
+
+describe('the Frame\'s numbers count from the edge the weaving starts at (ticket 1154)', () => {
+  const sheet = { row: 0, column: 0, rows: 3, columns: 4, technique: 'loom' as const, beads: {} }
+  const numbers = (frame: typeof sheet & { quarterTurns?: 1 }, way: { direction: 'rows' | 'columns'; reversed?: true }, rotation: Rotation = 0) => {
+    const subject = bareProject({ technique: 'loom', frame, rowProgress: { ...way, currentRow: 0, currentColumn: 0 } })
+    // A turn carries the Frame off the top-left corner: look at it in the middle of a viewport that holds it.
+    const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
+    const { labels } = rulerLayout(subject, view(view().scrollToCentre(sheet)), { fontPx: 11, numbers: true })
+    // One side's numbers each, in the order of the Frame's own lines.
+    const side = (axis: 'row' | 'column') => [...new Map(labels.filter((label) => label.axis === axis).map((label) => [label.index, label.text])).values()]
+    return { rows: side('row'), columns: side('column') }
+  }
+
+  it('counts rows from the top and columns from the left while the rows run down or to the right', () => {
+    expect(numbers(sheet, { direction: 'rows' })).toEqual({ rows: ['1', '2', '3'], columns: ['1', '2', '3', '4'] })
+    expect(numbers(sheet, { direction: 'columns' })).toEqual({ rows: ['1', '2', '3'], columns: ['1', '2', '3', '4'] })
+  })
+
+  it('counts the rows from the bottom woven bottom to top, and the columns from the right woven right to left', () => {
+    expect(numbers(sheet, { direction: 'rows', reversed: true })).toEqual({ rows: ['3', '2', '1'], columns: ['1', '2', '3', '4'] })
+    expect(numbers(sheet, { direction: 'columns', reversed: true })).toEqual({ rows: ['1', '2', '3'], columns: ['4', '3', '2', '1'] })
+  })
+
+  it('keeps counting from that edge on a turned Canvas, where the rows run across the screen', () => {
+    expect(numbers(sheet, { direction: 'rows', reversed: true }, 90)).toEqual({ rows: ['3', '2', '1'], columns: ['1', '2', '3', '4'] })
+  })
+
+  it('counts a Frame lying a quarter round from the edge its first row lies at: the right', () => {
+    expect(numbers({ ...sheet, quarterTurns: 1 }, { direction: 'rows' })).toEqual({ rows: ['1', '2', '3', '4'], columns: ['3', '2', '1'] })
+    expect(numbers({ ...sheet, quarterTurns: 1 }, { direction: 'rows', reversed: true })).toEqual({ rows: ['1', '2', '3', '4'], columns: ['1', '2', '3'] })
+  })
+
+  it('makes every 5th number counted that way the bold one', () => {
+    const tall = { ...sheet, rows: 7 }
+    const subject = bareProject({ technique: 'loom', frame: tall, rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
+    const { labels } = rulerLayout(subject, surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: tall, rotation: 0, zoom: 1 }), { fontPx: 11, numbers: true })
+    expect([...new Set(labels.filter((label) => label.axis === 'row' && label.fifth).map((label) => `${label.index}:${label.text}`))]).toEqual(['2:5'])
+  })
+})

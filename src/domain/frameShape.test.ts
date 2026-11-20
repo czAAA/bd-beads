@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
 import { customFrameSize, followsWeave, FRAME_SHAPE_IDS, frameAllows, frameGeometry, frameLayoutOf, frameShapeOf, frameSizeMm, isFrameShape, rowOrderOf, techniquesOf, type FrameSettings } from './frameShape'
 import { layoutNeighbors, type FrameLayout, type LayoutPosition } from './frameLayout'
-import { beadCell, TECHNIQUES } from './weave'
+import { beadCell, cellCenter, TECHNIQUES } from './weave'
 import type { Weave } from './weave'
 
 /** A bare Frame of `rows` by `columns` positions in a Weave, with no Frame shape stored. */
@@ -84,7 +84,7 @@ describe('a round shape packed by its layer\'s Bead (ticket 0723)', () => {
 })
 
 describe('the Row order of a Frame without a shape', () => {
-  it('weaves peyote one pass for the first row and two for each later one, even positions first', () => {
+  it('weaves peyote one pass for the first row and two for each later one, the level columns first from the top', () => {
     const order = rowOrderOf(sheet(3, 4, { technique: 'peyote' }), { direction: 'rows' })
     expect(order.count).toBe(5)
     expect(order.positionsOf(0)).toEqual([0, 1, 2, 3].map((column) => ({ row: 0, column })))
@@ -92,6 +92,44 @@ describe('the Row order of a Frame without a shape', () => {
     expect(order.positionsOf(2)).toEqual([{ row: 1, column: 1 }, { row: 1, column: 3 }])
     expect(order.passAt({ row: 2, column: 3 })).toBe(4)
     expect([0, 1, 2, 3, 4].map((pass) => order.lineOf(pass))).toEqual([0, 1, 1, 2, 2])
+  })
+
+  it('weaves peyote on from the edge it starts at, never back: each pass lies past the one before, whichever way and Drop (ticket 1154)', () => {
+    for (const peyoteDrop of [1, 2, 3]) {
+      for (const reversed of [false, true]) {
+        const weave: Weave = { technique: 'peyote', techniqueSettings: { peyoteDrop } }
+        const order = rowOrderOf(sheet(5, 7, weave), { direction: 'rows', reversed })
+        // How far down each bead of a pass sits, in beads: the shifted columns' half a bead lower.
+        const levels = (pass: number) => [...new Set(order.positionsOf(pass).map((position) => cellCenter(weave, position, 2, 2).y / 2))]
+        const passes = Array.from({ length: order.count }, (_pass, pass) => levels(pass))
+        // The first pass strings the two levels of the first line; every later one adds one level of beads.
+        expect(passes.map((pass) => pass.length), `drop ${peyoteDrop}, reversed ${reversed}`).toEqual([2, ...Array.from({ length: order.count - 1 }, () => 1)])
+        const on = passes.slice(1).map(([level]) => level!)
+        const start = reversed ? Math.min(...passes[0]!) : Math.max(...passes[0]!)
+        expect([start, ...on], `drop ${peyoteDrop}, reversed ${reversed}`).toEqual([start, ...on].sort((a, b) => (reversed ? b - a : a - b)))
+        expect(new Set(on).size).toBe(on.length)
+      }
+    }
+  })
+
+  it('weaves a peyote row from the bottom up lower beads first: 7, 3, 4, 3, 4 (ticket 1154)', () => {
+    const order = rowOrderOf(sheet(39, 7, { technique: 'peyote' }), { direction: 'rows', reversed: true })
+    expect(order.count).toBe(77)
+    expect(order.positionsOf(0).map(({ row }) => row)).toEqual([38, 38, 38, 38, 38, 38, 38])
+    // The shifted columns hang half a bead lower, nearer the row just woven, so they come first.
+    expect(order.positionsOf(1)).toEqual([1, 3, 5].map((column) => ({ row: 37, column })))
+    expect(order.positionsOf(2)).toEqual([0, 2, 4, 6].map((column) => ({ row: 37, column })))
+    expect(order.positionsOf(3)).toEqual([1, 3, 5].map((column) => ({ row: 36, column })))
+    expect(order.passAt({ row: 36, column: 0 })).toBe(4)
+  })
+
+  it('weaves a peyote Frame down its columns even beads first from either end, as a column\'s beads lie level (ticket 1154)', () => {
+    for (const reversed of [false, true]) {
+      const order = rowOrderOf(sheet(4, 3, { technique: 'peyote' }), { direction: 'columns', reversed })
+      const column = 1
+      expect(order.positionsOf(1), `reversed ${reversed}`).toEqual([{ row: 0, column }, { row: 2, column }])
+      expect(order.positionsOf(2), `reversed ${reversed}`).toEqual([{ row: 1, column }, { row: 3, column }])
+    }
   })
 
   it('counts its rows from the far end when reversed (ticket 0589)', () => {
