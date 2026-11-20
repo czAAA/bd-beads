@@ -95,22 +95,23 @@ export function useExportFlow(deps: ExportFlowDeps) {
    * (ticket 306). */
   async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, projectIds?: readonly string[], toastId = SAVED_FILE_TOAST): Promise<boolean> {
     const contents = await make()
-    const outcome = await downloadFile(fileName, contents, type)
+    // A test's hand-over may answer nothing: it counts as a download.
+    const outcome = (await downloadFile(fileName, contents, type)) ?? 'downloaded'
     if (outcome === 'cancelled') {
       return false
     }
     if (outcome === 'refused') {
       // A refused share hands nothing over until its action does (SaveReminder card: the count stays till then).
       toast.readyToSave(fileName, async () => {
-        const again = await downloadFile(fileName, contents, type)
-        if (again === 'refused' || again === 'cancelled') return false
+        const again = (await downloadFile(fileName, contents, type)) ?? 'downloaded'
+        if (again === 'refused' || again === 'cancelled') return undefined
         reached(fileName, projectIds)
-        return true
+        return again
       }, toastId)
       return true
     }
     reached(fileName, projectIds)
-    toast.saved(fileName, toastId)
+    toast.saved(fileName, outcome, toastId)
     return true
   }
 
@@ -187,7 +188,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
         await deps.linkedFiles!.put(project.id, target)
         if (deps.currentProject()?.id === project.id) linkedFileName.value = target.name
         reached(target.name, [project.id])
-        toast.saved(target.name)
+        toast.saved(target.name, 'written')
         return true
       }
       return handOverFile(projectFileName(project), async () => contents, [project.id])

@@ -294,7 +294,7 @@ describe('useExportFlow', () => {
 })
 
 describe('useExportFlow toasts (ticket 523)', () => {
-  function setupToasts(handOver?: 'handed' | 'refused' | 'cancelled') {
+  function setupToasts(handOver?: 'downloaded' | 'shared' | 'refused' | 'cancelled') {
     const toasts: { id: string; text: string; action?: { label: string; run: () => void } }[] = []
     downloadFile.mockReturnValue(handOver)
     const flow = useExportFlow({
@@ -310,11 +310,18 @@ describe('useExportFlow toasts (ticket 523)', () => {
   }
 
   it('hands the file over in the tap, then names it in the saved-file toast, with no action (ticket 0859)', async () => {
-    const { flow, toasts } = setupToasts('handed')
+    const { flow, toasts } = setupToasts('downloaded')
     await flow.onExportPng()
 
     expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
-    expect(toasts).toEqual([{ id: 'saved-file', text: 'Saved: my-scarf.png', action: undefined }])
+    expect(toasts).toEqual([{ id: 'saved-file', text: 'Saved to Downloads: my-scarf.png', action: undefined }])
+  })
+
+  it('says a file the share sheet took went where the person chose (ticket 1139)', async () => {
+    const { flow, toasts } = setupToasts('shared')
+    await flow.onExportPng()
+
+    expect(toasts.map((toast) => toast.text)).toEqual(['Saved where you chose: my-scarf.png'])
   })
 
   it('names the PDF and the Project file in the same toast, each replacing the last', async () => {
@@ -322,7 +329,7 @@ describe('useExportFlow toasts (ticket 523)', () => {
     await flow.onExportPdf()
     await flow.onSave()
 
-    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf_cover.pdf'], ['saved-file', `Saved: ${projectFileName(project)}`]])
+    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved to Downloads: my-scarf_cover.pdf'], ['saved-file', `Saved to Downloads: ${projectFileName(project)}`]])
   })
 
   it('gives each further page its own toast, so every file is named', async () => {
@@ -330,7 +337,7 @@ describe('useExportFlow toasts (ticket 523)', () => {
     const { flow, toasts } = setupToasts()
     await flow.onExportPng()
 
-    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf.png'], ['saved-file-2', 'Saved: my-scarf_2.png']])
+    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved to Downloads: my-scarf.png'], ['saved-file-2', 'Saved to Downloads: my-scarf_2.png']])
   })
 
   it('says nothing when the person closed the share sheet', async () => {
@@ -340,7 +347,7 @@ describe('useExportFlow toasts (ticket 523)', () => {
     expect(toasts).toEqual([])
   })
 
-  it('keeps a Save action when the share was refused for a stale tap, hands the file over again from it, then says Saved', async () => {
+  it('keeps a Save action when the share was refused for a stale tap, hands the file over again from it, then says where it went (ticket 1139)', async () => {
     const { flow, toasts } = setupToasts('refused')
     await flow.onExportPng()
 
@@ -348,10 +355,10 @@ describe('useExportFlow toasts (ticket 523)', () => {
     expect(toasts[0]!.text).toBe('Ready to save: my-scarf.png')
     expect(toasts[0]!.action!.label).toBe(en.saveBox.readySave)
     downloadFile.mockClear()
-    downloadFile.mockReturnValue('handed')
+    downloadFile.mockReturnValue('shared')
     toasts[0]!.action!.run()
     expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
-    await vi.waitFor(() => expect(toasts.at(-1)!.text).toBe('Saved: my-scarf.png'))
+    await vi.waitFor(() => expect(toasts.at(-1)!.text).toBe('Saved where you chose: my-scarf.png'))
   })
 
   it('says nothing more when the fresh tap is refused or the share sheet closed again', async () => {
@@ -372,13 +379,13 @@ describe('useExportFlow toasts (ticket 523)', () => {
 describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
   const linked = (name: string) => ({ name }) as PickedFile
 
-  function setupSave(options: { writer?: Partial<FileWriter>; links?: Record<string, PickedFile>; handOver?: 'handed' | 'refused' | 'cancelled'; projects?: Project[]; sealed?: SealedProject[] } = {}) {
+  function setupSave(options: { writer?: Partial<FileWriter>; links?: Record<string, PickedFile>; handOver?: 'downloaded' | 'shared' | 'refused' | 'cancelled'; projects?: Project[]; sealed?: SealedProject[] } = {}) {
     const toasts: { id: string; text: string; action?: { label: string; run: () => void } }[] = []
     const links = new Map(Object.entries(options.links ?? {}))
     const saved: (readonly string[])[] = []
     const fileNames: string[] = []
     const reached = vi.fn()
-    downloadFile.mockReturnValue(options.handOver ?? 'handed')
+    downloadFile.mockReturnValue(options.handOver ?? 'downloaded')
     const writer: FileWriter = {
       available: true,
       pick: vi.fn(async (name: string) => ({ kind: 'picked' as const, file: linked(name) })),
@@ -417,7 +424,7 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
     await flow.onSave()
 
     expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array), 'application/json')
-    expect(toasts.map((toast) => toast.text)).toEqual([`Saved: ${projectFileName(project)}`])
+    expect(toasts.map((toast) => toast.text)).toEqual([`Saved to Downloads: ${projectFileName(project)}`])
     expect(saved).toEqual([[project.id]])
     expect(fileNames).toEqual([projectFileName(project)])
     expect(flow.canSaveAs.value).toBe(false)
@@ -435,7 +442,7 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
     expect((await run('cancelled')).saved).toEqual([])
     const refused = await run('refused')
     expect(refused.saved).toEqual([])
-    downloadFile.mockReturnValue('handed')
+    downloadFile.mockReturnValue('shared')
     refused.toasts[0]!.action!.run()
     await vi.waitFor(() => expect(refused.saved).toEqual([[project.id]]))
 
@@ -446,7 +453,7 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
     }
   })
 
-  it('the first Save asks where to save, writes the file, links it and says Saved: {file}', async () => {
+  it('the first Save asks where to save, writes the file, links it and says Saved into your file: {file} (ticket 1139)', async () => {
     const { flow, writer, links, saved, fileNames, toasts } = setupSave()
     await flow.onSave()
 
@@ -454,7 +461,7 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
     expect(writer.write).toHaveBeenCalledWith(linked(projectFileName(project)), expect.any(Uint8Array))
     expect(links.get(project.id)).toEqual(linked(projectFileName(project)))
     expect(downloadFile).not.toHaveBeenCalled()
-    expect(toasts.map((toast) => toast.text)).toEqual([`Saved: ${projectFileName(project)}`])
+    expect(toasts.map((toast) => toast.text)).toEqual([`Saved into your file: ${projectFileName(project)}`])
     expect(saved).toEqual([[project.id]])
     expect(fileNames).toEqual([projectFileName(project)])
     await vi.waitFor(() => expect(flow.linkedFileName.value).toBe(projectFileName(project)))
@@ -475,7 +482,7 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
 
     expect(writer.pick).toHaveBeenCalled()
     expect(links.get(project.id)).toEqual(linked(projectFileName(project)))
-    expect(toasts.map((toast) => toast.text)).toEqual([`Saved: ${projectFileName(project)}`])
+    expect(toasts.map((toast) => toast.text)).toEqual([`Saved into your file: ${projectFileName(project)}`])
   })
 
   it('a cancelled dialog changes nothing', async () => {
@@ -495,7 +502,7 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
 
     expect(downloadFile).toHaveBeenCalledTimes(2)
     expect(failed.links.size).toBe(0)
-    expect(failed.toasts.map((toast) => toast.text)).toEqual([`Saved: ${projectFileName(project)}`])
+    expect(failed.toasts.map((toast) => toast.text)).toEqual([`Saved to Downloads: ${projectFileName(project)}`])
   })
 
   it('Save as always asks and links the new file', async () => {

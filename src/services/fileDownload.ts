@@ -22,8 +22,10 @@ function downloadViaLink(fileName: string, contents: BlobPart, type: string): vo
   setTimeout(() => URL.revokeObjectURL(url))
 }
 
-/** What came of handing a file over: `'refused'` when the share sheet needed a fresh tap and got a stale one, `'cancelled'` when the person closed it. */
-type HandOver = 'handed' | 'refused' | 'cancelled'
+/** What came of handing a file over: `'downloaded'` by a link (into the browser's downloads), `'shared'` through the
+ * share sheet (where the person chose), `'refused'` when the share sheet needed a fresh tap and got a stale one,
+ * `'cancelled'` when the person closed it. The toast says which (ticket 1139). */
+export type HandOver = 'downloaded' | 'shared' | 'refused' | 'cancelled'
 
 /** How a file is handed over (ADR 0020); downloadFile is the browser's, and a test supplies its own. */
 export type DownloadFile = (fileName: string, contents: BlobPart, type?: string) => HandOver | Promise<HandOver> | void
@@ -35,7 +37,7 @@ export const downloadFile: DownloadFile = (fileName, contents, type = JSON_TYPE)
     const file = new File([contents], fileName, { type })
     if (navigator.canShare({ files: [file] })) {
       return navigator.share({ files: [file] }).then(
-        (): HandOver => 'handed',
+        (): HandOver => 'shared',
         (error: unknown): HandOver => {
           // Closing the share sheet is the person's choice, not a failure; a stale tap is the caller's to ask again
           // for; anything else falls back to a download.
@@ -46,12 +48,12 @@ export const downloadFile: DownloadFile = (fileName, contents, type = JSON_TYPE)
             return 'cancelled'
           }
           downloadViaLink(fileName, contents, type)
-          return 'handed'
+          return 'downloaded'
         },
       )
     }
   }
 
   downloadViaLink(fileName, contents, type)
-  return 'handed'
+  return 'downloaded'
 }
