@@ -4,6 +4,7 @@ import type { BeadMap, FrameSheet } from './canvas'
 import type { Layer, Rotation } from './grid'
 import type { PieceName } from './pieceNames'
 import { touch, type Background, type CanvasLayer, type FrameLayer, type LayerFields, type Project, type RowProgress } from './project'
+import { startingRowProgress } from './rowWays'
 import { beadCell, heldSettings, withCell, type Weave } from './weave'
 
 // The one way to read and write a layer, the Canvas or the Frame (ADR 0079, tickets 0661, 0664): a Project holds its
@@ -137,7 +138,7 @@ export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<Fr
   if (!sheet) {
     return { ...project, layers: [canvas] }
   }
-  const kept = frameOf(project) ? frameIdentity(frameOf(project)!) : { ...frameIdentity({ ...canvas, rowProgress: { ...FIRST_ROW } }), id: newLayerId() }
+  const kept = frameOf(project) ? frameIdentity(frameOf(project)!) : { ...frameIdentity({ ...canvas, rowProgress: startingProgress(project, sheet) }), id: newLayerId() }
   const { cell: _cell, ...laid } = sheet
   return { ...project, layers: [canvas, { ...kept, ...laid }, ...framesOf(project).slice(1)] }
 }
@@ -161,8 +162,11 @@ export function frameIdentity({ id, beadId, bead, background, letters, rowProgre
   }
 }
 
-/** Where a Frame laid anew starts its Row progress: the first row, along its rows. */
-const FIRST_ROW: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
+/** Row progress for a Frame of this sheet's Technique laid on this Project's Canvas: at the first pass, the rows running
+ * the Technique's starting way as the Canvas lies. */
+export function startingProgress(project: Layered, { technique, shape }: Pick<FrameSheet, 'technique' | 'shape'>): RowProgress {
+  return startingRowProgress(technique, quarterTurnOf(project) / 90, !!shape)
+}
 
 /** The Canvas's orientation (ADR 0079): the turn the whole picture is shown at, in degrees, any angle (ticket 0672);
  * none with no Project open. */

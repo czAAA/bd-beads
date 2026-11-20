@@ -42,10 +42,10 @@ import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
 import { canvasDistance, canvasWeave, frameWeave, laidOnCanvas, sameBeadSize, weaveOf } from './layerWeave'
 import { withWovenPalette } from './projectBead'
-import { clampPointer, firstPasses, progressWithoutLine, rowProgressOf, rowProgressStarted } from './rowProgress'
+import { clampPointer, firstPasses, isInitialRowProgress, progressWithoutLine, rowProgressOf, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
-import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, touchFrameSheet, withFrameSheet, withLayer, withPieceNames } from './layerRecord'
+import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingProgress, touchFrameSheet, withFrameSheet, withLayer, withPieceNames } from './layerRecord'
 import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -236,7 +236,7 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
     // A Custom frame's layout follows its Weave (a Fringe earring's top, ticket 0814): laid out again round its centre,
     // each bead keeping its row and column, those with no place in it folded until a layout has one again.
     const woven = frameOf(rewoven)!
-    return { kind: 'changed', project: frameShapeOf(woven) ? withFrameSheet(rewoven, resettled(rewoven, woven, woven.settings ?? {}, woven.quarterTurns, project)) : rewoven }
+    return { kind: 'changed', project: frameShapeOf(woven) ? withFrameSheet(rewoven, resettled(rewoven, woven, woven.settings ?? {}, woven.quarterTurns, project)) : withStartingWay(project, rewoven) }
   }
 
   if ('make' in change) {
@@ -251,6 +251,16 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
     return { kind: 'unchanged', project }
   }
   return { kind: 'changed', project: resizedFrame(project, rectangle) }
+}
+
+/** A Frame whose weaver has not moved the rows (still at the first pass, in its Technique's starting way) takes the starting
+ * way of the Technique it is rewoven in; one the weaver has begun, or turned by hand, keeps its way. */
+function withStartingWay(before: Project, after: Project): Project {
+  const [was, now] = [frameOf(before), frameOf(after)]
+  if (!was || !now || was.technique === now.technique || !isInitialRowProgress(was.rowProgress, startingProgress(before, was))) {
+    return after
+  }
+  return touchFrameSheet(after, { ...now, rowProgress: startingProgress(after, now) })
 }
 
 /** Whether the Frame refuses this change: what it does not offer (Remove row/column on a Custom frame), a Technique
@@ -284,12 +294,12 @@ function customSheet(project: Project, shape: FrameShapeId, settings: FrameSetti
 type CustomPlacement = { shape: FrameShapeId; centre: GridPosition; beads?: BeadMap; weave?: Weave; quarterTurns?: QuarterTurns } & ({ size: number } | { settings: FrameSettings })
 
 /** The Project with a new Custom frame in place of any Frame there (ticket 0592), holding the beads given that its
- * layout has a position for: Row progress starts at the first pass, and the Canvas keeps every bead. */
+ * layout has a position for: Row progress starts at the first pass, along its rows, and the Canvas keeps every bead. */
 function placedCustomFrame(project: Project, placement: CustomPlacement): Project {
   const { shape, centre, beads = {}, weave, quarterTurns } = placement
   const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ shape })!.id]: placement.size }
   const sheet = customSheet(project, shape, settings, centre, quarterTurns, weave)
-  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: firstPasses(rowProgressOf(project)) })
+  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingProgress(project, sheet) })
 }
 
 /** A Custom frame laid out again from new settings round its own centre, as it lay in `before` (the Project itself, or
@@ -425,7 +435,8 @@ function placedFrame(project: Project, place: FramePlacement): Project {
   const { row, column, rows, columns } = place.frame
   const sheet = { row, column, rows, columns, ...weaveOf(place.weave), ...(place.quarterTurns ? { quarterTurns: place.quarterTurns } : {}) }
   const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {} }
-  return touchFrameSheet(project, { ...frame, rowProgress: firstPasses(rowProgressOf(project)) })
+  // A Frame laid where there was none starts in its Technique's way; one laid in place of another keeps the way the weaver chose.
+  return touchFrameSheet(project, { ...frame, rowProgress: frameOf(project) ? firstPasses(rowProgressOf(project)) : startingProgress(project, sheet) })
 }
 
 /** The Project with its Custom frame become its shape round `rectangle` (ADR 0079, ticket 0669), the smallest that

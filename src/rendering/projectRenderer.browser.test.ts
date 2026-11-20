@@ -5,7 +5,7 @@ import { frameOf, heldWeave, withCanvas, withLayer } from '../domain/layerRecord
 import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
 import { moveToRow, rowProgressOf, stepLines, toggleRowDirection } from '../domain/rowProgress'
-import { withLayers } from '../testUtils/layerFields'
+import { ROWS_DOWN, withLayers } from '../testUtils/layerFields'
 import { DARK_THEME, type DrawingContext } from './beadLook'
 import { liftLookOf } from './liftedPiece'
 import { renderProject } from './projectRenderer'
@@ -189,7 +189,7 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again the passes 
       ['a press a few passes along', 'rows', 3, 7],
       ['Row done down the columns', 'columns', 5, 6],
     ] as const)('after %s, leaves the Canvas as a whole draw makes it', (_step, direction, from, to) => {
-      const painted = projectOf(technique, bead, CHECKERED)
+      const painted = withLayers(projectOf(technique, bead, CHECKERED), { rowProgress: ROWS_DOWN })
       const turned = direction === 'columns' ? toggleRowDirection(painted) : painted
       const [before, after] = [moveToRow(turned, from), moveToRow(turned, to)]
       const step = stepLines(after, rowProgressOf(before))!
