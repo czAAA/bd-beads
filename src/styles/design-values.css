@@ -453,9 +453,8 @@
   --inside-row-height: 2rem; /* A chapter's row in that list, 32px. */
   --welcome-tile-width: 60rem; /* The Welcome section's tile at its widest, 960px. */
   --welcome-heading-size: 2.75rem; /* The Welcome heading, serif-heading at 44px on 48. */
-  --welcome-piece-width: 45rem; /* The finished piece on the Welcome tile at its widest, 720px. */
-  --welcome-piece-least-width: 20rem; /* The narrowest a short screen makes it, 320px. */
-  --welcome-beside-piece: 42rem; /* What a screen's height holds besides the piece: the box's bars, the tile's other lines; 672px. */
+  --welcome-piece-least-width: 20rem; /* The narrowest a short screen makes the Welcome cuff, 320px (the finished piece until ticket 1157). */
+  --welcome-beside-piece: 41.5rem; /* What a screen's height holds besides the cuff: the box's bars, the tile's other lines and the cuff's bar, with room for Linux's font metrics; 664px (ticket 1157). */
   --welcome-cuff-width: 34rem; /* The cuff being woven on the Welcome tile at its widest, with its rulers, 544px (ticket 1157). */
   --welcome-cuff-step: 1.4s; /* How long the cuff shows each pass before it weaves the next by itself (ticket 1157). */
   --welcome-cuff-passes: 24; /* How many passes the cuff marks done before it starts again (ticket 1157). */

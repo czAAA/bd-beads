@@ -8,17 +8,16 @@ export const homepage: HomepageTranslations = {
     openEditor: 'Otwórz edytor',
     whatsInside: 'Co jest w środku',
     welcome: {
-      heading: 'Wzory koralikowe, narysowane tak, jak układają się koraliki.',
-      line: 'Na krosno, peyote i ścieg ceglasty.',
-      seeHow: 'Zobacz, jak to działa',
-      colors: { one: '{codes} kolor {brands}', few: '{codes} kolory {brands}', many: '{codes} kolorów {brands}', other: '{codes} koloru {brands}' },
+      heading: { one: 'Darmowy edytor wzorów z koralików, który działa w {count} technice', few: 'Darmowy edytor wzorów z koralików, który działa w {count} technikach', many: 'Darmowy edytor wzorów z koralików, który działa w {count} technikach', other: 'Darmowy edytor wzorów z koralików, który działa w {count} technikach' },
+      countWords: ['jednej', 'dwóch', 'trzech', 'czterech', 'pięciu', 'sześciu', 'siedmiu', 'ośmiu', 'dziewięciu'],
+      line: '{techniques}.',
       startFromStarter: 'Zacznij od gotowego wzoru',
-      caption: '{technique} · {size}',
-      piece: 'Oczka pawiego pióra, w peyote',
+      cuff: 'Bransoletka z pawimi piórami w peyote, w trakcie plecenia: {counter}',
       promises: {
         free: { name: 'Wszystko tutaj jest darmowe', text: 'Bez konta i bez okresu próbnego. Twoja praca zostaje w tej przeglądarce.' },
         picture: { name: 'Zacznij od obrazu', text: 'Zamień zdjęcie we wzór z koralików.' },
         weave: { name: 'Licz i pleć', text: 'Każdy kolor policzony; zaznaczaj gotowe rzędy w trakcie plecenia.' },
+        export: { name: 'Darmowy eksport', text: 'PDF i PNG w pełnej jakości.' },
       },
     },
     inside: {

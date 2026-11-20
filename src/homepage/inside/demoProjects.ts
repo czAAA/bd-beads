@@ -5,6 +5,7 @@ import { setPalette } from '../../domain/paletteEdits'
 import type { GridPosition } from '../../domain/grid'
 import { withLayer } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
+import { turnRowDirectionTo } from '../../domain/rowProgress'
 import { starterById } from '../../domain/starters'
 import { DEFAULT_TECHNIQUE, type Technique } from '../../domain/weave'
 import type { Translations } from '../../i18n/translations'
@@ -152,17 +153,20 @@ function frameColors(drawing: PeacockDrawing): string[][] {
   return Array.from({ length: drawing.length }, (_, along) => drawing.rows.map((line) => DEMO_COLORS[PEACOCK_COLORS[line[along] as PeacockPart]]))
 }
 
-/** The Welcome section's piece (ticket 0831; Homepage card): the peacock cuff the tour traces, finished as the tour
- * leaves it at the end of Reference image (no purple pupils). A peyote Frame 48 long and 23 wide on a Canvas turned as
- * a new peyote Project's is, so it lies across as it is woven. */
-export function finishedCuff(): Project {
+/** The Welcome section's piece (ticket 0831; Homepage card), woven since ticket 1157 (`wovenCuff`): the peacock cuff
+ * the tour traces, finished as the tour leaves it at the end of Reference image (no purple pupils). A peyote Frame 48
+ * long and 23 wide on a Canvas turned as a new peyote Project's is, so it lies across as it is woven. */
+function finishedCuff(): Project {
   const size = { unit: 'beads' as const, width: PEACOCK_CUFF.lines, height: PEACOCK_CUFF.length }
   const project = createProject({ name: '', technique: DEMO_TECHNIQUE, beadId: DEMO_BEAD, size, background: 1 })
   return withLayer(project, 'frame', { beads: beadsFromColors(frameColors(PEACOCK_CUFF)) })
 }
 
-/** The size the Welcome piece's caption names, long by wide. */
-export const DEMO_PIECE_SIZE = { long: PEACOCK_CUFF.length, wide: PEACOCK_CUFF.lines } as const
+/** The cuff the Welcome tile weaves (ticket 1157; Homepage card): the finished cuff with its rows running left to right,
+ * as a beader would set it, so its passes and rulers count from the left (ticket 1154). Row progress is its own data. */
+export function wovenCuff(): Project {
+  return turnRowDirectionTo(finishedCuff(), 'right')
+}
 
 /** How many beads of the Canvas the tour's view shows either side of the cuff's Frame (Homepage card, Its view). */
 export const DEMO_VIEW_MARGIN = 4
