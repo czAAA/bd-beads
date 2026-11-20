@@ -271,6 +271,9 @@ function closeConvert() {
 const referencePressing = ref(false)
 /** Set Frame around the picture is hovered or focused: its new Frame is previewed. */
 const framePreviewOn = ref(false)
+/** The picture bar's width as it last measured itself: kept while a press hides the bar, so the Turn handle keeps clear
+ * of where it comes back (ticket 1160). */
+const pictureBarWidth = ref(0)
 const pictureLayout = usePictureBarLayout({
   project: () => activeProject.value,
   view: () => surfaceView.value,
@@ -278,6 +281,7 @@ const pictureLayout = usePictureBarLayout({
   covered: () => pictureBar.box.value,
   framed: () => pictureBar.frameBox.value,
   sheet: () => frameAnchor.value?.sheet,
+  barWidth: () => pictureBarWidth.value,
   framePreviewOn,
   converting: () => pictureBar.converting.value,
   messages: () => t.value,
@@ -512,7 +516,7 @@ const drawingStyle = computed(() => {
                 :selection-refusals="selectionRefusals"
                 :fill-refusals="fillRefusals"
                 :label="projectLabel"
-                :reference="pictureBar.converting.value ? undefined : referenceImage.drawn.value"
+                :reference="pictureBar.previewProject.value ? undefined : referenceImage.drawn.value"
                 @surface-view="surfaceView = $event"
                 @cell-primary-down="onCellPrimaryDown"
                 @cell-primary-move="onCellPrimaryMove"
@@ -565,6 +569,7 @@ const drawingStyle = computed(() => {
                 @commit="referenceImage.commit"
                 :size="referenceSize"
                 :sheet="frameAnchor?.sheet"
+                :bar="pictureLayout.bar.value"
                 @pressing="referencePressing = $event"
               />
               <EmptyCanvas v-else-if="!activeProject" :deleted="deletedProjectName" :quiet="openPanel !== null" @library="openMenuOnSavedProjects">
@@ -593,6 +598,7 @@ const drawingStyle = computed(() => {
                 :over="referenceImage.over.value"
                 @preview="referenceImage.preview"
                 @commit="referenceImage.commit"
+                @width="pictureBarWidth = $event"
                 @frame-preview="framePreviewOn = $event"
                 @frame="pictureBar.frameAround"
                 @convert="pictureBar.converting.value ? pictureBar.close() : pictureBar.open()"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { reachClearOf, type ScreenBox } from '../../composables/canvas/pictureBarPlacement'
 import { ownPoint } from '../../composables/ui/cssZoom'
 import { fillBlanks } from '../../domain/fillBlanks'
 import {
@@ -14,7 +15,7 @@ import {
 } from '../../domain/referenceImage'
 import { useI18n } from '../../i18n/useI18n'
 import { reachLimit } from '../../rendering/handleSizes'
-import { placeOnScreen, REFERENCE_TURN_OFFSET_PX, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
+import { placeOnScreen, REFERENCE_TURN_CLEAR_PX, REFERENCE_TURN_OFFSET_PX, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
 import AppHandle from '../ui/AppHandle.vue'
 import AppIcon from '../ui/AppIcon.vue'
 
@@ -32,7 +33,9 @@ const props = defineProps<{
   /** While a corner is dragged, the beads the picture covers and their measure (ticket 0883). */
   size?: { beads: string; measure: string }
   /** The Frame's margin sheet on screen: the Turn handle stands below it where the picture lies under it (ticket 0883). */
-  sheet?: { left: number; top: number; width: number; height: number }
+  sheet?: ScreenBox
+  /** The picture bar's box on screen: the Turn handle stands on beyond it where it would land under it (ticket 1160). */
+  bar?: ScreenBox
 }>()
 const emit = defineEmits<{
   /** A drag as it goes, drawn but not saved. */
@@ -47,35 +50,54 @@ const { t } = useI18n()
 const words = computed(() => t.value.referenceImage)
 const rootEl = ref<HTMLElement>()
 
-/** The press under way: what it works, where the pointer is and the place it started from. */
-const press = ref<{ kind: 'turn' | ReferenceCorner; pointer: number; at: { x: number; y: number }; from: ReferencePlace; place: ReferencePlace }>()
+/** Where the Turn handle stands: below the picture's bottom edge or above its top edge, and how far past it. */
+interface TurnStand {
+  below: boolean
+  reach: number
+}
+
+/** The press under way: what it works, where the pointer is, the place it started from and where the Turn handle stood. */
+const press = ref<{ kind: 'turn' | ReferenceCorner; pointer: number; at: { x: number; y: number }; from: ReferencePlace; place: ReferencePlace; turn: TurnStand }>()
 const shown = computed(() => press.value?.place ?? props.place)
 const onScreen = computed(() => placeOnScreen(props.view, shown.value, shown.value.width * props.aspect))
 
-/** How far past the picture's edge the Turn handle stands below it: its offset, and on beyond the Frame's margin sheet
- * where the handle would land on it (ticket 0883). */
-const turnReach = computed(() => {
+/** The middle of the picture's bottom edge on screen (`below`), or its top edge's, and the way the Turn handle's stem
+ * runs on from it. */
+function stemFrom(below: boolean) {
   const { centre, height, angle } = onScreen.value
   const turn = radians(angle)
-  const down = { x: -Math.sin(turn), y: Math.cos(turn) }
-  const handle = height / 2 + REFERENCE_TURN_OFFSET_PX
+  const side = below ? 1 : -1
+  const way = { x: -Math.sin(turn) * side, y: Math.cos(turn) * side }
+  return { from: { x: centre.x + (way.x * height) / 2, y: centre.y + (way.y * height) / 2 }, way }
+}
+
+/** Where the Turn handle would stand off the picture's bottom edge (`below`) or its top edge: how far past the edge and
+ * the spot on screen. Its offset; below, on beyond the Frame's margin sheet where the handle would land on it (ticket
+ * 0883); and on beyond the picture bar where it would land under it, as on a picture turned bottom edge up (ticket 1160). */
+function standOn(below: boolean) {
+  const { from, way } = stemFrom(below)
+  const spot = (reach: number) => ({ x: from.x + way.x * reach, y: from.y + way.y * reach })
+  let reach = REFERENCE_TURN_OFFSET_PX
   const sheet = props.sheet
-  const at = { x: centre.x + down.x * handle, y: centre.y + down.y * handle }
-  if (!sheet || down.y < 0.7 || at.x < sheet.left || at.x > sheet.left + sheet.width || at.y < sheet.top || at.y > sheet.top + sheet.height) return REFERENCE_TURN_OFFSET_PX
-  return REFERENCE_TURN_OFFSET_PX + (sheet.top + sheet.height - at.y) / down.y + REFERENCE_TURN_OFFSET_PX / 2
-})
+  const at = spot(reach)
+  if (below && sheet && way.y >= 0.7 && at.x >= sheet.left && at.x <= sheet.left + sheet.width && at.y >= sheet.top && at.y <= sheet.top + sheet.height) {
+    reach += (sheet.top + sheet.height - at.y) / way.y + REFERENCE_TURN_OFFSET_PX / 2
+  }
+  reach = reachClearOf(from, way, reach, props.bar, REFERENCE_TURN_CLEAR_PX)
+  return { reach, spot: spot(reach) }
+}
 
 /** The Turn handle stands below the picture's bottom edge (ticket 0883), or above its top edge where there is no room
- * below, so the top edge is free for the picture bar. */
-const turnBelow = computed(() => {
-  const { centre, height, angle } = onScreen.value
-  const reach = height / 2 + turnReach.value
-  const turn = radians(angle)
-  const below = { x: centre.x - Math.sin(turn) * reach, y: centre.y + Math.cos(turn) * reach }
-  const { width, height: tall } = props.view.viewport
-  return below.x >= 0 && below.y >= 0 && below.x <= width && below.y <= tall
+ * below in the canvas box. A press holds it where it stood (ticket 1160): the bar is away meanwhile, and a handle that
+ * changed sides under the pointer would turn the picture half round at every move. */
+const turnStand = computed<TurnStand>(() => {
+  if (press.value) return press.value.turn
+  const { reach, spot } = standOn(true)
+  const { width, height } = props.view.viewport
+  const below = spot.x >= 0 && spot.y >= 0 && spot.x <= width && spot.y <= height
+  return { below, reach: below ? reach : standOn(false).reach }
 })
-const stemStyle = computed(() => ({ height: `calc(${turnBelow.value ? turnReach.value : REFERENCE_TURN_OFFSET_PX}px - var(--reference-turn) / 2)` }))
+const stemStyle = computed(() => ({ height: `calc(${turnStand.value.reach}px - var(--reference-turn) / 2)` }))
 
 /** The size chip beside the pointer while a corner is dragged (ticket 0883). */
 const sizeChipStyle = computed(() => {
@@ -114,7 +136,7 @@ function begin(event: PointerEvent, kind: 'turn' | ReferenceCorner) {
   }
   event.stopPropagation()
   ;(event.currentTarget as Element).setPointerCapture?.(event.pointerId)
-  press.value = { kind, pointer: event.pointerId, at: local(event), from: props.place, place: props.place }
+  press.value = { kind, pointer: event.pointerId, at: local(event), from: props.place, place: props.place, turn: turnStand.value }
   emit('pressing', true)
 }
 
@@ -124,7 +146,7 @@ function drag(event: PointerEvent) {
   const point = screenToGrid(props.view, local(event))
   let place: ReferencePlace
   if (pressed.kind === 'turn') {
-    place = turnedToward(pressed.from, point, { below: turnBelow.value, fine: event.shiftKey })
+    place = turnedToward(pressed.from, point, { below: pressed.turn.below, fine: event.shiftKey })
   } else {
     place = resizedFromCorner(pressed.from, props.aspect, pressed.kind, point, props.limits)
   }
@@ -176,7 +198,7 @@ function cancel() {
         :data-testid="`reference-adjust-${corner}`"
         @pointerdown="begin($event, corner)"
       />
-      <span class="reference-adjust__turn" :class="{ 'reference-adjust__turn--below': turnBelow }">
+      <span class="reference-adjust__turn" :class="{ 'reference-adjust__turn--below': turnStand.below }">
         <span class="reference-adjust__stem" :style="stemStyle" aria-hidden="true" />
         <button
           class="reference-adjust__turn-handle"

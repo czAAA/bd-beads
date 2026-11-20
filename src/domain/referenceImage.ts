@@ -100,6 +100,11 @@ function turned({ x, y }: Point, angle: number): Point {
   return { x: x * cos - y * sin, y: x * sin + y * cos }
 }
 
+/** Whether two places are the same: a drag given up leaves the picture where it rests. */
+export function samePlace(a: ReferencePlace, b: ReferencePlace): boolean {
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.angle === b.angle
+}
+
 /** The picture moved by a distance in grid px. */
 export function movedBy(place: ReferencePlace, dx: number, dy: number): ReferencePlace {
   return { ...place, x: place.x + dx, y: place.y + dy }
