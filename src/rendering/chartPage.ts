@@ -1,4 +1,4 @@
-import { beadsAreRound, drawChartParts, drawKeySwatch, K, mmPt } from './chartVector'
+import { beadsAreRound, chartLookOf, drawChartParts, drawKeySwatch, K, mmPt } from './chartVector'
 import { colorsOnPage, KEY_COLUMNS } from './chartPageKey'
 import { blankPage, drawMark, font, MONO, partLabel, SANS, SERIF, text } from './printPages'
 import { PRINT_COLORS } from './printColors'
@@ -9,7 +9,8 @@ import { PdfContent } from '../domain/pdfContent'
 import { fillBlanks } from '../domain/fillBlanks'
 
 // A chart page for the PDF (ticket 0585; PrintChartPage card): the translated text as one picture and everything else as
-// PDF drawing laid over it (ADR 0043). The picture is the paper, so empty positions are plain paper under their small cross.
+// PDF drawing laid over it (ADR 0043). The picture is the paper, so empty positions are plain paper (under their small
+// cross with Empty grid on, ticket 1127).
 
 
 /** A, B ... Z, AA: the order the key's letters run in. */
@@ -66,7 +67,7 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const letters = project.paletteLetters ?? {}
   const here = parts[0]!
   const content = new PdfContent(page.height * K)
-  const pads = drawChartParts(content, project, plan, parts, letters)
+  const pads = drawChartParts(content, project, plan, parts, letters, undefined, chartLookOf(words))
   const right = page.width - PRINT_MARGIN
 
   // Header: the page number, then the mini map to its left, then the technique word and name, and the part line under them.
