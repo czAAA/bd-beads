@@ -209,6 +209,23 @@ describe('RadialToolbox (ticket 1064)', () => {
     outside.remove()
   })
 
+  it('lets through, still open, the press outside that moves it, which the Canvas says (ticket 1147); any other still closes it', async () => {
+    const canvas = document.createElement('div')
+    document.body.append(canvas)
+    let heard = 0
+    canvas.addEventListener('pointerdown', () => (heard += 1))
+    wrapper = mountRing({ movesOn: (event: PointerEvent) => event.button === 2 })
+
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 2 }))
+    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(heard).toBe(1)
+
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }))
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(heard).toBe(1)
+    canvas.remove()
+  })
+
   it('keeps the picked tile pressed while the ring leaves, and none after a pick that keeps it open', async () => {
     wrapper = mountRing()
     const picked = () => wrapper!.findAll('.radial-toolbox__place--picked').map((place) => place.get('button').attributes('data-radial-item'))

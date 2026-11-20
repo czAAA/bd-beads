@@ -77,6 +77,9 @@ export interface SurfacePointerEvents {
   hold: [at?: { x: number; y: number }]
   /** A hold is up: drop what its press started, as a pinch's first finger is dropped. `open-toolbox` follows. */
   'drop-press': []
+  /** A press that opens the ring landed while it is open (ticket 1147): the ring closes at once, to open again where
+   * this press says, at its lift or its hold. */
+  'close-toolbox': []
   /** The pointer whose hold opened the ring, still down and armed (moved the drag slop since), is at this point, in
    * client px (ticket 1077). With no point its press ended away from the ring (cancelled). */
   slide: [at?: { x: number; y: number }]
@@ -105,6 +108,8 @@ export interface SurfacePointerDeps {
     holdOpens?: boolean
     /** How many holds a pinch has ended: the surface never hears the second finger of one (usePinchPan). */
     holdEnds?: number
+    /** Whether the Radial toolbox is open: a press that opens it then moves it here and is no tool's (ticket 1147). */
+    toolboxOpen?: boolean
   }
   emit: EmitFn<ShortEmitsToObject<SurfacePointerEvents>>
   root: Ref<HTMLElement | undefined>
@@ -463,6 +468,25 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   }
   watch(() => props.holdEnds, () => stepHold({ type: 'finger' }))
 
+  /** What a press is as its button goes down, by `pressBecomes`. */
+  function pressDown(event: PointerEvent): CanvasPress | undefined {
+    return pressBecomes(undefined, { type: 'down', button: event.button, pointerType: event.pointerType, inputMode: props.inputMode })
+  }
+
+  /** Whether a press times a hold (ticket 1065): the drawing pointer's, where the ring would open. Not a second
+   * finger's, nor the press Pick color from Canvas waits for, which takes its colour at once. */
+  function timesHoldFor(event: PointerEvent, press: CanvasPress | undefined): boolean {
+    return press === 'held' && !!props.holdOpens && !props.tools.picking && !(event.pointerType === 'touch' && !event.isPrimary)
+  }
+
+  /** The press the ring opens on, on this surface (ticket 1147): the right button's, or the drawing pointer's whose hold
+   * is timed. While the ring is open the overlay lets this one press through to here, which moves the ring to it. */
+  function opensToolbox(event: PointerEvent): boolean {
+    if (!(event.target instanceof Node) || !rootEl.value?.contains(event.target)) return false
+    const press = pressDown(event)
+    return press === 'waits' || timesHoldFor(event, press)
+  }
+
   /** Asks for the Radial toolbox at a point on screen, on the bead position under it whatever the tool. */
   function openToolbox(at: { x: number; y: number }): void {
     const hit = surface.value.pointToHit(pointInDrawing({ clientX: at.x, clientY: at.y }))
@@ -713,7 +737,18 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       return
     }
     // The right button's press waits to be a pan or a click (ticket 1074): no tool or handle gets it.
-    const press = pressBecomes(undefined, { type: 'down', button: event.button, pointerType: event.pointerType, inputMode: props.inputMode })
+    const press = pressDown(event)
+    // With the ring open, the press it opens on moves it (ticket 1147): the ring closes now and opens again where a right
+    // click lifts or a hold is up. A held press is then only timed: no tool or handle hears it, so a tap draws nothing.
+    if (props.toolboxOpen && opensToolbox(event)) {
+      emit('close-toolbox')
+      if (press === 'held') {
+        timeHold(event)
+        rootEl.value?.setPointerCapture?.(event.pointerId)
+        event.preventDefault()
+        return
+      }
+    }
     if (press === 'waits') {
       rightPress = { id: event.pointerId, x: event.clientX, y: event.clientY, is: press }
       rootEl.value?.setPointerCapture?.(event.pointerId)
@@ -739,9 +774,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
         return
       }
     }
-    // Whether this press's hold is timed (ticket 1065): the drawing pointer's, where the ring would open. Not a second
-    // finger's, nor the press Pick color from Canvas waits for, which takes its colour at once.
-    const timesHold = press === 'held' && props.holdOpens && !props.tools.picking && !(event.pointerType === 'touch' && !event.isPrimary)
+    const timesHold = timesHoldFor(event, press)
     const held = grabbed.value
     if ((props.tools.selects || areaGrab.value) && held && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
       // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it. A shape
@@ -1062,5 +1095,6 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     showFinished,
     pressMoveHandle,
     pressAreaGrip,
+    opensToolbox,
   }
 }
