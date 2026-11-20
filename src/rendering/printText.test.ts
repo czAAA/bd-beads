@@ -143,11 +143,20 @@ describe('printText Word chart (ticket 0574)', () => {
     const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.title).toBe('Row by row')
-    expect(chart.notes).toEqual([en.print.wordChart.firstTop, en.print.wordChart.sides, runNote])
+    expect(chart.notes).toEqual(['Row 1 is at the top of the picture.', en.print.wordChart.sides, runNote])
     expect(chart.rows).toEqual([
       { label: '1', first: 1, last: 1, marker: 'L', runs: [[{ count: 2, letter: 'C' }], [{ count: 1 }]] },
       { label: '2', first: 2, last: 2, marker: 'R', runs: [[{ count: 1, letter: 'C' }], [{ count: 2 }]] },
     ])
+  })
+
+  it('says where the first row is by the number it carries: the ruler\'s, 2 at the bottom of a 2-row loom worked upward (ticket 1129)', () => {
+    const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 2, height: 2, unit: 'beads' } })
+    const upward = withLayers(paintAt(base, [{ row: 0, column: 0 }, { row: 1, column: 1 }], red.hex), { rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
+    const chart = printText(letters(upward), en, 'en', at, ROW_BY_ROW).wordChart!
+
+    expect(chart.notes[0]).toBe('Row 2 is at the bottom of the picture.')
+    expect(chart.rows.map((row) => row.label)).toEqual(['2', '1'])
   })
 
   it('says Rows 1&2 and the count for peyote, and translates the words but not the letters', () => {

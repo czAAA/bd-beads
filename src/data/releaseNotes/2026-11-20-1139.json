@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "The saved-file toast now says where the file went: to Downloads, where you chose in the share sheet, or into your file",
+    "ru": "Уведомление о сохранении теперь говорит, куда ушёл файл: в «Загрузки», в выбранное место или в ваш файл",
+    "uk": "Сповіщення про збереження тепер каже, куди пішов файл: у «Завантаження», у вибране місце чи у ваш файл",
+    "be": "Апавяшчэнне пра захаванне цяпер кажа, куды пайшоў файл: у «Спампоўкі», у выбранае месца ці ў ваш файл",
+    "zh": "保存提示现在会说明文件去了哪里：“下载”、你在分享菜单中选择的位置，或你的文件",
+    "es": "El aviso de guardado ahora dice adónde fue el archivo: a Descargas, donde elegiste o a tu archivo",
+    "pl": "Powiadomienie o zapisie mówi teraz, dokąd trafił plik: do Pobranych, w wybrane miejsce albo do Twojego pliku"
+  }
+}

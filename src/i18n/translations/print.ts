@@ -77,6 +77,8 @@ export interface PrintTranslations {
       empty: string
       /** The footer where the rows go on: "Rows 83–120 on page 8 →". */
       nextRows: string
+      /** Where the first row is, by its number (`row`): the printed ruler's, 1 unless the rows are worked from the bottom or
+       * the right (ticket 1129). */
       firstTop: string
       firstRight: string
       firstBottom: string

@@ -1,5 +1,5 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
-import { PRINT_COLORS } from './printColors'
+import { printInkOf, type PrintInk } from './printInk'
 import { drawEmptySwatch, drawMark, font, MONO, pt, SANS, SERIF, text } from './printPages'
 import { mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
 import { headerMaker, RUN_NOTE_BEAD, type PrintedRunPart, type PrintedRunUnit, type PrintedWordRow, type PrintText } from './printText'
@@ -219,48 +219,49 @@ export function pdfPageCount(plan: Pick<PrintPlan, 'pageCount' | 'page'>, words:
   return plan.pageCount + wordChartPageCount(words, plan.page)
 }
 
-function drawHeader(context: CanvasRenderingContext2D, words: PrintText, range: string, pageNumber: number, total: number, left: number, width: number): void {
+function drawHeader(context: CanvasRenderingContext2D, words: PrintText, range: string, pageNumber: number, total: number, left: number, width: number, { colors }: PrintInk): void {
   const meta = [words.techniqueWord, words.name, headerMaker(words.maker)].filter(Boolean).join(' · ')
-  text(context, meta, left, mm(14), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', width - mm(40))
-  const title = text(context, words.wordChart!.title, left, mm(22.4), font('600', 16, SANS), PRINT_COLORS.ink)
-  text(context, range, left + title + mm(1.6), mm(22.4), font('italic 400', 17, SERIF), PRINT_COLORS.accent)
+  text(context, meta, left, mm(14), font('400', 7.5, MONO), colors.muted, 'left', width - mm(40))
+  const title = text(context, words.wordChart!.title, left, mm(22.4), font('600', 16, SANS), colors.ink)
+  text(context, range, left + title + mm(1.6), mm(22.4), font('italic 400', 17, SERIF), colors.accent)
   const right = left + width
-  const of = text(context, `/ ${total}`, right, mm(18.6), font('400', 8, MONO), PRINT_COLORS.muted, 'right')
-  text(context, String(pageNumber), right - of - mm(1), mm(18.6), font('600', 18, SANS), PRINT_COLORS.ink, 'right')
+  const of = text(context, `/ ${total}`, right, mm(18.6), font('400', 8, MONO), colors.muted, 'right')
+  text(context, String(pageNumber), right - of - mm(1), mm(18.6), font('600', 18, SANS), colors.ink, 'right')
 }
 
-/** A bead's swatch, the key's and a run's (ticket 1096): its fill, a 0.1 mm `line-strong` edge and its Swatch letter;
- * with no color, the empty swatch with the chart's small cross. */
-function drawSwatch(context: CanvasRenderingContext2D, x: number, top: number, color: Pick<PrintText['colors'][number], 'hex' | 'letter'> | undefined, size = SWATCH): void {
+/** A bead's swatch, the key's and a run's (ticket 1096): its fill (in one ink, its tone), a 0.1 mm `line-strong` edge and
+ * its Swatch letter; with no color, the empty swatch with the chart's small cross. */
+function drawSwatch(context: CanvasRenderingContext2D, x: number, top: number, color: Pick<PrintText['colors'][number], 'hex' | 'letter'> | undefined, ink: PrintInk, size = SWATCH): void {
   if (!color) {
-    drawEmptySwatch(context, x, top, size, mm(0.1))
+    drawEmptySwatch(context, x, top, size, mm(0.1), ink)
     return
   }
-  context.fillStyle = color.hex
+  context.fillStyle = ink.fill(color.hex)
   context.beginPath()
   context.roundRect(x, top, size, size, size * SWATCH_CORNER)
   context.fill()
-  context.strokeStyle = PRINT_COLORS.lineStrong
+  context.strokeStyle = ink.colors.lineStrong
   context.lineWidth = mm(0.1)
   context.stroke()
-  if (color.letter) drawBeadLetter(context, { x, y: top, size, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
+  if (color.letter) drawBeadLetter(context, { x, y: top, size, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME, ...(ink.oneInk ? { ink: ink.letter(color.hex) } : {}) })
 }
 
 /** A line of the notes, the key line's bead drawn as an outlined swatch with the letter C. */
-function drawNoteLine(context: CanvasRenderingContext2D, line: string, x: number, baseline: number): void {
+function drawNoteLine(context: CanvasRenderingContext2D, line: string, x: number, baseline: number, ink: PrintInk): void {
   let at = x
   line.split(RUN_NOTE_BEAD).forEach((piece, index) => {
     if (index > 0) {
-      drawSwatch(context, at, baseline - NOTE_MIDDLE - NOTE_SWATCH / 2, { hex: PRINT_COLORS.paper, letter: NOTE_LETTER }, NOTE_SWATCH)
+      drawSwatch(context, at, baseline - NOTE_MIDDLE - NOTE_SWATCH / 2, { hex: ink.colors.paper, letter: NOTE_LETTER }, ink, NOTE_SWATCH)
       at += NOTE_SWATCH
     }
-    at += text(context, piece, at, baseline, NOTE_STYLE, PRINT_COLORS.muted)
+    at += text(context, piece, at, baseline, NOTE_STYLE, ink.colors.muted)
   })
 }
 
-function drawKey(context: CanvasRenderingContext2D, words: PrintText, layout: Layout, left: number, width: number): void {
+function drawKey(context: CanvasRenderingContext2D, words: PrintText, layout: Layout, left: number, width: number, ink: PrintInk): void {
   const chart = words.wordChart!
-  context.strokeStyle = PRINT_COLORS.faint
+  const { colors } = ink
+  context.strokeStyle = colors.faint
   context.lineWidth = mm(0.2)
   context.beginPath()
   context.roundRect(left, KEY_TOP, width, layout.keyHeight, mm(2))
@@ -275,43 +276,44 @@ function drawKey(context: CanvasRenderingContext2D, words: PrintText, layout: La
   }
   layout.keyColors.forEach((color, index) => {
     const at = place(index)
-    drawSwatch(context, at.x, at.top, color)
-    text(context, color.name, at.name, at.baseline, font('400', 7, SANS), PRINT_COLORS.ink, 'left', nameRoom)
+    drawSwatch(context, at.x, at.top, color, ink)
+    text(context, color.name, at.name, at.baseline, font('400', 7, SANS), colors.ink, 'left', nameRoom)
   })
   if (chart.empty) {
     const at = place(layout.keyColors.length)
-    drawSwatch(context, at.x, at.top, undefined)
-    text(context, chart.empty, at.name, at.baseline, font('400', 7, SANS), PRINT_COLORS.ink, 'left', nameRoom)
+    drawSwatch(context, at.x, at.top, undefined, ink)
+    text(context, chart.empty, at.name, at.baseline, font('400', 7, SANS), colors.ink, 'left', nameRoom)
   }
 
   const noteTop = KEY_TOP + layout.keyHeight + mm(6)
-  layout.notes.forEach((line, index) => drawNoteLine(context, line, left, noteTop + index * NOTE_LINE))
+  layout.notes.forEach((line, index) => drawNoteLine(context, line, left, noteTop + index * NOTE_LINE, ink))
 }
 
-function drawRow(context: CanvasRenderingContext2D, layout: Layout, placed: PlacedRow, x: number, y: number): void {
+function drawRow(context: CanvasRenderingContext2D, layout: Layout, placed: PlacedRow, x: number, y: number, ink: PrintInk): void {
+  const { colors } = ink
   const { row, parts } = placed
-  context.strokeStyle = PRINT_COLORS.fieldLine
+  context.strokeStyle = colors.fieldLine
   context.lineWidth = mm(0.2)
   context.beginPath()
   context.roundRect(x, y + mm(1.4), TICK, TICK, mm(0.4))
   context.stroke()
   const baseline = y + mm(3.9)
-  text(context, row.label, x + NUMBER_RIGHT, baseline, NUMBER_STYLE, PRINT_COLORS.ink, 'right')
-  if (row.marker) text(context, `(${row.marker})`, x + NUMBER_RIGHT + MARKER_GAP, baseline, ROW_STYLE, PRINT_COLORS.muted)
+  text(context, row.label, x + NUMBER_RIGHT, baseline, NUMBER_STYLE, colors.ink, 'right')
+  if (row.marker) text(context, `(${row.marker})`, x + NUMBER_RIGHT + MARKER_GAP, baseline, ROW_STYLE, colors.muted)
   for (const { part, line, x: along } of parts) {
     const left = x + layout.runsX + along
     const lineBaseline = baseline + line * PITCH
     if ('text' in part) {
-      text(context, part.text, left, lineBaseline, ROW_STYLE, PRINT_COLORS.ink)
+      text(context, part.text, left, lineBaseline, ROW_STYLE, colors.ink)
       continue
     }
-    // A run's count, then its bead's swatch, the swatch's middle on the middle of the digits.
-    const count = text(context, String(part.count), left, lineBaseline, ROW_STYLE, PRINT_COLORS.ink)
-    drawSwatch(context, left + count + COUNT_GAP, lineBaseline - DIGIT_MIDDLE - SWATCH / 2, part.letter === undefined ? undefined : layout.byLetter.get(part.letter))
+    // A run's count, then its bead's swatch (in one ink, its tone), the swatch's middle on the middle of the digits.
+    const count = text(context, String(part.count), left, lineBaseline, ROW_STYLE, colors.ink)
+    drawSwatch(context, left + count + COUNT_GAP, lineBaseline - DIGIT_MIDDLE - SWATCH / 2, part.letter === undefined ? undefined : layout.byLetter.get(part.letter), ink)
   }
 
   const fifth = row.last % 5 === 0
-  context.strokeStyle = fifth ? PRINT_COLORS.lineStrong : PRINT_COLORS.lineSoft
+  context.strokeStyle = fifth ? colors.lineStrong : colors.lineSoft
   context.lineWidth = mm(fifth ? 0.2 : 0.15)
   context.beginPath()
   context.moveTo(x, y + placed.height)
@@ -319,12 +321,12 @@ function drawRow(context: CanvasRenderingContext2D, layout: Layout, placed: Plac
   context.stroke()
 }
 
-function drawFooter(context: CanvasRenderingContext2D, words: PrintText, next: { range: string; page: number } | undefined, left: number, width: number, pageHeight: number): void {
+function drawFooter(context: CanvasRenderingContext2D, words: PrintText, next: { range: string; page: number } | undefined, left: number, width: number, pageHeight: number, { colors }: PrintInk): void {
   const footer = pageHeight - PRINT_MARGIN - mm(1.5)
-  drawMark(context, left, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
-  const brand = text(context, 'openbeads', left + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
-  text(context, words.exportedAt, left + mm(5.5) + brand + mm(4), footer, font('400', 7.5, MONO), PRINT_COLORS.muted)
-  if (next) text(context, fillBlanks(words.labels.wordChart.nextRows, { rows: next.range, page: next.page }), left + width, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
+  drawMark(context, left, footer - mm(3.4), mm(4), colors.accent)
+  const brand = text(context, 'openbeads', left + mm(5.5), footer, font('700', 7.5, SANS), colors.ink)
+  text(context, words.exportedAt, left + mm(5.5) + brand + mm(4), footer, font('400', 7.5, MONO), colors.muted)
+  if (next) text(context, fillBlanks(words.labels.wordChart.nextRows, { rows: next.range, page: next.page }), left + width, footer, font('400', 7.5, SANS), colors.muted, 'right')
 }
 
 /** The Word chart's sheets, drawn one at a time by `makePage` (the PDF's blank page at its dpi); numbered from `first` of
@@ -332,21 +334,22 @@ function drawFooter(context: CanvasRenderingContext2D, words: PrintText, next: {
 export function* drawWordChartPages(words: PrintText, page: PageSize, makePage: () => { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D }, first: number, total: number): Generator<HTMLCanvasElement> {
   if (!words.wordChart) return
   const layout = layoutWordChart(scratch(), words, page)
+  const ink = printInkOf(words)
   const left = PRINT_MARGIN
   const width = page.width - PRINT_MARGIN * 2
   for (const [index, sheet] of layout.pages.entries()) {
     const { canvas, context } = makePage()
-    drawHeader(context, words, sheet.range, first + index, total, left, width)
-    drawKey(context, words, layout, left, width)
+    drawHeader(context, words, sheet.range, first + index, total, left, width, ink)
+    drawKey(context, words, layout, left, width, ink)
     sheet.columns.forEach((rows, column) => {
       let y = layout.rowsTop
       for (const placed of rows) {
-        drawRow(context, layout, placed, left + column * (COLUMN + GAP), y)
+        drawRow(context, layout, placed, left + column * (COLUMN + GAP), y, ink)
         y += placed.height
       }
     })
     const following = layout.pages[index + 1]
-    drawFooter(context, words, following && { range: following.range, page: first + index + 1 }, left, width, page.height)
+    drawFooter(context, words, following && { range: following.range, page: first + index + 1 }, left, width, page.height, ink)
     yield canvas
   }
 }

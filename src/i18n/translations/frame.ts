@@ -44,6 +44,16 @@ export interface FrameTranslations {
     coverPageLabel: string
     coverPageInfoLabel: string
     coverPageLine: string
+    blackAndWhiteLabel: string
+    blackAndWhiteInfoLabel: string
+    blackAndWhiteLine: string
+    /** Empty grid and Chart border (ticket 1127, ExportPanel card): the empty positions' outline and cross, and the chart's rim. */
+    emptyGridLabel: string
+    emptyGridInfoLabel: string
+    emptyGridLine: string
+    chartBorderLabel: string
+    chartBorderInfoLabel: string
+    chartBorderLine: string
     largeBeadsLabel: string
     largeBeadsInfoLabel: string
     largeBeadsLine: string
@@ -54,6 +64,9 @@ export interface FrameTranslations {
      * to that name, after an underscore; and the pencil that renames the file for this export, its name and Tooltip. */
     savesAs: string
     fileWordCover: string
+    fileWordBlackAndWhite: string
+    fileWordEmptyGrid: string
+    fileWordChartBorder: string
     fileWordLargeBeads: string
     fileWordRowByRow: string
     fileNameEdit: string
