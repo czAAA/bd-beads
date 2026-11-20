@@ -8,7 +8,7 @@ import { loadProjects } from './services/libraryStore'
 import { convertImageAddress, firstProjectAddress, firstStarterAddress, newProjectAddress, projectAddress, savedProjectsAddress } from './domain/openingAddress'
 import { storedHugeProject, storeLibrary } from './testUtils/hugeProject'
 import { withLayers } from './testUtils/layerFields'
-import { closePanel, openPanel, openSavedProjects, openThisProject } from './testUtils/pill'
+import { closePanel, openPanel, openSavedProjects } from './testUtils/pill'
 
 // How the editor opens (ticket 0716): safe start, the size gate and its own addresses, wired from storage to screen.
 // What each decides is in useSafeStart, useProjectLibrary and useSavedProjectConfirms's tests.
@@ -70,7 +70,6 @@ describe('opening the editor (ticket 0716)', () => {
     await flushPromises()
 
     await openPanel(wrapper, 'strip-project')
-    await openThisProject(wrapper)
     await wrapper.get('[data-testid="project-delete"]').trigger('click')
     await wrapper.get('[data-testid="delete-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()

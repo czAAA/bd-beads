@@ -19,7 +19,6 @@ const FLAGS: DialogId[] = ['delete-all', 'reset-progress', 'remove-frame', 'repl
 const moth = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
 const fox = { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Fox', size: { width: 12, height: 12, unit: 'beads' } }), id: 'fox' }
 const WITH_PROJECT: [DialogId, unknown][] = [
-  ['duplicate-project', 'Moth copy'],
   ['delete-project', { id: 'fox', name: 'Fox' }],
   ['delete-all-projects', true],
   ['name-piece', { at: { row: 0, column: 0 }, name: 'Moth' }],

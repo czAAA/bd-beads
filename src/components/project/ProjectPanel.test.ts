@@ -19,8 +19,6 @@ afterEach(() => {
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
-  // This Project starts folded (ticket 0971): these tests look at its rows.
-  localStorage.setItem('openbeads:panel-sections-opened', 'project:this')
 })
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
@@ -31,14 +29,15 @@ function mountPanel(props: Record<string, unknown> = {}) {
 }
 
 describe('ProjectPanel (tickets 443, 554, 0670)', () => {
-  it('has the head, then the Canvas\'s Layer settings, the reference image and this project sections, in that order', () => {
+  it('has the head, then the Canvas\'s Layer settings, the reference image and the Project\'s own rows, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'save-project-file', 'project-duplicate', 'project-export', 'project-clear', 'project-delete']
+    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'save-project-file', 'project-export', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas, outside the Frame', 'reference image', 'This Project'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas, outside the Frame', 'reference image'])
+    expect(wrapper.get('[data-testid="project-rows"]').find('.panel-section__header').exists()).toBe(false)
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
     expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}.openbeads`)
@@ -264,21 +263,13 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     }
   })
 
-  it('emits Duplicate, Clear, Delete and Save', async () => {
+  it('emits Clear, Delete and Save', async () => {
     const wrapper = mountPanel()
-    await wrapper.get('[data-testid="project-duplicate"]').trigger('click')
     await wrapper.get('[data-testid="project-clear"]').trigger('click')
     await wrapper.get('[data-testid="project-delete"]').trigger('click')
     await wrapper.get('[data-testid="save-project-file"]').trigger('click')
-    expect(['duplicate', 'clear', 'delete', 'save-project-file'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1, 1, 1])
+    expect(['clear', 'delete', 'save-project-file'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1, 1])
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
-  })
-
-  it('starts This Project folded, so the panel is short enough to leave the Tool pill clear (ticket 0971)', () => {
-    localStorage.removeItem('openbeads:panel-sections-opened')
-    const wrapper = mountPanel()
-    expect(wrapper.get('[data-testid="project-this"] .panel-section__header').attributes('aria-expanded')).toBe('false')
-    expect(wrapper.find('[data-testid="project-delete"]').exists()).toBe(false)
   })
 
   it('folds a section shut and shows its summary', async () => {

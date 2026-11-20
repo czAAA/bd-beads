@@ -971,22 +971,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
     if (project) deleteProject.onRequestDelete(project.id)
   }
 
-  /** Rename and Duplicate for the open Project, from the Project panel, and Delete all (spec 0440, ticket 443). */
+  /** Rename for the open Project, from the Project panel, and Delete all (spec 0440, ticket 443). */
   const manageProject = useProjectManageFlow({
     currentProject,
     projects: () => projects.value,
     sealed: () => sealed.value,
     replaceProject,
-    // Duplicate copies the reference image's picture with the settings (ticket 0790).
-    addProject: (copy) => {
-      void referenceImage.copyToDuplicate(copy)
-      const source = currentProject()
-      if (source) sinceFile.duplicated(source.id, copy.id)
-      addProject(copy)
-    },
     removeAllProjects,
-    showToast,
-    messages,
     dialogs,
   })
 
@@ -1402,7 +1393,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       openElsewhere,
       saveNow,
       onRenameProject: manageProject.onRenameProject,
-      onRequestDuplicate: manageProject.onRequestDuplicate,
       onRequestDelete: onRequestDeleteOpen,
       onRequestDeleteAll: deleteAll.onRequestDeleteAll,
       // Each layer's Layer settings (ticket 0670): the Canvas's in Project, the Frame's in the Frame panel
@@ -1493,9 +1483,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       sendReport: feedback.sendReport,
       verifyFeedback: feedback.verifyFeedback,
       copyReport: feedback.copyReport,
-      duplicating: manageProject.duplicating,
-      onConfirmDuplicate: manageProject.onConfirmDuplicate,
-      onCancelDuplicate: manageProject.onCancelDuplicate,
       pendingDelete: deleteProject.pendingDelete,
       onConfirmDelete: deleteProject.onConfirmDelete,
       onCancelDelete: deleteProject.onCancelDelete,

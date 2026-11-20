@@ -2,7 +2,7 @@ import { MAX_MAKER_NAME } from './makerName'
 import { projectNameOf, withLayer } from './layerRecord'
 import type { Project } from './project'
 
-/** A Project's own name (spec 0440, ticket 443): up to 40 characters, never empty. New Project, Rename and Duplicate
+/** A Project's own name (spec 0440, ticket 443): up to 40 characters, never empty. New Project, Rename
  * all take this one limit (ticket 0854). */
 export const MAX_PROJECT_NAME = MAX_MAKER_NAME
 
@@ -25,9 +25,9 @@ function shortenAtWord(name: string, room: number): string {
   return (/\s/.test(name[room]!) || !lastSpace ? cut : cut.slice(0, lastSpace.index)).trim()
 }
 
-/** What Duplicate suggests (ticket 443): the name plus the first unused number from 2 ("Moth 2", "Moth 3"), shortened
+/** The name plus the first unused number from 2 ("Moth 2", "Moth 3"), shortened
  * at a word to fit (ticket 0854). */
-export function suggestCopyName(name: string, existingNames: readonly string[]): string {
+function nextFreeName(name: string, existingNames: readonly string[]): string {
   const taken = new Set(existingNames.map((existing) => existing.trim().toLowerCase()))
   const trailing = /^(.*\S)\s+(\d+)$/.exec(name.trim())
   const base = trailing ? trailing[1]! : name.trim()
@@ -40,15 +40,15 @@ export function suggestCopyName(name: string, existingNames: readonly string[]):
   }
 }
 
-/** The name as it is when the library holds no name the same, else Duplicate's next free number: an import's name
+/** The name as it is when the library holds no name the same, else the next free number: an import's name
  * (ticket 0860), and "Project 1" for a new Project left unnamed, then "Project 2" (ticket 0866). */
 export function freeName(name: string, existingNames: readonly string[]): string {
   const key = name.trim().toLowerCase()
-  return existingNames.some((existing) => existing.trim().toLowerCase() === key) ? suggestCopyName(name, existingNames) : name
+  return existingNames.some((existing) => existing.trim().toLowerCase() === key) ? nextFreeName(name, existingNames) : name
 }
 
 /** Projects joining a library under names it doesn't hold yet (ticket 0860): a taken one, by the library or by one
- * arriving before it, gets Duplicate's next free number, so no two rows share a name. A free one comes as it is. */
+ * arriving before it, gets the next free number, so no two rows share a name. A free one comes as it is. */
 export function withFreeNames(arriving: readonly Project[], existingNames: readonly string[]): Project[] {
   const names = [...existingNames]
   return arriving.map((project) => {

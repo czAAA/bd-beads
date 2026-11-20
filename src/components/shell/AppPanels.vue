@@ -62,7 +62,6 @@ const {
   onSaveMakerName,
   onSetLetters,
   onRenameProject,
-  onRequestDuplicate,
   onRequestDelete,
   inputMode,
   setInputMode,
@@ -254,7 +253,6 @@ const chosenStarter = ref<StarterId>()
       @fit="onFitFrame"
       @select-frame="onSelectFrame('export')"
       @save-maker-name="onSaveMakerName"
-      @duplicate="onRequestDuplicate"
       @clear="onRequestDeleteAll"
       @delete="onRequestDelete"
     />

@@ -55,7 +55,7 @@ The setup in step 2 of the Starter gallery, once an option is tapped (ticket 059
 _Avoid_: Template setup, Starter form, Starter dialog
 
 **Project panel**:
-The Project panel: the modal dropdown the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Export (since ticket 0956 one row to the Export panel; Save Project file stands first under this Project, apart from it), Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
+The Project panel: the modal dropdown the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Export (since ticket 0956 one row to the Export panel; Save Project file stands first among the Project's own rows, apart from it), Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
 _Avoid_: Project sheet, Pattern sheet, Tool sheet (gone)
 
 **Canvas strip**:

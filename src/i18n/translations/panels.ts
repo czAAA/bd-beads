@@ -78,11 +78,6 @@ export interface PanelsTranslations {
       /** Save and Save as (ADR 0090, ticket 0796): the Project panel rows and the actions' names. */
       saveFile: string
       saveFileAs: string
-      duplicate: string
-      duplicateTitle: string
-      duplicateNote: string
-      nameField: string
-      duplicateHint: string
       deleteThis: string
       deleteTitle: string
       deleteMessage: string
@@ -90,7 +85,6 @@ export interface PanelsTranslations {
       cancel: string
       save: string
       tooltipRename: string
-      tooltipDuplicate: string
       tooltipDelete: string
       titleLabel: string
       nameLabel: string
@@ -99,12 +93,9 @@ export interface PanelsTranslations {
       notSavedYet: string
       addMaker: string
       changeMaker: string
-      thisProject: string
       beadBrand: string
       beadType: string
       beadSize: string
-      /** After Duplicate (ticket 0860): `{copy}` is the Project now open, `{original}` the one it was copied from. */
-      duplicatedToast: string
       /** Said under 1024px, where the strip shows no name, when a Project opens from the library (ticket 0986). */
       openedToast: string
       /** After Delete of the open Project (ticket 0983): `{name}` is the deleted one, `{open}` the one open now. */

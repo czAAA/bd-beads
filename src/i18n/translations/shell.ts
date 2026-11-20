@@ -50,7 +50,7 @@ export interface ShellTranslations {
     /** The Estimated size when the unit is mm: the same size as a count of beads, "≈ 40×30 beads" (ticket 342). */
     estimateBeads: string
     /** What a new Project left unnamed is called, and the Name's placeholder (ticket 0866): "Project 1", then the next
-     * free number. It ends in its number, as Duplicate's suggestions do. */
+     * free number. It ends in its number, as the other free names do. */
     unnamedProject: string
     /** New Project's Info buttons (ticket 0951): what Technique decides, and each button's name; Bead's help is
      * `beadPicker.hint`. */
