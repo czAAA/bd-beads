@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { moveToRow, rowProgressOf, toggleRowDirection } from './rowProgress'
+import { moveToRow, rowProgressOf, shownWayOf, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
 import { BEAD_CATALOG } from './beads'
 import type { Technique } from './weave'
 import { paintAt } from '../testUtils/layers'
@@ -78,6 +78,14 @@ describe('deleteAll', () => {
     const cleared = deleteAll(paintedAndWoven())
 
     expect(rowProgressOf(cleared)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+  })
+
+  it.each([['loom', 'down'], ['peyote', 'right'], ['brick', 'up']] as const)('puts a %s Frame back at the first row, its rows running %s as seen as a new Project\'s do', (technique, way) => {
+    const woven = moveToRow(turnRowDirectionTo(createProject({ technique, beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }), 'left'), 3)
+    const cleared = deleteAll(woven)
+
+    expect(shownWayOf(cleared)).toBe(way)
+    expect(rowProgressOf(cleared)).toMatchObject({ currentRow: 0, currentColumn: 0 })
   })
 
   it('keeps name, size, Technique, Bead and rotation exactly as they were', () => {

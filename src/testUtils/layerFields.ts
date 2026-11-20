@@ -1,9 +1,13 @@
 import type { FrameSheet } from '../domain/canvas'
 import { canvasOf, frameOf, withCanvas, withFrameSheet, withLetters } from '../domain/layerRecord'
 import { rowProgressOf } from '../domain/rowProgress'
-import type { CanvasLayer, FrameLayer, LayerFields, Project } from '../domain/project'
+import type { CanvasLayer, FrameLayer, LayerFields, Project, RowProgress } from '../domain/project'
 import { DEFAULT_BEAD } from '../domain/beads'
 import { DEFAULT_TECHNIQUE } from '../domain/weave'
+
+/** Row progress with the rows running top to bottom along the Frame's own rows, as any Technique's tests count their passes
+ * (a new peyote or brick Frame starts another way): `withLayers(project, { rowProgress: ROWS_DOWN })`. */
+export const ROWS_DOWN: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
 /** What a test sets on a Project in one go (ticket 0664): the Canvas layer's own fields, the Bead and Letters of
  * every layer, the Frame layer as a sheet (none removes it) and its Row progress, and the Project's own. */

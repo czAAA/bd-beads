@@ -21,7 +21,7 @@ import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
-import { canvasOf, frameOf, heldWeave, quarterTurnOf, withCanvas, withFrameSheet, withLayer } from '../../domain/layerRecord'
+import { canvasOf, frameOf, heldWeave, quarterTurnOf, withFrameSheet, withLayer } from '../../domain/layerRecord'
 import { findBead } from '../../domain/beads'
 import { scaledBead } from '../../testUtils/squareBead'
 import { moveToRow, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
@@ -30,7 +30,7 @@ import type { RowPress } from '../../composables/project/useRowOps'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { PATTERN_DONE_MS, ROW_MOTION } from '../../rendering/rowMotion'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
-import { type LayersChange, withLayers } from '../../testUtils/layerFields'
+import { type LayersChange, ROWS_DOWN, withLayers } from '../../testUtils/layerFields'
 import { addedColorId, projectPalette } from '../../domain/palette'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
@@ -595,7 +595,7 @@ describe('ProjectSurface', () => {
     const bands = () => context.named('rect').map((call) => call.args)
     /** A tall Frame, 20 × 30 at the origin and upright (peyote comes turned), the weaver on `pass`: one Project, as Row
      * progress steps it. */
-    const upright = (technique: Technique) => withCanvas(projectOf(20, 30, {}, technique), { orientation: 0 })
+    const upright = (technique: Technique) => withLayers(projectOf(20, 30, {}, technique), { orientation: 0, rowProgress: ROWS_DOWN })
     const tall = { loom: upright('loom'), peyote: upright('peyote'), brick: upright('brick') }
     const weaving = (pass: number, technique: 'loom' | 'peyote' | 'brick' = 'loom') => moveToRow(tall[technique], pass)
 

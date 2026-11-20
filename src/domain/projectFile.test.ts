@@ -208,10 +208,13 @@ describe('single-Project roundtrip', () => {
     expect(canvasOf(restored).technique).toBe('peyote')
     expect(canvasOf(restored).beadId).toBe(cubeBead.id)
     expect(frameGrid(restored!)[2]![3]!.color).toBe('#e63746')
+    // A new peyote Frame's rows run left to right as seen, on its Canvas turned a quarter: up its own rows, so their own pointer.
     expect(rowProgressOf(restored)).toEqual({
       direction: 'rows',
-      currentRow: 4,
+      reversed: true,
+      currentRow: 0,
       currentColumn: 0,
+      currentRowBack: 4,
     })
   })
 
@@ -223,7 +226,7 @@ describe('single-Project roundtrip', () => {
     file.projects[0].layers[1].rowProgress.enabled = false
     file.projects[0].layers[1].rowProgress.decided = true
     const [restored] = parseProjectsFile(JSON.stringify(file)).projects
-    expect(rowProgressOf(restored)).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
+    expect(rowProgressOf(restored)).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0, currentRowBack: 4 })
   })
 
   it('writes version 14 with the layer list, the Background list it is in (ticket 1000), each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
