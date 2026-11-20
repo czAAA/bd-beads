@@ -6,7 +6,7 @@ description: "Use when a branch or its PR conflicts with main, or a git merge/re
 1. **Start from a safe state.** Work in the branch's worktree (`git worktree list`; a ticket's is `../bd-beads-worktrees/bd-beads-<ticket>/`). On `main`, stop: there is nothing to resolve. If a merge/rebase is already in progress, skip to step 2. Otherwise check that the work is committed and pushed: `git status` is clean and `git log @{u}..HEAD` is empty (no upstream: stop and say so). If not, stop and tell the user what is uncommitted or unpushed. Then `git fetch origin main` and `git merge origin/main` into the current branch, so the conflicts land on this branch's PR (`gh pr view`). Merge, don't rebase: no force-push. Exception: if the branch was cut from another branch that has since been squash-merged, `git rebase --onto origin/main <that branch's last commit>` instead (ask before the force-push).
 
 2. **See the conflicts.** List the conflicting files and read the history on both sides. A hunk `git rerere` resolved from an earlier merge is already staged; check it like the rest.
-   **Fast path:** if only `.md` files conflict and every hunk is lines both sides added at the same spot (a list or an index), keep both, newest first, and skip step 3 and step 5's tests (run `npm run check` only).
+   **Fast path:** if only `.md` files conflict and every hunk is lines both sides added at the same spot (a list or an index), keep both, newest first, and skip step 3 and step 5's tests (run the check only: `CLAUDE.md`, Context hygiene).
 
 3. **Find the primary sources** for each conflict: why each change was made and its original intent. Read the commit messages, the PRs, the tickets (`.scratch/`, and `.scratch/.archive/` by `ls`). Note whether this branch's goal is to **refactor, replace, remove or rework** the code in conflict.
 
@@ -16,6 +16,6 @@ description: "Use when a branch or its PR conflicts with main, or a git merge/re
    - Don't invent new behaviour. Always resolve; never `--abort`.
    - Keep a list of every hunk where one side was dropped or reshaped, with the reason.
 
-5. **Verify before touching the PR.** Run `npm run check` and `npm run test:related -- <files changed by the merge, plus the conflicted files>`. Fix anything the merge broke, at the merge, not by weakening tests. If a failure can't be fixed without losing functionality, stop and report; don't push.
+5. **Verify before touching the PR.** Run the check and the related tests (`CLAUDE.md`, Context hygiene) for the files changed by the merge, plus the conflicted files. Fix anything the merge broke, at the merge, not by weakening tests. If a failure can't be fixed without losing functionality, stop and report; don't push.
 
 6. **Finish and update the PR.** Stage everything, commit the merge (or continue the rebase to the end), and push only when step 5 is green. If a rebase was in progress, ask before force-pushing, and use `--force-with-lease`. Report the dropped-or-reshaped list from step 4.

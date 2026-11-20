@@ -29,6 +29,9 @@ const KINDS: readonly { kind: string; open: (page: Page) => Promise<void> }[] = 
   },
 ]
 
+/** What the Also sent block shows of the build and the machine, as the screenshots have it. */
+const MACHINE = { appVersion: '1.0.0 · 0000000', browser: 'Chromium 100', os: 'Linux', viewport: '1400 × 1300' }
+
 const SCREENS = [
   { name: 'phone', viewport: { width: 390, height: 844 } },
   { name: 'wide', viewport: { width: 1400, height: 1300 } },
@@ -47,9 +50,13 @@ for (const { kind, open } of KINDS) {
       await page.getByTestId('feedback-also-sent-toggle').click()
       await page.mouse.move(5, 5)
       await settle(page)
-      // The Also sent block names the app's version, this browser and the window: those values are masked, not their rows.
-      const machine = ['appVersion', 'browser', 'os', 'viewport'].map((key) => `[data-testid="feedback-also-sent"] [data-key="${key}"] dd`)
-      await expect(sheet).toHaveScreenshot(`feedback-${kind}-${screen.name}.png`, { maxDiffPixelRatio: 0.01, mask: [page.locator(machine.join(', '))] })
+      // The Also sent block names the Build's Version, this browser and the window. Each is given a fixed text of its
+      // own kind, not a mask: a mask is as wide as the value under it, so a Version one character longer moved more of
+      // the phone's pixels than the check lets differ, on every branch at once (ticket 1143).
+      await page.getByTestId('feedback-also-sent').evaluate((block, fixed) => {
+        for (const [key, text] of Object.entries(fixed)) block.querySelector(`[data-key="${key}"] dd`)!.textContent = text
+      }, MACHINE)
+      await expect(sheet).toHaveScreenshot(`feedback-${kind}-${screen.name}.png`, { maxDiffPixelRatio: 0.01 })
       await context.close()
     })
   }

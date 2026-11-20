@@ -47,10 +47,29 @@ export async function startHost(upstream: string): Promise<Host> {
   await new Promise<void>((resolve) => signIn.listen(0, '127.0.0.1', resolve))
   const signInUrl = `http://localhost:${(signIn.address() as AddressInfo).port}/`
 
+  // The requests still waiting in a delay, each with what ends its wait: closing the host drops them at once, where
+  // waiting them out held a check's teardown for the rest of a 20 s delay (ticket 1143).
+  const waiting = new Set<() => void>()
+  let closed = false
+  const delayed = (ms: number) =>
+    new Promise<void>((resolve) => {
+      const wake = () => {
+        clearTimeout(timer)
+        waiting.delete(wake)
+        resolve()
+      }
+      const timer = setTimeout(wake, ms)
+      waiting.add(wake)
+    })
+
   const server = createServer((request, response) => {
     void (async () => {
       const path = request.url ?? '/'
-      if (host.delay?.pattern.test(path)) await new Promise((resolve) => setTimeout(resolve, host.delay!.ms))
+      if (host.delay?.pattern.test(path)) await delayed(host.delay.ms)
+      if (closed) {
+        response.destroy()
+        return
+      }
       if (host.accessExpired) {
         response.writeHead(302, { location: signInUrl }).end()
         return
@@ -79,8 +98,13 @@ export async function startHost(upstream: string): Promise<Host> {
   host.url = `http://localhost:${port}${basePath}`
   host.close = () =>
     new Promise((resolve) => {
+      closed = true
+      for (const wake of [...waiting]) wake()
       signIn.close()
       server.close(() => resolve())
+      // A browser keeps its connections open between requests; closing waits for none of them.
+      signIn.closeAllConnections()
+      server.closeAllConnections()
     })
   return host
 }

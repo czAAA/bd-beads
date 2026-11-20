@@ -18,11 +18,13 @@ const move: ViewMove = { back: { x: 0, y: 0 }, to: { x: -500, y: 0 }, zoom: 1, a
 function setup(project: Project = framed, areaZoom = 1) {
   const current = ref(project)
   const open = ref(true)
+  /** The drawing area's size as the view knows it: the area's own, in its own px. */
+  const viewSize = ref({ width: area.width / areaZoom, height: area.height / areaZoom })
   const bringIntoView = vi.fn<FrameBesidePanelDeps['bringIntoView']>(() => move)
   const putBack = vi.fn()
-  const deps: FrameBesidePanelDeps = { currentProject: () => current.value, bringIntoView, putBack, panelOpen: () => open.value, area: () => area, areaZoom: () => areaZoom }
+  const deps: FrameBesidePanelDeps = { currentProject: () => current.value, bringIntoView, putBack, panelOpen: () => open.value, area: () => area, areaZoom: () => areaZoom, viewSize: () => viewSize.value }
   const { panelPlaced } = effectScope().run(() => useFrameBesidePanel(deps))!
-  return { current, open, bringIntoView, putBack, panelPlaced }
+  return { current, open, viewSize, bringIntoView, putBack, panelPlaced }
 }
 
 describe('useFrameBesidePanel (ticket 0971)', () => {
@@ -65,6 +67,25 @@ describe('useFrameBesidePanel (ticket 0971)', () => {
     open.value = true
     open.value = false
     expect(putBack).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for the view to know the drawing area\'s size: placed while the view holds an older one (Convert image just closed), it moves once the size is the area\'s (ticket 1143)', () => {
+    const { viewSize, bringIntoView, panelPlaced } = setup()
+    viewSize.value = { width: 56, height: area.height }
+    panelPlaced(panel)
+    expect(bringIntoView).not.toHaveBeenCalled()
+    viewSize.value = { width: area.width, height: area.height }
+    expect(bringIntoView).toHaveBeenCalledTimes(1)
+  })
+
+  it('moves nothing for a panel closed before the view knew the size', () => {
+    const { open, viewSize, bringIntoView, putBack, panelPlaced } = setup()
+    viewSize.value = { width: 56, height: area.height }
+    panelPlaced(panel)
+    open.value = false
+    viewSize.value = { width: area.width, height: area.height }
+    expect(bringIntoView).not.toHaveBeenCalled()
+    expect(putBack).not.toHaveBeenCalled()
   })
 
   it('moves nothing where the panel leaves no room beside it', () => {
