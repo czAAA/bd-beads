@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "Keyboard shortcuts opens in Menu, each key right beside its name, with the gestures and handle keys it never listed",
+    "ru": "Горячие клавиши открываются в меню, каждая клавиша рядом со своим названием, и в списке есть жесты и клавиши маркеров, которых раньше не было",
+    "uk": "Гарячі клавіші відкриваються в меню, кожна клавіша поруч зі своєю назвою, і в списку є жести та клавіші маркерів, яких раніше не було",
+    "be": "Гарачыя клавішы адкрываюцца ў меню, кожная клавіша побач са сваёй назвай, і ў спісе ёсць жэсты і клавішы маркераў, якіх раней не было",
+    "zh": "键盘快捷键在菜单中打开，每个按键紧挨着它的名称，并列出了以前没有的手势和控点按键",
+    "es": "Los atajos de teclado se abren en el menú, cada tecla junto a su nombre, con los gestos y las teclas de los tiradores que antes no aparecían",
+    "pl": "Skróty klawiszowe otwierają się w menu, każdy klawisz tuż obok swojej nazwy, z gestami i klawiszami uchwytów, których wcześniej nie było"
+  }
+}

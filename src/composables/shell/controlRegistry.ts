@@ -1,4 +1,4 @@
-import { MOD_KEY, type Chord } from '../../domain/chord'
+import { ALT_KEY, ARROWS, MOD_KEY, type Chord } from '../../domain/chord'
 import type { IconName } from '../../components/ui/icons'
 import { CROP_HANDLES } from '../../domain/convertSize'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
@@ -28,7 +28,7 @@ export interface ControlDeps {
   onPickColorKey: (key: number) => void
   /** A menu or popover layer is open (useOverlayLayer). */
   hasOpenLayer: () => boolean
-  /** A confirmation modal or the shortcuts help overlay is open. */
+  /** A confirmation modal or a sheet is open. */
   anyDialogOpen: () => boolean
   /** Ends Pick color from canvas; true if it was on. */
   cancelColorPick: () => boolean
@@ -82,7 +82,9 @@ export interface ControlDeps {
   onMoveRow: (delta: number) => void
   /** Asks, then takes Row progress back to the first row (ticket 455). */
   onResetProgress: () => void
-  openShortcutsHelp: () => void
+  /** Whether Menu shows Keyboard shortcuts, and `?`: opens Menu on them, or closes it from there (ticket 1159). */
+  shortcutsHelpOpen: () => boolean
+  toggleShortcutsHelp: () => void
   /** Ctrl/⌘ + plus, minus and 0: Canvas zoom in, out and Fit (ticket 316). */
   onZoomIn: () => void
   onZoomOut: () => void
@@ -92,11 +94,17 @@ export interface ControlDeps {
   onSaveProjectFileAs: () => void
 }
 
-/** Every group of the Keyboard shortcuts dialog. */
-export type ControlGroup = 'tools' | 'canvas' | 'colors' | 'edit' | 'rowProgress'
+/** Every group of Keyboard shortcuts; `handle` is the keys on a focused handle (ShortcutsHelp card). */
+export type ControlGroup = 'tools' | 'colors' | 'edit' | 'canvas' | 'handle' | 'rowProgress'
 
-/** The groups the dialog lists, in order. */
-export const CONTROL_GROUPS: readonly ControlGroup[] = ['tools', 'canvas', 'colors', 'edit', 'rowProgress']
+/** The groups Keyboard shortcuts lists, in order (ShortcutsHelp card). */
+export const CONTROL_GROUPS: readonly ControlGroup[] = ['tools', 'colors', 'edit', 'canvas', 'handle', 'rowProgress']
+
+/** One row of Keyboard shortcuts: a name and one chord, its parts as `keyParts` takes them (ShortcutsHelp card). */
+export interface HelpRow {
+  name: (t: Translations) => string
+  keys: readonly string[]
+}
 
 /** Whether the action's key runs while a menu or dialog is open: not at all, regardless, or claimed from the browser
  * but not run. */
@@ -118,9 +126,9 @@ export type ControlAction = Disableable & {
   chords: readonly Chord[]
   /** A key the action shows without owning it (Done, Cancel and Clear selection show Back out's `Esc`). */
   shownKey?: string
-  /** The Keyboard shortcuts dialog's wording when it differs from `name` and `chords` (one row for the whole
-   * Palette; the two Pastes named apart, ticket 0993). */
-  help?: { name: (t: Translations) => string; keys?: readonly (readonly string[])[] }
+  /** Keyboard shortcuts' rows when not one row of `name` and the first chord: the Palette's three, the two Pastes
+   * named apart (ticket 0993), none for `?` itself (ticket 1159). A row with no `keys` shows the first chord. */
+  help?: readonly (Omit<HelpRow, 'keys'> & { keys?: HelpRow['keys'] })[]
   /** Runs from a key press: the key is claimed from the browser first when `preventDefault`. Absent where there is
    * no key: the control's own surface runs it. */
   run?: (deps: ControlDeps, event: KeyboardEvent) => void
@@ -222,7 +230,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.pasteTool,
     touchBody: (t) => t.tooltips.pasteToolTouch,
     group: 'tools',
-    help: { name: (t) => t.shortcutsHelp.pasteTool },
+    help: [{ name: (t) => t.shortcutsHelp.pasteTool }],
     chords: [tileChord('paste')],
     run: (deps) => deps.onPasteMode(),
   },
@@ -236,17 +244,6 @@ export const CONTROLS: readonly ControlAction[] = [
     preventDefault: true,
     needsProject: true,
     run: (deps) => deps.onSelectAll(),
-  },
-  {
-    id: 'empty-selection',
-    icon: 'delete',
-    name: (t) => t.contextBar.clearButton,
-    group: 'tools',
-    // Backspace too: it is the key a Mac keyboard labels delete.
-    chords: [{ key: ['Delete', 'Backspace'], label: 'Del' }],
-    run: (deps) => {
-      if (deps.hasSelection()) deps.onClearSelection()
-    },
   },
   {
     id: 'back-out',
@@ -356,14 +353,25 @@ export const CONTROLS: readonly ControlAction[] = [
     name: (t) => t.shortcutsHelp.title,
     group: 'canvas',
     chords: [{ key: '?', shift: 'any', label: '?' }],
-    run: (deps) => deps.openShortcutsHelp(),
+    // Its key is the Subpanel header's chip and the Help row's value, not a row (ShortcutsHelp card).
+    help: [],
+    // Runs over its own Menu to close it; over anything else it waits.
+    modals: 'ignore',
+    run: (deps) => {
+      if (deps.shortcutsHelpOpen() || (!deps.hasOpenLayer() && !deps.anyDialogOpen())) deps.toggleShortcutsHelp()
+    },
   },
   {
     id: 'palette-color',
     name: (t) => t.palette.colorLabel,
     group: 'colors',
     chords: PALETTE_SHORTCUTS.map(({ code, keyLabel }) => ({ code, shift: true, label: keyLabel })),
-    help: { name: (t) => t.shortcutsHelp.paletteColors, keys: [['Shift', '1…9'], ['Shift', '0']] },
+    // Shift+1…3 the recent colors, then the Palette's first seven slots (tickets 529, 0865).
+    help: [
+      { name: (t) => t.shortcutsHelp.recentColor, keys: ['Shift', '1…3'] },
+      { name: (t) => t.shortcutsHelp.paletteColors, keys: ['Shift', '4…9'] },
+      { name: (t) => t.shortcutsHelp.paletteColorSeven, keys: ['Shift', '0'] },
+    ],
     run: (deps, event) => deps.onPickColorKey(PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code)),
   },
   {
@@ -385,7 +393,7 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps) => deps.canRedo(),
     disabledBody: (t) => t.tooltips.nothingToRedo,
     group: 'edit',
-    // Ctrl+Y is the older Windows convention.
+    // Ctrl+Y is the older Windows convention; Keyboard shortcuts lists the first chord only (ShortcutsHelp card).
     chords: [
       { key: 'z', mod: true, shift: true, label: 'Z' },
       { key: 'y', ctrl: true, label: 'Y' },
@@ -406,17 +414,6 @@ export const CONTROLS: readonly ControlAction[] = [
     run: (deps) => deps.onCopy(),
   },
   {
-    id: 'paste',
-    icon: 'paste',
-    name: (t) => t.tools.pasteLabel,
-    enabled: (deps) => deps.hasClipboard(),
-    disabledBody: (t) => t.tooltips.pasteDisabled,
-    group: 'edit',
-    help: { name: (t) => t.shortcutsHelp.pasteClipboard },
-    chords: [{ key: 'v', mod: true, label: 'V' }],
-    run: (deps, event) => deps.pasteAtPointer(event),
-  },
-  {
     id: 'cut',
     icon: 'cut',
     name: (t) => t.tools.cutButton,
@@ -426,6 +423,52 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [{ key: 'x', mod: true, label: 'X' }],
     preventDefault: true,
     run: (deps) => deps.onCut(),
+  },
+  {
+    id: 'paste',
+    icon: 'paste',
+    name: (t) => t.tools.pasteLabel,
+    enabled: (deps) => deps.hasClipboard(),
+    disabledBody: (t) => t.tooltips.pasteDisabled,
+    group: 'edit',
+    help: [{ name: (t) => t.shortcutsHelp.pasteClipboard }],
+    chords: [{ key: 'v', mod: true, label: 'V' }],
+    run: (deps, event) => deps.pasteAtPointer(event),
+  },
+  {
+    id: 'empty-selection',
+    icon: 'delete',
+    name: (t) => t.contextBar.clearButton,
+    group: 'edit',
+    // Backspace too: it is the key a Mac keyboard labels delete.
+    chords: [{ key: ['Delete', 'Backspace'], label: 'Del' }],
+    run: (deps) => {
+      if (deps.hasSelection()) deps.onClearSelection()
+    },
+  },
+  {
+    id: 'remove-line',
+    icon: 'remove-line',
+    name: (t) => t.tools.removeLineButton,
+    body: (t) => t.tooltips.removeLine,
+    enabled: (deps) => deps.canRemoveSelectedLine(),
+    disabledBody: (t) => t.tooltips.removeLineDisabled,
+    group: 'edit',
+    chords: [{ key: ['Delete', 'Backspace'], shift: true, label: 'Del' }],
+    run: (deps) => {
+      if (deps.canRemoveSelectedLine()) deps.onRemoveSelectedLine()
+    },
+  },
+  {
+    id: 'rotate',
+    icon: 'rotate',
+    name: (t) => t.palette.rotateButton,
+    body: (t) => t.tooltips.rotate,
+    enabled: (deps) => deps.hasSelection() && !deps.selectionInFinishedRows(),
+    disabledBody: (t, deps) => (deps.hasSelection() ? t.tooltips.rotateInFinishedRows : t.tooltips.copyDisabled),
+    group: 'edit',
+    chords: [{ key: 'r', shift: true, label: 'R' }],
+    run: (deps) => deps.onRotate(),
   },
   // Save and Save as (ADR 0090, ticket 0796): never the browser's Save page; they run from a field and under a panel or
   // dialog too (the Project panel holds the Save row), and do nothing with no Project open.
@@ -467,17 +510,6 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !frameLocked(deps),
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrame,
   }),
-  {
-    id: 'rotate',
-    icon: 'rotate',
-    name: (t) => t.palette.rotateButton,
-    body: (t) => t.tooltips.rotate,
-    enabled: (deps) => deps.hasSelection() && !deps.selectionInFinishedRows(),
-    disabledBody: (t, deps) => (deps.hasSelection() ? t.tooltips.rotateInFinishedRows : t.tooltips.copyDisabled),
-    group: 'edit',
-    chords: [{ key: 'r', shift: true, label: 'R' }],
-    run: (deps) => deps.onRotate(),
-  },
   // The Selection bar's Mirror (ADR 0082): the Selection's rectangle becomes the Mirror's Area; no key.
   unkeyed('mirror-selection', (t) => t.mirror.title, 'edit', {
     icon: 'mirror',
@@ -485,19 +517,6 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !deps.selectionOnFrame(),
     disabledBody: (t: Translations) => t.mirror.frameMirrorsWhole,
   }),
-  {
-    id: 'remove-line',
-    icon: 'remove-line',
-    name: (t) => t.tools.removeLineButton,
-    body: (t) => t.tooltips.removeLine,
-    enabled: (deps) => deps.canRemoveSelectedLine(),
-    disabledBody: (t) => t.tooltips.removeLineDisabled,
-    group: 'edit',
-    chords: [{ key: ['Delete', 'Backspace'], shift: true, label: 'Del' }],
-    run: (deps) => {
-      if (deps.canRemoveSelectedLine()) deps.onRemoveSelectedLine()
-    },
-  },
   {
     id: 'name-piece',
     icon: 'name-piece',
@@ -688,13 +707,25 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('go-to-row', (t) => t.rowProgress.goToRow, 'rowProgress', { body: (t) => t.rowProgress.goToRowBody }),
 ]
 
-/** The gestures with no key the dialog still lists beside the keys (ticket 95): not actions, so not in CONTROLS. */
-export const POINTER_HELP: readonly { group: ControlGroup; name: (t: Translations) => string; keys: readonly (readonly string[])[] }[] = [
-  { group: 'canvas', name: (t) => t.shortcutsHelp.panCanvas, keys: [['Space', 'drag']] },
-  { group: 'canvas', name: (t) => t.shortcutsHelp.zoomCanvas, keys: [[MOD_KEY, 'wheel']] },
-  // The Radial toolbox (tickets 1064, 1065; ShortcutsHelp card): the ring of tools and colours a right click on the
-  // Canvas opens, or a hold with a finger or the Pencil.
-  { group: 'canvas', name: (t) => t.shortcutsHelp.toolsAtPointer, keys: [['right-click'], ['hold']] },
+/** The rows Keyboard shortcuts lists that are no action here (ticket 95; ShortcutsHelp card): the Canvas's gestures,
+ * and the keys a focused handle answers itself. Each follows its group's actions. */
+export const GESTURE_HELP: readonly (HelpRow & { group: ControlGroup })[] = [
+  { group: 'canvas', name: (t) => t.shortcutsHelp.panCanvas, keys: ['Space', 'drag'] },
+  { group: 'canvas', name: (t) => t.shortcutsHelp.panAnyTool, keys: ['middle-drag'] },
+  { group: 'canvas', name: (t) => t.shortcutsHelp.scrollCanvas, keys: ['wheel'] },
+  { group: 'canvas', name: (t) => t.shortcutsHelp.scrollSideways, keys: ['Shift', 'wheel'] },
+  { group: 'canvas', name: (t) => t.shortcutsHelp.zoomCanvas, keys: [MOD_KEY, 'wheel'] },
+  { group: 'canvas', name: (t) => t.shortcutsHelp.pinchZoom, keys: ['pinch'] },
+  // The Radial toolbox (tickets 1064, 1065): the ring of tools and colours a right click on the Canvas opens, or a hold
+  // with a finger or the Pencil.
+  { group: 'canvas', name: (t) => t.shortcutsHelp.toolsAtPointer, keys: ['right-click'] },
+  { group: 'canvas', name: (t) => t.shortcutsHelp.toolsAtTouch, keys: ['hold'] },
+  { group: 'handle', name: (t) => t.shortcutsHelp.moveArea, keys: [ARROWS] },
+  { group: 'handle', name: (t) => t.shortcutsHelp.moveFrame, keys: [ARROWS] },
+  { group: 'handle', name: (t) => t.shortcutsHelp.resizeFrame, keys: ['Shift', ARROWS] },
+  { group: 'handle', name: (t) => t.shortcutsHelp.moveReference, keys: [ARROWS] },
+  { group: 'handle', name: (t) => t.shortcutsHelp.tenAtATime, keys: ['Shift', ARROWS] },
+  { group: 'handle', name: (t) => t.shortcutsHelp.movePaletteColor, keys: [ALT_KEY, '←→'] },
 ]
 
 /** Whether a key press is this chord. */

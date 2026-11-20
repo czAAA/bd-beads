@@ -231,6 +231,8 @@
   --radial-radius: 84px; /* The Radial toolbox: from its centre to the centres of its tiles. With its 48px band (pill-thickness) the ring is 216px across round a 120px hole. */
   --panel-width: 520px; /* The Menu, Project and Frame panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
   --panel-width-small: 360px; /* The Export panel dropdown from the Canvas strip's Export button (ExportPanel card); held 8px from the screen's edge on a narrow one. */
+  --panel-width-wide: 736px; /* Menu's Keyboard shortcuts Subpanel (ShortcutsHelp card): pushing it widens the dropdown from panel-width, Back narrows it; held 8px from the screen's edge on a narrow one. */
+  --shortcut-keys-width: 144px; /* The keys' track of a Keyboard shortcuts row, right after the name (ShortcutsHelp card): holds the widest chord, Ctrl + Shift + S. */
   --item-height: 34px; /* A Menu or Project panel item, setting row or pencil row; 44px (touch-target) on a coarse pointer. */
   --panel-row: 28px; /* A row of the Menu, Project or Frame panel (ticket 0553): item, section header, setting, pencil or beads-needed row. Replaces item-height there. */
   --panel-row-touch: 36px; /* panel-row on a coarse pointer: a deliberate exception to touch-target, since the rows touch and each row is its own hit area (responsive.md). */
@@ -252,7 +254,7 @@
   --z-sheet: 50; /* ToolSheets; the modal Pattern sheet and its scrim. */
   --z-popover: 60; /* Menus, OverflowMenu. */
   --z-toast: 70; /* Toast messages: above sheets so a result is never hidden, below modals. */
-  --z-modal: 80; /* Modals and their scrim (scrim one below): confirmations, Keyboard shortcuts, New Pattern on phone. */
+  --z-modal: 80; /* Modals and their scrim (scrim one below): confirmations, the Feedback sheet, New Pattern on phone. */
   --z-tooltip: 90; /* Tooltips: always on top, never interactive. */
   --print-page-width: 210mm; /* A4 portrait. */
   --print-page-height: 297mm; /* A4 portrait. */

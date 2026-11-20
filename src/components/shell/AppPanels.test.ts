@@ -95,6 +95,24 @@ describe('Menu', () => {
     expect(mounted.wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
   })
 
+  it('pushes Keyboard shortcuts from Help, wider than Menu with `?` in its header, and narrows again for the library (ticket 1159)', async () => {
+    const mounted = mountPanels()
+    const width = () => mounted.wrapper.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style.width
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-item-shortcuts')
+    expect(text(mounted, 'panel-sub-title')).toBe(en.shortcutsHelp.title)
+    expect(text(mounted, 'panel-sub-key')).toBe('?')
+    expect(mounted.wrapper.find('[data-testid="shortcuts-help"]').exists()).toBe(true)
+    expect(width()).toBe('var(--panel-width-wide)')
+
+    await click(mounted, 'panel-back')
+    expect(width()).toBe('')
+    await click(mounted, 'menu-saved-projects')
+    expect(text(mounted, 'panel-sub-title')).toBe(en.projects.heading)
+    expect(mounted.wrapper.find('[data-testid="shortcuts-help"]').exists()).toBe(false)
+    expect(width()).toBe('')
+  })
+
   it('opens on its root list over the converter, even with an empty library, so leaving asks first (ticket 0861)', async () => {
     saveProjects([])
     const mounted = mountPanels()

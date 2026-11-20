@@ -6,7 +6,6 @@ import ConfirmModal from '../ui/ConfirmModal.vue'
 import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import DeleteProjectModal from '../project/DeleteProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
-import ShortcutsHelp from './ShortcutsHelp.vue'
 import FeedbackSheet from './FeedbackSheet.vue'
 import { projectNameOf } from '../../domain/layerRecord'
 import { inMillions } from '../../domain/formatNumber'
@@ -75,7 +74,6 @@ const {
   naming,
   onSavePieceName,
   onCancelPieceName,
-  onCloseShortcutsHelp,
   feedbackRequest,
   onCloseFeedback,
   sendReport,
@@ -275,8 +273,6 @@ const importMessage = computed(() => {
     @confirm="onConfirmLargeOpen"
     @cancel="onCancelLargeOpen"
   />
-
-  <ShortcutsHelp v-if="open === 'shortcuts'" @close="onCloseShortcutsHelp" />
 
   <!-- A Report to the maintainer (ADR 0081, ticket 0700): from the Menu or the Bead colors list, which have closed. -->
   <FeedbackSheet

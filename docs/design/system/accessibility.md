@@ -64,7 +64,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard (every c
 | `z-sheet` | 50 | ToolSheets; the modal Pattern sheet and its scrim. |
 | `z-popover` | 60 | Menus, the HeaderMenu. |
 | `z-toast` | 70 | Toast messages: above sheets so a result is never hidden, below modals. |
-| `z-modal` | 80 | Modals and their scrim (scrim one below): confirmations, Keyboard shortcuts, New Pattern on phone. |
+| `z-modal` | 80 | Modals and their scrim (scrim one below): confirmations, the Feedback sheet, New Pattern on phone. |
 | `z-tooltip` | 90 | Tooltips: always on top, never interactive. |
 
 - A scrim sits one below its layer (39, 49, 79). One modal at a time. Nothing inside the canvas box goes above `z-canvas-overlay`; the Save-failed notice row is in the page flow, not a layer.

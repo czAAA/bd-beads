@@ -107,10 +107,10 @@ describe("What's inside's demo editor (ticket 0797)", () => {
     const { wrapper, wired } = demo()
     const outside = document.body.appendChild(document.createElement('button'))
     outside.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }))
-    expect(wired.dialogRegistry.open.value).toBeUndefined()
+    expect(wired.panels.openPanel.value).toBeNull()
 
     wrapper.get('[data-testid="strip-menu"]').element.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }))
-    expect(wired.dialogRegistry.open.value).toBe('shortcuts')
+    expect([wired.panels.openPanel.value, wired.panels.shortcutsOpen.value]).toEqual(['menu', true])
   })
 
   /** The demo editor with the ghost's hand, applying at once. */
