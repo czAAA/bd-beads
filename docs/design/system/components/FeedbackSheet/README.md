@@ -7,7 +7,7 @@ The one modal through which a beader sends a **Report** to the maintainer, with 
 | Kind | Opened from | Title | Fields, in order |
 |---|---|---|---|
 | general | Menu, Help: **Send feedback** (`message` icon, after Keyboard shortcuts; on the Homepage too) | Send feedback | Message (required) |
-| translation | Menu, Preferences: the link **Report a translation problem** under the Language row | Report a translation problem | Language (the app's language, changeable), Text as shown (required), Should say, Note |
+| translation | Menu, Help: the link **Report a translation problem** right under Send feedback | Report a translation problem | Language (the app's language, changeable), Text as shown (required), Should say, Note |
 | bead-color | The Bead colors list's foot row **Wrong or missing color?** (BeadColors card) | Report a bead color | Problem (Wrong color \| Missing color), Brand and catalog (read-only), Code, Looks like, Note |
 
 Every kind then has **Email** (optional), then **Also sent**. Signed in, Email starts as the account's email, an ordinary value that can be changed or cleared, and its hint reads "From your account. Only to ask you about this report." while the field still holds that address (tickets 1087, 0078).
