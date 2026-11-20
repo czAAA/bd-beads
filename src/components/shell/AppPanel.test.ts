@@ -5,6 +5,7 @@ import AppPanel from './AppPanel.vue'
 import PanelItem from './PanelItem.vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
+import { resetKeyHintsDevice, useKeyHints } from '../../composables/ui/useKeyHints'
 
 /** The shell's subpanel (spec 0478): Back, title swap, reset, Escape levels, focus. */
 
@@ -65,6 +66,18 @@ describe('AppSubpanel', () => {
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(panel().style.width).toBe('')
+  })
+
+  it('shows the subpanel\'s key only where key hints show, as the row that pushes it does (ticket 1159)', async () => {
+    useKeyHints().setShown(false)
+    try {
+      const wrapper = mountShell({ subKey: '?' })
+      await wrapper.get('[data-testid="root-row"]').trigger('click')
+      expect(wrapper.find('[data-testid="panel-sub-key"]').exists()).toBe(false)
+    } finally {
+      localStorage.removeItem('openbeads:key-hints')
+      resetKeyHintsDevice()
+    }
   })
 
   it('opens a subpanel on the panel, not its first field, on a touch device, so the keyboard stays down (ticket 0688)', async () => {

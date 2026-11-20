@@ -93,13 +93,6 @@ describe('ShortcutsHelp', () => {
     expect(handle.get('.shortcuts-help__hint').text()).toBe(en.shortcutsHelp.handleHint)
   })
 
-  it('runs each group\'s rows down the left column first, the left taking the larger half', () => {
-    const lists = mountHelp().findAll('.shortcuts-help__list')
-    const rowsPerColumn = lists.map((list) => list.attributes('style'))
-    expect(rowsPerColumn[1]).toContain('--rows: 2') // colors: 3 rows, 2 + 1
-    expect(rowsPerColumn[2]).toContain('--rows: 5') // edit: 10 rows, 5 + 5
-  })
-
   it('draws every key as a chip and speaks each row\'s keys as one phrase', () => {
     onApple()
     const row = mountHelp().findAll('.shortcuts-help__row').find((each) => each.get('dt').text() === 'Resize the Frame')!

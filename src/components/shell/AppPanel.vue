@@ -34,7 +34,7 @@ const props = defineProps<{
   subTitle?: string
   /** A figure at the right of the subpanel's header (the library's count). */
   subMeta?: string
-  /** The subpanel's own key, as a Kbd chip where the meta sits (Keyboard shortcuts' `?`, ticket 1159). */
+  /** The subpanel's own key, as a Kbd chip where the meta sits, where key hints show (Keyboard shortcuts' `?`, 1159). */
   subKey?: string
   /** The dropdown's width while the subpanel shows, when wider than the root's (Keyboard shortcuts, ShortcutsHelp card). */
   subWidth?: string
@@ -268,7 +268,7 @@ onBeforeUnmount(() => {
       <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" />
       <h2 :id="titleId" class="app-panel__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
       <span v-if="currentMeta" class="app-panel__meta" data-testid="panel-sub-meta">{{ currentMeta }}</span>
-      <KeyChip v-else-if="subKey" always class="kbd-chip app-panel__key" data-testid="panel-sub-key">{{ subKey }}</KeyChip>
+      <KeyChip v-else-if="subKey" class="kbd-chip app-panel__key" data-testid="panel-sub-key">{{ subKey }}</KeyChip>
     </div>
     <h2 v-else :id="titleId" class="app-panel__title">{{ title }}</h2>
     <div class="app-panel__scroll">

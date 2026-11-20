@@ -529,7 +529,7 @@ const savedProjects = controlAction('saved-projects')
             @feedback="feedback.onOpenFeedback"
           />
           <template #sub="{ depth }">
-            <ShortcutsHelp v-if="shortcutsOpen" />
+            <ShortcutsHelp v-if="depth === 1 && shortcutsOpen" />
             <LibraryUnopened v-else-if="depth === 1 && libraryFailed" list />
             <LoadingState v-else-if="depth === 1 && libraryLoading" compact :text="t.projects.loading" />
             <ProjectsLibrary

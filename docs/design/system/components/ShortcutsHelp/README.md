@@ -12,7 +12,8 @@ earlier centred Modal.
   from the Menu button, over the Canvas, with no scrim.
 - **`?`** opens Menu straight on this Subpanel; Escape then closes the panel (the Subpanel was the opening view), and
   Back shows Menu's list. `?` again, or the lit Menu button, closes it.
-- The header's right holds the `?` key as a Kbd chip, where a Subpanel's meta sits.
+- The header's right holds the `?` key as a Kbd chip, where a Subpanel's meta sits, wherever key hints show (as the
+  Help row's `?` value).
 - Shown only when a keyboard is present, as before. On the Homepage the same Subpanel opens from its Menu (the What's
   inside demo included), not a page Modal.
 

@@ -238,6 +238,11 @@ describe('HomePage', () => {
     expect(wrapper.get('[data-testid="panel-sub-key"]').text()).toBe('?')
     expect(wrapper.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style.width).toBe('var(--panel-width-wide)')
 
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true) // closed and opened again, Menu is on its list
+
+    await wrapper.get('[data-testid="menu-item-shortcuts"]').trigger('click')
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
     await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')

@@ -274,7 +274,6 @@ const importMessage = computed(() => {
     @cancel="onCancelLargeOpen"
   />
 
-
   <!-- A Report to the maintainer (ADR 0081, ticket 0700): from the Menu or the Bead colors list, which have closed. -->
   <FeedbackSheet
     v-if="open === 'feedback' && feedbackRequest"
