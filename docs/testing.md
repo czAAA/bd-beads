@@ -16,9 +16,13 @@ This page holds the rules every test follows. The reference pages in `docs/testi
 
 ## Running them
 
-- While working, run only the tests related to your change: `npm run test:related -- <changed files>`. It runs `vitest related` with the `agent` reporter and `--silent=passed-only`, so a green run prints a few lines, and it leaves out the `App.*.test.ts` files: the App imports everything, so almost any UI change would pull in all 19 of them (about 4 min of CPU on the Pi). The full unit suite peaks near 2 GB of RAM (summed over its worker processes, the largest about 0.8 GB; measured after tickets 420 and 422), so on a slow machine its one run is CI's, on every pull request, even where a skill says to run it at the end (`CLAUDE.md`, Context hygiene). `npm run test:full` makes that machine-dependent: before a pull request opens it runs the whole suite (`agent` reporter, `--silent=passed-only`) when the machine has at least 8 cores and 8 GB (available on Linux, total on macOS) and prints a skip line otherwise. `BD_FULL_TESTS=1` forces the run, `BD_FULL_TESTS=0` forces the skip. CI stays the gate either way.
-- Add an App file to the command (`npm run test:related -- src/ProgressBar.vue src/App.canvas.test.ts`) only when your change touches the App's wiring: a shell, a keyboard shortcut, a flow that spans components. It is then run on its own, in the same quiet mode.
-- `npm run typecheck` and `npm run lint` are cheap; run them before pushing.
+- **While working**: `npm run test:related -- <changed files>`, the tests related to the files named (`vitest related`). It leaves out the `App.*.test.ts` files: the App imports everything, so almost any UI change would pull in every one of them. Name an App file as well (`npm run test:related -- src/ProgressBar.vue src/App.canvas.test.ts`) only when the change touches the App's wiring: a shell, a keyboard shortcut, a flow that spans components. It then runs on its own.
+- **Before pushing**: `npm run check` (typecheck, lint and knip; it prints only what fails).
+- **Before a pull request opens**: `npm run test:full`, the whole suite once, on a capable machine: at least 8 cores and 8 GB (free on Linux, all of it on macOS). Elsewhere it prints a skip line, and the suite's one run is CI's. `BD_FULL_TESTS=1` forces the run, `BD_FULL_TESTS=0` the skip. Never run `vitest run` unfiltered by hand.
+- Both test commands print little when green (the `agent` reporter with `--silent=passed-only`).
+- Both run the browser component tests too (`*.browser.test.ts`, What's inside's whole tours among them) wherever Chromium is installed (`npx playwright install chromium`). A machine without it (the Pi) skips them; `BD_BROWSER_TESTS=0` skips them anywhere, and `=1` makes a missing Chromium an error.
+- Vitest runs two workers on a machine that is not capable (more exhausted the Pi's memory) and more on one that is (`vite.workers.ts`). `BD_TEST_WORKERS=<count>` sets the count by hand: lower it when several sessions run tests on one machine.
+- CI is the gate either way ([`testing/ci.md`](testing/ci.md)).
 
 ## Where a test goes
 
@@ -77,10 +81,10 @@ A Custom frame's beads are saved by layout position (ADR 0078), so each Frame sh
 
 The visual check (`npm run visual`, [`testing/visual-check.md`](testing/visual-check.md)) compares against the reference screenshots in `e2e/visual/__screenshots__/`. Update them only when the look is meant to change, never to make a failing run pass, and say so in the pull request.
 
-- The Project-grid references (`look`, `overlays`, `interaction` specs, compared by `e2e/support/referenceCheck.ts`): `UPDATE_REFERENCES=1 npx playwright test <spec>`.
-- The `toHaveScreenshot` references (`convertImage`, `canvasColor`, `roundBeads`, `rulers*` specs): `npm run visual:update -- <spec>` (rewrites only the images that differ).
+- The Project-grid references (the specs that compare through `e2e/support/referenceCheck.ts`): `UPDATE_REFERENCES=1 npx playwright test <spec>`.
+- The `toHaveScreenshot` references (every spec that calls it: `grep -l toHaveScreenshot e2e/visual/*.spec.ts`): `npm run visual:update -- <spec>` (rewrites only the images that differ).
 
-A change that adds, removes or moves visible elements (a row in a panel, a control, a label) can change screenshots you didn't touch. Before the pull request, find the specs that open that screen (`grep -l <component or selector> e2e/visual/*.spec.ts`) and run them (`npx playwright test <specs>`) instead of learning it from CI's 6-minute shards. After a CI failure, `bash scripts/ci-failures.sh <pr>` lists the failed jobs and tests.
+A change that adds, removes or moves visible elements (a row in a panel, a control, a label) can change screenshots you didn't touch. Before the pull request, find the specs that open that screen (`grep -l <component or selector> e2e/visual/*.spec.ts`) and run them (`npx playwright test <specs>`) instead of learning it from CI. After a CI failure, `bash scripts/ci-failures.sh <pr>` lists the failed jobs and tests.
 
 `Process from config.webServer was not able to start` means `npm run build` failed (the server builds first, `e2e/support/server.ts`) and Playwright hides why: run `npm run build` by hand to see it. Missing `esbuild`, `miniflare` or `wrangler` means `npm ci` is due.
 

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "fixed",
+  "line": {
+    "en": "The demo in What's inside keeps its piece in the middle when you jump to a later step",
+    "ru": "Демо в «Что внутри» держит изделие по центру, когда вы переходите сразу к более позднему шагу",
+    "uk": "Демо в «Що всередині» тримає виріб по центру, коли ви переходите одразу до пізнішого кроку",
+    "be": "Дэма ў «Што ўнутры» трымае выраб па цэнтры, калі вы пераходзіце адразу да пазнейшага кроку",
+    "zh": "在“功能一览”的演示中直接跳到后面的步骤时，作品仍保持在中间",
+    "es": "La demo de Qué incluye mantiene la pieza en el centro cuando saltas a un paso posterior",
+    "pl": "Demo w „Co jest w środku” trzyma pracę na środku, gdy przeskakujesz do późniejszego kroku"
+  }
+}

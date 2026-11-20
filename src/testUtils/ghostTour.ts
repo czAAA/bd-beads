@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {} from '@vitest/browser-playwright'
 import { cdp, page } from 'vitest/browser'
 import { mountAt } from './browserFit'
+import { runClockFaster } from './fastClock'
 import { fakeFeedback } from './fakeFeedback'
 import { turnToSection } from './homepageSection'
 import { cssZoomOf } from '../composables/ui/cssZoom'
@@ -9,7 +10,7 @@ import HomePage from '../homepage/HomePage.vue'
 
 // Everything the ghost presses or rests on is seen whole (ticket 0820): the tour played with motion, as a visitor
 // watches it, every press and rest checked against what clips its control, what covers it and where the ghost is. A tour
-// takes three minutes and a file's tests run one by one, so each size is a file, `.long.` to start first (vite.sequencer).
+// is three minutes of the page's clock and a file's tests run one by one: each size is a file, `.long.` to start first.
 
 /** The slack of a measure, in px. */
 const SLACK = 1.5
@@ -133,6 +134,11 @@ async function withMotion(on: boolean): Promise<void> {
   await cdp().send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: on ? 'no-preference' : 'reduce' }] })
 }
 
+/** How many times faster the page's clock runs while a tour plays (ticket 1143): at 4 a tour takes about a minute, not
+ * over three, and still passed with the CPU slowed 3×. `VITE_TOUR_SPEED` sets another, to measure one before choosing it.
+ * The test's own waits and limits are real seconds, untouched. */
+const TOUR_SPEED = Number(import.meta.env.VITE_TOUR_SPEED) || 4
+
 /** A screen size the tour plays at, in px. */
 type TourSize = readonly [width: number, height: number]
 
@@ -141,12 +147,18 @@ export const MORE_TOUR_SIZES: readonly TourSize[] = [[1920, 1080], [1180, 820], 
 
 /** Plays the whole tour at each size, every press and rest of the ghost checked; none plays unless `when` holds. */
 export function playWholeTours(sizes: readonly TourSize[], when = true): void {
-  afterEach(() => withMotion(false))
+  let realClock: (() => Promise<void>) | undefined
+  afterEach(async () => {
+    await realClock?.()
+    realClock = undefined
+    await withMotion(false)
+  })
 
   describe.runIf(when)("What's inside: everything the ghost presses is seen whole (ticket 0820)", () => {
     for (const [width, height] of sizes) {
       it(`a whole tour at ${width} × ${height}`, async () => {
         await withMotion(true)
+        realClock = await runClockFaster(TOUR_SPEED)
         const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
         await page.viewport(width, height)
         // Welcome comes first (ticket 0830): the tour plays once the page is turned to What's inside, its demo there.

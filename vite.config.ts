@@ -11,6 +11,7 @@ import { releaseNotesFiles } from './vite.notes.ts'
 import { offlineShell } from './vite.pwa.ts'
 import { LongFilesFirst } from './vite.sequencer.ts'
 import { buildVersion, versionGuard } from './vite.version.ts'
+import { testWorkers, thisMachine } from './vite.workers.ts'
 
 /** What needs a page (ticket 420); every other `src/**\/*.test.ts` runs in Node. */
 const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/homepage/**/*.test.ts', 'src/App*.test.ts', '**/*.dom.test.ts']
@@ -22,6 +23,8 @@ const BROWSER_TESTS = '**/*.browser.test.ts'
 /** The browser tests that need a touch screen (ticket 0962): `*.touch.browser.test.ts`, in a page of their own with
  * Playwright's `hasTouch`, as turning touch emulation off again left the shared page with no pointer at all on CI. */
 const TOUCH_BROWSER_TESTS = '**/*.touch.browser.test.ts'
+/** How long a browser test may take, in ms. */
+const BROWSER_TEST_TIMEOUT_MS = 30_000
 const browserTestsOn = (): boolean => {
   const mode = process.env.BD_BROWSER_TESTS
   if (mode === '0') return false
@@ -80,8 +83,9 @@ export default defineConfig(({ mode }) => ({
     // Generous on purpose: a shared CI runner can be several times slower than a dev machine, and a healthy test
     // finishes in milliseconds either way, so this only ever matters on a bad day.
     testTimeout: 15000,
-    // Two workers: more exhausted a dev machine's memory (8GB, no swap) and got the run killed.
-    maxWorkers: 2,
+    // By the machine (vite.workers.ts): two where more exhausted the memory (8GB, no swap) and got the run killed, more
+    // on a capable one. `BD_TEST_WORKERS` sets the count by hand, as CI does. The browser tests take the same count.
+    maxWorkers: testWorkers(thisMachine(), process.env.BD_TEST_WORKERS),
     // A file that plays for minutes (`*.long.browser.test.ts`) starts first, beside its shard's other files.
     sequence: { sequencer: LongFilesFirst },
     projects: [
@@ -124,6 +128,9 @@ export default defineConfig(({ mode }) => ({
               extends: true as const,
               test: {
                 name: 'browser',
+                // Twice the suite's limit: a CI runner plays three pages on four cores (ci.yml), and a test that
+                // lays a component out at every zoom took 9 to 12 s there (ticket 1143).
+                testTimeout: BROWSER_TEST_TIMEOUT_MS,
                 include: [BROWSER_TESTS],
                 exclude: [...configDefaults.exclude, TOUCH_BROWSER_TESTS],
                 setupFiles: ['./src/browserSetup.ts'],
@@ -136,6 +143,7 @@ export default defineConfig(({ mode }) => ({
               extends: true as const,
               test: {
                 name: 'browser-touch',
+                testTimeout: BROWSER_TEST_TIMEOUT_MS,
                 include: [TOUCH_BROWSER_TESTS],
                 setupFiles: ['./src/browserSetup.ts'],
                 browser: { enabled: true, headless: true, screenshotFailures: false,

@@ -29,7 +29,7 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 - **App page**: what fills the canvas box between the Canvas strip and the Progress bar, in place of the Canvas — the editor, the Homepage or Convert image (ADR 0085, ADR 0086, ticket 0756). A page may register a leave guard that a leaving Menu action awaits (avoid: screen, view, layout)
 - **Visual language**: how the app looks — light, dark and high contrast themes, tokens, layout, components, copy and artwork — is set by the design system in `docs/design/system/` (owned by the repo, baseline v19), entered through [DESIGN.md](DESIGN.md); see ADR 0021 and ADR 0030. The App shell layout below is the redesigned one (ticket 141); the redesign tickets restyle its parts
 - **App shell layout**: how the screen is arranged — the **Tool pill layout** at every width: the canvas box is the screen (flush with every edge, the safe-area inset where larger), the Tool pill floating over its drawing area, the slim Canvas strip on top, and Menu, Project and the Frame panel as dropdowns from it (ADR 0046). The full arrangement is in [docs/layout.md](docs/layout.md)
-- **Text fit check**: the browser check, part of `npm run visual`, that no text or Tooltip is cut off or pokes out of its box in any language at any supported width; how it works and how to extend it is in [docs/testing/text-fit.md](docs/testing/text-fit.md)
+- **Text fit check**: the tests that no text or Tooltip is cut off or pokes out of its box in any language at any supported width. They run with the unit tests, most of them as browser component tests (`*.browser.test.ts`), not in `npm run visual`; how it works and how to extend it is in [docs/testing/text-fit.md](docs/testing/text-fit.md)
 
 ## Language
 
@@ -48,7 +48,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 
 ## How to run it
 
-`npm install`, then `npm run dev` (Vite) and open the URL it prints; `npm run build` makes `dist/`. Every check (`npm test`, `npm run typecheck`, `npm run lint`, `npm run visual`, `npm run perf`) is in the README's [Checks](README.md#checks). While working, run only the tests related to your change (`npm run test:related -- <changed files>`), never the full suite by hand; before a pull request `npm run test:full` runs it on a capable machine (CI runs it on every pull request), and `npm run check` runs typecheck, lint and knip. How tests are written: [docs/testing.md](docs/testing.md); what a change must follow: [CODING_STANDARDS.md](CODING_STANDARDS.md).
+`npm install`, then `npm run dev` (Vite) and open the URL it prints; `npm run build` makes `dist/`. The checks, and when to run which, are in the README's [Checks](README.md#checks) and in [docs/testing.md](docs/testing.md) (Running them). How tests are written: [docs/testing.md](docs/testing.md); what a change must follow: [CODING_STANDARDS.md](CODING_STANDARDS.md).
 
 ## Where to start
 
