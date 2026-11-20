@@ -94,14 +94,22 @@ describe('a press outside', () => {
     })
   }
 
+  /** Another control on the page: a press on it goes on once the layer has closed (ticket 1171). */
   function page() {
     const outside = document.createElement('button')
     document.body.append(outside)
     return outside
   }
 
+  /** The Canvas, or any other part that is no control: a press on it only closes the layer. */
+  function surface() {
+    const outside = document.createElement('canvas')
+    document.body.append(outside)
+    return outside
+  }
+
   it('closes the top-most layer only, stops the press and swallows the click, then the next press closes the one beneath', () => {
-    const outside = page()
+    const outside = surface()
     const closeBottom = vi.fn()
     const closeTop = vi.fn()
     mount(panel({ close: closeBottom }), { attachTo: document.body })
@@ -137,7 +145,64 @@ describe('a press outside', () => {
     expect(close).not.toHaveBeenCalled()
   })
 
-  it('swallows without closing when the layer demands an answer', () => {
+  it('closes the layer and lets the press go on when it lands on another control (ticket 1171)', () => {
+    const outside = page()
+    const behind = vi.fn()
+    outside.addEventListener('pointerdown', behind)
+    const clicked = vi.fn()
+    outside.addEventListener('click', clicked)
+    const close = vi.fn()
+    mount(panel({ close }), { attachTo: document.body })
+
+    const press = pressOn(outside)
+    outside.click()
+
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(press.defaultPrevented).toBe(false)
+    expect(behind).toHaveBeenCalledTimes(1)
+    expect(clicked).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats an element with a control role as a control', () => {
+    const close = vi.fn()
+    mount(panel({ close }), { attachTo: document.body })
+    const item = document.body.appendChild(document.createElement('div'))
+    item.setAttribute('role', 'menuitem')
+
+    expect(pressOn(item).defaultPrevented).toBe(false)
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats a bare tabindex as no control: the Canvas takes focus and must never draw (ADR 0101)', () => {
+    const close = vi.fn()
+    mount(panel({ close }), { attachTo: document.body })
+    const focusable = document.body.appendChild(document.createElement('div'))
+    focusable.tabIndex = 0
+
+    expect(pressOn(focusable).defaultPrevented).toBe(true)
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes every layer a press on another control reaches, each by its own rules (a popover in a panel)', () => {
+    const open = ref(true)
+    const layerOf = defineComponent({
+      setup() {
+        const el = ref<HTMLElement>()
+        useOverlayLayer({ isOpen: () => open.value, root: () => el.value, close: () => (open.value = false) })
+        return () => h('div', { ref: el })
+      },
+    })
+    const closePanel = vi.fn()
+    mount(panel({ close: closePanel }), { attachTo: document.body })
+    mount(layerOf, { attachTo: document.body })
+
+    pressOn(page())
+
+    expect(open.value).toBe(false)
+    expect(closePanel).toHaveBeenCalledTimes(1)
+  })
+
+  it('swallows without closing when the layer demands an answer, even on another control', () => {
     const close = vi.fn()
     mount(panel({ close, outside: 'swallow' }), { attachTo: document.body })
 
@@ -148,7 +213,7 @@ describe('a press outside', () => {
   })
 
   it('closes and lets the press go on when the layer stands aside for it (the paper tag over the canvas)', () => {
-    const outside = page()
+    const outside = surface()
     const behind = vi.fn()
     outside.addEventListener('pointerdown', behind)
     const close = vi.fn()
@@ -162,7 +227,7 @@ describe('a press outside', () => {
   })
 
   it('hands the press on to the layer beneath once it has closed (an Info tip open in the Menu panel, ticket 0955)', () => {
-    const outside = page()
+    const outside = surface()
     const closeMenu = vi.fn()
     mount(panel({ close: closeMenu }), { attachTo: document.body })
     const tipOpen = ref(true)
@@ -230,7 +295,7 @@ describe('useOverlayLayer in a boxed shell (ticket 0797)', () => {
   it('hears presses and Escape only inside its box, and the page layer beneath hears the rest', () => {
     const box = document.body.appendChild(document.createElement('div'))
     const inside = box.appendChild(document.createElement('button'))
-    const outside = document.body.appendChild(document.createElement('button'))
+    const outside = document.body.appendChild(document.createElement('canvas'))
     const scope: ShellScope = { root: () => box, teleportTo: 'body' }
     const closePage = vi.fn()
     const closeBoxed = vi.fn()
@@ -261,7 +326,7 @@ describe('useOverlayLayer in a boxed shell (ticket 0797)', () => {
   it("leaves a press on the page's own control in the box alone: the layer stays open and the press goes on (ticket 0830)", () => {
     const box = document.body.appendChild(document.createElement('div'))
     const own = box.appendChild(document.createElement('button'))
-    const other = box.appendChild(document.createElement('button'))
+    const other = box.appendChild(document.createElement('canvas'))
     const scope: ShellScope = { root: () => box, teleportTo: 'body', pagesOwn: (target) => target === own }
     const close = vi.fn()
     const boxed = mount(rootedLayer(close, scope))

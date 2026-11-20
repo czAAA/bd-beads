@@ -377,6 +377,10 @@
   --margin-key-disc: 18px; /* MarginSheet card: one disc of the roomy title block's color key. */
   --margin-key-letter: 600 0.625rem/1 var(--font-sans); /* MarginSheet card: a Swatch letter in a key disc (Inter 600 10). */
   --margin-bead-popover: 17rem; /* MarginSheet card: the roomy title block's Bead popover, holding the three pickers on one row. */
+  --margin-expanded-gap: 8px; /* MarginSheet card, Expand the Frame (ticket 1168): the expanded sheet clear of the Canvas strip, the Progress bar and the screen's sides. */
+  --margin-expanded-gap-compact: 4px; /* MarginSheet card, Expand the Frame: the same under bp-tablet. */
+  --margin-expanded-inset: 6px; /* MarginSheet card, Expand the Frame: the expanded sheet's row and title block in from its edge. */
+  --margin-expanded-inset-compact: 4px; /* MarginSheet card, Expand the Frame: the same under bp-tablet. */
   /* SchemaTag card (tickets 0721, 0733): an unframed Schema's name on a tag above its Piece, in screen px at every zoom. */
   --schema-tag-height: 28px; /* SchemaTag card: the tag's height. */
   --schema-tag-end: 9px; /* SchemaTag card: the tag's cut left corners, and the hole's centre in from its left end. */
