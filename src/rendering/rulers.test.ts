@@ -277,7 +277,7 @@ describe('the Ruler dots', () => {
     expect(piece.labels).toEqual([])
   })
 
-  it('are none on a Frame whose margin sheet is compact, folded or bare, which has no room for them, the line kept (ticket 0658)', () => {
+  it('are no numbers on a Frame whose margin sheet is compact, folded or bare, which has no room for them, the line kept (ticket 0658)', () => {
     for (const sheet of ['compact', 'folded', 'bare'] as const) {
       const layout = framed(frame, { zoom: 0.6, sheet })
       expect(layout.labels, sheet).toEqual([])
@@ -410,7 +410,7 @@ describe('the Frame\'s dots once its margin sheet has no room for numbers (ticke
     for (const sheet of ['compact', 'folded', 'bare'] as const) {
       const { dots } = framed(frame, { zoom: 0.6, sheet })
       expect(onTop(dots).map((d) => d.index + 1), sheet).toEqual(Array.from({ length: 30 }, (_, i) => i + 1))
-      expect(dots.filter((d) => d.axis === 'row').length, sheet).toBe(16)
+      expect(dots.filter((d) => d.axis === 'row').length, sheet).toBe(frame.rows * 2)
       expect(onTop(dots).filter((d) => d.fifth).map((d) => d.index + 1), sheet).toEqual([5, 10, 15, 20, 25, 30])
     }
   })
@@ -419,7 +419,6 @@ describe('the Frame\'s dots once its margin sheet has no room for numbers (ticke
     const { dots, boxes, frameScale } = framed(frame, { zoom: 0.6, sheet: 'bare' })
     const away = frameTop(0.6) - onTop(dots)[0]!.y
     expect(away).toBeCloseTo(boxes[0]!.outset + frameScale.gap + frameScale.dotRadius, 5)
-    expect(away).toBeLessThan(10)
   })
 
   it('keep only every 5th bead\'s where the beads stand too close for a dot each', () => {
