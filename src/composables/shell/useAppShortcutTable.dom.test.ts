@@ -17,6 +17,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     anyDialogOpen: () => false,
     cancelColorPick: () => false,
     leaveMirrorMode: () => false,
+    collapseFrame: () => false,
     onPickColorKey: vi.fn(),
     backOutOfSelect: vi.fn(() => false),
     onUndo: vi.fn(),
@@ -261,6 +262,18 @@ describe('useAppShortcutTable', () => {
     expect(picking.deps.leaveMirrorMode).toHaveBeenCalled()
     expect(picking.deps.backOutOfSelect).not.toHaveBeenCalled()
     picking.wrapper.unmount()
+  })
+
+  it('Escape takes an expanded Frame back to the Canvas after the Selection, and leaves the tool alone (ticket 1169)', () => {
+    const selected = mountTable({ activeTool: () => 'select', backOutOfSelect: vi.fn(() => true), collapseFrame: vi.fn(() => true) })
+    press({ key: 'Escape' })
+    expect(selected.deps.collapseFrame).not.toHaveBeenCalled()
+    selected.wrapper.unmount()
+    const expanded = mountTable({ activeTool: () => 'erase', backOutOfSelect: vi.fn(() => false), collapseFrame: vi.fn(() => true) })
+    press({ key: 'Escape' })
+    expect(expanded.deps.collapseFrame).toHaveBeenCalled()
+    expect(expanded.deps.onSelectTool).not.toHaveBeenCalled()
+    expanded.wrapper.unmount()
   })
 
   it('Escape leaves the tool alone when it dismissed something', () => {

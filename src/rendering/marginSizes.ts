@@ -42,4 +42,8 @@ export const MARGIN_PX = {
   icon: { full: 16, compact: 14 },
   /** The current pass's mark (ticket 0685): the pill's room round its number, and the tick's thickness. */
   pass: { pillPad: 2, tick: 3 },
+  /** Expand the Frame (MarginSheet card, ticket 1169): the slim sheet clear of the strip, the Progress bar and the
+   * screen's sides (`gap`), its row and title block in from its edge (`inset`), each smaller under bp-tablet; and the
+   * room between the row, the numbers and the Frame's line (`numbers`). */
+  expanded: { gap: { full: 8, compact: 4 }, inset: { full: 6, compact: 4 }, numbers: 3 },
 } as const

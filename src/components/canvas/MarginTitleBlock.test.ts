@@ -239,3 +239,13 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     })
   })
 })
+
+describe('the expanded sheet\'s narrowest title row (ticket 1169)', () => {
+  it('keeps the name, the legend and Letters with its fold, and leaves out the Technique and the sizes', () => {
+    const wrapper = mount(MarginTitleBlock, { props: { project: framed({ frame: { ...frameOf(framed())!, name: 'Sun band' } }), form: 'key' }, attachTo: document.body })
+    expect(wrapper.text()).toContain('Sun band')
+    for (const shown of ['margin-legend', 'margin-letters', 'margin-title-fold']) expect(wrapper.find(`[data-testid="${shown}"]`).exists(), shown).toBe(true)
+    for (const left of ['margin-technique', 'margin-size', 'margin-estimate']) expect(wrapper.find(`[data-testid="${left}"]`).exists(), left).toBe(false)
+    wrapper.unmount()
+  })
+})

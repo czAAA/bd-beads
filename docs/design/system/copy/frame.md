@@ -110,13 +110,13 @@ Russian, Ukrainian and Polish here are proposals for review with the build. "Ш�
 
 ## Expand the Frame copy (ticket 1168)
 
-The margin sheet's Expand the Frame button (MarginSheet card, Expand the Frame). Its name is its Tooltip and changes with the state; the announcement is said once after each press. Belarusian, Spanish and Chinese are written with the build (ticket 1169).
+The margin sheet's Expand the Frame button (MarginSheet card, Expand the Frame). Its name is its Tooltip and changes with the state; the announcement is said once after each press. Belarusian, Spanish and Chinese were written with the build (ticket 1169).
 
-| English | Русский | Українська | Polski |
-|---|---|---|---|
-| Expand the Frame (the button, the Frame on the Canvas) | Развернуть рамку | Розгорнути рамку | Rozwiń ramkę |
-| Back to the Canvas (the button while expanded) | Вернуться к холсту | Повернутися до полотна | Wróć do płótna |
-| Frame expanded (announced) | Рамка развёрнута | Рамку розгорнуто | Ramka rozwinięta |
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Expand the Frame (the button, the Frame on the Canvas) | Развернуть рамку | Розгорнути рамку | Разгарнуць рамку | 展开边框 | Expandir el marco | Rozwiń ramkę |
+| Back to the Canvas (the button while expanded) | Вернуться к холсту | Повернутися до полотна | Вярнуцца да палатна | 回到画布 | Volver al lienzo | Wróć do płótna |
+| Frame expanded (announced) | Рамка развёрнута | Рамку розгорнуто | Рамка разгорнута | 边框已展开 | Marco expandido | Ramka rozwinięta |
 
 ## Print choices copy (ticket 0916)
 

@@ -13,7 +13,9 @@ import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { Size } from '../../rendering/cellSize'
 import { SETTLE_MS, twistTransform } from '../../rendering/gestureView'
 import { marginForm, marginScale } from '../../rendering/marginForm'
-import { marginSheetPx } from '../../rendering/projectRenderer'
+import { marginSheetPx, type SlimSheet } from '../../rendering/projectRenderer'
+import { MARGIN_PX } from '../../rendering/marginSizes'
+import { slimSheetSides, type SlimContent } from '../../rendering/slimSheet'
 import type { DrawnReference } from '../../rendering/referenceImage'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
@@ -114,6 +116,9 @@ const props = withDefaults(defineProps<{
   holdEnds?: number
   /** Whether the Radial toolbox is open: the press it opens on then moves it here (ticket 1147). */
   toolboxOpen?: boolean
+  /** What the expanded Frame's slim sheet holds (MarginSheet card, Expand the Frame; ticket 1169), none unexpanded: the
+   * sheet is laid round the Frame's line from it, its numbers are the 100% ones, and a press off the Frame is refused. */
+  slim?: SlimContent
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -225,7 +230,7 @@ const sheetLook = computed(() => {
 
 /** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two
  * cannot disagree. */
-const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, pieces: pieces.value }))
+const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, expanded: !!props.slim, pieces: pieces.value }))
 
 /** A drawing as the layers made it: the view it was drawn for, and how it maps to the screen. */
 interface HeldDrawing {
@@ -315,8 +320,29 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-/** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. */
+/** The expanded Frame's slim sheet in the view's px (ticket 1169): round the Frame's line by what it holds. */
+const slimBox = computed(() => {
+  const frame = frameOf(props.project)
+  if (!props.slim || !frame) return undefined
+  const line = surface.value.frameBox(frame)
+  const sides = slimSheetSides(props.slim, line.width)
+  return { x: line.x - sides.left, y: line.y - sides.top, width: line.width + sides.left + sides.right, height: line.height + sides.top + sides.bottom }
+})
+/** The slim sheet as the canvas draws it: its box in grid px, its corners in screen px. */
+const slimSheet = computed<SlimSheet | undefined>(() => {
+  const box = slimBox.value
+  if (!box || !props.slim) return undefined
+  const corners = [surface.value.pointToGrid({ x: box.x, y: box.y }), surface.value.pointToGrid({ x: box.x + box.width, y: box.y + box.height })]
+  const x = Math.min(corners[0]!.x, corners[1]!.x)
+  const y = Math.min(corners[0]!.y, corners[1]!.y)
+  const sheet = { x, y, width: Math.abs(corners[1]!.x - corners[0]!.x), height: Math.abs(corners[1]!.y - corners[0]!.y) }
+  return { sheet, radius: props.slim.compact ? MARGIN_PX.sheetRadius.compact : MARGIN_PX.sheetRadius.full }
+})
+
+/** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. Expanded, the slim
+ * sheet. */
 function sheetIn(view: SurfaceView): { x: number; y: number; width: number; height: number } | undefined {
+  if (slimBox.value && view === surface.value) return slimBox.value
   const grid = marginSheetPx(props.project)
   if (!grid) return undefined
   const corners = [view.gridToPoint(grid.sheet.x, grid.sheet.y), view.gridToPoint(grid.sheet.x + grid.sheet.width, grid.sheet.y + grid.sheet.height)]
@@ -405,7 +431,7 @@ const frameTurn = useFrameTurn({
 })
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
-useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference: toRef(() => props.reference) })
+useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference: toRef(() => props.reference), slimSheet })
 watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flush: 'post' })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, frameTheme, marksShown, oncePerFrame,
