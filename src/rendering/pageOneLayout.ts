@@ -59,8 +59,8 @@ export function pageOneLayout(project: Counted, words: PageOneWords, page: PageS
 }
 
 /** Page 1 of the PDF for a Project's words (ticket 0914): the chart whole when it fits at a working bead (planPrint; 3 mm
- * or more with Large beads, ticket 0916), Beads needed under it as far as its share of the page allows and the rest on list
- * pages; one color to a row when all of it fits that way (ticket 1096). Otherwise page 1 is the overview, and the chart parts follow. */
+ * or more with Large beads, ticket 0916), Beads needed under it, at the foot of the page, as far as its share allows and the
+ * rest on list pages; one color to a row when all of it fits that way (ticket 1096). Otherwise page 1 is the overview, and the chart parts follow. */
 function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize): PageOneLayout {
   const floorMm = words.largeBeads ? PRINT_BEAD_LARGE_MM : undefined
   const titleHeight = titleHeightOf(words)
@@ -68,6 +68,8 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
   const bottom = page.height - PRINT_MARGIN - PAGE_FOOTER
   const room = bottom - area.y
   const colors = words.colors.length
+  // Beads needed straight under the chart, set one color to a row when that fits, then moved down to the foot of the page.
+  const settled = (slice: ColorsSlice & { y: number }) => atTheFoot(oneToARow(slice, NEEDED_TABLE, bottom, FIT_SLOP), NEEDED_TABLE, bottom)
   const under = (table: number): PageSize => ({ width: page.width - PRINT_MARGIN * 2, height: room - NEEDED_GAP - table })
   const chartOver = (table: number) => {
     const plan = planWithKey(project, { page, floorMm, pageOne: under(table) })
@@ -86,13 +88,13 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
     const count = whole ? colors : Math.min(colors, fitting)
     const lists = whole ? [] : listSlices(words, NEEDED_TABLE, count, page)
     const plan = lists.length > 0 ? planWithKey(project, { page, floorMm, pageOne: chart.pageOne, listPages: lists.length }) : chart.plan
-    const { needed, drop } = atTheFoot(oneToARow({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top }, NEEDED_TABLE, bottom, FIT_SLOP), NEEDED_TABLE, bottom)
+    const { needed, drop } = settled({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top })
     return { plan, titleHeight, area: { x: area.x, y: area.y + drop }, needed, lists }
   }
 
   const overview = overviewLayout(project, words, NEEDED_TABLE, page)
   const plan = planWithKey(project, { page, floorMm, pageOne: under(least), listPages: overview.lists.length })
-  const { needed, drop } = atTheFoot(oneToARow(overview.needed, NEEDED_TABLE, bottom, FIT_SLOP), NEEDED_TABLE, bottom)
+  const { needed, drop } = settled(overview.needed)
   const board = { x: overview.board.x, y: overview.board.y + drop }
   return { plan, titleHeight, area, overview: { zoom: overview.zoom, extent: overview.extent, board }, needed, lists: overview.lists }
 }

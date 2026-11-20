@@ -157,8 +157,9 @@ export function drawCoverPage(project: Project, words: PrintText, page: PageSize
   context.moveTo(PRINT_MARGIN, ruleY)
   context.lineTo(page.width - PRINT_MARGIN, ruleY)
   context.stroke()
-  text(context, words.metaLine, PRINT_MARGIN, ruleY + TECH_LINE_GAP + pt(SIZE.meta) * (1 - DESCENT), META_FONT, PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
-  drawPiece(context, project, coverPageLayout(project, page, ruleY + TECH_LINE_GAP + pt(SIZE.meta) + BOARD_GAP))
+  const techBottom = ruleY + TECH_LINE_GAP + pt(SIZE.meta)
+  text(context, words.metaLine, PRINT_MARGIN, techBottom - pt(SIZE.meta) * DESCENT, META_FONT, PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
+  drawPiece(context, project, coverPageLayout(project, page, techBottom + BOARD_GAP))
 
   drawFooter(context, page, words, pageNumber, pageCount)
   return canvas

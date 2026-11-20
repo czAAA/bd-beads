@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { Technique } from '../domain/weave'
+import { OVERVIEW_CUT_LABEL, PAGE_FOOTER } from './overviewLayout'
 import { largeBeadsActs, pageOneLayout } from './pageOneLayout'
 import { A4_PORTRAIT, chartOnPageOne, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
 
 const shape = (technique: Technique, columns: number, rows: number) => bareProject({ technique, orientation: 0, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
 const words = (colors: number, name = 'Mandala', maker = 'Anna K.') => ({ name, maker, colors: Array.from({ length: colors }, (_, index) => ({ hex: '#000000', name: `Color ${index}`, beads: '10' })) })
-const FOOTER_TOP = A4_PORTRAIT.height - PRINT_MARGIN - mm(6)
+const FOOTER_TOP = A4_PORTRAIT.height - PRINT_MARGIN - PAGE_FOOTER
 const bottomOf = (layout: ReturnType<typeof pageOneLayout>) => layout.needed.y + mm(10.5) + layout.needed.rows * layout.needed.rowHeight + (layout.needed.total ? mm(14) : 0)
 
 // Page 1 of the PDF (ticket 0914; PrintPage1 card): the title block, the whole piece and one Beads needed table.
@@ -115,7 +116,7 @@ describe('pageOneLayout: Beads needed one color to a row (ticket 1096)', () => {
       const { board, extent } = layout.overview!
       // The framed board: the cut labels' band over it, then a ruler and the pad round the beads.
       const inset = PRINT_RULER + PRINT_BOARD_PAD
-      const boardTop = board.y - inset - mm(3.5)
+      const boardTop = board.y - inset - OVERVIEW_CUT_LABEL
       const boardBottom = board.y + extent.height + inset
 
       expect(bottomOf(layout)).toBeCloseTo(FOOTER_TOP, 3)
