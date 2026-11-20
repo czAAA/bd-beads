@@ -18,6 +18,8 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 3. **Chart pages**, only when the chart does not fit page 1: the parts, in reading order (across, then down), after the overview on page 1.
 4. **Word chart** pages, only when **Row by row** is on in the Export panel (tickets 0574, 0916). Letters adds or removes no page: every printed chart is lettered.
 
+**Black and white** (Export panel, ticket 1096; PrintBlackAndWhite card), off at first, draws every page after the cover in one ink for a black-and-white printer: each bead on paper, a 10%, 20% or 30% tint or solid black, every letter and line black, so they print sharp on an office printer. The cover and the picture stay in color, and it adds no page.
+
 **Large beads** (Export panel, ticket 0916) raises the smallest bead from `print-bead-min` to `print-bead-large` (3 mm, the chart size before ticket 0913), on page 1's whole chart, its strips and every chart page, at the cost of more pages: a 100 × 100 becomes the overview and parts. It acts, and is offered, only where the plan without it prints a bead under 3 mm (ticket 1125). The Export panel's Printable chart row counts the pages before the export ("PDF ≈ 1.2 MB · 5 pages").
 
 The PDF's file name says which print switches are on, `{project}-{frame}-{maker}_large-beads_row-by-row.pdf`, and the Export panel shows it, renamable for one export, before the export (ExportPanel card, ticket 1096).
@@ -29,7 +31,6 @@ There is no cover that repeats the chart and no Specification that repeats the b
 Signed off on the canvas "PDF export: cover page". The cards have the detail; until ticket 1096 lands the rest of this file describes the exports as they are.
 
 - **Picture is the Cover page**, not page 1: one PNG file, in color.
-- **Black and white** (PrintBlackAndWhite card), a switch that is off at first: every page after the cover is drawn in one ink, each bead on paper, a 10%, 20% or 30% tint or solid black, so letters and lines print sharp on an office printer.
 - **Row by row shows each run's bead**: the count, then the bead's own swatch with its letter, and an empty position as the empty swatch, in place of "3A, 2×" (PrintWordChart card).
 
 ## Trimmed to the beads (ticket 1128)

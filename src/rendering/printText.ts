@@ -19,6 +19,7 @@ import { fillBlanks } from '../domain/fillBlanks'
 import { frameOf, quarterTurnOf, projectNameOf, withFrameSheet } from '../domain/layerRecord'
 import { pieceFaceOf } from '../domain/pieceFaces'
 import { largeBeadsActs } from './pageOneLayout'
+import { printTones } from '../domain/printTones'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -51,10 +52,12 @@ interface PrintedWordChart {
   rows: PrintedWordRow[]
 }
 
-/** The Export panel's print choices (tickets 0916, 1096), kept on the device: Cover page (on at first) opens the PDF on the
- * Cover page, Large beads keeps every bead of the chart at 3 mm or more, Row by row adds the Word chart's pages. */
+/** The Export panel's print choices (tickets 0916, 1096), kept on the device: Cover page (on at first) opens the PDF on it,
+ * Black and white draws the pages after it in one ink, Large beads keeps every chart bead at 3 mm or more, Row by row adds
+ * the Word chart's pages. */
 export interface PrintChoices {
   cover?: boolean
+  blackAndWhite?: boolean
   /** Empty grid (ticket 1127, off at first): each empty position its outline and cross, else bare paper. */
   emptyGrid?: boolean
   /** Chart border (ticket 1127, on at first): the chart's one rim round its beads (ticket 1126). */
@@ -91,6 +94,8 @@ export interface PrintText {
   largeBeads?: boolean
   /** Cover page (ticket 1096): the PDF opens on the Cover page, and page 1 is its second page. */
   cover?: boolean
+  /** Black and white (ticket 1096): each color's tone as a share of black, the pages after the cover in one ink. */
+  tones?: Readonly<Record<string, number>>
   /** Empty grid and Chart border (ticket 1127): how the charts draw empty positions and whether a rim goes round them. */
   emptyGrid?: boolean
   chartBorder?: boolean
@@ -224,6 +229,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     ...(hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
     ...(choices.cover ? { cover: true } : {}),
+    ...(choices.blackAndWhite ? { tones: printTones(quantities) } : {}),
     ...(choices.emptyGrid ? { emptyGrid: true } : {}),
     ...(choices.chartBorder ? { chartBorder: true } : {}),
     labels: t.print,

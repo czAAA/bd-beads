@@ -23,8 +23,9 @@ function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 /** How many pixels one strip of a page holds while it is compressed. */
 const STRIP_PIXELS = 1_000_000
 
-/** The words the PNG's pages print: the Cover page is the PDF's (ticket 1096), so the PNG is page 1 and its list pages. */
-function pictureWords({ cover: _cover, ...words }: PrintText): PrintText {
+/** The words the PNG's pages print: the Cover page and Black and white are the PDF's (ticket 1096), so the PNG is page 1
+ * and its list pages, in color. */
+function pictureWords({ cover: _cover, tones: _tones, ...words }: PrintText): PrintText {
   return words
 }
 
