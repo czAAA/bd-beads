@@ -359,7 +359,7 @@
     {
       "name": "PrintStrips",
       "group": "Print",
-      "summary": "Long thin Schemas and leftover parts stack several boards on one sheet; the PNG puts its story under the chart."
+      "summary": "Long thin Schemas and leftover parts stack several boards on one sheet."
     },
     {
       "name": "PrintWide",

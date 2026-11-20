@@ -3,7 +3,7 @@ import type { Project } from '../domain/project'
 import { CELL_SIZE_PX } from './cellSize'
 import { coverPageLayout } from './coverPageLayout'
 import { pageOneLayout, underLargeBeads } from './pageOneLayout'
-import { chartOnPageOne, PRINT_DPI } from './printPlan'
+import { chartOnPageOne, mm, PRINT_DPI } from './printPlan'
 import type { PrintText } from './printText'
 import { pdfPageCount } from './wordChartPages'
 import { beadsOfLayer, frameOf } from '../domain/layerRecord'
@@ -116,12 +116,11 @@ const COVER_PAGE_BYTES = {
 } as const
 const COVER_COLORS = 100
 const COVER_SHORT_EDGE_MM = 2.5
-const MM_PER_INCH = 25.4
 
 function coverBytes(facts: ExportFacts, dpi: number, zoom: number): number {
   const [base, perBead, perArea, perEdge, perShortEdge, perColorArea] = atDpi(COVER_PAGE_BYTES, dpi) as [number, number, number, number, number, number]
   const bead = (CELL_SIZE_PX * zoom * dpi) / PRINT_DPI
-  const short = Math.min(bead, (COVER_SHORT_EDGE_MM * dpi) / MM_PER_INCH)
+  const short = Math.min(bead, (mm(COVER_SHORT_EDGE_MM) * dpi) / PRINT_DPI)
   const area = facts.filled * bead * bead
   const edges = facts.edges * bead
   return base + perBead * facts.filled * bead + perArea * area + perEdge * edges + perShortEdge * edges * short + (perColorArea * area * Math.min(facts.colors, COVER_COLORS)) / COVER_COLORS

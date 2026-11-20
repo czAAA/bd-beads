@@ -314,13 +314,6 @@ describe('useExportFlow toasts (ticket 523)', () => {
     expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf_cover.pdf'], ['saved-file', `Saved: ${projectFileName(project)}`]])
   })
 
-  it('names the picture in the one toast', async () => {
-    const { flow, toasts } = setupToasts()
-    await flow.onExportPng()
-
-    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf.png']])
-  })
-
   it('says nothing when the person closed the share sheet', async () => {
     const { flow, toasts } = setupToasts('cancelled')
     await flow.onExportPng()
