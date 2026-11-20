@@ -1,12 +1,13 @@
 import { planWithKey, trimmedArea } from './chartPageKey'
-import { colorsHeight, PAGE_FOOTER, overviewLayout, listSlices, oneToARow, TABLE_SHARE, titleHeightOf, type ColorsSlice, type TableRows } from './overviewLayout'
+import { atTheFoot, colorsHeight, PAGE_FOOTER, overviewLayout, listSlices, oneToARow, TABLE_SHARE, titleHeightOf, type ColorsSlice, type TableRows } from './overviewLayout'
 import { A4_PORTRAIT, afterCoverPage, chartOnPageOne, mm, PRINT_BEAD_LARGE_MM, PRINT_MARGIN, PRINT_PART_LABEL, PRINT_RULER, type PageSize, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
 import type { Project } from '../domain/project'
 import type { Layered } from '../domain/layerRecord'
 
 // Where everything sits on the PDF's page 1 (ticket 0914; PrintPage1 card), worked out without a canvas so the drawing,
-// the page count and the File size estimate agree: the title block, the whole piece, one Beads needed table, the footer.
+// the page count and the File size estimate agree: the title block, the whole piece, one Beads needed table at the foot of
+// the page with the piece centred over it (ticket 1141), the footer.
 
 /** Beads needed on page 1 and its list pages: the heading and its rule, the column heads, a row of colors (its letter
  * swatch), and the Total and the grams note. */
@@ -25,7 +26,8 @@ export interface PageOneLayout {
   /** The PDF's plan: the chart whole on page 1 (`chartOnPageOne`), or its parts on the chart pages after it. */
   plan: PrintPlan
   titleHeight: number
-  /** The top left corner of page 1's chart area, under the title block. */
+  /** The top left corner of page 1's chart area: under the title block, moved down so the chart sits centred between it
+   * and Beads needed. */
   area: { x: number; y: number }
   /** Page 1 as the overview of a chart cut into parts (no letters, the parts marked): its zoom, size and where its beads
    * begin (overviewLayout). */
@@ -57,8 +59,8 @@ export function pageOneLayout(project: Counted, words: PageOneWords, page: PageS
 }
 
 /** Page 1 of the PDF for a Project's words (ticket 0914): the chart whole when it fits at a working bead (planPrint; 3 mm
- * or more with Large beads, ticket 0916), Beads needed under it as far as its share of the page allows and the rest on list
- * pages; one color to a row when all of it fits that way (ticket 1096). Otherwise page 1 is the overview, and the chart parts follow. */
+ * or more with Large beads, ticket 0916), Beads needed under it, at the foot of the page, as far as its share allows and the
+ * rest on list pages; one color to a row when all of it fits that way (ticket 1096). Otherwise page 1 is the overview, and the chart parts follow. */
 function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize): PageOneLayout {
   const floorMm = words.largeBeads ? PRINT_BEAD_LARGE_MM : undefined
   const trim = trimmedArea(project)
@@ -67,6 +69,8 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
   const bottom = page.height - PRINT_MARGIN - PAGE_FOOTER
   const room = bottom - area.y
   const colors = words.colors.length
+  // Beads needed straight under the chart, set one color to a row when that fits, then moved down to the foot of the page.
+  const settled = (slice: ColorsSlice & { y: number }) => atTheFoot(oneToARow(slice, NEEDED_TABLE, bottom, FIT_SLOP), NEEDED_TABLE, bottom)
   const under = (table: number): PageSize => ({ width: page.width - PRINT_MARGIN * 2, height: room - NEEDED_GAP - table })
   const chartOver = (table: number) => {
     const plan = planWithKey(project, { page, floorMm, trim, pageOne: under(table) })
@@ -85,10 +89,13 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
     const count = whole ? colors : Math.min(colors, fitting)
     const lists = whole ? [] : listSlices(words, NEEDED_TABLE, count, page)
     const plan = lists.length > 0 ? planWithKey(project, { page, floorMm, trim, pageOne: chart.pageOne, listPages: lists.length }) : chart.plan
-    return { plan, titleHeight, area, needed: oneToARow({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top }, NEEDED_TABLE, bottom, FIT_SLOP), lists }
+    const { needed, drop } = settled({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top })
+    return { plan, titleHeight, area: { x: area.x, y: area.y + drop }, needed, lists }
   }
 
   const overview = overviewLayout(project, words, NEEDED_TABLE, page, trim)
   const plan = planWithKey(project, { page, floorMm, trim, pageOne: under(least), listPages: overview.lists.length })
-  return { plan, titleHeight, area, overview: { zoom: overview.zoom, extent: overview.extent, board: overview.board }, needed: oneToARow(overview.needed, NEEDED_TABLE, bottom, FIT_SLOP), lists: overview.lists }
+  const { needed, drop } = settled(overview.needed)
+  const board = { x: overview.board.x, y: overview.board.y + drop }
+  return { plan, titleHeight, area, overview: { zoom: overview.zoom, extent: overview.extent, board }, needed, lists: overview.lists }
 }
