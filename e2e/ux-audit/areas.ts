@@ -360,12 +360,6 @@ const keepIt: AreaWalk = {
       await page.getByTestId('menu-import-file').setInputFiles(savedFile)
       await page.waitForTimeout(REDRAW_MS)
     })
-    await walk.step('project-duplicated', async () => {
-      await escape(page)
-      await openStripPanel(page, 'strip-project')
-      await page.getByTestId('project-duplicate').first().click()
-      await page.waitForTimeout(PANEL_MS)
-    })
     await walk.step('project-delete-asked', async () => {
       await escape(page)
       await openStripPanel(page, 'strip-project')

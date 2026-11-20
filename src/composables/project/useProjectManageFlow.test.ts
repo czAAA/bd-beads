@@ -4,7 +4,6 @@ import type { Project } from '../../domain/project'
 import type { SealedProject } from '../../domain/sealedProject'
 import { useProjectManageFlow } from './useProjectManageFlow'
 import { canvasOf } from '../../domain/layerRecord'
-import { en } from '../../i18n/en'
 
 const make = (name: string) => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name, size: { width: 3, height: 3, unit: 'beads' } })
 
@@ -15,10 +14,7 @@ function setup(projects: Project[], sealed: SealedProject[] = []) {
     projects: () => library.projects,
     sealed: () => sealed,
     replaceProject: vi.fn((project: Project) => void (library.projects = library.projects.map((p) => (p.id === project.id ? project : p)))),
-    addProject: vi.fn((project: Project) => void (library.projects = [project, ...library.projects])),
     removeAllProjects: vi.fn(() => void (library.projects = [])),
-    showToast: vi.fn(),
-    messages: () => en,
   }
   return { flow: useProjectManageFlow(deps), deps, library }
 }
@@ -30,34 +26,6 @@ describe('useProjectManageFlow', () => {
     expect(deps.replaceProject).not.toHaveBeenCalled()
     expect(flow.onRenameProject(' Owl ')).toBe(true)
     expect(canvasOf(deps.replaceProject.mock.calls[0]![0]).name).toBe('Owl')
-  })
-
-  it('suggests the next free number and Cancel changes nothing', () => {
-    const { flow, deps } = setup([make('Moth'), make('Moth 2')])
-    flow.onRequestDuplicate()
-    expect(flow.duplicating.value).toBe('Moth 3')
-    flow.onCancelDuplicate()
-    expect(flow.duplicating.value).toBeUndefined()
-    expect(deps.addProject).not.toHaveBeenCalled()
-  })
-
-  // What a copy keeps (Row progress included) is duplicateProject's (projectName.test).
-  it('duplicates under the chosen name, and refuses an empty one', () => {
-    const moth = make('Moth')
-    const { flow, deps } = setup([moth])
-    flow.onRequestDuplicate()
-    expect(flow.onConfirmDuplicate('')).toBe(false)
-    expect(flow.onConfirmDuplicate('Copy')).toBe(true)
-    const copy = deps.addProject.mock.calls[0]![0]
-    expect(canvasOf(copy).name).toBe('Copy')
-    expect(copy.id).not.toBe(moth.id)
-  })
-
-  it('says after Duplicate which Project is open now and that the original stays (ticket 0860)', () => {
-    const { flow, deps } = setup([make('Sunflower')])
-    flow.onRequestDuplicate()
-    flow.onConfirmDuplicate('Sunflower 2')
-    expect(deps.showToast).toHaveBeenCalledWith('duplicated', 'Now in “Sunflower 2”. “Sunflower” stays as it was.', 'success')
   })
 
   it('deletes every Project only after being asked, and leaves none open', () => {

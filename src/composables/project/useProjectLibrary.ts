@@ -354,7 +354,7 @@ export function useProjectLibrary(
     },
 
     /** Adds imported Projects (ticket 15's Project file); opens one only when nothing is open. Saved now, so they go
-     * to the front; a taken name gets Duplicate's next free number (ticket 0860). */
+     * to the front; a taken name gets the next free number (ticket 0860). */
     addProjects(imported: Project[]) {
       const now = Date.now()
       const joined = inSavedOrder(withFreeNames(imported, names()).map((project) => markSaved(project, now)))

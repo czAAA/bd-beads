@@ -13,7 +13,6 @@ import { rotateFrame } from '../domain/rotate'
 import ProjectPanel from './project/ProjectPanel.vue'
 import { newReferenceImage, withReferenceImage } from '../domain/referenceImage'
 import NewProjectForm from './project/NewProjectForm.vue'
-import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
 import { BEAD_CATALOG, offeredBeads } from '../domain/beads'
 import { withColors } from '../domain/canvas'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
@@ -57,17 +56,8 @@ const refuseSizes = async (root: HTMLElement): Promise<void> => {
   }
   await nextTick()
 }
-/** The Project panel's This Project unfolded, as it opens folded (ticket 0971); kept open on the device once opened. */
-const unfoldThisProject = (root: HTMLElement): void => {
-  const header = root.querySelector<HTMLElement>('[data-testid="project-this"] .panel-section__header')
-  if (!header) throw new Error('The Project panel has no This Project header')
-  if (header.getAttribute('aria-expanded') === 'false') header.click()
-}
-
-/** This Project and its Export row unfolded (ticket 1058): the export rows in the Project panel. */
+/** The Project panel's Export row unfolded (ticket 1058): the export rows in the Project panel. */
 const unfoldProjectExport = async (root: HTMLElement): Promise<void> => {
-  unfoldThisProject(root)
-  await nextTick()
   root.querySelector<HTMLElement>('[data-testid="project-export"]')?.click()
 }
 
@@ -96,7 +86,7 @@ const CASES: FitCase[] = [
   ['MenuPanel (signed in)', inPanel(MenuPanel, { projectCount: 1, account: { email: 'a.very.long.name.of.a.maker@a-long-mail-domain.example.com', plan: 'free' } }), {}],
   ['SignInPanel', SignInPanel, { asks: false, leaving: false, verify: () => () => {} }],
   ['SignInPanel (refused, Cloudflare asking, leaving)', SignInPanel, { refusal: 'cancelled', asks: true, leaving: true, verify: () => () => {} }],
-  ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, canSaveAs: true, lastFileName: 'Scarf for winter.openbeads' }, unfoldThisProject],
+  ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, canSaveAs: true, lastFileName: 'Scarf for winter.openbeads' }],
   ['ProjectPanel (Export unfolded)', ProjectPanel, { project: painted, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, exporting: 'pdf' }, unfoldProjectExport],
   ['ProjectPanel (Export unfolded, no Frame)', ProjectPanel, { project: withFrameSheet(painted, undefined), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }, unfoldProjectExport],
   ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
@@ -129,7 +119,6 @@ const CASES: FitCase[] = [
     },
   ],
   ['NewProjectForm', NewProjectForm, { namePlaceholder: 'Project 1' }],
-  ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],
 ]
 
 describeFits(CASES)
