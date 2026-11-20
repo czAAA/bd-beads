@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "fixed",
+  "line": {
+    "en": "The rulers always count 1, 2, 3… from the top left as you see it, however the Canvas or the Frame is turned and whichever way you weave",
+    "ru": "Линейки всегда считают 1, 2, 3… от левого верхнего угла, как вы его видите, как бы ни были повёрнуты холст и рамка и в какую бы сторону вы ни плели",
+    "uk": "Лінійки завжди рахують 1, 2, 3… від лівого верхнього кута, як ви його бачите, хоч як повернуті полотно й рамка і хоч у який бік ви плетете",
+    "be": "Лінейкі заўсёды лічаць 1, 2, 3… ад левага верхняга кута, як вы яго бачыце, як бы ні былі павернутыя палатно і рамка і ў які б бок вы ні плялі",
+    "zh": "标尺始终从您看到的左上角开始按 1、2、3…计数，无论画布或边框如何旋转，也无论朝哪个方向编织",
+    "es": "Las reglas siempre cuentan 1, 2, 3… desde la esquina superior izquierda tal como la ves, esté como esté girado el lienzo o el marco y tejas en el sentido que tejas",
+    "pl": "Linijki zawsze liczą 1, 2, 3… od lewego górnego rogu, tak jak go widzisz, jakkolwiek obrócone są płótno i ramka i w którąkolwiek stronę tkasz"
+  }
+}
