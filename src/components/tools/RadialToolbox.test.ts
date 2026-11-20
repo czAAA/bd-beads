@@ -195,7 +195,7 @@ describe('RadialToolbox (ticket 1064)', () => {
 
   it('a press outside it asks to close it and is swallowed; a press on it is not', async () => {
     wrapper = mountRing()
-    const outside = document.createElement('button')
+    const outside = document.createElement('canvas')
     document.body.append(outside)
     let heard = 0
     outside.addEventListener('pointerdown', () => (heard += 1))
