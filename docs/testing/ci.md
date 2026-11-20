@@ -13,7 +13,6 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 | Visual check | The Playwright specs over that build: the offline shell's checks as a part of their own, every other spec split over the shards (`VISUAL_PART`, `playwright.config.ts`). A new spec lands in a shard with no listing |
 | Visual report | The parts' reports merged into one HTML report |
 
-
 - Each suite ends in one job with a stable name, and branch protection requires those three: "Typecheck and lint", "Unit tests passed" (the unit and the browser component shards) and "Visual check passed" (the build and every part of the visual check). The shard counts can change in `ci.yml` without touching branch protection.
 - The shard and worker counts are measured, not guessed: each test job prints its runner's cores and memory, the workflow's comments give the counts tried and their times, and Vitest's workers are set there with `BD_TEST_WORKERS`, Playwright's with `VISUAL_WORKERS`.
 - A pull request that changes only Markdown is skipped by `paths-ignore`, so its required checks never start and it waits forever: merge it with an admin override.

@@ -270,8 +270,9 @@ describe('the rate limit', () => {
     }))
 })
 
-/** The R2 cap the size cap's tests set, in bytes. */
-const R2_CAP = MB / 16
+/** The R2 cap the size cap's tests set: a sixteenth of a MB, as the variable counts it, and in bytes. */
+const R2_CAP_MB = 1 / 16
+const R2_CAP = R2_CAP_MB * MB
 
 describe('the size cap', () => {
   let worker: RunningWorker
@@ -279,7 +280,7 @@ describe('the size cap', () => {
     // Small caps, so the tests send small bodies: the D1 cap in bytes, the R2 cap in MB, a sixteenth of one. A refusal
     // by declared length answers before the body is read, and a body still being written when the Worker hangs up
     // breaks the pipe: a whole MB did on a busy machine (ticket 1143).
-    worker = await startWorker({ entry: 'fixture', vars: { UPLOAD_CAP_D1_BYTES: 300_000, UPLOAD_CAP_R2_MB: R2_CAP / MB } })
+    worker = await startWorker({ entry: 'fixture', vars: { UPLOAD_CAP_D1_BYTES: 300_000, UPLOAD_CAP_R2_MB: R2_CAP_MB } })
   })
   afterAll(() => worker.dispose())
 

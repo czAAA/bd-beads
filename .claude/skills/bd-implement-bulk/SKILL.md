@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Implement a batch of tickets end to end: plan, run, merge. You are the **orchestrator**: you never implement a ticket yourself. Each ticket is implemented by a sub-agent following `bd-implement`, in its own worktree, and you merge the pull requests in the order the plan fixes. Every rule of `CLAUDE.md` (Implementing tickets) holds for each ticket. Don't ask between steps; the exceptions are named below.
 
-Flags: `-plan` prints the plan (step 2) and stops. `-max N` caps the sub-agents running at once (default 3: each one runs typecheck, lint and vitest, on two workers). `-budget P` is the share of the plan's 5-hour usage window a run may project up to before it holds new sub-agents back (default 85, step 3.1); `-cost P` sets the points of that window one ticket is assumed to take until the run has measured its own (default 10); `-no-budget` turns the usage gate off, leaving only `-max`.
+Flags: `-plan` prints the plan (step 2) and stops. `-max N` caps the sub-agents running at once (default 3: each one runs typecheck, lint and vitest, its tests held to two workers, step 3's `BD_TEST_WORKERS=2`). `-budget P` is the share of the plan's 5-hour usage window a run may project up to before it holds new sub-agents back (default 85, step 3.1); `-cost P` sets the points of that window one ticket is assumed to take until the run has measured its own (default 10); `-no-budget` turns the usage gate off, leaving only `-max`.
 
 ## 1. Read the batch
 
