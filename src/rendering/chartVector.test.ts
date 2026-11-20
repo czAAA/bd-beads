@@ -7,9 +7,11 @@ import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
 import { TECHNIQUES, type Technique } from '../domain/weave'
-import { drawChartParts, K, letterColor, letterPt, placeBeads } from './chartVector'
-import { helveticaWidth } from '../domain/helvetica'
-import { type PageDrawing, PdfContent } from '../domain/pdfContent'
+import { drawChartParts, K, letterColor, letterPt, mmPt, placeBeads, rulerNumberPt } from './chartVector'
+import { HELVETICA_CAP_HEIGHT, helveticaWidth } from '../domain/helvetica'
+import { type PageDrawing, PdfContent, type TextStyle } from '../domain/pdfContent'
+import { PRINT_COLORS } from './printColors'
+import { planWithKey } from './chartPageKey'
 import { acrossNumber, EMPTY_CROSS_SHARE } from './printPages'
 import { chartOnPageOne, displayedGrid, partLetter, planPrint, mm, PRINT_RULER, type PrintPlan } from './printPlan'
 import { customChart } from './customChart'
@@ -56,6 +58,30 @@ function crossArms(content: string): number[][] {
 }
 
 const texts = (content: string) => [...content.matchAll(/BT \/(F[12]) ([\d.]+) Tf ([\d.]+) Tz ([\d.-]+) ([\d.-]+) Td \(([^)]*)\) Tj ET/g)].map((match) => ({ font: match[1]!, size: Number(match[2]), scale: Number(match[3]), x: Number(match[4]), y: Number(match[5]), value: match[6]! }))
+
+/** A Schema of `columns` × `rows` with every position painted. */
+function full(technique: Technique, beadId: string, columns: number, rows: number, orientation: number, techniqueSettings?: Record<string, number>): Project {
+  const base = createProject({ technique, beadId, ...(techniqueSettings ? { techniqueSettings } : {}), size: { width: columns, height: rows, unit: 'beads' } })
+  const { columns: wide, rows: tall } = frameOf(base)!
+  const beads = Object.fromEntries(Array.from({ length: tall }, (_, row) => [row, Object.fromEntries(Array.from({ length: wide }, (_, column) => [column, DARK]))]))
+  return withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation, paletteLetters: LETTERS, letters: false })
+}
+
+/** The ruler numbers the parts are drawn with: each text that is only digits, with its style and place in points. */
+function rulerTexts(project: Project, plan: PrintPlan, parts: PrintPlan['parts']) {
+  const found: { value: string; x: number; baseline: number; style: TextStyle; align?: string }[] = []
+  const recorder: PageDrawing = {
+    fillRect: () => {},
+    lines: () => {},
+    roundRect: () => {},
+    polygon: () => {},
+    text: (value, x, baseline, style, align) => {
+      if (/^\d+$/.test(value)) found.push({ value, x, baseline, style, ...(align ? { align } : {}) })
+    },
+  }
+  drawChartParts(recorder, project, plan, parts, LETTERS)
+  return found
+}
 
 /** The parts drawn as PDF operators. */
 function pdfOf(project: Project, plan: ReturnType<typeof planPrint>, parts: ReturnType<typeof planPrint>['parts'], letters: Record<string, string>, height = plan.page.height) {
@@ -178,27 +204,87 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(across / (plan.zoom * displayedGrid(project).stepAcross * K)).toBeCloseTo(EMPTY_CROSS_SHARE, 2)
   })
 
-  it('numbers only every 5th row and column, upright, on all four sides, the tens in Helvetica-Bold', () => {
-    const { content, plan } = chartOf(schema('loom', 150, 100))
+  it('numbers every row and column, upright, on all four sides, in Helvetica regular (ticket 1129)', () => {
+    const { content } = chartOf(schema('loom', 150, 100))
     const numbers = texts(content.toString()).filter((text) => /^\d+$/.test(text.value))
-    const values = numbers.map((text) => Number(text.value))
 
-    expect(plan.beadMm).toBeGreaterThanOrEqual(2.2)
-    expect(values.every((value) => value % 5 === 0)).toBe(true)
-    // Part A's 75 columns: 15 numbers on each of the top and bottom; 100 rows: 20 on each of the left and right.
-    expect(numbers).toHaveLength(15 * 2 + 20 * 2)
-    expect(numbers.filter((text) => text.value === '10').map((text) => text.font)).toEqual(['F2', 'F2', 'F2', 'F2'])
-    expect(numbers.filter((text) => text.value === '5').map((text) => text.font)).toEqual(['F1', 'F1', 'F1', 'F1'])
+    // Part A's 75 columns on each of the top and bottom, the 100 rows on each of the left and right.
+    expect(numbers).toHaveLength(75 * 2 + 100 * 2)
+    expect(new Set(numbers.map((text) => text.font))).toEqual(new Set(['F1']))
+    expect(numbers.filter((text) => text.value === '1')).toHaveLength(4)
     // Upright: no text matrix is ever set, so nothing is turned.
     expect(content.toString()).not.toContain(' Tm')
   })
 
-  it('numbers only every 10th row and column under 2.2 mm a bead (ticket 0913)', () => {
-    const numbers = texts(chartOf(schema()).content.toString()).filter((text) => /^\d+$/.test(text.value))
+  it.each([0, 90, 180, 270])('counts a trimmed chart turned %s° 1… left to right on the top and bottom, 1… top to bottom on the sides', (turn) => {
+    // A 13 × 30 piece in the middle of a 30 × 39 Frame.
+    const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 30, height: 39, unit: 'beads' } })
+    const beads = Object.fromEntries(Array.from({ length: 30 }, (_, row) => [row + 4, Object.fromEntries(Array.from({ length: 13 }, (_, column) => [column + 8, DARK]))]))
+    const project = withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation: turn, paletteLetters: LETTERS, letters: false })
+    const plan = planWithKey(project)
+    const numbers = rulerTexts(project, plan, plan.parts.filter((part) => part.page === plan.parts[0]!.page))
+    const [across, down] = turn % 180 === 0 ? [13, 30] : [30, 13]
+    const count = (length: number) => Array.from({ length }, (_, index) => String(index + 1))
+    const top = Math.min(...numbers.map((text) => text.baseline))
+    const bottom = Math.max(...numbers.map((text) => text.baseline))
 
-    expect(numbers.every((text) => Number(text.value) % 10 === 0)).toBe(true)
-    expect(numbers).toHaveLength(10 * 2 + 10 * 2)
-    expect(numbers.every((text) => text.size === 6.5)).toBe(true)
+    expect(plan.parts).toHaveLength(1)
+    for (const edge of [top, bottom]) expect(numbers.filter((text) => text.baseline === edge && text.align === 'center').sort((p, q) => p.x - q.x).map((text) => text.value)).toEqual(count(across))
+    for (const side of ['right', 'left']) expect(numbers.filter((text) => text.align === side).sort((p, q) => p.baseline - q.baseline).map((text) => text.value)).toEqual(count(down))
+  })
+
+  it('sets every ruler number `muted`, the overlap\'s `faint`, none in ink (ticket 1129)', () => {
+    const { plan } = chartOf(schema('loom', 150, 100), 1)
+    const numbers = rulerTexts(schema('loom', 150, 100), plan, [plan.parts[1]!])
+
+    expect(new Set(numbers.filter((text) => Number(text.value) >= 76).map((text) => text.style.color))).toEqual(new Set([PRINT_COLORS.muted]))
+    expect(new Set(numbers.filter((text) => ['74', '75'].includes(text.value) && text.baseline < mm(30)).map((text) => text.style.color))).toEqual(new Set([PRINT_COLORS.faint]))
+  })
+
+  it('sets every ruler number on a page in one size, the card\'s: 3.1 pt on part B of a 150 × 100, 2.4 pt on a 100 × 100 at 1.8 mm', () => {
+    const wide = chartOf(schema('loom', 150, 100), 1)
+    const small = chartOf(schema())
+    const sizes = (content: PdfContent) => new Set(texts(content.toString()).filter((text) => /^\d+$/.test(text.value)).map((text) => text.size))
+
+    expect([...sizes(wide.content)]).toHaveLength(1)
+    expect([...sizes(wide.content)][0]).toBeCloseTo(3.1, 1)
+    expect([...sizes(small.content)]).toHaveLength(1)
+    expect([...sizes(small.content)][0]).toBeCloseTo(2.45, 1)
+  })
+
+  it('keeps 6.5 pt where the widest number fits, and a three-digit row under its band\'s 4.6 pt', () => {
+    const piece = full('loom', 'miyuki-delica-11-0', 13, 30, 0)
+    const roomy = planWithKey(piece)
+    const long = full('loom', 'toho-cube-1.5mm', 20, 120, 0)
+    const tall = planWithKey(long)
+
+    expect(rulerNumberPt(piece, roomy, roomy.parts)).toBe(6.5)
+    expect(rulerNumberPt(long, tall, tall.parts.filter((part) => part.page === tall.parts[0]!.page))).toBeLessThanOrEqual(4.6)
+  })
+
+  it('fits the widest column number in 80 % of its column and the widest row number\'s digits in 80 % of its row', () => {
+    for (const project of [schema('loom', 150, 100), schema(), schema('peyote', 40, 140), schema('brick', 140, 40)]) {
+      const plan = planPrint(project, { keyRows: 2 })
+      const grid = displayedGrid(project)
+      for (const page of new Set(plan.parts.map((part) => part.page))) {
+        const parts = plan.parts.filter((part) => part.page === page)
+        const size = rulerNumberPt(project, plan, parts)
+        const widest = (key: 'lastAcross' | 'lastDown', first: number) => String(Math.max(...parts.map((part) => part[key] - first + 1)))
+        expect(helveticaWidth(widest('lastAcross', plan.trim.firstAcross), 'regular', size)).toBeLessThanOrEqual(0.8 * grid.stepAcross * plan.zoom * K + 1e-9)
+        expect(HELVETICA_CAP_HEIGHT * size).toBeLessThanOrEqual(0.8 * grid.stepDown * plan.zoom * K + 1e-9)
+        expect(helveticaWidth(widest('lastDown', plan.trim.firstDown), 'regular', size)).toBeLessThanOrEqual(mmPt(2.7) + 1e-9)
+      }
+    }
+  })
+
+  it('draws the shared parts of one sheet in one size', () => {
+    const project = full('loom', 'toho-cube-1.5mm', 35, 120, 0)
+    const plan = planWithKey(project)
+    const sheet = plan.parts.filter((part) => part.page === plan.parts[0]!.page)
+    const sizes = new Set(rulerTexts(project, plan, sheet).map((text) => text.style.size))
+
+    expect(sheet.length).toBeGreaterThan(1)
+    expect(sizes.size).toBe(1)
   })
 
   it('draws the pad as an outline with no fill', () => {
@@ -218,13 +304,14 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(pdf).toContain('0.122 0.122 0.122 RG\n0.85 w')
   })
 
-  it('counts the 5th and 10th from the Schema’s first bead, so on part B of a 150 × 100 they fall at 75, 80, 85 and on', () => {
-    const { content, part } = chartOf(schema('loom', 150, 100), 1)
+  it('carries part B of a 150 × 100 on from part A: its top ruler reads 74, 75 (the overlap), 76… 150', () => {
+    const project = schema('loom', 150, 100)
+    const { plan, part } = chartOf(project, 1)
+    const numbers = rulerTexts(project, plan, [part])
+    const top = Math.min(...numbers.map((text) => text.baseline))
 
     expect(part.overlapAcross).toBe(2)
-    // The ruler on part B starts at column 74 (its overlap).
-    const columnNumbers = texts(content.toString()).filter((text) => /^\d+$/.test(text.value) && text.y > 750).map((text) => Number(text.value))
-    expect(columnNumbers.sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, index) => 75 + index * 5))
+    expect(numbers.filter((text) => text.baseline === top).map((text) => Number(text.value))).toEqual(Array.from({ length: 77 }, (_, index) => 74 + index))
   })
 
   it('tints the overlap 60 % toward white, with muted letters and faint numbers, under an accent line between columns 75 and 76', () => {
@@ -357,14 +444,6 @@ describe('every bead shape at the smallest and the largest bead (ticket 0913)', 
 })
 
 describe('a turned Schema prints every bead in its place (ticket 1122)', () => {
-  /** A Schema of `columns` × `rows` with every position painted. */
-  function full(technique: Technique, beadId: string, columns: number, rows: number, orientation: number, techniqueSettings?: Record<string, number>): Project {
-    const base = createProject({ technique, beadId, ...(techniqueSettings ? { techniqueSettings } : {}), size: { width: columns, height: rows, unit: 'beads' } })
-    const { columns: wide, rows: tall } = frameOf(base)!
-    const beads = Object.fromEntries(Array.from({ length: tall }, (_, row) => [row, Object.fromEntries(Array.from({ length: wide }, (_, column) => [column, DARK]))]))
-    return withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation, paletteLetters: LETTERS, letters: false })
-  }
-
   /** Every part's beads, each where it stands in the whole displayed chart, the overlap's repeats left out. */
   function printed(project: Project) {
     const plan = planPrint(project, { keyRows: 2 })
@@ -417,10 +496,15 @@ describe('a turned Schema prints every bead in its place (ticket 1122)', () => {
     const hexOf = (row: number) => `#0000${row.toString(16).padStart(2, '0')}`
     const beads = Object.fromEntries(Array.from({ length: rows }, (_, row) => [row, Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, hexOf(row)]))]))
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads }, paletteLetters: Object.fromEntries(Array.from({ length: rows }, (_, row) => [hexOf(row), partLetter(row)])) })
-    const numbered = printed(project).map((bead) => ({ ruler: acrossNumber(project, bead.across), row: parseInt(bead.color!.slice(1), 16) + 1 }))
+    const { trim } = planPrint(project, { keyRows: 2 })
+    // Each Schema row's beads stand under one ruler number, and Row by row gives that row the same number (ticket 1129).
+    const rulerOf = new Map(printed(project).map((bead) => [project.paletteLetters![bead.color!], acrossNumber(trim, bead.across)]))
+    const words = wordChartOf(project)!.rows
 
-    expect(numbered.every(({ ruler, row }) => ruler === row)).toBe(true)
-    expect(wordChartOf(project)!.rows.map((row) => row.number).sort((p, q) => p - q)).toEqual([...new Set(numbered.map(({ ruler }) => ruler))].sort((p, q) => p - q))
+    expect(rulerOf.size).toBe(rows)
+    expect(words).toHaveLength(rows)
+    for (const row of words) expect(row.number).toBe(rulerOf.get(row.runs[0]!.letter!))
+    expect([...rulerOf.values()].sort((p, q) => p - q)).toEqual(Array.from({ length: rows }, (_, index) => index + 1))
   })
 
   // The shapes of the owner's exports the cases above leave out (a loom 13 × 30 is one of them).
