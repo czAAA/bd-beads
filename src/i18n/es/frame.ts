@@ -67,7 +67,7 @@ export const frame: FrameTranslations = {
       auto: 'Auto',
       autoLabel: 'Auto, un paso por encima o por debajo del color del lienzo',
       canvasColorLabel: '{color}, el color del lienzo',
-      line: 'El margen mide 4 cuentas por cada lado. No se puede poner nada en él y las exportaciones nunca lo muestran.',
+      line: 'El margen es el espacio alrededor del marco donde no se puede dibujar. Contiene las herramientas del marco, su nombre y su tamaño.',
       titleBlock: 'Nombre y tamaño en el margen',
       changeTechnique: 'Cambiar técnica',
       changeSetting: 'Cambiar {setting}',

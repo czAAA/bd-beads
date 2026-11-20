@@ -67,7 +67,7 @@ export const frame: FrameTranslations = {
       auto: '自动',
       autoLabel: '自动，比画布颜色深浅差一级',
       canvasColorLabel: '{color}，画布颜色',
-      line: '边距每边宽 4 颗珠子。其中不能放置任何东西，导出时也不会显示。',
+      line: '边距是边框周围不能绘制的区域，放着边框工具、名称和尺寸。',
       titleBlock: '在边距上显示名称和尺寸',
       changeTechnique: '更换编织技法',
       changeSetting: '更改{setting}',

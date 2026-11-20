@@ -67,7 +67,7 @@ export const frame: FrameTranslations = {
       auto: 'Auto',
       autoLabel: 'Auto, one step off the Canvas color',
       canvasColorLabel: '{color}, the Canvas color',
-      line: 'The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it.',
+      line: 'The margin is the space around the Frame where you can’t draw. It holds the Frame’s tools, name and size.',
       titleBlock: 'Name and size on the margin',
       changeTechnique: 'Change Technique',
       changeSetting: 'Change {setting}',
