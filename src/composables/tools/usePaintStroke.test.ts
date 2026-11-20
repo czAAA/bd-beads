@@ -231,6 +231,39 @@ describe('usePaintStroke', () => {
     })
   })
 
+  describe('the Fill preview (ticket 1153)', () => {
+    const fourWide = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
+
+    it('previews exactly the beads the press then fills, under the Mirror\'s Canvas Area', () => {
+      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 10, column: 10 } })
+      const area: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 25, columns: 13 } } }
+      const { stroke, harness } = setup('fill', framed, area)
+      harness.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 10 }, { row: 20, column: 11 }, { row: 20, column: 12 }, { row: 20, column: 13 }], '#0000ff'))
+
+      const previewed = stroke.fillPreviewCells(harness.project, { row: 20, column: 11 }, '#00ff00')
+      stroke.beginOrCommitPress('paint', '#00ff00', 20, 11)
+      stroke.endStroke()
+
+      expect(previewed).toEqual([10, 11, 12].map((column) => ({ row: 20, column })))
+      expect(beadsOfLayer(harness.project, 'canvas')[20]).toEqual({ 10: '#00ff00', 11: '#00ff00', 12: '#00ff00', 13: '#0000ff' })
+    })
+
+    it('floods again only when the pointer leaves the region, the color changes or the Project does', () => {
+      const { stroke, harness, frame } = setup('fill', fourWide())
+      harness.edit('drawing', (project) => paintAt(project, [{ row: frame.row, column: frame.column }, { row: frame.row, column: frame.column + 1 }], '#0000ff'))
+      const first = stroke.fillPreviewCells(harness.project, { row: frame.row, column: frame.column }, '#00ff00')
+
+      expect(stroke.fillPreviewCells(harness.project, { row: frame.row, column: frame.column + 1 }, '#00ff00')).toBe(first)
+      const outside = stroke.fillPreviewCells(harness.project, { row: frame.row + 1, column: frame.column }, '#00ff00')
+      expect(outside).not.toBe(first)
+      expect(outside).toHaveLength(10)
+      expect(stroke.fillPreviewCells(harness.project, { row: frame.row + 1, column: frame.column + 3 }, '#00ff00')).toBe(outside)
+      expect(stroke.fillPreviewCells(harness.project, { row: frame.row + 1, column: frame.column + 3 }, '#ff0000')).not.toBe(outside)
+      harness.edit('drawing', (project) => paintAt(project, [{ row: frame.row + 2, column: frame.column }], '#0000ff'))
+      expect(stroke.fillPreviewCells(harness.project, { row: frame.row + 1, column: frame.column + 3 }, '#ff0000')).toHaveLength(9)
+    })
+  })
+
   it('ends a Select press and flushes even when no stroke was running', () => {
     const { stroke, harness, endSelectPress } = setup()
     stroke.endStroke()
