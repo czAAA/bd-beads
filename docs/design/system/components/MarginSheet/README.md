@@ -1,11 +1,11 @@
 # MarginSheet
 
-The Frame's keep-out margin drawn as a sheet of drafting paper: its own background and inner border, the Frame's tools and Row progress in its top band, a title block in the Frame's own bottom-right corner, and the rulers on three sides (ticket 0655; design canvas "Keep-out margin variants", variant A "Drafting sheet", link on ticket 0655 in the private docs repo). It replaces the flat margin and the gutter controls of the Frame card. Built by tickets 0656 (width and color), 0657 (tools, title block, Row progress) and 0658 (zoom forms and folding).
+The Frame's keep-out margin drawn as a sheet of drafting paper: its own background and inner border, the Frame's tools and Row progress in its top band, a title block in its bottom-left corner as seen, and the rulers along its left and top (tickets 0655, 1170; design canvas "Keep-out margin variants", variant A "Drafting sheet", link on ticket 0655 in the private docs repo). It replaces the flat margin and the gutter controls of the Frame card. Built by tickets 0656 (width and color), 0657 (tools, title block, Row progress) and 0658 (zoom forms and folding).
 
 ## Width
 
 - **4 bead positions on every side**, fixed, not a setting (was 6). The keep-out rules of the Frame card are unchanged; only the width is.
-- 4 is what the content needs at 100% zoom, where a bead pitch is 18px and the band 72px. The top band holds the 10px border inset, the 28px tool row, the column numbers (12px) and 7px to the Frame line: about 64px. The bottom band holds 7px from the Frame line, the 48px title block and the 10px inset: about 65px. The side bands hold the row numbers (about 40px). Three beads (54px) cannot hold the title block; five or more is empty paper.
+- 4 is what the content needs at 100% zoom, where a bead pitch is 18px and the band 72px. The top band holds the 10px border inset, the 28px tool row, the column numbers (12px) and 7px to the Frame line: about 64px. The bottom band holds 7px from the Frame line, the 48px title block and the 10px inset: about 65px. The left band holds the row numbers (about 40px); the right band is clear. Three beads (54px) cannot hold the title block; five or more is empty paper.
 
 ## The sheet
 
@@ -87,7 +87,7 @@ The Frame turns about its middle (ADR 0052, ADR 0079), seen turning over `--fram
 
 ## Title block
 
-Anchored to the inner border's bottom-right corner, two rows of `--margin-title-row` (23px), 1px `margin-line` rules between cells, filled `margin-title`, its own bottom-right corner rounded with the border.
+Anchored to the inner border's bottom-left corner as seen (ticket 1170), two rows of `--margin-title-row` (23px), 1px `margin-line` rules between cells, filled `margin-title`, its own bottom-left corner rounded with the border.
 
 | Row | Cells, left to right |
 |---|---|
@@ -100,7 +100,7 @@ Anchored to the inner border's bottom-right corner, two rows of `--margin-title-
 - **The Bead is changed from the roomy block only** (below, ticket 1015); the two-row block does not name it. The Frame panel's Settings and the Project panel keep their Bead pickers.
 - The title block is the only place the canvas shows the Frame's name: it is not drawn under the Frame (ticket 0719); an unframed named Piece's name is on its own tag (SchemaTag card, tickets 0721, 0733).
 - **Fold** (`chevron-down`) folds the title block to a tab in the same corner: the name (Inter 600 11) and `chevron-up`, 24px tall, `margin-title` fill. The tab unfolds it. Kept for the session.
-- **On a turned Canvas** (ticket 0728) the title block stays on the Frame's own bottom-right corner, the one that is bottom-right when the Canvas is upright: bottom-left on screen after Rotate Canvas to 90°, top-left at 180°, top-right at 270°. It is drawn upright on screen inside the inner border there, and its forms, the tab and giving way to a Selection's handles work there as at the bottom-right. At a top corner it shares the top edge with the band's row: the block takes the corner and the row is laid out in the width left beside it, stepping down as on a narrow sheet; the block leaves the narrowest row (the Move bar and the Frame tools button) its room, so the Frame can always be moved. During a two-finger twist it stays on that corner, its contents leaning with the Canvas by less than 45° and snapping upright on the next quarter turn past 45°. The top band itself stays along the screen's top edge. A Frame turned with Rotate Frame does not move it: the corner is taken from the Frame as it lies on the upright Canvas.
+- **Always the bottom-left as seen** (ticket 1170, replacing ticket 0728's Frame's own bottom-right carried round by the Canvas's turn): at every Canvas turn and for a Frame turned with Rotate Frame the title block sits in the sheet's bottom-left corner on screen, upright, as the top band stays along the top. It never shares the top edge with the band's row, which always has the sheet's whole width. During a two-finger twist it is at the bottom-left of the quarter turn the Canvas is drawn at, its contents leaning with the Canvas by less than 45°, and on the next quarter turn past 45° it is at the new one's bottom-left.
 
 ### Roomy title block (ticket 1015)
 
@@ -119,9 +119,9 @@ Where the band on screen is `--margin-band-roomy` (104px, a loom Frame from 130%
 
 ## Rulers and the current pass
 
-- With a Frame, its rulers are drawn on three sides, none along the screen edge the title block is on: the bottom, or the top on a Canvas turned 180° or 270° (ticket 0728). Placement, sizes and the 5th-number rule are the Rulers card's; their color follows Margin color above.
-- The **current pass** is marked on its own ruler number: a `marker` pill behind it, 2px round the number and fully rounded, the number weight 700 in `canvas` (Rulers card), in both bands that number it (left and right for a row; the top for a column once Turn row direction sets columns). The numbers sit below the tool row in every form, so the mark never meets a tool. The pass itself keeps its ring and the finished passes their dimming (BeadBoard card).
-- **Row done (ticket 0729):** the pill glides from the pass's number to the next one's over `duration-base` with `ease-standard`, in every band that numbers it, the two numbers crossfading their color; the tick glides along the Frame's line the same way. When the last pass is done the pill and the tick fade out over 150ms (`ease-in`) and Pattern done plays over the Frame, inside the sheet (Motion section, Row progress). Under reduced motion they jump.
+- With a Frame, its rulers stand in the left and top bands as seen, at every turn (ticket 1170; three sides, none along the title block's edge, until then). Placement, sizes and the 5th-number rule are the Rulers card's; their color follows Margin color above.
+- The **current pass** is marked on its own ruler number: a `marker` pill behind it, 2px round the number and fully rounded, the number weight 700 in `canvas` (Rulers card), in the band that numbers it (the left for a pass across the screen, the top for one down it). The numbers sit below the tool row in every form, so the mark never meets a tool. The pass itself keeps its ring and the finished passes their dimming (BeadBoard card).
+- **Row done (ticket 0729):** the pill glides from the pass's number to the next one's over `duration-base` with `ease-standard`, the two numbers crossfading their color; the tick glides along the Frame's line the same way. When the last pass is done the pill and the tick fade out over 150ms (`ease-in`) and Pattern done plays over the Frame, inside the sheet (Motion section, Row progress). Under reduced motion they jump.
 - Where the pass has no number drawn (the compact and folded forms, Rulers off, a Frame turned a quarter, whose numbers count the cells it covers, or a Ruler step that skips it), the mark is a **tick**: 3px thick in `marker`, rounded, from the middle of the Frame's line in to the beads, at the pass; on the left and right sides for a pass across the screen, on the top for one down it. Inside the line, it never stands under a tool.
 - None for a Custom frame, whose passes are no line, nor once every pass is done, nor in the bare form (ticket 0685; it replaced a 9 × 12 `marker` triangle 4px outside the numbers, which with columns could sit under a tool).
 
@@ -195,7 +195,7 @@ Expand the Frame, Back to the Canvas, Frame expanded (ticket 1168), Margin color
 - [ ] The top band holds Row progress, the Move bar and the tools; Row done there and in the Progress bar move the same pointer.
 - [ ] The title block edits the name, the Technique and the maker's name, shows the sizes and the lettered legend, and toggles Letters.
 - [ ] From 104px of band the title block is roomy: it names the Bead, Change asks Replace bead? through the Frame panel's pickers, and the key counts each color.
-- [ ] Rulers top, left and right; the current pass marked on its number, or by a tick on the Frame's line where it has none.
+- [ ] Rulers top and left as seen, at every turn; the current pass marked on its number, or by a tick on the Frame's line where it has none.
 - [ ] The full, compact and folded forms follow the band's height, with nothing clipped or overlapping; the fold button and tab work.
 - [ ] No gutter controls remain; exports never show the sheet.
 

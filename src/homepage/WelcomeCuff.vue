@@ -122,8 +122,9 @@ onMounted(() => {
 const name = computed(() => cuffName(t.value, project.value))
 
 /** The bar's forms, best first: the counter's words, "Pass 7 of 95 · row 4"; short, "7/95 · row 4", as the editor's
- * narrow bar has it; shortest, "7/95"; and stacked, short with the moves on a row of their own, as on a phone. */
-const COUNTER_FORMS = ['words', 'short', 'shortest', 'stacked'] as const
+ * narrow bar has it; shortest, "7/95"; trackless, "7/95" and the moves with no track, as the margin sheet's row gives
+ * up its track first (ticket 1170); and stacked, short with the moves on a row of their own, as on a phone. */
+const COUNTER_FORMS = ['words', 'short', 'shortest', 'trackless', 'stacked'] as const
 const barEl = ref<HTMLElement>()
 const { width: barRoom } = useElementSize(barEl)
 /** What the bar's first row needs: the counter, the track at its least, and the moves where they share the row (on a
@@ -131,14 +132,18 @@ const { width: barRoom } = useElementSize(barEl)
 function firstRowWidth(): number {
   const items = [...(barEl.value?.querySelectorAll<HTMLElement>(':scope > .row-progress > *') ?? [])]
   const counter = items[0]
-  const first = counter ? items.filter((item) => item.offsetTop < counter.offsetTop + counter.offsetHeight) : []
+  // A part the form hides takes no room (trackless has no track).
+  const shown = items.filter((item) => getComputedStyle(item).display !== 'none')
+  const first = counter ? shown.filter((item) => item.offsetTop < counter.offsetTop + counter.offsetHeight) : []
   const gap = barEl.value ? Number.parseFloat(getComputedStyle(barEl.value).columnGap) || 0 : 0
   const widths = first.map((item) => (item.classList.contains('progress-track') ? Number.parseFloat(getComputedStyle(item).minWidth) || 0 : item.offsetWidth))
   return widths.reduce((sum, width) => sum + width, 0) + gap * Math.max(0, first.length - 1)
 }
 const counterFit = useFittingForm({
   forms: () => COUNTER_FORMS,
-  room: () => barRoom.value,
+  // Read off the page until the observer first reports, so the form is chosen before the first paint and the Welcome
+  // holds still as it arrives (ticket 1170).
+  room: () => barRoom.value || barEl.value?.clientWidth || 0,
   measure: firstRowWidth,
   observed: () => [barEl.value?.querySelector('.row-progress__counter-text')],
   labels: () => locale.value,
@@ -204,12 +209,16 @@ const counterForm = computed(() => counterFit.value ?? 'stacked')
 .welcome-cuff__bar--short :deep(.row-progress__woven-step),
 .welcome-cuff__bar--shortest :deep(.row-progress__woven-step),
 .welcome-cuff__bar--shortest :deep(.row-progress__woven-line),
+.welcome-cuff__bar--trackless :deep(.row-progress__woven-step),
+.welcome-cuff__bar--trackless :deep(.row-progress__woven-line),
+.welcome-cuff__bar--trackless :deep(.row-progress__track),
 .welcome-cuff__bar--stacked :deep(.row-progress__woven-step) {
   display: none;
 }
 
 .welcome-cuff__bar--short :deep(.row-progress__woven-short),
 .welcome-cuff__bar--shortest :deep(.row-progress__woven-short),
+.welcome-cuff__bar--trackless :deep(.row-progress__woven-short),
 .welcome-cuff__bar--stacked :deep(.row-progress__woven-short) {
   display: inline;
 }
