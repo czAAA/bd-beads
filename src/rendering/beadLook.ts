@@ -84,10 +84,6 @@ export interface ProjectTheme {
   /** Whether empty positions are tonal tiles from the Background (ticket 1001, BeadBoard card, Tonal tiles): the screen
    * in light and dark. High contrast and exports keep the `positionMark` outline and the `emptyBead` bead. */
   tonalTiles: boolean
-  /** Whether every Piece lies on the Canvas with a contour and a soft shadow (ticket 1004, BeadBoard card, Lifted
-   * piece), in place of the Piece area's rectangle: the screen in light and dark. High contrast and exports keep the
-   * rectangle. */
-  liftedPiece: boolean
   /** The rim of a near-black bead, where a dark `rim` would vanish: white in light and dark, the theme's own `rim`
    * in high contrast. */
   rimOnBlack: string
@@ -133,7 +129,6 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   rim: 'rgba(20,20,19,.12)',
   ownColorRim: true,
   tonalTiles: true,
-  liftedPiece: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
@@ -157,7 +152,6 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   rim: WHITE_RIM,
   ownColorRim: true,
   tonalTiles: true,
-  liftedPiece: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
@@ -180,7 +174,6 @@ const CONTRAST_THEME: ProjectTheme = {
   rim: 'rgba(0,0,0,.35)',
   ownColorRim: false,
   tonalTiles: false,
-  liftedPiece: false,
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
@@ -194,7 +187,7 @@ const CONTRAST_THEME: ProjectTheme = {
 }
 
 /** PNG and PDF exports: always light, whatever the app's theme, on the `print-board`, in the flat bead. */
-export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec', ownColorRim: false, tonalTiles: false, liftedPiece: false }
+export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec', ownColorRim: false, tonalTiles: false }
 
 const flatLooks = new WeakMap<ProjectTheme, ProjectTheme>()
 
@@ -245,6 +238,13 @@ export interface BeadShape {
 }
 
 export type BeadDrawer = (context: DrawingContext, bead: BeadShape) => void
+
+/** A bead drawer that draws the painted beads only: the empty ones are drawn already, under them. */
+export function paintedOnly(draw: BeadDrawer): BeadDrawer {
+  return (context, bead) => {
+    if (bead.color !== null) draw(context, bead)
+  }
+}
 
 /** The gap between two neighbouring beads, in the Project's own px (ticket 458): each bead stands half of it in from
  * its cell on every side. */
@@ -484,7 +484,8 @@ function rgbaText({ r, g, b }: Rgb, alpha: number): string {
 }
 
 /** Whether a bead of this corner and width is a round one, drawn in Open weave (ticket 1010, BeadBoard card, Canvas
- * look): its corner is a half circle. Read from the shape, never from a Bead's name. */
+ * look): its corner is a half circle. Read from the shape, never from a Bead's name.
+ * @internal Tests name it. */
 export function isOpenWeave(cornerRadius: number, width: number): boolean {
   return width > 0 && hasHalfCircleCorner(cornerRadius / width)
 }

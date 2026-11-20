@@ -25,7 +25,6 @@ import { canvasOf, frameOf, heldWeave, quarterTurnOf, withFrameSheet, withLayer 
 import { findBead } from '../../domain/beads'
 import { scaledBead } from '../../testUtils/squareBead'
 import { moveToRow, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
-import { LIFT_REACH_PX } from '../../rendering/liftedPiece'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { PATTERN_DONE_MS, ROW_MOTION } from '../../rendering/rowMotion'
@@ -96,8 +95,7 @@ const TOUCH = { pointerType: 'touch', isPrimary: true }
 const PEN = { pointerType: 'pen', isPrimary: true }
 const MOUSE = { pointerType: 'mouse', isPrimary: true }
 
-/** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. The Lifted
- * piece's shadow sheet clears itself too (ticket 1006), here on the same recorded context: a few px, not the surface. */
+/** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. */
 const draws = () => context.named('clearRect').filter(({ args }) => (args[2] as number) > 100).length / 2
 
 describe('ProjectSurface', () => {
@@ -394,9 +392,8 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: painted(project, 12, 4) })
 
-      // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it, widened by three rows
-      // either side, where the Lifted piece's contour and shadow reach (ticket 1004).
-      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 180, 400, 140]])
+      // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it.
+      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
     })
 
     it('draws a band for each cluster of changed rows, as a change to rows far apart', async () => {
@@ -407,7 +404,7 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: painted(painted(project, 3, 4), 26, 4) })
 
-      expect(context.named('rect').map((call) => call.args[1])).toEqual([0, 460])
+      expect(context.named('rect').map((call) => call.args[1])).toEqual([60, 520])
     })
 
     // A shaped Frame's rows are its layout's, not rows on the screen: a Fringe earring's top is counted up from its base
@@ -536,16 +533,15 @@ describe('ProjectSurface', () => {
       expect(await nextFrame()).toEqual(['all'])
 
       await surface.trigger('pointerdown', { ...pointAt(2, 1), button: 0, buttons: 1 })
-      // Each band reaches three rows either side of the rows painted, as far as the Lifted piece does (ticket 1004).
-      expect(await nextFrame()).toEqual([{ first: 0, last: 5 }])
+      expect(await nextFrame()).toEqual([{ first: 2, last: 2 }])
 
       // Two moves in one frame, seven beads along row 2: still one draw, of that row.
       await surface.trigger('pointermove', { ...pointAt(2, 4), buttons: 1 })
       await surface.trigger('pointermove', { ...pointAt(2, 8), buttons: 1 })
-      expect(await nextFrame()).toEqual([{ first: 0, last: 5 }])
+      expect(await nextFrame()).toEqual([{ first: 2, last: 2 }])
 
       await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
-      expect(await nextFrame()).toEqual([{ first: 0, last: 9 }])
+      expect(await nextFrame()).toEqual([{ first: 3, last: 6 }])
 
       // Over a bead already painted, and the release: nothing changed, so nothing is drawn.
       await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
@@ -589,7 +585,7 @@ describe('ProjectSurface', () => {
   })
 
   // Row done, Row not done and a press on the Progress bar (ticket 1038): only the passes whose look changed are drawn
-  // again, the one finished and the new current row, with the rows their Lifted pieces reach.
+  // again, the one finished and the new current row.
   describe('when a Progress bar step moves Row progress', () => {
     /** The view's cut, `[x, y, width, height]`, of each band drawn again since the step. */
     const bands = () => context.named('rect').map((call) => call.args)
@@ -609,14 +605,14 @@ describe('ProjectSurface', () => {
     it('draws again after Row done only the row finished and the new current one, of a Frame much taller', async () => {
       await step(weaving(12), weaving(13))
 
-      // Rows 12 and 13, y 240 to 280, widened by the three rows either side the Lifted piece reaches (ticket 1004).
-      expect(bands()).toEqual([[0, 180, 400, 160]])
+      // Rows 12 and 13, y 240 to 280, and the half row the weave's shift hangs below them.
+      expect(bands()).toEqual([[0, 240, 400, 40]])
     })
 
     it.each([
-      ['Row not done', 13, 12, [[0, 180, 400, 160]]],
-      ['a press a few passes along', 12, 16, [[0, 180, 400, 220]]],
-      ['a press a few passes back', 16, 12, [[0, 180, 400, 220]]],
+      ['Row not done', 13, 12, [[0, 240, 400, 40]]],
+      ['a press a few passes along', 12, 16, [[0, 240, 400, 100]]],
+      ['a press a few passes back', 16, 12, [[0, 240, 400, 100]]],
     ])('draws again after %s only the passes between', async (_name, from, to, drawn) => {
       await step(weaving(from), weaving(to))
 
@@ -626,8 +622,8 @@ describe('ProjectSurface', () => {
     it.each([
       // On peyote a pass is every other bead of a line (its first line one pass): passes 23 and 24 are both of row 12,
       // drawn whole, down to the half bead its staggered columns hang below it.
-      ['peyote', 23, 24, [[0, 180, 400, 150]]],
-      ['brick', 12, 13, [[0, 180, 400, 160]]],
+      ['peyote', 23, 24, [[0, 240, 400, 30]]],
+      ['brick', 12, 13, [[0, 240, 400, 40]]],
     ] as const)('draws again on %s only the lines of the passes between', async (technique, from, to, drawn) => {
       await step(weaving(from, technique), weaving(to, technique))
 
@@ -639,9 +635,8 @@ describe('ProjectSurface', () => {
       const across = (pass: number) => moveToRow(turned, pass)
       await step(across(4), across(5))
 
-      // Columns 4 and 5, x 80 to 120, as far either side as the Lifted piece reaches, the view's whole height.
-      const [left, right] = [Math.floor(80 - LIFT_REACH_PX), Math.ceil(120 + LIFT_REACH_PX)]
-      expect(bands()).toEqual([[left, 0, right - left, 600]])
+      // Columns 4 and 5, x 80 to 120, the view's whole height.
+      expect(bands()).toEqual([[80, 0, 40, 600]])
     })
 
     describe('draws everything again where the passes are not a few lines of the Canvas', () => {
@@ -2480,7 +2475,7 @@ describe('ProjectSurface with a Frame', () => {
 
       await wrapper.setProps({ project: moveToRow(weaving, 10), rowPress: lastPass })
       await at(1000)
-      // Row 9, y 180 to 200, across the view: high contrast has no Lifted piece to reach further.
+      // Row 9, y 180 to 200, across the view.
       expect(cells.named('rect').map((call) => call.args)).toEqual([[0, 180, 1000, 20]])
 
       cells.calls.length = 0

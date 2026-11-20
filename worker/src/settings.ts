@@ -6,13 +6,13 @@ import { ApiError, json } from './errors'
 import { rateLimit, sizeCap, type RateLimitRule } from './guards'
 import { requireAccount } from './sessions'
 
-// The Settings kept in step (ticket 1086, ADR 0014): language, theme and Lifted pieces, one row per account and
+// The Settings kept in step (ticket 1086, ADR 0014): language and theme, one row per account and
 // setting in `core`, unencrypted. A device reads them with `GET /api/me` and sends its changes here; the later change
 // wins, setting by setting. The account always comes from the session, so no account reaches another's.
 
 /** Per account: a person changes a setting a few times in a row at most, and each change is one request. */
 const SETTINGS_RATE: RateLimitRule = { binding: 'SETTINGS_RATE', periodSeconds: 60 }
-/** Not a tuning knob: three settings are under 300 bytes, so this only keeps a flood's body out of memory. */
+/** Not a tuning knob: two settings are under 300 bytes, so this only keeps a flood's body out of memory. */
 const SETTINGS_BODY_CAP_BYTES = 4 * 1024
 
 /** A setting as the API sends it: its value and when it was changed, in epoch milliseconds. */
@@ -36,7 +36,7 @@ const KEEP_THE_LATER = `INSERT INTO settings (account_id, name, value, changed_a
 
 /** `POST /api/settings`: the signed-in account's changed settings, `{ settings: { <name>: { value, changedAt } } }`.
  * Each is kept only when its change is later than the one held, and a time in the future counts as now. Answers with
- * what the account now holds. Anything but the three settings and their own values is `400 bad-request`. */
+ * what the account now holds. Anything but the two settings and their own values is `400 bad-request`. */
 export const settingsRoute: Route = {
   method: 'POST',
   path: '/api/settings',

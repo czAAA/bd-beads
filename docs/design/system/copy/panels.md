@@ -95,14 +95,3 @@ The Project panel's canvas section says which layer it sets while a Frame is on 
 
 English follows the audit's proposal (UX-018); the other languages are proposals for review with the build.
 
-## Lifted pieces copy (ticket 1042)
-
-The Menu's Preferences switch for the Lifted piece (BeadBoard card), named in the plural, as it switches every Piece at once, and what it does behind its Info button: what a person sees with it on, then what Off leaves.
-
-| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
-|---|---|---|---|---|---|---|
-| Lifted pieces | Приподнятые кусочки | Підняті шматочки | Прыпаднятыя кавалачкі | 浮起的小块 | Trozos en relieve | Uniesione kawałki |
-| What Lifted pieces does (the Info button) | Что делают Приподнятые кусочки | Що роблять Підняті шматочки | Што робяць Прыпаднятыя кавалачкі | 浮起的小块的作用 | Para qué sirven los Trozos en relieve | Do czego służą Uniesione kawałki |
-| Each piece lies on its own ground, with a thin line and a soft shadow round it. Switched off, pieces lie flat on the Canvas. | Каждый кусочек лежит на своей подложке, с тонкой линией и мягкой тенью вокруг. Если выключить, кусочки лежат на холсте плоско. | Кожен шматочок лежить на власній підкладці, з тонкою лінією та м’якою тінню навколо. Якщо вимкнути, шматочки лежать на полотні пласко. | Кожны кавалачак ляжыць на сваёй падкладцы, з тонкай лініяй і мяккім ценем вакол. Калі выключыць, кавалачкі ляжаць на палатне плоска. | 每个小块都衬在自己的底色上，周围有一条细线和柔和的阴影。关闭后，小块平铺在画布上。 | Cada trozo descansa sobre su propio fondo, con una línea fina y una sombra suave alrededor. Si lo apagas, los trozos quedan planos sobre el lienzo. | Każdy kawałek leży na własnym tle, z cienką linią i miękkim cieniem dookoła. Po wyłączeniu kawałki leżą płasko na płótnie. |
-
-The languages other than English are proposals for review with the build.

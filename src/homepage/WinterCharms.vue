@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import AppLogo from '../components/ui/AppLogo.vue'
-import { PROJECT_THEMES, drawFlatBead } from '../rendering/beadLook'
+import { PROJECT_THEMES, drawFlatBead, paintedOnly } from '../rendering/beadLook'
 import { CELL_SIZE_PX } from '../rendering/cellSize'
-import { paintedOnly } from '../rendering/liftedPiece'
 import { renderProject } from '../rendering/projectRenderer'
 import { spaceOf } from '../rendering/space'
 import { useResolvedTheme } from '../theme/useResolvedTheme'
@@ -25,8 +24,8 @@ const props = defineProps<{
 }>()
 
 const theme = useResolvedTheme()
-/** The theme's look with nothing but the beads: no ground, tiles, Lifted piece, piece line or Position marks. */
-const BEADS_ONLY = { background: 'transparent', tonalTiles: false, liftedPiece: false, pieceLine: 'transparent', positionMark: 'transparent' }
+/** The theme's look with nothing but the beads: no ground, tiles, piece line or Position marks. */
+const BEADS_ONLY = { background: 'transparent', tonalTiles: false, pieceLine: 'transparent', positionMark: 'transparent' }
 const rootEl = ref<HTMLElement>()
 const charms = shallowRef<PlacedCharm[]>([])
 const marks = shallowRef<PlacedMark[]>([])

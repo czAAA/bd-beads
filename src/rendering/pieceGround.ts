@@ -1,7 +1,7 @@
 import { BLACK_WHITE_BALANCE, channelsOf, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
 
-// The piece's ground (BeadBoard card, Lifted piece): what lies between round beads (Open weave). Its own module, as the
-// Lifted piece draws it and the bead look parts a pale round bead from it (ticket 1037).
+// The piece's ground (BeadBoard card): what lies between round beads (Open weave), from which the bead look parts a pale
+// round bead (ticket 1037).
 
 /** How far toward white the piece's ground is from the Background. */
 const GROUND_TOWARD_WHITE = { dark: 0.05, light: 0.8 }

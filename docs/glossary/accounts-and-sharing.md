@@ -27,7 +27,7 @@ _Avoid_: sign up, register, log in, log out
 _Avoid_: login provider, auth method, identity
 
 **Settings kept in step**:
-The three settings a signed-in person finds the same on all their devices: language, theme and the Lifted pieces switch (ADR 0014). Every other preference stays on its device, and the Maker's name belongs to each Project. At sign-in the account's settings win over the device's; after that the later change wins, setting by setting, and a device picks changes up when the app opens or its tab comes back into view. "Sync" is kept for Projects.
+The two settings a signed-in person finds the same on all their devices: language and theme (ADR 0014; a third, the Lifted pieces switch, went with the Lifted piece, which was removed on 2026-11-20). Every other preference stays on its device, and the Maker's name belongs to each Project. At sign-in the account's settings win over the device's; after that the later change wins, setting by setting, and a device picks changes up when the app opens or its tab comes back into view. "Sync" is kept for Projects.
 _Avoid_: settings sync, synced settings, basic settings
 
 **Edit link**:

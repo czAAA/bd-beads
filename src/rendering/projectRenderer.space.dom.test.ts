@@ -9,7 +9,6 @@ import { canvasWeave, weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { canvasBlits, recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, PROJECT_THEMES, type BeadShape, type ProjectTheme } from './beadLook'
-import { LIFT_REACH_PX } from './liftedPiece'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
@@ -142,8 +141,7 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
     it('starts a band at the top of its first row, with no seam above it', () => {
       expect(topOf(false, 2)[1]).toBe(positionBoxPx({ technique }, 2, 0).y)
       expect(topOf(false, 0)[1]).toBe(positionBoxPx({ technique }, 0, 0).y)
-      // Open, the band starts where the Lifted piece's contour above its first row reaches (ticket 1004).
-      expect(topOf(true, 8)[1]).toBeLessThanOrEqual(positionBoxPx({ technique }, 8, 0).y - LIFT_REACH_PX)
+      expect(topOf(true, 8)[1]).toBe(positionBoxPx({ technique }, 8, 0).y)
     })
   })
 })
@@ -173,8 +171,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads: withColors({}, [{ row: 0, column: 0, color: '#e63746' }]) } })
     const { calls, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
     expect(beads.map(({ color }) => color)).toEqual(['#e63746'])
-    // Eleven tiles, and the Lifted piece's shadows (ticket 1004).
-    expect(canvasBlits(calls)).toBe(12)
+    expect(canvasBlits(calls)).toBe(11)
   })
 
   it('draws the Frame\'s empty beads and marks in its look where tiles are not drawn (high contrast, exports)', () => {

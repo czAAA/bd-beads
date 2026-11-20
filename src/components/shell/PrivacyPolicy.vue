@@ -19,7 +19,7 @@ const { t, locale } = useI18n()
       <h2>In short</h2>
       <ul>
         <li>openbeads works without an account. Your Projects and settings stay in your browser, on your device.</li>
-        <li>An account is optional. It keeps your email address and three settings, so they are the same on all your devices.</li>
+        <li>An account is optional. It keeps your email address and two settings, so they are the same on all your devices.</li>
         <li>No ads, no analytics, no tracking, no selling of data.</li>
         <li>You can delete your account at any time, from the app.</li>
       </ul>
@@ -43,7 +43,7 @@ const { t, locale } = useI18n()
         <li>your verified email address;</li>
         <li>Google's id for your account, so you are still found if your address changes;</li>
         <li>your plan (Free) and the date the account was made;</li>
-        <li>three settings kept in step: language, theme and Lifted pieces, each with the time it was last changed.</li>
+        <li>two settings kept in step: language and theme, each with the time it was last changed.</li>
       </ul>
       <p>
         openbeads does not keep your name, your picture or any Google token. Your Projects stay on your device: they are

@@ -25,11 +25,10 @@ function setup(start: Partial<MemoryAccountState> = {}, shows: Partial<DeviceSet
 
 /** A device already signed in, whose account holds what the device shows, but for `held`. */
 function signedIn(start: Partial<MemoryAccountState> = {}, shows: Partial<DeviceSettings> = {}, held: KeptSettings = {}) {
-  const shown = { language: 'en', theme: 'device', liftedPieces: 'on', ...shows } as DeviceSettings
+  const shown = { language: 'en', theme: 'device', ...shows } as DeviceSettings
   const settings: KeptSettings = {
     language: { value: shown.language, changedAt: NOW - 5000 },
     theme: { value: shown.theme, changedAt: NOW - 5000 },
-    liftedPieces: { value: shown.liftedPieces, changedAt: NOW - 5000 },
     ...held,
   }
   return setup({ remembered: ann, session: ann, settings, ...start }, shows)
@@ -47,21 +46,21 @@ afterEach(() => vi.useRealTimers())
 
 describe('the Settings kept in step: signing in', () => {
   it('lets the account win at sign-in, through the device’s own setters, with no toast', async () => {
-    const settings = { language: { value: 'ru', changedAt: 1 }, theme: { value: 'dark', changedAt: 2 }, liftedPieces: { value: 'off', changedAt: 3 } } as const
-    const { account, device, showToast } = setup({ returned: 'signed-in', session: ann, settings }, { language: 'en', theme: 'light', liftedPieces: 'on' })
+    const settings = { language: { value: 'ru', changedAt: 1 }, theme: { value: 'dark', changedAt: 2 } } as const
+    const { account, device, showToast } = setup({ returned: 'signed-in', session: ann, settings }, { language: 'en', theme: 'light' })
     await settled()
-    expect(device.shown).toEqual({ language: 'ru', theme: 'dark', liftedPieces: 'off' })
-    expect(device.sets).toEqual([{ language: 'ru' }, { theme: 'dark' }, { liftedPieces: 'off' }])
+    expect(device.shown).toEqual({ language: 'ru', theme: 'dark' })
+    expect(device.sets).toEqual([{ language: 'ru' }, { theme: 'dark' }])
     // Taking the account's values is not a change made here: nothing is sent back.
     expect(account.state.sent).toEqual([])
     expect(account.state.settings).toEqual(settings)
     expect(showToast).not.toHaveBeenCalled()
   })
 
-  it('uploads the device’s three at the first sign-in ever', async () => {
-    const { account, device } = setup({ returned: 'signed-in', session: ann }, { language: 'pl', theme: 'contrast', liftedPieces: 'off' })
+  it('uploads the device’s two at the first sign-in ever', async () => {
+    const { account, device } = setup({ returned: 'signed-in', session: ann }, { language: 'pl', theme: 'contrast' })
     await settled()
-    const uploaded = { language: { value: 'pl', changedAt: NOW }, theme: { value: 'contrast', changedAt: NOW }, liftedPieces: { value: 'off', changedAt: NOW } }
+    const uploaded = { language: { value: 'pl', changedAt: NOW }, theme: { value: 'contrast', changedAt: NOW } }
     expect(account.state.sent).toEqual([uploaded])
     expect(account.state.settings).toEqual(uploaded)
     expect(device.sets).toEqual([])
@@ -70,15 +69,15 @@ describe('the Settings kept in step: signing in', () => {
   it('takes what the account holds and sends only what it lacks', async () => {
     const { account, device } = setup({ returned: 'signed-in', session: ann, settings: { theme: { value: 'dark', changedAt: 2 } } }, { language: 'es' })
     await settled()
-    expect(device.shown).toEqual({ language: 'es', theme: 'dark', liftedPieces: 'on' })
-    expect(account.state.sent).toEqual([{ language: { value: 'es', changedAt: NOW }, liftedPieces: { value: 'on', changedAt: NOW } }])
+    expect(device.shown).toEqual({ language: 'es', theme: 'dark' })
+    expect(account.state.sent).toEqual([{ language: { value: 'es', changedAt: NOW } }])
   })
 
   it('keeps the device’s own where the account holds a value from a newer build, and sends nothing over it', async () => {
-    const settings = { language: 'unknown', theme: { value: 'dark', changedAt: 2 }, liftedPieces: { value: 'on', changedAt: 3 } } as const
+    const settings = { language: 'unknown', theme: { value: 'dark', changedAt: 2 } } as const
     const { account, device } = setup({ returned: 'signed-in', session: ann, settings }, { language: 'uk' })
     await settled()
-    expect(device.shown).toEqual({ language: 'uk', theme: 'dark', liftedPieces: 'on' })
+    expect(device.shown).toEqual({ language: 'uk', theme: 'dark' })
     expect(account.state.sent).toEqual([])
     expect(account.state.settings).toEqual(settings)
   })
@@ -124,9 +123,9 @@ describe('the Settings kept in step: a change on a signed-in device', () => {
     expect(showToast).not.toHaveBeenCalled()
     account.state.backend = 'up'
     later(1000)
-    device.shown.liftedPieces = 'off'
+    device.shown.theme = 'dark'
     await settled()
-    expect(account.state.sent).toEqual([{ language: { value: 'ru', changedAt: NOW + 1000 }, liftedPieces: { value: 'off', changedAt: NOW + 2000 } }])
+    expect(account.state.sent).toEqual([{ language: { value: 'ru', changedAt: NOW + 1000 }, theme: { value: 'dark', changedAt: NOW + 2000 } }])
     expect(account.state.waiting).toEqual({})
   })
 
@@ -212,10 +211,10 @@ describe('the Settings kept in step: the app opens, or its tab comes back', () =
     const { account, device } = signedIn({}, { language: 'en' }, { language: { value: 'be', changedAt: NOW - 1000 } })
     await settled()
     expect(device.shown.language).toBe('be')
-    account.state.settings = { ...(account.state.settings as object), liftedPieces: { value: 'off', changedAt: NOW + 1000 } }
+    account.state.settings = { ...(account.state.settings as object), theme: { value: 'dark', changedAt: NOW + 1000 } }
     account.comeBackInView()
     await settled()
-    expect(device.shown.liftedPieces).toBe('off')
+    expect(device.shown.theme).toBe('dark')
     expect(account.state.sent).toEqual([])
   })
 

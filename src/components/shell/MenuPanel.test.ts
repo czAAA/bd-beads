@@ -158,7 +158,7 @@ describe('MenuPanel on every page (tickets 540, 1113)', () => {
 
   it('holds the same rows in the editor, on Convert image and on the Homepage', () => {
     const editor = rowsOn({})
-    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-keep-projects', 'menu-lifted-pieces', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback', 'menu-item-homepage']))
+    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-keep-projects', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback', 'menu-item-homepage']))
     expect(rowsOn({ page: 'convert-image' })).toEqual(editor)
     expect(rowsOn({ page: 'homepage' })).toEqual(editor)
   })
@@ -324,29 +324,5 @@ describe('MenuPanel Kept by this browser (tickets 0839, 0936)', () => {
   it('is absent where the browser can\'t say, and in the demo', () => {
     expect(mountIn().find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
     expect(mountIn({ kept: false, demo: true }).find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
-  })
-})
-
-describe('MenuPanel Lifted pieces (ticket 1042)', () => {
-  it('has a switch under Theme, on until switched off, with what it does behind an Info button, kept on this device', async () => {
-    const wrapper = mountIn()
-    const preferences = wrapper.findAll('section')[2]!
-    const rows = preferences.findAll('[data-testid="theme-picker"], [data-testid="menu-lifted-pieces"], [data-testid="menu-tools-position"]').map((row) => row.attributes('data-testid'))
-    expect(rows).toEqual(['theme-picker', 'menu-lifted-pieces', 'menu-tools-position'])
-    const lifted = wrapper.get('[data-testid="menu-lifted-pieces"]')
-    expect(lifted.attributes()).toMatchObject({ role: 'switch', 'aria-checked': 'true', 'aria-label': en.panels.menu.liftedPieces })
-    expect(wrapper.get('[data-testid="menu-lifted-pieces-info"]').attributes('aria-label')).toBe(en.panels.menu.liftedPiecesInfoLabel)
-
-    await lifted.trigger('click')
-
-    expect(wrapper.get('[data-testid="menu-lifted-pieces"]').attributes('aria-checked')).toBe('false')
-    expect(localStorage.getItem('openbeads:lifted-pieces')).toBe('off')
-  })
-
-  it('is absent in high contrast, which lifts no Piece, and in the demo', async () => {
-    expect(mountIn({ demo: true }).find('[data-testid="menu-lifted-pieces"]').exists()).toBe(false)
-    const wrapper = mountIn()
-    document.documentElement.dataset.theme = 'contrast'
-    await vi.waitFor(() => expect(wrapper.find('[data-testid="menu-lifted-pieces"]').exists()).toBe(false))
   })
 })
