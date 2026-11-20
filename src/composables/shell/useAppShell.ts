@@ -6,6 +6,7 @@ import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
+import { UNDER_TABLET_QUERY } from '../../rendering/rulerScale'
 import type { Layer } from '../../domain/layers'
 import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads, selectionLayer } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -231,7 +232,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
-      compact: typeof window === 'undefined' ? undefined : useMediaQuery('(max-width: 743px)'),
+      compact: typeof window === 'undefined' ? undefined : useMediaQuery(UNDER_TABLET_QUERY),
       // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879); at the plain
       // address, the view the tab left its Project at, for a reload (ticket 1108).
       opening: openingAddress.project
@@ -241,7 +242,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
   useKeepViewOnPageHide(
     services.keptView,
     () => {
-      const view = keptView()
+      // An expanded Frame is not kept: a reload opens unexpanded, at its fit (ticket 1169).
+      const view = frameExpanded.value ? undefined : keptView()
       return activeProject.value && view && { project: activeProject.value.id, view }
     },
     () => activeProject.value !== undefined && viewPlaced.value,

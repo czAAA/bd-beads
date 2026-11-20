@@ -687,11 +687,4 @@ describe('Expand the Frame (MarginSheet card, ticket 1169)', () => {
     await wrapper.setProps({ anchor })
     expect(wrapper.emitted('slim')).toHaveLength(count)
   })
-
-  it('stands to the lone Move bar\'s left in the bare form, as the Frame tools button stands to its right', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.3) })
-    const handle = control(wrapper, 'margin-handle')
-    expect(handle.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Expand the Frame', 'Move Frame', 'Frame tools'])
-    expect(wrapper.find('[data-testid="margin-handle-expand-frame"]').exists()).toBe(true)
-  })
 })

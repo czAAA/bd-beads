@@ -12,11 +12,16 @@ export interface SlimContent {
   rowWidth: number
 }
 
+/** The slim sheet's row and title block in from its edge, and a side's least width: smaller under bp-tablet. */
+export function slimInset(compact: boolean): number {
+  return MARGIN_PX.expanded.inset[compact ? 'compact' : 'full']
+}
+
 /** The slim sheet's sides out from the Frame's line, in screen px: the row and the column numbers on top, the row
  * numbers on the left, the title block below, a side with none of them the inset alone; widened evenly where the Frame
  * is narrower than the row, so the row stays whole (ticket 1169). */
 export function slimSheetSides({ compact, row, title, numbers, rowWidth }: SlimContent, lineWidth: number): Insets {
-  const inset = compact ? MARGIN_PX.expanded.inset.compact : MARGIN_PX.expanded.inset.full
+  const inset = slimInset(compact)
   const gap = MARGIN_PX.expanded.numbers
   const left = numbers.left ? inset + numbers.left + gap : inset
   const right = inset

@@ -5,7 +5,7 @@ import type { Project } from '../../domain/project'
 import type { Insets } from '../../domain/toolPill'
 import type { Size } from '../../rendering/cellSize'
 import { MARGIN_PX } from '../../rendering/marginSizes'
-import { frameOutsetPx } from '../../rendering/rulerScale'
+import { frameOutsetPx, rulerFontAtFull } from '../../rendering/rulerScale'
 import { frameNumberBands } from '../../rendering/rulers'
 import { slimSheetSides, type SlimContent } from '../../rendering/slimSheet'
 import type { ShownView } from './useCanvasView'
@@ -54,7 +54,7 @@ export function useFrameExpand(deps: FrameExpandDeps) {
     const project = deps.currentProject()
     if (!expanded.value || !project) return undefined
     const across = nearestQuarterTurn(deps.orientation.value) % 180 !== 0
-    const fontPx = deps.compact.value ? 12 : 11
+    const fontPx = rulerFontAtFull(deps.compact.value)
     const { row, title, rowWidth } = measures.value
     return { compact: deps.compact.value, row, title, rowWidth, numbers: frameNumberBands(project, across, fontPx) }
   })
@@ -64,7 +64,7 @@ export function useFrameExpand(deps: FrameExpandDeps) {
   function room(zoom: number): Insets {
     const held = content.value!
     const sides = slimSheetSides({ ...held, rowWidth: 0 }, 0)
-    const gap = held.compact ? MARGIN_PX.expanded.gap.compact : MARGIN_PX.expanded.gap.full
+    const gap = MARGIN_PX.expanded.gap[held.compact ? 'compact' : 'full']
     const past = frameOutsetPx(zoom) + gap
     return { top: sides.top + past, right: sides.right + past, bottom: sides.bottom + past, left: sides.left + past }
   }

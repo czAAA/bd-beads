@@ -32,6 +32,8 @@ import { frameOf } from '../../domain/layerRecord'
 import { useRotateCopy, type RotateCopyPlace } from '../../composables/ui/useRotateCopy'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 import type { SlimMeasures } from '../../composables/canvas/useFrameExpand'
+import { UNDER_TABLET_QUERY } from '../../rendering/rulerScale'
+import { slimInset } from '../../rendering/slimSheet'
 
 // The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658, 1170): Row progress, the Move bar and the
 // tools in its top band, the title block in its bottom-left corner as seen, laid over the sheet the canvas draws. The
@@ -116,7 +118,7 @@ const canvas = useCanvasBackground(() => props.project)
 /** A finger: the band keeps Edit Frame and the Frame tools button, its other tools in that menu (ticket 0976). */
 const touch = useMediaQuery('(pointer: coarse)')
 /** Under bp-tablet the expanded sheet's insets are smaller (MarginSheet card, Expand the Frame). */
-const narrowScreen = useMediaQuery('(max-width: 743px)')
+const narrowScreen = useMediaQuery(UNDER_TABLET_QUERY)
 /** Expand the Frame's name and Tooltip: Back to the Canvas while expanded, its icon turned in. */
 const expandName = computed(() => (props.expanded ? t.value.frame.backToCanvas : undefined))
 const expandIcon = computed(() => (props.expanded ? 'collapse-frame' : 'expand-frame'))
@@ -151,7 +153,7 @@ const form = computed<MarginForm>(() => (props.expanded ? 'full' : marginForm(pr
  * with the beads, so the fitting below measures in those px too. Expanded, 1 at every zoom (ticket 1169). */
 const scale = computed(() => (props.expanded ? 1 : marginScale(props.anchor.band, least.value)))
 /** The expanded sheet's inset: its row and title block in from its edge. */
-const expandedInset = computed(() => (narrowScreen.value ? MARGIN_PX.expanded.inset.compact : MARGIN_PX.expanded.inset.full))
+const expandedInset = computed(() => slimInset(narrowScreen.value))
 
 // The band's row and the title block step down a form where the sheet is too narrow for them, and are left out where
 // nothing fits: `narrow` is the folded row with Margin color in the Frame tools menu and no Row progress. Each tools form

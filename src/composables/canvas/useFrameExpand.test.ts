@@ -7,7 +7,7 @@ import type { Project } from '../../domain/project'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView } from '../../rendering/surfaceView'
 import { withLayers } from '../../testUtils/layerFields'
-import { useCanvasView, type CanvasViewOptions } from './useCanvasView'
+import { LARGEST_FIT_BEAD_PX, useCanvasView, type CanvasViewOptions } from './useCanvasView'
 import { useFrameExpand } from './useFrameExpand'
 
 const framed = (columns: number, rows: number): Project =>
@@ -62,7 +62,7 @@ describe('useFrameExpand (ticket 1169)', () => {
     expand.toggle()
     const project = framed(4, 3)
     const beads = beadsOnScreen(project, view.zoom.value, view.scroll.value)
-    expect(beads.width / 4).toBeLessThanOrEqual(48.5)
+    expect(beads.width / 4).toBeLessThanOrEqual(LARGEST_FIT_BEAD_PX + 0.5)
     stop()
   })
 

@@ -15,6 +15,7 @@ import { SETTLE_MS, twistTransform } from '../../rendering/gestureView'
 import { marginForm, marginScale } from '../../rendering/marginForm'
 import { marginSheetPx, type SlimSheet } from '../../rendering/projectRenderer'
 import { MARGIN_PX } from '../../rendering/marginSizes'
+import { rulerFontAtFull } from '../../rendering/rulerScale'
 import { slimSheetSides, type SlimContent } from '../../rendering/slimSheet'
 import type { DrawnReference } from '../../rendering/referenceImage'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
@@ -218,7 +219,7 @@ const pieces = computed<RuledPieces>((previous) =>
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
 function rulerFontPx(): number {
-  return window.innerWidth <= 743 ? 12 : 11
+  return rulerFontAtFull(window.innerWidth <= 743)
 }
 
 /** The form and scale the Frame's margin sheet takes at this zoom (tickets 0658, 0698): the Frame's numbers hang on it. */
