@@ -1,33 +1,36 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { duplicateProject, freeName, normalizeProjectName, suggestCopyName, withFreeNames, withProjectName } from './projectName'
+import { duplicateProject, freeName, normalizeProjectName, withFreeNames, withProjectName } from './projectName'
 import { canvasOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
 import { withLayers } from '../testUtils/layerFields'
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
 
-describe('suggestCopyName', () => {
+/** The name's next free number, though it is taken itself. */
+const nextNumbered = (name: string, existingNames: readonly string[]) => freeName(name, [...existingNames, name])
+
+describe('the next free number', () => {
   it('adds 2 to a name, then the next free number', () => {
-    expect(suggestCopyName('Moth', ['Moth'])).toBe('Moth 2')
-    expect(suggestCopyName('Moth', ['Moth', 'Moth 2'])).toBe('Moth 3')
-    expect(suggestCopyName('Moth', ['Moth', 'Moth 2', 'moth 3'])).toBe('Moth 4')
+    expect(nextNumbered('Moth', ['Moth'])).toBe('Moth 2')
+    expect(nextNumbered('Moth', ['Moth', 'Moth 2'])).toBe('Moth 3')
+    expect(nextNumbered('Moth', ['Moth', 'Moth 2', 'moth 3'])).toBe('Moth 4')
   })
 
   it('gives a name ending in a number the next free one', () => {
-    expect(suggestCopyName('Moth 2', ['Moth', 'Moth 2'])).toBe('Moth 3')
-    expect(suggestCopyName('Moth 2', ['Moth 2', 'Moth 3'])).toBe('Moth 4')
-    expect(suggestCopyName('2024', [])).toBe('2024 2')
+    expect(nextNumbered('Moth 2', ['Moth', 'Moth 2'])).toBe('Moth 3')
+    expect(nextNumbered('Moth 2', ['Moth 2', 'Moth 3'])).toBe('Moth 4')
+    expect(nextNumbered('2024', [])).toBe('2024 2')
   })
 
   it('keeps the suggestion inside 40 characters', () => {
-    expect(suggestCopyName('x'.repeat(40), [])).toBe(`${'x'.repeat(38)} 2`)
+    expect(nextNumbered('x'.repeat(40), [])).toBe(`${'x'.repeat(38)} 2`)
   })
 
   it('shortens a long name at a word, not inside one (ticket 0854)', () => {
     const long = 'A sunflower bracelet for my grandmother and her garden'
-    expect(suggestCopyName(long, [])).toBe('A sunflower bracelet for my 2')
-    expect(suggestCopyName(long, ['A sunflower bracelet for my 2'])).toBe('A sunflower bracelet for my 3')
+    expect(nextNumbered(long, [])).toBe('A sunflower bracelet for my 2')
+    expect(nextNumbered(long, ['A sunflower bracelet for my 2'])).toBe('A sunflower bracelet for my 3')
   })
 })
 
@@ -51,7 +54,7 @@ describe('withFreeNames', () => {
   const named = (name: string) => withProjectName(moth(), name)
   const namesOf = (projects: readonly ReturnType<typeof moth>[]) => projects.map((project) => canvasOf(project).name)
 
-  it('gives a taken name Duplicate\'s next free number and leaves a free one as it came (ticket 0860)', () => {
+  it('gives a taken name the next free number and leaves a free one as it came (ticket 0860)', () => {
     const free = named('Owl')
     const arriving = withFreeNames([named('Summer bracelet'), free], ['Summer bracelet', 'Moth'])
     expect(namesOf(arriving)).toEqual(['Summer bracelet 2', 'Owl'])

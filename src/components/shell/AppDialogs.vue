@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogsContext } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
-import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import DeleteProjectModal from '../project/DeleteProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import FeedbackSheet from './FeedbackSheet.vue'
@@ -58,9 +57,6 @@ const {
   onKeepCurrentAfterImport,
   onSwitchToImported,
   onSaveBeforeImportSwitch,
-  duplicating,
-  onConfirmDuplicate,
-  onCancelDuplicate,
   pendingDelete,
   onConfirmDelete,
   onCancelDelete,
@@ -283,9 +279,6 @@ const importMessage = computed(() => {
     :copy="copyReport"
     @cancel="onCloseFeedback"
   />
-
-  <!-- Duplicate this Project (ProjectPanel and ConfirmDialogs cards, ticket 443): opened from the Project panel, which has closed. -->
-  <DuplicateProjectModal v-if="open === 'duplicate-project' && duplicating !== undefined" :suggested="duplicating" @confirm="onConfirmDuplicate" @cancel="onCancelDuplicate" />
 
   <!-- Delete “{name}”?, the one question of every delete of a Project, wherever it starts (ticket 0842). -->
   <DeleteProjectModal

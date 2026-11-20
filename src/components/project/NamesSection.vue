@@ -12,7 +12,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Project's Name and Maker's name, shared by New Project and the Project panel (tickets 182, 554, 568): two open
 // fields, or `inline` a line each with a pencil, saved at once, refusing an empty Name. A change is `update:name` or
-// `update:makerName`; each name has the one limit and counter Rename and Duplicate have (ticket 0854).
+// `update:makerName`; each name has the one limit and counter Rename has (ticket 0854).
 const props = defineProps<{
   /** What the Name field shows while empty: the chosen Bead, as the form's hint. */
   namePlaceholder?: string

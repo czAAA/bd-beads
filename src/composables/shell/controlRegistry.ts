@@ -654,7 +654,7 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('strip-project', (t) => t.header.projectPanelLabel, 'edit', {
     icon: 'pattern',
-    body: (t) => t.tooltips.list([t.form.techniqueLabel, t.panels.project.exportHeading, t.panels.project.duplicate]),
+    body: (t) => t.tooltips.list([t.form.techniqueLabel, t.panels.project.exportHeading, t.panels.project.saveFile]),
   }),
   unkeyed('strip-menu', (t) => t.header.menuButton, 'edit', {
     icon: 'menu',
@@ -675,7 +675,6 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('import-file', (t) => t.transfer.importLabel, 'edit', { body: (t) => t.tooltips.importFile }),
   unkeyed('change-maker-name', (t) => t.saveBox.changeName, 'edit', { body: (t) => t.tooltips.changeName }),
   unkeyed('rename-project', (t) => t.panels.project.renameAction, 'edit', { icon: 'pencil', body: (t) => t.panels.project.tooltipRename }),
-  unkeyed('duplicate-project', (t) => t.panels.project.duplicate, 'edit', { icon: 'copy', body: (t) => t.panels.project.tooltipDuplicate }),
   unkeyed('delete-project', (t) => t.panels.project.deleteThis, 'edit', { icon: 'delete', body: (t) => t.panels.project.tooltipDelete }),
   unkeyed('delete-all-projects', (t) => t.panels.menu.deleteAll, 'edit', { icon: 'delete', body: (t) => t.panels.menu.tooltipDeleteAll }),
   unkeyed('clear-project', (t) => t.panels.project.clear, 'edit', { icon: 'erase', body: (t) => t.panels.project.tooltipClear }),

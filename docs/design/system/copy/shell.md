@@ -26,7 +26,7 @@ What an empty field says goes in it (TextField card, Placeholder, value and limi
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
-| Project name (Rename, Duplicate) | Название проекта | Назва проєкту | Назва праекта | 项目名称 | Nombre del proyecto | Nazwa projektu |
+| Project name (Rename) | Название проекта | Назва проєкту | Назва праекта | 项目名称 | Nombre del proyecto | Nazwa projektu |
 | Frame name | Название рамки | Назва рамки | Назва рамкі | 边框名称 | Nombre del marco | Nazwa ramki |
 | Piece name | Название кусочка | Назва шматочка | Назва кавалачка | 小块名称 | Nombre del trozo | Nazwa kawałka |
 | Your message (Feedback: Message) | Ваше сообщение | Ваше повідомлення | Ваша паведамленне | 你的留言 | Tu mensaje | Twoja wiadomość |
@@ -42,7 +42,7 @@ English follows the audit's proposal (F-01-28, F-05-18); the other languages are
 
 ## Unnamed Project copy (ticket 0866)
 
-A Project left unnamed is "Project 1", then the next free number as Duplicate counts ("Project 2" once "Project 1" is taken), never the Bead's name, which belongs in the Bead row. The same words are New Project's Name placeholder, so the grey text is the name the Project gets. The number always ends the name, after a space, in every language.
+A Project left unnamed is "Project 1", then the next free number ("Project 2" once "Project 1" is taken), never the Bead's name, which belongs in the Bead row. The same words are New Project's Name placeholder, so the grey text is the name the Project gets. The number always ends the name, after a space, in every language.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

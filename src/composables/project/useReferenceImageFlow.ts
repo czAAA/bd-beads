@@ -72,7 +72,7 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
   /** The place a drag shows before it is let go and saved. */
   const draft = ref<ReferencePlace>()
   const loaded = shallowRef<LoadedPicture>()
-  /** Pictures the device refused to keep, or hasn't kept yet (a duplicate's, ticket 1083), by Project id: shown for the
+  /** Pictures the device refused to keep (ticket 1083), by Project id: shown for the
    * session from here. */
   const session = new Map<string, Blob>()
   const unsaved = ref(new Set<string>())
@@ -254,17 +254,6 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     if (announcement) deps.announce(announcement)
   }
 
-  /** Duplicate: the copy of the open Project gets its picture too, where it has one. The picture held for the open
-   * Project goes to the copy at once, as the copy opens before the device has kept it (ticket 1083). */
-  async function copyToDuplicate(copy: Project): Promise<void> {
-    const source = deps.currentProject()
-    if (!source?.referenceImage || source.id === copy.id) return
-    const held = heldPicture(source.id)
-    if (held) session.set(copy.id, held)
-    const blob = held ?? (await pictureOf(source.id))
-    if (blob) await keep(copy.id, blob)
-  }
-
   /** The pictures an export carries, of those Projects that have one. */
   async function picturesOf(projectIds: readonly string[]): Promise<Map<string, Blob>> {
     const found = await Promise.all(projectIds.map(async (id) => [id, await pictureOf(id)] as const))
@@ -329,7 +318,6 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     confirmRemove,
     preview,
     commit,
-    copyToDuplicate,
     picturesOf,
     keepImported,
   }

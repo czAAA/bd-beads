@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "The Project panel always shows its rows, with no title to open, and Duplicate is gone",
+    "ru": "Панель «Проект» всегда показывает свои строки, без заголовка, который нужно раскрывать, а «Дублировать» убрано",
+    "uk": "Панель «Проєкт» завжди показує свої рядки, без заголовка, який треба розгортати, а «Дублювати» прибрано",
+    "be": "Панэль «Праект» заўсёды паказвае свае радкі, без загалоўка, які трэба разгортваць, а «Дублікаваць» прыбрана",
+    "zh": "“项目”面板始终显示自己的各行，不再有需要展开的标题，“复制”也已移除",
+    "es": "El panel Proyecto siempre muestra sus filas, sin título que abrir, y Duplicar ya no está",
+    "pl": "Panel Projekt zawsze pokazuje swoje wiersze, bez tytułu do rozwijania, a Duplikuj zniknęło"
+  }
+}

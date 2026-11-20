@@ -12,7 +12,6 @@ type DialogId =
   | 'replace-bead'
   | 'import-switch'
   | 'switch-project'
-  | 'duplicate-project'
   | 'delete-project'
   | 'delete-all-projects'
   | 'name-piece'

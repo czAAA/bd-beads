@@ -45,13 +45,11 @@ describe('useBeadsSinceFile', () => {
     expect(since.current.value).toEqual({ beads: 0, lastFileAt: 1000, fileName: 'moth.openbeads' })
   })
 
-  it('gives a duplicate its original\'s count and time but not its file\'s name, and an import 0', () => {
-    const { since, kept } = setup({ test: { beads: 64, lastFileAt: 5, fileName: 'moth.openbeads' }, old: { beads: 9 } }, ['test', 'old'])
-    since.duplicated('test', 'copy')
+  it('gives an import 0', () => {
+    const { since, kept } = setup({ old: { beads: 9 } }, ['old'])
     since.imported(['old'])
 
-    expect(kept()).toMatchObject({ copy: { beads: 64, lastFileAt: 5 }, old: { beads: 0 } })
-    expect(kept().copy).not.toHaveProperty('fileName')
+    expect(kept()).toMatchObject({ old: { beads: 0 } })
   })
 
   it('drops the records of no Project at start, and a Project\'s when it leaves the library', async () => {

@@ -391,7 +391,7 @@
     {
       "name": "ProjectPanel",
       "group": "Overlays",
-      "summary": "The Project panel: name with a pencil, save state, the Canvas's Layer settings, the Project file export, Duplicate, Clear and Delete this Project."
+      "summary": "The Project panel: name with a pencil, save state, the Canvas's Layer settings, the Project file export, Clear and Delete this Project."
     },
     {
       "name": "LayerSettings",
