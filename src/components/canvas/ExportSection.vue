@@ -2,10 +2,10 @@
 import { computed, ref, shallowRef } from 'vue'
 import EditableLine from '../project/EditableLine.vue'
 import AppButton from '../ui/AppButton.vue'
+import ProjectFileButton from './ProjectFileButton.vue'
 import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
 import LoadingState from '../ui/LoadingState.vue'
-import { controlAction } from '../../composables/shell/controlRegistry'
 import { useExportQuality } from '../../composables/export/useExportQuality'
 import { usePrintChoices } from '../../composables/export/usePrintChoices'
 import type { Project } from '../../domain/project'
@@ -40,8 +40,6 @@ const emit = defineEmits<{
   'save-project-file': []
 }>()
 
-/** Save Project file (ADR 0090): File runs it, so its name and Ctrl/⌘ S are the action's. */
-const saveFile = controlAction('save-project-file')
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
 const QUALITY_CAPTIONS = { low: 'qualityLowCaption', medium: 'qualityMediumCaption', high: 'qualityHighCaption' } as const
 const { t, locale } = useI18n()
@@ -149,16 +147,7 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
     >
       PDF
     </AppButton>
-    <AppButton
-      variant="accent-2"
-      :action="saveFile"
-      :tooltip="{ body: t.frame.exportProjectFileBody }"
-      :aria-label="spoken(saveFile.name(t), t.frame.exportProjectFileBody)"
-      data-testid="export-project-file"
-      @click="emit('save-project-file')"
-    >
-      {{ t.frame.exportProjectFile }}
-    </AppButton>
+    <ProjectFileButton @save-project-file="emit('save-project-file')" />
   </div>
   <div class="export-section__file">
     <EditableLine v-bind="fileLine" @save="onRename" />

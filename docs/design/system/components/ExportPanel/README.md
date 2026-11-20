@@ -19,7 +19,7 @@ The Export panel: a small panel from the **Export** button in the Canvas strip's
 The Frame panel's export section, the same component, under the title line:
 
 - **PNG** (`image`) and **PDF** (`pdf`): two buttons side by side, then File (below), a third of the row each, 8px apart, 10px side padding (ticket 1121; they were the Picture and Printable chart PanelItems). Each is an `accent-2` Button (Button card): `accent-2-soft` fill, `accent-2` edge, label and icon, so it reads as a button without the one accent's yellow or orange. On hover (and keyboard focus, and a held press on touch) each Tooltip names the file and says what it gives: "Picture" over "PNG ≈ 1.4 MB · 1 file", "Printable chart" over "PDF ≈ 3.2 MB · 9 pages" (the File size estimate, QualitySlider card). The accessible name says both: "Picture, PNG ≈ 1.4 MB · 1 file". The Printable chart's count is what will come out, "1 page", "3 pages", read from the PDF's own plan (`pdfPageCount`: the Cover page, page 1, its list pages, the chart pages, the Word chart pages), so it is the count the PDF's footers print. It changes at once with the Frame, the colors and either switch below (ticket 0916).
-- **File** (`save`), the third button of the row, after PNG and PDF, the same `accent-2` Button (ticket 1121): it saves the whole Project as its `.openbeads` file by the Save Project file action (ADR 0090), as the Project panel's row and Ctrl/⌘ S do, and stays live while an export runs. It stands with PNG and PDF, so with no Frame it is not shown here (the Project panel's Save Project file row and Ctrl/⌘ S still save). Its Tooltip is the action's, "Save Project file" with its key, over "The whole Project in one .openbeads file, with its colors, Frame and settings, to open again here or on another device." (`writing.md`, Export buttons copy); its accessible name says both. The three buttons are a third of the row each.
+- **File** (`save`), the third button of the row, after PNG and PDF, the same `accent-2` Button (ticket 1121): it saves the whole Project as its `.openbeads` file by the Save Project file action (ADR 0090), as the Project panel's row and Ctrl/⌘ S do, and stays live while an export runs. It needs no Frame, so with none it shows too (ticket 1133; With no Frame, below). Its Tooltip is the action's, "Save Project file" with its key, over "The whole Project in one .openbeads file: its beads, colors, Frame, reference image and settings, to open again here or on another device." (`writing.md`, Export buttons copy); its accessible name says both. The three buttons are a third of the row each.
 - **"Saves as"** right under the buttons (ticket 1121; below).
 - **Export quality** under "Saves as", folded every time the rows show (ticket 1121; QualitySlider card): one row with its name, Info button, the chosen stop and a chevron, in `accent-2` while folded.
 - The three files stand side by side, PNG, PDF then File, and the PDF's and PNG's options under them (ticket 1095; ticket 0957 had put each option under its file): "Saves as", the **Export quality** QualitySlider (it sets the picture only, and its Info note says so), then the switches.
@@ -57,11 +57,12 @@ The owner agreed to Empty grid's file word and its place after Black and white, 
 
 ### With no Frame
 
-No export buttons and no slider. Under the title line:
+No PNG, no PDF and no slider; File stays (ticket 1133). Under the title line:
 
 - One `meta-small` `muted` line: "Set a Frame around the drawing you want to export."
 - **Fit a Frame to the drawing** (`frame`; ticket 0944): first once something is drawn, as it is the one-tap way. While nothing is drawn it comes second, disabled with "Nothing is drawn yet to fit a Frame to.". It never carries `fit`, which is the zoom's Fit alone.
 - **Drag a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568). Once the Frame is set the notice about dragging closes and this panel opens again, hung from the strip's button, on Picture and Printable chart (ticket 0847). Escape or another tool cancels and the notice closes too; the panel stays shut. The notice reads "Drag over the Canvas to select the Frame. Escape cancels."; on touch, where there is no Escape key, it ends "Pick a tool to cancel." instead (ticket 0954), as the paste notice does.
+- **File** (ticket 1133): under the ways to a Frame, the same `accent-2` button as beside PNG and PDF, a third of the row wide, with its Tooltip; it saves the `.openbeads` file, which needs no Frame.
 
 The rows are the Frame panel's own (one shared component, ExportRows, which the Project panel's Export row also unfolds). Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Drag a Frame closes it until the drag has set the Frame, then brings it back (ticket 0847), so both ways end at the export rows.
 
@@ -77,7 +78,7 @@ Every string is the Frame panel's: Export, Picture, Printable chart, Export qual
 - [ ] PDF's Tooltip says how many pages the PDF will have, and the count changes at once with Cover page, Large beads, Row by row, the Frame and the colors.
 - [ ] Cover page is on at first, Large beads and Row by row off, all remembered on the device; Letters adds or removes no page.
 - [ ] Large beads shows only on a piece whose chart would print a bead under 3 mm; on a small piece it is gone and names nothing.
-- [ ] With no Frame: the line, then Fit a Frame to the drawing (`frame`) and Drag a Frame, Fit first once something is drawn; no export buttons.
+- [ ] With no Frame: the line, then Fit a Frame to the drawing (`frame`) and Drag a Frame, Fit first once something is drawn, then File (ticket 1133); no PNG, PDF or slider.
 - [ ] The Frame panel's export section and this panel render one shared component.
 - [ ] "Saves as" names the PDF as it will be saved, a word for each switch that is on, at once; its pencil renames it for this export, with no word added, forgotten when the panel closes (ticket 1096).
 
