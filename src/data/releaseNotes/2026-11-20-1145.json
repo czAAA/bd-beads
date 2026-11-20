@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "Hovering the Tool pill's grip shows the places it can move to, and their outline stands out on every Background",
+    "ru": "Наведите курсор на ручку панели инструментов, и она покажет, куда её можно переместить, а контур этих мест виден на любом фоне",
+    "uk": "Наведіть курсор на ручку панелі інструментів, і вона покаже, куди її можна перемістити, а контур цих місць видно на будь-якому тлі",
+    "be": "Навядзіце курсор на ручку панэлі інструментаў, і яна пакажа, куды яе можна перамясціць, а контур гэтых месцаў відаць на любым фоне",
+    "zh": "把指针移到工具条的把手上，就会显示它可以移到的位置，这些位置的轮廓在任何背景上都清晰可见",
+    "es": "Al pasar el puntero por el asa de la barra de herramientas se ven los sitios adonde puede ir, con un contorno que destaca sobre cualquier fondo",
+    "pl": "Najechanie na uchwyt paska narzędzi pokazuje miejsca, w które można go przenieść, a ich obrys widać na każdym tle"
+  }
+}

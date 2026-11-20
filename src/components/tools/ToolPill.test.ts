@@ -347,6 +347,32 @@ describe('dragging the Tool pill (ticket 439)', () => {
     wrapper.unmount()
   })
 
+  it('shows the four zones, none lit, while a mouse or pen hovers the grip, not on a finger’s tap (ticket 1145)', async () => {
+    const wrapper = mount(ToolPill, { props: base, attachTo: document.body })
+    const grip = wrapper.get('[data-testid="tool-pill-grip"]')
+    const zones = () => wrapper.find('[data-testid="tool-pill-zones"]').exists()
+    for (const pointerType of ['mouse', 'pen']) {
+      await grip.trigger('pointerenter', { pointerType })
+      expect(zones(), pointerType).toBe(true)
+      expect(wrapper.findAll('.tool-pill-zone--near')).toHaveLength(0)
+      await grip.trigger('pointerleave', { pointerType })
+      expect(zones(), pointerType).toBe(false)
+    }
+
+    await grip.trigger('pointerenter', { pointerType: 'touch' })
+    expect(zones()).toBe(false)
+
+    // A drag from a hovered grip: once the pill is let go elsewhere, the zones go too.
+    area(wrapper)
+    await grip.trigger('pointerenter', { pointerType: 'mouse' })
+    await grip.trigger('pointerdown', { button: 0, clientX: 200, clientY: 280, pointerId: 1, pointerType: 'mouse' })
+    move(60, 150)
+    move(60, 150, 'pointerup')
+    await nextTick()
+    expect(zones()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('follows a finger or pen only from the grip, so a swipe on the tools scrolls them (ticket 0837); a mouse drags it from a tile', async () => {
     const wrapper = mount(ToolPill, { props: base, attachTo: document.body })
     area(wrapper)
