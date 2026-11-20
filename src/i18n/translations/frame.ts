@@ -60,6 +60,9 @@ export interface FrameTranslations {
     rowByRowLabel: string
     rowByRowInfoLabel: string
     rowByRowLine: string
+    rowByRowWayLabel: string
+    rowByRowWayProgress: string
+    rowByRowWayLine: string
     /** The line under the print switches (ticket 1096, ExportPanel card), before the PDF's file name; the word each switch adds
      * to that name, after an underscore; and the pencil that renames the file for this export, its name and Tooltip. */
     savesAs: string

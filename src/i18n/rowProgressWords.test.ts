@@ -24,10 +24,10 @@ describe('rowProgressAnnouncement (ticket 0934)', () => {
   })
 
   it('says the pass and the rulers\' row on peyote, where a line takes two passes', () => {
-    // A new peyote Project's Canvas is turned a quarter: its second row is the rulers' 13th from the left (ticket 1165).
+    // A new peyote Project's Canvas is turned a quarter and its rows start left to right as seen: its second row is the rulers' 2nd from the left.
     const peyote = framed('peyote', 6, 14)
-    expect(rowProgressAnnouncement(words, moveToRow(peyote, 2))).toBe('Pass 3 of 27, row 13')
-    expect(rowProgressAnnouncement(words, moveToRow(toggleRowDirection(framed('peyote', 14, 6)), 2))).toMatch(/^Pass 3 of \d+, column 2$/)
+    expect(rowProgressAnnouncement(words, moveToRow(peyote, 2))).toBe('Pass 3 of 27, row 2')
+    expect(rowProgressAnnouncement(words, moveToRow(toggleRowDirection(framed('peyote', 14, 6)), 2))).toBe('Pass 3 of 27, column 13')
   })
 })
 
@@ -40,7 +40,7 @@ describe('rowProgressCount (ticket 0972)', () => {
 
   it('counts passes on peyote with the rulers\' row after, which the announcer reads in the same words', () => {
     const count = rowProgressCount(words, moveToRow(framed('peyote', 6, 14), 2))
-    expect(count).toEqual({ step: 'Pass 3 of 27', line: '· row 13', short: '3/27', spoken: 'Pass 3 of 27, row 13' })
+    expect(count).toEqual({ step: 'Pass 3 of 27', line: '· row 2', short: '3/27', spoken: 'Pass 3 of 27, row 2' })
   })
 
   it('says Pattern done once every pass is', () => {

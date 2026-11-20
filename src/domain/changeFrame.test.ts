@@ -179,6 +179,20 @@ describe('changeFrame', () => {
       expect(beadsOfLayer(result.project, 'canvas')).toEqual(beadsOfLayer(project, 'canvas'))
     })
 
+    it('moves a Frame whose rows are untouched to the starting way of its new Technique', () => {
+      const result = changeFrame(framed(), { technique: 'peyote' })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      // Left to right as seen, on an upright Canvas: down the Frame's columns.
+      expect(rowProgressOf(result.project)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
+    })
+
+    it('leaves the way as it is once the weaver has turned the rows by hand', () => {
+      const turned = framed({ rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 0 } })
+      const result = changeFrame(turned, { technique: 'peyote' })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(rowProgressOf(result.project)).toEqual(rowProgressOf(turned))
+    })
+
     it('is no change to the Technique it already has', () => {
       const project = framed()
       const result = changeFrame(project, { technique: 'loom' })

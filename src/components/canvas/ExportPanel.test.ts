@@ -226,6 +226,34 @@ describe('ExportPanel Empty grid and Chart border (ticket 1127)', () => {
   })
 })
 
+describe('ExportPanel Row by row direction', () => {
+  const ways = (wrapper: Panel) => wrapper.findAll('[data-testid^="export-row-by-row-way-"]').map((chip) => chip.attributes('data-testid')!.replace('export-row-by-row-way-', ''))
+
+  it('shows the way the rows run only with Row by row on, as Row progress by default and each of the four ways beside it', async () => {
+    const wrapper = await mountPanel(framed())
+    expect(has(wrapper, 'export-row-by-row-way')).toBe(false)
+
+    await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
+    expect(ways(wrapper)).toEqual(['progress', 'down', 'right', 'up', 'left'])
+    expect(wrapper.get('[data-testid="export-row-by-row-way-progress"]').attributes('aria-checked')).toBe('true')
+
+    await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
+    expect(has(wrapper, 'export-row-by-row-way')).toBe(false)
+  })
+
+  it('remembers the way chosen on the device, and Row progress again clears it', async () => {
+    const wrapper = await mountPanel(framed())
+    await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
+
+    await wrapper.get('[data-testid="export-row-by-row-way-up"]').trigger('click')
+    expect(localStorage.getItem('openbeads:print-row-by-row-way')).toBe('up')
+    expect(wrapper.get('[data-testid="export-row-by-row-way-up"]').attributes('aria-checked')).toBe('true')
+
+    await wrapper.get('[data-testid="export-row-by-row-way-progress"]').trigger('click')
+    expect(localStorage.getItem('openbeads:print-row-by-row-way')).toBeNull()
+  })
+})
+
 describe('ExportPanel Large beads only where it acts (ticket 1125)', () => {
   it('leaves Large beads out for a piece that already prints at 3 mm or more, Row by row still there', async () => {
     const wrapper = await mountPanel(framed())
