@@ -16,7 +16,7 @@ export const FILL_CAP = 250_000
 export type FillRefusal = 'open' | 'too-big'
 
 /** Whether a Fill was refused rather than made (ticket 0715). */
-export function isFillRefusal(result: BeadMap | FillRefusal): result is FillRefusal {
+export function isFillRefusal<T extends object>(result: T | FillRefusal): result is FillRefusal {
   return typeof result === 'string'
 }
 
@@ -29,6 +29,9 @@ export interface FillReach {
   /** A border the Fill does not cross, either way (the Mirror's Canvas Area): a flood begun inside stays inside, one
    * begun outside stays outside. Inside it the space is enclosed, so it is never refused as open. */
   border?: Rect
+  /** Hears, when Fill reach refuses the press, the beads painted up to then: the positions the flood had reached, every
+   * one of which a press would be refused at too (ticket 1153). */
+  refusedAfter?: (painted: BeadMap) => void
 }
 
 /** The beads a Fill paints into as it floods (ticket 0677): a row is copied the first time it changes, the rest shared
@@ -154,5 +157,7 @@ export function fillArea(sheet: LayerSheet, row: number, column: number, color: 
   const painting = flood(sheet, start, color, reach)
   if (sheet.geometry.spans) floodLines(painting, start, sheet.geometry.spans)
   else floodNeighbors(painting, start, sheet.geometry)
-  return painting.refusal() ?? painting.beads()
+  const refusal = painting.refusal()
+  if (refusal) reach.refusedAfter?.(painting.beads())
+  return refusal ?? painting.beads()
 }

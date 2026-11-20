@@ -466,6 +466,75 @@ function emptiedColorOf(theme: ProjectTheme, layer: Layer, deviceScale: number):
  * (ticket 0675): there its gap and rounding are about a pixel, and the whole block is in view, a fill a bead. */
 const DRAFT_PREVIEW_BEAD_PX = 10
 
+/** The hover preview's beads on a layer laid on a grid, those the view reaches (a Fill's region can be far bigger than
+ * the screen, ticket 1153). Zoomed out, many beads outside the Mirror's Area draw as one draft image, as a pasted
+ * block does; a bead and its Mirror counterparts keep their outlines. */
+function drawPreviewInView(context: DrawingContext, weave: Weave, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme, deviceScale: number, inArea: InArea, view: () => VisiblePositions, emptied?: string): void {
+  const { shown, draft } = cells.length > 1 ? culledOnce(cells, view(), () => {
+    const kept = inView(cells, view())
+    return { shown: kept, draft: kept.length > 1 && CELL_SIZE_PX * deviceScale < DRAFT_PREVIEW_BEAD_PX && !kept.some(inArea) ? draftCells(kept, preview, emptied) : undefined }
+  }, `${deviceScale}:${preview.color}:${emptied}`) : { shown: cells, draft: undefined }
+  if (!draft) {
+    drawPreview(context, weave, space, shown, preview, theme, inArea, emptied)
+    return
+  }
+  context.globalAlpha = PREVIEW_OPACITY
+  drawDraftBeads(context, weave, space.open ? draft : draft.filter(({ row, column }) => inSpace(space, row, column)))
+  context.globalAlpha = 1
+}
+
+/** Each layer's share of a preview's beads, kept for the list and the Project it was worked out for: a Fill's region
+ * comes unchanged while the pointer moves inside it (ticket 1153), so it is not split again at every redraw. */
+const splitPreviews = new WeakMap<readonly PreviewCell[], { project: DrawnProject; open: boolean; canvas?: PreviewCell[]; frame?: PreviewCell[] }>()
+
+function splitOnce(cells: readonly PreviewCell[], project: DrawnProject, space: Space, layer: Layer, split: (cells: readonly PreviewCell[]) => PreviewCell[]): PreviewCell[] {
+  if (cells.length <= 1) return split(cells)
+  let known = splitPreviews.get(cells)
+  if (!known || known.project !== project || known.open !== space.open) {
+    known = { project, open: space.open }
+    splitPreviews.set(cells, known)
+  }
+  return (known[layer] ??= split(cells))
+}
+
+/** What a preview's list shows in a view, kept for the list (a Fill's region, unchanged while the pointer moves inside
+ * it, ticket 1153) until the view or the look moves on. */
+const culledPreviews = new WeakMap<readonly PreviewCell[], { key: string; culled: Culled }>()
+interface Culled {
+  shown: readonly PreviewCell[]
+  draft: PastedCell[] | undefined
+}
+
+function culledOnce(cells: readonly PreviewCell[], view: VisiblePositions, cull: () => Culled, look: string): Culled {
+  const [top, bottom] = [view.columnsOf(view.firstRow), view.columnsOf(view.lastRow)]
+  const key = `${view.firstRow}:${view.lastRow}:${top.first}:${top.last}:${bottom.first}:${bottom.last}:${look}`
+  const known = culledPreviews.get(cells)
+  if (known?.key === key) return known.culled
+  const culled = cull()
+  culledPreviews.set(cells, { key, culled })
+  return culled
+}
+
+/** The positions of `cells` a view holds. */
+function inView<T extends GridPosition>(cells: readonly T[], { firstRow, lastRow, columnsOf }: VisiblePositions): T[] {
+  return cells.filter(({ row, column }) => {
+    if (row < firstRow || row > lastRow) return false
+    const { first, last } = columnsOf(row)
+    return column >= first && column <= last
+  })
+}
+
+/** The preview's beads each in the color it shows, for the draft image; none when one shows no color (an outline). */
+function draftCells(cells: readonly PreviewCell[], preview: HoverPreview, emptied: string | undefined): PastedCell[] | undefined {
+  const drafted: PastedCell[] = []
+  for (const cell of cells) {
+    const color = previewColorOf(cell, preview, emptied)
+    if (!color) return undefined
+    drafted.push({ row: cell.row, column: cell.column, color })
+  }
+  return drafted
+}
+
 /** A pasted block's preview on a layer laid on a grid: as beads, or zoomed out as one draft image at the preview's
  * opacity. */
 function drawStampPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PastedCell[], preview: HoverPreview, theme: ProjectTheme, deviceScale: number, inArea: InArea): void {
@@ -984,7 +1053,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
   const canvasView = () => visibleBeadsInSpace(canvasWeaveOf, space, region, zoom, quarterTurnOf(project))
   const offFrameStamp = (stamp: PasteStamp) => stampInView(stamp, canvasView(), { row: 0, column: 0 }, frame && ((cell) => !onFrame(frame, geometry, covered, cell)))
-  const canvasCells = preview && space.open ? offFrame(preview.cells) : []
+  const canvasCells = preview && space.open ? splitOnce(preview.cells, project, space, 'canvas', offFrame) : []
   const canvasStamp = preview?.stamp && space.open ? offFrameStamp(preview.stamp) : []
 
   if (space.open && marginOutline > 0 && frameOf(project)) {
@@ -1002,7 +1071,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // over that, and the marker lifted above its row.
   if (space.open) {
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, selectionColor, canvasView, { row: 0, column: 0 }, theme)
-    if (preview && canvasCells.length) drawPreview(context, canvasWeaveOf, space, canvasCells, preview, theme, inCanvasArea, emptiedColorOf(theme, 'canvas', zoom * pixelRatio))
+    if (preview && canvasCells.length) drawPreviewInView(context, canvasWeaveOf, space, canvasCells, preview, theme, zoom * pixelRatio, inCanvasArea, canvasView, emptiedColorOf(theme, 'canvas', zoom * pixelRatio))
     if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio, inCanvasArea)
     if (canvasArea) {
       drawAreaRect(context, canvasWeaveOf, space, canvasArea, theme.mirror, canvasView, { row: 0, column: 0 }, theme)
@@ -1051,14 +1120,14 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (mirrored) drawMirrorAxes(context, sheetWeave, { row: 0, column: 0, rows: mirrored.rows, columns: mirrored.columns }, wholeFrame!, zoom * scale, theme)
     const symmetry = wholeFrame && !geometry!.grid ? geometry!.symmetry?.() : undefined
     if (symmetry) drawLayoutAxes(context, symmetry, gridBox(sheetWeave, { row: 0, column: 0, rows: sheetSpace.rows, columns: sheetSpace.columns }), wholeFrame!, zoom * scale, theme)
-    const sheetCells = preview ? onSheet(preview.cells) : []
+    const sheetCells = preview ? splitOnce(preview.cells, project, space, 'frame', onSheet) : []
     const sheetStamp = preview?.stamp ? onSheetStamp(preview.stamp) : []
     const inFrameArea = wholeFrame ? ALL_IN_AREA : NOWHERE
     if (preview && sheetCells.length + sheetStamp.length > 0) {
       const emptied = emptiedColorOf(frameTheme, 'frame', zoom * scale * pixelRatio)
       if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, theme, inFrameArea, emptied)
       else {
-        if (sheetCells.length) drawPreview(context, sheetWeave, sheetSpace, sheetCells, preview, theme, inFrameArea, emptied)
+        if (sheetCells.length) drawPreviewInView(context, sheetWeave, sheetSpace, sheetCells, preview, theme, zoom * scale * pixelRatio, inFrameArea, sheetView, emptied)
         if (sheetStamp.length) drawStampPreview(context, sheetWeave, sheetSpace, sheetStamp, preview, theme, zoom * scale * pixelRatio, inFrameArea)
       }
     }

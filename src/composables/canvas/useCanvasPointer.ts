@@ -20,6 +20,8 @@ export interface CanvasPointerDeps {
   pastePreviewCells: (project: Project, hovered: GridPosition) => PreviewCell[]
   /** The block Paste would stamp on a grid, aimed at the hovered cell (ticket 0675). */
   pastePreviewStamp: (project: Project, hovered: GridPosition) => PasteStamp | undefined
+  /** The beads a Fill pressed at the hovered bead in a color would change (ticket 1153): the whole region, or none. */
+  fillPreviewCells: (project: Project, hovered: GridPosition, color: string) => PreviewCell[]
   beginSelectPress: (row: number, column: number, layer?: Layer) => void
   extendSelection: (row: number, column: number, layer?: Layer) => void
   /** The Piece tool's tap on a bead (ticket 414): selects its Piece's rectangle, or clears the Selection on empty
@@ -32,8 +34,8 @@ export interface CanvasPointerDeps {
   pasteAt: (cell: GridPosition | undefined) => boolean
   /** Pick color from canvas (ticket 398): true when it is on and took this press. */
   pickColorAt: (row: number, column: number, layer?: Layer) => boolean
-  /** The Mirror setting (ticket 0703): the hover preview shows every counterpart of the hovered bead, under any tool
-   * but Fill (ticket 1025). */
+  /** The Mirror setting (ticket 0703): the hover preview shows every counterpart of the hovered bead under Paint and
+   * the Eraser; a Fill is not mirrored (ticket 1025). */
   mirror: () => MirrorSetting
   /** Whether the Canvas takes no press (open in another tab, ticket 0937): no tool acts, and no preview shows. */
   readOnly?: () => boolean
@@ -60,8 +62,11 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (tool === 'select') {
       return deps.pastePreviewCells(project, hovered)
     }
-    // A Fill is not mirrored (ticket 1025), so its preview is the hovered bead alone.
-    const cells = tool === 'fill' ? [hovered] : mirroredOnCanvas(project, deps.mirror(), [hovered])
+    // With no color a Fill press fills nothing: the bead alone, as Paint shows it.
+    if (tool === 'fill') {
+      return [hovered]
+    }
+    const cells = mirroredOnCanvas(project, deps.mirror(), [hovered])
     if (tool !== 'erase') {
       return cells
     }
@@ -69,11 +74,18 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     return cells.filter((cell) => beadColorAt(project, cell.row, cell.column, cell.layer) !== null).map((cell) => ({ ...cell, erases: true as const }))
   }
 
-  // The hover preview: the block Paste would stamp (ticket 31), or the cell Paint/Fill would touch (tickets 22/23). Beads in rows already woven are left out (ticket 33).
+  // The hover preview: the block Paste would stamp (ticket 31), the cell Paint would touch (tickets 22/23), the region a
+  // Fill would flood (ticket 1153). Beads in rows already woven are left out (ticket 33).
   const previewCells = computed<PreviewCell[]>(() => {
     const project = deps.currentProject()
     if (!project || !hoveredCell.value || deps.readOnly?.()) {
       return []
+    }
+    // A Fill shows the region it would flood (ticket 1153), unmirrored (ticket 1025), rows woven already left out by
+    // Edit's own rules; kept as made, so a hover within it hands the overlay the same list.
+    const color = deps.selectedColorHex()
+    if (deps.activeTool() === 'fill' && color) {
+      return deps.fillPreviewCells(project, hoveredCell.value, color)
     }
     const finished = finishedRowsOf(project)
     return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !finished(cell))

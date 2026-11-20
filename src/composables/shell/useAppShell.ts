@@ -656,7 +656,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
-  const { strokeMode, fillRefusals, endStroke, endCancelledStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
+  const { strokeMode, fillRefusals, fillPreviewCells, endStroke, endCancelledStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
     activeTool: () => activeTool.value,
@@ -717,6 +717,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     selectedColorHex,
     pastePreviewCells,
     pastePreviewStamp,
+    fillPreviewCells,
     // In Mirror mode the same press marks out the Mirror's Area, refused on the Frame and leaving the clipboard alone.
     beginSelectPress: (row, column, layer) => beginSelectPress(row, column, layer, mirror.marking.value),
     extendSelection,
