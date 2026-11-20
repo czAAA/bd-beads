@@ -144,12 +144,13 @@ export function emptyCrossArms(x: number, y: number, size: number): [number, num
   return [[x - arm, y - arm, x + arm, y + arm], [x + arm, y - arm, x - arm, y + arm]]
 }
 
-/** A bead drawn as the flat look draws it, except an empty position, which carries a small `faint` cross on the bare
- * board (tickets 0719, 0818): the mark a chart reader knows as "no bead here", never taken for a pale bead. `lineWidth`
- * is in the bead's own px. */
-function crossWhereEmpty(lineWidth: number): BeadDrawer {
+/** A bead drawn as the flat look draws it, except an empty position: the bare board, or with `crosses` (Empty grid,
+ * ticket 1127) a small `faint` cross on it (tickets 0719, 0818), the mark a chart reader knows as "no bead here", never
+ * taken for a pale bead. `lineWidth` is in the bead's own px. */
+function crossWhereEmpty(lineWidth: number, crosses: boolean): BeadDrawer {
   return (context, bead) => {
     if (bead.color !== null) return drawFlatBead(context, bead)
+    if (!crosses) return
     const width = bead.width ?? bead.size
     const height = bead.height ?? bead.size
     context.beginPath()
@@ -184,8 +185,8 @@ export function drawEmptySwatch(context: CanvasRenderingContext2D, x: number, y:
 }
 
 /** The pale rounded board and the beads of `region` on it, without letters: page 1's overview (ticket 0914). An empty
- * position is the bare board under a faint cross (tickets 0587, 0719, 0818). */
-export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board): void {
+ * position is the bare board, under a faint cross with `emptyGrid` (tickets 0587, 0719, 0818, 1127). */
+export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, emptyGrid: boolean): void {
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
@@ -201,7 +202,7 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
   const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
   // The cross's line is `print-line-cell` and at least a device pixel, so it prints at 150 dpi too.
   const crossLine = Math.max(CROSS_LINE * scale, 1) / (zoom * scale)
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, drawBead: crossWhereEmpty(crossLine) })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, drawBead: crossWhereEmpty(crossLine, emptyGrid) })
   context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
