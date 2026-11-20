@@ -50,15 +50,16 @@ describe('exportFacts', () => {
 })
 
 describe('the File size estimate with Empty grid and Chart border (ticket 1127)', () => {
-  it('weighs the empty positions\' crosses only with Empty grid on, on page 1\'s picture and the overview', () => {
+  it('weighs the empty positions\' crosses only with Empty grid on, on the overview; the picture, the Cover page, shows none', () => {
     for (const size of [40, 150]) {
       const off = factsOf('loom', size, size)
       const on = factsOf('loom', size, size, { emptyGrid: true })
       expect(off.crosses).toBe(0)
       expect(on.crosses).toBe(on.cells - on.filled)
       expect(on.crosses).toBeGreaterThan(0)
-      expect(estimatePng(on, 300).bytes).toBeGreaterThan(estimatePng(off, 300).bytes)
+      expect(estimatePng(on, 300).bytes).toBe(estimatePng(off, 300).bytes)
     }
+    expect(estimatePdf(factsOf('loom', 150, 150, { emptyGrid: true }), 300).bytes).toBeGreaterThan(estimatePdf(factsOf('loom', 150, 150), 300).bytes)
   })
 
   it('counts the same pages whatever either says', () => {
@@ -78,13 +79,11 @@ describe('estimatePng (QualitySlider card)', () => {
     expect(estimatePng(facts, 450).bytes).toBeGreaterThan(estimatePng(facts, 300).bytes)
   })
 
-  it('adds a file and its bytes for every list page', () => {
-    const over = estimatePng({ ...facts, lists: [30, 12] }, 300)
-    expect(over.count).toBe(3)
-    expect(over.bytes).toBeGreaterThan(estimatePng(facts, 300).bytes)
+  it('is one file however many colors run over page 1 onto list pages: the picture is the Cover page (ticket 1096)', () => {
+    expect(estimatePng({ ...facts, lists: [30, 12] }, 300)).toEqual(estimatePng(facts, 300))
   })
 
-  it('grows with the beads on page 1', () => {
+  it('grows with the beads on the cover', () => {
     expect(estimatePng({ ...facts, filled: facts.filled * 2, edges: facts.edges * 2 }, 300).bytes).toBeGreaterThan(estimatePng(facts, 300).bytes)
   })
 })
@@ -110,6 +109,7 @@ describe('estimatePdf', () => {
     expect(covered.pdfPages).toBe(plain.pdfPages + 1)
     expect(estimatePdf(covered, 300).count).toBe(estimatePdf(plain, 300).count + 1)
     expect(estimatePdf(covered, 300).bytes - estimatePdf(plain, 300).bytes).toBeGreaterThan(100_000)
+    // The picture is the cover whatever the switch says.
     expect(estimatePng(covered, 300)).toEqual(estimatePng(plain, 300))
   })
 

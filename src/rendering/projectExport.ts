@@ -3,7 +3,7 @@ import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
 import { deflateRgb, deflateText, encodePng } from '../domain/pngEncoder'
 import { pageOneLayout } from './pageOneLayout'
-import { PRINT_DPI, type PrintPart, type PrintPlan } from './printPlan'
+import { A4_PORTRAIT, PRINT_DPI, type PrintPart } from './printPlan'
 import type { PrintText } from './printText'
 import { drawWordChartPages, pdfPageCount } from './wordChartPages'
 
@@ -23,17 +23,6 @@ function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 /** How many pixels one strip of a page holds while it is compressed. */
 const STRIP_PIXELS = 1_000_000
 
-/** The words the PNG's pages print: the Cover page and Black and white are the PDF's (ticket 1096), so the PNG is page 1
- * and its list pages, in color. */
-function pictureWords({ cover: _cover, tones: _tones, ...words }: PrintText): PrintText {
-  return words
-}
-
-/** The PNG's files (ticket 0915): page 1 of the PDF, then the list pages Beads needed runs over onto, in order after it. */
-export function projectPageCount(project: Project, words: PrintText): number {
-  return 1 + pageOneLayout(project, pictureWords(words)).lists.length
-}
-
 /** The page as a PNG, compressed strip by strip. */
 function pngOf(canvas: HTMLCanvasElement): Promise<Blob> {
   const context = contextOf(canvas)
@@ -41,18 +30,15 @@ function pngOf(canvas: HTMLCanvasElement): Promise<Blob> {
   return encodePng(canvas.width, canvas.height, stripRows, (y, rows) => context.getImageData(0, y, canvas.width, rows).data)
 }
 
-// The Project as a PNG (tickets 164, 0583, 0915; printed-output.md): page 1 of the PDF as a picture, or list page `page`
-// (1, 2 ...) after it, drawn at `dpi`. It has no pages to point at, so its footer counts its own files.
-export async function exportProjectPng(project: Project, allWords: PrintText, dpi = PRINT_DPI, page = 0): Promise<Blob> {
-  const words = pictureWords(allWords)
+// The Project as a PNG (tickets 164, 0583, 1096; PngExport card): the Cover page as a picture, one file whatever the piece,
+// drawn at `dpi` and always in color. It is saved whatever the Cover page switch says (that switch is the PDF's), so its
+// footer reads "1 / 1".
+export async function exportProjectPng(project: Project, words: PrintText, dpi = PRINT_DPI): Promise<Blob> {
   // Loaded when a PNG is asked for: the page drawing (and the mark it reads from the design system) isn't needed before.
-  const { drawNeededListPage, drawPageOne } = await import('./pageOnePage')
+  const { drawCoverPage } = await import('./coverPage')
   const { loadPrintFonts } = await import('./printPages')
   await loadPrintFonts()
-  const layout = pageOneLayout(project, words)
-  const plan: PrintPlan = { ...layout.plan, pageCount: 1 + layout.lists.length }
-  const scale = dpi / PRINT_DPI
-  const canvas = page === 0 ? drawPageOne(project, words, layout, plan, scale, 'png').canvas : drawNeededListPage(project, words, layout, page - 1, plan, scale)
+  const canvas = drawCoverPage(project, words, A4_PORTRAIT, 1, 1, dpi / PRINT_DPI)
   const blob = await pngOf(canvas)
   canvas.width = 0
   canvas.height = 0

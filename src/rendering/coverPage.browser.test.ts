@@ -9,7 +9,7 @@ import { loadPrintFonts } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { A4_PORTRAIT } from './printPlan'
 import { printText } from './printText'
-import { exportProjectPdf, exportProjectPng, projectPageCount } from './projectExport'
+import { exportProjectPdf, exportProjectPng } from './projectExport'
 
 // The Cover page drawn for real (ticket 1096; PrintCover card): the piece in color on the board, the title block, the
 // tech line and the footer, as the PDF's first page.
@@ -124,12 +124,27 @@ describe('the PDF with the Cover page (ticket 1096)', () => {
 
     expect(await pdfPages(await exportProjectPdf(project, wordsOf(project, false), 150))).toBe(1)
   }, 60_000)
+})
 
-  it('leaves the PNG page 1, its own footer counting its own files', async () => {
+describe('Picture saves the Cover page (ticket 1096; PngExport card)', () => {
+  beforeAll(loadPrintFonts)
+
+  it('is the cover, "1 / 1", whatever the Cover page switch says', async () => {
     const project = fixtureProject({ technique: 'loom', columns: 20, rows: 20 })
-    const values = await written(() => exportProjectPng(project, wordsOf(project), 150))
-
-    expect(projectPageCount(project, wordsOf(project))).toBe(1)
-    expect(pageNumbers(values)).toEqual(['1 / 1'])
+    for (const cover of [true, false]) {
+      const words = wordsOf(project, cover)
+      const values = await written(() => exportProjectPng(project, words, 150))
+      expect(values, `switch ${cover ? 'on' : 'off'}`).toEqual(await written(() => drawCoverPage(project, words, A4_PORTRAIT, 1, 1)))
+      expect(pageNumbers(values)).toEqual(['1 / 1'])
+    }
   })
+
+  it('is one picture at the dpi asked, however many colors the piece has', async () => {
+    const project = fixtureProject({ technique: 'loom', columns: 100, rows: 100 })
+    const many = { ...wordsOf(project), colors: Array.from({ length: 90 }, (_, index) => ({ hex: '#336699', name: `Color ${index}`, beads: '10' })) }
+    const picture = await createImageBitmap(await exportProjectPng(project, many, 300))
+
+    expect(pageOneLayout(project, many).lists.length).toBeGreaterThan(0)
+    expect([picture.width, picture.height]).toEqual([A4_PORTRAIT.width * 2, A4_PORTRAIT.height * 2])
+  }, 60_000)
 })

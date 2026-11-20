@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "changed",
+  "line": {
+    "en": "Picture saves the Cover page, the finished piece in color with its name, as one PNG however big the piece is",
+    "ru": "Картинка сохраняет обложку, готовое изделие в цвете с названием, одним PNG, каким бы большим ни было изделие",
+    "uk": "Картинка зберігає обкладинку, готовий виріб у кольорі з назвою, одним PNG, яким би великим не був виріб",
+    "be": "Карцінка захоўвае вокладку, гатовы выраб у колеры з назвай, адным PNG, якім бы вялікім ні быў выраб",
+    "zh": "图片保存的是封面：彩色的成品和它的名称，无论作品多大，都只有一个 PNG",
+    "es": "Imagen guarda la portada, la pieza terminada en color con su nombre, en un solo PNG por grande que sea la pieza",
+    "pl": "Obraz zapisuje okładkę, gotową pracę w kolorze z nazwą, jako jeden PNG, niezależnie od wielkości pracy"
+  }
+}

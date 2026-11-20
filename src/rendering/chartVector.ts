@@ -17,8 +17,7 @@ import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 import type { PrintText } from './printText'
 
 // A chart as drawing (ticket 0585, ADR 0043; PrintChartPage card): PDF operators on a chart page and page 1, sharp at any
-// zoom, and the same calls painted on the PNG's canvas (ticket 0915). The Layer geometry places every bead of every
-// Technique (ticket 0630) and this draws what it is told. Layout is in the plan's px (150 dpi); the drawing is in points.
+// zoom. The Layer geometry places every bead of every Technique (ticket 0630) and this draws what it is told. Layout is in the plan's px (150 dpi); the drawing is in points.
 
 /** Points per layout px, and per millimetre. */
 export const K = 72 / PRINT_DPI
@@ -481,9 +480,8 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
   }
 }
 
-/** Every part on a chart page, or page 1's whole chart from `area`'s top left corner, into `content` (PDF operators, or the
- * PNG's canvas), and where each pad sits (the caller's labels and key go by them), in the `look` and `ink` the export's
- * switches give. */
+/** Every part on a chart page, or page 1's whole chart from `area`'s top left corner, into `content` (PDF operators), and
+ * where each pad sits (the caller's labels and key go by them), in the `look` and `ink` the export's switches give. */
 export function drawChartParts(content: PageDrawing, project: Project, plan: PrintPlan, parts: PrintPart[], letters: SwatchLetters, area = CHART_PAGE_AREA, look = DEFAULT_LOOK, ink: PrintInk = COLOR_INK): Box[] {
   const shared = parts.length > 1
   const pads = parts.map((part) => padOf(part, shared, area))
