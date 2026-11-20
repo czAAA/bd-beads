@@ -95,4 +95,16 @@ describe('useOverlayVisibility', () => {
     overlays.onSelectPanel('menu')
     expect([overlays.openPanel.value, overlays.menuOpensOnList.value]).toEqual([null, false])
   })
+
+  it('opens Menu on the Keyboard shortcuts Subpanel, and `?` again closes it, until the panel is gone or swapped (ticket 1159)', () => {
+    const overlays = setup()
+    overlays.toggleMenuOnShortcuts()
+    expect([overlays.openPanel.value, overlays.shortcutsOpen.value]).toEqual(['menu', true])
+    overlays.toggleMenuOnShortcuts()
+    expect([overlays.openPanel.value, overlays.shortcutsOpen.value]).toEqual([null, false])
+
+    overlays.toggleMenuOnShortcuts()
+    overlays.onSelectPanel('project')
+    expect([overlays.openPanel.value, overlays.shortcutsOpen.value]).toEqual(['project', false])
+  })
 })

@@ -766,10 +766,13 @@ body {
 .fbar .grow{flex:1}
 .fbar .sw{display:flex;gap:4px}.fbar .sw i{width:16px;height:16px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--swatch-edge)}
 .fstrip{display:flex;align-items:center;gap:10px;height:46px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--box);font:500 14px var(--font-sans)}
-.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px}
-.sc-g h5{margin:0 0 8px;font:400 12px var(--font-mono);color:var(--muted);text-transform:lowercase}
-.sc-r{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line-soft);font:400 13px/18px var(--font-sans);color:var(--body)}
-.sc-r span:last-child{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+/* ShortcutsHelp (ticket 1159): a group's rows in two columns down the left first (--rows is the left's count), the keys in a fixed track after the name. */
+.sc-g + .sc-g{margin-top:4px;padding-top:4px;border-top:1px solid var(--line-soft)}
+.sc-g h5{margin:0;padding:0 10px;min-height:28px;display:flex;align-items:center;font:400 12px var(--font-mono);color:var(--muted);text-transform:lowercase}
+.sc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(var(--rows),auto);grid-auto-flow:column;column-gap:16px}
+.sc-r{display:grid;grid-template-columns:minmax(0,1fr) var(--shortcut-keys-width);align-content:center;align-items:baseline;gap:8px;min-height:28px;padding:4px 10px;border-radius:var(--radius-sm);font:400 13px/18px var(--font-sans);color:var(--ink)}
+.sc-r span:last-child{display:flex;gap:2px;white-space:nowrap}
+.kbd.is-arrows{letter-spacing:.2em;padding-right:calc(6px - .2em)}
 
 /* ---------- Interaction states and motion (Phase B) ---------- */
 /* Motion tokens (--duration-*, --ease-*), --hover-fill / --press-fill, ix-* state samples, mo-* motion samples. */

@@ -225,7 +225,7 @@ describe('HomePage', () => {
     expect(wrapper.emitted(asked)).toHaveLength(1)
   })
 
-  it('shows the Shortcuts help over the page, the Menu put away, and keeps Tools position on the device (ticket 1113)', async () => {
+  it('pushes Keyboard shortcuts as the Menu\'s Subpanel, wider than Menu, and keeps Tools position on the device (tickets 1113, 1159)', async () => {
     const wrapper = page()
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await choosePanelOption(wrapper, 'menu-tools-position', 'left')
@@ -233,10 +233,16 @@ describe('HomePage', () => {
 
     await wrapper.get('[data-testid="menu-item-shortcuts"]').trigger('click')
     await flushPromises()
-    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(true)
-    await wrapper.get('[data-testid="shortcuts-help-close"]').trigger('click')
-    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="shortcuts-help"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe(en.shortcutsHelp.title)
+    expect(wrapper.get('[data-testid="panel-sub-key"]').text()).toBe('?')
+    expect(wrapper.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style.width).toBe('var(--panel-width-wide)')
+
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="shortcuts-help"]').exists()).toBe(false)
   })
 
   it('names the strip\'s buttons from What the buttons do, until Escape (tickets 0927, 1113)', async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chordLine, chordParts, keyParts, MOD_KEY } from './chord'
+import { ALT_KEY, chordLine, chordParts, keyParts, MOD_KEY } from './chord'
 
 describe('chordParts and chordLine (ticket 0993)', () => {
   const line = (chord: Parameters<typeof chordParts>[0], keyboard: 'apple' | 'other') => chordLine(chordParts(chord, keyboard))
@@ -34,5 +34,10 @@ describe('chordParts and chordLine (ticket 0993)', () => {
     expect(chordLine(keyParts([MOD_KEY, 'wheel'], 'apple'))).toBe('⌘+wheel')
     expect(chordLine(keyParts([MOD_KEY, 'wheel'], 'other'))).toBe('Ctrl+wheel')
     expect(chordLine(keyParts(['Space', 'drag'], 'apple'))).toBe('Space+drag')
+  })
+
+  it('writes Alt as ⌥ on an Apple keyboard, with the arrows after it (ticket 1159)', () => {
+    expect(chordLine(keyParts([ALT_KEY, '←→'], 'apple'))).toBe('⌥+←→')
+    expect(chordLine(keyParts([ALT_KEY, '←→'], 'other'))).toBe('Alt+←→')
   })
 })

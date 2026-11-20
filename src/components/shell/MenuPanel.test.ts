@@ -103,6 +103,16 @@ describe('MenuPanel (ticket 443)', () => {
     expect(panel.emitted('update:toolsPosition')).toEqual([['left']])
   })
 
+  it('pushes Keyboard shortcuts as a Subpanel from Help, its row marked › (ticket 1159)', async () => {
+    const openSub = vi.fn()
+    const wrapper = mountIn({}, openSub)
+    const row = wrapper.get('[data-testid="menu-item-shortcuts"]')
+    expect(row.find('.panel-item__mark--sub').exists()).toBe(true)
+    await row.trigger('click')
+    expect(wrapper.getComponent(MenuPanel).emitted('shortcuts')).toHaveLength(1)
+    expect(openSub).toHaveBeenCalledTimes(1)
+  })
+
   it('opens the Feedback sheet from Help’s Send feedback, after Keyboard shortcuts, and from the link right below it (tickets 0700, 1144)', async () => {
     const wrapper = mountIn()
     const panel = wrapper.getComponent(MenuPanel)

@@ -150,11 +150,11 @@ describe('useConvertImageFlow', () => {
 
   it('leaves a picture for another dialog that is showing, or for a page that is already open', () => {
     const { dialogs, appPage, flow } = setup()
-    dialogs.flag('shortcuts').value = true
+    dialogs.flag('delete-all').value = true
     expect(flow.onPicture(picture)).toBe(false)
     expect(flow.session.value).toBeUndefined()
 
-    dialogs.flag('shortcuts').value = false
+    dialogs.flag('delete-all').value = false
     flow.open(formValues)
     expect(appPage.page.value).toBe('convert-image')
     expect(flow.onPicture(picture)).toBe(false)

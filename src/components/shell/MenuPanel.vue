@@ -79,6 +79,7 @@ const emit = defineEmits<{
   'update:toolsPosition': [position: PillPosition]
   'update:inputMode': [mode: InputMode]
   'update:handedness': [hand: Handedness]
+  /** The Keyboard shortcuts Subpanel is about to be pushed (ticket 1159). */
   shortcuts: []
   /** What the buttons do (ticket 0927): every strip and pill button shows its name until the next press. */
   'button-names': []
@@ -219,7 +220,8 @@ const inputOptions = computed(() => [
     </PanelSection>
 
     <PanelSection id="menu:help" :label="t.panels.menu.help">
-      <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
+      <!-- Keyboard shortcuts is Menu's Subpanel (ticket 1159, ShortcutsHelp card), wider than Menu; the key shows where a keyboard is. -->
+      <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" sub stays data-testid="menu-item-shortcuts" @select="emit('shortcuts'); context?.openSub()">{{ t.shortcutsHelp.title }}</PanelItem>
       <PanelItem v-if="!demo" icon="info" data-testid="menu-item-button-names" @select="emit('button-names')">{{ t.panels.menu.buttonNames }}</PanelItem>
       <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
       <!-- Report a translation problem sits under Send feedback: both open the FeedbackSheet (tickets 0700, 1144). -->

@@ -54,6 +54,19 @@ describe('AppSubpanel', () => {
     expect(document.activeElement).toBe(wrapper.get('[data-testid="field"]').element)
   })
 
+  it('widens to the subpanel\'s own width with its key at the header\'s right, and narrows again on Back (ticket 1159)', async () => {
+    const wrapper = mountShell({ subWidth: 'var(--panel-width-wide)', subKey: '?' })
+    const panel = () => wrapper.get<HTMLElement>('[data-testid="panel-dropdown"]').element
+    expect(panel().style.width).toBe('')
+
+    await wrapper.get('[data-testid="root-row"]').trigger('click')
+    expect(panel().style.width).toBe('var(--panel-width-wide)')
+    expect(wrapper.get('[data-testid="panel-sub-key"]').text()).toBe('?')
+
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    expect(panel().style.width).toBe('')
+  })
+
   it('opens a subpanel on the panel, not its first field, on a touch device, so the keyboard stays down (ticket 0688)', async () => {
     vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
     const wrapper = mountShell()
@@ -119,6 +132,14 @@ describe('AppSubpanel', () => {
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="root-row"]').exists()).toBe(true)
+  })
+
+  it('goes back from a subpanel it opened on to the row that pushes it, with focus there (ticket 1159)', async () => {
+    const wrapper = mountShell({ startInSub: true, subOpener: 'root-row' })
+    await nextTick()
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="root-row"]').element)
   })
 
   it('is a plain region as the Menu, its rows buttons, and a dialog in a subpanel or otherwise', async () => {

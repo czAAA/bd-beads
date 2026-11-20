@@ -130,7 +130,11 @@ const pen = usePenInputMode(preferences)
 const projectsKept = props.persistentStorage
   ? useStorageAskFlow({ persistentStorage: props.persistentStorage, devicePreferences: preferences, messages: () => t.value, showToast }).kept
   : undefined
-const shortcutsOpen = dialogs.flag('shortcuts')
+/** Whether Menu's Subpanel is Keyboard shortcuts rather than the Projects library (ticket 1159). */
+const shortcutsOpen = ref(false)
+watch(menuOpen, (open) => {
+  if (!open) shortcutsOpen.value = false
+})
 const buttonNames = provideButtonNames()
 const themePick = useThemePick()
 const accountFlow = useAccountFlow({
@@ -491,7 +495,16 @@ const savedProjects = controlAction('saved-projects')
             </template>
           </CanvasStrip>
         </div>
-        <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="libraryFailed ? undefined : String(count)" @close="menuOpen = false">
+        <PanelHost
+          v-if="menuOpen"
+          open="menu"
+          :only="['menu']"
+          :sub-title="shortcutsOpen ? t.shortcutsHelp.title : t.projects.heading"
+          :sub-meta="shortcutsOpen || libraryFailed ? undefined : String(count)"
+          :sub-key="shortcutsOpen ? '?' : undefined"
+          :sub-width="shortcutsOpen ? 'var(--panel-width-wide)' : undefined"
+          @close="menuOpen = false"
+        >
           <MenuPanel
             v-model:tools-position="toolsPosition"
             page="homepage"
@@ -505,18 +518,19 @@ const savedProjects = controlAction('saved-projects')
             :may-open-sign-in="accountFlow.mayOpenSignIn"
             @new-project="emit('newProject')"
             @convert-image="emit('convertImage')"
-            @saved-projects="showSavedProjects"
+            @saved-projects="(shortcutsOpen = false), showSavedProjects()"
             @sign-in="emit('createAccount')"
             @sign-out="accountFlow.onSignOut"
             @delete-account="accountFlow.onRequestDeleteAccount"
             @update:input-mode="pen.setInputMode"
             @update:handedness="pen.setHandedness"
-            @shortcuts="fromMenu(() => (shortcutsOpen = true))"
+            @shortcuts="shortcutsOpen = true"
             @button-names="fromMenu(buttonNames.show)"
             @feedback="feedback.onOpenFeedback"
           />
           <template #sub="{ depth }">
-            <LibraryUnopened v-if="depth === 1 && libraryFailed" list />
+            <ShortcutsHelp v-if="shortcutsOpen" />
+            <LibraryUnopened v-else-if="depth === 1 && libraryFailed" list />
             <LoadingState v-else-if="depth === 1 && libraryLoading" compact :text="t.projects.loading" />
             <ProjectsLibrary
               v-else-if="depth === 1 && library"
@@ -544,7 +558,6 @@ const savedProjects = controlAction('saved-projects')
           :copy="feedback.copyReport"
           @cancel="feedback.onCloseFeedback"
         />
-        <ShortcutsHelp v-if="dialogs.open.value === 'shortcuts'" @close="shortcutsOpen = false" />
         <!-- Delete your account? (ticket 0082), asked from the Menu's Account section as in the editor. -->
         <ConfirmModal
           v-if="dialogs.open.value === 'delete-account'"

@@ -1,124 +1,127 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import ShortcutsHelp from './ShortcutsHelp.vue'
+import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
 
 beforeEach(() => {
-  localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
+  localStorage.setItem('openbeads:locale', 'en')
+})
+
+afterEach(() => {
+  document.body.innerHTML = ''
+  vi.restoreAllMocks()
 })
 
 function mountHelp() {
   return mount(ShortcutsHelp, { attachTo: document.body })
 }
 
+/** Each group's rows as "name: keys spoken". */
+function groups(wrapper: VueWrapper) {
+  return wrapper.findAll('[data-testid="shortcuts-help-group"]').map((group) => ({
+    title: group.get('h3').text(),
+    rows: group.findAll('.shortcuts-help__row').map((row) => `${row.get('dt').text()}: ${row.get('.shortcuts-help__spoken').text()}`),
+  }))
+}
+
+const onApple = () => vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)')
+
 describe('ShortcutsHelp', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-    vi.restoreAllMocks()
-  })
-
-  it('lists shortcuts grouped under the Tool group names, with the Canvas group (v16) after Tools', () => {
-    const wrapper = mountHelp()
-
-    const groupTitles = wrapper.findAll('[data-testid="shortcuts-help-group"]').map((group) =>
-      group.find('h3').text(),
-    )
-    expect(groupTitles).toEqual([
-      ru.toolbox.groups.tools,
-      ru.shortcutsHelp.canvasGroup,
-      ru.toolbox.groups.colors,
-      ru.toolbox.groups.edit,
-      ru.toolbox.groups.rowProgress,
+  it('holds the card\'s groups in its order: tools, colors, edit, canvas, on a handle, row progress (ticket 1159)', () => {
+    expect(groups(mountHelp()).map((group) => group.title)).toEqual([
+      en.toolbox.groups.tools,
+      en.toolbox.groups.colors,
+      en.toolbox.groups.edit,
+      en.shortcutsHelp.canvasGroup,
+      en.shortcutsHelp.handleGroup,
+      en.toolbox.groups.rowProgress,
     ])
   })
 
-  it('names every shortcut from tickets 87, 88, 90, 91, 92, 94, 95, and the canvas ones of ticket 233', () => {
-    const wrapper = mountHelp()
-    const text = wrapper.text()
-
-    for (const key of ['1', '2', '3', '4', 'Del', 'Space+drag', '5', '6', 'R', 'Ctrl+wheel', 'Ctrl+C', 'Ctrl+V', 'Ctrl+S', 'D']) {
-      expect(text).toContain(key)
-    }
-    expect(text).toContain(ru.tools.paintLabel)
-    expect(text).toContain(ru.contextBar.clearButton)
-    expect(text).toContain(ru.shortcutsHelp.panCanvas)
-    expect(text).toContain(ru.tools.handLabel)
-    expect(text).toContain(ru.canvas.rulersLabel)
-    expect(text).toContain(ru.shortcutsHelp.zoomCanvas)
-    expect(text).toContain(ru.shortcutsHelp.paletteColors)
+  it('lists the card\'s rows on an Apple keyboard, one chord each, and no row for `?` (ticket 1159)', () => {
+    onApple()
+    const [tools, colors, edit, canvas, handle, rowProgress] = groups(mountHelp()).map((group) => group.rows)
+    expect(tools.map((row) => row.split(': ')[1])).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '⌘A', 'Esc'])
+    expect(colors).toEqual(['A recent color: Shift+1…3', 'Palette colors 1 to 6: Shift+4…9', 'Palette color 7: Shift+0'])
+    expect(edit).toEqual([
+      'Undo: ⌘Z',
+      'Redo: Shift+⌘Z',
+      'Copy: ⌘C',
+      'Cut: ⌘X',
+      'Paste from clipboard: ⌘V',
+      'Remove selected beads: ⌫',
+      'Remove selected row/column: Shift+⌫',
+      'Rotate: Shift+R',
+      'Save Project file: ⌘S',
+      'Save Project file as…: Shift+⌘S',
+    ])
+    expect(canvas).toEqual([
+      'Rulers: R',
+      'Reference image: I',
+      'Zoom in: ⌘+',
+      'Zoom out: ⌘−',
+      'Fit: ⌘0',
+      'Move the Canvas: Space+drag',
+      'Move it from any tool: middle-drag',
+      'Scroll the Canvas: wheel',
+      'Scroll it sideways: Shift+wheel',
+      'Zoom the Canvas: ⌘+wheel',
+      'Zoom on a trackpad: pinch',
+      'Tools at the pointer: right-click',
+      'Tools at a finger or Pencil: hold',
+    ])
+    expect(handle).toEqual([
+      'Move the selection, Piece or Mirror area: ←↑↓→',
+      'Move the Frame: ←↑↓→',
+      'Resize the Frame: Shift+←↑↓→',
+      'Move the reference picture: ←↑↓→',
+      '… ten beads at a time: Shift+←↑↓→',
+      'Move a Palette color: ⌥+←→',
+    ])
+    expect(rowProgress.map((row) => row.split(': ')[1])).toEqual(['D', 'Enter', 'Shift+Enter'])
   })
 
-  it('lists the keys the registry lists, one row per action', () => {
-    const wrapper = mountHelp()
-    const rows = wrapper.findAll('.shortcuts-help__row').map((row) => row.find('.shortcuts-help__spoken').text())
-
-    for (const keys of ['Shift+Del', 'Shift+R', 'Ctrl+Z', 'Ctrl+Shift+Z, Ctrl+Y', 'Enter', 'Shift+Enter', 'Esc', '?']) {
-      expect(rows).toContain(keys)
-    }
-    expect(wrapper.text()).toContain(ru.palette.rotateButton)
+  it('writes Ctrl, Alt and Del on any other keyboard, and Redo with its main chord only (tickets 0993, 1159)', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+    const rows = groups(mountHelp()).flatMap((group) => group.rows)
+    expect(rows).toEqual(expect.arrayContaining(['Redo: Ctrl+Shift+Z', 'Remove selected beads: Del', 'Move a Palette color: Alt+←→', 'Zoom the Canvas: Ctrl+wheel']))
   })
 
-  it('writes ⌘ and ⌫ on an Apple device, with no plus after ⌘ (ticket 0993)', () => {
-    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)')
-    const rows = mountHelp().findAll('.shortcuts-help__row').map((row) => row.find('.shortcuts-help__spoken').text())
-    for (const keys of ['⌘Z', '⌫', '⌘+wheel']) expect(rows).toContain(keys)
+  it('says under the handle group\'s heading that the keys wait for a focused handle', () => {
+    const handle = mountHelp().findAll('[data-testid="shortcuts-help-group"]')[4]
+    expect(handle.get('.shortcuts-help__hint').text()).toBe(en.shortcutsHelp.handleHint)
   })
 
-  it('lists the pill\'s tools 1 to 8 in one group, in the pill\'s order, and no two rows both named Paste (ticket 0993)', () => {
-    const wrapper = mountHelp()
-    const [tools] = wrapper.findAll('[data-testid="shortcuts-help-group"]')
-    const keys = tools.findAll('.shortcuts-help__spoken').map((key) => key.text())
-    expect(keys.slice(0, 8)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
-
-    const labels = wrapper.findAll('.shortcuts-help__row dt').map((label) => label.text())
-    expect(labels).not.toContain(ru.tools.pasteLabel)
-    expect(labels).toEqual(expect.arrayContaining([ru.shortcutsHelp.pasteTool, ru.shortcutsHelp.pasteClipboard]))
+  it('runs each group\'s rows down the left column first, the left taking the larger half', () => {
+    const lists = mountHelp().findAll('.shortcuts-help__list')
+    const rowsPerColumn = lists.map((list) => list.attributes('style'))
+    expect(rowsPerColumn[1]).toContain('--rows: 2') // colors: 3 rows, 2 + 1
+    expect(rowsPerColumn[2]).toContain('--rows: 5') // edit: 10 rows, 5 + 5
   })
 
-  it('emits close when the close button is clicked', async () => {
-    const wrapper = mountHelp()
-
-    await wrapper.find('[data-testid="shortcuts-help-close"]').trigger('click')
-
-    expect(wrapper.emitted('close')).toHaveLength(1)
+  it('draws every key as a chip and speaks each row\'s keys as one phrase', () => {
+    onApple()
+    const row = mountHelp().findAll('.shortcuts-help__row').find((each) => each.get('dt').text() === 'Resize the Frame')!
+    expect(row.findAll('kbd').map((chip) => chip.text())).toEqual(['Shift', '←↑↓→'])
+    expect(row.findAll('kbd').map((chip) => chip.classes())).toEqual([expect.arrayContaining(['kbd-chip--word']), expect.arrayContaining(['kbd-chip--arrows'])])
+    expect(row.get('.shortcuts-help__spoken').text()).toBe('Shift+←↑↓→')
   })
 
-  it('emits close on Escape', async () => {
+  it('opens on the Show key hints switch, which reads the device and stores the first flip (ticket 438)', async () => {
     const wrapper = mountHelp()
+    const toggle = wrapper.get('[data-testid="shortcuts-help-key-hints"]')
+    expect(toggle.attributes('role')).toBe('switch')
+    expect(toggle.attributes('aria-checked')).toBe('true')
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.emitted('close')).toHaveLength(1)
-  })
-
-  it('emits close on a backdrop click, but not on a click inside the dialog', async () => {
-    const wrapper = mountHelp()
-
-    await wrapper.find('[data-testid="shortcuts-help-dialog"]').trigger('pointerdown')
-    expect(wrapper.emitted('close')).toBeUndefined()
-
-    await wrapper.find('[data-testid="shortcuts-help-backdrop"]').trigger('pointerdown')
-    expect(wrapper.emitted('close')).toHaveLength(1)
-  })
-
-  it('stops listening for Escape once unmounted', () => {
-    const wrapper = mountHelp()
-    wrapper.unmount()
-
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-
-    expect(true).toBe(true)
-  })
-
-  it('has a key hints switch at the top that reads the device and stores the first flip (ticket 438)', async () => {
-    const wrapper = mountHelp()
-    const row = wrapper.get('[data-testid="shortcuts-help-key-hints"]')
-    expect(row.text()).toContain(ru.shortcutsHelp.keyHints)
-    expect(row.get('[aria-checked="true"]').text()).toBe(ru.shortcutsHelp.keyHintsOn)
-
-    await row.get('[data-value="off"]').trigger('click')
+    await toggle.trigger('click')
     expect(localStorage.getItem('openbeads:key-hints')).toBe('off')
-    expect(wrapper.findAll('.shortcuts-help__kbd').length).toBeGreaterThan(0) // the help's own chips stay
+    expect(wrapper.findAll('.shortcuts-help__row kbd').length).toBeGreaterThan(0) // the list's own chips stay
+  })
+
+  it('names its rows in the shown language', () => {
+    localStorage.setItem('openbeads:locale', 'ru')
+    const rows = groups(mountHelp()).flatMap((group) => group.rows)
+    expect(rows).toEqual(expect.arrayContaining([`${ru.shortcutsHelp.moveFrame}: ←↑↓→`, `${ru.shortcutsHelp.recentColor}: Shift+1…3`]))
   })
 })
