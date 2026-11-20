@@ -277,11 +277,10 @@ describe('the Ruler dots', () => {
     expect(piece.labels).toEqual([])
   })
 
-  it('are none on a Frame whose margin sheet is compact or folded, which has no room for them, the line kept (ticket 0658)', () => {
+  it('are none on a Frame whose margin sheet is compact, folded or bare, which has no room for them, the line kept (ticket 0658)', () => {
     for (const sheet of ['compact', 'folded', 'bare'] as const) {
       const layout = framed(frame, { zoom: 0.6, sheet })
       expect(layout.labels, sheet).toEqual([])
-      expect(layout.dots, sheet).toEqual([])
       expect(layout.boxes, sheet).toHaveLength(1)
     }
     expect(framed(frame, { zoom: 0.6, sheet: 'full' }).labels.length).toBeGreaterThan(0)
@@ -399,6 +398,33 @@ describe('the dots below the zoom where only the last number shows (ticket 378)'
     const away = frameTop - top[0]!.y
     expect(away).toBeCloseTo(boxes[0]!.outset + scale.gap + scale.dotRadius, 5)
     expect(away).toBeLessThan(7)
+  })
+})
+
+describe('the Frame\'s dots once its margin sheet has no room for numbers (ticket 1155)', () => {
+  const frame: Rect = { row: 0, column: 0, rows: 8, columns: 30 }
+  const frameTop = (zoom: number) => surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom }).beadBox(frame).y
+  const onTop = (dots: RulerDot[]) => dots.filter((d) => d.axis === 'column' && d.normal[1] < -0.5)
+
+  it('mark every bead on the sheet\'s three sides, a number\'s bead too, in the compact, folded and bare forms', () => {
+    for (const sheet of ['compact', 'folded', 'bare'] as const) {
+      const { dots } = framed(frame, { zoom: 0.6, sheet })
+      expect(onTop(dots).map((d) => d.index + 1), sheet).toEqual(Array.from({ length: 30 }, (_, i) => i + 1))
+      expect(dots.filter((d) => d.axis === 'row').length, sheet).toBe(16)
+      expect(onTop(dots).filter((d) => d.fifth).map((d) => d.index + 1), sheet).toEqual([5, 10, 15, 20, 25, 30])
+    }
+  })
+
+  it('hug the Frame\'s line, under the Move bar\'s grip, not out at where the numbers would stand', () => {
+    const { dots, boxes, frameScale } = framed(frame, { zoom: 0.6, sheet: 'bare' })
+    const away = frameTop(0.6) - onTop(dots)[0]!.y
+    expect(away).toBeCloseTo(boxes[0]!.outset + frameScale.gap + frameScale.dotRadius, 5)
+    expect(away).toBeLessThan(10)
+  })
+
+  it('keep only every 5th bead\'s where the beads stand too close for a dot each', () => {
+    const { dots } = framed(frame, { zoom: 0.2, sheet: 'bare' })
+    expect(onTop(dots).map((d) => d.index + 1)).toEqual([5, 10, 15, 20, 25, 30])
   })
 })
 
