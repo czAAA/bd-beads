@@ -5,7 +5,7 @@ import { carryNames } from './pieceNames'
 import type { Project } from './project'
 import { isInFinishedRow } from './rowProgress'
 import { cellKey, movedSelection, selectableOn, selectionCells, selectionInLayer, selectionLayer, type Selection } from './selection'
-import { columnCycle, rowCycle } from './weave'
+import { columnCycle, rowCycle, wholeCycles } from './weave'
 
 // Moving a Piece (ticket 1013): the move grip of a Piece-shaped Selection carries the Selection's beads with it, on
 // their layer. Nothing is lost by it: a move that would put a bead on another bead, off what its layer shows (the
@@ -27,9 +27,7 @@ function cyclesOf(project: Project, selection: Selection): { rows: number; colum
  * cycles of its layer's stagger (a pair of columns on peyote, a pair of rows on brick stitch). */
 export function wholeMove(project: Project, selection: Selection, rows: number, columns: number): { rows: number; columns: number } {
   const cycle = cyclesOf(project, selection)
-  // Half a cycle goes the way of the drag, left as right; `+ 0` leaves no negative zero.
-  const whole = (beads: number, by: number) => Math.sign(beads) * Math.round(Math.abs(beads) / by) * by + 0
-  return { rows: whole(rows, cycle.rows), columns: whole(columns, cycle.columns) }
+  return { rows: wholeCycles(rows, cycle.rows), columns: wholeCycles(columns, cycle.columns) }
 }
 
 /** The move a step of `rows` and `columns` on the keys makes: a bead, or where the stagger repeats later one whole

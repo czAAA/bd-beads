@@ -599,10 +599,23 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
    * press on the line between two beads wobbles across it. Nothing for the Move handle. */
   let frameGrip = { x: 0, y: 0 }
 
+  /** The bead position a move was pressed on (a Selection's, or the Frame's by its Move handle), where the press was
+   * in grid space, and whether it goes by whole stagger cycles, as a Piece does (ticket 1150): the move is as far as
+   * the pointer has gone, so it keeps its line across staggered columns or rows. None while a handle resizes. */
+  let carryGrip: { from: GridPosition; pressed: { x: number; y: number }; byCycles: boolean } | undefined
+
+  /** Begins a move at the press, by whole stagger cycles for a Piece's shape; returns the position pressed. */
+  function beginCarry(event: PointerEvent, byCycles = false): GridPosition {
+    const from = cellUnder(event)
+    carryGrip = { from, pressed: surface.value.pointToGrid(pointInDrawing(event)), byCycles }
+    return from
+  }
+
   /** Reports the cell at `point` to whichever drag is held: a Frame's, a Selection's adjust or a Select drag. */
   function followHeldDrag(point: { x: number; y: number }): void {
-    if (framing.value) emit('frame-drag', surface.value.pointToCell({ x: point.x + frameGrip.x, y: point.y + frameGrip.y }, gestureLayer))
-    else if (adjusting.value) emit('selection-drag', surface.value.pointToCell(point, gestureLayer))
+    const carried = carryGrip && surface.value.carriedCell(carryGrip.from, carryGrip.pressed, point, gestureLayer, carryGrip.byCycles)
+    if (framing.value) emit('frame-drag', carried ?? surface.value.pointToCell({ x: point.x + frameGrip.x, y: point.y + frameGrip.y }, gestureLayer))
+    else if (adjusting.value) emit('selection-drag', carried ?? surface.value.pointToCell(point, gestureLayer))
     else if (selectDrag) {
       const near = surface.value.pointToCell(point, selectLayer)
       emit('cell-primary-move', near.row, near.column)
@@ -665,6 +678,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     } else {
       adjusting.value = true
       resizing = true
+      carryGrip = undefined
       gestureLayer = left.layer
     }
     hideMarker()
@@ -714,7 +728,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     rootEl.value?.setPointerCapture?.(event.pointerId)
     gestureLayer = 'canvas'
     frameGrip = { x: 0, y: 0 }
-    emit('frame-press', { kind: 'move' }, cellUnder(event))
+    emit('frame-press', { kind: 'move' }, beginCarry(event))
     event.preventDefault()
   }
 
@@ -732,7 +746,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     hideMarker()
     rootEl.value?.setPointerCapture?.(event.pointerId)
     gestureLayer = layer
-    emit('selection-press', { kind: 'inside' }, cellUnder(event), area)
+    emit('selection-press', { kind: 'inside' }, beginCarry(event, area === 'selection' && !!props.selection?.cells), area)
     event.preventDefault()
   }
 
@@ -784,6 +798,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = target.kind === 'handle' ? 'frame' : 'canvas'
+        carryGrip = undefined
         const pressed = cellUnder(event)
         const point = pointInDrawing(event)
         const middle = surface.value.beadToPoint(pressed, gestureLayer)
@@ -813,7 +828,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = selectionViewLayer()
-        emit('selection-press', target, cellUnder(event), ...(areaHandlesOnly.value ? ['mirror' as const] : []))
+        carryGrip = undefined
+        const pressed = resizing ? cellUnder(event) : beginCarry(event, !!held.cells)
+        emit('selection-press', target, pressed, ...(areaHandlesOnly.value ? ['mirror' as const] : []))
         // A handle's press is the handle's and is never timed; the inside's is, while its move starts (ticket 1084).
         if (target.kind === 'inside' && timesHold) timeHold(event)
         event.preventDefault()
@@ -1020,6 +1037,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     }
     heldPointer = undefined
     resizing = false
+    carryGrip = undefined
     stroke = undefined
     selectDrag = false
     releasePointer(event)

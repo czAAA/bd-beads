@@ -1,13 +1,15 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
-import type { Technique } from '../domain/weave'
+import { columnCycle, type Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { projectExtentPx, surfaceView } from './surfaceView'
 import { customFrameSize, frameGeometry } from '../domain/frameShape'
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
+/** After how many columns a Technique's stagger repeats: a move by that many keeps a bead's row on the screen. */
+const columnCycleOf = (technique: Technique) => columnCycle({ technique })
 const ROTATIONS: Rotation[] = [0, 90, 180, 270]
 const COLUMNS = 6
 const ROWS = 5
@@ -58,6 +60,45 @@ describe('the Surface view maps beads and points both ways', () => {
           }
         })
       })
+    })
+
+    describe.each(ROTATIONS)('turned %i°', (rotation) => {
+      it.each(VIEWS)('carries a position as many whole beads as the pointer went, wherever in its bead the press was (ticket 1150, zoom $zoom)', ({ zoom, scroll }) => {
+        const view = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll })
+        const from = { row: 2, column: 2 }
+        const { column: along, row: down } = view.beadStep()
+        const middle = view.beadToPoint(from)
+        // Pressed a third of a bead off the middle, each way: a staggered neighbour's bead is under the pointer there.
+        for (const off of [-1 / 3, 1 / 3]) {
+          const press = { x: middle.x + (along.x + down.x) * off, y: middle.y + (along.y + down.y) * off }
+          const gone = (columns: number, rows: number) => ({ x: press.x + along.x * columns + down.x * rows, y: press.y + along.y * columns + down.y * rows })
+          const pressed = view.pointToGrid(press)
+          for (const [columns, rows] of [[0, 0], [1, 0], [3, 0], [0, 1], [0, -3], [-2, 5], [0.4, -0.4], [1.6, 0.6]] as const) {
+            expect(view.carriedCell(from, pressed, gone(columns, rows))).toEqual({ row: 2 + Math.round(rows), column: 2 + Math.round(columns) })
+          }
+        }
+      })
+
+      it('carries it as far when the view has moved and zoomed since the press', () => {
+        const pressedIn = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom: 1 })
+        const press = pressedIn.beadToPoint({ row: 2, column: 2 })
+        const now = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom: 2.5, scroll: { x: 37, y: -12 } })
+        // The pointer is on a bead of the same row two stagger cycles on, as the view now draws it.
+        expect(now.carriedCell({ row: 2, column: 2 }, pressedIn.pointToGrid(press), now.beadToPoint({ row: 2, column: 2 + 2 * columnCycleOf(technique) }))).toEqual({ row: 2, column: 2 + 2 * columnCycleOf(technique) })
+      })
+    })
+
+    it('carries by whole stagger cycles when asked, half a cycle going the way of the drag (ticket 1150)', () => {
+      const view = surfaceView({ space: OPEN_SPACE, technique, rotation: 0, zoom: 1 })
+      const from = { row: 2, column: 2 }
+      const press = view.beadToPoint(from)
+      const { column: along, row: down } = view.beadStep()
+      const carried = (columns: number, rows: number) => view.carriedCell(from, view.pointToGrid(press), { x: press.x + along.x * columns + down.x * rows, y: press.y + along.y * columns + down.y * rows }, undefined, true)
+      // How far each goes, in beads, for the pointer gone 0.9, 1, 2.9, 3 and -1 beads that way.
+      const went = { columns: [0.9, 1, 2.9, 3, -1].map((beads) => carried(beads, 0).column - 2), rows: [0.9, 1, 2.9, 3, -1].map((beads) => carried(0, beads).row - 2) }
+      const byBeads = [1, 1, 3, 3, -1]
+      const byPairs = [0, 2, 2, 4, -2]
+      expect(went).toEqual({ columns: technique === 'peyote' ? byPairs : byBeads, rows: technique === 'brick' ? byPairs : byBeads })
     })
 
     it('gives no bead for a point outside a Project drawn on its own, and the nearest cell for one on the Canvas', () => {

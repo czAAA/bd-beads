@@ -163,16 +163,19 @@ describe('the Radial toolbox', () => {
     wrapper.unmount()
   })
 
-  /** Holds a finger inside an area while it wobbles onto the next bead, less than the drag slop away, so the area steps
-   * a bead with it before the hold is up; `stepped` is checked at that moment. Then the finger lifts. */
+  /** Holds a finger inside an area while it wobbles over half a bead, less than the drag slop away, so the area steps
+   * a bead with it before the hold is up; `stepped` is checked at that moment. Then the finger lifts. Zoomed out to
+   * 50% first: an area steps once the pointer has gone half a bead (ticket 1150), which at 100% is past the slop. */
   async function wobblyHold(wrapper: Mounted, at: { row: number; column: number }, stepped: () => void) {
+    for (let step = 0; step < 5; step += 1) await wrapper.get('[data-testid="zoom-out"]').trigger('click')
+    await flushPromises()
     const surface = wrapper.get('[data-testid="project-surface"]')
     const middle = beadPoint(wrapper, at)
     const half = (beadPoint(wrapper, { ...at, column: at.column + 1 }).clientX - middle.clientX) / 2
     const finger = { clientY: middle.clientY, pointerType: 'touch', isPrimary: true }
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     try {
-      await surface.trigger('pointerdown', { ...finger, clientX: middle.clientX + half - 1, button: 0, buttons: 1 })
+      await surface.trigger('pointerdown', { ...finger, clientX: middle.clientX, button: 0, buttons: 1 })
       await surface.trigger('pointermove', { ...finger, clientX: middle.clientX + half + 1, buttons: 1 })
       stepped()
       vi.advanceTimersByTime(CANVAS_HOLD_MS)
