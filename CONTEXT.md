@@ -62,7 +62,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | `composables/<feature>/` | The app's behavior, one composable per concern; user flows are `use<Name>Flow` | `shell/useAppShell.ts` (wires them all), `project/useEdit.ts`, `shell/controlRegistry.ts` |
 | `components/<feature>/` | The Vue components for each feature: `canvas`, `tools`, `palette`, `export`, `import`, `project`, `shell` | `shell/AppShell.vue` |
 | `components/ui/`, `composables/ui/` | Primitives every feature builds on: `IconButton`, `AppButton`, `MenuButton`, `AppSwatch`, `AppNote`, `AppTooltip`, modals, menus, form fields; generic composables | `controlAction.ts` |
-| `i18n/` | One typed dictionary per language (English, Russian, Ukrainian, Belarusian, Chinese, Spanish, Polish), plurals, the language switch | `translations.ts`, `en.ts`, `ru.ts`, `uk.ts`, `be.ts`, `zh.ts`, `es.ts`, `pl.ts` |
+| `i18n/` | One typed dictionary per language (English, Russian, Ukrainian, Belarusian, Chinese, Spanish, Polish), each a folder of area files put together by its index (ticket 1135), plurals, the language switch | `translations.ts` and `translations/<area>.ts`; `en.ts` and `en/<area>.ts`, and the same for `ru`, `uk`, `be`, `zh`, `es`, `pl` |
 | `theme/` | Light, dark and high contrast, following the device | `theme.ts` |
 | `styles/` | Tokens and shared CSS, from the design system | `tokens.css`, `design-values.css` |
 | `homepage/` | The Homepage, at the main address (its own entry, the root `index.html`; the editor's is `app/index.html`, ticket 1052); how it is built: [docs/homepage.md](docs/homepage.md) | `HomePage.vue`, `homepageRoute.ts` |

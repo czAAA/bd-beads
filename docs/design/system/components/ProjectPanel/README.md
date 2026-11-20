@@ -34,6 +34,6 @@ Not here any more: an export section of its own heading the panel (ticket 0956: 
 
 ## Copy
 
-English: Project, name:, maker:, reference image (its copy is the ReferenceImage card's), Saved in this browser, Not saved yet, Saved in openbeads cloud, Not in openbeads cloud: sign in to sync, Add your name for exports, Technique, Drop, Bead, Save Project file, Save Project file as…, Duplicate, Export (the Canvas strip's Export button's word), Clear all beads, Delete Project. Russian: `writing.md` (Panels redesign).
+English: Project, name:, maker:, reference image (its copy is the ReferenceImage card's), Saved in this browser, Not saved yet, Saved in openbeads cloud, Not in openbeads cloud: sign in to sync, Add your name for exports, Technique, Drop, Bead, Save Project file, Save Project file as…, Duplicate, Export (the Canvas strip's Export button's word), Clear all beads, Delete Project. Russian: `copy/panels.md` (Panels redesign).
 
 Hand-written from spec 0440, the Menu and Project mockups and the ticket 0553 canvas; static rendition.
