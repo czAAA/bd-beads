@@ -163,7 +163,7 @@ function finishedCuff(): Project {
 }
 
 /** The cuff the Welcome tile weaves (ticket 1157; Homepage card): the finished cuff with its rows running left to right,
- * as a beader would set it, so its passes and rulers count from the left (ticket 1154). Row progress is its own data. */
+ * as a beader would set it, so its passes run from the left, where the rulers' 1 always is (ticket 1165). Row progress is its own data. */
 export function wovenCuff(): Project {
   return turnRowDirectionTo(finishedCuff(), 'right')
 }
