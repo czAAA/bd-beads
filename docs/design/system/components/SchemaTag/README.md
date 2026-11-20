@@ -39,7 +39,7 @@ The tag and border are drawn by the page (HTML over the canvas), not by the canv
 
 ## Copy
 
-"{name}, show details", "Click for the size and colors.", `schema`, "{w} × {h} beads · ≈ {measure}", "{n} beads · {n} colors", Rename, Frame, Close, and the Tab stop's name "Schema names": `writing.md`, Schema tag copy (ticket 0721).
+"{name}, show details", "Click for the size and colors.", `schema`, "{w} × {h} beads · ≈ {measure}", "{n} beads · {n} colors", Rename, Frame, Close, and the Tab stop's name "Schema names": `copy/panels.md`, Schema tag copy (ticket 0721).
 
 ## As built
 

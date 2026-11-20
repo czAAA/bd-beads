@@ -9,6 +9,6 @@ The result or error of Open Project file (ticket 0859: in is "Open Project file"
   - a picture (its type is `image/…` or its name ends in a picture's ending): "This is a picture. Use Convert image to turn it into beads."
   - a file named `….openbeads` that doesn't read: "This Project file is damaged and can't be opened."
   - anything else: "This isn't a Project file. Choose a file ending in .openbeads."
-  The other languages are in `writing.md` (Project file copy).
+  The other languages are in `copy/projects.md` (Project file copy).
 
 Hand-written from the Phase A sign-off (forms, screens and states); static rendition.

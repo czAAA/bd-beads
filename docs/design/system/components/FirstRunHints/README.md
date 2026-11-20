@@ -30,6 +30,6 @@ The same welcome, at the desktop sizes. No CanvasHint line.
 - The whole layer is decoration: `aria-hidden`, `pointer-events: none`, so the first press on the canvas paints the first bead. The same help is in Keyboard shortcuts and in each control's Tooltip.
 - No keyboard stop, nothing to dismiss.
 
-The copy in every language is in `writing.md`, "First-run welcome copy".
+The copy in every language is in `copy/canvas.md`, "First-run welcome copy".
 
 Hand-written from the approved canvas (2026-10-31, ticket 0738); static rendition. The welcome cut down to the storage lines in the repo (2026-11-05, tickets 0795 and 0798), then led by the next step with the storage as one quiet line under it (2026-11-14, ticket 0920, Impeccable UX audit UX-001).
