@@ -6,7 +6,8 @@ name: Deploy
 # redeploys production from the newest release commit, never from main's head (until a first release exists, it
 # deploys main's head). Which commit is a release is `scripts/release.ts`'s answer alone. Each deploy is
 # `deploy-worker.yml`: each database's migrations, then the code, then a smoke check that /api/health answers with the
-# commit it deployed.
+# commit it deployed. Once production's deploy of a release commit has passed its smoke check, the GitHub Release job
+# tags that commit `vX.Y.Z` and makes its GitHub Release (ticket 1134).
 #
 # The Cloudflare token and account id live only in the `production` GitHub environment, which is limited to main, so
 # no branch, pull request or fork can deploy. Only the steps that run Wrangler get the token, and the job that holds it
@@ -51,12 +52,11 @@ jobs:
         run: |
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             commit=$GITHUB_SHA
-            release=$(node scripts/release.ts is-release "$commit")
           else
             commit=$(node scripts/release.ts production "$GITHUB_SHA")
-            release=false
             git checkout --quiet --detach "$commit"
           fi
+          release=$(node scripts/release.ts is-release "$commit")
           echo "Building $commit (adds a release: $release)"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
           echo "release=$release" >> "$GITHUB_OUTPUT"
@@ -93,3 +93,64 @@ jobs:
       worker: production
       commit: ${{ needs.build.outputs.commit }}
     secrets: inherit
+
+  # Once production runs a release commit and its smoke check passed: the tag `vX.Y.Z` on that commit and the GitHub
+  # Release `openbeads X.Y.Z`, marked Latest, whose notes are that release's section of CHANGELOG.md, from the same
+  # generator (ticket 1134). Its own job, outside the production environment, with no secret but the run's own token: the
+  # only job that may write to the repo. Running it again changes nothing; a tag of that name on another commit fails it,
+  # and it never moves a tag.
+  github-release:
+    name: GitHub Release
+    needs: [build, production]
+    if: >-
+      !cancelled() && needs.build.result == 'success' && needs.build.outputs.release == 'true' &&
+      needs.production.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The commit production runs, with its tags so an existing one is found: its record and notes give the Release.
+      # The generator comes from the run's own commit on main, which a manual run's older release may predate.
+      # No credential is left in either checkout.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.build.outputs.commit }}
+          path: release
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: tools
+          persist-credentials: false
+      # Plain Node runs the generator: no install.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Tag the release and make its GitHub Release
+        working-directory: release
+        env:
+          COMMIT: ${{ needs.build.outputs.commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="$RUNNER_TEMP/release-notes.md"
+          version=$(node ../tools/scripts/changelog.ts --newest-release "$notes")
+          # The generator refuses it too; checked again here, where it becomes a tag and a title.
+          if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::The newest release's Version is not plain X.Y.Z"
+            exit 1
+          fi
+          tag="v$version"
+          tagged=$(git rev-parse --quiet --verify "refs/tags/$tag^{commit}" || true)
+          if [ -n "$tagged" ] && [ "$tagged" != "$COMMIT" ]; then
+            echo "::error::$tag is already on $tagged, not $COMMIT; a release tag is never moved"
+            exit 1
+          fi
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "$tag and its GitHub Release already exist; nothing to do"
+            exit 0
+          fi
+          # The tag already on this commit (a run that made it and then failed) is kept; else the Release makes it.
+          make=(gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "openbeads $version" --notes-file "$notes" --latest)
+          if [ -n "$tagged" ]; then "${make[@]}" --verify-tag; else "${make[@]}" --target "$COMMIT"; fi
+          echo "Made $tag on $COMMIT and its GitHub Release"

@@ -18,7 +18,7 @@ export const frame: FrameTranslations = {
     exportPicture: 'Obraz',
     exportChart: 'Wykres do druku',
     exportProjectFile: 'Plik',
-    exportProjectFileBody: 'Cały projekt w jednym pliku .openbeads, z kolorami, ramką i ustawieniami, by otworzyć go znowu tu lub na innym urządzeniu.',
+    exportProjectFileBody: 'Cały projekt w jednym pliku .openbeads: koraliki, kolory, ramka, obraz pomocniczy i ustawienia, by otworzyć go znowu tu lub na innym urządzeniu.',
     exportQuality: 'Jakość eksportu',
     qualityLow: 'Niska',
     qualityMedium: 'Średnia',
