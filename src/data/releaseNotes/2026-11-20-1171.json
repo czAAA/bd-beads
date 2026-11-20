@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "One press goes from an open panel or menu to the next; a press on the Canvas only closes it",
+    "ru": "Одно нажатие переводит от открытой панели или меню к следующей; нажатие на холст только закрывает открытое",
+    "uk": "Одне натискання переходить від відкритої панелі чи меню до наступної; натискання на полотно лише закриває відкрите",
+    "be": "Адно націсканне пераходзіць ад адкрытай панэлі ці меню да наступнай; націсканне на палатно толькі закрывае адкрытае",
+    "zh": "从打开的面板或菜单点到下一个，一次点击即可；点击画布只会关闭已打开的面板或菜单",
+    "es": "Un solo toque pasa de un panel o menú abierto al siguiente; tocar el lienzo solo cierra lo abierto",
+    "pl": "Jedno dotknięcie przechodzi od otwartego panelu lub menu do następnego; dotknięcie płótna tylko zamyka otwarte"
+  }
+}
