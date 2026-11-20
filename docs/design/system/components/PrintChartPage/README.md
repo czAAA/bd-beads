@@ -4,12 +4,12 @@ A chart page of the PDF: one equal part of the Schema, at the largest bead the s
 
 Signed off in the design session of 2026-10-27 (tickets 0585, 0586, 0588; the claude.ai canvas "Printed chart pages"). Sizes are on A4 portrait, measured from the page's top left corner; colors are tokens.
 
-## The new chart: approved 2026-11-19, not yet in the app (tickets 1126, 1127; 1128 and 1129 are in the app)
+## The new chart: approved 2026-11-19 (tickets 1126, 1127; 1126, 1128 and 1129 are in the app, 1127 not yet)
 
-Signed off by the owner on 2026-11-19 (ticket 1123; the claude.ai page "PDF chart, beads only", linked on the ticket): a loom piece, a turned peyote two-drop and a Custom frame, each with Empty grid off and on, and the rulers close up. Until each build ticket lands, the rest of this card describes the chart as it prints. Then, part by part:
+Signed off by the owner on 2026-11-19 (ticket 1123; the claude.ai page "PDF chart, beads only", linked on the ticket): a loom piece, a turned peyote two-drop and a Custom frame, each with Empty grid off and on, and the rulers close up. Until ticket 1127 lands, the rest of this card describes the chart as it prints, with Empty grid on and Chart border on. Part by part:
 
-- **No lines inside the chart, and no bold edge** (ticket 1126). The lines every 5th and 10th bead and the chart's 0.3 mm `ink` outer edge go; nothing is drawn between beads but their borders. Each colored square bead is filled and bordered on its own, `print-line-cell` (0.1 mm) in `line-strong`, so two neighbours share one hairline and a staggered row (brick stitch, peyote, any Drop) is outlined bead by bead and never stepped. A round bead keeps its circle's edge as today. The overlap's line, the letters and the key stay as they are; the pad's outline becomes the chart's rim (next). With Black and white on (PrintBlackAndWhite card) a solid black bead keeps its 0.2 mm of paper to its neighbours in place of the border.
-- **One rounded rim, the numbers outside it** (approved 2026-11-20; ticket 1126; its switch, **Chart border**, ticket 1127), on at first. The pad's rounded outline (`print-pad-line`, 0.2 mm `faint`, corners `print-pad-radius`, 2 mm), which today goes round the chart and its four ruler bands, moves in to `print-rim-gap` (1 mm) clear of the trimmed chart's outermost beads, an even margin on every side. It is the only line round the chart: no straight line under the ruler numbers, no edge on the beads, no second outline outside the numbers. The ruler numbers stand outside it, in the rest of their `print-ruler` band, and no bead touches it: on a staggered side (brick stitch's left and right, a turned peyote's) it runs straight, 1 mm clear of the outermost beads, and a row set in by half a bead stands a little further inside it. A Custom frame gets the same rim round its trimmed beads, with no numbers. A part's overlap line still runs through the rim and the rulers. With Chart border off nothing goes round the chart: the beads and their numbers stand on bare paper. (The owner marked this on the drawing on 2026-11-19: keep the rounded rim, remove the straight line under the numbers, move the numbers outside the rim.)
+- **No lines inside the chart, and no bold edge** (ticket 1126; in the app). The lines every 5th and 10th bead and the chart's 0.3 mm `ink` outer edge go; nothing is drawn between beads but their borders. Each colored square bead is filled and bordered on its own, `print-line-cell` (0.1 mm) in `line-strong`, so two neighbours share one hairline and a staggered row (brick stitch, peyote, any Drop) is outlined bead by bead and never stepped. A round bead keeps its circle's edge as today. The overlap's line, the letters and the key stay as they are; the pad's outline becomes the chart's rim (next). With Black and white on (PrintBlackAndWhite card, not yet in the app) a solid black bead keeps its 0.2 mm of paper to its neighbours in place of the border.
+- **One rounded rim, the numbers outside it** (approved 2026-11-20; ticket 1126, in the app; its switch, **Chart border**, ticket 1127), on at first. The pad's rounded outline (`print-pad-line`, 0.2 mm `faint`, corners `print-pad-radius`, 2 mm), which today goes round the chart and its four ruler bands, moves in to `print-rim-gap` (1 mm) clear of the trimmed chart's outermost beads, an even margin on every side. It is the only line round the chart: no straight line under the ruler numbers, no edge on the beads, no second outline outside the numbers. The ruler numbers stand outside it, in the rest of their `print-ruler` band, and no bead touches it: on a staggered side (brick stitch's left and right, a turned peyote's) it runs straight, 1 mm clear of the outermost beads, and a row set in by half a bead stands a little further inside it. A Custom frame gets the same rim round its trimmed beads, with no numbers. A part's overlap line still runs through the rim and the rulers. With Chart border off nothing goes round the chart: the beads and their numbers stand on bare paper. (The owner marked this on the drawing on 2026-11-19: keep the rounded rim, remove the straight line under the numbers, move the numbers outside the rim.)
 - **Empty grid** (ticket 1127; the Export panel's new switch, ExportPanel card), off at first. Off, an empty position is bare paper: no cell line, no outline, no cross. On, it is drawn as it prints today: a square chart's cell line (`print-line-cell` in `line-strong`) and the small `faint` cross, a round bead's cross alone, a Custom frame's `faint` outline and cross. Colored beads look the same either way. It is the same rule on page 1's whole chart, its strips and every chart page.
 - **Trimmed to the beads** (ticket 1128; in the app). The chart holds only the rows and columns from the first bead to the last, across and down: the empty rows and columns round the drawing are left out, and empty positions inside it stay (Empty grid says how they look). The plan sizes the bead, the parts and the pages from the trimmed chart, so a small piece on a large Frame prints larger: a 13-wide piece on a 30 × 39 loom Frame is a 13 × 30 chart at about 5.1 mm a bead, where the whole Frame was about 4.0 mm. A staggered chart is the union of its trimmed rows' cells, so its edge follows the stagger. A Schema with no beads prints whole.
 - **Rulers go 1 to the end** (ticket 1129; in the app). Every column and every row has its number, on all four sides: across 1, 2, 3… from the left on the top and bottom rulers, down 1, 2, 3… from the top on the left and right rulers, whichever way the Schema is turned, starting at the trimmed chart's first column and row. A part counts on from where the one before it ends: a part from column 61 shows 61, 62… (its overlap 59, 60 `faint`). Every number is Helvetica (regular) in `muted`, the 10ths included: nothing is set apart, no bold and no `ink`. Places are those under Rulers below, measured from the rim (1126) instead of the chart: a column number centred on its column (over the first row's bead in a staggered chart), its baseline 1.5 mm above the rim and its cap top 1.5 mm below it; a row number on its row's letter baseline, 1.3 mm from the rim. They keep those places with Chart border off. No ticks.
@@ -21,8 +21,8 @@ The owner agreed on 2026-11-19 (ticket 1123): Empty grid on showing exactly toda
 
 Acceptance, for the build tickets:
 
-- [ ] (1126) No line runs between beads or after every 5th or 10th, and there is no 0.3 mm edge; every colored square bead has its own 0.1 mm `line-strong` border, and a brick, peyote or two-drop chart shows no stepped line.
-- [ ] (1126) One rounded rim (0.2 mm `faint`, 2 mm corners) goes round the trimmed beads 1 mm clear of the outermost ones on every side, a Custom frame's too; the ruler numbers stand outside it; no other line goes round the chart, and no bead touches the rim.
+- [x] (1126) No line runs between beads or after every 5th or 10th, and there is no 0.3 mm edge; every colored square bead has its own 0.1 mm `line-strong` border, and a brick, peyote or two-drop chart shows no stepped line.
+- [x] (1126) One rounded rim (0.2 mm `faint`, 2 mm corners) goes round the trimmed beads 1 mm clear of the outermost ones on every side, a Custom frame's too; the ruler numbers stand outside it; no other line goes round the chart, and no bead touches the rim.
 - [ ] (1127) Chart border, on at first, shows or hides the rim and nothing else: the numbers keep their places.
 - [ ] (1127) With Empty grid off no empty position has a line, outline or cross; on, each has today's cell line (outline on a Custom frame) and cross. Colored beads are the same either way.
 - [x] (1128) A 13-wide piece on a 30 × 39 Frame prints a 13 × 30 chart, larger than the whole Frame did; empty positions inside the drawing stay; a Schema with no beads prints as today.
@@ -30,7 +30,7 @@ Acceptance, for the build tickets:
 
 ## What is drawn how
 
-- **Vector** (PDF drawing operators, ADR 0043): bead fills and shapes, every line, the pad outline, the overlap line, the mini map, the Swatch letters and the ruler numbers. Letters and digits use the PDF's built-in **Helvetica** and **Helvetica-Bold** (nothing embedded).
+- **Vector** (PDF drawing operators, ADR 0043): bead fills and shapes, every line, the rim, the overlap line, the mini map, the Swatch letters and the ruler numbers. Letters and digits use the PDF's built-in **Helvetica** and **Helvetica-Bold** (nothing embedded).
 - **Picture**: the page's translated text (header, part label, "Colors on this page" and the key's color names, footer). It is drawn in the app's fonts at 300 dpi (150 where the device cannot allocate a 300 dpi page) as one picture laid **under** the vector drawing.
 
 ## Page layout
@@ -62,33 +62,31 @@ Acceptance, for the build tickets:
 
 ## Lines
 
-Drawn over the fills and under the letters, in this order:
+Drawn over the fills and under the letters (ticket 1126):
 
 | Line | Weight | Color |
 | --- | --- | --- |
-| Between cells | `print-line-cell` 0.1 mm | `line-strong` |
-| After every 5th bead | `print-line-five` 0.18 mm | `field-line` |
-| After every 10th bead, and the chart's outer edge | `print-line-ten` 0.3 mm | `ink` |
+| Each square bead's border, round its own cell | `print-line-cell` 0.1 mm | `line-strong` |
 
-The lines count from the Schema's first bead, not the part's. On part B of a 150 × 100 (columns 76–150), the heavy lines fall after 80, 90, 100 and on.
+Two neighbours share one hairline. An empty position keeps its cell line while Empty grid is on (today always). There is no line after every 5th or 10th bead and no outer edge: the rim (below) is the only line round the chart.
 
-## Pad
+## Rim
 
-- A rounded rectangle round the chart and its four ruler bands, **outline only**: `print-pad-line` (0.2 mm) in `faint`, with corners of `print-pad-radius` (2 mm). It has no fill, so only beads take toner. Chart pages don't use `print-board`.
+- One rounded rectangle, **outline only**, `print-rim-gap` (1 mm) clear of the chart's outermost beads on every side: `print-pad-line` (0.2 mm) in `faint`, with corners of `print-pad-radius` (2 mm). It has no fill, so only beads take toner. Chart pages don't use `print-board`. The pad, the chart and its four `print-ruler` bands, keeps its size for the layout; nothing is drawn at its edge.
 
 ## Rulers
 
-- A `print-ruler` (5 mm) band on all four sides, inside the pad. **Every** row and column has its number, on all four sides, upright (ticket 1129): 1, 2, 3… from the left on the top and bottom, from the top on the sides, whichever way the Schema is turned, from the trimmed chart's first column and row. A part counts on from the one before it: a part that starts at 61 shows 59, 60 (its overlap, `faint`), 61, 62…
+- A `print-ruler` (5 mm) band on all four sides of the chart, the rim in its first 1 mm. **Every** row and column has its number, on all four sides, upright (ticket 1129): 1, 2, 3… from the left on the top and bottom, from the top on the sides, whichever way the Schema is turned, from the trimmed chart's first column and row. A part counts on from the one before it: a part that starts at 61 shows 59, 60 (its overlap, `faint`), 61, 62…
 - Every number is Helvetica regular in `muted`, the tens too. Every number on a page is one size (above): 6.5 pt (`print-letter`) where the page's widest number fits, smaller where it does not.
-- Column numbers are centred on their column. At the top, the baseline is 1.5 mm above the chart; at the bottom, the cap top is 1.5 mm below it.
-- Row numbers share their row's letter baseline. On the left they are right-aligned 1.3 mm from the chart; on the right, left-aligned 1.3 mm from it.
+- Column numbers are centred on their column. At the top, the baseline is 1.5 mm above the rim; at the bottom, the cap top is 1.5 mm below it.
+- Row numbers share their row's letter baseline. On the left they are right-aligned 1.3 mm from the rim; on the right, left-aligned 1.3 mm from it.
 - No ticks.
 
 ## Overlap
 
 - A part repeats `print-part-overlap` (2) columns or rows of the part before it.
-- **Tint**: the overlap fills are mixed `print-overlap-tint` (60%) toward white. Their letters are `muted` whatever the color, their ruler numbers `faint`, and their lines are drawn as usual.
-- **Where the part begins**: one `print-overlap-line` (0.5 mm) `accent` line on that cell boundary, running the pad's full height (or width), through the rulers. A grayscale printer turns it into a mid-gray line, and the tint stays lighter than the beads around it.
+- **Tint**: the overlap fills are mixed `print-overlap-tint` (60%) toward white. Their letters are `muted` whatever the color, their ruler numbers `faint`, and their borders are drawn as usual.
+- **Where the part begins**: one `print-overlap-line` (0.5 mm) `accent` line on that cell boundary, running the pad's full height (or width), through the rim and the rulers. A grayscale printer turns it into a mid-gray line, and the tint stays lighter than the beads around it.
 - The overlap counts in the part's size, so a part with its overlap still fits its sheet.
 
 ## Header
@@ -115,10 +113,10 @@ The lines count from the Schema's first bead, not the part's. On part B of a 150
 
 The beads follow the canvas drawing (ticket 0585). The letters, rulers, key and tint are the same as for square beads.
 
-- **Round beads**: a circle 2.6/3 of the bead across (2.6 mm on 3 mm), centred in its cell, filled, with a 0.1 mm `line-strong` edge so a White bead shows. There are no lines between cells; the 5th and 10th lines run in the gaps between the circles. An empty position draws only its cross, 40 % of the cell across.
-- **Brick stitch**: every other row is offset by half a bead, as on the canvas. The cells are squares with their cell lines. The 5th and 10th lines across the rows are straight; the ones down the columns step with each row's offset. Column numbers sit over the first row's beads. No outer edge line: the outermost cell lines are the edge.
-- **Peyote**: the same, with every other column offset half a bead down. The lines down the columns are straight; the ones across step with each column. Row numbers sit beside the first column's beads.
-- **A Custom frame** (ticket 0594): the parts tile its bounding rectangle as for any Frame. Each bead is drawn at its centre, turned to its panel's angle, filled, with a 0.1 mm `line-strong` edge (round beads as circles), its letter upright at its centre; an empty position is outlined 0.1 mm `faint` so the shape reads, with its cross; the Seams are 0.18 mm `field-line` lines. A bead belongs to the part its centre falls in. There are no cell lines, no 5th or 10th lines and no rulers: its beads keep no rows and columns.
+- **Round beads**: a circle 2.6/3 of the bead across (2.6 mm on 3 mm), centred in its cell, filled, with a 0.1 mm `line-strong` edge so a White bead shows. There are no lines between the circles. An empty position draws only its cross, 40 % of the cell across.
+- **Brick stitch**: every other row is offset by half a bead, as on the canvas. Each bead is bordered round its own cell, so nothing steps from row to row. Column numbers sit over the first row's beads. The rim runs straight, 1 mm clear of the outermost beads; a row set in by half a bead stands a little further inside it.
+- **Peyote**: the same, with every other column offset half a bead down. Row numbers sit beside the first column's beads.
+- **A Custom frame** (ticket 0594): the parts tile its bounding rectangle as for any Frame. Each bead is drawn at its centre, turned to its panel's angle, filled, with a 0.1 mm `line-strong` edge (round beads as circles), its letter upright at its centre; an empty position is outlined 0.1 mm `faint` so the shape reads, with its cross; the Seams are 0.18 mm `field-line` lines (`print-line-five`). A bead belongs to the part its centre falls in. The same rim goes round it. There are no cell lines and no rulers: its beads keep no rows and columns.
 
 ## Shared sheets
 
@@ -133,8 +131,8 @@ A build agent checks each of these on a 100 × 100 loom Schema with an empty bac
 - [ ] Every non-empty position has its letter in Helvetica-Bold, about 4.3 pt at 1.8 mm (6.5 pt at 3 mm), centred across, its baseline half its cap height below the cell's centre. No empty position has a letter or a fill; each carries the small `faint` cross.
 - [ ] A bead with luminance > 0.1791 has an `ink` letter, otherwise white. A White bead has an `ink` letter.
 - [ ] A two-letter Swatch letter is drawn at 72% horizontal scale and stays inside its cell.
-- [ ] Cell lines are 0.1 mm `line-strong`, every 5th 0.18 mm `field-line`, every 10th and the edge 0.3 mm `ink`, counted as the rulers count.
-- [ ] The pad is a 0.2 mm `faint` outline with 2 mm corners and no fill.
+- [ ] Each square bead's border is 0.1 mm `line-strong`, one hairline between neighbours; there is no line every 5th or 10th and no edge.
+- [ ] The rim is a 0.2 mm `faint` outline with 2 mm corners and no fill, 1 mm clear of the outermost beads.
 - [ ] Every row and column has its ruler number, upright, on all four sides, at the offsets above, all Helvetica `muted` in one size: 2.4 pt at 1.8 mm on the 100 × 100, 3.1 pt on part B of a 150 × 100.
 - [ ] On part B of a 150 × 100, columns 74–75 are tinted 60% toward white, with `muted` letters and `faint` numbers, and a 0.5 mm `accent` line runs the pad's full height between columns 75 and 76.
 - [ ] The header has the two lines, the page number and the mini map as above, and no chart-style or date line.
