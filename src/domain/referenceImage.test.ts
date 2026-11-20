@@ -13,6 +13,7 @@ import {
   withReferenceImage,
   type ReferenceImage,
   type ReferencePicture,
+  samePlace,
 } from './referenceImage'
 import { bareProject } from '../testUtils/layerFields'
 
@@ -106,6 +107,14 @@ describe('turning', () => {
   it('resizes by a factor within the limits', () => {
     expect(scaledBy(centre, 1.1, limits).width).toBeCloseTo(110)
     expect(scaledBy({ ...centre, width: 21 }, 0.9, limits).width).toBe(20)
+  })
+})
+
+describe('two places', () => {
+  it('are the same when the picture lies and is turned alike, whichever object says so (ticket 1160)', () => {
+    const place = { x: 50, y: 40, width: 120, angle: 15 }
+    expect(samePlace(place, { ...place })).toBe(true)
+    for (const moved of [{ x: 51 }, { y: 41 }, { width: 121 }, { angle: 16 }]) expect(samePlace(place, { ...place, ...moved })).toBe(false)
   })
 })
 
