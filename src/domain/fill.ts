@@ -16,7 +16,7 @@ export const FILL_CAP = 250_000
 export type FillRefusal = 'open' | 'too-big'
 
 /** Whether a Fill was refused rather than made (ticket 0715). */
-export function isFillRefusal(result: BeadMap | FillRefusal): result is FillRefusal {
+export function isFillRefusal<T extends object>(result: T | FillRefusal): result is FillRefusal {
   return typeof result === 'string'
 }
 

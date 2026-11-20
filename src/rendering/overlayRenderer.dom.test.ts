@@ -1189,6 +1189,41 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     expect(putImageData).toHaveBeenCalledTimes(1)
   })
 
+  it('draws no more of a Fill\'s 300 × 300 region than the beads on screen, and zoomed out as one draft image (ticket 1153)', () => {
+    const putImageData = vi.fn()
+    const scratch = { createImageData: (width: number, height: number) => ({ width, height, data: new Uint8ClampedArray(width * height * 4) }), putImageData }
+    const project = canvas()
+    const region = cellsOf(stampOf(block(300, 300))).map(({ row, column }) => ({ row, column }))
+    const near = recordingContext()
+
+    renderOverlay(near.context, { project, space: spaceOf(project, true), region: window, zoom: 1, preview: { cells: region, color: RED } })
+    expect(near.named('fillRect').length).toBeGreaterThan(0)
+    expect(near.named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
+
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(scratch as unknown as CanvasRenderingContext2D)
+    const far = recordingContext()
+    renderOverlay(far.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, preview: { cells: region, color: RED } })
+    expect(far.named('fillRect')).toHaveLength(0)
+    expect(far.named('drawImage').map((call) => [call.globalAlpha, ...call.args.slice(1)])).toEqual([[0.6, 0, 0, 300, 300, 0, 0, 6000, 6000]])
+  })
+
+  it('keeps the Mirror\'s outline on a zoomed-out preview inside its Area, drawn bead by bead (tickets 0806, 1153)', () => {
+    const scratch = { createImageData: (width: number, height: number) => ({ width, height, data: new Uint8ClampedArray(width * height * 4) }), putImageData: vi.fn() }
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(scratch as unknown as CanvasRenderingContext2D)
+    const project = canvas()
+    const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 4, columns: 4 } } }
+    const { context, named } = recordingContext()
+    const cells = [{ row: 0, column: 0 }, { row: 0, column: 3 }]
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, mirror, preview: { cells, color: RED } })
+
+    expect(named('drawImage')).toHaveLength(0)
+    // Outside the Area the same two beads are a draft image.
+    const outside = recordingContext()
+    renderOverlay(outside.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, mirror, preview: { cells: cells.map(({ row, column }) => ({ row: row + 10, column })), color: RED } })
+    expect(outside.named('drawImage')).toHaveLength(1)
+  })
+
   it('draws a stamp as the same preview its cells listed one by one make, on the Canvas and on a Frame in its own Weave', () => {
     const base = projectOf('loom', 3, 3, { marks: false })
     const framed: Project = withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
