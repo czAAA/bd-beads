@@ -63,7 +63,7 @@ export const print: PrintTranslations = {
       evenCount: '偶数颗珠。',
       oddCount: '奇数颗珠。',
       sides: '(L) 从左边开始,(R) 从右边开始。',
-      runNote: '一段由数量和字母组成:2C 是两颗 C 珠。',
+      runNote: '一段由数量和珠子组成：2 {bead} 是两颗 C 珠。',
       firstCentre: '第 1 圈在中心，每圈绕形状一周。',
       firstPoint: '第 1 行是尖端的一对珠，各行来回往返。',
       firstBase: '第 1 行是顶部的底排，每行从左往右读；然后从左起逐条流苏，从上往下读。',

@@ -63,7 +63,7 @@ export const print: PrintTranslations = {
       evenCount: 'Even count.',
       oddCount: 'Odd count.',
       sides: '(L) starts at the left, (R) at the right.',
-      runNote: 'A run is a count and a letter: 2C is two beads of C.',
+      runNote: 'A run is a count and a bead: 2 {bead} is two beads of C.',
       firstCentre: 'Round 1 is at the centre; each round goes round the shape.',
       firstPoint: 'Row 1 is the pair at the point; the rows go back and forth.',
       firstBase: 'Row 1 is the top\'s base row; each row reads left to right, then each strand from the left, top to bottom.',
