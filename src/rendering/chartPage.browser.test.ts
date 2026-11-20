@@ -20,6 +20,20 @@ describe('chart pages of the PDF', () => {
     expect(page.drawing).toContain('/F2 6.5 Tf')
   })
 
+  it('draws its parts in the look Empty grid and Chart border give (ticket 1127): the rim, the crosses', async () => {
+    await loadPrintFonts()
+    const project = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
+    const plan = planWithKey(project)
+    const drawing = (choices: { emptyGrid?: boolean; chartBorder?: boolean }) => drawChartPage(project, printText(project, en, 'en', new Date(), choices), plan, [plan.parts[0]!]).drawing.split('\n')
+    const outlines = (lines: string[]) => lines.filter((line) => line.includes(' c ') && line.endsWith(' S')).length
+
+    expect(outlines(drawing({ chartBorder: true })) - outlines(drawing({}))).toBe(1)
+    // The crosses: straight faint strokes (the mini map's faint outlines are rounded).
+    const crosses = (lines: string[]) => lines.some((line, index) => lines[index - 1] === '0.659 0.659 0.659 RG' && / l$/.test(line) && !line.includes(' c '))
+    expect(crosses(drawing({ emptyGrid: true }))).toBe(true)
+    expect(crosses(drawing({}))).toBe(false)
+  })
+
   it('writes every chart page with one picture, its text, and the letters and lines as drawing, tens of kB each', async () => {
     const project = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
     const words = printText(project, en, 'en', new Date())

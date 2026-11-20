@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "new",
+  "line": {
+    "en": "Export has two new switches for the PDF chart: Empty grid outlines each empty position and marks it with a small cross, and Chart border shows or hides the line round the chart; at first empty positions print as bare paper",
+    "ru": "В «Экспорте» два новых переключателя для схемы PDF: «Пустая сетка» обводит каждое пустое место и отмечает его крестиком, а «Контур схемы» показывает или прячет линию вокруг схемы; сначала пустые места печатаются чистой бумагой",
+    "uk": "В «Експорті» два нові перемикачі для схеми PDF: «Порожня сітка» обводить кожне порожнє місце й позначає його хрестиком, а «Контур схеми» показує або ховає лінію навколо схеми; спершу порожні місця друкуються чистим папером",
+    "be": "У «Экспарце» два новыя пераключальнікі для схемы PDF: «Пустая сетка» абводзіць кожнае пустое месца і пазначае яго крыжыкам, а «Контур схемы» паказвае або хавае лінію вакол схемы; спачатку пустыя месцы друкуюцца чыстай паперай",
+    "zh": "导出新增两个 PDF 图样开关：空位网格为每个空位描出轮廓并画一个小叉，图样边线显示或隐藏图样四周的线；默认空位印成空白纸面",
+    "es": "Exportar tiene dos interruptores nuevos para el esquema del PDF: Cuadrícula vacía marca cada posición vacía con un contorno y una pequeña cruz, y Borde del esquema muestra u oculta la línea alrededor del esquema; al principio las posiciones vacías se imprimen como papel en blanco",
+    "pl": "Eksport ma dwa nowe przełączniki schematu w PDF: Pusta siatka obrysowuje każde puste miejsce i zaznacza je krzyżykiem, a Obramowanie schematu pokazuje lub ukrywa linię wokół schematu; na początku puste miejsca drukują się jako czysty papier"
+  }
+}

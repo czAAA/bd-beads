@@ -101,7 +101,7 @@ test('PDF export holds the legend and the chart, and splits a large Project over
   const { name, bytes } = await downloadOf(page, 'export-pdf')
   const pdf = bytes.toString('latin1')
 
-  expect(name).toBe('fixture-brick_cover.pdf')
+  expect(name).toBe('fixture-brick_cover_chart-border.pdf')
   expect(pdf.startsWith('%PDF-1.4')).toBe(true)
   // The overview on page 1, then the chart: 120 × 120 does not fit page 1 at 1.6 mm a bead, so it is cut into parts.
   const plan = pdfPlan(project)

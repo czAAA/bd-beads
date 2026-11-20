@@ -7,7 +7,7 @@ import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
 import { TECHNIQUES, type Technique } from '../domain/weave'
-import { drawChartParts, K, letterColor, letterPt, mmPt, placeBeads, rulerNumberPt } from './chartVector'
+import { chartLookOf, drawChartParts, K, letterColor, letterPt, mmPt, placeBeads, rulerNumberPt } from './chartVector'
 import { HELVETICA_CAP_HEIGHT, helveticaWidth } from '../domain/helvetica'
 import { type PageDrawing, type Paint, PdfContent, type TextStyle } from '../domain/pdfContent'
 import { PRINT_COLORS } from './printColors'
@@ -83,16 +83,19 @@ function rulerTexts(project: Project, plan: PrintPlan, parts: PrintPlan['parts']
   return found
 }
 
+/** Empty grid and Chart border both on (ticket 1127): the empty positions' outline and cross, and the rim. */
+const EMPTY_GRID_ON = { rim: true, emptyGrid: true }
+
 /** The parts drawn as PDF operators. */
-function pdfOf(project: Project, plan: ReturnType<typeof planPrint>, parts: ReturnType<typeof planPrint>['parts'], letters: Record<string, string>, height = plan.page.height) {
+function pdfOf(project: Project, plan: ReturnType<typeof planPrint>, parts: ReturnType<typeof planPrint>['parts'], letters: Record<string, string>, height = plan.page.height, look?: { rim: boolean; emptyGrid: boolean }) {
   const content = new PdfContent(height * K)
-  return { content, pads: drawChartParts(content, project, plan, parts, letters) }
+  return { content, pads: drawChartParts(content, project, plan, parts, letters, undefined, look) }
 }
 
-function chartOf(project: Project, part = 0) {
+function chartOf(project: Project, part = 0, look?: { rim: boolean; emptyGrid: boolean }) {
   const plan = planPrint(project, { keyRows: 2 })
   const parts = [plan.parts[part]!]
-  return { plan, part: parts[0]!, ...pdfOf(project, plan, parts, LETTERS) }
+  return { plan, part: parts[0]!, ...pdfOf(project, plan, parts, LETTERS, plan.page.height, look) }
 }
 
 describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', () => {
@@ -183,18 +186,18 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(fills).toHaveLength(10 * 16)
   })
 
-  it('marks every empty position, and only those, with a small faint cross, 0.1 mm (ticket 0818)', () => {
-    const { part, content } = chartOf(schema())
+  it('marks every empty position, and only those, with a small faint cross, 0.1 mm, with Empty grid on (tickets 0818, 1127)', () => {
+    const { part, content } = chartOf(schema(), 0, EMPTY_GRID_ON)
     const crosses = crossArms(content.toString())
     const positions = (part.lastAcross - part.firstAcross + 1) * (part.lastDown - part.firstDown + 1)
 
     expect(crosses).toHaveLength((positions - 10 * 16) * 2)
   })
 
-  it('marks an empty position among round beads with the same cross, 40 % of the bead across (ticket 0818)', () => {
+  it('marks an empty position among round beads with the same cross, 40 % of the bead across, with Empty grid on (ticket 0818)', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 4, height: 4, unit: 'beads' } })
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads: { 0: { 0: DARK } } }, paletteLetters: LETTERS, letters: false })
-    const { plan, part, content } = chartOf(project)
+    const { plan, part, content } = chartOf(project, 0, EMPTY_GRID_ON)
     const arms = crossArms(content.toString())
     const empty = placeBeads(project, plan, part).filter((bead) => bead.color === null)
 
@@ -553,9 +556,9 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
     expect(lettered.filter((text) => text.value === 'A').length).toBeGreaterThanOrEqual(12)
   })
 
-  it('draws each bead turned to its panel as a closed path, the empty ones outlined, and the Seams, with no rulers', () => {
+  it('draws each bead turned to its panel as a closed path, the empty ones outlined with Empty grid on, and the Seams, with no rulers', () => {
     const project = triangle()
-    const { content } = chartOf(project)
+    const { content } = chartOf(project, 0, EMPTY_GRID_ON)
     const pdf = content.toString()
     const turned = pdf.split('\n').filter((line) => / l .* h [BfS]$/.test(line) && !line.includes(' c '))
     expect(turned.length).toBe(frameLayoutOf(frameOf(project)!)!.positions.length)
@@ -564,6 +567,96 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
     expect(crossArms(pdf)).toHaveLength((frameLayoutOf(frameOf(project)!)!.positions.length - 30) * 2)
     // No ruler numbers: the only text is the beads' letters.
     expect(texts(pdf).every((text) => /^[A-Z]+$/.test(text.value))).toBe(true)
+  })
+})
+
+describe('Empty grid and Chart border (ticket 1127)', () => {
+  /** Every call a chart's parts make, in order, as text: what the page would draw. */
+  function calls(project: Project, plan: PrintPlan, look: { rim: boolean; emptyGrid: boolean }) {
+    const made: string[] = []
+    const recorder: PageDrawing = {
+      fillRect: (...args) => made.push(`fill ${JSON.stringify(args)}`),
+      lines: (segments, width, color) => segments.length && made.push(`lines ${width} ${color} ${JSON.stringify(segments)}`),
+      roundRect: (...args) => made.push(`round ${JSON.stringify(args)}`),
+      polygon: (...args) => made.push(`polygon ${JSON.stringify(args)}`),
+      text: (...args) => made.push(`text ${JSON.stringify(args)}`),
+    }
+    drawChartParts(recorder, project, plan, plan.parts, LETTERS, undefined, look)
+    return made
+  }
+  const faint = (made: string[]) => made.filter((call) => call.includes(`"stroke":"${PRINT_COLORS.faint}"`) || call.startsWith(`lines ${mmPt(0.1)} ${PRINT_COLORS.faint}`))
+
+  it('reads the look from the export\'s words: the rim with Chart border, the empty positions with Empty grid, neither as the words start', () => {
+    expect(chartLookOf({})).toEqual({ rim: false, emptyGrid: false })
+    expect(chartLookOf({ chartBorder: true })).toEqual({ rim: true, emptyGrid: false })
+    expect(chartLookOf({ emptyGrid: true, chartBorder: true })).toEqual({ rim: true, emptyGrid: true })
+  })
+
+  it('with Chart border off draws everything but the rim, each in its place', () => {
+    const project = schema('loom', 30, 30)
+    const plan = planPrint(project, { keyRows: 2 })
+    const on = calls(project, plan, EMPTY_GRID_ON)
+    const off = calls(project, plan, { rim: false, emptyGrid: true })
+    const rims = on.filter((call) => call.startsWith('round') && !call.includes('"fill"'))
+
+    expect(rims).toHaveLength(1)
+    expect(off).toEqual(on.filter((call) => call !== rims[0]))
+  })
+
+  it('with Empty grid off leaves every empty position bare paper and draws the colored beads as with it on', () => {
+    const project = schema('loom', 30, 30)
+    const plan = planPrint(project, { keyRows: 2 })
+    const part = plan.parts[0]!
+    const on = calls(project, plan, EMPTY_GRID_ON)
+    const off = calls(project, plan, { rim: true, emptyGrid: false })
+
+    // No faint cross and no empty position's border; the fills, the letters, the numbers and the rim are the same.
+    expect(faint(on).length).toBeGreaterThan(0)
+    expect(faint(off.filter((call) => !call.startsWith('round')))).toEqual([])
+    expect(off.filter((call) => !call.startsWith('lines'))).toEqual(on.filter((call) => !call.startsWith('lines')))
+    // Every hairline left is a side of a colored bead.
+    const { pads } = drawn(project, plan, [part])
+    const chart = chartBoxOf(pads[0]!, part)
+    const colored = placeBeads(project, plan, part).filter((bead) => bead.color !== null)
+    const segments = off.filter((call) => call.startsWith(`lines ${mmPt(0.1)} ${PRINT_COLORS.lineStrong}`)).flatMap((call) => JSON.parse(call.slice(call.indexOf('[['))) as number[][])
+    const onSide = (x: number, y: number) => colored.some(({ cell }) => {
+      const [left, top, right, bottom] = [chart.x + cell.x * K, chart.y + cell.y * K, chart.x + (cell.x + cell.width) * K, chart.y + (cell.y + cell.height) * K]
+      const within = (value: number, from: number, to: number) => value >= from - 0.05 && value <= to + 0.05
+      return ((Math.abs(x - left) < 0.05 || Math.abs(x - right) < 0.05) && within(y, top, bottom)) || ((Math.abs(y - top) < 0.05 || Math.abs(y - bottom) < 0.05) && within(x, left, right))
+    })
+    expect(segments.length).toBeGreaterThan(0)
+    for (const [x1, y1, x2, y2] of segments) expect(onSide((x1! + x2!) / 2, (y1! + y2!) / 2)).toBe(true)
+  })
+
+  it('outlines a Custom frame\'s empty position only where it lies wholly inside the trimmed rectangle, and none with Empty grid off', () => {
+    // A Triangle whose painted beads take the first five positions: trimmed to them, its rim's empties reach past it.
+    const triangle = triangleOf(9)
+    const positions = frameLayoutOf(frameOf(triangle)!)!.positions
+    const project = onLayer(withLayers(triangle, { frame: { ...frameOf(triangle)!, beads: {} } }), 'frame', (view) => paintCells(view, positions.slice(0, 5), DARK))
+    const plan = planWithKey(project)
+    expect(plan.parts).toHaveLength(1)
+    const part = plan.parts[0]!
+    const empties = (look: { rim: boolean; emptyGrid: boolean }) => {
+      const outlines: (readonly (readonly [number, number])[])[] = []
+      const recorder: PageDrawing = {
+        fillRect: () => {},
+        lines: () => {},
+        roundRect: () => {},
+        polygon: (points, paint) => paint.fill === undefined && outlines.push(points),
+        text: () => {},
+      }
+      return { outlines, pads: drawChartParts(recorder, project, plan, [part], LETTERS, undefined, look) }
+    }
+    const { outlines, pads } = empties(EMPTY_GRID_ON)
+    const chart = chartBoxOf(pads[0]!, part)
+    const inside = ([x, y]: readonly [number, number]) => x >= chart.x - 1e-3 && x <= chart.x + chart.width + 1e-3 && y >= chart.y - 1e-3 && y <= chart.y + chart.height + 1e-3
+    // The empty positions whose centre is in the trimmed rectangle: those a part takes as its own.
+    const centred = customChart(project, part.region, plan.zoom)!.beads.filter((bead) => bead.color === null && bead.x >= 0 && bead.x < part.region.width && bead.y >= 0 && bead.y < part.region.height)
+
+    expect(outlines.length).toBeGreaterThan(0)
+    expect(outlines.every((points) => points.every(inside))).toBe(true)
+    expect(outlines.length).toBeLessThan(centred.length)
+    expect(empties({ rim: true, emptyGrid: false }).outlines).toEqual([])
   })
 })
 
