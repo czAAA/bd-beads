@@ -8,8 +8,13 @@ import { surfaceView, type Region, type Scroll, type SurfaceView } from '../rend
 
 /** The rulers' numbers at 100%, as the editor sets them off a phone (Rulers card). */
 const RULER_FONT_PX = 11
-/** Room past the outermost number for the current pass's pill and the ring round its beads. */
-const EDGE_PX = MARGIN_PX.pass.pillPad + 2
+/** Room past the outermost number for the current pass's pill, and a little more for the ring round its beads. */
+const RING_PX = 2
+const EDGE_PX = MARGIN_PX.pass.pillPad + RING_PX
+/** The viewport the first pass lays the view out in, before the drawing's own size is known. */
+const FIRST_GUESS = { width: 1000, height: 1000 }
+/** Passes until the view and its numbers settle: each one moves them by less than a px after the first two. */
+const SETTLE_PASSES = 4
 
 /** The view the Welcome cuff is drawn through (ticket 1157): the editor's own Canvas view of the cuff's Frame, its
  * line and rulers, scrolled so they fill it. */
@@ -49,9 +54,9 @@ function drawnBox(project: Project, surface: SurfaceView, rulers: RulerLayout): 
  * found against that size in a few passes, as the view lays its numbers by its edges.
  * @internal Its test draws the editor's Canvas through it too. */
 export function cuffView(project: Project, zoom: number, fontPx = RULER_FONT_PX): CuffView {
-  let size = { width: 1000, height: 1000 }
+  let size = FIRST_GUESS
   let scroll = { x: 0, y: 0 }
-  for (let pass = 0; pass < 4; pass++) {
+  for (let pass = 0; pass < SETTLE_PASSES; pass++) {
     const { surface, rulers } = viewAt(project, zoom, fontPx, scroll, size)
     const box = drawnBox(project, surface, rulers)
     scroll = { x: scroll.x + box.x, y: scroll.y + box.y }
@@ -65,6 +70,6 @@ export function cuffView(project: Project, zoom: number, fontPx = RULER_FONT_PX)
 export function shownCuffView(project: Project, zoom: number, shownWidth: number): CuffView {
   let view = cuffView(project, zoom)
   if (shownWidth <= 0) return view
-  for (let pass = 0; pass < 3; pass++) view = cuffView(project, zoom, (RULER_FONT_PX * view.size.width) / shownWidth)
+  for (let pass = 0; pass < SETTLE_PASSES; pass++) view = cuffView(project, zoom, (RULER_FONT_PX * view.size.width) / shownWidth)
   return view
 }

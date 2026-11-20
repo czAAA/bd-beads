@@ -524,7 +524,7 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
       expect(wrapper.getComponent(WelcomeCuff).props('shown')).toBe(true)
       await wrapper.get('[data-testid="section-next"]').trigger('click')
       expect(shown(wrapper)).toEqual(['inside'])
-      expect(wrapper.findComponent(WelcomeCuff).exists() && wrapper.getComponent(WelcomeCuff).props('shown')).toBe(false)
+      expect(wrapper.getComponent(WelcomeCuff).props('shown')).toBe(false)
     })
 
     it("goes into the editor from its tile's way in, as the strip's does", async () => {

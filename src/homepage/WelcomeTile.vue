@@ -86,7 +86,7 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
           </AppButton>
         </template>
       </div>
-      <WelcomeCuff class="welcome__cuff" :shown="shown ?? false" />
+      <WelcomeCuff class="welcome__cuff" :shown="shown" />
       <!-- The promises: an icon, a name and its line each, nothing to press. -->
       <ul v-if="!phone" class="welcome__promises" data-testid="welcome-promises">
         <li v-for="promise in promises" :key="promise.id" class="welcome__promise" :data-testid="`welcome-promise-${promise.id}`">

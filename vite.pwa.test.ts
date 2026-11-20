@@ -188,7 +188,8 @@ describe('the production build (ticket 69)', () => {
 
   it('has what a store listing needs, and every file it names is in the build at the size it says (ticket 1057)', () => {
     const manifest = builtManifest()
-    expect(manifest.description).toMatch(/loom, peyote and brick stitch/)
+    // The Techniques as Welcome lists them (ticket 1157), joined as English joins a list.
+    expect(manifest.description).toMatch(/loom, peyote,? and brick stitch/i)
     expect(manifest.categories.length).toBeGreaterThan(0)
     for (const { src, sizes, type } of [...manifest.icons, ...manifest.screenshots]) {
       expect(files).toContain(src)
