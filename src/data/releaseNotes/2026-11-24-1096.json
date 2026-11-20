@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-24",
+  "kind": "changed",
+  "line": {
+    "en": "Row by row shows each run as its count and its bead's swatch with the letter on it, an empty position as the empty swatch",
+    "ru": "«Ряд за рядом» показывает каждую серию числом и образцом бисеринки с буквой на нём, а пустое место пустым образцом",
+    "uk": "«Рядок за рядком» показує кожну серію числом і зразком бісерини з літерою на ньому, а порожнє місце порожнім зразком",
+    "be": "«Рад за радам» паказвае кожную серыю лікам і ўзорам бісерынкі з літарай на ім, а пустое месца пустым узорам",
+    "zh": "逐行说明把每一段显示为数量加上带字母的珠子色块，空位显示为空色块",
+    "es": "Fila por fila muestra cada tramo como su número y la muestra de su cuenta con la letra, y un hueco como la muestra vacía",
+    "pl": "Rząd po rzędzie pokazuje każdy odcinek jako liczbę i próbkę koralika z literą, a puste miejsce jako pustą próbkę"
+  }
+}

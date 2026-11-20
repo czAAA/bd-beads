@@ -32,7 +32,7 @@ An empty position is paper under the chart's small cross, drawn in black hairlin
 
 - **Overlap** columns and rows (PrintChartPage): their beads are paper with the letter in Helvetica (not bold), and the line where the part begins is black, `print-overlap-line` wide.
 - **The overview** on Page 1 has no letters, so nothing can break up: each bead is its color's own grey, the board has no fill and a black hairline outline, and the lines where the parts meet are black with their white keyline.
-- **Swatches** (Beads needed, "Colors on this page", the Word chart's key): the bead's tone with its letter, inside a black hairline, so a paper swatch still shows.
+- **Swatches** (Beads needed, "Colors on this page", the Word chart's key and its runs): the bead's tone with its letter, inside a black hairline, so a paper swatch still shows.
 - Beads needed, the title block and the footer are as on the color pages, in black.
 
 ## Why these numbers
