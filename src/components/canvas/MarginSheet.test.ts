@@ -73,10 +73,11 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect((control(wrapper, 'margin-sheet').element as HTMLElement).style.transform).toBe('')
   })
 
-  it('holds Row progress, the Move bar and the tools in its top band, in that order and with their names', () => {
+  it('holds Expand the Frame, Row progress, the Move bar and the tools in its top band, in that order and with their names', () => {
     const wrapper = mountSheet()
     const names = control(wrapper, 'margin-band').findAll('button').map((button) => button.attributes('aria-label') ?? button.text())
     expect(names).toEqual([
+      'Expand the Frame',
       'Turn row direction',
       'Reset progress',
       'Back a row',
@@ -93,11 +94,11 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(control(wrapper, 'margin-progress-previous').text()).toBe('')
   })
 
-  it('is a Tab stop each for Row progress, the Move bar and the tools, ←/→ stepping along the tools, the title block\'s name next (ticket 0857)', async () => {
+  it('is a Tab stop each for Expand the Frame, Row progress, the Move bar and the tools, ←/→ stepping along the tools, the title block\'s name next (tickets 0857, 1169)', async () => {
     const wrapper = mountSheet()
     const stops = () => wrapper.findAll('button').filter((button) => button.attributes('tabindex') !== '-1')
     const names = stops().map((button) => button.attributes('aria-label') ?? button.text())
-    expect(names.slice(0, 4)).toEqual(['Turn row direction', 'Move Frame', 'Mirror the whole Frame', 'Name this Frame'])
+    expect(names.slice(0, 5)).toEqual(['Expand the Frame', 'Turn row direction', 'Move Frame', 'Mirror the whole Frame', 'Name this Frame'])
 
     const mirror = control(wrapper, 'margin-mirror-frame')
     ;(mirror.element as HTMLElement).focus()
@@ -273,7 +274,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     const wrapper = mountSheet({ anchor: anchorAt(0.6), project: moveToRow(framed(), 2) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
     // Two rows done: the Frame holds still, its Edit Frame kept in place, disabled (ticket 0975).
-    expect(names(wrapper)).toEqual(['Row highlight', 'Row done', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
+    expect(names(wrapper)).toEqual(['Expand the Frame', 'Row highlight', 'Row done', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
     expect(control(wrapper, 'margin-progress-compact-position').text()).toBe('3/11')
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(true)
     expect(styleOf(wrapper, 'margin-band')).toContain('top: 8px')
@@ -286,7 +287,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
   it('folds under 40px: Row highlight and the counter with Row done, the Move bar, Margin color and Frame tools, the title block a tab', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--folded')
-    expect(names(wrapper)).toEqual(['Row highlight', 'Row done', 'Move Frame', 'Margin color', 'Frame tools'])
+    expect(names(wrapper)).toEqual(['Expand the Frame', 'Row highlight', 'Row done', 'Move Frame', 'Margin color', 'Frame tools'])
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(false)
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
     // Folded by the zoom, the tab only names the Frame: there is no room to unfold it.
@@ -308,7 +309,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--bare')
     expect(wrapper.find('[data-testid="margin-band"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="margin-title"]').exists()).toBe(false)
-    expect(wrapper.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Move Frame', 'Frame tools'])
+    expect(wrapper.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Expand the Frame', 'Move Frame', 'Frame tools'])
     // Nothing of the sheet is drawn, so not its Edit Frame outline either.
     expect(control(wrapper, 'margin-sheet').classes()).not.toContain('margin-sheet--editing')
     await control(wrapper, 'frame-move-handle').trigger('pointerdown')
@@ -637,5 +638,53 @@ describe('Edit Frame on a turned Frame (ticket 1016)', () => {
       expect(ids(turned), `${turn}`).toEqual(ids(framed()))
       expect(control(mountSheet({ project: turned }), 'frame-edit-toggle').attributes('aria-disabled')).not.toBe('true')
     }
+  })
+})
+
+describe('Expand the Frame (MarginSheet card, ticket 1169)', () => {
+  /** The slim sheet at 300%: 20px beads times 3, a few px of sheet round the line. */
+  const expandedAnchor: FrameAnchor = { box: { left: 30, top: 60, width: 2414, height: 674 }, sheet: { left: 0, top: 0, width: 2450, height: 800 }, band: 240, viewport: { width: 2500, height: 900 } }
+
+  it('asks to expand, its name and Tooltip Back to the Canvas while expanded, with no aria-pressed', async () => {
+    const wrapper = mountSheet()
+    const button = control(wrapper, 'margin-expand-frame')
+    expect(button.attributes('aria-label')).toBe('Expand the Frame')
+    expect(button.attributes('aria-pressed')).toBeUndefined()
+    await button.trigger('click')
+    expect(wrapper.emitted('toggle-expand')).toHaveLength(1)
+    await wrapper.setProps({ expanded: true, anchor: expandedAnchor })
+    expect(control(wrapper, 'margin-expand-frame').attributes('aria-label')).toBe('Back to the Canvas')
+    expect(control(wrapper, 'margin-expand-frame').attributes('aria-pressed')).toBeUndefined()
+  })
+
+  it('draws no Move bar while expanded, which is then no Tab stop, and its row and title block 6px in at scale 1', async () => {
+    const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
+    await nextTick()
+    expect(wrapper.find('[data-testid="frame-move-handle"]').exists()).toBe(false)
+    expect(names(wrapper)).not.toContain('Move Frame')
+    expect(styleOf(wrapper, 'margin-band')).toContain('top: 6px')
+    expect(styleOf(wrapper, 'margin-band')).toContain('scale(1)')
+    expect(styleOf(wrapper, 'margin-title')).toContain('left: 6px')
+    expect(styleOf(wrapper, 'margin-title')).toContain('bottom: 6px')
+  })
+
+  it('takes the two-row title block, never the roomy one, however large the band', async () => {
+    const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
+    await nextTick()
+    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('full')
+  })
+
+  it('tells the canvas what its row and title block measure, so it lays the slim sheet round them', async () => {
+    const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
+    await nextTick()
+    const last = () => (wrapper.emitted('slim')!.at(-1)! as [{ row: number; title: number; rowWidth: number }])[0]
+    expect(last()).toEqual({ row: MARGIN_PX.tool, title: control(wrapper, 'margin-title').element.getBoundingClientRect().height, rowWidth: 0 })
+    useCanvasBackground().margin.setTitleBlock(false)
+    await nextTick()
+    expect(last().title).toBe(0)
+    await wrapper.setProps({ expanded: false })
+    const count = wrapper.emitted('slim')!.length
+    await wrapper.setProps({ anchor })
+    expect(wrapper.emitted('slim')).toHaveLength(count)
   })
 })

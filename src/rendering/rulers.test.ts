@@ -3,7 +3,7 @@ import { withColors, type Rect } from '../domain/canvas'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import type { MarginForm } from './marginForm'
-import { rulerLayout, type RulerDot, type RulerLabel } from './rulers'
+import { frameNumberBands, rulerLayout, type RulerDot, type RulerLabel } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
 import { bareProject } from '../testUtils/layerFields'
@@ -23,6 +23,7 @@ interface Look {
   numbers?: boolean
   sheet?: MarginForm
   sheetScale?: number
+  expanded?: boolean
 }
 
 const block = (row: number, column: number, rows = 3, columns = 3): [number, number][] =>
@@ -34,12 +35,12 @@ const project = (positions: [number, number][], frame?: Rect, technique: Techniq
     beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
   })
 /** The Ruler layout of a Project in a view of the Canvas. */
-const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(subject).technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet, sheetScale }: Look = {}) => {
+const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(subject).technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet, sheetScale, expanded }: Look = {}) => {
   const view = (at?: { x: number; y: number }, size = viewport) => surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll: at, viewport: size })
   // A turn carries the box off the top-left corner: centre it in a viewport that holds it, whichever way it is turned.
   const looking = centred ? view(undefined, { width: 2000, height: 2000 }) : undefined
   const surface = looking ? view(looking.scrollToCentre(centred), { width: 2000, height: 2000 }) : view(scroll)
-  return rulerLayout(subject, surface, { fontPx: 11, numbers, sheet, sheetScale })
+  return rulerLayout(subject, surface, { fontPx: 11, numbers, sheet, sheetScale, expanded })
 }
 const framed = (frame: Rect, look: Look = {}) => layoutOf(project([], frame, look.technique), look)
 
@@ -323,6 +324,19 @@ describe('the Ruler dots', () => {
     expect(layoutOf(piece, { zoom: 2, sheetScale: 1.5 }).scale.fontPx).toBeCloseTo(layoutOf(piece, { zoom: 2 }).scale.fontPx)
   })
 
+  it('are the 100% ones on an expanded Frame at every zoom, with the Ruler step, in any sheet form (ticket 1169)', () => {
+    for (const zoom of [0.3, 1, 3]) {
+      const layout = framed(frame, { zoom, sheet: 'compact', sheetScale: 1.4, expanded: true })
+      expect(layout.frameScale.fontPx, `${zoom}`).toBe(11)
+      expect(layout.frameScale.gap, `${zoom}`).toBe(3)
+      expect(layout.sheetScale).toBe(1)
+      expect(layout.passMark).toBe(true)
+      // More than the last row's and the last column's numbers, which alone are drawn below 50% unexpanded.
+      expect(layout.labels.length, `${zoom}`).toBeGreaterThan(2)
+    }
+    expect(framed(frame, { zoom: 0.3 }).labels).toHaveLength(2)
+  })
+
   it('are a Frame\'s at its sheet\'s scale and the Pieces around it at the zoom\'s, in the same view (ticket 1012)', () => {
     const both = layoutOf(project(block(0, 0, 5, 5), { row: 20, column: 20, rows: 3, columns: 4 }), { zoom: 2, sheetScale: 1.5 })
     const heights = (kind: RulerLabel['kind']) => new Set(both.labels.filter((label) => label.kind === kind && !label.turned).map((label) => label.height))
@@ -542,5 +556,25 @@ describe('every ruler counts left to right and top to bottom as seen (ticket 116
         expect([...shown], `${rotation}° ${way.direction}`).toEqual([String(passLine(subject)!.line)])
       }
     }
+  })
+})
+
+describe('frameNumberBands', () => {
+  const subject = (frame: Rect) => project([], frame)
+
+  it('is the widest row number on the left and a column number\'s height on top (ticket 1169)', () => {
+    expect(frameNumberBands(subject({ row: 0, column: 0, rows: 120, columns: 30 }), false, 10)).toEqual({ left: 18, top: 10 })
+  })
+
+  it('numbers the columns on the left and the rows on top on a Canvas turned a quarter', () => {
+    expect(frameNumberBands(subject({ row: 0, column: 0, rows: 120, columns: 30 }), true, 10)).toEqual({ left: 12, top: 10 })
+  })
+
+  it('takes a turned three-digit column number\'s length on top', () => {
+    expect(frameNumberBands(subject({ row: 0, column: 0, rows: 9, columns: 150 }), false, 10)).toEqual({ left: 6, top: 18 })
+  })
+
+  it('is none without a Frame', () => {
+    expect(frameNumberBands(project([]), false, 10)).toEqual({ left: 0, top: 0 })
   })
 })

@@ -10,7 +10,7 @@ import type { Project } from '../domain/project'
 import { canvasBlits, recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, PROJECT_THEMES, type BeadShape, type ProjectTheme } from './beadLook'
 import { LIFT_REACH_PX } from './liftedPiece'
-import { renderProject } from './projectRenderer'
+import { renderProject, type SlimSheet } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
@@ -46,7 +46,7 @@ const markFills = (named: (name: string) => { args: unknown[]; fillStyle: unknow
     .filter((call) => typeof call.fillStyle === 'object')
     .map(({ args: [x, y, width, height] }) => ({ left: x as number, top: y as number, right: (x as number) + (width as number), bottom: (y as number) + (height as number) }))
 
-function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme; frameTheme?: ProjectTheme; opaque?: boolean } = {}) {
+function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme; frameTheme?: ProjectTheme; opaque?: boolean; slimSheet?: SlimSheet } = {}) {
   const beads: BeadShape[] = []
   const { context, calls, named } = recordingContext()
   renderProject(context, {
@@ -58,6 +58,7 @@ function render(project: Project, open: boolean, extra: { region?: Region; rows?
     theme: extra.theme,
     frameTheme: extra.frameTheme,
     opaque: extra.opaque,
+    slimSheet: extra.slimSheet,
     drawBead: (_c, bead) => beads.push(bead),
   })
   return { beads, calls, named, context }
@@ -297,6 +298,18 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
         expect(calls.some((call) => call.fillStyle === '#123456' || call.strokeStyle === '#fedcba' || call.strokeStyle === '#abcdef'), `${zoom}`).toBe(false)
       }
       expect(drawn(true, 0.39).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
+    })
+
+    it('is drawn slim while the Frame is expanded: its own box, corners at scale 1 at any zoom, no inner border (ticket 1169)', () => {
+      // The Frame's beads are x 200 to 260, y 200 to 280; the slim sheet a few px round them, at 300% and at 150%.
+      for (const zoom of [3, 1.5]) {
+        const project = withLayers(framedProject('loom'), { frame })
+        const slimSheet = { sheet: { x: 180, y: 170, width: 100, height: 130 }, radius: 12 }
+        const { calls } = render(project, true, { region: { x: 0, y: 0, width: 800, height: 800 }, zoom, theme, slimSheet })
+        expect(near(roundRects(calls), [180, 170, 100, 130, 12 / zoom]), `${zoom}`).toBe(true)
+        expect(strokedIn(calls, '#fedcba'), `${zoom}`).toHaveLength(1)
+        expect(strokedIn(calls, '#abcdef'), `${zoom}`).toHaveLength(0)
+      }
     })
 
     it('is never drawn in an export, which draws the Frame on its own, nor with no Frame', () => {

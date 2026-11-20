@@ -29,7 +29,7 @@ import { frameOf, lettersOn } from '../../domain/layerRecord'
 // one row of them. It only asks; the shell's flows do the work, as from the Frame and Project panels.
 /** `roomy` is the taller block where the band has room (ticket 1015): the name leads, the Bead with Change, and a color
  * key with each color's bead count. `brief` is the compact row without its legend, where the sheet is too narrow. */
-const props = withDefaults(defineProps<{ project: Project; form?: 'roomy' | 'full' | 'compact' | 'brief' }>(), { form: 'full' })
+const props = withDefaults(defineProps<{ project: Project; form?: 'roomy' | 'full' | 'compact' | 'brief' | 'key' }>(), { form: 'full' })
 
 const emit = defineEmits<{
   rename: [name: string]
@@ -143,7 +143,7 @@ const keyLabel = computed(() =>
 </script>
 
 <template>
-  <div class="margin-title" :class="`margin-title--${form === 'brief' ? 'compact' : form}`" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
+  <div class="margin-title" :class="`margin-title--${form === 'brief' || form === 'key' ? 'compact' : form}`" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
     <!-- Roomy (ticket 1015): what the Frame is on the left, what it is made of on the right. -->
     <template v-if="form === 'roomy'">
       <div class="margin-title__identity">
@@ -214,13 +214,18 @@ const keyLabel = computed(() =>
         <div class="margin-title__cell margin-title__name">
           <EditableLine v-bind="nameLine" invite-only @save="emit('rename', $event)" />
         </div>
-        <div class="margin-title__cell margin-title__value" data-testid="margin-technique">{{ techniqueName(t, technique) }}</div>
-        <div v-for="{ setting, value } in settings" :key="setting.id" class="margin-title__cell margin-title__value">
-          <MarginSettingCell :setting="setting" :value="value" :editable="false" />
-        </div>
+        <!-- The expanded sheet's narrowest row (ticket 1169) keeps the name, the legend and Letters alone. -->
+        <template v-if="form !== 'key'">
+          <div class="margin-title__cell margin-title__value" data-testid="margin-technique">{{ techniqueName(t, technique) }}</div>
+          <div v-for="{ setting, value } in settings" :key="setting.id" class="margin-title__cell margin-title__value">
+            <MarginSettingCell :setting="setting" :value="value" :editable="false" />
+          </div>
+        </template>
       </template>
-      <div class="margin-title__cell margin-title__meta" data-testid="margin-size">{{ size }}</div>
-      <div class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
+      <template v-if="form !== 'key'">
+        <div class="margin-title__cell margin-title__meta" data-testid="margin-size">{{ size }}</div>
+        <div class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
+      </template>
       <div v-if="form !== 'brief'" class="margin-title__cell margin-title__legend" :style="form === 'full' ? grid.legend : undefined" role="img" :aria-label="legendLabel" data-testid="margin-legend">
         <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
         <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>

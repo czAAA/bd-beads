@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { cssZoomOf } from '../ui/cssZoom'
 import type { Project } from '../../domain/project'
 import { NO_INSETS, pillInsets, type Insets, type PillPosition, type PillRect } from '../../domain/toolPill'
@@ -6,6 +6,7 @@ import type { Size } from '../../rendering/cellSize'
 import type { Region } from '../../rendering/surfaceView'
 import { useElementSize } from '../ui/useElementSize'
 import { useCanvasView, type CanvasViewOptions } from './useCanvasView'
+import { useFrameExpand } from './useFrameExpand'
 
 /** What the canvas view needs from the app shell: the open Project. */
 export interface CanvasFramingDeps {
@@ -14,6 +15,8 @@ export interface CanvasFramingDeps {
   keepTwist?: (orientation: number) => void
   /** The view a Project opens at this once, in place of its fit: the address's (ticket 0879) or a reload's (1108). */
   opening?: CanvasViewOptions['opening']
+  /** Under bp-tablet (ticket 1169): the expanded Frame's sheet takes its smaller insets and gap there. */
+  compact?: Ref<boolean>
 }
 
 /** How the canvas is sized and zoomed (tickets 27, 57, 197; ADR 0020): the measured area, fit zoom and the strip's
@@ -27,7 +30,12 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   /** What the Tool pill takes from the edge it docks to (ticket 0850), kept while it is away. */
   const toolPillCover = ref<Insets>(NO_INSETS)
 
-  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening })
+  /** Expand the Frame's room, set once it is made below: the view fits into it while the Frame is expanded. */
+  let expandedRoom: CanvasViewOptions['expanded'] = () => undefined
+  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, pinchStep, endTwist, fit, showView } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening, expanded: () => expandedRoom?.() })
+  /** Expand the Frame (ticket 1169): the Frame fitted to the whole drawing area, the Tool pill set aside. */
+  const frameExpand = useFrameExpand({ currentProject: deps.currentProject, viewport, zoom, scroll, isAtFit, orientation, compact: deps.compact ?? ref(false), fit, showView })
+  expandedRoom = () => (frameExpand.expanded.value ? frameExpand.room : undefined)
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
    * threaded down as a second prop. */
@@ -92,5 +100,13 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     zoomPercent,
     stripZoomPercent,
     onToolPillPlaced,
+    /** Whether the Frame is expanded (ticket 1169), and what its slim sheet holds meanwhile. */
+    frameExpanded: frameExpand.expanded,
+    slimContent: frameExpand.content,
+    /** Expand the Frame or Back to the Canvas: whether it is now expanded. */
+    toggleFrameExpand: frameExpand.toggle,
+    /** Back to the Canvas, Escape's: whether it was expanded. */
+    collapseFrame: frameExpand.collapse,
+    onSlimMeasured: frameExpand.measured,
   }
 }

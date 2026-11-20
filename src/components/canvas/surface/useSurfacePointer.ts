@@ -110,6 +110,9 @@ export interface SurfacePointerDeps {
     holdEnds?: number
     /** Whether the Radial toolbox is open: a press that opens it then moves it here and is no tool's (ticket 1147). */
     toolboxOpen?: boolean
+    /** Set while the Frame is expanded (ticket 1169): only the Frame is in play, and a press off it is refused as on
+     * the keep-out margin. */
+    slim?: unknown
   }
   emit: EmitFn<ShortEmitsToObject<SurfacePointerEvents>>
   root: Ref<HTMLElement | undefined>
@@ -403,7 +406,15 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     return inMargin(footprintOf(props.project), bead) || (layerAt(props.project, bead) === 'frame' && (props.tools.marksArea || !frameAllows(frameOf(props.project), 'select')))
   }
 
+  /** Whether the tool in hand would place, pick or select off the expanded Frame, where only the Frame is in play. */
+  function offExpandedFrame(bead: GridPosition | undefined): boolean {
+    const { blocksMargin, selects, nearestOnPress, selectsAnywhere, tool } = props.tools
+    if (!props.slim || !(blocksMargin || selects || nearestOnPress || selectsAnywhere || tool === 'erase')) return false
+    return !bead || layerAt(props.project, bead) !== 'frame'
+  }
+
   function refusesMargin(bead: GridPosition | undefined): boolean {
+    if (offExpandedFrame(bead) && bead !== undefined) return true
     if (bead === undefined) return false
     if (refusesSelectionStart(bead)) return true
     return props.tools.blocksMargin && !mayPlace(props.project, bead)
@@ -859,6 +870,12 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     }
     if (!bead) {
       lastBead = undefined
+      // Expanded, a press off the Frame is refused, as on its margin (ticket 1169).
+      if (offExpandedFrame(bead)) {
+        overRefusedMargin.value = true
+        if (event.button === 0) refusePress()
+        return
+      }
       // A press on empty background still opens the stroke (ticket 504); Fill lands on the nearest bead instead.
       if (event.button === 0) {
         if (props.tools.nearestOnPress || props.tools.selectsAnywhere) {
@@ -884,7 +901,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     const pasted = [...previewed, ...(props.previewStamp ? stampCells(props.previewStamp) : [])]
     if (event.button === 0 && (refusesMargin(bead) || pasted.some((cell) => refusesMargin(cell)))) {
       refusePress()
-      if (refusesSelectionStart(bead)) return
+      if (refusesSelectionStart(bead) || offExpandedFrame(bead)) return
     }
 
     // A touch has not been over the bead before it lands on it: the hover comes first, as the bead's pointerenter did.

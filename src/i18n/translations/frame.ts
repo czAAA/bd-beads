@@ -142,6 +142,11 @@ export interface FrameTranslations {
     announceSelectionRotated: string
     rotateFrameLabel: string
     announceFrameRotated: string
+    /** Expand the Frame (MarginSheet card, ticket 1169): the margin sheet's first button, its name while expanded, and
+     * the announcement of a press that expands it (the one back says the button's own name). */
+    expandFrame: string
+    backToCanvas: string
+    announceFrameExpanded: string
     /** Export without a Frame opens a dialog with this title. */
     countNeedsFrame: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
