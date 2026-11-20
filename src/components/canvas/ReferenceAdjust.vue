@@ -71,18 +71,20 @@ function stemFrom(below: boolean) {
   return { from: { x: centre.x + (way.x * height) / 2, y: centre.y + (way.y * height) / 2 }, way }
 }
 
-/** How far past the picture's edge the Turn handle stands: its offset; below, on beyond the Frame's margin sheet where
- * the handle would land on it (ticket 0883); and on beyond the picture bar where it would land under it, as on a
- * picture turned bottom edge up (ticket 1160). */
-function reachOn(below: boolean): number {
+/** Where the Turn handle would stand off the picture's bottom edge (`below`) or its top edge: how far past the edge and
+ * the spot on screen. Its offset; below, on beyond the Frame's margin sheet where the handle would land on it (ticket
+ * 0883); and on beyond the picture bar where it would land under it, as on a picture turned bottom edge up (ticket 1160). */
+function standOn(below: boolean) {
   const { from, way } = stemFrom(below)
+  const spot = (reach: number) => ({ x: from.x + way.x * reach, y: from.y + way.y * reach })
   let reach = REFERENCE_TURN_OFFSET_PX
   const sheet = props.sheet
-  const at = { x: from.x + way.x * reach, y: from.y + way.y * reach }
+  const at = spot(reach)
   if (below && sheet && way.y >= 0.7 && at.x >= sheet.left && at.x <= sheet.left + sheet.width && at.y >= sheet.top && at.y <= sheet.top + sheet.height) {
     reach += (sheet.top + sheet.height - at.y) / way.y + REFERENCE_TURN_OFFSET_PX / 2
   }
-  return reachClearOf(from, way, reach, props.bar, REFERENCE_TURN_CLEAR_PX)
+  reach = reachClearOf(from, way, reach, props.bar, REFERENCE_TURN_CLEAR_PX)
+  return { reach, spot: spot(reach) }
 }
 
 /** The Turn handle stands below the picture's bottom edge (ticket 0883), or above its top edge where there is no room
@@ -90,12 +92,10 @@ function reachOn(below: boolean): number {
  * changed sides under the pointer would turn the picture half round at every move. */
 const turnStand = computed<TurnStand>(() => {
   if (press.value) return press.value.turn
-  const reach = reachOn(true)
-  const { from, way } = stemFrom(true)
-  const spot = { x: from.x + way.x * reach, y: from.y + way.y * reach }
+  const { reach, spot } = standOn(true)
   const { width, height } = props.view.viewport
   const below = spot.x >= 0 && spot.y >= 0 && spot.x <= width && spot.y <= height
-  return { below, reach: below ? reach : reachOn(false) }
+  return { below, reach: below ? reach : standOn(false).reach }
 })
 const stemStyle = computed(() => ({ height: `calc(${turnStand.value.reach}px - var(--reference-turn) / 2)` }))
 
