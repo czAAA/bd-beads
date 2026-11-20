@@ -23,21 +23,21 @@ describe('downloadFile', () => {
     vi.restoreAllMocks()
   })
 
-  it('downloads through a link by default', () => {
+  it('downloads through a link by default, and says it was downloaded (ticket 1139)', () => {
     stubLinkDownload()
     stubBrowser('Mozilla/5.0 (X11; Linux x86_64) Chrome/120')
 
-    downloadFile('a.json', '{}')
+    expect(downloadFile('a.json', '{}')).toBe('downloaded')
 
     expect(linkClicks).toEqual(['a.json'])
   })
 
-  it('offers the file to the share sheet on an iPad that can share it', () => {
+  it('offers the file to the share sheet on an iPad that can share it, and says it was shared (ticket 1139)', async () => {
     stubLinkDownload()
     const share = vi.fn().mockResolvedValue(undefined)
     stubBrowser(IPAD_UA, { share, canShare: () => true })
 
-    downloadFile('a.json', '{}')
+    await expect(downloadFile('a.json', '{}')).resolves.toBe('shared')
 
     expect(share).toHaveBeenCalledOnce()
     expect(share.mock.calls[0]![0].files[0].name).toBe('a.json')
@@ -70,7 +70,7 @@ describe('downloadFile', () => {
     stubLinkDownload()
     const failing = vi.fn().mockRejectedValue(new DOMException('no', 'DataError'))
     stubBrowser(IPAD_UA, { share: failing, canShare: () => true })
-    await expect(downloadFile('a.json', '{}')).resolves.toBe('handed')
+    await expect(downloadFile('a.json', '{}')).resolves.toBe('downloaded')
     expect(linkClicks).toEqual(['a.json'])
 
     linkClicks.length = 0
