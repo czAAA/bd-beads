@@ -243,8 +243,9 @@ export function useSelectionGesture(
     }
   }
 
-  /** Carries the held Piece to where the drag has reached, by whole beads of its Weave; a place it can't lie whole
-   * (`moveLayerSelection`) is passed over, the Piece waiting at the last one it could. */
+  /** Carries the held Piece to where the drag has reached, by whole beads of its Weave, over any bead in the way
+   * (ticket 1162: each step is worked out from the Project at the press, so what it passes shows again); a place it
+   * can't lie whole (`moveLayerSelection`) is passed over, the Piece waiting at the last one it could. */
   function carryTo(held: Extract<NonNullable<typeof adjust>, { kind: 'carry' }>, cell: GridPosition) {
     const project = currentProject()
     if (!project) return
@@ -255,17 +256,18 @@ export function useSelectionGesture(
       selection.value = held.start
       return
     }
-    const moved = moveLayerSelection(project, held.start, by.rows, by.columns)
+    const moved = moveLayerSelection(project, held.start, by.rows, by.columns, { cover: true })
     if (!moved) return
     carried.value = { ...by, project: moved.project }
     selection.value = moved.selection
   }
 
-  /** Lands a Piece's move as one Edit; the Selection goes with the beads, or stays where the move was not made. */
-  function landMove(start: Selection, rows: number, columns: number): boolean {
+  /** Lands a Piece's move as one Edit; the Selection goes with the beads, or stays where the move was not made. A
+   * drag's covers the beads it is let go over (ticket 1162). */
+  function landMove(start: Selection, rows: number, columns: number, cover: boolean): boolean {
     let landed: Selection | undefined
     const outcome = edit('drawing', (current) => {
-      const moved = moveLayerSelection(current, start, rows, columns)
+      const moved = moveLayerSelection(current, start, rows, columns, { cover })
       landed = moved?.selection
       return moved?.project ?? current
     })
@@ -303,7 +305,7 @@ export function useSelectionGesture(
     if (done?.kind === 'carry') {
       const held = carried.value
       carried.value = undefined
-      if (held) landMove(done.start, held.rows, held.columns)
+      if (held) landMove(done.start, held.rows, held.columns, true)
       return
     }
     if (done?.kind !== 'move' || done.moved || !done.tool) {
@@ -480,7 +482,8 @@ export function useSelectionGesture(
   }
 
   /** An arrow on the move grip (ticket 0808): the rectangle moves by that many beads, as a drag of its inside does. A
-   * Piece's shape moves with its beads, one Undo step an arrow (ticket 1013); a step it can't make shows the cue. */
+   * Piece's shape moves with its beads, one Undo step an arrow (ticket 1013); a step it can't make shows the cue. A
+   * step onto another bead is one: each arrow lands at once, so stepping through a Piece would eat it (ticket 1162). */
   function moveSelectionBy(rows: number, columns: number) {
     const current = selection.value
     const project = currentProject()
@@ -490,7 +493,7 @@ export function useSelectionGesture(
       return
     }
     const step = stepMove(project, current, rows, columns)
-    if (!landMove(current, step.rows, step.columns)) refusals.value += 1
+    if (!landMove(current, step.rows, step.columns, false)) refusals.value += 1
   }
 
   return {

@@ -7,9 +7,9 @@ import { isInFinishedRow } from './rowProgress'
 import { cellKey, movedSelection, selectableOn, selectionCells, selectionInLayer, selectionLayer, type Selection } from './selection'
 import { columnCycle, rowCycle, wholeCycles } from './weave'
 
-// Moving a Piece (ticket 1013): the move grip of a Piece-shaped Selection carries the Selection's beads with it, on
-// their layer. Nothing is lost by it: a move that would put a bead on another bead, off what its layer shows (the
-// Frame's edge, its keep-out margin) or into a row marked done is not made.
+// Moving a Piece (ticket 1013): its move grip carries a Piece-shaped Selection's beads on their layer. No move puts a
+// bead off what its layer shows (the Frame's edge, its keep-out margin) or into a row marked done, nor onto another
+// bead unless asked to cover it (a drag, ticket 1162), its beads then taking those places as a Paste's do.
 
 /** The Project with a Selection's beads moved, and the Selection where they went. */
 export interface MovedSelection {
@@ -38,8 +38,9 @@ export function stepMove(project: Project, selection: Selection, rows: number, c
 }
 
 /** A Selection's beads moved by whole beads on its layer, the Selection going with them and a Piece's name with its
- * beads; none when the move can't be made whole (see above), or there is nothing to move. */
-export function moveLayerSelection(project: Project, selection: Selection, rows: number, columns: number): MovedSelection | undefined {
+ * beads; with `cover`, over any bead in the way. None when the move can't be made whole (see above), or there is
+ * nothing to move. */
+export function moveLayerSelection(project: Project, selection: Selection, rows: number, columns: number, { cover = false }: { cover?: boolean } = {}): MovedSelection | undefined {
   const layer = selectionLayer(project, selection)
   const sheet = layerSheet(project, layer)
   if (!sheet.geometry.grid || (rows === 0 && columns === 0)) return undefined
@@ -54,12 +55,20 @@ export function moveLayerSelection(project: Project, selection: Selection, rows:
   if (lifted.length === 0) return undefined
   const own = new Set(lifted.map(({ row, column }) => cellKey(row, column)))
   const landed = lifted.map(({ row, column, color }) => ({ row: row + rows, column: column + columns, color }))
-  const blocked = (at: GridPosition) => !selectable(at.row, at.column) || finished(at) || (!own.has(cellKey(at.row, at.column)) && colorAt(sheet.beads, at.row, at.column) !== null)
+  const taken = (at: GridPosition) => !cover && !own.has(cellKey(at.row, at.column)) && colorAt(sheet.beads, at.row, at.column) !== null
+  const blocked = (at: GridPosition) => !selectable(at.row, at.column) || finished(at) || taken(at)
   if (lifted.some(finished) || landed.some(blocked)) return undefined
 
   const moved = onLayer(project, layer, ({ beads }) => withColors(beads, [...lifted.map(({ row, column }) => ({ row, column, color: null })), ...landed]))
-  // Pieces and their names are the Canvas's, whose positions are its own.
-  const carried = layer === 'canvas' ? carryNames(project, moved, (at) => (own.has(cellKey(at.row, at.column)) ? { row: at.row + rows, column: at.column + columns } : at)) : moved
+  // Pieces and their names are the Canvas's, whose positions are its own. A bead it covers is gone, so a name follows
+  // what is left of its Piece, and is dropped with the last of it.
+  const covered = new Set(landed.map(({ row, column }) => cellKey(row, column)))
+  const where = (at: GridPosition) => {
+    const key = cellKey(at.row, at.column)
+    if (own.has(key)) return { row: at.row + rows, column: at.column + columns }
+    return covered.has(key) ? undefined : at
+  }
+  const carried = layer === 'canvas' ? carryNames(project, moved, where) : moved
   const next = movedSelection(selection, rows, columns)
   return { project: carried, selection: selection.cells ? { ...next, cells: selection.cells.map((cell) => ({ row: cell.row + rows, column: cell.column + columns })) } : next }
 }
