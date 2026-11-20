@@ -23,6 +23,8 @@ const BROWSER_TESTS = '**/*.browser.test.ts'
 /** The browser tests that need a touch screen (ticket 0962): `*.touch.browser.test.ts`, in a page of their own with
  * Playwright's `hasTouch`, as turning touch emulation off again left the shared page with no pointer at all on CI. */
 const TOUCH_BROWSER_TESTS = '**/*.touch.browser.test.ts'
+/** How long a browser test may take, in ms. */
+const BROWSER_TEST_TIMEOUT_MS = 30_000
 const browserTestsOn = (): boolean => {
   const mode = process.env.BD_BROWSER_TESTS
   if (mode === '0') return false
@@ -126,6 +128,9 @@ export default defineConfig(({ mode }) => ({
               extends: true as const,
               test: {
                 name: 'browser',
+                // Twice the suite's limit: a CI runner plays three pages on four cores (ci.yml), and a test that
+                // lays a component out at every zoom took 9 to 12 s there (ticket 1143).
+                testTimeout: BROWSER_TEST_TIMEOUT_MS,
                 include: [BROWSER_TESTS],
                 exclude: [...configDefaults.exclude, TOUCH_BROWSER_TESTS],
                 setupFiles: ['./src/browserSetup.ts'],
@@ -138,6 +143,7 @@ export default defineConfig(({ mode }) => ({
               extends: true as const,
               test: {
                 name: 'browser-touch',
+                testTimeout: BROWSER_TEST_TIMEOUT_MS,
                 include: [TOUCH_BROWSER_TESTS],
                 setupFiles: ['./src/browserSetup.ts'],
                 browser: { enabled: true, headless: true, screenshotFailures: false,

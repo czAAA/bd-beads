@@ -35,17 +35,16 @@ jobs:
       - run: npm run knip
 
   # The unit tests are split across runners with Vitest's own sharding. Every test file lands in exactly one shard.
-  # Two shards, from the measured times in the PR for ticket 423 (three before tickets 420 and 422 made the suite leaner): fewer leave the slowest shard long, more lose the
-  # saving to each shard's install and startup. Changing the count is this list only; the --shard flag follows it.
+  # A runner has 4 cores and 15 GB (each test job prints its own). Measured there for ticket 1143, whole job: one shard
+  # 170 s at 2 workers and 153 s at 4; two shards 91 and 71 s at 2 workers, 84 and 71 s at 4. Two shards at 4 workers:
+  # a third would save less than its own install. Changing the count is this list only; the --shard flag follows it.
   unit:
-    name: Unit tests (${{ matrix.shard }}, ${{ matrix.workers }} workers)
+    name: Unit tests (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # MEASURING (ticket 1143): every count tried at once; the chosen one replaces this before the PR is ready.
-        shard: [1/2, 2/2]
-        workers: [2, 4]
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -55,19 +54,21 @@ jobs:
       - run: npm ci
       - name: The runner's cores and memory
         run: echo "$(nproc) cores, $(awk '/MemTotal/ { print int($2 / 1048576) }' /proc/meminfo) GB"
-      - run: npx vitest run --shard=${{ matrix.shard }}
+      - run: npx vitest run --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
-          BD_TEST_WORKERS: ${{ matrix.workers }}
+          BD_TEST_WORKERS: '4'
 
   # The two Playwright jobs (this and `visual`) run in Microsoft's Playwright image, which has Chromium and its system
   # libraries built in: installing them with apt on the runner took 11 to 14 minutes on a slow run. The image tag must
   # equal the installed @playwright/test version (package-lock.json); bump both together, or Chromium is not found.
   # The component tests that need a real browser (ticket 552): text fit and Tooltips, one component at a time. The unit
   # shards have no Chromium and skip them, so this job runs them and `BD_BROWSER_TESTS=1` makes a missing one an error.
-  # Four shards: one runner took 235 s for 2,040 tests, the longest job in the pipeline. Changing the count is this
-  # list only; the --shard flag follows it.
+  # Measured for ticket 1143, whole job, slowest shard (What's inside's tours play at 4×, about 60 to 75 s each):
+  # 2 shards 245 s at 2 workers, 174 s at 4; 3 shards 209 s at 2; 4 shards 164 and 173 s at 2, 148 s at 3, 146 s at 4.
+  # Four shards at 3 workers: at 4 the heaviest tests ran twice as long and one passed its time limit.
+  # Changing the count is this list only; the --shard flag follows it.
   browser:
-    name: Browser component tests (${{ matrix.shard }}, ${{ matrix.workers }} workers, tours ${{ matrix.speed }}x)
+    name: Browser component tests (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble
@@ -75,15 +76,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # MEASURING (ticket 1143): every count tried at once; the chosen one replaces this before the PR is ready.
-        shard: [1/4, 2/4, 3/4, 4/4]
-        workers: [2, 3]
-        speed: [4]
-        include:
-          - { shard: 1/4, workers: 2, speed: 8 }
-          - { shard: 2/4, workers: 2, speed: 8 }
-          - { shard: 3/4, workers: 2, speed: 8 }
-          - { shard: 4/4, workers: 2, speed: 8 }
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -93,11 +86,10 @@ jobs:
       - run: npm ci
       - name: The runner's cores and memory
         run: echo "$(nproc) cores, $(awk '/MemTotal/ { print int($2 / 1048576) }' /proc/meminfo) GB"
-      - run: npx vitest run --project browser --project browser-touch --shard=${{ matrix.shard }}
+      - run: npx vitest run --project browser --project browser-touch --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           BD_BROWSER_TESTS: '1'
-          BD_TEST_WORKERS: ${{ matrix.workers }}
-          VITE_TOUR_SPEED: ${{ matrix.speed }}
+          BD_TEST_WORKERS: '3'
 
   # The one check branch protection names for the unit tests, so the shard count can change without touching it.
   # `if: always()` matters: a skipped or failed shard must fail this job, not skip it (a skipped required check passes).
@@ -138,10 +130,12 @@ jobs:
   # The visual tests are split across runners with Playwright's own sharding (the tests are fullyParallel, so it splits
   # by test, not by file). Every test lands in exactly one part; the reference screenshots stay one folder.
   # The offline shell's checks are a part of their own (`VISUAL_PART`, playwright.config.ts): the longest spec by far,
-  # they made the shard they fell in the slowest. Every other spec is split over the shards, a new one with no listing.
-  # Changing the shard count is this list only: each shard names its own share.
+  # they made the shard they fell in the slowest (208 s against 99 s). Every other spec is split over the shards.
+  # Measured for ticket 1143, whole job, slowest shard, at 2 workers: 2 shards 209 s, 3 shards 141 and 155 s, 4 shards
+  # 142 s; the offline part 104 and 118 s. More workers gave no steady gain: 3 shards took 141 s at 2 workers, 162 s
+  # at 3 and 174 s at 4. Changing the shard count is this list only: each shard names its own share.
   visual:
-    name: Visual check (${{ matrix.part }}, ${{ matrix.workers }} workers)
+    name: Visual check (${{ matrix.part }})
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble
@@ -150,11 +144,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # MEASURING (ticket 1143): every count tried at once; the chosen one replaces this before the PR is ready.
-        part: [1/3, 2/3, 3/3, 1/4, 2/4, 3/4, 4/4, offline]
-        workers: [2]
+        part: [1/4, 2/4, 3/4, 4/4, offline]
     env:
-      VISUAL_WORKERS: ${{ matrix.workers }}
+      VISUAL_WORKERS: '2'
       SKIP_BUILD: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -189,38 +181,6 @@ jobs:
         with:
           name: visual-test-results-${{ strategy.job-index }}
           path: test-results
-
-  # MEASURING (ticket 1143), not for merge: the Feedback sheet's six shots as this build draws them on Linux, for the
-  # references the spec's fixed texts need.
-  reshoot:
-    name: Reshoot the Feedback sheet (temporary)
-    runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble
-      options: --ipc=host
-    needs: build
-    env:
-      SKIP_BUILD: '1'
-      VISUAL_WORKERS: '2'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: dist
-          path: dist
-      - run: npx playwright test feedback --update-snapshots=all --reporter=list
-      - run: npx playwright test feedback --repeat-each=5 --reporter=list
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: feedback-reshoot
-          path: e2e/visual/__screenshots__/feedback-*.png
-          retention-days: 3
 
   # One HTML report from all the shards' blobs, so a failure is read in one place.
   visual-report:
