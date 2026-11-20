@@ -8,17 +8,16 @@ export const homepage: HomepageTranslations = {
     openEditor: 'Open the editor',
     whatsInside: "What's inside",
     welcome: {
-      heading: 'Bead patterns, drawn the way the beads sit.',
-      line: 'For loom, peyote and brick stitch.',
-      seeHow: 'See how it works',
-      colors: { one: '{codes} {brands} color', other: '{codes} {brands} colors' },
+      heading: { one: 'A free bead pattern editor that works in {count} technique', other: 'A free bead pattern editor that works in {count} techniques' },
+      countWords: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'],
+      line: '{techniques}.',
       startFromStarter: 'Start from a ready design',
-      caption: '{technique} · {size}',
-      piece: 'Peacock feather eyes, in peyote',
+      cuff: 'Peacock feather cuff in peyote, being woven: {counter}',
       promises: {
         free: { name: 'Everything here is free', text: 'No account, no trial. Your work stays in this browser.' },
         picture: { name: 'Start from a picture', text: 'Turn a photo into a bead pattern.' },
         weave: { name: 'Count and weave', text: 'Every color counted; mark rows done as you weave.' },
+        export: { name: 'Free export', text: 'PDF and PNG in full quality.' },
       },
     },
     inside: {

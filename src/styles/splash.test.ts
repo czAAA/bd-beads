@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { en } from '../i18n/en'
+import { welcomeHeading, welcomeLine } from '../homepage/welcomeCopy'
 
 const repo = resolve(__dirname, '../..')
 const read = (path: string) => readFileSync(resolve(repo, path), 'utf8')
@@ -76,8 +77,8 @@ describe('manifest.webmanifest (ticket 69)', () => {
   })
 
   it("describes the app in the Homepage's own words, so the two can't drift apart (ticket 1057)", () => {
-    const { heading, line, promises } = en.homepage.welcome
-    expect(manifest.description).toMatch(new RegExp(`^${heading} ${line} `))
+    const { promises } = en.homepage.welcome
+    expect(manifest.description.startsWith(`${welcomeHeading(en, 'en')}. ${welcomeLine(en, 'en')} `)).toBe(true)
     expect(manifest.description).toContain(promises.picture.text.slice(0, -1))
   })
 })

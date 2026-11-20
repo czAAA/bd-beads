@@ -77,20 +77,26 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           // No zoom on a phone.
           expect(box('[data-testid="zoom-reset"]').width).toBe(0)
 
-          // Welcome first (ticket 0830): the tile with no button in it (the bar's main button is the way in), the piece
-          // inside it, and the three promises a grouped list under it.
+          // Welcome first (tickets 0830, 1157): the tile with no way in (the bar's main button is), the cuff inside it
+          // with the editor's phone bar under it, Back a row and Row done on a row of their own, and the four promises a
+          // grouped list under the tile.
           expect(mounted.root.querySelectorAll('[data-testid="phone-bar-segment"]')).toHaveLength(4)
           insideTheSection()
           const welcome = box('.welcome__tile')
-          expect(mounted.root.querySelectorAll('[data-testid="homepage-welcome"] button')).toHaveLength(0)
-          const piece = box('[data-testid="welcome-piece"]')
-          expect(piece.left).toBeGreaterThanOrEqual(welcome.left)
-          expect(piece.right).toBeLessThanOrEqual(welcome.right)
-          expect(piece.width, 'the piece the tile\'s width but its padding').toBeGreaterThan(welcome.width * 0.8)
-          expect(box('[data-testid="welcome-caption"]').top).toBeGreaterThanOrEqual(piece.bottom)
+          const buttons = [...mounted.root.querySelectorAll('[data-testid="homepage-welcome"] button')].map((button) => button.getAttribute('data-testid'))
+          expect(buttons).toEqual(['welcome-cuff-previous', 'welcome-cuff-next'])
+          const cuff = box('[data-testid="welcome-cuff-drawing"]')
+          expect(cuff.left).toBeGreaterThanOrEqual(welcome.left)
+          expect(cuff.right).toBeLessThanOrEqual(welcome.right)
+          expect(cuff.width, "the cuff the tile's width but its padding").toBeGreaterThan(welcome.width * 0.8)
+          const cuffCounter = box('[data-testid="welcome-cuff-compact-position"]')
+          const done = box('[data-testid="welcome-cuff-next"]')
+          expect(cuffCounter.top).toBeGreaterThanOrEqual(cuff.bottom)
+          expect(done.top, 'Row done on a row of its own').toBeGreaterThanOrEqual(cuffCounter.bottom)
+          expect(done.bottom).toBeLessThanOrEqual(welcome.bottom)
           const kept = box('[data-testid="welcome-promises"]')
           expect(kept.top).toBeGreaterThanOrEqual(welcome.bottom)
-          expect(mounted.root.querySelectorAll('[data-testid="welcome-promises"] > li')).toHaveLength(3)
+          expect(mounted.root.querySelectorAll('[data-testid="welcome-promises"] > li')).toHaveLength(4)
           endsWithNext(el('#homepage-inside').textContent!)
           found.push(...(await misfitsNow()))
 
