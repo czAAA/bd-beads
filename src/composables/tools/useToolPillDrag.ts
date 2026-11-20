@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref, type Ref } from 'vue'
+import { computed, onBeforeUnmount, ref, type Ref } from 'vue'
 import { ownPoint } from '../ui/cssZoom'
 import { DRAG_SLOP_PX } from '../../domain/dragSlop'
 import { nearestPillEdge, type PillPosition } from '../../domain/toolPill'
@@ -17,6 +17,19 @@ export function useToolPillDrag(
   const nearest = ref<PillPosition>('bottom')
   /** The lifted pill's top-left corner in the layer's pixels. */
   const corner = ref({ left: 0, top: 0 })
+
+  /** Whether a mouse or pen hovers the grip: the drop zones show then too, before a drag (ticket 1145); a finger's tap
+   * doesn't count, so it doesn't flash them. */
+  const gripHovered = ref(false)
+  const showsZones = computed(() => dragging.value || gripHovered.value)
+
+  function onGripPointerEnter(event: PointerEvent) {
+    if (event.pointerType !== 'touch') gripHovered.value = true
+  }
+
+  function onGripPointerLeave() {
+    gripHovered.value = false
+  }
 
   let pressed: { id: number; x: number; y: number; grabX: number; grabY: number } | undefined
 
@@ -37,6 +50,8 @@ export function useToolPillDrag(
     if (!dragging.value) {
       if (Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) < DRAG_SLOP_PX) return
       dragging.value = true
+      // The pill leaves the pointer behind as it moves, and a captured pointer may never leave the grip: drop the hover.
+      gripHovered.value = false
       pill.value?.setPointerCapture?.(pressed.id)
       deps.onStart()
     }
@@ -67,5 +82,5 @@ export function useToolPillDrag(
   }
   onBeforeUnmount(stop)
 
-  return { dragging, nearest, corner, onPointerDown }
+  return { dragging, nearest, corner, showsZones, onPointerDown, onGripPointerEnter, onGripPointerLeave }
 }
