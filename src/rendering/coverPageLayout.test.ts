@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { COVER_PAD, coverPageLayout } from './coverPageLayout'
-import { A4_PORTRAIT, mm, PRINT_MARGIN } from './printPlan'
+import { A4_PORTRAIT, displayedGrid, mm, PRINT_MARGIN } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => bareProject({ technique, orientation: rotation, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
@@ -34,5 +34,17 @@ describe('coverPageLayout', () => {
 
     expect(across.width).toBeGreaterThan(across.height)
     expect(turned.height).toBeGreaterThan(turned.width)
+  })
+
+  it('trims the piece to its beads before it scales it, and draws from where the beads start (ticket 1128)', () => {
+    const beads = { 4: { 8: '#ff0000', 20: '#ff0000' }, 33: { 8: '#ff0000', 20: '#ff0000' } }
+    const piece = bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns: 30, rows: 39, beads } })
+    const trimmed = coverPageLayout(piece)
+    const { stepAcross, stepDown } = displayedGrid(piece)
+
+    expect(trimmed.zoom).toBeCloseTo(coverPageLayout(shape('loom', 13, 30)).zoom, 9)
+    expect(trimmed.piece).toEqual(coverPageLayout(shape('loom', 13, 30)).piece)
+    expect(trimmed.start).toEqual({ x: 8 * stepAcross, y: 4 * stepDown })
+    expect(coverPageLayout(shape('loom', 30, 39)).start).toEqual({ x: 0, y: 0 })
   })
 })

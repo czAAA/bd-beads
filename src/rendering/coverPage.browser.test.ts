@@ -41,15 +41,15 @@ describe('the Cover page', () => {
   beforeAll(loadPrintFonts)
 
   it('shows the piece in color on the board, an empty position as bare board', () => {
-    // The top row empty: nothing above it casts a shadow there.
-    const project = fixtureProject({ technique: 'loom', columns: 6, rows: 6, override: Array.from({ length: 6 }, (_, column) => ({ row: 0, column, color: null })) })
+    // A column empty inside the piece, which trimming keeps (ticket 1128): nothing above it casts a shadow there.
+    const project = fixtureProject({ technique: 'loom', columns: 6, rows: 6, override: Array.from({ length: 6 }, (_, row) => ({ row, column: 2, color: null })) })
     const canvas = drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2)
     const { board, piece } = coverPageLayout(project)
     const bead = piece.width / 6
 
     expect(pixel(canvas, board.x + board.width / 2, board.y + 4)).toBe(PRINT_COLORS.board)
-    expect(pixel(canvas, piece.x + bead * 2.5, piece.y + bead / 2)).toBe(PRINT_COLORS.board)
-    expect(pixel(canvas, piece.x + bead * 2.5, piece.y + bead * 3.5)).not.toBe(PRINT_COLORS.board)
+    expect(pixel(canvas, piece.x + bead * 2.5, piece.y + bead * 3.5)).toBe(PRINT_COLORS.board)
+    expect(pixel(canvas, piece.x + bead * 3.5, piece.y + bead * 3.5)).not.toBe(PRINT_COLORS.board)
   })
 
   it('writes the technique word, the title, the maker, the Total, the tech line and the page number, and no Swatch letter', async () => {

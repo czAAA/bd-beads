@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "The PDF and the picture show only the rows and columns from the first bead to the last, so a small drawing on a large Frame prints larger",
+    "ru": "PDF и картинка показывают только ряды и столбцы от первой бисеринки до последней, поэтому небольшой рисунок в большой рамке печатается крупнее",
+    "uk": "PDF і картинка показують лише ряди й стовпці від першої бісерини до останньої, тому невеликий малюнок у великій рамці друкується більшим",
+    "be": "PDF і карцінка паказваюць толькі рады і слупкі ад першай бісерыны да апошняй, таму невялікі малюнак у вялікай рамцы друкуецца большым",
+    "zh": "PDF 和图片只显示从第一颗珠子到最后一颗珠子之间的行和列，大边框里的小图案因此印得更大",
+    "es": "El PDF y la imagen muestran solo las filas y columnas de la primera cuenta a la última, así que un dibujo pequeño en un marco grande se imprime más grande",
+    "pl": "PDF i obrazek pokazują tylko rzędy i kolumny od pierwszego koralika do ostatniego, więc mały rysunek w dużej ramce drukuje się większy"
+  }
+}

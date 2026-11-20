@@ -41,6 +41,17 @@ describe('Word chart (ticket 0574)', () => {
     expect(chart.hasEmpty).toBe(true)
   })
 
+  it('writes only the rows from the first bead to the last, each across the beads\' columns, numbered as today (ticket 1128)', () => {
+    const project = framed('loom', ['.....', '.A.B.', '.....', '..C..', '.....'])
+    expect(lines(project)).toEqual(['2: 1A,1*,1B', '3: 3*', '4: 1*,1C,1*'])
+    expect(wordChartOf(project)!.lastNumber).toBe(4)
+    expect(lines(framed('loom', ['...', '...']))).toEqual(['1: 3*', '2: 3*'])
+  })
+
+  it('counts a peyote row by the trimmed width (ticket 1128)', () => {
+    expect(wordChartOf(framed('peyote', ['.AAAAAA.', '.BBBBBB.']))!.count).toBe('even')
+  })
+
   it('numbers rows from the Frame\'s last line once rows run bottom to top, with Row 1 on the opposite edge', () => {
     const project = framed('loom', ['AB', 'CC'], { rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
     expect(lines(project)).toEqual(['1: 2C', '2: 1A,1B'])
