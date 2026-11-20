@@ -7,13 +7,14 @@ import { frameWeave } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { acrossNumber, displayedCellOf, downNumber, emptyCrossArms, RULER_FIT } from './printPages'
 import { PRINT_COLORS } from './printColors'
-import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
+import { areaRegion, displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
 import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { gridToRegion, inGridPx, regionInGridSpace } from './surfaceView'
 import { chartCellOf, customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { type Layered, quarterTurnOf } from '../domain/layerRecord'
+import type { PrintText } from './printText'
 
 // A chart as drawing (ticket 0585, ADR 0043; PrintChartPage card): PDF operators on a chart page and page 1, sharp at any
 // zoom, and the same calls painted on the PNG's canvas (ticket 0915). The Layer geometry places every bead of every
@@ -209,13 +210,19 @@ export function drawKeySwatch(content: PageDrawing, x: number, y: number, hex: s
 }
 
 /** What a chart draws besides its colored beads (PrintChartPage card): the one rim round them (ticket 1126) and the empty
- * positions' outline and cross. Both are on until ticket 1127's Chart border and Empty grid switches. */
+ * positions' outline and cross, as the Export panel's Chart border and Empty grid say (ticket 1127). */
 interface ChartLook {
   rim: boolean
   emptyGrid: boolean
 }
 
-const DEFAULT_LOOK: ChartLook = { rim: true, emptyGrid: true }
+/** The switches as they start: the rim on, the empty positions bare paper. */
+const DEFAULT_LOOK: ChartLook = { rim: true, emptyGrid: false }
+
+/** The chart's look in an export's words (ticket 1127): Chart border shows the rim, Empty grid the empty positions. */
+export function chartLookOf(words: Pick<PrintText, 'emptyGrid' | 'chartBorder'>): ChartLook {
+  return { rim: !!words.chartBorder, emptyGrid: !!words.emptyGrid }
+}
 
 /** A box grown by `by` on every side. */
 function outset(box: Box, by: number): Box {
@@ -241,7 +248,9 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
 
   const custom = customChart(project, part.region, plan.zoom)
   if (custom) {
-    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm), look.emptyGrid)
+    const trimmed = areaRegion(project, plan.trim)
+    const whole = { x: trimmed.x * plan.zoom - part.region.x, y: trimmed.y * plan.zoom - part.region.y, width: trimmed.width * plan.zoom, height: trimmed.height * plan.zoom }
+    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm), look.emptyGrid && whole)
     drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
     return
   }
@@ -380,10 +389,25 @@ function emptyCross(x: number, y: number, size: number): [number, number, number
   return emptyCrossArms(x * K, y * K, size * K)
 }
 
-/** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls in the part's cells, turned as it lies, with
- * its Swatch letter upright; while `emptyGrid`, empty positions outlined so the shape reads, each with its cross; its Seams
- * as lines. No cell lines or rulers: its beads keep no rows and columns. */
-function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number, emptyGrid: boolean): void {
+/** Whether a Custom frame's bead, as drawn (a turned square, or a round bead's circle), lies wholly inside `box`. */
+function beadWithin(bead: ChartBead, round: boolean, box: Box): boolean {
+  const inside = (x: number, y: number) => x >= box.x - 1e-6 && x <= box.x + box.width + 1e-6 && y >= box.y - 1e-6 && y <= box.y + box.height + 1e-6
+  if (round) {
+    const half = (Math.min(bead.width, bead.height) * ROUND_SHARE) / 2
+    return inside(bead.x - half, bead.y - half) && inside(bead.x + half, bead.y + half)
+  }
+  const cos = Math.cos(bead.angle)
+  const sin = Math.sin(bead.angle)
+  return [[-1, -1], [1, -1], [1, 1], [-1, 1]].every(([across, out]) => {
+    const [dx, dy] = [(across! * bead.width) / 2, (out! * bead.height) / 2]
+    return inside(bead.x + dx * cos - dy * sin, bead.y + dx * sin + dy * cos)
+  })
+}
+
+/** A Custom frame's part (ticket 0594): each bead whose centre falls in the part's cells, turned, its letter upright; with
+ * Empty grid on, each empty position wholly inside `emptyWithin` (the trimmed chart's box, ticket 1127) outlined with its
+ * cross; its Seams as lines. No cell lines or rulers: its beads keep no rows and columns. */
+function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number, emptyWithin: Box | false): void {
   // A part's region reaches past its last cell by a staggered Weave's half bead, onto the next part's: each bead belongs
   // to the part whose cells hold its centre, as the page's key counts it, so none is printed on two pages (ticket 1132).
   const cellOf = (bead: ChartBead) => chartCellOf({ x: part.region.x + bead.x, y: part.region.y + bead.y }, step.across, step.down)
@@ -396,7 +420,7 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
     return across < part.firstAcross || down < part.firstDown
   }
   const round = beadsAreRound(project)
-  const beads = custom.beads.filter((bead) => own(bead) && (emptyGrid || bead.color !== null))
+  const beads = custom.beads.filter((bead) => own(bead) && (bead.color !== null || (emptyWithin && beadWithin(bead, round, emptyWithin))))
   for (const bead of beads) {
     const fill = bead.color === null ? undefined : inOverlap(bead) ? tint(bead.color, OVERLAP_TINT) : bead.color
     const paint = { ...(fill ? { fill } : {}), stroke: fill ? PRINT_COLORS.lineStrong : PRINT_COLORS.faint, lineWidth: LINE_CELL }
@@ -427,7 +451,7 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
 }
 
 /** Every part on a chart page, or page 1's whole chart from `area`'s top left corner, into `content` (PDF operators, or the
- * PNG's canvas), and where each pad sits (the caller's labels and key go by them). `look` stays the default until ticket 1127's switches. */
+ * PNG's canvas), and where each pad sits (the caller's labels and key go by them), in the `look` the export's switches give. */
 export function drawChartParts(content: PageDrawing, project: Project, plan: PrintPlan, parts: PrintPart[], letters: SwatchLetters, area = CHART_PAGE_AREA, look = DEFAULT_LOOK): Box[] {
   const shared = parts.length > 1
   const pads = parts.map((part) => padOf(part, shared, area))

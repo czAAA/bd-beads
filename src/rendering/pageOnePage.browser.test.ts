@@ -76,6 +76,33 @@ describe('page 1 of the PDF', () => {
     expect(drawPageOne(project, words, layout, layout.plan).drawing).toBeUndefined()
   })
 
+  it('draws its chart with the rim only with Chart border on, and its overview\'s crosses only with Empty grid on (ticket 1127)', () => {
+    const small = fixtureProject({ technique: 'loom', columns: 20, rows: 20 })
+    const chart = (chartBorder: boolean) => {
+      const words = printText(small, en, 'en', new Date(), { chartBorder })
+      return drawPageOne(small, words, pageOneLayout(small, words), pageOneLayout(small, words).plan).drawing!.split('\n').filter((line) => line.includes(' c ') && line.endsWith(' S')).length
+    }
+    expect(chart(true) - chart(false)).toBe(1)
+
+    const big = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
+    const crosses = (emptyGrid: boolean) => {
+      const words = printText(big, en, 'en', new Date(), { emptyGrid })
+      const layout = pageOneLayout(big, words)
+      const stroke = vi.spyOn(CanvasRenderingContext2D.prototype, 'stroke')
+      const faint: number[] = []
+      stroke.mockImplementation(function (this: CanvasRenderingContext2D) {
+        if (this.strokeStyle === PRINT_COLORS.faint) faint.push(1)
+      })
+      drawPageOne(big, words, layout, layout.plan, 1, 'png')
+      stroke.mockRestore()
+      expect(layout.overview).toBeDefined()
+      return faint.length
+    }
+    // Off, the only faint stroke is the key's empty swatch (ticket 0963); on, every empty position's cross too.
+    expect(crosses(false)).toBe(1)
+    expect(crosses(true)).toBeGreaterThan(1)
+  })
+
   it('draws a list page for the colors page 1 has no room for', () => {
     const project = fixtureProject({ technique: 'loom', columns: 100, rows: 100 })
     const many = { ...wordsOf(project), colors: Array.from({ length: 90 }, (_, index) => ({ hex: '#123456', name: `Color ${index}`, beads: '10', grams: '0.1 g' })) }
