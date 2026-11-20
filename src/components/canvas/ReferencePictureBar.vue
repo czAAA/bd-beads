@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ownPoint } from '../../composables/ui/cssZoom'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
@@ -54,12 +54,15 @@ const emit = defineEmits<{
   over: [on: boolean]
   replace: [file: File]
   remove: []
+  /** The bar's width once measured: the Turn handle stands clear of the bar's box (ticket 1160). */
+  width: [px: number]
 }>()
 
 const { t } = useI18n()
 const words = computed(() => t.value.referenceImage)
 const barEl = ref<HTMLElement>()
 const { width } = useElementSize(barEl, { box: 'border-box' })
+watch(width, (px) => px > 0 && emit('width', px))
 const at = computed(() => pictureBarPlace(props.picture, { width: width.value, height: props.barHeight }, props.view.viewport, props.sheet))
 /** Where the bar stands, hidden once it has gone out of view with its picture (ticket 1011). */
 const placedStyle = computed(() => {
