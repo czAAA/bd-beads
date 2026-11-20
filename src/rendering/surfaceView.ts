@@ -4,7 +4,7 @@ import { frameFootprint } from '../domain/footprint'
 import { frameGeometry } from '../domain/frameShape'
 import { laidRect } from '../domain/frameOrientation'
 import { gridGeometry, type LayerGeometry } from '../domain/layerGeometry'
-import { describeWeave, type BeadCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
+import { columnCycle, describeWeave, rowCycle, wholeCycles, type BeadCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
 import { beadsBox } from '../domain/weaveGeometry'
 import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
@@ -185,6 +185,10 @@ export interface SurfaceView {
   /** The bead position nearest a point, gaps and rounded corners included, in a layer's geometry: what dragging a Frame
    * needs. */
   pointToCell(point: Scroll, layer?: ViewLayer): GridPosition
+  /** The bead position a drag pressed at `pressed` (grid space, `pointToGrid`) has carried `from` to, the pointer now
+   * at `point`: as far as the pointer went, in whole beads, or in whole stagger cycles of the layer's Weave, which is
+   * how a Piece moves (ticket 1150). Not the position under the pointer: on a staggered Weave that one zigzags. */
+  carriedCell(from: GridPosition, pressed: Scroll, point: Scroll, layer?: ViewLayer, byCycles?: boolean): GridPosition
   /** The Frame's line in the viewport: its beads' rectangle with the line's outset, which is what its handles stand
    * on. A Frame given whole is taken as it lies, turned (ticket 0667). */
   frameBox(frame: Rect | FrameSheet): Region
@@ -201,6 +205,8 @@ export interface SurfaceView {
   beadStep(layer?: ViewLayer): { column: Scroll; row: Scroll }
   /** A point in grid space, in the viewport. For the layouts that hang things off a bead's edge (the rulers). */
   gridToPoint(x: number, y: number): Scroll
+  /** A point of the viewport, in grid space: where it stays while the view is moved or zoomed. */
+  pointToGrid(point: Scroll): Scroll
   /** A direction in grid space as it points on screen: turned, not zoomed. */
   gridDirection(x: number, y: number): Scroll
 }
@@ -347,6 +353,14 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       const on = layerNamed(layer)
       return addressOf(on, cellIn(on, (gridX - on.origin.x) / on.scale, (gridY - on.origin.y) / on.scale))
     },
+    carriedCell: (from, pressed, point, layer, byCycles = false) => {
+      const [gridX, gridY] = toGrid(point)
+      const { weave, scale } = layerNamed(layer)
+      const { across, down } = beadStepPx(weave)
+      const rows = wholeCycles((gridY - pressed.y) / scale / down, byCycles ? rowCycle(weave) : 1)
+      const columns = wholeCycles((gridX - pressed.x) / scale / across, byCycles ? columnCycle(weave) : 1)
+      return { row: from.row + rows, column: from.column + columns }
+    },
     frameBox: (box) => {
       const lying = 'technique' in box ? laidRect({ ...box, cell: sheetWeave?.cell ?? canvasCell }) : box
       const shown = inViewport(displayedBox(lying, zoom, sheet ?? canvas))
@@ -375,6 +389,10 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     gridToPoint: (x, y) => {
       const at = displayed(x, y, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }
+    },
+    pointToGrid: (point) => {
+      const [x, y] = toGrid(point)
+      return { x, y }
     },
     gridDirection: (x, y) => {
       const origin = displayed(0, 0, 1)
