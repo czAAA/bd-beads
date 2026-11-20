@@ -202,8 +202,8 @@ interface BoxLayout {
 
 // Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
 // number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
-// from 100 up turn. The Ruler step is worked out once per axis. `withNumbers` false lays only dots, one a bead (ticket 1155).
-function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; offset: GridPosition; layer: ViewLayer; size?: number }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale, withNumbers = true): BoxLayout {
+// from 100 up turn. The Ruler step is worked out once per axis.
+function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; offset: GridPosition; layer: ViewLayer; size?: number }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   // The box counted from the layer's first position, and where that sits in grid px (ticket 492).
   const start = { row: box.row - place.offset.row, column: box.column - place.offset.column }
@@ -268,20 +268,19 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     const turned = column && number >= TURNED_FROM
     const band = column ? columnBand : rowSize
     const half = column ? columnBand.height / 2 : rowSize.width / 2
-    // Below the zoom where only the last number is drawn, or with none, the dots hug the line: no row of numbers to line
-    // up with (tickets 378, 1155). Above it, no further out than a 2-digit number's half, so a turned 3-digit number or a
-    // wide row number does not push them off the line (ticket 377).
-    const dotHalf = lastOnly || !withNumbers ? scale.dotRadius : Math.min(half, fontPx * DOT_BAND_HALF_MAX)
+    // Below the zoom where only the last number is drawn the dots hug the line, as there is no row of numbers for them
+    // to line up with (ticket 378); above it they stand no further out than a 2-digit number's half, so a turned
+    // 3-digit number or a wide row number does not push them off the line (ticket 377).
+    const dotHalf = lastOnly ? scale.dotRadius : Math.min(half, fontPx * DOT_BAND_HALF_MAX)
     const step = column ? columnStep : rowStep
-    const hasNumber = withNumbers && number % step === 0
     const { x, y, nx, ny } = outward(gridX, gridY, normal)
 
     const dotAway = box.outset + gap + dotHalf
     const dot = { x: x + nx * dotAway, y: y + ny * dotAway }
     if (dotSeen(dot)) {
-      beads.push({ ...dot, fifth: number % 5 === 0, numbered: hasNumber, kind: box.kind, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half: dotHalf })
+      beads.push({ ...dot, fifth: number % 5 === 0, numbered: number % step === 0, kind: box.kind, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half: dotHalf })
     }
-    if (hasNumber) {
+    if (number % step === 0) {
       const size = labelBox(text, turned, fontPx)
       const reach = gap + (Math.abs(nx) * (column ? band.width : rowSize.width) + Math.abs(ny) * (column ? band.height : rowSize.height)) / 2
       const spot = { x: x + nx * (box.outset + reach), y: y + ny * (box.outset + reach), ...size }
@@ -338,18 +337,16 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     const reach = reachOf(box.kind)
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
-  // A Frame's numbers need the room of its sheet's full form; its dots are there in every form (ticket 1155).
-  const frameNumbered = sheet === 'full'
   const laid = boxes.map((box) => ({
     kind: box.kind,
     ...(box.kind === 'frame'
-      ? layBox(box, frameWeave(project), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame', size: frameBeadScale(project) }, surface, viewport, frameScale, frameNumbered)
+      ? layBox(box, frameWeave(project), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame', size: frameBeadScale(project) }, surface, viewport, frameScale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
-  // A Piece's numbers and dots follow the Rulers toggle; a Frame's are always laid.
-  const shown = laid.filter((box) => box.kind === 'frame' || numbers)
-  const everyLabel = shown.flatMap((box) => box.labels)
-  const everyBead = shown.flatMap((box) => box.beads)
+  // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.
+  const numbered = laid.filter((box) => (box.kind === 'frame' ? sheet === 'full' : numbers))
+  const everyLabel = numbered.flatMap((box) => box.labels)
+  const everyBead = numbered.flatMap((box) => box.beads)
 
   return {
     scale,
