@@ -3,6 +3,7 @@ import { placedFrame } from '../../domain/layerWeave'
 import type { Project } from '../../domain/project'
 import type { Insets } from '../../domain/toolPill'
 import { roomBesidePanel } from '../../rendering/roomBesidePanel'
+import type { Size } from '../../rendering/cellSize'
 import type { Region, SurfaceView } from '../../rendering/surfaceView'
 import { fitBox, RULER_GUTTER_PX, type ViewMove } from './useCanvasView'
 
@@ -17,6 +18,8 @@ export interface FrameBesidePanelDeps {
   area: () => Region | undefined
   /** The CSS zoom the drawing area is drawn at (ticket 1071): the view moves in its own px, the panel is placed on screen. */
   areaZoom: () => number
+  /** The drawing area's size as the view knows it, in the area's own px: its observer's, which lags a resize. */
+  viewSize: () => Size
 }
 
 /** How far on screen the Frame's sheet may reach under the Frame panel (and its air) before the Canvas pans for it: a
@@ -30,14 +33,25 @@ export const FRAME_PANEL_SLACK_PX = 32
 export function useFrameBesidePanel(deps: FrameBesidePanelDeps) {
   /** The move the panel's opening made, and in which Project. */
   let made: { move: ViewMove; project: string } | undefined
+  /** Ends the wait for the view to know the drawing area's size. */
+  let stopWaiting: (() => void) | undefined
 
   /** The Frame panel has its place on the screen (`panel`, its box). */
   function panelPlaced(panel: Region): void {
+    stopWaiting?.()
+    stopWaiting = undefined
     const project = deps.currentProject()
     const area = deps.area()
     const onScreen = area && roomBesidePanel(panel, area)
     if (!project || !onScreen || made) return
     const zoom = deps.areaZoom()
+    // The view pans by the area's size as its observer last told it, which comes after a resize (Convert image closing
+    // gives the area its room back): a move worked out by the older size lands wrong and goes back wrong (ticket 1143).
+    const known = deps.viewSize()
+    if (Math.abs(known.width - area.width / zoom) > 1 || Math.abs(known.height - area.height / zoom) > 1) {
+      stopWaiting = watch(deps.viewSize, () => panelPlaced(panel), { flush: 'sync' })
+      return
+    }
     const clear = { top: onScreen.top / zoom, right: onScreen.right / zoom, bottom: onScreen.bottom / zoom, left: onScreen.left / zoom }
     const room = area.width / zoom - clear.left - clear.right
     const move = deps.bringIntoView((surface) => {
@@ -56,6 +70,8 @@ export function useFrameBesidePanel(deps: FrameBesidePanelDeps) {
 
   watch(deps.panelOpen, (open) => {
     if (open) return
+    stopWaiting?.()
+    stopWaiting = undefined
     // Another Project opened (which closes the panel) has a view of its own: nothing to take back there.
     if (made && made.project === deps.currentProject()?.id) deps.putBack(made.move)
     made = undefined
