@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs'
 import { expect, test, type BrowserContext, type Page, type Response } from '@playwright/test'
 import { LOCALES } from '../../src/domain/locale'
 import { openApp, openStripPanel, storedProjects } from '../support/app'
 import { startHost, type Host } from '../support/hostProxy'
 import { fixtureProject } from '../support/projects'
 import { baseURL } from '../support/server'
+
+/** The older of the two releases What's new shows: the last but one in the release record. */
+const OLDER_SHOWN_RELEASE = (JSON.parse(readFileSync(new URL('../../src/data/releases.json', import.meta.url), 'utf8')) as { version: string }[])
+  .slice(-2)[0].version
 
 // The offline shell in a real browser (ticket 69, ADR 0045): the production build under `vite preview` with its service
 // worker allowed (other checks block it); `startHost` plays our hosting, so it can go down, slow, or serve a new
@@ -138,7 +143,8 @@ for (const [situation, breakIt] of failures) {
     }
   })
 
-  // The notes files are built files (ticket 1047): What's new reads the page's own, in a language not shown before.
+  // The notes files are built files (ticket 1047): What's new reads the page's own, in a language not shown before. It
+  // holds the last two releases (scripts/notesFile.ts), so its last release line is the older of them.
   test(`What's new opens ${situation}, in a language the device has not shown (ticket 1047)`, async ({ page, context }) => {
     await openAndInstall(page)
     await breakIt(context, host)
@@ -147,7 +153,7 @@ for (const [situation, breakIt] of failures) {
     await page.goto(host.url)
     await page.locator('[data-testid="section-step"][data-step="coffee"]').click()
     await page.getByTestId('homepage-whats-new-toggle').click()
-    await expect(page.getByTestId('homepage-whats-new-release').last()).toContainText('Lanzamiento 1.0.0')
+    await expect(page.getByTestId('homepage-whats-new-release').last()).toContainText(`Lanzamiento ${OLDER_SHOWN_RELEASE}`)
     await expect(page.getByTestId('homepage-history')).toHaveText('Todos los cambios')
   })
 
