@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "fixed",
+  "line": {
+    "en": "Undo and Redo stay in view at the start of the toolbar's right side, so a narrow screen no longer scrolls them away",
+    "ru": "«Отменить» и «Повторить» остаются на виду в начале правой части панели, и на узком экране их больше не прокручивает за край",
+    "uk": "«Скасувати» і «Повторити» залишаються на виду на початку правої частини панелі, і на вузькому екрані їх більше не прокручує за край",
+    "be": "«Адмяніць» і «Паўтарыць» застаюцца на віду ў пачатку правай часткі панэлі, і на вузкім экране іх болей не пракручвае за край",
+    "zh": "撤销和重做固定在工具栏右侧的最前面，窄屏幕上不会再被滚出视野",
+    "es": "Deshacer y Rehacer se quedan a la vista al principio del lado derecho de la barra, y en una pantalla estrecha ya no se desplazan fuera",
+    "pl": "Cofnij i Ponów zostają na widoku na początku prawej strony paska, więc na wąskim ekranie nie przewijają się już poza krawędź"
+  }
+}

@@ -26,8 +26,8 @@ import { imageInputAccept } from '../../domain/imageConversion'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
 // The canvas box's header strip on every App page (tickets 143, 540, 0756, ADRs 0046, 0073, 0085; CanvasStrip card): Menu ·
-// Project · Frame on the left (Menu · Close on Convert image), the Brand in the middle, Rotate · Rulers · Undo · Redo, zoom
-// and Export, never scrolled away, on the right (tickets 543, 0652, 0843); the Homepage's way in, its slogan as the wordmark.
+// Project · Frame on the left (Menu · Close on Convert image), the Brand in the middle, on the right Undo · Redo | Reference
+// image · Rotate · Rulers · zoom · Language | Export, the two ends never scrolled away (tickets 543, 0652, 0843); the Homepage's way in, its slogan as the wordmark.
 const props = defineProps<{
   /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page, and
    * Convert image's is plain, so leaving never happens by a link that asks nothing. */
@@ -250,7 +250,14 @@ function onControlsKeydown(event: KeyboardEvent) {
       </span>
     </div>
     <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="onControlsKeydown" @focusin="controlsRoving.onFocusin">
-      <!-- Everything before Export, in a row that scrolls sideways where the strip is too narrow (ticket 0843). -->
+      <!-- Undo and Redo: the first controls, never scrolled away, as Export is the last; a divider apart from
+           the scrolling row. -->
+      <div v-if="project" class="canvas-strip__history">
+        <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" @click="emit('undo')" />
+        <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="strip-redo" @click="emit('redo')" />
+      </div>
+      <span v-if="project" class="canvas-strip__divider" aria-hidden="true" data-testid="strip-divider-history" />
+      <!-- Everything between Undo · Redo and Export, in a row that scrolls sideways where the strip is too narrow (ticket 0843). -->
       <div ref="scrollerEl" class="canvas-strip__scroller" :data-cut="cut" data-testid="canvas-strip-scroller">
         <!-- Expand (ticket 0830): words only, the icon set has none for it; it keeps the width of the wider word. -->
         <AppButton v-if="expand" class="canvas-strip__expand" size="sm" data-testid="strip-expand" @click="emit('toggle-expand')">
@@ -259,12 +266,6 @@ function onControlsKeydown(event: KeyboardEvent) {
           }}</span>
         </AppButton>
         <div v-if="project" class="canvas-strip__tools">
-          <template v-if="!demo">
-            <IconButton variant="plain" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')">
-              <AppIcon :name="rotateIcon" :size="18" :turn="rotateTurn" />
-            </IconButton>
-            <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulersLit" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
-          </template>
           <template v-if="referenceImage">
             <IconButton
               variant="plain"
@@ -280,12 +281,16 @@ function onControlsKeydown(event: KeyboardEvent) {
               <FileButton :label="actions.referenceImage.name(t)" :accept="referenceAccept" tabindex="-1" data-testid="strip-reference-image-input" @change="onReferenceFile" />
             </span>
           </template>
-          <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" @click="emit('undo')" />
-          <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="strip-redo" @click="emit('redo')" />
+          <template v-if="!demo">
+            <IconButton variant="plain" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')">
+              <AppIcon :name="rotateIcon" :size="18" :turn="rotateTurn" />
+            </IconButton>
+            <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulersLit" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
+          </template>
         </div>
         <div v-if="zoomPercent !== undefined && !demo" class="canvas-strip__zoom" :data-zoom-percent="zoomPercent" data-testid="canvas-strip-zoom">
-          <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= min" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
           <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
+          <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= min" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
           <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
         </div>
         <!-- Language: the Menu's picker, moved here, after Fit and before Export; on every page but the demo. -->
@@ -300,6 +305,7 @@ function onControlsKeydown(event: KeyboardEvent) {
           @update:model-value="setLocale"
         />
       </div>
+      <span v-if="project && !demo" class="canvas-strip__divider" aria-hidden="true" data-testid="strip-divider-export" />
       <!-- Export (tickets 0652, 0843): the strip's last button, in its right corner, never scrolled away; lit while the
            Export panel is open. -->
       <IconButton
@@ -437,6 +443,24 @@ function onControlsKeydown(event: KeyboardEvent) {
 
 .canvas-strip__controls > .icon-btn-wrap {
   flex: none;
+}
+
+/* Undo · Redo, pinned at the cluster's start like Export at its end. */
+.canvas-strip__history {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The strip's divider: 1px, `box-muted` at 22%. It cancels the cluster's 2px gaps, so it sits flush between two buttons'
+ * boxes (the icons inside have room of their own) and costs the 800px tablet only its own pixel. */
+.canvas-strip__divider {
+  flex: none;
+  width: 1px;
+  height: var(--strip-divider-height);
+  margin: 0 calc(-1 * var(--space-2));
+  background: color-mix(in srgb, var(--box-muted) 22%, transparent);
 }
 
 /* The scrolling row fades its edge where a control is cut, so the row shows it goes on; a swipe scrolls it. */
