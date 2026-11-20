@@ -75,6 +75,20 @@ describe('AppSubpanel', () => {
     expect(document.activeElement).toBe(wrapper.get('[data-testid="panel-dropdown"]').element)
   })
 
+  it('goes back once on a click anywhere in the subpanel header row, not only on the chevron', async () => {
+    const wrapper = mountShell()
+    await wrapper.get('[data-testid="root-row"]').trigger('click')
+    await wrapper.get('[data-testid="panel-sub-title"]').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[data-testid="root-row"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="panel-back"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="root-row"]').trigger('click')
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[data-testid="root-row"]').exists()).toBe(true) // the chevron still goes back, and only one level
+  })
+
   it('goes back with the arrow or Escape, focusing the row it came from and dropping the subpanel, and closes on the next Escape', async () => {
     const wrapper = mountShell()
     const row = () => wrapper.get('[data-testid="root-row"]').element
