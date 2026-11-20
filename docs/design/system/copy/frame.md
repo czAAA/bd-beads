@@ -66,7 +66,7 @@ The roomy title block (ticket 1015) adds no copy: its Bead, Change, the Bead pic
 | Auto · Auto, one step off the Canvas color (its accessible name) | Авто · Авто, на шаг от цвета холста | Авто · Авто, на крок від кольору полотна | Auto · Auto, o krok od koloru płótna |
 | {color}, the Canvas color (the swatch equal to it) | {color}, цвет холста | {color}, колір полотна | {color}, kolor płótna |
 | Name and size on the margin | Имя и размер на полях | Назва й розмір на полях | Nazwa i rozmiar na marginesie |
-| The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it. | Поля — 4 бисеринки с каждой стороны. На них ничего нельзя поставить, и в экспорт они не попадают. | Поля — 4 бісерини з кожного боку. На них нічого не можна поставити, і в експорт вони не потрапляють. | Margines ma 4 koraliki z każdej strony. Nie można na nim nic umieścić i nie trafia do eksportu. |
+| The margin is the space around the Frame where you can’t draw. It holds the Frame’s tools, name and size. | Поля окружают рамку, и рисовать на них нельзя. На полях находятся инструменты рамки, её имя и размер. | Поля оточують рамку, і малювати на них не можна. На полях розміщені інструменти рамки, її назва й розмір. | Margines to miejsce wokół ramki, na którym nie można rysować. Są na nim narzędzia ramki, jej nazwa i rozmiar. |
 | Fold the title block · Show the title block | Свернуть штамп · Показать штамп | Згорнути штамп · Показати штамп | Zwiń tabliczkę · Pokaż tabliczkę |
 | Change Technique (the title block's pencil) | Сменить технику | Змінити техніку | Zmień technikę |
 | Frame tools (the folded form's ··· menu) | Инструменты рамки | Інструменти рамки | Narzędzia ramki |
@@ -78,7 +78,7 @@ Built by ticket 0656 (the Frame panel's margin section), in Belarusian, Spanish 
 | Margin · Margin color | Палі · Колер палёў | Margen · Color del margen | 边距 · 边距颜色 |
 | Auto · Auto, one step off the Canvas color | Аўта · Аўта, на крок ад колеру палатна | Auto · Auto, un paso por encima o por debajo del color del lienzo | 自动 · 自动，比画布颜色深浅差一级 |
 | {color}, the Canvas color | {color}, колер палатна | {color}, el color del lienzo | {color}，画布颜色 |
-| The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it. | Палі шырынёй 4 бісерыны з кожнага боку. На іх нічога нельга паставіць, і ў экспарт яны не трапляюць. | El margen mide 4 cuentas por cada lado. No se puede poner nada en él y las exportaciones nunca lo muestran. | 边距每边宽 4 颗珠子。其中不能放置任何东西，导出时也不会显示。 |
+| The margin is the space around the Frame where you can’t draw. It holds the Frame’s tools, name and size. | Палі акружаюць рамку, і маляваць на іх нельга. На палях размешчаны інструменты рамкі, яе імя і памер. | El margen es el espacio alrededor del marco donde no se puede dibujar. Contiene las herramientas del marco, su nombre y su tamaño. | 边距是边框周围不能绘制的区域，放着边框工具、名称和尺寸。 |
 
 Built by ticket 0657 (the title block), in Belarusian, Spanish and Chinese:
 
