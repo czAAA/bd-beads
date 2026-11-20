@@ -55,6 +55,10 @@ interface PrintedWordChart {
  * Cover page, Large beads keeps every bead of the chart at 3 mm or more, Row by row adds the Word chart's pages. */
 export interface PrintChoices {
   cover?: boolean
+  /** Empty grid (ticket 1127, off at first): each empty position its outline and cross, else bare paper. */
+  emptyGrid?: boolean
+  /** Chart border (ticket 1127, on at first): the chart's one rim round its beads (ticket 1126). */
+  chartBorder?: boolean
   largeBeads?: boolean
   rowByRow?: boolean
 }
@@ -87,6 +91,9 @@ export interface PrintText {
   largeBeads?: boolean
   /** Cover page (ticket 1096): the PDF opens on the Cover page, and page 1 is its second page. */
   cover?: boolean
+  /** Empty grid and Chart border (ticket 1127): how the charts draw empty positions and whether a rim goes round them. */
+  emptyGrid?: boolean
+  chartBorder?: boolean
   labels: Translations['print']
 }
 
@@ -217,6 +224,8 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     ...(hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
     ...(choices.cover ? { cover: true } : {}),
+    ...(choices.emptyGrid ? { emptyGrid: true } : {}),
+    ...(choices.chartBorder ? { chartBorder: true } : {}),
     labels: t.print,
   }
   // Large beads only where it makes the beads bigger (ticket 1125): a remembered "on" does nothing on a small piece.
