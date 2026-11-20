@@ -2,12 +2,12 @@
   "date": "2026-11-20",
   "kind": "changed",
   "line": {
-    "en": "Zoomed out, the Frame's ··· menu stays beside its Move bar, so every Frame tool is a press away",
-    "ru": "При уменьшении меню рамки ··· остаётся рядом с её ручкой перемещения, так что любой инструмент рамки под рукой",
-    "uk": "При зменшенні меню рамки ··· лишається поруч з її ручкою переміщення, тож кожен інструмент рамки під рукою",
-    "be": "Пры памяншэнні меню рамкі ··· застаецца побач з яе ручкай перамяшчэння, таму кожны інструмент рамкі пад рукой",
-    "zh": "缩小时，边框的 ··· 菜单留在移动条旁边，每个边框工具一按即达",
-    "es": "Al alejar la vista, el menú ··· del marco sigue junto a su barra de mover, así que cada herramienta del marco está a un toque",
-    "pl": "Po oddaleniu menu ··· ramki zostaje obok jej paska przesuwania, więc każde narzędzie ramki masz pod ręką"
+    "en": "Zoomed out, the Frame's ··· menu stays beside its Move bar in place of the dots along its edge, so every Frame tool is a press away",
+    "ru": "При уменьшении меню рамки ··· остаётся рядом с её ручкой перемещения вместо точек вдоль края, так что любой инструмент рамки под рукой",
+    "uk": "При зменшенні меню рамки ··· лишається поруч з її ручкою переміщення замість крапок уздовж краю, тож кожен інструмент рамки під рукою",
+    "be": "Пры памяншэнні меню рамкі ··· застаецца побач з яе ручкай перамяшчэння замест кропак уздоўж краю, таму кожны інструмент рамкі пад рукой",
+    "zh": "缩小时，边框的 ··· 菜单留在移动条旁边，取代沿边的点，每个边框工具一按即达",
+    "es": "Al alejar la vista, el menú ··· del marco sigue junto a su barra de mover en lugar de los puntos del borde, así que cada herramienta del marco está a un toque",
+    "pl": "Po oddaleniu menu ··· ramki zostaje obok jej paska przesuwania zamiast kropek wzdłuż krawędzi, więc każde narzędzie ramki masz pod ręką"
   }
 }
