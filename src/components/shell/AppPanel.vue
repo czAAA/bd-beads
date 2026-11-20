@@ -256,8 +256,9 @@ onBeforeUnmount(() => {
     @focusout="onFocusOut"
   >
     <!-- Plain boxes, not header and footer: in a dialog those would be a second banner and contentinfo (ticket 0856). -->
-    <div v-if="inSub" class="app-panel__header">
-      <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" @click="goBack" />
+    <!-- The whole row goes back (a mouse and touch convenience); the chevron stays the one keyboard stop, and its click bubbles here. -->
+    <div v-if="inSub" class="app-panel__header" @click="goBack">
+      <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" />
       <h2 :id="titleId" class="app-panel__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
       <span v-if="currentMeta" class="app-panel__meta" data-testid="panel-sub-meta">{{ currentMeta }}</span>
     </div>
@@ -314,6 +315,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: var(--space-8);
   padding-bottom: var(--space-8);
+  cursor: pointer;
 }
 
 .app-panel__heading {
