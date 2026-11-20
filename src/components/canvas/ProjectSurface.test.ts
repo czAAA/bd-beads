@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MIRROR_OFF } from '../../domain/mirror'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { defineComponent, h, nextTick, shallowRef } from 'vue'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import { changeFrame } from '../../domain/changeFrame'
@@ -30,6 +30,9 @@ import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { PATTERN_DONE_MS, ROW_MOTION } from '../../rendering/rowMotion'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
+import { addedColorId, projectPalette } from '../../domain/palette'
+import type { ColorCatalog } from '../../domain/colorCatalog'
+import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
@@ -1127,6 +1130,58 @@ describe('ProjectSurface', () => {
       const empty = at(project, 6, 6)
       await surface.trigger('pointermove', { clientX: empty.x, clientY: empty.y, pointerType: 'mouse', buttons: 0 })
       expect(wrapper.find('[data-testid="pick-chip"]').exists()).toBe(false)
+    })
+
+    it("names a bead of a coded Palette color by its code, as the Palette does, and only a plain color by its hex", async () => {
+      const coded = projectPalette(projectOf(20, 10)).colors.find((color) => color.code)!
+      const project = projectOf(20, 10, { beads: { 3: { 4: coded.hex }, 5: { 5: '#123456' } } })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ picking: true }) })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      const bead = at(project, 3, 4)
+      await surface.trigger('pointermove', { clientX: bead.x, clientY: bead.y, pointerType: 'mouse', buttons: 0 })
+      // Mounted alone there is no Bead catalog to name its color from, so the code stands alone.
+      expect(wrapper.find('[data-testid="pick-chip"]').text()).toBe(coded.code)
+
+      const plain = at(project, 5, 5)
+      await surface.trigger('pointermove', { clientX: plain.x, clientY: plain.y, pointerType: 'mouse', buttons: 0 })
+      expect(wrapper.find('[data-testid="pick-chip"]').text()).toBe('#123456')
+    })
+
+    it('flips to the left of the tip by its own width, so a long name is not cut off at the edge', async () => {
+      const project = projectOf(48, 10, { beads: { 3: { 40: '#123456' } } })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ picking: true }) })
+      const bead = at(project, 3, 40)
+      expect(bead.x).toBeLessThan(VIEWPORT.width - 110)
+      expect(bead.x).toBeGreaterThan(VIEWPORT.width - 250)
+      // jsdom lays nothing out: the chip says how wide it is drawn.
+      vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
+        return this.dataset.testid === 'pick-chip' ? 240 : 0
+      })
+
+      await wrapper.find('[data-testid="project-surface"]').trigger('pointermove', { clientX: bead.x, clientY: bead.y, pointerType: 'mouse', buttons: 0 })
+      await nextTick()
+
+      expect(wrapper.find('[data-testid="pick-chip"]').classes()).toContain('project-surface__pick-chip--flip-x')
+    })
+
+    it("gives the code's color name too once it loads the Bead's catalog, as the Palette does", async () => {
+      const project = projectOf(20, 10, { beads: { 3: { 4: '#123456' } } })
+      const named = { ...project, palette: [...project.palette, addedColorId('#123456')], paletteCodes: { '#123456': '49' } }
+      const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
+      const beadColors = { catalog: ref(catalog), load: vi.fn() } as unknown as BeadColors
+      const wrapper = mount(
+        defineComponent({ setup: () => (provideBeadColors(beadColors), () => h(ProjectSurface, { project: named, zoom: 1, scroll: { x: 0, y: 0 }, tools: can({ picking: true }) })) }),
+        { attachTo: document.body },
+      )
+      await nextTick()
+      await nextTick()
+
+      const bead = at(named, 3, 4)
+      await wrapper.find('[data-testid="project-surface"]').trigger('pointermove', { clientX: bead.x, clientY: bead.y, pointerType: 'mouse', buttons: 0 })
+      expect(wrapper.find('[data-testid="pick-chip"]').text()).toBe('49 Opaque Black')
+      expect(beadColors.load).toHaveBeenCalled()
+      wrapper.unmount()
     })
 
     it('has no eyedropper and no chip when not picking', async () => {

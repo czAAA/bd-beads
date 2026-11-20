@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "Pick color from Canvas names the bead under the pointer by its code and color, and by its hex only where it has no code",
+    "ru": "«Взять цвет с холста» называет бисеринку под указателем её кодом и цветом, а шестнадцатеричным кодом, только если кода нет",
+    "uk": "«Взяти колір з полотна» називає бісерину під вказівником її кодом і кольором, а шістнадцятковим кодом, лише якщо коду немає",
+    "be": "«Узяць колер з палатна» называе бісерынку пад указальнікам яе кодам і колерам, а шаснаццатковым кодам, толькі калі кода няма",
+    "zh": "从画布取色会用色号和颜色名称标出指针下的珠子，没有色号时才显示十六进制值",
+    "es": "Elegir color del lienzo nombra la cuenta bajo el puntero por su código y su color, y por su hex solo si no tiene código",
+    "pl": "Pobierz kolor z płótna podaje koralik pod wskaźnikiem jego kodem i kolorem, a kodem hex tylko wtedy, gdy nie ma kodu"
+  }
+}

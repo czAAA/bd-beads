@@ -113,6 +113,9 @@ export interface SurfacePointerDeps {
   }
   emit: EmitFn<ShortEmitsToObject<SurfacePointerEvents>>
   root: Ref<HTMLElement | undefined>
+  /** The pick chip as drawn, measured so a bead color's code and name, longer than a hex, flips at the edge too (ticket
+   * 1148). */
+  pickChipEl: Readonly<Ref<HTMLElement | null | undefined>>
   /** The surface's size on screen. */
   size: Ref<Size>
   /** The view of the drawing, at the Canvas's quarter turn: a point is turned onto it from the screen first. */
@@ -134,9 +137,11 @@ const PEN_POINTER_NUDGE = 2
 /** How far up, and to the side away from the writing hand, of a hovering Pencil's tip the marker stands, in px, clear
  * of the hand resting below and beside it. */
 const PEN_MARKER_OFFSET_PX = 18
-/** The room the pick chip needs right of and below the tip, in px: its width with a full hex, and its height, plus
- * the offset. */
+/** The room the pick chip needs right of and below the tip, in px: its width with a full hex, until it is measured, and
+ * its height, plus the offset. */
 const PICK_CHIP_ROOM = { x: 110, y: 40 }
+/** How far right of and below the tip the pick chip stands, in px (its `--space-16` offset). */
+const PICK_CHIP_OFFSET = 16
 /** How far apart, in px, a swipe is sampled for beads: finer than the smallest bead on screen. */
 const STROKE_SAMPLE_PX = 2
 
@@ -154,7 +159,7 @@ function hoversFor(event: PointerEvent): boolean {
 /** The Drawing surface's pointer and cursor (ticket 0619): it reads presses, drags, hover and the wheel (ticket 60:
  * pointer events, so mouse, touch and pen work alike) into bead positions and gestures, and picks the cursor, the bead
  * marker, the hovering Pencil's pointer and the pick chip that show for them. */
-export function useSurfacePointer({ props, emit, root: rootEl, size, surface, leaning, marksShown, refuse: refusePress }: SurfacePointerDeps) {
+export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, leaning, marksShown, refuse: refusePress }: SurfacePointerDeps) {
   /** Whether the chosen Tool moves the canvas right now: the Hand tool. */
   const handMoves = computed(() => props.tools.moves)
   /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
@@ -351,9 +356,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     return (props.tools.selectsAnywhere ? surface.value.frameCellAt(point) : undefined) ?? surface.value.pointToHit(point)
   }
 
-  /** The color chip beside the eyedropper (ticket 403): what a press would take, live over beads; none over an empty
-   * cell or for a finger. */
+  /** The color chip beside the eyedropper (ticket 403): what a press would take, live over beads (ProjectSurface names
+   * it); none over an empty cell or for a finger. */
   const pickChip = ref<{ x: number; y: number; hex: string; flipX: boolean; flipY: boolean }>()
+  let pickChipRoom = PICK_CHIP_ROOM.x
 
   function placePickChip(event: PointerEvent, bead: GridPosition | undefined): void {
     const shown = eyedropperShown.value && bead && event.pointerType !== 'touch' && !movesCanvas(event)
@@ -364,8 +370,21 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     }
     const { x, y } = pointOnScreen(event)
     // Near the right or bottom edge the chip goes to the other side of the tip instead of being cut off.
-    pickChip.value = { x, y, hex, flipX: x > size.value.width - PICK_CHIP_ROOM.x, flipY: y > size.value.height - PICK_CHIP_ROOM.y }
+    pickChip.value = { x, y, hex, flipX: x > size.value.width - pickChipRoom, flipY: y > size.value.height - PICK_CHIP_ROOM.y }
   }
+
+  // Once drawn with its text, the chip's own width decides the flip, before the frame is painted.
+  watch(
+    pickChip,
+    (chip) => {
+      const width = pickChipEl.value?.offsetWidth
+      if (!chip || !width) return
+      pickChipRoom = width + PICK_CHIP_OFFSET
+      const flipX = chip.x > size.value.width - pickChipRoom
+      if (flipX !== chip.flipX) pickChip.value = { ...chip, flipX }
+    },
+    { flush: 'post' },
+  )
 
   // A zoom, scroll or end of the pick leaves the chip showing a bead that is no longer under the pointer.
   watch(
