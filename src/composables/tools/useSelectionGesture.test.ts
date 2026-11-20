@@ -1001,18 +1001,32 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toBe(selection)
     })
 
-    it('passes over a place where it would lie on another Piece, waiting at the last one it could', () => {
+    it('carries on over another Piece, which shows again once it has passed (ticket 1162)', () => {
       const { gesture, harness } = pieceSelected()
 
       gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
-      gesture.dragAdjust({ row: 9, column: 10 })
-      // Three to the right would put its second bead on the BLUE one.
+      // Three to the right puts its second bead on the BLUE one: it is shown on top.
       gesture.dragAdjust({ row: 9, column: 12 })
-      expect(gesture.selection.value).toMatchObject({ top: 5, left: 6 })
+      expect(gesture.selection.value).toMatchObject({ top: 5, left: 8 })
+      expect(canvasBeads(gesture.carriedProject.value)[5]).toEqual({ 8: RED, 9: RED })
       gesture.dragAdjust({ row: 9, column: 14 })
+      expect(canvasBeads(gesture.carriedProject.value)[5]).toEqual({ 9: BLUE, 10: RED, 11: RED })
       gesture.endAdjust()
 
       expect(canvasBeads(harness.currentProject())[5]).toEqual({ 9: BLUE, 10: RED, 11: RED })
+    })
+
+    it('let go over another Piece, covers its beads, one Undo bringing them back (ticket 1162)', () => {
+      const { gesture, harness } = pieceSelected()
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
+      gesture.dragAdjust({ row: 9, column: 12 })
+      gesture.endAdjust()
+
+      expect(canvasBeads(harness.currentProject())[5]).toEqual({ 8: RED, 9: RED })
+      expect(gesture.selection.value).toMatchObject({ top: 5, left: 8 })
+      harness.history.onUndo()
+      expect(canvasBeads(harness.currentProject())[5]).toEqual({ 5: RED, 6: RED, 9: BLUE })
     })
 
     it('goes by a pair of columns on peyote, so the Piece keeps its shape', () => {

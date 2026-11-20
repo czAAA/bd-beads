@@ -80,6 +80,46 @@ describe('moveLayerSelection (ticket 1013)', () => {
     expect(moveLayerSelection(project, selection, 0, 5)).toBeDefined()
   })
 
+  it('covers another Piece\'s beads when asked to, as a drag lets go over them (ticket 1162)', () => {
+    const project = canvasWith({ ...PIECE, 10: { ...PIECE[10], 13: BLUE, 14: BLUE } })
+    const selection = pieceSelectionOnLayer(project, { row: 10, column: 10 })!
+
+    const moved = moveLayerSelection(project, selection, 0, 3, { cover: true })!
+
+    expect(positionsOf(beadsOfLayer(moved.project, 'canvas'))).toEqual([`10,13:${RED}`, `10,14:${BLUE}`, `11,13:${RED}`])
+    expect(moved.selection).toMatchObject({ top: 10, left: 13 })
+  })
+
+  it('still stops a covering move at the keep-out margin and at a row marked done (ticket 1162)', () => {
+    const project = canvasWith(PIECE, { frame: { technique: 'loom', row: 10, column: 30, rows: 5, columns: 5, beads: {} } })
+    const selection = pieceSelectionOnLayer(project, { row: 10, column: 10 })!
+
+    expect(moveLayerSelection(project, selection, 0, 15, { cover: true })).toBeUndefined()
+
+    const inFrame = beadsFromColors([[RED]], { row: 3, column: 1 })
+    const progressing = canvasWith({}, { frame: { technique: 'loom', row: 20, column: 20, rows: 5, columns: 5, beads: inFrame }, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
+    const red = pieceSelectionOnLayer(progressing, { row: 23, column: 21, layer: 'frame' })!
+    expect(moveLayerSelection(progressing, red, -3, 0, { cover: true })).toBeUndefined()
+  })
+
+  it('drops the name of a named Piece it covers whole (ticket 1162)', () => {
+    const fox = withPieceName(canvasWith({ ...PIECE, 10: { ...PIECE[10], 20: BLUE } }), { row: 10, column: 20 }, 'Fox')
+    const selection = pieceSelectionOnLayer(fox, { row: 10, column: 10 })!
+
+    const moved = moveLayerSelection(fox, selection, 0, 9, { cover: true })!
+
+    expect(namedPieces(moved.project)).toEqual([])
+  })
+
+  it('keeps the name of a named Piece it covers in part on what is left of it (ticket 1162)', () => {
+    const fox = withPieceName(canvasWith({ ...PIECE, 10: { ...PIECE[10], 20: BLUE, 21: BLUE, 22: BLUE } }), { row: 10, column: 20 }, 'Fox')
+    const selection = pieceSelectionOnLayer(fox, { row: 10, column: 10 })!
+
+    const moved = moveLayerSelection(fox, selection, 0, 9, { cover: true })!
+
+    expect(namedPieces(moved.project).map(({ name }) => name)).toEqual(['Fox'])
+  })
+
   it('makes no move at all by nothing', () => {
     const project = canvasWith(PIECE)
 
