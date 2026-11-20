@@ -302,7 +302,7 @@
   --area-band-fill: 0.16; /* ContextBar card, Area sheet: the band's fill, the area's colour at this opacity. */
   --area-band-edge: 0.55; /* ContextBar card, Area sheet: the band's 1px outer edge, the area's colour at this opacity. */
   --area-bar-gap: 14px; /* ContextBar card, Area sheet: how far the area's bar stands off its sheet, a mouse's reach of its handles (ticket 0833). */
-  --area-cut: 0.45; /* ContextBar card, Area sheet: a half position the area's edge cuts, canvas at this opacity over it. */
+  --area-cut: 0.45; /* ContextBar card, Area sheet: a half position the area's edge cuts, canvas at this opacity over it, then the band's fill. */
   --area-move-grip: 18px; /* ContextBar card, Area sheet: the area bar's move grip, an 18 x 4 pill in a 28px cell. */
   --mirror-area-line: 1.5px; /* ContextBar card, Mirror bar: the Area's rectangle. */
   --mirror-ghost-opacity: 0.45; /* ContextBar card, Mirror bar: a counterpart in the hover preview. */

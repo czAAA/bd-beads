@@ -571,7 +571,7 @@ function drawSelection(context: DrawingContext, weave: Weave, space: Space, sele
   const right = space.open ? selection.left + selection.columns - 1 : Math.min(selection.left + selection.columns - 1, space.columns - 1)
   const { x, y, width, height } = positionsBoxPx(weave, selection.top, selection.left, bottom - selection.top + 1, right - selection.left + 1)
 
-  drawCutHalves(context, weave, { top: selection.top, left: selection.left, bottom, right }, { x, y, width, height }, view(), theme)
+  drawCutHalves(context, weave, { top: selection.top, left: selection.left, bottom, right }, { x, y, width, height }, view(), theme, color)
   context.fillStyle = color
   if (describeWeave(weave).shifted) {
     drawStaircase(context, weave, { top: selection.top, left: selection.left, bottom, right }, view())
@@ -635,22 +635,29 @@ const NO_OUTSET: Outset = { top: 0, right: 0, bottom: 0, left: 0 }
 const AREA_CUT_OPACITY = 0.45
 
 // Where the half-bead shift leaves a position half inside the rectangle (brick's rows, peyote's columns), that half is
-// covered with `canvas` (ticket 0807): Select, Fill, Paste and Mirror skip it, and now it shows. Only the lines in view.
-function drawCutHalves(context: DrawingContext, weave: Weave, lines: { top: number; left: number; bottom: number; right: number }, box: Region, view: VisiblePositions, theme: ProjectTheme): void {
+// covered with `canvas` (ticket 0807), Select, Fill, Paste and Mirror skipping it, then the area's colour at the band's
+// fill, so it reads as outside the area, a Selection's and a Mirror's Area alike (ticket 1149). Only the lines in view.
+function drawCutHalves(context: DrawingContext, weave: Weave, lines: { top: number; left: number; bottom: number; right: number }, box: Region, view: VisiblePositions, theme: ProjectTheme, color: string): void {
   const description = describeWeave(weave)
   if (!description.shifted) return
   const cell = cellSizePx(weave.technique, weave.cell)
   const beadAt = (row: number, column: number) => description.box({ row, column }, cell.width, cell.height)
+  const cover = (x: number, y: number, width: number, height: number) => {
+    context.globalAlpha = AREA_CUT_OPACITY
+    context.fillStyle = theme.canvas
+    context.fillRect(x, y, width, height)
+    context.globalAlpha = AREA_BAND_FILL
+    context.fillStyle = color
+    context.fillRect(x, y, width, height)
+  }
   context.save()
-  context.globalAlpha = AREA_CUT_OPACITY
-  context.fillStyle = theme.canvas
   if (description.staggers === 'rows') {
     for (let row = Math.max(lines.top, view.firstRow); row <= Math.min(lines.bottom, view.lastRow); row++) {
       const first = beadAt(row, lines.left)
       const last = beadAt(row, lines.right)
-      if (first.x > box.x) context.fillRect(box.x, first.y, first.x - box.x, first.height)
+      if (first.x > box.x) cover(box.x, first.y, first.x - box.x, first.height)
       const end = last.x + last.width
-      if (end < box.x + box.width) context.fillRect(end, last.y, box.x + box.width - end, last.height)
+      if (end < box.x + box.width) cover(end, last.y, box.x + box.width - end, last.height)
     }
   } else {
     const firstShown = Math.min(view.columnsOf(view.firstRow).first, view.columnsOf(view.lastRow).first)
@@ -658,9 +665,9 @@ function drawCutHalves(context: DrawingContext, weave: Weave, lines: { top: numb
     for (let column = Math.max(lines.left, firstShown); column <= Math.min(lines.right, lastShown); column++) {
       const first = beadAt(lines.top, column)
       const last = beadAt(lines.bottom, column)
-      if (first.y > box.y) context.fillRect(first.x, box.y, first.width, first.y - box.y)
+      if (first.y > box.y) cover(first.x, box.y, first.width, first.y - box.y)
       const end = last.y + last.height
-      if (end < box.y + box.height) context.fillRect(last.x, end, last.width, box.y + box.height - end)
+      if (end < box.y + box.height) cover(last.x, end, last.width, box.y + box.height - end)
     }
   }
   context.restore()
