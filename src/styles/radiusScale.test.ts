@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { styleFiles } from '../testUtils/styleSources'
 
 const src = resolve(__dirname, '..')
 
@@ -16,13 +17,6 @@ const DRAWING_GEOMETRY = ['margin-sheet-radius', 'margin-border-radius', 'piece-
 
 const allowed = new Set([...SCALE, ...SCALE_NAMES, ...DRAWING_GEOMETRY])
 const fromScale = new Set([...SCALE, ...SCALE_NAMES])
-
-function styleFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = resolve(dir, entry.name)
-    return entry.isDirectory() ? styleFiles(path) : /\.(css|vue)$/.test(path) ? [path] : []
-  })
-}
 
 /** The top-level parts of a radius value: `0 var(--radius-sm) calc(…)` gives three, a `/` is a separator. */
 function parts(value: string): string[] {
