@@ -8,6 +8,7 @@ import { scrollCut, useScrollPosition } from '../../composables/ui/useScrollCut'
 import { PANEL_CONTEXT } from './panelContext'
 import { PANEL_OPENERS } from './panels'
 import IconButton from '../ui/IconButton.vue'
+import KeyChip from '../ui/KeyChip.vue'
 import { useI18n } from '../../i18n/useI18n'
 import type { Region } from '../../rendering/surfaceView'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
@@ -33,8 +34,14 @@ const props = defineProps<{
   subTitle?: string
   /** A figure at the right of the subpanel's header (the library's count). */
   subMeta?: string
+  /** The subpanel's own key, as a Kbd chip where the meta sits, where key hints show (Keyboard shortcuts' `?`, 1159). */
+  subKey?: string
+  /** The dropdown's width while the subpanel shows, when wider than the root's (Keyboard shortcuts, ShortcutsHelp card). */
+  subWidth?: string
   /** Opens already on the subpanel; Escape then closes the panel instead of going back. */
   startInSub?: boolean
+  /** The row, by test id, that Back from a subpanel the panel opened on takes focus to (Keyboard shortcuts' Help row). */
+  subOpener?: string
 }>()
 const emit = defineEmits<{ close: []; placed: [box: Region] }>()
 
@@ -47,7 +54,7 @@ interface SubLevel {
   meta?: string
   returnTestId: string | null
 }
-const stack = ref<SubLevel[]>(props.startInSub ? [{ returnTestId: null }] : [])
+const stack = ref<SubLevel[]>(props.startInSub ? [{ returnTestId: props.subOpener ?? null }] : [])
 /** Whether a subpanel is showing, and whether the panel opened on its first (so Escape there closes rather than goes back). */
 const inSub = computed(() => stack.value.length > 0)
 const depth = computed(() => stack.value.length)
@@ -110,7 +117,7 @@ const dropdownStyle = computed(() => ({
     anchored.roomBelow.value === undefined
       ? `calc(100dvh - ${Number.parseFloat(placed.value.top ?? '0') || 0}px - ${16}px)`
       : `${anchored.roomBelow.value}px`,
-  ...(props.width ? { width: props.width } : {}),
+  ...(inSub.value && props.subWidth ? { width: props.subWidth } : props.width ? { width: props.width } : {}),
 }))
 
 // Its box on the screen, told once as it first has its place (ticket 0971: the Frame panel moves the Canvas clear of it).
@@ -261,6 +268,7 @@ onBeforeUnmount(() => {
       <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" />
       <h2 :id="titleId" class="app-panel__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
       <span v-if="currentMeta" class="app-panel__meta" data-testid="panel-sub-meta">{{ currentMeta }}</span>
+      <KeyChip v-else-if="subKey" class="kbd-chip app-panel__key" data-testid="panel-sub-key">{{ subKey }}</KeyChip>
     </div>
     <h2 v-else :id="titleId" class="app-panel__title">{{ title }}</h2>
     <div class="app-panel__scroll">
@@ -329,6 +337,11 @@ onBeforeUnmount(() => {
   padding-right: var(--space-6);
   font: var(--type-meta);
   color: var(--muted);
+}
+
+.app-panel__key {
+  margin-left: auto;
+  margin-right: var(--space-6);
 }
 
 .app-panel__footer:empty {

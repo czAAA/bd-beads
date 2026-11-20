@@ -286,7 +286,7 @@
     {
       "name": "Modal",
       "group": "Overlays",
-      "summary": "A centered dialog for confirmations (Delete all?, Replace bead?) and the keyboard shortcuts, and the large size that holds the Convert image wizard."
+      "summary": "A centered dialog for confirmations (Delete all?, Replace bead?), and the large size that holds the Convert image wizard."
     },
     {
       "name": "Motion",
@@ -476,7 +476,7 @@
     {
       "name": "ShortcutsHelp",
       "group": "Screens",
-      "summary": "Keyboard shortcuts as a Menu Subpanel: every key and gesture, grouped as in the Toolbox, each group in two even columns (approved 2026-11-20, ticket 1159 builds it)."
+      "summary": "Keyboard shortcuts as a Menu Subpanel: every key and gesture, grouped as in the Toolbox, each group in two even columns (ticket 1159)."
     },
     {
       "name": "StackingOrder",

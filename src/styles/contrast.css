@@ -16,7 +16,7 @@
   border-top: 2px solid var(--line);
 }
 
-:root[data-theme='contrast'] :is(.bead-quantities__row > td, .shortcuts-help__row) {
+:root[data-theme='contrast'] .bead-quantities__row > td {
   border-top-width: 2px;
 }
 

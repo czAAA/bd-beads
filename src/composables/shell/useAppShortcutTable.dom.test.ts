@@ -48,7 +48,8 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onToggleRowHighlight: vi.fn(),
     onMoveRow: vi.fn(),
     onResetProgress: vi.fn(),
-    openShortcutsHelp: vi.fn(),
+    shortcutsHelpOpen: () => false,
+    toggleShortcutsHelp: vi.fn(),
     onZoomIn: vi.fn(),
     onZoomOut: vi.fn(),
     onFit: vi.fn(),
@@ -389,7 +390,18 @@ describe('useAppShortcutTable', () => {
     press({ key: 'c', metaKey: true })
     press({ key: '?', shiftKey: true })
     expect(deps.onCopy).toHaveBeenCalledTimes(2)
-    expect(deps.openShortcutsHelp).toHaveBeenCalledTimes(1)
+    expect(deps.toggleShortcutsHelp).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('? closes Menu from its Keyboard shortcuts, and over any other panel waits (ticket 1159)', () => {
+    let shown = true
+    const { deps, wrapper } = mountTable({ hasOpenLayer: () => true, shortcutsHelpOpen: () => shown })
+    press({ key: '?', shiftKey: true })
+    expect(deps.toggleShortcutsHelp).toHaveBeenCalledTimes(1)
+    shown = false
+    press({ key: '?', shiftKey: true })
+    expect(deps.toggleShortcutsHelp).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })
 
@@ -404,7 +416,7 @@ describe('useAppShortcutTable', () => {
       field.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
     }
     field.remove()
-    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowDirection, deps.onClearSelection, deps.onRemoveSelectedLine, deps.onMoveRow, deps.openShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
+    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowDirection, deps.onClearSelection, deps.onRemoveSelectedLine, deps.onMoveRow, deps.toggleShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()
     }
     wrapper.unmount()
@@ -413,7 +425,7 @@ describe('useAppShortcutTable', () => {
   it('answers no key while a dialog is open, except Escape', () => {
     const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => framedProject, onPickColorKey: vi.fn() })
     for (const init of [{ key: '1' }, { key: '?' }, { key: 'Enter' }, { key: 'r' }, { key: 'p' }, { code: 'Digit1', shiftKey: true }]) press(init)
-    for (const fn of [deps.onSelectTool, deps.openShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onSelectColor]) {
+    for (const fn of [deps.onSelectTool, deps.toggleShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()
     }
     wrapper.unmount()

@@ -1,8 +1,8 @@
 import { ref, watch, type Ref } from 'vue'
 import type { ExportChoice, ExportOpener, OpenPanel } from './openPanel'
 
-// The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu and Project panels. The Shortcuts-help boolean stays in the app shell: one boolean with no logic isn't
-// worth extracting.
+// The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu and Project
+// panels, and which Subpanel Menu shows (New Project, Saved Projects, Sign in, Keyboard shortcuts).
 export function useOverlayVisibility(deps: { selectProject: (id: string, opened?: () => void) => void; openPanel?: Ref<OpenPanel | null> }) {
   /** Which panel is open (tickets 79, 295, 439, 510), or none: opening one closes the others. Tapping the strip button of the open sheet closes
    * it, same as pressing it again. */
@@ -83,6 +83,20 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     menuOpensOnList.value = true
   }
 
+  /** Whether Menu's subpanel is Keyboard shortcuts (ticket 1159, ShortcutsHelp card). Clears once the panel is gone or
+   * swapped. */
+  const shortcutsOpen = ref(false)
+  watch(openPanel, () => {
+    shortcutsOpen.value = false
+  }, { flush: 'sync' })
+
+  /** `?`: opens Menu straight on Keyboard shortcuts, or closes the Menu it opened there (ShortcutsHelp card). */
+  function toggleMenuOnShortcuts() {
+    if (openPanel.value === 'menu' && shortcutsOpen.value) return void (openPanel.value = null)
+    openPanel.value = 'menu'
+    shortcutsOpen.value = true
+  }
+
   /** Picking a Project from Menu's Saved Projects opens it and puts the panel away. */
   function onSelectProjectFromPhoneDrawer(id: string) {
     deps.selectProject(id, () => {
@@ -107,5 +121,7 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     menuOpensOnList,
     openMenuOnSignIn,
     openMenuOnAccount,
+    shortcutsOpen,
+    toggleMenuOnShortcuts,
   }
 }

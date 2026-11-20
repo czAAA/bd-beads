@@ -89,7 +89,8 @@ const framePanel = 'calc(min(var(--panel-width), 100vw - 2 * var(--frame-panel-g
 const CASES: FitCase[] = [
   ['CanvasStrip', CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }],
   ['CanvasStrip (in its shell)', inShell(CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }), {}],
-  ['ShortcutsHelp', ShortcutsHelp, {}],
+  // Menu's widest Subpanel (ticket 1159): `panel-width-wide`, or the window less its gutters, less the panel's edges.
+  ['ShortcutsHelp', inPanel(ShortcutsHelp, {}, 'calc(min(var(--panel-width-wide), 100vw - 2 * var(--frame-panel-gap)) - 2 * var(--space-8) - 2px)'), {}],
   ['MenuPanel', inPanel(MenuPanel, { projectCount: 1, toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true, kept: false }), {}],
   // Signed in (ticket 0078): a long address cuts at its end beside the plan, which stays whole.
   ['MenuPanel (signed in)', inPanel(MenuPanel, { projectCount: 1, account: { email: 'a.very.long.name.of.a.maker@a-long-mail-domain.example.com', plan: 'free' } }), {}],

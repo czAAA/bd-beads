@@ -1,6 +1,6 @@
 # Modal
 
-A centered dialog for confirmations (Delete all?, Replace bead?) and the keyboard shortcuts (until ticket 1159 moves them into a Menu Subpanel, approved 2026-11-20: ShortcutsHelp card). (Derived in DESIGN.md.)
+A centered dialog for confirmations (Delete all?, Replace bead?). Keyboard shortcuts is no Modal: it is a Menu Subpanel (ShortcutsHelp card, ticket 1159). (Derived in DESIGN.md.)
 
 - Width 420 (confirm) to 560 (panels), `canvas` fill in light / `panel` in dark (plus a 1px `line-strong` border), radius-lg, `elevation-3`, padding 24.
 - **Scrim:** `rgba(0,0,0,.32)` light, `rgba(0,0,0,.6)` dark.

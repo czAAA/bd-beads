@@ -13,7 +13,7 @@ type DialogId = Parameters<Dialogs['flag']>[0]
 
 // The shell's dialogs that ask about nothing, opened through the registry, in every language at the layout's width
 // edges (ticket 552).
-const FLAGS: DialogId[] = ['delete-all', 'reset-progress', 'remove-frame', 'replace-frame', 'remove-all-colors', 'shortcuts']
+const FLAGS: DialogId[] = ['delete-all', 'reset-progress', 'remove-frame', 'replace-frame', 'remove-all-colors']
 
 // The dialogs that name a Project: two are saved, so the open one has another to switch to and to delete.
 const moth = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
