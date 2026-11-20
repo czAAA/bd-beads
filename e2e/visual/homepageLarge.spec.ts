@@ -5,12 +5,13 @@ import { expect, test } from '@playwright/test'
 for (const scheme of ['light', 'dark', 'contrast'] as const) {
   test(`Welcome at 2560 × 1440 in ${scheme} (ticket 1059)`, async ({ page }) => {
     await page.setViewportSize({ width: 2560, height: 1440 })
-    await page.emulateMedia(scheme === 'contrast' ? { colorScheme: 'light', contrast: 'more' } : { colorScheme: scheme })
+    // Reduced motion holds the Welcome cuff still on its sixth pass done (ticket 1157), so the picture is the same each run.
+    await page.emulateMedia({ ...(scheme === 'contrast' ? { colorScheme: 'light', contrast: 'more' } : { colorScheme: scheme }), reducedMotion: 'reduce' })
     // Out of the Winter charms' season (ticket 1102), which has a look of its own.
     await page.clock.setFixedTime(new Date('2026-11-18T12:00:00'))
     await page.goto('./')
     await expect(page.getByTestId('homepage-welcome')).toBeVisible()
-    await expect(page.getByTestId('welcome-piece')).toBeVisible()
+    await expect(page.getByTestId('welcome-cuff')).toBeVisible()
     await page.evaluate(() => document.fonts.ready)
     await expect(page).toHaveScreenshot(`homepage-large-${scheme}.png`, { maxDiffPixelRatio: 0.01 })
   })

@@ -1,7 +1,7 @@
 import type { Locale, Translations } from '../i18n/translations'
 import { freeListGroups } from './freeList'
 import { insideChapters } from './inside/insideCopy'
-import { welcomePromises } from './welcomeCopy'
+import { welcomeHeading, welcomeLine, welcomePromises } from './welcomeCopy'
 
 // The Homepage's words as the page itself carries them (ticket 1055): its title and description, and the copy the
 // drawn page shows, taken from the same functions its sections draw from, so the two can't drift. The build writes
@@ -46,14 +46,14 @@ export function homepageTitle(t: Translations): string {
 /** The Homepage's words in a language: Welcome's heading, line and promises, What's inside's chapters and rows, and
  * the free list a new visitor sees, in What's inside's chapters (ticket 0947). Nothing the drawn page doesn't show. */
 export function homepageCopy(t: Translations, locale: Locale): HomepageCopy {
-  const { welcome, plans } = t.homepage
+  const { plans } = t.homepage
   return {
     locale,
     name: t.app.title,
     title: homepageTitle(t),
     description: t.homepage.description,
     sections: [
-      { heading: welcome.heading, line: welcome.line, named: welcomePromises(t).map(({ name, text }) => ({ name, text })) },
+      { heading: welcomeHeading(t, locale), line: welcomeLine(t, locale), named: welcomePromises(t).map(({ name, text }) => ({ name, text })) },
       {
         heading: t.homepage.whatsInside,
         groups: insideChapters(t, locale).map((chapter) => ({ heading: chapter.name, named: chapter.rows.map(({ name, text }) => ({ name, text })) })),

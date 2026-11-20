@@ -28,6 +28,14 @@ export function sampledColors(pixels: PixelData, points: readonly PicturePoint[]
   return points.map(({ row, column, u, v }) => ({ row, column, color: packedAt(pixels, u, v) }))
 }
 
+/** How many colors the sampled positions hold, the see-through ones left out: the Colors stepper's most before its 256
+ * cap. Counted, not reduced: a reduction to 256 colors of a photo's beads takes seconds (ticket 1160). */
+export function sampledColorCount(sampled: readonly SampledPosition[]): number {
+  const colors = new Set<number>()
+  for (const { color } of sampled) if (color !== NO_COLOR) colors.add(color)
+  return colors.size
+}
+
 /** The picture's color at a point of it, as Convert to beads reads a bead's centre: a hex, or none where it lets the Canvas
  * through. What Pick color from Canvas takes from the reference image before matching it (ticket 1119). */
 export function pictureColorAt(pixels: PixelData, { u, v }: { u: number; v: number }): string | undefined {

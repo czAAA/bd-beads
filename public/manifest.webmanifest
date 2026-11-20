@@ -1,7 +1,7 @@
 {
   "name": "openbeads",
   "short_name": "openbeads",
-  "description": "Bead patterns, drawn the way the beads sit. For loom, peyote and brick stitch. Turn a photo into a bead pattern, count every color and mark rows done as you weave. Everything here is free: no account, no trial, and your work stays in this browser.",
+  "description": "A free bead pattern editor that works in three techniques. Loom, peyote, and brick stitch. Turn a photo into a bead pattern, count every color and mark rows done as you weave. Everything here is free: no account, no trial, and your work stays in this browser.",
   "categories": ["design", "lifestyle", "productivity"],
   "lang": "en",
   "dir": "ltr",

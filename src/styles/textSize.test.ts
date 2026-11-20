@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { styleFiles, stylesOf } from '../testUtils/styleSources'
 
 /** The browser's text size reaches the chrome (ticket 0941, WCAG 1.4.4): the root's size is a share of it, and the
  * chrome's type is in `rem`, never px, so it follows. The canvas, rulers and printed pages draw in px from TypeScript
@@ -8,20 +9,6 @@ import { describe, expect, it } from 'vitest'
 
 const src = resolve(__dirname, '..')
 const read = (path: string) => readFileSync(resolve(src, path), 'utf8')
-
-function styleFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = resolve(dir, entry.name)
-    return entry.isDirectory() ? styleFiles(path) : /\.(vue|css)$/.test(entry.name) ? [path] : []
-  })
-}
-
-/** A file's CSS without comments: a `.vue` file's style blocks, a `.css` file whole. */
-function stylesOf(path: string): string {
-  const text = readFileSync(path, 'utf8')
-  const css = path.endsWith('.vue') ? [...text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(([, block]) => block).join('\n') : text
-  return css.replace(/\/\*[\s\S]*?\*\//g, '')
-}
 
 /** Type sized in px on purpose: lettering inside SVG artwork, which scales with its drawing. */
 const ARTWORK = ['homepage/PlanTiles.vue .plan__stamp text']

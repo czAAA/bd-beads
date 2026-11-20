@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "fixed",
+  "line": {
+    "en": "The reference image's Turn handle no longer hides under its bar, and resizing or turning the picture with Convert to beads open no longer freezes the app",
+    "ru": "Маркер поворота подложки больше не прячется под её панелью, а изменение размера и поворот картинки при открытом «Перевести в бисер» больше не подвешивают приложение",
+    "uk": "Маркер повороту підкладки більше не ховається під її панеллю, а зміна розміру й поворот картинки з відкритим «Перетворити на бісер» більше не підвішують застосунок",
+    "be": "Маркер павароту падкладкі больш не хаваецца пад яе панэллю, а змена памеру і паварот карцінкі з адкрытым «Перавесці ў бісер» больш не падвешваюць праграму",
+    "zh": "参考图的旋转控制点不再被它的工具条挡住；打开“转换为珠子”时缩放或旋转图片也不再让应用卡死",
+    "es": "El control de giro de la imagen de referencia ya no queda bajo su barra, y cambiarle el tamaño o girarla con Convertir en cuentas abierto ya no congela la aplicación",
+    "pl": "Uchwyt obrotu obrazu pomocniczego nie chowa się już pod jego paskiem, a zmiana rozmiaru i obracanie obrazu przy otwartym Zamień na koraliki nie zawieszają już aplikacji"
+  }
+}

@@ -8,17 +8,16 @@ export const homepage: HomepageTranslations = {
     openEditor: '打开编辑器',
     whatsInside: '功能一览',
     welcome: {
-      heading: '串珠图样，按珠子实际的排列方式绘制。',
-      line: '适用于织机、佩奥特编织和砖形针法。',
-      seeHow: '看看怎么用',
-      colors: { other: '{codes} 种 {brands} 颜色' },
+      heading: { other: '支持{count}种编织技法的免费串珠图样编辑器' },
+      countWords: ['一', '两', '三', '四', '五', '六', '七', '八', '九'],
+      line: '{techniques}。',
       startFromStarter: '从现成的设计开始',
-      caption: '{technique} · {size}',
-      piece: '孔雀羽眼，佩奥特编织',
+      cuff: '孔雀羽毛手镯，佩奥特编织，编织中：{counter}',
       promises: {
         free: { name: '这里的一切都免费', text: '无需账户，没有试用期。作品留在此浏览器中。' },
         picture: { name: '从一张图片开始', text: '把照片变成串珠图样。' },
         weave: { name: '计数并编织', text: '每种颜色都已计数；边编织边标记已完成的行。' },
+        export: { name: '免费导出', text: '全画质的 PDF 和 PNG。' },
       },
     },
     inside: {

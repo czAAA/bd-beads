@@ -11,8 +11,14 @@ beforeEach(() => {
 const view = { gridToPoint: (x: number, y: number) => ({ x: x * 2 + 10, y: y * 2 + 20 }), viewport: { width: 400, height: 400 } }
 const place = { x: 50, y: 50, width: 40, angle: 0 }
 
-function mountAdjust({ size = undefined as { beads: string; measure: string } | undefined } = {}) {
-  return mount(ReferenceAdjust, { props: { place, aspect: 0.5, limits: { min: 10, max: 400 }, opacity: 50, view, size }, attachTo: document.body })
+interface Mounted {
+  size?: { beads: string; measure: string }
+  at?: typeof place
+  bar?: { left: number; top: number; width: number; height: number }
+}
+
+function mountAdjust({ size, at = place, bar }: Mounted = {}) {
+  return mount(ReferenceAdjust, { props: { place: at, aspect: 0.5, limits: { min: 10, max: 400 }, opacity: 50, view, size, bar }, attachTo: document.body })
 }
 
 const pointer = (x: number, y: number, extra: Record<string, unknown> = {}) => ({ clientX: x, clientY: y, button: 0, pointerId: 1, ...extra })
@@ -98,6 +104,40 @@ describe('The reference image\'s handles (ReferenceImage card, tickets 0790, 079
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(wrapper.emitted('preview')).toBeUndefined()
     expect(wrapper.emitted('commit')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('stands the Turn handle on beyond the picture bar where it would land under it (ticket 1160)', () => {
+    // Turned bottom edge up: the handle's 48px would put it at (110, 52), under the bar over the picture's top.
+    const turned = { ...place, angle: 180 }
+    const bar = { left: 40, top: 46, width: 140, height: 40 }
+    const wrapper = mountAdjust({ at: turned, bar })
+    expect(wrapper.get('.reference-adjust__turn').classes()).toContain('reference-adjust__turn--below')
+    expect(wrapper.get('.reference-adjust__stem').attributes('style')).toContain('calc(76px - var(--reference-turn) / 2)')
+    wrapper.unmount()
+    // Upright, the handle below the picture is nowhere near the bar: its own 48px.
+    const upright = mountAdjust({ bar })
+    expect(upright.get('.reference-adjust__stem').attributes('style')).toContain('calc(48px - var(--reference-turn) / 2)')
+    upright.unmount()
+  })
+
+  it('stands the Turn handle on the picture\'s other edge where there is no room beyond the bar (ticket 1160)', () => {
+    // The same picture 15px higher: beyond the bar is above the canvas box, so the handle takes the edge that faces down.
+    const wrapper = mountAdjust({ at: { ...place, y: 35, angle: 180 }, bar: { left: 40, top: 16, width: 140, height: 40 } })
+    expect(wrapper.get('.reference-adjust__turn').classes()).not.toContain('reference-adjust__turn--below')
+    expect(wrapper.get('.reference-adjust__stem').attributes('style')).toContain('calc(48px - var(--reference-turn) / 2)')
+    wrapper.unmount()
+  })
+
+  it('keeps the Turn handle on its side through a drag, though the drag takes it out of the canvas box (ticket 1160)', async () => {
+    // Near the left edge: turned a quarter, the handle is past it. It stays the handle being dragged, the picture under it.
+    const wrapper = mountAdjust({ at: { ...place, x: 20 } })
+    await wrapper.get('[data-testid="reference-adjust-turn"]').trigger('pointerdown', pointer(50, 188))
+    const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
+    await picture.trigger('pointermove', pointer(0, 120))
+    await picture.trigger('pointermove', pointer(0, 121))
+    expect(wrapper.emitted('preview')!.map(([at]) => (at as typeof place).angle)).toEqual([90, 90])
+    expect(wrapper.get('.reference-adjust__turn').classes()).toContain('reference-adjust__turn--below')
     wrapper.unmount()
   })
 })

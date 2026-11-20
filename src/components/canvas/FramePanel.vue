@@ -674,7 +674,6 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   padding: 0;
   font: var(--type-control);
   line-height: 1;
-  touch-action: manipulation;
 }
 
 .frame-panel__cell :deep(.frame-panel__step--in) {

@@ -52,6 +52,18 @@ export function pictureBarPlace(picture: ScreenBox, bar: { width: number; height
   }
 }
 
+/** How far from `from` a handle stands along `way` (a unit vector) to keep `clear` px off the bar: `least`, or on past
+ * the bar's box where `least` would land it on the bar (ticket 1160), leaving by the side its way reaches first. */
+export function reachClearOf(from: { x: number; y: number }, way: { x: number; y: number }, least: number, bar: ScreenBox | undefined, clear: number): number {
+  if (!bar) return least
+  const [left, top, right, bottom] = [bar.left - clear, bar.top - clear, bar.left + bar.width + clear, bar.top + bar.height + clear]
+  const at = { x: from.x + way.x * least, y: from.y + way.y * least }
+  if (at.x <= left || at.x >= right || at.y <= top || at.y >= bottom) return least
+  const across = way.x > 0 ? (right - from.x) / way.x : way.x < 0 ? (left - from.x) / way.x : Infinity
+  const along = way.y > 0 ? (bottom - from.y) / way.y : way.y < 0 ? (top - from.y) / way.y : Infinity
+  return Math.min(across, along)
+}
+
 /** The popover's top-left: 20px right of the picture, or left of it where there is no room, its top level with the
  * bar's; kept inside the canvas box. */
 export function convertPopoverPlace(picture: ScreenBox, barTop: number, popover: { width: number; height: number }, viewport: { width: number; height: number }): { left: number; top: number } {

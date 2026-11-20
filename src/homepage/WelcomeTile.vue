@@ -7,12 +7,12 @@ import { useElementSize } from '../composables/ui/useElementSize'
 import { controlAction } from '../composables/shell/controlRegistry'
 import { useI18n } from '../i18n/useI18n'
 import GroupedList from './GroupedList.vue'
-import WelcomePiece from './WelcomePiece.vue'
-import { welcomeCaption, welcomeCounts, welcomePromises } from './welcomeCopy'
+import WelcomeCuff from './WelcomeCuff.vue'
+import { welcomeHeading, welcomeLine, welcomePromises } from './welcomeCopy'
 
-// The Welcome section (Homepage card, ticket 0830): the heading, its line, the way in (two `2xl` buttons: the one primary
-// and Projects library or, new, Start from a ready design, 0953), the counts, a piece, three promises and See how it
-// works under them. On a phone the bar carries the way in, and the promises are a grouped list under the tile.
+// The Welcome section (Homepage card, tickets 0830, 1157): the heading, its line, the way in (two `2xl` buttons: the one
+// primary and Projects library or, new, Start from a ready design, 0953), the cuff being woven with Row progress, and
+// four promises. On a phone the bar carries the way in, and the promises are a grouped list under the tile.
 const props = defineProps<{
   /** Drawn for a phone: no button, the promises apart from the tile. */
   phone?: boolean
@@ -20,12 +20,14 @@ const props = defineProps<{
   isNew: boolean
   /** The Projects saved, which Projects library shows. */
   count: number
+  /** Whether Welcome is the section shown: the cuff weaves by itself only then. */
+  shown?: boolean
 }>()
-const emit = defineEmits<{ makeFirstProject: []; openEditor: []; openSavedProjects: []; seeHow: []; startFromStarter: [] }>()
+const emit = defineEmits<{ makeFirstProject: []; openEditor: []; openSavedProjects: []; startFromStarter: [] }>()
 
 const { t, locale } = useI18n()
-const counts = computed(() => welcomeCounts(t.value, locale.value))
-const caption = computed(() => welcomeCaption(t.value))
+const heading = computed(() => welcomeHeading(t.value, locale.value))
+const line = computed(() => welcomeLine(t.value, locale.value))
 const promises = computed(() => welcomePromises(t.value))
 /** The Menu row's action, whose name Projects library shows with the count, as the strip's does (ticket 0716). */
 const savedProjects = controlAction('saved-projects')
@@ -62,8 +64,8 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
     <div class="welcome__tile">
       <!-- A sentence, balanced over as many lines as the tile's width asks: `data-wrap-ok` tells the fit check so. -->
       <!-- The page's one h1 (ticket 0995): the sections under it are h2s. -->
-      <h1 id="homepage-welcome" class="welcome__heading" data-wrap-ok>{{ t.homepage.welcome.heading }}</h1>
-      <p class="welcome__line">{{ t.homepage.welcome.line }}</p>
+      <h1 id="homepage-welcome" class="welcome__heading" data-wrap-ok>{{ heading }}</h1>
+      <p class="welcome__line">{{ line }}</p>
       <!-- The way in, twice the `lg` size: two buttons, so a new visitor's second is Start from a ready design. -->
       <div v-if="!phone" ref="wayIn" class="welcome__way-in" :class="{ 'welcome__way-in--wraps': !wayInFit }">
         <template v-if="isNew">
@@ -84,27 +86,19 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
           </AppButton>
         </template>
       </div>
-      <p class="welcome__counts" data-testid="welcome-counts">{{ counts }}</p>
-      <div class="welcome__show">
-        <WelcomePiece />
-        <p class="welcome__caption" data-testid="welcome-caption">{{ caption }}</p>
-        <!-- The promises: an icon, a name and its line each, nothing to press. -->
-        <ul v-if="!phone" class="welcome__promises" data-testid="welcome-promises">
-          <li v-for="promise in promises" :key="promise.id" class="welcome__promise" :data-testid="`welcome-promise-${promise.id}`">
-            <AppIcon class="welcome__promise-icon" :name="promise.icon" :size="18" />
-            <span class="welcome__promise-words">
-              <span class="welcome__promise-name">{{ promise.name }}</span>
-              <!-- The stop keeps a screen reader from running the name into its line. -->
-              <span class="welcome__stop">. </span>
-              <span class="welcome__promise-line">{{ promise.text }}</span>
-            </span>
-          </li>
-        </ul>
-      </div>
-      <!-- At the tile's foot, under the promises: it turns to What's inside, as Next does. -->
-      <AppButton v-if="!phone" class="welcome__see-how" variant="text" size="lg" trailing-icon="arrow-down" data-testid="welcome-see-how" @click="emit('seeHow')">
-        {{ t.homepage.welcome.seeHow }}
-      </AppButton>
+      <WelcomeCuff class="welcome__cuff" :shown="shown" />
+      <!-- The promises: an icon, a name and its line each, nothing to press. -->
+      <ul v-if="!phone" class="welcome__promises" data-testid="welcome-promises">
+        <li v-for="promise in promises" :key="promise.id" class="welcome__promise" :data-testid="`welcome-promise-${promise.id}`">
+          <AppIcon class="welcome__promise-icon" :name="promise.icon" :size="18" />
+          <span class="welcome__promise-words">
+            <span class="welcome__promise-name">{{ promise.name }}</span>
+            <!-- The stop keeps a screen reader from running the name into its line. -->
+            <span class="welcome__stop">. </span>
+            <span class="welcome__promise-line">{{ promise.text }}</span>
+          </span>
+        </li>
+      </ul>
     </div>
     <GroupedList v-if="phone" :rows="promises" testid="welcome-promises" row-testid="welcome-promise" />
   </section>
@@ -122,7 +116,7 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
   margin: 0 auto;
 }
 
-/* Under 744px: padding 24 20, the heading 34 on 38, the promises one under another. */
+/* Under 744px: padding 24 20, the heading 34 on 38. */
 .welcome__tile {
   display: flex;
   flex-direction: column;
@@ -168,40 +162,20 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
   flex-wrap: wrap;
 }
 
-.welcome__see-how {
-  margin-top: var(--space-20);
+/* 18px under the way in, as the card has it. */
+.welcome__cuff {
+  margin-top: 1.125rem;
 }
 
-/* `meta-small`'s face and size, never lowercased: the counts hold brand names. */
-.welcome__counts,
-.welcome__caption {
-  margin: var(--space-14) 0 0;
-  font: var(--type-meta-small);
-  color: var(--muted);
-}
-
-/* The piece, its caption and the promises share the piece's width, so the hairline is as wide as the piece. */
-.welcome__show {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: var(--welcome-piece-width);
-  /* 30px, as the card has it. */
-  margin-top: 1.875rem;
-}
-
-.welcome__caption {
-  margin-top: var(--space-8);
-}
-
+/* The tile's width, inside its padding, under a hairline: one under another, two by two from 744, four across from
+ * 1000, 24px apart. */
 .welcome__promises {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-12) var(--space-24);
   align-self: stretch;
-  /* 28px over the hairline, as the card has it. */
-  margin: 1.75rem 0 0;
+  /* 22px over the hairline, as the card has it. */
+  margin: 1.375rem 0 0;
   padding: var(--space-20) 0 0;
   text-align: left;
   list-style: none;
@@ -211,7 +185,6 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
 .welcome__promise {
   position: relative;
   display: flex;
-  flex: 1 1 0;
   gap: var(--space-10);
   align-items: flex-start;
   min-width: 0;
@@ -248,7 +221,7 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
   white-space: nowrap;
 }
 
-/* From 744px: padding 28 32 24, the heading 44 on 48, the promises side by side 32px apart. */
+/* From 744px: padding 28 32 24, the heading 44 on 48, the promises two by two. */
 @container homepage (min-width: 744px) {
   .welcome__tile {
     padding: 1.75rem var(--space-32) var(--space-24);
@@ -260,15 +233,18 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
   }
 
   .welcome__promises {
-    flex-direction: row;
-    gap: var(--space-32);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* From 1000px: padding 36 60 30. */
+/* From 1000px: padding 36 60 30, the promises four across. */
 @container homepage (min-width: 1000px) {
   .welcome__tile {
     padding: 2.25rem 3.75rem 1.875rem;
+  }
+
+  .welcome__promises {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
