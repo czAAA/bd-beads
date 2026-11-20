@@ -2139,6 +2139,28 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     expect(wrapper.emitted('cell-primary-down')).toEqual([[1, 3]])
   })
 
+  it('carries a Piece straight along a row of peyote, whose columns stand half a bead apart (ticket 1150)', async () => {
+    const project = projectOf(20, 10, { frame: undefined }, 'peyote')
+    const shape = { top: 2, left: 2, rows: 1, columns: 1, cells: [{ row: 2, column: 2 }] }
+    const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'piece', selects: true }), selection: shape })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+    const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', rotation: quarterTurnOf(project), zoom: 1 })
+    const middle = view.beadToPoint({ row: 2, column: 2 })
+    const { column: along, row: down } = view.beadStep()
+    // Pressed in the bead's upper part: at that height the next column, half a bead lower, holds the row above.
+    const pressed = { x: middle.x - down.x / 4, y: middle.y - down.y / 4 }
+    const after = (beads: number) => ({ clientX: pressed.x + along.x * beads, clientY: pressed.y + along.y * beads })
+    expect(view.pointToCell({ x: after(1).clientX, y: after(1).clientY })).toEqual({ row: 1, column: 3 })
+
+    await surface.trigger('pointerdown', { button: 0, ...after(0), pointerId: 1 })
+    for (let beads = 1; beads <= 4; beads += 1) await surface.trigger('pointermove', { buttons: 1, ...after(beads), pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+
+    expect(wrapper.emitted('selection-press')!.map(([, cell]) => cell)).toEqual([{ row: 2, column: 2 }])
+    // By whole stagger cycles, a pair of columns: half a cycle goes the way of the drag.
+    expect(wrapper.emitted('selection-drag')!.map(([cell]) => cell)).toEqual([4, 4, 6, 6].map((column) => ({ row: 2, column })))
+  })
+
   it('under Select, leaves a press on a bead of the selected Piece to the tool, which marks out a new Selection', async () => {
     const shape = { ...selection, cells: [{ row: 1, column: 1 }, { row: 2, column: 2 }] }
     const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'select', selects: true, selectsAnywhere: true }), selection: shape })
@@ -2298,6 +2320,21 @@ describe('ProjectSurface with a Frame', () => {
     await surface.trigger('pointermove', { buttons: 1, clientX: 60, clientY: 60, pointerId: 1 })
     expect(wrapper.emitted('frame-press')!.map(([target]) => target)).toEqual([{ kind: 'move' }])
     expect(wrapper.emitted('frame-drag')).toHaveLength(1)
+  })
+
+  it('moves the Frame straight along a row of peyote by its Move handle, as a Piece is carried (ticket 1150)', async () => {
+    const project = projectOf(8, 6, {}, 'peyote')
+    const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can() })
+    const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', rotation: quarterTurnOf(project), zoom: 1 })
+    const middle = view.beadToPoint({ row: 2, column: 2 })
+    const { column: along, row: down } = view.beadStep()
+    const after = (beads: number) => ({ clientX: middle.x - down.x / 4 + along.x * beads, clientY: middle.y - down.y / 4 + along.y * beads })
+
+    pressMoveHandle(wrapper, [after(0).clientX, after(0).clientY])
+    const surface = wrapper.find('[data-testid="project-surface"]')
+    for (let beads = 1; beads <= 4; beads += 1) await surface.trigger('pointermove', { buttons: 1, ...after(beads), pointerId: 1 })
+
+    expect(wrapper.emitted('frame-drag')!.map(([cell]) => cell)).toEqual([3, 4, 5, 6].map((column) => ({ row: 2, column })))
   })
 
   it('scrolls the view toward the edge a dragged Frame touches, and moves the Frame with it', async () => {
