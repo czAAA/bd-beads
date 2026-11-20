@@ -161,6 +161,9 @@ export const PREFERENCES = {
   printCover: onUntilOff('openbeads:print-cover'),
   /** Black and white, under Cover page (ticket 1096): off until switched on. */
   printBlackAndWhite: offUntilOn('openbeads:print-black-and-white'),
+  /** Empty grid (off until switched on) and Chart border (on until switched off), the print choices of ticket 1127. */
+  printEmptyGrid: offUntilOn('openbeads:print-empty-grid'),
+  printChartBorder: onUntilOff('openbeads:print-chart-border'),
   /** Large beads and Row by row, the Export panel's print choices (ticket 0916): off until switched on. */
   printLargeBeads: offUntilOn('openbeads:print-large-beads'),
   printRowByRow: offUntilOn('openbeads:print-row-by-row'),

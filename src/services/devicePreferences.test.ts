@@ -37,6 +37,8 @@ const CASES = [
   { name: 'toolPillPosition', key: 'openbeads:tool-pill-position', saved: 'left', read: 'left', other: 'right', stored: 'right', invalid: 'middle', fallback: 'bottom' },
   { name: 'printCover', key: 'openbeads:print-cover', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
   { name: 'printBlackAndWhite', key: 'openbeads:print-black-and-white', saved: 'on', read: true, other: true, stored: 'on', invalid: 'yes', fallback: false },
+  { name: 'printEmptyGrid', key: 'openbeads:print-empty-grid', saved: 'on', read: true, other: true, stored: 'on', invalid: 'yes', fallback: false },
+  { name: 'printChartBorder', key: 'openbeads:print-chart-border', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
   { name: 'printLargeBeads', key: 'openbeads:print-large-beads', saved: 'on', read: true, other: true, stored: 'on', invalid: 'yes', fallback: false },
   { name: 'printRowByRow', key: 'openbeads:print-row-by-row', saved: 'on', read: true, other: true, stored: 'on', invalid: 'yes', fallback: false },
   { name: 'locale', key: 'openbeads:locale', saved: 'ru', read: 'ru', other: 'en', stored: 'en', invalid: 'fr', fallback: 'en' },

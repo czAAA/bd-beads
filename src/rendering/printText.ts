@@ -58,6 +58,10 @@ interface PrintedWordChart {
 export interface PrintChoices {
   cover?: boolean
   blackAndWhite?: boolean
+  /** Empty grid (ticket 1127, off at first): each empty position its outline and cross, else bare paper. */
+  emptyGrid?: boolean
+  /** Chart border (ticket 1127, on at first): the chart's one rim round its beads (ticket 1126). */
+  chartBorder?: boolean
   largeBeads?: boolean
   rowByRow?: boolean
 }
@@ -92,6 +96,9 @@ export interface PrintText {
   cover?: boolean
   /** Black and white (ticket 1096): each color's tone as a share of black, the pages after the cover in one ink. */
   tones?: Readonly<Record<string, number>>
+  /** Empty grid and Chart border (ticket 1127): how the charts draw empty positions and whether a rim goes round them. */
+  emptyGrid?: boolean
+  chartBorder?: boolean
   labels: Translations['print']
 }
 
@@ -136,7 +143,9 @@ function spineText({ before, pair, after }: WordSpine): string {
 /** The Word chart's words in the app's language; letters and numbers stay as they are. A Custom frame's line names its
  * round, row, part or join before its runs (ticket 0594). */
 function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], steps: Translations['rowProgress']): PrintedWordChart {
-  const notes = [chart.start ? t[START_KEY[chart.start]] : t[FIRST_ROW_KEY[chart.firstEdge]]]
+  // Where the first row is, by its number: the ruler's, so a Schema worked from the bottom or the right starts at its
+  // last row (ticket 1129).
+  const notes = [chart.start ? t[START_KEY[chart.start]] : fillBlanks(t[FIRST_ROW_KEY[chart.firstEdge]], { row: chart.rows[0]?.number ?? 1 })]
   if (!chart.marked && !chart.start) notes.push(t.loomRead)
   if (chart.count) notes.push(chart.count === 'even' ? t.evenCount : t.oddCount)
   if (chart.marked) notes.push(t.sides)
@@ -221,6 +230,8 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
     ...(choices.cover ? { cover: true } : {}),
     ...(choices.blackAndWhite ? { tones: printTones(quantities) } : {}),
+    ...(choices.emptyGrid ? { emptyGrid: true } : {}),
+    ...(choices.chartBorder ? { chartBorder: true } : {}),
     labels: t.print,
   }
   // Large beads only where it makes the beads bigger (ticket 1125): a remembered "on" does nothing on a small piece.

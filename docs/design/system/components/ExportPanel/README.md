@@ -43,15 +43,15 @@ Until ticket 1096 lands the panel is as written above. Then:
 
 - **Picture saves the Cover page** (PrintCover card), whatever the Cover page switch says, always in color and always one file. No switch changes it, so Large beads' Info body loses "It changes the picture too: the picture is the chart’s first page." and Cover page's gains "It is the page Picture saves."
 
-### Approved 2026-11-19, not yet in the app (ticket 1127)
+### Empty grid and Chart border (ticket 1127; in the app)
 
-Signed off by the owner on 2026-11-19 (ticket 1123). It waits for ticket 1121's export rows. Then:
+Signed off by the owner on 2026-11-19 (ticket 1123), Chart border approved on 2026-11-20:
 
-- **Two more switches, Empty grid, then Chart border** (Chart border approved 2026-11-20), right after Black and white, so the order is Cover page, Black and white, Empty grid, Chart border, Large beads (where it shows), Row by row.
-  - **Empty grid** ("What Empty grid does"). A PanelSwitchRow like the others, with its Info button; off at first and remembered on the device like them. Off, an empty position on the PDF's charts and overview is bare paper; on, it gets its outline and small cross (PrintChartPage card). It adds or removes no page.
-  - **Chart border** ("What Chart border does"; name, default and copy approved 2026-11-20). The same kind of row, remembered on the device, **on at first**. On, every chart has its one rounded rim, 1 mm round the beads with the ruler numbers outside it (PrintChartPage card); off, nothing goes round the chart and the numbers keep their places. It changes the PDF's charts only (not the overview, the Cover page or the picture) and adds or removes no page.
-- **Their file words**, `empty-grid` and `chart-border` in English (`copy/frame.md`), come after Black and white's in the name, in the panel's order, each while its switch is on: `peacock-cuff-ada-lind_cover_black-and-white_empty-grid_chart-border.pdf`. Chart border is on at first, so a name made with the switches as they start ends `_cover_chart-border`.
-- Empty grid changes the PDF only once Picture saves the Cover page, which shows no empty positions. If it lands while Picture is still page 1, the picture follows it too and its Info body adds that it does (ticket 0957's rule); the same holds for Chart border.
+- **Two more switches, Empty grid, then Chart border**, right after Cover page (after Black and white once it lands, ticket 1096), so the order is Cover page, Black and white, Empty grid, Chart border, Large beads (where it shows), Row by row.
+  - **Empty grid** ("What Empty grid does"). A PanelSwitchRow like the others, with its Info button; off at first and remembered on the device like them. Off, an empty position on the PDF's charts and overview is bare paper or bare board; on, it gets its outline and small cross (PrintChartPage card). It adds or removes no page.
+  - **Chart border** ("What Chart border does"). The same kind of row, remembered on the device, **on at first**. On, every chart has its one rounded rim, 1 mm round the beads with the ruler numbers outside it (PrintChartPage card); off, nothing goes round the chart and the numbers keep their places. It changes the PDF's charts only (not the overview or the Cover page) and adds or removes no page.
+- **Their file words**, `empty-grid` and `chart-border` in English (`copy/frame.md`), come after Cover page's (and Black and white's) in the name, in the panel's order, each while its switch is on: `peacock-cuff-ada-lind_cover_black-and-white_empty-grid_chart-border.pdf`. Chart border is on at first, so a name made with the switches as they start ends `_cover_chart-border`.
+- While Picture is still page 1 (until ticket 1096's Picture saves the Cover page), the picture is that page, so its chart and overview follow both switches too; their Info bodies don't say so yet, as the Cover page shows no empty positions and no rim and that sentence goes once Picture saves it.
 
 The owner agreed to Empty grid's file word and its place after Black and white, and asked for the rim's switch, on 2026-11-19 (ticket 1123). The owner approved Chart border's name, default, Info body and file word on 2026-11-20.
 

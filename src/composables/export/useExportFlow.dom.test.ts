@@ -44,6 +44,9 @@ afterEach(() => {
   cover.value = true
   largeBeads.value = false
   rowByRow.value = false
+  const { emptyGrid, chartBorder } = usePrintChoices()
+  emptyGrid.value = false
+  chartBorder.value = true
 })
 
 function setup(options: { open?: boolean; project?: Project } = {}) {
@@ -102,6 +105,26 @@ describe('useExportFlow Word chart (ticket 0586)', () => {
     await setup().onExportPng()
 
     expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png')])
+  })
+})
+
+describe('useExportFlow Empty grid and Chart border (ticket 1127)', () => {
+  it('prints the rim and bare empty positions, as the switches are at first', async () => {
+    await setup().onExportPdf()
+    const [, words] = vi.mocked(exportProjectPdf).mock.lastCall!
+    expect([words.emptyGrid, words.chartBorder]).toEqual([undefined, true])
+  })
+
+  it('prints with Empty grid and Chart border as this device has them, page 1 of the PNG too, and names the PDF by them', async () => {
+    const { emptyGrid, chartBorder } = usePrintChoices()
+    emptyGrid.value = true
+    chartBorder.value = false
+    await setup().onExportPdf()
+    await setup().onExportPng()
+    expect(exportProjectPdf).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ emptyGrid: true }), 300)
+    expect(vi.mocked(exportProjectPdf).mock.lastCall![1].chartBorder).toBeUndefined()
+    expect(exportProjectPng).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ emptyGrid: true }), expect.anything())
+    expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_empty-grid.pdf', expect.any(Blob), 'application/pdf')
   })
 })
 
@@ -217,11 +240,12 @@ describe('useExportFlow', () => {
     it('draws the open Project as a PDF', async () => {
       await setup().onExportPdf()
       expect(exportProjectPdf).toHaveBeenCalled()
-      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover.pdf', expect.any(Blob), 'application/pdf')
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_chart-border.pdf', expect.any(Blob), 'application/pdf')
     })
 
     it('names the PDF as it was with every print switch off (ticket 1096)', async () => {
       usePrintChoices().cover.value = false
+      usePrintChoices().chartBorder.value = false
       await setup().onExportPdf()
       expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'pdf'), expect.any(Blob), 'application/pdf')
     })
@@ -232,14 +256,14 @@ describe('useExportFlow', () => {
       largeBeads.value = true
       blackAndWhite.value = true
       await setup({ project: wide }).onExportPdf()
-      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_black-and-white_large-beads_row-by-row.pdf', expect.any(Blob), 'application/pdf')
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_black-and-white_chart-border_large-beads_row-by-row.pdf', expect.any(Blob), 'application/pdf')
       expect(vi.mocked(exportProjectPdf).mock.lastCall![1].tones).toBeDefined()
     })
 
     it('names no Large beads, and prints none, where it changes nothing (ticket 1125)', async () => {
       usePrintChoices().largeBeads.value = true
       await setup().onExportPdf()
-      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover.pdf', expect.any(Blob), 'application/pdf')
+      expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_chart-border.pdf', expect.any(Blob), 'application/pdf')
       expect(vi.mocked(exportProjectPdf).mock.lastCall![1].largeBeads).toBeUndefined()
     })
 
@@ -324,7 +348,7 @@ describe('useExportFlow toasts (ticket 523)', () => {
     await flow.onExportPdf()
     await flow.onSave()
 
-    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf_cover.pdf'], ['saved-file', `Saved: ${projectFileName(project)}`]])
+    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf_cover_chart-border.pdf'], ['saved-file', `Saved: ${projectFileName(project)}`]])
   })
 
   it('gives each further page its own toast, so every file is named', async () => {

@@ -222,10 +222,12 @@ function cutSide(from: number, total: number, count: number): Span[] {
 /** Where a cut prefers to fall: on a ruler's ten, the heavy line. */
 const CUT_STEP = 10
 
-/** The same cuts moved to the nearest multiple of `CUT_STEP` in the Schema's places, or none when they are there already or
- * a part would be left under half the size of another. */
+/** The same cuts moved to the nearest multiple of `CUT_STEP` as the rulers count, from the first part's first bead (ticket
+ * 1129: a part starts at 11, 21… 61), or none when they are there already or a part would be left under half the size of
+ * another. */
 function snappedSide(sides: Span[]): Span[] | undefined {
-  const edges = [sides[0]!.first, ...sides.slice(1).map((side) => Math.round(side.first / CUT_STEP) * CUT_STEP), sides.at(-1)!.last + 1]
+  const from = sides[0]!.first
+  const edges = [from, ...sides.slice(1).map((side) => from + Math.round((side.first - from) / CUT_STEP) * CUT_STEP), sides.at(-1)!.last + 1]
   const owned = sides.map((_, index) => edges[index + 1]! - edges[index]!)
   if (owned.some((beads) => beads * 2 < Math.max(...owned))) return undefined
   if (sides.every((side, index) => side.first === edges[index])) return undefined

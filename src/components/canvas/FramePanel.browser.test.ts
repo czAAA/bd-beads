@@ -80,6 +80,8 @@ describe('FramePanel edge steppers on a coarse pointer (ticket 0933)', () => {
     for (const edge of EDGES) {
       for (const [half, by] of [['in', -1], ['out', 1]] as const) {
         const button = root.querySelector<HTMLElement>(`[data-testid="frame-edge-${edge}-${half}"]`)!
+        // The export rows above the edges grow with each print switch: a tap lands only on screen.
+        button.scrollIntoView({ block: 'center' })
         const drawn = button.getBoundingClientRect()
         if (drawn.width < touchTarget) wrong.push(`${edge} ${half} is ${drawn.width}px wide`)
         const row = root.querySelector<HTMLElement>(`[data-testid="frame-panel-cell-${edge}"]`)!.getBoundingClientRect()

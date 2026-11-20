@@ -151,7 +151,7 @@ Approved 2026-11-19 (ticket 1096): Cover page's and Black and white's rows are i
 
 ## Empty grid and Chart border copy (ticket 1127)
 
-Approved 2026-11-19, not yet in the app (signed off in ticket 1123; ticket 1127 builds both switches). The Export panel's two switches after Black and white (ExportPanel card), in the Frame panel's export section too, and the word each adds to the PDF's file name after `black-and-white`, in the panel's order. "Empty grid" is the owner's name, and the owner agreed to its file word. Chart border is the switch the owner asked for, for the chart's one rounded rim round the beads, the numbers outside it; the owner approved its name, its default (on) and its English copy on 2026-11-20. English is the ticket's; the other languages are proposals for review with the build. Russian, Ukrainian and Belarusian avoid «рамка», the Frame's word.
+Approved 2026-11-19, in the app since ticket 1127 (signed off in ticket 1123). The Export panel's two switches after Black and white (ExportPanel card), in the Frame panel's export section too, and the word each adds to the PDF's file name after `black-and-white`, in the panel's order. "Empty grid" is the owner's name, and the owner agreed to its file word. Chart border is the switch the owner asked for, for the chart's one rounded rim round the beads, the numbers outside it; the owner approved its name, its default (on) and its English copy on 2026-11-20. English is the ticket's; the other languages are proposals for review with the build. Russian, Ukrainian and Belarusian avoid «рамка», the Frame's word.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

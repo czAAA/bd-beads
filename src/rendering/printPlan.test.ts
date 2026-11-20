@@ -71,6 +71,13 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     expect(plan.parts.map((part) => part.firstAcross)).toEqual([0, 70, 130])
   })
 
+  it('counts that multiple of 10 from the trimmed chart\'s first column, as the rulers do (ticket 1129)', () => {
+    // The same 200 columns trimmed out of a wider Schema from its 6th column: parts start at ruler 1, 71 and 131.
+    const plan = planPrint(shape('loom', 220, 100), { trim: { firstAcross: 5, lastAcross: 204, firstDown: 0, lastDown: 99 } })
+
+    expect(plan.parts.map((part) => part.firstAcross - 5 + 1)).toEqual([1, 71, 131])
+  })
+
   it('keeps the bead at 1.8 mm or more on several sheets, and at 3 mm at most', () => {
     for (const [columns, rows] of [[120, 120], [150, 100], [300, 200], [400, 30], [60, 400]]) {
       const plan = planPrint(shape('loom', columns!, rows!))
