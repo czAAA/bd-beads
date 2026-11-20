@@ -69,7 +69,7 @@ Deleting a test that repeats a lower level (ticket 0599) loses nothing only when
 
 One layout is the only layout (ADR 0046, ticket 412), so no unit test mocks a layout flag and an App test drives the Tool pill and the strip's sheets. The helpers that drive them are in `src/testUtils/pill.ts` ([`testing/helpers.md`](testing/helpers.md), The one layout's helpers).
 
-Two things differ from a layout that keeps its controls on screen. Picking a Tool, a color or a Project closes the sheet it was picked in, so a test that reads the Palette again opens the sheet again. And a sheet that is open withholds the keyboard shortcuts and swallows the first press outside it, so a test that presses a key or the canvas closes the sheet first (`sheet-close`).
+Two things differ from a layout that keeps its controls on screen. Picking a Tool, a color or a Project closes the sheet it was picked in, so a test that reads the Palette again opens the sheet again. And a sheet that is open withholds the keyboard shortcuts and swallows the first press outside it on the canvas (a press on another control closes it and goes on, ADR 0101), so a test that presses a key or the canvas closes the sheet first (`sheet-close`).
 
 ## Stored-data compatibility
 

@@ -3,7 +3,7 @@ import { swallowNextClick } from './swallowNextClick'
 import { inScope, PAGE_SCOPE, useShellScope, type ShellScope } from './shellScope'
 
 // The overlay registry (ticket 76 Escape; ticket 449, ADR 0061 press outside): every open overlay is a layer on one stack;
-// Escape and a press outside (click swallowed) close the top-most, its opener and a dialog raised from it exempt. A boxed
+// Escape and a press outside close the top-most (click swallowed, but a press on another control goes on, ticket 1171), its opener and a dialog raised from it exempt. A boxed
 // shell's layer (ticket 0797) hears only what happens in its box, the page's layers everything.
 export interface OverlayLayerOptions {
   /** Whether the overlay is open; it is a layer only while this holds. */
@@ -12,9 +12,9 @@ export interface OverlayLayerOptions {
   root: () => Element | null | undefined
   /** Escape, and by default a press outside. */
   close: () => void
-  /** A press outside swallows and, with `'swallow'`, does not close (a modal that demands an answer); with `'through'`
-   * it closes and the press goes on (the paper tag over the canvas, ticket 0721; a Tooltip a click opened, ticket 0955),
-   * to the layer beneath if there is one. */
+  /** A press outside closes and swallows, but on another control it goes on (ticket 1171). `'swallow'` does not close
+   * (a modal that demands an answer); `'through'` closes and the press goes on wherever it lands (the paper tag over
+   * the canvas, ticket 0721; a Tooltip a click opened, ticket 0955), to the layer beneath if there is one. */
   outside?: 'close' | 'swallow' | 'through'
   /** What a press outside does instead of `close` (a sheet notes it was closed by a press, ticket 424). */
   onOutsidePress?: () => void
@@ -36,6 +36,11 @@ function topFor(target: EventTarget | null): Layer | undefined {
 }
 
 const DIALOG = '[role="dialog"], [role="alertdialog"]'
+
+// What a press is aimed at when it means to act (ticket 1171, ADR 0101): a control, by its tag or its role. A bare
+// tabindex is none: the Canvas takes focus, and a press on it must never draw.
+const CONTROL_SELECTOR =
+  'button, a[href], input, select, textarea, label, summary, [role="button"], [role="link"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="tab"], [role="switch"], [role="checkbox"], [role="radio"], [role="option"], [role="slider"]'
 
 function onKeyDown(event: KeyboardEvent) {
   if (event.key !== 'Escape') return
@@ -61,7 +66,10 @@ function onPointerDown(event: PointerEvent) {
   if (!top || (event.pointerType === 'touch' && !event.isPrimary) || !(target instanceof Element)) return
   const root = top.root()
   if (!root || root.contains(target) || isExempt(top, target) || top.keepsPress?.(event) || top.scope.pagesOwn?.(target)) return
-  if (top.outside === 'through') {
+  // A press on another control closes the layer and goes on, so one press moves from an open Menu to the next panel;
+  // a press on the Canvas, or on anything that is no control, only closes it (a modal that demands an answer keeps
+  // its own say).
+  if (top.outside === 'through' || (top.outside !== 'swallow' && target.closest(CONTROL_SELECTOR))) {
     ;(top.onOutsidePress ?? top.close)()
     // Closed, it hands the press on to the layer beneath, as if it had never been open (an Info tip pinned in the
     // Menu panel, ticket 0955: a press outside the panel still closes the panel). `close` takes it off the stack at
