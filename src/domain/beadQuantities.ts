@@ -7,6 +7,7 @@ import { frameGeometryOf } from './layers'
 import { beadsOfLayer, frameOf } from './layerRecord'
 import { backBeadsAt } from './pieceFaces'
 import { colorAt } from './canvas'
+import { inBox, paintedFrameBox } from './projectExtent'
 
 /** One line of a Project's shopping list: a painted color and how many beads of it the Project needs. */
 export interface ColorQuantity {
@@ -47,12 +48,14 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
     .sort((a, b) => b.count - a.count || a.hex.localeCompare(b.hex))
 }
 
-/** Whether the Frame has a position no bead is painted in: what a chart draws under its small cross, and what its key then
- * names "empty" (ticket 0963). None without a Frame. */
+/** Whether the printed chart has a position no bead is painted in: what it draws under its small cross, and what its key
+ * then names "empty" (ticket 0963). Only inside the box round the beads, which the chart is trimmed to (ticket 1128); a
+ * Custom frame's whole shape. None without a Frame. */
 export function hasEmptyPositions(project: Project): boolean {
   const beads = beadsOfLayer(project, 'frame')
   if (!beads) return false
-  return frameGeometryOf(project).positions().some(({ row, column }) => colorAt(beads, row, column) === null)
+  const box = paintedFrameBox(project)
+  return frameGeometryOf(project).positions().some((position) => inBox(box, position) && colorAt(beads, position.row, position.column) === null)
 }
 
 // A quantity's Estimated weight in grams (CONTEXT.md): bead count times the Bead's average weight. Derived, never

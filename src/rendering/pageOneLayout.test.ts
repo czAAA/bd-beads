@@ -200,3 +200,26 @@ describe('largeBeadsActs (ticket 1125)', () => {
     expect(largeBeadsActs(shape('loom', 100, 100), { ...words(8), largeBeads: true })).toBe(true)
   })
 })
+
+describe('pageOneLayout: trimmed to the beads (ticket 1128)', () => {
+  /** A Frame with a bead in each corner of the box from `[top, left]` to `[bottom, right]`. */
+  const framed = (columns: number, rows: number, [top, left, bottom, right]: [number, number, number, number]) => {
+    const beads = { [top]: { [left]: '#ff0000', [right]: '#ff0000' }, [bottom]: { [left]: '#ff0000', [right]: '#ff0000' } }
+    return bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns, rows, beads } })
+  }
+
+  it('sizes the overview of a piece cut into parts from its trimmed chart, as large as that piece alone', () => {
+    const piece = pageOneLayout(framed(260, 200, [20, 40, 169, 239]), words(4))
+    const alone = pageOneLayout(framed(200, 150, [0, 0, 149, 199]), words(4))
+
+    expect(piece.overview).toBeDefined()
+    expect(piece.overview!.zoom).toBeCloseTo(alone.overview!.zoom, 9)
+    expect(piece.overview!.extent).toEqual(alone.overview!.extent)
+    expect(piece.plan.pageCount).toBe(alone.plan.pageCount)
+  })
+
+  it('offers Large beads by the trimmed plan: a small piece on a big Frame may lose the switch', () => {
+    expect(largeBeadsActs(shape('loom', 120, 120), words(1))).toBe(true)
+    expect(largeBeadsActs(framed(120, 120, [50, 50, 69, 69]), words(1))).toBe(false)
+  })
+})

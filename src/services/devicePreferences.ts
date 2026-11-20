@@ -159,6 +159,9 @@ export const PREFERENCES = {
   }),
   /** Cover page, the Export panel's first print choice (ticket 1096): on until switched off. */
   printCover: onUntilOff('openbeads:print-cover'),
+  /** Empty grid (off until switched on) and Chart border (on until switched off), the print choices of ticket 1127. */
+  printEmptyGrid: offUntilOn('openbeads:print-empty-grid'),
+  printChartBorder: onUntilOff('openbeads:print-chart-border'),
   /** Large beads and Row by row, the Export panel's print choices (ticket 0916): off until switched on. */
   printLargeBeads: offUntilOn('openbeads:print-large-beads'),
   printRowByRow: offUntilOn('openbeads:print-row-by-row'),

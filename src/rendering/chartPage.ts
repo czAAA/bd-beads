@@ -1,16 +1,16 @@
-import { beadsAreRound, drawChartParts, drawKeySwatch, K, mmPt } from './chartVector'
+import { beadsAreRound, chartLookOf, drawChartParts, drawKeySwatch, K, mmPt } from './chartVector'
 import { colorsOnPage, KEY_COLUMNS } from './chartPageKey'
 import { blankPage, drawMark, font, MONO, partLabel, SANS, SERIF, text } from './printPages'
 import { PRINT_COLORS } from './printColors'
-import { continuation, displayedGrid, mm, PRINT_MARGIN, type PrintPart, type PrintPlan } from './printPlan'
+import { continuation, mm, PRINT_MARGIN, type PrintPart, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintText } from './printText'
 import type { Project } from '../domain/project'
 import { PdfContent } from '../domain/pdfContent'
 import { fillBlanks } from '../domain/fillBlanks'
-import { type Layered } from '../domain/layerRecord'
 
 // A chart page for the PDF (ticket 0585; PrintChartPage card): the translated text as one picture and everything else as
-// PDF drawing laid over it (ADR 0043). The picture is the paper, so empty positions are plain paper under their small cross.
+// PDF drawing laid over it (ADR 0043). The picture is the paper, so empty positions are plain paper (under their small
+// cross with Empty grid on, ticket 1127).
 
 
 /** A, B ... Z, AA: the order the key's letters run in. */
@@ -32,19 +32,21 @@ function continuationText(labels: PrintText['labels'], plan: PrintPlan, parts: P
   return here < Math.max(...plan.parts.map((part) => part.page)) ? fillBlanks(labels.continuesOn, { next: here + 1 }) : labels.lastPart
 }
 
-/** The mini map's rectangles in px from its top left corner: every part of the Schema to scale in a 9.4 mm square, 0.4 mm
- * apart, the parts on this sheet marked.
+/** The mini map's rectangles in px from its top left corner: every part of the printed chart (trimmed, ticket 1128) to
+ * scale in a 9.4 mm square, 0.4 mm apart, the parts on this sheet marked.
  * @internal Its test checks the mini map on its own. */
-export function miniMapRects(plan: PrintPlan, project: Layered, page: number): { x: number; y: number; width: number; height: number; here: boolean }[] {
-  const grid = displayedGrid(project)
+export function miniMapRects(plan: PrintPlan, page: number): { x: number; y: number; width: number; height: number; here: boolean }[] {
+  const { trim } = plan
+  const across = trim.lastAcross - trim.firstAcross + 1
+  const down = trim.lastDown - trim.firstDown + 1
   const side = mm(9.4)
   const gap = mm(0.4)
-  const scale = side / Math.max(grid.across, grid.down)
-  const left = (side - grid.across * scale) / 2
-  const top = (side - grid.down * scale) / 2
+  const scale = side / Math.max(across, down)
+  const left = (side - across * scale) / 2
+  const top = (side - down * scale) / 2
   return plan.parts.map((part) => ({
-    x: left + part.firstAcross * scale + gap / 2,
-    y: top + part.firstDown * scale + gap / 2,
+    x: left + (part.firstAcross - trim.firstAcross) * scale + gap / 2,
+    y: top + (part.firstDown - trim.firstDown) * scale + gap / 2,
     width: Math.max(mm(0.2), (part.lastAcross - part.firstAcross + 1) * scale - gap),
     height: Math.max(mm(0.2), (part.lastDown - part.firstDown + 1) * scale - gap),
     here: part.page === page,
@@ -65,7 +67,7 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const letters = project.paletteLetters ?? {}
   const here = parts[0]!
   const content = new PdfContent(page.height * K)
-  const pads = drawChartParts(content, project, plan, parts, letters)
+  const pads = drawChartParts(content, project, plan, parts, letters, undefined, chartLookOf(words))
   const right = page.width - PRINT_MARGIN
 
   // Header: the page number, then the mini map to its left, then the technique word and name, and the part line under them.
@@ -73,19 +75,19 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const number = text(context, String(here.page), right - total - mm(0.8), mm(18.6), font('600', 18, SANS), PRINT_COLORS.ink, 'right')
   const mapRight = right - total - mm(0.8) - number - mm(3)
   const mapLeft = mapRight - mm(9.4)
-  for (const cell of miniMapRects(plan, project, here.page)) {
+  for (const cell of miniMapRects(plan, here.page)) {
     content.roundRect((mapLeft + cell.x) * K, (mm(11.6) + cell.y) * K, cell.width * K, cell.height * K, mmPt(0.3), cell.here ? { fill: PRINT_COLORS.accent } : { stroke: PRINT_COLORS.faint, lineWidth: mmPt(0.15) })
   }
   const room = mapLeft - mm(3) - PRINT_MARGIN
   const word = text(context, words.techniqueWord, PRINT_MARGIN, mm(16.4), font('italic 400', 14, SERIF), PRINT_COLORS.accent)
   text(context, words.name, PRINT_MARGIN + word + mm(1.6), mm(16.4), font('600', 13, SANS), PRINT_COLORS.ink, 'left', Math.max(mm(20), room - word - mm(1.6)))
   const by = words.maker ? fillBlanks(labels.byMaker, { maker: headerMaker(words.maker) }) : ''
-  const line = parts.length === 1 ? [partLabel(project, labels, here), by].filter(Boolean).join(' · ') : by
+  const line = parts.length === 1 ? [partLabel(plan.trim, labels, here), by].filter(Boolean).join(' · ') : by
   if (line) text(context, line, PRINT_MARGIN, mm(21.4), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', room)
 
   // A sheet shared by several parts labels each above its pad.
   if (parts.length > 1) {
-    parts.forEach((part, index) => text(context, partLabel(project, labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
+    parts.forEach((part, index) => text(context, partLabel(plan.trim, labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
   }
 
   // Colors on this page: swatches are drawing, the names are text.

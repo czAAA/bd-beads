@@ -49,6 +49,25 @@ describe('exportFacts', () => {
   })
 })
 
+describe('the File size estimate with Empty grid and Chart border (ticket 1127)', () => {
+  it('weighs the empty positions\' crosses only with Empty grid on, on page 1\'s picture and the overview', () => {
+    for (const size of [40, 150]) {
+      const off = factsOf('loom', size, size)
+      const on = factsOf('loom', size, size, { emptyGrid: true })
+      expect(off.crosses).toBe(0)
+      expect(on.crosses).toBe(on.cells - on.filled)
+      expect(on.crosses).toBeGreaterThan(0)
+      expect(estimatePng(on, 300).bytes).toBeGreaterThan(estimatePng(off, 300).bytes)
+    }
+  })
+
+  it('counts the same pages whatever either says', () => {
+    for (const choices of [{}, { emptyGrid: true }, { chartBorder: true }, { emptyGrid: true, chartBorder: true }]) {
+      expect(factsOf('loom', 150, 150, choices).pdfPages).toBe(factsOf('loom', 150, 150).pdfPages)
+    }
+  })
+})
+
 describe('estimatePng (QualitySlider card)', () => {
   // Against real files: exportEstimate.browser.test.ts.
   const facts = factsOf('loom', 40, 60)

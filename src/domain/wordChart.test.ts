@@ -16,10 +16,10 @@ const HEX: Record<string, string> = { A: '#111111', B: '#222222', C: '#333333' }
 function framed(technique: Technique, rows: string[], changes: LayersChange = {}): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: rows[0].length, height: rows.length, unit: 'beads' } })
   const beads: Record<number, Record<number, string>> = {}
+  // A row with no beads has no entry, as the app keeps a map.
   rows.forEach((row, r) => {
-    beads[r] = {}
     ;[...row].forEach((letter, c) => {
-      if (letter !== '.') beads[r][c] = HEX[letter]
+      if (letter !== '.') (beads[r] ??= {})[c] = HEX[letter]
     })
   })
   return withLayers(base, { frame: { ...frameOf(base)!, beads }, letters: true, paletteLetters: { [HEX.A]: 'A', [HEX.B]: 'B', [HEX.C]: 'C' }, ...changes })
@@ -41,10 +41,41 @@ describe('Word chart (ticket 0574)', () => {
     expect(chart.hasEmpty).toBe(true)
   })
 
-  it('numbers rows from the Frame\'s last line once rows run bottom to top, with Row 1 on the opposite edge', () => {
+  it('writes only the rows from the first bead to the last, each across the beads\' columns, numbered from 1 as the chart\'s ruler (tickets 1128, 1129)', () => {
+    const project = framed('loom', ['.....', '.A.B.', '.....', '..C..', '.....'])
+    expect(lines(project)).toEqual(['1: 1A,1*,1B', '2: 3*', '3: 1*,1C,1*'])
+    expect(wordChartOf(project)!.lastNumber).toBe(3)
+    expect(lines(framed('loom', ['...', '...']))).toEqual(['1: 3*', '2: 3*'])
+  })
+
+  it('counts a peyote row by the trimmed width (ticket 1128)', () => {
+    expect(wordChartOf(framed('peyote', ['.AAAAAA.', '.BBBBBB.']))!.count).toBe('even')
+  })
+
+  it('starts from the Frame\'s last line once rows run bottom to top, each row keeping the ruler\'s number (ticket 1129)', () => {
     const project = framed('loom', ['AB', 'CC'], { rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
-    expect(lines(project)).toEqual(['1: 2C', '2: 1A,1B'])
+    expect(lines(project)).toEqual(['2: 2C', '1: 1A,1B'])
     expect(wordChartOf(project)!.firstEdge).toBe('bottom')
+  })
+
+  it.each<[0 | 90 | 180 | 270, number[]]>([
+    [0, [1, 2, 3]],
+    [90, [3, 2, 1]],
+    [180, [3, 2, 1]],
+    [270, [1, 2, 3]],
+  ])('numbers each row as the ruler beside it at %s°: from 1 at the trimmed picture\'s top or left (ticket 1129)', (rotation, numbers) => {
+    // Three rows of beads under an empty one: Frame row 1 is the trimmed chart's first.
+    const project = framed('loom', ['...', 'AAA', 'BBB', 'CCC'], { orientation: rotation })
+    expect(wordChartOf(project)!.rows.map((row) => row.number)).toEqual(numbers)
+  })
+
+  it('starts a trimmed brick chart with an (L) row', () => {
+    expect(lines(framed('brick', ['...', 'AAB', 'ABB']))).toEqual(['1(L): 2A,1B', '2(R): 2B,1A'])
+  })
+
+  it('makes the first line kept peyote\'s Rows 1&2, woven in one pass, where the Frame\'s first line is trimmed away (ticket 1129)', () => {
+    const project = framed('peyote', ['.......', 'AAAAAAA', 'BBBBBBB'])
+    expect(lines(project)).toEqual(['1&2(L): 7A', '3(R): 4B', '4(L): 3B'])
   })
 
   it('alternates (L) and (R) on brick stitch and reads an (R) row from the right', () => {

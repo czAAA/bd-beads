@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "The PDF chart has no bold lines: each bead has its own thin border, and one rounded line goes round the beads with the numbers outside it",
+    "ru": "В схеме PDF нет жирных линий: у каждой бисеринки своя тонкая обводка, а вокруг бисеринок идёт одна скруглённая линия, номера снаружи",
+    "uk": "У схемі PDF немає жирних ліній: кожна бісерина має свою тонку обвідку, а навколо бісерин іде одна заокруглена лінія, номери зовні",
+    "be": "У схеме PDF няма тоўстых ліній: у кожнай пацеркі свая тонкая абводка, а вакол пацерак ідзе адна закругленая лінія, нумары звонку",
+    "zh": "PDF 图表不再有粗线：每颗珠子有自己的细边框，珠子外围一条圆角线，编号在线外",
+    "es": "El esquema del PDF no tiene líneas gruesas: cada cuenta tiene su propio borde fino, y una línea redondeada rodea las cuentas con los números por fuera",
+    "pl": "Schemat w PDF nie ma grubych linii: każdy koralik ma własną cienką obwódkę, a wokół koralików biegnie jedna zaokrąglona linia, z numerami na zewnątrz"
+  }
+}

@@ -11,7 +11,7 @@ import { fillBlanks } from '../domain/fillBlanks'
 import type { Project } from '../domain/project'
 
 // The Cover page (ticket 1096; PrintCover card): its technique word, title, maker, colors and tech line at the top (ticket
-// 1138), then the finished piece in color on the pale board, and the footer. It opens the PDF while the Cover page switch
+// 1141), then the finished piece in color on the pale board, and the footer. It opens the PDF while the Cover page switch
 // is on; the page a maker shows or sells the pattern with, so it holds no chart and no Beads needed.
 
 /** The piece as the app draws it in the light theme (its own-color rim and satin light) on the print board, with nothing
@@ -63,7 +63,7 @@ function shadowColor(): string {
 
 /** The board and the piece on it, drawn at the page's own resolution, then laid in with its shadow. */
 function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: CoverPageLayout): void {
-  const { board, piece, zoom } = layout
+  const { board, piece, zoom, start } = layout
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
   context.roundRect(board.x, board.y, board.width, board.height, BOARD_CORNER)
@@ -75,7 +75,7 @@ function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: 
   tile.height = Math.max(1, Math.ceil(piece.height * scale))
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
-  const region = { x: 0, y: 0, width: tile.width, height: tile.height }
+  const region = { x: start.x * zoom * scale, y: start.y * zoom * scale, width: tile.width, height: tile.height }
   renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom: zoom * scale, theme: COVER_THEME, rowMarks: false, positionMarks: false, drawBead: paintedOnly })
   // A shadow's offset and blur are in device px, whatever the transform.
   context.save()

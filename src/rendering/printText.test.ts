@@ -26,9 +26,21 @@ describe('printText (tickets 162, 164)', () => {
     const text = printText(delicaProject(10), en, 'en', at)
 
     expect(text.techniqueWord).toBe('Loom')
-    expect(text.metaLine).toMatch(/^80×60 · Miyuki Delica 11\/0 · ≈ .+ cm$/)
+    expect(text.metaLine).toMatch(/^10×1 · Miyuki Delica 11\/0 · ≈ .+ mm$/)
     expect(text.exportedAt).toBe('Sep 26, 2026 · 14:32')
     expect(text.maker).toBe('')
+  })
+
+  it('gives the trimmed size, the box round the beads, and its estimate; a Schema with no beads its Frame\'s (ticket 1128)', () => {
+    const frame = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 30, height: 39, unit: 'beads' } })
+    const cells = Array.from({ length: 30 }, (_, row) => [{ row: row + 4, column: 8 }, { row: row + 4, column: 20 }]).flat()
+    const piece = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 13, height: 30, unit: 'beads' } })
+    const whole = paintAt(piece, Array.from({ length: 30 }, (_, row) => [{ row, column: 0 }, { row, column: 12 }]).flat(), red.hex)
+
+    expect(printText(paintAt(frame, cells, red.hex), en, 'en', at).metaLine).toBe(printText(whole, en, 'en', at).metaLine)
+    expect(printText(whole, en, 'en', at).metaLine).toMatch(/^13×30 · /)
+    expect(printText(paintAt(withLayers(frame, { orientation: 90 }), cells, red.hex), en, 'en', at).metaLine).toMatch(/^30×13 · /)
+    expect(printText(frame, en, 'en', at).metaLine).toMatch(/^30×39 · /)
   })
 
   it('writes Beads needed in beads and grams, the Total from the total count, with the note', () => {
@@ -63,7 +75,7 @@ describe('printText (tickets 162, 164)', () => {
     expect(text.colors[0]!.grams).toBeUndefined()
     expect(text.totalGrams).toBeUndefined()
     expect(text.gramsNote).toBeUndefined()
-    expect(text.metaLine).toBe('80×60 · Unknown bead')
+    expect(text.metaLine).toBe('10×1 · Unknown bead')
   })
 
   it('speaks Russian: the date, the plural, the decimal comma', () => {
@@ -124,18 +136,27 @@ describe('printText Word chart (ticket 0574)', () => {
     const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.title).toBe('Row by row')
-    expect(chart.notes).toEqual([en.print.wordChart.firstTop, en.print.wordChart.sides, en.print.wordChart.runNote])
+    expect(chart.notes).toEqual(['Row 1 is at the top of the picture.', en.print.wordChart.sides, en.print.wordChart.runNote])
     expect(chart.rows).toEqual([
       { label: '1', first: 1, last: 1, marker: 'L', runs: '2C, 1×' },
       { label: '2', first: 2, last: 2, marker: 'R', runs: '1C, 2×' },
     ])
   })
 
+  it('says where the first row is by the number it carries: the ruler\'s, 2 at the bottom of a 2-row loom worked upward (ticket 1129)', () => {
+    const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 2, height: 2, unit: 'beads' } })
+    const upward = withLayers(paintAt(base, [{ row: 0, column: 0 }, { row: 1, column: 1 }], red.hex), { rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
+    const chart = printText(letters(upward), en, 'en', at, ROW_BY_ROW).wordChart!
+
+    expect(chart.notes[0]).toBe('Row 2 is at the bottom of the picture.')
+    expect(chart.rows.map((row) => row.label)).toEqual(['2', '1'])
+  })
+
   it('says Rows 1&2 and the count for peyote, and translates the words but not the letters', () => {
     const base = createProject({ technique: 'peyote', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 2, unit: 'beads' } })
-    const chart = printText(letters(paintAt(base, [{ row: 0, column: 0 }], red.hex)), ru, 'ru', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(paintAt(base, [{ row: 0, column: 0 }, { row: 0, column: 3 }], red.hex)), ru, 'ru', at, ROW_BY_ROW).wordChart!
 
-    expect(chart.rows[0]).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C, 3×' })
+    expect(chart.rows[0]).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C, 2×, 1C' })
     expect(chart.notes).toContain(ru.print.wordChart.evenCount)
     expect(chart.empty).toBe(ru.print.wordChart.empty)
   })

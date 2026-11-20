@@ -73,14 +73,14 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
 
     await wrapper.find('[data-testid="export-pdf"]').trigger('click')
     // The print code arrives by a dynamic import, which a flush of promises doesn't wait for.
-    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover.pdf', expect.any(Blob), 'application/pdf'))
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_chart-border.pdf', expect.any(Blob), 'application/pdf'))
 
     expect(exportProjectPdf).toHaveBeenCalledWith(
       expect.objectContaining({ id: project.id }),
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
       expect.any(Number),
     )
-    expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover.pdf', expect.any(Blob), 'application/pdf')
+    expect(downloadFile).toHaveBeenCalledWith('my-scarf_cover_chart-border.pdf', expect.any(Blob), 'application/pdf')
   })
 
 })
