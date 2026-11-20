@@ -74,10 +74,10 @@ function layerOfBox(project: Project, box: Rect): ViewLayer {
   return frame && sameFrame(box, frame) ? 'frame' : 'canvas'
 }
 
-/** A move `bringIntoView` made (ticket 0971): from and to which scroll, at which zoom, and whether the view was at its
- * fit before it, so `putBack` can take it back. */
+/** A move `bringIntoView` made (ticket 0971), so `putBack` can take it back: the scroll it went to, at which zoom, the
+ * scroll it goes back to and whether the view follows the fit there. */
 export interface ViewMove {
-  from: Scroll
+  back: Scroll
   to: Scroll
   zoom: number
   atFit: boolean
@@ -258,23 +258,36 @@ export function useCanvasView(
   }
 
   /** Pans the shortest way that brings a part of the drawing into the room the Tool pill (and `clear`, the Frame panel,
-   * ticket 0971) leaves, zoom untouched (ticket 0934), gliding or a jump; `locate` finds it in the view as it stands. One
-   * already in the room, or none, moves nothing and the view keeps following the fit. Returns the move, for `putBack`. */
-  function bringIntoView(locate: (surface: SurfaceView) => Region | undefined, { jump = false, clear = NO_INSETS }: { jump?: boolean; clear?: Insets } = {}): ViewMove | undefined {
+   * ticket 0971) leaves, zoom untouched (ticket 0934), gliding or a jump. One in the room, or missing it by `slack` at most
+   * (px, as `clear`), or none, moves nothing and the view keeps following the fit. Returns the move, for `putBack`. */
+  function bringIntoView(locate: (surface: SurfaceView) => Region | undefined, { jump = false, clear = NO_INSETS, slack = 0 }: { jump?: boolean; clear?: Insets; slack?: number } = {}): ViewMove | undefined {
     const project = currentProject()
     const found = project && measured() ? locate(surfaceOf(project)) : undefined
     if (!found) return undefined
-    const { area, corner } = fitRoom(clear)
-    const { offset, screenBox, unturned } = leaning.value
-    const move = shortestPan(screenBox({ ...found, x: found.x + offset.x, y: found.y + offset.y }), { ...corner, ...area })
-    if (move.x === 0 && move.y === 0) return undefined
-    const across = unturned(move)
-    const from = scroll.value
-    const to = { x: from.x - across.x, y: from.y - across.y }
-    const made = { from, to, zoom: zoom.value, atFit: isAtFit.value }
+    const { offset, screenBox } = leaning.value
+    const shown = screenBox({ ...found, x: found.x + offset.x, y: found.y + offset.y })
+    const move = panInto(shown, clear)
+    if (Math.abs(move.x) <= slack && Math.abs(move.y) <= slack) return undefined
+    const before = scroll.value
+    const to = scrollAfter(before, move)
+    // Back where it was, or, where the move brought the part into view, only as far as keeps it there.
+    const back = scrollAfter(before, panInto(shown))
+    const made = { back, to, zoom: zoom.value, atFit: isAtFit.value && back.x === before.x && back.y === before.y }
     isAtFit.value = false
     glideTo(to, jump)
     return made
+  }
+
+  /** The shortest pan on screen that brings a block on screen into the room the Tool pill and `clear` leave. */
+  function panInto(shown: Region, clear: Insets = NO_INSETS): Scroll {
+    const { area, corner } = fitRoom(clear)
+    return shortestPan(shown, { ...corner, ...area })
+  }
+
+  /** The scroll after a pan on screen from `from`: the content follows the pan, so the scroll goes the other way. */
+  function scrollAfter(from: Scroll, pan: Scroll): Scroll {
+    const across = leaning.value.unturned(pan)
+    return { x: from.x - across.x, y: from.y - across.y }
   }
 
   /** Takes back a move `bringIntoView` made (ticket 0971), the same way it came, while the view is still where it took
@@ -283,7 +296,7 @@ export function useCanvasView(
     const there = scroll.value.x === move.to.x && scroll.value.y === move.to.y
     const onTheWay = gliding !== undefined && gliding.x === move.to.x && gliding.y === move.to.y
     if (zoom.value !== move.zoom || !(there || onTheWay)) return
-    glideTo(move.from, false)
+    glideTo(move.back, false)
     isAtFit.value = move.atFit
   }
 
