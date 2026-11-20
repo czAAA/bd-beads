@@ -449,6 +449,15 @@ describe('The Export panel', () => {
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileNameOf('Moth'), expect.any(Uint8Array), 'application/json'))
   })
 
+  it('saves the Project file from its File with no Frame too (ticket 1133)', async () => {
+    vi.mocked(downloadFile).mockClear()
+    saveProjects([withFrameSheet(moth(), undefined)])
+    const mounted = mountPanels()
+    await mounted.openPanel('export')
+    await click(mounted, 'export-project-file')
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileNameOf('Moth'), expect.any(Uint8Array), 'application/json'))
+  })
+
   it('is not opened by the Project panel\'s Export row, which unfolds the rows in Project and saves nothing (ticket 1058)', async () => {
     vi.mocked(downloadFile).mockClear()
     const mounted = mountPanels()

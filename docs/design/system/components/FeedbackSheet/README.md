@@ -34,6 +34,6 @@ Every kind then has **Email** (optional), then **Also sent**. Signed in, Email s
 
 ## Copy
 
-English above; every language in `writing.md` (Feedback sheet copy).
+English above; every language in `copy/account.md` (Feedback sheet copy).
 
 Hand-written from spec 0698 and ticket 0700; the Vue component `FeedbackSheet.vue` is the real thing.

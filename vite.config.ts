@@ -9,6 +9,7 @@ import { crawlerPages } from './vite.crawler.ts'
 import { pageHeaders } from './vite.headers.ts'
 import { releaseNotesFiles } from './vite.notes.ts'
 import { offlineShell } from './vite.pwa.ts'
+import { LongFilesFirst } from './vite.sequencer.ts'
 import { buildVersion, versionGuard } from './vite.version.ts'
 
 /** What needs a page (ticket 420); every other `src/**\/*.test.ts` runs in Node. */
@@ -81,6 +82,8 @@ export default defineConfig(({ mode }) => ({
     testTimeout: 15000,
     // Two workers: more exhausted a dev machine's memory (8GB, no swap) and got the run killed.
     maxWorkers: 2,
+    // A file that plays for minutes (`*.long.browser.test.ts`) starts first, beside its shard's other files.
+    sequence: { sequencer: LongFilesFirst },
     projects: [
       {
         // Tests that need no page (ticket 420): domain, rendering, services, pure composables. Plain Node, no jsdom and no
