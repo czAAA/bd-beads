@@ -68,7 +68,11 @@ export const projects: ProjectsTranslations = {
     formatsHint: 'png · pdf',
     makingPng: '正在生成 PNG 图片 · {name}',
     makingPdf: '正在生成 PDF · {name}',
-    savedFile: '已保存：{file}',
+    savedFile: {
+      downloaded: '已保存到“下载”：{file}',
+      shared: '已保存到你选择的位置：{file}',
+      written: '已保存到你的文件：{file}',
+    },
     readySave: '保存',
     nameOnExports: '导出文件上的姓名',
     changeName: '更改',

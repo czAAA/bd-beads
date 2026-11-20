@@ -5,7 +5,7 @@ import type { Toast } from '../../composables/ui/useToasts'
 import ToastRegion from './ToastRegion.vue'
 
 const rect = (left: number, top: number, right: number, bottom: number) => ({ left, top, right, bottom, width: right - left, height: bottom - top, x: left, y: top }) as DOMRect
-const saved: Toast = { id: 'saved-file', text: 'Saved: sunflower.png', tone: 'success', stamp: 1 }
+const saved: Toast = { id: 'saved-file', text: 'Saved to Downloads: sunflower.png', tone: 'success', stamp: 1 }
 
 /** The canvas box with the toasts in it, and an open panel over their corner (the Export panel). */
 function mountInBox(props: { clearOfPanel: boolean }) {
@@ -86,7 +86,7 @@ describe('ToastRegion (ticket 0859)', () => {
     const update: Toast = { id: 'update-ready', text: 'Update ready', tone: 'info', stamp: 4, update: { version: '2.2.0', note: { kind: 'new', line: 'A new thing' } } }
     const wrapper = mount(ToastRegion, { props: { toasts: [update, saved] }, attachTo: document.body })
     expect(wrapper.get('[data-testid="update-ready"] [data-testid="update-version"]').text()).toBe('2.2.0')
-    expect(wrapper.get('[data-testid="saved-file"] .app-message__text').text()).toBe('Saved: sunflower.png')
+    expect(wrapper.get('[data-testid="saved-file"] .app-message__text').text()).toBe('Saved to Downloads: sunflower.png')
     wrapper.unmount()
   })
 })

@@ -68,7 +68,11 @@ export const projects: ProjectsTranslations = {
     formatsHint: 'png · pdf',
     makingPng: 'Creando la imagen PNG · {name}',
     makingPdf: 'Creando el PDF · {name}',
-    savedFile: 'Guardado: {file}',
+    savedFile: {
+      downloaded: 'Guardado en Descargas: {file}',
+      shared: 'Guardado donde elegiste: {file}',
+      written: 'Guardado en tu archivo: {file}',
+    },
     readySave: 'Guardar',
     nameOnExports: 'Nombre al exportar',
     changeName: 'Cambiar',
