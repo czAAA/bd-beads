@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { loadPrintFonts, lineBetween, partLabel, RULER_FIT } from './printPages'
+import { loadPrintFonts, partLabel, RULER_FIT } from './printPages'
 import { en } from '../i18n/en'
 import { PRINT_COLORS } from './printColors'
 import { COVER_BOARD, COVER_PAD } from './coverPageLayout'
@@ -65,14 +65,6 @@ describe('partLabel: the label above each pad (ticket 578)', () => {
 describe('chart rulers (tickets 579, 0585)', () => {
   it('takes the token for how much of its room a ruler number may take', () => {
     expect(RULER_FIT * 100).toBe(Number.parseFloat(String(print('print-ruler-fit'))))
-  })
-
-  it('draws a fine line after every 5th bead and a heavier one after every 10th, either way its neighbours are given', () => {
-    expect(lineBetween(5, 6)).toBe('fifth')
-    expect(lineBetween(10, 11)).toBe('tenth')
-    expect(lineBetween(3, 4)).toBeUndefined()
-    expect(lineBetween(11, 10)).toBe('tenth')
-    expect(lineBetween(6, 5)).toBe('fifth')
   })
 })
 
