@@ -9,7 +9,7 @@ It is a one-ink design, not the color pages turned grey. A 600 dpi office printe
 ## One ink
 
 - **All text and all lines are pure black** (`#000000`). What the color pages set in `muted` or `faint` is black here; weight and size carry the order instead (the rulers' tens bold, the fives regular).
-- **Lines** keep their widths (`print-line-cell`, `print-line-five`, `print-line-ten`, `print-pad-line`) and are all black.
+- **Lines** keep their widths (`print-line-cell`, `print-line-five`, `print-line-ten`, `print-pad-line`) and are all black. (Approved 2026-11-19, not yet in the app, ticket 1126: the lines every 5 and 10 and the bold edge go, each bead keeps its own `print-line-cell` border in black, a solid black bead keeps its 0.2 mm of paper below in place of that border, and the chart's rounded rim, while Chart border is on, is black too. Ticket 1129: every ruler number is regular, the tens no longer bold.)
 - **Nothing is accent**: the technique word, the lines where chart parts meet, the part labels, the mini map's current part (filled black) and the X1 mark (`bd-beads-mark-ink.svg`) are black.
 
 ## A bead's tone

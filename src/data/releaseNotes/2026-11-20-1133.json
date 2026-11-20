@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "File in Export saves the Project file even before a Frame is set, and its hover text says the reference image goes with it",
+    "ru": "Кнопка Файл в экспорте сохраняет файл проекта и без рамки, а подсказка при наведении говорит, что подложка сохраняется вместе с ним",
+    "uk": "Кнопка Файл в експорті зберігає файл проєкту й без рамки, а підказка під час наведення каже, що підкладка зберігається разом із ним",
+    "be": "Кнопка Файл у экспарце захоўвае файл праекта і без рамкі, а падказка пры навядзенні кажа, што падкладка захоўваецца разам з ім",
+    "zh": "导出中的文件按钮在未设置边框时也能保存项目文件，悬停提示会说明参考图也一并保存",
+    "es": "Archivo en Exportar guarda el archivo del proyecto aunque no haya marco, y su texto al pasar el puntero dice que la imagen de referencia va con él",
+    "pl": "Plik w eksporcie zapisuje plik projektu także bez ramki, a podpowiedź po najechaniu mówi, że obraz pomocniczy zapisuje się razem z nim"
+  }
+}

@@ -17,11 +17,12 @@ describe('WelcomeTile (ticket 0830)', () => {
     expect(wrapper.text()).toContain('For loom, peyote and brick stitch.')
   })
 
-  it("offers a new visitor one primary button, the page's way in, with See how it works beside it", async () => {
+  it("offers a new visitor one primary button, the page's way in, with See how it works at the tile's foot", async () => {
     const wrapper = tile()
     const wayIn = find(wrapper, 'welcome-make-first')
     expect(wayIn.text()).toBe('Make your first Project')
     expect(wayIn.classes()).toContain('app-button--primary')
+    expect(wayIn.classes()).toContain('app-button--2xl')
     expect(wrapper.findAll('.app-button--primary')).toHaveLength(1)
     expect(find(wrapper, 'welcome-open-editor').exists()).toBe(false)
     expect(find(wrapper, 'welcome-saved-projects').exists()).toBe(false)
@@ -31,16 +32,20 @@ describe('WelcomeTile (ticket 0830)', () => {
     const seeHow = find(wrapper, 'welcome-see-how')
     expect(seeHow.text()).toBe('See how it works')
     expect(seeHow.classes()).not.toContain('app-button--primary')
+    expect(seeHow.classes()).toContain('app-button--lg')
+    // Under the promises, the last thing in the tile.
+    expect(wrapper.get('.welcome__tile').element.lastElementChild).toBe(seeHow.element)
     await seeHow.trigger('click')
     expect(wrapper.emitted('seeHow')).toHaveLength(1)
   })
 
-  it('offers a new visitor Start from a ready design, a text button beside See how it works (ticket 0953)', async () => {
+  it('offers a new visitor Start from a ready design, a secondary button as big as the way in beside it (ticket 0953)', async () => {
     const wrapper = tile()
     const start = find(wrapper, 'welcome-start-from-starter')
     expect(start.text()).toBe('Start from a ready design')
-    expect(start.classes()).toContain('app-button--text')
-    expect(start.element.parentElement).toBe(find(wrapper, 'welcome-see-how').element.parentElement)
+    expect(start.classes()).not.toContain('app-button--text')
+    expect(start.classes()).toContain('app-button--2xl')
+    expect(start.element.parentElement).toBe(find(wrapper, 'welcome-make-first').element.parentElement)
     await start.trigger('click')
     expect(wrapper.emitted('startFromStarter')).toHaveLength(1)
     expect(find(tile({ isNew: false, count: 3 }), 'welcome-start-from-starter').exists()).toBe(false)
@@ -55,6 +60,8 @@ describe('WelcomeTile (ticket 0830)', () => {
     expect(wrapper.findAll('.app-button--primary')).toHaveLength(1)
     const library = find(wrapper, 'welcome-saved-projects')
     expect(library.text()).toBe('Projects library · 3')
+    expect(open.classes()).toContain('app-button--2xl')
+    expect(library.classes()).toContain('app-button--2xl')
     await open.trigger('click')
     await library.trigger('click')
     expect(wrapper.emitted('openEditor')).toHaveLength(1)

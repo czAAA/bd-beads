@@ -11,7 +11,7 @@ import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_
 import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { gridToRegion, inGridPx, regionInGridSpace } from './surfaceView'
-import { customChart, type ChartBead } from './customChart'
+import { chartCellOf, customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
@@ -216,7 +216,7 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
 
   const custom = customChart(project, part.region, plan.zoom)
   if (custom) {
-    drawCustomPart(content, project, part, chart, custom, letters, { across: part.overlapAcross * stepAcross, down: part.overlapDown * stepDown }, letterPt(plan.beadMm))
+    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm))
     drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
     return
   }
@@ -343,12 +343,21 @@ function emptyCross(x: number, y: number, size: number): [number, number, number
   return emptyCrossArms(x * K, y * K, size * K)
 }
 
-/** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls on the part, turned as it lies, with
+/** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls in the part's cells, turned as it lies, with
  * its Swatch letter upright; empty positions outlined so the shape reads, each with its cross; its Seams as lines. No cell lines or rulers:
  * its beads keep no rows and columns. */
-function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, overlap: { across: number; down: number }, letterSize: number): void {
-  const own = (bead: ChartBead) => bead.x >= 0 && bead.y >= 0 && bead.x <= part.region.width && bead.y <= part.region.height
-  const inOverlap = (bead: ChartBead) => bead.x < overlap.across || bead.y < overlap.down
+function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number): void {
+  // A part's region reaches past its last cell by a staggered Weave's half bead, onto the next part's: each bead belongs
+  // to the part whose cells hold its centre, as the page's key counts it, so none is printed on two pages (ticket 1132).
+  const cellOf = (bead: ChartBead) => chartCellOf({ x: part.region.x + bead.x, y: part.region.y + bead.y }, step.across, step.down)
+  const own = (bead: ChartBead) => {
+    const { across, down } = cellOf(bead)
+    return across >= part.firstAcross - part.overlapAcross && across <= part.lastAcross && down >= part.firstDown - part.overlapDown && down <= part.lastDown
+  }
+  const inOverlap = (bead: ChartBead) => {
+    const { across, down } = cellOf(bead)
+    return across < part.firstAcross || down < part.firstDown
+  }
   const round = beadsAreRound(project)
   const beads = custom.beads.filter(own)
   for (const bead of beads) {
