@@ -138,7 +138,9 @@ function firstRowWidth(): number {
 }
 const counterFit = useFittingForm({
   forms: () => COUNTER_FORMS,
-  room: () => barRoom.value,
+  // Read off the page until the observer first reports, so the form is chosen before the first paint and the Welcome
+  // holds still as it arrives (ticket 1170: at 1440 × 900 the cuff leaves only the stacked form room).
+  room: () => barRoom.value || barEl.value?.clientWidth || 0,
   measure: firstRowWidth,
   observed: () => [barEl.value?.querySelector('.row-progress__counter-text')],
   labels: () => locale.value,
