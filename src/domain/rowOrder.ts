@@ -80,7 +80,7 @@ export function rowsOrder(weave: Weave & { rows: number; columns: number }, { di
   return {
     turns: true,
     count,
-    passAt: ({ row, column }) => (columnWise ? passes.of(mirrorLine(column, lines, reversed), row, direction) : passes.of(mirrorLine(row, lines, reversed), column, direction)),
+    passAt: ({ row, column }) => (columnWise ? passes.of(mirrorLine(column, lines, reversed), row, direction, reversed) : passes.of(mirrorLine(row, lines, reversed), column, direction, reversed)),
     positionsOf: (pass) => {
       if (pass < 0 || pass >= count) {
         return []
@@ -89,7 +89,7 @@ export function rowsOrder(weave: Weave & { rows: number; columns: number }, { di
       for (const line of passes.lines(pass, direction)) {
         const at = mirrorLine(line, lines, reversed)
         for (let along = 0; along < length; along += 1) {
-          if (passes.of(line, along, direction) === pass) {
+          if (passes.of(line, along, direction, reversed) === pass) {
             positions.push(columnWise ? { row: along, column: at } : { row: at, column: along })
           }
         }
