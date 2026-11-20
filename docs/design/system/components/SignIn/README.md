@@ -65,6 +65,6 @@ The Subpanel is a `dialog` named "Sign in", as every Subpanel. Focus enters on t
 
 ## Copy
 
-English above; every language is in `writing.md` (Sign-in copy). The owner approved the English on 2026-11-18; the other six were reviewed with the build (ticket 0078).
+English above; every language is in `copy/account.md` (Sign-in copy). The owner approved the English on 2026-11-18; the other six were reviewed with the build (ticket 0078).
 
 Hand-written from ticket 1087's canvas; static rendition.
