@@ -1,4 +1,4 @@
-import { BLACK_WHITE_BALANCE, fromHex, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
+import { fromHex, mix, toHex, WHITE } from '../domain/color'
 import { HELVETICA_CAP_HEIGHT, helveticaWidth } from '../domain/helvetica'
 import type { PageDrawing } from '../domain/pdfContent'
 import type { SwatchLetters } from '../domain/swatchLetters'
@@ -6,7 +6,7 @@ import { beadRoundness, describeWeave } from '../domain/weave'
 import { frameWeave } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { acrossNumber, displayedCellOf, downNumber, emptyCrossArms, lineBetween, rulerLevel } from './printPages'
-import { PRINT_COLORS } from './printColors'
+import type { PrintInk } from './printInk'
 import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
 import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
@@ -53,14 +53,6 @@ export function letterPt(beadMm: number): number {
 function tint(hex: string, amount: number): string {
   const rgb = fromHex(hex)
   return rgb ? toHex(mix(rgb, WHITE, amount)) : hex
-}
-
-/** The colour of a Swatch letter on a bead of this color: `ink` on a light one, white on a dark one, by the same
- * balance as markOn (`--print-letter-balance`); ink on a color it cannot read.
- * @internal Its test checks the switch from ink to white on its own. */
-export function letterColor(hex: string): string {
-  const rgb = fromHex(hex)
-  return !rgb || relativeLuminance(rgb) > BLACK_WHITE_BALANCE ? PRINT_COLORS.ink : PRINT_COLORS.paper
 }
 
 /** Whether the Project's beads are drawn round (a circle in the cell) rather than as squares. */
@@ -181,27 +173,44 @@ function padOf(part: PrintPart, shared: boolean, area: { x: number; y: number })
 /** The share of its cell's width a Swatch letter may take, so a two-letter one stays inside it. */
 const LETTER_ROOM = 0.9
 
-/** A Swatch letter set centred in a box at `size` pt, or smaller where it would be wider than the box: Helvetica-Bold,
- * its baseline the cap height's half below the middle. */
-function letterAt(content: PageDrawing, letter: string, box: Box, color: string, largest: number): void {
+/** A Swatch letter set centred in a box at `size` pt, or smaller where it would be wider than the box: Helvetica-Bold (an
+ * overlap bead's in one ink, regular), its baseline the cap height's half below the middle. */
+function letterAt(content: PageDrawing, letter: string, box: Box, color: string, largest: number, face: 'bold' | 'regular' = 'bold'): void {
   const squeeze = letter.length > 1 ? LETTER_SQUEEZE : 100
-  const wide = (helveticaWidth(letter, 'bold', largest) * squeeze) / 100
+  const wide = (helveticaWidth(letter, face, largest) * squeeze) / 100
   const size = Math.min(largest, (largest * box.width * K * LETTER_ROOM) / wide)
   const x = (box.x + box.width / 2) * K
   const baseline = (box.y + box.height / 2) * K + (HELVETICA_CAP_HEIGHT * size) / 2
-  content.text(letter, x, baseline, { face: 'bold', size, color, ...(letter.length > 1 ? { scale: squeeze } : {}) }, 'center')
+  content.text(letter, x, baseline, { face, size, color, ...(letter.length > 1 ? { scale: squeeze } : {}) }, 'center')
 }
 
-/** A swatch drawn like a bead on the page: its fill, a hairline edge and its letter (the key's). */
-export function drawKeySwatch(content: PageDrawing, x: number, y: number, hex: string, letter: string, round: boolean): void {
+/** A swatch drawn like a bead on the page: its fill (in one ink, its tone), a hairline edge and its letter (the key's). */
+export function drawKeySwatch(content: PageDrawing, x: number, y: number, hex: string, letter: string, round: boolean, ink: PrintInk): void {
   const size = mm(KEY_SWATCH_MM)
   const inset = round ? (size * (1 - ROUND_SHARE)) / 2 : 0
-  content.roundRect((x + inset) * K, (y + inset) * K, (size - inset * 2) * K, (size - inset * 2) * K, round ? size : 0, { fill: hex, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
-  letterAt(content, letter, { x, y, width: size, height: size }, letterColor(hex), letterPt(KEY_SWATCH_MM))
+  content.roundRect((x + inset) * K, (y + inset) * K, (size - inset * 2) * K, (size - inset * 2) * K, round ? size : 0, { fill: ink.fill(hex), stroke: ink.colors.lineStrong, lineWidth: LINE_CELL })
+  letterAt(content, letter, { x, y, width: size, height: size }, ink.letter(hex), letterPt(KEY_SWATCH_MM))
 }
 
+/** What a bead of `hex` is filled with: its tone or color, an overlap bead paper in one ink, else its color toward white. */
+function fillOf(hex: string, overlap: boolean, ink: PrintInk): string {
+  if (!overlap) return ink.fill(hex)
+  return ink.oneInk ? ink.colors.paper : tint(hex, OVERLAP_TINT)
+}
+
+/** An overlap bead's letter: `muted` on the color pages, black and regular in one ink. */
+function overlapLetter(ink: PrintInk): { color: string; face: 'bold' | 'regular' } {
+  return ink.oneInk ? { color: ink.colors.ink, face: 'regular' } : { color: ink.colors.muted, face: 'bold' }
+}
+
+/** Half the paper between two solid black beads (PrintBlackAndWhite card), round each one's fill. */
+const SOLID_INSET = mm(0.1)
+
+/** A cell edge, the same for both beads it lies between. */
+const edgeKey = (horizontal: boolean, at: number, from: number, to: number) => [horizontal ? 'h' : 'v', at, Math.min(from, to), Math.max(from, to)].map((value) => (typeof value === 'number' ? Math.round(value * 100) : value)).join(':')
+
 /** One part: its pad outline, beads, lines, letters, rulers and the overlap line, on the page at `pad`. */
-function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters): void {
+function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters, ink: PrintInk): void {
   const grid = displayedGrid(project)
   const stepAcross = grid.stepAcross * plan.zoom
   const stepDown = grid.stepDown * plan.zoom
@@ -212,12 +221,13 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
   const firstIndexDown = part.firstDown - part.overlapDown
   const inOverlap = (bead: PlacedBead) => bead.across < part.overlapAcross || bead.down < part.overlapDown
 
-  content.roundRect(pad.x * K, pad.y * K, pad.width * K, pad.height * K, mmPt(2), { stroke: PRINT_COLORS.faint, lineWidth: PAD_LINE })
+  const { colors } = ink
+  content.roundRect(pad.x * K, pad.y * K, pad.width * K, pad.height * K, mmPt(2), { stroke: colors.faint, lineWidth: PAD_LINE })
 
   const custom = customChart(project, part.region, plan.zoom)
   if (custom) {
-    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm))
-    drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
+    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm), ink)
+    drawOverlapLine(content, part, pad, chart, stepAcross, stepDown, ink)
     return
   }
 
@@ -225,22 +235,32 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
   const round = beadsAreRound(project)
   const offset = beads.some((bead) => Math.abs(bead.cell.x - bead.across * stepAcross) > 0.5 || Math.abs(bead.cell.y - bead.down * stepDown) > 0.5)
 
-  // Fills, one colour after another.
+  // Fills, one colour after another. A solid black bead stands apart by paper, with no hairline round it.
+  const solid = (bead: PlacedBead) => bead.color !== null && !inOverlap(bead) && ink.solid(bead.color)
   const filled = beads.filter((bead) => bead.color !== null).sort((p, q) => (p.color! < q.color! ? -1 : 1))
   for (const bead of filled) {
-    const fill = inOverlap(bead) ? tint(bead.color!, OVERLAP_TINT) : bead.color!
+    const fill = fillOf(bead.color!, inOverlap(bead), ink)
     // A square bead fills its cell, so staggered beads don't overlap.
     const { x, y, width, height } = round ? bead.box : bead.cell
-    const inset = round ? (Math.min(width, height) * (1 - ROUND_SHARE)) / 2 : 0
+    const inset = round ? (Math.min(width, height) * (1 - ROUND_SHARE)) / 2 : solid(bead) ? SOLID_INSET : 0
     const left = (chart.x + x + inset) * K
     const top = (chart.y + y + inset) * K
     const wide = (width - inset * 2) * K
     const tall = (height - inset * 2) * K
     if (round) {
-      content.roundRect(left, top, wide, tall, Math.min(wide, tall), { fill, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
+      content.roundRect(left, top, wide, tall, Math.min(wide, tall), solid(bead) ? { fill } : { fill, stroke: colors.lineStrong, lineWidth: LINE_CELL })
     } else {
       content.fillRect(left, top, wide, tall, fill)
     }
+  }
+  const apart = new Set(beads.filter(solid).flatMap(({ cell }) => [
+    edgeKey(false, cell.x, cell.y, cell.y + cell.height),
+    edgeKey(false, cell.x + cell.width, cell.y, cell.y + cell.height),
+    edgeKey(true, cell.y, cell.x, cell.x + cell.width),
+    edgeKey(true, cell.y + cell.height, cell.x, cell.x + cell.width),
+  ]))
+  const addCellLine = (horizontal: boolean, at: number, from: number, to: number) => {
+    if (!apart.has(edgeKey(horizontal, at, from, to))) cellLines.add(horizontal, at, from, to)
   }
 
   // Lines over the fills: cell lines, then every 5th, every 10th and the chart's edge.
@@ -251,39 +271,40 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
     const acrossIndex = firstIndexAcross + across
     const downIndex = firstIndexDown + down
     if (!round) {
-      cellLines.add(false, cell.x, cell.y, cell.y + cell.height)
-      cellLines.add(false, cell.x + cell.width, cell.y, cell.y + cell.height)
-      cellLines.add(true, cell.y, cell.x, cell.x + cell.width)
-      cellLines.add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
+      addCellLine(false, cell.x, cell.y, cell.y + cell.height)
+      addCellLine(false, cell.x + cell.width, cell.y, cell.y + cell.height)
+      addCellLine(true, cell.y, cell.x, cell.x + cell.width)
+      addCellLine(true, cell.y + cell.height, cell.x, cell.x + cell.width)
     }
     const right = across < lastAcross && lineBetween(acrossNumber(project, acrossIndex), acrossNumber(project, acrossIndex + 1))
     if (right) (right === 'tenth' ? tenLines : fiveLines).add(false, cell.x + cell.width, cell.y, cell.y + cell.height)
     const below = down < lastDown && lineBetween(downNumber(project, downIndex), downNumber(project, downIndex + 1))
     if (below) (below === 'tenth' ? tenLines : fiveLines).add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
   }
-  content.lines(cellLines.segments(chart.x, chart.y), LINE_CELL, PRINT_COLORS.lineStrong)
-  content.lines(fiveLines.segments(chart.x, chart.y), LINE_FIVE, PRINT_COLORS.fieldLine)
-  content.lines(tenLines.segments(chart.x, chart.y), LINE_TEN, PRINT_COLORS.ink)
+  content.lines(cellLines.segments(chart.x, chart.y), LINE_CELL, colors.lineStrong)
+  content.lines(fiveLines.segments(chart.x, chart.y), LINE_FIVE, colors.fieldLine)
+  content.lines(tenLines.segments(chart.x, chart.y), LINE_TEN, colors.ink)
   if (!offset) {
     const right = chart.x + chart.width
     const bottom = chart.y + chart.height
-    content.lines([[chart.x * K, chart.y * K, right * K, chart.y * K], [right * K, chart.y * K, right * K, bottom * K], [right * K, bottom * K, chart.x * K, bottom * K], [chart.x * K, bottom * K, chart.x * K, chart.y * K]], LINE_TEN, PRINT_COLORS.ink)
+    content.lines([[chart.x * K, chart.y * K, right * K, chart.y * K], [right * K, chart.y * K, right * K, bottom * K], [right * K, bottom * K, chart.x * K, bottom * K], [chart.x * K, bottom * K, chart.x * K, chart.y * K]], LINE_TEN, colors.ink)
   }
 
   // An empty position's small faint cross (ticket 0818), on the paper the fills leave.
   content.lines(beads.filter((bead) => bead.color === null).flatMap((bead) => {
     const { x, y, width, height } = round ? bead.box : bead.cell
     return emptyCross(chart.x + x + width / 2, chart.y + y + height / 2, Math.min(width, height))
-  }), LINE_CELL, PRINT_COLORS.faint)
+  }), LINE_CELL, colors.faint)
 
   // Letters over the lines: every bead carries its Swatch letter, whether the Letters toggle is on or not.
   for (const bead of beads) {
     if (bead.color === null) continue
     const { x, y, width, height } = round ? bead.box : bead.cell
-    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + x, y: chart.y + y, width, height }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color), letterPt(plan.beadMm))
+    const { color, face } = inOverlap(bead) ? overlapLetter(ink) : { color: ink.letter(bead.color), face: 'bold' as const }
+    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + x, y: chart.y + y, width, height }, color, letterPt(plan.beadMm), face)
   }
 
-  drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
+  drawOverlapLine(content, part, pad, chart, stepAcross, stepDown, ink)
 
   // Rulers: upright numbers at every 5th (every 10th on a small bead), on all four sides, tens bold in ink, fives regular
   // in muted, overlap faint.
@@ -292,7 +313,7 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
   const cap = HELVETICA_CAP_HEIGHT * size
   const number = (value: number, x: number, baseline: number, align: 'left' | 'center' | 'right', overlap: boolean) => {
     const level = rulerLevel(value)
-    content.text(String(value), x, baseline, { face: level === 'tenth' ? 'bold' : 'regular', size, color: overlap ? PRINT_COLORS.faint : level === 'tenth' ? PRINT_COLORS.ink : PRINT_COLORS.muted }, align)
+    content.text(String(value), x, baseline, { face: level === 'tenth' ? 'bold' : 'regular', size, color: overlap ? colors.faint : level === 'tenth' ? colors.ink : colors.muted }, align)
   }
   for (let index = 0; index <= lastAcross; index += 1) {
     const value = acrossNumber(project, firstIndexAcross + index)
@@ -313,11 +334,11 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
 }
 
 /** Where the part itself begins: the line past the overlap it repeats from the part before. */
-function drawOverlapLine(content: PageDrawing, part: PrintPart, pad: Box, chart: Box, stepAcross: number, stepDown: number): void {
+function drawOverlapLine(content: PageDrawing, part: PrintPart, pad: Box, chart: Box, stepAcross: number, stepDown: number, ink: PrintInk): void {
   const seam: [number, number, number, number][] = []
   if (part.overlapAcross) seam.push([(chart.x + part.overlapAcross * stepAcross) * K, pad.y * K, (chart.x + part.overlapAcross * stepAcross) * K, (pad.y + pad.height) * K])
   if (part.overlapDown) seam.push([pad.x * K, (chart.y + part.overlapDown * stepDown) * K, (pad.x + pad.width) * K, (chart.y + part.overlapDown * stepDown) * K])
-  content.lines(seam, OVERLAP_LINE, PRINT_COLORS.accent)
+  content.lines(seam, OVERLAP_LINE, ink.colors.accent)
 }
 
 /** A segment cut to a box, or none where it misses it (Liang–Barsky). */
@@ -346,7 +367,7 @@ function emptyCross(x: number, y: number, size: number): [number, number, number
 /** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls in the part's cells, turned as it lies, with
  * its Swatch letter upright; empty positions outlined so the shape reads, each with its cross; its Seams as lines. No cell lines or rulers:
  * its beads keep no rows and columns. */
-function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number): void {
+function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number, ink: PrintInk): void {
   // A part's region reaches past its last cell by a staggered Weave's half bead, onto the next part's: each bead belongs
   // to the part whose cells hold its centre, as the page's key counts it, so none is printed on two pages (ticket 1132).
   const cellOf = (bead: ChartBead) => chartCellOf({ x: part.region.x + bead.x, y: part.region.y + bead.y }, step.across, step.down)
@@ -361,8 +382,9 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
   const round = beadsAreRound(project)
   const beads = custom.beads.filter(own)
   for (const bead of beads) {
-    const fill = bead.color === null ? undefined : inOverlap(bead) ? tint(bead.color, OVERLAP_TINT) : bead.color
-    const paint = { ...(fill ? { fill } : {}), stroke: fill ? PRINT_COLORS.lineStrong : PRINT_COLORS.faint, lineWidth: LINE_CELL }
+    const fill = bead.color === null ? undefined : fillOf(bead.color, inOverlap(bead), ink)
+    const solid = bead.color !== null && !inOverlap(bead) && ink.solid(bead.color)
+    const paint = solid ? { fill } : { ...(fill ? { fill } : {}), stroke: fill ? ink.colors.lineStrong : ink.colors.faint, lineWidth: LINE_CELL }
     if (round) {
       const size = Math.min(bead.width, bead.height) * ROUND_SHARE
       content.roundRect((chart.x + bead.x - size / 2) * K, (chart.y + bead.y - size / 2) * K, size * K, size * K, size * K, paint)
@@ -380,20 +402,21 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
     const cut = clippedTo(local, seam)
     return cut ? [[(chart.x + cut[0]) * K, (chart.y + cut[1]) * K, (chart.x + cut[2]) * K, (chart.y + cut[3]) * K] as [number, number, number, number]] : []
   })
-  content.lines(seams, LINE_FIVE, PRINT_COLORS.fieldLine)
-  content.lines(beads.filter((bead) => bead.color === null).flatMap((bead) => emptyCross(chart.x + bead.x, chart.y + bead.y, Math.min(bead.width, bead.height))), LINE_CELL, PRINT_COLORS.faint)
+  content.lines(seams, LINE_FIVE, ink.colors.fieldLine)
+  content.lines(beads.filter((bead) => bead.color === null).flatMap((bead) => emptyCross(chart.x + bead.x, chart.y + bead.y, Math.min(bead.width, bead.height))), LINE_CELL, ink.colors.faint)
   for (const bead of beads) {
     if (bead.color === null) continue
     const size = Math.min(bead.width, bead.height)
-    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + bead.x - size / 2, y: chart.y + bead.y - size / 2, width: size, height: size }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color), letterSize)
+    const { color, face } = inOverlap(bead) ? overlapLetter(ink) : { color: ink.letter(bead.color), face: 'bold' as const }
+    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + bead.x - size / 2, y: chart.y + bead.y - size / 2, width: size, height: size }, color, letterSize, face)
   }
 }
 
 /** Every part on a chart page, or page 1's whole chart from `area`'s top left corner, into `content` (PDF operators, or the
- * PNG's canvas), and where each pad sits (the caller's labels and key go by them). */
-export function drawChartParts(content: PageDrawing, project: Project, plan: PrintPlan, parts: PrintPart[], letters: SwatchLetters, area = CHART_PAGE_AREA): Box[] {
+ * PNG's canvas) in `ink`, and where each pad sits (the caller's labels and key go by them). */
+export function drawChartParts(content: PageDrawing, project: Project, plan: PrintPlan, parts: PrintPart[], letters: SwatchLetters, ink: PrintInk, area = CHART_PAGE_AREA): Box[] {
   const shared = parts.length > 1
   const pads = parts.map((part) => padOf(part, shared, area))
-  parts.forEach((part, index) => drawPart(content, project, plan, part, pads[index]!, letters))
+  parts.forEach((part, index) => drawPart(content, project, plan, part, pads[index]!, letters, ink))
   return pads
 }

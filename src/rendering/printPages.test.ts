@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { PRINT_TONE } from '../domain/printTones'
 import { describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
@@ -22,6 +23,11 @@ const print = (name: string) => tokens.print.tokens.find((entry) => entry.name =
 describe('the printed pages keep to the tokens (ticket 162)', () => {
   it('uses the light colors and the print board', () => {
     expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), faint: color('faint'), line: color('line'), lineSoft: color('line-soft'), lineStrong: color('line-strong'), fieldLine: color('field-line'), accent: color('accent'), accentStrong: color('accent-strong'), board: color('print-board') })
+  })
+
+  it('draws Black and white in the print tones', () => {
+    const share = (name: string) => parseFloat(String(print(name))) / 100
+    expect(PRINT_TONE).toEqual({ step: share('print-tone-step'), max: share('print-tone-max'), blackShare: share('print-black-share') })
   })
 
   it('uses the print sizes', () => {

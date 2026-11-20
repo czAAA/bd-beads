@@ -1083,6 +1083,9 @@ export interface Translations {
     coverPageLabel: string
     coverPageInfoLabel: string
     coverPageLine: string
+    blackAndWhiteLabel: string
+    blackAndWhiteInfoLabel: string
+    blackAndWhiteLine: string
     largeBeadsLabel: string
     largeBeadsInfoLabel: string
     largeBeadsLine: string
@@ -1093,6 +1096,7 @@ export interface Translations {
      * to that name, after an underscore; and the pencil that renames the file for this export, its name and Tooltip. */
     savesAs: string
     fileWordCover: string
+    fileWordBlackAndWhite: string
     fileWordLargeBeads: string
     fileWordRowByRow: string
     fileNameEdit: string

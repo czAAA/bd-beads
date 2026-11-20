@@ -159,6 +159,8 @@ export const PREFERENCES = {
   }),
   /** Cover page, the Export panel's first print choice (ticket 1096): on until switched off. */
   printCover: onUntilOff('openbeads:print-cover'),
+  /** Black and white, under Cover page (ticket 1096): off until switched on. */
+  printBlackAndWhite: offUntilOn('openbeads:print-black-and-white'),
   /** Large beads and Row by row, the Export panel's print choices (ticket 0916): off until switched on. */
   printLargeBeads: offUntilOn('openbeads:print-large-beads'),
   printRowByRow: offUntilOn('openbeads:print-row-by-row'),

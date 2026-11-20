@@ -4,6 +4,7 @@ import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/g
 import type { Project } from '../domain/project'
 import { drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
+import type { PrintInk } from './printInk'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import {
@@ -143,12 +144,12 @@ export function emptyCrossArms(x: number, y: number, size: number): [number, num
   return [[x - arm, y - arm, x + arm, y + arm], [x + arm, y - arm, x - arm, y + arm]]
 }
 
-/** A bead drawn as the flat look draws it, except an empty position, which carries a small `faint` cross on the bare
- * board (tickets 0719, 0818): the mark a chart reader knows as "no bead here", never taken for a pale bead. `lineWidth`
- * is in the bead's own px. */
-function crossWhereEmpty(lineWidth: number): BeadDrawer {
+/** A bead drawn as the flat look draws it (in one ink, its color's grey), except an empty position, which carries a small
+ * `faint` cross on the bare board (tickets 0719, 0818): the mark a chart reader knows as "no bead here", never taken for
+ * a pale bead. `lineWidth` is in the bead's own px. */
+function crossWhereEmpty(lineWidth: number, ink: PrintInk): BeadDrawer {
   return (context, bead) => {
-    if (bead.color !== null) return drawFlatBead(context, bead)
+    if (bead.color !== null) return drawFlatBead(context, { ...bead, color: ink.overview(bead.color) })
     const width = bead.width ?? bead.size
     const height = bead.height ?? bead.size
     context.beginPath()
@@ -156,7 +157,7 @@ function crossWhereEmpty(lineWidth: number): BeadDrawer {
       context.moveTo(x1, y1)
       context.lineTo(x2, y2)
     }
-    context.strokeStyle = PRINT_COLORS.faint
+    context.strokeStyle = ink.colors.faint
     context.lineWidth = lineWidth
     context.lineCap = 'butt'
     context.stroke()
@@ -165,10 +166,10 @@ function crossWhereEmpty(lineWidth: number): BeadDrawer {
 
 /** A key's "empty" swatch (ticket 0963): a bead's swatch with no fill, its `line-strong` edge `edge` wide, carrying the
  * small `faint` cross an empty position carries on the chart, so the key shows the very sign it names. */
-export function drawEmptySwatch(context: CanvasRenderingContext2D, x: number, y: number, size: number, edge: number): void {
+export function drawEmptySwatch(context: CanvasRenderingContext2D, x: number, y: number, size: number, edge: number, ink: PrintInk): void {
   context.beginPath()
   context.roundRect(x, y, size, size, size * 0.28)
-  context.strokeStyle = PRINT_COLORS.lineStrong
+  context.strokeStyle = ink.colors.lineStrong
   context.lineWidth = edge
   context.stroke()
   context.beginPath()
@@ -176,19 +177,25 @@ export function drawEmptySwatch(context: CanvasRenderingContext2D, x: number, y:
     context.moveTo(x1, y1)
     context.lineTo(x2, y2)
   }
-  context.strokeStyle = PRINT_COLORS.faint
+  context.strokeStyle = ink.colors.faint
   context.lineWidth = CROSS_LINE
   context.lineCap = 'butt'
   context.stroke()
 }
 
 /** The pale rounded board and the beads of `region` on it, without letters: page 1's overview (ticket 0914). An empty
- * position is the bare board under a faint cross (tickets 0587, 0719, 0818). */
-export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board): void {
-  context.fillStyle = PRINT_COLORS.board
+ * position is the bare board under a faint cross (tickets 0587, 0719, 0818). In one ink the board is paper in a hairline. */
+export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, ink: PrintInk): void {
   context.beginPath()
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
-  context.fill()
+  if (ink.oneInk) {
+    context.strokeStyle = ink.colors.ink
+    context.lineWidth = CROSS_LINE
+    context.stroke()
+  } else {
+    context.fillStyle = ink.colors.board
+    context.fill()
+  }
 
   // The page may be scaled (blankPage): the beads are drawn at that resolution too, then laid in at layout size.
   const scale = context.getTransform().a
@@ -200,7 +207,7 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
   const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
   // The cross's line is `print-line-cell` and at least a device pixel, so it prints at 150 dpi too.
   const crossLine = Math.max(CROSS_LINE * scale, 1) / (zoom * scale)
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, drawBead: crossWhereEmpty(crossLine) })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, drawBead: crossWhereEmpty(crossLine, ink) })
   context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
@@ -246,7 +253,7 @@ export function displayedCellOf(project: RulerShape, { row, column }: GridPositi
 // Page 1's rulers on all four sides in the Project's own numbers (a turned Project's rows run across, counted from the
 // far end), a number every `every` beads (page 1: 5, or 10 when the beads are small) and a hairline every 10; the chart
 // pages' own are `drawChartRulers`.
-export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10 = 10): void {
+export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, ink: PrintInk, every: 5 | 10 = 10): void {
   const grid = displayedGrid(project)
   const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
 
@@ -256,7 +263,7 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
     const tenth = value % 10 === 0
     if (!tenth && (every === 10 || value % 5 !== 0) && value !== 1) return
     context.font = font(tenth ? '700' : '400', 6.5, MONO)
-    context.fillStyle = tenth ? PRINT_COLORS.ink : PRINT_COLORS.muted
+    context.fillStyle = tenth ? ink.colors.ink : ink.colors.muted
     context.textAlign = 'center'
     context.fillText(String(value), x, y)
   }
@@ -271,9 +278,9 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
     label(downNumber(project, index), at.x + at.width + gap, y)
   }
 
-  // A hairline every 10 beads, in the gap between the 10th and the 11th.
-  context.strokeStyle = PRINT_COLORS.ink
-  context.globalAlpha = 0.45
+  // A hairline every 10 beads, in the gap between the 10th and the 11th: faded on the color pages, solid in one ink.
+  context.strokeStyle = ink.colors.ink
+  context.globalAlpha = ink.oneInk ? 1 : 0.45
   context.lineWidth = pt(0.5)
   context.beginPath()
   for (let index = across.first + 1; index <= across.last; index += 1) {
@@ -305,12 +312,12 @@ export function lineBetween(a: number, b: number): 'tenth' | 'fifth' | undefined
 }
 
 /** A white pill with an accent border holding `value`, its top left at (x, y); returns its width. */
-function pill(context: CanvasRenderingContext2D, value: string, x: number, y: number, color: string, align: 'left' | 'center' | 'right' = 'left'): number {
+function pill(context: CanvasRenderingContext2D, value: string, x: number, y: number, color: string, ink: PrintInk, align: 'left' | 'center' | 'right' = 'left'): number {
   context.font = font('700', 6.5, MONO)
   const width = context.measureText(value).width + mm(2.4)
   const left = align === 'left' ? x : align === 'center' ? x - width / 2 : x - width
-  context.fillStyle = PRINT_COLORS.paper
-  context.strokeStyle = PRINT_COLORS.accent
+  context.fillStyle = ink.colors.paper
+  context.strokeStyle = ink.colors.accent
   context.lineWidth = pt(0.7)
   context.beginPath()
   context.roundRect(left, y, width, pt(11), pt(5.5))
@@ -322,7 +329,7 @@ function pill(context: CanvasRenderingContext2D, value: string, x: number, y: nu
 
 /** The chart parts on page 1 (PrintPage1 card): solid accent lines with a white keyline through the board and its
  * rulers, "101 →" and "101 ↓" where each cut is, and a pill on each part saying which page it prints on. */
-export function drawParts(context: CanvasRenderingContext2D, project: Project, plan: PrintPlan, labels: PrintText['labels'], zoom: number, board: Board): void {
+export function drawParts(context: CanvasRenderingContext2D, project: Project, plan: PrintPlan, labels: PrintText['labels'], zoom: number, board: Board, ink: PrintInk): void {
   const grid = displayedGrid(project)
   const across = [...new Set(plan.parts.map((part) => part.firstAcross).filter(Boolean))]
   const down = [...new Set(plan.parts.map((part) => part.firstDown).filter(Boolean))]
@@ -346,12 +353,12 @@ export function drawParts(context: CanvasRenderingContext2D, project: Project, p
     }
     context.stroke()
   }
-  stroke(PRINT_COLORS.paper, 4)
-  stroke(PRINT_COLORS.accent, 2)
+  stroke(ink.colors.paper, 4)
+  stroke(ink.colors.accent, 2)
   context.restore()
 
-  for (const index of across) pill(context, `${acrossNumber(project, index)} →`, xOf(index), board.y - reach - OVERVIEW_CUT_LABEL + mm(0.3), PRINT_COLORS.accentStrong, 'center')
-  for (const index of down) pill(context, `${downNumber(project, index)} ↓`, board.x + board.width - mm(1), yOf(index) - pt(5.5), PRINT_COLORS.accentStrong, 'right')
+  for (const index of across) pill(context, `${acrossNumber(project, index)} →`, xOf(index), board.y - reach - OVERVIEW_CUT_LABEL + mm(0.3), ink.colors.accentStrong, ink, 'center')
+  for (const index of down) pill(context, `${downNumber(project, index)} ↓`, board.x + board.width - mm(1), yOf(index) - pt(5.5), ink.colors.accentStrong, ink, 'right')
 
   for (const part of plan.parts) {
     const x = xOf(part.firstAcross)
@@ -360,7 +367,7 @@ export function drawParts(context: CanvasRenderingContext2D, project: Project, p
     const label = (key: 'partPage' | 'partPageShort') => fillBlanks(labels[key], { part: part.letter, page: part.page })
     context.font = font('700', 6.5, MONO)
     const long = label('partPage')
-    pill(context, context.measureText(long).width + mm(2.4) <= room ? long : label('partPageShort'), x + mm(1.5), y + mm(1.5), PRINT_COLORS.ink)
+    pill(context, context.measureText(long).width + mm(2.4) <= room ? long : label('partPageShort'), x + mm(1.5), y + mm(1.5), ink.colors.ink, ink)
   }
 }
 

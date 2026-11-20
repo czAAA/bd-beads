@@ -19,6 +19,7 @@ import { fillBlanks } from '../domain/fillBlanks'
 import { frameOf, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
 import { pieceFaceOf } from '../domain/pieceFaces'
 import { largeBeadsActs } from './pageOneLayout'
+import { printTones } from '../domain/printTones'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -51,10 +52,12 @@ interface PrintedWordChart {
   rows: PrintedWordRow[]
 }
 
-/** The Export panel's print choices (tickets 0916, 1096), kept on the device: Cover page (on at first) opens the PDF on the
- * Cover page, Large beads keeps every bead of the chart at 3 mm or more, Row by row adds the Word chart's pages. */
+/** The Export panel's print choices (tickets 0916, 1096), kept on the device: Cover page (on at first) opens the PDF on it,
+ * Black and white draws the pages after it in one ink, Large beads keeps every chart bead at 3 mm or more, Row by row adds
+ * the Word chart's pages. */
 export interface PrintChoices {
   cover?: boolean
+  blackAndWhite?: boolean
   largeBeads?: boolean
   rowByRow?: boolean
 }
@@ -87,6 +90,8 @@ export interface PrintText {
   largeBeads?: boolean
   /** Cover page (ticket 1096): the PDF opens on the Cover page, and page 1 is its second page. */
   cover?: boolean
+  /** Black and white (ticket 1096): each color's tone as a share of black, the pages after the cover in one ink. */
+  tones?: Readonly<Record<string, number>>
   labels: Translations['print']
 }
 
@@ -212,6 +217,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     ...(hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
     ...(choices.cover ? { cover: true } : {}),
+    ...(choices.blackAndWhite ? { tones: printTones(quantities) } : {}),
     labels: t.print,
   }
   // Large beads only where it makes the beads bigger (ticket 1125): a remembered "on" does nothing on a small piece.

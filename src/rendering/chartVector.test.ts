@@ -7,7 +7,8 @@ import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
 import { TECHNIQUES, type Technique } from '../domain/weave'
-import { drawChartParts, K, letterColor, letterPt, placeBeads } from './chartVector'
+import { drawChartParts, K, letterPt, placeBeads } from './chartVector'
+import { COLOR_INK, letterColor } from './printInk'
 import { helveticaWidth } from '../domain/helvetica'
 import { type PageDrawing, PdfContent } from '../domain/pdfContent'
 import { acrossNumber, EMPTY_CROSS_SHARE } from './printPages'
@@ -60,7 +61,7 @@ const texts = (content: string) => [...content.matchAll(/BT \/(F[12]) ([\d.]+) T
 /** The parts drawn as PDF operators. */
 function pdfOf(project: Project, plan: ReturnType<typeof planPrint>, parts: ReturnType<typeof planPrint>['parts'], letters: Record<string, string>, height = plan.page.height) {
   const content = new PdfContent(height * K)
-  return { content, pads: drawChartParts(content, project, plan, parts, letters) }
+  return { content, pads: drawChartParts(content, project, plan, parts, letters, COLOR_INK) }
 }
 
 function chartOf(project: Project, part = 0) {
@@ -459,7 +460,7 @@ describe('a Custom frame prints every bead (ticket 1132)', () => {
           if (fill) drawn.push({ points, fill })
         },
       }
-      const [pad] = drawChartParts(record, project, plan, [part], LETTERS, area)
+      const [pad] = drawChartParts(record, project, plan, [part], LETTERS, COLOR_INK, area)
       const chart = { x: pad!.x + PRINT_RULER - part.region.x, y: pad!.y + PRINT_RULER - part.region.y }
       return drawn.map(({ points, fill }) => {
         const corners = points.map(([x, y]) => ({ x: x / K - chart.x, y: y / K - chart.y }))
