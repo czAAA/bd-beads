@@ -50,7 +50,7 @@ describe('Menu', () => {
 })
 
 describe('Feedback (ticket 0700)', () => {
-  it('opens the Feedback sheet from the Menu’s Send feedback and from the link under Language', async () => {
+  it('opens the Feedback sheet from the Menu’s Send feedback and from the link under it', async () => {
     const wrapper = mountApp()
     await flushPromises()
     const fromMenu = async (testid: string) => {
