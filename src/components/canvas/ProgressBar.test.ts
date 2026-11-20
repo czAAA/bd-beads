@@ -393,8 +393,8 @@ describe('ProgressBar counter (ticket 0849)', () => {
 
     const counter = wrapper.get('[data-testid="progress-bar-compact-position"]')
     expect(counter.get('.row-progress__count-step').text()).toBe('Проход 3 из 27')
-    // The rulers' number of the pass's row: the 13th from the left on a new peyote Project's turned Canvas (ticket 1165).
-    expect(counter.get('.row-progress__line').text()).toBe('· ряд 13')
+    // The rulers' number of the pass's row: the 2nd from the left, as a new peyote Project's rows run left to right on its turned Canvas.
+    expect(counter.get('.row-progress__line').text()).toBe('· ряд 2')
     expect(wrapper.text()).toContain('проходов: 27, рядов: 14')
   })
 

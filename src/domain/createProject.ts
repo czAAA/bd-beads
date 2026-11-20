@@ -7,7 +7,7 @@ import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds }
 import { lettersOfPalette } from './paletteEdits'
 import type { Background, Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
-import { INITIAL_ROW_PROGRESS } from './rowProgress'
+import { startingRowProgress } from './rowWays'
 import { DEFAULT_TECHNIQUE, startOrientation, type Technique, type TechniqueSettings } from './weave'
 
 // Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture. A new peyote
@@ -61,7 +61,7 @@ export function createProject(input: CreateProjectInput): Project {
     // Both layers take the form's settings (ADR 0079).
     layers: [
       { id: newLayerId(), name, ...layer, orientation: startOrientation(created.technique) },
-      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, rowProgress: { ...INITIAL_ROW_PROGRESS } }] : []),
+      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, rowProgress: startingRowProgress(created.technique, startOrientation(created.technique) / 90) }] : []),
     ],
     palette,
     paletteLetters: lettersOfPalette(palette, bead.id, undefined),

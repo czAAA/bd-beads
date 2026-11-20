@@ -10,7 +10,7 @@ import { ru } from '../i18n/ru'
 import { headerMaker, printText, RUN_NOTE_BEAD, type PrintedRunUnit } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
 import { frameOf, withFrameSheet, withLayer } from '../domain/layerRecord'
-import { withLayers } from '../testUtils/layerFields'
+import { ROWS_DOWN, withLayers } from '../testUtils/layerFields'
 
 const at = new Date(2026, 8, 26, 14, 32)
 
@@ -139,7 +139,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('writes the rows as words with the range, the notes and the runs', () => {
     const base = createProject({ technique: 'brick', beadId: 'miyuki-delica-11-0', size: { width: 3, height: 2, unit: 'beads' } })
-    const painted = paintAt(base, [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 2 }], red.hex)
+    const painted = paintAt(withLayers(base, { rowProgress: ROWS_DOWN }), [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 2 }], red.hex)
     const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.title).toBe('Row by row')
@@ -148,6 +148,16 @@ describe('printText Word chart (ticket 0574)', () => {
       { label: '1', first: 1, last: 1, marker: 'L', runs: [[{ count: 2, letter: 'C' }], [{ count: 1 }]] },
       { label: '2', first: 2, last: 2, marker: 'R', runs: [[{ count: 1, letter: 'C' }], [{ count: 2 }]] },
     ])
+  })
+
+  it('writes the rows the way asked as seen, not the way Row progress runs them (Export panel)', () => {
+    const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 2, height: 2, unit: 'beads' } })
+    const project = letters(paintAt(base, [{ row: 0, column: 0 }, { row: 1, column: 1 }], red.hex))
+    const first = (choices: { rowByRowWay?: 'down' | 'right' | 'up' | 'left' }) => printText(project, en, 'en', at, { ...ROW_BY_ROW, ...choices }).wordChart!.notes[0]
+
+    expect(first({})).toBe('Row 1 is at the top of the picture.')
+    expect(first({ rowByRowWay: 'up' })).toBe('Row 2 is at the bottom of the picture.')
+    expect(first({ rowByRowWay: 'right' })).toBe('Row 1 is at the left of the picture.')
   })
 
   it('says where the first row is by the number it carries: the ruler\'s, 2 at the bottom of a 2-row loom worked upward (ticket 1129)', () => {
@@ -161,7 +171,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('says Rows 1&2 and the count for peyote, and translates the words but not the letters', () => {
     const base = createProject({ technique: 'peyote', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 2, unit: 'beads' } })
-    const chart = printText(letters(paintAt(base, [{ row: 0, column: 0 }, { row: 0, column: 3 }], red.hex)), ru, 'ru', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(paintAt(withLayers(base, { rowProgress: ROWS_DOWN }), [{ row: 0, column: 0 }, { row: 0, column: 3 }], red.hex)), ru, 'ru', at, ROW_BY_ROW).wordChart!
 
     expect({ ...chart.rows[0], runs: asLine(chart.rows[0]!.runs) }).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C 2× 1C' })
     expect(chart.notes).toContain(ru.print.wordChart.evenCount)

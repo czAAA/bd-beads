@@ -11,7 +11,7 @@ import { BEAD_CATALOG } from './beads'
 import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, frameOf, withCanvas, withFrameSheet } from './layerRecord'
-import { withLayers } from '../testUtils/layerFields'
+import { ROWS_DOWN, withLayers } from '../testUtils/layerFields'
 import { type RowProgress } from './project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -344,7 +344,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
 describe('peyote passes (ticket 347)', () => {
   /** 3 columns x 7 rows, the reporter's example. */
   function peyote(direction: 'rows' | 'columns', pass: number) {
-    const project = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 4.5, height: 10.5, unit: 'mm' } })
+    const project = withLayers(createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 4.5, height: 10.5, unit: 'mm' } }), { rowProgress: ROWS_DOWN })
     const down = direction === 'columns' ? toggleRowDirection(project) : project
     return moveToRow(down, pass)
   }
@@ -380,7 +380,7 @@ describe('peyote passes (ticket 347)', () => {
   it('steps through the passes on the column-staggered grid as weavers do: a row at a time, its level columns then its shifted ones (tickets 0734, 1154)', () => {
     // The thread runs along a row whose beads sit in staggered columns: at a Drop of 2 a pass picks up the two beads of a pair.
     const dropped = (pass: number) => {
-      const project = createProject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 }, beadId: cubeBead.id, size: { width: 6, height: 10.5, unit: 'mm' } })
+      const project = withLayers(createProject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 }, beadId: cubeBead.id, size: { width: 6, height: 10.5, unit: 'mm' } }), { rowProgress: ROWS_DOWN })
       return moveToRow(project, pass)
     }
     const row1 = (project: ReturnType<typeof dropped>) =>
@@ -408,7 +408,7 @@ describe('resetRowProgress (ticket 455)', () => {
 describe('passLine (ticket 0849)', () => {
   it('names the ruler line of the pass where a line takes two passes, on peyote only (ticket 0849, F-04-03)', () => {
     // A new peyote Project's Canvas is turned a quarter: looked at upright first.
-    const peyote = withCanvas(createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }), { orientation: 0 })
+    const peyote = withLayers(createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }), { orientation: 0, rowProgress: ROWS_DOWN })
     const lines = frameOf(peyote)!.rows
     expect(rowProgressPosition(peyote).total).toBe(1 + (lines - 1) * 2)
     // Pass 1 is the first line; passes 2 and 3 the second; pass 4 the third.
@@ -439,7 +439,7 @@ describe('passLine (ticket 0849)', () => {
 })
 
 describe('stepLines (ticket 1038)', () => {
-  const frame = (technique: 'loom' | 'peyote') => createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 20, height: 30, unit: 'beads' } })
+  const frame = (technique: 'loom' | 'peyote') => withLayers(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 20, height: 30, unit: 'beads' } }), { rowProgress: ROWS_DOWN })
   const step = (project: Project, from: number, to: number) => stepLines(moveToRow(project, to), rowProgressOf(moveToRow(project, from)))
 
   it('names the lines of the passes a step crossed, the one it left and the one it reached, either way', () => {
