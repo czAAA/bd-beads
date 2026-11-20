@@ -52,7 +52,9 @@ export interface ExportFlowDeps {
 /** Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020) as a Project file, PNG or PDF, printing the
  * maker's name (ADR 0060). Deps are lazy. */
 export function useExportFlow(deps: ExportFlowDeps) {
-  const downloadFile = deps.downloadFile ?? browserDownloadFile
+  const download = deps.downloadFile ?? browserDownloadFile
+  /** Hands a file over and answers its route; a hand-over that answers nothing (a test's) counts as a download. */
+  const downloadFile = async (fileName: string, contents: BlobPart, type: string) => (await download(fileName, contents, type)) ?? 'downloaded'
   const picturesOf = (ids: readonly string[]): Promise<ReadonlyMap<string, Blob>> => deps.picturesOf?.(ids) ?? Promise.resolve(new Map())
   const quality = useExportQuality()
   /** Large beads and Row by row (ticket 0916): page 1 of both formats follows the first, the PDF's pages the second. */
@@ -95,15 +97,14 @@ export function useExportFlow(deps: ExportFlowDeps) {
    * (ticket 306). */
   async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, projectIds?: readonly string[], toastId = SAVED_FILE_TOAST): Promise<boolean> {
     const contents = await make()
-    // A test's hand-over may answer nothing: it counts as a download.
-    const outcome = (await downloadFile(fileName, contents, type)) ?? 'downloaded'
+    const outcome = await downloadFile(fileName, contents, type)
     if (outcome === 'cancelled') {
       return false
     }
     if (outcome === 'refused') {
       // A refused share hands nothing over until its action does (SaveReminder card: the count stays till then).
       toast.readyToSave(fileName, async () => {
-        const again = (await downloadFile(fileName, contents, type)) ?? 'downloaded'
+        const again = await downloadFile(fileName, contents, type)
         if (again === 'refused' || again === 'cancelled') return undefined
         reached(fileName, projectIds)
         return again

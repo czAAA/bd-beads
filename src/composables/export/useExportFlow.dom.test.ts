@@ -361,6 +361,15 @@ describe('useExportFlow toasts (ticket 523)', () => {
     await vi.waitFor(() => expect(toasts.at(-1)!.text).toBe('Saved where you chose: my-scarf.png'))
   })
 
+  it('says Downloads when the fresh tap\'s share fails and the file goes by a link instead (ticket 1139)', async () => {
+    const { flow, toasts } = setupToasts('refused')
+    await flow.onExportPng()
+    downloadFile.mockReturnValue('downloaded')
+    toasts[0]!.action!.run()
+
+    await vi.waitFor(() => expect(toasts.at(-1)!.text).toBe('Saved to Downloads: my-scarf.png'))
+  })
+
   it('says nothing more when the fresh tap is refused or the share sheet closed again', async () => {
     for (const again of ['refused', 'cancelled'] as const) {
       const { flow, toasts } = setupToasts('refused')
