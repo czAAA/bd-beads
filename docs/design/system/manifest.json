@@ -476,7 +476,7 @@
     {
       "name": "ShortcutsHelp",
       "group": "Screens",
-      "summary": "The Keyboard shortcuts modal: every shortcut, grouped as in the Toolbox."
+      "summary": "Keyboard shortcuts as a Menu Subpanel: every key and gesture, grouped as in the Toolbox, each group in two even columns (approved 2026-11-20, ticket 1159 builds it)."
     },
     {
       "name": "StackingOrder",
