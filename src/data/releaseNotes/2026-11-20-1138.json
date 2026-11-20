@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "fixed",
+  "line": {
+    "en": "Opening the Frame panel no longer nudges the Canvas when the panel barely reaches the Frame, and closing it keeps the Frame in view",
+    "ru": "Открытая панель рамки больше не сдвигает холст, когда едва задевает рамку, а при закрытии рамка остаётся на виду",
+    "uk": "Відкрита панель рамки більше не зсуває полотно, коли ледь зачіпає рамку, а після закриття рамка лишається на виду",
+    "be": "Адкрытая панэль рамкі больш не зрушвае палатно, калі ледзь зачапляе рамку, а пасля закрыцця рамка застаецца на віду",
+    "zh": "打开边框面板时，若面板只稍稍碰到边框，画布不再跟着挪动；关闭面板后边框仍留在视野中",
+    "es": "Abrir el panel del marco ya no mueve el lienzo cuando el panel apenas toca el marco, y al cerrarlo el marco sigue a la vista",
+    "pl": "Otwarcie panelu ramki nie przesuwa już płótna, gdy panel ledwo sięga ramki, a po zamknięciu ramka zostaje na widoku"
+  }
+}
