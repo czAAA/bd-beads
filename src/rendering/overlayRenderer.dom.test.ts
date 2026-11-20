@@ -597,6 +597,21 @@ describe('renderOverlay', () => {
       expect(covers.every((call) => call.globalAlpha === 0.45)).toBe(true)
     })
 
+    it('washes those cut halves in the area\'s colour at the band\'s 16%, over the cover, so they read as outside it (ticket 1149)', () => {
+      const brick = projectOf('brick', 6, 5, noProgress)
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project: brick, region: whole(brick), zoom: 1, selection: { top: 1, left: 0, rows: 2, columns: 2 } })
+
+      const halves = calls.filter((call) => call.name === 'fillRect' && (call.fillStyle === DEFAULT_THEME.canvas || call.globalAlpha === 0.16))
+      expect(halves.map((call) => [call.fillStyle, call.globalAlpha, call.args])).toEqual([
+        [DEFAULT_THEME.canvas, 0.45, [0, 20, 10, 20]],
+        [DEFAULT_THEME.marker, 0.16, [0, 20, 10, 20]],
+        [DEFAULT_THEME.canvas, 0.45, [40, 40, 10, 20]],
+        [DEFAULT_THEME.marker, 0.16, [40, 40, 10, 20]],
+      ])
+    })
+
     it('covers the half positions above and below on peyote\'s columns, and none on loom', () => {
       const peyote = projectOf('peyote', 6, 5, noProgress)
       const cut = recordingContext()
@@ -840,6 +855,18 @@ describe('renderOverlay', () => {
       const erasing = recordingContext()
       renderOverlay(erasing.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), preview: { cells: [inside, outside], color: null } })
       expect(erasing.named('fill').map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.mirror, DEFAULT_THEME.outline])
+    })
+
+    it('washes the half positions its edge cuts on peyote in `mirror`, as a Selection\'s are in its colour (ticket 1149)', () => {
+      const project = (changeFrame(projectOf('peyote', 6, 5, { marks: false }), { remove: true }) as { project: Project }).project
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }) })
+
+      const covers = calls.filter((call) => call.name === 'fillRect' && call.fillStyle === DEFAULT_THEME.canvas).map((call) => call.args)
+      const washes = calls.filter((call) => call.name === 'fillRect' && call.fillStyle === DEFAULT_THEME.mirror && call.globalAlpha === 0.16).map((call) => call.args)
+      expect(covers).toHaveLength(2)
+      expect(washes).toEqual(covers)
     })
 
     it('draws no line in a direction one bead across, its chip being off', () => {
