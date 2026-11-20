@@ -3,7 +3,7 @@ import { withMakerName } from '../../domain/makerName'
 import type { Layer } from '../../domain/grid'
 import { lettersOn, withLetters } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf, projectListFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf } from '../../domain/projectFile'
 import type { SealedProject } from '../../domain/sealedProject'
 import type { Locale, Translations } from '../../i18n/translations'
 import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
@@ -15,7 +15,7 @@ import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../../s
 import { useExportQuality } from './useExportQuality'
 import { usePrintChoices } from './usePrintChoices'
 import { namedChoices, pdfFileName } from './pdfFileName'
-import { SAVED_FILE_TOAST, savedFileToast, savedPageToast } from './savedFileToast'
+import { savedFileToast } from './savedFileToast'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { frameOf } from '../../domain/layerRecord'
 
@@ -93,7 +93,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   /** Makes a file and hands it over inside the tap, then names it in the saved-file toast (tickets 523, 0859). Safari
    * shares only from a fresh tap, so when it refuses because the build took too long the toast's action is the new tap
    * (ticket 306). */
-  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, projectIds?: readonly string[], toastId = SAVED_FILE_TOAST): Promise<boolean> {
+  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, projectIds?: readonly string[]): Promise<boolean> {
     const contents = await make()
     const outcome = await downloadFile(fileName, contents, type)
     if (outcome === 'cancelled') {
@@ -106,23 +106,15 @@ export function useExportFlow(deps: ExportFlowDeps) {
         if (again === 'refused' || again === 'cancelled') return false
         reached(fileName, projectIds)
         return true
-      }, toastId)
+      })
       return true
     }
     reached(fileName, projectIds)
-    toast.saved(fileName, toastId)
+    toast.saved(fileName)
     return true
   }
 
-  /** `more` are the files made, in order, after the first is handed over (the PNG's list pages after page 1, tickets 0583, 0915, and the
-   * Word chart's PNG, ticket 0574): none when there is nothing more to make. */
-  async function runExport(
-    nameOf: (project: Project) => string | Promise<string>,
-    make: (project: Project) => Promise<Blob>,
-    extension: 'png' | 'pdf',
-    type: string,
-    more?: (project: Project) => Promise<{ fileName: string; make: () => Promise<Blob> }[]>,
-  ) {
+  async function runExport(nameOf: (project: Project) => string | Promise<string>, make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string) {
     const project = deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
     if (!project || !frameOf(project) || exporting.value) {
@@ -130,13 +122,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
     exporting.value = extension
     try {
-      const handed = await makeAndHandOver(await nameOf(project), () => make(project), type)
-      // Each further page stacks a toast of its own, so every name is read; the first is page 1.
-      const further = handed ? ((await more?.(project)) ?? []) : []
-      for (const [index, next] of further.entries()) {
-        const page = index + 2
-        if (!(await makeAndHandOver(next.fileName, next.make, type, undefined, savedPageToast(page)))) break
-      }
+      await makeAndHandOver(await nameOf(project), () => make(project), type)
     } finally {
       exporting.value = undefined
     }
@@ -243,9 +229,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
   const wordsOf = (code: PrintCode, project: Project) => code.printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value)
 
   function onExportPng() {
-    // The words the pictures print (tickets 164, 0583), in the app's language, with the Project's maker's name (ADR 0060).
-    // Page 1 is the first (ticket 0915); Beads needed that runs over follows as `_2`, `_3`. The Word chart is PDF pages only (ticket
-    // 0586).
+    // The words the picture prints (tickets 164, 0583), in the app's language, with the Project's maker's name (ADR 0060).
+    // It is the Cover page, one file (ticket 1096; PngExport card).
     const dpi = pngDpiFor(quality.value)
     return runExport(
       (project) => projectExportFileName(project, 'png'),
@@ -255,14 +240,6 @@ export function useExportFlow(deps: ExportFlowDeps) {
       },
       'png',
       'image/png',
-      async (project) => {
-        const code = await loadPrintCode()
-        const words = wordsOf(code, project)
-        return Array.from({ length: code.projectPageCount(project, words) - 1 }, (_, index) => ({
-          fileName: projectListFileName(project, index + 2),
-          make: () => code.exportProjectPng(project, words, dpi, index + 1),
-        }))
-      },
     )
   }
 

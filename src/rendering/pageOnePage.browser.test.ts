@@ -16,40 +16,17 @@ import { drawNeededListPage, drawPageOne, NEEDED_ROOM } from './pageOnePage'
 import { font, loadPrintFonts, MONO, SERIF } from './printPages'
 import { A4_PORTRAIT, PRINT_MARGIN } from './printPlan'
 import { printText } from './printText'
-import { exportProjectPdf, exportProjectPng, projectPageCount } from './projectExport'
-import { K } from './chartVector'
-import { toHex } from '../domain/color'
+import { exportProjectPdf } from './projectExport'
 import { fillBlanks } from '../domain/fillBlanks'
 
 // Page 1 of the PDF drawn for real (ticket 0914; PrintPage1 card): the whole piece and Beads needed, and for most pieces
-// the whole PDF; and the PNG, the same page as a picture (ticket 0915; PngExport card).
+// the whole PDF.
 
 const wordsOf = (project: ReturnType<typeof fixtureProject>) => printText(project, en, 'en', new Date())
 
 /** The pages the PDF says it has. */
 async function pdfPages(blob: Blob): Promise<number> {
   return Number(/\/Count (\d+)/.exec(await blob.text())?.[1])
-}
-
-const pixel = (canvas: HTMLCanvasElement, x: number, y: number) => {
-  const [r, g, b] = canvas.getContext('2d')!.getImageData(Math.round(x), Math.round(y), 1, 1).data
-  return toHex({ r: r!, g: g!, b: b! })
-}
-
-/** The filled squares of a PDF drawing, in layout px from the page's top left corner, with their color. */
-function filledSquares(drawing: string, pageHeight: number): { x: number; y: number; width: number; height: number; hex: string }[] {
-  let hex = ''
-  const squares = []
-  for (const line of drawing.split('\n')) {
-    const color = /^([\d.]+) ([\d.]+) ([\d.]+) rg$/.exec(line)
-    if (color) hex = toHex({ r: Math.round(Number(color[1]) * 255), g: Math.round(Number(color[2]) * 255), b: Math.round(Number(color[3]) * 255) })
-    const square = /^([\d.-]+) ([\d.-]+) ([\d.]+) ([\d.]+) re f$/.exec(line)
-    if (square) {
-      const [x, y, width, height] = square.slice(1, 5).map(Number) as [number, number, number, number]
-      squares.push({ x: x / K, y: (pageHeight * K - y - height) / K, width: width / K, height: height / K, hex })
-    }
-  }
-  return squares
 }
 
 describe('page 1 of the PDF', () => {
@@ -122,12 +99,12 @@ describe('page 1 of the PDF', () => {
     expect(grams.every(({ x }) => Math.abs(x - right) < 0.5)).toBe(true)
   })
 
-  it('ends its key with the cross and "empty" when the Schema has empty positions, in the PDF and the PNG (ticket 0963)', () => {
-    const texts = (project: ReturnType<typeof fixtureProject>, as: 'pdf' | 'png') => {
+  it('ends its key with the cross and "empty" when the Schema has empty positions (ticket 0963)', () => {
+    const texts = (project: ReturnType<typeof fixtureProject>) => {
       const words = wordsOf(project)
       const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
       const layout = pageOneLayout(project, words)
-      drawPageOne(project, words, layout, layout.plan, 1, as)
+      drawPageOne(project, words, layout, layout.plan, 1)
       const drawn = fillText.mock.calls.map(([value]) => value)
       fillText.mockRestore()
       return drawn
@@ -136,11 +113,9 @@ describe('page 1 of the PDF', () => {
     const overview = fixtureProject({ technique: 'loom', columns: 200, rows: 200 })
     const everyCell = Array.from({ length: 400 }, (_, index) => ({ row: Math.floor(index / 20), column: index % 20, color: '#e63746' }))
     const full = fixtureProject({ technique: 'loom', columns: 20, rows: 20, override: everyCell })
-    for (const as of ['pdf', 'png'] as const) {
-      expect(texts(holed, as), as).toContain(en.print.wordChart.empty)
-      expect(texts(overview, as), as).toContain(en.print.wordChart.empty)
-      expect(texts(full, as), as).not.toContain(en.print.wordChart.empty)
-    }
+    expect(texts(holed)).toContain(en.print.wordChart.empty)
+    expect(texts(overview)).toContain(en.print.wordChart.empty)
+    expect(texts(full)).not.toContain(en.print.wordChart.empty)
   })
 
   it.each<[Locale, Translations]>([['en', en], ['ru', ru], ['uk', uk], ['be', be], ['zh', zh], ['es', es], ['pl', pl]])('fits the tech line and the maker across the page in %s', (locale, messages) => {
@@ -175,63 +150,4 @@ describe('the PDF of a piece cut into parts (ticket 0914)', () => {
     expect(plan.pageCount).toBe(3)
     expect(await pdfPages(await exportProjectPdf(project, words, 150))).toBe(3)
   }, 60_000)
-})
-
-describe('the PNG is page 1 as a picture (ticket 0915; PngExport card)', () => {
-  beforeAll(loadPrintFonts)
-
-  it('paints each bead where page 1 of the PDF draws it, in its color, with the same letters', () => {
-    const project = fixtureProject({ technique: 'loom', columns: 20, rows: 20 })
-    const words = wordsOf(project)
-    const layout = pageOneLayout(project, words)
-    const pdf = drawPageOne(project, words, layout, layout.plan, 1)
-    const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
-    const png = drawPageOne(project, words, layout, layout.plan, 1, 'png')
-    const painted = fillText.mock.calls.map(([value]) => value).filter((value) => /^[A-Z?]+$/.test(value))
-    fillText.mockRestore()
-
-    expect(png.drawing).toBeUndefined()
-    const squares = filledSquares(pdf.drawing!, A4_PORTRAIT.height)
-    expect(squares.length).toBeGreaterThan(300)
-    // Near a bead's corner, clear of its letter.
-    for (const square of squares) expect(pixel(png.canvas, square.x + square.width * 0.15, square.y + square.height * 0.15)).toBe(square.hex)
-    expect(painted).toEqual([...pdf.drawing!.matchAll(/\(([A-Z?]+)\) Tj/g)].map((match) => match[1]))
-  })
-
-  it('is the overview of a piece cut into parts, without the lines where they meet and their pills', () => {
-    const project = fixtureProject({ technique: 'loom', columns: 150, rows: 100 })
-    const words = wordsOf(project)
-    const layout = pageOneLayout(project, words)
-    const texts = (as: 'pdf' | 'png') => {
-      const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
-      drawPageOne(project, words, layout, layout.plan, 1, as)
-      const values = fillText.mock.calls.map(([value]) => value)
-      fillText.mockRestore()
-      return values
-    }
-
-    expect(layout.overview).toBeDefined()
-    expect(texts('pdf').some((value) => value.endsWith('→'))).toBe(true)
-    expect(texts('png').some((value) => value.endsWith('→'))).toBe(false)
-  })
-
-  it('is drawn at the dpi asked, one file for a short list', async () => {
-    const project = fixtureProject({ technique: 'loom', columns: 20, rows: 20 })
-    const words = wordsOf(project)
-    const picture = await createImageBitmap(await exportProjectPng(project, words, 300))
-
-    expect(projectPageCount(project, words)).toBe(1)
-    expect([picture.width, picture.height]).toEqual([A4_PORTRAIT.width * 2, A4_PORTRAIT.height * 2])
-  })
-
-  it('continues Beads needed in further files, each a list page', async () => {
-    const project = fixtureProject({ technique: 'loom', columns: 100, rows: 100 })
-    const many = { ...wordsOf(project), colors: Array.from({ length: 90 }, (_, index) => ({ hex: '#336699', name: `Color ${index}`, beads: '10' })) }
-    const files = projectPageCount(project, many)
-
-    expect(files).toBe(1 + pageOneLayout(project, many).lists.length)
-    expect(files).toBeGreaterThan(1)
-    const list = await createImageBitmap(await exportProjectPng(project, many, 150, files - 1))
-    expect([list.width, list.height]).toEqual([A4_PORTRAIT.width, A4_PORTRAIT.height])
-  })
 })

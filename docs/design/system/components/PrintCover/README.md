@@ -1,6 +1,6 @@
 # PrintCover
 
-**In the PDF since ticket 1096.** Picture saving it is approved 2026-11-19, not yet in the app (ticket 1096): until then the Picture export is Page 1 as a picture (PngExport).
+**In the app since ticket 1096**: the PDF's first page and the page Picture saves.
 
 The **Cover page**: one A4 portrait page that shows the finished piece in color, with its name. It is the PDF's first page while the Export panel's **Cover page** switch is on (it is on at first), and it is what **Picture** saves. It is the page a maker shows or sells the pattern with; the chart and Beads needed start on the page after it. Signed off on the canvas "PDF export: cover page", look A (Gallery).
 
@@ -29,14 +29,14 @@ An empty name leaves out the title, an empty maker the "by" line. An unknown Bea
 
 ## As the Picture
 
-Approved 2026-11-19, not yet in the app (ticket 1096). Picture saves this page as a PNG, at the Export quality's dpi (QualitySlider card), drawn by the same code as the PDF's. It is one file, whatever the piece's size and however many colors it has, and its footer reads "1 / 1". It is saved whether or not the Cover page switch is on: the switch is the PDF's. Its file name carries no option (ExportPanel card).
+Picture saves (ticket 1096; PngExport card) this page as a PNG, at the Export quality's dpi (QualitySlider card), drawn by the same code as the PDF's. It is one file, whatever the piece's size and however many colors it has, and its footer reads "1 / 1". It is saved whether or not the Cover page switch is on: the switch is the PDF's. Its file name carries no option (ExportPanel card).
 
 ## Acceptance
 
 - [x] With Cover page on, the PDF opens on the cover: the piece in color on the board, its technique word, title, maker, colors and tech line; the chart starts on the next page.
 - [x] Every page number and every page a page points at counts the cover.
 - [x] With Cover page off, the PDF is what it was before.
-- [ ] Picture saves the cover as one PNG file.
+- [x] Picture saves the cover as one PNG file.
 - [ ] The cover is in color with Black and white on.
 
 Hand-written from the signed-off canvas; static rendition.

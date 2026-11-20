@@ -32,8 +32,7 @@ export interface Paint {
 }
 
 /** A page's drawing (ticket 0915): fills, lines, shapes and Helvetica text in points from the page's top left corner. Page 1
- * and the chart pages describe themselves through it once; `PdfContent` writes it as PDF operators, and the PNG paints it
- * on its canvas (`rendering/canvasDrawing.ts`). */
+ * and the chart pages describe themselves through it; `PdfContent` writes it as PDF operators. */
 export interface PageDrawing {
   fillRect(x: number, y: number, width: number, height: number, color: string): void
   /** Straight lines `[x1, y1, x2, y2]`, all in one path. */

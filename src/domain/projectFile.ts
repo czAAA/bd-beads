@@ -134,11 +134,6 @@ export function typedPdfFileName(raw: string): string | undefined {
   return stem ? `${stem}.pdf` : undefined
 }
 
-/** A further page of the PNG, a list page after page 1 (Beads needed running over, tickets 0583, 0915), e.g. `summer-rose-ada_2.png` for the second. */
-export function projectListFileName(project: Project, page: number): string {
-  return projectExportFileName(project, 'png').replace(/\.png$/, `_${page}.png`)
-}
-
 export function libraryFileName(): string {
   return 'openbeads_lib.openbeads'
 }

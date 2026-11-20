@@ -2,7 +2,7 @@ import { nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf, projectListFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf } from '../../domain/projectFile'
 import { en } from '../../i18n/en'
 import { readProjectsFile } from '../../services/projectFileCodec'
 import { encodeProject } from '../../domain/projectEncoding'
@@ -17,12 +17,10 @@ vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQ
 vi.mock('../../rendering/projectExport', () => ({
   exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
-  projectPageCount: vi.fn(() => 1),
 }))
-import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
+import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
 import { usePrintChoices } from './usePrintChoices'
 import { canvasOf, frameOf, withFrameSheet } from '../../domain/layerRecord'
-import { withLayers } from '../../testUtils/layerFields'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
 /** Big enough that its chart prints under 3 mm, where Large beads acts (ticket 1125). */
@@ -35,7 +33,6 @@ beforeEach(() => {
   downloadFile.mockClear()
   vi.mocked(exportProjectPng).mockClear()
   vi.mocked(exportProjectPdf).mockClear()
-  vi.mocked(projectPageCount).mockReturnValue(1)
   localStorage.clear()
 })
 
@@ -118,14 +115,12 @@ describe('useExportFlow print choices (tickets 0916, 1096)', () => {
     expect(vi.mocked(exportProjectPdf).mock.lastCall![1].cover).toBeUndefined()
   })
 
-  it('prints with Large beads and Row by row as this device has them, page 1 of the PNG with Large beads too', async () => {
+  it('prints with Large beads and Row by row as this device has them', async () => {
     const { largeBeads, rowByRow } = usePrintChoices()
     largeBeads.value = true
     rowByRow.value = true
     await setup({ project: wide }).onExportPdf()
-    await setup({ project: wide }).onExportPng()
     expect(exportProjectPdf).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ largeBeads: true, wordChart: expect.anything() }), 300)
-    expect(exportProjectPng).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ largeBeads: true }), expect.anything())
   })
 })
 
@@ -191,21 +186,15 @@ describe('useExportFlow', () => {
       expect(exportProjectPng).toHaveBeenCalledWith(expect.anything(), expect.anything(), 450)
     })
 
-    it('hands over the list pages Beads needed runs over onto as _2 and _3, in order (ticket 0583)', async () => {
-      vi.mocked(projectPageCount).mockReturnValue(3)
-      await setup({ project: withLayers(project, { letters: true }) }).onExportPng()
+    it('hands over one picture, the Cover page, with no word for any switch in its name (ticket 1096)', async () => {
+      const { cover, largeBeads, rowByRow } = usePrintChoices()
+      cover.value = false
+      largeBeads.value = true
+      rowByRow.value = true
+      await setup({ project: wide }).onExportPng()
 
-      expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), projectListFileName(project, 2), projectListFileName(project, 3)])
-      expect(projectListFileName(project, 2)).toBe('my-scarf_2.png')
-      expect(vi.mocked(exportProjectPng).mock.calls.map((call) => call[3])).toEqual([undefined, 1, 2])
-    })
-
-    it('stops handing over pages when one is cancelled (ticket 0583)', async () => {
-      vi.mocked(projectPageCount).mockReturnValue(3)
-      downloadFile.mockResolvedValueOnce('saved').mockResolvedValueOnce('cancelled')
-      await setup().onExportPng()
-
-      expect(downloadFile).toHaveBeenCalledTimes(2)
+      expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(wide, 'png')])
+      expect(exportProjectPng).toHaveBeenCalledTimes(1)
     })
 
     it('draws the PDF at its own dpi whatever the Export quality (ADR 0076)', async () => {
@@ -325,12 +314,11 @@ describe('useExportFlow toasts (ticket 523)', () => {
     expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf_cover.pdf'], ['saved-file', `Saved: ${projectFileName(project)}`]])
   })
 
-  it('gives each further page its own toast, so every file is named', async () => {
-    vi.mocked(projectPageCount).mockReturnValue(2)
+  it('names the picture in the one toast', async () => {
     const { flow, toasts } = setupToasts()
     await flow.onExportPng()
 
-    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf.png'], ['saved-file-2', 'Saved: my-scarf_2.png']])
+    expect(toasts.map((toast) => [toast.id, toast.text])).toEqual([['saved-file', 'Saved: my-scarf.png']])
   })
 
   it('says nothing when the person closed the share sheet', async () => {

@@ -25,4 +25,4 @@ Until ticket 1096 lands this page is as written above. Then:
 - [ ] A 150 × 100 opens with the overview, its two parts marked, then two chart pages: "1 / 3".
 - [ ] Colors that do not fit page 1 continue on a list page; the Total and the note end the last.
 
-Rewritten in ticket 0914: the Cover page that opened the PDF (the whole Schema at up to 6 mm a bead, the parts marked, Beads needed as swatch, name, beads and grams) and the Specification page after the chart pages are folded into this page. Since ticket 0915 the PNG is this page as a picture (PngExport); the earlier cards are in git history.
+Rewritten in ticket 0914: the Cover page that opened the PDF (the whole Schema at up to 6 mm a bead, the parts marked, Beads needed as swatch, name, beads and grams) and the Specification page after the chart pages are folded into this page. From ticket 0915 to ticket 1096 the PNG was this page as a picture; it is the Cover page now (PngExport). The earlier cards are in git history.

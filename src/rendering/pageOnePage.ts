@@ -1,5 +1,4 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
-import { CanvasDrawing } from './canvasDrawing'
 import { drawChartParts, K } from './chartVector'
 import { listHeader, TABLE_COLUMN_GAP, TITLE_MAKER_ROW, TITLE_NAME_ROW, titleRows, type ColorsSlice } from './overviewLayout'
 import { NEEDED_COLUMNS, NEEDED_HEADING, type PageOneLayout } from './pageOneLayout'
@@ -18,8 +17,7 @@ import { projectDimensions } from '../domain/projectExtent'
 import type { SwatchLetters } from '../domain/swatchLetters'
 
 // Page 1 of the PDF and the list pages after it (ticket 0914; PrintPage1 card): the title block, the whole piece (the
-// working chart as PDF drawing, ADR 0043, or the overview of its parts), one Beads needed table and the footer. The PNG is
-// the same page as a picture (ticket 0915; PngExport card): its chart painted from the same drawing, its list pages the same.
+// working chart as PDF drawing, ADR 0043, or the overview of its parts), one Beads needed table and the footer.
 
 const RULE = pt(0.75)
 /** A row's swatch, drawn like a bead with its Swatch letter on it. */
@@ -55,9 +53,9 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
 }
 
 /** The overview (ticket 0914): the whole piece on its board without letters, rulers with a number every 5 (10 when the
- * beads are too small for that) and an empty position under its cross. With `plan` the lines where the chart parts meet
- * and their page pills are drawn too; the PNG has no pages to point at. */
-function drawOverview(context: CanvasRenderingContext2D, project: Project, overview: NonNullable<PageOneLayout['overview']>, plan: PrintPlan | undefined, labels: PrintText['labels']): void {
+ * beads are too small for that), an empty position under its cross, and the lines where the chart parts meet with their
+ * page pills. */
+function drawOverview(context: CanvasRenderingContext2D, project: Project, overview: NonNullable<PageOneLayout['overview']>, plan: PrintPlan, labels: PrintText['labels']): void {
   const board = { ...overview.board, ...overview.extent }
   const { columns, rows } = projectDimensions(project)
   const whole = displayedExtentPx(frameWeave(project).technique, columns, rows, overview.zoom, quarterTurnOf(project), frameWeave(project).cell)
@@ -66,7 +64,7 @@ function drawOverview(context: CanvasRenderingContext2D, project: Project, overv
   const every = grid.stepAcross * overview.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
   // A Custom frame's beads keep no rows and columns to number (ticket 0594).
   if (geometryDrawnAlone(project).grid) drawRulers(context, project, overview.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, every)
-  if (plan && plan.parts.length > 1) drawParts(context, project, plan, labels, overview.zoom, board)
+  if (plan.parts.length > 1) drawParts(context, project, plan, labels, overview.zoom, board)
 }
 
 /** The footer of the Cover page, page 1 and the list pages: the mark, the brand and the date and time on the left, the page
@@ -172,22 +170,21 @@ function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: Pr
 }
 
 /** Page 1 (ticket 0914): the title block, the chart whole (strips each under their label) or the overview with the parts
- * marked, Beads needed and the footer. For the PDF the chart is drawing in points laid over the picture; for the PNG
- * (ticket 0915) the same chart is painted on the picture itself, and the overview leaves out the parts. */
-export function drawPageOne(project: Project, words: PrintText, layout: PageOneLayout, plan: PrintPlan, scale = 1, as: 'pdf' | 'png' = 'pdf'): { canvas: HTMLCanvasElement; drawing?: string } {
+ * marked, Beads needed and the footer. The chart is drawing in points laid over the picture (ADR 0043). */
+export function drawPageOne(project: Project, words: PrintText, layout: PageOneLayout, plan: PrintPlan, scale = 1): { canvas: HTMLCanvasElement; drawing?: string } {
   const { page } = plan
   const { canvas, context } = blankPage(page, scale)
   drawTitleBlock(context, page, words)
   let drawing: string | undefined
   if (layout.overview) {
-    drawOverview(context, project, layout.overview, as === 'pdf' ? plan : undefined, words.labels)
+    drawOverview(context, project, layout.overview, plan, words.labels)
   } else {
-    const pdf = as === 'pdf' ? new PdfContent(page.height * K) : undefined
-    const pads = drawChartParts(pdf ?? new CanvasDrawing(context, scale), project, plan, plan.parts, project.paletteLetters ?? {}, layout.area)
+    const pdf = new PdfContent(page.height * K)
+    const pads = drawChartParts(pdf, project, plan, plan.parts, project.paletteLetters ?? {}, layout.area)
     if (plan.parts.length > 1) {
       plan.parts.forEach((part, index) => text(context, partLabel(project, words.labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
     }
-    drawing = pdf?.toString()
+    drawing = pdf.toString()
   }
   drawNeeded(context, page, words, project.paletteLetters ?? {}, layout.needed, layout.needed.y, words.empty)
   drawFooter(context, page, words, plan.pageOneNumber, plan.pageCount)

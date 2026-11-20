@@ -59,13 +59,11 @@ describe('estimatePng (QualitySlider card)', () => {
     expect(estimatePng(facts, 450).bytes).toBeGreaterThan(estimatePng(facts, 300).bytes)
   })
 
-  it('adds a file and its bytes for every list page', () => {
-    const over = estimatePng({ ...facts, lists: [30, 12] }, 300)
-    expect(over.count).toBe(3)
-    expect(over.bytes).toBeGreaterThan(estimatePng(facts, 300).bytes)
+  it('is one file however many colors run over page 1 onto list pages: the picture is the Cover page (ticket 1096)', () => {
+    expect(estimatePng({ ...facts, lists: [30, 12] }, 300)).toEqual(estimatePng(facts, 300))
   })
 
-  it('grows with the beads on page 1', () => {
+  it('grows with the beads on the cover', () => {
     expect(estimatePng({ ...facts, filled: facts.filled * 2, edges: facts.edges * 2 }, 300).bytes).toBeGreaterThan(estimatePng(facts, 300).bytes)
   })
 })
@@ -91,6 +89,7 @@ describe('estimatePdf', () => {
     expect(covered.pdfPages).toBe(plain.pdfPages + 1)
     expect(estimatePdf(covered, 300).count).toBe(estimatePdf(plain, 300).count + 1)
     expect(estimatePdf(covered, 300).bytes - estimatePdf(plain, 300).bytes).toBeGreaterThan(100_000)
+    // The picture is the cover whatever the switch says.
     expect(estimatePng(covered, 300)).toEqual(estimatePng(plain, 300))
   })
 

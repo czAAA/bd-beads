@@ -28,7 +28,6 @@ There is no cover that repeats the chart and no Specification that repeats the b
 
 Signed off on the canvas "PDF export: cover page". The cards have the detail; until ticket 1096 lands the rest of this file describes the exports as they are.
 
-- **Picture is the Cover page**, not page 1: one PNG file, in color.
 - **Black and white** (PrintBlackAndWhite card), a switch that is off at first: every page after the cover is drawn in one ink, each bead on paper, a 10%, 20% or 30% tint or solid black, so letters and lines print sharp on an office printer.
 - **Row by row shows each run's bead**: the count, then the bead's own swatch with its letter, and an empty position as the empty swatch, in place of "3A, 2×" (PrintWordChart card).
 
@@ -69,7 +68,7 @@ One A4 portrait page inside a 10 mm margin on all four sides (`print-margin`), t
 ## The maker's name
 
 - **Where the name comes from**: the Project's own optional field, **Your name** (ADR 0060; "Printed on this Project's PDF and PNG exports.").
-- Set on a Project, it is printed on every export of that Project as information: in the chart page header, and "by {maker}" under the title of page 1 (and so of the PNG). It is never a watermark.
+- Set on a Project, it is printed on every export of that Project as information: in the chart page header, and "by {maker}" under the title of page 1 and of the Cover page (and so of the PNG). It is never a watermark.
 - Empty: the exports leave it out. Names longer than 32 characters are cut with an ellipsis in the header.
 
 ## Wide and long Schemas
@@ -79,7 +78,7 @@ One A4 portrait page inside a 10 mm margin on all four sides (`print-margin`), t
 
 ## PNG image
 
-- **Page 1 of the PDF, as a picture** (ticket 0915): the same page drawn by the same code, its chart painted on the picture from the drawing the PDF writes, drawn at 150, 300 or 450 DPI by the Export quality (QualitySlider card); a device that cannot hold a 450 DPI page draws High at 300. At the same size the PNG and PDF page 1 show the same bead size, letters, rulers and table. A piece that fits page 1 is the lettered chart with Beads needed; one cut into parts is the overview without the lines where the parts meet and their pills, as the PNG has no pages to point at. Its footer counts its own files ("1 / 2").
-- Beads needed that does not fit continues in further files, `_2`, `_3` after the file name, the list pages, handed over in order after page 1. Drawn in the app's language. No watermark. The PNG and PDF are named `{project}-{frame}-{maker}.png|pdf` and the project file `{project}-{maker}.openbeads`, each part made filename-safe and left out when it leaves nothing to write (ticket 0720).
+- **The Cover page, as a picture** (ticket 1096; PngExport card): the same page drawn by the same code, in color, drawn at 150, 300 or 450 DPI by the Export quality (QualitySlider card); a device that cannot hold a 450 DPI page draws High at 300. It is saved whatever the Cover page switch says, and no switch changes it. One file, whatever the piece: no list pages follow it, and its footer reads "1 / 1". Until ticket 1096 the PNG was page 1 of the PDF as a picture, its list pages further files (ticket 0915).
+- Drawn in the app's language. No watermark. The PNG and PDF are named `{project}-{frame}-{maker}.png|pdf` and the project file `{project}-{maker}.openbeads`, each part made filename-safe and left out when it leaves nothing to write (ticket 0720).
 
 The sizes are the `print-*` tokens; the board color is `print-board`. The PrintPage1, PrintChartPage, PrintStrips, PrintWordChart and PngExport cards show the pages. The signed-off canvas is in the claude.ai design project "Export sheets — PDF & PNG".

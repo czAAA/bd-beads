@@ -7,7 +7,7 @@ import type { Cell, Project } from '../domain/project'
 import { en } from '../i18n/en'
 import { estimatePdf, estimatePng, exportFacts } from './exportEstimate'
 import { printText } from './printText'
-import { exportProjectPdf, exportProjectPng, projectPageCount } from './projectExport'
+import { exportProjectPdf, exportProjectPng } from './projectExport'
 import { withLayers } from '../testUtils/layerFields'
 
 // The size each export shows against the real files (ticket 0588, ADR 0076): never less than the file and under about twice
@@ -74,10 +74,8 @@ describe('the File size estimate against real exports (QualitySlider card, ADR 0
       const facts = exportFacts(project, words)!
       for (const [quality, dpi] of Object.entries(PNG_DPI_BY_QUALITY)) {
         const estimate = estimatePng(facts, dpi)
-        expect(estimate.count).toBe(projectPageCount(project, words))
-        let real = 0
-        for (let page = 0; page < estimate.count; page += 1) real += (await exportProjectPng(project, words, dpi, page)).size
-        check(`PNG at ${quality}, choices ${on ? 'on' : 'off'}`, estimate.bytes, real)
+        expect(estimate.count).toBe(1)
+        check(`PNG at ${quality}, choices ${on ? 'on' : 'off'}`, estimate.bytes, (await exportProjectPng(project, words, dpi)).size)
       }
       const pdf = await exportProjectPdf(project, words, PDF_PAGE_DPI)
       const estimate = estimatePdf(facts, PDF_PAGE_DPI)

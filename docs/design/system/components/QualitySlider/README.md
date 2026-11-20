@@ -13,10 +13,10 @@ Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai c
 
 ## The size line (ticket 0588)
 
-- Each export button shows its size in its **Tooltip** (ticket 1121; it was the PanelItem's value slot), under the file's name: "PNG ≈ 1.4 MB · 2 files" and "PDF ≈ 3.2 MB · 9 pages". The format word comes first, so the extension is still there.
+- Each export button shows its size in its **Tooltip** (ticket 1121; it was the PanelItem's value slot), under the file's name: "PNG ≈ 1.4 MB · 1 file" and "PDF ≈ 3.2 MB · 9 pages". The format word comes first, so the extension is still there.
 - The figure is the File size estimate (glossary), an upper bound. It is rounded **up** to 0.1 MB ("≈ 0.3 MB"); under 0.1 MB it reads "< 0.1 MB" with no "≈"; from 10 MB it is whole MB, rounded up ("≈ 12 MB").
-- The count is every file or page the button gives: "1 file", "2 files"; "4 pages", "9 pages", with singular and plural from the language.
-- The PNG line follows the slider's stop. The PDF line follows only the Frame, the colors (list pages) and the Printable chart's two switches (ticket 0916): Large beads (more chart pages) and Row by row (the Word chart pages). The PNG line follows Large beads too, as its picture is page 1. Letters changes neither.
+- The count is every file or page the button gives: the PNG is always "1 file" (the Cover page, ticket 1096); "4 pages", "9 pages", with singular and plural from the language.
+- The PNG line follows the slider's stop. The PDF line follows only the Frame, the colors (list pages) and the Printable chart's two switches (ticket 0916): Large beads (more chart pages) and Row by row (the Word chart pages). The PNG line follows none of them: the picture is the Cover page (ticket 1096). Letters changes neither.
 - Until the print code has arrived (offline before the offline copy had it) the Tooltip says ".png" and ".pdf". With no Frame there are no buttons (ExportPanel card).
 - At narrow widths, a value that does not fit beside its label moves under it as a second line, left-aligned with the label, never truncated. The figures never wrap inside themselves.
 
@@ -60,7 +60,7 @@ The PDF is not on the slider: its picture pages (the Cover page, the overview on
 
 - [ ] The slider changes the PNG only. A PDF made at Low, Medium and High is the same file, apart from its date.
 - [ ] The stops show the word and its caption in words, with no size and no DPI; the DPI figures are in the Info note. `aria-valuetext` reads the word and the caption.
-- [ ] PNG's Tooltip and name read "PNG ≈ {size} · {n} files" and PDF's read "PDF ≈ {size} · {n} pages", with the counts equal to the files and pages the buttons give.
+- [ ] PNG's Tooltip and name read "PNG ≈ {size} · 1 file" and PDF's read "PDF ≈ {size} · {n} pages", with the counts equal to the files and pages the buttons give.
 - [ ] Sizes are rounded up to 0.1 MB, "< 0.1 MB" under 0.1 MB, and whole MB from 10 MB. Nothing ever shows a floor of "1 MB".
 - [ ] No line stands under the stops; the Info note opens with "Quality is for the picture only." and ends with "The printable chart is drawn in lines and stays sharp at any zoom." In the Unavailable state the High line sits under the stops.
 - [ ] At 320px, a value that does not fit moves under its label, and nothing is cut off or overflows.
