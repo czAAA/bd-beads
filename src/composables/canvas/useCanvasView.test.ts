@@ -529,6 +529,34 @@ describe('useCanvasView', () => {
       view.fit()
       expect(view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 100 } })).toBeUndefined()
     })
+
+    it('makes no move for a part the room misses by no more than the slack, and still follows the fit', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      const at = view.scroll.value
+      // The Frame starts at 170px: a panel over the left 200px misses it by 30px.
+      expect(view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 200 }, slack: 40 })).toBeUndefined()
+      expect(view.scroll.value).toEqual(at)
+      expect(view.isAtFit.value).toBe(true)
+      expect(view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, left: 200 }, slack: 20 })).toBeDefined()
+    })
+
+    it('takes back only as far as keeps in view a part the move brought into it', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      // The Frame, 170px to 830px at the fit, is moved till 30px of it lies off the right edge.
+      view.panBy(200, 0)
+      const move = view.bringIntoView(frameOf20, { jump: true, clear: { ...NO_INSETS, right: 300 } })!
+      vi.stubGlobal('matchMedia', () => ({ matches: true }))
+      try {
+        view.putBack(move)
+      } finally {
+        vi.unstubAllGlobals()
+      }
+      const shown = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: view.zoom.value, scroll: view.scroll.value }).beadBox({ row: 0, column: 0, rows: 10, columns: 20 })
+      expect(shown.x + shown.width).toBeCloseTo(1000, 6)
+      expect(view.isAtFit.value).toBe(false)
+    })
   })
 
   describe('a two-finger twist (tickets 0672, 0709)', () => {

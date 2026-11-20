@@ -9,7 +9,7 @@ import { fitBox, RULER_GUTTER_PX, type ViewMove } from './useCanvasView'
 /** What keeping the Frame beside the Frame panel needs from the Canvas view and the shell (ticket 0971). */
 export interface FrameBesidePanelDeps {
   currentProject: () => Project | undefined
-  bringIntoView: (locate: (surface: SurfaceView) => Region | undefined, how: { clear: Insets }) => ViewMove | undefined
+  bringIntoView: (locate: (surface: SurfaceView) => Region | undefined, how: { clear: Insets; slack: number }) => ViewMove | undefined
   putBack: (move: ViewMove) => void
   /** Whether the Frame panel is open. */
   panelOpen: () => boolean
@@ -19,9 +19,14 @@ export interface FrameBesidePanelDeps {
   areaZoom: () => number
 }
 
+/** How far on screen the Frame's sheet may reach under the Frame panel (and its air) before the Canvas pans for it: a
+ * move this small would only nudge the view, while what lies under the panel is the sheet's margin.
+ * @internal Tests check the slack is passed in the drawing area's own px. */
+export const FRAME_PANEL_SLACK_PX = 32
+
 /** Keeps the Frame clear of the Frame panel (ticket 0971): as the panel is placed over the Frame, the Canvas pans once,
- * the shortest way, so the Frame's sheet (or, where it is too wide, the Frame and its rulers) lies in the free side beside
- * it, as far as that side holds it; as the panel closes, the view goes back, unless the person has moved it since. */
+ * the shortest way past a small slack, so the Frame's sheet (or, too wide, the Frame and rulers) lies in the free side;
+ * as it closes, the view goes back unless moved since, only as far as keeps in view a Frame the move brought in. */
 export function useFrameBesidePanel(deps: FrameBesidePanelDeps) {
   /** The move the panel's opening made, and in which Project. */
   let made: { move: ViewMove; project: string } | undefined
@@ -45,7 +50,7 @@ export function useFrameBesidePanel(deps: FrameBesidePanelDeps) {
       if (whole.width <= room) return whole
       const line = surface.frameBox(frame)
       return { x: line.x - RULER_GUTTER_PX, y: line.y - RULER_GUTTER_PX, width: Math.min(room, line.width + 2 * RULER_GUTTER_PX), height: line.height + 2 * RULER_GUTTER_PX }
-    }, { clear })
+    }, { clear, slack: FRAME_PANEL_SLACK_PX / zoom })
     made = move && { move, project: project.id }
   }
 
