@@ -204,12 +204,12 @@ watch(
 
 <template>
   <div ref="layerEl" class="tool-pill-layer" data-testid="tool-pill-layer">
-    <div v-if="drag.dragging.value" class="tool-pill-zones" aria-hidden="true" data-testid="tool-pill-zones">
+    <div v-if="drag.showsZones.value" class="tool-pill-zones" aria-hidden="true" data-testid="tool-pill-zones">
       <span
         v-for="edge in PILL_POSITIONS"
         :key="edge"
         class="tool-pill-zone"
-        :class="[`tool-pill-zone--${edge}`, { 'tool-pill-zone--near': drag.nearest.value === edge }]"
+        :class="[`tool-pill-zone--${edge}`, { 'tool-pill-zone--near': drag.dragging.value && drag.nearest.value === edge }]"
         :data-testid="`tool-pill-zone-${edge}`"
       />
     </div>
@@ -237,6 +237,8 @@ watch(
         tabindex="-1"
         data-testid="tool-pill-grip"
         @keydown="onGripKeydown"
+        @pointerenter="drag.onGripPointerEnter"
+        @pointerleave="drag.onGripPointerLeave"
       >
         <span class="tool-pill__grip-bar" />
       </button>
@@ -616,19 +618,29 @@ watch(
   border-radius: var(--radius-full);
 }
 
-/* The four drop zones inside the drawing area while dragging: dashed, the nearest edge's in the accent with a 14%
- * wash. */
+/* The four drop zones inside the drawing area while dragging and while the grip is hovered (ticket 1145): a two-toned
+ * edge, `muted` dashes over a solid `elevated` line, so one of the two stands out on any Background or picture; the
+ * nearest edge's dashes in the accent with a 14% wash. */
 .tool-pill-zones {
   position: absolute;
   inset: 0;
 }
 
 .tool-pill-zone {
+  --zone-edge: 2px;
   position: absolute;
   box-sizing: border-box;
-  border: 2px dashed var(--line-strong);
+  border: var(--zone-edge) solid var(--elevated);
   border-radius: var(--radius-full);
   transition: background var(--duration-slow) var(--ease-standard);
+}
+
+.tool-pill-zone::before {
+  position: absolute;
+  inset: calc(-1 * var(--zone-edge));
+  content: '';
+  border: var(--zone-edge) dashed var(--muted);
+  border-radius: inherit;
 }
 
 .tool-pill-zone--bottom,
@@ -667,6 +679,9 @@ watch(
 
 .tool-pill-zone--near {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.tool-pill-zone--near::before {
   border-color: var(--accent);
 }
 
