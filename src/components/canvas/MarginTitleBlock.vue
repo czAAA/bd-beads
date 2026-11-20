@@ -24,9 +24,9 @@ import MarginSettingCell from './MarginSettingCell.vue'
 import { frameNameLine } from './marginFrameName'
 import { frameOf, lettersOn } from '../../domain/layerRecord'
 
-// The margin sheet's title block (MarginSheet card, tickets 0657, 0658, 0698), in its bottom-right corner like a
-// drawing's: the name, Technique, its settings and maker edited in place, the sizes, the lettered legend, Letters and
-// fold; compact, one row of them. It only asks; the shell's flows do the work, as from the Frame and Project panels.
+// The margin sheet's title block (MarginSheet card, tickets 0657, 0658, 0698, 1170), in its bottom-left corner as seen:
+// the name, Technique, its settings and maker edited in place, the sizes, the lettered legend, Letters and fold; compact,
+// one row of them. It only asks; the shell's flows do the work, as from the Frame and Project panels.
 /** `roomy` is the taller block where the band has room (ticket 1015): the name leads, the Bead with Change, and a color
  * key with each color's bead count. `brief` is the compact row without its legend, where the sheet is too narrow. */
 const props = withDefaults(defineProps<{ project: Project; form?: 'roomy' | 'full' | 'compact' | 'brief' }>(), { form: 'full' })
@@ -237,7 +237,7 @@ const keyLabel = computed(() =>
 </template>
 
 <style scoped>
-/* Two rows of 23px with 1px rules between the cells, on `margin-title`, its bottom-right corner rounded with the inner
+/* Two rows of 23px with 1px rules between the cells, on `margin-title`, its bottom-left corner rounded with the inner
  * border (MarginSheet card). Row 1: the name, the Technique, "by" the maker over two cells; row 2: the sizes, the
  * legend, Letters; the fold button over both. Compact: one 22px row (ticket 0658). */
 .margin-title {
@@ -247,7 +247,7 @@ const keyLabel = computed(() =>
   color: var(--ink);
   background: var(--margin-title);
   border: 1px solid var(--margin-line);
-  border-radius: 0 0 var(--margin-border-radius) 0;
+  border-radius: 0 0 0 var(--margin-border-radius);
 }
 
 .margin-title--compact {

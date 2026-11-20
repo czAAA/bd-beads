@@ -465,28 +465,18 @@ describe('folding the title block by hand (MarginSheet card, Title block, ticket
   })
 })
 
-describe('the title block on a turned Canvas (ticket 0728)', () => {
-  const at = (titleCorner: { top: boolean; left: boolean }, zoom = 0.9) => styleOf(mountSheet({ anchor: { ...anchorAt(zoom), titleCorner } }), 'margin-title')
-
-  it('sits inside the border at the Frame\'s own bottom-right corner, wherever the turn puts it, drawn from that corner', () => {
-    expect(at({ top: false, left: false })).toMatch(/right: 10px; bottom: 10px;.*transform-origin: 100% 100%/)
-    expect(at({ top: false, left: true })).toMatch(/left: 10px; bottom: 10px;.*transform-origin: 0 100%/)
-    expect(at({ top: true, left: true })).toMatch(/left: 10px; top: 10px;.*transform-origin: 0 0/)
-    expect(at({ top: true, left: false })).toMatch(/right: 10px; top: 10px;.*transform-origin: 100% 0/)
+describe('the title block\'s place (ticket 1170)', () => {
+  it('sits inside the border at the sheet\'s bottom-left corner as seen, drawn from that corner', () => {
+    expect(styleOf(mountSheet({ anchor: anchorAt(0.9) }), 'margin-title')).toMatch(/left: 10px; bottom: 10px;.*transform-origin: 0 100%/)
   })
 
-  it('leaves the narrowest band row, the Move bar and the Frame tools button, its room beside it at a top corner', () => {
-    const room = (style: string) => Number.parseFloat(style.split('max-width: ')[1]!)
-    const { moveWidth, tab, gap, place } = MARGIN_PX
-    const narrowestRow = moveWidth + 2 * tab + 2 * gap
-    // In drafting px: at the top the row's inset stands on the far side in place of the border, and the row beside it.
-    expect(room(at({ top: false, left: true }, 1)) - room(at({ top: true, left: true }, 1))).toBeCloseTo(place.full.side - place.full.border + narrowestRow + gap, 4)
-  })
-
-  it('stands the folded tab beside the folded row at a top corner, in the middle of the room above the Frame\'s line', () => {
-    const wrapper = mountSheet({ anchor: { ...anchorAt(0.45), titleCorner: { top: true, left: false } } })
-    const top = (testid: string) => Number.parseFloat(styleOf(wrapper, testid).split('top: ')[1]!)
-    expect(top('margin-title')).toBeCloseTo(top('margin-band'), 4)
+  it('leaves the band\'s row the sheet\'s whole width, and the folded tab in the middle of the room below the Frame\'s line', () => {
+    const full = mountSheet({ anchor: anchorAt(0.9) })
+    expect(styleOf(full, 'margin-band')).toMatch(new RegExp(`left: ${MARGIN_PX.place.full.side}px;`))
+    const folded = mountSheet({ anchor: anchorAt(0.45) })
+    const bottom = Number.parseFloat(styleOf(folded, 'margin-title').split('bottom: ')[1]!)
+    const top = Number.parseFloat(styleOf(folded, 'margin-band').split('top: ')[1]!)
+    expect(bottom).toBeCloseTo(top, 4)
   })
 })
 

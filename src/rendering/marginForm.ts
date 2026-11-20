@@ -1,5 +1,4 @@
 import { MARGIN_PX } from './marginSizes'
-import type { SurfaceView } from './surfaceView'
 
 // The margin sheet's scale and forms (MarginSheet card, Zoom forms; tickets 0658, 0698, 0851): drawn at the drafting
 // sheet's proportion to its band, held between 1 (where its words and buttons are legible) and 1.5; only under 1 does
@@ -25,17 +24,4 @@ export function marginForm(bandPx: number, least: number = MARGIN_PX.scale.min):
   if (designPx >= band.full) return 'full'
   if (designPx >= band.compact) return 'compact'
   return designPx >= band.folded ? 'folded' : 'bare'
-}
-
-/** A corner of the margin sheet on screen. */
-export interface TitleCorner {
-  top: boolean
-  left: boolean
-}
-
-/** The margin sheet's corner on screen that holds its title block (ticket 0728): the Frame's own bottom-right as it lies
- * on the upright Canvas, wherever the Canvas's quarter turn brings it. Read from the drawn view's turn of the grid. */
-export function titleBlockCorner(surface: Pick<SurfaceView, 'gridDirection'>): TitleCorner {
-  const toward = surface.gridDirection(1, 1)
-  return { top: toward.y < 0, left: toward.x < 0 }
 }

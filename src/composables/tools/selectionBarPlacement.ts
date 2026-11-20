@@ -1,5 +1,4 @@
 import { AREA_BAR_GAP_PX, AREA_SHEET_OUTSET } from '../../rendering/frameHandles'
-import type { TitleCorner } from '../../rendering/marginForm'
 
 /** A rectangle in the canvas box's own pixels. */
 export interface BarBox {
@@ -110,9 +109,6 @@ export interface FrameAnchor extends SelectionAnchor {
   band: number
   /** The Canvas's first bead cell on screen, whatever the Frame is: it moves with pan and zoom only, so what is carried with the view follows it (ticket 500). */
   origin?: BarBox
-  /** The sheet's corner that holds the title block, the Frame's own bottom-right on a turned Canvas (ticket 0728): as
-   * drawn before it leans. None, bottom-right. */
-  titleCorner?: TitleCorner
   /** How far the Canvas leans off its quarter turn, in degrees clockwise (ticket 0672): the boxes above are as drawn
    * before it leans, and the sheet's tools lean with it about the viewport's middle. None upright. */
   tilt?: number

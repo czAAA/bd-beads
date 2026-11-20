@@ -2291,15 +2291,6 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
   })
 
-  it('tells the sheet the corner the title block is in: the Frame\'s own bottom-right, moved by the Canvas\'s turn, not by Rotate Frame (ticket 0728)', async () => {
-    const corner = async (project: Project) => {
-      const { wrapper } = await mountSurface(project, 1)
-      return (wrapper.emitted('frame-anchor')!.at(-1)![0] as FrameAnchor).titleCorner
-    }
-    expect(await corner(withCanvas(framed(), { orientation: 180 }))).toEqual({ top: true, left: true })
-    expect(await corner(rotateFrame(framed())!)).toEqual({ top: false, left: false })
-  })
-
   it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {
     const full = await mountSurface(framed(), 1, { x: 0, y: 0 }, { showRulers: true })
     expect(rulerNumbers(full.wrapper).length).toBeGreaterThan(0)
