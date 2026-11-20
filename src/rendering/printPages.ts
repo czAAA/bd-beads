@@ -302,19 +302,6 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
   context.restore()
 }
 
-/** Which block a row or column (its printed number) closes: every 10th, every 5th, or neither; the chart's lines every 5
- * and 10 go by it. */
-function rulerLevel(value: number): 'tenth' | 'fifth' | 'plain' {
-  return value % 10 === 0 ? 'tenth' : value % 5 === 0 ? 'fifth' : 'plain'
-}
-
-/** Whether the line between two neighbouring beads (their printed numbers) closes a block of 5 or 10: a fine line every
- * 5 beads, a heavier one every 10, counted as the rulers count (ticket 1129). */
-export function lineBetween(a: number, b: number): 'tenth' | 'fifth' | undefined {
-  const level = rulerLevel(Math.min(a, b))
-  return level === 'plain' ? undefined : level
-}
-
 /** A white pill with an accent border holding `value`, its top left at (x, y); returns its width. */
 function pill(context: CanvasRenderingContext2D, value: string, x: number, y: number, color: string, align: 'left' | 'center' | 'right' = 'left'): number {
   context.font = font('700', 6.5, MONO)
