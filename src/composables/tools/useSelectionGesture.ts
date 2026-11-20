@@ -264,7 +264,7 @@ export function useSelectionGesture(
 
   /** Lands a Piece's move as one Edit; the Selection goes with the beads, or stays where the move was not made. A
    * drag's covers the beads it is let go over (ticket 1162). */
-  function landMove(start: Selection, rows: number, columns: number, cover: boolean): boolean {
+  function landMove(start: Selection, rows: number, columns: number, { cover = false }: { cover?: boolean } = {}): boolean {
     let landed: Selection | undefined
     const outcome = edit('drawing', (current) => {
       const moved = moveLayerSelection(current, start, rows, columns, { cover })
@@ -305,7 +305,7 @@ export function useSelectionGesture(
     if (done?.kind === 'carry') {
       const held = carried.value
       carried.value = undefined
-      if (held) landMove(done.start, held.rows, held.columns, true)
+      if (held) landMove(done.start, held.rows, held.columns, { cover: true })
       return
     }
     if (done?.kind !== 'move' || done.moved || !done.tool) {
@@ -493,7 +493,7 @@ export function useSelectionGesture(
       return
     }
     const step = stepMove(project, current, rows, columns)
-    if (!landMove(current, step.rows, step.columns, false)) refusals.value += 1
+    if (!landMove(current, step.rows, step.columns)) refusals.value += 1
   }
 
   return {
