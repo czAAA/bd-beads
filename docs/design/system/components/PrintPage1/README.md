@@ -14,13 +14,16 @@
 - No watermark: nothing behind or over the chart, the title or Beads needed.
 - **In one ink** with the Export panel's Black and white switch on (ticket 1096; PrintBlackAndWhite card): every text and line black, each bead on paper, a tint or solid black, the overview in each color's own grey on a board that is only a hairline.
 
-## The new chart: approved 2026-11-19, not yet in the app (tickets 1126–1129)
+## Trimmed to the beads (ticket 1128)
+
+The chart on this page, whole or in strips, and the overview are trimmed to the beads (PrintChartPage card): only the rows and columns from the first bead to the last, across and down, empty positions between beads kept. The tech line gives the trimmed size: a 13-wide piece on a 30 × 39 Frame reads "13 × 30", and its chart gets the room a 13 × 30 needs. A Schema with no beads prints whole.
+
+## The new chart: approved 2026-11-19, not yet in the app (tickets 1126, 1127, 1129)
 
 Signed off by the owner on 2026-11-19 (ticket 1123). Until it is built, this page is as written above. Then:
 
-- **The chart** on this page, whole or in strips, is the new chart (PrintChartPage card): no lines between beads and no bold edge, one rounded rim round the beads with the numbers outside it (1126; its switch Chart border, 1127), empty positions bare unless Empty grid is on (1127), trimmed to the beads (1128), and every row and column numbered from 1 (1129).
-- **The tech line gives the trimmed size** (1128): a 13-wide piece on a 30 × 39 Frame reads "13 × 30", and its chart gets the room a 13 × 30 needs.
-- **The overview** is trimmed the same way (1128) and follows Empty grid (1127): off, an empty position is bare board; on, it carries the small `faint` cross. It keeps a number every 5 (every 10 when the beads are small) and its hairline every 10, counted as the chart's rulers count (1129): from 1 at the trimmed piece's left and top, whichever way it is turned. Its numbers are one size too, as a chart page's are (approved 2026-11-20): today's 6.5 pt, or one smaller size for all of them where its widest number would not fit 80% of the room between two numbers. Its cut pills use those numbers ("76 →", "51 ↓").
+- **The chart** on this page, whole or in strips, is the new chart (PrintChartPage card): no lines between beads and no bold edge, one rounded rim round the beads with the numbers outside it (1126; its switch Chart border, 1127), empty positions bare unless Empty grid is on (1127), and every row and column numbered from 1 (1129).
+- **The overview** follows Empty grid (1127): off, an empty position is bare board; on, it carries the small `faint` cross. It keeps a number every 5 (every 10 when the beads are small) and its hairline every 10, counted as the chart's rulers count (1129): from 1 at the trimmed piece's left and top, whichever way it is turned. Its numbers are one size too, as a chart page's are (approved 2026-11-20): today's 6.5 pt, or one smaller size for all of them where its widest number would not fit 80% of the room between two numbers. Its cut pills use those numbers ("76 →", "51 ↓").
 
 The owner agreed to these overview rules on 2026-11-19 (ticket 1123). The overview has no rim: its board and its rulers stay as they are, whatever Chart border says.
 

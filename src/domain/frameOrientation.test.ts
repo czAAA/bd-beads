@@ -203,7 +203,9 @@ describe('Row progress on a turned Frame', () => {
     const lettered = withLayers(turned, { letters: true })
     expect(wordChartOf(withLayers(upright, { letters: true }))!.firstEdge).toBe('top')
     expect(wordChartOf(lettered)!.firstEdge).toBe('right')
-    expect(wordChartOf(lettered)!.rows).toHaveLength(4)
+    // Its own 4 rows, not the 6 it covers as it lies, with a bead at both ends of them (the chart is trimmed, ticket 1128).
+    const cornered = withLayers(lettered, { frame: { ...frameOf(lettered)!, beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 3, column: 5, color: RED }]) } })
+    expect(wordChartOf(cornered)!.rows).toHaveLength(4)
   })
 })
 

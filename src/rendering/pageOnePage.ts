@@ -5,16 +5,12 @@ import { listHeader, TABLE_COLUMN_GAP, TITLE_MAKER_ROW, TITLE_NAME_ROW, titleRow
 import { NEEDED_COLUMNS, NEEDED_HEADING, type PageOneLayout } from './pageOneLayout'
 import { blankPage, drawBoard, drawEmptySwatch, drawMark, drawParts, drawRulers, font, MONO, partLabel, pt, SANS, SERIF, text, wrap } from './printPages'
 import { COLOR_INK, printInkOf, type PrintInk } from './printInk'
-import { displayedGrid, mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
+import { areaRegion, displayedGrid, mm, PRINT_MARGIN, type PageSize, type PrintPlan, type TrimmedArea } from './printPlan'
 import type { PrintText } from './printText'
 import { geometryDrawnAlone } from './space'
-import { displayedExtentPx } from './surfaceView'
 import { fillBlanks } from '../domain/fillBlanks'
-import { quarterTurnOf } from '../domain/layerRecord'
-import { frameWeave } from '../domain/layerWeave'
 import { PdfContent } from '../domain/pdfContent'
 import type { Project } from '../domain/project'
-import { projectDimensions } from '../domain/projectExtent'
 import type { SwatchLetters } from '../domain/swatchLetters'
 
 // Page 1 of the PDF and the list pages after it (ticket 0914; PrintPage1 card): the title block, the whole piece (the
@@ -55,18 +51,17 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
   text(context, [words.techniqueWord, words.metaLine].join(' · '), PRINT_MARGIN, y + pt(6), font('400', 7.5, MONO), colors.muted, 'left', width)
 }
 
-/** The overview (ticket 0914): the whole piece on its board without letters, rulers with a number every 5 (10 when the
- * beads are too small for that) and an empty position under its cross. With `plan` the lines where the chart parts meet
- * and their page pills are drawn too; the PNG has no pages to point at. */
-function drawOverview(context: CanvasRenderingContext2D, project: Project, overview: NonNullable<PageOneLayout['overview']>, plan: PrintPlan | undefined, labels: PrintText['labels'], ink: PrintInk): void {
+/** The overview (ticket 0914): the whole piece, trimmed to `trim` (ticket 1128), on its board without letters, rulers with
+ * a number every 5 (10 when the beads are too small for that) and an empty position under its cross. With `plan` the lines
+ * where the chart parts meet and their page pills are drawn too; the PNG has no pages to point at. */
+function drawOverview(context: CanvasRenderingContext2D, project: Project, overview: NonNullable<PageOneLayout['overview']>, trim: TrimmedArea, plan: PrintPlan | undefined, labels: PrintText['labels'], ink: PrintInk): void {
   const board = { ...overview.board, ...overview.extent }
-  const { columns, rows } = projectDimensions(project)
-  const whole = displayedExtentPx(frameWeave(project).technique, columns, rows, overview.zoom, quarterTurnOf(project), frameWeave(project).cell)
-  drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, overview.zoom, board, ink)
+  const piece = areaRegion(project, trim)
+  drawBoard(context, project, { x: piece.x * overview.zoom, y: piece.y * overview.zoom, width: piece.width * overview.zoom, height: piece.height * overview.zoom }, overview.zoom, board, ink)
   const grid = displayedGrid(project)
   const every = grid.stepAcross * overview.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
   // A Custom frame's beads keep no rows and columns to number (ticket 0594).
-  if (geometryDrawnAlone(project).grid) drawRulers(context, project, overview.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, ink, every)
+  if (geometryDrawnAlone(project).grid) drawRulers(context, project, overview.zoom, board, { first: trim.firstAcross, last: trim.lastAcross }, { first: trim.firstDown, last: trim.lastDown }, ink, every)
   if (plan && plan.parts.length > 1) drawParts(context, project, plan, labels, overview.zoom, board, ink)
 }
 
@@ -185,7 +180,7 @@ export function drawPageOne(project: Project, words: PrintText, layout: PageOneL
   drawTitleBlock(context, page, words, ink)
   let drawing: string | undefined
   if (layout.overview) {
-    drawOverview(context, project, layout.overview, as === 'pdf' ? plan : undefined, words.labels, ink)
+    drawOverview(context, project, layout.overview, plan.trim, as === 'pdf' ? plan : undefined, words.labels, ink)
   } else {
     const pdf = as === 'pdf' ? new PdfContent(page.height * K) : undefined
     const pads = drawChartParts(pdf ?? new CanvasDrawing(context, scale), project, plan, plan.parts, project.paletteLetters ?? {}, ink, layout.area)

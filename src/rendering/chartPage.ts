@@ -2,12 +2,11 @@ import { beadsAreRound, drawChartParts, drawKeySwatch, K, mmPt } from './chartVe
 import { colorsOnPage, KEY_COLUMNS } from './chartPageKey'
 import { blankPage, drawMark, font, MONO, partLabel, SANS, SERIF, text } from './printPages'
 import { printInkOf } from './printInk'
-import { continuation, displayedGrid, mm, PRINT_MARGIN, type PrintPart, type PrintPlan } from './printPlan'
+import { continuation, mm, PRINT_MARGIN, type PrintPart, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintText } from './printText'
 import type { Project } from '../domain/project'
 import { PdfContent } from '../domain/pdfContent'
 import { fillBlanks } from '../domain/fillBlanks'
-import { type Layered } from '../domain/layerRecord'
 
 // A chart page for the PDF (ticket 0585; PrintChartPage card): the translated text as one picture and everything else as
 // PDF drawing laid over it (ADR 0043). The picture is the paper, so empty positions are plain paper under their small cross.
@@ -32,19 +31,21 @@ function continuationText(labels: PrintText['labels'], plan: PrintPlan, parts: P
   return here < Math.max(...plan.parts.map((part) => part.page)) ? fillBlanks(labels.continuesOn, { next: here + 1 }) : labels.lastPart
 }
 
-/** The mini map's rectangles in px from its top left corner: every part of the Schema to scale in a 9.4 mm square, 0.4 mm
- * apart, the parts on this sheet marked.
+/** The mini map's rectangles in px from its top left corner: every part of the printed chart (trimmed, ticket 1128) to
+ * scale in a 9.4 mm square, 0.4 mm apart, the parts on this sheet marked.
  * @internal Its test checks the mini map on its own. */
-export function miniMapRects(plan: PrintPlan, project: Layered, page: number): { x: number; y: number; width: number; height: number; here: boolean }[] {
-  const grid = displayedGrid(project)
+export function miniMapRects(plan: PrintPlan, page: number): { x: number; y: number; width: number; height: number; here: boolean }[] {
+  const { trim } = plan
+  const across = trim.lastAcross - trim.firstAcross + 1
+  const down = trim.lastDown - trim.firstDown + 1
   const side = mm(9.4)
   const gap = mm(0.4)
-  const scale = side / Math.max(grid.across, grid.down)
-  const left = (side - grid.across * scale) / 2
-  const top = (side - grid.down * scale) / 2
+  const scale = side / Math.max(across, down)
+  const left = (side - across * scale) / 2
+  const top = (side - down * scale) / 2
   return plan.parts.map((part) => ({
-    x: left + part.firstAcross * scale + gap / 2,
-    y: top + part.firstDown * scale + gap / 2,
+    x: left + (part.firstAcross - trim.firstAcross) * scale + gap / 2,
+    y: top + (part.firstDown - trim.firstDown) * scale + gap / 2,
     width: Math.max(mm(0.2), (part.lastAcross - part.firstAcross + 1) * scale - gap),
     height: Math.max(mm(0.2), (part.lastDown - part.firstDown + 1) * scale - gap),
     here: part.page === page,
@@ -75,7 +76,7 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const number = text(context, String(here.page), right - total - mm(0.8), mm(18.6), font('600', 18, SANS), colors.ink, 'right')
   const mapRight = right - total - mm(0.8) - number - mm(3)
   const mapLeft = mapRight - mm(9.4)
-  for (const cell of miniMapRects(plan, project, here.page)) {
+  for (const cell of miniMapRects(plan, here.page)) {
     content.roundRect((mapLeft + cell.x) * K, (mm(11.6) + cell.y) * K, cell.width * K, cell.height * K, mmPt(0.3), cell.here ? { fill: colors.accent } : { stroke: colors.faint, lineWidth: mmPt(0.15) })
   }
   const room = mapLeft - mm(3) - PRINT_MARGIN
