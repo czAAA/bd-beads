@@ -11,6 +11,7 @@ import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
 import { frameOf, type Layered } from '../domain/layerRecord'
+import { laidWayOf } from '../domain/rowProgress'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's sides but the bottom one
 // (ticket 0657), or each Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -39,6 +40,8 @@ export interface RuledBox extends Rect {
   sides: 'sheet' | 'start'
   /** False for the box round every bead of a layer whose Pieces aren't counted yet (ticket 0716): numbers, no line. */
   outlined?: false
+  /** The axis numbered from the box's far end: the Frame's lines woven from its bottom or its right (ticket 1154). */
+  fromEnd?: 'row' | 'column'
 }
 
 /** One number on a ruler, where it is in the viewport and what a click on it selects. */
@@ -74,7 +77,10 @@ function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPiece
   const own: RuledBox[] = []
   if (frame && !frameShapeOf(frame)) {
     const { row, column, rows, columns } = laidRect({ ...frame, cell: frameWeave(project).cell })
-    own.push({ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' })
+    // Its lines are numbered from the edge the weaving starts at, as it lies (ticket 1154).
+    const way = laidWayOf(project)
+    const fromEnd = way === 'up' ? { fromEnd: 'row' as const } : way === 'left' ? { fromEnd: 'column' as const } : {}
+    own.push({ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet', ...fromEnd })
   }
   return [
     ...own,
@@ -257,8 +263,9 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     position: number,
   ) => {
     const column = axis === 'column'
-    const text = String(index + 1)
-    const turned = column && index + 1 >= TURNED_FROM
+    const number = box.fromEnd === axis ? (column ? count.columns : count.rows) - index : index + 1
+    const text = String(number)
+    const turned = column && number >= TURNED_FROM
     const band = column ? columnBand : rowSize
     const half = column ? columnBand.height / 2 : rowSize.width / 2
     // Below the zoom where only the last number is drawn the dots hug the line, as there is no row of numbers for them
@@ -271,14 +278,14 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     const dotAway = box.outset + gap + dotHalf
     const dot = { x: x + nx * dotAway, y: y + ny * dotAway }
     if (dotSeen(dot)) {
-      beads.push({ ...dot, fifth: (index + 1) % 5 === 0, numbered: (index + 1) % step === 0, kind: box.kind, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half: dotHalf })
+      beads.push({ ...dot, fifth: number % 5 === 0, numbered: number % step === 0, kind: box.kind, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half: dotHalf })
     }
-    if ((index + 1) % step === 0) {
+    if (number % step === 0) {
       const size = labelBox(text, turned, fontPx)
       const reach = gap + (Math.abs(nx) * (column ? band.width : rowSize.width) + Math.abs(ny) * (column ? band.height : rowSize.height)) / 2
       const spot = { x: x + nx * (box.outset + reach), y: y + ny * (box.outset + reach), ...size }
       if (seen(spot)) {
-        labels.push({ text, ...spot, turned, fifth: (index + 1) % 5 === 0, kind: box.kind, axis, index, selection, position })
+        labels.push({ text, ...spot, turned, fifth: number % 5 === 0, kind: box.kind, axis, index, selection, position })
       }
     }
   }

@@ -13,7 +13,7 @@ interface LinesGeometry {
   cellAspect: number
   /** How much of a bead's width its corners are rounded by. */
   roundness: number
-  /** How lines are woven: one pass each, or the first in one and every later one in two (peyote: even beads, then odd). */
+  /** How lines are woven: one pass each, or the first in one and every later one in two (peyote: the beads nearer the lines woven, then the rest). */
   passes: 'one' | 'twoAfterFirst'
   /** How many lines lie straight beside each other before the next block of them shifts, where lines shift: 1, every other. */
   block: number
@@ -120,14 +120,15 @@ export interface WeaveGeometry {
      * position along the line (the cross-line part of `neighbors`; along a line a bead touches the next one either side). */
     reach(line: number, toLine: number): readonly [number, number]
   }
-  /** Whether the first line takes one pass and every later one two (peyote: even positions, then odd). */
+  /** Whether the first line takes one pass and every later one two (peyote: the half nearer the lines woven first). */
   twoPasses: boolean
   /** Row progress's passes (tickets 347, 484, 487), lines counted from the Frame's first in weaving order. */
   passes: {
     /** How many passes weaving `lines` lines takes. */
     count(lines: number, direction: PassDirection): number
-    /** The pass (zero-based) that weaves the bead at `along` (its position along its line) in line `line`. */
-    of(line: number, along: number, direction: PassDirection): number
+    /** The pass (zero-based) that weaves the bead at `along` (its position along its line) in line `line`; `reversed`
+     * where the lines are counted from the Frame's far end, which turns a two-pass line's halves round (ticket 1154). */
+    of(line: number, along: number, direction: PassDirection, reversed?: boolean): number
     /** The line a pass works on: what the rulers number and what the current-line marker sits on. */
     lineOf(pass: number, direction: PassDirection): number
     /** Every line that holds a bead of a pass. */
@@ -151,13 +152,23 @@ export function beadsBox(geometry: Pick<WeaveGeometry, 'box'>, { row, column, ro
   return { x, y, width: Math.max(...corners.map((box) => box.x + box.width)) - x, height: Math.max(...corners.map((box) => box.y + box.height)) - y }
 }
 
+/** Whether the bead at `along` a line sits further on than its neighbours, the way the Frame's own lines are counted:
+ * peyote's shifted columns, half a bead lower. None where the line's beads lie level, which weaves even beads first. */
+type FurtherAlong = (along: number, direction: PassDirection) => boolean | undefined
+
 /** How lines are woven, shared by both kinds of grid: Row progress's passes (tickets 347, 484, 487), lines counted from the
- * Frame's first in weaving order. `twoPasses` is peyote's: the first line in one pass, every later one in two. */
-export function linePasses(twoPasses: boolean): WeaveGeometry['passes'] {
+ * Frame's first in weaving order. `twoPasses` is peyote's: the first line in one pass, every later one in two, the beads
+ * nearer the lines already woven first. `further` says which beads of a line those are not (ticket 1154). */
+export function linePasses(twoPasses: boolean, further: FurtherAlong = () => undefined): WeaveGeometry['passes'] {
   const lineOf = (pass: number): number => (twoPasses && pass > 0 ? Math.ceil(pass / 2) : pass)
+  // Woven from the far end, the beads further on in the Frame's own lines are the nearer ones, so they come first.
+  const second = (along: number, direction: PassDirection, reversed: boolean | undefined): boolean => {
+    const ahead = further(along, direction)
+    return ahead === undefined ? along % 2 === 1 : ahead !== !!reversed
+  }
   return {
     count: (lines) => (!twoPasses || lines <= 0 ? Math.max(0, lines) : 1 + (lines - 1) * 2),
-    of: (line, along) => (!twoPasses || line === 0 ? line : (line - 1) * 2 + 1 + (along % 2)),
+    of: (line, along, direction, reversed) => (!twoPasses || line === 0 ? line : (line - 1) * 2 + 1 + (second(along, direction, reversed) ? 1 : 0)),
     lineOf,
     lines: (pass) => [lineOf(pass)],
   }

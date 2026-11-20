@@ -377,8 +377,8 @@ describe('peyote passes (ticket 347)', () => {
     expect(finished(peyote('rows', 2)).filter((bead) => bead.startsWith('1,'))).toEqual(['1,0', '1,2'])
   })
 
-  it('steps through the passes on the column-staggered grid as weavers do: a row at a time, even beads then odd (ticket 0734)', () => {
-    // The thread runs along a row whose beads sit in staggered columns, so a Drop of 2 changes where beads lie, not the passes.
+  it('steps through the passes on the column-staggered grid as weavers do: a row at a time, its level columns then its shifted ones (tickets 0734, 1154)', () => {
+    // The thread runs along a row whose beads sit in staggered columns: at a Drop of 2 a pass picks up the two beads of a pair.
     const dropped = (pass: number) => {
       const project = createProject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 }, beadId: cubeBead.id, size: { width: 6, height: 10.5, unit: 'mm' } })
       return moveToRow(project, pass)
@@ -388,7 +388,7 @@ describe('peyote passes (ticket 347)', () => {
 
     expect(rowProgressPosition(dropped(0)).total).toBe(13)
     expect(row1(dropped(1))).toEqual([])
-    expect(row1(dropped(2))).toEqual(['1,0', '1,2'])
+    expect(row1(dropped(2))).toEqual(['1,0', '1,1'])
     expect(row1(dropped(3))).toEqual(['1,0', '1,1', '1,2', '1,3'])
   })
 })
@@ -415,9 +415,12 @@ describe('passLine (ticket 0849)', () => {
     expect(passLine(moveToRow(peyote, 1))).toEqual({ line: 2, lines })
     expect(passLine(moveToRow(peyote, 2))).toEqual({ line: 2, lines })
     expect(passLine(moveToRow(peyote, 3))).toEqual({ line: 3, lines })
-    // Counted as the rulers number them: from the top, whichever way the rows run.
+    // Counted as the rulers number them: from the edge the weaving starts at (ticket 1154).
     const upward = toggleRowDirection(toggleRowDirection(peyote))
-    expect(passLine(upward)).toEqual({ line: lines, lines })
+    expect(passLine(upward)).toEqual({ line: 1, lines })
+    expect(passLine(moveToRow(upward, 3))).toEqual({ line: 3, lines })
+    const leftward = toggleRowDirection(upward)
+    expect(passLine(moveToRow(leftward, 1))).toEqual({ line: 2, lines: frameOf(peyote)!.columns })
     // None once every pass is done, and none where a pass is a whole line.
     expect(passLine(moveToRow(peyote, rowProgressPosition(peyote).total))).toBeUndefined()
     expect(passLine(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }))).toBeUndefined()
