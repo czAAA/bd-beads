@@ -112,6 +112,8 @@ const props = withDefaults(defineProps<{
   holdOpens?: boolean
   /** How many holds a pinch has ended (ticket 1065): each stops the hold being timed. */
   holdEnds?: number
+  /** Whether the Radial toolbox is open: the press it opens on then moves it here (ticket 1147). */
+  toolboxOpen?: boolean
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -377,7 +379,7 @@ const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project)
 const marginCue = useMarginCue(props)
 const pickChipEl = useTemplateRef<HTMLElement>('pickChipBox')
 const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, pickChipEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
-const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle, pressAreaGrip } = pointer
+const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle, pressAreaGrip, opensToolbox } = pointer
 const { t } = useI18n()
 const beadColors = useBeadColorsList()
 const palette = computed(() => projectPalette(props.project))
@@ -441,7 +443,7 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   return { x: box.left + shown.x * zoom, y: box.top + shown.y * zoom }
 }
 
-defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen })
+defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen, opensToolbox })
 
 onMounted(() => {
   measure()

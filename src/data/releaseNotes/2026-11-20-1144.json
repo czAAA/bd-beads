@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "Report a translation problem moved to the Menu's Help, right under Send feedback",
+    "ru": "«Сообщить об ошибке перевода» переехало в «Справку» меню, сразу под «Отправить отзыв»",
+    "uk": "«Повідомити про помилку перекладу» переїхало в «Довідку» меню, одразу під «Надіслати відгук»",
+    "be": "«Паведаміць пра памылку перакладу» пераехала ў «Даведку» меню, адразу пад «Адправіць водгук»",
+    "zh": "“报告翻译问题”移到了菜单的“帮助”里，就在“发送反馈”下方",
+    "es": "Informar de un problema de traducción pasó a Ayuda del menú, justo debajo de Enviar comentarios",
+    "pl": "Zgłoś błąd tłumaczenia trafiło do Pomocy w menu, tuż pod Wyślij opinię"
+  }
+}

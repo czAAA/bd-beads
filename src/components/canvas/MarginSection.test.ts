@@ -55,7 +55,7 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
     expect(wrapper.find('[data-testid="custom-color-button"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="background-color-studio"]').find('[data-testid="background-color-dot"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Auto #eeeeee')
-    expect(wrapper.get('[data-testid="margin-line"]').text()).toBe('The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it.')
+    expect(wrapper.get('[data-testid="margin-line"]').text()).toBe('The margin is the space around the Frame where you can’t draw. It holds the Frame’s tools, name and size.')
   })
 
   it('follows the Canvas\'s Background with Auto, on the swatch and on the sheet (ticket 0666)', async () => {

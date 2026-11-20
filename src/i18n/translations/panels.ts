@@ -44,7 +44,7 @@ export interface PanelsTranslations {
       deleteAllTitle: PluralForms
       deleteAllMessage: string
       deleteAllConfirm: string
-      /** The Help row and the Language row's link that open the Feedback sheet (ticket 0700). */
+      /** Help's Send feedback row and the link under it that open the Feedback sheet (tickets 0700, 1144). */
       sendFeedback: string
       reportTranslation: string
       /** The row that shows whether the browser keeps the Projects (tickets 0839, 0936), its value, and its Info

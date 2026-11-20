@@ -52,7 +52,8 @@ Replaces the Colour sheet on every device, phones included.
 
 ## Moving the pill
 
-- **Drag:** after 8px of movement the pill lifts (`elevation-3`-like shadow), follows the pointer, and four dashed `line-strong` drop zones show inside the drawing area; the nearest edge's zone turns `accent` with a 14% `accent` wash. Let go and the pill snaps there (`duration-slow`, `ease-standard`). Open popovers close when a drag starts. A drag never paints.
+- **Drag:** after 8px of movement the pill lifts (`elevation-3`-like shadow), follows the pointer, and four drop zones show inside the drawing area; the nearest edge's zone turns `accent` with a 14% `accent` wash. A zone's 2px edge is two-toned, `muted` dashes over a solid `elevated` line, so one of the two stands out on any Canvas Background or reference picture; the near zone's dashes are `accent`. Let go and the pill snaps there (`duration-slow`, `ease-standard`). Open popovers close when a drag starts. A drag never paints.
+- **Hover:** while a mouse or pen hovers the grip, the four zones show too, none lit, so the maker sees where the pill can go before grabbing it; a finger's tap doesn't flash them (ticket 1145).
 - **Keyboard and screen readers:** the grip is a focusable button, "Move tools", whose arrow keys move the pill to that edge; Menu also has "Tools position": Left | Top | Right | Bottom, under Preferences (MenuPanel card).
 - The position is remembered on this device, like the theme (ADR 0020).
 
