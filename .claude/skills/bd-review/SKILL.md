@@ -56,7 +56,7 @@ Then fix:
 - **Fix every `hard` finding**, then every `judgement` finding that is plainly right on reading the code (an obvious magic literal, a duplicate of an existing helper, a test that asserts nothing).
 - **Never delete behaviour or build a missing feature as a fix**, whatever its label: scope creep and missing requirements go to the user.
 - **Leave alone** anything where it is hard to say whether it is an issue: most smells, design trade-offs, scope creep that might be wanted, a missing test of doubtful value. List these for the user under `## Needs your call`, one line each, with the reason it's unclear.
-- Run `npm run check` and `npm run test:related -- <changed files>` after the fixes. If a fix breaks them and the cause isn't obvious, revert that fix and list it under `## Needs your call`.
+- Run the check and the related tests (`CLAUDE.md`, Context hygiene) after the fixes. If a fix breaks them and the cause isn't obvious, revert that fix and list it under `## Needs your call`.
 - Don't commit or push; the caller does. Undo step 1's `git add -N` on files still uncommitted (`git reset -q -- <files>`), so the index is as you found it.
 
 End with one line: findings per axis, how many fixed, how many left for the user.

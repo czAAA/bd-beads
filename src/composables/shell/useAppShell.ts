@@ -227,7 +227,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
+  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
@@ -761,7 +761,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   })
 
   /** The Frame kept clear of the Frame panel while it is open (ticket 0971). */
-  const frameBesidePanel = useFrameBesidePanel({ currentProject, bringIntoView, putBack, panelOpen: () => frameFlow.barShown.value, area: areaOnScreen, areaZoom })
+  const frameBesidePanel = useFrameBesidePanel({ currentProject, bringIntoView, putBack, panelOpen: () => frameFlow.barShown.value, area: areaOnScreen, areaZoom, viewSize: () => canvasViewport.value })
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0054). */
   const editFrame = frameFlow.toggleHandles
 

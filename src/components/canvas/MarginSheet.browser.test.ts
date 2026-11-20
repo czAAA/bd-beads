@@ -201,7 +201,8 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
         }
       }
       expect(found).toEqual({})
-    })
+      // 104 layouts in one test: 11 to 13 s on a CI runner, under the suite's 15 s only by luck (ticket 1143).
+    }, 60_000)
   }
 })
 
