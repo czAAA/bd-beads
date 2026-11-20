@@ -52,7 +52,7 @@ function baseContext(locale: Locale): ReportContext {
   }
 }
 
-/** The Feedback sheet (ADR 0081, spec 0698): opened from the Menu's Send feedback, the Language row's link or the Bead
+/** The Feedback sheet (ADR 0081, spec 0698): opened from the Menu's Send feedback, the link under it or the Bead
  * colors list's foot row with its Report kind; Send posts the Report and a success closes it with a toast. A failure
  * keeps the sheet open: the sheet shows why and offers Copy report. */
 export function useFeedbackFlow(deps: FeedbackFlowDeps) {

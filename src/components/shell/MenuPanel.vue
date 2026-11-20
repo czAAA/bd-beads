@@ -171,7 +171,6 @@ const inputOptions = computed(() => [
     </PanelSection>
 
     <PanelSection v-if="!demo" id="menu:preferences" :label="t.panels.menu.preferences">
-      <PanelItem secondary data-testid="menu-report-translation" @select="emit('feedback', 'translation')">{{ t.panels.menu.reportTranslation }}</PanelItem>
       <PanelPicker
         :model-value="pick"
         :label="t.theme.groupLabel"
@@ -223,6 +222,8 @@ const inputOptions = computed(() => [
       <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
       <PanelItem v-if="!demo" icon="info" data-testid="menu-item-button-names" @select="emit('button-names')">{{ t.panels.menu.buttonNames }}</PanelItem>
       <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
+      <!-- Report a translation problem sits under Send feedback: both open the FeedbackSheet (tickets 0700, 1144). -->
+      <PanelItem v-if="!demo" secondary data-testid="menu-report-translation" @select="emit('feedback', 'translation')">{{ t.panels.menu.reportTranslation }}</PanelItem>
       <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="onHomepage ? 'page' : undefined" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>
 
