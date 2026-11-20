@@ -129,9 +129,9 @@ const PEN_POINTER_NUDGE = 2
 /** How far up, and to the side away from the writing hand, of a hovering Pencil's tip the marker stands, in px, clear
  * of the hand resting below and beside it. */
 const PEN_MARKER_OFFSET_PX = 18
-/** The room the pick chip needs right of and below the tip, in px: its width with a full hex, and its height, plus
- * the offset. */
-const PICK_CHIP_ROOM = { x: 110, y: 40 }
+/** The room the pick chip needs right of and below the tip, in px: its width with a bead color's code and name, and
+ * its height, plus the offset. */
+const PICK_CHIP_ROOM = { x: 260, y: 40 }
 /** How far apart, in px, a swipe is sampled for beads: finer than the smallest bead on screen. */
 const STROKE_SAMPLE_PX = 2
 
@@ -346,8 +346,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     return (props.tools.selectsAnywhere ? surface.value.frameCellAt(point) : undefined) ?? surface.value.pointToHit(point)
   }
 
-  /** The color chip beside the eyedropper (ticket 403): what a press would take, live over beads; none over an empty
-   * cell or for a finger. */
+  /** The color chip beside the eyedropper (ticket 403): what a press would take, live over beads (ProjectSurface names
+   * it); none over an empty cell or for a finger. */
   const pickChip = ref<{ x: number; y: number; hex: string; flipX: boolean; flipY: boolean }>()
 
   function placePickChip(event: PointerEvent, bead: GridPosition | undefined): void {

@@ -36,6 +36,10 @@ import { useRowMotion } from './surface/useRowMotion'
 import { useFrameTurn } from './surface/useFrameTurn'
 import type { RowPress } from '../../composables/project/useRowOps'
 import PatternDone from './PatternDone.vue'
+import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/useBeadColors'
+import { projectPalette } from '../../domain/palette'
+import { colorLabel } from '../../i18n/colorLabel'
+import { useI18n } from '../../i18n/useI18n'
 import { PATTERN_DONE_STARS } from '../../rendering/rowMotion'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
@@ -373,6 +377,17 @@ const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project)
 const marginCue = useMarginCue(props)
 const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle, pressAreaGrip } = pointer
+const { t } = useI18n()
+const beadColors = useBeadColorsList()
+const palette = computed(() => projectPalette(props.project))
+/** The Palette color of the bead under the eyedropper, named by its code and color as the Palette names it. */
+const pickedColor = computed(() => (pickChip.value ? palette.value.byHex(pickChip.value.hex) : undefined))
+loadCatalogWhen(beadColors, () => !!pickedColor.value?.code)
+/** The chip's text: the bead color's code where the Palette holds it with one, else only its hex. */
+const pickChipText = computed(() => {
+  const color = pickedColor.value
+  return color?.code ? colorLabel(t.value, color, beadColors?.catalog.value).text : pickChip.value?.hex
+})
 const { oncePerFrame } = useFrameScheduler()
 const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
 const frameTurn = useFrameTurn({
@@ -495,7 +510,7 @@ onBeforeUnmount(() => {
       :style="{ left: `${pickChip.x}px`, top: `${pickChip.y}px`, '--pick-color': pickChip.hex }"
       data-testid="pick-chip"
       aria-hidden="true"
-    ><span class="project-surface__pick-chip-swatch" />{{ pickChip.hex }}</span>
+    ><span class="project-surface__pick-chip-swatch" />{{ pickChipText }}</span>
   </div>
 </template>
 
@@ -549,6 +564,7 @@ onBeforeUnmount(() => {
   background: var(--panel);
   border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
+  white-space: nowrap;
   pointer-events: none;
 }
 
