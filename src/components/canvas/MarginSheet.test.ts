@@ -303,12 +303,12 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(px('margin-title', 'bottom')).toBeCloseTo(inset, 2)
   })
 
-  it('keeps only the Move bar where even the folded row has no room, under 31px (tickets 0682, 0698, 0851)', async () => {
+  it('keeps only the Move bar and the Frame tools button where even the folded row has no room, under 31px (tickets 0682, 0698, 0851, 1164)', async () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.2), editing: true })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--bare')
     expect(wrapper.find('[data-testid="margin-band"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="margin-title"]').exists()).toBe(false)
-    expect(wrapper.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Move Frame'])
+    expect(wrapper.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Move Frame', 'Frame tools'])
     // Nothing of the sheet is drawn, so not its Edit Frame outline either.
     expect(control(wrapper, 'margin-sheet').classes()).not.toContain('margin-sheet--editing')
     await control(wrapper, 'frame-move-handle').trigger('pointerdown')
@@ -317,12 +317,29 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(wrapper.emitted('key')).toHaveLength(1)
   })
 
+  it('offers every Frame tool in the bare Frame tools menu, Margin color hung from its button (ticket 1164)', async () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.2) })
+    const items = async () => {
+      await control(wrapper, 'margin-frame-tools').trigger('click')
+      await nextTick()
+      return wrapper.findAll('[role^="menuitem"]')
+    }
+    expect((await items()).map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
+    await control(wrapper, 'margin-frame-tools-color').trigger('click')
+    await nextTick()
+    expect(document.querySelector('[data-testid="margin-color-popover"]')).not.toBeNull()
+  })
+
   it('lets the bare Move bar give way to a Selection\'s handles (ticket 0682)', async () => {
     const at = anchorAt(0.2)
     const wrapper = mountSheet({ anchor: at })
     const handle = () => control(wrapper, 'margin-handle')
     expect(handle().classes()).not.toContain('margin-sheet__yielding')
     await wrapper.setProps({ selection: { left: at.box.left + at.box.width / 2 - 10, top: at.box.top + 4, width: 20, height: 20 } })
+    expect(handle().classes()).toContain('margin-sheet__yielding')
+    // So does the Frame tools button beside it (ticket 1164): a Selection 50px right of the bar, its handles' 35px reach
+    // ending over the button and short of the bar.
+    await wrapper.setProps({ selection: { left: at.box.left + at.box.width / 2 + MARGIN_PX.moveWidth / 2 + 50, top: at.box.top + 4, width: 20, height: 20 } })
     expect(handle().classes()).toContain('margin-sheet__yielding')
   })
 
@@ -602,8 +619,11 @@ describe('Rotate Frame waits under the pointer (ticket 1016)', () => {
     expect(copy(wrapper).exists()).toBe(false)
   })
 
-  it('pressed from the Frame tools menu, closes it and stands where the item was pressed', async () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.45) })
+  it.each([
+    ['folded', 0.45],
+    ['bare', 0.2],
+  ])('pressed from the %s Frame tools menu, closes it and stands where the item was pressed (ticket 1164)', async (_form, zoom) => {
+    const wrapper = mountSheet({ anchor: anchorAt(zoom) })
     await control(wrapper, 'margin-frame-tools').trigger('click')
     await nextTick()
     const item = control(wrapper, 'margin-frame-tools-rotate')

@@ -653,8 +653,8 @@ export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: 
 }
 
 /** The keep-out margin as drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the Frame's
- * footprint left out, a hairline edge and an inner border; folded, no border; none bare, which keeps only the Move bar
- * (ticket 0682). In grid space: its `MARGIN_PX` at the sheet's scale (ticket 0698), over the zoom. */
+ * footprint left out, a hairline edge and an inner border; folded, no border; none bare, which keeps only the Move bar and
+ * the Frame tools button (tickets 0682, 1164). In grid space: its `MARGIN_PX` at the sheet's scale (ticket 0698), over the zoom. */
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
   const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
   const band = gridBand * zoom
