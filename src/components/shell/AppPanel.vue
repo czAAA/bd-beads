@@ -242,7 +242,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   anchored.stop()
   const target = findInShell(`[data-testid="${props.anchor}"]`) ?? opener
-  // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes. Focus moves to
+  // A dialog the panel opened (Delete) takes focus itself and gives it back when it closes. Focus moves to
   // the button before the dialog mounts, so the button is what the dialog gives it back to (ticket 0939).
   if (pressClosed.wasPressClosed() || findInShell('.app-modal')) return
   if (target?.isConnected) target.focus({ preventScroll: true })

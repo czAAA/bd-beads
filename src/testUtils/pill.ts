@@ -94,17 +94,8 @@ export async function rotate(wrapper: Wrapper): Promise<void> {
 
 /** Presses Clear this Project in the Project panel, which opens first; the confirmation it raises is the caller's. */
 export async function deleteAll(wrapper: Wrapper): Promise<void> {
-  if (!wrapper.find('[data-testid="project-clear"]').exists()) {
-    if (!wrapper.find('[data-testid="project-this"]').exists()) await openPanel(wrapper, 'strip-project')
-    await openThisProject(wrapper)
-  }
+  if (!wrapper.find('[data-testid="project-clear"]').exists()) await openPanel(wrapper, 'strip-project')
   await wrapper.get('[data-testid="project-clear"]').trigger('click')
-}
-
-/** Unfolds the open Project panel's This Project section, which starts folded (ticket 0971). */
-export async function openThisProject(wrapper: Wrapper): Promise<void> {
-  const header = wrapper.find('[data-testid="project-this"] .panel-section__header[aria-expanded="false"]')
-  if (header.exists()) await header.trigger('click')
 }
 
 /** Picks a language in the strip's Language picker (tickets 368, 443). */

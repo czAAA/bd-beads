@@ -14,7 +14,7 @@ const props = defineProps<{
   keepSummary?: boolean
   /** Closed every time it mounts and kept nowhere (Convert image's Review, ticket 0759), instead of per device by `id`. */
   closedFirst?: boolean
-  /** Folded until it is opened, then kept per device by `id` (the Project panel's This Project, ticket 0971). */
+  /** Folded until it is opened, then kept per device by `id` (the Starter's beads section, ticket 0971). */
   folded?: boolean
   /** Never folds: a heading with no button or chevron over its rows (the Frame panel's Export, ticket 1121). */
   alwaysOpen?: boolean

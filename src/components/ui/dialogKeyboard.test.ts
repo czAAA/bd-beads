@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
@@ -11,7 +10,6 @@ afterEach(() => {
 })
 
 const dialogs = {
-  'Duplicate project': () => mount(DuplicateProjectModal, { props: { suggested: 'Copy' }, attachTo: document.body }),
   'Name piece': () => mount(NamePieceModal, { props: { name: 'Leaf' }, attachTo: document.body }),
 }
 
@@ -34,13 +32,5 @@ describe.each(Object.entries(dialogs))('%s dialog focus (ticket 516)', (_name, o
     const wrapper = open()
     outside.focus()
     expect(document.activeElement).toBe(wrapper.find('[role="dialog"]').element)
-  })
-})
-
-describe('Duplicate project dialog (ConfirmDialogs card, ticket 0988)', () => {
-  it('opens with its suggested name selected, so typing replaces it', () => {
-    const wrapper = dialogs['Duplicate project']()
-    const field = wrapper.find<HTMLInputElement>('[data-autofocus]').element
-    expect([field.selectionStart, field.selectionEnd]).toEqual([0, 'Copy'.length])
   })
 })

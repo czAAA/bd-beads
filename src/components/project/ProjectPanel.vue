@@ -19,8 +19,8 @@ import ReferenceImageSection from './ReferenceImageSection.vue'
 import { layerSettingsOf, layerSummary } from './layerSettingsOf'
 
 // The body of Project (spec 0440, tickets 443, 554, 0670; ProjectPanel card): what no tool already does about the open
-// Project. A head, then three folding sections: the Canvas's Layer settings, the reference image (0790) and this project
-// (the Project file first, then Export, which unfolds the export rows in place, 1058). It only asks.
+// Project. A head, two folding sections (the Canvas's Layer settings, the reference image, 0790), then the Project's own
+// rows, always showing under no title: the Project file, Export (its rows unfold in place, 1058), Clear and Delete.
 const props = defineProps<{
   project: Project
   saveFailed: boolean
@@ -58,14 +58,12 @@ const emit = defineEmits<{
   fit: []
   'select-frame': []
   'save-maker-name': [name: string]
-  duplicate: []
   clear: []
   delete: []
 }>()
 
 const { t } = useI18n()
 const backgrounds = useCanvasBackground(() => props.project)
-const duplicate = controlAction('duplicate-project')
 const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
 const save = controlAction('save-project-file')
@@ -118,17 +116,16 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       @remove="emit('remove-reference-image')"
     />
 
-    <PanelSection id="project:this" :label="t.panels.project.thisProject" folded data-testid="project-this">
+    <div class="project-panel__rows" data-testid="project-rows">
       <PanelItem :icon="save.icon" :value="lastFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
-      <PanelItem icon="copy" data-testid="project-duplicate" @select="emit('duplicate')">{{ duplicate.name(t) }}</PanelItem>
       <PanelItem :icon="exportAction.icon" :expanded="exportOpen" :aria-controls="exportRowsId" data-testid="project-export" @select="exportOpen = !exportOpen">{{ exportAction.name(t) }}</PanelItem>
       <div v-if="exportOpen" :id="exportRowsId" class="project-panel__export" role="group" :aria-label="exportAction.name(t)" data-testid="project-export-rows">
         <ExportRows :project="project" :exporting="exporting" @fit="emit('fit')" @select-frame="emit('select-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" @save-project-file="emit('save-project-file')" />
       </div>
       <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="project-delete" @select="emit('delete')">{{ remove.name(t) }}</PanelItem>
-    </PanelSection>
+    </div>
   </div>
 </template>
 
@@ -137,6 +134,13 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
   display: flex;
   flex-direction: column;
   color: var(--ink);
+}
+
+/* The rows under no title, set off from the sections above as a section is (PanelSection). */
+.project-panel__rows {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line-soft);
 }
 
 .project-panel__export {

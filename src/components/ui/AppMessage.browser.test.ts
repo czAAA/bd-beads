@@ -39,7 +39,7 @@ describe('a toast with a long name', () => {
     const name = 'MOTHWINGSWOVEN'.repeat(3).slice(0, 40)
     const toast = defineComponent({
       setup: () => () =>
-        h(AppMessage, { tone: 'success' }, { default: () => `“${name}” was duplicated.`, actions: () => h('button', { type: 'button' }, 'Undo') }),
+        h(AppMessage, { tone: 'success' }, { default: () => `“${name}” was deleted.`, actions: () => h('button', { type: 'button' }, 'Undo') }),
     })
     const mounted = await mountAt(toast, {}, { locale: 'en', width: 1280 })
     const message = mounted.root.querySelector<HTMLElement>('.app-message')!

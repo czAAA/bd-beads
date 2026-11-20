@@ -33,8 +33,6 @@ const other = () => (withLayers(moth(), { id: 'other', name: 'Other' }))
 
 beforeEach(() => {
   saveProjects([moth()])
-  // This Project starts folded (ticket 0971): these tests press its rows.
-  localStorage.setItem('openbeads:panel-sections-opened', 'project:this')
 })
 
 afterEach(() => vi.restoreAllMocks())
@@ -299,21 +297,6 @@ describe('Project', () => {
     expect(text(mounted, 'save-state')).toBe(en.panels.project.savedLocal)
   })
 
-  it('duplicates through the popup and opens the copy; Cancel changes nothing', async () => {
-    const mounted = mountPanels()
-    await mounted.openPanel('project')
-    await click(mounted, 'project-duplicate')
-    await click(mounted, 'duplicate-cancel')
-    expect(names()).toEqual(['Moth'])
-
-    await mounted.openPanel('project')
-    await click(mounted, 'project-duplicate')
-    await click(mounted, 'duplicate-confirm')
-
-    expect(names()).toEqual(['Moth', 'Moth 2'])
-    expect(canvasOf(mounted.panels.activeProject.value!).name).toBe('Moth 2')
-  })
-
   it('deletes the open Project after the same Delete question, and the other Project opens; Cancel keeps it (ticket 0842)', async () => {
     saveProjects([moth(), other()])
     const mounted = mountPanels()
@@ -337,12 +320,12 @@ describe('Project', () => {
     stripButton.dataset.testid = 'strip-project'
     document.body.append(stripButton)
     const mounted = mountPanels()
-    for (const [row, close] of [['project-delete', 'cancel'], ['project-clear', 'escape'], ['project-duplicate', 'escape']] as const) {
+    for (const [row, close] of [['project-delete', 'cancel'], ['project-clear', 'escape']] as const) {
       await mounted.openPanel('project')
       const opener = mounted.wrapper.get(`[data-testid="${row}"]`)
       ;(opener.element as HTMLElement).focus()
       await click(mounted, row)
-      if (row !== 'project-duplicate') expect(document.activeElement).toBe(mounted.wrapper.get('[data-testid="confirm-modal-cancel"]').element)
+      expect(document.activeElement).toBe(mounted.wrapper.get('[data-testid="confirm-modal-cancel"]').element)
       if (close === 'cancel') await click(mounted, 'confirm-modal-cancel')
       else {
         document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))

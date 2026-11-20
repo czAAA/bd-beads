@@ -113,7 +113,7 @@ A PanelSection **reference image** between canvas and export (ProjectPanel card)
 
 - **Picked:** the Convert image formats and caps (PNG, JPEG, GIF's first frame, WebP; at most 50 MB, any number of pixels, read smaller; ticket 0931). A file of a library of pictures is read up to 100 MB (ADR 0089).
 - **Stored made smaller:** at most 2048 px on its longest side, WebP where the browser encodes it, else JPEG (PNG when it has transparency), stepped down until it is at most 1 MB. The row's size line shows what is stored.
-- **Where:** the picture's bytes beside the Project library on the device, the settings with the Project, and both inside the `.openbeads` file (ADR 0089, ticket 0790). Duplicate copies it; Delete and Delete all remove it.
+- **Where:** the picture's bytes beside the Project library on the device, the settings with the Project, and both inside the `.openbeads` file (ADR 0089, ticket 0790). Delete and Delete all remove it.
 - **Not saved:** a device that refuses to keep it (a private window can) shows the picture for the session, and the Project panel's local save icon says "Reference image not saved in this browser".
 
 ## Copy

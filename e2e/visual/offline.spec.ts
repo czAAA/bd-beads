@@ -317,8 +317,6 @@ test('asks the browser to keep the library at the first Project file, not on loa
   expect(await asked()).toBe(0)
 
   await openStripPanel(page, 'strip-project')
-  // This Project starts folded (ticket 0971).
-  await page.locator('[data-testid="project-this"] .panel-section__header').click()
   await Promise.all([page.waitForEvent('download'), page.getByTestId('save-project-file').click()])
   await expect.poll(asked).toBe(1)
   await expect(page.locator('.app-modal')).toHaveCount(0)
