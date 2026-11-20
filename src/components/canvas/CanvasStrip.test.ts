@@ -20,11 +20,11 @@ describe('CanvasStrip', () => {
 
   const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
 
-  it('holds Menu, Project, Frame (with or without one, ticket 555), Rotate canvas, Rulers, Undo, Redo, then the zoom (out, in, Fit) and Export, and passes each press on (tickets 425, 431, 0652)', async () => {
+  it('holds Menu, Project, Frame (with or without one, ticket 555), Undo, Redo, Rotate canvas, Rulers, then the zoom (in, out, Fit) and Export, and passes each press on (tickets 425, 431, 0652)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
 
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-coffee', 'strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset', 'strip-export'])
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-coffee', 'strip-undo', 'strip-redo', 'strip-divider-history', 'strip-rotate-canvas', 'strip-rulers', 'zoom-in', 'zoom-out', 'zoom-reset', 'strip-divider-export', 'strip-export'])
     expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="canvas-strip-zoom"]').attributes('data-zoom-percent')).toBe('125')
 
@@ -105,6 +105,21 @@ describe('CanvasStrip', () => {
     expect(slots.map((slot) => slot.className.split(' ')[0])).toEqual(['canvas-strip__panels', 'canvas-strip__center', 'canvas-strip__controls'])
     const controls = wrapper.get('[data-testid="canvas-strip-controls"]')
     for (const id of ['strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset']) expect(controls.find(`[data-testid="${id}"]`).exists()).toBe(true)
+  })
+
+  it('pins Undo · Redo before the scrolling row and Export after it, so only the tools between scroll', () => {
+    const wrapper = mount(CanvasStrip, { props: { project, referenceImage: 'none', canUndo: true, zoomPercent: 100 } })
+    const scroller = wrapper.get('[data-testid="canvas-strip-scroller"]')
+    for (const id of ['strip-undo', 'strip-redo', 'strip-export']) expect(scroller.find(`[data-testid="${id}"]`).exists(), id).toBe(false)
+    for (const id of ['strip-reference-image', 'strip-rotate-canvas', 'strip-rulers', 'zoom-in', 'zoom-out', 'zoom-reset', 'language-switcher']) expect(scroller.find(`[data-testid="${id}"]`).exists(), id).toBe(true)
+    const children = Array.from(wrapper.get('[data-testid="canvas-strip-controls"]').element.children)
+    expect(children.map((child) => child.getAttribute('data-testid') ?? child.querySelector('[data-testid]')?.getAttribute('data-testid'))).toEqual(['strip-undo', 'strip-divider-history', 'canvas-strip-scroller', 'strip-divider-export', 'strip-export'])
+    expect(wrapper.get('[data-testid="strip-divider-history"]').attributes('aria-hidden')).toBe('true')
+  })
+
+  it('has no divider before Export where Export is away, and none after Undo · Redo without a Project', () => {
+    expect(mount(CanvasStrip, { props: { project, demo: true, referenceImage: 'none' } }).find('[data-testid="strip-divider-export"]').exists()).toBe(false)
+    expect(mount(CanvasStrip, { props: {} }).find('[data-testid="strip-divider-history"]').exists()).toBe(false)
   })
 
   it('holds Menu alone with no Project open (ticket 431)', () => {
@@ -253,7 +268,7 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
 
   it('is three Tab stops: a panel button, the Wordmark and a right-hand tool', () => {
     const wrapper = mount(CanvasStrip, { props, attachTo: document.body })
-    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-rotate-canvas'])
+    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-undo'])
     wrapper.unmount()
   })
 
@@ -276,11 +291,13 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
 
   it('keeps the right-hand tools in one section, moving its Tab stop to the last focused one', async () => {
     const wrapper = mount(CanvasStrip, { props, attachTo: document.body })
-    const rulers = wrapper.get('[data-testid="strip-rulers"]')
-    ;(rulers.element as HTMLElement).focus()
-    await rulers.trigger('keydown', { key: 'ArrowRight' })
-    expect(document.activeElement).toBe(wrapper.get('[data-testid="strip-undo"]').element)
-    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-undo'])
+    const undo = wrapper.get('[data-testid="strip-undo"]')
+    ;(undo.element as HTMLElement).focus()
+    await undo.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="strip-redo"]').element)
+    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-redo'])
+    await wrapper.get('[data-testid="strip-redo"]').trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="strip-rotate-canvas"]').element)
     const language = wrapper.get('[data-testid="language-switcher"] button[aria-haspopup]')
     ;(language.element as HTMLElement).focus()
     await language.trigger('keydown', { key: 'ArrowRight' })
@@ -319,10 +336,11 @@ describe('CanvasStrip\'s Reference image button (ReferenceImage card, ticket 079
   const project = bareProject({ technique: 'loom' })
   const button = (referenceImage: 'none' | 'shown' | 'hidden') => mount(CanvasStrip, { props: { project, rulers: true, referenceImage } })
 
-  it('stands right after Rulers, named Reference image', () => {
+  it('stands first of the scrolling tools, just before Rotate Canvas, named Reference image', () => {
     const wrapper = button('none')
     const order = wrapper.findAll('[data-testid^="strip-"]').map((element) => element.attributes('data-testid'))
-    expect(order.indexOf('strip-reference-image')).toBe(order.indexOf('strip-rulers') + 1)
+    expect(order.indexOf('strip-reference-image')).toBe(order.indexOf('strip-divider-history') + 1)
+    expect(order.indexOf('strip-rotate-canvas')).toBe(order.indexOf('strip-reference-image') + 2)
     expect(wrapper.get('[data-testid="strip-reference-image"]').attributes('aria-label')).toBe(en.referenceImage.name)
   })
 
@@ -397,16 +415,16 @@ describe("CanvasStrip in What's inside's demo editor (ticket 0797)", () => {
     const project = bareProject({ beads: {}, technique: 'loom' })
     const wrapper = mount(CanvasStrip, { props: { project, demo: true, referenceImage: 'none', rulers: true, zoomPercent: 100 } })
     const ids = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(ids.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-demo', 'strip-reference-image', 'strip-reference-image-input', 'strip-undo', 'strip-redo'])
+    expect(ids.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-demo', 'strip-undo', 'strip-redo', 'strip-divider-history', 'strip-reference-image', 'strip-reference-image-input'])
     expect(wrapper.get('[data-testid="canvas-brand"]').element.tagName).toBe('SPAN')
     expect(wrapper.get('[data-testid="strip-demo"]').text()).toBe(en.homepage.inside.demoTag)
     expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="strip-demo"]').exists()).toBe(false)
   })
 
-  it('offers Expand first in its right slot, before Reference image, a secondary button of words only that asks to toggle (ticket 0830)', async () => {
+  it('offers Expand first of its scrolling row, after Undo · Redo and before Reference image, a secondary button of words only that asks to toggle (ticket 0830)', async () => {
     const project = bareProject({ beads: {}, technique: 'loom' })
     const wrapper = mount(CanvasStrip, { props: { project, demo: true, expand: 'expand', referenceImage: 'none' } })
-    const controls = wrapper.get('[data-testid="canvas-strip-controls"]').findAll('button')
+    const controls = wrapper.get('[data-testid="canvas-strip-scroller"]').findAll('button')
     expect(controls[0].attributes('data-testid')).toBe('strip-expand')
     expect(controls[0].text()).toBe('Expand')
     expect(controls[0].classes()).toContain('app-button--secondary')
