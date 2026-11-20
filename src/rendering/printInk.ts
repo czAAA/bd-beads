@@ -76,7 +76,7 @@ export function printInkOf(words: Pick<PrintText, 'tones'>): PrintInk {
     solid: (hex) => toneOf(hex) === BLACK_TONE,
     overview: (hex) => {
       const rgb = fromHex(hex)
-      return rgb ? toneHex(1 - luma(rgb) / 255) : hex
+      return rgb ? toneHex(1 - luma(rgb) / 255) : NEUTRAL
     },
     overviewTheme: ONE_INK_THEME,
   }

@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { PRINT_TONE } from '../domain/printTones'
 import { describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
@@ -10,6 +9,7 @@ import { PRINT_COLORS } from './printColors'
 import { COVER_BOARD, COVER_PAD } from './coverPageLayout'
 import { mm, planPrint, PRINT_BEAD_LARGE_MM, PRINT_BEAD_MAX_MM, PRINT_BEAD_MIN_MM, PRINT_BEAD_STRETCH_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
+import { PRINT_TONE } from '../domain/printTones'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => bareProject({ technique, orientation: rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 

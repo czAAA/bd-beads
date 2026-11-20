@@ -198,9 +198,15 @@ function fillOf(hex: string, overlap: boolean, ink: PrintInk): string {
   return ink.oneInk ? ink.colors.paper : tint(hex, OVERLAP_TINT)
 }
 
-/** An overlap bead's letter: `muted` on the color pages, black and regular in one ink. */
-function overlapLetter(ink: PrintInk): { color: string; face: 'bold' | 'regular' } {
+/** A bead's letter: on its own bead its color by the ink; an overlap bead's `muted`, or black and regular in one ink. */
+function letterOf(hex: string, overlap: boolean, ink: PrintInk): { color: string; face: 'bold' | 'regular' } {
+  if (!overlap) return { color: ink.letter(hex), face: 'bold' }
   return ink.oneInk ? { color: ink.colors.ink, face: 'regular' } : { color: ink.colors.muted, face: 'bold' }
+}
+
+/** Whether a bead prints solid black: never in the overlap, which is paper. */
+function isSolid(hex: string | null, overlap: boolean, ink: PrintInk): boolean {
+  return hex !== null && !overlap && ink.solid(hex)
 }
 
 /** Half the paper between two solid black beads (PrintBlackAndWhite card), round each one's fill. */
@@ -236,7 +242,7 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
   const offset = beads.some((bead) => Math.abs(bead.cell.x - bead.across * stepAcross) > 0.5 || Math.abs(bead.cell.y - bead.down * stepDown) > 0.5)
 
   // Fills, one colour after another. A solid black bead stands apart by paper, with no hairline round it.
-  const solid = (bead: PlacedBead) => bead.color !== null && !inOverlap(bead) && ink.solid(bead.color)
+  const solid = (bead: PlacedBead) => isSolid(bead.color, inOverlap(bead), ink)
   const filled = beads.filter((bead) => bead.color !== null).sort((p, q) => (p.color! < q.color! ? -1 : 1))
   for (const bead of filled) {
     const fill = fillOf(bead.color!, inOverlap(bead), ink)
@@ -300,7 +306,7 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
   for (const bead of beads) {
     if (bead.color === null) continue
     const { x, y, width, height } = round ? bead.box : bead.cell
-    const { color, face } = inOverlap(bead) ? overlapLetter(ink) : { color: ink.letter(bead.color), face: 'bold' as const }
+    const { color, face } = letterOf(bead.color, inOverlap(bead), ink)
     letterAt(content, letters[bead.color] ?? '?', { x: chart.x + x, y: chart.y + y, width, height }, color, letterPt(plan.beadMm), face)
   }
 
@@ -383,7 +389,7 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
   const beads = custom.beads.filter(own)
   for (const bead of beads) {
     const fill = bead.color === null ? undefined : fillOf(bead.color, inOverlap(bead), ink)
-    const solid = bead.color !== null && !inOverlap(bead) && ink.solid(bead.color)
+    const solid = isSolid(bead.color, inOverlap(bead), ink)
     const paint = solid ? { fill } : { ...(fill ? { fill } : {}), stroke: fill ? ink.colors.lineStrong : ink.colors.faint, lineWidth: LINE_CELL }
     if (round) {
       const size = Math.min(bead.width, bead.height) * ROUND_SHARE
@@ -393,8 +399,9 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
     const cos = Math.cos(bead.angle)
     const sin = Math.sin(bead.angle)
     const corner = (across: number, out: number): [number, number] => [(chart.x + bead.x + across * cos - out * sin) * K, (chart.y + bead.y + across * sin + out * cos) * K]
-    const halfWide = bead.width / 2
-    const halfDeep = bead.height / 2
+    // A solid black bead gives up its edge to paper, as on a grid.
+    const halfWide = bead.width / 2 - (solid ? SOLID_INSET : 0)
+    const halfDeep = bead.height / 2 - (solid ? SOLID_INSET : 0)
     content.polygon([corner(-halfWide, -halfDeep), corner(halfWide, -halfDeep), corner(halfWide, halfDeep), corner(-halfWide, halfDeep)], paint)
   }
   const local = { x: 0, y: 0, width: part.region.width, height: part.region.height }
@@ -407,7 +414,7 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
   for (const bead of beads) {
     if (bead.color === null) continue
     const size = Math.min(bead.width, bead.height)
-    const { color, face } = inOverlap(bead) ? overlapLetter(ink) : { color: ink.letter(bead.color), face: 'bold' as const }
+    const { color, face } = letterOf(bead.color, inOverlap(bead), ink)
     letterAt(content, letters[bead.color] ?? '?', { x: chart.x + bead.x - size / 2, y: chart.y + bead.y - size / 2, width: size, height: size }, color, letterSize, face)
   }
 }
