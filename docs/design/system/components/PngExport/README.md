@@ -1,6 +1,6 @@
 # PngExport
 
-The PNG export: **the Cover page as a picture** (ticket 1096; PrintCover card), one A4 portrait page drawn by the same code as the PDF's Cover page: the finished piece in color on the pale board, with the technique word, the title, the maker, the piece's colors and the tech line.
+The PNG export: **the Cover page as a picture** (ticket 1096; PrintCover card), one A4 portrait page drawn by the same code as the PDF's Cover page: the technique word, the title, the maker, the piece's colors and the tech line at the top (ticket 1141), then the finished piece in color on the pale board.
 
 **Trimmed to the beads** (ticket 1128): the picture shows only the rows and columns from the first bead to the last, across and down, empty positions between beads kept, and its tech line gives that trimmed size. A Schema with no beads shows whole.
 

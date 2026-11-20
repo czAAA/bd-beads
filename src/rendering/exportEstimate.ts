@@ -117,13 +117,13 @@ const OVERVIEW_BYTES = {
   450: [155_841, 23_447, 45.09, 140.36, 143.94, 540],
 } as const
 
-/** The Cover page's bytes, PDF and picture (ticket 1096; 15 pieces measured 2026-11-20 at each dpi, 5 × 5 to 250 × 250, 1 to
- * 90 colors): a constant, then by the bead's size in device px: the beads, their area, the color edges, the edges again by
- * the bead's size up to `COVER_SHORT_EDGE_MM`, and the area by the colors (up to 100). */
+/** The Cover page's bytes, PDF and picture (tickets 1096, 1141; 15 pieces measured 2026-11-20 at each dpi, 5 × 5 to 250 × 250,
+ * 1 to 90 colors): a constant, then by the bead's size in device px: the beads, their area, the color edges, the edges again
+ * by the bead's size up to `COVER_SHORT_EDGE_MM`, and the area by the colors (up to 100). */
 const COVER_PAGE_BYTES = {
-  150: [86_800, 0.063, 0.0444, 1.8, 0.233, 1.82],
-  300: [196_000, 0, 0.0546, 5.22, 0, 0.892],
-  450: [352_000, 0.0663, 0.00992, 5.87, 0, 0.662],
+  150: [87_900, 0, 0.0794, 0, 0.292, 2.02],
+  300: [261_000, 0.63, 0, 0.898, 0.225, 0.462],
+  450: [512_000, 0.146, 0, 1.36, 0.129, 0.373],
 } as const
 const COVER_COLORS = 100
 const COVER_SHORT_EDGE_MM = 2.5
