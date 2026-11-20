@@ -2,9 +2,8 @@
 
 Keyboard shortcuts: every key and gesture the editor answers, grouped as in the Toolbox, as a **Subpanel of Menu**.
 
-**Approved 2026-11-20, not yet in the app (ticket 1159 builds it, and adds the two named sizes below to the tokens).**
-Until then the app shows the earlier centred Modal (560–640px, two CSS columns, keys wrapping under long names). The
-design was signed off on the "Keyboard shortcuts in Menu" canvas, variant A4.
+Approved 2026-11-20 on the "Keyboard shortcuts in Menu" canvas (variant A4), built by ticket 1159 in place of the
+earlier centred Modal.
 
 ## Where it opens
 
@@ -13,7 +12,8 @@ design was signed off on the "Keyboard shortcuts in Menu" canvas, variant A4.
   from the Menu button, over the Canvas, with no scrim.
 - **`?`** opens Menu straight on this Subpanel; Escape then closes the panel (the Subpanel was the opening view), and
   Back shows Menu's list. `?` again, or the lit Menu button, closes it.
-- The header's right holds the `?` key as a Kbd chip, where a Subpanel's meta sits.
+- The header's right holds the `?` key as a Kbd chip, where a Subpanel's meta sits, wherever key hints show (as the
+  Help row's `?` value).
 - Shown only when a keyboard is present, as before. On the Homepage the same Subpanel opens from its Menu (the What's
   inside demo included), not a page Modal.
 
@@ -23,7 +23,9 @@ design was signed off on the "Keyboard shortcuts in Menu" canvas, variant A4.
   the dropdown from `panel-width`; Back narrows it again. Its left edge stays under the Menu button. It is the one
   exception to "the dropdown keeps `panel-width`", because two even columns need the room.
 - Where the window can't hold 46rem plus the 8px gutters (an iPad mini upright, a phone), it takes the window's width
-  less the gutters, and each group falls to **one column** once a column would be narrower than 22rem.
+  less the gutters, and each group falls to **one column** once a column would be narrower than 22rem. The full
+  panel's padding and edge leave each column a hair under that, so the line is drawn where the body is under 44rem:
+  two columns at full width, one on an iPad mini or a 10th-generation iPad upright (744, 820px).
 - As tall as it needs, up to the panel's usual limit (MenuPanel card, Panel); past that its body scrolls with the fade
   and thumb every panel has. On a 1440×900 screen it scrolls a little.
 - **First row, full width:** Show key hints (`keyboard` icon, the label in `control`, a Switch at the end, as Lifted
@@ -46,7 +48,9 @@ design was signed off on the "Keyboard shortcuts in Menu" canvas, variant A4.
 
 - **Two tracks:** the name, then the keys in a fixed track, `shortcut-keys-width` (9rem), left-aligned. Every key in the
   panel starts at the same x within its column, close to its name. The keys never wrap and never drop under the name:
-  a long name wraps in its own track, and the keys stay on its first line. 9rem holds the widest chord on any keyboard
+  a long name wraps in its own track, and the keys stay on its first line. On a phone, where the name's track is
+  narrower than some single words, such a word breaks inside itself (only one that fits no line) rather than push the
+  keys out. 9rem holds the widest chord on any keyboard
   (Ctrl + Shift + S).
 - The row is at least `panel-row` tall (28px; 36px on a coarse pointer), with padding 4 10, `radius-sm` and
   `hover-fill` under a fine pointer. The name is in `body` / `ink`.
@@ -65,7 +69,7 @@ design was signed off on the "Keyboard shortcuts in Menu" canvas, variant A4.
 
 ## The rows
 
-Apple keyboard shown. Rows the app answers that the Modal never listed are marked † (ticket 1159 adds them).
+Apple keyboard shown. Rows the app answered that the Modal never listed are marked † (ticket 1159 added them).
 
 | Group | Name | Keys |
 | --- | --- | --- |

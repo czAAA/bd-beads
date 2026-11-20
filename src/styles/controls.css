@@ -33,12 +33,12 @@
   --track-height: 0.25rem;
   /* Button card: the expand button */
   --expand-size: 1.75rem;
-  /* Modal card: a confirmation, and a panel (Keyboard shortcuts) */
+  /* Modal card: a confirmation, and a panel (the Feedback sheet) */
   --modal-width: 26.25rem;
   --modal-width-panel: 35rem;
   /* NameOnExports card: the narrow modal */
   --modal-width-narrow: 21.25rem;
-  /* ShortcutsHelp card: a key chip */
+  /* ShortcutsHelp card: a key chip (Kbd) */
   --kbd-height: 1.375rem;
   /* Message card: the widest a message gets, its tone edge, and its close button */
   --message-max-width: 26.25rem;
@@ -129,6 +129,34 @@
   border: 1px solid var(--line-strong);
   border-bottom-width: 2px;
   border-radius: var(--radius-xs);
+}
+
+/* Kbd (ShortcutsHelp card): a key in Keyboard shortcuts and its header, 22px, DM Mono 12, `ink` on `elevated`, a 1px
+   `line-strong` edge with a 2px bottom, `radius-xs`; padding 0 4, or 0 6 for a word (`kbd-chip--word`). */
+.kbd-chip {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: var(--kbd-height);
+  height: var(--kbd-height);
+  padding: 0 var(--space-4);
+  font: var(--type-meta-small);
+  color: var(--ink);
+  white-space: nowrap;
+  background: var(--elevated);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.kbd-chip--word {
+  padding: 0 var(--space-6);
+}
+
+/* Arrows in one chip keep a little air between them; the last arrow's spacing comes off the right padding. */
+.kbd-chip--arrows {
+  padding-right: calc(var(--space-4) - 0.2em);
+  letter-spacing: 0.2em;
 }
 
 /* A popup placed by useAnchoredPosition in the top layer (a manual popover, ticket 0698): the script places it in

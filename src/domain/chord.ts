@@ -16,11 +16,17 @@ export type Keyboard = 'apple' | 'other'
 /** The platform's modifier in a help row written by hand (`[MOD_KEY, 'wheel']`), named for the keyboard by `keyParts`. */
 export const MOD_KEY = 'Mod'
 
-/** Keys named for the keyboard (ticket 0993): `MOD_KEY` as ⌘ or Ctrl, Del as ⌫ on an Apple keyboard, where Shift
- * also comes before ⌘ as macOS writes it (Shift, ⌘, Z). */
+/** The Option or Alt key in a help row written by hand (`[ALT_KEY, '←→']`, ticket 1159), named by `keyParts`. */
+export const ALT_KEY = 'Alt'
+
+/** The four arrows as one key of a help row: they share a chip (ShortcutsHelp card). */
+export const ARROWS = '←↑↓→'
+
+/** Keys named for the keyboard (ticket 0993): `MOD_KEY` as ⌘ or Ctrl, Del as ⌫ and Alt as ⌥ on an Apple keyboard,
+ * where Shift also comes before ⌘ as macOS writes it (Shift, ⌘, Z). */
 export function keyParts(parts: readonly string[], keyboard: Keyboard): string[] {
   if (keyboard === 'other') return parts.map((part) => (part === MOD_KEY ? 'Ctrl' : part))
-  const named = parts.map((part) => (part === MOD_KEY ? '⌘' : part === 'Del' ? '⌫' : part))
+  const named = parts.map((part) => (part === MOD_KEY ? '⌘' : part === 'Del' ? '⌫' : part === ALT_KEY ? '⌥' : part))
   return named.includes('⌘') && named.includes('Shift') ? ['Shift', ...named.filter((part) => part !== 'Shift')] : named
 }
 

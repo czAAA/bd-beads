@@ -1024,10 +1024,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     dialogs,
   })
 
-  /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */
-  const shortcutsHelpOpen = dialogs.flag('shortcuts')
-  const onOpenShortcutsHelp = () => void (shortcutsHelpOpen.value = true)
-  const onCloseShortcutsHelp = () => void (shortcutsHelpOpen.value = false)
+  /** Whether Menu shows Keyboard shortcuts, its Subpanel (ticket 1159), which `?` opens and closes. */
+  const shortcutsHelpOpen = () => openPanel.value === 'menu' && overlays.shortcutsOpen.value
 
   /** The save ring (SaveReminder card, ticket 0796): once the Project file is well behind; it waits for a quiet moment. */
   const saveReminder = useSaveReminder({
@@ -1098,7 +1096,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onZoomIn: () => zoomIn(),
     onZoomOut: () => zoomOut(),
     onFit: resetZoom,
-    openShortcutsHelp: onOpenShortcutsHelp,
+    shortcutsHelpOpen,
+    toggleShortcutsHelp: overlays.toggleMenuOnShortcuts,
     onSaveProjectFile: exportFlow.onSave,
     onSaveProjectFileAs: exportFlow.onSaveAs,
   })
@@ -1355,6 +1354,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** The Menu's Account section and its Sign in Subpanel (ticket 0078). */
       signInOpen: overlays.signInOpen,
       menuOpensOnList: overlays.menuOpensOnList,
+      /** Menu's Keyboard shortcuts Subpanel (ticket 1159): its Help row pushes it, `?` opens Menu on it. */
+      shortcutsOpen: overlays.shortcutsOpen,
       account: accountFlow.account,
       mayOpenSignIn: accountFlow.mayOpenSignIn,
       signInRefusal: accountFlow.signInRefusal,
@@ -1371,7 +1372,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
        * empties its Canvas. */
       demo: !!demo,
       onStartDemoAfresh: () => demo?.startAfresh(),
-      onOpenShortcutsHelp,
       onShowButtonNames: buttonNames.show,
       onOpenFeedback: feedback.onOpenFeedback,
       // Menu: the device and the library
@@ -1488,7 +1488,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       pendingLargeOpen: savedProjectConfirms.pendingLargeOpen,
       onConfirmLargeOpen: savedProjectConfirms.onConfirmLargeOpen,
       onCancelLargeOpen: savedProjectConfirms.onCancelLargeOpen,
-      onCloseShortcutsHelp,
       feedbackRequest: feedback.feedbackRequest,
       onCloseFeedback: feedback.onCloseFeedback,
       sendReport: feedback.sendReport,

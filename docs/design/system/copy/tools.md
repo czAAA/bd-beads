@@ -51,3 +51,27 @@ A setting on the Mirror bar that a Canvas Area's size does not fit grows the Are
 | In Mirror mode the half-bead shift lines up no more axes: try Repeat. (the + Tooltip) | В режиме «Отражение» сдвиг на половину бисеринки не даёт больше осей: попробуйте «Повтор». | У режимі «Відображення» зсув на пів бісерини не дає більше осей: спробуйте «Повтор». | У рэжыме «Адлюстраванне» зрух на паўпацеркі не дае больш восей: паспрабуйце «Паўтор». | 在“镜像”模式下，半珠错位无法对齐更多轴：请试试“重复”。 | En modo Espejo el desfase de media cuenta no alinea más ejes: prueba con Repetir. | W trybie „Odbicie” przesunięcie o pół koralika nie pozwala na więcej osi: spróbuj „Powtórz”. |
 
 English follows the ticket, tightened to name each count with its own noun ("2 Left–right axes and 1 Top–bottom axis"); Russian rewrites the ticket's «чтобы … совпадал» as «и … ложится ровно», so the verb agrees with every Mode and the Area keeps the app's word, «область отражения». The other languages are proposals for review with the build.
+
+## Keyboard shortcuts in Menu (ticket 1159)
+
+Keyboard shortcuts became Menu › Help's Subpanel (ShortcutsHelp card), and lists the keys and gestures the editor already answered but never named: one chord per row, each row named for its way, the Palette's one row split in three, and a group for the keys on a focused handle with its condition line. The English follows the card's table; the other languages use each one's own words for the Frame, Piece, Mirror area, reference image, handle and bead, and are for review with the build. The Show key hints row is now a Switch, so its On and Off are gone.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Move it from any tool (middle-drag) | Двигать его при любом инструменте | Рухати його будь-яким інструментом | Рухаць яго любым інструментам | 任何工具下都可移动 | Moverlo con cualquier herramienta | Przesuń je dowolnym narzędziem |
+| Scroll the Canvas (wheel) | Прокручивать холст | Прокручувати полотно | Пракручваць палатно | 滚动画布 | Desplazar el lienzo | Przewiń płótno |
+| Scroll it sideways (Shift + wheel) | Прокручивать его вбок | Прокручувати його вбік | Пракручваць яго ўбок | 横向滚动画布 | Desplazarlo de lado | Przewiń je w bok |
+| Zoom on a trackpad (pinch) | Менять масштаб на трекпаде | Змінювати масштаб на трекпаді | Змяняць маштаб на трэкпадзе | 在触控板上缩放 | Hacer zoom en un trackpad | Powiększ na gładziku |
+| Tools at a finger or Pencil (hold) | Инструменты у пальца или Pencil | Інструменти біля пальця або Pencil | Інструменты каля пальца або Pencil | 手指或 Pencil 旁的工具 | Herramientas junto al dedo o el Pencil | Narzędzia przy palcu lub Pencil |
+| On a handle (the group) | На маркере | На маркері | На маркеры | 在控点上 | En un tirador | Na uchwycie |
+| Tab to the handle first, then: (its line) | Сначала перейдите к маркеру клавишей Tab, затем: | Спершу перейдіть до маркера клавішею Tab, потім: | Спачатку перайдзіце да маркера клавішай Tab, потым: | 先用 Tab 移到控点，然后： | Primero llega al tirador con Tab, luego: | Najpierw przejdź do uchwytu klawiszem Tab, potem: |
+| Move the selection, Piece or Mirror area | Двигать выделение, кусочек или область отражения | Рухати виділення, шматочок або область відображення | Рухаць вылучэнне, кавалачак або вобласць адлюстравання | 移动选区、小块或镜像区域 | Mover la selección, el trozo o el área del espejo | Przesuń zaznaczenie, kawałek lub obszar odbicia |
+| Move the Frame | Двигать рамку | Рухати рамку | Рухаць рамку | 移动边框 | Mover el marco | Przesuń ramkę |
+| Resize the Frame | Менять размер рамки | Змінювати розмір рамки | Змяняць памер рамкі | 调整边框大小 | Cambiar el tamaño del marco | Zmień rozmiar ramki |
+| Move the reference picture | Двигать подложку | Рухати підкладку | Рухаць падкладку | 移动参考图 | Mover la imagen de referencia | Przesuń obraz pomocniczy |
+| … ten beads at a time | … на десять бисеринок за раз | … на десять бісерин за раз | … на дзесяць бісерынак за раз | ……每次十颗珠子 | … diez cuentas a la vez | … o dziesięć koralików naraz |
+| Move a Palette color | Переставить цвет палитры | Переставити колір палітри | Пераставіць колер палітры | 移动调色板颜色 | Mover un color de la paleta | Przestaw kolor palety |
+| A recent color (Shift + 1…3) | Недавний цвет | Нещодавній колір | Нядаўні колер | 最近使用的颜色 | Un color reciente | Ostatni kolor |
+| Palette colors 1 to 6 (Shift + 4…9) | Цвета палитры с 1 по 6 | Кольори палітри з 1 по 6 | Колеры палітры з 1 па 6 | 调色板颜色 1 至 6 | Colores 1 a 6 de la paleta | Kolory palety od 1 do 6 |
+| Palette color 7 (Shift + 0) | Цвет палитры 7 | Колір палітри 7 | Колер палітры 7 | 调色板颜色 7 | Color 7 de la paleta | Kolor palety 7 |
+| Show key hints (the first row, now a Switch; unchanged) | Показывать подсказки клавиш | Показувати підказки клавіш | Паказваць падказкі клавіш | 显示按键提示 | Mostrar atajos de teclado | Pokazuj podpowiedzi klawiszy |

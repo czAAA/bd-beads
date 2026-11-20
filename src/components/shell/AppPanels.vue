@@ -3,6 +3,7 @@ import ExportPanel from '../canvas/ExportPanel.vue'
 import FramePanel from '../canvas/FramePanel.vue'
 import MenuPanel from './MenuPanel.vue'
 import SignInPanel from './SignInPanel.vue'
+import ShortcutsHelp from './ShortcutsHelp.vue'
 import PanelHost from './PanelHost.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import StarterGallery from '../project/StarterGallery.vue'
@@ -85,7 +86,7 @@ const {
   menuOpensOnForm,
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
-  onOpenShortcutsHelp,
+  shortcutsOpen,
   onShowButtonNames,
   onOpenFeedback,
   projectsKept,
@@ -194,9 +195,12 @@ const chosenStarter = ref<StarterId>()
     v-if="openPanel === 'menu' || (openPanel === 'project' && activeProject)"
     :open="openPanel"
     :only="['menu', 'project']"
-    :sub-title="signInOpen ? t.account.signIn : phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
-    :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen && !signInOpen ? String(projects.length + sealed.length) : undefined"
-    :start-in-sub="page !== 'convert-image' && !menuOpensOnList && (menuOpensOnForm || projects.length + sealed.length === 0)"
+    :sub-title="shortcutsOpen ? t.shortcutsHelp.title : signInOpen ? t.account.signIn : phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
+    :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen && !signInOpen && !shortcutsOpen ? String(projects.length + sealed.length) : undefined"
+    :sub-key="openPanel === 'menu' && shortcutsOpen ? '?' : undefined"
+    :sub-width="openPanel === 'menu' && shortcutsOpen ? 'var(--panel-width-wide)' : undefined"
+    :sub-opener="shortcutsOpen ? 'menu-item-shortcuts' : undefined"
+    :start-in-sub="shortcutsOpen || (page !== 'convert-image' && !menuOpensOnList && (menuOpensOnForm || projects.length + sealed.length === 0))"
     @close="openPanel = null"
   >
     <MenuPanel
@@ -212,15 +216,15 @@ const chosenStarter = ref<StarterId>()
       :kept="projectsKept"
       :account="account"
       :may-open-sign-in="mayOpenSignIn"
-      @new-project="demo ? onStartDemoAfresh() : ((phoneSavedProjectsOpen = false), (signInOpen = false))"
+      @new-project="demo ? onStartDemoAfresh() : ((phoneSavedProjectsOpen = false), (signInOpen = false), (shortcutsOpen = false))"
       @convert-image="onOpenConvertImage()"
-      @saved-projects="(phoneSavedProjectsOpen = true), (signInOpen = false)"
-      @sign-in="signInOpen = true"
+      @saved-projects="(phoneSavedProjectsOpen = true), (signInOpen = false), (shortcutsOpen = false)"
+      @sign-in="(signInOpen = true), (shortcutsOpen = false)"
       @sign-out="onSignOut"
       @delete-account="onRequestDeleteAccount"
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
-      @shortcuts="onOpenShortcutsHelp"
+      @shortcuts="(shortcutsOpen = true), (signInOpen = false), (phoneSavedProjectsOpen = false)"
       @button-names="onShowButtonNames"
       @feedback="onOpenFeedback"
     />
@@ -255,9 +259,11 @@ const chosenStarter = ref<StarterId>()
       @delete="onRequestDelete"
     />
     <template #sub="{ depth }">
+      <!-- Keyboard shortcuts (ticket 1159): Help's Subpanel, or what `?` opens Menu on. -->
+      <ShortcutsHelp v-if="shortcutsOpen && depth === 1" />
       <!-- Sign in (ticket 0078): the Account section's subpanel, also what Menu opens on back from Google refused. -->
       <SignInPanel
-        v-if="signInOpen && depth === 1"
+        v-else-if="signInOpen && depth === 1"
         :refusal="signInRefusal"
         :asks="signInAsks"
         :leaving="signInLeaving"
