@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "Zoomed out, the Frame keeps a dot for every bead along its edge, so you can still count them",
+    "ru": "При уменьшении у рамки остаётся точка у каждой бисеринки вдоль края, так что их по-прежнему можно сосчитать",
+    "uk": "При зменшенні в рамки лишається крапка біля кожної бісерини вздовж краю, тож їх і далі можна порахувати",
+    "be": "Пры памяншэнні ў рамкі застаецца кропка каля кожнай бісерыны ўздоўж краю, таму іх па-ранейшаму можна палічыць",
+    "zh": "缩小时，边框沿边的每颗珠子仍保留一个点，依然可以数清",
+    "es": "Al alejar la vista, el marco conserva un punto por cada cuenta a lo largo del borde, así que aún puedes contarlas",
+    "pl": "Po oddaleniu ramka zachowuje kropkę przy każdym koraliku wzdłuż krawędzi, więc nadal możesz je policzyć"
+  }
+}
