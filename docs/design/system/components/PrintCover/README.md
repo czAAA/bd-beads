@@ -37,6 +37,6 @@ Approved 2026-11-19, not yet in the app (ticket 1096). Picture saves this page a
 - [x] Every page number and every page a page points at counts the cover.
 - [x] With Cover page off, the PDF is what it was before.
 - [ ] Picture saves the cover as one PNG file.
-- [ ] The cover is in color with Black and white on.
+- [x] The cover is in color with Black and white on.
 
 Hand-written from the signed-off canvas; static rendition.

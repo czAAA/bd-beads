@@ -12,12 +12,7 @@
 - **List pages**: the colors that do not fit page 1 continue on pages straight after it (so chart pages start later), each with the title (Inter 700 13) over the same table in two columns, its heading naming the Bead too; the Total and the note end the last.
 - **Footer**, on page 1 and the list pages: the X1 mark, "openbeads" and the date and time on the left, the page number on the right in DM Mono `muted` ("1 / 1", "2 / 3"), counting the Cover page, the list pages, the chart pages and the Word chart.
 - No watermark: nothing behind or over the chart, the title or Beads needed.
-
-## Approved 2026-11-19, not yet in the app (ticket 1096)
-
-Until ticket 1096 lands this page is as written above. Then:
-
-- With Black and white on, this page is drawn in one ink (PrintBlackAndWhite card).
+- **In one ink** with the Export panel's Black and white switch on (ticket 1096; PrintBlackAndWhite card): every text and line black, each bead on paper, a tint or solid black, the overview in each color's own grey on a board that is only a hairline.
 
 ## The new chart: approved 2026-11-19, not yet in the app (tickets 1126–1129)
 
