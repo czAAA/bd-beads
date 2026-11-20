@@ -7,13 +7,13 @@ import { roomBesidePanel } from '../../rendering/roomBesidePanel'
 import { surfaceView } from '../../rendering/surfaceView'
 import { OPEN_SPACE } from '../../rendering/space'
 import { fitBox, RULER_GUTTER_PX, type ViewMove } from './useCanvasView'
-import { useFrameBesidePanel, type FrameBesidePanelDeps } from './useFrameBesidePanel'
+import { FRAME_PANEL_SLACK_PX, useFrameBesidePanel, type FrameBesidePanelDeps } from './useFrameBesidePanel'
 
 const framed = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Summer bracelet', size: { width: 24, height: 10, unit: 'beads' } })
 const area = { x: 0, y: 46, width: 1366, height: 930 }
 /** The iPad's Frame panel, hung from the strip's Frame button. */
 const panel = { x: 288, y: 50, width: 565, height: 900 }
-const move: ViewMove = { from: { x: 0, y: 0 }, to: { x: -500, y: 0 }, zoom: 1, atFit: true }
+const move: ViewMove = { back: { x: 0, y: 0 }, to: { x: -500, y: 0 }, zoom: 1, atFit: true }
 
 function setup(project: Project = framed, areaZoom = 1) {
   const current = ref(project)
@@ -40,7 +40,7 @@ describe('useFrameBesidePanel (ticket 0971)', () => {
     panelPlaced(panel)
     expect(bringIntoView).toHaveBeenCalledTimes(1)
     const [locate, how] = bringIntoView.mock.calls[0]!
-    expect(how).toEqual({ clear: roomBesidePanel(panel, area) })
+    expect(how).toEqual({ clear: roomBesidePanel(panel, area), slack: FRAME_PANEL_SLACK_PX })
     const frame = placedFrame(framed)!
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1, scroll: { x: 0, y: 0 }, viewport: { width: 1366, height: 930 }, frame })
     const line = surface.frameBox(frame)
@@ -50,11 +50,11 @@ describe('useFrameBesidePanel (ticket 0971)', () => {
     expect(locate(surface)).toEqual({ x: line.x - RULER_GUTTER_PX, y: line.y - RULER_GUTTER_PX, width: room, height: line.height + 2 * RULER_GUTTER_PX })
   })
 
-  it('keeps clear of the panel in the drawing area\'s own px, where CSS zoom draws it larger (ticket 1071)', () => {
+  it('keeps clear of the panel, and lets a small miss be, in the drawing area\'s own px, where CSS zoom draws it larger (ticket 1071)', () => {
     const { bringIntoView, panelPlaced } = setup(framed, 2)
     panelPlaced(panel)
     const onScreen = roomBesidePanel(panel, area)!
-    expect(bringIntoView.mock.calls[0]![1]).toEqual({ clear: { top: 0, right: 0, bottom: 0, left: onScreen.left / 2 } })
+    expect(bringIntoView.mock.calls[0]![1]).toEqual({ clear: { top: 0, right: 0, bottom: 0, left: onScreen.left / 2 }, slack: FRAME_PANEL_SLACK_PX / 2 })
   })
 
   it('takes the move back as the panel closes, once', () => {

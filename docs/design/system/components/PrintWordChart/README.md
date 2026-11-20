@@ -39,10 +39,12 @@ Until ticket 1096 lands the runs are written as above ("3A, 7B, 2×"). Then **ea
 - A run is its count in DM Mono 400 `print-word-row` (10 pt) `ink`, then 0.6 mm, then **the bead's swatch**: the key's own swatch (3 mm, drawn like a chart bead: its fill, a 0.1 mm `line-strong` edge, its Swatch letter on it by PrintChartPage's white-or-black rule), its middle on the middle of the digits. No letter is written beside it and no comma follows: the next run starts 2.4 mm after the swatch.
 - **An empty position has a swatch too**: the key's empty swatch (the 0.1 mm `line-strong` edge, no fill, the chart's small `faint` cross), in place of the `×` character. So every run, bead or no bead, ends in a bead-shaped mark, and a row reads as counts and beads: "53 ☐ 2 ■ 40 ☐".
 - A row still wraps at a run, a run never splits from its swatch, and the pitch and the hairlines are as above.
-- The line under the key shows it: "A run is a count and a bead: 2 ▢ is two beads of C.", the mark being an outlined swatch with the letter C (`writing.md`).
+- The line under the key shows it: "A run is a count and a bead: 2 ▢ is two beads of C.", the mark being an outlined swatch with the letter C (`copy/frame.md`).
 - With Black and white on, a swatch is its bead's tone inside a black hairline (PrintBlackAndWhite card).
 
-**Approved 2026-11-19, not yet in the app (tickets 1128, 1129; signed off in ticket 1123):** Row by row writes the trimmed chart (PrintChartPage card): only the rows from the first bead to the last, each across the trimmed chart's columns only, so a row starts and ends where the chart does and its empty runs are the ones inside the drawing. Each row carries the number the chart's ruler gives it, counted from 1, so a maker reads one number for a row on the chart and here; the page title's range ("Row by row 1–30") uses the same numbers.
+**Trimmed to the beads** (ticket 1128): Row by row writes the trimmed chart (PrintChartPage card): only the rows from the first bead to the last, each across the trimmed chart's columns only, so a row starts and ends where the chart does and its empty runs are the ones inside the drawing. A Custom frame's rounds and rows are written whole. Each row keeps the Schema's own number until ticket 1129.
+
+**Approved 2026-11-19, not yet in the app (ticket 1129; signed off in ticket 1123):** each row carries the number the chart's ruler gives it, counted from 1, so a maker reads one number for a row on the chart and here; the page title's range ("Row by row 1–30") uses the same numbers.
 
 ## Two columns
 

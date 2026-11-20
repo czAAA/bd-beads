@@ -2,7 +2,9 @@
 
 The PNG export: **the Cover page as a picture** (ticket 1096; PrintCover card), one A4 portrait page drawn by the same code as the PDF's Cover page: the finished piece in color on the pale board, with the technique word, the title, the maker, the piece's colors and the tech line.
 
-**Approved 2026-11-19, not yet in the app (tickets 1126–1129; signed off in ticket 1123):** the picture shows only the rows and columns from the first bead to the last (1128). The Cover page shows no empty positions whatever Empty grid says, so Empty grid changes the PDF only.
+**Trimmed to the beads** (ticket 1128): the picture shows only the rows and columns from the first bead to the last, across and down, empty positions between beads kept, and its tech line gives that trimmed size. A Schema with no beads shows whole.
+
+**Approved 2026-11-19, not yet in the app (ticket 1127; signed off in ticket 1123):** the Cover page has no chart and shows no empty positions, so Empty grid and Chart border change the PDF only.
 
 - **One file, whatever the piece**: however big it is and however many colors it has, there are no list pages and no further files. Its footer reads "1 / 1".
 - **Whatever the switches say**: it is saved whether or not the Cover page switch is on (that switch is the PDF's). Large beads and Row by row change only the PDF; the picture is always in color.

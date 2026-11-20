@@ -52,7 +52,7 @@ A Production release is made by one command and one pull request (ticket 1046):
 - **What it holds.** Exactly what the command wrote: `src/data/releases.json` and `CHANGELOG.md`, nothing else. A release has a number and a date, no headline and no Release note of its own. A fix on production is another release.
 - **Major only when the owner says.** A release keeps its newest note's Version; nothing steps the first number unless the owner asks for a major release ("release 2.0.0"): then run `npm run release -- --major`, which makes the newest release's first number plus one, `.0.0` (ticket 1103).
 - **Its title** is `release: X.Y.Z`, the one title that names a Version. It has **no ticket**, so no ticket number in the title and no ticket to archive.
-- **Only the owner merges it.** No skill merges one; the bulk run skips it and names it in its report. Its checks run (it changes the release record, not only Markdown). Merging it deploys production (`docs/deploy.md`, Releasing to production).
+- **Only the owner merges it.** No skill merges one; the bulk run skips it and names it in its report. Its checks run (it changes the release record, not only Markdown). Merging it deploys production, and once production's smoke check passes, the release's tag `vX.Y.Z` and its GitHub Release `openbeads X.Y.Z`, with its section of `CHANGELOG.md` as notes, are made with no step of the owner's (`docs/deploy.md`, Releasing to production).
 - A note that merges after the last run and before the merge keeps the number it had before the release, and the next release writes it down. The notes after it go on from the higher of its number and the release's, so none is given twice.
 
 ### The changelog

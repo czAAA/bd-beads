@@ -84,7 +84,8 @@ describe('Word chart pages', () => {
   it('runs a 35 × 120 loom in two columns and titles each page with its own rows', async () => {
     await loadPrintFonts()
     // Three colors keep the key to one strip row, so the card's 41 rows a column fit.
-    const painted = ['#e63746', '#2a9d8f', '#264653'].map((color, index) => ({ row: index, column: index, color }))
+    // The last bead in the far corner keeps all 120 rows (ticket 1128).
+    const painted = [...['#e63746', '#2a9d8f', '#264653'].map((color, index) => ({ row: index, column: index, color })), { row: 119, column: 34, color: '#264653' }]
     const project = fixtureProject({ technique: 'loom', columns: 35, rows: 120, blank: true, override: painted })
     const words = printText(project, en, 'en', new Date(), { rowByRow: true })
     expect(drawnSheets(words)).toEqual([

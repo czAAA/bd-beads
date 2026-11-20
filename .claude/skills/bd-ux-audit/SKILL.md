@@ -19,7 +19,8 @@ the session's scratchpad directory, never in the repos.
    `arrive`, the calibration: `01-arrive.md`'s `**Review artifact:**` URL, read with
    `mcp__claude-artifacts__read_comments`, and what the owner called higher, lower or drop becomes your sense of each
    severity. The component cards the area touches (`docs/design/system/components/<Name>/README.md`) and
-   `writing.md`, so an Off-contract finding cites a line.
+   `writing.md` with the area's approved copy (`docs/design/system/copy/<area>.md`), so an Off-contract finding cites
+   a line.
 2. **The walk.** `npm run ux:walk -- <area> 2>&1 | tail -n 30` (builds first; minutes). Output per device and state
    in `ux-audit-output/<area>/`: read `stops.json` (a `reached: false` with its error is a finding candidate: the
    control wasn't there or didn't work), `console.json` and `axe.json` whole. Then the PNGs **one at a time**, judging

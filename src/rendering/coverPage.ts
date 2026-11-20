@@ -63,7 +63,7 @@ function shadowColor(): string {
 
 /** The board and the piece on it, drawn at the page's own resolution, then laid in with its shadow. */
 function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: CoverPageLayout): void {
-  const { board, piece, zoom } = layout
+  const { board, piece, zoom, start } = layout
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
   context.roundRect(board.x, board.y, board.width, board.height, BOARD_CORNER)
@@ -75,7 +75,7 @@ function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: 
   tile.height = Math.max(1, Math.ceil(piece.height * scale))
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
-  const region = { x: 0, y: 0, width: tile.width, height: tile.height }
+  const region = { x: start.x * zoom * scale, y: start.y * zoom * scale, width: tile.width, height: tile.height }
   renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom: zoom * scale, theme: COVER_THEME, rowMarks: false, positionMarks: false, drawBead: paintedOnly })
   // A shadow's offset and blur are in device px, whatever the transform.
   context.save()

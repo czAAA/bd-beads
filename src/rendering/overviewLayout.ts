@@ -1,9 +1,6 @@
-import { frameWeave } from '../domain/layerWeave'
-import { projectDimensions } from '../domain/projectExtent'
-import { A4_PORTRAIT, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER, type PageSize } from './printPlan'
+import { A4_PORTRAIT, areaRegion, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER, wholeArea, type PageSize, type TrimmedArea } from './printPlan'
 import type { PrintText } from './printText'
-import { displayedExtentPx } from './surfaceView'
-import { type Layered, quarterTurnOf } from '../domain/layerRecord'
+import type { Layered } from '../domain/layerRecord'
 
 // Where everything sits on page 1 when it is the overview of a piece cut into parts (tickets 0583, 0914; it began as the old
 // Cover of ticket 0583, which the PNG was until ticket 0915), and how Beads needed is cut into list pages, worked out without a canvas
@@ -104,9 +101,9 @@ export function listSlices(words: OverviewWords, table: TableRows, from: number,
   return lists
 }
 
-/** Page 1 as the overview (and its list pages) for a Project's words, with Beads needed as `table`: the whole piece as large
- * as the room the title block and Beads needed (at most its share) leave, centred in it. */
-export function overviewLayout(project: Layered, words: OverviewWords, table: TableRows, page: PageSize = A4_PORTRAIT): OverviewLayout {
+/** Page 1 as the overview (and its list pages) for a Project's words, with Beads needed as `table`: the whole piece, trimmed
+ * to `trim` (ticket 1128), as large as the room the title block and Beads needed (at most its share) leave, centred in it. */
+export function overviewLayout(project: Layered, words: OverviewWords, table: TableRows, page: PageSize = A4_PORTRAIT, trim: TrimmedArea = wholeArea(project)): OverviewLayout {
   const rowHeight = table.row
   const titleHeight = titleHeightOf(words)
   const top = PRINT_MARGIN + titleHeight
@@ -122,7 +119,7 @@ export function overviewLayout(project: Layered, words: OverviewWords, table: Ta
   const needed: ColorsSlice = { from: 0, count: onPageOne, rowHeight, columns: 2, rows: Math.ceil(onPageOne / 2), total: whole }
   const tableHeight = colorsHeight(onPageOne, table, whole)
 
-  const wide = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, quarterTurnOf(project), frameWeave(project).cell)
+  const wide = areaRegion(project, trim)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const room = available - tableHeight - OVERVIEW_GAP
   const widthRoom = page.width - PRINT_MARGIN * 2 - inset * 2

@@ -97,7 +97,19 @@
     "printed-output.md",
     "responsive.md",
     "tokens.css",
-    "writing.md"
+    "writing.md",
+    "copy/shell.md",
+    "copy/homepage.md",
+    "copy/account.md",
+    "copy/tools.md",
+    "copy/colors.md",
+    "copy/panels.md",
+    "copy/projects.md",
+    "copy/canvas.md",
+    "copy/print.md",
+    "copy/frame.md",
+    "copy/convert.md",
+    "copy/reference.md"
   ],
   "libraries": [],
   "components": [

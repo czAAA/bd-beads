@@ -3,7 +3,7 @@ import type { Project } from '../domain/project'
 import { CELL_SIZE_PX } from './cellSize'
 import { coverPageLayout } from './coverPageLayout'
 import { pageOneLayout, underLargeBeads } from './pageOneLayout'
-import { chartOnPageOne, mm, PRINT_DPI } from './printPlan'
+import { chartOnPageOne, mm, PRINT_DPI, wholeArea, type TrimmedArea } from './printPlan'
 import type { PrintText } from './printText'
 import { pdfPageCount } from './wordChartPages'
 import { beadsOfLayer, frameOf } from '../domain/layerRecord'
@@ -16,7 +16,8 @@ import { beadsOfLayer, frameOf } from '../domain/layerRecord'
 export interface ExportFacts {
   /** Colors in Beads needed. */
   colors: number
-  /** The Frame's cells and the beads on it, and where a bead's color differs from the next below or to the right. */
+  /** The printed chart's cells (trimmed to the beads, ticket 1128) and the beads on it, and where a bead's color differs
+   * from the next below or to the right. */
   cells: number
   filled: number
   edges: number
@@ -62,6 +63,11 @@ function beadsOf(frame: Rect, beads: BeadMap): { filled: number; edges: number }
   return { filled: at.size, edges }
 }
 
+/** How many cells an area of the displayed chart holds. */
+function cellsIn(area: TrimmedArea): number {
+  return (area.lastAcross - area.firstAcross + 1) * (area.lastDown - area.firstDown + 1)
+}
+
 /** The facts of an export of this Project in these words, or nothing without a Frame. */
 export function exportFacts(project: Project, words: PrintText): ExportFacts | undefined {
   const frame = frameOf(project)
@@ -72,7 +78,7 @@ export function exportFacts(project: Project, words: PrintText): ExportFacts | u
   const pdfPages = pdfPageCount(plan, words)
   return {
     colors: words.colors.length,
-    cells: frame.columns * frame.rows,
+    cells: Math.max(filled, Math.round((frame.columns * frame.rows * cellsIn(plan.trim)) / cellsIn(wholeArea(project)))),
     filled,
     edges,
     pageOneColors: pageOne.needed.count,
