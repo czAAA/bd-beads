@@ -196,12 +196,6 @@ export function shownWayOf(project: Layered): ShownWay {
   return shownWay(rowProgressOf(project), seenTurns(project))
 }
 
-/** Which way the Frame's rows run across the Canvas's own rows and columns (ticket 1154): its own way turned with the
- * Frame as it lies, whatever the view's turn. The Frame's rulers count from the edge that way starts at. */
-export function laidWayOf(project: Layered): ShownWay {
-  return shownWay(rowProgressOf(project), frameOf(project)?.quarterTurns)
-}
-
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
  * alone. */
 export function toggleRowDirection(project: Project): Project {
@@ -239,18 +233,21 @@ export function rowProgressPosition(project: Layered): { current: number; total:
 }
 
 
-/** The Frame line (row or column, from 1 as the rulers number it: from the edge the weaving starts at, ticket 1154) the
- * current pass works on, and how many lines there are, where a line takes more than one pass (peyote, ticket 0849): there
- * the counter counts passes, not the rulers' rows. None where each pass is a line, for a Custom frame, and once every pass is done. */
+/** The Frame line (row or column, from 1 as the rulers number it: left to right and top to bottom as seen, ticket 1165)
+ * the current pass works on, and how many lines there are, where a line takes more than one pass (peyote, ticket 0849): there
+ * the counter counts passes. A Frame lying turned counts its own lines so. None where a pass is a line, for a Custom frame, and once all are done. */
 export function passLine(project: Layered): { line: number; lines: number } | undefined {
   const frame = frameOf(project)
   const order = frameRowOrder(project)
   const pass = currentPass(rowProgressOf(project))
   if (!frame || order.stepOf || pass >= order.count) return undefined
-  const { direction, reversed } = rowProgressOf(project)
+  const { direction } = rowProgressOf(project)
   const lines = direction === 'columns' ? frame.columns : frame.rows
   const line = order.lineOf(pass)
-  return order.count === lines || line === undefined ? undefined : { line: reversed ? lines - line : line + 1, lines }
+  // The Frame's own lines as seen: where both turns show them running up or to the left, the rulers count from the far end.
+  const seen = shownWay({ direction }, seenTurns(project))
+  const fromEnd = seen === 'up' || seen === 'left'
+  return order.count === lines || line === undefined ? undefined : { line: fromEnd ? lines - line : line + 1, lines }
 }
 
 /** The Frame's Row order (spec 0590), worked the way the weaver's rows run now: the one thing Row progress asks how
