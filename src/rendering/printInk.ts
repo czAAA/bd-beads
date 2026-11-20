@@ -1,5 +1,6 @@
 import { BLACK_WHITE_BALANCE, fromHex, luma, relativeLuminance, toHex } from '../domain/color'
 import { BLACK_TONE } from '../domain/printTones'
+import { PRINT_THEME, type ProjectTheme } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import type { PrintText } from './printText'
 
@@ -18,8 +19,9 @@ export interface PrintInk {
   letter(hex: string): string
   /** Whether a bead prints solid black: its cell lines give way to paper, so two black beads never run together. */
   solid(hex: string): boolean
-  /** A bead on the overview, which carries no letter: its color, or its color's own grey. */
+  /** A bead on the overview, which carries no letter: its color, or its color's own grey; and the theme it is drawn in. */
   overview(hex: string): string
+  overviewTheme: ProjectTheme
 }
 
 /** The colour of a Swatch letter on a bead of this color on the color pages: `ink` on a light one, white on a dark one,
@@ -38,9 +40,15 @@ export const COLOR_INK: PrintInk = {
   letter: letterColor,
   solid: () => false,
   overview: (hex) => hex,
+  overviewTheme: PRINT_THEME,
 }
 
 const BLACK = '#000000'
+/** A neutral grey for what the print theme tints warm: an empty position's mark and bead. */
+const NEUTRAL = '#d8d8d8'
+
+/** The overview in one ink: no board under the beads, and nothing warm. */
+const ONE_INK_THEME: ProjectTheme = { ...PRINT_THEME, background: PRINT_COLORS.paper, canvas: PRINT_COLORS.paper, positionMark: NEUTRAL, emptyBead: NEUTRAL }
 
 /** Every role black but the paper's; the board is the paper, as the overview has no pale board in one ink. */
 const ONE_INK_COLORS: PrintColors = {
@@ -70,5 +78,6 @@ export function printInkOf(words: Pick<PrintText, 'tones'>): PrintInk {
       const rgb = fromHex(hex)
       return rgb ? toneHex(1 - luma(rgb) / 255) : hex
     },
+    overviewTheme: ONE_INK_THEME,
   }
 }

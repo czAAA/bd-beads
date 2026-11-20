@@ -2,7 +2,7 @@ import { projectDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
-import { drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
+import { drawFlatBead, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import type { PrintInk } from './printInk'
 import { renderProject } from './projectRenderer'
@@ -207,7 +207,7 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
   const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
   // The cross's line is `print-line-cell` and at least a device pixel, so it prints at 150 dpi too.
   const crossLine = Math.max(CROSS_LINE * scale, 1) / (zoom * scale)
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, drawBead: crossWhereEmpty(crossLine, ink) })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: ink.overviewTheme, rowMarks: false, drawBead: crossWhereEmpty(crossLine, ink) })
   context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
