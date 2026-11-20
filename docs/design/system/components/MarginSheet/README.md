@@ -125,7 +125,7 @@ On a coarse pointer every control on the sheet has a 44px hit area, centred on i
 
 The roomy title block adds no copy: Bead, Change, Replace bead, Brand, Type, Size, "Sets size, weight and colors." and "{count} beads" are existing strings (ticket 1015).
 
-Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin, Fold the title block, Show the title block, Change Technique, Frame tools, and the line "The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it." (`writing.md`, Margin sheet copy). Everything else is existing copy: Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Back a row, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Custom color.
+Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin, Fold the title block, Show the title block, Change Technique, Frame tools, and the line "The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it." (`copy/frame.md`, Margin sheet copy). Everything else is existing copy: Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Back a row, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Custom color.
 
 ## As built (ticket 0657)
 
