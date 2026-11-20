@@ -112,7 +112,8 @@ function drawNumber(context: DrawingContext, label: RulerLabel, looks: Looks, cu
  * bead is. None for a Custom frame, nor once every pass is done. */
 interface PassOnScreen {
   line: number
-  /** Whether the pass runs across the screen, so its marks stand on the Frame's left and right sides, not its top. */
+  /** Whether the pass runs across the screen: its number is on the left ruler (ticket 1170) and its ticks on the Frame's
+   * left and right sides, not its top. */
   across: boolean
   first: { x: number; y: number }
   box: RuledBox
@@ -207,7 +208,7 @@ function faded(context: DrawingContext, alpha: number, draw: () => void): void {
 const mix = (a: number, b: number, t: number) => a + (b - a) * t
 
 // Row done's marker (ticket 0730, Rulers card): the pill glides from the number of the pass it left to the next one's
-// in every band that numbers both, the two numbers crossfading, and the tick glides along the Frame's line. Once every
+// on the ruler that numbers both (ticket 1170), the two numbers crossfading, and the tick glides along the Frame's line. Once every
 // pass is done there is no next one: the pill and the tick fade out where they were.
 function drawGliding(context: DrawingContext, input: RulerDrawInput, motion: { left: PassOnScreen; reached?: PassOnScreen; elapsed: number }, looks: Looks, pad: number): void {
   const { project, layout } = input

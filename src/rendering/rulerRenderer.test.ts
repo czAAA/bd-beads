@@ -230,14 +230,14 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     return { left: shown.x - box.outset, top: shown.y - box.outset, right: shown.x + shown.width + box.outset }
   }
 
-  it('sets the current row\'s numbers, left and right, on a `marker` pill in the canvas\'s ink, and draws no triangle', () => {
+  it('sets the current row\'s number, on the left (ticket 1170), on a `marker` pill in the canvas\'s ink, and draws no triangle', () => {
     const input = at(moveToRow(base, 1), 'full')
     const { context, fills, texts, textStyles } = fakeContext()
     drawRulers(context, input)
 
     const numbers = input.layout.labels.filter((label) => label.axis === 'row' && label.index === 1)
-    expect(numbers).toHaveLength(2)
-    expect(marks(fills)).toHaveLength(2)
+    expect(numbers).toHaveLength(1)
+    expect(marks(fills)).toHaveLength(1)
     for (const number of numbers) expect(marks(fills).some((fill) => holds(fill.rect, number))).toBe(true)
     expect(textStyles.filter((_style, index) => texts[index] === '2')).toContain(LIGHT_THEME.canvas)
   })
@@ -254,7 +254,7 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
 
     const pieceNumbers = input.layout.labels.filter((label) => label.kind === 'piece' && label.axis === 'row')
     expect(pieceNumbers.length).toBeGreaterThan(0)
-    expect(marks(fills)).toHaveLength(2)
+    expect(marks(fills)).toHaveLength(1)
     for (const number of pieceNumbers) expect(marks(fills).some((fill) => holds(fill.rect, number))).toBe(false)
   })
 
@@ -329,7 +329,7 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     const off = fakeContext()
     drawRulers(off.context, at(moveToRow(base, 1), 'full', { numbers: false }))
     expect(off.texts).toContain('2')
-    expect(marks(off.fills)).toHaveLength(2)
+    expect(marks(off.fills)).toHaveLength(1)
   })
 
   it('ticks the line where the full form shows no number of the pass: a Frame turned a quarter (ticket 0667), a Ruler step past it', () => {
@@ -360,12 +360,12 @@ describe('the marker gliding on after Row done (Rulers card, ticket 0730)', () =
   }
   const centreY = (rect: number[]) => rect[1]! + rect[3]! / 2
 
-  it('glides each band\'s pill from the number of the pass left toward the next one\'s, and rests on it once the glide is over', () => {
+  it('glides the pill from the number of the pass left toward the next one\'s, and rests on it once the glide is over', () => {
     const project = moveToRow(base, 2)
     const numberY = (index: number) => at(project, 'full', undefined).layout.labels.find((label) => label.axis === 'row' && label.index === index)!.y
     const midway = fakeContext()
     drawRulers(midway.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide / 2 }))
-    expect(marks(midway.fills)).toHaveLength(2)
+    expect(marks(midway.fills)).toHaveLength(1)
     for (const pill of marks(midway.fills)) {
       expect(centreY(pill.rect)).toBeGreaterThan(numberY(1))
       expect(centreY(pill.rect)).toBeLessThan(numberY(2))
@@ -392,7 +392,7 @@ describe('the marker gliding on after Row done (Rulers card, ticket 0730)', () =
   it('fades the pill out where it was once every pass is done', () => {
     const { context, fills } = fakeContext()
     drawRulers(context, at(moveToRow(base, 3), 'full', { from: 2, elapsed: ROW_MOTION.markFade / 2 }))
-    expect(marks(fills)).toHaveLength(2)
+    expect(marks(fills)).toHaveLength(1)
     const gone = fakeContext()
     drawRulers(gone.context, at(moveToRow(base, 3), 'full', { from: 2, elapsed: ROW_MOTION.markFade }))
     expect(marks(gone.fills)).toEqual([])

@@ -21,7 +21,7 @@ import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
-import { canvasOf, frameOf, heldWeave, quarterTurnOf, withCanvas, withFrameSheet, withLayer } from '../../domain/layerRecord'
+import { canvasOf, frameOf, heldWeave, quarterTurnOf, withFrameSheet, withLayer } from '../../domain/layerRecord'
 import { findBead } from '../../domain/beads'
 import { scaledBead } from '../../testUtils/squareBead'
 import { moveToRow, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
@@ -2289,15 +2289,6 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.band).toBe(80)
     expect(anchor.sheet.left).toBeCloseTo(anchor.box.left + 7 - 80)
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
-  })
-
-  it('tells the sheet the corner the title block is in: the Frame\'s own bottom-right, moved by the Canvas\'s turn, not by Rotate Frame (ticket 0728)', async () => {
-    const corner = async (project: Project) => {
-      const { wrapper } = await mountSurface(project, 1)
-      return (wrapper.emitted('frame-anchor')!.at(-1)![0] as FrameAnchor).titleCorner
-    }
-    expect(await corner(withCanvas(framed(), { orientation: 180 }))).toEqual({ top: true, left: true })
-    expect(await corner(rotateFrame(framed())!)).toEqual({ top: false, left: false })
   })
 
   it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {

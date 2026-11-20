@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "The Frame's name and legend always sit at its bottom left and the rulers along its left and top, however the Canvas or the Frame is turned",
+    "ru": "Название и легенда рамки всегда внизу слева, а линейки слева и сверху, как бы ни были повёрнуты холст и рамка",
+    "uk": "Назва й легенда рамки завжди внизу ліворуч, а лінійки ліворуч і вгорі, хоч як повернуті полотно й рамка",
+    "be": "Назва і легенда рамкі заўсёды ўнізе злева, а лінейкі злева і зверху, як бы ні былі павернутыя палатно і рамка",
+    "zh": "边框的名称和图例始终在左下角，标尺始终在左侧和上方，无论画布或边框如何旋转",
+    "es": "El nombre y la leyenda del marco siempre están abajo a la izquierda y las reglas a la izquierda y arriba, esté como esté girado el lienzo o el marco",
+    "pl": "Nazwa i legenda ramki są zawsze w lewym dolnym rogu, a linijki po lewej i u góry, jakkolwiek obrócone są płótno i ramka"
+  }
+}

@@ -795,7 +795,7 @@ const drawingStyle = computed(() => {
           />
 
           <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Row progress, the Move bar and the
-            tools in its top band, the title block in its bottom-right corner, following the Frame. -->
+            tools in its top band, the title block in its bottom-left corner as seen, following the Frame. -->
           <MarginSheet
             v-if="frameOf(activeProject) && frameAnchor"
             :project="activeProject"

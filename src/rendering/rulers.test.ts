@@ -44,9 +44,9 @@ const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(su
 const framed = (frame: Rect, look: Look = {}) => layoutOf(project([], frame, look.technique), look)
 
 describe('which boxes carry rulers', () => {
-  it('is each piece, with only the start sides, until a Frame is set', () => {
+  it('is each piece until a Frame is set', () => {
     const { boxes } = layoutOf(project([...block(0, 0), ...block(10, 10)]))
-    expect(boxes.map((box) => [box.kind, box.sides, box.outset])).toEqual([['piece', 'start', 5], ['piece', 'start', 5]])
+    expect(boxes.map((box) => [box.kind, box.outset])).toEqual([['piece', 5], ['piece', 5]])
   })
 
   it('leaves out a Piece area of 4 beads or fewer in total, and keeps one of 5 or more, whatever its shape', () => {
@@ -67,9 +67,9 @@ describe('which boxes carry rulers', () => {
     expect(boxes.map(({ row, column, rows, columns }) => ({ row, column, rows, columns }))).toEqual([{ row: 0, column: 0, rows: 3, columns: 3 }])
   })
 
-  it('is the Frame, on every side, then each Piece area around it once it is set (ticket 1012)', () => {
+  it('is the Frame, then each Piece area around it once it is set (ticket 1012)', () => {
     const { boxes } = layoutOf(project([...block(0, 0), ...block(30, 30)], { row: 12, column: 13, rows: 4, columns: 5 }))
-    expect(boxes.map((box) => [box.kind, box.row, box.column, box.sides])).toEqual([['frame', 12, 13, 'sheet'], ['piece', 0, 0, 'start'], ['piece', 30, 30, 'start']])
+    expect(boxes.map((box) => [box.kind, box.row, box.column])).toEqual([['frame', 12, 13], ['piece', 0, 0], ['piece', 30, 30]])
   })
 
   it('leaves out the beads the Frame and its margin cover, which carry no rectangle (ticket 1012)', () => {
@@ -96,28 +96,43 @@ describe('which boxes carry rulers', () => {
 describe('the numbers of a ruled box', () => {
   const frame = { row: 0, column: 0, rows: 3, columns: 4 }
 
-  it('are every row and column, from 1, above, left and right of a Frame, none below, where its title block is (ticket 0657)', () => {
+  it('are every row and column, from 1, above and to the left of a Frame, none below or to the right (ticket 1170)', () => {
     const { labels } = framed(frame)
 
     expect(labels.filter((l) => l.axis === 'column' && l.y < 0).map((l) => l.text)).toEqual(['1', '2', '3', '4'])
     expect(labels.filter((l) => l.axis === 'column' && l.y > 60).map((l) => l.text)).toEqual([])
     expect(labels.filter((l) => l.axis === 'row' && l.x < 0).map((l) => l.text)).toEqual(['1', '2', '3'])
-    expect(labels.filter((l) => l.axis === 'row' && l.x > 80).map((l) => l.text)).toEqual(['1', '2', '3'])
+    expect(labels.filter((l) => l.axis === 'row' && l.x > 80).map((l) => l.text)).toEqual([])
   })
 
-  it('leave out the side along the screen edge the title block is on, whichever way the view is turned (tickets 0657, 0728)', () => {
-    // The title block sits at the Frame's own bottom-right corner: along the screen's bottom at 0° and 90°, along its
-    // top at 180° and 270°. Each number is on the screen side its offset from the Frame's middle (the viewport's) points to most.
-    const sides = (rotation: Rotation) => {
-      const { labels } = framed(frame, { rotation, centred: frame })
-      const middle = { x: 1000, y: 1000 }
-      const sideOf = ({ x, y }: RulerLabel) => (Math.abs(x - middle.x) > Math.abs(y - middle.y) ? (x < middle.x ? 'left' : 'right') : y < middle.y ? 'top' : 'bottom')
-      return [...new Set(labels.map(sideOf))].sort()
+  // Each number is on the screen side its offset from the box's middle (the viewport's) points to most.
+  const sidesSeen = (labels: RulerLabel[]) => {
+    const middle = { x: 1000, y: 1000 }
+    const sideOf = ({ x, y }: RulerLabel) => (Math.abs(x - middle.x) > Math.abs(y - middle.y) ? (x < middle.x ? 'left' : 'right') : y < middle.y ? 'top' : 'bottom')
+    return [...new Set(labels.map(sideOf))].sort()
+  }
+
+  it('stand on the left and the top as seen, whichever way the Canvas is turned (ticket 1170)', () => {
+    for (const rotation of [0, 90, 180, 270] as const) {
+      expect(sidesSeen(framed(frame, { rotation, centred: frame }).labels), `${rotation}°`).toEqual(['left', 'top'])
     }
-    expect(sides(0)).toEqual(['left', 'right', 'top'])
-    expect(sides(90)).toEqual(['left', 'right', 'top'])
-    expect(sides(180)).toEqual(['bottom', 'left', 'right'])
-    expect(sides(270)).toEqual(['bottom', 'left', 'right'])
+  })
+
+  it('stand on the left and the top as seen for a Frame lying turned, at every Canvas turn (ticket 1170)', () => {
+    const turned = { row: 0, column: 0, rows: 3, columns: 4, technique: 'loom' as const, quarterTurns: 1 as const }
+    for (const rotation of [0, 90, 180, 270] as const) {
+      const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: turned, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
+      const surface = view(view().scrollToCentre({ row: 0, column: 0, rows: 4, columns: 3 }))
+      const { labels } = rulerLayout(bareProject({ technique: 'loom', frame: { ...turned, beads: {} } }), surface, { fontPx: 11, numbers: true })
+      expect(sidesSeen(labels), `${rotation}°`).toEqual(['left', 'top'])
+    }
+  })
+
+  it('stand on a Piece area\'s left and top as seen too, whichever way the Canvas is turned (ticket 1170)', () => {
+    const area = { row: 2, column: 2, rows: 3, columns: 4 }
+    for (const rotation of [0, 90, 180, 270] as const) {
+      expect(sidesSeen(layoutOf(project(block(2, 2, 3, 4)), { rotation, centred: area }).labels), `${rotation}°`).toEqual(['left', 'top'])
+    }
   })
 
   it('stand 3px clear of the line, which is 7px outside the beads, on each side', () => {
@@ -143,7 +158,7 @@ describe('the numbers of a ruled box', () => {
     expect(left[0]?.x).toBeCloseTo(leftDots[0]?.x ?? NaN)
   })
 
-  it('mark every 5th, and only each piece’s own start sides have numbers', () => {
+  it('mark every 5th, and only each piece’s left and top have numbers', () => {
     const { labels } = layoutOf(project(block(0, 0, 3, 10)))
 
     expect(labels.filter((l) => l.fifth).map((l) => l.text)).toEqual(['5', '10'])
@@ -180,11 +195,14 @@ describe('the numbers of a ruled box', () => {
     expect(first.x).toBe(20)
   })
 
-  it('follow the picture when it is turned, standing on the side the Frame’s top now faces', () => {
-    const { labels } = framed(frame, { rotation: 90, scroll: { x: -200, y: 0 } })
-    const topOne = labels.find((l) => l.axis === 'column' && l.text === '1')!
-    // A quarter turn clockwise carries the top of the Frame to the right: the column numbers stand right of it.
-    expect(topOne.x - topOne.width / 2).toBeCloseTo(0 + 200 + 7 + 3, 5)
+  it('follow the picture when it is turned, along the side of it that is seen at the left (ticket 1170)', () => {
+    const { labels } = framed(frame, { rotation: 90, centred: frame })
+    // A quarter turn clockwise carries the Frame's columns down the screen and its bottom to the left: the column
+    // numbers stand left of it, 1 at the top, the row numbers above it.
+    const columns = labels.filter((l) => l.axis === 'column')
+    expect(columns.every((l) => l.x < 1000)).toBe(true)
+    expect(columns.sort((a, b) => a.y - b.y).map((l) => l.text)).toEqual(['1', '2', '3', '4'])
+    expect(labels.filter((l) => l.axis === 'row').every((l) => l.y < 1000)).toBe(true)
   })
 
   it('leave out the numbers far off screen', () => {
@@ -196,11 +214,11 @@ describe('the numbers of a ruled box', () => {
 })
 
 describe('the Ruler step', () => {
-  // The first ruler of column numbers: the one above the Frame, or at the side its top now faces.
+  // The ruler of column numbers: above the Frame, or at its left as seen when turned a quarter.
   const columnsOnTop = (look: Look, columns = 50) => {
     const frame = { row: 0, column: 0, rows: 5, columns }
     const { labels } = framed(frame, { ...look, centred: look.rotation ? frame : undefined })
-    return labels.slice(0, labels.findIndex((l) => l.axis === 'row'))
+    return labels.filter((l) => l.axis === 'column')
   }
 
   it('is every bead while the numbers have room, then every 5th', () => {
@@ -251,21 +269,27 @@ describe('the Ruler dots', () => {
   })
 
   it('shift a brick stitch’s odd rows by half a bead, as the numbers do', () => {
-    // Turned a quarter, the first row's and the last row's rulers both stand on screen, at the right and the left.
-    const look = { technique: 'brick' as const, zoom: 0.7, rotation: 90 as const, centred: { row: 0, column: 0, rows: 4, columns: 12 } }
-    const { dots } = framed({ row: 0, column: 0, rows: 4, columns: 12 }, look)
-    const columns = dots.filter((d) => d.axis === 'column')
-    const first = (side: (d: RulerDot) => boolean) => columns.find(side)!
-    // Row 0 sits unshifted, row 3 is shifted a half bead: the same column's dot is 14 * 0.5 apart along the side.
-    expect(Math.abs(first((d) => d.x > 1000).y - first((d) => d.x < 1000).y)).toBeCloseTo(10 * 0.7)
+    // Turned a quarter one way the column ruler at the left runs along the last row (shifted half a bead), the other
+    // way along the first (unshifted): each dot stands level with its column's bead in that row.
+    const area = { row: 0, column: 0, rows: 4, columns: 12 }
+    for (const [rotation, row] of [[90, 3], [270, 0]] as const) {
+      const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'brick', rotation, zoom: 0.7, scroll, viewport: { width: 2000, height: 2000 } })
+      const surface = view(view().scrollToCentre(area))
+      const { dots } = rulerLayout(project(block(0, 0, 4, 12), undefined, 'brick'), surface, { fontPx: 11, numbers: true })
+      const columns = dots.filter((d) => d.axis === 'column')
+      expect(columns.length, `${rotation}°`).toBeGreaterThan(0)
+      for (const dot of columns) {
+        expect(dot.y, `${rotation}° column ${dot.index}`).toBeCloseTo(surface.beadToPoint({ row, column: dot.index }, 'canvas').y, 5)
+      }
+    }
   })
 
-  it('stand on the side the top faces when turned, and give only a Piece’s start sides dots', () => {
+  it('stand on the same two sides of a Frame and of a Piece area when turned (ticket 1170)', () => {
     const look = { rotation: 90 as const, zoom: 0.7, technique: 'brick' as const, centred: { row: 0, column: 0, rows: 4, columns: 12 } }
     const whole = framed({ row: 0, column: 0, rows: 4, columns: 12 }, look).dots
     const piece = layoutOf(project(block(0, 0, 4, 12), undefined, 'brick'), look).dots
     expect(piece.length).toBeGreaterThan(0)
-    expect(whole.length).toBeGreaterThan(piece.length)
+    expect(whole.length).toBe(piece.length)
   })
 
   it('stay on a Frame with the numbers off, and are none on a Piece area (ticket 1012)', () => {
@@ -327,11 +351,11 @@ describe('the numbers below 50% zoom (ticket 303)', () => {
     expect(texts(0.5, (l) => l.axis === 'row' && l.x < 0).length).toBeGreaterThan(0)
   })
 
-  it('are only the last one on each side at 49%, columns and rows, above, left and right', () => {
+  it('are only the last one at 49%, columns above and rows to the left', () => {
     expect(texts(0.49, (l) => l.axis === 'column' && l.y < 0)).toEqual(['100'])
     expect(texts(0.49, (l) => l.axis === 'column' && l.y > 0)).toEqual([])
     expect(texts(0.49, (l) => l.axis === 'row' && l.x < 0)).toEqual(['13'])
-    expect(texts(0.49, (l) => l.axis === 'row' && l.x > 0)).toEqual(['13'])
+    expect(texts(0.49, (l) => l.axis === 'row' && l.x > 0)).toEqual([])
   })
 
   it('give a press on the last number its whole row or column', () => {
@@ -339,7 +363,7 @@ describe('the numbers below 50% zoom (ticket 303)', () => {
     expect(last!.selection).toEqual({ top: 0, left: 99, rows: 13, columns: 1 })
   })
 
-  it('are the one number of a piece’s start sides too', () => {
+  it('are the one number of a piece’s rulers too', () => {
     const { labels } = layoutOf(project(block(0, 0, 13, 100)), { zoom: 0.25 })
     expect(labels.map((l) => l.text).sort()).toEqual(['100', '13'])
   })
@@ -488,12 +512,12 @@ describe('every ruler counts left to right and top to bottom as seen (ticket 116
     }
   })
 
-  it('counts a Piece area\'s the same way, on the sides it stood on', () => {
+  it('counts a Piece area\'s the same way', () => {
     for (const rotation of TURNS) {
       const { labels } = layoutOf(project(block(2, 2, 3, 4)), { rotation, centred: { row: 2, column: 2, rows: 3, columns: 4 } })
       expect(asSeen(labels, 'piece').map((numbers) => numbers.join()).sort(), `${rotation}°`).toEqual(['1,2,3', '1,2,3,4'])
     }
-    // Turned half round the rulers are still its own top and left ones, now below and to the right.
+    // Turned half round, its own bottom row is the one along the top as seen, its last column the one at the left.
     const { labels, boxes } = layoutOf(project(block(2, 2, 3, 4)), { rotation: 180, centred: { row: 2, column: 2, rows: 3, columns: 4 } })
     expect(boxes).toHaveLength(1)
     expect(labels.filter((label) => label.axis === 'column').map((label) => `${label.index}:${label.text}`)).toEqual(['0:4', '1:3', '2:2', '3:1'])
