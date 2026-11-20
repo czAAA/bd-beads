@@ -3,6 +3,7 @@ import type { Rotation } from './grid'
 import { frameRowOrder, rowProgressOf, seenRotation } from './rowProgress'
 import { frameWeave } from './layerWeave'
 import { beadsOfLayer, frameOf } from './layerRecord'
+import { inBox, paintedFrameBox } from './projectExtent'
 import type { Project } from './project'
 import { describeWeave } from './weave'
 import type { PassDirection } from './weaveGeometry'
@@ -98,7 +99,9 @@ export function wordChartOf(project: Project): WordChart | undefined {
     return customWordChart(project, order)
   }
   const { direction, reversed } = rowProgressOf(project)
-  const along = direction === 'rows' ? frame.columns : frame.rows
+  // Trimmed as the chart is (ticket 1128): the rows from the first bead to the last, each across the beads' columns only.
+  const box = paintedFrameBox(project)
+  const along = direction === 'rows' ? (box?.columns ?? frame.columns) : (box?.rows ?? frame.rows)
   // The Frame's own rows, as the picture shows them: turned on the Canvas (ticket 0667), then with the view.
   const shown = seenRotation(project)
   const ascends = ASCENDS[direction][shown]
@@ -107,7 +110,9 @@ export function wordChartOf(project: Project): WordChart | undefined {
 
   const rows: WordRow[] = []
   for (let pass = 0; pass < order.count; pass += 1) {
-    const colors = order.positionsOf(pass).map(({ row, column }) => {
+    const positions = order.positionsOf(pass).filter((position) => inBox(box, position))
+    if (positions.length === 0) continue
+    const colors = positions.map(({ row, column }) => {
       const hex = colorAt(beads, row, column)
       return hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?')
     })

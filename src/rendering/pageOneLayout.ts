@@ -1,4 +1,4 @@
-import { planWithKey } from './chartPageKey'
+import { planWithKey, trimmedArea } from './chartPageKey'
 import { colorsHeight, PAGE_FOOTER, overviewLayout, listSlices, oneToARow, TABLE_SHARE, titleHeightOf, type ColorsSlice, type TableRows } from './overviewLayout'
 import { A4_PORTRAIT, afterCoverPage, chartOnPageOne, mm, PRINT_BEAD_LARGE_MM, PRINT_MARGIN, PRINT_PART_LABEL, PRINT_RULER, type PageSize, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
@@ -61,6 +61,7 @@ export function pageOneLayout(project: Counted, words: PageOneWords, page: PageS
  * pages; one color to a row when all of it fits that way (ticket 1096). Otherwise page 1 is the overview, and the chart parts follow. */
 function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize): PageOneLayout {
   const floorMm = words.largeBeads ? PRINT_BEAD_LARGE_MM : undefined
+  const trim = trimmedArea(project)
   const titleHeight = titleHeightOf(words)
   const area = { x: PRINT_MARGIN, y: PRINT_MARGIN + titleHeight }
   const bottom = page.height - PRINT_MARGIN - PAGE_FOOTER
@@ -68,7 +69,7 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
   const colors = words.colors.length
   const under = (table: number): PageSize => ({ width: page.width - PRINT_MARGIN * 2, height: room - NEEDED_GAP - table })
   const chartOver = (table: number) => {
-    const plan = planWithKey(project, { page, floorMm, pageOne: under(table) })
+    const plan = planWithKey(project, { page, floorMm, trim, pageOne: under(table) })
     return chartOnPageOne(plan) ? { plan, pageOne: under(table) } : undefined
   }
 
@@ -83,11 +84,11 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
     const fitting = Math.max(1, Math.floor((bottom - top - NEEDED_TABLE.head) / NEEDED_TABLE.row)) * 2
     const count = whole ? colors : Math.min(colors, fitting)
     const lists = whole ? [] : listSlices(words, NEEDED_TABLE, count, page)
-    const plan = lists.length > 0 ? planWithKey(project, { page, floorMm, pageOne: chart.pageOne, listPages: lists.length }) : chart.plan
+    const plan = lists.length > 0 ? planWithKey(project, { page, floorMm, trim, pageOne: chart.pageOne, listPages: lists.length }) : chart.plan
     return { plan, titleHeight, area, needed: oneToARow({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top }, NEEDED_TABLE, bottom, FIT_SLOP), lists }
   }
 
-  const overview = overviewLayout(project, words, NEEDED_TABLE, page)
-  const plan = planWithKey(project, { page, floorMm, pageOne: under(least), listPages: overview.lists.length })
+  const overview = overviewLayout(project, words, NEEDED_TABLE, page, trim)
+  const plan = planWithKey(project, { page, floorMm, trim, pageOne: under(least), listPages: overview.lists.length })
   return { plan, titleHeight, area, overview: { zoom: overview.zoom, extent: overview.extent, board: overview.board }, needed: oneToARow(overview.needed, NEEDED_TABLE, bottom, FIT_SLOP), lists: overview.lists }
 }
