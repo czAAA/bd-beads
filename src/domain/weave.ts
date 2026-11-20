@@ -273,6 +273,13 @@ export function columnCycle(weave: Weave): number {
   return describeWeave(weave).columnCycle
 }
 
+/** A move of this many beads, whole or not, as the nearest whole number of stagger cycles of `cycle` beads; half a
+ * cycle goes the way of the move, back as forth. */
+export function wholeCycles(beads: number, cycle: number): number {
+  // `+ 0` leaves no negative zero.
+  return Math.sign(beads) * Math.round(Math.abs(beads) / cycle) * cycle + 0
+}
+
 /** A number the same for Weaves whose beads touch alike (tickets 0691, 0734): the stagger's cycle along rows and along
  * columns, which brick stitch and peyote with the same Drop do not share. What a cache of Pieces is keyed by. */
 export function touchKey(weave: Weave): number {
