@@ -67,7 +67,7 @@ export const frame: FrameTranslations = {
       auto: 'Auto',
       autoLabel: 'Auto, o krok od koloru płótna',
       canvasColorLabel: '{color}, kolor płótna',
-      line: 'Margines ma 4 koraliki z każdej strony. Nie można na nim nic umieścić i nie trafia do eksportu.',
+      line: 'Margines to miejsce wokół ramki, na którym nie można rysować. Są na nim narzędzia ramki, jej nazwa i rozmiar.',
       titleBlock: 'Nazwa i rozmiar na marginesie',
       changeTechnique: 'Zmień technikę',
       changeSetting: 'Zmień: {setting}',
