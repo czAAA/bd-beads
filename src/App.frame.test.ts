@@ -3,6 +3,7 @@ import { frameWeave } from './domain/layerWeave'
 import { weaveSettings } from './domain/weave'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
+import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import { withColors, type Rect } from './domain/canvas'
 import { changeFrame } from './domain/changeFrame'
 import { createProject } from './domain/createProject'
@@ -351,6 +352,22 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     await wrapper.get('[data-testid="margin-progress-next"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('[data-testid="progress-bar-compact-position"] .row-progress__count-short').text()).toBe('2/2')
+  })
+
+  it('expands the Frame from its first button, setting the Tool pill aside and the surface slim, and Escape goes back, each announced (ticket 1169)', async () => {
+    const wrapper = await mountOpen(sheetProject())
+    const surface = () => wrapper.findComponent(ProjectSurface)
+    await wrapper.get('[data-testid="margin-expand-frame"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Frame expanded')
+    expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Back to the Canvas')
+    expect(wrapper.get('[data-testid="tool-pill-layer"]').classes()).toContain('app-shell__pill--aside')
+    // The sheet measured itself, and the surface lays the slim sheet by what it told: no title block height in jsdom.
+    expect(surface().props('slim')).toMatchObject({ title: 0 })
+    await key({ key: 'Escape' })
+    expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Back to the Canvas')
+    expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Expand the Frame')
+    expect(surface().props('slim')).toBeUndefined()
   })
 
   it('opens the Export panel from its Export button, hung from that button', async () => {

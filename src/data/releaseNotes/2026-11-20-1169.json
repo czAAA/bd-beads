@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-20",
+  "kind": "changed",
+  "line": {
+    "en": "Expand the Frame, the first button on the margin, fills the screen with the Frame for weaving; the same button or Escape takes you back to the Canvas",
+    "ru": "«Развернуть рамку», первая кнопка на полях, раскрывает рамку на весь экран для плетения; та же кнопка или Escape возвращает к холсту",
+    "uk": "«Розгорнути рамку», перша кнопка на полях, розгортає рамку на весь екран для плетіння; та сама кнопка або Escape повертає до полотна",
+    "be": "«Разгарнуць рамку», першая кнопка на палях, разгортвае рамку на ўвесь экран для пляцення; тая ж кнопка або Escape вяртае да палатна",
+    "zh": "边距上的第一个按钮“展开边框”让边框铺满屏幕，方便照着编织；再按一次或按 Escape 回到画布",
+    "es": "Expandir el marco, el primer botón del margen, llena la pantalla con el marco para tejer; el mismo botón o Escape te devuelve al lienzo",
+    "pl": "Rozwiń ramkę, pierwszy przycisk na marginesie, wypełnia ekran ramką do tkania; ten sam przycisk lub Escape wraca do płótna"
+  }
+}

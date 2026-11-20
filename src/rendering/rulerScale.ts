@@ -43,6 +43,15 @@ export interface RulerScale {
   fifthDotRadius: number
 }
 
+/** Under bp-tablet (744px): a phone's screen, where the ruler numbers are 12px and the expanded Frame's sheet takes its
+ * smaller insets (Rulers and MarginSheet cards). */
+export const UNDER_TABLET_QUERY = '(max-width: 743px)'
+
+/** The ruler numbers' size at zoom 1: 11px, 12px under bp-tablet (Rulers card). */
+export function rulerFontAtFull(underTablet: boolean): number {
+  return underTablet ? 12 : 11
+}
+
 /** The line of a Frame, off its beads, at this zoom: the Frame's handles and presses use it too. */
 export function frameOutsetPx(zoom: number): number {
   return FRAME_OUTSET_PX * outsetShare(zoom)

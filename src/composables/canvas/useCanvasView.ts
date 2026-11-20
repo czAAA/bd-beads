@@ -93,6 +93,16 @@ export interface CanvasViewOptions {
    * ticket 0879) or the one kept for a reload (ticket 1108). The first fit the view makes once measured takes it, if it
    * is that Project's. */
   opening?: { project: string; view: OpeningView | KeptView }
+  /** While the Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): the room its slim sheet and the gap
+   * round it take from each side of the drawing area, past the Frame's beads, at a zoom. A fit then fits the Frame's
+   * beads into the rest, and the Tool pill, set aside meanwhile, takes none. */
+  expanded?: () => ((zoom: number) => Insets) | undefined
+}
+
+/** A view to show: a zoom and the scroll at it. */
+export interface ShownView {
+  zoom: number
+  scroll: Scroll
 }
 
 // Where the Canvas is looked at from (ADR 0026): zoom and scroll over an endless field. `fit` shows the Frame (or all
@@ -129,9 +139,9 @@ export function useCanvasView(
 
   /** The Canvas as the view stands, or from another scroll or in a part of the viewport; with no Project, an empty one
    * in the default Technique. */
-  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value, area: Size = viewport.value): SurfaceView {
+  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value, area: Size = viewport.value, atZoom: number = zoom.value): SurfaceView {
     const { technique, techniqueSettings, cell } = project ? layerOf(project, 'canvas').weave : { technique: DEFAULT_TECHNIQUE }
-    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project), rotation: nearestQuarterTurn(orientation.value), zoom: zoom.value, scroll: at, viewport: area })
+    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project), rotation: nearestQuarterTurn(orientation.value), zoom: atZoom, scroll: at, viewport: area })
   }
 
   /** The part of the viewport a fit uses (ticket 0850): all of it less what lies over its edges (and `also`, what else
@@ -147,7 +157,7 @@ export function useCanvasView(
    * under 100%, so a Frame of large beads fits as it did. */
   function frameFitCeiling(surface: SurfaceView): number {
     const { column, row } = surface.beadStep('frame')
-    const stepAtFull = Math.max(Math.hypot(column.x, column.y), Math.hypot(row.x, row.y)) / zoom.value
+    const stepAtFull = Math.max(Math.hypot(column.x, column.y), Math.hypot(row.x, row.y)) / surface.zoom
     // To a whole percent, so the step worked out at another zoom doesn't round the ceiling down a percent.
     return Math.max(1, Math.round((LARGEST_FIT_BEAD_PX / stepAtFull) * 100) / 100)
   }
@@ -156,12 +166,38 @@ export function useCanvasView(
     return viewport.value.width > 0 && viewport.value.height > 0
   }
 
+  /** The expanded Frame's fit (ticket 1169): its beads as large as the room its slim sheet leaves allows, within the
+   * Fit limits, centred there. Worked out twice, as the Frame's line, which the sheet stands off, moves with the zoom. */
+  function expandedFit(project: Project, room: (zoom: number) => Insets): ShownView | undefined {
+    const footprint = footprintOf(project)
+    if (!footprint) return undefined
+    let at = zoom.value
+    let insets = room(at)
+    let area = viewport.value
+    for (let pass = 0; pass < 2; pass += 1) {
+      area = { width: Math.max(1, viewport.value.width - insets.left - insets.right), height: Math.max(1, viewport.value.height - insets.top - insets.bottom) }
+      const surface = surfaceOf(project, scroll.value, area)
+      at = clampZoom(surface.zoomToFit(footprint, { width: 0, height: 0 }, 'canvas', frameFitCeiling(surface)))
+      insets = room(at)
+    }
+    const centred = surfaceOf(project, scroll.value, area, at).scrollToCentre(footprint, 'canvas')
+    return { zoom: at, scroll: { x: centred.x - insets.left, y: centred.y - insets.top } }
+  }
+
   /** Puts the view at the fit: the Frame's sheet or the drawing whole, or the origin in the middle for an empty canvas,
-   * in the room the Tool pill leaves. */
-  function fit(): void {
+   * in the room the Tool pill leaves; the expanded Frame in its own room, gliding there when `glide` asks. */
+  function fit({ glide = false }: { glide?: boolean } = {}): void {
     stopGlide()
     const project = currentProject()
     if (!project) {
+      return
+    }
+    const room = options.expanded?.()
+    const expanded = room && measured() ? expandedFit(project, room) : undefined
+    if (expanded) {
+      opening = undefined
+      isAtFit.value = true
+      glideView(expanded, !glide)
       return
     }
     const target = fitBox(project)
@@ -232,6 +268,38 @@ export function useCanvasView(
     if (glide !== undefined) cancelAnimationFrame(glide)
     glide = undefined
     gliding = undefined
+  }
+
+  /** Moves the view to a zoom and a scroll together, eased over the base duration, or at once under reduced motion or
+   * when `jump` asks: Expand the Frame and Back to the Canvas (ticket 1169). */
+  function glideView(to: ShownView, jump: boolean): void {
+    stopGlide()
+    const from = { zoom: zoom.value, scroll: scroll.value }
+    const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (jump || still || typeof requestAnimationFrame !== 'function' || (from.zoom === to.zoom && from.scroll.x === to.scroll.x && from.scroll.y === to.scroll.y)) {
+      zoom.value = to.zoom
+      scroll.value = to.scroll
+      return
+    }
+    gliding = to.scroll
+    let start: number | undefined
+    const step = (time: number) => {
+      start ??= time
+      const eased = easeStandard(Math.min(1, (time - start) / INTO_VIEW_MS))
+      const done = eased >= 1
+      zoom.value = done ? to.zoom : from.zoom + (to.zoom - from.zoom) * eased
+      scroll.value = done ? to.scroll : { x: from.scroll.x + (to.scroll.x - from.scroll.x) * eased, y: from.scroll.y + (to.scroll.y - from.scroll.y) * eased }
+      if (!done) glide = requestAnimationFrame(step)
+      else glide = gliding = undefined
+    }
+    glide = requestAnimationFrame(step)
+  }
+
+  /** Puts back a view kept before (Back to the Canvas, ticket 1169): gliding there, and following the fit again if it
+   * was. */
+  function showView(view: ShownView & { atFit: boolean }): void {
+    glideView(view, false)
+    isAtFit.value = view.atFit
   }
 
   /** Moves the view to a scroll, eased over the base duration, or at once under reduced motion or when `jump` asks. */
@@ -450,8 +518,9 @@ export function useCanvasView(
     /** A zoom the wheel or fingers chose: any level in the usable range rather than a step, about the point under
      * them. */
     setZoom,
-    resetZoom: fit,
+    resetZoom: () => fit(),
     fit,
+    showView,
     panBy,
     scrollBy,
     centreOn,

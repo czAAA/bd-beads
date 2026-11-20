@@ -29,7 +29,8 @@ test.describe('the Mirror and its Area', () => {
   })
 
   test('the whole Frame as the Mirror, its margin button lit and the Mirror bar above the sheet', async ({ page }) => {
-    await openApp(page, [fixtureProject({ technique: 'peyote' })])
+    // 24 columns, so the band's row keeps its tools at 100% with Expand the Frame first in it (ticket 1169).
+    await openApp(page, [fixtureProject({ technique: 'peyote', columns: 24 })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await setZoom(page, 100)
     await page.getByTestId('margin-mirror-frame').click()

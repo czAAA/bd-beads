@@ -191,6 +191,10 @@ const {
   onToggleDemoExpand,
   surfaceProbe,
   onToolPillPlaced,
+  frameExpanded,
+  slimContent,
+  onToggleFrameExpand,
+  onSlimMeasured,
   radialToolbox,
   onDropPress,
 } = useCanvasContext()
@@ -517,6 +521,7 @@ const drawingStyle = computed(() => {
                 :fill-refusals="fillRefusals"
                 :label="projectLabel"
                 :reference="pictureBar.previewProject.value ? undefined : referenceImage.drawn.value"
+                :slim="slimContent"
                 @surface-view="surfaceView = $event"
                 @cell-primary-down="onCellPrimaryDown"
                 @cell-primary-move="onCellPrimaryMove"
@@ -644,8 +649,11 @@ const drawingStyle = computed(() => {
           </div>
 
           <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
+          <!-- Set aside while the Frame is expanded (ToolPill card, ticket 1169): faded out, not reached; its keys still work. -->
           <ToolPill
             v-if="activeProject"
+            :class="['app-shell__pill', { 'app-shell__pill--aside': frameExpanded }]"
+            :inert="frameExpanded || undefined"
             v-model:position="toolPillPosition"
             v-model:popover-open="toolPillPopoverOpen"
             :mirror-on="mirrorOn"
@@ -759,7 +767,7 @@ const drawingStyle = computed(() => {
             :can-name-piece="canNamePiece"
             :has-paint-color="hasPaintColor()"
             :select-active="activeTool === 'select'"
-            :obstacle="pillRect"
+            :obstacle="frameExpanded ? undefined : pillRect"
             @copy="onCopy"
             @cut="onCut"
             @paste="onPasteMode"
@@ -784,7 +792,7 @@ const drawingStyle = computed(() => {
             :paste-armed="pasteProjectionActive"
             :project="activeProject"
             :can-remove-line="false"
-            :obstacle="pillRect"
+            :obstacle="frameExpanded ? undefined : pillRect"
             :mirror="mirrorBar"
             :mirror-anchor="mirrorAnchor"
             :mirror-size-only="mirrorAdjusting"
@@ -809,6 +817,9 @@ const drawingStyle = computed(() => {
             :mirror-on-frame="mirrorOnFrame"
             :without-not-done="demo"
             :placing="!viewPlaced"
+            :expanded="frameExpanded"
+            @toggle-expand="onToggleFrameExpand"
+            @slim="onSlimMeasured"
             @mirror="onMirrorWholeFrame"
             @rotate="onRotateFrame"
             @toggle-edit="onEditFrame"
@@ -834,6 +845,19 @@ const drawingStyle = computed(() => {
 </template>
 
 <style scoped>
+/* The Tool pill set aside while the Frame is expanded (ToolPill card, ticket 1169): it fades over `duration-fast`, then
+   is not drawn; it fades back in the same way. */
+.app-shell__pill {
+  transition: opacity var(--duration-fast) var(--ease-standard), visibility 0s;
+}
+
+.app-shell__pill--aside {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-standard), visibility 0s linear var(--duration-fast);
+}
+
 /* New Project and the import icons, under the empty canvas's message (they were a bar in the Progress bar's place,
    ticket 439). */
 .app-shell__empty-actions {
