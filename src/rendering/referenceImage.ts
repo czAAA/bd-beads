@@ -63,6 +63,9 @@ export function referenceWidthLimits(project: Layered, box: ReferenceBox): Width
 
 /** How far the Turn handle stands off the picture's edge in Adjust, in screen px: `--frame-control-offset`. */
 export const REFERENCE_TURN_OFFSET_PX = 48
+/** How far the Turn handle's centre keeps off the picture bar, in screen px (ticket 1160): half its 28px circle
+ * (`--reference-turn`) and 8px of air. */
+export const REFERENCE_TURN_CLEAR_PX = 22
 
 /** A point of the drawing area, in its px. */
 interface ScreenPoint {

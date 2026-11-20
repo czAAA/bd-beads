@@ -13,8 +13,8 @@ import { canvasWeave } from '../../domain/layerWeave'
 import { brandColors, defaultPalette } from '../../domain/palette'
 import type { Grid, Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
-import { beadsReplaced, convertSampled, gridChanges, sampledColors, withConvertedBeads, type ReferenceConversion } from '../../domain/referenceConvert'
-import { referenceHeight, type ReferencePlace } from '../../domain/referenceImage'
+import { beadsReplaced, convertSampled, gridChanges, sampledColorCount, sampledColors, withConvertedBeads, type ReferenceConversion } from '../../domain/referenceConvert'
+import { referenceHeight, samePlace, type ReferencePlace } from '../../domain/referenceImage'
 import { keepAllowedEdits } from '../../domain/allowedEdits'
 import { plural, pluralForm } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -81,13 +81,27 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
     return beadOfLayer(project, 'canvas').bead ?? findBead(canvasOf(project).beadId) ?? DEFAULT_BEAD
   })
 
-  /** The positions the picture covers as it lies now, and the box round them. */
+  /** A handle or the Move grip is dragging the picture: it lies off the place it is saved at. */
+  const dragging = computed(() => {
+    const saved = deps.currentProject()?.referenceImage?.place
+    const now = deps.place()
+    return !!saved && !!now && !samePlace(saved, now)
+  })
+  /** The positions the picture covers where it rests, at its saved place: what Convert to beads makes its beads from.
+   * Not a drag's place as it goes: making the beads again takes far longer than a frame of the drag, so every move
+   * held the app (ticket 1160). */
+  const restingCover = computed(() => {
+    const project = deps.currentProject()
+    const image = project?.referenceImage
+    return project && image ? pictureCover(canvasWeave(project), image.place, referenceHeight(image)) : undefined
+  })
+  /** The positions the picture covers as it lies now, a drag's place as it goes, and the box round them. */
   const cover = computed(() => {
     const project = deps.currentProject()
     const place = deps.place()
     const picture = project?.referenceImage?.picture
     if (!project || !place || !picture) return undefined
-    return pictureCover(canvasWeave(project), place, referenceHeight({ picture, place }))
+    return dragging.value ? pictureCover(canvasWeave(project), place, referenceHeight({ picture, place })) : restingCover.value
   })
   const box = computed(() => cover.value?.box)
   /** The Frame Set Frame around the picture makes: the box, its top and left where a Frame may start. */
@@ -106,11 +120,12 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
     return { grid: `${at.columns}×${at.rows}`, measure }
   })
 
-  const convertOff = computed<ConvertOff | undefined>(() => {
-    const at = box.value
+  /** Why a picture covering this box can't be converted, if it can't. */
+  function offFor(at: Rect | undefined): ConvertOff | undefined {
     if (!at || at.columns < MIN_SIDE || at.rows < MIN_SIDE) return 'too-small'
     return at.columns > LARGE_SCHEMA_BEADS || at.rows > LARGE_SCHEMA_BEADS ? 'too-big' : undefined
-  })
+  }
+  const convertOff = computed(() => offFor(box.value))
 
   const hasCatalog = computed(() => !!colorCatalogOf(bead.value.id))
   /** The match: the Bead's palette by default, as Convert image opens; the Default Palette for a Bead with no Color
@@ -129,20 +144,22 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
 
   const sampled = computed(() => {
     const read = pixels.value
-    const at = cover.value
-    if (!converting.value || !read || !at?.listed || read.blob !== deps.picture()) return undefined
+    const at = restingCover.value
+    // A picture too small or too big makes no beads, so none are read: past 300 a side they are hundreds of thousands.
+    if (!converting.value || !read || !at?.listed || offFor(at.box) || read.blob !== deps.picture()) return undefined
     return sampledColors(read.data, at.positions)
   })
   /** Every color the picture's beads sample, at most 256: the Colors stepper's most. */
-  const colorsMax = computed(() => Math.max(1, Math.min(MAX_IMAGE_COLORS, sampled.value ? convertSampled(sampled.value, MAX_IMAGE_COLORS, undefined).colorsFound : 1)))
+  const colorsMax = computed(() => Math.max(1, Math.min(MAX_IMAGE_COLORS, sampled.value ? sampledColorCount(sampled.value) : 1)))
   const colors = computed(() => Math.min(colorsMax.value, chosenColors.value ?? DEFAULT_MAX_IMAGE_COLORS))
   const conversion = computed<ReferenceConversion | undefined>(() => sampled.value && convertSampled(sampled.value, colors.value, targets.value))
 
-  /** The open Project as Convert would leave it, beads the rows marked done or the margin hold left out: the preview. */
+  /** The open Project as Convert would leave it, beads the rows marked done or the margin hold left out: the preview.
+   * None while the picture is dragged: it shows as itself until it is let go and its beads are made again. */
   const previewProject = computed(() => {
     const project = deps.currentProject()
     const made = conversion.value
-    if (!project || !made || convertOff.value) return undefined
+    if (!project || !made || convertOff.value || dragging.value) return undefined
     return keepAllowedEdits(project, withConvertedBeads(project, made.changes))
   })
   const replaced = computed(() => {

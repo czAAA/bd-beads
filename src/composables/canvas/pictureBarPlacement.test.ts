@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { convertPopoverPlace, pictureBarPlace, pictureBounds } from './pictureBarPlacement'
+import { convertPopoverPlace, pictureBarPlace, pictureBounds, reachClearOf } from './pictureBarPlacement'
 
 const viewport = { width: 1000, height: 700 }
 const bar = { width: 160, height: 40 }
@@ -52,5 +52,18 @@ describe('the picture bar and the Convert to beads popover on the canvas box (Re
     const popover = { width: 360, height: 400 }
     expect(convertPopoverPlace(picture, 146, popover, viewport)).toEqual({ left: 520, top: 146 })
     expect(convertPopoverPlace({ ...picture, left: 600 }, 146, popover, viewport)).toEqual({ left: 220, top: 146 })
+  })
+
+  it('stands a handle on beyond the bar where it would land under it, and leaves it where it is clear (ticket 1160)', () => {
+    const over = { left: 320, top: 146, width: 160, height: 40 }
+    const up = { x: 0, y: -1 }
+    // From the picture's top edge, 48px up lands on the bar: on to 22px above the bar's top.
+    expect(reachClearOf({ x: 400, y: 200 }, up, 48, over, 22)).toBe(76)
+    // Down from the bottom edge, or with no bar, the handle keeps its offset.
+    expect(reachClearOf({ x: 400, y: 300 }, { x: 0, y: 1 }, 48, over, 22)).toBe(48)
+    expect(reachClearOf({ x: 400, y: 200 }, up, 48, undefined, 22)).toBe(48)
+    // Beside the bar's end it is clear already; slanting under its end it leaves by the nearer side.
+    expect(reachClearOf({ x: 520, y: 200 }, up, 48, over, 22)).toBe(48)
+    expect(reachClearOf({ x: 460, y: 200 }, { x: 0.8, y: -0.6 }, 48, over, 22)).toBeCloseTo(52.5)
   })
 })

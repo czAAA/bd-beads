@@ -31,6 +31,17 @@ describe('ReferencePictureBar (ReferenceImage card, ticket 0883)', () => {
     wrapper.unmount()
   })
 
+  it('says its width once it has measured it, for the Turn handle to stand clear of it (ticket 1160)', async () => {
+    FakeResizeObserver.reset()
+    const wrapper = mountBar()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted('width')).toBeUndefined()
+    for (const observer of FakeResizeObserver.instances) observer.trigger(300, 40)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted('width')).toEqual([[300]])
+    wrapper.unmount()
+  })
+
   it('is hidden once its picture is panned wholly out of the canvas box, so Tab never reaches it (ticket 1011)', async () => {
     const wrapper = mountBar()
     const bar = () => wrapper.get('[data-testid="picture-bar"]').attributes('style') ?? ''

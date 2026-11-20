@@ -9,6 +9,7 @@ import type { Translations } from '../../i18n/translations'
 import { marginSheetPx } from '../../rendering/projectRenderer'
 import { placeOnScreen } from '../../rendering/referenceImage'
 import { gridBox, type Region, type SurfaceView } from '../../rendering/surfaceView'
+import { barOutOfView } from '../tools/selectionBarPlacement'
 import { useMediaQuery } from '../ui/useMediaQuery'
 import { pictureBarPlace, pictureBounds, type ScreenBox } from './pictureBarPlacement'
 
@@ -22,6 +23,8 @@ export interface PictureBarLayoutDeps {
   /** The Frame Set Frame around the picture would set. */
   framed: () => Rect | undefined
   sheet: () => ScreenBox | undefined
+  /** The bar's width as it measured itself, 0 before it has. */
+  barWidth: () => number
   framePreviewOn: Ref<boolean>
   converting: () => boolean
   messages: () => Translations
@@ -58,6 +61,16 @@ export function usePictureBarLayout(deps: PictureBarLayoutDeps) {
     return picture.value && view ? pictureBarPlace(picture.value, { width: 0, height: barHeight.value }, view.viewport, deps.sheet()).top : 0
   })
 
+  /** The bar's box, once it has measured its width, none while it is out of view: what the Turn handle stands clear of
+   * (ticket 1160). */
+  const bar = computed<ScreenBox | undefined>(() => {
+    const view = deps.view()
+    const size = { width: deps.barWidth(), height: barHeight.value }
+    if (!picture.value || !view || size.width <= 0) return undefined
+    const at = pictureBarPlace(picture.value, size, view.viewport, deps.sheet())
+    return barOutOfView(at, size, view.viewport) ? undefined : { ...at, ...size }
+  })
+
   /** Set Frame around the picture's preview: the Frame it would make, its line and margin sheet, and its tag. */
   const framePreview = computed(() => {
     const project = deps.project()
@@ -80,5 +93,5 @@ export function usePictureBarLayout(deps: PictureBarLayoutDeps) {
     return { box: onScreen(view, gridBox(canvasWeave(project), box)), label: deps.messages().referenceImage.convert.preview }
   })
 
-  return { barHeight, picture, barTop, framePreview, convertPreview }
+  return { barHeight, picture, barTop, bar, framePreview, convertPreview }
 }
