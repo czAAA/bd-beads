@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "An expanded Frame now fills the whole screen with larger numbers on every column and row, and pinching out goes back to the Canvas",
+    "ru": "Развёрнутая рамка теперь занимает весь экран, с более крупными номерами у каждого столбца и ряда, а сведение пальцев возвращает к холсту",
+    "uk": "Розгорнута рамка тепер займає весь екран, з більшими номерами біля кожного стовпця й рядка, а зведення пальців повертає до полотна",
+    "be": "Разгорнутая рамка цяпер займае ўвесь экран, з большымі нумарамі каля кожнага слупка і шэрагу, а зводжанне пальцаў вяртае да палатна",
+    "zh": "展开的边框现在铺满整个屏幕，每一列和每一行都有更大的编号，双指缩小则回到画布",
+    "es": "El marco expandido ahora llena toda la pantalla, con números más grandes en cada columna y fila, y al alejar con los dedos se vuelve al lienzo",
+    "pl": "Rozwinięta ramka wypełnia teraz cały ekran, z większymi numerami przy każdej kolumnie i rzędzie, a zsunięcie palców wraca do płótna"
+  }
+}

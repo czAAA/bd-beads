@@ -233,6 +233,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       currentProject,
       keepTwist: (turned, moved) => rotateCanvasFlow.onTwistCanvas(turned, moved),
       compact: typeof window === 'undefined' ? undefined : useMediaQuery(UNDER_TABLET_QUERY),
+      backByZoom: () => void backToCanvas(),
       // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879); at the plain
       // address, the view the tab left its Project at, for a reload (ticket 1108).
       opening: openingAddress.project

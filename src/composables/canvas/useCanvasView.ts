@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
-import { clampZoom, MAX_ZOOM, stepZoom, type GridPosition } from '../../domain/grid'
+import { clampZoom, MAX_ZOOM, MIN_ZOOM, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
 import { frameOf, layerOf, orientationOf } from '../../domain/layerRecord'
 import { footprintOf, frameFootprint } from '../../domain/footprint'
@@ -51,6 +51,17 @@ const SHEET_FIT_MARGIN_PX: Size = { width: FIT_MARGIN_PX.width - RULER_GUTTER_PX
  * @internal Its test works out the fit zoom with it. */
 export const LARGEST_FIT_BEAD_PX = 48
 
+/** How many times the expanded fit works out its zoom and the room it leaves, the sheet's numbers growing with the bead
+ * (ticket 1194). */
+const EXPANDED_FIT_PASSES = 6
+/** A zoom out resting under this share of the expanded fit goes back to the Canvas; above it, the view springs back
+ * (ticket 1194). */
+const LEAVES_EXPANDED_UNDER = 0.95
+/** How long a wheel or button zoom stays still before it counts as at rest, and how far past the expanded fit a zoom in
+ * may go, as a share of it (ticket 1194). */
+const ZOOM_REST_MS = 150
+const EXPANDED_ZOOM_IN_SHARE = 2
+
 /** What a view fits to and centres on, a block of the Canvas's positions, and the room left clear round it. */
 interface FitTarget {
   box: Rect
@@ -96,10 +107,14 @@ export interface CanvasViewOptions {
    * ticket 0879) or the one kept for a reload (ticket 1108). The first fit the view makes once measured takes it, if it
    * is that Project's. */
   opening?: { project: string; view: OpeningView | KeptView }
-  /** While the Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): the room its slim sheet and the gap
-   * round it take from each side of the drawing area, past the Frame's beads, at a zoom. A fit then fits the Frame's
-   * beads into the rest, clear of the Tool pill too (ticket 1176). */
-  expanded?: () => ((zoom: number) => Insets) | undefined
+  /** While the Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): the room its slim sheet takes from
+   * each side of the drawing area, past the Frame's beads, at a zoom and the bead pitch it makes. A fit then fits the
+   * Frame's beads into the rest, clear of the Tool pill too (ticket 1176). */
+  expanded?: () => ((zoom: number, pitch: number) => Insets) | undefined
+  /** The expanded fit's bead pitch on screen, in px, once worked out (ticket 1194): the sheet's numbers grow with it. */
+  fitted?: (pitch: number) => void
+  /** A zoom out that rests under the expanded fit (ticket 1194): Back to the Canvas, announced as its button is. */
+  leaveExpanded?: () => void
 }
 
 /** A view to show: a zoom and the scroll at it. */
@@ -141,6 +156,12 @@ export function useCanvasView(
   /** The frame of the glide `bringIntoView` plays, until it lands or the view is moved some other way, and where to. */
   let glide: number | undefined
   let gliding: Scroll | undefined
+  /** The zoom of the expanded fit as it was last worked out (ticket 1194): where a zoom out leaves or springs back, and
+   * what the zoom ceiling is while expanded. */
+  let expandedFitZoom: number | undefined
+  let restTimer: ReturnType<typeof setTimeout> | undefined
+  /** Two fingers are still down on an expanded Frame: a zoom out waits for them to lift. */
+  let pinching = false
 
   /** The Canvas's orientation as shown: the twist's while one runs, else the Project's. */
   const orientation = computed(() => twisting.value ?? orientationOf(currentProject()) ?? 0)
@@ -175,40 +196,84 @@ export function useCanvasView(
     return area.width > 0 && area.height > 0 ? { area, corner: { x: clear.left, y: clear.top } } : { area: viewport.value, corner: { x: 0, y: 0 } }
   }
 
+  /** The Frame's bead's longer step at zoom 1, in px. */
+  function pitchAtFull(surface: SurfaceView): number {
+    const { column, row } = surface.beadStep('frame')
+    return Math.max(Math.hypot(column.x, column.y), Math.hypot(row.x, row.y)) / surface.zoom
+  }
+
   /** The zoom a Frame's fit goes up to (ticket 0964): where its bead's longer step is LARGEST_FIT_BEAD_PX, and never
    * under 100%, so a Frame of large beads fits as it did. */
   function frameFitCeiling(surface: SurfaceView): number {
-    const { column, row } = surface.beadStep('frame')
-    const stepAtFull = Math.max(Math.hypot(column.x, column.y), Math.hypot(row.x, row.y)) / surface.zoom
+    const stepAtFull = pitchAtFull(surface)
     // To a whole percent, so the step worked out at another zoom doesn't round the ceiling down a percent.
     return Math.max(1, Math.round((LARGEST_FIT_BEAD_PX / stepAtFull) * 100) / 100)
+  }
+
+  /** Keeps a zoom inside the range: the usual one, and while the Frame is expanded as far past its fit as a zoom in may go
+   * (ticket 1194: the fit of a small Frame reaches past 400%). */
+  function limitZoom(value: number): number {
+    const ceiling = options.expanded?.() && expandedFitZoom !== undefined ? Math.max(MAX_ZOOM, expandedFitZoom * EXPANDED_ZOOM_IN_SHARE) : MAX_ZOOM
+    return Math.max(MIN_ZOOM, Math.min(ceiling, value))
+  }
+
+  /** A button step from the zoom, past the usual ceiling too while expanded. */
+  function stepFrom(direction: 1 | -1): number {
+    if (direction === 1 && zoom.value >= MAX_ZOOM) return zoom.value * 1.25
+    if (direction === -1 && zoom.value > MAX_ZOOM) return zoom.value / 1.25
+    return stepZoom(zoom.value, direction)
+  }
+
+  /** A zoom of an expanded Frame came to rest (ticket 1194): under about 95% of its fit it goes back to the Canvas, over
+   * that and under the fit it springs back to it, and a zoom in stays. */
+  function settleExpandedZoom(): void {
+    if (!options.expanded?.() || expandedFitZoom === undefined || pinching) return
+    if (zoom.value < expandedFitZoom * LEAVES_EXPANDED_UNDER) options.leaveExpanded?.()
+    else if (zoom.value < expandedFitZoom) fit({ glide: true })
+  }
+
+  function restSoon(wait: number): void {
+    clearTimeout(restTimer)
+    if (options.expanded?.()) restTimer = setTimeout(settleExpandedZoom, wait)
   }
 
   function measured(): boolean {
     return viewport.value.width > 0 && viewport.value.height > 0
   }
 
-  /** The expanded Frame's fit (ticket 1169): its beads as large as the room its slim sheet and the Tool pill leave
-   * allows (ticket 1176: the pill stays while expanded), up to the zoom's 400% with no bead cap, centred there. Worked out twice, as the
-   * Frame's line, which the sheet stands off, moves with the zoom. */
-  function expandedFit(project: Project, sheetRoom: (zoom: number) => Insets): ShownView | undefined {
+  /** The expanded Frame's fit (ticket 1169): its beads as large as the room its sheet and the Tool pill leave allows,
+   * with no zoom limit (ticket 1194), centred there. Worked out until it settles, as the sheet's numbers grow with the
+   * bead and the Frame's line, which the sheet stands off, moves with the zoom. */
+  function expandedFit(project: Project, sheetRoom: (zoom: number, pitch: number) => Insets): ShownView | undefined {
     const footprint = footprintOf(project)
     if (!footprint) return undefined
     const pill = options.covered?.() ?? NO_INSETS
-    const room = (at: number): Insets => {
-      const sheet = sheetRoom(at)
+    const room = (at: number, full: number): Insets => {
+      const sheet = sheetRoom(at, full * at)
       return { top: sheet.top + pill.top, right: sheet.right + pill.right, bottom: sheet.bottom + pill.bottom, left: sheet.left + pill.left }
     }
-    let at = zoom.value
-    let insets = room(at)
+    const full = pitchAtFull(surfaceOf(project))
+    let at = 1
+    let before = at
+    let insets = room(at, full)
     let area = viewport.value
-    for (let pass = 0; pass < 2; pass += 1) {
+    for (let pass = 0; pass < EXPANDED_FIT_PASSES; pass += 1) {
       area = { width: Math.max(1, viewport.value.width - insets.left - insets.right), height: Math.max(1, viewport.value.height - insets.top - insets.bottom) }
       const surface = surfaceOf(project, scroll.value, area)
-      // Only the zoom's own ceiling (ticket 1176): Fit's 48px bead cap would leave a small Frame short of the screen.
-      at = clampZoom(surface.zoomToFit(footprint, { width: 0, height: 0 }, 'canvas', MAX_ZOOM))
-      insets = room(at)
+      before = at
+      const wanted = surface.zoomToFit(footprint, { width: 0, height: 0 }, 'canvas', Infinity)
+      at = Number.isFinite(wanted) ? Math.max(MIN_ZOOM, wanted) : 1
+      if (at === before) break
+      insets = room(at, full)
     }
+    // A fit that keeps flipping between two sizes takes the smaller, which fits.
+    if (at !== before) {
+      at = Math.min(at, before)
+      insets = room(at, full)
+      area = { width: Math.max(1, viewport.value.width - insets.left - insets.right), height: Math.max(1, viewport.value.height - insets.top - insets.bottom) }
+    }
+    options.fitted?.(full * at)
+    expandedFitZoom = at
     const centred = surfaceOf(project, scroll.value, area, at).scrollToCentre(footprint, 'canvas')
     return { zoom: at, scroll: { x: centred.x - insets.left, y: centred.y - insets.top } }
   }
@@ -433,8 +498,9 @@ export function useCanvasView(
   function pinchStep({ zoom: toZoom, pan, turn, anchor }: PinchStep): void {
     stopGlide()
     let at = scroll.value
-    const next = toZoom === undefined ? zoom.value : clampZoom(toZoom)
+    const next = toZoom === undefined ? zoom.value : limitZoom(toZoom)
     if (next !== zoom.value) {
+      if (options.expanded?.()) pinching = true
       // The spread zooms about where the fingers were before this step's move, which the move then carries along.
       const was = pan ? { x: anchor.x - pan.x, y: anchor.y - pan.y } : anchor
       at = surfaceOf(currentProject(), at).scrollAfterZoom(leaning.value.toView(was), next)
@@ -460,6 +526,10 @@ export function useCanvasView(
   /** The fingers lifted (a point of the viewport): the twist comes to rest about them, easing onto a quarter turn
    * within about 10° of it, and the Project keeps the angle once it has. */
   function endTwist(anchor?: Scroll): void {
+    if (pinching) {
+      pinching = false
+      restSoon(0)
+    }
     const from = twisting.value
     if (from === undefined) {
       return
@@ -504,7 +574,7 @@ export function useCanvasView(
   }
 
   function setZoom(value: number, anchor?: Scroll): void {
-    const next = clampZoom(value)
+    const next = limitZoom(value)
     if (next === zoom.value) {
       return
     }
@@ -514,6 +584,7 @@ export function useCanvasView(
     scroll.value = surfaceOf(currentProject()).scrollAfterZoom(at, next)
     zoom.value = next
     isAtFit.value = false
+    restSoon(ZOOM_REST_MS)
   }
 
   /** Shows the new Project, or a Canvas turned otherwise than by the view (Delete all), whole. */
@@ -529,6 +600,7 @@ export function useCanvasView(
   // every bead drawn.
   onScopeDispose(() => {
     clearTimeout(snapTimer)
+    clearTimeout(restTimer)
     stopGlide()
   })
   watch(() => currentProject()?.id, () => {
@@ -553,7 +625,7 @@ export function useCanvasView(
     if (isAtFit.value) {
       fit()
     } else {
-      zoom.value = clampZoom(zoom.value)
+      zoom.value = limitZoom(zoom.value)
     }
     placed.value = true
   })
@@ -563,8 +635,8 @@ export function useCanvasView(
     scroll,
     placed: readonly(placed),
     zoomPercent: computed(() => Math.round(zoom.value * 100)),
-    zoomIn: (anchor?: Scroll) => setZoom(stepZoom(zoom.value, 1), anchor),
-    zoomOut: (anchor?: Scroll) => setZoom(stepZoom(zoom.value, -1), anchor),
+    zoomIn: (anchor?: Scroll) => setZoom(stepFrom(1), anchor),
+    zoomOut: (anchor?: Scroll) => setZoom(stepFrom(-1), anchor),
     /** A zoom the wheel or fingers chose: any level in the usable range rather than a step, about the point under
      * them. */
     setZoom,
