@@ -24,6 +24,7 @@ Act on the summary:
 - **`pr title BAD`**: an open PR's title must match `type:[NNNN] Description` (`docs/agents/pull-requests.md`); a mismatch is a hard finding.
 - **`release pr yes`**: a release PR (`release: X.Y.Z`, no ticket; `docs/agents/pull-requests.md`, The release PR) holds only what `npm run release` wrote, so check that and skip the Spec sub-agent.
 - **`release notes`**: if the diff adds or touches a Release note (`src/data/releaseNotes/*.json`), check its kind against the rules in `docs/agents/pull-requests.md` (Release notes) yourself and report it under `## Spec`: a `fix` PR's note that isn't Fixed, a kind smaller than the change (the bigger kind wins), or a New note with no sign the owner said yes is a hard finding; so is a title or ticket that names a Version, and a note that is deleted or renamed. A user-facing change with no note is a judgement finding.
+- **`trial due`**: this flow is on trial (ticket 1178) and has its 15 runs. Say so at the end of your final message, among what is left for a human: it is time to measure the runs and decide whether the flow stays (the ticket says how). Don't measure or decide yourself, and don't delete the trial file: it goes once the owner has decided.
 
 ### 2. Find the spec
 
