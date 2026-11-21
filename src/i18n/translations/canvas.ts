@@ -37,11 +37,15 @@ export interface CanvasTranslations {
       /** On touch (ticket 0927): a half-second hold on a button shows its Tooltip. */
       holdForName: string
     }
-    /** The welcome over an empty Project (FirstRunHints card, tickets 0795, 0798 and 0920): its quiet line on where
-     * Projects are kept, and its lead line off touch, the Paint tool's Tooltip (`tooltips.paint`) in mouse words. */
+    /** The welcome over an empty Project (FirstRunHints card, tickets 0795, 0798, 0920): next step, Frame line, storage,
+     * save line. `{paint}`, `{palette}`, `{select}`, `{frame}` and `{save}` stand for icon chips, `{key}` the save
+     * shortcut. The lead is `tooltips.paint` on touch; `saveKeys` is off touch, `saveTouch` on it. */
     firstRun: {
       storage: string
       paintMouse: string
+      setFrame: string
+      saveKeys: string
+      saveTouch: string
     }
   }
   rowProgress: {
