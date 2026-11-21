@@ -118,6 +118,17 @@ The margin sheet's Expand the Frame button (MarginSheet card, Expand the Frame).
 | Back to the Canvas (the button while expanded) | Вернуться к холсту | Повернутися до полотна | Вярнуцца да палатна | 回到画布 | Volver al lienzo | Wróć do płótna |
 | Frame expanded (announced) | Рамка развёрнута | Рамку розгорнуто | Рамка разгорнута | 边框已展开 | Marco expandido | Ramka rozwinięta |
 
+## Lift copy (ticket 1177)
+
+The margin sheet's Lift button and its Frame tools item (MarginSheet card, Lift). The name is its Tooltip and changes with the state; the announcement is said once after each press. Belarusian, Spanish and Chinese are written with the build (ticket 1177). Russian, Ukrainian and Polish are proposals for review with the build; "кусочек", "шматочок" and "kawałek" are the Piece (writing.md) as the earlier Lifted pieces switch had it.
+
+| English | Русский | Українська | Polski |
+|---|---|---|---|
+| Lift the pieces (the button off; the menu item) | Приподнять кусочки | Підняти шматочки | Unieś kawałki |
+| Lay the pieces flat (the button on) | Положить кусочки плоско | Покласти шматочки пласко | Połóż kawałki płasko |
+| Pieces lifted (announced) | Кусочки приподняты | Шматочки підняті | Kawałki uniesione |
+| Pieces laid flat (announced) | Кусочки лежат плоско | Шматочки лежать пласко | Kawałki leżą płasko |
+
 ## Print choices copy (ticket 0916)
 
 The Printable chart's two switches in the Export panel and the Frame panel's export section (ExportPanel card), each with its Info button. "Row by row" is the Word chart's own title in every language, so the switch and the pages it adds share a name. Letters no longer changes the PDF, so its Info body says what it does now. The page count reuses "{count} page" / "{count} pages"; no new copy. English is the ticket's; the other languages are proposals for review with the build.

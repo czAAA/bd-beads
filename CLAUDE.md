@@ -40,6 +40,8 @@ Single-context layout: one `CONTEXT.md` at the repo root (the core; its glossary
 
 ### Design
 
+Design work (a mockup, a prototype, variants, a redesign, "how should X look") runs through the `bd-ux-design` skill: options on a local canvas in `.scratch-design/`, audited by script, nothing uploaded.
+
 All UI work follows the openbeads design system (baseline v19, owned by this repo since ADR 0030), in `docs/design/system/`. `DESIGN.md` at the repo root is its entry point: the rule for which source wins, a map of where each topic lives, and the app-specific notes (the canvas `ProjectTheme`, light-only exports, bundled fonts). The design system wins for tokens, component specs, copy and artwork; `DESIGN.md` wins only for its app-specific notes. Use the role-named tokens from `docs/design/system/tokens.json`; don't hardcode colors, fonts, sizes or shadows. If a UI need isn't covered, or the app deliberately differs from a card, change the design system in place in the same commit (`DESIGN.md` §6): the card's `README.md`, tokens, `bundle.css` and `src/styles/design-values.css`. The repo is the source: don't sync from claude.ai into it. Only if the claude.ai copy needs to know a change, copy it back out from the repo, one way. Take icons, logo and favicon files from `docs/design/system/`; don't redraw them. The decision to follow the design system is ADR 0021; ADR 0030 makes the repo its owner.
 
 ## Context hygiene
