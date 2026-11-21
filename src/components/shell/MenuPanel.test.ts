@@ -118,24 +118,13 @@ describe('MenuPanel (ticket 443)', () => {
     const panel = wrapper.getComponent(MenuPanel)
     const group = (label: string) => wrapper.findAll('[role="group"]').find((each) => each.find('h3').text() === label)!
     const rows = group(en.panels.menu.help).findAll('.panel-item').map((row) => row.attributes('data-testid'))
-    expect(rows.slice(0, 3)).toEqual(['menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback'])
+    expect(rows.slice(0, 2)).toEqual(['menu-item-shortcuts', 'menu-item-feedback'])
     expect(wrapper.find('[data-testid="menu-report-translation"]').exists()).toBe(false)
     const feedback = wrapper.get('[data-testid="menu-item-feedback"]')
     expect(feedback.text()).toBe(en.panels.menu.sendFeedback)
     expect(feedback.find('svg[data-icon="message"]').exists()).toBe(true)
     await feedback.trigger('click')
     expect(panel.emitted('feedback')).toEqual([['general']])
-  })
-
-  it('asks for every button\'s name from Help\'s What the buttons do, on every page but the demo (tickets 0927, 1113)', async () => {
-    const wrapper = mountIn()
-    const row = wrapper.get('[data-testid="menu-item-button-names"]')
-    expect(row.text()).toBe(en.panels.menu.buttonNames)
-    await row.trigger('click')
-    expect(wrapper.getComponent(MenuPanel).emitted('button-names')).toHaveLength(1)
-
-    for (const page of ['homepage', 'convert-image']) expect(mountIn({ page }).find('[data-testid="menu-item-button-names"]').exists()).toBe(true)
-    expect(mountIn({ demo: true }).find('[data-testid="menu-item-button-names"]').exists()).toBe(false)
   })
 
   // Folding and remembering is PanelSection's; the Menu names each section for it.
@@ -147,15 +136,15 @@ describe('MenuPanel (ticket 443)', () => {
 })
 
 describe('MenuPanel on every page (tickets 540, 1113)', () => {
-  /** Every row's and section's test id, in order, with the pen seen, the browser's keeping known and a signed-in account. */
+  /** Every row's and section's test id, in order, with the pen seen and a signed-in account. */
   const rowsOn = (props: Record<string, unknown>) =>
-    mountIn({ penSeen: true, kept: true, account: { email: 'ann@example.com', plan: 'free' }, ...props })
+    mountIn({ penSeen: true, account: { email: 'ann@example.com', plan: 'free' }, ...props })
       .findAll('[data-testid^="menu-"], [data-testid="theme-picker"]')
       .map((row) => row.attributes('data-testid'))
 
   it('holds the same rows in the editor, on Convert image and on the Homepage', () => {
     const editor = rowsOn({})
-    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-keep-projects', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback', 'menu-item-homepage']))
+    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-feedback', 'menu-item-homepage']))
     expect(rowsOn({ page: 'convert-image' })).toEqual(editor)
     expect(rowsOn({ page: 'homepage' })).toEqual(editor)
   })
@@ -305,21 +294,3 @@ describe("MenuPanel in What's inside's demo editor (ticket 0797)", () => {
   })
 })
 
-describe('MenuPanel Kept by this browser (tickets 0839, 0936)', () => {
-  it('shows whether the browser keeps the Projects as a fact, not a button, with the reason behind an Info button', () => {
-    const off = mountIn({ kept: false })
-    const row = off.get('[data-testid="menu-keep-projects"]')
-    expect(row.element.tagName).toBe('DIV')
-    expect(row.text().startsWith(en.panels.menu.keepProjects)).toBe(true)
-    expect(row.get('.panel-fact-row__value').text()).toBe(en.panels.menu.keepProjectsOff)
-    expect(row.get('svg').attributes('data-icon')).toBe('device')
-    expect(row.get('[data-testid="menu-keep-projects-info"]').attributes('aria-label')).toBe(en.panels.menu.keepProjectsInfoLabel)
-
-    expect(mountIn({ kept: true }).get('[data-testid="menu-keep-projects"]').text()).toContain(en.panels.menu.keepProjectsOn)
-  })
-
-  it('is absent where the browser can\'t say, and in the demo', () => {
-    expect(mountIn().find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
-    expect(mountIn({ kept: false, demo: true }).find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
-  })
-})

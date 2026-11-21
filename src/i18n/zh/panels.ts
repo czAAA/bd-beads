@@ -25,13 +25,6 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: '删除所有项目',
       sendFeedback: '发送反馈',
       reportTranslation: '报告翻译问题',
-      keepProjects: '此浏览器保留项目',
-      keepProjectsOn: '是',
-      keepProjectsOff: '否',
-      keepProjectsInfoLabel: '关于保留项目',
-      keepProjectsInfo:
-        '设备空间不足时，浏览器可能会清除此应用的数据，除非它保留你的项目。这由浏览器自行决定，所以请为每个你在意的项目保存项目文件。',
-      buttonNames: '按钮的作用',
     },
     project: {
       rename: '重命名“{name}”',

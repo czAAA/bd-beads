@@ -22,8 +22,20 @@ export function welcomeHeading(t: Translations, locale: Locale): string {
 /** "Loom, peyote, and brick stitch.": the Techniques by name, joined as the language joins a list, as the free list
  * names them. */
 export function welcomeLine(t: Translations, locale: Locale): string {
-  const names = formatList(locale, TECHNIQUES.map((technique) => techniqueName(t, technique).toLocaleLowerCase(locale)))
+  const full = TECHNIQUES.map((technique) => techniqueName(t, technique).toLocaleLowerCase(locale))
+  const names = formatList(locale, shareLastWord(full))
   return fillBlanks(t.homepage.welcome.line, { techniques: names.charAt(0).toLocaleUpperCase(locale) + names.slice(1) })
+}
+
+/** A noun the names end on is said once, at the end, as a list does: "мозаичное и кирпичное плетение", not "мозаичное
+ * плетение и кирпичное плетение". Only a name of two words or more loses its last word, and only when it is the last
+ * name's last word too, so English and the one-word languages are untouched. */
+function shareLastWord(names: readonly string[]): string[] {
+  const last = names[names.length - 1]?.split(' ').pop()
+  return names.map((name, index) => {
+    const words = name.split(' ')
+    return index < names.length - 1 && words.length > 1 && words[words.length - 1] === last ? words.slice(0, -1).join(' ') : name
+  })
 }
 
 /** The cuff as an image: named with the counter's own words, as the announcer says them. */
