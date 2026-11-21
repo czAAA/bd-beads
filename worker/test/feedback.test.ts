@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SCREENSHOT_MAX_BYTES } from '../../src/domain/feedbackReport.ts'
 import { ORIGIN, startWorker, type Outbound, type RunningWorker, type StartOptions } from './harness.ts'
 
 // Ticket 0699, seam 1: POST /api/feedback, a Report in, one issue posted to a fake GitHub (ADR 0081, spec 0698).
@@ -10,13 +11,15 @@ const ISSUES_URL = 'https://api.github.com/repos/czAAA/bd-beads-docs/issues'
 
 const context = { appVersion: '1.4.0', uiLanguage: 'en', browser: 'Safari', os: 'iOS', viewport: '390 × 844' }
 
+const CONTENTS_URL = 'https://api.github.com/repos/czAAA/bd-beads-docs/contents/'
+
 const SITEVERIFY = 'https://challenges.cloudflare.com/turnstile/'
 /** A token the fake verifier rejects whatever the secret key, as Cloudflare rejects a made-up one. */
 const REJECTED_TOKEN = 'made-up'
 
 /** Answers siteverify as Cloudflare does for its dummy keys, for a token made on the app's own page, and GitHub's issue
  * creation with `github`'s status. */
-function fakes(github = 201): NonNullable<StartOptions['reply']> {
+function fakes(github = 201, storage = 201): NonNullable<StartOptions['reply']> {
   return ({ url, body }: Outbound) => {
     if (url.startsWith(SITEVERIFY)) {
       const form = new URLSearchParams(body)
@@ -24,6 +27,10 @@ function fakes(github = 201): NonNullable<StartOptions['reply']> {
       return Response.json({ success, hostname: new URL(ORIGIN).hostname })
     }
     if (url === ISSUES_URL) return Response.json({ number: 7 }, { status: github })
+    if (url.startsWith(CONTENTS_URL)) {
+      const path = url.slice(CONTENTS_URL.length)
+      return Response.json({ content: { html_url: `https://github.com/czAAA/bd-beads-docs/blob/main/${path}` } }, { status: storage })
+    }
     return new Response('unexpected', { status: 500 })
   }
 }
@@ -235,4 +242,73 @@ describe('POST /api/feedback', () => {
       expect(worker.outbound).toHaveLength(0)
       expect((await worker.fetch('/api/health')).status).toBe(200)
     }))
+
+  describe('with a screenshot (ticket 1179)', () => {
+    const base64 = (bytes: number[], total = bytes.length) => {
+      const all = new Uint8Array(total)
+      all.set(bytes)
+      let text = ''
+      for (const byte of all) text += String.fromCharCode(byte)
+      return btoa(text)
+    }
+    const JPEG = [0xff, 0xd8, 0xff, 0xe0]
+    const WEBP = [...'RIFF'].map((c) => c.charCodeAt(0)).concat([0, 0, 0, 0], [...'WEBP'].map((c) => c.charCodeAt(0)))
+    const report = (screenshot: unknown) => ({ kind: 'general', fields: { message: 'See' }, context, screenshot })
+    const stored = (worker: RunningWorker) => worker.outbound.filter(({ url }) => url.startsWith(CONTENTS_URL))
+
+    it('stores a JPEG or WebP under feedback/ with a random name and links it from the issue', () =>
+      withWorker({ env: 'production' }, async (worker) => {
+        const jpeg = await send(worker, report({ type: 'image/jpeg', data: base64(JPEG, 1000) }), { 'CF-Connecting-IP': '203.0.113.21' })
+        expect(jpeg.status).toBe(201)
+        const [call] = stored(worker)
+        expect(call.method).toBe('PUT')
+        expect(call.url).toMatch(/\/contents\/feedback\/[0-9a-f-]{36}\.jpg$/)
+        expect(postedIssue(worker)?.body).toMatch(/### Screenshot\n\n\[Open the screenshot\]\(https:\/\/github\.com\/czAAA\/bd-beads-docs\/blob\/main\/feedback\/[0-9a-f-]{36}\.jpg\)$/)
+        const webp = await send(worker, report({ type: 'image/webp', data: base64(WEBP, 1000) }), { 'CF-Connecting-IP': '203.0.113.22' })
+        expect(webp.status).toBe(201)
+        expect(stored(worker)[1].url).toMatch(/\.webp$/)
+        expect(stored(worker)[1].url).not.toBe(call.url)
+      }))
+
+    it('posts a Report without one as before, and stores nothing', () =>
+      withWorker({}, async (worker) => {
+        expect((await send(worker, report(undefined))).status).toBe(201)
+        expect(stored(worker)).toHaveLength(0)
+        expect(postedIssue(worker)?.body).not.toContain('Screenshot')
+      }))
+
+    it('refuses 400 a type its bytes deny, a second image and a bad shape, and posts nothing', () =>
+      withWorker({}, async (worker) => {
+        const png = [0x89, 0x50, 0x4e, 0x47]
+        const one = { type: 'image/jpeg', data: base64(JPEG, 100) }
+        for (const [index, screenshot] of [
+          { type: 'image/jpeg', data: base64(png, 100) },
+          { type: 'image/png', data: base64(JPEG, 100) },
+          { type: 'image/jpeg', data: '***not base64***' },
+          [one, one],
+        ].entries()) {
+          const response = await send(worker, report(screenshot), { 'CF-Connecting-IP': `203.0.113.${index + 30}` })
+          expect(response.status, JSON.stringify(screenshot).slice(0, 60)).toBe(400)
+        }
+        expect(stored(worker)).toHaveLength(0)
+        expect(postedIssue(worker)).toBeUndefined()
+      }))
+
+    it('refuses 413 an image over the cap, and accepts one exactly at it', () =>
+      withWorker({}, async (worker) => {
+        const over = await send(worker, report({ type: 'image/jpeg', data: base64(JPEG, SCREENSHOT_MAX_BYTES + 1) }))
+        expect(over.status).toBe(413)
+        expect(await over.json()).toEqual({ error: 'too-large', cap: SCREENSHOT_MAX_BYTES })
+        expect(postedIssue(worker)).toBeUndefined()
+        const exact = await send(worker, report({ type: 'image/jpeg', data: base64(JPEG, SCREENSHOT_MAX_BYTES) }))
+        expect(exact.status).toBe(201)
+      }))
+
+    it('still posts the text when storing fails, and says the screenshot did not arrive', () =>
+      withWorker({ reply: fakes(201, 500) }, async (worker) => {
+        const response = await send(worker, report({ type: 'image/jpeg', data: base64(JPEG, 1000) }))
+        expect(response.status).toBe(201)
+        expect(postedIssue(worker)?.body).toMatch(/### Screenshot\n\nThe screenshot did not arrive\.$/)
+      }))
+  })
 })

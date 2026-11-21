@@ -69,7 +69,9 @@ const { t, locale } = useI18n()
       <p>
         If you send feedback from the app, what you write, the email address you add (only if you choose to) and the app's
         version, language, browser, operating system and window size become an issue in a private GitHub repository that
-        only the maintainer reads. Write to us to have a report deleted.
+        only the maintainer reads. A picture goes with it only if you attach one: it is made smaller on your device, its hidden
+        location and camera details are dropped, and it is kept in the same private repository. Write to us to have a report
+        deleted.
       </p>
 
       <h2>Keeping the service safe</h2>

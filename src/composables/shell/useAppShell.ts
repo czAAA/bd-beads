@@ -1495,6 +1495,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       sendReport: feedback.sendReport,
       verifyFeedback: feedback.verifyFeedback,
       copyReport: feedback.copyReport,
+      shrinkScreenshot: feedback.shrinkScreenshot,
       pendingDelete: deleteProject.pendingDelete,
       onConfirmDelete: deleteProject.onConfirmDelete,
       onCancelDelete: deleteProject.onCancelDelete,

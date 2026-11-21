@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import FeedbackSheet from './FeedbackSheet.vue'
 import type { FeedbackRequest } from '../../composables/shell/useFeedbackFlow'
 import type { Report, ReportKind, ReportSent } from '../../domain/feedbackReport'
+import type { ScreenshotPick } from '../../domain/shrinkScreenshot'
 
 const context = { appVersion: '1.4.0', uiLanguage: 'pl', browser: 'Firefox', os: 'Android', viewport: '412 × 915' }
 const COLOR = { brand: 'Miyuki', catalog: 'miyuki-delica', code: 'DB-2100', hex: '#3a6b8c', swatchLetter: 'C' }
@@ -12,13 +13,16 @@ function request(kind: ReportKind, change: Partial<FeedbackRequest> = {}): Feedb
   return { kind, prefill, context: kind === 'bead-color' ? { ...context, ...COLOR } : context, email: '', ...change }
 }
 
-function sheet(asked: FeedbackRequest, outcome: ReportSent = { sent: true }) {
+const PICKED: ScreenshotPick = { ok: true, screenshot: { type: 'image/webp', data: 'UklGRg==' }, size: 150 * 1024 }
+
+function sheet(asked: FeedbackRequest, outcome: ReportSent = { sent: true }, picked: ScreenshotPick = PICKED) {
   const send = vi.fn(async (_report: Report) => outcome)
   const copy = vi.fn(async (_text: string) => true)
   const stop = vi.fn()
   const verify = vi.fn(() => stop)
-  const wrapper = mount(FeedbackSheet, { props: { request: asked, send, copy, verify }, attachTo: document.body })
-  return { wrapper, send, copy, verify, stop }
+  const shrink = vi.fn(async (_file: File) => picked)
+  const wrapper = mount(FeedbackSheet, { props: { request: asked, send, copy, verify, shrink }, attachTo: document.body })
+  return { wrapper, send, copy, verify, stop, shrink }
 }
 
 const submit = async (wrapper: ReturnType<typeof sheet>['wrapper']) => {
@@ -162,5 +166,66 @@ describe('FeedbackSheet', () => {
     const { wrapper } = sheet(request('general'))
     await wrapper.get('[data-testid="feedback-cancel"]').trigger('click')
     expect(wrapper.emitted('cancel')).toHaveLength(1)
+  })
+
+  describe('the screenshot (ticket 1180)', () => {
+    /** Picks a file as the browser's picker does: the input's files, then its change. */
+    async function pick(wrapper: ReturnType<typeof sheet>['wrapper']) {
+      const input = wrapper.get('[data-testid="feedback-screenshot-input"]')
+      Object.defineProperty(input.element, 'files', { value: [new File(['x'], 'shot.png', { type: 'image/png' })], configurable: true })
+      await input.trigger('change')
+      await flushPromises()
+    }
+
+    it.each(['general', 'translation', 'bead-color'] as const)('offers Attach screenshot on the %s sheet', (kind) => {
+      const { wrapper } = sheet(request(kind))
+      expect(wrapper.find('[data-testid="feedback-screenshot-input"]').exists()).toBe(true)
+      wrapper.unmount()
+    })
+
+    it('previews the picked picture with its size, and sends it with the Report', async () => {
+      const { wrapper, send, shrink } = sheet(request('general'))
+      await pick(wrapper)
+      expect(shrink).toHaveBeenCalledOnce()
+      expect(wrapper.get('[data-testid="feedback-screenshot-preview"]').attributes('src')).toBe('data:image/webp;base64,UklGRg==')
+      expect(wrapper.get('[data-testid="feedback-screenshot-size"]').text()).toBe('150 KB')
+      await wrapper.get('[data-testid="feedback-message"]').setValue('See')
+      await submit(wrapper)
+      expect(send.mock.calls[0][0]).toMatchObject({ screenshot: { type: 'image/webp', data: 'UklGRg==' } })
+      wrapper.unmount()
+    })
+
+    it('removes it, so the Report carries none', async () => {
+      const { wrapper, send } = sheet(request('general'))
+      await pick(wrapper)
+      await wrapper.get('[data-testid="feedback-screenshot-remove"]').trigger('click')
+      expect(wrapper.find('[data-testid="feedback-screenshot-preview"]').exists()).toBe(false)
+      await wrapper.get('[data-testid="feedback-message"]').setValue('See')
+      await submit(wrapper)
+      expect(send.mock.calls[0][0]).not.toHaveProperty('screenshot')
+      wrapper.unmount()
+    })
+
+    it('says a picture is too detailed in plain words and still sends the text', async () => {
+      const { wrapper, send } = sheet(request('general'), { sent: true }, { ok: false, reason: 'too-detailed' })
+      await pick(wrapper)
+      expect(wrapper.text()).toContain('This picture is too detailed to attach. You can send the report without it.')
+      await wrapper.get('[data-testid="feedback-message"]').setValue('See')
+      await submit(wrapper)
+      expect(send.mock.calls[0][0]).not.toHaveProperty('screenshot')
+      wrapper.unmount()
+    })
+
+    it('keeps the picture when sending fails, and Copy report stays text only', async () => {
+      const { wrapper, copy } = sheet(request('general'), { sent: false, reason: 'failed' })
+      await pick(wrapper)
+      await wrapper.get('[data-testid="feedback-message"]').setValue('See')
+      await submit(wrapper)
+      expect(wrapper.find('[data-testid="feedback-screenshot-preview"]').exists()).toBe(true)
+      await wrapper.get('[data-testid="feedback-copy"]').trigger('click')
+      await flushPromises()
+      expect(copy.mock.calls[0][0]).not.toContain('UklGRg==')
+      wrapper.unmount()
+    })
   })
 })
