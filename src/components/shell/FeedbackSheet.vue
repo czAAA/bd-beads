@@ -1,14 +1,27 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import type { FeedbackRequest } from '../../composables/shell/useFeedbackFlow'
-import { EMAIL_MAX, FIELD_MAX, isEmail, NOTE_MAX, parseReport, reportIssue, type Report, type ReportContext, type ReportSent } from '../../domain/feedbackReport'
+import {
+  EMAIL_MAX,
+  FIELD_MAX,
+  isEmail,
+  NOTE_MAX,
+  parseReport,
+  reportIssue,
+  type Report,
+  type ReportContext,
+  type ReportScreenshot,
+  type ReportSent,
+} from '../../domain/feedbackReport'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { LOCALES, LOCALE_NAMES, type Locale } from '../../domain/locale'
+import type { ScreenshotPick } from '../../domain/shrinkScreenshot'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppMessage from '../ui/AppMessage.vue'
 import AppModal from '../ui/AppModal.vue'
 import ChipRadioGroup from '../ui/form/ChipRadioGroup.vue'
+import FileButton from '../ui/form/FileButton.vue'
 import FormField from '../ui/form/FormField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
@@ -22,6 +35,8 @@ const props = defineProps<{
   verify: (container: HTMLElement) => () => void
   send: (report: Report) => Promise<ReportSent>
   copy: (text: string) => Promise<boolean>
+  /** Shrinks a picked picture to the screenshot cap on this device (ticket 1180). */
+  shrink: (file: File) => Promise<ScreenshotPick>
 }>()
 const emit = defineEmits<{ cancel: [] }>()
 const { t } = useI18n()
@@ -37,6 +52,35 @@ const problem = ref<'wrong' | 'missing'>(props.request.prefill.problem ?? 'wrong
 const code = ref(props.request.prefill.code ?? '')
 const looksLike = ref('')
 const email = ref(props.request.email)
+
+/** The one screenshot the person attached (ticket 1180): shown before Send, removable, never taken by itself. */
+const attached = ref<{ screenshot: ReportScreenshot; size: number }>()
+const shrinking = ref(false)
+const screenshotProblem = ref<string>()
+const attachedKb = computed(() => Math.max(1, Math.round((attached.value?.size ?? 0) / 1024)))
+const previewSrc = computed(() => (attached.value ? `data:${attached.value.screenshot.type};base64,${attached.value.screenshot.data}` : undefined))
+
+async function onPickScreenshot(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  // Picking the same file again still counts as a change.
+  input.value = ''
+  if (!file) return
+  shrinking.value = true
+  screenshotProblem.value = undefined
+  try {
+    const result = await props.shrink(file)
+    if (result.ok) attached.value = { screenshot: result.screenshot, size: result.size }
+    else screenshotProblem.value = result.reason === 'too-detailed' ? words.value.screenshotTooDetailed : words.value.screenshotUnreadable
+  } finally {
+    shrinking.value = false
+  }
+}
+
+function removeScreenshot() {
+  attached.value = undefined
+  screenshotProblem.value = undefined
+}
 /** Signed in, the Email starts as the account's (ticket 0078): the hint says so while it is still that address. */
 const emailHint = computed(() => (props.request.email && email.value === props.request.email ? words.value.emailHintAccount : words.value.emailHint))
 
@@ -49,7 +93,11 @@ const context = computed<ReportContext>(() =>
 
 const report = computed<Report>(() => {
   const typedEmail = email.value.trim()
-  const shared = { context: context.value, ...(typedEmail ? { email: typedEmail } : {}) }
+  const shared = {
+    context: context.value,
+    ...(typedEmail ? { email: typedEmail } : {}),
+    ...(attached.value ? { screenshot: attached.value.screenshot } : {}),
+  }
   switch (kind.value) {
     case 'general':
       return { kind: 'general', fields: { message: message.value }, ...shared }
@@ -220,6 +268,26 @@ onBeforeUnmount(() => stopVerifying?.())
         />
       </FormField>
 
+      <FormField :label="words.screenshot" label-id="feedback-screenshot-label" :aside="t.form.optional" :hint="words.screenshotHint" :error="screenshotProblem">
+        <div v-if="attached" class="feedback-sheet__attached" data-testid="feedback-screenshot">
+          <img class="feedback-sheet__preview" :src="previewSrc" :alt="words.screenshotAlt" data-testid="feedback-screenshot-preview" />
+          <span class="feedback-sheet__size" data-testid="feedback-screenshot-size">{{ fillBlanks(words.screenshotSize, { size: attachedKb }) }}</span>
+          <AppButton variant="link" data-testid="feedback-screenshot-remove" @click="removeScreenshot">{{ words.removeScreenshot }}</AppButton>
+        </div>
+        <FileButton
+          v-else
+          :label="shrinking ? words.screenshotShrinking : words.attachScreenshot"
+          icon="image"
+          small
+          secondary
+          :disabled="shrinking"
+          accept="image/*"
+          aria-labelledby="feedback-screenshot-label"
+          data-testid="feedback-screenshot-input"
+          @change="onPickScreenshot"
+        />
+      </FormField>
+
       <div class="feedback-sheet__also">
         <AppButton
           variant="in-box"
@@ -258,7 +326,7 @@ onBeforeUnmount(() => stopVerifying?.())
 
     <template #actions>
       <AppButton variant="in-box" data-testid="feedback-cancel" @click="emit('cancel')">{{ words.cancel }}</AppButton>
-      <AppButton variant="primary" type="submit" form="feedback-sheet-form" :disabled="sending" data-testid="feedback-send">
+      <AppButton variant="primary" type="submit" form="feedback-sheet-form" :disabled="sending || shrinking" data-testid="feedback-send">
         {{ sending ? words.sending : words.send }}
       </AppButton>
     </template>
@@ -291,6 +359,25 @@ onBeforeUnmount(() => stopVerifying?.())
   margin: 0;
   font: var(--type-control);
   color: var(--ink);
+}
+
+.feedback-sheet__attached {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.feedback-sheet__preview {
+  width: var(--feedback-screenshot-preview);
+  height: var(--feedback-screenshot-preview);
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.feedback-sheet__size {
+  font: var(--type-meta);
+  color: var(--muted);
 }
 
 .feedback-sheet__also {

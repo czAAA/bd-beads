@@ -113,21 +113,18 @@ describe('MenuPanel (ticket 443)', () => {
     expect(openSub).toHaveBeenCalledTimes(1)
   })
 
-  it('opens the Feedback sheet from Help’s Send feedback, after Keyboard shortcuts, and from the link right below it (tickets 0700, 1144)', async () => {
+  it('opens the Feedback sheet from Help’s Send feedback, after Keyboard shortcuts (tickets 0700, 1144)', async () => {
     const wrapper = mountIn()
     const panel = wrapper.getComponent(MenuPanel)
     const group = (label: string) => wrapper.findAll('[role="group"]').find((each) => each.find('h3').text() === label)!
     const rows = group(en.panels.menu.help).findAll('.panel-item').map((row) => row.attributes('data-testid'))
-    expect(rows.slice(0, 3)).toEqual(['menu-item-shortcuts', 'menu-item-feedback', 'menu-report-translation'])
-    expect(group(en.panels.menu.preferences).find('[data-testid="menu-report-translation"]').exists()).toBe(false)
+    expect(rows.slice(0, 2)).toEqual(['menu-item-shortcuts', 'menu-item-feedback'])
+    expect(wrapper.find('[data-testid="menu-report-translation"]').exists()).toBe(false)
     const feedback = wrapper.get('[data-testid="menu-item-feedback"]')
     expect(feedback.text()).toBe(en.panels.menu.sendFeedback)
     expect(feedback.find('svg[data-icon="message"]').exists()).toBe(true)
-    const link = wrapper.get('[data-testid="menu-report-translation"]')
-    expect(link.text()).toBe(en.panels.menu.reportTranslation)
     await feedback.trigger('click')
-    await link.trigger('click')
-    expect(panel.emitted('feedback')).toEqual([['general'], ['translation']])
+    expect(panel.emitted('feedback')).toEqual([['general']])
   })
 
   // Folding and remembering is PanelSection's; the Menu names each section for it.

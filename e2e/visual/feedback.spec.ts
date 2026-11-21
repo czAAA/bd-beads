@@ -15,7 +15,7 @@ const KINDS: readonly { kind: string; open: (page: Page) => Promise<void> }[] = 
   {
     kind: 'translation',
     open: async (page) => {
-      await openStripPanel(page, 'strip-menu')
+      await page.locator('[data-testid="language-switcher"] button[aria-haspopup]').click()
       await page.getByTestId('menu-report-translation').click()
     },
   },

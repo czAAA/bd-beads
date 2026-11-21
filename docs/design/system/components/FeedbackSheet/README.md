@@ -1,6 +1,6 @@
 # FeedbackSheet
 
-The one modal through which a beader sends a **Report** to the maintainer, with no account (ADR 0081, spec 0698, ticket 0700). It is the Modal card at the `panel` width (560px; the screen less 24 a side on a phone, scrolling inside), in the confirm dialogs' shell: focus is trapped, Escape and the scrim cancel, focus returns to what opened it. Nothing of a Project and no device id is ever sent; text only, no attachments.
+The one modal through which a beader sends a **Report** to the maintainer, with no account (ADR 0081, spec 0698, ticket 0700). It is the Modal card at the `panel` width (560px; the screen less 24 a side on a phone, scrolling inside), in the confirm dialogs' shell: focus is trapped, Escape and the scrim cancel, focus returns to what opened it. Nothing of a Project and no device id is ever sent; one screenshot only if the person attaches it (ticket 1180).
 
 ## Three Report kinds, three ways in
 
@@ -10,14 +10,14 @@ The one modal through which a beader sends a **Report** to the maintainer, with 
 | translation | Menu, Help: the link **Report a translation problem** right under Send feedback | Report a translation problem | Language (the app's language, changeable), Text as shown (required), Should say, Note |
 | bead-color | The Bead colors list's foot row **Wrong or missing color?** (BeadColors card) | Report a bead color | Problem (Wrong color \| Missing color), Brand and catalog (read-only), Code, Looks like, Note |
 
-Every kind then has **Email** (optional), then **Also sent**. Signed in, Email starts as the account's email, an ordinary value that can be changed or cleared, and its hint reads "From your account. Only to ask you about this report." while the field still holds that address (tickets 1087, 0078).
+Every kind then has **Screenshot** (optional): a small secondary file button, "Attach screenshot", with the hint "One picture. It is made smaller on this device first, and its location and camera details are dropped." A picked picture is shrunk on the device to 300 KB or less and shows as a `--feedback-screenshot-preview` (3.5rem) square thumbnail (`radius-sm`) with its size in KB (`meta` / `muted`) and a **Remove** link; it is never taken from the Project by itself. A picture that can't fit shows, as the field's error, "This picture is too detailed to attach. You can send the report without it." Every kind then has **Email** (optional), then **Also sent**. Signed in, Email starts as the account's email, an ordinary value that can be changed or cleared, and its hint reads "From your account. Only to ask you about this report." while the field still holds that address (tickets 1087, 0078).
 
 ## Layout
 
 - Under the title, one `body` sentence saying what to write for the kind; then the fields, 16 apart, each a TextField card field with its label, "optional" where it is, hint and error.
 - **Message** and **Note** are multiline TextFields that start `--feedback-message-height` (7.5rem, about five lines) and `--feedback-note-height` (4.5rem, about three lines) tall and can be pulled taller. Message and Note take up to 2,000 characters, every other field 200, the email 320.
 - **Language** is a ChipRadioGroup of the seven languages, each by its own name. **Problem** is a SegmentedControl. **Brand and catalog** is plain `control` text: what the Bead is, not typed. **Code** starts from the highlighted catalog swatch (the row last focused in the list) or else the active Palette color's code; **Looks like** takes words or a hex, its hint says so.
-- **Also sent** is a small `in-box` button with a chevron (`aria-expanded`), folded when the sheet opens. Open, it shows on `surface`, `radius-md`, padding 8 12, one row per value the Report carries, the label in `meta` / `muted` and the value in `meta` / `ink` at the right: Version, App language, Browser, System, Window size; a translation adds its Language; a color adds Brand, Catalog, Code, Stored hex and Swatch letter (those it has). The values are exactly what is sent. Under them, in `small` / `muted`: "Nothing from your Projects, and nothing that identifies this device."
+- **Also sent** is a small `in-box` button with a chevron (`aria-expanded`), folded when the sheet opens. Open, it shows on `surface`, `radius-md`, padding 8 12, one row per value the Report carries, the label in `meta` / `muted` and the value in `meta` / `ink` at the right: Version, App language, Browser, System, Window size; a translation adds its Language; a color adds Brand, Catalog, Code, Stored hex and Swatch letter (those it has). The values are exactly what is sent. Under them, in `small` / `muted`: "Nothing from your Projects, and nothing that identifies this device. A screenshot goes only if you attach one."
 - Actions: Cancel (`in-box`) and **Send** (primary), which reads "Sending…" and is disabled while it sends.
 
 ## Sending

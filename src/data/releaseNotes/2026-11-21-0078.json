@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "In the Menu, Sign in and the line that everything works without an account sit on one line",
+    "ru": "В Меню «Войти» и фраза о том, что всё работает без аккаунта, стоят в одной строке",
+    "uk": "У Меню «Увійти» і фраза про те, що все працює без акаунта, стоять в одному рядку",
+    "be": "У Меню «Увайсці» і фраза пра тое, што ўсё працуе без акаўнта, стаяць у адным радку",
+    "zh": "菜单中的“登录”与“不登录也能使用”的说明现在位于同一行",
+    "es": "En el Menú, Iniciar sesión y la frase de que todo funciona sin cuenta van en la misma línea",
+    "pl": "W Menu „Zaloguj się” i zdanie, że wszystko działa bez konta, są w jednej linii"
+  }
+}
