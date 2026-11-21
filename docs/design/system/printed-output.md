@@ -39,6 +39,15 @@ Signed off by the owner on 2026-11-19 (ticket 1123; the claude.ai page "PDF char
 - **Empty grid** (1127), a switch in the Export panel, off at first: off, an empty position on a chart or the overview is bare paper or bare board; on, it gets today's outline and small `faint` cross. Colored beads look the same either way.
 - **Letters always** is unchanged: every bead carries its Swatch letter. An empty position has no letter and no fill, and with Empty grid off no cross either: bare paper. A White bead keeps its border and its `ink` letter, which tell it from an empty position.
 
+## Lifted Frame in exports (approved 2026-11-21, ticket 1177; not yet in the app)
+
+The Frame's Lift (MarginSheet card, Lift; BeadBoard card, Lifted Frame) carries into the PDF and PNG. An export follows the **saved Lift** of the Frame, never Row highlight, and draws it in the light theme whatever the screen shows. A Schema with no Frame, and a Frame with no Lift (every Frame saved before it), print as before. Not drawn in a mockup yet: ticket 1177 tries a printed sample and sets the stacked shadow's steps.
+
+- **The Cover page, the overview and the PNG picture** (the finished piece on the `print-board`): the piece is lifted as on screen, outer border only: ground, outline and the two soft shadows (BeadBoard card, values), their sizes in proportion to the bead as printed, as they follow the zoom on screen; holes lie on the piece like beads, empty positions inside the drawing staying as they are (Trimmed to the beads).
+- **Page 1's whole chart and every chart part:** the one rounded rim (`print-pad-line`, 1 mm clear of the beads) stays the only line, and each pad lifts off the paper by a soft shadow under it: a PDF's drawing has no blur, so the shadow is three or four stacked, nearly clear black copies of the rim, each a little lower and wider. No ground (the paper is the ground) and no second outline. Never along a cut between parts, since each part is its own pad with its own rim.
+- **Not drawn** with **Chart border** off (the shadow hangs on the rim), with **Black and white** on (every page after the cover is one ink and toner is not spent on a shadow; the cover and the picture keep it), on Beads needed, list pages or Word chart pages.
+- **No change to the chart:** the beads, letters, rulers and lines of a chart page are exactly as before, and the ruler numbers keep their places outside the rim; the shadow lies on the margin, clear of them.
+
 ## Page 1
 
 One A4 portrait page inside a 10 mm margin on all four sides (`print-margin`), the PrintPage1 card.
