@@ -17,6 +17,7 @@ import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
 import { MARGIN_PX } from '../../rendering/marginSizes'
+import { bandRowWidth, bandTools, BAND_ORDER, type BandFit, type BandRow, type BandToolId } from '../../rendering/marginBand'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -122,7 +123,7 @@ const rotatable = computed(() => frameAllows(props.project, 'rotate'))
 const editable = computed(() => frameAllows(props.project, 'resize'))
 
 const canvas = useCanvasBackground(() => props.project)
-/** A finger: the band keeps Edit Frame and the Frame tools button, its other tools in that menu (ticket 0976). */
+/** A finger: its 44px hit areas stand the band's tools further apart (ticket 0976). */
 const touch = useMediaQuery('(pointer: coarse)')
 /** Under bp-tablet the expanded sheet's insets are smaller (MarginSheet card, Expand the Frame). */
 const narrowScreen = useMediaQuery(UNDER_TABLET_QUERY)
@@ -162,16 +163,16 @@ const scale = computed(() => (props.expanded ? 1 : marginScale(props.anchor.band
 /** The expanded sheet's inset: its row and title block in from its edge. */
 const expandedInset = computed(() => slimInset(narrowScreen.value))
 
-// The band's row and the title block step down a form where the sheet is too narrow for them, and are left out where
-// nothing fits: `narrow` is the folded row with Margin color in the Frame tools menu.
-type RowForm = 'full' | 'compact' | 'folded' | 'narrow'
+// The band's row and the title block step down a form where the sheet is too narrow for them; the row's tools then leave
+// it for the Frame tools menu as the width runs out (ticket 1195).
+type RowForm = BandRow
 const ROW_FITS: Record<MarginForm, readonly RowForm[]> = {
-  full: ['full', 'compact', 'folded', 'narrow'],
-  compact: ['compact', 'folded', 'narrow'],
-  folded: ['folded', 'narrow'],
+  full: ['full', 'compact', 'folded'],
+  compact: ['compact', 'folded'],
+  folded: ['folded'],
   bare: [],
 }
-/** Expanded, the row is never bare nor narrow (ticket 1169): the sheet widens to the folded row instead. */
+/** Expanded, the row is never bare (ticket 1169): the sheet widens to the folded row with the menu button alone instead. */
 const EXPANDED_ROW_FITS: readonly RowForm[] = ['full', 'compact', 'folded']
 // The legend is the first the title block gives up: `brief` is the compact row without it (ticket 0698). On Row
 // progress's strip (ticket 1176) the full form's block is one row, `line`: the name, the Technique and its settings with
@@ -307,31 +308,26 @@ const footStyle = computed(() => ({
   ...scaledFrom('0 100%'),
 }))
 
-const bandEl = ref<HTMLElement>()
-const bandParts = () => [...(bandEl.value?.children ?? [])]
 /** The band's room on screen: the sheet's width inside the row's inset. */
 const bandRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * place.value.side))
 const bandLeft = computed(() => place.value.side)
-/** The band row's width in drafting px: the Move bar centred, with room on each side for the wider of Expand the Frame
- * and the tools. */
-function bandWidth(): number {
-  const parts = bandParts()
-  const [start = 0, move = 0, end = 0] = parts.map((part) => ownLength(part, part.getBoundingClientRect().width) / scale.value)
-  if (parts.length !== 3 || start + end === 0) return 0
-  // Expanded there is no Move bar to centre (ticket 1169): Expand the Frame and the tools side by side.
-  return props.expanded ? start + end + 2 * MARGIN_PX.gap : move + 2 * Math.max(start, end) + 2 * MARGIN_PX.gap
-}
-const fitting = useFittingForm({
-  forms: () => (props.expanded ? EXPANDED_ROW_FITS : ROW_FITS[form.value]),
-  room: () => bandRoom.value / scale.value,
-  measure: bandWidth,
-  observed: bandParts,
-  // What the row holds: the language, the tools shown (ticket 0851).
-  labels: () => JSON.stringify([locale.value, rotatable.value, editable.value, touch.value, !!props.expanded]),
-})
-/** The row shown: expanded, the folded row where none fits, the sheet then widening to it (ticket 1169). */
-const rowFit = computed(() => fitting.value ?? (props.expanded ? EXPANDED_ROW_FITS.at(-1) : undefined))
-const row = rowFit
+
+/** Lift is on the band only while Row highlight is on (MarginSheet card, Lift): with it off the Frame lies flat. */
+const liftShown = computed(() => rotatable.value && !!props.rowHighlight)
+/** The Frame's tools now, and which stand on the band and which are under the Frame tools button (ticket 1195). */
+const offered = computed<Record<BandToolId, boolean>>(() => ({ mirror: rotatable.value, rotate: rotatable.value, lift: liftShown.value, edit: editable.value, export: true, color: true, remove: true }))
+const toolIds = computed(() => BAND_ORDER.filter((id) => offered.value[id]))
+const bandFit = computed<BandFit | undefined>(() =>
+  bandTools({ tools: toolIds.value, rows: props.expanded ? EXPANDED_ROW_FITS : ROW_FITS[form.value], room: bandRoom.value / scale.value, touch: touch.value, expanded: !!props.expanded }),
+)
+/** Expanded, where no row fits, the folded one with every tool under the menu button: the sheet then widens to it (ticket 1169). */
+const narrowest = computed<BandFit>(() => ({ row: 'folded', onBand: [], overflow: toolIds.value }))
+const shownFit = computed(() => bandFit.value ?? (props.expanded ? narrowest.value : undefined))
+/** The row shown, if any. */
+const row = computed(() => shownFit.value?.row)
+const onBand = (id: BandToolId) => !!shownFit.value?.onBand.includes(id)
+/** The divider before Remove Frame, with a mouse and another tool before it (as `bandRowWidth` counts it). */
+const dividerShown = computed(() => !touch.value && (shownFit.value?.onBand.length ?? 0) > 1)
 const rowTop = computed(() => (form.value === 'folded' && !props.expanded ? middle(roomAbove.value) : place.value.top))
 /** The row's height in drafting px; on screen, times the scale. */
 const rowHeight = computed(() => (row.value === 'full' ? MARGIN_PX.tool : MARGIN_PX.tab))
@@ -368,17 +364,8 @@ const handleYields = computed(() => {
 })
 const footYields = computed(() => footSize.width.value > 0 && yields(footBox.value))
 
-/** The folded row's width, once the expanded sheet has had to show it: the sheet is never narrower (ticket 1169). */
-const narrowestRow = ref(0)
-watch(
-  [rowFit, bandRoom],
-  () => {
-    if (!props.expanded || rowFit.value !== EXPANDED_ROW_FITS.at(-1)) return
-    const width = bandWidth()
-    if (width > 0) narrowestRow.value = width
-  },
-  { flush: 'post' },
-)
+/** The folded row's width with the menu button alone: the expanded sheet is never narrower (ticket 1169). */
+const narrowestRow = computed(() => bandRowWidth('folded', [], true, touch.value, true))
 // What the slim sheet holds, told to the canvas, which lays it round them.
 watch(
   () => (props.expanded ? { row: rowHeight.value, title: footSize.height.value, rowWidth: narrowestRow.value } : undefined),
@@ -402,13 +389,6 @@ function onMovePress(event: PointerEvent): void {
   emit('move-press', event)
 }
 
-/** Which tools the band shows as buttons: all of them in the full and compact rows; folded, Margin color; on a coarse
- * pointer, Edit Frame alone, the rest in the Frame tools menu so no two 44px hit areas overlap (ticket 0976). The
- * narrow row shows none. */
-const iconsShown = computed(() => !touch.value && (row.value === 'full' || row.value === 'compact'))
-const editShown = computed(() => editable.value && (iconsShown.value || (touch.value && row.value !== 'narrow')))
-const colorShown = computed(() => !touch.value && !!row.value && row.value !== 'narrow')
-
 /** The Margin color popover, hung from its button, or from the Frame tools menu where that holds it. */
 const toolsEl = ref<HTMLElement>()
 /** The Frame tools button beside the lone Move bar (ticket 1164). */
@@ -421,7 +401,7 @@ const colorButton = computed(() =>
 )
 // It hangs from its button as a dropdown does (ticket 0698): where the zoom or the width takes that button away (into
 // the Frame tools menu, the row's or the lone Move bar's), it closes rather than float.
-const colorHangsFrom = computed(() => (!row.value ? 'handle' : colorShown.value ? 'button' : 'menu'))
+const colorHangsFrom = computed(() => (!row.value ? 'handle' : onBand('color') ? 'button' : 'menu'))
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
 const sheetEl = ref<HTMLElement>()
@@ -469,25 +449,23 @@ watch(frame, (now) => now || rotateCopy.drop())
 /** Mirror the whole Frame's name: "Mirror off" while it is on (MarginSheet card). */
 const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOff : undefined))
 
-/** Lift is on the band only while Row highlight is on (MarginSheet card, Lift): with it off the Frame lies flat. */
-const liftShown = computed(() => rotatable.value && !!props.rowHighlight)
 const liftOn = computed(() => !!frame.value?.lifted)
 /** Lift's name says Lay the pieces flat while it is on. */
 const liftName = computed(() => (liftOn.value ? t.value.frame.layPiecesFlat : undefined))
 
-/** The Frame tools menu holds the tools the band shows no button for (MarginSheet card, Zoom forms); Mirror the whole
- * Frame first, checked while on, shown as Rotate Frame is. */
-const menuItems = computed<FrameToolItem[]>(() =>
-  [
-    rotatable.value && { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
-    rotatable.value && { id: 'rotate', action: actions.rotate, run: rotateFromBand },
-    liftShown.value && { id: 'lift', action: actions.lift, run: () => emit('toggle-lift'), checked: liftOn.value },
-    editable.value && !editShown.value && { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
-    { id: 'export', action: actions.export, run: () => emit('export', 'margin-frame-tools') },
-    !colorShown.value && { id: 'color', action: actions.color, run: () => (colorOpen.value = true) },
-    { id: 'remove', action: actions.remove, run: () => emit('remove') },
-  ].filter((item) => !!item),
-)
+/** Every Frame tool as a menu item: the bare Frame tools button's menu holds them all, the band's only those it has no
+ * room for (MarginSheet card, Zoom forms); Mirror the whole Frame first, checked while on, shown as Rotate Frame is. */
+const toolItems = computed<Record<BandToolId, FrameToolItem>>(() => ({
+  mirror: { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
+  rotate: { id: 'rotate', action: actions.rotate, run: rotateFromBand },
+  lift: { id: 'lift', action: actions.lift, run: () => emit('toggle-lift'), checked: liftOn.value },
+  edit: { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
+  export: { id: 'export', action: actions.export, run: () => emit('export', 'margin-frame-tools') },
+  color: { id: 'color', action: actions.color, run: () => (colorOpen.value = true) },
+  remove: { id: 'remove', action: actions.remove, run: () => emit('remove') },
+}))
+const allItems = computed(() => toolIds.value.map((id) => toolItems.value[id]))
+const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((id) => toolItems.value[id]) : allItems.value))
 </script>
 
 <template>
@@ -500,7 +478,6 @@ const menuItems = computed<FrameToolItem[]>(() =>
   >
     <div
       v-if="row"
-      ref="bandEl"
       class="margin-sheet__band"
       :class="[`margin-sheet__band--${row}`, { 'margin-sheet__band--touch': touch, 'margin-sheet__yielding': bandYields }]"
       :style="bandStyle"
@@ -523,35 +500,33 @@ const menuItems = computed<FrameToolItem[]>(() =>
       <span v-if="expanded" aria-hidden="true" />
       <MarginMoveBar v-else :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
       <div ref="toolsEl" class="margin-sheet__tools" @keydown="toolsRoving.onKeydown" @focusin="toolsRoving.onFocusin" @pointerdown.capture="rotateCopy.notePress" @keydown.capture="rotateCopy.forgetPress">
-        <template v-if="iconsShown">
-          <IconButton
-            v-if="rotatable"
-            variant="plain"
-            class="margin-sheet__tool margin-sheet__mirror"
-            :class="{ 'margin-sheet__mirror--on': mirrorOnFrame }"
-            :icon-size="iconSize"
-            :action="actions.mirror"
-            :label="mirrorName"
-            :pressed="!!mirrorOnFrame"
-            data-testid="margin-mirror-frame"
-            @click="emit('mirror')"
-          />
-          <IconButton v-if="rotatable" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" data-rotate-from="button" @click="rotateFromBand" />
-          <IconButton
-            v-if="liftShown"
-            variant="plain"
-            class="margin-sheet__tool"
-            :class="{ 'margin-sheet__mirror--on': liftOn }"
-            :icon-size="iconSize"
-            :action="actions.lift"
-            :label="liftName"
-            :pressed="liftOn"
-            data-testid="margin-lift-frame"
-            @click="emit('toggle-lift')"
-          />
-        </template>
         <IconButton
-          v-if="editShown"
+          v-if="onBand('mirror')"
+          variant="plain"
+          class="margin-sheet__tool margin-sheet__mirror"
+          :class="{ 'margin-sheet__mirror--on': mirrorOnFrame }"
+          :icon-size="iconSize"
+          :action="actions.mirror"
+          :label="mirrorName"
+          :pressed="!!mirrorOnFrame"
+          data-testid="margin-mirror-frame"
+          @click="emit('mirror')"
+        />
+        <IconButton v-if="onBand('rotate')" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" data-rotate-from="button" @click="rotateFromBand" />
+        <IconButton
+          v-if="onBand('lift')"
+          variant="plain"
+          class="margin-sheet__tool"
+          :class="{ 'margin-sheet__mirror--on': liftOn }"
+          :icon-size="iconSize"
+          :action="actions.lift"
+          :label="liftName"
+          :pressed="liftOn"
+          data-testid="margin-lift-frame"
+          @click="emit('toggle-lift')"
+        />
+        <IconButton
+          v-if="onBand('edit')"
           variant="plain"
           class="margin-sheet__tool"
           :icon-size="iconSize"
@@ -562,7 +537,7 @@ const menuItems = computed<FrameToolItem[]>(() =>
           @click="emit('toggle-edit')"
         />
         <IconButton
-          v-if="iconsShown"
+          v-if="onBand('export')"
           variant="plain"
           class="margin-sheet__tool"
           :icon-size="iconSize"
@@ -572,7 +547,7 @@ const menuItems = computed<FrameToolItem[]>(() =>
           @click="emit('export', 'margin-export')"
         />
         <IconButton
-          v-if="colorShown"
+          v-if="onBand('color')"
           variant="plain"
           class="margin-sheet__tool"
           :icon-size="iconSize"
@@ -583,11 +558,11 @@ const menuItems = computed<FrameToolItem[]>(() =>
           data-testid="margin-color"
           @click="colorOpen = !colorOpen"
         />
-        <template v-if="iconsShown">
-          <span class="margin-sheet__divider" aria-hidden="true" />
+        <template v-if="onBand('remove')">
+          <span v-if="dividerShown" class="margin-sheet__divider" aria-hidden="true" />
           <IconButton variant="plain" :icon-size="iconSize" :action="actions.remove" :deps="deps" class="margin-sheet__tool margin-sheet__remove" data-testid="frame-chrome-remove" @click="emit('remove')" />
         </template>
-        <MarginFrameTools v-else :items="menuItems" :deps="deps" />
+        <MarginFrameTools v-if="menuItems.length" :items="menuItems" :deps="deps" />
       </div>
     </div>
 
@@ -606,7 +581,7 @@ const menuItems = computed<FrameToolItem[]>(() =>
         <IconButton variant="plain" :icon="expandIcon" :icon-size="MARGIN_PX.icon.compact" :action="actions.expand" :label="expandName" data-testid="margin-handle-expand-frame" @click="emit('toggle-expand')" />
       </span>
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
-      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools :items="menuItems" :deps="deps" /></span>
+      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools :items="allItems" :deps="deps" /></span>
     </div>
 
     <!-- The foot (ticket 1176): the title block in the bottom-left corner, Row progress under it across the sheet, or

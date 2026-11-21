@@ -438,8 +438,8 @@ function hitAreas(root: HTMLElement): { name: string; rect: DOMRect }[] {
   })
 }
 
-describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
-  it('keeps Edit Frame and the Frame tools button, whose 44px hit areas overlap no other, at every zoom and width', async () => {
+describe('the Frame\'s bar on a coarse pointer (tickets 0976, 1195)', () => {
+  it('keeps every tool that fits on the band and the rest under the Frame tools button, whose 44px hit areas overlap no other, at every zoom and width', async () => {
     vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
     onTestFinished(() => {
       vi.unstubAllGlobals()
@@ -458,8 +458,10 @@ describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
         if (!band) continue
         const tools = [...band.querySelectorAll<HTMLElement>('.margin-sheet__tools > *')].map((tool) => tool.dataset.testid ?? tool.querySelector<HTMLElement>('[data-testid]')?.dataset.testid)
         const wrong = [...problems(root)]
-        const expected = band.dataset.form === 'narrow' ? ['margin-frame-tools'] : ['frame-edit-toggle', 'margin-frame-tools']
-        if (tools.join() !== expected.join()) wrong.push(`the tools are ${tools.join(', ')}`)
+        // Edit Frame leaves the band last; the menu button is there only while some tool is under it.
+        const menu = tools.includes('margin-frame-tools')
+        if (tools.length > 1 && !tools.includes('frame-edit-toggle')) wrong.push(`the tools are ${tools.join(', ')}`)
+        if (!menu && tools.length !== 6) wrong.push(`no menu, but the tools are ${tools.join(', ')}`)
         const areas = hitAreas(root)
         for (const [index, area] of areas.entries()) for (const other of areas.slice(index + 1)) if (overlap(area.rect, other.rect)) wrong.push(`${area.name} overlaps ${other.name}`)
         if (wrong.length) found[name] = wrong
