@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { CANVAS_HOLD_MS } from '../domain/hold'
 import { beadColorAt } from '../domain/layerBeads'
 import { projectDimensions } from '../domain/projectExtent'
-import { rowProgressOf, rowProgressOn } from '../domain/rowProgress'
+import { currentPass, ownRowWayOf, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import type { VueWrapper } from '@vue/test-utils'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
@@ -175,8 +175,8 @@ export function outlinedBead(wrapper: Anywhere): GridPosition | undefined {
 export function rowProgressView(wrapper: Anywhere) {
   const project = drawnProject(wrapper)
   const enabled = rowProgressOn(project)
-  const { direction, currentRow, currentColumn } = rowProgressOf(project)
-  const current = direction === 'rows' ? currentRow : currentColumn
+  const { direction } = ownRowWayOf(project)
+  const current = currentPass(rowProgressOf(project))
   return { enabled, direction, current, finished: enabled ? current : 0, markerShown: enabled }
 }
 

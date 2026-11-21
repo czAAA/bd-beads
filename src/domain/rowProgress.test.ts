@@ -1,8 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { turnedWithFrame } from './rowWays'
+import { withCanvasTurned } from './table'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, shownWayOf, stepLines, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
+import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, seenWayOf, stepLines, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
 import { changeFrame } from './changeFrame'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
@@ -10,8 +12,8 @@ import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'
-import { beadsOfLayer, frameOf, withCanvas, withFrameSheet } from './layerRecord'
-import { ROWS_DOWN, withLayers } from '../testUtils/layerFields'
+import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
+import { withLayers } from '../testUtils/layerFields'
 import { type RowProgress } from './project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -26,36 +28,32 @@ describe('row progress', () => {
   }
 
   it('starts on with the Frame its size makes, pointing at the first row (ticket 426)', () => {
-    expect(rowProgressOf(project())).toEqual({
-      direction: 'rows',
-      currentRow: 0,
-      currentColumn: 0,
-    })
+    expect(rowProgressOf(project())).toEqual({ way: 'down' })
   })
 
   it('is on exactly when there is a Frame, and a Frame set or removed carries the pointer with it (ticket 426)', () => {
     const started = moveToRow(project(), 4)
-    expect(rowProgressOf(started)).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
+    expect(rowProgressOf(started)).toEqual({ way: 'down', down: 4 })
 
     const removed = withFrame(started, undefined)
     expect(rowProgressOn(removed)).toBe(false)
-    expect(rowProgressOf(removed)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(removed)).toEqual({ way: 'down' })
 
     const back = withFrame(removed, { row: 0, column: 0, columns: 2, rows: 2 })
-    expect(rowProgressOf(back)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(back)).toEqual({ way: 'down' })
   })
 
   it('moves the pointer forward and backward through the rows', () => {
     const atThree = moveToRow(project(), 3)
-    expect(rowProgressOf(atThree).currentRow).toBe(3)
-    expect(rowProgressOf(moveToRow(atThree, rowProgressOf(atThree).currentRow - 1)).currentRow).toBe(2)
+    expect((rowProgressOf(atThree).down ?? 0)).toBe(3)
+    expect(rowProgressOf(moveToRow(atThree, (rowProgressOf(atThree).down ?? 0) - 1)).down).toBe(2)
   })
 
   it('will not step past either end of the Project; one past the last pass is every pass done (ticket 411)', () => {
     const first = project()
 
-    expect(rowProgressOf(moveToRow(first, -1)).currentRow).toBe(0)
-    expect(rowProgressOf(moveToRow(first, frameOf(first)!.rows + 5)).currentRow).toBe(frameOf(first)!.rows)
+    expect((rowProgressOf(moveToRow(first, -1)).down ?? 0)).toBe(0)
+    expect(rowProgressOf(moveToRow(first, frameOf(first)!.rows + 5)).down).toBe(frameOf(first)!.rows)
   })
 
   it('counts every pass done as the whole track, on loom, brick stitch and peyote, in both directions (ticket 411)', () => {
@@ -121,7 +119,7 @@ describe('row progress', () => {
 
     const after = moveToRow(before, 2)
 
-    expect(rowProgressOf(before).currentRow).toBe(0)
+    expect((rowProgressOf(before).down ?? 0)).toBe(0)
     expect(beadsOfLayer(after, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
   })
 })
@@ -163,13 +161,7 @@ describe('row direction', () => {
     const ways = [tallProject()]
     for (let at = 0; at < 4; at += 1) ways.push(toggleRowDirection(ways[at]))
 
-    expect(ways.map((way) => [rowProgressOf(way).direction, !!rowProgressOf(way).reversed])).toEqual([
-      ['rows', false],
-      ['columns', false],
-      ['rows', true],
-      ['columns', true],
-      ['rows', false],
-    ])
+    expect(ways.map((way) => rowProgressOf(way).way)).toEqual(['down', 'right', 'up', 'left', 'down'])
   })
 
   describe('turned straight to a way chosen from the list (ticket 0973, UX-060)', () => {
@@ -177,11 +169,11 @@ describe('row direction', () => {
       const onRowSix = moveToRow(tallProject(), 6)
       const upward = turnRowDirectionTo(onRowSix, 'up')
 
-      expect(shownWayOf(upward)).toBe('up')
+      expect(seenWayOf(upward)).toBe('up')
       expect(rowProgressPosition(upward)).toEqual({ current: 0, total: 20 })
       expect(rowProgressPosition(turnRowDirectionTo(upward, 'down'))).toEqual({ current: 6, total: 20 })
-      expect(shownWayOf(turnRowDirectionTo(onRowSix, 'right'))).toBe('right')
-      expect(shownWayOf(turnRowDirectionTo(onRowSix, 'left'))).toBe('left')
+      expect(seenWayOf(turnRowDirectionTo(onRowSix, 'right'))).toBe('right')
+      expect(seenWayOf(turnRowDirectionTo(onRowSix, 'left'))).toBe('left')
     })
 
     it('leaves the Project as it is for the way the rows run already', () => {
@@ -191,11 +183,12 @@ describe('row direction', () => {
 
     it('reads the way as the Frame lies on a turned Frame', () => {
       const project = tallProject()
-      const turned = withFrameSheet(project, { ...frameOf(project)!, quarterTurns: 1 })
-      expect(shownWayOf(turned)).toBe('left')
+      // Its own rows turned a quarter with it: right to left as seen (ticket 1185).
+      const turned = withLayers(withFrameSheet(project, { ...frameOf(project)!, quarterTurns: 1 }), { rowProgress: turnedWithFrame(rowProgressOf(project), 1) })
+      expect(seenWayOf(turned)).toBe('left')
 
       const chosen = turnRowDirectionTo(turned, 'down')
-      expect(shownWayOf(chosen)).toBe('down')
+      expect(seenWayOf(chosen)).toBe('down')
       expect(turnRowDirectionTo(turned, 'left')).toBe(turned)
     })
   })
@@ -282,7 +275,7 @@ describe('finishedRowsHold (ticket 0848)', () => {
 
 describe('Row progress on the Frame (ticket 233)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-  const framed: Project = withLayers(base, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 6, columns: 4, beads: {} }, rowProgress: { ...rowProgressOf(base), currentRow: 2 } })
+  const framed: Project = withLayers(base, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 6, columns: 4, beads: {} }, rowProgress: { way: 'down', down: 2 } })
 
   it('names the current row of the Frame, and nothing outside it (ticket 352)', () => {
     expect(isInCurrentRow(framed, { row: 12, column: 10 })).toBe(true)
@@ -292,7 +285,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
     expect(isInCurrentRow(framed, { row: 12, column: 20 })).toBe(false)
     const unframed = withFrameSheet(framed, undefined)
     expect(isInCurrentRow(unframed, { row: 12, column: 10 })).toBe(false)
-    const columnWise: Project = withLayers(framed, { rowProgress: { ...rowProgressOf(framed), direction: 'columns', currentColumn: 1 } })
+    const columnWise: Project = withLayers(framed, { rowProgress: { ...rowProgressOf(framed), way: 'right', right: 1 } })
     expect(isInCurrentRow(columnWise, { row: 15, column: 11 })).toBe(true)
     expect(isInCurrentRow(columnWise, { row: 15, column: 12 })).toBe(false)
   })
@@ -324,7 +317,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
     const stored = (project: Project, enabled: boolean) => (withLayers(project, { rowProgress: { ...rowProgressOf(project), enabled, decided: true } as RowProgress }))
     const fromOffFile = normalizeProject(stored(base, false) as Project)
     expect(rowProgressOn(fromOffFile)).toBe(true)
-    expect(rowProgressOf(fromOffFile)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(fromOffFile)).toEqual({ way: 'down' })
     const fromFramelessFile = normalizeProject(stored(open as Project, true) as Project)
     expect(rowProgressOn(fromFramelessFile)).toBe(false)
     expect(rowProgressOf(fromFramelessFile)).not.toHaveProperty('enabled')
@@ -336,7 +329,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
     expect(rowProgressOn(framedNow)).toBe(true)
     const removed = withFrame(moveToRow(framedNow, 2), undefined)
     expect(rowProgressOn(removed)).toBe(false)
-    expect(rowProgressOf(removed).currentRow).toBe(0)
+    expect((rowProgressOf(removed).down ?? 0)).toBe(0)
     expect(rowProgressOf(deleteAll(framedNow))).not.toHaveProperty('enabled')
   })
 })
@@ -344,7 +337,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
 describe('peyote passes (ticket 347)', () => {
   /** 3 columns x 7 rows, the reporter's example. */
   function peyote(direction: 'rows' | 'columns', pass: number) {
-    const project = withLayers(createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 4.5, height: 10.5, unit: 'mm' } }), { rowProgress: ROWS_DOWN })
+    const project = withLayers(createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 4.5, height: 10.5, unit: 'mm' } }), { ownProgress: {} })
     const down = direction === 'columns' ? toggleRowDirection(project) : project
     return moveToRow(down, pass)
   }
@@ -380,7 +373,7 @@ describe('peyote passes (ticket 347)', () => {
   it('steps through the passes on the column-staggered grid as weavers do: a row at a time, its level columns then its shifted ones (tickets 0734, 1154)', () => {
     // The thread runs along a row whose beads sit in staggered columns: at a Drop of 2 a pass picks up the two beads of a pair.
     const dropped = (pass: number) => {
-      const project = withLayers(createProject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 }, beadId: cubeBead.id, size: { width: 6, height: 10.5, unit: 'mm' } }), { rowProgress: ROWS_DOWN })
+      const project = withLayers(createProject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 }, beadId: cubeBead.id, size: { width: 6, height: 10.5, unit: 'mm' } }), { ownProgress: {} })
       return moveToRow(project, pass)
     }
     const row1 = (project: ReturnType<typeof dropped>) =>
@@ -399,7 +392,7 @@ describe('resetRowProgress (ticket 455)', () => {
     const woven = moveToRow(project, 2)
     expect(rowProgressStarted(woven)).toBe(true)
     const reset = resetRowProgress(woven)
-    expect(rowProgressOf(reset)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(reset)).toEqual({ way: 'right' })
     expect(beadsOfLayer(reset, 'canvas')).toBe(beadsOfLayer(woven, 'canvas'))
     expect(rowProgressStarted(reset)).toBe(false)
   })
@@ -408,7 +401,7 @@ describe('resetRowProgress (ticket 455)', () => {
 describe('passLine (ticket 0849)', () => {
   it('names the ruler line of the pass where a line takes two passes, on peyote only (ticket 0849, F-04-03)', () => {
     // A new peyote Project's Canvas is turned a quarter: looked at upright first.
-    const peyote = withLayers(createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }), { orientation: 0, rowProgress: ROWS_DOWN })
+    const peyote = withLayers(createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }), { orientation: 0, ownProgress: {} })
     const lines = frameOf(peyote)!.rows
     expect(rowProgressPosition(peyote).total).toBe(1 + (lines - 1) * 2)
     // Pass 1 is the first line; passes 2 and 3 the second; pass 4 the third.
@@ -424,14 +417,14 @@ describe('passLine (ticket 0849)', () => {
     const leftward = toggleRowDirection(upward)
     expect(passLine(moveToRow(leftward, 1))).toEqual({ line: columns - 1, lines: columns })
     // A Canvas turned half round shows the rows the other way up, and a quarter turn their first one at the right.
-    expect(passLine(withCanvas(peyote, { orientation: 180 }))).toEqual({ line: lines, lines })
-    expect(passLine(withCanvas(upward, { orientation: 180 }))).toEqual({ line: 1, lines })
-    expect(passLine(withCanvas(peyote, { orientation: 90 }))).toEqual({ line: lines, lines })
-    expect(passLine(withCanvas(peyote, { orientation: 270 }))).toEqual({ line: 1, lines })
+    expect(passLine(withCanvasTurned(peyote, 180))).toEqual({ line: lines, lines })
+    expect(passLine(withCanvasTurned(upward, 180))).toEqual({ line: 1, lines })
+    expect(passLine(withCanvasTurned(peyote, 90))).toEqual({ line: lines, lines })
+    expect(passLine(withCanvasTurned(peyote, 270))).toEqual({ line: 1, lines })
     // A Frame lying a quarter round shows its first row at the right: its own rows are counted as seen too.
-    const lying = withFrameSheet(peyote, { ...frameOf(peyote)!, quarterTurns: 1 })
+    const lying = withLayers(withFrameSheet(peyote, { ...frameOf(peyote)!, quarterTurns: 1 }), { rowProgress: turnedWithFrame(rowProgressOf(peyote), 1) })
     expect(passLine(lying)).toEqual({ line: lines, lines })
-    expect(passLine(withCanvas(lying, { orientation: 180 }))).toEqual({ line: 1, lines })
+    expect(passLine(withCanvasTurned(lying, 180))).toEqual({ line: 1, lines })
     // None once every pass is done, and none where a pass is a whole line.
     expect(passLine(moveToRow(peyote, rowProgressPosition(peyote).total))).toBeUndefined()
     expect(passLine(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }))).toBeUndefined()
@@ -439,7 +432,7 @@ describe('passLine (ticket 0849)', () => {
 })
 
 describe('stepLines (ticket 1038)', () => {
-  const frame = (technique: 'loom' | 'peyote') => withLayers(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 20, height: 30, unit: 'beads' } }), { rowProgress: ROWS_DOWN })
+  const frame = (technique: 'loom' | 'peyote') => withLayers(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 20, height: 30, unit: 'beads' } }), { ownProgress: {} })
   const step = (project: Project, from: number, to: number) => stepLines(moveToRow(project, to), rowProgressOf(moveToRow(project, from)))
 
   it('names the lines of the passes a step crossed, the one it left and the one it reached, either way', () => {

@@ -22,7 +22,7 @@ export function paintCells({ beads, geometry, edge }: LayerSheet, positions: Gri
 export function deleteAll(project: Project): Project {
   // Row progress starts afresh: the first pass, the Frame Technique's way as the Frame lies (spec 1182).
   const frame = frameOf(project)
-  const start = frame ? startingRowProgressOf(project, frame) : INITIAL_ROW_PROGRESS
+  const start = frame ? startingRowProgressOf(frame) : INITIAL_ROW_PROGRESS
   if (!hasProjectBeads(project) && !frame?.folded && isInitialRowProgress(rowProgressOf(project), start)) {
     return project
   }

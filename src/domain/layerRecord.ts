@@ -1,5 +1,5 @@
 import { beadCopy, type Bead } from './beads'
-import { nearestQuarterTurn } from './canvasOrientation'
+import { nearestQuarterTurn, normalizedOrientation, quarterTurnsOff } from './canvasOrientation'
 import type { BeadMap, FrameSheet } from './canvas'
 import type { Layer, Rotation } from './grid'
 import type { PieceName } from './pieceNames'
@@ -41,9 +41,27 @@ export function canvasOf(project: Layered): CanvasLayer {
   return project.layers[0]
 }
 
-/** The Frame (ADR 0066, 0079), the layer after the Canvas; none on a Canvas without one, or with no Project open. */
-export function frameOf(project: Layered | undefined): FrameLayer | undefined {
+/** The Frame layer as the Project holds it: its own angle on the table, no `quarterTurns`. */
+function heldFrame(project: Layered | undefined): FrameLayer | undefined {
   return project?.layers[1]
+}
+
+/** Each layer list's Frame as read (see frameOf), so a Frame read twice from one Project is the same object. */
+const readFrames = new WeakMap<Layered['layers'], FrameLayer>()
+
+/** The Frame (ADR 0066, 0079), the layer after the Canvas, with `quarterTurns` read from its own angle on the table and
+ * the Canvas's (spec 1182): how it lies on the Canvas's grid, what its laying, sizes and handles go by. None on a Canvas
+ * without one, or with no Project open. */
+export function frameOf(project: Layered | undefined): FrameLayer | undefined {
+  const held = heldFrame(project)
+  if (!held) return undefined
+  const known = readFrames.get(project!.layers)
+  if (known) return known
+  const turns = quarterTurnsOff(held.angle, canvasOf(project!).orientation)
+  const { quarterTurns: _stale, ...rest } = held
+  const read = turns === (held.quarterTurns ?? 0) ? held : turns ? { ...rest, quarterTurns: turns } : rest
+  readFrames.set(project!.layers, read)
+  return read
 }
 
 /** The Frames after the Canvas (ADR 0079): the app makes and shows at most one. */
@@ -71,7 +89,7 @@ export function unwoven<T extends Partial<Weave>>(record: T): Omit<T, 'technique
 
 /** The layer itself, as the Project holds it; none for a Frame the Project lacks. */
 function heldLayer(project: Layered, layer: Layer): LayerFields | undefined {
-  return layer === 'frame' ? frameOf(project) : canvasOf(project)
+  return layer === 'frame' ? heldFrame(project) : canvasOf(project)
 }
 
 /** A layer's Weave, with the cell its Bead draws it in (ADR 0068); none for a Frame the Project lacks.
@@ -130,17 +148,26 @@ export function withCanvas(project: Project, change: Partial<CanvasLayer>): Proj
   return { ...project, layers: [{ ...canvasOf(project), ...change }, ...framesOf(project)] }
 }
 
-/** The Project with its Frame laid as a sheet (ADR 0066, 0079), or removed with none: a field the sheet leaves out is
- * gone. The Frame keeps its id, Bead, Letters switch and Row progress, the sheet's own winning; one laid anew copies the
- * Canvas's and starts at the first row. Not stamped as a change. */
+/** The Project with its Frame laid as a sheet (ADR 0066, 0079), or removed with none; a field it leaves out is gone. Its
+ * angle on the table is the Canvas's turned by the sheet's quarter turns (ticket 1185). It keeps its id, Bead, Letters and
+ * Row progress, the sheet's winning; one laid anew copies the Canvas's, at the first row. Not stamped as a change. */
 export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<FrameLayer>) | undefined): Project {
   const canvas = canvasOf(project)
   if (!sheet) {
     return { ...project, layers: [canvas] }
   }
-  const kept = frameOf(project) ? frameIdentity(frameOf(project)!) : { ...frameIdentity({ ...canvas, rowProgress: startingRowProgressOf(project, sheet) }), id: newLayerId() }
-  const { cell: _cell, ...laid } = sheet
-  return { ...project, layers: [canvas, { ...kept, ...laid }, ...framesOf(project).slice(1)] }
+  const held = heldFrame(project)
+  const kept = held ? frameIdentity(held) : { ...frameIdentity({ ...canvas, rowProgress: startingRowProgressOf(sheet) }), id: newLayerId() }
+  const { cell: _cell, quarterTurns, angle: _angle, ...laid } = sheet
+  const angle = normalizedOrientation(canvas.orientation + 90 * (quarterTurns ?? 0))
+  return { ...project, layers: [canvas, { ...kept, ...laid, angle }, ...framesOf(project).slice(1)] }
+}
+
+/** The Project with the Frame layer's own fields set as given (its angle, its Row progress), as the Project holds them:
+ * no sheet is laid. The same Project without a Frame. Not stamped. */
+export function withFrameFields(project: Project, change: Partial<Pick<FrameLayer, 'angle' | 'rowProgress'>>): Project {
+  const held = heldFrame(project)
+  return held ? { ...project, layers: [canvasOf(project), { ...held, ...change }, ...framesOf(project).slice(1)] } : project
 }
 
 /** The Project with its Frame laid as a sheet, or removed with none, as `withFrameSheet` does, stamped as just-edited:
@@ -151,7 +178,7 @@ export function touchFrameSheet(project: Project, sheet: (FrameSheet & Partial<F
 
 /** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Background, Letters
  * switch and Row progress. A Frame made anew in place of another keeps them. */
-export function frameIdentity({ id, beadId, bead, background, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet> & LayerFields): Omit<FrameLayer, keyof FrameSheet> {
+export function frameIdentity({ id, beadId, bead, background, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet | 'angle'> & LayerFields): Omit<FrameLayer, keyof FrameSheet | 'angle'> {
   return {
     id,
     beadId,
@@ -162,22 +189,21 @@ export function frameIdentity({ id, beadId, bead, background, letters, rowProgre
   }
 }
 
-/** The starting way (spec 1182): Row progress afresh, the rows running the Frame Technique's own way as the Frame lies
- * on screen (its own turns and, until 1188, the Canvas's nearest); every fresh start asks it, never the Canvas's
- * Technique. */
-export function startingRowProgressOf(project: Layered, { technique, shape, quarterTurns }: Pick<FrameSheet, 'technique' | 'shape' | 'quarterTurns'>): RowProgress {
-  return startingRowProgress(technique, quarterTurnOf(project) / 90 + (quarterTurns ?? 0), !!shape)
+/** The starting way (spec 1182): Row progress afresh, the rows running the Frame Technique's own way as seen, whatever
+ * the Canvas or its turn; every fresh start asks it. */
+export function startingRowProgressOf({ technique, shape }: Pick<FrameSheet, 'technique' | 'shape'>): RowProgress {
+  return startingRowProgress(technique, !!shape)
 }
 
 /** The Project with its Frame's Row progress started afresh (see startingRowProgressOf); the same Project without a
  * Frame. Not stamped as a change. */
 export function withStartingRowProgress(project: Project): Project {
-  const frame = frameOf(project)
-  return frame ? { ...project, layers: [canvasOf(project), { ...frame, rowProgress: startingRowProgressOf(project, frame) }, ...framesOf(project).slice(1)] } : project
+  const frame = heldFrame(project)
+  return frame ? withFrameFields(project, { rowProgress: startingRowProgressOf(frame) }) : project
 }
 
-/** The Canvas's orientation (ADR 0079): the turn the whole picture is shown at, in degrees, any angle (ticket 0672);
- * none with no Project open. */
+/** The Canvas's orientation (ADR 0079): its angle on the table, in degrees, any angle (ticket 0672); none with no
+ * Project open. */
 export function orientationOf(project: Layered): number
 export function orientationOf(project: Layered | undefined): number | undefined
 export function orientationOf(project: Layered | undefined): number | undefined {
@@ -266,7 +292,7 @@ export function backgroundOf(project: Layered, layer: Layer): Background | undef
 export function withBackground(project: Project, layer: Layer, background: Background): Project {
   if (!heldLayer(project, layer)) return project
   const set = <T extends LayerFields>(held: T): T => ({ ...held, background })
-  return { ...project, layers: layer === 'canvas' ? [set(canvasOf(project)), ...framesOf(project)] : [canvasOf(project), set(frameOf(project)!), ...framesOf(project).slice(1)] }
+  return { ...project, layers: layer === 'canvas' ? [set(canvasOf(project)), ...framesOf(project)] : [canvasOf(project), set(heldFrame(project)!), ...framesOf(project).slice(1)] }
 }
 
 /** The Project with every layer that has no Background given `start` (ticket 0666): a new Project starts on the

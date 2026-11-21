@@ -4,7 +4,7 @@ import type { GridPosition } from './grid'
 import { columnsGeometry } from './columnsGeometry'
 import { rowsGeometry } from './rowsGeometry'
 import { settingValue, type SettingSpec } from './settingSpec'
-import type { ShownWay } from './rowWays'
+import type { SeenWay } from './rowWays'
 import type { CellCenter, GeometryNumber, GeometryRef, GeometryStrategy, WeaveGeometry } from './weaveGeometry'
 
 /** The weaving method, which determines a Project's grid geometry: a key of the config map below. */
@@ -75,7 +75,7 @@ interface TechniqueRules<G extends GeometryRef = GeometryRef> {
   startOrientation: number
   /** The way its rows run as the maker sees them until the weaver turns them: Row progress starts a Frame so, and Row by
    * row writes its rows so unless told otherwise (ticket 1172). */
-  startingWay: ShownWay
+  startingWay: SeenWay
   /** How its beads are laid out: a kind of geometry and the values that kind reads. */
   geometry: G
   /** Its settings (ticket 0624), in the order they are offered: the Weave holds their values in `techniqueSettings`, and
@@ -306,7 +306,7 @@ export function startOrientation(technique: Technique): number {
 
 /** The way the Technique's rows run as seen until the weaver turns them: loom top to bottom, peyote left to right, brick
  * stitch bottom to top. */
-export function startingWay(technique: Technique): ShownWay {
+export function startingWay(technique: Technique): SeenWay {
   return RULES[technique].startingWay
 }
 

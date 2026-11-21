@@ -5,7 +5,7 @@ import { withMargin } from '../domain/margin'
 import { createProject } from '../domain/createProject'
 import { findBead } from '../domain/beads'
 import { replaceBead } from '../domain/projectBead'
-import { moveToRow, rowProgressOf } from '../domain/rowProgress'
+import { moveToRow, rowProgressOf, type OwnRowProgress } from '../domain/rowProgress'
 import { changeFrame } from '../domain/changeFrame'
 import { frameLayoutOf } from '../domain/frameShape'
 import { frameGeometryOf, onLayer } from '../domain/layers'
@@ -43,6 +43,8 @@ function caseRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnT
 
 /** A test Project that draws no Row progress says `marks: false` on its Row progress; the wrapper below hands that to the renderer as `rowMarks`, as an export does. */
 type TestRowProgress = RowProgress & { marks?: boolean }
+/** Row progress a test gives in the Frame's own rows (ownProgressOf), and whether it draws. */
+type OwnTestProgress = Partial<OwnRowProgress> & { marks?: boolean }
 
 function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: Parameters<typeof renderOverlayWith>[1]): void {
   renderOverlayWith(context, { rowMarks: (rowProgressOf(input.project) as TestRowProgress).marks !== false, ...input })
@@ -52,13 +54,14 @@ function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: 
 /** The Project in a Bead this device does not know, drawn in its Technique's own cell (rounded in peyote), not a cube's. */
 const ownCell = (project: Project): Project => withLayers(project, { bead: undefined })
 
-function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<TestRowProgress>, rotation: Rotation = 0, filled = true): Project {
+function projectOf(technique: Technique, columns: number, rows: number, { marks, ...own }: OwnTestProgress, rotation: Rotation = 0, filled = true): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const beads: BeadMap = {}
   for (let row = 0; filled && row < rows; row += 1) {
     beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
   }
-  return withLayers(project, { frame: { ...frameOf(project)!, beads }, orientation: rotation, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } })
+  const made = withLayers(project, { frame: { ...frameOf(project)!, beads }, orientation: rotation, ownProgress: own })
+  return marks === false ? withLayers(made, { rowProgress: { ...rowProgressOf(made), marks } as TestRowProgress }) : made
 }
 
 function whole(project: Project, zoom = 1) {
@@ -1114,7 +1117,7 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
   })
 
   it('outlines a Selection of the Frame inside the Frame\'s layer and one of the Canvas outside it', () => {
-    const project = withLayers(mixed(), { rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0, marks: false } as RowProgress })
+    const project = withLayers(mixed(), { rowProgress: { way: 'down', marks: false } as TestRowProgress })
     const draw = (layer: 'canvas' | 'frame', top: number) => {
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top, left: 3, rows: 1, columns: 1, layer } })

@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { framePlacement } from './framePlacement'
+import type { CanvasLayer, FrameLayer } from './project'
 import { describe, expect, it } from 'vitest'
 import { withColorsInPalette } from './paletteEdits'
 import { BEAD_CATALOG } from './beads'
@@ -159,8 +161,10 @@ describe('encodeProject / decodeProject', () => {
     const decoded = decodeProject(JSON.parse(JSON.stringify(encodeProject(project))))
 
     // Beside it, the marks normalizeProject reads: the list its Background positions are in (ticket 1000), and that
-    // each layer's Letters switch is its own (ticket 1092).
-    expect(decoded).toEqual({ ...project, backgroundPositions: 3, lettersByLayer: true })
+    // each layer's Letters switch is its own (ticket 1092). The Frame keeps its centre on the table in place of its
+    // Canvas position (ticket 1185).
+    const [canvas, { row: _row, column: _column, ...frame }] = project.layers as [CanvasLayer, FrameLayer]
+    expect(decoded).toEqual({ ...project, layers: [canvas, { ...frame, centre: framePlacement(project)!.at }], backgroundPositions: 3, lettersByLayer: true })
   })
 
   it('does not fold the grid colors into a field of their own on the Project', () => {
@@ -195,7 +199,8 @@ describe('encodeProject / decodeProject', () => {
     const encoded = encodeProject(withLayers(paint(makeProject(2, 1), () => '#ff0000'), { beads: { 5: { 5: '#00ff00' } } }))
 
     expect(encoded.layers[0]!.encodedBeads).toEqual({ colors: ['#00ff00'], rows: { 5: '5:1' } })
-    expect(encoded.layers[1]).toMatchObject({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
+    expect(encoded.layers[1]).toMatchObject({ technique: 'loom', angle: 0, centre: { x: 1, y: 0.5 }, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
+    expect(encoded.layers[1]).not.toHaveProperty('row')
     expect(encoded.layers[1]).not.toHaveProperty('beads')
   })
 

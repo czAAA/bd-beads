@@ -4,7 +4,7 @@ import { nearestQuarterTurn, tiltOf } from '../domain/canvasOrientation'
 import { beadsToDraw, bitmapBox, coversArea, gestureTransform, mayRedrawMidGesture, twistTransform, type View } from './gestureView'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
-import { scrollAfterTurn, tiltedView } from './tiltedView'
+import { drawingScrollOf, originTurnedAbout, tableScrollOf, tiltedView } from './tiltedView'
 
 describe('gestureTransform', () => {
   it('is the identity for an unchanged view', () => {
@@ -134,7 +134,9 @@ describe('twistTransform', () => {
 
   it('turns the drawing a quarter clockwise about the middle when the Canvas turned there', () => {
     const from = drawnAt(0)
-    const to = drawnAt(90, 1, scrollAfterTurn({ x: 0, y: 0 }, screen, { from: 0, to: 90 }))
+    const table = tableScrollOf({ x: 0, y: 0 }, screen, { orientation: 0, origin: { x: 0, y: 0 }, zoom: 1 })
+    const origin = originTurnedAbout({ x: 0, y: 0 }, { by: 90, anchor: { x: 500, y: 400 }, table, zoom: 1 })
+    const to = drawnAt(90, 1, drawingScrollOf(table, screen, { orientation: 90, origin, zoom: 1 }))
     const m = twistTransform(from, to)
     expect([m.a, m.b, m.c, m.d].map((n) => Math.round(n * 1e6) / 1e6)).toEqual([0, 1, -1, 0])
     expect(laid(m, from.leaning.offset, { x: 500, y: 400 })).toEqual({ x: 500, y: 400 })

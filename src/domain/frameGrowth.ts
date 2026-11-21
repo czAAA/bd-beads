@@ -1,4 +1,5 @@
-import { frameShapeOf, turnedGrid } from './frameShape'
+import { frameShapeOf } from './frameShape'
+import { lieAlike } from './table'
 import { beadsInFrame, beadsWithout, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { frameWeave, layersAlike } from './layerWeave'
@@ -11,11 +12,10 @@ import { columnCycle, rowCycle } from './weave'
 // Canvas beads it newly covers, as Frame from Selection does, and takes a named Piece whole or not at all.
 
 /** Whether a resize of the Project's Frame trades beads with the Canvas: a Frame woven like it (Technique and Brick
- * block alike) in a Bead of the same size (ticket 0665), whose own positions are the Canvas's (ADR 0066). A turned one
- * never does (ticket 1016): its cells no longer sit on the Canvas's positions. */
+ * block alike) in a Bead of the same size (ticket 0665), whose own positions are the Canvas's (ADR 0066). One that does
+ * not lie alike never does (tickets 1016, 1185): its cells no longer sit on the Canvas's positions. */
 export function tradesWithCanvas(project: Project): boolean {
-  const frame = frameOf(project)
-  return layersAlike(project) && !(frame && turnedGrid(frame))
+  return layersAlike(project) && lieAlike(project)
 }
 
 /** The beads of each named Piece on the Canvas, with its name. */

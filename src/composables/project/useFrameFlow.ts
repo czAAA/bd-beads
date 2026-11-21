@@ -115,7 +115,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const settingFrame = computed(() => {
     const frame = frameOf(deps.currentProject())
     // A Custom frame's handles step its size setting (ticket 0669).
-    return !!frame && frameAllows(frame, 'resize') && handlesOn.value && !locked.value
+    return !!frame && frameAllows(deps.currentProject(), 'resize') && handlesOn.value && !locked.value
   })
 
   /** Whether the Frame panel shows: a Project and the panel opened, with or without a Frame (ticket 555). Once a pass

@@ -1,50 +1,48 @@
-import type { RowProgress } from './project'
+import type { Rotation } from './grid'
+import type { RowProgress, SeenWay } from './project'
+import type { RowWay } from './rowOrder'
 import { startingWay, type Technique } from './weave'
 
-/** Which way the rows run on the Canvas, as an arrow points: down is top to bottom. */
-export type ShownWay = 'down' | 'left' | 'up' | 'right'
+export type { SeenWay }
 
 /** The ways in the order a quarter turn clockwise takes each to the next. */
-const CLOCKWISE: readonly ShownWay[] = ['down', 'left', 'up', 'right']
+const CLOCKWISE: readonly SeenWay[] = ['down', 'left', 'up', 'right']
 
 /** A way turned `turns` quarters clockwise (a negative count turns it back). */
-export function turnedWay(way: ShownWay, turns: number): ShownWay {
+export function turnedWay(way: SeenWay, turns: number): SeenWay {
   return CLOCKWISE[(((CLOCKWISE.indexOf(way) + turns) % 4) + 4) % 4]!
 }
 
-/** The Frame's own way (along its own rows or columns, from its first or its last) as an arrow on its upright grid. */
-export function ownWayOf({ direction, reversed }: Pick<RowProgress, 'direction' | 'reversed'>): ShownWay {
-  return direction === 'rows' ? (reversed ? 'up' : 'down') : reversed ? 'left' : 'right'
+/** The Frame's own axis and end (spec 1182) that run `way` as seen on a Frame lying at `turn`, its nearest quarter turn
+ * on the table: along its own rows or columns, from its first or its last. What its Row order is worked by (the peyote
+ * counter's line, the Word chart's Row 1, the ruler's pass marker and pass building); `reversed` is left out, never false. */
+export function ownRowWay(way: SeenWay, turn: Rotation): RowWay {
+  const own = turnedWay(way, -turn / 90)
+  return { direction: own === 'down' || own === 'up' ? 'rows' : 'columns', ...(own === 'up' || own === 'left' ? { reversed: true } : {}) }
 }
 
-/** The Frame's own direction and end that run `way` on its upright grid; `reversed` is left out, never false. */
-export function ownDirection(way: ShownWay): Pick<RowProgress, 'direction' | 'reversed'> {
-  return { direction: way === 'down' || way === 'up' ? 'rows' : 'columns', ...(way === 'up' || way === 'left' ? { reversed: true } : {}) }
+/** The way as seen that the Frame's own axis and end run on a Frame lying at `turn`: `ownRowWay` the other way round,
+ * for a rule worked in the Frame's own lines (Remove line) that must find the pointer it counts on. */
+export function seenWayOfOwn({ direction, reversed }: RowWay, turn: Rotation): SeenWay {
+  const own: SeenWay = direction === 'rows' ? (reversed ? 'up' : 'down') : reversed ? 'left' : 'right'
+  return turnedWay(own, turn / 90)
 }
 
-/** Row progress as it starts afresh (spec 1182): at the first pass, the rows running the Frame Technique's starting way
- * as seen (see startingWay), its own rows lying `seenTurns` quarters clockwise on screen. A Custom frame works its Row
- * order one way, so it starts along its rows. Callers go through `startingRowProgressOf`, which knows how the Frame lies. */
-export function startingRowProgress(technique: Technique, seenTurns = 0, shaped = false): RowProgress {
-  if (shaped) return { direction: 'rows', currentRow: 0, currentColumn: 0 }
-  return { ...ownDirection(turnedWay(startingWay(technique), -seenTurns)), currentRow: 0, currentColumn: 0 }
+/** Row progress as it starts afresh (spec 1182): at the first pass, the rows running the Frame Technique's starting
+ * way as seen (see startingWay), however the Frame or the Canvas lies. A Custom frame works its Row order one way, so it
+ * starts along its rows. */
+export function startingRowProgress(technique: Technique, shaped = false): RowProgress {
+  return { way: shaped ? 'down' : startingWay(technique) }
 }
 
-/** The pointer each of the Frame's own ways counts on. */
-const POINTER_OF: Record<ShownWay, 'currentRow' | 'currentColumn' | 'currentRowBack' | 'currentColumnBack'> = {
-  down: 'currentRow',
-  right: 'currentColumn',
-  up: 'currentRowBack',
-  left: 'currentColumnBack',
-}
-
-/** Row progress kept as seen while the Frame's own rows turn `turns` quarters clockwise on screen (Rotate Frame, spec
- * 1182): its own way and each pointer's slot step back as far, so the way and every count stay where they were seen. */
-export function keptAsSeen(rowProgress: RowProgress, turns: number): RowProgress {
-  const kept: RowProgress = { ...ownDirection(turnedWay(ownWayOf(rowProgress), -turns)), currentRow: 0, currentColumn: 0 }
+/** Row progress with the way and every pointer's slot turned `turns` quarters clockwise, so each count stays on the
+ * Frame's own rows as the Frame turns that far: Rotate Frame with a pass done, and the Canvas carrying the Frame round
+ * until 1188. With no pass done Rotate Frame leaves Row progress as it is, so the way sticks as seen. */
+export function turnedWithFrame(rowProgress: RowProgress, turns: number): RowProgress {
+  const turned: RowProgress = { way: turnedWay(rowProgress.way, turns) }
   for (const way of CLOCKWISE) {
-    const count = rowProgress[POINTER_OF[way]]
-    if (count) kept[POINTER_OF[turnedWay(way, -turns)]] = count
+    const count = rowProgress[way]
+    if (count) turned[turnedWay(way, turns)] = count
   }
-  return kept
+  return turned
 }

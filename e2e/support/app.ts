@@ -222,7 +222,7 @@ export async function storedProjects(page: Page): Promise<EncodedProject[]> {
           const all = db.transaction('projects').objectStore('projects').getAll()
           all.onsuccess = () => {
             db.close()
-            resolve((all.result as { format: number; stored: string }[]).filter((record) => record.format === 1).map((record) => record.stored))
+            resolve((all.result as { format: number; stored: string }[]).filter((record) => record.format === 1 || record.format === 2).map((record) => record.stored))
           }
           all.onerror = () => {
             db.close()

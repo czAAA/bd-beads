@@ -1,8 +1,20 @@
 import { fillBlanks } from '../domain/fillBlanks'
 import type { Layered } from '../domain/layerRecord'
-import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition } from '../domain/rowProgress'
+import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition, type SeenWay } from '../domain/rowProgress'
 import { orderStepLabel } from './orderStep'
 import type { Translations } from './translations'
+
+/** The words of a way as seen (spec 1182), the one table of them: its name in Turn row direction's list and on the
+ * Progress bar ("Top to bottom"), and the toast once the rows run it, its noun as seen (rows down or up, columns across). */
+export function seenWayWords(words: Translations['rowProgress'], way: SeenWay): { name: string; toast: string } {
+  const all: Record<SeenWay, { name: string; toast: string }> = {
+    down: { name: words.topToBottom, toast: words.directionToastRows },
+    right: { name: words.leftToRight, toast: words.directionToastColumns },
+    up: { name: words.bottomToTop, toast: words.directionToastRowsReversed },
+    left: { name: words.rightToLeft, toast: words.directionToastColumnsReversed },
+  }
+  return all[way]
+}
 
 /** A Custom frame's pass in words in place of "Row 3 of 20" (ticket 0594): "Round 3" and "of 9", or where its passes
  * are of several sorts, parts, joins or a Fringe earring's strands, "Part 2, round 3" and "· 8 of 20". `shown` is the

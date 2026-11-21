@@ -6,7 +6,7 @@ import { addedColorId, defaultPalette } from './palette'
 import { frameGrid } from '../testUtils/frameGrid'
 import { backgroundOf, canvasOf, frameOf } from './layerRecord'
 import { rotateCanvas } from './rotate'
-import { rowProgressOf, shownWayOf } from './rowProgress'
+import { rowProgressOf, seenWayOf } from './rowProgress'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -229,7 +229,7 @@ describe('createProjectFromImage', () => {
       ['#00ff00', '#0000ff'],
     ])
     expect(canvasOf(project).name).toBe('Fox')
-    expect(rowProgressOf(project)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(project)).toEqual({ way: 'down' })
   })
 
   it('fits a grid that does not match the stated size rather than contradicting its own dimensions', () => {
@@ -256,12 +256,12 @@ describe('createProject starting way of the rows', () => {
   const made = (technique: 'peyote' | 'loom' | 'brick') => createProject({ technique, beadId: cubeBead.id, size: { width: 4, height: 4, unit: 'beads' } })
 
   it('starts a loom Frame top to bottom, peyote left to right and brick stitch bottom to top as seen, at the first pass', () => {
-    expect((['loom', 'peyote', 'brick'] as const).map((technique) => shownWayOf(made(technique)))).toEqual(['down', 'right', 'up'])
+    expect((['loom', 'peyote', 'brick'] as const).map((technique) => seenWayOf(made(technique)))).toEqual(['down', 'right', 'up'])
   })
 
-  it('keeps each Frame\'s own way as the Technique\'s starting Canvas turn takes it: peyote\'s Canvas starts turned a quarter', () => {
-    expect(rowProgressOf(made('loom'))).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
-    expect(rowProgressOf(made('peyote'))).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 })
-    expect(rowProgressOf(made('brick'))).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 })
+  it('keeps each Frame\'s starting way as seen, whatever the Technique\'s starting Canvas turn (ticket 1185)', () => {
+    expect(rowProgressOf(made('loom'))).toEqual({ way: 'down' })
+    expect(rowProgressOf(made('peyote'))).toEqual({ way: 'right' })
+    expect(rowProgressOf(made('brick'))).toEqual({ way: 'up' })
   })
 })

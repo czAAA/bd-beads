@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { turnedWithFrame } from './rowWays'
 import { beadsFromColors, forEachBead, withColors, type BeadMap } from './canvas'
 import { namedPieces, withPieceName } from './pieceNames'
 import { createProject } from './createProject'
@@ -262,15 +263,16 @@ describe('rotating a Piece-tool shape (ticket 547)', () => {
 describe('rotateFrame with Row progress (tickets 0647, 0667, ADR 0052)', () => {
   /** A Frame of 5 rows and 6 columns at (20, 20) in a Technique, its four pointers set and its rows running `way`. */
   function woven(technique: 'loom' | 'peyote' | 'brick', way: { direction: 'rows' | 'columns'; reversed?: boolean }): Project {
-    return withLayers(base, { technique, beads: {}, frame: { technique, row: 20, column: 20, rows: 5, columns: 6, beads: {} }, rowProgress: { currentRow: 3, currentColumn: 4, currentRowBack: 2, currentColumnBack: 5, ...way } })
+    return withLayers(base, { technique, beads: {}, frame: { technique, row: 20, column: 20, rows: 5, columns: 6, beads: {} }, ownProgress: { currentRow: 3, currentColumn: 4, currentRowBack: 2, currentColumnBack: 5, ...way } })
   }
 
-  it('keeps every pointer, so the same beads stay finished, on loom, peyote and brick stitch', () => {
+  it('turns every pointer with the Frame, so the same beads stay finished, on loom, peyote and brick stitch', () => {
     for (const technique of ['loom', 'peyote', 'brick'] as const) {
       for (const way of [{ direction: 'rows' as const }, { direction: 'columns' as const, reversed: true }]) {
         const project = woven(technique, way)
         const turned = rotateFrame(project)!
-        expect(rowProgressOf(turned), `${technique} ${JSON.stringify(way)}`).toBe(rowProgressOf(project))
+        // Its rows turn with it, until Rotate Frame asks (ticket 1184): the way and each pointer's slot a quarter on.
+        expect(rowProgressOf(turned), `${technique} ${JSON.stringify(way)}`).toEqual(turnedWithFrame(rowProgressOf(project), 1))
         expect(isInFinishedRow(turned, { row: frameOf(turned)!.row + 1, column: frameOf(turned)!.column, layer: 'frame' })).toBe(isInFinishedRow(project, { row: 21, column: 20, layer: 'frame' }))
       }
     }

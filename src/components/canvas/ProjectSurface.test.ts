@@ -25,12 +25,12 @@ import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { canvasOf, frameOf, heldWeave, quarterTurnOf, withFrameSheet, withLayer } from '../../domain/layerRecord'
 import { findBead } from '../../domain/beads'
 import { scaledBead } from '../../testUtils/squareBead'
-import { moveToRow, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
+import { moveToRow, resetRowProgress, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { PATTERN_DONE_MS, ROW_MOTION } from '../../rendering/rowMotion'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
-import { type LayersChange, ROWS_DOWN, withLayers } from '../../testUtils/layerFields'
+import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 import { addedColorId, projectPalette } from '../../domain/palette'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
@@ -621,7 +621,7 @@ describe('ProjectSurface', () => {
     const bands = () => context.named('rect').map((call) => call.args)
     /** A tall Frame, 20 × 30 at the origin and upright (peyote comes turned), the weaver on `pass`: one Project, as Row
      * progress steps it. */
-    const upright = (technique: Technique) => withLayers(projectOf(20, 30, {}, technique), { orientation: 0, rowProgress: ROWS_DOWN })
+    const upright = (technique: Technique) => withLayers(projectOf(20, 30, {}, technique), { orientation: 0, ownProgress: {} })
     const tall = { loom: upright('loom'), peyote: upright('peyote'), brick: upright('brick') }
     const weaving = (pass: number, technique: 'loom' | 'peyote' | 'brick' = 'loom') => moveToRow(tall[technique], pass)
 
@@ -833,11 +833,11 @@ describe('ProjectSurface', () => {
   })
 
   it('draws the Row progress marker on the overlay, and no marker when no bead is in the pass', async () => {
-    const progress: RowProgress = { direction: 'rows', currentRow: 2, currentColumn: 0 }
+    const progress: RowProgress = { way: 'down', down: 2 }
     // Only a cell that holds a bead is marked (ticket 411).
     const beads = { 2: { 0: '#e63746', 1: '#e63746' } }
 
-    await mountSurface(projectOf(20, 10, { beads, rowProgress: { ...progress, currentRow: 0 } }))
+    await mountSurface(projectOf(20, 10, { beads, rowProgress: { way: 'down' } }))
     const without = context.named('stroke').length
 
     context.calls.length = 0
@@ -1271,7 +1271,7 @@ describe('ProjectSurface', () => {
       function weaving(): Project {
         const project = projectOf(20, 10)
         const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
-        return withLayers(painted, { rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
+        return withLayers(painted, { ownProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
       }
       inHighContrast()
       const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
@@ -1359,7 +1359,7 @@ describe('ProjectSurface', () => {
 
         // Undo to before the first row was finished: the same spot is now a row still to weave.
         context.calls.length = 0
-        await wrapper.setProps({ project: withLayers(project, { rowProgress: { ...rowProgressOf(project), currentRow: 0 } }) })
+        await wrapper.setProps({ project: resetRowProgress(project) })
         await nextTick()
         await nextTick()
         expect(redShown()).toBe(false)

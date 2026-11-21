@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import type { Technique } from '../../src/domain/weave'
-import type { Project, RowProgress } from '../../src/domain/project'
+import type { Project } from '../../src/domain/project'
+import type { OwnRowProgress } from '../../src/domain/rowProgress'
 import { copySelection, gridBox, selectTool, settle } from '../support/app'
 import { beadCentre } from '../support/projects'
 
@@ -15,7 +16,8 @@ interface Context {
 export interface Scenario {
   name: string
   technique: Technique
-  rowProgress?: Partial<RowProgress>
+  /** Row progress in the Frame's own rows (see fixtureProject). */
+  rowProgress?: Partial<OwnRowProgress>
   /** Runs once, at 100%, before any screenshot: makes the state (a Selection, a copied block). */
   prepare?: (page: Page, context: Context) => Promise<void>
   /** Runs at each zoom, once the zoom has settled and before the screenshot: puts the pointer where the state needs

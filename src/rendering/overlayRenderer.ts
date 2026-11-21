@@ -8,7 +8,7 @@ import type { LayerGeometry } from '../domain/layerGeometry'
 import type { Layer } from '../domain/layers'
 import { colorAt, frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
-import { currentPass, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
+import { currentPass, ownRowWayOf, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import { selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type PastedCell, type PasteStamp, type Selection } from '../domain/selection'
 import type { VisiblePositions } from '../domain/weaveGeometry'
 import { GLINT_COLOR, ROW_MOTION, glintMs, glintWash } from './rowMotion'
@@ -239,7 +239,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
   // The Frame's Row order in its own rows (turned, it lies in others: ticket 0667), or one over the Project drawn alone,
   // measured as its space is.
   const { rows, columns } = frame ?? space
-  const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows, columns }, rowProgressOf(project))
+  const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows, columns }, ownRowWayOf(project))
   if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
     const beads = beadsOfLayer(project, 'frame')!

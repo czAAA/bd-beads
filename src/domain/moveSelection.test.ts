@@ -97,7 +97,7 @@ describe('moveLayerSelection (ticket 1013)', () => {
     expect(moveLayerSelection(project, selection, 0, 15, { cover: true })).toBeUndefined()
 
     const inFrame = beadsFromColors([[RED]], { row: 3, column: 1 })
-    const progressing = canvasWith({}, { frame: { technique: 'loom', row: 20, column: 20, rows: 5, columns: 5, beads: inFrame }, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
+    const progressing = canvasWith({}, { frame: { technique: 'loom', row: 20, column: 20, rows: 5, columns: 5, beads: inFrame }, ownProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
     const red = pieceSelectionOnLayer(progressing, { row: 23, column: 21, layer: 'frame' })!
     expect(moveLayerSelection(progressing, red, -3, 0, { cover: true })).toBeUndefined()
   })
@@ -149,7 +149,7 @@ describe('moveLayerSelection (ticket 1013)', () => {
 
   it('makes no move out of or into a row marked done', () => {
     const inFrame = beadsFromColors([[RED]], { row: 3, column: 1 })
-    const project = canvasWith({}, { frame: { technique: 'loom', row: 20, column: 20, rows: 5, columns: 5, beads: inFrame }, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
+    const project = canvasWith({}, { frame: { technique: 'loom', row: 20, column: 20, rows: 5, columns: 5, beads: inFrame }, ownProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
     const selection = pieceSelectionOnLayer(project, { row: 23, column: 21, layer: 'frame' })!
 
     expect(moveLayerSelection(project, selection, 1, 0)).toBeDefined()

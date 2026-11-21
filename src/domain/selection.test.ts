@@ -501,7 +501,7 @@ describe('selectionInFinishedRows (ticket 0647, ADR 0052)', () => {
   /** A loom Frame of 6 x 6 at (10, 10) whose first two rows are done. */
   const woven: Project = withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), {
 frame: { technique: 'loom', row: 10, column: 10, rows: 6, columns: 6, beads: {} },
-    rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 },
+    ownProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 },
 })
 
   it('is true for a Frame Selection that holds a position of a finished pass', () => {
@@ -520,7 +520,7 @@ frame: { technique: 'loom', row: 10, column: 10, rows: 6, columns: 6, beads: {} 
   it('reads a shaped Selection by its own cells, and the way the rows run', () => {
     const shape = { top: 11, left: 10, rows: 2, columns: 2, cells: [{ row: 12, column: 11 }] }
     expect(selectionInFinishedRows(woven, shape)).toBe(false)
-    const fromTheLeft = withLayers(woven, { rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } })
+    const fromTheLeft = withLayers(woven, { ownProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } })
     expect(selectionInFinishedRows(fromTheLeft, { top: 14, left: 11, rows: 1, columns: 1 })).toBe(true)
     expect(selectionInFinishedRows(fromTheLeft, { top: 10, left: 12, rows: 1, columns: 1 })).toBe(false)
   })

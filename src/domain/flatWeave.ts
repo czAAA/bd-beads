@@ -2,7 +2,8 @@ import type { Bead } from './beads'
 import type { BeadMap, FrameSheet } from './canvas'
 import type { Rotation } from './grid'
 import type { PieceName } from './pieceNames'
-import type { Project, RowProgress } from './project'
+import type { Project } from './project'
+import type { OwnRowProgress } from './rowProgress'
 import { BRICK_DROP_SETTING, type Technique, type TechniqueSettings } from './weave'
 
 // The Brick block of earlier stored versions: brick stitch's Drop under its old name (ticket 0691), flat beside a
@@ -29,7 +30,7 @@ export interface FlatProject extends Omit<Project, 'layers'> {
   bead?: Bead
   beads: BeadMap
   frame?: FrameSheet
-  rowProgress: RowProgress
+  rowProgress: OwnRowProgress
   letters?: boolean
   pieceNames?: PieceName[]
   rotation: Rotation

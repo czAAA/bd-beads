@@ -1,5 +1,6 @@
 import type { Rect } from '../domain/canvas'
-import { currentPass, frameRowOrder, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
+import { currentPass, frameRowOrder, ownRowWayOf, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
+import { lieAlike } from '../domain/table'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
@@ -123,7 +124,7 @@ function passOnScreen({ project, surface, layout }: RulerDrawInput, pass = curre
   const order = frameRowOrder(project)
   const line = pass < order.count ? order.lineOf(pass) : undefined
   if (!frame || !box || line === undefined) return undefined
-  const columns = rowProgressOf(project).direction === 'columns'
+  const columns = ownRowWayOf(project).direction === 'columns'
   const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, 'frame')
   const along = surface.beadStep('frame')[columns ? 'row' : 'column']
   // A Frame lying a quarter round runs its own rows the other way on screen (ticket 0667).
@@ -132,12 +133,12 @@ function passOnScreen({ project, surface, layout }: RulerDrawInput, pass = curre
 }
 
 /** Whether a ruler number is the current pass's own: only the Frame's can be, never a Piece's on the same Canvas line
- * (ticket 1115). A turned Frame's rulers count the cells it covers, not its own rows (ticket 0667): none of its
+ * (ticket 1115). A Frame that does not lie alike has rulers counting the cells it covers, not its own rows (ticket 0667): none of its
  * numbers is. */
 function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProject): boolean {
   const frame = frameOf(project)
-  if (label.kind !== 'frame' || !frame || frame.quarterTurns) return false
-  const columns = rowProgressOf(project).direction === 'columns'
+  if (label.kind !== 'frame' || !frame || !lieAlike(project)) return false
+  const columns = ownRowWayOf(project).direction === 'columns'
   return label.axis === (columns ? 'column' : 'row') && label.position - (columns ? frame.column : frame.row) === pass.line
 }
 

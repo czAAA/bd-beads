@@ -235,7 +235,7 @@ describe('the library in IndexedDB', () => {
     await store.save([{ project: makeProject('Fox'), knownStored: false }], [])
     await putRecord({
       id: 'project-Newer',
-      format: 2,
+      format: RECORD_FORMAT + 1,
       stored: '{"future":true}',
       stamp: 'x',
       summary: null,
@@ -258,7 +258,7 @@ describe('the library in IndexedDB', () => {
 
     const rows = await records()
     expect(rows.find((row) => row.id === 'project-Newer')).toMatchObject({
-      format: 2,
+      format: RECORD_FORMAT + 1,
       stored: '{"future":true}',
       stamp: 'x',
     })
@@ -272,6 +272,8 @@ describe('the library in IndexedDB', () => {
     localStorage.removeItem(STORAGE_KEY)
 
     const next = createBrowserLibraryStore()
+    // Counted beside the current format's records, which it is saved as next (ticket 1185).
+    expect(await next.count()).toBe(1)
     await next.start()
 
     expect(next.open(() => false).projects).toEqual([expected])

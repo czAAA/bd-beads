@@ -26,7 +26,7 @@ function framedProject(technique: Technique, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 4, unit: 'beads' } })
   const cells = Array.from({ length: 12 }, (_, index) => ({ row: Math.floor(index / 3), column: index % 3, color: '#e63746' }))
   const frame = { ...weaveOf(canvasOf(project)), technique, row: 6, column: frameColumn(technique), rows: 4, columns: 3, beads: withColors({}, cells) }
-  return withLayers(project, { technique, orientation: rotation, frame, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
+  return withLayers(project, { technique, orientation: rotation, frame, ownProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
 }
 
 const view: Region = { x: 0, y: 0, width: 400, height: 400 }

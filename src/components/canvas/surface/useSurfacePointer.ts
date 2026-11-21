@@ -400,7 +400,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     if (!props.tools.selects) return false
     // A Frame whose kind offers no Selection refuses one as the margin does (a Custom frame, ticket 0592), and so does
     // any Frame in Mirror mode: it mirrors whole (ADR 0082).
-    return inMargin(footprintOf(props.project), bead) || (layerAt(props.project, bead) === 'frame' && (props.tools.marksArea || !frameAllows(frameOf(props.project), 'select')))
+    return inMargin(footprintOf(props.project), bead) || (layerAt(props.project, bead) === 'frame' && (props.tools.marksArea || !frameAllows(props.project, 'select')))
   }
 
   function refusesMargin(bead: GridPosition | undefined): boolean {

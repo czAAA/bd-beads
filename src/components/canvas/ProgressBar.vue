@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Project } from '../../domain/project'
-import type { ShownWay } from '../../domain/rowProgress'
+import type { SeenWay } from '../../domain/rowProgress'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
@@ -31,7 +31,7 @@ const emit = defineEmits<{
   /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
   'reset-progress': []
   /** A way chosen from Turn row direction's list (ticket 0973). */
-  'set-row-direction': [way: ShownWay]
+  'set-row-direction': [way: SeenWay]
   'toggle-row-highlight': []
   /** Go to row, from the counter (ticket 0849): the pass to point at, from 0. */
   'go-to-row': [pass: number]

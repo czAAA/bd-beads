@@ -3,7 +3,8 @@ import { nextTick, onMounted, ref } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useShellScope } from '../../composables/ui/shellScope'
-import { ROW_WAYS, type ShownWay } from '../../domain/rowProgress'
+import { ROW_WAYS, type SeenWay } from '../../domain/rowProgress'
+import { seenWayWords } from '../../i18n/rowProgressWords'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
@@ -15,7 +16,7 @@ const props = defineProps<{
   /** The button it hangs from: its own press toggles the list. */
   anchor: HTMLElement | undefined
   /** The way the rows run now, as the Frame lies. */
-  current: ShownWay
+  current: SeenWay
   /** Whether the Canvas draws the Row progress marks. */
   rowHighlight: boolean
   /** The prefix of its test ids. */
@@ -24,7 +25,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   /** A way chosen other than the one the rows run now. */
-  choose: [way: ShownWay]
+  choose: [way: SeenWay]
   'toggle-row-highlight': []
 }>()
 
@@ -37,10 +38,7 @@ const rootEl = ref<HTMLElement>()
 const anchorEl = ref<HTMLElement>()
 const anchored = useAnchoredPosition(anchorEl, rootEl, () => 'start', () => 'above')
 
-const wayLabel = (way: ShownWay): string => {
-  const words = t.value.rowProgress
-  return { down: words.topToBottom, right: words.leftToRight, up: words.bottomToTop, left: words.rightToLeft }[way]
-}
+const wayLabel = (way: SeenWay): string => seenWayWords(t.value.rowProgress, way).name
 
 function close() {
   emit('close')
@@ -55,7 +53,7 @@ useOverlayLayer({
   isOpener: (target) => props.anchor?.contains(target) ?? false,
 })
 
-function choose(way: ShownWay) {
+function choose(way: SeenWay) {
   if (way !== props.current) emit('choose', way)
   close()
 }

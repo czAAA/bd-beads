@@ -500,7 +500,7 @@ describe('every ruler counts left to right and top to bottom as seen (ticket 116
     return [...new Map(own.sort((a, b) => along(a) - along(b)).map((label) => [along(label), label.text])).values()]
   })
   const framed = (frame: typeof sheet & { quarterTurns?: 1 }, way: (typeof WAYS)[number], rotation: Rotation) => {
-    const subject = bareProject({ technique: 'loom', frame, rowProgress: { ...way, currentRow: 0, currentColumn: 0 } })
+    const subject = bareProject({ technique: 'loom', frame, ownProgress: way })
     // A turn carries the Frame off the top-left corner: look at it in the middle of a viewport that holds it.
     const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
     return rulerLayout(subject, view(view().scrollToCentre(sheet)), { fontPx: 11, numbers: true }).labels
@@ -547,7 +547,7 @@ describe('every ruler counts left to right and top to bottom as seen (ticket 116
     const peyote = { ...sheet, rows: 5, technique: 'peyote' as const }
     for (const rotation of TURNS) {
       for (const way of WAYS) {
-        const subject = moveToRow(bareProject({ technique: 'peyote', frame: peyote, orientation: rotation, rowProgress: { ...way, currentRow: 0, currentColumn: 0 } }), 3)
+        const subject = moveToRow(bareProject({ technique: 'peyote', frame: peyote, orientation: rotation, ownProgress: way }), 3)
         const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame: peyote, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
         const { labels } = rulerLayout(subject, view(view().scrollToCentre(peyote)), { fontPx: 11, numbers: true })
         // The number the pill stands on (rulerRenderer's `numbersPass`): the line's own, on the ruler across the rows.

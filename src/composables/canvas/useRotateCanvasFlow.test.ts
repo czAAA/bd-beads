@@ -1,15 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
+import { withCanvasTurned } from '../../domain/table'
 import { withColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
-import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
+import { moveToRow, ownRowWayOf, rowProgressOf } from '../../domain/rowProgress'
+import { turnedWithFrame } from '../../domain/rowWays'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateCanvasFlow } from './useRotateCanvasFlow'
-import { beadsOfLayer, canvasOf, orientationOf, withCanvas } from '../../domain/layerRecord'
+import { beadsOfLayer, canvasOf, orientationOf } from '../../domain/layerRecord'
 import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
 
-const base = withCanvas(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), { orientation: 0 })
+const base = withCanvasTurned(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), 0)
 const framed: Project = withLayers(base, {
 frame: { technique: 'loom' as const, row: 20, column: 20, rows: 5, columns: 6, beads: {} },
   beads: withColors({}, [{ row: 21, column: 22, color: '#e63746' }]),
@@ -32,13 +34,15 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
     expect(seen).toEqual([90, 180, 270, 0])
   })
 
-  it('changes no bead, Frame, name or Row direction, and is no Undo step', () => {
+  it('changes no bead, Frame, name or the Frame\'s own rows, and is no Undo step', () => {
     const { harness, onRotateCanvas } = setup()
     onRotateCanvas()
     expect(beadsOfLayer(harness.project, 'canvas')).toEqual(beadsOfLayer(framed, 'canvas'))
     expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(framed))
     expect(canvasOf(harness.project).pieceNames).toEqual(canvasOf(framed).pieceNames)
-    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(framed))
+    // The Frame is carried with its rows (until 1188), so the way as seen turns a quarter with it (ticket 1185).
+    expect(rowProgressOf(harness.project)).toEqual(turnedWithFrame(rowProgressOf(framed), 1))
+    expect(ownRowWayOf(harness.project)).toEqual(ownRowWayOf(framed))
     expect(harness.history.canUndo.value).toBe(false)
     expect(harness.resetAfterFrameChange).not.toHaveBeenCalled()
   })
@@ -63,7 +67,7 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
     expect(orientationOf(harness.project)).toBe(212.5)
     expect(beadsOfLayer(harness.project, 'canvas')).toEqual(beadsOfLayer(framed, 'canvas'))
     expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(framed))
-    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(moveToRow(framed, 1)))
+    expect(rowProgressOf(harness.project)).toEqual(turnedWithFrame(rowProgressOf(moveToRow(framed, 1)), 2))
     expect(harness.history.canUndo.value).toBe(false)
     expect(deps.announce).not.toHaveBeenCalled()
   })

@@ -1,6 +1,7 @@
 import { colorAt, type Rect } from './canvas'
 import type { GridPosition, Rotation } from './grid'
-import { frameRowOrder, rowProgressOf, seenRotation } from './rowProgress'
+import { frameRowOrder, ownRowWayOf } from './rowProgress'
+import { frameQuarterTurnOf } from './table'
 import { frameWeave } from './layerWeave'
 import { beadsOfLayer, frameOf } from './layerRecord'
 import { inBox, paintedFrameBox } from './projectExtent'
@@ -99,12 +100,12 @@ export function wordChartOf(project: Project): WordChart | undefined {
   if (order.stepOf) {
     return customWordChart(project, order)
   }
-  const { direction, reversed } = rowProgressOf(project)
+  const { direction, reversed } = ownRowWayOf(project)
   // Trimmed as the chart is (ticket 1128): the rows from the first bead to the last, each across the beads' columns only.
   const box = paintedFrameBox(project)
   const along = direction === 'rows' ? (box?.columns ?? frame.columns) : (box?.rows ?? frame.rows)
-  // The Frame's own rows, as the picture shows them: turned on the Canvas (ticket 0667), then with the view.
-  const shown = seenRotation(project)
+  // The Frame's own rows, as the picture shows them: at the Frame's nearest quarter turn on the table (ticket 1185).
+  const shown = frameQuarterTurnOf(project)
   const ascends = ASCENDS[direction][shown]
   const beads = beadsOfLayer(project, 'frame')!
   let hasEmpty = false

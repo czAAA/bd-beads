@@ -208,14 +208,8 @@ describe('single-Project roundtrip', () => {
     expect(canvasOf(restored).technique).toBe('peyote')
     expect(canvasOf(restored).beadId).toBe(cubeBead.id)
     expect(frameGrid(restored!)[2]![3]!.color).toBe('#e63746')
-    // A new peyote Frame's rows run left to right as seen, on its Canvas turned a quarter: up its own rows, so their own pointer.
-    expect(rowProgressOf(restored)).toEqual({
-      direction: 'rows',
-      reversed: true,
-      currentRow: 0,
-      currentColumn: 0,
-      currentRowBack: 4,
-    })
+    // A new peyote Frame's rows run left to right as seen, kept so with that way's own pointer (ticket 1185).
+    expect(rowProgressOf(restored)).toEqual({ way: 'right', right: 4 })
   })
 
   it('writes Row progress without its flag, and reads an old file that has one with the Frame deciding (ticket 426)', () => {
@@ -226,14 +220,14 @@ describe('single-Project roundtrip', () => {
     file.projects[0].layers[1].rowProgress.enabled = false
     file.projects[0].layers[1].rowProgress.decided = true
     const [restored] = parseProjectsFile(JSON.stringify(file)).projects
-    expect(rowProgressOf(restored)).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0, currentRowBack: 4 })
+    expect(rowProgressOf(restored)).toEqual({ way: 'right', right: 4 })
   })
 
-  it('writes version 14 with the layer list, the Background list it is in (ticket 1000), each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
+  it('writes version 15 with the layer list, the Background list it is in (ticket 1000), each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(14)
+    expect(file.version).toBe(15)
     expect(file.patterns).toBeUndefined()
     expect(Object.keys(file.projects[0]).sort()).toEqual(['backgroundPositions', 'createdAt', 'id', 'layers', 'lettersByLayer', 'palette', 'paletteLetters', 'updatedAt'])
     expect(file.projects[0].backgroundPositions).toBe(3)
@@ -253,8 +247,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 15
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 15')
+    file.version = 16
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 16')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as its Bead\'s built-in colors', () => {
@@ -471,11 +465,7 @@ describe('parseProjectsFile', () => {
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
-    expect(rowProgressOf(projects[0])).toEqual({
-      direction: 'rows',
-      currentRow: 0,
-      currentColumn: 0,
-    })
+    expect(rowProgressOf(projects[0])).toEqual({ way: 'down' })
   })
 
   it('still imports a file exported before ADR 0026, ignoring the millimetre size it stored and keeping the grid', () => {
