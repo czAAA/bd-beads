@@ -94,6 +94,8 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     const rows = wrapper.get('[data-testid="project-export-rows"]')
     await rows.get('[data-testid="export-select-frame"]').trigger('click')
     expect(wrapper.emitted('select-frame')).toEqual([[]])
+    await rows.get('[data-testid="export-select-piece-frame"]').trigger('click')
+    expect(wrapper.emitted('select-piece-frame')).toEqual([[]])
   })
 
   it('names the last saved file on the Save row, and offers Save as only where the browser can link a file (ADR 0090)', async () => {

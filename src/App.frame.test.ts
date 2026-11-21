@@ -220,6 +220,22 @@ describe('A Frame from the panel with no Frame', () => {
     expect(savedFrame()).toMatchObject({ rows: 1, columns: 2 })
   })
 
+  it('selects a Piece to frame from the panel: Piece becomes the tool and the next tap frames that Piece at once', async () => {
+    const wrapper = await mountOpen()
+    await toggleBar(wrapper)
+    await wrapper.get('[data-testid="frame-select-piece"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="frame-panel"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="pill-tool-piece"]').attributes('aria-pressed')).toBe('true')
+    expect(savedFrame()).toBeUndefined()
+
+    await pressBead(wrapper, { row: 2, column: 3 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await flushPromises()
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 1 })
+    expect(wrapper.find('[data-testid="select-frame"]').exists()).toBe(false)
+  })
+
   it('selects a frame from the Export panel: Escape drops the notice; once one is set the notice goes and Export comes back (ticket 0847)', async () => {
     const wrapper = await mountOpen()
     const selectFromExport = async () => {
