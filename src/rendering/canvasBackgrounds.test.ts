@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { channelsOf, contrastRatio } from '../domain/color'
+import { channelsOf, contrastRatio, relativeLuminance } from '../domain/color'
 import { PROJECT_THEMES, PRINT_THEME } from './beadLook'
 import { canvasBackgrounds, canvasBackgroundOf, canvasTheme, marginColorOf, migratedChoice, shownChoice } from './canvasBackgrounds'
 
@@ -100,7 +100,7 @@ describe('Canvas color backgrounds', () => {
 
   it('never changes the print board that exports use', () => {
     expect(PRINT_THEME.background).toBe('#f7f3ec')
-    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, background: '#f7f3ec', ownColorRim: false, tonalTiles: false })
+    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, offShape: PROJECT_THEMES.light.canvas, background: '#f7f3ec', ownColorRim: false, tonalTiles: false })
   })
 
   it.each([
@@ -165,5 +165,34 @@ describe('the margin color (ticket 0656, MarginSheet card)', () => {
     const { margin } = canvasTheme('dark', 1, undefined, { choice: 'custom', customColor: color })
     expect(contrast(margin.ruler, color)).toBeGreaterThanOrEqual(4.5)
     expect(contrast(margin.rulerStrong, color)).toBeGreaterThanOrEqual(contrast(margin.ruler, color))
+  })
+})
+
+describe('the Frame\'s Off-shape color (ticket 1196)', () => {
+  const offShapeToken = (theme: 'light' | 'dark' | 'contrast') => tokens.color.tokens.find((entry) => entry.name === 'frame-off-shape')!.value[theme as 'light' | 'dark']
+  const luminance = (color: string) => relativeLuminance(channelsOf(color))
+
+  it.each(['light', 'dark', 'contrast'] as const)('copies the frame-off-shape token of tokens.json in %s', (theme) => {
+    expect(PROJECT_THEMES[theme].offShape).toBe(offShapeToken(theme))
+  })
+
+  it.each(['light', 'dark'] as const)('stays darker than every Frame background in %s', (theme) => {
+    for (const choice of [1, 2, 3] as const) {
+      const look = canvasTheme(theme, choice)
+      expect(luminance(look.offShape), `${theme} ${choice}`).toBeLessThan(luminance(look.canvas))
+    }
+  })
+
+  it('stays darker than the white canvas of high contrast', () => {
+    expect(luminance(PROJECT_THEMES.contrast.offShape)).toBeLessThan(luminance(PROJECT_THEMES.contrast.canvas))
+    expect(canvasTheme('contrast', 1).offShape).toBe(PROJECT_THEMES.contrast.offShape)
+  })
+
+  it.each(['#ffffff', '#808080', '#a0a0a0', '#101010', '#000000', '#ffcc00'])('is darker than a Custom color %s, darkening that color itself where it is darker than the token', (color) => {
+    for (const theme of ['light', 'dark'] as const) {
+      const look = canvasTheme(theme, 'custom', color)
+      expect(luminance(look.offShape)).toBeLessThanOrEqual(luminance(color))
+      if (color !== '#000000') expect(luminance(look.offShape)).toBeLessThan(luminance(color))
+    }
   })
 })

@@ -223,8 +223,8 @@ export interface SurfaceView {
    * the keep-out margin refuses a press at any angle. Where the Frame is drawn as the Canvas is, its margin is the
    * Canvas positions round it (`inMargin`). */
   onMarginSheet(point: Scroll): boolean
-  /** Whether a point is on a Custom frame where it has no bead (ticket 0592): a Seam, its centre or Off-shape, where a
-   * press is refused as on the keep-out margin. */
+  /** Whether a point is on a Frame where it has no bead (tickets 0592, 1196): a Custom frame's Seam or Off-shape, a
+   * staggered Frame's empty half bead; where a press is refused as on the keep-out margin. */
   offShapeAt(point: Scroll): boolean
   /** The Frame's cell under a point on a Custom frame, on a bead or not (ticket 0594): what the Select tool marks out
    * there, a rectangle on screen; none off the Frame or on one without a shape. */
@@ -411,8 +411,17 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     pointToHit,
     onMarginSheet,
     offShapeAt: (point) => {
-      const at = laidOut && onSheet(point)
-      return !!laidOut && !!at && beadIn(laidOut, at.x, at.y) === undefined
+      const at = sheet && onSheet(point)
+      if (!sheet || !at) return false
+      if (laidOut) return beadIn(laidOut, at.x, at.y) === undefined
+      // A staggered Frame's empty half bead at the short end of a line holds no cell (ticket 1196); a gap between beads is in one.
+      if (sheet.description.shift === 0) return false
+      const [x, y] = [at.x / CELL_SIZE_PX, at.y / CELL_SIZE_PX]
+      const cells = sheet.geometry.positionsIn({ x: x - 1, y: y - 1, width: 2, height: 2 })
+      return !cells.some((position) => {
+        const box = sheet.geometry.place(position)!.box
+        return x >= box.x && x < box.x + box.width && y >= box.y && y < box.y + box.height
+      })
     },
     frameCellAt: (point) => {
       const at = laidOut && laid && onSheet(point)

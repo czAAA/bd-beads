@@ -7,7 +7,7 @@ import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
 import { moveToRow, rowProgressOf, stepLines, toggleRowDirection } from '../domain/rowProgress'
 import { withLayers } from '../testUtils/layerFields'
-import { DARK_THEME, type DrawingContext } from './beadLook'
+import { DARK_THEME, PRINT_THEME, type DrawingContext, type ProjectTheme } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 
@@ -107,5 +107,40 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again the passes 
       expect(step.direction).toBe(direction)
       expect(differing(whole, banded).length).toBeLessThanOrEqual(CLIPPED_EDGES_PX)
     })
+  })
+})
+
+describe('the Frame\'s Off-shape (ticket 1196)', () => {
+  /** How many pixels are in a color, to the nearest channel step. */
+  function pixelsOf(canvas: HTMLCanvasElement, [red, green, blue]: readonly [number, number, number]): number {
+    const data = canvas.getContext('2d')!.getImageData(0, 0, SIDE, SIDE).data
+    let found = 0
+    for (let at = 0; at < data.length; at += 4) if (data[at] === red && data[at + 1] === green && data[at + 2] === blue) found += 1
+    return found
+  }
+  const drawnIn = (technique: Technique, theme: ProjectTheme): HTMLCanvasElement => {
+    const canvas = surface()
+    const project = projectOf(technique, 'toho-cube-1.5mm', [])
+    const region = { x: -40, y: -40, width: SIDE / 2, height: SIDE / 2 }
+    renderProject(canvas.getContext('2d') as unknown as DrawingContext, { project, space: spaceOf(project, true), region, zoom: 1, pixelRatio: 2, rowMarks: false, theme, opaque: true, draftWhenSmall: false })
+    return canvas
+  }
+  const black = [5, 5, 5] as const
+
+  it.each(['peyote', 'brick'] as const)('darkens the half beads at the short ends of a %s Frame', (technique) => {
+    expect(pixelsOf(drawnIn(technique, DARK_THEME), black)).toBeGreaterThan(0)
+  })
+
+  it('draws none on a loom Frame, where every place of the box holds a bead', () => {
+    expect(pixelsOf(drawnIn('loom', DARK_THEME), black)).toBe(0)
+  })
+
+  it('leaves it out of an export, which prints on white', () => {
+    const lightOffShape = [0xa5, 0xa1, 0x9b] as const
+    for (const technique of ['peyote', 'brick'] as const) {
+      const canvas = drawnIn(technique, PRINT_THEME)
+      expect(pixelsOf(canvas, black)).toBe(0)
+      expect(pixelsOf(canvas, lightOffShape)).toBe(0)
+    }
   })
 })
