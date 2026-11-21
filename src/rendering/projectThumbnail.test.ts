@@ -9,7 +9,8 @@ import { changeFrame } from '../domain/changeFrame'
 import { rotateFrame } from '../domain/rotate'
 import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
-import { withFrameSheet } from '../domain/layerRecord'
+import { withCanvas, withFrameSheet } from '../domain/layerRecord'
+import { withLaidTurn } from '../domain/framePlacement'
 import { withLayers } from '../testUtils/layerFields'
 
 function project(grid: (string | null)[][], rotation: Rotation = 0, technique: Technique = 'loom'): Project {
@@ -177,5 +178,16 @@ describe('thumbnailPixels', () => {
 
     expect(image.height).toBeGreaterThan(image.width)
     expect(expected(mean(0), mean(1), image.width, image.height)).toEqual([true, true])
+  })
+})
+
+describe('a thumbnail follows the Frame alone, never the Canvas\'s turn (spec 1182, ticket 1186)', () => {
+  it.each(['loom', 'peyote', 'brick'] as const)('draws a %s Frame the same over a Canvas turned under it alone', (technique) => {
+    const grid = [['#ff0000', '#0000ff', null], [null, '#ff0000', '#0000ff']]
+    for (const framed of [project(grid, 0, technique), rotateFrame(project(grid, 0, technique))!]) {
+      // As the library draws it, by the Frame's own turn (ProjectThumbnail).
+      const drawn = thumbnailPixels(withLaidTurn(framed), 24)
+      for (const turn of [90, 180, 270, 37.5]) expect(thumbnailPixels(withLaidTurn(withCanvas(framed, { orientation: turn })), 24)).toEqual(drawn)
+    }
   })
 })

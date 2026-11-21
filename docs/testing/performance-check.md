@@ -23,3 +23,5 @@ A carried Piece (`e2e/perf/pieceCarry.spec.ts`, ticket 1150) runs in Safari's en
 ## Ports
 
 The performance check never reuses a preview that is already running, since that could be another worktree's build: where port 4173 is taken, pass a free one, `E2E_PORT=4391 npm run perf`.
+
+A twist and a pan (`e2e/perf/surfaceTwist.spec.ts`, ticket 1187) run in Safari's engine at an iPad's density (1366×1024 at 2×), over a 60×60 Frame on a full 160×160 Canvas: a 60° two-finger twist about the middle and a 360 px two-finger pan, each over 60 touch moves 16 ms apart, printing the frames drawn, the mean and the longest gap between two frames, how many gaps were over 33 ms and where the gesture left the view. It has no budget: it compares a change to the drawing with the build before it, run the same way. Option: `PERF_TECHNIQUES` (default `loom,peyote`); `npm run perf -- surfaceTwist` runs it alone.

@@ -2,6 +2,7 @@ import { PDF_PAGE_DPI } from '../domain/exportQuality'
 import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
 import { exactColors, packPage, type PackedPage } from '../domain/pagePacking'
+import { withLaidTurn } from '../domain/framePlacement'
 import { projectColors } from '../domain/layerBeads'
 import { deflateText, encodePng } from '../domain/pngEncoder'
 import { pageOneLayout } from './pageOneLayout'
@@ -35,7 +36,8 @@ function pngOf(canvas: HTMLCanvasElement, project: Project): Promise<Blob> {
 // The Project as a PNG (tickets 164, 0583, 1096; PngExport card): the Cover page as a picture, one file whatever the piece,
 // drawn at `dpi` and always in color. It is saved whatever the Cover page switch says (that switch is the PDF's), so its
 // footer reads "1 / 1".
-export async function exportProjectPng(project: Project, words: PrintText, dpi = PRINT_DPI): Promise<Blob> {
+export async function exportProjectPng(shown: Project, words: PrintText, dpi = PRINT_DPI): Promise<Blob> {
+  const project = withLaidTurn(shown)
   // Loaded when a PNG is asked for: the page drawing (and the mark it reads from the design system) isn't needed before.
   const { drawCoverPage } = await import('./coverPage')
   const { loadPrintFonts } = await import('./printPages')
@@ -59,7 +61,8 @@ function flateOf(canvas: HTMLCanvasElement, project: Project): Promise<PackedPag
 // The Project as a PDF (tickets 162, 0914, 1096): the Cover page when it is asked for, page 1 (the chart whole, or the
 // overview of its parts) and its list pages, the chart pages when there are any, then the Word chart, drawn one at a time so memory stays bounded (ADR 0019). Pictures are
 // drawn at `dpi` (ADR 0076: the PDF has no Export quality); the sheet is the same size in points whatever it is.
-export async function exportProjectPdf(project: Project, words: PrintText, dpi = PDF_PAGE_DPI): Promise<Blob> {
+export async function exportProjectPdf(shown: Project, words: PrintText, dpi = PDF_PAGE_DPI): Promise<Blob> {
+  const project = withLaidTurn(shown)
   const layout = pageOneLayout(project, words)
   const scale = dpi / PRINT_DPI
   // Loaded when a PDF is asked for: the page drawing (and the mark it reads from the design system) isn't needed
