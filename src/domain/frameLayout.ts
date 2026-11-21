@@ -488,6 +488,33 @@ export function fringeLayout(settings: FringeSettings, top: FringeTop = BRICK_TO
   })
 }
 
+/** How far a top row of a Fringe earring starts in from its base row's first bead, named as `fringeLayout` names it. */
+function fringeRowInset(row: number, top: FringeTop): number {
+  if (top.lines === 'columns') return 0
+  const shifted = top.lines === 'shiftedRows'
+  if (row < 0) return shifted ? (Math.floor((row - BODY_ROW) / top.drop) % 2) / 2 : 0
+  return shifted ? Math.floor(row / top.drop) / 2 : row
+}
+
+/** The name a Fringe earring's bead takes as the handle on one side of its shape moves it from `before` to `after`, so
+ * it stays where it lay and beads come or go on that side alone: `left` takes the columns along, `top` keeps a top
+ * bead as many rows up from the base. `right` and `bottom` keep names, growing where `fringeLayout` already adds. */
+export function fringeRenamed(before: FringeSettings, after: FringeSettings, top: FringeTop, side: 'top' | 'right' | 'bottom' | 'left'): (position: GridPosition) => GridPosition {
+  const wider = after.topWidth - before.topWidth
+  // A peyote top's columns step out from its middle, so its Width grows evenly, half a side, whichever handle moves it.
+  const by = top.lines === 'columns' && (side === 'left' || side === 'right') ? wider / 2 : side === 'left' ? wider : 0
+  if (by) return ({ row, column }) => ({ row, column: column + by })
+  if (side !== 'top') return (position) => position
+  const body = (settings: FringeSettings) => Math.max(0, settings.topRows - fringePointRows(settings.topWidth, top))
+  const [was, now] = [body(before), body(after)]
+  return ({ row, column }) => {
+    if (row >= STRAND_ROW) return { row, column }
+    const up = row < 0 ? row - BODY_ROW : was + row
+    const named = up < now ? BODY_ROW + up : up - now
+    return { row: named, column: column + Math.round(fringeRowInset(row, top) - fringeRowInset(named, top)) }
+  }
+}
+
 const turnedLayouts = new WeakMap<FrameLayout, FrameLayout[]>()
 
 /** A layout turned a quarter clockwise on screen `turns` times (Rotate Frame, ticket 0594): every bead keeps its name and

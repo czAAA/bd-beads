@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { withColorsInPalette } from './paletteEdits'
 import { computeColorQuantities } from './beadQuantities'
-import { beadCount, colorAt, type FrameSheet } from './canvas'
+import { beadCount, colorAt, forEachBead, type FrameSheet } from './canvas'
 import { changeFrame, relaidInBead, type FrameChange } from './changeFrame'
 import { findBead } from './beads'
 import { customFrameSize, frameLayoutOf, settingValuesOf, type FrameSettings } from './frameShape'
@@ -417,6 +417,76 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       expect(frameOf(left)!.settings).toEqual({ ...settings, topWidth: 8 })
       expect(edges(left).right).toBe(edges(project).right)
       expect(edges(left).left).toBeLessThan(edges(project).left)
+    })
+
+    /** Every painted bead's place, measured from the Frame's edge across from `edge`, which a drag of `edge` leaves put. */
+    const fromKeptEdge = (project: Project, edge: 'top' | 'bottom' | 'left' | 'right') => {
+      const geometry = frameGeometryOf(project)
+      const extent = geometry.extent()!
+      const seam = geometry.place({ row: 1000, column: 0 })!
+      const places: string[] = []
+      forEachBead(frameOf(project)!.beads, (row, column) => {
+        const { box } = geometry.place({ row, column })!
+        const across = edge === 'left' ? extent.x + extent.width - box.x : edge === 'right' ? box.x - extent.x : edge === 'top' ? extent.y + extent.height - box.y : box.y - extent.y
+        // Along it, from the Seam the strands hang from: a Width change grows a whole point up and a V's tip down.
+        const along = edge === 'left' || edge === 'right' ? box.y - seam.box.y : box.x - extent.x
+        places.push(`${across.toFixed(2)}:${along.toFixed(2)}`)
+      })
+      return places.sort()
+    }
+    const paintedAll = (project: Project) => paintFrame(project, [...frameGeometryOf(project).positions()], RED)
+
+    /** The Starter's own sizes: a whole point and no body. */
+    const starter = { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 10 } as const
+    const handleCases: [string, () => Project][] = [
+      ['a cut-off point', () => earring()],
+      ['the Starter\'s whole point', () => earring(starter)],
+      ['a body under the point', () => earring({ ...starter, topRows: 8 })],
+      ['a 2-drop top', () => changed(earring(starter), { techniqueSettings: { brickDrop: 2 } })],
+      ['a loom top', () => changed(earring(starter), { technique: 'loom' })],
+      ['a V fringe', () => earring({ ...starter, fringeStyle: 'v' })],
+      ['Rotate Frame', () => rotateFrame(earring(starter))!],
+    ]
+
+    it.each(['left', 'right', 'top', 'bottom'] as const)('grows on the side its %s handle drags, every bead staying where it lay on the Canvas', (edge) => {
+      for (const [name, made] of handleCases) {
+        const project = paintedAll(made())
+        const grown = changed(project, { set: dragged(project, edge, 2) })
+        expect(frameOf(grown)!.settings, `${name}, ${edge}`).not.toEqual(frameOf(project)!.settings)
+        expect(fromKeptEdge(grown, edge), `${name}, ${edge}`).toEqual(fromKeptEdge(project, edge))
+      }
+    })
+
+    it.each(['left', 'right', 'top', 'bottom'] as const)('loses beads on the side its %s handle drags in, and has them back as it drags out again', (edge) => {
+      // A cut-off point made whole by a narrower Width stays whole as it widens again (ticket 0814).
+      for (const [name, made] of handleCases.slice(1)) {
+        const project = paintedAll(made())
+        const shrunk = changed(project, { set: dragged(project, edge, -2) })
+        expect(fromKeptEdge(project, edge), `${name}, ${edge}`).toEqual(expect.arrayContaining(fromKeptEdge(shrunk, edge)))
+        const back = changed(shrunk, { set: dragged(shrunk, edge, 2) })
+        expect(frameOf(back)!.settings, `${name}, ${edge}`).toEqual(frameOf(project)!.settings)
+        expect(frameOf(back)!.beads, `${name}, ${edge}`).toEqual(frameOf(project)!.beads)
+      }
+    })
+
+    it('grows a peyote top\'s Width evenly from either side handle, every column keeping its step from the middle', () => {
+      const project = paintedAll(changed(earring(starter), { technique: 'peyote' }))
+      /** Each bead's place from the earring's middle and from its strands' ends. */
+      const fromMiddle = (each: Project) => {
+        const geometry = frameGeometryOf(each)
+        const extent = geometry.extent()!
+        const places: string[] = []
+        forEachBead(frameOf(each)!.beads, (row, column) => {
+          const { box } = geometry.place({ row, column })!
+          places.push(`${(box.x - extent.x - extent.width / 2).toFixed(2)}:${(extent.y + extent.height - box.y).toFixed(2)}`)
+        })
+        return places.sort()
+      }
+      for (const edge of ['left', 'right'] as const) {
+        const grown = changed(project, { set: dragged(project, edge, 2) })
+        expect(frameOf(grown)!.settings!.topWidth).toBeGreaterThan(starter.topWidth)
+        expect(fromMiddle(grown), edge).toEqual(fromMiddle(project))
+      }
     })
 
     it('changes Top rows by its top handle, growing upwards with the strands staying put', () => {

@@ -26,6 +26,7 @@ import {
   frameAllows,
   frameGeometry,
   frameShapeOf,
+  resizedName,
   sameSettings,
   settingsHolding,
   settingsOf,
@@ -222,8 +223,13 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
     if (sameSettings(settings, settingsOf(frame)!)) {
       return { kind: 'unchanged', project }
     }
-    const laid = resettled(project, frame, settings, frame.quarterTurns)
-    return { kind: 'changed', project: touchFrameSheet(project, edges && frameShapeOf(frame)!.sides ? keptEdges(project, frame, laid, edges) : laid) }
+    if (!edges || !frameShapeOf(frame)!.sides) {
+      return { kind: 'changed', project: touchFrameSheet(project, resettled(project, frame, settings, frame.quarterTurns)) }
+    }
+    // Each bead is named again to stay where it lay as the dragged edges move, so beads come or go on those sides alone.
+    const { folded: _folded, ...shown } = frame
+    const renamed = { ...shown, ...withEachBead(frame, resizedName(frame, settings, heldWeave(project, 'frame')!, edges)) }
+    return { kind: 'changed', project: touchFrameSheet(project, keptEdges(project, frame, resettled(project, renamed, settings, frame.quarterTurns), edges)) }
   }
 
   if ('remove' in change) {
