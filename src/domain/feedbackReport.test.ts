@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseReport, reportIssue } from './feedbackReport'
+import { parseReport, reportIssue, screenshotTypeOf } from './feedbackReport'
 
 const context = { appVersion: '1.4.0', uiLanguage: 'pl', browser: 'Firefox', os: 'Android', viewport: '412 × 915' }
 
@@ -174,5 +174,30 @@ describe('parseReport', () => {
     const local = 'a'.repeat(308)
     expect(parseReport({ ...general, email: `${local}@example.com` })).not.toBeNull()
     expect(parseReport({ ...general, email: `${local}x@example.com` })).toBeNull()
+  })
+})
+
+describe('a Report screenshot (ticket 1179)', () => {
+  const base = { kind: 'general', fields: { message: 'Hi' }, context: { appVersion: '1', uiLanguage: 'en', browser: 'Safari', os: 'iOS', viewport: '1 × 1' } }
+
+  it('is kept when it is one { type, data } of an allowed type, and refused as an array, another type or empty', () => {
+    const shot = { type: 'image/webp', data: 'UklGRg==' }
+    expect(parseReport({ ...base, screenshot: shot })?.screenshot).toEqual(shot)
+    for (const bad of [[shot], { ...shot, type: 'image/png' }, { ...shot, data: '' }, { ...shot, extra: 1 }, 'x']) {
+      expect(parseReport({ ...base, screenshot: bad })).toBeNull()
+    }
+  })
+
+  it('reads a type from its bytes', () => {
+    expect(screenshotTypeOf(Uint8Array.of(0xff, 0xd8, 0xff, 0xe0))).toBe('image/jpeg')
+    expect(screenshotTypeOf(Uint8Array.from([...'RIFF', 0, 0, 0, 0, ...'WEBP'].map((c) => (typeof c === 'string' ? c.charCodeAt(0) : c))))).toBe('image/webp')
+    expect(screenshotTypeOf(Uint8Array.of(0x89, 0x50, 0x4e, 0x47))).toBeNull()
+  })
+
+  it('adds a Screenshot section only when given a link or a failure, so Copy report stays text', () => {
+    const report = parseReport(base)!
+    expect(reportIssue(report).body).not.toContain('Screenshot')
+    expect(reportIssue(report, { url: 'https://github.com/o/r/blob/main/feedback/a.jpg' }).body).toContain('[Open the screenshot](https://github.com/o/r/blob/main/feedback/a.jpg)')
+    expect(reportIssue(report, {}).body).toContain('The screenshot did not arrive.')
   })
 })
