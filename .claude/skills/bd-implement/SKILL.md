@@ -14,7 +14,7 @@ Use /bd-tdd where possible, at pre-agreed seams.
 
 Run typechecking regularly and single test files regularly. At the end, and again before opening the PR, run the checks `CLAUDE.md`'s Context hygiene gives for each moment: the related tests, the check before pushing, the full suite before the PR.
 
-Once done, use /bd-review to review the work.
+Once done, use /bd-review to review the work. Every item of its `## Needs your call` goes, as it stands, into what your final message leaves for a human.
 
 A user-facing change adds one Release note with its kind, by the rules in `docs/agents/pull-requests.md` (Release notes): a `fix` PR's note is Fixed, the bigger kind wins, and before a note is New ask the owner (say what the maker can now do); a no makes it Changed. In a bulk run you can't ask: open the PR with the note as New, and put `New needs the owner's yes: <what the maker can now do>` as the first line of your report, so the orchestrator asks before it merges. Never name a Version in the title or the ticket.
 
