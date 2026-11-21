@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { beadsFromColors, forEachBead, type BeadMap } from './canvas'
 import { createProject } from './createProject'
 import { beadsOfLayer } from './layerRecord'
-import { moveLayerSelection, stepMove, wholeMove } from './moveSelection'
+import { moveLayerSelection, pieceCarry, stepMove, wholeMove } from './moveSelection'
 import { namedPieces, withPieceName } from './pieceNames'
 import type { Project } from './project'
 import { pieceSelectionOnLayer } from './selection'
@@ -191,5 +191,35 @@ describe('wholeMove (ticket 1013)', () => {
     expect(wholeMove(peyote, pieceSelectionOnLayer(peyote, { row: 10, column: 10 })!, 0, -0.4)).toEqual({ rows: 0, columns: 0 })
     expect(wholeMove(peyote, pieceSelectionOnLayer(peyote, { row: 10, column: 10 })!, 0, -1)).toEqual({ rows: 0, columns: -2 })
     expect(wholeMove(brick, pieceSelectionOnLayer(brick, { row: 10, column: 10 })!, 1, 5)).toEqual({ rows: 2, columns: 5 })
+  })
+})
+
+describe('pieceCarry (ticket 1151)', () => {
+  const other = beadsFromColors([[BLUE]], { row: 12, column: 13 })
+
+  it('holds the Project with the Piece lifted out, and the Piece alone', () => {
+    const project = canvasWith({ ...PIECE, ...other })
+    const selection = pieceSelectionOnLayer(project, { row: 10, column: 10 })!
+
+    const carry = pieceCarry(project, selection)!
+
+    expect(positionsOf(beadsOfLayer(carry.lifted, 'canvas'))).toEqual([`12,13:${BLUE}`])
+    expect(positionsOf(beadsOfLayer(carry.piece, 'canvas'))).toEqual([`10,10:${RED}`, `10,11:${BLUE}`, `11,10:${RED}`])
+  })
+
+  it('says a step can be made over any bead in the way, as a move that covers does', () => {
+    const project = canvasWith({ ...PIECE, ...other })
+    const selection = pieceSelectionOnLayer(project, { row: 10, column: 10 })!
+    const carry = pieceCarry(project, selection)!
+
+    expect(carry.lands(2, 0)).toBe(true)
+    // Onto the other Piece: a carry covers it, as a drag let go there does.
+    expect(carry.lands(2, 2)).toBe(true)
+  })
+
+  it('is none for a Selection holding no bead', () => {
+    const project = canvasWith(PIECE)
+
+    expect(pieceCarry(project, { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
   })
 })

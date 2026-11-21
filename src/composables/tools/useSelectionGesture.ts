@@ -21,7 +21,7 @@ import {
   type PasteStamp,
   type Selection,
 } from '../../domain/selection'
-import { moveLayerSelection, stepMove, wholeMove } from '../../domain/moveSelection'
+import { moveLayerSelection, pieceCarry, selectionAfterMove, stepMove, wholeMove, type PieceCarry } from '../../domain/moveSelection'
 import { frameAllows } from '../../domain/frameShape'
 import { laidFrame } from '../../domain/frameOrientation'
 import { frameOf, layerOf } from '../../domain/layerRecord'
@@ -72,12 +72,12 @@ export function useSelectionGesture(
   let adjust:
     | { kind: 'resize'; edges: FrameEdge[]; start: Selection }
     | { kind: 'move'; origin: GridPosition; start: Selection; moved: boolean; tool?: 'select' | 'piece' }
-    | { kind: 'carry'; origin: GridPosition; start: Selection }
+    | { kind: 'carry'; origin: GridPosition; start: Selection; held?: PieceCarry | null; refused?: { rows: number; columns: number } }
     | undefined
 
   /** A Piece held by its move grip (ticket 1013): how far it has come from where it was, and the Project as the release
    * will leave it, which the canvas shows meanwhile. The open Project is untouched until the release. */
-  const carried = shallowRef<{ rows: number; columns: number; project: Project } | undefined>()
+  const carried = shallowRef<{ rows: number; columns: number; project: Project; piece?: CarriedPiece } | undefined>()
 
   // Where a Select press started and whether it has left that cell. Dragging marks a new Selection; a click in place
   // stamps the copy, or with none drops the Selection, so the press only records its anchor here and endPress decides
@@ -240,6 +240,12 @@ export function useSelectionGesture(
       adjust = { kind: 'resize', edges: target.edges, start }
     } else if (target.kind === 'inside') {
       adjust = start.cells ? { kind: 'carry', origin: cell, start } : { kind: 'move', origin: cell, start, moved: false, tool }
+      // A Canvas Piece is lifted out at the press, so the first step of the drag draws nothing the press did not (ticket 1151).
+      const project = currentProject()
+      if (adjust.kind === 'carry' && project) {
+        adjust.held = pieceCarry(project, start) ?? null
+        if (adjust.held) carried.value = { rows: 0, columns: 0, project: adjust.held.lifted, piece: { project: adjust.held.piece, from: { row: start.top, column: start.left } } }
+      }
     }
   }
 
@@ -251,13 +257,30 @@ export function useSelectionGesture(
     if (!project) return
     const by = wholeMove(project, held.start, cell.row - held.origin.row, cell.column - held.origin.column)
     if (by.rows === (carried.value?.rows ?? 0) && by.columns === (carried.value?.columns ?? 0)) return
+    // A place it was refused is not worked out again while the pointer stays in it.
+    if (by.rows === held.refused?.rows && by.columns === held.refused?.columns) return
+    // A Piece on the Canvas was lifted out of the Project at the press, and the canvas moves it as a bitmap of its own
+    // (ticket 1151): each step only asks whether it can lie there. Any other is the Project as the release will leave it.
+    const own = held.held
     if (by.rows === 0 && by.columns === 0) {
-      carried.value = undefined
+      carried.value = own && carried.value ? { ...carried.value, ...by } : undefined
       selection.value = held.start
       return
     }
+    if (own) {
+      if (!own.lands(by.rows, by.columns)) {
+        held.refused = by
+        return
+      }
+      carried.value = { ...by, project: own.lifted, piece: { project: own.piece, from: { row: held.start.top, column: held.start.left } } }
+      selection.value = selectionAfterMove(held.start, by.rows, by.columns)
+      return
+    }
     const moved = moveLayerSelection(project, held.start, by.rows, by.columns, { cover: true })
-    if (!moved) return
+    if (!moved) {
+      held.refused = by
+      return
+    }
     carried.value = { ...by, project: moved.project }
     selection.value = moved.selection
   }
@@ -526,12 +549,28 @@ export function useSelectionGesture(
     moveSelectionBy,
     /** The Project as a Piece held by its move grip will leave it (ticket 1013), for the canvas to show; none otherwise. */
     carriedProject: computed(() => carried.value?.project),
+    /** A Canvas Piece held by its move grip, for the canvas to move as a bitmap over `carriedProject`, which then has it
+     * lifted out (ticket 1151); none otherwise. */
+    carriedPiece: computed<CarriedPieceMove | undefined>(() => (carried.value?.piece ? { ...carried.value.piece, rows: carried.value.rows, columns: carried.value.columns } : undefined)),
     /** Whether a copied block is armed to paste (ticket 168's ContextBar: "Tap where to paste" replaces the
      * Selection's own controls once this is true). */
     pasteProjectionActive,
     /** Whether a block is copied, ready for Ctrl/Cmd+V (the Paste control's enabled state). */
     hasClipboard: () => copiedBlock.value !== undefined,
   }
+}
+
+/** The Piece a carry moves as a bitmap (ticket 1151): the Project of its beads alone, and the position of its Selection's
+ * first bead, which is what the move is measured from. */
+export interface CarriedPiece {
+  project: Project
+  from: GridPosition
+}
+
+/** A carried Piece and how far it has come from where it was, in beads (ticket 1151). */
+export interface CarriedPieceMove extends CarriedPiece {
+  rows: number
+  columns: number
 }
 
 /** What a Mirror-mode drag asks of the Area (ticket 1028): its rectangle from press to pointer, and the edges it keeps. */
