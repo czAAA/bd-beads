@@ -156,9 +156,11 @@ export interface RulerLayoutOptions {
   /** The margin sheet's scale (`marginScale`, ticket 0698): a Frame's numbers stand on its sheet and are drawn at it in
    * place of the zoom's own rule; a Piece's keep the zoom's. Left out, the zoom's rule for both. */
   sheetScale?: number
-  /** The Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): its numbers are the 100% ones at every
-   * zoom, the Ruler step always kept, never only the last number. */
+  /** The Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): its numbers keep their size at every zoom,
+   * the Ruler step always kept, never only the last number. */
   expanded?: boolean
+  /** The expanded Frame's numbers' size in px (ticket 1194: it grows with the bead); the 100% ones when left out. */
+  expandedFontPx?: number
   /** The Pieces to rule, when the caller holds them through a stroke (`ruledPieces`, ticket 0674); counted from the
    * beads otherwise. */
   pieces?: RuledPieces
@@ -322,14 +324,14 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
-export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
+export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, expandedFontPx, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
   const scale = rulerScale(surface.zoom, fontPx)
   // The Frame's numbers stand on its sheet, and grow and shrink with it (ticket 0698); expanded, the sheet is at 1 and
-  // they are the 100% ones, their gap too, whatever the zoom (ticket 1169).
+  // they keep their size, their gap too, whatever the zoom (tickets 1169, 1194).
   const atFull = rulerScale(1, fontPx)
-  const frameScale = expanded ? { ...scale, fontPx: atFull.fontPx, gap: atFull.gap } : sheetScale !== undefined ? { ...scale, fontPx: fontPx * sheetScale } : scale
+  const frameScale = expanded ? { ...scale, fontPx: expandedFontPx ?? atFull.fontPx, gap: atFull.gap } : sheetScale !== undefined ? { ...scale, fontPx: fontPx * sheetScale } : scale
   const scaleOf = (kind: RuledBox['kind']) => (kind === 'frame' ? frameScale : scale)
   const reachOf = (kind: RuledBox['kind']) => scaleOf(kind).fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
   const boxes = ruledBoxes(project, scale, pieces).filter((box) => {
@@ -355,7 +357,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     boxes,
     step: Math.max(1, ...laid.map((box) => box.step)),
     passMark: expanded || sheet !== 'bare',
-    sheetScale: expanded ? 1 : (sheetScale ?? 1),
+    sheetScale: expanded ? (expandedFontPx ?? fontPx) / fontPx : (sheetScale ?? 1),
     labels: everyLabel,
     dots: everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)),
   }
