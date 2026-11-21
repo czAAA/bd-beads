@@ -1,6 +1,6 @@
 # Icons
 
-Icons v2: 94 single-ink SVGs on a 24-unit grid, stroke 1.75, round caps and joins, no fill, drawn in `ink` #1f1f1f because `<img>` cannot inherit colour; inline them in UI with `stroke: currentColor`. The bead (a zero-length stroke at 2.6) is the signature. Which icon goes where is in the brand book's Iconography section. Phase E added `device` (Match device) and `contrast` (High contrast) for the theme control; ticket 188 added `bead` (the app's own compact-header mark), `library` (Saved Patterns) and `paste` (the phone Edit sheet's Paste, no longer reusing import).
+Icons v2: 96 single-ink SVGs on a 24-unit grid, stroke 1.75, round caps and joins, no fill, drawn in `ink` #1f1f1f because `<img>` cannot inherit colour; inline them in UI with `stroke: currentColor`. The bead (a zero-length stroke at 2.6) is the signature. Which icon goes where is in the brand book's Iconography section. Phase E added `device` (Match device) and `contrast` (High contrast) for the theme control; ticket 188 added `bead` (the app's own compact-header mark), `library` (Saved Patterns) and `paste` (the phone Edit sheet's Paste, no longer reusing import).
 
 v15 added `menu` (three lines, the same 1.75 stroke, round caps and 4–20 span as `row-progress`): the HeaderMenu button next to the logo.
 v15 also added `pattern` (a 12×17 board, radius 3.5, with two columns of three beads at stroke 2.6): the Dock's Pattern button, so it no longer reads as Save.
@@ -52,3 +52,5 @@ Ticket 1087 added two for signing in, placed by ticket 0078. `account` is a pers
 Ticket 1168 added two for the margin sheet's Expand the Frame, chosen by the owner on 2026-11-20 (variant A, from the design canvas "Expand Frame to the screen"). `expand-frame` is four arrows leaving the corners, each a diagonal from the middle with an L head at its corner, round the bead: Expand the Frame. `collapse-frame` is the same four turned in, their heads 5.5 in from the corners, round the bead: Back to the Canvas, the face the button shows while the Frame is expanded. One 1.75 stroke each plus the bead at 2.6.
 
 Ticket 1175 added `mouse`: a mouse seen from above, a 11 × 18 rounded body (radius 5.5, the stroke 1.75) with its wheel a 3-long line near the top, centred. The coffee screen's **For computers and phones**, beside `pen-mode` and `keyboard`.
+
+Ticket 1177 added `lift-frame` for the margin sheet's Lift, chosen with the Lift design session of 2026-11-21: a rounded plate (2.5 corners, 15 × 11.5) with a bead in its middle and a short line under it, the shadow it casts. It is the one icon of the Frame's tools that shows a setting that stays on, and it takes the band's selected look beside Mirror the whole Frame (MarginSheet card, Lift).
