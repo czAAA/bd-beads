@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition, seenWayOf, type SeenWay } from '../../domain/rowProgress'
+import { columnsAsSeen, frameRowOrder, rowProgressPosition, seenWayOf, type SeenWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { customPassWords, rowProgressCount, seenWayWords } from '../../i18n/rowProgressWords'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
-import GoToRowPopover from './GoToRowPopover.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import ProgressMoves from './ProgressMoves.vue'
 import ProgressTrack from './ProgressTrack.vue'
 import RowDirectionPopover from './RowDirectionPopover.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { frameOf } from '../../domain/layerRecord'
-import { pieceFaceOf } from '../../domain/pieceFaces'
 
 // Row progress's controls (ProgressBar and MarginSheet cards; tickets 144, 411, 0657, 0658, 1176), one component in the
 // Progress bar and the margin sheet's foot, so a press in either moves the one pointer: `bar` spells the row out; `margin`
@@ -49,10 +47,6 @@ const emit = defineEmits<{
   /** A way chosen from Turn row direction's list (ticket 0973, UX-060): its press only opens the list. */
   'set-row-direction': [way: SeenWay]
   'toggle-row-highlight': []
-  /** Go to row, from the bar's counter (ticket 0849): the pass to point at, from 0. */
-  'go-to-row': [pass: number]
-  /** Go to row's Show row (ticket 0934): the current row brought back into view, the pointer where it is. */
-  'show-row': []
 }>()
 
 const { t } = useI18n()
@@ -65,7 +59,6 @@ const actions = {
   rowHighlight: controlAction('row-highlight'),
   notDone: keyedHere(controlAction('row-not-done')),
   done: keyedHere(controlAction('row-done')),
-  goToRow: controlAction('go-to-row'),
 }
 
 /** On the Homepage's cuff Enter and Shift+Enter stay the page's (ticket 1157), so its moves show no key. */
@@ -105,46 +98,6 @@ const allDoneBody = computed(() => (columnWise.value ? t.value.rowProgress.every
 /** The counter names its step, "Row 7 of 10", and on peyote, where a line takes two passes, "Pass 3 of 27 · row 2"
  * with the rulers' row (tickets 0849 F-04-03, 0972): the announcer's own words. A narrow bar shows "7/10". */
 const count = computed(() => rowProgressCount(t.value.rowProgress, props.project))
-const line = computed(() => passLine(props.project))
-/** On peyote Go to row holds the sentence that says what a pass is behind an Info button (ticket 0972, UX-062). */
-const passesInfo = computed(() => {
-  const words = t.value.rowProgress
-  if (!line.value) return undefined
-  const body = fillBlanks(columnWise.value ? words.columnPassesBody : words.passesBody, { passes: position.value.total, lines: line.value.lines })
-  return { label: words.passesInfoName, body }
-})
-/** On a Kaleidocycle it first says the triangles here are this face's, of the piece's 24 (ticket 0876). */
-const counterBody = computed(() => {
-  const words = t.value.rowProgress
-  if (allDone.value) return allDoneBody.value
-  if (passesInfo.value) return passesInfo.value.body
-  const body = columnWise.value ? words.goToColumnBody : words.goToRowBody
-  const face = pieceFaceOf(frameOf(props.project)?.shape)
-  return face ? fillBlanks(words.faceBody, { parts: face.parts, total: face.total, then: body }) : body
-})
-
-/** Go to row, opened by the bar's counter (ticket 0849, F-04-14): its number counts what the counter does, passes
- * where a line takes two or the Frame is a Custom frame. */
-const goToOpen = ref(false)
-/** The counter's button, which Go to row hangs from: taken from its press, as a ref inside the items' loop is a list. */
-const counterButton = ref<HTMLElement>()
-function toggleGoTo(event: MouseEvent) {
-  counterButton.value = event.currentTarget as HTMLElement
-  goToOpen.value = !goToOpen.value
-}
-/** Where the number counts passes, Go to row is Go to pass, one noun with its field (ticket 0972, UX-062). */
-const countsPasses = computed(() => line.value !== undefined || frameRowOrder(props.project).stepOf !== undefined)
-const goToTitle = computed(() => {
-  const words = t.value.rowProgress
-  if (countsPasses.value) return words.goToPass
-  return columnWise.value ? words.goToColumn : words.goToRow
-})
-const goToUnit = computed(() => {
-  const words = t.value.rowProgress
-  if (countsPasses.value) return words.passLabel
-  return columnWise.value ? words.columnLabel : words.positionLabel
-})
-
 /** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): none for a Frame without a
  * Frame shape. */
 const customPosition = computed(() => customPassWords(t.value.rowProgress, props.project, shownRow.value))
@@ -228,22 +181,14 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
         customPosition?.of ?? fillBlanks(t.rowProgress.ofTotal, { total: position.total, direction: directionLabel })
       }}</span>
     </p>
-    <!-- In the bar and the margin's strip (ticket 1176) the counter is Go to row's button (ticket 0849), and once every
-      pass is done it reads Pattern done. -->
-    <AppButton
+    <!-- In the bar and the margin's strip (ticket 1176) the counter is text, and once every pass is done it reads Pattern
+      done. -->
+    <p
       v-else-if="item === 'counter' && (form === 'bar' || form === 'margin')"
-      class="row-progress__counter-button"
-      variant="text"
-      size="sm"
-      :icon="allDone ? 'check' : undefined"
-      :action="actions.goToRow"
-      :label="goToTitle"
-      :tooltip="{ body: counterBody }"
-      aria-haspopup="dialog"
-      :aria-expanded="goToOpen"
+      class="row-progress__count"
       :data-testid="`${testid}-compact-position`"
-      @click="toggleGoTo"
     >
+      <AppIcon v-if="allDone" name="check" />
       <template v-if="allDone">{{ t.rowProgress.patternDone }}</template>
       <template v-else>
         <span class="row-progress__count-step">{{ count.step }}</span><span class="row-progress__count-short">{{ count.short }}</span><span
@@ -251,7 +196,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
           class="row-progress__line"
         >&nbsp;{{ count.line }}</span>
       </template>
-    </AppButton>
+    </p>
     <!-- The cuff's counter (ticket 1157): the bar's words, nothing to press; the cuff picks which of them it has room for. -->
     <p v-else-if="item === 'counter' && form === 'woven'" class="row-progress__counter-text" :data-testid="`${testid}-compact-position`">
       <span class="row-progress__woven-step">{{ count.step }}</span><span class="row-progress__woven-short">{{ count.short }}</span><span
@@ -325,19 +270,6 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     @choose="emit('set-row-direction', $event)"
     @toggle-row-highlight="emit('toggle-row-highlight')"
   />
-  <GoToRowPopover
-    v-if="goToOpen && counterButton"
-    :anchor="counterButton"
-    :title="goToTitle"
-    :unit="goToUnit"
-    :current="shownRow"
-    :total="position.total"
-    :show-label="columnWise ? t.rowProgress.showColumn : t.rowProgress.showRow"
-    :info="passesInfo"
-    @close="goToOpen = false"
-    @go="emit('go-to-row', $event)"
-    @show="emit('show-row')"
-  />
   </div>
 </template>
 
@@ -380,12 +312,20 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   white-space: nowrap;
 }
 
-/* The bar's counter is Go to row's quiet button (ticket 0849), in the title role so it reads at arm's length (ticket
- * 0972, UX-063), with 6px either side. */
-.row-progress--bar :deep(.row-progress__counter-button) {
+/* The counter is text in the bar and the strip: the title role in the bar so it reads at arm's length (ticket 0972,
+ * UX-063), with 6px either side. */
+.row-progress__count {
+  display: inline-flex;
   flex: none;
-  padding-inline: var(--space-6);
+  align-items: center;
   gap: var(--space-4);
+  margin: 0;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.row-progress--bar .row-progress__count {
+  padding-inline: var(--space-6);
   font: var(--type-title);
 }
 
@@ -474,12 +414,10 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   margin-inline: var(--space-4);
 }
 
-/* The strip's counter is Go to row's quiet button in the control type, 4px either side (ticket 1176). */
-.row-progress--margin :deep(.row-progress__counter-button) {
-  flex: none;
+/* The strip's counter is in the control type, 4px either side (ticket 1176). */
+.row-progress--margin .row-progress__count {
   height: var(--margin-done);
   padding-inline: var(--space-4);
-  gap: var(--space-4);
   font: var(--type-control);
 }
 

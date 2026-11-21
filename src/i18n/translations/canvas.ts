@@ -92,9 +92,6 @@ export interface CanvasTranslations {
     /** The toast when rows marked done take a drawing back (ticket 0848), naming Back a row, or Back a column (ticket 0972). */
     markedDoneToast: string
     columnMarkedDoneToast: string
-    /** The counter's Tooltip where a line takes two passes (peyote, ticket 0849): what it counts, passes, not rows. */
-    passesBody: string
-    columnPassesBody: string
     /** After the counter there: the rulers' row of the pass, "3/27 · row 2". */
     passLine: string
     columnPassLine: string
@@ -107,34 +104,17 @@ export interface CanvasTranslations {
     /** After the Turn row direction toast, while the way left has rows marked done: they are kept, not lost. */
     rowsKeptToast: string
     columnsKeptToast: string
-    /** Go to row (ticket 0849): the counter opens it; a field for the row (or the pass, on peyote) and Go. */
-    goToRow: string
-    goToColumn: string
-    goToRowBody: string
-    goToColumnBody: string
     passLabel: string
     columnLabel: string
-    goButton: string
     /** The Turn row direction toast with the kept sentence after it: `{toast} {kept}`, with no space in Chinese. */
     directionKeptToast: string
-    /** The Go to row Tooltip on a Kaleidocycle (ticket 0876): the triangles here are this face's, `{then}` its usual sentence. */
-    faceBody: string
-    /** The counter, and what the announcer says after Back a row, Row done and Go to row (tickets 0934, 0972): "Row 7
+    /** The counter, and what the announcer says after Back a row and Row done (tickets 0934, 0972): "Row 7
      * of 10" (`unit` is Row, Column or Pass), and on peyote that `step` with the rulers' row, "Pass 3 of 27, row 2". */
     announcePosition: string
     announcePass: string
     announceColumnPass: string
-    /** Go to row's button that brings the current row back into view after the beader panned away (ticket 0934). */
-    showRow: string
-    showColumn: string
-    /** Go to row's name where it counts passes, on peyote and a Custom frame (ticket 0972): one noun with the counter. */
-    goToPass: string
-    /** The name of Go to row's Info button that holds the passes sentence on peyote (ticket 0972). */
-    passesInfoName: string
     /** Turn row direction's list (ticket 0973): its Switch that shows and hides the ring and the number pill, Row highlight. */
     showRowMarks: string
-    /** Go to row's line under its field when the number typed doesn't exist, the field's description (ticket 0980). */
-    goToRange: string
   }
   /** Remove row/column's question where it touches finished rows (ticket 0647), worded for rows or columns as the rows
    * run: `{number}` is the line's number the way the rows run, `{backTo}` the row Row progress shows after. */

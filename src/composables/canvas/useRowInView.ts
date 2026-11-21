@@ -13,7 +13,7 @@ export interface RowInViewDeps {
 }
 
 /** Keeps the row the weaver is on in view (ticket 0934): `showRow` pans the shortest way that brings the current pass,
- * with a row of context, into the visible Canvas, zoom untouched. A row move and Go to row's Show row call it; opening a
+ * with a row of context, into the visible Canvas, zoom untouched. A row move calls it; opening a
  * Project, a reload among them, jumps to it once the view is placed, unless an opening address set the view. */
 export function useRowInView(deps: RowInViewDeps) {
   function showRow(how: { jump?: boolean } = {}): void {

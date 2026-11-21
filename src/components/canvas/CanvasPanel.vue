@@ -156,8 +156,6 @@ const {
   onSelectCustomColor,
   onSetRowDirection,
   onMoveRow,
-  onGoToRow,
-  onShowRow,
   canRemoveSelectedLine,
   onRemoveSelectedLine,
   locale,
@@ -759,8 +757,6 @@ const drawingStyle = computed(() => {
           @reset-progress="onResetProgress"
           @set-row-direction="onSetRowDirection"
           @toggle-row-highlight="toggleRowHighlight"
-          @go-to-row="onGoToRow"
-          @show-row="onShowRow"
         />
 
         <!--
@@ -854,8 +850,6 @@ const drawingStyle = computed(() => {
             @reset-progress="onResetProgress"
             @set-row-direction="onSetRowDirection"
             @toggle-row-highlight="toggleRowHighlight"
-            @go-to-row="onGoToRow"
-            @show-row="onShowRow"
             @rename="onRenameFrame"
             @set-technique="onSetFrameTechnique"
             @set-setting="onSetFrameSetting"

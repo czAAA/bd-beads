@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "The row counter is plain text: Go to row, where you typed the row you were on, is gone",
+    "ru": "Счётчик рядов теперь просто текст: «Перейти к ряду», где можно было ввести свой ряд, убран",
+    "uk": "Лічильник рядів тепер просто текст: «Перейти до ряду», де можна було ввести свій ряд, прибрано",
+    "be": "Лічыльнік радоў цяпер проста тэкст: «Перайсці да рада», дзе можна было ўвесці свой рад, прыбраны",
+    "zh": "行计数器现在只是文字：可以输入当前行的“跳到行”已移除",
+    "es": "El contador de filas ahora es solo texto: se quitó «Ir a la fila», donde escribías la fila en la que estabas",
+    "pl": "Licznik rzędów to teraz zwykły tekst: „Przejdź do rzędu”, gdzie wpisywało się swój rząd, zniknęło"
+  }
+}
