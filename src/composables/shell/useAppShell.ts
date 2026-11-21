@@ -448,6 +448,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
     showToast('select-frame', touch.value ? t.value.frame.selectFrameTouchHint : t.value.frame.selectFrameHint, 'info')
   }
 
+  /** Select a Piece to make a Frame: Piece is the tool, and the Piece the next tap selects is framed at once, as the
+   * drag of Select a frame does. Same notices and Escape as that. */
+  function onSelectPieceFrame(from: FramingFrom = 'frame') {
+    onSelectTool('piece')
+    selectingFrame.value = from
+    showToast('select-frame', touch.value ? t.value.frame.selectPieceFrameTouchHint : t.value.frame.selectPieceFrameHint, 'info')
+  }
+
   /** The Progress bar's Fit a Frame and export a picture (ticket 0847, O-03): Fit to drawing, then Export on Picture. */
   function onFitAndExport() {
     frameFlow.fit()
@@ -470,6 +478,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
       }
       return
     }
+    finishFraming()
+  }
+
+  /** Frames the Selection just made when it was made to set the Frame, the Selection gone after. */
+  function finishFraming() {
     const from = selectingFrame.value
     if (!from || !selection.value) return
     endFraming()
@@ -477,6 +490,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
     resetSelection()
     if (from === 'export' && frameOf(currentProject())) overlays.showExport('strip-export')
   }
+
+  // A tap of the Piece tool made the Selection: framing it needs no drag to end.
+  watch(selection, () => {
+    if (activeTool.value === 'piece') finishFraming()
+  })
 
   // Mirror mode runs under Select: whatever takes the tool elsewhere (a colour picked into Paint too) ends it.
   watch(activeTool, (tool) => {
@@ -1442,6 +1460,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onRenameFrame: frameFlow.rename,
       onFitFrame: frameFlow.fit,
       onSelectFrame,
+      onSelectPieceFrame,
       onResetProgress: rowOps.onResetProgress,
       onSetFrameSettings: frameFlow.setSettings,
       onPlaceFrameFromStarter: frameFlow.placeFromStarter,

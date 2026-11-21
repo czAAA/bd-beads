@@ -9,7 +9,7 @@
 A free bead pattern maker for loom, peyote and brick stitch.<br>
 It runs in your browser, works offline and keeps your work on your device.
 
-<a href="https://openbeads.com"><img src="https://img.shields.io/badge/Open%20openbeads-fa520f?style=for-the-badge" alt="Open openbeads"></a>
+<a href="https://openbeads.com"><img src="https://img.shields.io/badge/openbeads-fa520f?style=for-the-badge" alt="openbeads"></a>
 <a href="https://buymeacoffee.com/openbeads"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
 
 <img src="public/screenshots/editor-wide.png" width="900" alt="The editor with a peyote band in Diamonds open">
