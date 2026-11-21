@@ -295,13 +295,14 @@ export function greyscale(color: string): string {
   return `rgb(${grey}, ${grey}, ${grey})`
 }
 
-/** How much brighter the current row's beads are than the todo rows (ticket 352). */
-export const CURRENT_ROW_BRIGHTNESS = 0.1
+/** How much brighter the current row's beads are than the todo rows: none, they keep their own color (ticket 352 lifted
+ * them 10%; the lift, ring and shadow stay, only the color change is gone). */
+export const CURRENT_ROW_BRIGHTNESS = 0
 
-/** The color lifted toward white by `amount` (0 to 1): the current row's 10% brighter beads (ticket 352). A color it
+/** The color lifted toward white by `amount` (0 to 1), none at 0. A color it
  * cannot read comes back as it was. */
 export function brighten(color: string, amount: number): string {
-  const rgb = parseColor(color)
+  const rgb = amount ? parseColor(color) : undefined
   return rgb ? rgbText(mix(rgb, WHITE, amount)) : color
 }
 

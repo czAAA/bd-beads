@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "changed",
+  "line": {
+    "en": "The current row keeps its own bead colors: it is still raised and ringed, but no longer drawn lighter",
+    "ru": "Текущий ряд сохраняет цвета бусин: он по-прежнему приподнят и обведён, но больше не светлее остальных",
+    "uk": "Поточний ряд зберігає кольори бісеринок: він досі піднятий і обведений, але більше не світліший за решту",
+    "be": "Бягучы рад захоўвае колеры пацерак: ён па-ранейшаму прыпаднят і абведзены, але больш не святлейшы за астатнія",
+    "zh": "当前行保持珠子原本的颜色：仍然凸起并带有圆环，但不再显得更亮",
+    "es": "La fila actual conserva los colores de sus cuentas: sigue elevada y con anillo, pero ya no se ve más clara",
+    "pl": "Bieżący rząd zachowuje kolory koralików: nadal jest uniesiony i otoczony pierścieniem, ale nie jest już jaśniejszy"
+  }
+}

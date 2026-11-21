@@ -111,7 +111,7 @@ export interface RenderInput {
   // Draw finished rows at their normal color (ticket 352): while the pointer hovers a finished row, or after a tap on a
   // finished row. Off, they are dimmed.
   showFinished?: boolean
-  // Whether Row progress is drawn: finished rows faded, the current one brighter. Defaults to `rowProgressOn(project)`;
+  // Whether Row progress is drawn: finished rows faded, the current one raised. Defaults to `rowProgressOn(project)`;
   // an export, a chart that shows every bead as it is, passes false (ticket 434).
   rowMarks?: boolean
   // Redraw only these rows: their whole band is cleared and redrawn, so edits do not pile up anti-aliasing on rounded

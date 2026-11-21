@@ -302,7 +302,7 @@ export function stepLines(project: Layered, before: RowProgress): { direction: P
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
- * current row is drawn brighter. Only while the overlay is on and a Frame is set.
+ * current row is raised. Only while the overlay is on and a Frame is set.
  * @internal The renderer asks `rowPassesOf` (ticket 0676); tests and the visual check ask of one bead. */
 export function isInCurrentRow(project: Layered, position: GridPosition): boolean {
   const pass = framePassAt(project, position)

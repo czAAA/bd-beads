@@ -8,7 +8,7 @@ import { MARGIN } from '../domain/margin'
 import { MIRROR_OFF, withMirror } from '../domain/mirror'
 import type { Grid, Project } from '../domain/project'
 import type { Technique, Weave } from '../domain/weave'
-import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, flatLook, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
+import { blendOver, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, flatLook, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
@@ -404,31 +404,20 @@ describe('renderProject', () => {
       return withLayers(project, { frame: { ...frame, beads } })
     }
 
-    it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
+    it('draws the current row in its own color, not brighter, shown or dimmed, in either direction', () => {
       const colors = (direction: 'rows' | 'columns', showFinished: boolean) => {
         const project = filled(projectOf('loom', 3, 3, { ownProgress: progress(direction) }))
         return beadsDrawn(project, whole(project), 1, showFinished, true).map(({ color }) => color)
       }
       const red = '#e63746'
-      const lit = brighten(red, 0.1)
-      expect(lit).not.toBe(red)
-
       for (const showFinished of [false, true]) {
-        // The finished and todo beads keep their own color; the current row's are lifted.
-        expect(colors('rows', showFinished)).toEqual([red, red, red, lit, lit, lit, red, red, red])
-        expect(colors('columns', showFinished)).toEqual([red, red, lit, red, red, lit, red, red, lit])
+        // The finished, todo and current beads all keep their own color.
+        expect(new Set(colors('rows', showFinished))).toEqual(new Set([red]))
+        expect(new Set(colors('columns', showFinished))).toEqual(new Set([red]))
       }
     })
 
-    it('brightens only the pass on peyote, not the whole line', () => {
-      const project = filled(projectOf('peyote', 4, 3, { ownProgress: { ...progress('rows'), currentRow: 1 } }))
-
-      const lit = beadsDrawn(project, whole(project), 1, false, true).filter(({ color }) => color === brighten('#e63746', 0.1)).length
-
-      expect(lit).toBe(2)
-    })
-
-    it('leaves an empty cell of the current row as it is: no brightening where there is no bead (ticket 411)', () => {
+    it('leaves an empty cell of the current row as it is: no color change where there is no bead (ticket 411)', () => {
       const project = projectOf('loom', 3, 3, { ownProgress: progress('rows') })
 
       expect(beadsDrawn(project, whole(project), 1, false, true).every(({ color }) => color === null)).toBe(true)
