@@ -2,11 +2,8 @@
 import { computed, ref } from 'vue'
 import type { Project } from '../../domain/project'
 import type { SeenWay } from '../../domain/rowProgress'
-import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
-import AppButton from '../ui/AppButton.vue'
-import AppIcon from '../ui/AppIcon.vue'
 import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { frameOf } from '../../domain/layerRecord'
@@ -15,7 +12,7 @@ import { rowItemsWidth, useFittingForm } from '../../composables/canvas/useFitti
 import { useElementSize } from '../../composables/ui/useElementSize'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control along the canvas box's
-// bottom; with no Frame (ADR 0055) Fit a Frame and export a picture (0847), with one its RowProgressControls (0657). The
+// bottom; with no Frame (ADR 0055) the footer isn't shown (CanvasPanel), with one its RowProgressControls (0657). The
 // Homepage fills it with its sections through the slot, with no Project (0739); the editor with none leaves it empty (0748).
 const props = withDefaults(defineProps<{
   /** The Project whose Row progress it shows; none where the slot fills the bar, or where the bar is empty. */
@@ -37,24 +34,13 @@ const emit = defineEmits<{
   'go-to-row': [pass: number]
   /** Go to row's Show row (ticket 0934): bring the current row back into view. */
   'show-row': []
-  /** The bar's own way to a Frame and a picture, shown while there is none to count rows on (ticket 0847, O-03): Fit
-   * to drawing, then Export opened on Picture. */
-  'fit-and-export': []
-  /** The no-Frame line's press (ticket 0944): the Select tile's own pick, as the Tool pill emits it. */
-  'select-tool': [tool: 'select']
 }>()
 
-const { t, locale } = useI18n()
+const { locale } = useI18n()
 
 // One Tab stop; ←/→ step along the bar's controls and stop at the ends (ADR 0075).
 const rootEl = ref<HTMLElement>()
 const roving = useRovingFocus(rootEl, { axis: () => 'horizontal', managesTabIndex: true })
-
-const fitAndExport = controlAction('fit-and-export')
-/** The Select tile's action (ticket 0944): the no-Frame line is named and keyed as the tile is, and its press is the
- * tile's own pick. Its chips stand for the icon, so the action's own is left off. */
-const selectTile = { ...controlAction('tool-select'), icon: undefined }
-const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
 const hasFrame = computed(() => props.project !== undefined && frameOf(props.project) !== undefined)
@@ -79,24 +65,8 @@ const countFit = useFittingForm({
 <template>
   <div ref="rootEl" class="progress-bar no-page-pan" data-testid="progress-bar" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
     <slot>
-    <template v-if="project && !hasFrame">
-      <!-- Set like the CanvasHint, icons 14px to fit the 20px chips: "(Select chip)(Frame chip) Mark the piece to export and
-           count: drag with Select.", a button that picks the Select tool as its pill tile does (ticket 0944). -->
-      <span class="progress-bar__need">
-        <AppButton variant="text" :action="selectTile" data-wrap-ok data-testid="progress-bar-needs-frame" @click="emit('select-tool', 'select')">
-          <span class="progress-bar__chips">
-            <span class="hint-chip"><AppIcon name="select" :size="14" /></span>
-            <span class="hint-chip"><AppIcon name="frame" :size="14" /></span>
-          </span>
-          <span class="progress-bar__need-text">{{ t.frame.progressMarkPiece }}</span>
-        </AppButton>
-      </span>
-      <span class="progress-bar__fit-frame">
-        <AppButton variant="box" :action="fitAndExport" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-and-export')" />
-      </span>
-    </template>
     <RowProgressControls
-      v-else-if="project"
+      v-if="project && hasFrame"
       :project="project"
       :row-highlight="rowHighlight"
       :row-press="rowPress"
@@ -115,40 +85,6 @@ const countFit = useFittingForm({
 </template>
 
 <style scoped>
-/* No Frame (ProgressBar card): the line that picks Select, set like the CanvasHint, wrapping to a second line where it
- * has no room, and Fit a Frame and export a picture pushed to the right. */
-.progress-bar__need {
-  display: flex;
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.progress-bar__need :deep(.app-button-wrap) {
-  min-width: 0;
-}
-
-.progress-bar__need :deep(.app-button) {
-  justify-content: flex-start;
-  min-width: 0;
-  height: auto;
-  min-height: var(--control-height);
-  font: 400 0.75rem/1rem var(--font-sans);
-  color: var(--muted);
-  white-space: normal;
-  text-align: start;
-}
-
-.progress-bar__chips {
-  display: flex;
-  flex: none;
-  gap: var(--space-4);
-}
-
-.progress-bar__fit-frame {
-  flex: none;
-  margin-left: auto;
-}
-
 .progress-bar {
   container-type: inline-size;
   display: flex;
@@ -177,11 +113,6 @@ const countFit = useFittingForm({
      * 443): 4px between them keeps it one row at 320px, inside the 12px screen edge (ticket 450). */
     gap: var(--space-4);
     padding-inline: var(--space-4);
-  }
-
-  /* The no-Frame line takes the first row whole; Fit a Frame and export a picture wraps to the second. */
-  .progress-bar__need {
-    flex-basis: 100%;
   }
 }
 </style>

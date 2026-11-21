@@ -202,7 +202,6 @@ export const tools: ToolsTranslations = {
     rulers: 'Rulers number your beads.',
     rowDirection: 'Turn the way the rows run: top to bottom, left to right, bottom to top or right to left.',
     rowHighlight: 'Show or hide the marks on the current row and the rows marked done.',
-    fitAndExport: 'Fit the Frame around every bead, then open Export on Picture.',
     pasteToolTouch: 'Tap where the copy goes.',
     noBeadsToNumber: 'There are no beads to number.',
     framePanelBeads: 'The Frame marks the part you export and weave. Open Export, Beads needed ({total}), the Frame’s size, Rotate and Remove.',

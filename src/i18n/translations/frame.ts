@@ -159,15 +159,10 @@ export interface FrameTranslations {
     countNeedsFrame: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
-    /** The Progress bar's button with no Frame (ticket 0847): fits a Frame and opens Export on Picture. */
-    fitAndExport: string
     /** Each Export quality stop's caption in a crafter's words (ticket 0957); the DPI is in `qualityHint`. */
     qualityLowCaption: string
     qualityMediumCaption: string
     qualityHighCaption: string
-    /** The Progress bar's line with no Frame, after its Select and Frame chips: what a Frame gives, then how to set one
-     * (ticket 0944). The line is a button that picks the Select tool. */
-    progressMarkPiece: string
     /** The Drag a Frame notice on touch (ticket 0954): a finger has no Escape key, and picking a tool cancels. */
     selectFrameTouchHint: string
     /** The size fields' range line (ticket 0978), shown when a key is refused or a typed side is brought into range; {min} and {max} are numbers of beads. */

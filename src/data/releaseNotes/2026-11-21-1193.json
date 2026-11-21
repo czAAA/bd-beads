@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "The bottom bar shows only once there is a Frame, and the empty canvas now says how to set one and how to save your file, with chips for the tools",
+    "ru": "Нижняя панель появляется только когда есть рамка, а пустой холст подсказывает, как её задать и как сохранить файл, со значками инструментов",
+    "uk": "Нижня панель з’являється лише тоді, коли є рамка, а порожнє полотно підказує, як її задати і як зберегти файл, зі значками інструментів",
+    "be": "Ніжняя панэль паказваецца толькі калі ёсць рамка, а пустое палатно падказвае, як яе задаць і як захаваць файл, са значкамі інструментаў",
+    "zh": "只有设置了边框才会显示底部栏；空白画布现在会用工具图标提示如何设置边框、如何保存文件",
+    "es": "La barra inferior solo aparece cuando hay un marco, y el lienzo vacío explica cómo fijarlo y cómo guardar el archivo, con fichas de las herramientas",
+    "pl": "Dolny pasek pojawia się dopiero, gdy jest ramka, a puste płótno podpowiada, jak ją ustawić i jak zapisać plik, z ikonami narzędzi"
+  }
+}

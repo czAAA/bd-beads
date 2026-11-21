@@ -9,8 +9,6 @@ import PrivacyPolicy from './shell/PrivacyPolicy.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { moveToRow, rowProgressPosition, toggleRowDirection } from '../domain/rowProgress'
-import { withFrameSheet } from '../domain/layerRecord'
-import { withLayers } from '../testUtils/layerFields'
 
 // Components with a fixed-size box, mounted in a real browser in every language at the layout's width edges, must keep
 // their text inside the box (ticket 552).
@@ -23,8 +21,6 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['ToolPill', ToolPill, { activeTool: 'paint', position: 'bottom', recentsInPill: [], popoverOpen: false, hasClipboard: true, colorHex: '#e63746', colorName: 'Red' }],
   ['ProgressBar by rows', ProgressBar, { project }],
   ['ProgressBar by columns', ProgressBar, { project: toggleRowDirection(project) }],
-  // No Frame and a bead drawn (ticket 0847): the hint and Fit a Frame and export a picture.
-  ['ProgressBar with no Frame', ProgressBar, { project: withLayers(withFrameSheet(project, undefined), { beads: { 0: { 0: '#e63746' } } }) }],
   // Peyote by columns, the rulers' column after the count, and every row done: Pattern done (ticket 0849).
   ['ProgressBar on peyote', ProgressBar, { project: moveToRow(toggleRowDirection(peyote), 22) }],
   ['ProgressBar with every row done', ProgressBar, { project: moveToRow(project, rowProgressPosition(project).total) }],

@@ -204,7 +204,6 @@ export const tools: ToolsTranslations = {
     rulers: 'Las reglas numeran tus cuentas.',
     rowDirection: 'Cambia el sentido de las filas: de arriba abajo, de izquierda a derecha, de abajo arriba o de derecha a izquierda.',
     rowHighlight: 'Muestra u oculta las marcas en la fila actual y en las filas marcadas como terminadas.',
-    fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
     pasteToolTouch: 'Toca donde va la copia.',
     noBeadsToNumber: 'No hay cuentas que numerar.',
     framePanelBeads: 'El marco marca la parte que exportas y tejes. Abre Exportar, Cuentas necesarias ({total}), el tamaño del marco, girar y quitar.',

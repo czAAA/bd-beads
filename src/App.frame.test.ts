@@ -315,30 +315,16 @@ describe('Painting a Custom frame', () => {
 describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
   const savedProgress = () => rowProgressOf(loadProjects()[0])
 
-  it('picks the Select tool from the bar\'s no-Frame line, as its pill tile does (ticket 0944)', async () => {
+  it('draws no Progress bar while the Project has no Frame', async () => {
     const wrapper = await mountOpen()
-    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('false')
 
-    await wrapper.get('[data-testid="progress-bar-needs-frame"]').trigger('click')
-    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__footer--none')
   })
 
-  it('turns on with the first Frame, fitted from the Progress bar, which opens Export on Picture; one Undo takes both back (ticket 0847)', async () => {
-    const wrapper = await mountOpen()
-    expect(savedFrame()).toBeUndefined()
-    expect(savedProgress()).not.toHaveProperty('enabled')
+  it('draws the Progress bar once the Project has a Frame', async () => {
+    const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
 
-    await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
-    await flushPromises()
-
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(pointersOf(savedProgress())).toEqual({})
-    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="export-panel"] [data-testid="export-png"]').attributes('data-panel-entry')).toBe('true')
-
-    await key({ key: 'z', ctrlKey: true })
-    expect(savedFrame()).toBeUndefined()
-    expect(savedProgress()).not.toHaveProperty('enabled')
+    expect(wrapper.get('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__footer--none')
   })
 
   it('asks before Reset progress, then takes the rows back to the first, keeping the Frame (ticket 455)', async () => {
