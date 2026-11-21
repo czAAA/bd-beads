@@ -247,8 +247,9 @@ function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFra
  * as in the list of three (ticket 1000), and each layer's Letters switch as its own (ticket 1092). */
 export function encodeProject(project: Project): EncodedProject {
   const [canvas, ...frames] = project.layers
-  const placement = framePlacement(project)
-  return { ...project, backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: [encodeLayer(canvas), ...frames.map((frame) => encodeFrame(frame, placement?.at))] }
+  // Each Frame's own centre, worked out as if it were the Frame laid on this Canvas.
+  const centreOf = (frame: FrameLayer) => framePlacement({ layers: [canvas, frame] })?.at
+  return { ...project, backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: [encodeLayer(canvas), ...frames.map((frame) => encodeFrame(frame, centreOf(frame)))] }
 }
 
 function encodeLayer(layer: Project['layers'][number]): EncodedLayer {

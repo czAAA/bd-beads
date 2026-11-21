@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { moveToRow, rowProgressOf } from './rowProgress'
+import { moveToRow, ownRowWayOf, rowProgressOf } from './rowProgress'
+import { rotateFrame, turnCanvasTo } from './rotate'
 import { replaceBead } from './projectBead'
 import { restoreSnapshot, snapshotOf, UNDO_CAP } from './undoSnapshot'
 import { mirrorSettingOf, withMirror, withMirrorMode, withMirrorPlace } from './mirror'
@@ -40,6 +41,13 @@ describe('snapshotOf and restoreSnapshot', () => {
     expect(canvasOf(restored)).not.toHaveProperty('letters')
     expect(frameOf(restored)).toMatchObject({ id: frameOf(before)!.id, letters: true })
     expect(restoreSnapshot(before, snapshot).layers[1]).toBe(before.layers[1])
+  })
+
+  it('carry the Frame put back with the Canvas\'s turn as it is now, so it lies on it as it did (ticket 1185)', () => {
+    const before = rotateFrame(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 3, unit: 'beads' } }))!
+    const restored = restoreSnapshot(turnCanvasTo(deleteAll(before), 90), snapshotOf(before))
+    expect(frameOf(restored)).toMatchObject({ quarterTurns: 1, angle: 180 })
+    expect(ownRowWayOf(restored)).toEqual(ownRowWayOf(before))
   })
 
   it('keep each layer\'s Background as it is now, a view and no Undo step (ticket 0666)', () => {

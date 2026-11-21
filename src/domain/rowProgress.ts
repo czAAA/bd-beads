@@ -99,7 +99,7 @@ export interface OwnRowProgress {
 /** An older file's Row progress as seen (ticket 1185): the way it showed, its own way turned `shownTurns` quarters (the
  * Canvas's nearest quarter turn plus the Frame's turn on it), each pointer moved to the slot of the way it showed. */
 export function seenProgressOf(own: OwnRowProgress, shownTurns: number): RowProgress {
-  const ownWay: SeenWay = own.direction === 'columns' ? (own.reversed ? 'left' : 'right') : own.reversed ? 'up' : 'down'
+  const ownWay = seenWayOfOwn({ direction: own.direction ?? 'rows', ...(own.reversed ? { reversed: true } : {}) }, 0)
   const pointers: [SeenWay, number | undefined][] = [['down', own.currentRow], ['right', own.currentColumn], ['up', own.currentRowBack], ['left', own.currentColumnBack]]
   return pointers.reduce((seen, [way, count]) => (count ? { ...seen, [turnedWay(way, shownTurns)]: count } : seen), { way: turnedWay(ownWay, shownTurns) } as RowProgress)
 }

@@ -272,6 +272,8 @@ describe('the library in IndexedDB', () => {
     localStorage.removeItem(STORAGE_KEY)
 
     const next = createBrowserLibraryStore()
+    // Counted beside the current format's records, which it is saved as next (ticket 1185).
+    expect(await next.count()).toBe(1)
     await next.start()
 
     expect(next.open(() => false).projects).toEqual([expected])
