@@ -352,19 +352,10 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
     expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 6) } }))).toBe('Нить 3 · 7 из 9')
   })
 
-  it('says on a Kaleidocycle that each triangle is beaded for this face, of the piece\'s 24 (ticket 0876)', () => {
-    const face = 'Каждый треугольник здесь плетётся для этой грани: 6 из 24 в изделии.'
-    const placed = changeFrame(makeProject(), { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 10, column: 10 } } })
-    if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
-    expect(mount(ProgressBar, { props: { project: placed.project } }).text()).toContain(`${face} ${ru.rowProgress.goToRowBody}`)
-    const star = changeFrame(makeProject(), { custom: { shape: 'star', size: 3, centre: { row: 10, column: 10 } } })
-    if (star.kind !== 'changed') throw new Error('expected a Star')
-    expect(mount(ProgressBar, { props: { project: star.project } }).text()).not.toContain(face)
-  })
 })
 
 describe('ProgressBar counter (ticket 0849)', () => {
-  it('names the pass and adds the rulers\' row on peyote, and says in its Tooltip that it counts passes (F-04-03, ticket 0972)', () => {
+  it('names the pass and adds the rulers\' row on peyote (F-04-03, ticket 0972)', () => {
     const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 14, unit: 'beads' } })
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(peyote, 2) } })
 
@@ -373,54 +364,10 @@ describe('ProgressBar counter (ticket 0849)', () => {
     // The rulers' number of the pass's line: the 2nd from the left, as a new peyote Project's lines run left to right
     // on its turned Canvas, so they are columns as seen (ticket 1183).
     expect(counter.get('.row-progress__line').text()).toBe('· столбец 2')
-    expect(wrapper.text()).toContain('проходов: 27, столбцов: 14')
-  })
-
-  it('calls Go to row Go to pass on peyote, the noun of its field, with the passes sentence behind an Info button (ticket 0972)', async () => {
-    const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 14, unit: 'beads' } })
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(peyote, 2) }, attachTo: document.body })
-    await wrapper.get('[data-testid="progress-bar-compact-position"]').trigger('click')
-    const popover = wrapper.get('[data-testid="go-to-row"]')
-    expect(popover.get('.go-to-row__title').text()).toBe(ru.rowProgress.goToPass)
-    expect(popover.get('.go-to-row__line').text()).toContain(ru.rowProgress.passLabel)
-    expect(popover.get('[data-testid="go-to-row-info"]').attributes('aria-label')).toBe(ru.rowProgress.passesInfoName)
-    wrapper.unmount()
   })
 
   it('names the track after a column while rows run down the columns (F-04-05)', () => {
     const wrapper = mount(ProgressBar, { props: { project: toggleRowDirection(makeProject()) } })
     expect(wrapper.get('[data-testid="progress-bar-track"]').attributes('aria-label')).toBe(ru.rowProgress.columnFinishedLabel)
-  })
-
-  it('opens Go to row from the counter, and Go points at the row typed (F-04-14)', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) }, attachTo: document.body })
-    const counter = wrapper.get('[data-testid="progress-bar-compact-position"]')
-    expect(counter.attributes('aria-expanded')).toBe('false')
-
-    await counter.trigger('click')
-    const field = wrapper.get<HTMLInputElement>('[data-testid="go-to-row-field"]')
-    expect(field.element.value).toBe('5')
-    expect(wrapper.get('[data-testid="go-to-row"]').text()).toContain(ru.rowProgress.goToRow)
-
-    // A number out of range can't be set; one in range goes, and closes it.
-    await field.setValue('21')
-    expect(wrapper.get('[data-testid="go-to-row-go"]').attributes('aria-disabled')).toBe('true')
-    await field.setValue('12')
-    await wrapper.get('form').trigger('submit')
-    expect(wrapper.emitted('go-to-row')).toEqual([[11]])
-    expect(wrapper.find('[data-testid="go-to-row"]').exists()).toBe(false)
-    wrapper.unmount()
-  })
-
-  it("offers Show row in Go to row, Show column while rows run down the columns, and passes it on (ticket 0934)", async () => {
-    const wrapper = mount(ProgressBar, { props: { project: toggleRowDirection(moveToRow(makeProject(), 4)) }, attachTo: document.body })
-    await wrapper.get('[data-testid="progress-bar-compact-position"]').trigger('click')
-    const show = wrapper.get('[data-testid="go-to-row-show"]')
-    expect(show.text()).toBe(ru.rowProgress.showColumn)
-
-    await show.trigger('click')
-    expect(wrapper.emitted('show-row')).toHaveLength(1)
-    expect(wrapper.emitted('go-to-row')).toBeUndefined()
-    wrapper.unmount()
   })
 })

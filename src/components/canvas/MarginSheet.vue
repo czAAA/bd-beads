@@ -81,10 +81,6 @@ const emit = defineEmits<{
   /** A way chosen from Turn row direction's list (ticket 0973). */
   'set-row-direction': [way: SeenWay]
   'toggle-row-highlight': []
-  /** Go to row, from the strip's counter (ticket 1176): the pass to point at, from 0. */
-  'go-to-row': [pass: number]
-  /** Go to row's Show row: the current row brought back into view. */
-  'show-row': []
   rename: [name: string]
   'set-technique': [technique: Technique]
   /** A setting of the Frame's Technique, by its id (ticket 0698). */
@@ -653,8 +649,6 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
           @reset-progress="emit('reset-progress')"
           @set-row-direction="emit('set-row-direction', $event)"
           @toggle-row-highlight="emit('toggle-row-highlight')"
-          @go-to-row="emit('go-to-row', $event)"
-          @show-row="emit('show-row')"
         />
       </div>
     </div>
