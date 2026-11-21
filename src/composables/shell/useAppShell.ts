@@ -1446,8 +1446,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onExportPdf: exportFlow.onExportPdf,
       // The Frame panel's and the title block's switch is the Frame's own (ticket 1092).
       onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, 'frame'),
-      // Menu: whether the browser keeps the Projects, shown as a fact (tickets 0839, 0936)
-      projectsKept: storageAsk.kept,
       // The row the Export panel opens on (ticket 0843)
       exportChoice: overlays.exportChoice,
     },

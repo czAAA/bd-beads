@@ -26,7 +26,6 @@ import { browserAccount } from '../services/account'
 import { browserFeedback } from '../services/feedback'
 import { notesFromBase } from '../services/notesFile'
 import { browserPictureStore } from '../services/pictureStore'
-import { browserPersistentStorage } from '../services/persistentStorage'
 import { leaveWithBox } from './boxHandoff'
 import { keepDemoCopy, type DemoSnapshot } from './demoCopy'
 import { editorUrl, hasArrived, markArrived, shouldOpenEditor, WHATS_NEW_HASH } from './homepageRoute'
@@ -111,10 +110,9 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         atWhatsNew: location.hash === WHATS_NEW_HASH,
         // What waits for Reload, heard through the same port as the editor's "Update ready" (ticket 1049).
         updates: browserAppUpdates,
-        // The Menu's Account section and Kept by this browser, as in the editor (ticket 1113); a signed-in person's
+        // The Menu's Account section, as in the editor (ticket 1113); a signed-in person's
         // change of language or theme here is sent as the editor sends it (ticket 1086).
         account: browserAccount,
-        persistentStorage: browserPersistentStorage,
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
         openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).

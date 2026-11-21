@@ -25,12 +25,6 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: 'Выдаліць усе праекты',
       sendFeedback: 'Адправіць водгук',
       reportTranslation: 'Паведаміць пра памылку перакладу',
-      keepProjects: 'Браўзер захоўвае праекты',
-      keepProjectsOn: 'Так',
-      keepProjectsOff: 'Не',
-      keepProjectsInfoLabel: 'Пра захоўванне праектаў',
-      keepProjectsInfo:
-        'Калі на прыладзе мала месца, браўзер можа выдаліць даныя гэтай праграмы, калі ён не захоўвае вашы праекты. Браўзер вырашае гэта сам, таму захавайце файл праекта для кожнага, які вам дарагі.',
       buttonNames: 'Што робяць кнопкі',
     },
     project: {
