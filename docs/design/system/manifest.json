@@ -116,7 +116,7 @@
     {
       "name": "BeadBoard",
       "group": "Canvas",
-      "summary": "How a Pattern is drawn: beads on a rounded board, with rulers and the current-row marker."
+      "summary": "How a Pattern is drawn: beads on a rounded board, with rulers and the current-row marker, and the Lifted Frame, a ground, outline and shadow round a Frame's pieces (approved 2026-11-21, ticket 1177 builds it)."
     },
     {
       "name": "BeadHover",
@@ -411,7 +411,7 @@
     {
       "name": "MarginSheet",
       "group": "Canvas",
-      "summary": "The Frame's keep-out margin as a drafting sheet: 4 beads in its own color, the Frame's tools and Row progress in its top band, a title block in its corner, its zoom forms, and Expand the Frame, which fits the Frame to the screen with a slim sheet (approved 2026-11-20, built by ticket 1169)."
+      "summary": "The Frame's keep-out margin as a drafting sheet: 4 beads in its own color, the Frame's tools and Row progress in its top band, a title block in its corner, its zoom forms, and Expand the Frame, which fits the Frame to the screen with a slim sheet (approved 2026-11-20, built by ticket 1169), and Lift, which lifts the Frame's pieces (approved 2026-11-21, ticket 1177 builds it)."
     },
     {
       "name": "ReferenceImage",
