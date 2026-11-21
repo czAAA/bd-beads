@@ -31,7 +31,7 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { litPillTool, type PillRect } from '../../domain/toolPill'
+import { expandedPillPosition, litPillTool, type PillPosition, type PillRect } from '../../domain/toolPill'
 import { useShellScope } from '../../composables/ui/shellScope'
 import { hasGuides, selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
@@ -388,12 +388,29 @@ function bindDrawing(el: unknown) {
 const drawingSize = useElementSize(drawingEl)
 // Nothing in the drawing area scrolls the drawn Canvas away from what sits on it (ticket 1107).
 useDrawingScrollGuard(drawingEl)
+/** A move of the pill while the Frame is expanded: kept until Back to the Canvas, the device's edge left as it is. */
+const expandedPillMove = ref<PillPosition>()
+watch(frameExpanded, (expanded) => expanded || (expandedPillMove.value = undefined))
+/** Where the pill stands: its own edge, or while the Frame is expanded the edge that leaves the Frame the most room
+ * (ticket 1176), by the sheet's shape against the drawing area's. */
+const shownPillPosition = computed<PillPosition>({
+  get: () => {
+    const sheet = frameAnchor.value?.sheet
+    if (!frameExpanded.value || !sheet) return toolPillPosition.value
+    const area = { width: drawingSize.width.value, height: drawingSize.height.value }
+    return expandedPillMove.value ?? expandedPillPosition(toolPillPosition.value, sheet, area)
+  },
+  set: (position) => {
+    if (frameExpanded.value) expandedPillMove.value = position
+    else toolPillPosition.value = position
+  },
+})
 /** The Tool pill where it now stands: the Selection bar keeps clear of it, and a Fit too (ticket 0850), in the drawing
  * area as it is now. */
 function onPillRect(rect: PillRect | undefined) {
   pillRect.value = rect
   const el = drawingEl.value
-  if (el) onToolPillPlaced(rect, { width: el.clientWidth, height: el.clientHeight }, toolPillPosition.value)
+  if (el) onToolPillPlaced(rect, { width: el.clientWidth, height: el.clientHeight }, shownPillPosition.value)
 }
 const selectionLayerStyle = computed(() => {
   const el = drawingEl.value
@@ -650,12 +667,9 @@ const drawingStyle = computed(() => {
           </div>
 
           <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
-          <!-- Set aside while the Frame is expanded (ToolPill card, ticket 1169): faded out, not reached; its keys still work. -->
           <ToolPill
             v-if="activeProject"
-            :class="['app-shell__pill', { 'app-shell__pill--aside': frameExpanded }]"
-            :inert="frameExpanded || undefined"
-            v-model:position="toolPillPosition"
+            v-model:position="shownPillPosition"
             v-model:popover-open="toolPillPopoverOpen"
             :mirror-on="mirrorOn"
             :mirror-marking="mirrorMarking"
@@ -728,7 +742,7 @@ const drawingStyle = computed(() => {
         <!-- Behind Convert image, which runs to the window's bottom (ticket 0896), it stays laid out, as the drawing area does. -->
         <ProgressBar
           class="app-shell__footer"
-          :class="{ 'app-shell__footer--behind': page === 'convert-image' && convertSession }"
+          :class="{ 'app-shell__footer--behind': page === 'convert-image' && convertSession, 'app-shell__footer--aside': frameExpanded }"
           data-bottom-bar
           :project="activeProject"
           :row-highlight="rowHighlight"
@@ -768,7 +782,7 @@ const drawingStyle = computed(() => {
             :can-name-piece="canNamePiece"
             :has-paint-color="hasPaintColor()"
             :select-active="activeTool === 'select'"
-            :obstacle="frameExpanded ? undefined : pillRect"
+            :obstacle="pillRect"
             @copy="onCopy"
             @cut="onCut"
             @paste="onPasteMode"
@@ -793,7 +807,7 @@ const drawingStyle = computed(() => {
             :paste-armed="pasteProjectionActive"
             :project="activeProject"
             :can-remove-line="false"
-            :obstacle="frameExpanded ? undefined : pillRect"
+            :obstacle="pillRect"
             :mirror="mirrorBar"
             :mirror-anchor="mirrorAnchor"
             :mirror-size-only="mirrorAdjusting"
@@ -803,8 +817,9 @@ const drawingStyle = computed(() => {
             @move-key="onAreaKey"
           />
 
-          <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Row progress, the Move bar and the
-            tools in its top band, the title block in its bottom-left corner as seen, following the Frame. -->
+          <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Expand the Frame, the Move bar and the
+            tools in its top band, the title block in its bottom-left corner as seen with Row progress under it (ticket
+            1176), following the Frame. -->
           <MarginSheet
             v-if="frameOf(activeProject) && frameAnchor"
             :project="activeProject"
@@ -833,6 +848,8 @@ const drawingStyle = computed(() => {
             @reset-progress="onResetProgress"
             @set-row-direction="onSetRowDirection"
             @toggle-row-highlight="toggleRowHighlight"
+            @go-to-row="onGoToRow"
+            @show-row="onShowRow"
             @rename="onRenameFrame"
             @set-technique="onSetFrameTechnique"
             @set-setting="onSetFrameSetting"
@@ -847,19 +864,6 @@ const drawingStyle = computed(() => {
 </template>
 
 <style scoped>
-/* The Tool pill set aside while the Frame is expanded (ToolPill card, ticket 1169): it fades over `duration-fast`, then
-   is not drawn; it fades back in the same way. */
-.app-shell__pill {
-  transition: opacity var(--duration-fast) var(--ease-standard), visibility 0s;
-}
-
-.app-shell__pill--aside {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity var(--duration-fast) var(--ease-standard), visibility 0s linear var(--duration-fast);
-}
-
 /* New Project and the import icons, under the empty canvas's message (they were a bar in the Progress bar's place,
    ticket 439). */
 .app-shell__empty-actions {
@@ -946,6 +950,18 @@ const drawingStyle = computed(() => {
 
 .app-shell__footer--behind {
   visibility: hidden;
+}
+
+/* While the Frame is expanded its sheet holds Row progress under the title block (MarginSheet card, ticket 1176), so the
+ * bar gives its room to the Frame: nothing of it is drawn but the safe-area inset it keeps clear of a home indicator. */
+.app-shell__footer--aside {
+  min-height: var(--bar-bottom-inset, 0px);
+  padding: 0;
+  border: 0;
+}
+
+.app-shell__footer--aside > :deep(*) {
+  display: none;
 }
 
 /* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing

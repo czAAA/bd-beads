@@ -17,13 +17,12 @@ Ticket 1007 removed Grid focus: its name, Tooltip line and disabled reason are g
 
 ## A button says its name on touch (ticket 0927)
 
-On the iPad most buttons are icons, and only a half-second hold shows a name. The touch hint line now says so, a Tool pill tile's first tap says its Tooltip's name and line in a toast, and Help has a row that shows every strip and pill name at once. `{name}` and `{line}` are the tile's Tooltip's own words, not copies.
+On the iPad most buttons are icons, and only a half-second hold shows a name. The touch hint line now says so, a Tool pill tile's first tap says its Tooltip's name and line in a toast. `{name}` and `{line}` are the tile's Tooltip's own words, not copies.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
 | hold a button for its name (the touch hint's last part) | удержание кнопки: её название | утримання кнопки: її назва | утрыманне кнопкі: яе назва | 长按按钮查看名称 | mantén un botón para ver su nombre | przytrzymaj przycisk, aby zobaczyć nazwę |
 | {name}: {line} (toast, a tile's first tap) | {name}: {line} | {name}: {line} | {name}: {line} | {name}：{line} | {name}: {line} | {name}: {line} |
-| What the buttons do (Menu › Help) | Что делают кнопки | Що роблять кнопки | Што робяць кнопкі | 按钮的作用 | Qué hace cada botón | Co robią przyciski |
 
 ## The Radial toolbox's words (approved 2026-11-18; the right click's are in the app, ticket 1064)
 

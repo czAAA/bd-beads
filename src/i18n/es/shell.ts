@@ -34,7 +34,6 @@ export const shell: ShellTranslations = {
     enterHeight: 'Escribe un alto.',
     enterWholeBeads: 'Escribe un número entero de cuentas.',
     or: 'o',
-    openCanvasSubtitle: 'Dibuja donde quieras. Pon el tamaño cuando quieras una imagen o un PDF.',
     pickStarter: 'Elegir un punto de partida',
     estimateBeads: '≈ {columns}×{rows} cuentas',
     unnamedProject: 'Proyecto {number}',

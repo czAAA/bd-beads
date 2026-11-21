@@ -800,7 +800,10 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       context.fillStyle = gapColorOf(theme.canvas)
       context.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top)
     }
-    if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
+    // Expanded, the slim sheet is the margin on screen (ticket 1176): the marks run up to it, under it, so no bare band of
+    // the 4 keep-out positions shows round it. What the margin keeps out is unchanged.
+    const marked = input.slimSheet ? 0 : margin
+    if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin: marked, tiles })
     if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
     drawCanvasLayer(context, draw, space)
     if (frame && frameBox) {

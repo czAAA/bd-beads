@@ -89,7 +89,8 @@ function problems(root: HTMLElement): string[] {
   const sheet = root.querySelector<HTMLElement>('[data-testid="margin-sheet"]')!.getBoundingClientRect()
   const { box } = anchorAt(zoom.value, columns.value)
   const line = new DOMRect(sheet.left + box.left, sheet.top + box.top, box.width, box.height)
-  const band = [...root.querySelectorAll<HTMLElement>('[data-testid="margin-band"] :is(button, [role="progressbar"], .row-progress__counter)')]
+  // The band's tools, and Row progress's controls in the foot under the title block (ticket 1176).
+  const band = [...root.querySelectorAll<HTMLElement>(':is([data-testid="margin-band"], .margin-sheet__progress) :is(button, [role="progressbar"], .row-progress__counter)')]
   const title = root.querySelector<HTMLElement>('[data-testid="margin-title"] > *')
   const parts = [...band, ...(title ? [title] : [])].map((element) => ({ name: element.getAttribute('aria-label') || element.dataset.testid || element.className, rect: element.getBoundingClientRect() }))
   const found: string[] = []
@@ -155,33 +156,27 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
         // At 60% the sheet is compact, its title block one row without the Drop cell.
         if (80 * at < MARGIN_PX.band.full) continue
         expect(root.querySelector('[data-testid="margin-brick-drop-short"]'), `${at}`).not.toBeNull()
-        // The full block's pencils stand on one line, the Technique's picker too; roomy, the name has a line of its own.
-        const roomy = root.querySelector('[data-testid="margin-title"]')!.getAttribute('data-form') === 'roomy'
-        const pencils = [...(roomy ? [] : ['margin-frame-name-edit']), 'margin-technique-picker', 'margin-brick-drop-edit', 'margin-maker-edit']
+        // The one row's pencils stand on one line, the Technique's picker too (ticket 1176).
+        expect(root.querySelector('[data-testid="margin-title"]')!.getAttribute('data-form'), `${at}`).toBe('line')
+        const pencils = ['margin-frame-name-edit', 'margin-technique-picker', 'margin-brick-drop-edit']
           .map((id) => root.querySelector(`[data-testid="${id}"] svg`)!.getBoundingClientRect())
           .map((icon) => icon.top + icon.height / 2)
         expect(Math.max(...pencils) - Math.min(...pencils), `${at}`).toBeLessThan(0.5)
       }
     })
 
-    it(`is roomy from 130%, its block clear of the Frame's line, and in two rows where the sheet is too narrow for it, in ${locale} (ticket 1015)`, async () => {
+    it(`keeps the title block in one row on Row progress's strip from 90% to 150%, clear of the Frame's line, in ${locale} (ticket 1176)`, async () => {
       zoom.value = 1
       columns.value = 40
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
       const titleForm = () => root.querySelector('[data-testid="margin-title"]')?.getAttribute('data-form')
-      for (const [at, form] of [[1.25, 'full'], [1.3, 'roomy'], [1.5, 'roomy']] as const) {
+      for (const at of [0.9, 1, 1.25, 1.5]) {
         zoom.value = at
         await settled(root)
-        expect(titleForm(), `${at}`).toBe(form)
+        expect(titleForm(), `${at}`).toBe('line')
+        expect(root.querySelector('.margin-sheet__progress')?.getAttribute('data-form'), `${at}`).toBe('margin:0')
         expect(problems(root), `${at}`).toEqual([])
       }
-      // The Bead's Change is a button of the least size the sheet draws, and opens the pickers over the sheet.
-      const change = root.querySelector<HTMLElement>('[data-testid="margin-bead-change"]')!
-      expect(change.getBoundingClientRect().height).toBeGreaterThanOrEqual(MARGIN_PX.legible.button)
-      columns.value = 3
-      await settled(root)
-      expect(titleForm()).not.toBe('roomy')
-      expect(problems(root)).toEqual([])
     })
 
     it(`fits at every zoom from 25% to 150%, and on a narrow Frame, stepping down a form where the sheet is too narrow, in ${locale}`, async () => {
@@ -233,8 +228,8 @@ describe('the title block in the sheet\'s bottom-left corner (ticket 1170)', () 
   }
 })
 
-describe('the title block giving way at the bottom-left (tickets 498, 1170)', () => {
-  it('gives way to a Selection\'s handles that reach under it at the bottom-left, and not to one at the top-right', async () => {
+describe('the title block and Row progress giving way at the bottom-left (tickets 498, 1170, 1176)', () => {
+  it('give way to a Selection\'s handles that reach under them at the bottom-left, and not to one at the top-right', async () => {
     const sheetAt = (selection?: { left: number; top: number; width: number; height: number }) =>
       defineComponent({
         setup: () => () => h('div', { style: { position: 'relative', height: '400px' } }, [h(MarginSheet, { project: projectOf(40), anchor: anchorAt(1, 40), editing: false, pressing: false, selection })]),
@@ -242,7 +237,7 @@ describe('the title block giving way at the bottom-left (tickets 498, 1170)', ()
     const yielding = async (selection: { left: number; top: number; width: number; height: number }) => {
       const { root } = await mountAt(sheetAt(selection), {}, { locale: 'en', width: 1280 })
       await settled(root)
-      return root.querySelector('[data-testid="margin-title"]')!.classList.contains('margin-sheet__yielding')
+      return root.querySelector('[data-testid="margin-foot"]')!.classList.contains('margin-sheet__yielding')
     }
     expect(await yielding({ left: 40, top: 250, width: 200, height: 60 })).toBe(true)
     expect(await yielding({ left: 700, top: 40, width: 100, height: 60 })).toBe(false)

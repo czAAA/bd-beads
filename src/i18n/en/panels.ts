@@ -25,13 +25,6 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: 'Delete all Projects',
       sendFeedback: 'Send feedback',
       reportTranslation: 'Report a translation problem',
-      keepProjects: 'Kept by this browser',
-      keepProjectsOn: 'Yes',
-      keepProjectsOff: 'No',
-      keepProjectsInfoLabel: 'About keeping Projects',
-      keepProjectsInfo:
-        "When the device runs short on space, the browser can clear this app's data, unless it keeps your Projects. The browser decides this by itself, so save a Project file of each one you care about.",
-      buttonNames: 'What the buttons do',
     },
     project: {
       rename: 'Rename {name}',

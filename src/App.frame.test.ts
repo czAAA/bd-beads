@@ -354,19 +354,21 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="progress-bar-compact-position"] .row-progress__count-short').text()).toBe('2/2')
   })
 
-  it('expands the Frame from its first button, setting the Tool pill aside and the surface slim, and Escape goes back, each announced (ticket 1169)', async () => {
+  it('expands the Frame from its first button, the surface slim, the Tool pill kept and the Progress bar set aside, and Escape goes back, each announced (tickets 1169, 1176)', async () => {
     const wrapper = await mountOpen(sheetProject())
     const surface = () => wrapper.findComponent(ProjectSurface)
     await wrapper.get('[data-testid="margin-expand-frame"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Frame expanded')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Back to the Canvas')
-    expect(wrapper.get('[data-testid="tool-pill-layer"]').classes()).toContain('app-shell__pill--aside')
-    // The sheet measured itself, and the surface lays the slim sheet by what it told: no title block height in jsdom.
+    expect(wrapper.get('[data-testid="tool-pill-layer"]').attributes('inert')).toBeUndefined()
+    expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__footer--aside')
+    // The sheet measured itself, and the surface lays the slim sheet by what it told: no foot height in jsdom.
     expect(surface().props('slim')).toMatchObject({ title: 0 })
     await key({ key: 'Escape' })
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Expand the Frame')
+    expect(wrapper.get('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__footer--aside')
     expect(surface().props('slim')).toBeUndefined()
   })
 
@@ -383,6 +385,9 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
 
   it('sets the Frame\'s Drop from its title block\'s stepper (ticket 0698)', async () => {
     const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'brick' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
+    // Zoomed in, the sheet is full: its title block's one row holds the setting's pencil (ticket 1176).
+    await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+    await flushPromises()
     await wrapper.get('[data-testid="margin-brick-drop-edit"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="margin-brick-drop-stepper-more"]').trigger('click')

@@ -4,7 +4,6 @@ import { TOOLTIP_HOLD_MS } from '../../domain/hold'
 import { cssZoomOf } from '../../composables/ui/cssZoom'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
-import { BUTTON_NAMES_AREA, clearOfPlaced, useButtonNames, type Box } from '../../composables/ui/useButtonNames'
 import KeyChip from './KeyChip.vue'
 import { tooltipOwners } from './tooltipOwner'
 import type { TooltipProps } from './tooltipProps'
@@ -42,13 +41,6 @@ const id = useId()
 /** For the hover text check (ticket 264): the components this Tooltip comes from. */
 const owners = tooltipOwners(getCurrentInstance())
 const open = ref(false)
-/** What the buttons do (ticket 0927): the shell's, and whether this tip is one it shows, the name alone. */
-const buttonNames = useButtonNames()
-const naming = ref(false)
-/** Whether the bubble shows: opened, or named by What the buttons do. */
-const visible = computed(() => open.value || naming.value)
-/** Named only, not opened: the bubble says the name alone, so the row of them stays short. */
-const nameOnly = computed(() => naming.value && !open.value)
 /** Whether the open tip was opened by a click (ticket 453). */
 const pinned = ref(false)
 const bubbleEl = ref<HTMLElement>()
@@ -92,40 +84,7 @@ async function place() {
   const left = props.align === 'end' ? trigger.right - bubble.width : trigger.left + trigger.width / 2 - bubble.width / 2
   const fit = (value: number, size: number, screen: number) => Math.max(VIEWPORT_MARGIN_PX, Math.min(value, screen - VIEWPORT_MARGIN_PX - size))
   position.value = { left: fit(left, bubble.width, window.innerWidth), top: fit(top, bubble.height, window.innerHeight) }
-  if (nameOnly.value && buttonNames) placeAmongNames(buttonNames.placed, side === 'bottom', bubble, fit)
 }
-
-/** A named bubble steps away from its control past the names already shown, so neighbours' names don't cover each other. */
-function placeAmongNames(placed: Map<string, Box>, down: boolean, bubble: DOMRect, fit: (value: number, size: number, screen: number) => number) {
-  placed.delete(id)
-  const box = { ...position.value, width: bubble.width, height: bubble.height }
-  const top = fit(clearOfPlaced(box, placed.values(), down, TRIGGER_GAP_PX), bubble.height, window.innerHeight)
-  position.value = { ...position.value, top }
-  placed.set(id, { ...box, top })
-}
-
-/** Whether What the buttons do names this tip: its control is in the strip or the pill, and on screen. */
-function namedHere(): boolean {
-  const trigger = triggerEl.value
-  return !!trigger?.closest(BUTTON_NAMES_AREA) && trigger.getClientRects().length > 0
-}
-
-watch(
-  () => !!buttonNames?.shown.value,
-  (shown) => {
-    if (shown && namedHere()) {
-      naming.value = true
-      if (!open.value) void openBubble()
-      return
-    }
-    if (!naming.value) return
-    naming.value = false
-    if (open.value) return
-    resizeObserver?.disconnect()
-    follow(false)
-    setTopLayer(false)
-  },
-)
 
 async function openBubble() {
   await nextTick()
@@ -236,7 +195,6 @@ function hide() {
   pinned.value = false
   if (!open.value) return
   open.value = false
-  if (naming.value) return void place()
   resizeObserver?.disconnect()
   follow(false)
   setTopLayer(false)
@@ -290,8 +248,6 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  naming.value = false
-  buttonNames?.placed.delete(id)
   hide()
 })
 
@@ -314,7 +270,7 @@ onBeforeUnmount(() => {
     <slot :describedby="announce ? id : undefined" />
     <Transition name="app-tooltip">
       <span
-        v-show="visible"
+        v-show="open"
         :id="id"
         ref="bubbleEl"
         class="app-tooltip__bubble"
@@ -325,7 +281,7 @@ onBeforeUnmount(() => {
         data-testid="tooltip"
         :data-owner="owners"
       >
-        <template v-if="rich && !nameOnly">
+        <template v-if="rich">
           <span class="app-tooltip__head">
             <strong class="app-tooltip__name">{{ name }}</strong>
             <KeyChip v-if="shownKey" class="app-tooltip__key">{{ shownKey }}</KeyChip>

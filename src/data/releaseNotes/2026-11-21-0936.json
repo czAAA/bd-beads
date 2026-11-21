@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "The Menu no longer has the \"Kept by this browser\" row",
+    "ru": "В меню больше нет строки «Браузер хранит проекты»",
+    "uk": "У меню більше немає рядка «Браузер зберігає проєкти»",
+    "be": "У меню больш няма радка «Браўзер захоўвае праекты»",
+    "zh": "菜单里不再有“此浏览器保留项目”这一行",
+    "es": "El menú ya no tiene la fila «Este navegador conserva los proyectos»",
+    "pl": "W menu nie ma już wiersza „Przeglądarka zachowuje projekty”"
+  }
+}

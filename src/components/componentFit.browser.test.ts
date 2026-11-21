@@ -19,7 +19,7 @@ const project = createProject({ technique: 'loom', beadId: cubeBead.id, size: { 
 const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 120, height: 40, unit: 'beads' } })
 
 const CASES: [string, Component, Record<string, unknown>][] = [
-  ['MenuPanel', MenuPanel, { projectCount: 1, penSeen: true, kept: false }],
+  ['MenuPanel', MenuPanel, { projectCount: 1, penSeen: true }],
   ['ToolPill', ToolPill, { activeTool: 'paint', position: 'bottom', recentsInPill: [], popoverOpen: false, hasClipboard: true, colorHex: '#e63746', colorName: 'Red' }],
   ['ProgressBar by rows', ProgressBar, { project }],
   ['ProgressBar by columns', ProgressBar, { project: toggleRowDirection(project) }],

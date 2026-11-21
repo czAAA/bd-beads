@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__TITLE__ · design canvas</title>
+    <link rel="stylesheet" href="/_app/styles/fonts.css" />
+    <link rel="stylesheet" href="/_app/styles/tokens.css" />
+    <link rel="stylesheet" href="/_app/styles/design-values.css" />
+    <link rel="stylesheet" href="/_canvas/canvas.css" />
+  </head>
+  <body>
+    <!-- The whole canvas is this list. data-sizes: desktop (1710×907), ipad (1366×1024), ipad-portrait, phone, or WxH.
+         One <section> per option; data-states lists what option.js can show (the first is the one it opens in). -->
+    <main
+      id="canvas"
+      data-title="__TITLE__"
+      data-question="The design question, in one line"
+      data-sizes="desktop ipad"
+      data-themes="light dark contrast"
+      data-langs="en ru"
+    >
+__OPTIONS__
+    </main>
+    <script src="/_canvas/canvas.js"></script>
+  </body>
+</html>

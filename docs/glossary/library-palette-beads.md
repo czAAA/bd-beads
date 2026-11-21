@@ -24,7 +24,7 @@ The app itself, kept on the device by the service worker after the first visit, 
 _Avoid_: cache, offline mode, downloaded app
 
 **Kept by this browser**:
-Whether the browser has agreed to keep the Project library when the device runs short on space (tickets 399, 0839, 0936). The app asks the browser once per device, at the first Project file or export and only if it doesn't already keep the library, with no question of its own first; creating a Project or opening the app never asks. A yes is said in a toast, "This browser will keep your Projects."; a no says nothing, as the welcome and the Save reminder already carry the advice to keep a Project file. The Menu row "Kept by this browser" shows the answer as a fact (Yes or No) with the reason behind an Info button; it can't be pressed, as only the browser decides. A browser without the storage API is never asked and has no row. It replaced the Keep note, the app's own question before the browser's.
+Whether the browser has agreed to keep the Project library when the device runs short on space (tickets 399, 0839, 0936). The app asks the browser once per device, at the first Project file or export and only if it doesn't already keep the library, with no question of its own first; creating a Project or opening the app never asks. A yes is said in a toast, "This browser will keep your Projects."; a no says nothing, as the welcome and the Save reminder already carry the advice to keep a Project file. The Menu shows no row for it (removed 2026-11-21). It replaced the Keep note, the app's own question before the browser's.
 _Avoid_: Keep note, permission prompt, storage popup
 
 **Maker's name**:

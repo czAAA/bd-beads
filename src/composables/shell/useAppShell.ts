@@ -77,7 +77,6 @@ import { useToasts } from '../ui/useToasts'
 import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
 import { useArmedToolToasts } from '../tools/useArmedToolToasts'
 import { usePillTileNames } from '../tools/usePillTileNames'
-import { provideButtonNames } from '../ui/useButtonNames'
 import { provideColorPick, provideMoveColor, providePaletteLetters, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
@@ -654,9 +653,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     pictureShown: () => !!shownPicture(),
     pasteArmed: () => pasteProjectionActive.value,
   })
-  /** On touch a pill tile's first tap says its name (ticket 0927); Menu › Help shows every button's name at once. */
+  /** On touch a pill tile's first tap says its name (ticket 0927). */
   const pillTileNames = usePillTileNames({ touch, showToast, messages, preferences: services.devicePreferences })
-  const buttonNames = provideButtonNames()
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
@@ -1381,7 +1379,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
        * empties its Canvas. */
       demo: !!demo,
       onStartDemoAfresh: () => demo?.startAfresh(),
-      onShowButtonNames: buttonNames.show,
       onOpenFeedback: feedback.onOpenFeedback,
       // Menu: the device and the library
       toolPillPosition: toolPill.toolPillPosition,
@@ -1449,8 +1446,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onExportPdf: exportFlow.onExportPdf,
       // The Frame panel's and the title block's switch is the Frame's own (ticket 1092).
       onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, 'frame'),
-      // Menu: whether the browser keeps the Projects, shown as a fact (tickets 0839, 0936)
-      projectsKept: storageAsk.kept,
       // The row the Export panel opens on (ticket 0843)
       exportChoice: overlays.exportChoice,
     },

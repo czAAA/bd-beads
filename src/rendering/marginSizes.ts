@@ -14,8 +14,9 @@ export const MARGIN_PX = {
   legible: { text: 11, button: 24 },
   /** The band height, at scale 1, from which each form fits (MarginSheet card, Zoom forms; ticket 0682 for folded). */
   band: {
-    /** The full form's two-row title block, 10px in, clear of the Frame's line. */
-    full: 68,
+    /** The full form's compact title row on Row progress's strip (ticket 1176; the two-row block from 68 until then),
+     * 10px in, clear of the Frame's line and its outset. */
+    full: 72,
     /** The compact row, 8px in, clear of the Frame's line; under it the sheet folds. */
     compact: 40,
     /** The folded row, 24px, between the sheet's edge and the Frame's line; under it the sheet is bare. */
@@ -34,6 +35,8 @@ export const MARGIN_PX = {
   tool: 28,
   /** The folded title block's name tab, the Move bar outside the full form, and the compact and folded row's height. */
   tab: 24,
+  /** Row progress's strip under the title block, across the sheet (ticket 1176), its rules included. */
+  strip: 26,
   /** The Move bar's hit area, the gutter handle's width. */
   moveWidth: 56,
   /** Between the band's Row progress, Move bar and tools. */
@@ -42,8 +45,8 @@ export const MARGIN_PX = {
   icon: { full: 16, compact: 14 },
   /** The current pass's mark (ticket 0685): the pill's room round its number, and the tick's thickness. */
   pass: { pillPad: 2, tick: 3 },
-  /** Expand the Frame (MarginSheet card, ticket 1169): the slim sheet clear of the strip, the Progress bar and the
-   * screen's sides (`gap`), its row and title block in from its edge (`inset`), each smaller under bp-tablet; and the
-   * room between the row, the numbers and the Frame's line (`numbers`). */
-  expanded: { gap: { full: 8, compact: 4 }, inset: { full: 6, compact: 4 }, numbers: 3 },
+  /** Expand the Frame (MarginSheet card, ticket 1169): the slim sheet's row and title block in from its edge (`inset`),
+   * smaller under bp-tablet, and the room between the row, the numbers and the Frame's line (`numbers`). The sheet
+   * meets the screen's edges and the Tool pill with no gap (ticket 1176). */
+  expanded: { inset: { full: 6, compact: 4 }, numbers: 3 },
 } as const

@@ -34,7 +34,6 @@ export const shell: ShellTranslations = {
     enterHeight: 'Укажите высоту.',
     enterWholeBeads: 'Укажите целое число бисеринок.',
     or: 'или',
-    openCanvasSubtitle: 'Рисуйте где угодно. Задайте размер, когда понадобится картинка или PDF.',
     pickStarter: 'Выбрать шаблон',
     estimateBeads: '≈ {columns}×{rows} бисеринок',
     unnamedProject: 'Проект {number}',

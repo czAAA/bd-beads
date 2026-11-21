@@ -274,7 +274,7 @@
   --margin-tool: 28px;
   --margin-tool-compact: 24px;
   --margin-title-row: 23px;
-  --margin-band-full: 68px;
+  --margin-band-full: 72px;
   --margin-band-compact: 40px;
   --margin-band-folded: 31px;
   --margin-band-inset-compact: 10px;
@@ -285,6 +285,7 @@
   --margin-tab-name: 600 0.6875rem/0.875rem var(--font-sans);
   --margin-band-inset: 14px;
   --margin-move-height: 28px;
+  --margin-strip: 26px;
   --margin-done: 26px;
   --margin-track: 64px;
   --margin-pencil: 18px;
@@ -298,8 +299,6 @@
   --margin-key-disc: 18px; /* MarginSheet card: one disc of the roomy title block's color key. */
   --margin-key-letter: 600 0.625rem/1 var(--font-sans); /* MarginSheet card: a Swatch letter in a key disc (Inter 600 10). */
   --margin-bead-popover: 17rem; /* MarginSheet card: the roomy title block's Bead popover, holding the three pickers on one row. */
-  --margin-expanded-gap: 8px; /* MarginSheet card, Expand the Frame (ticket 1168): the expanded sheet clear of the Canvas strip, the Progress bar and the screen's sides. */
-  --margin-expanded-gap-compact: 4px; /* MarginSheet card, Expand the Frame: the same under bp-tablet. */
   --margin-expanded-inset: 6px; /* MarginSheet card, Expand the Frame: the expanded sheet's row and title block in from its edge. */
   --margin-expanded-inset-compact: 4px; /* MarginSheet card, Expand the Frame: the same under bp-tablet. */
   --schema-tag-height: 28px;

@@ -86,9 +86,7 @@ const {
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
   shortcutsOpen,
-  onShowButtonNames,
   onOpenFeedback,
-  projectsKept,
   exportChoice,
   signInOpen,
   menuOpensOnList,
@@ -212,7 +210,6 @@ const chosenStarter = ref<StarterId>()
       :pen-seen="inputModeAvailable"
       :handedness="handedness"
       :demo="demo"
-      :kept="projectsKept"
       :account="account"
       :may-open-sign-in="mayOpenSignIn"
       @new-project="demo ? onStartDemoAfresh() : ((phoneSavedProjectsOpen = false), (signInOpen = false), (shortcutsOpen = false))"
@@ -224,7 +221,6 @@ const chosenStarter = ref<StarterId>()
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="(shortcutsOpen = true), (signInOpen = false), (phoneSavedProjectsOpen = false)"
-      @button-names="onShowButtonNames"
       @feedback="onOpenFeedback"
     />
     <ProjectPanel

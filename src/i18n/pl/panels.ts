@@ -25,13 +25,6 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: 'Usuń wszystkie projekty',
       sendFeedback: 'Wyślij opinię',
       reportTranslation: 'Zgłoś błąd tłumaczenia',
-      keepProjects: 'Przeglądarka zachowuje projekty',
-      keepProjectsOn: 'Tak',
-      keepProjectsOff: 'Nie',
-      keepProjectsInfoLabel: 'O zachowywaniu projektów',
-      keepProjectsInfo:
-        'Gdy na urządzeniu brakuje miejsca, przeglądarka może usunąć dane tej aplikacji, chyba że zachowuje Twoje projekty. Przeglądarka decyduje o tym sama, więc zapisz plik projektu każdego, na którym Ci zależy.',
-      buttonNames: 'Co robią przyciski',
     },
     project: {
       rename: 'Zmień nazwę „{name}”',
