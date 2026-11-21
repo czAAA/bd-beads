@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "The cover page puts the technique under the picture instead of above the title",
+    "ru": "На обложке техника теперь стоит под картинкой, а не над названием",
+    "uk": "На обкладинці техніка тепер стоїть під зображенням, а не над назвою",
+    "be": "На вокладцы тэхніка цяпер стаіць пад малюнкам, а не над назвай",
+    "zh": "封面页把工艺放在图片下方，而不是标题上方",
+    "es": "La portada pone la técnica debajo de la imagen en lugar de sobre el título",
+    "pl": "Okładka umieszcza technikę pod obrazkiem, a nie nad tytułem"
+  }
+}
