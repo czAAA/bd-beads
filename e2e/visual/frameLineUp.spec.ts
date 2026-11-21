@@ -19,7 +19,7 @@ for (const { technique, angle } of [
     const leaning = twistFrameTo(upright, angle)!
     await openApp(page, [leaning])
     await settle(page)
-    await expect(page.getByTestId('app-canvas')).toHaveScreenshot(`frame-line-up-${technique}-leaning.png`, { maxDiffPixelRatio: 0.01 })
+    await expect.soft(page.getByTestId('app-canvas')).toHaveScreenshot(`frame-line-up-${technique}-leaning.png`, { maxDiffPixelRatio: 0.01 })
 
     // Remove Frame from the Frame panel, which shows it whatever room the margin sheet's band has.
     await page.getByRole('button', { name: 'Frame', exact: true }).click()
@@ -31,7 +31,7 @@ for (const { technique, angle } of [
     if (await page.getByTestId('frame-panel').isVisible()) await page.keyboard.press('Escape')
     await settle(page)
     await page.mouse.move(5, 5)
-    await expect(page.getByTestId('app-canvas')).toHaveScreenshot(`frame-line-up-${technique}-dropped.png`, { maxDiffPixelRatio: 0.01 })
+    await expect.soft(page.getByTestId('app-canvas')).toHaveScreenshot(`frame-line-up-${technique}-dropped.png`, { maxDiffPixelRatio: 0.01 })
 
     // Every bead of the Frame lies on the Canvas.
     const count = (beads: Record<number, Record<number, string>>) => Object.values(beads).reduce((sum, row) => sum + Object.keys(row).length, 0)
