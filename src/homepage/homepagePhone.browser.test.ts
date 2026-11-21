@@ -128,7 +128,7 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           expect(coffee.width).toBeGreaterThan(band.width * 0.8)
           const promises = box('[data-testid="homepage-promises"]')
           expect(promises.top).toBeGreaterThanOrEqual(band.bottom)
-          expect(mounted.root.querySelectorAll('[data-testid="homepage-promises"] > li')).toHaveLength(7)
+          expect(mounted.root.querySelectorAll('[data-testid="homepage-promises"] > li')).toHaveLength(8)
           expect(mounted.root.querySelector('[data-testid="homepage-promise-shortcuts"]')).toBeNull()
           const whatsNew = box('[data-testid="homepage-whats-new"]')
           expect(whatsNew.top).toBeGreaterThanOrEqual(promises.bottom)

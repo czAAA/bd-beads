@@ -41,11 +41,11 @@ describe('CoffeeScreen on a phone (tickets 0827, 0880)', () => {
     expect(list.classes()).toContain('grouped-list')
     const rows = list.findAll('[data-testid^="homepage-promise-"]')
     expect(rows.map((row) => row.attributes('data-testid'))).toEqual(
-      ['device', 'offline', 'noAds', 'tablets', 'free', 'openSource', 'sayHello'].map((id) => `homepage-promise-${id}`),
+      ['device', 'offline', 'noAds', 'free', 'tablets', 'mouse', 'openSource', 'sayHello'].map((id) => `homepage-promise-${id}`),
     )
     expect(rows[1].text()).toBe(`${en.homepage.promises.offline.name}. ${en.homepage.promises.offline.text}`)
-    expect(rows[5].get('[data-testid="homepage-coffee-source"]').attributes('href')).toBe('https://github.com/czAAA/bd-beads')
-    await rows[6].get('[data-testid="homepage-send-feedback"]').trigger('click')
+    expect(rows[6].get('[data-testid="homepage-coffee-source"]').attributes('href')).toBe('https://github.com/czAAA/bd-beads')
+    await rows[7].get('[data-testid="homepage-send-feedback"]').trigger('click')
     expect(wrapper.emitted('feedback')).toHaveLength(1)
     const order = [...wrapper.get('[data-testid="homepage-coffee"]').element.children].map((el) => el.getAttribute('data-testid'))
     expect(order).toEqual(['homepage-coffee-band', 'homepage-promises', 'homepage-whats-new'])

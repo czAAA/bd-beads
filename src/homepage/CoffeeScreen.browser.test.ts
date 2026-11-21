@@ -81,6 +81,15 @@ describe('CoffeeScreen, clicked', () => {
 /** How many rows the elements a selector finds stand in: their distinct tops. */
 const rows = (root: Element, selector: string) => new Set([...root.querySelectorAll(selector)].map((el) => Math.round(el.getBoundingClientRect().top))).size
 const centreOf = (box: DOMRect) => (box.left + box.right) / 2
+/** The centre of each row the promises stand in, top to bottom: the middle of its first item's left and last's right. */
+const rowCentres = (root: Element) => {
+  const byTop = new Map<number, DOMRect[]>()
+  for (const el of root.querySelectorAll('[data-testid^="homepage-coffee-promise-"]')) {
+    const box = el.getBoundingClientRect()
+    byTop.set(Math.round(box.top), [...(byTop.get(Math.round(box.top)) ?? []), box])
+  }
+  return [...byTop.entries()].sort(([a], [b]) => a - b).map(([, boxes]) => (Math.min(...boxes.map((b) => b.left)) + Math.max(...boxes.map((b) => b.right))) / 2)
+}
 
 describe('CoffeeScreen at its widths (ticket 0823)', () => {
   it('from 1000px: the cup and title beside the text, the button centred under the text, the promises in two rows', async () => {
@@ -92,7 +101,9 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
     expect(box('.coffee__title').right, 'the text on the right').toBeLessThanOrEqual(text.left)
     expect(button.top).toBeGreaterThanOrEqual(text.bottom)
     expect(Math.abs(centreOf(button) - centreOf(text)), 'the button centred under the text').toBeLessThanOrEqual(1)
-    expect(rows(root, '[data-testid^="homepage-coffee-promise-"]'), 'the six promises in two rows').toBe(2)
+    expect(rows(root, '[data-testid^="homepage-coffee-promise-"]'), 'the seven promises four over three').toBe(2)
+    const [first, second] = rowCentres(root)
+    expect(Math.abs(first! - second!), 'the three centred under the four (ticket 1175)').toBeLessThanOrEqual(1)
   })
 
   // On a phone the promises are a grouped list under the band (ticket 0827), laid out in homepagePhone.browser.test.ts.
@@ -105,7 +116,8 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
       for (const selector of ['.coffee__lead', '.coffee__text', '[data-testid="homepage-coffee-button"]']) {
         expect(Math.abs(centreOf(box(selector)) - centre), `${selector} centred`).toBeLessThanOrEqual(1)
       }
-      expect(rows(root, '[data-testid^="homepage-coffee-promise-"]'), 'the promises in two rows, three under 640').toBe(width < 640 ? 3 : 2)
+      expect(rows(root, '[data-testid^="homepage-coffee-promise-"]'), 'the promises four over three, two to a row under 640').toBe(width < 640 ? 4 : 2)
+      for (const [i, rowCentre] of rowCentres(root).entries()) expect(Math.abs(rowCentre - centre), `row ${i + 1} centred`).toBeLessThanOrEqual(1)
       for (const selector of ['[data-testid="homepage-coffee-promises"]', '[data-testid="homepage-coffee-acts"]']) {
         expect(Math.abs(centreOf(box(selector)) - centre), `${selector} centred`).toBeLessThanOrEqual(1)
       }
@@ -156,7 +168,7 @@ describe("What's new at its widths (tickets 0824, 0880, 1047, 1049)", () => {
 const ZOOM_KEY = 'openbeads:homepage-zoom'
 afterEach(() => localStorage.removeItem(ZOOM_KEY))
 
-// Every promise's name is in view at once (ticket 0948): two rows of three (three of two in a box under 640), Open
+// Every promise's name is in view at once (ticket 0948): four over three (ticket 1175; two to a row in a box under 640), Open
 // source and Say hello under them with their controls, nothing over anything else, nothing past the band and no
 // sideways scroll, at every width from 481 and every zoom (a zoom is a narrower layout), in the longest language too.
 describe('The promises, every name in view (ticket 0948)', () => {
@@ -178,11 +190,11 @@ describe('The promises, every name in view (ticket 0948)', () => {
         await settleForMeasuring()
         const section = root.closest<HTMLElement>('[data-testid="homepage-section-coffee"]')!
         const band = root.querySelector('[data-testid="homepage-coffee-band"]')!.getBoundingClientRect()
-        // Two rows of three; three rows of two in a box under 640 (500px, or 1024px at 200%).
+        // Four over three; two to a row in a box under 640 (500px, or 1024px at 200%).
         const narrow = width / (zoom / 100) < 640
-        expect(rows(root, '[data-testid^="homepage-coffee-promise-"]'), 'the rows of promises').toBe(narrow ? 3 : 2)
+        expect(rows(root, '[data-testid^="homepage-coffee-promise-"]'), 'the rows of promises').toBe(narrow ? 4 : 2)
         const items = [...root.querySelectorAll('[data-testid^="homepage-coffee-promise-"], [data-testid^="homepage-coffee-act-"]')]
-        expect(items).toHaveLength(8)
+        expect(items).toHaveLength(9)
         const boxes = items.map((item) => item.getBoundingClientRect())
         for (const [i, item] of items.entries()) {
           const id = item.getAttribute('data-testid')

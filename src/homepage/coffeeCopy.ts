@@ -3,32 +3,37 @@ import type { Translations } from '../i18n/translations'
 import type { IconName } from '../components/ui/icons'
 import { controlAction } from '../composables/shell/controlRegistry'
 
-// The coffee screen's words (Homepage card, tickets 0823, 0880, 0948): its six promises, each with its icon, then Open
-// source and Say hello, the two that act. The Menu's labels they point at come from the app, never typed into the copy.
+// The coffee screen's words (Homepage card, tickets 0823, 0880, 0948, 1175): its seven promises, each with its icon and
+// its row, then Open source and Say hello, the two that act. The Menu's labels they point at come from the app, never typed into the copy.
 
-/** One promise as shown: its icon, its name, and its line for screen readers. */
+/** The row a promise stands in: what openbeads is, then how you use it (ticket 1175). */
+type PromiseRow = 'what' | 'how'
+
+/** One promise as shown: its icon, its row, its name, and its line for screen readers. */
 interface CoffeePromise {
   id: keyof Translations['homepage']['promises']
   icon: IconName
+  row: PromiseRow
   name: string
   text: string
 }
 
 const PROMISES = [
-  { id: 'device', icon: 'device' },
-  { id: 'offline', icon: 'cloud-off' },
-  { id: 'noAds', icon: 'eye-off' },
-  { id: 'tablets', icon: 'pen-mode' },
-  { id: 'free', icon: 'check' },
-  { id: 'shortcuts', icon: 'keyboard' },
-] as const satisfies readonly { id: CoffeePromise['id']; icon: IconName }[]
+  { id: 'device', icon: 'device', row: 'what' },
+  { id: 'offline', icon: 'cloud-off', row: 'what' },
+  { id: 'noAds', icon: 'eye-off', row: 'what' },
+  { id: 'free', icon: 'check', row: 'what' },
+  { id: 'tablets', icon: 'pen-mode', row: 'how' },
+  { id: 'mouse', icon: 'mouse', row: 'how' },
+  { id: 'shortcuts', icon: 'keyboard', row: 'how' },
+] as const satisfies readonly Pick<CoffeePromise, 'id' | 'icon' | 'row'>[]
 
-/** The six promises in a language, in the order the band shows them. */
+/** The seven promises in a language, in the order the band shows them. */
 export function coffeePromises(t: Translations): CoffeePromise[] {
   const blanks = { menu: controlAction('strip-menu').name(t), help: t.panels.menu.help, shortcuts: t.shortcutsHelp.title }
-  return PROMISES.map(({ id, icon }) => {
+  return PROMISES.map(({ id, icon, row }) => {
     const copy = t.homepage.promises[id]
-    return { id, icon, name: copy.name, text: id === 'shortcuts' ? fillBlanks(copy.text, blanks) : copy.text }
+    return { id, icon, row, name: copy.name, text: id === 'shortcuts' ? fillBlanks(copy.text, blanks) : copy.text }
   })
 }
 
@@ -49,7 +54,7 @@ export function coffeeActs(t: Translations): CoffeeAct[] {
   ]
 }
 
-/** A phone's rows in a language: the six promises, then Open source and Say hello. */
+/** A phone's rows in a language: the seven promises, then Open source and Say hello. */
 export function coffeeRows(t: Translations): (CoffeePromise | CoffeeAct)[] {
   return [...coffeePromises(t), ...coffeeActs(t)]
 }

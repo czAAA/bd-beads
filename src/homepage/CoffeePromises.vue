@@ -5,26 +5,31 @@ import { useI18n } from '../i18n/useI18n'
 import CoffeeAction from './CoffeeAction.vue'
 import { coffeeActs, coffeePromises } from './coffeeCopy'
 
-// What stands under the coffee screen's band (tickets 0880, 0948; Homepage card): the six promises, two rows of an icon
-// and a name each, nothing to press, then Open source and Say hello with their controls. Every name is in view at once,
-// so nothing needs a hover or a tap to say what it is. Each item's line is for screen readers only.
+// Under the coffee screen's band (tickets 0880, 0948, 1175; Homepage card): the seven promises, four over three (what
+// it is, then how you use it), then Open source and Say hello. Every name is in view at once, nothing to press, so
+// nothing needs a hover or a tap to say what it is. Each item's line is for screen readers only.
 const emit = defineEmits<{ feedback: [] }>()
 
 const { t } = useI18n()
-const promises = computed(() => coffeePromises(t.value))
+const rows = computed(() => {
+  const promises = coffeePromises(t.value)
+  return (['what', 'how'] as const).map((row) => ({ row, promises: promises.filter((promise) => promise.row === row) }))
+})
 const acts = computed(() => coffeeActs(t.value))
 </script>
 
 <template>
   <div class="coffee-promises">
-    <ul class="coffee-promises__list" data-testid="homepage-coffee-promises">
-      <li v-for="promise in promises" :key="promise.id" class="coffee-promise" :data-testid="`homepage-coffee-promise-${promise.id}`">
-        <AppIcon class="coffee-promise__icon" :name="promise.icon" :size="18" />
-        <span class="coffee-promise__name">{{ promise.name }}</span>
-        <!-- The stop keeps a screen reader from running the name into its line. -->
-        <span class="coffee-promise__said">. {{ promise.text }}</span>
-      </li>
-    </ul>
+    <div class="coffee-promises__list" data-testid="homepage-coffee-promises">
+      <ul v-for="{ row, promises } in rows" :key="row" class="coffee-promises__row" :data-testid="`homepage-coffee-promises-${row}`">
+        <li v-for="promise in promises" :key="promise.id" class="coffee-promise" :data-testid="`homepage-coffee-promise-${promise.id}`">
+          <AppIcon class="coffee-promise__icon" :name="promise.icon" :size="18" />
+          <span class="coffee-promise__name">{{ promise.name }}</span>
+          <!-- The stop keeps a screen reader from running the name into its line. -->
+          <span class="coffee-promise__said">. {{ promise.text }}</span>
+        </li>
+      </ul>
+    </div>
     <ul class="coffee-promises__acts" data-testid="homepage-coffee-acts">
       <li v-for="act in acts" :key="act.id" class="coffee-promise coffee-promise--act" :data-testid="`homepage-coffee-act-${act.id}`">
         <AppIcon class="coffee-promise__icon" :name="act.icon" :size="18" />
@@ -45,17 +50,31 @@ const acts = computed(() => coffeeActs(t.value))
   gap: var(--space-16);
 }
 
-/* Two rows of three, centred, a name wrapping between its words within its column: 24px between the columns, 32px
-   from 744. Under 640 three rows of two, so the longest word of every language keeps to its column. */
+/* Four over three (ticket 1175), each row centred, the three under the four like brick stitch, 12px between the rows. */
 .coffee-promises__list {
-  display: grid;
-  grid-template-columns: repeat(3, auto);
-  gap: var(--space-12) var(--space-24);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-12);
+  max-width: 100%;
+}
+
+/* One row: a name wraps between its words where the row is short of room, 24px between the promises, 32px from 744.
+   Under 640 two to a row, each half the width, the odd one out centred, so the longest word of every language keeps
+   to its half. */
+.coffee-promises__row {
+  display: flex;
   justify-content: center;
+  gap: var(--space-12) var(--space-24);
   max-width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* A promise is never narrower than its longest word, which would poke out of its box. */
+.coffee-promises__row > .coffee-promise {
+  min-width: auto;
 }
 
 /* One row, centred, 32px apart, one under the other where there is no room. */
@@ -71,13 +90,18 @@ const acts = computed(() => coffeeActs(t.value))
 }
 
 @container homepage (max-width: 639px) {
-  .coffee-promises__list {
-    grid-template-columns: repeat(2, auto);
+  .coffee-promises__row {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .coffee-promises__row > .coffee-promise {
+    flex: 0 0 calc((100% - var(--space-24)) / 2);
   }
 }
 
 @container homepage (min-width: 744px) {
-  .coffee-promises__list {
+  .coffee-promises__row {
     column-gap: var(--space-32);
   }
 }
