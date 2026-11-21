@@ -5,9 +5,11 @@ import { blankPage, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages
 import { PRINT_COLORS } from './printColors'
 import { mm, PRINT_MARGIN, type PageSize } from './printPlan'
 import type { PrintText } from './printText'
+import { LIFT_REACH_PX } from './liftedFrame'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { fillBlanks } from '../domain/fillBlanks'
+import { frameLifted } from '../domain/frame'
 import type { Project } from '../domain/project'
 
 // The Cover page (ticket 1096; PrintCover card): its title, maker, colors and tech line at the top (ticket
@@ -72,19 +74,24 @@ function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: 
   context.fill()
 
   const scale = context.getTransform().a
+  // A lifted Frame (ticket 1177) draws its plate, outline and shadows round the piece: the picture is that much larger each side.
+  const lift = frameLifted(project)
+  const bleed = lift ? LIFT_REACH_PX * zoom : 0
   const tile = document.createElement('canvas')
-  tile.width = Math.max(1, Math.ceil(piece.width * scale))
-  tile.height = Math.max(1, Math.ceil(piece.height * scale))
+  tile.width = Math.max(1, Math.ceil((piece.width + 2 * bleed) * scale))
+  tile.height = Math.max(1, Math.ceil((piece.height + 2 * bleed) * scale))
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
-  const region = { x: start.x * zoom * scale, y: start.y * zoom * scale, width: tile.width, height: tile.height }
-  renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom: zoom * scale, theme: COVER_THEME, rowMarks: false, positionMarks: false, drawBead: paintedOnly })
-  // A shadow's offset and blur are in device px, whatever the transform.
+  const region = { x: (start.x * zoom - bleed) * scale, y: (start.y * zoom - bleed) * scale, width: tile.width, height: tile.height }
+  renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom: zoom * scale, theme: COVER_THEME, rowMarks: false, positionMarks: false, drawBead: paintedOnly, lift, liftBackground: PRINT_COLORS.board })
+  // A shadow's offset and blur are in device px, whatever the transform. A lifted piece casts its own.
   context.save()
-  context.shadowColor = shadowColor()
-  context.shadowOffsetY = SHADOW.down * scale
-  context.shadowBlur = SHADOW.blur * scale
-  context.drawImage(tile, piece.x, piece.y, tile.width / scale, tile.height / scale)
+  if (!lift) {
+    context.shadowColor = shadowColor()
+    context.shadowOffsetY = SHADOW.down * scale
+    context.shadowBlur = SHADOW.blur * scale
+  }
+  context.drawImage(tile, piece.x - bleed, piece.y - bleed, tile.width / scale, tile.height / scale)
   context.restore()
   tile.width = 0
   tile.height = 0

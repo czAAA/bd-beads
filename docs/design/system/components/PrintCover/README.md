@@ -41,6 +41,6 @@ Picture saves (ticket 1096; PngExport card) this page as a PNG, at the Export qu
 
 Hand-written from the signed-off canvas; static rendition.
 
-## Lifted Frame (ticket 1177, approved 2026-11-21, not yet in the app)
+## Lifted Frame (ticket 1177)
 
 With the Frame's Lift saved on, the piece on the board is lifted: ground, outline and two soft shadows round its outer border, holes lying on it like beads (printed-output.md, Lifted Frame in exports; BeadBoard card). With Black and white on the cover keeps it, as it keeps its color.

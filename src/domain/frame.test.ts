@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { withColors, sameFrame } from './canvas'
-import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, snapColumn, snapRow } from './frame'
+import { fitToDrawing, frameLifted, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, snapColumn, snapRow, withFrame, withFrameLift } from './frame'
+import { frameOf } from './layerRecord'
+import { sameLayers } from './layerBeads'
 import { bareProject } from '../testUtils/layerFields'
 
 describe('snapRow', () => {
@@ -221,5 +223,34 @@ describe('a Drop (tickets 477, 0691)', () => {
   it('fits to the drawing from a legal row', () => {
     const beads = withColors({}, [{ row: 9, column: 1, color: '#111111' }, { row: 13, column: 4, color: '#111111' }])
     expect(fitToDrawing(bareProject({ ...block2, beads }))).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
+  })
+})
+
+describe('a Frame\'s Lift (ticket 1177)', () => {
+  const project = bareProject({ frame: { row: 0, column: 0, rows: 4, columns: 4, technique: 'loom' as const, beads: {} } })
+
+  it('turns on and off without touching anything else, and a repeat is the same Project', () => {
+    const on = withFrameLift(project, true)
+    expect(frameLifted(on)).toBe(true)
+    expect(withFrameLift(on, true)).toBe(on)
+    const off = withFrameLift(on, false)
+    expect(frameLifted(off)).toBe(false)
+    expect(frameOf(off)).toEqual(frameOf(project))
+    expect(withFrameLift(off, false)).toBe(off)
+  })
+
+  it('is one Undo step: a Project that differs only in Lift is not the same layers', () => {
+    expect(sameLayers(project, withFrameLift(project, true))).toBe(false)
+    expect(sameLayers(withFrameLift(project, true), withFrameLift(project, true))).toBe(true)
+  })
+
+  it('stays when the Frame is resized and goes with the Frame', () => {
+    const on = withFrameLift(project, true)
+    expect(frameLifted(withFrame(on, { row: 0, column: 0, rows: 6, columns: 4 }))).toBe(true)
+    expect(frameLifted(withFrame(on, undefined))).toBe(false)
+  })
+
+  it('is on for a Frame set anew', () => {
+    expect(frameLifted(withFrame(withFrame(project, undefined), { row: 0, column: 0, rows: 4, columns: 4 }))).toBe(true)
   })
 })

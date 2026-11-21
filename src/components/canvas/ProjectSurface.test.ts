@@ -5,6 +5,7 @@ import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { FRAME_WAIT_MS } from './surface/useSurfaceDrawing'
 import { createProject } from '../../domain/createProject'
+import { withFrameLift } from '../../domain/frame'
 import { changeFrame } from '../../domain/changeFrame'
 import type { Project, RowProgress } from '../../domain/project'
 import { rotateFrame } from '../../domain/rotate'
@@ -37,7 +38,8 @@ import { provideBeadColors, type BeadColors } from '../../composables/palette/us
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
 function projectOf(columns: number, rows: number, extra: LayersChange = {}, technique: Technique = 'loom'): Project {
-  const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
+  // Flat: the bands these tests count are a flat Frame's; a lifted one's are wider by the lift's reach (ticket 1177).
+  const project = withFrameLift(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), false)
   const { beads, ...rest } = extra
   // Left out the Frame is the usual one; `frame: undefined` is a Canvas with none, and its beads are the Canvas's.
   if ('frame' in extra && extra.frame === undefined) {
@@ -419,11 +421,12 @@ describe('ProjectSurface', () => {
       const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined)
       const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 15, column: 10 } } })
       if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
-      const { wrapper } = await mountSurface(placed.project)
+      const flat = withFrameLift(placed.project, false)
+      const { wrapper } = await mountSurface(flat)
       context.calls.length = 0
 
-      const beads = frameOf(placed.project)!.beads
-      await wrapper.setProps({ project: withLayer(placed.project, 'frame', { beads: { ...beads, [row]: { ...beads[row], [column]: '#e63746' } } }) })
+      const beads = frameOf(flat)!.beads
+      await wrapper.setProps({ project: withLayer(flat, 'frame', { beads: { ...beads, [row]: { ...beads[row], [column]: '#e63746' } } }) })
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
