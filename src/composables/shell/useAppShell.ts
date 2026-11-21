@@ -1021,7 +1021,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     settings: {
       language: { value: () => locale.value, set: setLocale },
       theme: { value: () => themePick.pick.value, set: themePick.setPick },
-      liftedPieces: { value: () => (backgrounds.lift.on.value ? 'on' : 'off'), set: (lifted) => backgrounds.lift.set(lifted === 'on') },
     },
     dialogs,
   })

@@ -2,7 +2,7 @@ import { onScopeDispose, watch } from 'vue'
 import { changedSince, KEPT_SETTING_NAMES, settingsStep, type AccountSettings, type DeviceSettings, type KeptSettingName, type KeptSettings, type KeptValue } from '../../domain/keptSettings'
 import type { AccountService } from '../../services/account'
 
-/** The device's three settings kept in step, each read as it shows now and set the way the Menu sets it. */
+/** The device's settings kept in step, each read as it shows now and set the way the Menu sets it. */
 export type DeviceSettingControls = { [N in KeptSettingName]: { value: () => KeptValue<N>; set: (value: KeptValue<N>) => void } }
 
 /** What keeping the settings in step needs from the account flow. */
@@ -28,7 +28,7 @@ function onSettingChange(
   KEPT_SETTING_NAMES.forEach(watchOne)
 }
 
-/** The Settings kept in step (ticket 1086, ADR 0014): a signed-in person's language, theme and Lifted pieces are the
+/** The Settings kept in step (ticket 1086, ADR 0014): a signed-in person's language and theme are the
  * same on all their devices. A change here is sent at once, or waits quietly until it can be; the account's settings
  * are taken through the Menu's own setters. No toast, no banner. */
 export function useKeptSettings(deps: KeptSettingsDeps) {
@@ -38,7 +38,7 @@ export function useKeptSettings(deps: KeptSettingsDeps) {
   /** How many sends the backend has kept: an answer asked for before the last of them may be older than it. */
   let kept = 0
 
-  const shown = (): DeviceSettings => ({ language: deps.device.language.value(), theme: deps.device.theme.value(), liftedPieces: deps.device.liftedPieces.value() })
+  const shown = (): DeviceSettings => ({ language: deps.device.language.value(), theme: deps.device.theme.value() })
 
   /** Puts the account's `values` on the device. They are all that is on its way now: one expected earlier that never
    * came (a language that couldn't be fetched) is expected no more. */
@@ -68,7 +68,7 @@ export function useKeptSettings(deps: KeptSettingsDeps) {
     if (Object.keys(changedSince(waiting, changes)).length > 0) void send()
   }
 
-  onSettingChange({ language: deps.device.language.value, theme: deps.device.theme.value, liftedPieces: deps.device.liftedPieces.value }, (name, value) => {
+  onSettingChange({ language: deps.device.language.value, theme: deps.device.theme.value }, (name, value) => {
     const fromAccount = arriving[name] === value
     delete arriving[name]
     if (fromAccount) return

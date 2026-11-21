@@ -602,40 +602,38 @@ describe('Account (ticket 0078)', () => {
   })
 
   describe('the Settings kept in step (ticket 1086)', () => {
-    const KEYS = ['openbeads:locale', 'openbeads:theme', 'openbeads:lifted-pieces']
+    const KEYS = ['openbeads:locale', 'openbeads:theme']
     afterEach(() => {
       for (const key of KEYS) localStorage.removeItem(key)
       for (const name of ['lang', 'data-theme', 'style']) document.documentElement.removeAttribute(name)
     })
 
-    it('takes the account’s language, theme and Lifted pieces as the app opens, the way the Menu and the strip set them', async () => {
+    it('takes the account’s language and theme as the app opens, the way the Menu sets them', async () => {
       const at = Date.now() - 1000
-      const settings = { language: { value: 'ru', changedAt: at }, theme: { value: 'dark', changedAt: at }, liftedPieces: { value: 'off', changedAt: at } } as const
+      const settings = { language: { value: 'ru', changedAt: at }, theme: { value: 'dark', changedAt: at } } as const
       const account = memoryAccount({ remembered: ann, session: ann, settings })
       const mounted = mountOn(account)
       await flushPromises()
       expect(document.documentElement.lang).toBe('ru')
       expect(document.documentElement.dataset.theme).toBe('dark')
-      expect(KEYS.map((key) => localStorage.getItem(key))).toEqual(['ru', 'dark', 'off'])
+      expect(KEYS.map((key) => localStorage.getItem(key))).toEqual(['ru', 'dark'])
       await mounted.openPanel('menu')
       expect(document.documentElement.lang).toBe('ru')
-      expect(mounted.wrapper.get('[data-testid="menu-lifted-pieces"]').attributes('aria-checked')).toBe('false')
       expect(account.state.sent).toEqual([])
       expect(mounted.canvas.toasts.value).toEqual([])
     })
 
-    it('sends a signed-in person’s pick in the Menu and the strip at once', async () => {
+    it('sends a signed-in person’s pick in the Menu at once', async () => {
       const at = Date.now() - 1000
-      const settings = { language: { value: 'en', changedAt: at }, theme: { value: 'device', changedAt: at }, liftedPieces: { value: 'on', changedAt: at } } as const
+      const settings = { language: { value: 'en', changedAt: at }, theme: { value: 'device', changedAt: at } } as const
       const account = memoryAccount({ remembered: ann, session: ann, settings })
       const mounted = mountShellPartsOn({ account }, AppPanels, AppDialogs, CanvasStrip)
       await flushPromises()
       await mounted.openPanel('menu')
       await choosePanelOption(mounted.wrapper, 'theme-picker', 'dark')
-      await click(mounted, 'menu-lifted-pieces')
       await choosePanelOption(mounted.wrapper, 'language-switcher', 'pl')
       await flushPromises()
-      expect(account.state.settings).toMatchObject({ language: { value: 'pl' }, theme: { value: 'dark' }, liftedPieces: { value: 'off' } })
+      expect(account.state.settings).toMatchObject({ language: { value: 'pl' }, theme: { value: 'dark' } })
       expect(account.state.waiting).toEqual({})
     })
   })

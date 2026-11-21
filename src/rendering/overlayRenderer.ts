@@ -21,7 +21,7 @@ import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
-import { joinedTouching } from './liftedPiece'
+import { joinedTouching } from './touchingCells'
 import { lookSideOf } from './pieceGround'
 import { drawDraftBeads, drawsDraft } from './draftRenderer'
 import { markLookAt } from './tonalTiles'
@@ -45,8 +45,7 @@ const MARKER_CASE_PX = 1
 const RAISE_PX = 1
 
 /** The one shadow under the current pass's raised beads (ticket 1032, BeadBoard card): its blur's spread (a CSS
- * `blur()`, as the Lifted piece's) and fall in px at 100% zoom, on the screen whatever the turn, and its black's opacity
- * in each look, in the Lifted piece's proportion. */
+ * `blur()`) and fall in px at 100% zoom, on the screen whatever the turn, and its black's opacity in each look. */
 const RAISED_SHADOW = { blur: 5, down: 2, opacity: { dark: 0.72, light: 0.24 } } as const
 
 /** What a hover preview shows a bead in (BeadHover card): the chosen color at 60%, over whatever the bead holds. */
@@ -303,7 +302,7 @@ function deviceX(m: DOMMatrix2DInit, bead: PassBead, x: number, y: number): numb
 // joined, filled once. The shape lies left of the device's pixels and the shadow is cast back, so only the shadow shows
 // (Safari took seconds over a blurred path of many shapes: ticket 1030). Light and dark on screen only, not the draft look.
 function drawRaisedShadow(context: DrawingContext, beads: readonly PassBead[], weave: Weave, deviceScale: number, theme: ProjectTheme): void {
-  // The screen's full look is told by its own-color rim: Lifted pieces can be switched off there (ticket 1042).
+  // The screen's full look is told by its own-color rim.
   if (!beads.length || !theme.ownColorRim || drawsDraft(deviceScale)) return
   const inset = BEAD_GAP_PX / 2
   const body = (bead: PassBead) => raisedBy(bead, RAISE_PX - inset)

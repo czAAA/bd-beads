@@ -17,7 +17,7 @@ export interface AccountFlowDeps {
   openMenu: (on: 'account' | 'sign-in') => void
   /** The panel sections folded on this device, by id (`usePanelSection`). */
   foldedSections: Ref<readonly string[]>
-  /** The device's language, theme and Lifted pieces, which a signed-in person finds the same on all their devices
+  /** The device's language and theme, which a signed-in person finds the same on all their devices
    * (ticket 1086): each as it shows now, and set the way the Menu sets it. */
   settings: DeviceSettingControls
   /** The shell's dialog registry, which shows "Delete your account?"; a test's flow makes its own. */
