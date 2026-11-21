@@ -41,7 +41,7 @@ async function mountPanel(project: Project) {
 type Panel = Awaited<ReturnType<typeof mountPanel>>
 const has = (wrapper: Panel, testId: string) => wrapper.find(`[data-testid="${testId}"]`).exists()
 /** The ways to a Frame, in the panel's order. */
-const rows = (wrapper: Panel) => wrapper.findAll('[data-testid="export-fit"], [data-testid="export-select-frame"]').map((row) => row.attributes('data-testid'))
+const rows = (wrapper: Panel) => wrapper.findAll('[data-testid="export-fit"], [data-testid="export-select-frame"], [data-testid="export-select-piece-frame"]').map((row) => row.attributes('data-testid'))
 
 describe('ExportPanel (ticket 0652)', () => {
   it('names the open Project on the title line, with or without a Frame (ticket 0986)', async () => {
@@ -106,13 +106,15 @@ describe('ExportPanel (ticket 0652)', () => {
 
     expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
     expect(['export-png', 'export-pdf', 'quality-range'].filter((id) => has(wrapper, id))).toEqual([])
-    expect(rows(wrapper)).toEqual(['export-fit', 'export-select-frame'])
+    expect(rows(wrapper)).toEqual(['export-fit', 'export-select-frame', 'export-select-piece-frame'])
     expect(wrapper.get('[data-testid="export-fit"] [data-icon]').attributes('data-icon')).toBe('frame')
     expect(wrapper.get('[data-testid="export-select-frame"]').text()).toBe(en.frame.selectAFrame)
 
     await wrapper.get('[data-testid="export-select-frame"]').trigger('click')
+    await wrapper.get('[data-testid="export-select-piece-frame"]').trigger('click')
     await wrapper.get('[data-testid="export-fit"]').trigger('click')
     expect(wrapper.emitted('select-frame')).toHaveLength(1)
+    expect(wrapper.emitted('select-piece-frame')).toHaveLength(1)
     expect(wrapper.emitted('fit')).toHaveLength(1)
   })
 

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "Select a Piece to make a Frame sets the Frame to the Piece you tap, beside Drag a Frame and Fit a Frame",
+    "ru": "«Выделить кусочек, чтобы сделать рамку» ставит рамку по кусочку, которого вы коснулись, рядом с «Растянуть рамку» и «Подогнать рамку»",
+    "uk": "«Виділити шматочок, щоб зробити рамку» ставить рамку за шматочком, якого ви торкнулися, поруч із «Розтягнути рамку» та «Підігнати рамку»",
+    "be": "«Вылучыць кавалачак, каб зрабіць рамку» ставіць рамку па кавалачку, да якога вы дакрануліся, побач з «Расцягнуць рамку» і «Падагнаць рамку»",
+    "zh": "“选中小块来做边框”会把边框设为你点按的小块，与“拖出边框”和“贴合边框”并列",
+    "es": "Seleccionar un trozo para hacer un marco pone el marco en el trozo que tocas, junto a Arrastrar un marco y Ajustar un marco",
+    "pl": "„Zaznacz kawałek, by zrobić ramkę” ustawia ramkę na dotkniętym kawałku, obok „Przeciągnij ramkę” i „Dopasuj ramkę”"
+  }
+}

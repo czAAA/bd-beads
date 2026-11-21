@@ -47,6 +47,7 @@ const {
   onSetBackground,
   onFitFrame,
   onSelectFrame,
+  onSelectPieceFrame,
   onResetProgress,
   onRequestReplaceBead,
   onImportProjects,
@@ -138,6 +139,7 @@ const chosenStarter = ref<StarterId>()
       @rename="onRenameFrame"
       @fit="onFitFrame"
       @select-frame="onSelectFrame"
+      @select-piece-frame="onSelectPieceFrame()"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @save-project-file="onSaveProjectFile"
@@ -177,6 +179,7 @@ const chosenStarter = ref<StarterId>()
       :opens-on="exportChoice"
       @fit="onFitFrame"
       @select-frame="onSelectFrame('export')"
+      @select-piece-frame="onSelectPieceFrame('export')"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @save-project-file="onSaveProjectFile"
@@ -248,6 +251,7 @@ const chosenStarter = ref<StarterId>()
       @export-pdf="onExportPdf"
       @fit="onFitFrame"
       @select-frame="onSelectFrame('export')"
+      @select-piece-frame="onSelectPieceFrame('export')"
       @save-maker-name="onSaveMakerName"
       @clear="onRequestDeleteAll"
       @delete="onRequestDelete"

@@ -479,6 +479,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
     expect(wrapper.findAll('.panel-section')).toEqual([])
     expect(wrapper.get('[data-testid="frame-select"]').text()).toContain(en.frame.selectAFrame)
+    expect(wrapper.get('[data-testid="frame-select-piece"]').text()).toContain(en.frame.selectAPieceFrame)
     for (const id of ['export-png', 'export-pdf', 'quality-range']) expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(false)
     expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
     expect(wrapper.get('[data-testid="frame-none-line"]').text()).toBe(en.frame.noFrameLine)
