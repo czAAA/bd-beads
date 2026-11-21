@@ -1,3 +1,5 @@
+import { packPage, type PackedPage } from './pagePacking'
+
 /** A PNG written strip by strip (ticket 73), so a picture too big for one canvas (iPad Safari's limit) is still one
  * file: the caller draws a band of rows, this compresses it and keeps only the bytes. Compression is the browser's
  * `CompressionStream` ("deflate" is the zlib format a PNG's data is in). */
@@ -39,62 +41,27 @@ function chunk(type: string, data: Uint8Array): Uint8Array {
 /** A band of the picture: `rows` full rows of RGBA pixels, `width` across, starting `y` rows down. */
 export type StripSource = (y: number, rows: number) => Uint8ClampedArray | Promise<Uint8ClampedArray>
 
-/** The zlib-compressed scanlines of an opaque 8-bit RGB picture (alpha of `strip` ignored), read `stripRows` rows at a
- * time: what a PNG's IDAT and a PDF's FlateDecode image hold (ticket 572). Each scanline leads with filter type 0. */
-export async function deflateRgb(width: number, height: number, stripRows: number, strip: StripSource): Promise<Uint8Array[]> {
-  const compression = new CompressionStream('deflate')
-  const writer = compression.writable.getWriter()
-  const compressed: Uint8Array[] = []
-  const reading = (async () => {
-    const reader = compression.readable.getReader()
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) {
-        return
-      }
-      compressed.push(value)
-    }
-  })()
-
-  const rowBytes = 1 + width * 3
-  for (let y = 0; y < height; y += stripRows) {
-    const rows = Math.min(stripRows, height - y)
-    const rgba = await strip(y, rows)
-    const scanlines = new Uint8Array(rows * rowBytes)
-    for (let row = 0; row < rows; row += 1) {
-      let out = row * rowBytes + 1
-      for (let from = row * width * 4, end = from + width * 4; from < end; from += 4) {
-        scanlines[out] = rgba[from]!
-        scanlines[out + 1] = rgba[from + 1]!
-        scanlines[out + 2] = rgba[from + 2]!
-        out += 3
-      }
-    }
-    await writer.write(scanlines)
-  }
-  await writer.close()
-  await reading
-  return compressed
-}
-
 /** `text` zlib-compressed (ASCII, as a PDF page's drawing operators are): a PDF stream's FlateDecode data (ticket 0585). */
 export async function deflateText(text: string): Promise<Uint8Array> {
   const compressed = new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('deflate')))
   return new Uint8Array(await compressed.arrayBuffer())
 }
 
-/**
- * An opaque 8-bit RGB PNG, `width` × `height`, read `stripRows` rows at a time from `strip` (whose alpha is ignored).
- */
-export async function encodePng(width: number, height: number, stripRows: number, strip: StripSource): Promise<Blob> {
+/** A packed page (`packPage`, ticket 1142) as a PNG: RGB, or palette-indexed when it was packed to 256 colors or fewer. */
+function pngOfPacked(page: PackedPage): Blob {
   const header = new Uint8Array(13)
   const headerView = new DataView(header.buffer)
-  headerView.setUint32(0, width)
-  headerView.setUint32(4, height)
-  header.set([8, 2, 0, 0, 0], 8) // 8 bits, RGB, deflate, no filter method variations, no interlace
-
-  const compressed = (await deflateRgb(width, height, stripRows, strip)).map((data) => chunk('IDAT', data))
-  return new Blob([SIGNATURE as BlobPart, chunk('IHDR', header) as BlobPart, ...(compressed as BlobPart[]), chunk('IEND', new Uint8Array(0)) as BlobPart], {
+  headerView.setUint32(0, page.width)
+  headerView.setUint32(4, page.height)
+  header.set([8, page.palette ? 3 : 2, 0, 0, 0], 8) // 8 bits, indexed or RGB, deflate, filter method 0, no interlace
+  const palette = page.palette ? [chunk('PLTE', page.palette)] : []
+  const data = page.flate.map((part) => chunk('IDAT', part))
+  return new Blob([SIGNATURE as BlobPart, chunk('IHDR', header) as BlobPart, ...(palette as BlobPart[]), ...(data as BlobPart[]), chunk('IEND', new Uint8Array(0)) as BlobPart], {
     type: 'image/png',
   })
+}
+
+/** An opaque PNG read `stripRows` rows at a time from `strip` (alpha ignored), packed as small as keeps `exact` (ticket 1142). */
+export async function encodePng(width: number, height: number, stripRows: number, strip: StripSource, exact: ReadonlySet<number> = new Set()): Promise<Blob> {
+  return pngOfPacked(await packPage(width, height, stripRows, strip, exact))
 }

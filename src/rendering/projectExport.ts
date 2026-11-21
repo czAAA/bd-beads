@@ -1,7 +1,9 @@
 import { PDF_PAGE_DPI } from '../domain/exportQuality'
 import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
-import { deflateRgb, deflateText, encodePng } from '../domain/pngEncoder'
+import { exactColors, packPage, type PackedPage } from '../domain/pagePacking'
+import { projectColors } from '../domain/layerBeads'
+import { deflateText, encodePng } from '../domain/pngEncoder'
 import { pageOneLayout } from './pageOneLayout'
 import { A4_PORTRAIT, PRINT_DPI, type PrintPart } from './printPlan'
 import type { PrintText } from './printText'
@@ -24,10 +26,10 @@ function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 const STRIP_PIXELS = 1_000_000
 
 /** The page as a PNG, compressed strip by strip. */
-function pngOf(canvas: HTMLCanvasElement): Promise<Blob> {
+function pngOf(canvas: HTMLCanvasElement, project: Project): Promise<Blob> {
   const context = contextOf(canvas)
   const stripRows = Math.max(1, Math.floor(STRIP_PIXELS / canvas.width))
-  return encodePng(canvas.width, canvas.height, stripRows, (y, rows) => context.getImageData(0, y, canvas.width, rows).data)
+  return encodePng(canvas.width, canvas.height, stripRows, (y, rows) => context.getImageData(0, y, canvas.width, rows).data, exactColors(projectColors(project)))
 }
 
 // The Project as a PNG (tickets 164, 0583, 1096; PngExport card): the Cover page as a picture, one file whatever the piece,
@@ -39,7 +41,7 @@ export async function exportProjectPng(project: Project, words: PrintText, dpi =
   const { loadPrintFonts } = await import('./printPages')
   await loadPrintFonts()
   const canvas = drawCoverPage(project, words, A4_PORTRAIT, 1, 1, dpi / PRINT_DPI)
-  const blob = await pngOf(canvas)
+  const blob = await pngOf(canvas, project)
   canvas.width = 0
   canvas.height = 0
   return blob
@@ -47,11 +49,11 @@ export async function exportProjectPng(project: Project, words: PrintText, dpi =
 
 // ---- PDF -----------------------------------------------------------------------------------------------------------
 
-/** The page as lossless compressed scanlines: measured at half the size of a JPEG of it (ticket 572, ADR 0043). */
-function flateOf(canvas: HTMLCanvasElement): Promise<Uint8Array[]> {
+/** The page as compressed scanlines, packed as small as keeps every color of the Project (tickets 572, 1142, ADR 0043). */
+function flateOf(canvas: HTMLCanvasElement, project: Project): Promise<PackedPage> {
   const context = contextOf(canvas)
   const stripRows = Math.max(1, Math.floor(STRIP_PIXELS / canvas.width))
-  return deflateRgb(canvas.width, canvas.height, stripRows, (y, rows) => context.getImageData(0, y, canvas.width, rows).data)
+  return packPage(canvas.width, canvas.height, stripRows, (y, rows) => context.getImageData(0, y, canvas.width, rows).data, exactColors(projectColors(project)))
 }
 
 // The Project as a PDF (tickets 162, 0914, 1096): the Cover page when it is asked for, page 1 (the chart whole, or the
@@ -73,7 +75,8 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   const pages: PdfPage[] = []
   const add = async (canvas: HTMLCanvasElement, drawing?: string) => {
     const size = { pixelWidth: canvas.width, pixelHeight: canvas.height }
-    pages.push({ ...size, flate: await flateOf(canvas), ...(drawing ? { drawing: await deflateText(drawing) } : {}) })
+    const { flate, palette } = await flateOf(canvas, project)
+    pages.push({ ...size, flate, ...(palette ? { palette } : {}), ...(drawing ? { drawing: await deflateText(drawing) } : {}) })
     // Let the canvas go before the next page is drawn.
     canvas.width = 0
     canvas.height = 0

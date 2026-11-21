@@ -7,6 +7,15 @@ async function text(blob: Blob): Promise<string> {
 
 const page = { flate: [Uint8Array.of(0x78, 0x9c, 1, 2), Uint8Array.of(3, 4, 5)], pixelWidth: 10, pixelHeight: 20 }
 
+describe('buildPdf with a palette (ticket 1142)', () => {
+  it('writes the picture as indexes into its colors', async () => {
+    const pdf = await text(buildPdf([{ ...page, palette: Uint8Array.of(255, 255, 255, 230, 55, 70) }], 595, 842))
+
+    expect(pdf).toContain('/ColorSpace [/Indexed /DeviceRGB 1 <ffffffe63746>]')
+    expect(pdf).toContain('/Predictor 15 /Colors 1 /BitsPerComponent 8 /Columns 10')
+  })
+})
+
 describe('buildPdf (ticket 74)', () => {
   it('makes a PDF with a page per picture, at the sheet size', async () => {
     const blob = buildPdf([page, page], 595.2, 841.68)
