@@ -1,6 +1,6 @@
 import { findBead, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
-import { fringeLayout, fringePointRows, type FringeTop, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
+import { fringeLayout, fringePointRows, fringeRenamed, type FringeTop, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { FrameEdge } from './frame'
 import type { GridDimensions, GridPosition } from './grid'
 import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, type LayerGeometry } from './layerGeometry'
@@ -87,6 +87,10 @@ export interface FrameShape extends FrameRules {
    * moved on the way it was changed from `before` (a Fringe earring's brick body, ticket 0814, and V fringe, ticket 0816);
    * without it every value in range is one. */
   settle?(read: NumberedSettings, weave: Weave, before?: FrameSettings): NumberedSettings
+  /** Where a bead goes as the resize handle on one side of the shape moves its settings from `before` to `after`, so it
+   * stays where it lay on the Canvas: a Fringe earring's columns are named from the left, its top's rows from the base.
+   * Without it every bead keeps its name. */
+  renamed?(before: FrameSettings, after: FrameSettings, weave: Weave, side: FrameEdge): (position: GridPosition) => GridPosition
   /** Built from its settings as `settingsOf` reads them, every one the shape has, and its Bead's depth across the
    * thread over its pitch along it, which a round shape packs by (ticket 0723) and a Kite draws (ticket 0874). */
   layout(settings: FrameSettings, depth: number, weave: Weave): FrameLayout
@@ -128,7 +132,7 @@ const CUSTOM_ALLOWS: ReadonlySet<FrameAction> = new Set(['resize', 'from-selecti
 
 /** A Frame shape's own: the Techniques it supports, its settings and styles, what its handles drive, how its settings
  * keep together, and its panel builder. */
-type ShapeOwn = Pick<FrameShape, 'techniques' | 'settings' | 'styles' | 'sides' | 'settle' | 'layout'> & Partial<Pick<FrameShape, 'followsWeave'>>
+type ShapeOwn = Pick<FrameShape, 'techniques' | 'settings' | 'styles' | 'sides' | 'settle' | 'renamed' | 'layout'> & Partial<Pick<FrameShape, 'followsWeave'>>
 
 /** A Frame shape (ADR 0078): its panel builder and settings, and its Row order's passes worked in rounds from the centre
  * or rows from a point (ticket 0594). Its beads are where its layout puts them, laid in its rectangle. */
@@ -214,6 +218,7 @@ const FRAME_SHAPES: Readonly<Record<FrameShapeId, FrameShape>> = {
     styles: FRINGE_STYLES,
     sides: { left: 'topWidth', right: 'topWidth', top: 'topRows', bottom: 'fringeLength' },
     settle: settledFringe,
+    renamed: (before, after, weave, side) => fringeRenamed(before as FringeSettings, after as FringeSettings, fringeTopOf(weave), side),
     layout: (settings, _depth, weave) => fringeLayout(settings as FringeSettings, fringeTopOf(weave)),
     followsWeave: true,
   }),
@@ -415,6 +420,17 @@ const AROUND: readonly FrameEdge[] = ['top', 'right', 'bottom', 'left']
  * the own edge of a Frame without a shape that a resize handle or stepper on that edge moves. */
 export function shapeSide(edge: FrameEdge, quarterTurns = 0): FrameEdge {
   return AROUND[(AROUND.indexOf(edge) - quarterTurns + AROUND.length) % AROUND.length]!
+}
+
+/** Where each bead of a Custom frame goes as resize handles move the `edges` of its rectangle on the Canvas, its settings
+ * going to `after`: named again by its shape for each side of it the edges show, so every bead stays where it lay and
+ * beads come or go on the dragged sides alone. */
+export function resizedName(frame: Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'>, after: FrameSettings, weave: Weave, edges: readonly FrameEdge[]): (position: GridPosition) => GridPosition {
+  const renamed = frameShapeOf(frame)?.renamed
+  if (!renamed) return (position) => position
+  const [before, now] = [settingsOf({ ...frame, ...weave })!, settingsOf({ ...frame, settings: after, ...weave })!]
+  const moves = edges.map((edge) => renamed(before, now, weave, shapeSide(edge, frame.quarterTurns)))
+  return (position) => moves.reduce((at, move) => move(at), position)
 }
 
 /** A Custom frame's settings with one setting stepped, a change at a time, to where its rectangle comes nearest the
