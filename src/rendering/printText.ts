@@ -242,7 +242,8 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       perGram && bead
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor)} ${bead.size}` })} ${t.print.spares}`
         : undefined,
-    ...(hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
+    // The key names the cross only while the chart draws it: Empty grid on (ticket 1140).
+    ...(choices.emptyGrid && hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
     ...(choices.cover ? { cover: true } : {}),
     ...(choices.blackAndWhite ? { tones: printTones(quantities) } : {}),
