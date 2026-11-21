@@ -623,6 +623,29 @@ export function useCanvasView(
     else ease()
   }
 
+  /** Remove frame's first motion (ticket 1189): the Frame eases from where it lies onto `to`, the angle it lines up at
+   * (the surface slides it onto whole Canvas positions there, as a twist's settle does), and `then` runs as it comes to
+   * rest. At once under reduced motion. */
+  function lineUpFrame(to: number, then: () => void): void {
+    const project = currentProject()
+    const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!project || still) return then()
+    clearTimeout(snapTimer)
+    frameTwisting.value = frameAngleOf(project)
+    twistPhase.value = 'turning'
+    // The surface holds what it shows first, so the ease plays from where the Frame lies.
+    const ease = () => {
+      frameTwisting.value = to
+      twistPhase.value = 'settling'
+      snapTimer = setTimeout(() => {
+        then()
+        releaseFrameTwist()
+      }, SNAP_MS)
+    }
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(ease)
+    else ease()
+  }
+
   /** How far the Canvas's origin has moved on the table since the twist began, in its bead widths (ticket 1188): none
    * outside a twist. */
   const twistMoved = computed<Scroll>(() => {
@@ -731,6 +754,7 @@ export function useCanvasView(
     frameTwist: readonly(frameTwisting),
     releaseFrameTwist,
     easeFrameBack,
+    lineUpFrame,
     turnCanvas,
     pinchStep,
     endTwist,

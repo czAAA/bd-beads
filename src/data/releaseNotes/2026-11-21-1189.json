@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "Remove Frame first turns a leaning Frame into line with the Canvas, so its beads come back as the very piece they were",
+    "ru": "«Убрать рамку» сначала выравнивает наклонённую рамку по холсту, и бисер ложится той же самой работой",
+    "uk": "«Прибрати рамку» спершу вирівнює нахилену рамку за полотном, і бісер лягає тією самою роботою",
+    "be": "«Прыбраць рамку» спачатку выроўнівае нахіленую рамку па палатне, і бісер кладзецца той самай работай",
+    "zh": "移除边框会先把倾斜的边框转正到画布上，珠子按原样落下，还是同一件作品",
+    "es": "Quitar marco primero alinea un marco inclinado con el lienzo, así sus cuentas quedan como la misma pieza que eran",
+    "pl": "Usuń ramkę najpierw wyrównuje przechyloną ramkę z płótnem, więc koraliki zostają tą samą pracą"
+  }
+}

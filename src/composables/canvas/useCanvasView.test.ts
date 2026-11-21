@@ -816,5 +816,37 @@ describe('useCanvasView', () => {
         vi.useRealTimers()
       }
     })
+
+    it('plays Remove frame\'s line-up: the Frame eases onto the angle it lines up at, then the drop runs (ticket 1189)', () => {
+      vi.useFakeTimers()
+      try {
+        const { view } = frameSetup()
+        const then = vi.fn()
+        view.lineUpFrame(90, then)
+        vi.advanceTimersByTime(20)
+        expect(view.frameTwist.value).toBe(90)
+        expect(view.twistPhase.value).toBe('settling')
+        expect(then).not.toHaveBeenCalled()
+        vi.advanceTimersByTime(SNAP_MS)
+        expect(then).toHaveBeenCalledTimes(1)
+        expect(view.frameTwist.value).toBeUndefined()
+        expect(view.twistPhase.value).toBeUndefined()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('drops at once under reduced motion', () => {
+      vi.stubGlobal('matchMedia', () => ({ matches: true }))
+      try {
+        const { view } = frameSetup()
+        const then = vi.fn()
+        view.lineUpFrame(90, then)
+        expect(then).toHaveBeenCalledTimes(1)
+        expect(view.frameTwist.value).toBeUndefined()
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
   })
 })

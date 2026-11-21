@@ -6,7 +6,7 @@ import { createProject } from '../../domain/createProject'
 import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
 import { withFrame } from '../../domain/frame'
 import { laidFrame, seenSize } from '../../domain/frameOrientation'
-import { rotateFrame } from '../../domain/rotate'
+import { rotateFrame, twistFrameTo } from '../../domain/rotate'
 import type { Project } from '../../domain/project'
 import { MIRROR_OFF, mirrorSettingOf } from '../../domain/mirror'
 import { starterById, starterDesign } from '../../domain/starters'
@@ -241,6 +241,33 @@ describe('useFrameFlow', () => {
     confirmRemove()
     expect(frameOf(deps.harness.project)).toBeUndefined()
     expect(deps.announce).toHaveBeenCalledWith('Frame removed')
+  })
+
+  it('lines a leaning Frame up with the Canvas before it drops its beads, as one edit (ticket 1189)', () => {
+    const leaning = twistFrameTo(withLayers(sized, { frame: { ...frameOf(sized)!, beads: { 0: { 0: '#ff0000' } } } }), 30)!
+    const harness = setup(leaning)
+    const lineUp = vi.fn<(to: number, then: () => void) => void>()
+    const flow = useFrameFlow({ ...harness.deps, lineUp })
+    flow.remove()
+    flow.confirmRemove()
+    expect(lineUp).toHaveBeenCalledWith(0, expect.any(Function))
+    expect(frameOf(harness.deps.harness.project)).toBeDefined()
+    expect(flow.frameDrops.value).toBe(0)
+    lineUp.mock.calls[0]![1]()
+    expect(frameOf(harness.deps.harness.project)).toBeUndefined()
+    expect(harness.deps.replaceProject).toHaveBeenCalledTimes(1)
+    expect(flow.frameDrops.value).toBe(1)
+  })
+
+  it('drops the beads of a Frame lying alike at once, with no line-up', () => {
+    const harness = setup()
+    const lineUp = vi.fn()
+    const flow = useFrameFlow({ ...harness.deps, lineUp })
+    flow.remove()
+    flow.confirmRemove()
+    expect(lineUp).not.toHaveBeenCalled()
+    expect(frameOf(harness.deps.harness.project)).toBeUndefined()
+    expect(flow.frameDrops.value).toBe(1)
   })
 
   it('fits the Frame to what is drawn, or says there is nothing to fit', () => {

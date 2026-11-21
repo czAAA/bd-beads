@@ -1,10 +1,10 @@
-import type { FrameSheet, Rect } from './canvas'
+import { forEachBead, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import { frameShapeOf, shapeSide, turnedGrid } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { turnedGridSize } from './layerGeometry'
 import { frameWeave } from './layerWeave'
-import { columnCycle, rowCycle, type Weave } from './weave'
+import { columnCycle, describeWeave, rowCycle, type Weave } from './weave'
 import { type Layered, frameOf } from './layerRecord'
 
 // A Frame's orientation (ADR 0079, ticket 0667): Rotate Frame turns the Frame on the Canvas like a sheet of A4 on an A1.
@@ -91,5 +91,59 @@ function withOwnSide(frame: Oriented, rect: Rect, seen: FrameEdge, wanted: numbe
     column: own === 'left' ? rect.column - grown : rect.column,
     rows: across === 'rows' ? best.n : rect.rows,
     columns: across === 'columns' ? best.n : rect.columns,
+  }
+}
+
+/** Bead maps of a Frame's own grid turned `quarters` clockwise exactly (ticket 1189), each bead keeping the beads it
+ * touches: a quarter only where lines stand straight (loom), a half turn in any Weave through its lattice's centre of
+ * symmetry; with the block they fill, from a position a Frame may start on. */
+export function turnedOwnBeads(weave: Weave, size: GridDimensions, quarters: number, maps: readonly BeadMap[]): { size: GridDimensions; maps: BeadMap[] } {
+  const turn = ownTurn(weave, ((quarters % 4) + 4) % 4)
+  // A staggered half turn can put a corner half a bead out, onto the next line: every line's ends bound the block.
+  const ends = edgeCells(size).map(turn)
+  const first = { row: Math.min(...ends.map(({ row }) => row)), column: Math.min(...ends.map(({ column }) => column)) }
+  const last = { row: Math.max(...ends.map(({ row }) => row)), column: Math.max(...ends.map(({ column }) => column)) }
+  const within = (at: number, cycle: number) => at - (((at % cycle) + cycle) % cycle)
+  const by = { row: -within(first.row, rowCycle(weave)), column: -within(first.column, columnCycle(weave)) }
+  const turned = maps.map((beads) => {
+    const moved: BeadChange[] = []
+    forEachBead(beads, (row, column, color) => {
+      const to = turn({ row, column })
+      moved.push({ row: to.row + by.row, column: to.column + by.column, color })
+    })
+    return withColors({}, moved)
+  })
+  return { size: { rows: last.row + by.row + 1, columns: last.column + by.column + 1 }, maps: turned }
+}
+
+/** The cells round a block's edge: every line's first and last. */
+function edgeCells({ rows, columns }: GridDimensions): GridPosition[] {
+  const cells: GridPosition[] = []
+  for (let row = 0; row < rows; row += 1) cells.push({ row, column: 0 }, { row, column: columns - 1 })
+  for (let column = 0; column < columns; column += 1) cells.push({ row: 0, column }, { row: rows - 1, column })
+  return cells
+}
+
+/** Where a turn of `quarters` clockwise sends a cell of a Weave's lattice, about a point of it the turn maps onto itself
+ * (unplaced: the caller slides the block back). */
+function ownTurn(weave: Weave, quarters: number): (position: GridPosition) => GridPosition {
+  if (quarters % 2 === 1) {
+    // Straight rows and columns: (row, column) goes to (column, -row) a quarter clockwise.
+    return (position) => {
+      let at = position
+      for (let turn = 0; turn < quarters; turn += 1) at = { row: at.column, column: -at.row }
+      return at
+    }
+  }
+  if (quarters === 0) return (position) => position
+  // A half turn through the middle of the first block of lines that sit level (a Drop's), on its first line: the
+  // lattice's centre of symmetry, so each cell's centre lands on another cell's.
+  const geometry = describeWeave(weave)
+  const block = (cycle: number) => Math.max(0, cycle / 2 - 1)
+  const [a, b] = [geometry.center({ row: 0, column: 0 }, 1, 1), geometry.center({ row: geometry.staggers === 'rows' ? block(geometry.rowCycle) : 0, column: geometry.staggers === 'columns' ? block(geometry.columnCycle) : 0 }, 1, 1)]
+  const centre = { x: a.x + b.x, y: a.y + b.y }
+  return (position) => {
+    const at = geometry.center(position, 1, 1)
+    return geometry.nearestPosition(centre.x - at.x, centre.y - at.y, 1, 1)
   }
 }
