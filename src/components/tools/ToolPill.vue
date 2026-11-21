@@ -223,7 +223,6 @@ watch(
       :aria-label="t.a11y.toolsLandmark"
       :aria-orientation="vertical ? 'vertical' : 'horizontal'"
       data-tool-pill
-      data-button-names
       data-testid="tool-pill"
       :data-position="position"
       @pointerdown="drag.onPointerDown"

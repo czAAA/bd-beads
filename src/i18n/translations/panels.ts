@@ -47,8 +47,6 @@ export interface PanelsTranslations {
       /** Help's Send feedback row and the link under it that open the Feedback sheet (tickets 0700, 1144). */
       sendFeedback: string
       reportTranslation: string
-      /** Help's row that shows every strip and pill button's name at once (ticket 0927). */
-      buttonNames: string
     }
     project: {
       rename: string
