@@ -91,6 +91,7 @@ const {
   canUndo,
   canRedo,
   onUndo,
+  onOpenFeedback,
   onRedo,
   panBy,
   scrollBy,
@@ -472,6 +473,7 @@ const drawingStyle = computed(() => {
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @reset="resetZoom"
+        @report-translation="onOpenFeedback('translation')"
       />
 
       <!-- The page's one main landmark (ticket 0856, ScreenReaders card): the box under the strip, the strip being the

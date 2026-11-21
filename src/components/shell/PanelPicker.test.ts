@@ -34,6 +34,20 @@ describe('PanelPicker (ticket 0553)', () => {
     expect(items().map((item) => [item.text(), item.attributes('aria-checked')])).toEqual([['Left', 'false'], ['Top', 'true'], ['Right', 'false']])
   })
 
+  it('ends its list with a footer link that closes the list and emits footer', async () => {
+    wrapper = mount(PanelPicker, {
+      props: { label: 'Language', options, modelValue: 'top', footer: { label: 'Report', testid: 'foot' } },
+      attachTo: document.body,
+      global: { stubs: { teleport: false } },
+    })
+    await button().trigger('click')
+    const list = wrapper.findAll('[role="menu"] > *')
+    expect(list.at(-1)?.attributes('data-testid')).toBe('foot')
+    await wrapper.get('[data-testid="foot"]').trigger('click')
+    expect(wrapper.emitted('footer')).toHaveLength(1)
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false)
+  })
+
   it('applies a choice at once and closes', async () => {
     wrapper = mountPicker()
     await button().trigger('click')
