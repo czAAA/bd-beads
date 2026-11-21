@@ -51,7 +51,7 @@ export const homepage: HomepageTranslations = {
     sections: { label: '章节', welcome: '欢迎', back: '上一节', next: '下一节', firstBody: '这是第一节。', lastBody: '这是最后一节。', goTo: '前往：{section}', moreBelow: '下方还有' },
     coffee: { title: '一家人做的', text: 'openbeads 将保持免费且完全本地运行，没有广告，也不追踪用户。如果它对你有帮助，可以通过 Buy Me a Coffee 支持它的开发。', button: '请我喝咖啡', source: '查看源代码' },
     promises: {
-      device: { name: '属于你，留在本设备', text: '在浏览器中运行。无需账户，无需安装。' },
+      device: { name: '所有项目都保存在你的设备上', text: '在浏览器中运行。无需账户，无需安装。' },
       offline: { name: '离线可用', text: '打开一次后，没有网络也能继续使用。' },
       noAds: { name: '无广告，无追踪', text: '不向你推销任何东西，也不记录你的操作。' },
       free: { name: '永久免费', text: '你需要的一切都免费，现在没有任何付费内容。专业扩展以后会推出。' },

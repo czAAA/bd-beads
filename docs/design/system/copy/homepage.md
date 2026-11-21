@@ -40,7 +40,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 
 | English | Russian |
 | --- | --- |
-| Yours, on this device · Runs in your browser. No account, nothing to install. (ticket 0819: "and offline" went to its own promise) | Ваше, на вашем устройстве · Работает в браузере. Без аккаунта и установки. |
+| Every project stays on your device · Runs in your browser. No account, nothing to install. (ticket 0819: "and offline" went to its own promise) | Все проекты, на вашем устройстве · Работает в браузере. Без аккаунта и установки. |
 | Works offline · Once open, it keeps working without a connection. (ticket 0819) | Работает офлайн · Однажды открытое, работает и без интернета. |
 | No ads or tracking · Nothing is sold to you, and nothing records what you do. (ticket 0819) | Без рекламы и слежки · Вам ничего не продают, и никто не записывает, что вы делаете. |
 | For tablets and pens · Pen mode, pen hover and big buttons for your finger. On iPad, Android and Windows. (ticket 1120: it was For iPad and Pencil, which read as iPad only; Pen mode takes any pen) | Для планшетов и стилусов · Режим пера, наведение пера и крупные кнопки под палец. На iPad, Android и Windows. |
@@ -64,7 +64,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | What's inside: the editor (the editor's region, for screen readers) | Что внутри: редактор |
 | Ring · Heart · Bracelet (the demo's Projects; Ring replaced Kaleidoscope, ticket 0819) | Кольцо · Сердце · Браслет |
 
-Since ticket 0819 the cards above are the coffee screen's promises, in this order: Yours, on this device · Works offline · No ads or tracking · Free forever, then For tablets and pens · For computers and phones · Keyboard shortcuts (ticket 1175; Keyboard shortcuts left out on a phone). The rows were What's inside's tabs (ticket 0819); since ticket 0830 they play under four chapters, the caption showing the playing row's name and line, and a phone lists them. Ticket 0830 also moved Starters up to fifth, after Mirror.
+Since ticket 0819 the cards above are the coffee screen's promises, in this order: Every project stays on your device · Works offline · No ads or tracking · Free forever, then For tablets and pens · For computers and phones · Keyboard shortcuts (ticket 1175; Keyboard shortcuts left out on a phone). The rows were What's inside's tabs (ticket 0819); since ticket 0830 they play under four chapters, the caption showing the playing row's name and line, and a phone lists them. Ticket 0830 also moved Starters up to fifth, after Mirror.
 
 ### The Homepage rework (ticket 0819)
 
@@ -129,7 +129,7 @@ The Homepage's first section and What's inside's chapters (Homepage card). Engli
 | Open editor from here (into the editor on a copy of the demo's Project) | Открыть редактор отсюда |
 | Expand · Collapse (the demo's width) | Развернуть · Свернуть |
 
-The heading, its line, See how it works, the counts and the piece's caption and name were here until ticket 1157, which replaced them (below). The way in (Make your first Project, Open the editor, Projects library · {n}) and the three promises (Yours, on this device · Works offline · Free forever, with their lines) are the strings the Homepage already has. A phone's "Next · What's inside" is "Next · {section}". A chapter is described to screen readers by its rows' names, joined as the language joins a list.
+The heading, its line, See how it works, the counts and the piece's caption and name were here until ticket 1157, which replaced them (below). The way in (Make your first Project, Open the editor, Projects library · {n}) and the three promises (Every project stays on your device · Works offline · Free forever, with their lines) are the strings the Homepage already has. A phone's "Next · What's inside" is "Next · {section}". A chapter is described to screen readers by its rows' names, joined as the language joins a list.
 
 ### The cuff woven (ticket 1157)
 
