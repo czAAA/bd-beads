@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
-import { rotateFrame } from '../../domain/rotate'
+import { rotateFrame, twistFrameTo } from '../../domain/rotate'
 import type { Project } from '../../domain/project'
-import { rotateFrameQuestion, type RotateFrameQuestion, type WovenChoice } from '../../domain/wovenLines'
+import { rotateFrameQuestion, twistFrameQuestion, type RotateFrameQuestion, type WovenChoice } from '../../domain/wovenLines'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { EditFn } from '../project/useEdit'
 import { wovenAskPrompt } from '../project/wovenAskPrompt'
@@ -18,6 +18,9 @@ export interface RotateFrameFlowDeps {
   /** The language a counted question is worded in. */
   locale: () => Locale
   dialogs?: Dialogs
+  /** The view a Frame twist is shown in while its question waits (ticket 1190): shown as the Project holds it once
+   * answered, eased back on Cancel. */
+  frameTwistView?: () => { releaseFrameTwist: () => void; easeFrameBack: () => void }
 }
 
 /** Rotate Frame (tickets 471, 0647, 0667, 1016, 1184, ADR 0052, 0079): the Frame a quarter turn on, one Edit; once a
@@ -28,6 +31,9 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   const frameTurns = ref(0)
   /** The question the Rotate Frame dialog shows while it is asked. */
   const question = (deps.dialogs ?? useDialogs()).question<RotateFrameQuestion>('rotate-frame')
+
+  /** The angle a Frame twist came to rest at while its question waits (ticket 1190). */
+  let twistedTo: number | undefined
 
   function turn(woven: WovenChoice): void {
     frameTurns.value += 1
@@ -48,15 +54,37 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     turn('keep')
   }
 
-  /** An answer to the question: the Frame turns, its rows started over or kept, as one Undo step. */
-  function answer(woven: WovenChoice): void {
-    question.value = undefined
-    turn(woven)
+  /** A two-finger twist of the Frame came to rest at `angle` (ticket 1190): kept as one Undo step, or 'asked' where it
+   * settled on another quarter turn with a pass done, the question coming first as for the button. Watched as it
+   * went, so nothing is announced. */
+  function onTwistFrame(angle: number): 'kept' | 'asked' {
+    const project = deps.currentProject()
+    const asked = project && twistFrameQuestion(project, angle)
+    if (asked) {
+      twistedTo = angle
+      question.value = asked
+      return 'asked'
+    }
+    deps.edit('exempt', (project) => twistFrameTo(project, angle) ?? project)
+    return 'kept'
   }
 
-  /** The question answered Cancel: the Frame stays unturned. */
+  /** An answer to the question: the Frame turns (or a twist is kept), its rows started over or kept, as one Undo step. */
+  function answer(woven: WovenChoice): void {
+    question.value = undefined
+    const angle = twistedTo
+    twistedTo = undefined
+    if (angle === undefined) return turn(woven)
+    deps.edit('exempt', (project) => twistFrameTo(project, angle, woven) ?? project)
+    deps.frameTwistView?.().releaseFrameTwist()
+  }
+
+  /** The question answered Cancel: the Frame stays unturned, a twist easing back. */
   function cancelRotateFrame(): void {
     question.value = undefined
+    if (twistedTo === undefined) return
+    twistedTo = undefined
+    deps.frameTwistView?.().easeFrameBack()
   }
 
   /** What the Rotate Frame dialog says while it is asked. */
@@ -69,6 +97,7 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
 
   return {
     onRotateFrame,
+    onTwistFrame,
     frameTurns,
     rotateFramePrompt,
     startOverRotateFrame: () => answer('start-over'),
