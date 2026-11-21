@@ -113,7 +113,7 @@ describe('MenuPanel (ticket 443)', () => {
     expect(openSub).toHaveBeenCalledTimes(1)
   })
 
-  it('opens the Feedback sheet from Help’s Send feedback, after Keyboard shortcuts, (tickets 0700, 1144); the translation link now sits in the Language list', async () => {
+  it('opens the Feedback sheet from Help’s Send feedback, after Keyboard shortcuts (tickets 0700, 1144)', async () => {
     const wrapper = mountIn()
     const panel = wrapper.getComponent(MenuPanel)
     const group = (label: string) => wrapper.findAll('[role="group"]').find((each) => each.find('h3').text() === label)!

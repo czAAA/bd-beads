@@ -378,8 +378,6 @@ function onListKeydown(event: KeyboardEvent) {
   cursor: pointer;
 }
 
-/* The first and last option run parallel to the list's corner (ticket 1080): `radius-md` less the 4px padding and the
- * line (2px in high contrast). */
 .panel-picker__footer {
   box-sizing: border-box;
   width: 100%;
@@ -418,6 +416,8 @@ function onListKeydown(event: KeyboardEvent) {
   }
 }
 
+/* The first and last option run parallel to the list's corner (ticket 1080): `radius-md` less the 4px padding and the
+ * line (2px in high contrast). */
 .panel-picker__option:first-child {
   border-top-left-radius: calc(var(--radius-md) - var(--space-4) - 1px);
   border-top-right-radius: calc(var(--radius-md) - var(--space-4) - 1px);
