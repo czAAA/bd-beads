@@ -5,6 +5,8 @@ import { columnCycle, type Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { projectExtentPx, surfaceView } from './surfaceView'
+import { seamOf } from './layerDrawings'
+import { tiltedView } from './tiltedView'
 import { customFrameSize, frameGeometry } from '../domain/frameShape'
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
@@ -355,5 +357,83 @@ describe('a Frame lying turned on the Canvas (ticket 0667)', () => {
     const line = view.frameBox(frame)
     expect(line.width).toBeLessThan(line.height)
     expect(view.frameCellAt(at(3.5, 5.5))).toEqual({ row: 5, column: 3, layer: 'frame' })
+  })
+})
+
+describe('the Frame layer by its own transform (ticket 1187)', () => {
+  // A 4 × 4 loom Frame at row 2, column 3 of a loom Canvas, its sheet drawn on a surface of its own.
+  const frame = { technique: 'loom' as const, row: 2, column: 3, rows: 4, columns: 4 }
+  const screen = { width: 400, height: 300 }
+  const base = { space: OPEN_SPACE, technique: 'loom' as const, frame, zoom: 1.5, scroll: { x: -40, y: 25 } }
+  const identity = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
+
+  it('lies exactly where it did when its surface is drawn as the Canvas is', () => {
+    for (const rotation of ROTATIONS) {
+      const carried = surfaceView({ ...base, rotation })
+      const own = surfaceView({ ...base, rotation, frameDrawing: { rotation, scroll: base.scroll, seam: identity } })
+      for (const bead of [{ row: 2, column: 3 }, { row: 5, column: 6 }, { row: 4, column: 4 }]) {
+        const [a, b] = [carried.beadToPoint(bead), own.beadToPoint(bead)]
+        expect(b.x).toBeCloseTo(a.x, 9)
+        expect(b.y).toBeCloseTo(a.y, 9)
+        expect(own.pointToHit(a)).toEqual({ ...bead, layer: 'frame' })
+      }
+      expect(own.frameBox(frame)).toEqual(carried.frameBox(frame))
+    }
+  })
+
+  describe.each([
+    { name: 'an upright Frame over a Canvas at 37°', canvas: 37, frame: 0 },
+    { name: 'a Frame at 37° over an upright Canvas', canvas: 0, frame: 37 },
+  ])('$name', ({ canvas, frame: frameAngle }) => {
+    const canvasLean = tiltedView(screen, canvas)
+    const frameLean = tiltedView(screen, frameAngle)
+    const view = surfaceView({ ...base, rotation: 0, frameDrawing: { rotation: 0, scroll: { x: 10, y: -30 }, seam: seamOf(frameLean, canvasLean) } })
+    /** A point of the Frame's own drawing, among the Canvas drawing's points. */
+    const fromFrameDrawing = (point: { x: number; y: number }) => canvasLean.toDrawn(frameLean.toScreen(point))
+    const frameOnly = surfaceView({ ...base, rotation: 0, scroll: { x: 10, y: -30 } })
+
+    it('finds each Frame bead where its own drawing puts it, and back', () => {
+      for (const bead of [{ row: 2, column: 3 }, { row: 5, column: 6 }, { row: 3, column: 5 }]) {
+        const at = fromFrameDrawing(frameOnly.beadToPoint(bead, 'frame'))
+        const point = view.beadToPoint(bead, 'frame')
+        expect(point.x).toBeCloseTo(at.x, 9)
+        expect(point.y).toBeCloseTo(at.y, 9)
+        expect(view.pointToHit(point)).toEqual({ ...bead, layer: 'frame' })
+        expect(view.pointToCell(point, 'frame')).toEqual(bead)
+      }
+    })
+
+    it('keeps the Canvas under it as the Canvas lies', () => {
+      const plain = surfaceView({ ...base, rotation: 0 })
+      expect(view.beadToPoint({ row: 20, column: 20 })).toEqual(plain.beadToPoint({ row: 20, column: 20 }))
+      expect(view.pointToHit(plain.beadToPoint({ row: 20, column: 20 }))).toEqual({ row: 20, column: 20, layer: 'canvas' })
+    })
+
+    it('is opaque: a point on the Frame is never the Canvas bead under it', () => {
+      const middle = view.beadToPoint({ row: 3, column: 4 }, 'frame')
+      expect(view.pointToHit(middle)?.layer).toBe('frame')
+    })
+
+    it('boxes the Frame round its turned corners and steps it along its own rows', () => {
+      const box = view.frameBox(frame)
+      for (const corner of [{ row: 2, column: 3 }, { row: 5, column: 6 }]) {
+        const at = view.beadToPoint(corner, 'frame')
+        expect(at.x).toBeGreaterThan(box.x)
+        expect(at.x).toBeLessThan(box.x + box.width)
+        expect(at.y).toBeGreaterThan(box.y)
+        expect(at.y).toBeLessThan(box.y + box.height)
+      }
+      const step = view.beadStep('frame').column
+      expect(Math.hypot(step.x, step.y)).toBeCloseTo(CELL_SIZE_PX * base.zoom, 9)
+      expect(Math.atan2(step.y, step.x) * (180 / Math.PI)).toBeCloseTo(frameAngle - canvas, 6)
+    })
+
+    it('carries a Frame drag by how far the pointer went along its own rows', () => {
+      const from = { row: 2, column: 3 }
+      const pressed = view.beadToPoint(from, 'frame')
+      const step = view.beadStep('frame')
+      const point = { x: pressed.x + 2 * step.column.x + step.row.x, y: pressed.y + 2 * step.column.y + step.row.y }
+      expect(view.carriedCell(from, view.pointToGrid(pressed), point, 'frame')).toEqual({ row: 3, column: 5 })
+    })
   })
 })

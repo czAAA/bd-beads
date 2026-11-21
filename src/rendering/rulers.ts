@@ -373,3 +373,10 @@ export function frameNumberBands(project: RuledProject, across: boolean, fontPx:
   const column = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
   return across ? { left: column.width, top: row.height } : { left: row.width, top: column.height }
 }
+
+/** The part of a ruler layout one kind of box carries (ticket 1187): the Frame's rulers lie on its own surface, the
+ * Pieces' on the Canvas's. Only the Frame's mark the current pass. */
+export function rulersOf(layout: RulerLayout, kind: RuledBox['kind']): RulerLayout {
+  const own = <T extends { kind: RuledBox['kind'] }>(items: readonly T[]): T[] => items.filter((item) => item.kind === kind)
+  return { ...layout, boxes: own(layout.boxes), labels: own(layout.labels), dots: own(layout.dots), passMark: kind === 'frame' && layout.passMark }
+}

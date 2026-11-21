@@ -17,9 +17,9 @@ import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from '.
 import { drawAreaCorners, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { outsetBox, type HandleId, type Outset } from './frameHandles'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
-import type { RulerLayout } from './rulers'
+import { rulersOf, type RulerLayout } from './rulers'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
-import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
+import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView, type ViewLayer } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 import { joinedTouching } from './touchingCells'
 import { lookSideOf } from './pieceGround'
@@ -149,6 +149,10 @@ export interface OverlayInput {
   /** Row done's motion (ticket 0730), each with the ms since its press: the passes just finished, glinting and held at
    * full color for the dim delay, and the pass the marker left, its ruler pill gliding on. Never given by an export. */
   rowMotion?: RowMotion
+  /** Draw one layer's items alone (ticket 1187), for the editor's two stacked surfaces: the Canvas's (its Selection,
+   * previews, Area and Pieces' rulers) or the Frame's (its Row progress, glints, margin outline, rulers and handles).
+   * Absent, both. On the Canvas only. */
+  layer?: ViewLayer
 }
 
 /** How an area's hot corners are drawn (ContextBar card, Area sheet, ticket 0807). */
@@ -1025,7 +1029,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, frameTheme = theme, space = spaceOf(project, false), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, areaSheet, rowMotion } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, frameTheme = theme, space = spaceOf(project, false), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, areaSheet, rowMotion, layer } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -1041,6 +1045,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   context.imageSmoothingEnabled = false
 
   const frame = space.open ? frameOf(project) : undefined
+  // Which layers' items this draws: on the Canvas, one of them where asked (ticket 1187).
+  const ofCanvas = space.open && layer !== 'frame'
+  const ofFrame = !space.open || layer !== 'canvas'
   const covered = footprintOf(project)
   const canvasWeaveOf = canvasWeave(project)
   const frameSpace = frame ? spaceOf(project, false) : undefined
@@ -1055,7 +1062,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const canvasCells = preview && space.open ? splitOnce(preview.cells, project, space, 'canvas', offFrame) : []
   const canvasStamp = preview?.stamp && space.open ? offFrameStamp(preview.stamp) : []
 
-  if (space.open && marginOutline > 0 && frameOf(project)) {
+  if (space.open && ofFrame && marginOutline > 0 && frameOf(project)) {
     drawMarginOutline(context, canvasWeaveOf, covered!, zoom, marginOutline, theme, margin)
   }
   // The Mirror's Area (ADR 0082), drawn while it is on: a Canvas rectangle with its Axes and its handles after, or the
@@ -1065,10 +1072,12 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // The hover preview's beads inside the Area, outlined in `mirror` (ticket 0806): a Canvas Area's, or all the Frame's.
   const inCanvasArea: InArea = canvasArea ? (cell) => frameContains(canvasArea, cell) : NOWHERE
   const selectionColor = marksArea ? theme.mirror : theme.marker
+  /** Whether an item on `on` is this drawing's to draw. */
+  const ownsLayer = (on: ViewLayer) => (on === 'frame' ? ofFrame : ofCanvas || !space.open)
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, and the marker lifted above its row.
-  if (space.open) {
+  if (ofCanvas) {
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, selectionColor, canvasView, { row: 0, column: 0 }, theme)
     if (preview && canvasCells.length) drawPreviewInView(context, canvasWeaveOf, space, canvasCells, preview, theme, zoom * pixelRatio, inCanvasArea, canvasView, emptiedColorOf(theme, 'canvas', zoom * pixelRatio))
     if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio, inCanvasArea)
@@ -1080,7 +1089,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
 
   // The Frame's layer, or the Project drawn alone.
   const sheetSpace = space.open ? frameSpace : space
-  if (sheetSpace && (frame || !space.open)) {
+  if (ofFrame && sheetSpace && (frame || !space.open)) {
     const sheetWeave = frameWeave(project)
     const origin = frame ? frameOriginPx(canvasWeaveOf, frame) : { x: 0, y: 0 }
     // The Frame's own px are its Bead's size over the Canvas's (ticket 0665); drawn alone, they are the space's.
@@ -1139,8 +1148,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // The Area sheets, the Mirror's first so a Selection's lies over it where the two meet (ContextBar card), under the
   // rulers and the hot corners.
   const outset = areaSheet?.outset ?? NO_OUTSET
-  const selectionBox = selection && space.open && !selection.cells && areaSheet ? areaSheet.surface.beadBox(selectionFrame(selection), ownLayer) : undefined
-  if (areaSheet && space.open && canvasArea) drawAreaSheet(context, areaSheet.surface.beadBox(canvasArea, 'canvas'), outset, theme.mirror, pixelRatio)
+  const selectionBox = selection && space.open && !selection.cells && areaSheet && ownsLayer(ownLayer) ? areaSheet.surface.beadBox(selectionFrame(selection), ownLayer) : undefined
+  if (areaSheet && ofCanvas && canvasArea) drawAreaSheet(context, areaSheet.surface.beadBox(canvasArea, 'canvas'), outset, theme.mirror, pixelRatio)
   if (areaSheet && selectionBox) drawAreaSheet(context, selectionBox, outset, selectionColor, pixelRatio)
 
   // The rulers are laid out in the viewport's own px, over everything the grid-space drawing above made.
@@ -1148,14 +1157,14 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     drawRulers(context, {
       project,
       surface: rulers.surface,
-      layout: rulers.layout,
+      layout: layer && space.open ? rulersOf(rulers.layout, layer === 'frame' ? 'frame' : 'piece') : rulers.layout,
       pixelRatio,
       theme,
       rowMarks: showRows,
       glide: rowMotion?.glide,
     })
   }
-  if (space.open && rulers && frameEditing && frameOf(project)) {
+  if (space.open && ofFrame && rulers && frameEditing && frameOf(project)) {
     drawFrameEditing(context, {
       frame: frameOf(project)!,
       surface: rulers.surface,
@@ -1170,13 +1179,13 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // The Area's corners first, so a Selection's lie over them where the two meet (ContextBar card, Mirror bar placement).
   // An Area's or a Selection's size is a number too: the Rulers toggle hides its Tooltip with the rest.
   const sized = (handles: AreaHandles) => (rulers?.layout.numbers === false ? '' : (handles.tooltip ?? ''))
-  if (mirrorArea && space.open && canvasArea) {
+  if (mirrorArea && ofCanvas && canvasArea) {
     drawAreaCorners(context, { ...mirrorArea, box: mirrorArea.surface.beadBox(canvasArea, 'canvas'), outset, pixelRatio, theme, color: theme.mirror, tooltip: sized(mirrorArea) })
   }
-  if (selection && selectionHandles && space.open && selectionHasHandles(selection)) {
+  if (selection && selectionHandles && space.open && ownsLayer(ownLayer) && selectionHasHandles(selection)) {
     drawAreaCorners(context, { ...selectionHandles, box: selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), outset, pixelRatio, theme, color: selectionColor, tooltip: sized(selectionHandles) })
   }
-  if (pointer) {
+  if (pointer && ownsLayer(pointer.layer ?? 'canvas')) {
     const pointerWeave = pointer.layer === 'frame' ? frameWeave(project) : canvasWeaveOf
     // On the Canvas, a Frame's bead is its Bead's size (ticket 0665).
     const scaled = pointer.layer === 'frame' && space.open ? frameScale(project) : 1

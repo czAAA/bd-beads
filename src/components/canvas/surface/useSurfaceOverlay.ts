@@ -79,6 +79,8 @@ export function useMarginCue(props: { project: Project; selectionRefusals?: numb
 
 /** What the overlay draws from: the surface's props, its layout, and what the pointer and the margin cue hold. */
 export interface SurfaceOverlayDeps {
+  /** Which layer's items this overlay draws (ticket 1187): the Canvas's on its surface, the Frame's on its own. */
+  layer: ViewLayer
   props: {
     project: Project
     zoom: number
@@ -125,7 +127,7 @@ export interface SurfaceOverlayDeps {
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { props, canvas: canvasEl, size, space, surface, rulers, theme, frameTheme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion } = deps
+  const { layer, props, canvas: canvasEl, size, space, surface, rulers, theme, frameTheme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -189,6 +191,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         mirrorArea: { surface: surface.value, touch: touchInput.value, ...hotArea(props.areaTooltip, !props.selection) },
         rowMotion: rowMotion.value,
         areaSheet: { surface: surface.value, outset: AREA_SHEET_OUTSET },
+        layer,
       })
     }
   }

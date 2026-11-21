@@ -15,7 +15,7 @@ How where one bead ends and the next starts shows, even when both are the same c
 _Avoid_: border, outline (the hover outline is another thing), grid line, gap
 
 **Drawing surface**:
-What the Project renderer draws on inside the canvas panel: a base layer holding the cells, and an overlay layer holding everything that comes and goes with the pointer — hover preview, the bead pointer, Selection, paste preview and the Row progress marker. It is not the "canvas" of the App shell layout, which is the panel that holds it.
+What the Project renderer draws on inside the canvas panel: two stacked surfaces, the Canvas's and the Frame's over it (ticket 1187), each drawn at its own layer's nearest quarter turn and leaning the rest on its own. Each has a base layer holding its cells and an overlay holding everything that comes and goes with the pointer — hover preview, the bead pointer, Selection, paste preview. The Frame's carries its margin sheet, beads, Row progress marker, glints and Pattern done, rulers and handles, and is clear round its sheet, so the Canvas's shows there. A twist holds each surface's drawing and moves it by its own transform. It is not the "canvas" of the App shell layout, which is the panel that holds it.
 _Avoid_: canvas (that is the panel), bitmap, canvas element
 
 **Bead pointer** (ticket 353):

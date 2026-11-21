@@ -43,5 +43,5 @@ The state of a synced Project that has changes the server doesn't have yet, for 
 _Avoid_: unsynced, offline, not synced yet
 
 **Surface view**:
-How a bead and a point on screen map onto each other, in both directions: where a bead or a block of beads is drawn, which bead is under a point, where to scroll to centre or fit a block, and how far one step along a row and one down are. Built from a Space, the Technique, the rotation, the zoom and the scroll, and the one place that knows about turning, the row shift and the row pitch.
+How a bead and a point on screen map onto each other, in both directions: where a bead or a block of beads is drawn, which bead is under a point, where to scroll to centre or fit a block, and how far one step along a row and one down are. Built from a Space, the Technique, the rotation, the zoom and the scroll, and the one place that knows about turning, the row shift and the row pitch. The Frame layer lies in it by its own transform where the Frame's surface is drawn otherwise than the Canvas's (ticket 1187), never through the Canvas's rotation; hit-testing and points go through it, and the Frame is opaque over its sheet.
 _Avoid_: hit test, canvas view, grid geometry

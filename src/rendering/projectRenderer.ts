@@ -44,6 +44,7 @@ import {
   regionInGridSpace,
   setGridTransform,
   type Region,
+  type ViewLayer,
 } from './surfaceView'
 import { beadsOfLayer, frameOf, type Layered, quarterTurnOf } from '../domain/layerRecord'
 import { drawReference, EMPTY_BEAD_OPACITY, type DrawnReference } from './referenceImage'
@@ -151,6 +152,10 @@ export interface RenderInput {
   lift?: boolean
   /** The color the lifted Frame's plate lies on where the theme's own Background is clear, as on the Cover page's board. */
   liftBackground?: string
+  /** Draw one layer of the open Canvas alone (ticket 1187), for the editor's two stacked surfaces: the Canvas's part
+   * (its Background, marks and beads, the Frame left out), or the Frame's (its margin sheet, ground and beads, clear
+   * round them). Absent, both, as an export draws them. */
+  layer?: ViewLayer
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
@@ -228,6 +233,13 @@ function frameGroundBox(project: DrawnProject): readonly [number, number, number
   const footprint = frameFootprintPx(project)!
   const edge = BEAD_GAP_PX / 2
   return [footprint.x - edge, footprint.y - edge, footprint.x + footprint.width + edge, footprint.y + footprint.height + edge]
+}
+
+/** The box of the Frame's margin sheet in grid px: left, top, right, bottom. What the Frame's own surface covers
+ * (ticket 1187). */
+function sheetBoxOf(project: DrawnProject, margin: number, slim?: SlimSheet): readonly [number, number, number, number] {
+  const sheet = slim?.sheet ?? marginSheetPx(project, margin)!.sheet
+  return [sheet.x, sheet.y, sheet.x + sheet.width, sheet.y + sheet.height]
 }
 
 /** Far enough past any Canvas, in grid px, for the clip round the Frame's box to hold the whole picture. */
@@ -727,7 +739,7 @@ function canvasLook(theme: ProjectTheme): ProjectTheme {
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, columns, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, canvasLetters, draftWhenSmall = false, opaque = false, positionMarks = true, reference } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, columns, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, canvasLetters, draftWhenSmall = false, opaque = false, positionMarks = true, reference, layer } = input
   const frameTheme = input.frameTheme ?? theme
   const frame = frameOf(project)
   const rotation = quarterTurnOf(project)
@@ -762,7 +774,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     context.clip()
   }
   context.clearRect(cleared.x, cleared.y, cleared.width, cleared.height)
-  if (!space.open || opaque) {
+  // The Frame's own surface is clear round its sheet: the Canvas's shows through (ticket 1187).
+  if (!space.open || (opaque && layer !== 'frame')) {
     context.fillStyle = space.open ? theme.canvas : frameTheme.background
     context.fillRect(cleared.x, cleared.y, cleared.width, cleared.height)
   }
@@ -794,19 +807,22 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     // showing it leaves the grid as it is (ticket 1008), under the outlines drawn instead. The Frame lays its own.
     const overTiles = positionMarks && markLookOf(theme, tiles).tiles
     const frameBox = frame ? frameGroundBox(project) : undefined
-    if (under && !overTiles) drawReferenceCut(context, under, frameBox, 'outside')
-    if (positionMarks && tiles && theme.tonalTiles) {
-      // The calm gap between tonal tiles, laid flat under them over the whole surface (ticket 1001).
-      context.fillStyle = gapColorOf(theme.canvas)
-      context.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top)
+    // The Canvas's own part: what its surface draws (ticket 1187), the Frame's laid over it on its own.
+    if (layer !== 'frame') {
+      if (under && !overTiles) drawReferenceCut(context, under, frameBox, 'outside')
+      if (positionMarks && tiles && theme.tonalTiles) {
+        // The calm gap between tonal tiles, laid flat under them over the whole surface (ticket 1001).
+        context.fillStyle = gapColorOf(theme.canvas)
+        context.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top)
+      }
+      // Expanded, the slim sheet is the margin on screen (ticket 1176): the marks run up to it, under it, so no bare band of
+      // the 4 keep-out positions shows round it. What the margin keeps out is unchanged.
+      const marked = input.slimSheet ? 0 : margin
+      if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin: marked, tiles })
+      if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
+      drawCanvasLayer(context, draw, space)
     }
-    // Expanded, the slim sheet is the margin on screen (ticket 1176): the marks run up to it, under it, so no bare band of
-    // the 4 keep-out positions shows round it. What the margin keeps out is unchanged.
-    const marked = input.slimSheet ? 0 : margin
-    if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin: marked, tiles })
-    if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
-    drawCanvasLayer(context, draw, space)
-    if (frame && frameBox) {
+    if (frame && frameBox && layer !== 'canvas') {
       drawMarginSheet(context, project, margin, zoom, theme.margin, input.slimSheet)
       drawFrameGround(context, { project, box: frameBox, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: under, tiles })
       const origin = frameOriginPx(canvasWeave(project), frame)
@@ -858,7 +874,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     }
   }
   // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
-  if (drawn?.over) drawReference(context, drawn)
+  // Drawn one layer at a time, each lays it on its own part: the Frame on its sheet's box, the Canvas round it.
+  if (drawn?.over) drawReferenceCut(context, drawn, layer && frame ? sheetBoxOf(project, margin, input.slimSheet) : undefined, layer === 'frame' ? 'inside' : 'outside')
 
   if (band || strip) {
     context.restore()
