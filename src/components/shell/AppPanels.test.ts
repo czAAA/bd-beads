@@ -223,15 +223,11 @@ describe('Keep Projects (tickets 0839, 0936)', () => {
   })
   afterEach(() => void delete (navigator as { storage?: unknown }).storage)
 
-  it('wires Save Project file to the browser\'s ask, and the Menu row shows its no', async () => {
+  it('wires Save Project file to the browser\'s ask', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
     await click(mounted, 'save-project-file')
     await vi.waitFor(() => expect(persist).toHaveBeenCalledOnce())
-
-    await mounted.openPanel('menu')
-    await flushPromises()
-    expect(text(mounted, 'menu-keep-projects')).toContain(en.panels.menu.keepProjectsOff)
   })
 })
 

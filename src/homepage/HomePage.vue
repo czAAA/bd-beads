@@ -48,13 +48,11 @@ import ShortcutsHelp from '../components/shell/ShortcutsHelp.vue'
 import ConfirmModal from '../components/ui/ConfirmModal.vue'
 import { useAccountFlow } from '../composables/shell/useAccountFlow'
 import { usePenInputMode } from '../composables/shell/usePenInputMode'
-import { useStorageAskFlow } from '../composables/project/useStorageAskFlow'
 import { provideButtonNames } from '../composables/ui/useButtonNames'
 import { useThemePick } from '../theme/useThemePick'
 import { memoryAccount } from '../services/memoryAccount'
 import { useDevicePreferences } from '../services/devicePreferences'
 import type { AccountService } from '../services/account'
-import type { PersistentStorage } from '../services/persistentStorage'
 import ToastRegion from '../components/ui/ToastRegion.vue'
 import { useDialogs } from '../composables/shell/useDialogs'
 import { useFeedbackFlow } from '../composables/shell/useFeedbackFlow'
@@ -83,8 +81,6 @@ const props = defineProps<{
   updates?: AppUpdates
   /** The Menu's Account section (ticket 1113): who is signed in, Sign out and Delete account; a Guest's twin if none. */
   account?: AccountService
-  /** Whether the browser keeps the Projects, for the Menu's Kept by this browser row; the row is absent without it. */
-  persistentStorage?: PersistentStorage
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
@@ -123,14 +119,11 @@ const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 const canvasBackground = useCanvasBackground()
 const feedback = useFeedbackFlow({ feedback: props.feedback, locale: () => locale.value, messages: () => t.value, showToast, dialogs })
 const zoom = useHomepageZoom()
-// The Menu holds the editor's rows (ticket 1113): the device's settings, Kept by this browser, the Shortcuts help, What
+// The Menu holds the editor's rows (ticket 1113): the device's settings, the Shortcuts help, What
 // the buttons do and the Account section work here; New Project, Convert image and Sign in open the editor on them.
 const preferences = useDevicePreferences()
 const toolsPosition = preferences.get('toolPillPosition')
 const pen = usePenInputMode(preferences)
-const projectsKept = props.persistentStorage
-  ? useStorageAskFlow({ persistentStorage: props.persistentStorage, devicePreferences: preferences, messages: () => t.value, showToast }).kept
-  : undefined
 /** Whether Menu's Subpanel is Keyboard shortcuts rather than the Projects library (ticket 1159). */
 const shortcutsOpen = ref(false)
 watch(menuOpen, (open) => {
@@ -513,7 +506,6 @@ const savedProjects = controlAction('saved-projects')
             :input-mode="pen.inputMode.value"
             :pen-seen="pen.inputModeAvailable.value"
             :handedness="pen.handedness.value"
-            :kept="projectsKept"
             :account="accountFlow.account.value"
             :may-open-sign-in="accountFlow.mayOpenSignIn"
             @new-project="emit('newProject')"
