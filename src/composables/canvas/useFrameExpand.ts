@@ -11,15 +11,17 @@ import { slimSheetSides, type SlimContent } from '../../rendering/slimSheet'
 import type { ShownView } from './useCanvasView'
 
 /** What the slim sheet's own controls measure on the page (MarginSheet card, Expand the Frame), in screen px: the
- * band's row, the title block (0 with none) and the narrowest row it shows (0 until it has had to show it). */
+ * band's row, the foot under the Frame (the title block and Row progress's strip; ticket 1176) and the narrowest row it
+ * shows (0 until it has had to show it). */
 export interface SlimMeasures {
   row: number
   title: number
   rowWidth: number
 }
 
-/** Until the sheet measures itself: the full row and the two-row title block, the tallest it holds. */
-const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: 2 * 23 + 1, rowWidth: 0 }
+/** Until the sheet measures itself: the full row, and the two-row title block on Row progress's strip (ticket 1176), the
+ * tallest it holds. */
+const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: 2 * 23 + 1 + MARGIN_PX.strip - 1, rowWidth: 0 }
 
 /** What Expand the Frame works the view through (`useCanvasView`). */
 export interface FrameExpandDeps {
@@ -59,13 +61,12 @@ export function useFrameExpand(deps: FrameExpandDeps) {
     return { compact: deps.compact.value, row, title, rowWidth, numbers: frameNumberBands(project, across, fontPx) }
   })
 
-  /** The room the slim sheet and the gap round it take from each side of the drawing area, past the Frame's beads, at
-   * a zoom: what a fit leaves clear. A Frame narrower than its row widens the sheet, which a fit does not count. */
+  /** The room the slim sheet takes from each side of the drawing area, past the Frame's beads, at a zoom: what a fit
+   * leaves clear. No gap round it (ticket 1176): the sheet is the margin. A Frame narrower than its row widens the
+   * sheet, which a fit does not count. */
   function room(zoom: number): Insets {
-    const held = content.value!
-    const sides = slimSheetSides({ ...held, rowWidth: 0 }, 0)
-    const gap = MARGIN_PX.expanded.gap[held.compact ? 'compact' : 'full']
-    const past = frameOutsetPx(zoom) + gap
+    const sides = slimSheetSides({ ...content.value!, rowWidth: 0 }, 0)
+    const past = frameOutsetPx(zoom)
     return { top: sides.top + past, right: sides.right + past, bottom: sides.bottom + past, left: sides.left + past }
   }
 

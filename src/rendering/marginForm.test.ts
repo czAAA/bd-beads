@@ -14,8 +14,8 @@ describe('the margin sheet\'s form by its band (MarginSheet card, Zoom forms, ti
   })
 
   it('under the smallest scale steps down where its band no longer holds a form at that scale: compact, folded, then bare', () => {
-    // The forms' 68, 40 and 31px, at 1.
-    expect([68, 67.9, 40, 39.9, 31, 30.9, 8].map((band) => marginForm(band))).toEqual(['full', 'compact', 'compact', 'folded', 'folded', 'bare', 'bare'])
+    // The forms' 72 (ticket 1176: the title row on Row progress's strip), 40 and 31px, at 1.
+    expect([72, 71.9, 40, 39.9, 31, 30.9, 8].map((band) => marginForm(band))).toEqual(['full', 'compact', 'compact', 'folded', 'folded', 'bare', 'bare'])
   })
 
   it('at the Homepage demo\'s least scale, 0.6, shrinks to it before it steps down (ticket 0851)', () => {

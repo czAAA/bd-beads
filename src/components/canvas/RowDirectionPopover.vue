@@ -18,8 +18,6 @@ const props = defineProps<{
   current: ShownWay
   /** Whether the Canvas draws the Row progress marks. */
   rowHighlight: boolean
-  /** Which side of the button it opens on: above the Progress bar, below the margin's band. */
-  side: 'above' | 'below'
   /** The prefix of its test ids. */
   testid: string
 }>()
@@ -37,7 +35,7 @@ const teleportTo = useShellScope().teleportTo
 const inShell = document.querySelector(teleportTo) !== null
 const rootEl = ref<HTMLElement>()
 const anchorEl = ref<HTMLElement>()
-const anchored = useAnchoredPosition(anchorEl, rootEl, () => 'start', () => props.side)
+const anchored = useAnchoredPosition(anchorEl, rootEl, () => 'start', () => 'above')
 
 const wayLabel = (way: ShownWay): string => {
   const words = t.value.rowProgress
