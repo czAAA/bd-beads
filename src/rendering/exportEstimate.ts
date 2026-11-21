@@ -143,14 +143,23 @@ function coverBytes(facts: ExportFacts, dpi: number, zoom: number): number {
   const short = Math.min(bead, (mm(COVER_SHORT_EDGE_MM) * dpi) / PRINT_DPI)
   const area = facts.filled * bead * bead
   const edges = facts.edges * bead
-  return base + perBead * facts.filled * bead + perArea * area + perEdge * edges + perShortEdge * edges * short + (perColorArea * area * Math.min(facts.colors, COVER_COLORS)) / COVER_COLORS
+  const full = base + perBead * facts.filled * bead + perArea * area + perEdge * edges + perShortEdge * edges * short + (perColorArea * area * Math.min(facts.colors, COVER_COLORS)) / COVER_COLORS
+  return full * BEADS_PACKED
 }
+
+/** A page of words packed to 256 colors weighs about half its 300 dpi full-color figures below, and a page of beads packed
+ * with row filters about four fifths of its figures (ticket 1142, measured 2026-11-21). */
+const WORDS_PACKED = 0.5
+/** With this many Project colors on a page, its 256 colors no longer hold them and the smoothing shades: it stays full color. */
+const WORDS_FULL_COLOR_AT = 90
+const BEADS_PACKED = 0.8
 
 /** What a page of text costs at a dpi, against 300 (the figures below). */
 const TEXT_AT_DPI = { 150: [0.46], 300: [1], 450: [1.74] } as const
 
-function textAtDpi(dpi: number): number {
-  return atDpi(TEXT_AT_DPI, dpi)[0]!
+function textAtDpi(dpi: number, colors = 0): number {
+  const packed = WORDS_PACKED + (1 - WORDS_PACKED) * Math.min(1, colors / WORDS_FULL_COLOR_AT)
+  return atDpi(TEXT_AT_DPI, dpi)[0]! * packed
 }
 
 /** At 300 dpi: a list page of Beads needed. */
@@ -179,17 +188,17 @@ const PDF_PAGE_OVERHEAD = 2_000
 function overviewBytes(facts: ExportFacts, dpi: number, zoom: number): number {
   const [base, perColor, perCell, perBead, perEdge, perCross] = atDpi(OVERVIEW_BYTES, dpi) as [number, number, number, number, number, number]
   const board = (perCell * facts.cells + perBead * facts.filled + perEdge * facts.edges + perCross * facts.crosses) * zoom
-  return base + (perColor + PAGE_ONE_PER_COLOR * textAtDpi(dpi)) * facts.pageOneColors + board
+  return (base + perColor * facts.pageOneColors + board) * BEADS_PACKED + PAGE_ONE_PER_COLOR * textAtDpi(dpi, facts.pageOneColors) * facts.pageOneColors
 }
 
 /** Page 1's picture at a dpi: the overview, or the text round the chart (the chart itself is drawing). */
 function pageOneBytes(facts: ExportFacts, dpi: number): number {
   if (facts.overviewZoom !== undefined) return overviewBytes(facts, dpi, facts.overviewZoom)
-  return (PAGE_ONE_BASE + PAGE_ONE_PER_COLOR * facts.pageOneColors) * textAtDpi(dpi)
+  return (PAGE_ONE_BASE + PAGE_ONE_PER_COLOR * facts.pageOneColors) * textAtDpi(dpi, facts.pageOneColors)
 }
 
 function listBytes(lists: number[], dpi: number): number {
-  return lists.reduce((sum, colors) => sum + (LIST_BASE + LIST_PER_COLOR * colors) * textAtDpi(dpi), 0)
+  return lists.reduce((sum, colors) => sum + (LIST_BASE + LIST_PER_COLOR * colors) * textAtDpi(dpi, colors), 0)
 }
 
 /** The PNG: the Cover page as one picture drawn at `dpi` (ticket 1096). */
@@ -201,7 +210,7 @@ export function estimatePng(facts: ExportFacts, dpi: number): SizeEstimate {
  * overview as a picture), its list pages and the Word chart as pictures drawn at `dpi`, and its chart pages vector over a
  * picture of their text (ticket 0914). */
 export function estimatePdf(facts: ExportFacts, dpi: number): SizeEstimate {
-  const text = textAtDpi(dpi)
+  const text = textAtDpi(dpi, facts.colors)
   const count = facts.pdfPages
   const pageOne = pageOneBytes(facts, dpi) + (facts.overviewZoom === undefined ? CHART_DRAWING : 0)
   const charts = facts.sheets * (CHART_PICTURE * text + CHART_DRAWING) + CHART_PER_BEAD * facts.filled + CHART_PER_AREA * facts.partArea

@@ -3,8 +3,10 @@
  * wraps them in the file format, keeping the export free of a PDF library. */
 
 export interface PdfPage {
-  /** The page as zlib-compressed RGB scanlines, each led by a PNG filter byte (`deflateRgb`); lossless (ticket 572). */
+  /** The page as zlib-compressed scanlines, each led by a PNG filter byte (`packPage`, ticket 1142): RGB, or indexes into
+   * `palette` when the page is packed to 256 colors or fewer. */
   flate: Uint8Array[]
+  palette?: Uint8Array
   /** The picture's size in pixels. */
   pixelWidth: number
   pixelHeight: number
@@ -63,10 +65,12 @@ export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number, ti
     const content = `q ${widthPt.toFixed(2)} 0 0 ${heightPt.toFixed(2)} 0 0 cm /Im0 Do Q`
     object(number + 1, [`<< /Length ${content.length} >>\nstream\n${content}\nendstream`])
     const length = page.flate.reduce((sum, part) => sum + part.length, 0)
-    // Predictor 15: every scanline leads with its PNG filter byte, as deflateRgb writes them.
-    const parms = `<< /Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns ${page.pixelWidth} >>`
+    // Predictor 15: every scanline leads with its PNG filter byte.
+    const parms = `<< /Predictor 15 /Colors ${page.palette ? 1 : 3} /BitsPerComponent 8 /Columns ${page.pixelWidth} >>`
+    const hex = page.palette ? Array.from(page.palette, (byte) => byte.toString(16).padStart(2, '0')).join('') : ''
+    const space = page.palette ? `[/Indexed /DeviceRGB ${page.palette.length / 3 - 1} <${hex}>]` : '/DeviceRGB'
     object(number + 2, [
-      `<< /Type /XObject /Subtype /Image /Width ${page.pixelWidth} /Height ${page.pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /DecodeParms ${parms} /Length ${length} >>\nstream\n`,
+      `<< /Type /XObject /Subtype /Image /Width ${page.pixelWidth} /Height ${page.pixelHeight} /ColorSpace ${space} /BitsPerComponent 8 /Filter /FlateDecode /DecodeParms ${parms} /Length ${length} >>\nstream\n`,
       ...page.flate,
       '\nendstream',
     ])
