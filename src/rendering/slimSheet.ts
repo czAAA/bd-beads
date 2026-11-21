@@ -2,10 +2,9 @@ import type { Insets } from '../domain/toolPill'
 import type { Size } from './cellSize'
 import { MARGIN_PX } from './marginSizes'
 
-/** What the expanded Frame's slim sheet holds (MarginSheet card, Expand the Frame; ticket 1169), in screen px at scale
- * 1: the band's row, the title block (0 where none shows), how thick the numbers stand on the left and the top as seen
- * (0 where none), the row's width, the numbers' size and the room the sheet fills (ticket 1194; none: as small as it can
- * be). `compact` is under bp-tablet, where the insets are smaller. */
+/** What the expanded Frame's slim sheet holds (MarginSheet card, Expand the Frame; tickets 1169, 1194), in screen px: the
+ * row, the title block, how thick the numbers stand on the left and top as seen (0 where none), the row's width, the
+ * numbers' size and the room to fill (none: as small as it can be). `compact` is under bp-tablet. */
 export interface SlimContent {
   compact: boolean
   row: number
@@ -21,10 +20,9 @@ export function slimInset(compact: boolean): number {
   return MARGIN_PX.expanded.inset[compact ? 'compact' : 'full']
 }
 
-/** The slim sheet's sides out from the Frame's line, in screen px: the row and the column numbers on top, the row
- * numbers on the left, the title block below, a side with none of them the inset alone; widened evenly where the Frame
- * is narrower than the row, so the row stays whole (ticket 1169), and to fill its room, the spare height shared by the
- * top band and the bottom strip (ticket 1194). */
+/** The slim sheet's sides out from the Frame's line, in screen px: row and column numbers on top, row numbers left,
+ * title block below, else the inset; widened evenly to hold its row (1169) and to fill its room, the spare height shared
+ * by the top band and the bottom strip (1194). */
 export function slimSheetSides({ compact, row, title, numbers, rowWidth, fill }: SlimContent, lineWidth: number, lineHeight = 0): Insets {
   const inset = slimInset(compact)
   const gap = MARGIN_PX.expanded.numbers

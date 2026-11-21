@@ -57,10 +57,12 @@ const EXPANDED_FIT_PASSES = 6
 /** A zoom out resting under this share of the expanded fit goes back to the Canvas; above it, the view springs back
  * (ticket 1194). */
 const LEAVES_EXPANDED_UNDER = 0.95
-/** How long a wheel or button zoom stays still before it counts as at rest, and how far past the expanded fit a zoom in
- * may go, as a share of it (ticket 1194). */
+/** How long a wheel or button zoom stays still before it counts as at rest (ticket 1194). */
 const ZOOM_REST_MS = 150
+/** How far past the expanded fit a zoom in may go, as a share of it. */
 const EXPANDED_ZOOM_IN_SHARE = 2
+/** A button's zoom step beyond the usual ceiling, where `stepZoom` stops. */
+const BUTTON_ZOOM_STEP = 1.25
 
 /** What a view fits to and centres on, a block of the Canvas's positions, and the room left clear round it. */
 interface FitTarget {
@@ -219,8 +221,8 @@ export function useCanvasView(
 
   /** A button step from the zoom, past the usual ceiling too while expanded. */
   function stepFrom(direction: 1 | -1): number {
-    if (direction === 1 && zoom.value >= MAX_ZOOM) return zoom.value * 1.25
-    if (direction === -1 && zoom.value > MAX_ZOOM) return zoom.value / 1.25
+    if (direction === 1 && zoom.value >= MAX_ZOOM) return zoom.value * BUTTON_ZOOM_STEP
+    if (direction === -1 && zoom.value > MAX_ZOOM) return zoom.value / BUTTON_ZOOM_STEP
     return stepZoom(zoom.value, direction)
   }
 

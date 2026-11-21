@@ -2,7 +2,7 @@
   "date": "2026-11-21",
   "kind": "changed",
   "line": {
-    "en": "An expanded Frame now fills the whole screen with larger numbers on every column and row, and pinching out goes back to the Canvas",
+    "en": "An expanded Frame now fills the whole screen with larger numbers on every column and row, and zooming out goes back to the Canvas",
     "ru": "Развёрнутая рамка теперь занимает весь экран, с более крупными номерами у каждого столбца и ряда, а сведение пальцев возвращает к холсту",
     "uk": "Розгорнута рамка тепер займає весь екран, з більшими номерами біля кожного стовпця й рядка, а зведення пальців повертає до полотна",
     "be": "Разгорнутая рамка цяпер займае ўвесь экран, з большымі нумарамі каля кожнага слупка і шэрагу, а зводжанне пальцаў вяртае да палатна",
