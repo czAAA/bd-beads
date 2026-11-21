@@ -1,0 +1,20 @@
+/* Shared by every option of this topic. Copy the real component CSS here (from src/, with its tokens), once.
+   The app's base font size is 18px and its sizes are in rem, so keep the rem values as they are. */
+html { font-size: 18px; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--canvas); color: var(--ink); font: var(--type-body); }
+[hidden] { display: none !important; }
+.screen { box-sizing: border-box; min-height: 100%; padding: var(--space-32); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-8); }
+
+/* Stand-ins the scaffold starts with: replace them with the real parts. */
+.demo-button {
+  min-height: var(--touch-target); padding: 0 var(--space-16); border: 1px solid var(--button-line); border-radius: var(--radius-md);
+  background: var(--button); color: var(--ink); font: var(--type-control); cursor: pointer;
+}
+.demo-button:hover { background: var(--surface); }
+.demo-button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.demo-popover {
+  width: 288px; padding: var(--space-12); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  background: var(--elevated); box-shadow: var(--elevation-3);
+}
+.demo-popover p { margin: 0; }

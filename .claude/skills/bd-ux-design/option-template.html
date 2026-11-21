@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-state="default">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__TITLE__ · option __ID__</title>
+    <link rel="stylesheet" href="/_app/styles/fonts.css" />
+    <link rel="stylesheet" href="/_app/styles/tokens.css" />
+    <link rel="stylesheet" href="/_app/styles/design-values.css" />
+    <link rel="stylesheet" href="../shared.css" />
+    <style>
+      /* Only what this option draws differently. Everything the options share is in ../shared.css. */
+    </style>
+  </head>
+  <body>
+    <!-- States: html[data-state="…"] in CSS, or data-show="open long" on a part. data-goto="open" on what opens it.
+         Text: the English in the element, data-t-ru="…" beside it, data-t-long="…" for the long state. -->
+    <main class="screen">
+      <button class="demo-button" data-goto="open" data-t-ru="Открыть" data-t-long="A much longer label than usual">Open</button>
+      <div class="demo-popover" data-show="open long">
+        <p data-t-ru="Вариант __ID__">Option __ID__</p>
+      </div>
+    </main>
+    <script src="/_canvas/option.js"></script>
+  </body>
+</html>
