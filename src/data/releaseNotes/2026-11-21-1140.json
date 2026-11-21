@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "Page 1's color key shows the empty item only with Empty grid on, so it names only what the chart draws",
+    "ru": "Ключ цветов на первой странице показывает пункт «пусто» только при включённой «Пустой сетке», он называет только то, что нарисовано на схеме",
+    "uk": "Ключ кольорів на першій сторінці показує пункт «порожньо» лише за ввімкненої «Порожньої сітки», він називає тільки те, що намальовано на схемі",
+    "be": "Ключ колераў на першай старонцы паказвае пункт «пуста» толькі пры ўключанай «Пустой сетцы», ён называе толькі тое, што намалявана на схеме",
+    "zh": "第一页的颜色图例只在开启空位网格时显示“空”项，只标出图样上画出来的内容",
+    "es": "La clave de colores de la página 1 muestra el elemento vacío solo con Cuadrícula vacía activada, así nombra solo lo que dibuja el esquema",
+    "pl": "Klucz kolorów na stronie 1 pokazuje pozycję „puste” tylko przy włączonej Pustej siatce, więc nazywa tylko to, co rysuje schemat"
+  }
+}
