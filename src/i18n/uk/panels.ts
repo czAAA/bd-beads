@@ -25,13 +25,6 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: 'Видалити всі проєкти',
       sendFeedback: 'Надіслати відгук',
       reportTranslation: 'Повідомити про помилку перекладу',
-      keepProjects: 'Браузер зберігає проєкти',
-      keepProjectsOn: 'Так',
-      keepProjectsOff: 'Ні',
-      keepProjectsInfoLabel: 'Про зберігання проєктів',
-      keepProjectsInfo:
-        'Коли на пристрої мало місця, браузер може видалити дані цього застосунку, якщо він не зберігає ваші проєкти. Браузер вирішує це сам, тож збережіть файл проєкту для кожного, який вам дорогий.',
-      buttonNames: 'Що роблять кнопки',
     },
     project: {
       rename: 'Перейменувати «{name}»',

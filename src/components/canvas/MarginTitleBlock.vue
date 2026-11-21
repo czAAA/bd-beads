@@ -29,7 +29,7 @@ import { frameOf, lettersOn } from '../../domain/layerRecord'
 // one row of them. It only asks; the shell's flows do the work, as from the Frame and Project panels.
 /** `roomy` is the taller block where the band has room (ticket 1015): the name leads, the Bead with Change, and a color
  * key with each color's bead count. `brief` is the compact row without its legend, where the sheet is too narrow. */
-const props = withDefaults(defineProps<{ project: Project; form?: 'roomy' | 'full' | 'compact' | 'brief' | 'key' }>(), { form: 'full' })
+const props = withDefaults(defineProps<{ project: Project; form?: 'roomy' | 'full' | 'line' | 'compact' | 'brief' | 'key' }>(), { form: 'full' })
 
 const emit = defineEmits<{
   rename: [name: string]
@@ -143,7 +143,7 @@ const keyLabel = computed(() =>
 </script>
 
 <template>
-  <div class="margin-title" :class="`margin-title--${form === 'brief' || form === 'key' ? 'compact' : form}`" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
+  <div class="margin-title" :class="`margin-title--${form === 'brief' || form === 'key' || form === 'line' ? 'compact' : form}`" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
     <!-- Roomy (ticket 1015): what the Frame is on the left, what it is made of on the right. -->
     <template v-if="form === 'roomy'">
       <div class="margin-title__identity">
@@ -191,7 +191,9 @@ const keyLabel = computed(() =>
       </div>
     </template>
     <template v-else>
-      <template v-if="form === 'full'">
+      <!-- The full form's cells, and on Row progress's strip its name, Technique and settings on one row (`line`, ticket
+           1176), pencils too: the maker and the estimated size are left to the two-row block and the Frame panel. -->
+      <template v-if="form === 'full' || form === 'line'">
         <div class="margin-title__cell margin-title__top margin-title__name">
           <EditableLine v-bind="nameLine" @save="emit('rename', $event)" />
         </div>
@@ -202,7 +204,7 @@ const keyLabel = computed(() =>
         <div v-for="{ setting, value, disabledBody } in settings" :key="setting.id" class="margin-title__cell margin-title__top margin-title__value">
           <MarginSettingCell :setting="setting" :value="value" editable :disabled-body="disabledBody" @set="emit('set-setting', setting.id, $event)" />
         </div>
-        <div class="margin-title__cell margin-title__top margin-title__value margin-title__maker" :style="grid.maker">
+        <div v-if="form === 'full'" class="margin-title__cell margin-title__top margin-title__value margin-title__maker" :style="grid.maker">
           <span v-if="by.before" class="margin-title__meta">{{ by.before }}</span>
           <EditableLine v-bind="makerLine" @save="emit('save-maker-name', $event)" />
           <span v-if="by.after" class="margin-title__meta">{{ by.after }}</span>
@@ -224,7 +226,7 @@ const keyLabel = computed(() =>
       </template>
       <template v-if="form !== 'key'">
         <div class="margin-title__cell margin-title__meta" data-testid="margin-size">{{ size }}</div>
-        <div class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
+        <div v-if="form !== 'line'" class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
       </template>
       <div v-if="form !== 'brief'" class="margin-title__cell margin-title__legend" :style="form === 'full' ? grid.legend : undefined" role="img" :aria-label="legendLabel" data-testid="margin-legend">
         <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
@@ -282,6 +284,11 @@ const keyLabel = computed(() =>
 
 .margin-title--compact .margin-title__fold {
   grid-row: 1;
+}
+
+/* One row, the full form's cells included, has no rule below any (ticket 1176). */
+.margin-title--compact .margin-title__cell {
+  border-bottom: 0;
 }
 
 .margin-title__cell:not(.margin-title__top) {

@@ -11,7 +11,6 @@ import type { ThemePick } from '../../theme/theme'
 import { useThemePick } from '../../theme/useThemePick'
 import type { Account } from '../../domain/account'
 import AccountSection from './AccountSection.vue'
-import PanelFactRow from './PanelFactRow.vue'
 import PanelItem from './PanelItem.vue'
 import PanelPicker from './PanelPicker.vue'
 import PanelSection from './PanelSection.vue'
@@ -44,8 +43,6 @@ const props = withDefaults(
     /** The Homepage's demo editor (ticket 0797): only the Projects and Keyboard shortcuts, so nothing in the demo
      * changes the app; its New Project empties the demo, with no form. */
     demo?: boolean
-    /** Whether the browser keeps the Projects (tickets 0839, 0936): the row shows it; absent where it can't say. */
-    kept?: boolean
     /** The signed-in account (ticket 0078); none for a Guest. */
     account?: Account
     /** A press on Sign in: whether its Subpanel may open, false once a toast said signing in can't be done now. */
@@ -60,7 +57,6 @@ const props = withDefaults(
     inputMode: 'mouse',
     handedness: 'right',
     penSeen: false,
-    kept: undefined,
     account: undefined,
     mayOpenSignIn: () => Promise.resolve(true),
   },
@@ -79,8 +75,6 @@ const emit = defineEmits<{
   'update:handedness': [hand: Handedness]
   /** The Keyboard shortcuts Subpanel is about to be pushed (ticket 1159). */
   shortcuts: []
-  /** What the buttons do (ticket 0927): every strip and pill button shows its name until the next press. */
-  'button-names': []
   /** Opens the Feedback sheet with its Report kind (ticket 0700). */
   feedback: [kind: 'general' | 'translation']
   /** The Sign in Subpanel is about to be pushed, and Sign out (ticket 0078). */
@@ -155,16 +149,6 @@ const inputOptions = computed(() => [
       <PanelItem icon="library" :value="countUnknown ? undefined : String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}
       </PanelItem>
-      <!-- Whether the browser keeps the Projects, as a fact with its reason behind an Info button (tickets 0839, 0936). -->
-      <PanelFactRow
-        v-if="!demo && kept !== undefined"
-        icon="device"
-        :label="t.panels.menu.keepProjects"
-        :value="kept ? t.panels.menu.keepProjectsOn : t.panels.menu.keepProjectsOff"
-        :info-label="t.panels.menu.keepProjectsInfoLabel"
-        :body="t.panels.menu.keepProjectsInfo"
-        testid="menu-keep-projects"
-      />
     </PanelSection>
 
     <PanelSection v-if="!demo" id="menu:preferences" :label="t.panels.menu.preferences">
@@ -207,7 +191,6 @@ const inputOptions = computed(() => [
     <PanelSection id="menu:help" :label="t.panels.menu.help">
       <!-- Keyboard shortcuts is Menu's Subpanel (ticket 1159, ShortcutsHelp card), wider than Menu; the key shows where a keyboard is. -->
       <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" sub stays data-testid="menu-item-shortcuts" @select="emit('shortcuts'); context?.openSub()">{{ t.shortcutsHelp.title }}</PanelItem>
-      <PanelItem v-if="!demo" icon="info" data-testid="menu-item-button-names" @select="emit('button-names')">{{ t.panels.menu.buttonNames }}</PanelItem>
       <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
       <!-- Report a translation problem sits under Send feedback: both open the FeedbackSheet (tickets 0700, 1144). -->
       <PanelItem v-if="!demo" secondary data-testid="menu-report-translation" @select="emit('feedback', 'translation')">{{ t.panels.menu.reportTranslation }}</PanelItem>

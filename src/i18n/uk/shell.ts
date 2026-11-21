@@ -34,7 +34,6 @@ export const shell: ShellTranslations = {
     enterHeight: 'Вкажіть висоту.',
     enterWholeBeads: 'Вкажіть ціле число бісерин.',
     or: 'або',
-    openCanvasSubtitle: 'Малюйте будь-де. Задайте розмір, коли знадобиться картинка або PDF.',
     pickStarter: 'Обрати шаблон',
     estimateBeads: '≈ {columns}×{rows} бісерин',
     unnamedProject: 'Проєкт {number}',

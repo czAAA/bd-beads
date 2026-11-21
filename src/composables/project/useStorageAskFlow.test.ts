@@ -55,7 +55,6 @@ describe('useStorageAskFlow', () => {
     const { flow, persistentStorage, showToast } = setup(true)
     flow.onFileReached()
     await settle()
-    expect(flow.kept.value).toBe(true)
     expect(persistentStorage.persist).not.toHaveBeenCalled()
     expect(showToast).not.toHaveBeenCalled()
   })
@@ -65,28 +64,24 @@ describe('useStorageAskFlow', () => {
     expect(() => flow.onFileReached()).not.toThrow()
     await settle()
     expect(persistentStorage.persist).not.toHaveBeenCalled()
-    expect(flow.kept.value).toBeUndefined()
   })
 
-  it('says a yes once in a toast, and the state turns kept', async () => {
+  it('says a yes once in a toast', async () => {
     const { flow, showToast } = setup(false, { answer: true })
     await settle()
-    expect(flow.kept.value).toBe(false)
     flow.onFileReached()
     await settle()
     flow.onFileReached()
     await settle()
     expect(showToast).toHaveBeenCalledOnce()
     expect(showToast).toHaveBeenCalledWith('storage-kept', 'This browser will keep your Projects.', 'success')
-    expect(flow.kept.value).toBe(true)
   })
 
-  it('says nothing on a no (ticket 0936): the Save reminder carries the advice, and the Menu row shows the answer', async () => {
+  it('says nothing on a no (ticket 0936): the Save reminder carries the advice', async () => {
     const { flow, showToast } = setup(false, { answer: false })
     flow.onFileReached()
     await settle()
     expect(showToast).not.toHaveBeenCalled()
-    expect(flow.kept.value).toBe(false)
   })
 
   it('says nothing when the browser gives no answer', async () => {
@@ -94,6 +89,5 @@ describe('useStorageAskFlow', () => {
     flow.onFileReached()
     await settle()
     expect(showToast).not.toHaveBeenCalled()
-    expect(flow.kept.value).toBe(false)
   })
 })
