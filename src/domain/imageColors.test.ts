@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { channelsOf, colorDistance, toHex, toOklab } from './color'
-import { LEAST_COLOR_DISTANCE, nearestColor, reducePictureColors } from './imageColors'
+import { LEAST_COLOR_DISTANCE, nearestColor, pictureReducer, reducePictureColors } from './imageColors'
 
 function counts(entries: Record<string, number>): Map<string, number> {
   return new Map(Object.entries(entries))
@@ -176,5 +176,20 @@ describe('reducePictureColors (ticket 177, ADR 0010)', () => {
     expect(reduced.colors).toHaveLength(12)
     const labs = reduced.colors.map((color) => toOklab(channelsOf(color.hex)))
     for (const [at, a] of labs.entries()) for (const b of labs.slice(at + 1)) expect(colorDistance(a, b)).toBeGreaterThanOrEqual(LEAST_COLOR_DISTANCE)
+  })
+})
+
+describe('pictureReducer', () => {
+  it('reduces to each count as a fresh reduction does, the median cut kept between counts (ticket 1163)', () => {
+    let seed = 7
+    const next = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32
+    const picture = new Map<string, number>()
+    while (picture.size < 300) {
+      const base = [40, 120, 210][Math.floor(next() * 3)]!
+      const hex = toHex({ r: base + next() * 60, g: 255 - base + next() * 30, b: next() * 255 })
+      picture.set(hex, (picture.get(hex) ?? 0) + 1 + Math.floor(next() * 4))
+    }
+    const reduce = pictureReducer(picture)
+    for (const asked of [30, 5, 12, 13, 9, 40]) expect(reduce(asked)).toEqual(reducePictureColors(picture, asked))
   })
 })

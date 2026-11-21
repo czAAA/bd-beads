@@ -30,6 +30,8 @@ export function nearestColor(colors: readonly string[], hex: string): string | u
 interface WeightedColor {
   hex: string
   rgb: Rgb
+  /** `rgb` in Oklab, turned once: the reduction measures every sampled color against the seeds many times (ticket 1163). */
+  lab: Oklab
   count: number
 }
 
@@ -76,17 +78,18 @@ function splitBox(box: readonly WeightedColor[]): [WeightedColor[], WeightedColo
 
 /** The one color that stands in for a box: its cell-weighted average, so it lands where most of the picture is. */
 function representative(box: readonly WeightedColor[]): Rgb {
-  const total = box.reduce((sum, color) => sum + color.count, 0)
-  const sum = box.reduce(
-    (totals, color) => ({
-      r: totals.r + color.rgb.r * color.count,
-      g: totals.g + color.rgb.g * color.count,
-      b: totals.b + color.rgb.b * color.count,
-    }),
-    { r: 0, g: 0, b: 0 },
-  )
-
-  return { r: sum.r / total, g: sum.g / total, b: sum.b / total }
+  // A plain loop: a box can hold every color of a photo (ticket 1163), and this runs for each group of each reduction.
+  let total = 0
+  let r = 0
+  let g = 0
+  let b = 0
+  for (const color of box) {
+    total += color.count
+    r += color.rgb.r * color.count
+    g += color.rgb.g * color.count
+    b += color.rgb.b * color.count
+  }
+  return { r: r / total, g: g / total, b: b / total }
 }
 
 /** A box with how far it spreads along its widest channel, worked out once: the Colors slider asks for thousands of
@@ -100,25 +103,41 @@ function measured(colors: WeightedColor[]): MeasuredBox {
   return { colors, spread: colors.length > 1 ? channelRange(colors, widestChannel(colors)) : -1 }
 }
 
-/** Median cut down to at most `maxColors` boxes by splitting the widest box until done. Over k-means (fixed steps,
- * no unlucky start) and a fixed octree (adapts to where flat artwork's few colors crowd the cube). */
-function medianCut(colors: WeightedColor[], maxColors: number): WeightedColor[][] {
+/** Median cut by splitting the widest box (the lowest on a tie) until done. Over k-means (fixed steps, no unlucky
+ * start) and a fixed octree (adapts to where flat artwork's few colors crowd the cube). The splits don't depend on
+ * how many boxes are wanted, so they are kept: 13 boxes after 12 is one split more (ticket 1163). */
+function medianCutter(colors: WeightedColor[]) {
   const boxes: MeasuredBox[] = [measured(colors)]
+  /** Each split made: the place the left half took and the right half pushed at the end. */
+  const steps: { at: number; left: WeightedColor[]; right: WeightedColor[] }[] = []
+  let spent = false
 
-  while (boxes.length < maxColors) {
+  function split(): void {
     let widest = 0
     for (let at = 1; at < boxes.length; at += 1) {
       if (boxes[at]!.spread > boxes[widest]!.spread) widest = at
     }
     // A box of one color cannot split: a spread of -1 says so.
-    if (boxes[widest]!.spread < 0) break
-
+    if (boxes[widest]!.spread < 0) {
+      spent = true
+      return
+    }
     const [left, right] = splitBox(boxes[widest]!.colors)
     boxes[widest] = measured(left)
     boxes.push(measured(right))
+    steps.push({ at: widest, left, right })
   }
 
-  return boxes.map((box) => box.colors)
+  /** The boxes, at most `maxColors` of them: fewer when every box is down to one color. */
+  return (maxColors: number): WeightedColor[][] => {
+    while (!spent && boxes.length < maxColors) split()
+    const result = [colors]
+    for (const step of steps.slice(0, Math.max(0, maxColors - 1))) {
+      result[step.at] = step.left
+      result.push(step.right)
+    }
+    return result
+  }
 }
 
 /** How many median-cut boxes a reduction picks its colors from, per color asked: enough that a small region of the
@@ -138,13 +157,20 @@ interface Candidate {
  * distance of a kept one. */
 function chooseByDifference(candidates: readonly Candidate[], maxColors: number, kept: readonly Oklab[] = []): Oklab[] {
   const chosen: Oklab[] = [...kept]
-  const nearest = candidates.map((candidate) => chosen.reduce((least, lab) => Math.min(least, colorDistance(candidate.lab, lab)), Infinity))
+  // Squared, ticket 1163: the least of the roots is the root of the least, so the picks are the same without a root per
+  // candidate per color kept.
+  const nearest = candidates.map((candidate) => {
+    let least = Infinity
+    for (const lab of chosen) least = Math.min(least, distanceSquared(candidate.lab, lab))
+    return least
+  })
   while (chosen.length < maxColors) {
     let best = -1
     let bestScore = 0
     candidates.forEach((candidate, at) => {
       // Capped at 1 (black to white), so the first pick, near nothing yet, is the biggest.
-      const score = nearest[at]! < LEAST_COLOR_DISTANCE ? 0 : candidate.count * Math.min(nearest[at]!, 1)
+      const distance = Math.sqrt(nearest[at]!)
+      const score = distance < LEAST_COLOR_DISTANCE ? 0 : candidate.count * Math.min(distance, 1)
       if (score > bestScore) {
         best = at
         bestScore = score
@@ -153,31 +179,35 @@ function chooseByDifference(candidates: readonly Candidate[], maxColors: number,
     if (best < 0) break
     const lab = candidates[best]!.lab
     chosen.push(lab)
-    candidates.forEach((candidate, at) => {
-      nearest[at] = Math.min(nearest[at]!, colorDistance(candidate.lab, lab))
-    })
+    for (let at = 0; at < candidates.length; at += 1) {
+      nearest[at] = Math.min(nearest[at]!, distanceSquared(candidates[at]!.lab, lab))
+    }
   }
   return chosen
+}
+
+function distanceSquared(a: Oklab, b: Oklab): number {
+  return (a.l - b.l) ** 2 + (a.a - b.a) ** 2 + (a.b - b.b) ** 2
 }
 
 /** The index of the closest of `colors` to `lab`. */
 function closest(colors: readonly Oklab[], lab: Oklab): number {
   let best = 0
   let bestDistance = Infinity
-  colors.forEach((color, at) => {
-    const distance = colorDistance(color, lab)
+  for (let at = 0; at < colors.length; at += 1) {
+    const distance = distanceSquared(colors[at]!, lab)
     if (distance < bestDistance) {
       best = at
       bestDistance = distance
     }
-  })
+  }
   return best
 }
 
 /** The sampled colors grouped round the colors chosen by difference, each joining its nearest (ticket 0890): a group
  * gathers one region of the picture, not a slice of the cube cut by cell count, so two regions don't blend. */
-function groupByDifference(sampled: readonly WeightedColor[], maxColors: number): WeightedColor[][] {
-  const boxes = medianCut([...sampled], Math.min(sampled.length, Math.max(maxColors * CANDIDATES_PER_COLOR, LEAST_CANDIDATES)))
+function groupByDifference(sampled: readonly WeightedColor[], maxColors: number, cut: ReturnType<typeof medianCutter>): WeightedColor[][] {
+  const boxes = cut(Math.min(sampled.length, Math.max(maxColors * CANDIDATES_PER_COLOR, LEAST_CANDIDATES)))
   const candidates = boxes.map((box) => ({ lab: toOklab(representative(box)), count: size(box) }))
   return filledUp(sampled, maxColors, groupAround(sampled, chooseByDifference(candidates, maxColors)))
 }
@@ -185,7 +215,7 @@ function groupByDifference(sampled: readonly WeightedColor[], maxColors: number)
 /** The sampled colors grouped round `seeds`, each joining its nearest; the groups that end alike joined. */
 function groupAround(sampled: readonly WeightedColor[], seeds: readonly Oklab[]): WeightedColor[][] {
   const groups: WeightedColor[][] = seeds.map(() => [])
-  for (const color of sampled) groups[closest(seeds, toOklab(color.rgb))]!.push(color)
+  for (const color of sampled) groups[closest(seeds, color.lab)]!.push(color)
   return joinNear(groups.filter((group) => group.length > 0))
 }
 
@@ -193,7 +223,7 @@ function groupAround(sampled: readonly WeightedColor[], seeds: readonly Oklab[])
  * own color most different from the groups' (at least the least distance from each) seeds one more, and the sampled
  * colors are grouped round them again. Ends at the count asked or when no color is that different; the most groups is kept. */
 function filledUp(sampled: readonly WeightedColor[], maxColors: number, first: WeightedColor[][]): WeightedColor[][] {
-  const own = sampled.map((color) => ({ lab: toOklab(color.rgb), count: color.count }))
+  const own = sampled.map((color) => ({ lab: color.lab, count: color.count }))
   let best = first
   let groups = first
   for (let round = 0; round < maxColors && groups.length < maxColors; round++) {
@@ -209,21 +239,24 @@ function filledUp(sampled: readonly WeightedColor[], maxColors: number, first: W
 /** The groups with any two whose colors ended closer than the least distance joined, the smaller into the bigger, until
  * none are: a join moves the joined color, so it is measured again. */
 function joinNear(groups: WeightedColor[][]): WeightedColor[][] {
-  const kept = groups.map((colors) => ({ colors, lab: toOklab(channelsOf(boxColor(colors))) }))
+  const kept = groups.map((colors) => ({ colors, lab: toOklab(channelsOf(boxColor(colors))), cells: size(colors) }))
   for (;;) {
-    kept.sort((a, b) => size(b.colors) - size(a.colors))
+    kept.sort((a, b) => b.cells - a.cells)
     const small = kept.findIndex((group, at) => kept.slice(0, at).some((big) => colorDistance(big.lab, group.lab) < LEAST_COLOR_DISTANCE))
     if (small < 0) return kept.map((group) => group.colors)
     const [joining] = kept.splice(small, 1)
     const big = kept.find((group) => colorDistance(group.lab, joining!.lab) < LEAST_COLOR_DISTANCE)!
     big.colors = [...big.colors, ...joining!.colors]
+    big.cells += joining!.cells
     big.lab = toOklab(channelsOf(boxColor(big.colors)))
   }
 }
 
 /** How many cells a group of sampled colors covers. */
 function size(group: readonly WeightedColor[]): number {
-  return group.reduce((sum, color) => sum + color.count, 0)
+  let cells = 0
+  for (const color of group) cells += color.count
+  return cells
 }
 
 /** A picture's colors reduced to a buyable count (ticket 177, ADR 0010), before any snap: the Convert image wizard
@@ -245,10 +278,25 @@ function boxColor(box: readonly WeightedColor[]): string {
 }
 
 /** At most `maxColors` colors for sampled cell colors, ordered by coverage. Up to `maxColors` distinct colors are kept as
- * they are (flat artwork, pixel art); more are chosen by difference (ticket 0890), never two within the least distance. */
+ * they are (flat artwork, pixel art); more are chosen by difference (ticket 0890), never two within the least distance.
+ * @internal The app reduces through pictureReducer; the tests reduce once. */
 export function reducePictureColors(counts: ReadonlyMap<string, number>, maxColors: number): ReducedColors {
-  const sampled: WeightedColor[] = [...counts].map(([hex, count]) => ({ hex, rgb: channelsOf(hex), count }))
-  const boxes = sampled.length === 0 ? [] : sampled.length <= maxColors ? sampled.map((color) => [color]) : groupByDifference(sampled, maxColors)
+  return pictureReducer(counts)(maxColors)
+}
+
+/** A picture's reduction to any count, with the work every count shares done once: for asking again and again (ticket
+ * 1163, reduceDelivering). */
+export function pictureReducer(counts: ReadonlyMap<string, number>): (maxColors: number) => ReducedColors {
+  const sampled: WeightedColor[] = [...counts].map(([hex, count]) => {
+    const rgb = channelsOf(hex)
+    return { hex, rgb, lab: toOklab(rgb), count }
+  })
+  const cut = medianCutter([...sampled])
+  return (maxColors) => reduceSampled(sampled, maxColors, cut)
+}
+
+function reduceSampled(sampled: WeightedColor[], maxColors: number, cut: ReturnType<typeof medianCutter>): ReducedColors {
+  const boxes = sampled.length === 0 ? [] : sampled.length <= maxColors ? sampled.map((color) => [color]) : groupByDifference(sampled, maxColors, cut)
 
   const byHex = new Map<string, string>()
   const coverage = new Map<string, number>()
