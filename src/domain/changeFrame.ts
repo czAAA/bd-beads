@@ -43,10 +43,10 @@ import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
 import { canvasDistance, canvasWeave, frameWeave, laidOnCanvas, sameBeadSize, weaveOf } from './layerWeave'
 import { withWovenPalette } from './projectBead'
-import { clampPointer, firstPasses, isInitialRowProgress, progressWithoutLine, rowProgressOf, rowProgressStarted } from './rowProgress'
+import { clampPointer, progressWithoutLine, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
-import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingProgress, touchFrameSheet, withFrameSheet, withLayer, withPieceNames } from './layerRecord'
+import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingRowProgressOf, touchFrameSheet, withFrameSheet, withLayer, withPieceNames, withStartingRowProgress } from './layerRecord'
 import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -261,14 +261,11 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
   return { kind: 'changed', project: resizedFrame(project, rectangle) }
 }
 
-/** A Frame whose weaver has not moved the rows (still at the first pass, in its Technique's starting way) takes the starting
- * way of the Technique it is rewoven in; one the weaver has begun, or turned by hand, keeps its way. */
+/** A Frame rewoven in another Technique starts its progress afresh, in the new Technique's way as it lies (spec 1182),
+ * whatever way it ran before; only its settings changed, it keeps its way. With a pass done the change is refused first
+ * (frameChangeRefusal). */
 function withStartingWay(before: Project, after: Project): Project {
-  const [was, now] = [frameOf(before), frameOf(after)]
-  if (!was || !now || was.technique === now.technique || !isInitialRowProgress(was.rowProgress, startingProgress(before, was))) {
-    return after
-  }
-  return touchFrameSheet(after, { ...now, rowProgress: startingProgress(after, now) })
+  return frameOf(before)?.technique === frameOf(after)?.technique ? after : withStartingRowProgress(after)
 }
 
 /** Whether the Frame refuses this change: what it does not offer (Remove row/column on a Custom frame), a Technique
@@ -307,7 +304,7 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
   const { shape, centre, beads = {}, weave, quarterTurns } = placement
   const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ shape })!.id]: placement.size }
   const sheet = customSheet(project, shape, settings, centre, quarterTurns, weave)
-  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingProgress(project, sheet) })
+  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingRowProgressOf(project, sheet) })
 }
 
 /** A Custom frame laid out again from new settings round its own centre, as it lay in `before` (the Project itself, or
@@ -451,8 +448,8 @@ function placedFrame(project: Project, place: FramePlacement): Project {
   const previous = frameOf(project)
   // Lift starts on for a Frame laid where there was none and stays as it was in place of another (ticket 1177).
   const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {}, ...(!previous || previous.lifted ? { lifted: true as const } : {}) }
-  // A Frame laid where there was none starts in its Technique's way; one laid in place of another keeps the way the weaver chose.
-  return touchFrameSheet(project, { ...frame, rowProgress: frameOf(project) ? firstPasses(rowProgressOf(project)) : startingProgress(project, sheet) })
+  // Its progress starts afresh, in its Technique's way as it lies, whatever way the Frame it replaces ran.
+  return touchFrameSheet(project, { ...frame, rowProgress: startingRowProgressOf(project, sheet) })
 }
 
 /** The Project with its Custom frame become its shape round `rectangle` (ADR 0079, ticket 0669), the smallest that

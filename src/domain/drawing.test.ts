@@ -77,7 +77,9 @@ describe('deleteAll', () => {
   it('puts both direction pointers back at the first row, Row progress staying on with the Frame', () => {
     const cleared = deleteAll(paintedAndWoven())
 
-    expect(rowProgressOf(cleared)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    // Top to bottom as the Frame lies, on the Canvas turned a quarter: down its own columns (spec 1182).
+    expect(shownWayOf(cleared)).toBe('down')
+    expect(rowProgressOf(cleared)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
   })
 
   it.each([['loom', 'down'], ['peyote', 'right'], ['brick', 'up']] as const)('puts a %s Frame back at the first row, its rows running %s as seen as a new Project\'s do', (technique, way) => {

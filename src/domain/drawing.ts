@@ -2,9 +2,7 @@ import { withColors, type BeadMap, type FrameSheet } from './canvas'
 import type { GridPosition } from './grid'
 import { hasProjectBeads } from './layerBeads'
 import type { LayerSheet } from './layers'
-import { canvasOf, frameOf, withFrameSheet, withLayer } from './layerRecord'
-import { startingRowProgress } from './rowWays'
-import { startOrientation } from './weave'
+import { canvasOf, frameOf, startingRowProgressOf, withFrameSheet, withLayer } from './layerRecord'
 import { touch, type Project } from './project'
 import { INITIAL_ROW_PROGRESS, isInitialRowProgress, rowProgressOf } from './rowProgress'
 
@@ -22,9 +20,9 @@ export function paintCells({ beads, geometry, edge }: LayerSheet, positions: Gri
  * the first row; name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow):
  * clearing progress is the point, so callers skip keepFinishedRows. Returns the same instance if already so. */
 export function deleteAll(project: Project): Project {
-  // Row progress goes back to where a Project of its Technique starts: the first pass, its starting way.
+  // Row progress starts afresh: the first pass, the Frame Technique's way as the Frame lies (spec 1182).
   const frame = frameOf(project)
-  const start = frame ? startingRowProgress(frame.technique, startOrientation(frame.technique) / 90, !!frame.shape) : INITIAL_ROW_PROGRESS
+  const start = frame ? startingRowProgressOf(project, frame) : INITIAL_ROW_PROGRESS
   if (!hasProjectBeads(project) && !frame?.folded && isInitialRowProgress(rowProgressOf(project), start)) {
     return project
   }

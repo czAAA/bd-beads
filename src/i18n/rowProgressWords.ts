@@ -1,6 +1,6 @@
 import { fillBlanks } from '../domain/fillBlanks'
 import type { Layered } from '../domain/layerRecord'
-import { frameRowOrder, passLine, rowProgressOf, rowProgressPosition } from '../domain/rowProgress'
+import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition } from '../domain/rowProgress'
 import { orderStepLabel } from './orderStep'
 import type { Translations } from './translations'
 
@@ -41,7 +41,7 @@ export function rowProgressCount(words: Translations['rowProgress'], project: La
     const step = `${custom.label} ${custom.of}`
     return { step, short, spoken: step }
   }
-  const columns = rowProgressOf(project).direction === 'columns'
+  const columns = columnsAsSeen(project)
   const line = passLine(project)
   const unit = line ? words.passLabel : columns ? words.columnLabel : words.positionLabel
   const step = fillBlanks(words.announcePosition, { unit, current: shown, total })

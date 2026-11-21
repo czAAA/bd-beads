@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { frameRowOrder, passLine, rowProgressOf, rowProgressPosition, shownWayOf, type ShownWay } from '../../domain/rowProgress'
+import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition, shownWayOf, type ShownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { customPassWords, rowProgressCount } from '../../i18n/rowProgressWords'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -88,7 +88,7 @@ watch(
   },
 )
 
-const columnWise = computed(() => rowProgressOf(props.project).direction === 'columns')
+const columnWise = computed(() => columnsAsSeen(props.project))
 
 /** Row done and Back a row name what is woven in the direction the rows run: a row, or a column (ticket 411). */
 const doneLabel = computed(() => (columnWise.value ? t.value.rowProgress.columnNextButton : t.value.rowProgress.nextButton))
@@ -226,7 +226,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
       @click="emit('reset-progress')"
     />
     <p v-else-if="item === 'position'" class="row-progress__position row-progress__phone-hide" :data-testid="`${testid}-position`">
-      <span class="row-progress__row">{{ customPosition?.label ?? `${t.rowProgress.positionLabel} ${shownRow}` }}</span>
+      <span class="row-progress__row">{{ customPosition?.label ?? `${columnWise ? t.rowProgress.columnLabel : t.rowProgress.positionLabel} ${shownRow}` }}</span>
       {{ ' ' }}
       <span class="row-progress__of">{{
         customPosition?.of ?? fillBlanks(t.rowProgress.ofTotal, { total: position.total, direction: directionLabel })

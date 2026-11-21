@@ -1,18 +1,169 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { startingRowProgress } from './rowWays'
+import { withColors } from './canvas'
+import { changeFrame, type FrameChangeResult } from './changeFrame'
+import { createProject, createProjectFromImage } from './createProject'
+import { deleteAll } from './drawing'
+import { fitToDrawing } from './frame'
+import { frameOf, withLayer } from './layerRecord'
+import type { Project } from './project'
+import { rotateCanvas, rotateFrame } from './rotate'
+import { columnsAsSeen, moveToRow, rowProgressOf, shownWayOf, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
+import { keptAsSeen, startingRowProgress } from './rowWays'
+import { designSizes, placedStarter, starterById, starterProject } from './starters'
+import type { Technique } from './weave'
+
+const beadId = 'miyuki/delica/11-0'
+const TECHNIQUES = ['loom', 'peyote', 'brick'] as const
+/** Each Technique's own way as seen: loom top to bottom, peyote left to right, brick stitch bottom to top. */
+const WAYS = { loom: 'down', peyote: 'right', brick: 'up' } as const
+
+function changed(result: FrameChangeResult): Project {
+  if (result.kind !== 'changed') throw new Error(result.kind)
+  return result.project
+}
+
+/** A Project of 10 by 10 beads in a Technique, its Frame made with it. */
+const made = (technique: Technique) => createProject({ technique, beadId, size: { width: 10, height: 10, unit: 'beads' } })
+
+/** A Canvas with no Frame in a Technique, a few beads painted on it. */
+function painted(technique: Technique): Project {
+  const open = createProject({ technique, beadId, name: 'Open' })
+  return withLayer(open, 'canvas', { beads: withColors({}, [{ row: 2, column: 2, color: '#111111' }, { row: 5, column: 6, color: '#222222' }]) })
+}
 
 describe('startingRowProgress (ticket 1172)', () => {
-  it('turns the Technique\'s way as seen back into the Frame\'s own rows by the Canvas\'s quarter turns', () => {
-    // Loom runs top to bottom as seen: along its own rows upright, down its columns once the Canvas is turned a quarter.
+  it('turns the Technique\'s way as seen back into the Frame\'s own rows by the quarter turns it lies at', () => {
+    // Loom runs top to bottom as seen: along its own rows upright, down its columns once turned a quarter.
     expect(startingRowProgress('loom')).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
     expect(startingRowProgress('loom', 1)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
-    // Peyote's Canvas starts turned a quarter: left to right as seen is up its own rows.
+    // Left to right as seen, lying a quarter turned, is up its own rows.
     expect(startingRowProgress('peyote', 1)).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 })
     expect(startingRowProgress('brick', 2)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(startingRowProgress('loom', 5)).toEqual(startingRowProgress('loom', 1))
   })
 
   it('starts a Frame with a Frame shape along its rows whatever the Technique and the turn', () => {
     expect(startingRowProgress('peyote', 1, true)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+  })
+})
+
+describe('the starting way: progress starting afresh runs the Frame Technique\'s own way as the Frame lies (spec 1182)', () => {
+  it('starts a new Project\'s Frame in its Technique\'s way, peyote\'s Canvas turned a quarter', () => {
+    expect(TECHNIQUES.map((technique) => shownWayOf(made(technique)))).toEqual(['down', 'right', 'up'])
+  })
+
+  it('starts Convert image on peyote left to right, its Canvas upright (bug: it ran bottom to top)', () => {
+    for (const technique of TECHNIQUES) {
+      const grid = Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ color: '#111111' })))
+      const project = createProjectFromImage({ technique, beadId, size: { width: 4, height: 4, unit: 'beads' }, grid })
+      expect(shownWayOf(project), technique).toBe(WAYS[technique])
+    }
+  })
+
+  it('starts a first Frame from Selection in its Technique\'s way (bug: always top to bottom)', () => {
+    for (const technique of TECHNIQUES) {
+      const project = changed(changeFrame(painted(technique), { make: { row: 0, column: 0, rows: 8, columns: 8 } }))
+      expect(shownWayOf(project), technique).toBe(WAYS[technique])
+      expect(rowProgressOf(project).currentRow).toBe(0)
+    }
+  })
+
+  it('starts a first Frame by Fit to drawing in its Technique\'s way, on a turned Canvas too', () => {
+    for (const technique of TECHNIQUES) {
+      for (const open of [painted(technique), rotateCanvas(painted(technique))]) {
+        const project = changed(changeFrame(open, { make: fitToDrawing(open)! }))
+        expect(shownWayOf(project), technique).toBe(WAYS[technique])
+      }
+    }
+  })
+
+  it('starts a Starter laid turned on an open Project in its Technique\'s way (bug: it started turned)', () => {
+    // A peyote Ring lies across a loom Canvas, its Frame turned a quarter.
+    const ring = starterById('ringDiamonds')
+    const choice = { sizes: designSizes(ring), useDesign: true }
+    const open = createProject({ technique: 'loom', beadId, name: 'Open' })
+    for (const canvas of [open, rotateCanvas(open)]) {
+      expect(shownWayOf(changed(placedStarter(canvas, ring, choice, { row: 50, column: 50 })))).toBe('right')
+    }
+    expect(frameOf(changed(placedStarter(open, ring, choice, { row: 50, column: 50 })))!.quarterTurns).toBe(1)
+    expect(shownWayOf(starterProject(ring, { ...choice, name: 'Ring', beadId }))).toBe('right')
+  })
+
+  it('starts a Starter laid over a Frame afresh, whatever way that Frame ran', () => {
+    const ring = starterById('ringDiamonds')
+    const open = turnRowDirectionTo(made('loom'), 'left')
+    expect(shownWayOf(changed(placedStarter(open, ring, { sizes: designSizes(ring), useDesign: true }, { row: 5, column: 5 })))).toBe('right')
+  })
+
+  it('sets the starting way on Delete all for the Frame as it lies, however it was turned', () => {
+    for (const technique of TECHNIQUES) {
+      const woven = moveToRow(turnRowDirectionTo(rotateFrame(rotateCanvas(made(technique)))!, 'left'), 2)
+      const cleared = deleteAll(woven)
+      expect(shownWayOf(cleared), technique).toBe(WAYS[technique])
+      expect(rowProgressOf(cleared)).toMatchObject({ currentRow: 0, currentColumn: 0 })
+      expect(rowProgressOf(cleared).currentColumnBack ?? 0).toBe(0)
+      expect(deleteAll(cleared)).toBe(cleared)
+    }
+  })
+
+  it('sets the new Technique\'s way on a Frame Technique change, after a hand-picked way or a turned Frame too', () => {
+    const loom = made('loom')
+    for (const before of [loom, turnRowDirectionTo(loom, 'left'), rotateFrame(loom)!, rotateCanvas(loom), rotateFrame(rotateCanvas(turnRowDirectionTo(loom, 'up')))!]) {
+      for (const technique of ['peyote', 'brick'] as const) {
+        expect(shownWayOf(changed(changeFrame(before, { technique }))), technique).toBe(WAYS[technique])
+      }
+    }
+  })
+
+  it('keeps the way on a change of the Frame\'s settings alone', () => {
+    const picked = turnRowDirectionTo(made('peyote'), 'down')
+    expect(shownWayOf(changed(changeFrame(picked, { techniqueSettings: { peyoteDrop: 2 } })))).toBe('down')
+  })
+
+  it('never reads the Canvas\'s Technique: a peyote Frame on a loom Canvas starts left to right', () => {
+    const framed = changed(changeFrame(painted('loom'), { make: { row: 0, column: 0, rows: 8, columns: 8 } }))
+    expect(shownWayOf(changed(changeFrame(framed, { technique: 'peyote' })))).toBe('right')
+  })
+})
+
+describe('Rotate Frame with no pass done keeps the way as seen (spec 1182)', () => {
+  it('keeps each of the four ways as seen through every quarter turn, on a turned Canvas too', () => {
+    for (const technique of TECHNIQUES) {
+      for (const way of ['down', 'right', 'up', 'left'] as const) {
+        let project = turnRowDirectionTo(rotateCanvas(made(technique)), way)
+        for (let turn = 0; turn < 4; turn += 1) {
+          project = rotateFrame(project)!
+          expect(shownWayOf(project), `${technique} ${way} ${turn}`).toBe(way)
+        }
+      }
+    }
+  })
+
+  it('steps each pointer\'s slot back with the own way, so every count stays on its way as seen', () => {
+    const kept = keptAsSeen({ direction: 'rows', currentRow: 3, currentColumn: 4, currentRowBack: 2, currentColumnBack: 5 }, 1)
+    // Top to bottom on a Frame turned a quarter clockwise is its own left to right; each pointer moves with its way.
+    expect(kept).toEqual({ direction: 'columns', currentRow: 5, currentColumn: 3, currentRowBack: 4, currentColumnBack: 2 })
+  })
+})
+
+describe('the way named as seen (spec 1182)', () => {
+  it('calls top to bottom and bottom to top rows, left to right and right to left columns, whatever the Frame\'s own lines', () => {
+    const loom = made('loom')
+    for (const project of [loom, rotateFrame(loom)!, rotateCanvas(loom)]) {
+      expect((['down', 'right', 'up', 'left'] as const).map((way) => columnsAsSeen(turnRowDirectionTo(project, way)))).toEqual([false, true, false, true])
+    }
+  })
+
+  it('steps the `D` key top to bottom, left to right, bottom to top, right to left as seen', () => {
+    for (const project of [made('loom'), rotateCanvas(made('brick')), rotateFrame(made('peyote'))!]) {
+      const seen: string[] = []
+      let next = turnRowDirectionTo(project, 'down')
+      for (let press = 0; press < 4; press += 1) {
+        seen.push(shownWayOf(next))
+        next = toggleRowDirection(next)
+      }
+      expect(seen).toEqual(['down', 'right', 'up', 'left'])
+    }
   })
 })

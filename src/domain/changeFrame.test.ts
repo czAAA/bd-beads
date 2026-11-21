@@ -186,11 +186,11 @@ describe('changeFrame', () => {
       expect(rowProgressOf(result.project)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
     })
 
-    it('leaves the way as it is once the weaver has turned the rows by hand', () => {
-      const turned = framed({ rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 0 } })
+    it('sets the new Technique\'s way even once the weaver has turned the rows by hand (spec 1182)', () => {
+      const turned = framed({ rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
       const result = changeFrame(turned, { technique: 'peyote' })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(rowProgressOf(result.project)).toEqual(rowProgressOf(turned))
+      expect(rowProgressOf(result.project)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
     })
 
     it('is no change to the Technique it already has', () => {

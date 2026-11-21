@@ -9,6 +9,8 @@ import { carryNames } from './pieceNames'
 import { canvasDistance, canvasWeave, frameWeave } from './layerWeave'
 import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, touchFrameSheet, withCanvas, withLayer } from './layerRecord'
 import { touch, type Project } from './project'
+import { rowProgressStarted } from './rowProgress'
+import { keptAsSeen } from './rowWays'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectableOn, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
@@ -175,7 +177,7 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
 
 /** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame's orientation a quarter clockwise about its centre,
  * like a sheet of A4 turned on an A1. Its beads keep their own rows and columns, so nothing is rewritten and no row snaps,
- * and Row progress keeps its pointers; what it covers turns, the Canvas under it untouched. No Frame: undefined. */
+ * and with no pass done its Row direction stays as seen (spec 1182); what it covers turns, the Canvas under it untouched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom
@@ -197,7 +199,10 @@ export function rotateFrame(project: Project): Project | undefined {
   // Upright again it starts where a Frame may (ticket 1016): a resize while turned can leave it between.
   const canvas = canvasWeave(project)
   const at = turns ? { row, column } : { row: snapRow(canvas, row), column: snapColumn(canvas, column) }
-  return touchFrameSheet(project, { ...turned, ...at })
+  // With no pass done the way stays as seen (spec 1182): its own way and pointer slots step a quarter back. With a pass
+  // done the rows turn with the Frame, until Rotate Frame asks (ticket 1184).
+  const rowProgress = rowProgressStarted(project) ? frame.rowProgress : keptAsSeen(frame.rowProgress, 1)
+  return touchFrameSheet(project, { ...turned, ...at, rowProgress })
 }
 
 /** Rotate canvas (ticket 471): the picture a quarter turn clockwise further from whatever angle it is at (ticket

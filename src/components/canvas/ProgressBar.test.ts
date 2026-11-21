@@ -126,12 +126,12 @@ describe('ProgressBar', () => {
     expect(left.text()).toContain(ru.rowProgress.rightToLeft)
   })
 
-  it('shows the rows running as the Frame lies, turned with it, still counting its own rows (ticket 0667)', () => {
+  it('shows the rows running as the Frame lies, turned with it once a pass is done, named as seen (tickets 0667, 1183)', () => {
     const turned = rotateFrame(moveToRow(makeProject(), 4))!
     const wrapper = mount(ProgressBar, { props: { project: turned } })
     expect(wrapper.find('.row-progress__steps--left').exists()).toBe(true)
     expect(wrapper.text()).toContain(ru.rowProgress.rightToLeft)
-    expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.columnNextButton)
   })
 
   it('shows the rows running as seen on a turned Canvas, the Frame upright or turned on it (ticket 1101)', async () => {
@@ -139,12 +139,13 @@ describe('ProgressBar', () => {
     const wrapper = mount(ProgressBar, { props: { project: canvasTurned } })
     expect(wrapper.find('.row-progress__steps--left').exists()).toBe(true)
     expect(wrapper.text()).toContain(ru.rowProgress.rightToLeft)
-    expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.columnNextButton)
 
+    // Rotate Frame with no pass done kept top to bottom as seen (ticket 1183); the Canvas's turn still carries it.
     const both = mount(ProgressBar, { props: { project: turnedClockwise(rotateFrame(makeProject())!) } })
-    expect(both.find('.row-progress__steps--up').exists()).toBe(true)
+    expect(both.find('.row-progress__steps--left').exists()).toBe(true)
     await both.get('[data-testid="progress-bar-direction"]').trigger('click')
-    expect(both.get('[data-testid="progress-bar-direction-up"]').attributes('aria-checked')).toBe('true')
+    expect(both.get('[data-testid="progress-bar-direction-left"]').attributes('aria-checked')).toBe('true')
   })
 
   it('shows the last row as the current one on it, and Pattern done with a check once every pass is done (tickets 411, 0849)', () => {
@@ -393,9 +394,10 @@ describe('ProgressBar counter (ticket 0849)', () => {
 
     const counter = wrapper.get('[data-testid="progress-bar-compact-position"]')
     expect(counter.get('.row-progress__count-step').text()).toBe('Проход 3 из 27')
-    // The rulers' number of the pass's row: the 2nd from the left, as a new peyote Project's rows run left to right on its turned Canvas.
-    expect(counter.get('.row-progress__line').text()).toBe('· ряд 2')
-    expect(wrapper.text()).toContain('проходов: 27, рядов: 14')
+    // The rulers' number of the pass's line: the 2nd from the left, as a new peyote Project's lines run left to right
+    // on its turned Canvas, so they are columns as seen (ticket 1183).
+    expect(counter.get('.row-progress__line').text()).toBe('· столбец 2')
+    expect(wrapper.text()).toContain('проходов: 27, столбцов: 14')
   })
 
   it('calls Go to row Go to pass on peyote, the noun of its field, with the passes sentence behind an Info button (ticket 0972)', async () => {

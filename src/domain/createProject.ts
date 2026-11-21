@@ -1,13 +1,12 @@
 import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, frameOf, newLayerId, withCanvas, withLayer } from './layerRecord'
+import { beadIdOfLayer, frameOf, newLayerId, startingRowProgressOf, withCanvas, withLayer, withStartingRowProgress } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import type { Background, Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
-import { startingRowProgress } from './rowWays'
 import { DEFAULT_TECHNIQUE, startOrientation, type Technique, type TechniqueSettings } from './weave'
 
 // Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture. A new peyote
@@ -56,12 +55,13 @@ export function createProject(input: CreateProjectInput): Project {
     ...(input.background !== undefined ? { background: input.background } : {}),
     beads: {},
   }
+  // Both layers take the form's settings (ADR 0079).
+  const canvas = { id: newLayerId(), name, ...layer, orientation: startOrientation(created.technique) }
   return {
     id: crypto.randomUUID(),
-    // Both layers take the form's settings (ADR 0079).
     layers: [
-      { id: newLayerId(), name, ...layer, orientation: startOrientation(created.technique) },
-      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, lifted: true as const, rowProgress: startingRowProgress(created.technique, startOrientation(created.technique) / 90) }] : []),
+      canvas,
+      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, lifted: true as const, rowProgress: startingRowProgressOf({ layers: [canvas] }, created) }] : []),
     ],
     palette,
     paletteLetters: lettersOfPalette(palette, bead.id, undefined),
@@ -87,7 +87,8 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
  * preview showed it (ticket 0965). Conversion never edits an open Project (ADR 0010). The grid is fitted to the stated
  * dimensions (missing cells empty, surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
-  const project = withCanvas(createProject(input), { orientation: 0 })
+  // Started again once the Canvas is upright: the Frame's way as it lies now, not as the turned Canvas had it (spec 1182).
+  const project = withStartingRowProgress(withCanvas(createProject(input), { orientation: 0 }))
   const frame = frameOf(project)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>

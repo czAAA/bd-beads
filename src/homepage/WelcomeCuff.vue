@@ -4,7 +4,7 @@ import RowProgressControls from '../components/canvas/RowProgressControls.vue'
 import { sizeCanvas } from '../components/canvas/surface/useSurfaceDrawing'
 import { reducedMotion } from '../components/canvas/surface/useSurfaceOverlay'
 import { useRowMotion } from '../components/canvas/surface/useRowMotion'
-import { useFittingForm } from '../composables/canvas/useFittingForm'
+import { rowItemsWidth, useFittingForm } from '../composables/canvas/useFittingForm'
 import { useA11yAnnouncer } from '../composables/ui/useA11yAnnouncer'
 import { useElementSize } from '../composables/ui/useElementSize'
 import { useI18n } from '../i18n/useI18n'
@@ -121,12 +121,24 @@ onMounted(() => {
 
 const name = computed(() => cuffName(t.value, project.value))
 
-/** The bar's forms, best first: the counter's words, "Pass 7 of 95 · row 4"; short, "7/95 · row 4", as the editor's
- * narrow bar has it; shortest, "7/95"; trackless, "7/95" and the moves with no track, as the margin sheet's row gives
- * up its track first (ticket 1170); and stacked, short with the moves on a row of their own, as on a phone. */
+/** The bar's forms, best first: the counter's words; short, "7/95 · column 4"; shortest, "7/95"; trackless, no track
+ * (ticket 1170), standing out past the cuff where the moves need it (ticket 1183); and stacked, the moves on a row of
+ * their own, as on a phone. */
 const COUNTER_FORMS = ['words', 'short', 'shortest', 'trackless', 'stacked'] as const
 const barEl = ref<HTMLElement>()
-const { width: barRoom } = useElementSize(barEl)
+const reachEl = ref<HTMLElement>()
+const tileEl = ref<HTMLElement>()
+onMounted(() => (tileEl.value = rootEl.value?.parentElement ?? undefined))
+const { width: cuffRoom } = useElementSize(rootEl)
+const { width: overhangs } = useElementSize(reachEl)
+const { width: tileRoom } = useElementSize(tileEl)
+/** How wide trackless may stand (ticket 1183): past the cuff by `--welcome-cuff-bar-overhang` on each side, never past
+ * the tile's padding. */
+const reachRoom = computed(() => {
+  const cuff = cuffRoom.value || rootEl.value?.clientWidth || 0
+  const tile = tileRoom.value || tileEl.value?.clientWidth || Number.POSITIVE_INFINITY
+  return Math.min(cuff + (overhangs.value || reachEl.value?.clientWidth || 0), Math.max(cuff, tile))
+})
 /** What the bar's first row needs: the counter, the track at its least, and the moves where they share the row (on a
  * phone they take a row of their own). */
 function firstRowWidth(): number {
@@ -135,15 +147,13 @@ function firstRowWidth(): number {
   // A part the form hides takes no room (trackless has no track).
   const shown = items.filter((item) => getComputedStyle(item).display !== 'none')
   const first = counter ? shown.filter((item) => item.offsetTop < counter.offsetTop + counter.offsetHeight) : []
-  const gap = barEl.value ? Number.parseFloat(getComputedStyle(barEl.value).columnGap) || 0 : 0
-  const widths = first.map((item) => (item.classList.contains('progress-track') ? Number.parseFloat(getComputedStyle(item).minWidth) || 0 : item.offsetWidth))
-  return widths.reduce((sum, width) => sum + width, 0) + gap * Math.max(0, first.length - 1)
+  return rowItemsWidth(first, barEl.value ? Number.parseFloat(getComputedStyle(barEl.value).columnGap) || 0 : 0)
 }
 const counterFit = useFittingForm({
   forms: () => COUNTER_FORMS,
   // Read off the page until the observer first reports, so the form is chosen before the first paint and the Welcome
   // holds still as it arrives (ticket 1170).
-  room: () => barRoom.value || barEl.value?.clientWidth || 0,
+  room: (form) => (form === 'trackless' ? reachRoom.value : cuffRoom.value || rootEl.value?.clientWidth || 0),
   measure: firstRowWidth,
   observed: () => [barEl.value?.querySelector('.row-progress__counter-text')],
   labels: () => locale.value,
@@ -157,7 +167,8 @@ const counterForm = computed(() => counterFit.value ?? 'stacked')
       <canvas ref="beadsEl" class="welcome-cuff__layer" aria-hidden="true" />
       <canvas ref="overlayEl" class="welcome-cuff__layer" aria-hidden="true" />
     </div>
-    <div ref="barEl" class="welcome-cuff__bar" :class="`welcome-cuff__bar--${counterForm}`">
+    <div ref="reachEl" class="welcome-cuff__reach" aria-hidden="true" />
+    <div ref="barEl" class="welcome-cuff__bar" :class="`welcome-cuff__bar--${counterForm}`" :style="{ '--welcome-cuff-reach': `${reachRoom}px` }">
       <RowProgressControls :project="project" :row-press="woven.rowPress.value" form="woven" testid="welcome-cuff" @move-row="woven.moveRow" />
     </div>
     <!-- A press is said as the editor says it; the weaving by itself is not. -->
@@ -170,6 +181,7 @@ const counterForm = computed(() => counterFit.value ?? 'stacked')
  * tall as the screen leaves it and never under `--welcome-piece-least-width` wide (Homepage card); a grown box's screen
  * is measured in its own grown px (ticket 1059), and never as taller than the box at its tallest with its margins. */
 .welcome-cuff {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
@@ -223,21 +235,45 @@ const counterForm = computed(() => counterFit.value ?? 'stacked')
   display: inline;
 }
 
+/* How far past the cuff trackless may stand out: `--welcome-cuff-bar-overhang` on each side, measured, not seen. */
+.welcome-cuff__reach {
+  position: absolute;
+  left: 0;
+  width: calc(2 * var(--welcome-cuff-bar-overhang));
+  height: 0;
+  visibility: hidden;
+}
+
+/* Trackless stands out past the cuff where the moves need it, as far as that reach inside the tile (ticket 1183): as
+ * wide as it needs, never narrower than the cuff, centred under it, the moves at its right end. */
+.welcome-cuff__bar--trackless {
+  align-self: center;
+  width: max-content;
+  min-width: 100%;
+  max-width: var(--welcome-cuff-reach);
+}
+
+.welcome-cuff__bar--trackless :deep(.progress-moves) {
+  margin-inline-start: auto;
+}
+
 /* Stacked, where not even that fits: the moves on a row of their own, half the bar each, as on a phone. */
 .welcome-cuff__bar--stacked {
   flex-wrap: wrap;
   gap: var(--space-4) var(--space-12);
 }
 
+/* A label too long for half takes the bar's whole width on a row of its own (ticket 1183). */
 .welcome-cuff__bar--stacked :deep(.progress-moves) {
   flex: 1 1 100%;
+  flex-wrap: wrap;
   min-width: 0;
 }
 
 .welcome-cuff__bar--stacked :deep(.progress-moves > .app-button),
 .welcome-cuff__bar--stacked :deep(.progress-moves .app-button-wrap) {
   flex: 1 1 0;
-  min-width: 0;
+  min-width: max-content;
 }
 
 .welcome-cuff__bar--stacked :deep(.progress-moves .app-button) {

@@ -98,7 +98,7 @@ describe('the cuff woven on the Welcome tile (ticket 1157)', () => {
     woven.moveRow(1)
     expect(announce).toHaveBeenCalledTimes(1)
     expect(announce).toHaveBeenLastCalledWith(rowProgressAnnouncement(en.rowProgress, woven.project.value))
-    expect(announce).toHaveBeenLastCalledWith('Pass 6 of 95, row 4')
+    expect(announce).toHaveBeenLastCalledWith('Pass 6 of 95, column 4')
     stop()
   })
 

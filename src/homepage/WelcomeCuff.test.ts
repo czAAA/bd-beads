@@ -76,7 +76,7 @@ describe('WelcomeCuff (ticket 1157)', () => {
     for (let press = 0; press < PRESSES; press++) rows.onMoveRow(1)
     const bar = mount(ProgressBar, { props: { project: editing.value } })
     expect(counterOf(cuff, 'welcome-cuff')).toBe(counterOf(bar, 'progress-bar'))
-    expect(counterOf(cuff, 'welcome-cuff')).toBe('Pass 8 of 95 · row 5')
+    expect(counterOf(cuff, 'welcome-cuff')).toBe('Pass 8 of 95 · column 5')
 
     // The editor's Canvas round the same Frame, at 100%, where its margin sheet is whole and holds the Frame's numbers.
     const view = cuffView(editing.value, 1)
@@ -100,12 +100,12 @@ describe('WelcomeCuff (ticket 1157)', () => {
     const cuff = mount(WelcomeCuff, { props: { shown: false } })
     const drawing = cuff.get('[data-testid="welcome-cuff-drawing"]')
     expect(drawing.attributes('role')).toBe('img')
-    expect(drawing.attributes('aria-label')).toBe('Peacock feather cuff in peyote, being woven: Pass 1 of 95, row 1')
+    expect(drawing.attributes('aria-label')).toBe('Peacock feather cuff in peyote, being woven: Pass 1 of 95, column 1')
     await cuff.get('[data-testid="welcome-cuff-next"]').trigger('click')
     await nextTick()
     await nextTick()
-    expect(drawing.attributes('aria-label')).toBe('Peacock feather cuff in peyote, being woven: Pass 2 of 95, row 2')
-    expect(cuff.get('[data-testid="welcome-cuff-announcer"]').text()).toBe('Pass 2 of 95, row 2')
+    expect(drawing.attributes('aria-label')).toBe('Peacock feather cuff in peyote, being woven: Pass 2 of 95, column 2')
+    expect(cuff.get('[data-testid="welcome-cuff-announcer"]').text()).toBe('Pass 2 of 95, column 2')
   })
 
   it('holds the bar\'s counter, track and moves alone, Back a row disabled on the first pass, and no key of the editor\'s', () => {
@@ -113,7 +113,7 @@ describe('WelcomeCuff (ticket 1157)', () => {
     for (const gone of ['direction', 'reset', 'highlight', 'position']) expect(cuff.find(`[data-testid="welcome-cuff-${gone}"]`).exists(), gone).toBe(false)
     expect(cuff.find('[data-testid="welcome-cuff-track"]').exists()).toBe(true)
     expect(cuff.get('[data-testid="welcome-cuff-previous"]').attributes('aria-disabled')).toBe('true')
-    expect(cuff.get('[data-testid="welcome-cuff-next"]').text()).toBe('Row done')
+    expect(cuff.get('[data-testid="welcome-cuff-next"]').text()).toBe('Column done')
     expect(cuff.find('kbd').exists()).toBe(false)
   })
 

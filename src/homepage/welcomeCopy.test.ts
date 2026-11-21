@@ -49,6 +49,6 @@ describe("the Welcome section's words (tickets 0830, 1157)", () => {
   })
 
   it("names the cuff with the counter's own words", () => {
-    expect(cuffName(en, moveToRow(wovenCuff(), 6))).toBe('Peacock feather cuff in peyote, being woven: Pass 7 of 95, row 4')
+    expect(cuffName(en, moveToRow(wovenCuff(), 6))).toBe('Peacock feather cuff in peyote, being woven: Pass 7 of 95, column 4')
   })
 })
