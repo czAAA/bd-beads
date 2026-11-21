@@ -25,6 +25,8 @@ HARD_BYTES=45000
 # An untracked file larger than this is named, not shown: it is a data file or an accident, not code to read.
 UNTRACKED_MAX_BYTES=200000
 LOCK_FILE=package-lock.json
+# The trial of this flow (ticket 1178): from this many logged runs on, the summary says the decision is due.
+TRIAL_RUNS=15
 
 here=$(cd "$(dirname "$0")" && pwd)
 cd "${1:-.}"
@@ -221,6 +223,16 @@ fi
   cat "$out/files.tsv"
 } >"$out/context.md"
 
+# The trial (ticket 1178) runs while its file exists. The file lies in the shared git folder, so every worktree
+# writes to the same one and it is never committed; deleting it ends the trial. One line per run: when, where, how big.
+trial_file="$(cd "$(git rev-parse --git-common-dir)" && pwd)/bd-review-trial.tsv"
+trial_count=0
+if [ -f "$trial_file" ]; then
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(basename "$root")" "$branch" \
+    "$file_count" "$added" "$deleted" >>"$trial_file"
+  trial_count=$(grep -vc '^#' "$trial_file" || true)
+fi
+
 summary_left_out=$(paste -sd ';' "$out/left-out.txt" | sed 's/;/; /g')
 rm "$out/files.tsv" "$out/left-out.txt" "$out/untracked.txt"
 
@@ -248,6 +260,9 @@ else
 fi
 if [ -n "$screenshots" ]; then
   echo "screenshots   $(printf '%s\n' "$screenshots" | grep -c .) changed"
+fi
+if [ "$trial_count" -ge "$TRIAL_RUNS" ]; then
+  echo "trial due     $trial_count runs logged in $trial_file: tell the owner it is time to decide on ticket 1178"
 fi
 echo
 echo "Standards prompt: Read $here/standards-brief.md and $out/context.md, then follow the brief."
