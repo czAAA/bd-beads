@@ -75,6 +75,7 @@ const {
   sendReport,
   verifyFeedback,
   copyReport,
+  shrinkScreenshot,
   onConfirmLeaveConverter,
   onCancelLeaveConverter,
 } = useDialogsContext()
@@ -277,6 +278,7 @@ const importMessage = computed(() => {
     :verify="verifyFeedback"
     :send="sendReport"
     :copy="copyReport"
+    :shrink="shrinkScreenshot"
     @cancel="onCloseFeedback"
   />
 

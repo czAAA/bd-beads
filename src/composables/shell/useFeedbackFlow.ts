@@ -96,5 +96,6 @@ export function useFeedbackFlow(deps: FeedbackFlowDeps) {
     sendReport,
     verifyFeedback,
     copyReport: deps.feedback.copy,
+    shrinkScreenshot: deps.feedback.shrink,
   }
 }

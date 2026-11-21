@@ -35,10 +35,35 @@ export interface ReportContext {
   swatchLetter?: string
 }
 
-/** One Report: its kind, the person's fields, the context, and an optional email. */
+/** The one screenshot a Report may carry (ticket 1179): JPEG or WebP, at most `SCREENSHOT_MAX_BYTES` after the app
+ * shrank it, as base64 in the Report's JSON. The Worker checks the type by its bytes, never by `type`. */
+export interface ReportScreenshot {
+  type: ScreenshotType
+  data: string
+}
+
+/** One Report: its kind, the person's fields, the context, an optional email and an optional screenshot. */
 export type Report = {
-  [K in ReportKind]: { kind: K; fields: ReportFieldsByKind[K]; context: ReportContext; email?: string }
+  [K in ReportKind]: {
+    kind: K
+    fields: ReportFieldsByKind[K]
+    context: ReportContext
+    email?: string
+    screenshot?: ReportScreenshot
+  }
 }[ReportKind]
+
+/** The most a screenshot may weigh when sent (ticket 1179): the app shrinks to it, the Worker refuses above it. */
+export const SCREENSHOT_MAX_BYTES = 300 * 1024
+const SCREENSHOT_TYPES = ['image/jpeg', 'image/webp'] as const
+export type ScreenshotType = (typeof SCREENSHOT_TYPES)[number]
+
+/** The type `bytes` really are, by their first bytes (a JPEG's FF D8 FF, a WebP's RIFF....WEBP), or null. */
+export function screenshotTypeOf(bytes: Uint8Array): ScreenshotType | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg'
+  const at = (offset: number, word: string) => [...word].every((char, i) => bytes[offset + i] === char.charCodeAt(0))
+  return bytes.length >= 12 && at(0, 'RIFF') && at(8, 'WEBP') ? 'image/webp' : null
+}
 
 /** How sending a Report ended, as the Feedback sheet tells it (spec 0698): sent, or why not, with the wait the Worker
  * asked for (`Retry-After`) where it gave one. */
@@ -119,8 +144,8 @@ function text(value: unknown, max: number): string | undefined {
 /** The Report in `value`, or null when it isn't one: an unknown kind or key, a required field empty, a field past its
  * length, an email not shaped as one. The Worker refuses such a body `400`; it never takes a title or labels. */
 export function parseReport(value: unknown): Report | null {
-  if (!isRecord(value) || !onlyKeys(value, ['kind', 'fields', 'context', 'email'])) return null
-  const { kind, fields, context, email } = value
+  if (!isRecord(value) || !onlyKeys(value, ['kind', 'fields', 'context', 'email', 'screenshot'])) return null
+  const { kind, fields, context, email, screenshot } = value
   if (typeof kind !== 'string' || !Object.hasOwn(FIELDS, kind) || !isRecord(fields) || !isRecord(context)) return null
   const specs = FIELDS[kind as ReportKind] as Array<{ key: string; required: boolean; max: number }>
   if (!onlyKeys(fields, specs.map((spec) => spec.key))) return null
@@ -141,11 +166,20 @@ export function parseReport(value: unknown): Report | null {
   }
   const parsedEmail = text(email, EMAIL_MAX)
   if (parsedEmail === undefined || (parsedEmail !== '' && !isEmail(parsedEmail))) return null
+  let parsedScreenshot: ReportScreenshot | undefined
+  if (screenshot !== undefined) {
+    // One image only: an array, or anything but `{ type, data }`, is refused here; the bytes are the Worker's to check.
+    if (!isRecord(screenshot) || !onlyKeys(screenshot, ['type', 'data'])) return null
+    const { type, data } = screenshot
+    if (!SCREENSHOT_TYPES.includes(type as ScreenshotType) || typeof data !== 'string' || data === '') return null
+    parsedScreenshot = { type: type as ScreenshotType, data }
+  }
   return {
     kind,
     fields: parsedFields,
     context: parsedContext,
     ...(parsedEmail ? { email: parsedEmail } : {}),
+    ...(parsedScreenshot ? { screenshot: parsedScreenshot } : {}),
   } as unknown as Report
 }
 
@@ -226,10 +260,15 @@ function fieldSections(report: Report): string[] {
   return report.kind === 'bead-color' ? [`### Problem\n\n${PROBLEMS[report.fields.problem]}`, ...written] : written
 }
 
+/** Where the Worker stored a Report's screenshot (`url`), or that storing it failed (no `url`). */
+export interface ScreenshotLink {
+  url?: string
+}
+
 /** The issue a Report becomes (glossary: Report): titled and labelled by kind, the person's fields as headings, the
  * context as a list, the email last. Everything the person or their browser sent is cleaned of invisible characters
  * and shown as code (ticket 1051). What the Worker posts and what Copy report copies, so the two never differ. */
-export function reportIssue(sent: Report): ReportIssue {
+export function reportIssue(sent: Report, screenshot?: ScreenshotLink): ReportIssue {
   const report = {
     ...sent,
     fields: cleanAll(sent.fields),
@@ -243,5 +282,6 @@ export function reportIssue(sent: Report): ReportIssue {
   )
   const sections = [...fieldSections(report), ['### Context', '', ...rows].join('\n')]
   if (report.email) sections.push(`### Email\n\n${code(report.email)}`)
+  if (screenshot) sections.push(`### Screenshot\n\n${screenshot.url ? `[Open the screenshot](${screenshot.url})` : 'The screenshot did not arrive.'}`)
   return { title: titleOf(report), labels: ['from-app', KIND_LABEL[report.kind]], body: sections.join('\n\n') }
 }

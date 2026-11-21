@@ -1,5 +1,7 @@
 import type { Report, ReportSent } from '../domain/feedbackReport'
+import type { ScreenshotPick } from '../domain/shrinkScreenshot'
 import { offline, retryAfterSeconds } from './backendAnswer'
+import { shrinkScreenshot } from './screenshot'
 import { verify, type Verification } from './turnstile'
 
 // Sending a Report from the Feedback sheet (ADR 0081, spec 0698): Turnstile's invisible check (turnstile.ts), rendered
@@ -14,6 +16,8 @@ export interface FeedbackService {
   send: (report: Report, verification: Verification) => Promise<ReportSent>
   /** Puts the text on the clipboard; false when the browser refuses. */
   copy: (text: string) => Promise<boolean>
+  /** Shrinks a picked picture to the screenshot cap on this device (ticket 1180). */
+  shrink: (file: File) => Promise<ScreenshotPick>
 }
 
 /** What the Worker's answer means for the sheet (spec 385's API contract; `worker/src/errors.ts`).
@@ -54,4 +58,4 @@ async function copy(text: string): Promise<boolean> {
   }
 }
 
-export const browserFeedback: FeedbackService = { verify: (container) => verify(container), send, copy }
+export const browserFeedback: FeedbackService = { verify: (container) => verify(container), send, copy, shrink: shrinkScreenshot }

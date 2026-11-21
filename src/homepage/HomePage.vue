@@ -541,6 +541,7 @@ const savedProjects = controlAction('saved-projects')
           :verify="feedback.verifyFeedback"
           :send="feedback.sendReport"
           :copy="feedback.copyReport"
+          :shrink="feedback.shrinkScreenshot"
           @cancel="feedback.onCloseFeedback"
         />
         <!-- Delete your account? (ticket 0082), asked from the Menu's Account section as in the editor. -->

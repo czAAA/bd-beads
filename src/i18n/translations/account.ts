@@ -30,6 +30,15 @@ export interface AccountTranslations {
     emailInvalid: string
     alsoSent: string
     alsoSentNote: string
+    screenshot: string
+    screenshotHint: string
+    attachScreenshot: string
+    screenshotShrinking: string
+    screenshotSize: string
+    removeScreenshot: string
+    screenshotAlt: string
+    screenshotTooDetailed: string
+    screenshotUnreadable: string
     ctxAppVersion: string
     ctxUiLanguage: string
     ctxBrowser: string
