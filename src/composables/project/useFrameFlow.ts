@@ -19,6 +19,8 @@ import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice, type StarterLayerSettings } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
 import { frameOf, heldWeave, layerOf } from '../../domain/layerRecord'
+import { linedUpAngle } from '../../domain/framePlacement'
+import { lieAlike } from '../../domain/table'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { laidFrame, ownEdge, ownSize, seenSize, turnedWithEdges } from '../../domain/frameOrientation'
 import { rowProgressStarted } from '../../domain/rowProgress'
@@ -58,6 +60,9 @@ export interface FrameFlowDeps {
   openPanel?: Ref<OpenPanel | null>
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
+  /** Plays Remove frame's line-up (ticket 1189): the Frame eased onto `to`, then `then`; without it the drop comes at
+   * once. */
+  lineUp?: (to: number, then: () => void) => void
 }
 
 /** How far a press on a resize handle is from the beads its edges stand on (ticket 0977): the drag keeps this distance,
@@ -431,10 +436,22 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     removeConfirmOpen.value = false
   }
 
-  /** Remove Frame after the question: one Undo step restores the Frame and the passes together. */
+  /** How many times a confirmed Remove frame has dropped the Frame's beads: what the drop is seen by, never an Undo. */
+  const frameDrops = ref(0)
+
+  /** Remove Frame after the question (ticket 1189): a Frame not lying alike with the Canvas is first seen lining up with
+   * it, then its beads drop; one Undo step restores the Frame at its old angle and the passes together. */
   function confirmRemove(): void {
     removeConfirmOpen.value = false
-    commit(undefined)
+    const project = deps.currentProject()
+    // A Project opened or changed by Undo during the line-up drops nothing.
+    const drop = () => {
+      if (deps.currentProject() !== project || !frameOf(project)) return
+      // Counted once the edit is made: the surface draws it on the next frame, so the drop still copies the Frame.
+      if (commit(undefined)) frameDrops.value += 1
+    }
+    if (!project || lieAlike(project) || !deps.lineUp) return drop()
+    deps.lineUp(linedUpAngle(project), drop)
   }
 
   /** Whether the Replace Frame question is open; the pending Starter waits behind it (tickets 495, 0596). */
@@ -563,6 +580,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     removeConfirmOpen,
     cancelRemove,
     confirmRemove,
+    frameDrops,
     placeFromStarter,
     setSettings,
     replaceConfirmOpen,

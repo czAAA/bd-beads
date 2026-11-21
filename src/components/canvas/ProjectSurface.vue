@@ -45,6 +45,7 @@ import type { MirrorSetting } from '../../domain/mirror'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 import { useRowMotion } from './surface/useRowMotion'
 import { useFrameTurn } from './surface/useFrameTurn'
+import { useFrameDrop } from './surface/useFrameDrop'
 import type { RowPress } from '../../composables/project/useRowOps'
 import PatternDone from './PatternDone.vue'
 import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/useBeadColors'
@@ -123,6 +124,8 @@ const props = withDefaults(defineProps<{
   rowPress?: RowPress
   /** How many times Rotate Frame has been pressed (ticket 1016): each press is seen turning, never an Undo. */
   frameTurns?: number
+  /** How many times a confirmed Remove frame has dropped the Frame's beads (ticket 1189): each is seen, never an Undo. */
+  frameDrops?: number
   /** The reference image to draw under the beads (ticket 0790), none while it is hidden. */
   reference?: DrawnReference
   /** Whether a hold with the drawing pointer opens the Radial toolbox (ticket 1065); absent, no hold is timed. */
@@ -168,6 +171,7 @@ const baseEl = ref<HTMLCanvasElement>()
 const overlayEl = ref<HTMLCanvasElement>()
 const fadeEl = ref<HTMLCanvasElement>()
 const turnEl = ref<HTMLCanvasElement>()
+const dropEl = ref<HTMLCanvasElement>()
 const standInEl = ref<HTMLCanvasElement>()
 const canvasOverlayEl = ref<HTMLCanvasElement>()
 const frameBaseEl = ref<HTMLCanvasElement>()
@@ -530,6 +534,13 @@ const frameTurn = useFrameTurn({
   paper: () => theme.value.margin.fill,
   view: () => [props.zoom, props.scroll, frameLayer.size.value, props.twist],
 })
+// Remove frame's drop fades a copy of the Frame's surface off the beads it leaves on the Canvas (ticket 1189).
+const frameDrop = useFrameDrop({
+  drops: () => props.frameDrops,
+  layers: () => [frameBaseEl.value, overlayEl.value],
+  copy: dropEl,
+  style: () => frameDrawingStyle.value,
+})
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
 const reference = toRef(() => props.reference)
@@ -652,6 +663,10 @@ onBeforeUnmount(() => {
       <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
       <PatternDone v-if="patternDoneAt" :key="patternDoneAt.id" :sheet="patternDoneAt.sheet" :frame="patternDoneAt.frame" :stars="patternDoneAt.stars" />
     </div>
+    <!-- The Frame as it lay lined up, its sheet fading off the beads Remove frame drops (ticket 1189). -->
+    <div v-show="frameDrop.dropping.value" class="project-surface__drawing project-surface__drop" :style="frameDrop.style.value" aria-hidden="true">
+      <canvas ref="dropEl" class="project-surface__canvas" :style="{ opacity: frameDrop.opacity.value }" data-testid="project-surface-frame-drop" />
+    </div>
     <img
       v-if="penPointer"
       class="project-surface__pen-pointer"
@@ -766,6 +781,14 @@ onBeforeUnmount(() => {
   background: var(--empty-marks, none) var(--empty-marks-at, 0 0) / var(--empty-marks-size, auto) repeat var(--empty-gap, transparent);
   content: '';
   pointer-events: none;
+}
+
+.project-surface__drop {
+  pointer-events: none;
+}
+
+.project-surface__drop .project-surface__canvas {
+  transition: opacity var(--duration-base) var(--ease-out);
 }
 
 .project-surface__canvas {

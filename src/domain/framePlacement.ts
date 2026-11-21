@@ -1,5 +1,6 @@
 import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
-import { laidSize } from './frameOrientation'
+import { hasBeads, type BeadMap } from './canvas'
+import { laidSize, turnedOwnBeads } from './frameOrientation'
 import { frameShapeOf } from './frameShape'
 import type { GridPosition, Rotation } from './grid'
 import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameFields, type Layered } from './layerRecord'
@@ -143,6 +144,41 @@ export function withFrameTurnedTo(project: Project, angle: number): Project {
   return withHeld(turned, { ...turned.layers[1]!, ...frameCornerAt(turned, placed.at, true) })
 }
 
+/** The angle Remove frame turns the Frame to first (ticket 1189), the smallest turn laying its beads on the Canvas's
+ * cells: straight lines (loom) and a Custom frame's layout at any quarter of the Canvas's angle, staggered ones (peyote,
+ * brick stitch) at it or a half turn off. A tie turns clockwise; with no Frame, the Canvas's angle. */
+export function linedUpAngle(project: Layered): number {
+  const canvas = canvasOf(project).orientation
+  const frame = frameOf(project)
+  if (!frame) return canvas
+  const weave = frameWeave(project)
+  const step = frameShapeOf(frame) || (rowCycle(weave) === 1 && columnCycle(weave) === 1) ? 90 : 180
+  return normalizedOrientation(canvas + step * Math.round(normalizedOrientation(frame.angle - canvas) / step))
+}
+
+/** The Project with its Frame lined up with the Canvas (ticket 1189): turned about its own centre to `linedUpAngle` and
+ * slid onto the nearest whole Canvas position a Frame may start on, so its cells lie on the Canvas's. The first of Remove
+ * frame's two motions; as it is where the Frame already lies on the grid at that angle, or there is no Frame. */
+export function linedUpFrame(project: Project): Project {
+  const held = project.layers[1]
+  if (!held) return project
+  const angle = linedUpAngle(project)
+  return !held.centre && held.angle === angle ? project : withFrameTurnedTo(project, angle)
+}
+
+/** The lined-up Frame read upright (ticket 1189): lying a quarter or half turn off the Canvas, its beads (Folded too)
+ * turned that far exactly and laid at the Canvas's angle about the same centre, so Remove frame drops it upright. As it
+ * is where it already lies upright, has a Frame shape, or there is no Frame. */
+export function uprightFrame(project: Project): Project {
+  const frame = frameOf(project)
+  if (!frame?.quarterTurns || frameShapeOf(frame) || frame.centre) return project
+  const { size, maps } = turnedOwnBeads(frameWeave(project), frame, frame.quarterTurns, [frame.beads, frame.folded ?? {}])
+  const [beads, folded] = maps as [BeadMap, BeadMap]
+  const { folded: _folded, quarterTurns: _turns, ...held } = project.layers[1]!
+  const upright = withHeld(project, { ...held, ...size, beads, ...(hasBeads(folded) ? { folded } : {}), angle: canvasOf(project).orientation })
+  return withHeld(upright, { ...upright.layers[1]!, ...frameCornerAt(upright, framePlacement(project)!.at, true) })
+}
+
 /** The Project with its Canvas turned to `orientation` and its origin moved `moved` on the table (a turn about a pivot,
  * in the Canvas's bead widths): Rotate canvas and its twist (spec 1182, ticket 1188). The Frame stays where it is on the
  * table, at its own angle, its Row progress untouched, so nothing of it moves on screen. Not stamped. */
@@ -194,20 +230,4 @@ export function withFrameLaidAt(project: Project, rotation: Rotation): Project {
   const angle = normalizedOrientation(rotation + 90 * turns)
   if (canvasOf(project).orientation === rotation && !held.centre && held.angle === angle) return project
   return withHeld(withCanvas(project, { orientation: rotation }), { ...onGrid, angle })
-}
-
-/** Where a point of a Frame off the Canvas's grid lies on the Canvas (ticket 1188): from the corner of the rectangle it
- * lies in, in its own cell widths, to the Canvas's own axes from its origin, in its cell widths: through its centre
- * and angle on the table. What Remove frame drops its beads by until ticket 1189. */
-export function offGridOnCanvas(project: Layered): (point: TablePoint) => TablePoint {
-  const frame = frameOf(project)!
-  const scale = frameScale(project)
-  const extent = laidExtent(project)
-  const at = framePlacement(project)!.at
-  const canvas = canvasPlacement(project)
-  const under = frame.angle - 90 * (frame.quarterTurns ?? 0)
-  return ({ x, y }) => {
-    const from = turned({ x: x * scale - extent.x / 2, y: y * scale - extent.y / 2 }, under)
-    return turned({ x: at.x + from.x - canvas.at.x, y: at.y + from.y - canvas.at.y }, -canvas.angle)
-  }
 }

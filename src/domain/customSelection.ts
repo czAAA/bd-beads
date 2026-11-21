@@ -1,9 +1,9 @@
-import { colorAt, forEachBead, type BeadChange, type BeadMap } from './canvas'
+import { colorAt, type BeadChange } from './canvas'
 import { frameLayoutOf } from './frameShape'
 import { laidSize } from './frameOrientation'
 import { beadUnder, keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
-import { layoutPlacement, turnedGridCentre, type LayoutPlacement } from './layerGeometry'
+import { layoutPlacement, type LayoutPlacement } from './layerGeometry'
 import type { LayerSheet } from './layers'
 import { describeWeave, type Weave } from './weave'
 
@@ -176,37 +176,17 @@ export function liftedOntoLayout(sheet: LayerSheet, cells: readonly (GridPositio
   return { landed, lifted }
 }
 
-/** Where beads are dropped (ticket 1188): the grid they land on, and where a centre on the Frame's laid cells lies on
- * it, in its cell widths. Left out, the Frame's own grid, as it lies. */
-export interface DropOnto {
-  weave: Weave
-  at: (centre: LayoutPoint) => LayoutPoint
-}
-
-/** A Custom frame's or a turned Frame's beads laid on a grid (Remove Frame, ticket 0669, ADR 0077): each on the Frame's
- * cell nearest its centre, as a Paste of them lays them. In the Frame's own rows and columns, or on `onto`'s grid. */
-export function droppedFromLayout(sheet: LayerSheet, onto?: DropOnto): BeadChange[] {
+/** A Custom frame's beads laid on a grid (Remove Frame, ticket 0669, ADR 0077): each on the Frame's cell nearest its
+ * centre, as a Paste of them lays them, in the Frame's own rows and columns. */
+export function droppedFromLayout(sheet: LayerSheet): BeadChange[] {
   const placement = placementOf(sheet)
   return droppedOnCells(
-    onto?.weave ?? sheet.weave,
+    sheet.weave,
     placement.layout.positions.flatMap((position) => {
       const color = colorAt(sheet.beads, position.row, position.column)
-      const centre = centreOf(placement, position)
-      return color ? [{ centre: onto ? onto.at(centre) : centre, color }] : []
+      return color ? [{ centre: centreOf(placement, position), color }] : []
     }),
   )
-}
-
-/** A turned Frame's Folded beads laid on a grid as `droppedFromLayout` lays its others: each where its own row and
- * column, beyond the Frame's edge, lies as the Frame is turned (ticket 0669). */
-export function droppedFromTurnedGrid(sheet: LayerSheet, folded: BeadMap, onto?: DropOnto): BeadChange[] {
-  const frame = { ...sheet.frame!, ...sheet.weave }
-  const beads: { centre: LayoutPoint; color: string }[] = []
-  forEachBead(folded, (row, column, color) => {
-    const centre = turnedGridCentre(frame, { row, column })
-    beads.push({ centre: onto ? onto.at(centre) : centre, color })
-  })
-  return droppedOnCells(onto?.weave ?? sheet.weave, beads)
 }
 
 /** Beads at points on screen laid on a Weave's cells, read in order on screen: each on the cell holding its centre, or

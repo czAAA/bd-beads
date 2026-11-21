@@ -15,7 +15,7 @@ import {
 } from './canvas'
 import { movedFrame, snapColumn, snapRow, withFrame, withFrameGiving, type FrameEdge } from './frame'
 import { layerSheet, shownBeads } from './layers'
-import { droppedFromLayout, droppedFromTurnedGrid, liftedOntoLayout } from './customSelection'
+import { droppedFromLayout, liftedOntoLayout } from './customSelection'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
 import { refoldSheet, withEachBead } from './folding'
@@ -44,8 +44,8 @@ import { numericKey, pieceBeadsAt } from './pieces'
 import { canvasDistance, canvasWeave, frameWeave, laidOnCanvas, sameBeadSize, weaveOf } from './layerWeave'
 import { withWovenPalette } from './projectBead'
 import { clampPointer, progressWithoutLine, rowProgressStarted } from './rowProgress'
-import { frameQuarterTurnOf, lieAlike } from './table'
-import { offGridOnCanvas } from './framePlacement'
+import { frameQuarterTurnOf } from './table'
+import { linedUpFrame, uprightFrame } from './framePlacement'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
 import { linesKeptIn, type WovenChoice } from './wovenLines'
@@ -499,27 +499,21 @@ function coveringSize(project: Project, weave: Weave, rectangle: Rect): { rows: 
   return { rows, columns }
 }
 
-/** The Frame's beads, shown and Folded (ticket 0638), on the Canvas: as `laidOnCanvas` lays a grid's (ticket 0665) where
- * a Frame without a shape lies alike; else each on its cell nearest its centre (ADR 0077, tickets 0669, 1185), a Custom
- * frame's Folded ones where growing it back would show them. */
+/** The Frame's beads, shown and Folded (ticket 0638), on the Canvas once lined up and read upright (ticket 1189): as
+ * `laidOnCanvas` lays a grid's (ticket 0665); a Custom frame's each on its cell nearest its centre (ADR 0077, ticket
+ * 0669), its Folded ones where growing it back would show them. */
 function droppedBeads(project: Project): { shown: BeadMap; folded: BeadMap } {
   const frame = frameOf(project)!
   const beads = beadsOfLayer(project, 'frame')!
   const folded = frame.folded ?? {}
   // In a Bead of another size each is read on the Canvas through millimetres (ticket 0665).
-  if (!frameShapeOf(frame) && lieAlike(project)) {
+  if (!frameShapeOf(frame)) {
     return { shown: laidOnCanvas(project, beads, frame), folded: laidOnCanvas(project, folded, frame) }
   }
   const sheet = layerSheet(project, 'frame')
-  // Off the Canvas's grid each lands on the Canvas position nearest where it lies on screen (ticket 1188).
-  if (frame.centre && !frameShapeOf(frame)) {
-    const onto = { weave: canvasWeave(project), at: offGridOnCanvas(project) }
-    return { shown: withColors({}, droppedFromLayout(sheet, onto)), folded: withColors({}, droppedFromTurnedGrid(sheet, folded, onto)) }
-  }
   const onCanvas = (sheet: Rect, dropped: BeadChange[]) => laidOnCanvas(project, withColors({}, dropped), sheet)
   const shown = onCanvas(frame, droppedFromLayout(sheet))
   if (!hasBeads(folded)) return { shown, folded: {} }
-  if (!frameShapeOf(frame)) return { shown, folded: onCanvas(frame, droppedFromTurnedGrid(sheet, folded)) }
   const positions: GridPosition[] = []
   forEachBead(folded, (row, column) => positions.push({ row, column }))
   // The Folded beads as the beads it shows, on the Frame grown to hold them.
@@ -527,15 +521,18 @@ function droppedBeads(project: Project): { shown: BeadMap; folded: BeadMap } {
   return { shown, folded: onCanvas(grown, droppedFromLayout(layerSheet(withFrameSheet(project, grown), 'frame'))) }
 }
 
-/** The Project without its Frame (ticket 497): the Frame's footprint on the Canvas is cleared and its beads dropped in,
- * so the picture looks as the Frame did, a Custom frame's too (ADR 0079). The Frame's name stays on the Piece its beads
- * form (the larger one if several); the passes go with the Frame. */
-function removedFrame(project: Project): Project {
+/** The Project without its Frame (ticket 497): the Frame lined up with the Canvas (ticket 1189), its footprint cleared
+ * and its beads dropped in, so the picture looks as the Frame did (ADR 0079). Its name stays on the Piece its beads form
+ * (the larger one if several); the passes go with it. */
+function removedFrame(held: Project): Project {
+  const lined = linedUpFrame(held)
+  const project = uprightFrame(lined)
   const frame = frameOf(project)!
   const { shown: dropped, folded } = droppedBeads(project)
+  // What the Frame hid as it lay lined up is cleared, and what it covers read upright, where its beads land.
+  const cleared = [footprintOf(lined), footprintOf(project)].reduce((beads, covered) => (covered ? beadsWithout(beads, covered) : beads), beadsOfLayer(project, 'canvas'))
   // Its Folded beads land where they stand too, over the Canvas, under the beads it shows (ticket 0638).
-  const covered = footprintOf(project)
-  const unfolded = beadsOver(covered ? beadsWithout(beadsOfLayer(project, 'canvas'), covered) : beadsOfLayer(project, 'canvas'), folded)
+  const unfolded = beadsOver(cleared, folded)
   const beads = beadsOver(unfolded, dropped)
   const canvas = carryNames(project, withLayer(withFrame(project, undefined), 'canvas', { beads }))
   const name = frame.name
