@@ -7,7 +7,8 @@ import { fixtureProject } from '../support/projects'
 // A two-finger twist on touch (ticket 1190): one that starts on the Frame's sheet turns the Frame about its centre, one
 // anywhere else the Canvas, and pan and pinch move both, in Safari's engine at an iPad's density, as the owner's iPad.
 
-test.use({ browserName: 'webkit', deviceScaleFactor: 2, viewport: { width: 1366, height: 1024 }, hasTouch: true })
+// The config's launch flags are Chromium's: WebKit on Linux refuses to start with them.
+test.use({ browserName: 'webkit', deviceScaleFactor: 2, viewport: { width: 1366, height: 1024 }, hasTouch: true, launchOptions: { args: [] } })
 
 type Point = { x: number; y: number }
 
