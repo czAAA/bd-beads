@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "fixed",
+  "line": {
+    "en": "Making beads from a noisy photo is faster when you pick a color count",
+    "ru": "Создание схемы из зашумлённой фотографии стало быстрее при выборе числа цветов",
+    "uk": "Створення схеми із зашумленої фотографії стало швидшим під час вибору кількості кольорів",
+    "be": "Стварэнне схемы з зашумленага фота стала хутчэйшым пры выбары колькасці колераў",
+    "zh": "选择颜色数量时，用有噪点的照片生成珠图更快了",
+    "es": "Crear cuentas a partir de una foto con ruido es más rápido al elegir cuántos colores",
+    "pl": "Tworzenie wzoru z zaszumionego zdjęcia jest szybsze po wybraniu liczby kolorów"
+  }
+}

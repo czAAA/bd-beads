@@ -1,7 +1,7 @@
 import { catalogSwatches, type CatalogSwatch } from './beadSwatch'
 import type { ColorCatalog } from './colorCatalog'
 import { channelsOf, colorDistance, toOklab, type Oklab } from './color'
-import { LEAST_COLOR_DISTANCE, nearestColor, reducePictureColors, type ReducedColors } from './imageColors'
+import { LEAST_COLOR_DISTANCE, nearestColor, pictureReducer, type ReducedColors } from './imageColors'
 import { addedColorId, type PaletteCodes, type PaletteColor } from './palette'
 import type { Cell, Grid } from './project'
 
@@ -173,11 +173,12 @@ export function reduceDelivering(
   leastBeads = LEAST_COLOR_BEADS,
 ): ReducedColors {
   const deliveredBy = (reduced: ReducedColors) => beadColorRows(matchFoundColors(reduced, targets, choices, leastBeads)).length
-  let best = reducePictureColors(counts, asked)
+  const reduce = pictureReducer(counts)
+  let best = reduce(asked)
   if (counts.size <= asked) return best
   let bestCount = deliveredBy(best)
   for (let asking = asked + 1; bestCount < asked && asking <= asked * 2 && asking <= counts.size; asking++) {
-    const reduced = reducePictureColors(counts, asking)
+    const reduced = reduce(asking)
     const count = deliveredBy(reduced)
     if (count > asked) break
     if (count > bestCount) {
