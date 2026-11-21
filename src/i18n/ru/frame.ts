@@ -12,7 +12,7 @@ export const frame: FrameTranslations = {
     fitNothing: 'Пока ничего не нарисовано, подгонять рамку не под что.',
     noFrameLine: 'Рамка задаёт размер, экспорт и «Нужно бисера».',
     selectAFrame: 'Растянуть рамку',
-    selectAPieceFrame: 'Выделить кусочек, чтобы сделать рамку',
+    selectAPieceFrame: 'Рамка по кусочку',
     selectPieceFrameHint: 'Коснитесь кусочка на холсте, чтобы взять его в рамку. Esc отменяет.',
     selectPieceFrameTouchHint: 'Коснитесь кусочка на холсте, чтобы взять его в рамку. Выберите инструмент, чтобы отменить.',
     selectFrameHint: 'Проведите по холсту, чтобы выделить рамку. Esc отменяет.',
