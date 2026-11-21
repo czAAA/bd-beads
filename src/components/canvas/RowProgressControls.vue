@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition, shownWayOf, type ShownWay } from '../../domain/rowProgress'
+import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition, seenWayOf, type SeenWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import { customPassWords, rowProgressCount } from '../../i18n/rowProgressWords'
+import { customPassWords, rowProgressCount, seenWayWords } from '../../i18n/rowProgressWords'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { useI18n } from '../../i18n/useI18n'
@@ -47,7 +47,7 @@ const emit = defineEmits<{
   /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
   'reset-progress': []
   /** A way chosen from Turn row direction's list (ticket 0973, UX-060): its press only opens the list. */
-  'set-row-direction': [way: ShownWay]
+  'set-row-direction': [way: SeenWay]
   'toggle-row-highlight': []
   /** Go to row, from the bar's counter (ticket 0849): the pass to point at, from 0. */
   'go-to-row': [pass: number]
@@ -149,15 +149,11 @@ const goToUnit = computed(() => {
  * Frame shape. */
 const customPosition = computed(() => customPassWords(t.value.rowProgress, props.project, shownRow.value))
 
-/** The turn that points the down arrow along the rows: the arrows are drawn for top to bottom (ticket 0589). The rows
- * run as seen, turned with the Frame (ticket 0667) and with the Canvas (ticket 1101). */
-const arrowTurn = computed(() => shownWayOf(props.project))
+/** The way the arrows point: drawn for top to bottom (ticket 0589), turned to the way the rows run as seen, which Row
+ * progress keeps (spec 1182). */
+const arrowTurn = computed(() => seenWayOf(props.project))
 
-const directionLabel = computed(() => {
-  const words = t.value.rowProgress
-  const labels = { down: words.topToBottom, up: words.bottomToTop, right: words.leftToRight, left: words.rightToLeft }
-  return labels[arrowTurn.value]
-})
+const directionLabel = computed(() => seenWayWords(t.value.rowProgress, arrowTurn.value).name)
 
 /** Turn row direction's list (ticket 0973, UX-060): its press opens it and turns nothing; Row highlight is in it too. */
 const directionOpen = ref(false)

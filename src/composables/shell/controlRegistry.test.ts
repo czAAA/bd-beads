@@ -107,7 +107,7 @@ describe('the control registry', () => {
 
     const remove = CONTROLS.find((control) => control.id === 'remove-frame')!
     const project = (framed: boolean, currentRow: number) =>
-      bareProject({ ...(framed ? { frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } } : {}), rowProgress: { direction: 'rows', currentRow, currentColumn: 0 } })
+      bareProject({ ...(framed ? { frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } } : {}), ownProgress: { direction: 'rows', currentRow, currentColumn: 0 } })
     const deps = (activeProject: unknown) => ({ activeProject: () => activeProject }) as never
     expect(remove.enabled?.(deps(project(true, 0)))).toBe(true)
     expect(remove.enabled?.(deps(project(true, 2)))).toBe(true)

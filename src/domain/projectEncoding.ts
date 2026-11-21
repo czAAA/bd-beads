@@ -3,6 +3,7 @@ import { hasBeads, knownBounds, sortedKeys, type BeadMap, type FrameSheet } from
 import { knownRowColors } from './layerBeads'
 import { knownBeadCount } from './openingLimits'
 import { isFrameShape, type QuarterTurns } from './frameShape'
+import { framePlacement } from './framePlacement'
 import { liftFlatWeave, renamedBrickBlock, renamedBrickBlocks, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import type { FrameLayer, Grid, Project } from './project'
 import type { GridProject, LayeredProject, StoredLayer } from './storedProject'
@@ -30,9 +31,9 @@ type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded' | 'shape'> & FlatWeave &
  * before, its Brick block was flat. Read only. */
 export type EncodedFlatProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeave & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
 
-/** A layer as a file (version 13) and the library (version 6) store it (ADR 0079, ticket 0664): everything it holds,
- * its beads (and a Frame's Folded beads) in the compact form, and its orientation in degrees; a Frame's place, Frame
- * shape and settings, and Row progress beside them. */
+/** A layer as a file (version 13) and the library (version 6) store it (ADR 0079, ticket 0664): all it holds, its beads
+ * compact, a Frame's shape, settings and Row progress beside them. Since file version 15 (library 7, ticket 1185) a Frame
+ * keeps its own angle and centre on the table, not its Canvas position and turn (`orientation`), and its way as seen. */
 export type EncodedLayer = Omit<StoredLayer, 'beads' | 'folded' | 'quarterTurns'> & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
 /** A Project as a file (version 13) and the library (version 6) store it (ticket 0664): what is one per file, and its
@@ -241,28 +242,38 @@ function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFra
   return { ...place, ...(isFrameShape(kind) ? { shape: kind } : {}), beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
-/** A Project as a file and the library store it (ticket 0664): each layer with its settings at their defaults left out
- * and its beads compact, a Frame's quarter turns as its orientation in degrees, its Background positions marked as in
- * the list of three (ticket 1000), so they are never moved again, and each layer's Letters switch as its own (ticket 1092). */
+/** A Project as a file and the library store it (ticket 0664): each layer's settings at their defaults left out, its
+ * beads compact, a Frame's placement on the table for its Canvas position (ticket 1185), its Background positions marked
+ * as in the list of three (ticket 1000), and each layer's Letters switch as its own (ticket 1092). */
 export function encodeProject(project: Project): EncodedProject {
-  return { ...project, backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: project.layers.map(encodeLayer) }
+  const [canvas, ...frames] = project.layers
+  const placement = framePlacement(project)
+  return { ...project, backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: [encodeLayer(canvas), ...frames.map((frame) => encodeFrame(frame, placement?.at))] }
 }
 
 function encodeLayer(layer: Project['layers'][number]): EncodedLayer {
-  const { beads, folded, quarterTurns, ...rest } = layer as Partial<FrameLayer> & Project['layers'][number]
+  const { beads, folded, ...rest } = layer as Partial<FrameLayer> & Project['layers'][number]
   return {
     ...savedWeave(rest),
-    ...(quarterTurns ? { orientation: quarterTurns * 90 } : {}),
     encodedBeads: encodeBeads(beads),
     ...(folded ? { encodedFolded: encodeBeads(folded) } : {}),
   }
 }
 
-/** The Project a file version 13 or library version 6 value holds (ticket 0664); it still goes through normalizeProject.
- * A Frame's orientation is read back as its quarter turns. */
+/** A Frame as file version 15 stores it: its own angle and its centre on the table (kept to a millionth of a bead), not
+ * its Canvas position; `quarterTurns` is read from the angle, so it is not kept. */
+function encodeFrame(frame: FrameLayer, centre: { x: number; y: number } | undefined): EncodedLayer {
+  const { row: _row, column: _column, quarterTurns: _turns, ...rest } = frame
+  const rounded = (value: number) => Math.round(value * 1e6) / 1e6 || 0
+  return { ...encodeLayer(rest as FrameLayer), ...(centre ? { centre: { x: rounded(centre.x), y: rounded(centre.y) } } : {}) }
+}
+
+/** The Project a file version 13 to 15 or library version 6 or 7 value holds (ticket 0664); it still goes through
+ * normalizeProject. A Frame stored before version 15 has its orientation read back as its quarter turns on the Canvas. */
 export function decodeProject(encoded: EncodedProject): LayeredProject {
   const [canvas, ...frames] = encoded.layers.map(decodeLayer)
-  return { ...encoded, layers: [canvas!, ...frames.map(({ orientation, ...frame }): StoredLayer => ({ ...frame, ...(typeof orientation === 'number' ? { quarterTurns: (orientation / 90) as QuarterTurns } : {}) }))] }
+  const earlier = ({ orientation, ...frame }: StoredLayer): StoredLayer => ({ ...frame, ...(typeof orientation === 'number' ? { quarterTurns: (orientation / 90) as QuarterTurns } : {}) })
+  return { ...encoded, layers: [canvas!, ...frames.map((frame) => (typeof frame.angle === 'number' ? frame : earlier(frame)))] }
 }
 
 function decodeLayer({ encodedBeads, encodedFolded, ...layer }: EncodedLayer): StoredLayer {

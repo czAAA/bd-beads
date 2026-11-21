@@ -123,7 +123,7 @@ describe('changing a Custom frame\'s Rounds', () => {
   })
 
   it('keeps its pointer and the same beads finished on Rotate Frame, as its order turns with its layout (ticket 0647)', () => {
-    const project = withLayers(triangle(4), { rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
+    const project = withLayers(triangle(4), { ownProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
     const turned = rotateFrame(project)!
     const finished = (woven: Project) =>
       frameLayoutOf(frameOf(woven)!)!.positions.filter(({ row, column }) => isInFinishedRow(woven, { row: row + frameOf(woven)!.row, column: column + frameOf(woven)!.column, layer: 'frame' })).map(({ row, column }) => `${row},${column}`)
@@ -216,7 +216,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   })
 
   it('holds its size still once a Row progress pass is done', () => {
-    const project = withLayers(triangle(4), { rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
+    const project = withLayers(triangle(4), { ownProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
     expect(changeFrame(project, { set: { ...frameOf(project)!, columns: frameOf(project)!.columns + 6 } })).toEqual({ kind: 'refused', reason: 'locked' })
   })
 

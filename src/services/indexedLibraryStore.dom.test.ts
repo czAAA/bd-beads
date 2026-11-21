@@ -235,7 +235,7 @@ describe('the library in IndexedDB', () => {
     await store.save([{ project: makeProject('Fox'), knownStored: false }], [])
     await putRecord({
       id: 'project-Newer',
-      format: 2,
+      format: RECORD_FORMAT + 1,
       stored: '{"future":true}',
       stamp: 'x',
       summary: null,
@@ -258,7 +258,7 @@ describe('the library in IndexedDB', () => {
 
     const rows = await records()
     expect(rows.find((row) => row.id === 'project-Newer')).toMatchObject({
-      format: 2,
+      format: RECORD_FORMAT + 1,
       stored: '{"future":true}',
       stamp: 'x',
     })

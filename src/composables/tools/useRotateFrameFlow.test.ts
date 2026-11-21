@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { colorAt, withColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
 import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
+import { turnedWithFrame } from '../../domain/rowWays'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
@@ -66,14 +67,14 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     expect(beadsOfLayer(harness.project, 'canvas')).toBe(beadsOfLayer(framed, 'canvas'))
   })
 
-  it('turns a Frame whose rows are marked done without asking, its pointers kept, and one Undo brings it back (ticket 0647)', () => {
+  it('turns a Frame whose rows are marked done without asking, its rows turned with it, and one Undo brings it back (ticket 0647)', () => {
     const woven = moveToRow(framed, 1)
     const { deps, harness, onRotateFrame } = setup(woven)
     onRotateFrame()
 
     // Row 1 is done: the same beads stay finished, the red bead in it kept, not trimmed.
     expect(frameOf(harness.project)).toMatchObject({ quarterTurns: 1 })
-    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
+    expect(rowProgressOf(harness.project)).toEqual(turnedWithFrame(rowProgressOf(woven), 1))
     expect(colorAt(frameOf(harness.project)!.beads, 0, 0)).toBe(RED)
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 

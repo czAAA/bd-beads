@@ -1,5 +1,6 @@
 import type { BeadMap } from './canvas'
 import type { HistoryCap } from './history'
+import { withCanvasTurned } from './table'
 import { backgroundOf, beadIdOfLayer, canvasOf, lettersOn, withBackground, withCanvas, withLetters } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -53,7 +54,8 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   const { name, orientation } = canvasOf(project)
   const restored = { ...rest, layers: entry.layers }
   // Each layer put back is the one recorded, the very object, unless a view changed since (ticket 0616).
-  const viewed = name === canvasOf(entry).name && orientation === canvasOf(entry).orientation ? restored : withCanvas(restored, { name, orientation })
+  // The Canvas's turn is a view: the layers put back turn to it, the Frame carried with them (ticket 1185).
+  const viewed = name === canvasOf(entry).name && orientation === canvasOf(entry).orientation ? restored : withCanvasTurned(withCanvas(restored, { name }), orientation)
   const lettered = (['canvas', 'frame'] as const).reduce((kept, layer) => withLetters(kept, layer, lettersOn(project, layer)), viewed)
   const layered = (['canvas', 'frame'] as const).reduce((kept, layer) => {
     const now = backgroundOf(project, layer)

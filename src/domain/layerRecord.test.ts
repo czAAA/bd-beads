@@ -145,12 +145,12 @@ describe('the layer list (ADR 0079, ticket 0664)', () => {
   it('lays a Frame anew as a copy of the Canvas\'s Bead and Letters, at the first row, under an id of its own', () => {
     const canvas = withLetters(withLayer(open(), 'canvas', { bead: cube }), 'canvas', true)
     const laid = withFrameSheet(canvas, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} })
-    expect(frameOf(laid)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), letters: true, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 } })
+    expect(frameOf(laid)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), letters: true, rowProgress: { way: 'down' } })
     expect(frameOf(laid)!.id).not.toBe(canvasOf(laid).id)
   })
 
   it('keeps a Frame\'s id, Bead, Letters and Row progress when its sheet is laid again, and removes it with none', () => {
-    const before = withLayers(framed(), { rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 2 } })
+    const before = withLayers(framed(), { ownProgress: { direction: 'columns', currentRow: 0, currentColumn: 2 } })
     const moved = withFrameSheet(before, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} })
     const { id, beadId, rowProgress } = frameOf(before)!
     expect(frameOf(moved)).toMatchObject({ id, beadId, rowProgress, row: 5 })

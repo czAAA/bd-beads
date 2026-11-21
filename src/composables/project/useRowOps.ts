@@ -1,9 +1,9 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
-import { columnsAsSeen, moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, shownWayOf, toggleRowDirection, turnRowDirectionTo, type ShownWay } from '../../domain/rowProgress'
+import { columnsAsSeen, moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, seenWayOf, toggleRowDirection, turnRowDirectionTo, type SeenWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import { rowProgressAnnouncement } from '../../i18n/rowProgressWords'
+import { rowProgressAnnouncement, seenWayWords } from '../../i18n/rowProgressWords'
 import type { Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
@@ -63,8 +63,7 @@ export function useRowOps(deps: RowOpsDeps) {
       // Said once per change, whether the list or the key turned it (ticket 411).
       const t = deps.messages().rowProgress
       // The way as seen names its noun too (spec 1182): top to bottom and bottom to top are rows, the others columns.
-      const toasts = { down: t.directionToastRows, up: t.directionToastRowsReversed, right: t.directionToastColumns, left: t.directionToastColumnsReversed }
-      const toast = toasts[shownWayOf(turned)]
+      const { toast } = seenWayWords(t, seenWayOf(turned))
       // The way left keeps its own pointer: said, so its rows marked done don't look lost (ticket 0849, F-04-04).
       const kept = rowProgressPosition(project).current > 0 ? (columnsAsSeen(project) ? t.columnsKeptToast : t.rowsKeptToast) : undefined
       deps.showToast('row-direction', kept ? fillBlanks(t.directionKeptToast, { toast, kept }) : toast, 'success')
@@ -77,7 +76,7 @@ export function useRowOps(deps: RowOpsDeps) {
   }
 
   /** A way chosen from Turn row direction's list (ticket 0973, UX-060): the rows run that way, its own count back. */
-  function onSetRowDirection(way: ShownWay) {
+  function onSetRowDirection(way: SeenWay) {
     turnTo((project) => turnRowDirectionTo(project, way))
   }
 

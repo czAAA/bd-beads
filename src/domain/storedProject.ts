@@ -4,7 +4,8 @@ import { beadsFromColors, type FrameSheet } from './canvas'
 import { normalizeHex } from './color'
 import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
 import type { Rotation } from './grid'
-import { normalizedOrientation } from './canvasOrientation'
+import { nearestQuarterTurn, normalizedOrientation, quarterTurnsOff } from './canvasOrientation'
+import { frameCornerAt } from './framePlacement'
 import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
@@ -13,7 +14,8 @@ import { readMirrorArea, readMirrorSetting, withFittedArea } from './mirror'
 import { readPieceNames } from './pieceNames'
 import { readReferenceImage } from './referenceImage'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
-import { readRowProgress } from './rowProgress'
+import { readRowProgress, seenProgressOf, type OwnRowProgress } from './rowProgress'
+import type { TablePoint } from './table'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { beadCell, isTechnique, withCell, type Technique, type Weave } from './weave'
 
@@ -24,8 +26,9 @@ import { beadCell, isTechnique, withCell, type Technique, type Weave } from './w
  * a Frame. Read by normalizeProject only, which gives it a Frame the size of the grid. */
 export type GridProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeave & { columns: number; rows: number; grid: Grid }
 
-/** A layer as a store or file holds it (file version 12, ticket 0664), before normalizeProject reads it: what a Canvas
- * or a Frame holds, its id and name possibly missing. A Frame's orientation is held as its quarter turns. */
+/** A layer as a store or file holds it (file version 12, ticket 0664), before normalizeProject reads it, its id and name
+ * possibly missing. A Frame of file version 15 holds its angle and centre on the table and its way as seen (ticket 1185);
+ * an older one its quarter turns on the Canvas, its Canvas position and its Row progress in its own rows. */
 export type StoredLayer = Omit<LayerFields, 'id'> &
   FlatWeave &
   Partial<Omit<FrameSheet, keyof LayerFields>> & {
@@ -36,7 +39,11 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
      * (ticket 0704) are dropped. */
     mirrorAxes?: unknown
     mirrorArea?: unknown
-    rowProgress?: Partial<RowProgress> & { currentRow: number }
+    /** The Frame's own angle on the table and its centre there (file version 15, ticket 1185). */
+    angle?: number
+    centre?: TablePoint
+    /** Row progress as seen (file version 15), or in the Frame's own rows before it. */
+    rowProgress?: Partial<RowProgress> | Partial<OwnRowProgress>
   }
 
 /** A Project as it is stored since it holds its layers (file version 12, library version 5, ticket 0664). */
@@ -175,14 +182,17 @@ function readCanvas(stored: StoredLayer, projectId: string, earlierBackground: b
   return { ...layer, name, orientation: readOrientation(stored.orientation) }
 }
 
-/** The Frame a store or file holds, its Row progress read inside it. One stored before it had a Weave of its own
- * (ticket 492), or with one this build does not know, takes the Canvas's. */
+/** The Frame a store or file holds, its Row progress read inside it; one without a Weave this build knows takes the
+ * Canvas's (ticket 492). One stored before file version 15 opens as last saved (ticket 1185): at the Canvas's orientation
+ * plus its quarter turns, at its Canvas position, its Row progress the way it showed. */
 function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string, earlierBackground: boolean): FrameLayer {
   const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas), earlierBackground)
   const { row = 0, column = 0, rows = 0, columns = 0, folded, name, lifted } = stored
   const laid = readFrameShape(stored, weaveOf(layer))
-  const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, rows, columns }
-  return {
+  // Before file version 15 a Frame kept its quarter turns on the Canvas: one, two or three, anything else none.
+  const earlierTurns = stored.quarterTurns === 1 || stored.quarterTurns === 2 || stored.quarterTurns === 3 ? stored.quarterTurns : 0
+  const angle = readOrientation(typeof stored.angle === 'number' ? stored.angle : canvas.orientation + 90 * earlierTurns)
+  const frame: FrameLayer = {
     ...layer,
     row,
     column,
@@ -192,7 +202,36 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string,
     ...(typeof name === 'string' && name ? { name } : {}),
     ...(lifted === true ? { lifted } : {}),
     ...laid,
-    rowProgress: readRowProgress(stored.rowProgress, shaped),
+    angle,
+    rowProgress: { way: 'down' },
+  }
+  const placed = readCentre(stored.centre) ? { ...frame, ...frameCornerAt({ layers: [canvas, frame] }, stored.centre!) } : frame
+  const turns = quarterTurnsOff(angle, canvas.orientation)
+  const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, ...(turns ? { quarterTurns: turns } : {}), rows, columns }
+  // One stored since file version 15 keeps its way as seen; one before, in its own rows, turned as it showed.
+  const held = stored.rowProgress
+  const seen = (held && 'way' in held) || typeof stored.angle === 'number' ? (held as Partial<RowProgress> | undefined) : seenProgressOf(readOwnProgress(held as Partial<OwnRowProgress> | undefined), laid.shape ? 0 : nearestQuarterTurn(canvas.orientation) / 90 + earlierTurns)
+  return { ...placed, rowProgress: readRowProgress(seen, shaped, nearestQuarterTurn(angle)) }
+}
+
+/** Whether a stored centre is a point: two finite numbers. */
+function readCentre(stored: unknown): stored is TablePoint {
+  const { x, y } = (stored ?? {}) as { x?: unknown; y?: unknown }
+  return typeof x === 'number' && Number.isFinite(x) && typeof y === 'number' && Number.isFinite(y)
+}
+
+/** Row progress as an older file held it, in the Frame's own rows (an old file's `enabled` and `decided` are dropped,
+ * as Row progress follows the Frame, tickets 426, 434); a pointer that is no number is the first pass. */
+function readOwnProgress(held: Partial<OwnRowProgress> | undefined): OwnRowProgress {
+  const stored = held as Record<string, unknown> | undefined
+  const count = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : 0)
+  return {
+    direction: stored?.direction === 'columns' ? 'columns' : 'rows',
+    ...(stored?.reversed === true ? { reversed: true } : {}),
+    currentRow: count(stored?.currentRow),
+    currentColumn: count(stored?.currentColumn),
+    currentRowBack: count(stored?.currentRowBack),
+    currentColumnBack: count(stored?.currentColumnBack),
   }
 }
 
@@ -257,14 +296,12 @@ function readWeave(technique: Technique, { techniqueSettings }: FlatWeave): Weav
 }
 
 /** A stored Frame's Frame shape, kept only where it is one this build knows (ticket 0591), else none. A Custom frame
- * keeps its settings, read within its shape's range (ticket 0592), and any Frame its orientation (tickets 0594, 0667);
- * one turned before 0667 had its beads rewritten, and opens upright. */
-function readFrameShape({ shape, settings: stored, quarterTurns }: StoredLayer, weave: Weave): Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'> {
-  // Rotate Frame's turn: one, two or three quarters; anything else reads as none.
-  const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
+ * keeps its settings, read within its shape's range (ticket 0592); its turn, like any Frame's (tickets 0594, 0667), is
+ * its angle's. One turned before 0667 had its beads rewritten, and opens upright. */
+function readFrameShape({ shape, settings: stored }: StoredLayer, weave: Weave): Pick<FrameSheet, 'shape' | 'settings'> {
   if (!isFrameShape(shape)) {
-    return turned
+    return {}
   }
   const settings = settingsOf({ shape, settings: stored, ...weave })
-  return { shape, ...(settings ? { settings } : {}), ...turned }
+  return { shape, ...(settings ? { settings } : {}) }
 }

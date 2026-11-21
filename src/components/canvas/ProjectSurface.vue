@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, useTempla
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { layerAt } from '../../domain/layers'
 import type { Handedness, InputMode } from '../../domain/inputMode'
-import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
+import { frameOf, layerOf, orientationOf, quarterTurnOf } from '../../domain/layerRecord'
+import { withCanvasTurned } from '../../domain/table'
 import { nearestQuarterTurn, tiltOf } from '../../domain/canvasOrientation'
 import { placedFrame } from '../../domain/layerWeave'
 import { rowProgressOn } from '../../domain/rowProgress'
@@ -189,7 +190,7 @@ const shownOrientation = computed(() => props.orientation ?? orientationOf(props
 const quarterTurn = computed(() => nearestQuarterTurn(shownOrientation.value))
 const leaning = computed(() => tiltedView(size.value, tiltOf(shownOrientation.value)))
 /** The Project at the quarter turn it is drawn at: itself, unless a live twist has passed half way to another. */
-const drawnProject = computed(() => (quarterTurnOf(props.project) === quarterTurn.value ? props.project : withCanvas(props.project, { orientation: quarterTurn.value })))
+const drawnProject = computed(() => (quarterTurnOf(props.project) === quarterTurn.value ? props.project : withCanvasTurned(props.project, quarterTurn.value)))
 /** Where the drawing's top-left is: the view's scroll, less how far the larger square reaches past the surface. */
 const drawnScroll = computed(() => {
   const { offset } = leaning.value

@@ -1,4 +1,4 @@
-import { nearestQuarterTurn, tiltOf } from '../domain/canvasOrientation'
+import { tiltOf } from '../domain/canvasOrientation'
 import type { Size } from './cellSize'
 import type { Region, Scroll } from './surfaceView'
 
@@ -73,16 +73,34 @@ export function tiltedView(screen: Size, degrees: number): TiltedView {
   }
 }
 
-/** The scroll that keeps the bead under `anchor` (a point of the screen; its middle when left out) there as the Canvas
- * turns `from` one orientation `to` another, in degrees. The Canvas turns about its origin by quarters and the drawing
- * about the screen's middle by the rest (ticket 0672). */
-export function scrollAfterTurn(scroll: Scroll, viewport: Size, { from, to, anchor }: { from: number; to: number; anchor?: Scroll }): Scroll {
+/** A view's place on the table (spec 1182, ticket 1185): the Canvas's orientation and its origin on the table (in grid
+ * px at zoom 1, along the screen's axes), and the zoom. */
+export interface TablePlace {
+  orientation: number
+  origin: Scroll
+  zoom: number
+}
+
+/** The view's scroll over the table: where the screen's top-left lies from the table's origin, in px at the zoom along
+ * the screen's axes. Worked out from the drawing's scroll (its quarter turn, leaned about the screen's middle) and where
+ * the Canvas lies on the table; pan and zoom move it, a turn of the Canvas never does. */
+export function tableScrollOf(drawing: Scroll, viewport: Size, { orientation, origin, zoom }: TablePlace): Scroll {
   const middle = { x: viewport.width / 2, y: viewport.height / 2 }
-  const at = anchor ?? middle
-  const out = { x: at.x - middle.x, y: at.y - middle.y }
-  // About the anchor: the middle swings round it by the whole turn, the Canvas's origin by the quarter turns.
-  const swung = turned(out, to - from)
-  const shift = turned({ x: swung.x - out.x, y: swung.y - out.y }, -tiltOf(to))
-  const carried = turned({ x: scroll.x + middle.x, y: scroll.y + middle.y }, nearestQuarterTurn(to) - nearestQuarterTurn(from))
-  return { x: shift.x + carried.x - middle.x, y: shift.y + carried.y - middle.y }
+  const at = turned({ x: drawing.x + middle.x, y: drawing.y + middle.y }, tiltOf(orientation))
+  return { x: at.x - middle.x + zoom * origin.x, y: at.y - middle.y + zoom * origin.y }
+}
+
+/** The drawing's scroll that shows the table from `table` (`tableScrollOf` undone). */
+export function drawingScrollOf(table: Scroll, viewport: Size, { orientation, origin, zoom }: TablePlace): Scroll {
+  const middle = { x: viewport.width / 2, y: viewport.height / 2 }
+  const at = turned({ x: middle.x + table.x - zoom * origin.x, y: middle.y + table.y - zoom * origin.y }, -tiltOf(orientation))
+  return { x: at.x - middle.x, y: at.y - middle.y }
+}
+
+/** The Canvas's origin on the table once the Canvas turns `by` degrees clockwise about the point of the table under
+ * `anchor` (a point of the screen): a turn moves the Canvas's placement, never the view's scroll over the table. */
+export function originTurnedAbout(origin: Scroll, { by, anchor, table, zoom }: { by: number; anchor: Scroll; table: Scroll; zoom: number }): Scroll {
+  const pivot = { x: (anchor.x + table.x) / zoom, y: (anchor.y + table.y) / zoom }
+  const swung = turned({ x: origin.x - pivot.x, y: origin.y - pivot.y }, by)
+  return { x: pivot.x + swung.x, y: pivot.y + swung.y }
 }

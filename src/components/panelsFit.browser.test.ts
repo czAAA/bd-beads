@@ -19,7 +19,7 @@ import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { changeFrame } from '../domain/changeFrame'
 import { createProject } from '../domain/createProject'
 import type { Project } from '../domain/project'
-import { rowProgressOf } from '../domain/rowProgress'
+import { moveToRow } from '../domain/rowProgress'
 import { withLayers } from '../testUtils/layerFields'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
 
@@ -27,7 +27,7 @@ import { frameOf, withFrameSheet } from '../domain/layerRecord'
 // (ticket 552).
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
 /** A Project with a Row progress pass done, so its Technique and settings are locked with their reasons (ticket 0626). */
-const rowsDone = (locked: Project): Project => (withLayers(locked, { rowProgress: { ...rowProgressOf(locked), currentRow: 1 } }))
+const rowsDone = (locked: Project): Project => moveToRow(locked, 1)
 const framed = withLayers(project, { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom' as const, beads: {} } })
 /** A named Frame with seven colors painted, so Beads needed lists more rows than it shows at first. */
 const colors = createPalette(defaultPaletteIds()).colors.slice(0, 7).map((color) => color.hex)
@@ -90,13 +90,13 @@ const CASES: FitCase[] = [
   ['ProjectPanel (Export unfolded)', ProjectPanel, { project: painted, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, exporting: 'pdf' }, unfoldProjectExport],
   ['ProjectPanel (Export unfolded, no Frame)', ProjectPanel, { project: withFrameSheet(painted, undefined), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }, unfoldProjectExport],
   ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
-  ['ProjectPanel (technique locked)', ProjectPanel, { project: withLayers(project, { rowProgress: { ...rowProgressOf(project), currentRow: 1 } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
+  ['ProjectPanel (technique locked)', ProjectPanel, { project: moveToRow(project, 1), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['FramePanel', inPanel(FramePanel, { project: painted }), {}],
   ['FramePanel (all colors shown)', inPanel(FramePanel, { project: painted }), {}, showAll],
   ['FramePanel (Export and margin unfolded)', inPanel(FramePanel, { project: painted }), {}, unfold],
   ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}, unfold],
   ['FramePanel (size refused)', inPanel(FramePanel, { project: painted }), {}, refuseSizes],
-  ['FramePanel (rows done)', inPanel(FramePanel, { project: withLayers(painted, { rowProgress: { ...rowProgressOf(painted), currentRow: 1 } }) }), {}],
+  ['FramePanel (rows done)', inPanel(FramePanel, { project: moveToRow(painted, 1) }), {}],
   ['FramePanel (turned)', inPanel(FramePanel, { project: rotateFrame(painted)! }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
   ['FramePanel (Fringe earring)', inPanel(FramePanel, { project: earring }), {}],

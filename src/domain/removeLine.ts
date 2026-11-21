@@ -2,7 +2,7 @@ import type { Rect } from './canvas'
 import { pieceAreasOf } from './pieceAreas'
 import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
 import { carryNames } from './pieceNames'
-import { finishedOnLine, lineRunsAlong, rowProgressOf, rowProgressPosition } from './rowProgress'
+import { finishedOnLine, lineRunsAlong, ownRowWayOf, rowProgressPosition } from './rowProgress'
 import { frameWeave } from './layerWeave'
 import { beadsOfLayer, frameOf, heldWeave, withLayer } from './layerRecord'
 import { describeWeave } from './weave'
@@ -97,12 +97,13 @@ export function removeLineQuestion(project: Project, selection: Selection | unde
   if (!line || !frameOf(project) || removeLineRefusal(project, selection)) {
     return undefined
   }
-  const { direction } = rowProgressOf(project)
+  const own = ownRowWayOf(project)
+  const { direction } = own
   const { beads } = finishedOnLine(project, line)
   if (beads === 0) {
     return undefined
   }
-  if (!lineRunsAlong(line, rowProgressOf(project))) {
+  if (!lineRunsAlong(line, own)) {
     return { kind: 'across-rows', rows: beads, direction }
   }
   const removed = changeFrame(project, { removeLine: line })
@@ -110,7 +111,7 @@ export function removeLineQuestion(project: Project, selection: Selection | unde
   // As the Progress bar shows it: the row being woven, the last once every pass is done.
   const backTo = Math.min(after.current + 1, after.total)
   const lines = line.axis === 'row' ? line.area.rows : line.area.columns
-  const row = (rowProgressOf(project).reversed ? lines - 1 - line.index : line.index) + 1
+  const row = (own.reversed ? lines - 1 - line.index : line.index) + 1
   const { shifted, staggers } = describeWeave(frameWeave(project))
   return { kind: 'finished-row', row, backTo, shifts: shifted && staggers === `${line.axis}s`, direction }
 }

@@ -1,7 +1,8 @@
 import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, frameOf, newLayerId, startingRowProgressOf, withCanvas, withLayer, withStartingRowProgress } from './layerRecord'
+import { beadIdOfLayer, frameOf, newLayerId, startingRowProgressOf, withLayer, withStartingRowProgress } from './layerRecord'
+import { withCanvasTurned } from './table'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -61,7 +62,7 @@ export function createProject(input: CreateProjectInput): Project {
     id: crypto.randomUUID(),
     layers: [
       canvas,
-      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, lifted: true as const, rowProgress: startingRowProgressOf({ layers: [canvas] }, created) }] : []),
+      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, lifted: true as const, angle: canvas.orientation, rowProgress: startingRowProgressOf(created) }] : []),
     ],
     palette,
     paletteLetters: lettersOfPalette(palette, bead.id, undefined),
@@ -88,7 +89,7 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
  * dimensions (missing cells empty, surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   // Started again once the Canvas is upright: the Frame's way as it lies now, not as the turned Canvas had it (spec 1182).
-  const project = withStartingRowProgress(withCanvas(createProject(input), { orientation: 0 }))
+  const project = withStartingRowProgress(withCanvasTurned(createProject(input), 0))
   const frame = frameOf(project)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>

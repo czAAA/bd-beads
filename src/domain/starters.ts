@@ -7,7 +7,8 @@ import type { GridDimensions, GridPosition } from './grid'
 import { createProject, type CreateProjectInput } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
 import { sameWeave, weaveOf } from './layerWeave'
-import { quarterTurnOf, withBackground, withCanvas, withLayer } from './layerRecord'
+import { quarterTurnOf, withBackground, withLayer } from './layerRecord'
+import { withCanvasTurned } from './table'
 import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
@@ -420,7 +421,7 @@ export function starterProject(starter: Starter, choice: StarterChoice & Pick<St
   const { name, beadId, background } = choice
   const made = createProject({ name, ...weaveIn(starter, choice), beadId, ...(background !== undefined ? { background } : {}) })
   const seen = seenTurn(starter, weaveIn(starter, choice))
-  const project = seen === undefined ? made : withCanvas(made, { orientation: seen })
+  const project = seen === undefined ? made : withCanvasTurned(made, seen)
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
   const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
   return placed.kind === 'changed' ? placed.project : project

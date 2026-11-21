@@ -2,7 +2,8 @@ import type { Rotation } from '../../src/domain/grid'
 import type { Technique } from '../../src/domain/weave'
 import { BUILT_IN_COLORS, defaultPaletteIds } from '../../src/domain/palette'
 import { framedGrid } from '../../src/domain/layerBeads'
-import type { Cell, Project, RowProgress } from '../../src/domain/project'
+import type { Cell, Project } from '../../src/domain/project'
+import { seenProgressOf, type OwnRowProgress } from '../../src/domain/rowProgress'
 import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
@@ -18,7 +19,9 @@ export interface FixtureOptions {
   columns?: number
   rows?: number
   rotation?: Rotation
-  rowProgress?: Partial<RowProgress>
+  /** Row progress in the Frame's own rows (along them top to bottom unless given), as the Frame lies on the turned
+   * Canvas: saved as the way it shows (ticket 1185). */
+  rowProgress?: Partial<OwnRowProgress>
   /** Leave every bead empty rather than painting the busy fixture picture. */
   blank?: boolean
   /** Beads to paint a different color than the picture has them, for proving the visual check notices. */
@@ -51,7 +54,7 @@ export function fixtureProject({
     id: `fixture-${technique}`,
     layers: [
       { ...canvas, id: 'fixture-canvas', name: `Fixture ${technique}`, orientation: rotation },
-      { ...frame!, id: 'fixture-frame', rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } },
+      { ...frame!, id: 'fixture-frame', angle: rotation, rowProgress: seenProgressOf({ direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress }, rotation / 90) },
     ],
     palette: defaultPaletteIds(),
     createdAt: 1_700_000_000_000,

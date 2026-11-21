@@ -575,6 +575,19 @@ describe('useCanvasView', () => {
       expect(orientationOf(current.value!)).toBe(0)
     })
 
+    it('turns only the Canvas\'s placement: the view\'s scroll over the table stays through the turn and the settle (ticket 1185)', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      const table = view.tableScroll.value
+      view.pinchStep({ turn: 25, anchor: { x: 700, y: 300 } })
+      view.pinchStep({ turn: 30, anchor: { x: 650, y: 320 } })
+      expect(view.tableScroll.value.x).toBeCloseTo(table.x, 6)
+      expect(view.tableScroll.value.y).toBeCloseTo(table.y, 6)
+      view.endTwist({ x: 650, y: 320 })
+      expect(view.tableScroll.value.x).toBeCloseTo(table.x, 6)
+      expect(view.tableScroll.value.y).toBeCloseTo(table.y, 6)
+    })
+
     it('is turning from the step the twist engages on, before the fingers have turned it', () => {
       const { view } = setup(projectOf(20, 10))
       view.fit()

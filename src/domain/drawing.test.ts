@@ -2,14 +2,14 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { moveToRow, rowProgressOf, shownWayOf, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
+import { moveToRow, rowProgressOf, seenWayOf, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
 import { BEAD_CATALOG } from './beads'
 import type { Technique } from './weave'
 import { paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
 import { frameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, orientationOf } from './layerRecord'
-import { frameSheetOf, withLayers } from '../testUtils/layerFields'
+import { frameSheetOf, withLayers, pointersOf } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -77,17 +77,17 @@ describe('deleteAll', () => {
   it('puts both direction pointers back at the first row, Row progress staying on with the Frame', () => {
     const cleared = deleteAll(paintedAndWoven())
 
-    // Top to bottom as the Frame lies, on the Canvas turned a quarter: down its own columns (spec 1182).
-    expect(shownWayOf(cleared)).toBe('down')
-    expect(rowProgressOf(cleared)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
+    // Top to bottom as the Frame lies, on the Canvas turned a quarter, kept as seen (spec 1182).
+    expect(seenWayOf(cleared)).toBe('down')
+    expect(rowProgressOf(cleared)).toEqual({ way: 'down' })
   })
 
   it.each([['loom', 'down'], ['peyote', 'right'], ['brick', 'up']] as const)('puts a %s Frame back at the first row, its rows running %s as seen as a new Project\'s do', (technique, way) => {
     const woven = moveToRow(turnRowDirectionTo(createProject({ technique, beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }), 'left'), 3)
     const cleared = deleteAll(woven)
 
-    expect(shownWayOf(cleared)).toBe(way)
-    expect(rowProgressOf(cleared)).toMatchObject({ currentRow: 0, currentColumn: 0 })
+    expect(seenWayOf(cleared)).toBe(way)
+    expect(pointersOf(rowProgressOf(cleared))).toEqual({})
   })
 
   it('keeps name, size, Technique, Bead and rotation exactly as they were', () => {

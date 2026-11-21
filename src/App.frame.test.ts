@@ -14,7 +14,7 @@ import { hoverBead, pressBead } from './testUtils/beads'
 import { pickColor, pressBar, selectAll } from './testUtils/pill'
 import { frameOf } from './domain/layerRecord'
 import { rowProgressOf } from './domain/rowProgress'
-import { frameSheetOf, withLayers } from './testUtils/layerFields'
+import { frameSheetOf, pointersOf, withLayers } from './testUtils/layerFields'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
 import { defaultColorOf } from './testUtils/defaultColors'
 
@@ -316,7 +316,7 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
     await flushPromises()
 
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(savedProgress()).toMatchObject({ currentRow: 0, currentColumn: 0 })
+    expect(pointersOf(savedProgress())).toEqual({})
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="export-panel"] [data-testid="export-png"]').attributes('data-panel-entry')).toBe('true')
 
@@ -328,17 +328,17 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
   it('asks before Reset progress, then takes the rows back to the first, keeping the Frame (ticket 455)', async () => {
     const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
-    expect(savedProgress().currentRow).toBe(1)
+    expect((savedProgress().down ?? 0)).toBe(1)
 
     await wrapper.get('[data-testid="progress-bar-reset"]').trigger('click')
     expect(wrapper.find('[data-testid="reset-progress-modal"]').exists()).toBe(true)
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
-    expect(savedProgress().currentRow).toBe(1)
+    expect((savedProgress().down ?? 0)).toBe(1)
 
     await wrapper.get('[data-testid="progress-bar-reset"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
-    expect(savedProgress()).toMatchObject({ currentRow: 0, currentColumn: 0 })
+    expect(pointersOf(savedProgress())).toEqual({})
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(wrapper.get('[data-testid="progress-bar-reset"]').attributes('aria-disabled')).toBe('true')
   })

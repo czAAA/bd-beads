@@ -1,7 +1,6 @@
 import type { Bead } from './beads'
 import type { BeadMap, FrameSheet } from './canvas'
 import type { Weave } from './weave'
-import type { PassDirection } from './weaveGeometry'
 import type { PaletteIds, PaletteCodes } from './palette'
 import type { SwatchLetters } from './swatchLetters'
 import type { PieceName } from './pieceNames'
@@ -20,25 +19,13 @@ export interface Cell {
  * produces and what older Projects were saved as. */
 export type Grid = Cell[][]
 
-/** Which way the weaver's rows run: along the grid's rows or down its columns (ticket 32). Separate from the Canvas's
- * orientation, which only turns the picture; rotating swaps the axis, so the weaver flips this too. */
-type RowDirection = PassDirection
+/** A way the weaver's rows run as seen, as an arrow points (spec 1182): down is top to bottom, right left to right. */
+export type SeenWay = 'down' | 'right' | 'up' | 'left'
 
-/** Which row the weaver is on (see CONTEXT.md's Row progress entry), the Frame's own (ADR 0079); whether the overlay
- * shows is worked out from the Frame (rowProgressOn). */
-export interface RowProgress {
-  direction: RowDirection
-  /** Zero-based index of the row being woven now; every row before it counts as finished. */
-  currentRow: number
-  /** The same pointer for when rows run down the grid's columns, kept apart so flipping the direction never loses
-   * either place. */
-  currentColumn: number
-  /** Rows run from the Frame's far end (bottom to top, or right to left), with their own two pointers so turning
-   * never loses a place (ticket 0589). Missing means false and 0. */
-  reversed?: boolean
-  currentRowBack?: number
-  currentColumnBack?: number
-}
+/** Which pass the weaver is on (CONTEXT.md's Row progress), the Frame's own (ADR 0079): the way its rows run as seen on
+ * its nearest quarter turn (spec 1182), and a pointer per way as seen (ticket 0589), the zero-based pass woven now,
+ * absent at the first. Whether the overlay shows is worked out from the Frame (rowProgressOn). */
+export type RowProgress = { way: SeenWay } & Partial<Record<SeenWay, number>>
 
 /** A layer's Background (ADR 0079, ticket 0666): a numbered position in the theme's list, 1 to 3, kept across light
  * and dark, or a Custom color as `#rrggbb`, one for both themes. */
@@ -65,7 +52,7 @@ export interface LayerFields extends Weave {
   pieceNames?: PieceName[]
 }
 
-/** The Canvas (layer0, ADR 0079): its name is the Project's, and its orientation is the view's turn. */
+/** The Canvas (layer0, ADR 0079): its name is the Project's, and its orientation its angle on the table. */
 export interface CanvasLayer extends LayerFields {
   /** The Project's name, and the file's: one value. */
   name: string
@@ -74,9 +61,13 @@ export interface CanvasLayer extends LayerFields {
   orientation: number
 }
 
-/** A Frame as a layer (ADR 0066, 0079): its sheet (place, Weave, beads, Folded beads, name, Frame shape and settings,
- * quarter turns, its orientation) with the rest of a layer and its Row progress. */
+/** A Frame as a layer (ADR 0066, 0079): its sheet (place, Weave, beads, Folded beads, name, Frame shape and settings)
+ * with the rest of a layer, its own angle on the table and its Row progress. */
 export interface FrameLayer extends LayerFields, FrameSheet {
+  /** Its own angle on the table (spec 1182), degrees clockwise from 0 up to a whole turn: no longer quarter turns on the
+   * Canvas. `quarterTurns`, how it lies on the Canvas's grid, is read from it and the Canvas's (layerRecord's frameOf).
+   * Until 1188 the Canvas carries it, so it is the Canvas's orientation plus whole quarter turns. */
+  angle: number
   rowProgress: RowProgress
 }
 

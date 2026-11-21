@@ -32,9 +32,12 @@ export const MOVED_FLAG = 'openbeads:library-in-indexeddb'
 /** The `meta` row that remembers what the old library held when it was last taken in. */
 const OLD_LIBRARY = 'old-library'
 
-/** What `stored` is in a record: a Project as library version 6 writes it. A record of another format is left alone.
- * @internal Tests read records with it. */
-export const RECORD_FORMAT = 1
+/** What `stored` is in a record: a Project as library version 7 writes it (ticket 1185). A record of another format is
+ * left alone. @internal Tests read records with it. */
+export const RECORD_FORMAT = 2
+/** The record formats this build reads, and writes over: version 6's (1) differs only in fields the one decoder reads
+ * either way (a Frame's place and Row progress, ticket 1185), so it is read as it is and saved as the current one. */
+const READ_FORMATS: readonly number[] = [1, RECORD_FORMAT]
 
 /** A Project's record. */
 interface LibraryRecord {
@@ -104,7 +107,7 @@ function recordOf(id: string, stored: string, summary: ProjectSummary | undefine
   }
 }
 
-const known = (record: LibraryRecord | undefined): record is LibraryRecord => record !== undefined && record.format === RECORD_FORMAT
+const known = (record: LibraryRecord | undefined): record is LibraryRecord => record !== undefined && READ_FORMATS.includes(record.format)
 
 /** The connection to the library database. It closes when the browser asks (a later version of the database is never
  * blocked by an open tab) and opens again when next used. */
@@ -196,9 +199,11 @@ export async function copyOldLibrary(db: IDBDatabase): Promise<void> {
     const write = db.transaction(PROJECTS, 'readwrite')
     const store = write.objectStore(PROJECTS)
     // A failed copy left earlier: the old library is the truth until the flag is set, so records it no longer holds go.
-    const existing = store.index(BY_FORMAT).getAllKeys(RECORD_FORMAT)
-    existing.onsuccess = () => {
-      for (const key of existing.result) if (!entries.has(String(key))) store.delete(key)
+    for (const format of READ_FORMATS) {
+      const existing = store.index(BY_FORMAT).getAllKeys(format)
+      existing.onsuccess = () => {
+        for (const key of existing.result) if (!entries.has(String(key))) store.delete(key)
+      }
     }
     for (const [id, { stored, summary }] of entries) store.put(recordOf(id, stored, summary))
     await finished(write)
@@ -478,7 +483,9 @@ export function indexedLibraryStore(connection: LibraryConnection): LibraryStore
     },
     count: async () => {
       const db = await connection.get()
-      return wrap(db.transaction(PROJECTS, 'readonly').objectStore(PROJECTS).index(BY_FORMAT).count(RECORD_FORMAT))
+      const formats = db.transaction(PROJECTS, 'readonly').objectStore(PROJECTS).index(BY_FORMAT)
+      const counts = await Promise.all(READ_FORMATS.map((format) => wrap(formats.count(format))))
+      return counts.reduce((sum, count) => sum + count, 0)
     },
     load: () => openLoaded(() => false).projects,
     open: openLoaded,

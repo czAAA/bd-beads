@@ -1,7 +1,7 @@
 import type { Rotation } from './grid'
 
-// The Canvas's orientation (ADR 0052, ADR 0079, ticket 0672): degrees clockwise, any angle on touch, quarter turns from
-// the Rotate canvas button. What is drawn turned by quarters (exports, sizes as seen, Row direction) reads the quarter
+// A layer's angle on the table (ADR 0052, ADR 0079, tickets 0672, 1185): degrees clockwise, any angle on touch, quarter
+// turns from the Rotate canvas button. What is drawn turned by quarters (exports, sizes as seen, Row direction) reads the quarter
 // turn it is nearest; only the view on screen leans off it.
 
 /** How near a quarter turn a twist must end to snap onto it (ADR 0079: about 10°). */
@@ -23,6 +23,12 @@ export function turnedOrientation(orientation: number, by: number): number {
 /** The quarter turn an orientation is nearest: how the Canvas is drawn, exported and measured as seen. */
 export function nearestQuarterTurn(orientation: number): Rotation {
   return ((Math.round(normalizedOrientation(orientation) / 90) * 90) % 360) as Rotation
+}
+
+/** The whole quarter turns clockwise `angle` lies off `base`, the nearest (spec 1182): how a Frame at its own angle on
+ * the table lies on the Canvas's grid, at the Canvas's angle `base`. */
+export function quarterTurnsOff(angle: number, base: number): 0 | 1 | 2 | 3 {
+  return (nearestQuarterTurn(angle - base) / 90) as 0 | 1 | 2 | 3
 }
 
 /** How far an orientation leans off its nearest quarter turn, in degrees: under 45 either way, clockwise positive. */

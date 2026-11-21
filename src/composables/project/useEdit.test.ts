@@ -12,7 +12,7 @@ import { addedColorId } from '../../domain/palette'
 import { editHarness } from '../../testUtils/editHarness'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer, canvasOf, frameOf } from '../../domain/layerRecord'
-import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
+import { frameSheetOf, withLayers, pointersOf } from '../../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 const frame = frameOf(base)!
@@ -126,7 +126,7 @@ describe('useEdit', () => {
       expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }))).toEqual({ kind: 'applied' })
       expect(frameOf(ctx.project)).toBeUndefined()
       expect(rowProgressOn(ctx.project)).toBe(false)
-      expect(rowProgressOf(ctx.project)).toMatchObject({ currentRow: 0 })
+      expect(pointersOf(rowProgressOf(ctx.project))).toEqual({})
 
       ctx.history.onUndo()
       expect(frameSheetOf(ctx.project)).toEqual(frameSheetOf(woven))
@@ -209,7 +209,7 @@ describe('useEdit', () => {
       const ctx = editHarness(woven)
       expect(ctx.edit('exempt', deleteAll)).toEqual({ kind: 'applied' })
       expect(frameOf(ctx.project)!.beads).toEqual({})
-      expect(rowProgressOf(ctx.project)).toMatchObject({ currentRow: 0 })
+      expect(pointersOf(rowProgressOf(ctx.project))).toEqual({})
 
       ctx.history.onUndo()
       expect(frameOf(ctx.project)!.beads).toEqual(frameOf(woven)!.beads)

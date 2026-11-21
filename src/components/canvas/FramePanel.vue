@@ -98,7 +98,7 @@ const sizeHeld = computed(() => locked.value)
  * size section's summary, which then holds the Estimated size alone; none for a Frame without a Frame shape. */
 const sizeSettings = computed(() => (frame.value ? settingValuesOf(frame.value).map((setting) => ({ ...setting, words: t.value.frame.sizeSettings[setting.name] })) : []))
 /** Whether the Frame can be turned a quarter: it allows it (a Custom frame too, ticket 0594). */
-const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
+const rotatable = computed(() => frameAllows(props.project, 'rotate'))
 
 /** The edge the last press stepped, lit in its cell. */
 const lastEdge = ref<FrameEdge>()

@@ -12,7 +12,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { columnsAsSeen, rowProgressPosition, type ShownWay } from '../../domain/rowProgress'
+import { columnsAsSeen, rowProgressPosition, type SeenWay } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
@@ -78,7 +78,7 @@ const emit = defineEmits<{
   'move-row': [delta: number]
   'reset-progress': []
   /** A way chosen from Turn row direction's list (ticket 0973). */
-  'set-row-direction': [way: ShownWay]
+  'set-row-direction': [way: SeenWay]
   'toggle-row-highlight': []
   /** Go to row, from the strip's counter (ticket 1176): the pass to point at, from 0. */
   'go-to-row': [pass: number]
@@ -116,10 +116,10 @@ const frame = computed(() => frameOf(props.project))
 const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
 /** The name the tab reads and is named by, or "Name this Frame". */
 const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
-const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
+const rotatable = computed(() => frameAllows(props.project, 'rotate'))
 /** Edit Frame, on a turned Frame too (ticket 1016), so no tool shifts as it turns. A Frame with a row done holds still,
  * its Edit Frame kept in place, disabled, saying why (ticket 0975). */
-const editable = computed(() => frameAllows(frame.value, 'resize'))
+const editable = computed(() => frameAllows(props.project, 'resize'))
 
 const canvas = useCanvasBackground(() => props.project)
 /** A finger: the band keeps Edit Frame and the Frame tools button, its other tools in that menu (ticket 0976). */

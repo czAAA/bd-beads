@@ -35,7 +35,7 @@ describe('useRemoveLineFlow', () => {
     onRemoveSelectedLine()
     expect(dialogs.open.value).toBeUndefined()
     expect(frameOf(harness.project)).toMatchObject({ rows: 2 })
-    expect(rowProgressOf(harness.project).currentRow).toBe(1)
+    expect((rowProgressOf(harness.project).down ?? 0)).toBe(1)
   })
 
   it('asks before a finished row, then takes it and moves the pointer back, one Undo bringing both back (ticket 0647)', () => {
@@ -49,7 +49,7 @@ describe('useRemoveLineFlow', () => {
     confirmRemoveLine()
     expect(dialogs.open.value).toBeUndefined()
     expect(frameOf(harness.project)).toMatchObject({ rows: 2 })
-    expect(rowProgressOf(harness.project).currentRow).toBe(1)
+    expect((rowProgressOf(harness.project).down ?? 0)).toBe(1)
 
     harness.history.onUndo()
     expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(woven))
@@ -61,7 +61,7 @@ describe('useRemoveLineFlow', () => {
     onRemoveSelectedLine()
     expect(removeLinePrompt.value).toEqual({ title: 'Remove row?', message: 'Row 2 is marked done. Removing it moves Row progress back to row 2.' })
 
-    const peyote: Project = withLayers(base, { technique: 'peyote', frame: { ...frameOf(base)!, technique: 'peyote' }, rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 3 } })
+    const peyote: Project = withLayers(base, { technique: 'peyote', frame: { ...frameOf(base)!, technique: 'peyote' }, ownProgress: { direction: 'columns', currentRow: 0, currentColumn: 3 } })
     const firstColumn: Selection = { top: 0, left: 1, rows: 3, columns: 1 }
     const columns = setup({ project: peyote, selection: firstColumn })
     columns.onRemoveSelectedLine()
