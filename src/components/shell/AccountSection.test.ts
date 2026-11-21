@@ -33,7 +33,7 @@ describe('AccountSection (ticket 0078)', () => {
   it('gives a Guest Sign in, which opens a subpanel, and the line that everything works without an account', () => {
     const { wrapper } = mountIn()
     const row = wrapper.get('[data-testid="menu-sign-in"]')
-    expect(row.text()).toBe(en.account.signIn)
+    expect(row.text()).toBe(`${en.account.signIn} ${en.account.guestNote}`)
     expect(row.get('svg').attributes('data-icon')).toBe('account')
     expect(row.find('.panel-item__mark--sub').exists()).toBe(true)
     expect(row.attributes('aria-disabled')).toBeUndefined()
