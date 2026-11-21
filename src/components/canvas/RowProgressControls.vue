@@ -17,9 +17,9 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
 import { pieceFaceOf } from '../../domain/pieceFaces'
 
-// Row progress's controls (ProgressBar and MarginSheet cards; tickets 144, 411, 0657, 0658): one component in the
-// Progress bar and the margin sheet's top band, so a press in either moves the one pointer. `bar` spells the row out;
-// `margin`, `compact` and `folded` are the margin's forms; `woven` the Homepage cuff's counter, track and moves (1157).
+// Row progress's controls (ProgressBar and MarginSheet cards; tickets 144, 411, 0657, 0658, 1176), one component in the
+// Progress bar and the margin sheet's foot, so a press in either moves the one pointer: `bar` spells the row out; `margin`
+// is the sheet's strip, `compact` and `folded` its smaller forms; `woven` the Homepage cuff's (1157).
 const props = withDefaults(defineProps<{
   project: Project
   /** Whether the Canvas draws the Row progress look (ticket 474): the Switch is on while it does. */
@@ -35,7 +35,12 @@ const props = withDefaults(defineProps<{
   /** On the margin, no Back a row: the Homepage demo's band (ticket 0797, MarginSheet card), the Progress bar keeping
    * its own. */
   withoutNotDone?: boolean
-}>(), { rowHighlight: true, drop: 0, withoutNotDone: false })
+  /** On the margin's strip, the counter's short "5/30" in place of "Row 5 of 30" (ticket 1176): the first it gives up. */
+  shortCount?: boolean
+  /** The margin's is the only Row progress on screen, the Progress bar set aside while the Frame is expanded (ticket
+   * 1176): its Row done is the filled one. */
+  lead?: boolean
+}>(), { rowHighlight: true, drop: 0, withoutNotDone: false, shortCount: false, lead: false })
 
 const emit = defineEmits<{
   'move-row': [delta: number]
@@ -168,8 +173,8 @@ const turns = computed(() => frameRowOrder(props.project).turns)
 const highlightShown = computed(() => (props.form === 'bar' ? !turns.value : turns.value))
 
 type Item = 'direction' | 'highlight' | 'reset' | 'position' | 'counter' | 'track' | 'divider' | 'steps'
-/** The bar's order (ProgressBar card), and the margin's, which puts Reset beside Turn row direction and sets the
- * counter off with dividers, its Row highlight in Turn row direction's list (ticket 0981), then its smaller forms, which
+/** The bar's order (ProgressBar card), and the margin's strip, which puts Reset beside Turn row direction and sets the
+ * counter and the track off with dividers, its Row highlight in Turn row direction's list (ticket 0981), then its smaller forms, which
  * keep Row highlight beside Row done (MarginSheet card, Zoom forms; ticket 0698). */
 const ITEMS: Record<typeof props.form, readonly Item[]> = {
   bar: ['direction', 'highlight', 'reset', 'position', 'counter', 'track', 'steps'],
@@ -191,7 +196,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
 </script>
 
 <template>
-  <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--margin': margin, 'row-progress--small': small }]" :data-testid="margin ? testid : undefined">
+  <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--margin': margin, 'row-progress--small': small, 'row-progress--short': shortCount }]" :data-testid="margin ? testid : undefined">
   <template v-for="(item, index) in items" :key="`${item}-${index}`">
     <!-- Turn row direction and Reset progress sit away from the do/undo pair, so they can't be hit while doing rows (tickets 411, 455). -->
     <!-- Its press opens the list of the four ways and turns nothing (ticket 0973). -->
@@ -227,9 +232,10 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
         customPosition?.of ?? fillBlanks(t.rowProgress.ofTotal, { total: position.total, direction: directionLabel })
       }}</span>
     </p>
-    <!-- In the bar the counter is Go to row's button (ticket 0849), and once every pass is done it reads Pattern done. -->
+    <!-- In the bar and the margin's strip (ticket 1176) the counter is Go to row's button (ticket 0849), and once every
+      pass is done it reads Pattern done. -->
     <AppButton
-      v-else-if="item === 'counter' && form === 'bar'"
+      v-else-if="item === 'counter' && (form === 'bar' || form === 'margin')"
       class="row-progress__counter-button"
       variant="text"
       size="sm"
@@ -264,7 +270,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     <ProgressTrack
       v-else-if="item === 'track'"
       class="row-progress__track"
-      :class="{ 'row-progress__track--margin': margin }"
+      :class="{ 'row-progress__track--margin': margin, 'row-progress__track--strip': form === 'margin' }"
       :share="finishedShare"
       :flares="flares"
       :compact="margin"
@@ -299,9 +305,9 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
         @click="emit('move-row', -1)"
       />
       <!-- The Progress bar's Row done is the one filled one on screen; the margin's is in a box, the same words and
-        press (ticket 0981, UX-092). -->
+        press (ticket 0981, UX-092), and filled only while the bar is set aside (ticket 1176). -->
       <AppButton
-        variant="in-box"
+        :variant="lead ? 'primary' : 'in-box'"
         size="sm"
         :action="actions.done"
         :label="doneLabel"
@@ -318,7 +324,6 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     :anchor="directionButton"
     :current="arrowTurn"
     :row-highlight="rowHighlight"
-    :side="margin ? 'below' : 'above'"
     :testid="testid"
     @close="directionOpen = false"
     @choose="emit('set-row-direction', $event)"
@@ -442,6 +447,11 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   gap: var(--space-4);
 }
 
+/* On the strip Back a row and Row done keep to its end, where it has no track to fill the middle (ticket 1176). */
+.row-progress--margin .row-progress__steps {
+  margin-inline-start: auto;
+}
+
 /* The arrows point along the rows: drawn for top to bottom, the down arrow turns to point right, up or left. */
 .row-progress__steps--right :deep(svg) {
   transform: rotate(-90deg);
@@ -455,10 +465,35 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   transform: rotate(90deg);
 }
 
-/* On the margin the track is 64px (MarginSheet card). */
+/* On the margin the track is 64px (MarginSheet card); on its strip it fills what the strip leaves, never under 64
+ * (ticket 1176). */
 .row-progress__track--margin {
   flex: none;
   width: var(--margin-track);
+}
+
+.row-progress__track--strip {
+  flex: 1 0 var(--margin-track);
+  width: auto;
+  margin-inline: var(--space-4);
+}
+
+/* The strip's counter is Go to row's quiet button in the control type, 4px either side (ticket 1176). */
+.row-progress--margin :deep(.row-progress__counter-button) {
+  flex: none;
+  height: var(--margin-done);
+  padding-inline: var(--space-4);
+  gap: var(--space-4);
+  font: var(--type-control);
+}
+
+.row-progress--short .row-progress__count-step,
+.row-progress--short .row-progress__line {
+  display: none;
+}
+
+.row-progress--short .row-progress__count-short {
+  display: inline;
 }
 
 /* A 1px rule between the switch, the counter and the steps (MarginSheet card). */
