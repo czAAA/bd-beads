@@ -274,7 +274,7 @@
   --margin-tool: 28px;
   --margin-tool-compact: 24px;
   --margin-title-row: 23px;
-  --margin-band-full: 68px;
+  --margin-band-full: 72px;
   --margin-band-compact: 40px;
   --margin-band-folded: 31px;
   --margin-band-inset-compact: 10px;
@@ -285,6 +285,7 @@
   --margin-tab-name: 600 0.6875rem/0.875rem var(--font-sans);
   --margin-band-inset: 14px;
   --margin-move-height: 28px;
+  --margin-strip: 26px;
   --margin-done: 26px;
   --margin-track: 64px;
   --margin-pencil: 18px;

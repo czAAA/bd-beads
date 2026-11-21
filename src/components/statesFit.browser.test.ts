@@ -284,8 +284,8 @@ const CASES: FitCase[] = [
   ['CanvasHint', CanvasHint, {}],
   ['FirstRunHints', FirstRunHints, {}],
   ['MarginSheet', marginSheetHost(1), {}],
-  // The roomy title block and its Bead pickers, opened from Change (ticket 1015).
-  ['MarginSheet (roomy)', marginSheetHost(1.5), {}],
+  // At 150%: the title block's one row on Row progress's strip, at the sheet's largest scale (ticket 1176).
+  ['MarginSheet (150%)', marginSheetHost(1.5), {}],
   ['MarginBeadCell (Bead pickers)', MarginBeadCellHost as Component, {}, (root: HTMLElement) => press(root, 'margin-bead-change')],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],

@@ -14,8 +14,9 @@ export const MARGIN_PX = {
   legible: { text: 11, button: 24 },
   /** The band height, at scale 1, from which each form fits (MarginSheet card, Zoom forms; ticket 0682 for folded). */
   band: {
-    /** The full form's two-row title block, 10px in, clear of the Frame's line. */
-    full: 68,
+    /** The full form's compact title row on Row progress's strip (ticket 1176; the two-row block from 68 until then),
+     * 10px in, clear of the Frame's line and its outset. */
+    full: 72,
     /** The compact row, 8px in, clear of the Frame's line; under it the sheet folds. */
     compact: 40,
     /** The folded row, 24px, between the sheet's edge and the Frame's line; under it the sheet is bare. */
@@ -34,6 +35,8 @@ export const MARGIN_PX = {
   tool: 28,
   /** The folded title block's name tab, the Move bar outside the full form, and the compact and folded row's height. */
   tab: 24,
+  /** Row progress's strip under the title block, across the sheet (ticket 1176), its rules included. */
+  strip: 26,
   /** The Move bar's hit area, the gutter handle's width. */
   moveWidth: 56,
   /** Between the band's Row progress, Move bar and tools. */

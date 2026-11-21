@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "Row progress now sits on the margin under the title block, across the Frame; Expand the Frame keeps your tools and lets you draw, and hides the Progress bar so the Frame grows larger",
+    "ru": "Прогресс по рядам теперь на полях под штампом, во всю ширину рамки; «Развернуть рамку» оставляет инструменты и рисование, а нижнюю панель прогресса прячет, чтобы рамка стала крупнее",
+    "uk": "Прогрес за рядами тепер на полях під штампом, на всю ширину рамки; «Розгорнути рамку» лишає інструменти й малювання, а нижню панель прогресу ховає, щоб рамка стала більшою",
+    "be": "Прагрэс па радках цяпер на палях пад штампам, на ўсю шырыню рамкі; «Разгарнуць рамку» пакідае інструменты і маляванне, а ніжнюю панэль прагрэсу хавае, каб рамка стала большай",
+    "zh": "行进度现在位于边距的标题栏下方，横跨整个边框；“展开边框”保留工具、照常绘制，并隐藏底部进度栏，让边框显示得更大",
+    "es": "El Progreso por filas está ahora en el margen, bajo el cajetín, a lo ancho del marco; Expandir el marco conserva tus herramientas y el dibujo, y oculta la barra de progreso para que el marco se vea más grande",
+    "pl": "Postęp rzędów jest teraz na marginesie pod tabliczką, na całą szerokość ramki; Rozwiń ramkę zostawia narzędzia i rysowanie, a chowa pasek postępu, by ramka była większa"
+  }
+}

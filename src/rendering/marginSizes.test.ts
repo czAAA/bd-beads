@@ -36,6 +36,7 @@ const MIRROR: Record<string, { token: string } | { css: string } | { none: strin
   borderRadius: { css: '--margin-border-radius' },
   tool: { css: '--margin-tool' },
   tab: { css: '--margin-tab' },
+  strip: { css: '--margin-strip' },
   moveWidth: { css: '--frame-handle-hit-width' },
   gap: { token: 'space-4' },
   'icon.full': { none: 'an IconButton’s icon size is a prop, not CSS' },

@@ -95,7 +95,7 @@ export interface CanvasViewOptions {
   opening?: { project: string; view: OpeningView | KeptView }
   /** While the Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): the room its slim sheet and the gap
    * round it take from each side of the drawing area, past the Frame's beads, at a zoom. A fit then fits the Frame's
-   * beads into the rest, and the Tool pill, set aside meanwhile, takes none. */
+   * beads into the rest, clear of the Tool pill too (ticket 1176). */
   expanded?: () => ((zoom: number) => Insets) | undefined
 }
 
@@ -166,11 +166,17 @@ export function useCanvasView(
     return viewport.value.width > 0 && viewport.value.height > 0
   }
 
-  /** The expanded Frame's fit (ticket 1169): its beads as large as the room its slim sheet leaves allows, within the
-   * Fit limits, centred there. Worked out twice, as the Frame's line, which the sheet stands off, moves with the zoom. */
-  function expandedFit(project: Project, room: (zoom: number) => Insets): ShownView | undefined {
+  /** The expanded Frame's fit (ticket 1169): its beads as large as the room its slim sheet and the Tool pill leave
+   * allows (ticket 1176: the pill stays while expanded), within the Fit limits, centred there. Worked out twice, as the
+   * Frame's line, which the sheet stands off, moves with the zoom. */
+  function expandedFit(project: Project, sheetRoom: (zoom: number) => Insets): ShownView | undefined {
     const footprint = footprintOf(project)
     if (!footprint) return undefined
+    const pill = options.covered?.() ?? NO_INSETS
+    const room = (at: number): Insets => {
+      const sheet = sheetRoom(at)
+      return { top: sheet.top + pill.top, right: sheet.right + pill.right, bottom: sheet.bottom + pill.bottom, left: sheet.left + pill.left }
+    }
     let at = zoom.value
     let insets = room(at)
     let area = viewport.value

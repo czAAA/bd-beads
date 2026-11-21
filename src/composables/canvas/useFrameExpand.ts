@@ -11,15 +11,17 @@ import { slimSheetSides, type SlimContent } from '../../rendering/slimSheet'
 import type { ShownView } from './useCanvasView'
 
 /** What the slim sheet's own controls measure on the page (MarginSheet card, Expand the Frame), in screen px: the
- * band's row, the title block (0 with none) and the narrowest row it shows (0 until it has had to show it). */
+ * band's row, the foot under the Frame (the title block and Row progress's strip; ticket 1176) and the narrowest row it
+ * shows (0 until it has had to show it). */
 export interface SlimMeasures {
   row: number
   title: number
   rowWidth: number
 }
 
-/** Until the sheet measures itself: the full row and the two-row title block, the tallest it holds. */
-const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: 2 * 23 + 1, rowWidth: 0 }
+/** Until the sheet measures itself: the full row, and the two-row title block on Row progress's strip (ticket 1176), the
+ * tallest it holds. */
+const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: 2 * 23 + 1 + MARGIN_PX.strip - 1, rowWidth: 0 }
 
 /** What Expand the Frame works the view through (`useCanvasView`). */
 export interface FrameExpandDeps {

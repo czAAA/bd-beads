@@ -35,9 +35,9 @@ import type { SlimMeasures } from '../../composables/canvas/useFrameExpand'
 import { UNDER_TABLET_QUERY } from '../../rendering/rulerScale'
 import { slimInset } from '../../rendering/slimSheet'
 
-// The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658, 1170): Row progress, the Move bar and the
-// tools in its top band, the title block in its bottom-left corner as seen, laid over the sheet the canvas draws. The
-// controls keep their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, the Move bar.
+// The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658, 1170, 1176): the tools in its top band, the
+// title block at its bottom-left as seen with Row progress under it, over the sheet the canvas draws. The controls keep
+// their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, the Move bar.
 const props = defineProps<{
   project: Project
   anchor: FrameAnchor
@@ -78,6 +78,10 @@ const emit = defineEmits<{
   /** A way chosen from Turn row direction's list (ticket 0973). */
   'set-row-direction': [way: ShownWay]
   'toggle-row-highlight': []
+  /** Go to row, from the strip's counter (ticket 1176): the pass to point at, from 0. */
+  'go-to-row': [pass: number]
+  /** Go to row's Show row: the current row brought back into view. */
+  'show-row': []
   rename: [name: string]
   'set-technique': [technique: Technique]
   /** A setting of the Frame's Technique, by its id (ticket 0698). */
@@ -156,30 +160,39 @@ const scale = computed(() => (props.expanded ? 1 : marginScale(props.anchor.band
 const expandedInset = computed(() => slimInset(narrowScreen.value))
 
 // The band's row and the title block step down a form where the sheet is too narrow for them, and are left out where
-// nothing fits: `narrow` is the folded row with Margin color in the Frame tools menu and no Row progress. Each tools form
-// first gives up Row progress's track (`:1`), then its counter (`:2`): Row done and Row highlight stay to the last.
+// nothing fits: `narrow` is the folded row with Margin color in the Frame tools menu.
 type RowForm = 'full' | 'compact' | 'folded' | 'narrow'
-type RowFit = `${Exclude<RowForm, 'narrow'>}:${0 | 1 | 2}` | 'narrow'
-const SMALL_FITS: readonly RowFit[] = ['compact:0', 'compact:1', 'compact:2', 'folded:0', 'folded:2', 'narrow']
-const ROW_FITS: Record<MarginForm, readonly RowFit[]> = {
-  full: ['full:0', 'full:1', 'full:2', ...SMALL_FITS],
-  compact: SMALL_FITS,
-  folded: SMALL_FITS.slice(3),
+const ROW_FITS: Record<MarginForm, readonly RowForm[]> = {
+  full: ['full', 'compact', 'folded', 'narrow'],
+  compact: ['compact', 'folded', 'narrow'],
+  folded: ['folded', 'narrow'],
   bare: [],
 }
 /** Expanded, the row is never bare nor narrow (ticket 1169): the sheet widens to the folded row instead. */
-const EXPANDED_ROW_FITS: readonly RowFit[] = ['full:0', 'full:1', 'full:2', ...SMALL_FITS.slice(0, -1)]
-// The legend is the first the title block gives up: `brief` is the compact row without it (ticket 0698).
-type TitleForm = 'roomy' | 'full' | 'compact' | 'brief' | 'key' | 'tab'
-const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['full', 'compact', 'brief', 'tab'], compact: ['compact', 'brief', 'tab'], folded: ['tab'], bare: [] }
-/** Expanded (ticket 1169): the two-row block, the compact row, then the name with the legend and Letters, then the tab;
- * never roomy. */
-const EXPANDED_TITLE_FORMS: readonly TitleForm[] = ['full', 'compact', 'key', 'tab']
-/** The roomy block (ticket 1015) is tried first where the band on screen holds it clear of the Frame's line. */
-const titleForms = computed<readonly TitleForm[]>(() =>
-  props.expanded ? EXPANDED_TITLE_FORMS : props.anchor.band >= MARGIN_PX.roomy ? ['roomy', ...TITLE_FORMS[form.value]] : TITLE_FORMS[form.value],
-)
+const EXPANDED_ROW_FITS: readonly RowForm[] = ['full', 'compact', 'folded']
+// The legend is the first the title block gives up: `brief` is the compact row without it (ticket 0698). On Row
+// progress's strip (ticket 1176) the full form's block is one row, `line`: the name, the Technique and its settings with
+// their pencils, the size, the legend and Letters; the two-row and roomy blocks need the room the strip takes.
+type TitleForm = 'full' | 'line' | 'compact' | 'brief' | 'key' | 'tab'
+const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['line', 'brief', 'tab'], compact: ['compact', 'brief', 'tab'], folded: ['tab'], bare: [] }
+/** Expanded (ticket 1169): the two-row block, the one row with its pencils, the compact row, then the name with the
+ * legend and Letters, then the tab; never roomy. */
+const EXPANDED_TITLE_FORMS: readonly TitleForm[] = ['full', 'line', 'compact', 'key', 'tab']
+const titleForms = computed<readonly TitleForm[]>(() => (props.expanded ? EXPANDED_TITLE_FORMS : TITLE_FORMS[form.value]))
 
+// Row progress under the title block (ticket 1176): full and expanded, the strip across the sheet, which first shortens
+// its counter (`:short`), then gives up its track (`:1`), then its counter (`:2`), Row done staying to the last. Compact
+// and folded, one line: Row progress at its end, beside the title block, giving up the same.
+type ProgressFit = `${'margin' | 'compact' | 'folded'}:${0 | 1 | 2}` | 'margin:0:short'
+const STRIP_FITS: readonly ProgressFit[] = ['margin:0', 'margin:0:short', 'margin:1', 'margin:2']
+const PROGRESS_FITS: Record<MarginForm, readonly ProgressFit[]> = {
+  full: STRIP_FITS,
+  compact: ['compact:0', 'compact:1', 'compact:2'],
+  folded: ['folded:0', 'folded:2'],
+  bare: [],
+}
+/** Under the title block, or beside it on one line. */
+const stacked = computed(() => !!props.expanded || form.value === 'full')
 /** The places of the sheet's form, in screen px at its scale. */
 const place = computed(() => {
   if (props.expanded) return { top: expandedInset.value, side: expandedInset.value, border: expandedInset.value }
@@ -193,15 +206,67 @@ const middle = (room: number) => Math.max(0, (room - MARGIN_PX.tab * scale.value
 /** A part drawn at the scale from its `origin` corner. */
 const scaledFrom = (origin: string) => ({ transform: `scale(${scale.value})`, transformOrigin: origin })
 
+/** The foot's inset from the sheet's left side, inside the border or, folded, as the row is. */
+const footSide = computed(() => (form.value === 'folded' ? MARGIN_PX.place.compact.side * scale.value : place.value.border))
+/** The foot's room on screen, the sheet's width inside its border; in drafting px, what the title block and Row
+ * progress fit into. */
+const footRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * footSide.value))
+const footRoomAt1 = computed(() => footRoom.value / scale.value)
+
+const footEl = ref<HTMLElement>()
+const footSize = useElementSize(footEl)
+const progressEl = ref<HTMLElement>()
+const progressSize = useElementSize(progressEl)
+/** Row progress's width in drafting px as laid out, the strip's track counted at its least, as it fills the rest. */
+function progressWidth(): number {
+  const root = progressEl.value?.firstElementChild as HTMLElement | null | undefined
+  if (!root) return 0
+  const style = getComputedStyle(root)
+  const parts = [...root.children] as HTMLElement[]
+  const gap = (parseFloat(style.columnGap) || 0) * Math.max(0, parts.length - 1)
+  const own = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0) + (parseFloat(style.borderLeftWidth) || 0) + (parseFloat(style.borderRightWidth) || 0)
+  const widths = parts.map((part) => {
+    const at = getComputedStyle(part)
+    const margins = (parseFloat(at.marginLeft) || 0) + (parseFloat(at.marginRight) || 0)
+    const filling = part.classList.contains('row-progress__track--strip')
+    return margins + (filling ? parseFloat(at.flexBasis) || 0 : ownLength(part, part.getBoundingClientRect().width) / scale.value)
+  })
+  const sum = widths.reduce((total, width) => total + width, 0)
+  return sum > 0 ? sum + gap + own : 0
+}
+/** The name tab's width with its whole name, once it has shown: on one line Row progress leaves it that. */
+const tabWidth = ref(0)
+/** Whether the title block is shown in some form: Name and size on the margin is on (MarginSheet card). */
+const titleOn = computed(() => canvas.margin.titleBlock.value && !!frame.value)
+const progressFitting = useFittingForm({
+  forms: () => (frame.value ? (props.expanded ? STRIP_FITS : PROGRESS_FITS[form.value]) : []),
+  // The strip has the sheet's whole width; on one line it leaves the title block its tab, the name uncut.
+  room: () => (stacked.value ? footRoomAt1.value : footRoomAt1.value - MARGIN_PX.gap - (titleOn.value ? tabWidth.value : 0)),
+  measure: progressWidth,
+  observed: () => [progressEl.value?.firstElementChild],
+  // What it reads: Row done or Column done, the counter, the language (ticket 0851).
+  labels: () => {
+    const { current, total } = rowProgressPosition(props.project)
+    return JSON.stringify([locale.value, rowProgressOf(props.project).direction, current, total, touch.value, !!props.expanded])
+  },
+})
+/** Row progress shown: expanded, where the Progress bar is set aside, always, the strip at its least where none fits. */
+const progressFit = computed(() => progressFitting.value ?? (props.expanded ? STRIP_FITS.at(-1) : undefined))
+const progressForm = computed(() => progressFit.value?.split(':')[0] as 'margin' | 'compact' | 'folded' | undefined)
+/** How much of Row progress it gives up: nothing, its track, or its track and counter. */
+const progressDrop = computed(() => Number(progressFit.value?.split(':')[1] ?? 0) as 0 | 1 | 2)
+const shortCount = computed(() => progressFit.value?.endsWith(':short') ?? false)
+
 const titleEl = ref<HTMLElement>()
-const titleSize = useElementSize(titleEl)
-/** The title block's inset from the sheet's left side, inside the border or, folded, as the row is. */
-const titleSide = computed(() => (form.value === 'folded' ? MARGIN_PX.place.compact.side * scale.value : place.value.border))
-/** The title block's room on screen: the sheet's width inside its border. */
-const titleRoom = computed(() => props.anchor.sheet.width - 2 * titleSide.value)
+
+/** The title block's room: the foot's, less Row progress beside it on one line. */
+const titleRoom = computed(() => {
+  if (stacked.value || !progressForm.value) return footRoomAt1.value
+  return footRoomAt1.value - ownLength(progressEl.value, progressSize.width.value) - MARGIN_PX.gap
+})
 const title = useFittingForm({
-  forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? titleForms.value.filter((shown) => shown === 'tab') : titleForms.value) : []),
-  room: () => titleRoom.value / scale.value,
+  forms: () => (titleOn.value ? (fold.folded.value ? titleForms.value.filter((shown) => shown === 'tab') : titleForms.value) : []),
+  room: () => titleRoom.value,
   measure: () => ownLength(titleEl.value, titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
   observed: () => [titleEl.value?.firstElementChild],
   // Its words: a shorter name, maker or language brings back the block it stepped down from (ticket 0851).
@@ -210,25 +275,33 @@ const title = useFittingForm({
     return JSON.stringify([locale.value, name, props.project.makerName, technique, techniqueSettings, columns, rows])
   },
 })
-/** What the title block is drawn at: the sheet's scale, or for the roomy block that scale by its own band over the
- * drafting sheet's, so it is 1 where it first shows and its words never under the sheet's least (ticket 1015). */
-const titleScale = computed(() => scale.value * (title.value === 'roomy' ? MARGIN_PX.scale.band / MARGIN_PX.roomy : 1))
+// The tab's width with its name whole, as laid out (not scaled): its own, less what the name shows, plus all the name.
+watch(
+  () => [title.value, tabName.value, progressSize.width.value, footRoomAt1.value],
+  () => {
+    const tab = titleEl.value?.firstElementChild as HTMLElement | null | undefined
+    const name = tab?.querySelector<HTMLElement>('.margin-sheet__tab-name')
+    if (title.value !== 'tab' || !tab || !name) return
+    const whole = tab.offsetWidth - name.clientWidth + name.scrollWidth
+    if (whole > 0) tabWidth.value = whole
+  },
+  { flush: 'post' },
+)
 /** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
 const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
-/** The title block's inset from the sheet's bottom-left corner, along its left side and its bottom edge: the inner
- * border's, or folded, the tab's in the middle of the room between the bottom edge and the Frame's line. */
-const titleInset = computed(() => ({
-  side: titleSide.value,
-  edge: form.value === 'folded' ? middle(roomBelow.value) : place.value.border,
+/** The foot's inset from the sheet's bottom-left corner, along its left side and its bottom edge: the inner border's,
+ * or folded, the line's in the middle of the room between the bottom edge and the Frame's line. */
+const footInset = computed(() => ({
+  side: footSide.value,
+  edge: form.value === 'folded' && !props.expanded ? middle(roomBelow.value) : place.value.border,
 }))
 // Always the bottom-left as seen, whatever the Canvas or the Frame is turned (ticket 1170): it never shares the top
 // band with the row.
-const titleStyle = computed(() => ({
-  left: `${titleInset.value.side}px`,
-  bottom: `${titleInset.value.edge}px`,
-  maxWidth: `${titleRoom.value / titleScale.value}px`,
-  transform: `scale(${titleScale.value})`,
-  transformOrigin: '0 100%',
+const footStyle = computed(() => ({
+  left: `${footInset.value.side}px`,
+  bottom: `${footInset.value.edge}px`,
+  width: `${footRoomAt1.value}px`,
+  ...scaledFrom('0 100%'),
 }))
 
 const bandEl = ref<HTMLElement>()
@@ -236,13 +309,13 @@ const bandParts = () => [...(bandEl.value?.children ?? [])]
 /** The band's room on screen: the sheet's width inside the row's inset. */
 const bandRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * place.value.side))
 const bandLeft = computed(() => place.value.side)
-/** The band row's width in drafting px: the Move bar centred, with room on each side for the wider of Row progress and
- * the tools. */
+/** The band row's width in drafting px: the Move bar centred, with room on each side for the wider of Expand the Frame
+ * and the tools. */
 function bandWidth(): number {
   const parts = bandParts()
   const [start = 0, move = 0, end = 0] = parts.map((part) => ownLength(part, part.getBoundingClientRect().width) / scale.value)
   if (parts.length !== 3 || start + end === 0) return 0
-  // Expanded there is no Move bar to centre (ticket 1169): Row progress and the tools side by side.
+  // Expanded there is no Move bar to centre (ticket 1169): Expand the Frame and the tools side by side.
   return props.expanded ? start + end + 2 * MARGIN_PX.gap : move + 2 * Math.max(start, end) + 2 * MARGIN_PX.gap
 }
 const fitting = useFittingForm({
@@ -250,25 +323,18 @@ const fitting = useFittingForm({
   room: () => bandRoom.value / scale.value,
   measure: bandWidth,
   observed: bandParts,
-  // What the row reads and holds: Row done or Column done, the counter, the language, the tools shown. Turned back to
-  // rows, the row it stepped down from shows whole again where it fits (ticket 0851).
-  labels: () => {
-    const { current, total } = rowProgressPosition(props.project)
-    return JSON.stringify([locale.value, rowProgressOf(props.project).direction, current, total, rotatable.value, editable.value, touch.value, !!props.expanded])
-  },
+  // What the row holds: the language, the tools shown (ticket 0851).
+  labels: () => JSON.stringify([locale.value, rotatable.value, editable.value, touch.value, !!props.expanded]),
 })
 /** The row shown: expanded, the folded row where none fits, the sheet then widening to it (ticket 1169). */
 const rowFit = computed(() => fitting.value ?? (props.expanded ? EXPANDED_ROW_FITS.at(-1) : undefined))
-const row = computed(() => rowFit.value?.split(':')[0] as RowForm | undefined)
-/** How much of Row progress the row gives up: nothing, its track, or its track and counter. */
-const progressDrop = computed(() => Number(rowFit.value?.split(':')[1] ?? 0) as 0 | 1 | 2)
+const row = rowFit
 const rowTop = computed(() => (form.value === 'folded' && !props.expanded ? middle(roomAbove.value) : place.value.top))
 /** The row's height in drafting px; on screen, times the scale. */
 const rowHeight = computed(() => (row.value === 'full' ? MARGIN_PX.tool : MARGIN_PX.tab))
 const bandStyle = computed(() => ({ top: `${rowTop.value}px`, left: `${bandLeft.value}px`, width: `${bandRoom.value / scale.value}px`, height: `${rowHeight.value}px`, ...scaledFrom('0 0') }))
 const small = computed(() => row.value !== 'full')
 const iconSize = computed(() => (small.value ? MARGIN_PX.icon.compact : MARGIN_PX.icon.full))
-const progressForm = computed(() => (row.value === 'full' ? 'margin' : row.value === 'compact' ? 'compact' : 'folded'))
 
 // The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498).
 // The Tool pill needs no such rule: it is drawn over the sheet, so it takes its own presses.
@@ -276,10 +342,10 @@ const bandBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
   return { left: sheet.left + bandLeft.value, top: sheet.top + rowTop.value, width: bandRoom.value, height: rowHeight.value * scale.value }
 })
-const titleBox = computed<BarBox>(() => {
+const footBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
-  const { width, height } = { width: titleSize.width.value * titleScale.value, height: titleSize.height.value * titleScale.value }
-  const { side, edge } = titleInset.value
+  const { width, height } = { width: footSize.width.value * scale.value, height: footSize.height.value * scale.value }
+  const { side, edge } = footInset.value
   return { left: sheet.left + side, top: sheet.top + sheet.height - edge - height, width, height }
 })
 const yields = (box: BarBox) => !!props.selection && overlapsSelectionHandles(box, props.selection)
@@ -297,7 +363,7 @@ const handleYields = computed(() => {
   const { sheet } = props.anchor
   return yields({ left: sheet.left + handleAt.value.left - MARGIN_PX.moveWidth / 2, top: sheet.top + handleAt.value.top - MARGIN_PX.tab, width: handleWidth, height: MARGIN_PX.tab })
 })
-const titleYields = computed(() => titleSize.width.value > 0 && yields(titleBox.value))
+const footYields = computed(() => footSize.width.value > 0 && yields(footBox.value))
 
 /** The folded row's width, once the expanded sheet has had to show it: the sheet is never narrower (ticket 1169). */
 const narrowestRow = ref(0)
@@ -312,13 +378,12 @@ watch(
 )
 // What the slim sheet holds, told to the canvas, which lays it round them.
 watch(
-  () => (props.expanded ? { row: rowHeight.value, title: title.value ? titleSize.height.value : 0, rowWidth: narrowestRow.value } : undefined),
+  () => (props.expanded ? { row: rowHeight.value, title: footSize.height.value, rowWidth: narrowestRow.value } : undefined),
   (measures) => measures && emit('slim', measures),
   { immediate: true, deep: true },
 )
 
 /** Row progress is one Tab stop, ←/→ along its controls, as in the Progress bar (ADR 0075). */
-const progressEl = ref<HTMLElement>()
 const roving = useRovingFocus(progressEl, { axis: () => 'horizontal', managesTabIndex: true })
 
 /** Whether the Move bar is being dragged: it turns accent until the canvas press ends. */
@@ -443,23 +508,6 @@ const menuItems = computed<FrameToolItem[]>(() =>
         data-testid="margin-expand-frame"
         @click="emit('toggle-expand')"
       />
-      <span class="margin-sheet__divider" aria-hidden="true" />
-      <div ref="progressEl" class="margin-sheet__progress" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
-        <RowProgressControls
-          v-if="row !== 'narrow'"
-          :project="project"
-          :row-highlight="rowHighlight"
-          :row-press="rowPress"
-          :form="progressForm"
-          :drop="progressDrop"
-          :without-not-done="withoutNotDone"
-          testid="margin-progress"
-          @move-row="emit('move-row', $event)"
-          @reset-progress="emit('reset-progress')"
-          @set-row-direction="emit('set-row-direction', $event)"
-          @toggle-row-highlight="emit('toggle-row-highlight')"
-        />
-      </div>
       </div>
       <!-- Expanded, the view follows the Frame: no Move bar, and no Tab stop for it (ticket 1169). -->
       <span v-if="expanded" aria-hidden="true" />
@@ -539,57 +587,79 @@ const menuItems = computed<FrameToolItem[]>(() =>
       <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools :items="menuItems" :deps="deps" /></span>
     </div>
 
+    <!-- The foot (ticket 1176): the title block in the bottom-left corner, Row progress under it across the sheet, or
+         where the sheet holds one line, at its end. -->
     <div
-      v-if="title"
-      ref="titleEl"
-      class="margin-sheet__title"
-      :class="{ 'margin-sheet__yielding': titleYields }"
-      :style="titleStyle"
-      :data-form="title"
-      data-testid="margin-title"
+      v-if="title || progressForm"
+      ref="footEl"
+      class="margin-sheet__foot"
+      :class="[stacked ? 'margin-sheet__foot--stacked' : 'margin-sheet__foot--line', { 'margin-sheet__foot--touch': touch, 'margin-sheet__yielding': footYields }]"
+      :style="footStyle"
+      data-testid="margin-foot"
     >
-      <MarginTitleBlock
-        v-if="title !== 'tab'"
-        :project="project"
-        :form="title"
-        @rename="emit('rename', $event)"
-        @set-technique="emit('set-technique', $event)"
-        @set-setting="(id, value) => emit('set-setting', id, value)"
-        @save-maker-name="emit('save-maker-name', $event)"
-        @replace-bead="emit('replace-bead', $event)"
-        @set-letters="emit('set-letters', $event)"
-        @fold="fold.fold()"
-      />
-      <!-- Folded, the title block is its name on a tab; where the sheet has room, the tab unfolds it. Unnamed, the tab
-           invites a name: "Name this Frame" opens the name field and its chevron unfolds (ticket 0803). -->
-      <span v-else-if="!frame?.name" class="margin-sheet__tab margin-sheet__tab--unnamed" data-testid="margin-title-tab">
-        <EditableLine v-bind="nameLine" invite-only class="margin-sheet__tab-name" @save="emit('rename', $event)" />
-        <IconButton
-          v-if="unfoldable"
-          variant="plain"
-          icon="chevron-up"
-          :icon-size="12"
-          :action="actions.show"
-          :label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: tabName })"
-          data-testid="margin-title-unfold"
-          @click="fold.unfold()"
+      <div v-if="title" ref="titleEl" class="margin-sheet__title" :data-form="title" data-testid="margin-title">
+        <MarginTitleBlock
+          v-if="title !== 'tab'"
+          :project="project"
+          :form="title"
+          @rename="emit('rename', $event)"
+          @set-technique="emit('set-technique', $event)"
+          @set-setting="(id, value) => emit('set-setting', id, value)"
+          @save-maker-name="emit('save-maker-name', $event)"
+          @replace-bead="emit('replace-bead', $event)"
+          @set-letters="emit('set-letters', $event)"
+          @fold="fold.fold()"
         />
-      </span>
-      <AppButton
-        v-else-if="unfoldable"
-        variant="text"
-        class="margin-sheet__tab"
-        :action="actions.show"
-        :aria-label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: tabName })"
-        trailing-icon="chevron-up"
-        data-testid="margin-title-tab"
-        @click="fold.unfold()"
-      >
-        <span class="margin-sheet__tab-name">{{ tabName }}</span>
-      </AppButton>
-      <span v-else class="margin-sheet__tab" data-testid="margin-title-tab">
-        <span class="margin-sheet__tab-name">{{ tabName }}</span>
-      </span>
+        <!-- Folded, the title block is its name on a tab; where the sheet has room, the tab unfolds it. Unnamed, the tab
+             invites a name: "Name this Frame" opens the name field and its chevron unfolds (ticket 0803). -->
+        <span v-else-if="!frame?.name" class="margin-sheet__tab margin-sheet__tab--unnamed" data-testid="margin-title-tab">
+          <EditableLine v-bind="nameLine" invite-only class="margin-sheet__tab-name" @save="emit('rename', $event)" />
+          <IconButton
+            v-if="unfoldable"
+            variant="plain"
+            icon="chevron-up"
+            :icon-size="12"
+            :action="actions.show"
+            :label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: tabName })"
+            data-testid="margin-title-unfold"
+            @click="fold.unfold()"
+          />
+        </span>
+        <AppButton
+          v-else-if="unfoldable"
+          variant="text"
+          class="margin-sheet__tab"
+          :action="actions.show"
+          :aria-label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: tabName })"
+          trailing-icon="chevron-up"
+          data-testid="margin-title-tab"
+          @click="fold.unfold()"
+        >
+          <span class="margin-sheet__tab-name">{{ tabName }}</span>
+        </AppButton>
+        <span v-else class="margin-sheet__tab" data-testid="margin-title-tab">
+          <span class="margin-sheet__tab-name">{{ tabName }}</span>
+        </span>
+      </div>
+      <div v-if="progressForm" ref="progressEl" class="margin-sheet__progress" :data-form="progressFit" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
+        <RowProgressControls
+          :project="project"
+          :row-highlight="rowHighlight"
+          :row-press="rowPress"
+          :form="progressForm"
+          :drop="progressDrop"
+          :short-count="shortCount"
+          :lead="expanded"
+          :without-not-done="withoutNotDone"
+          testid="margin-progress"
+          @move-row="emit('move-row', $event)"
+          @reset-progress="emit('reset-progress')"
+          @set-row-direction="emit('set-row-direction', $event)"
+          @toggle-row-highlight="emit('toggle-row-highlight')"
+          @go-to-row="emit('go-to-row', $event)"
+          @show-row="emit('show-row')"
+        />
+      </div>
     </div>
 
     <!-- Rotate Frame's copy, lifted off the paper where it was pressed (ticket 1016): no Tab stop and hidden from a
@@ -658,7 +728,7 @@ const menuItems = computed<FrameToolItem[]>(() =>
 }
 
 .margin-sheet__band > *,
-.margin-sheet__title,
+.margin-sheet__foot,
 .margin-sheet__handle {
   pointer-events: auto;
 }
@@ -674,10 +744,6 @@ const menuItems = computed<FrameToolItem[]>(() =>
   display: flex;
   align-items: center;
   gap: var(--space-4);
-}
-
-.margin-sheet__progress {
-  display: flex;
 }
 
 /* Expand the Frame (ticket 1169): the band's first item, a tool's size and look, a divider after it. */
@@ -697,11 +763,6 @@ const menuItems = computed<FrameToolItem[]>(() =>
 .margin-sheet__start :deep(.margin-sheet__expand:hover),
 .margin-sheet__handle-expand :deep(.icon-btn:hover) {
   background: color-mix(in srgb, var(--ink) 10%, transparent);
-}
-
-/* On a coarse pointer it stands clear of Row progress's first hit area, as the tools stand apart (ticket 0976). */
-.margin-sheet__band--touch .margin-sheet__start {
-  gap: calc((var(--touch-target) - var(--margin-tool)) / 2);
 }
 
 .margin-sheet__tools {
@@ -748,13 +809,13 @@ const menuItems = computed<FrameToolItem[]>(() =>
   padding-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2);
 }
 
-/* So do Row progress's 28px Turn row direction and Reset progress, and Back a row beside Row done, in the full row. */
-.margin-sheet__band--touch :deep(.row-progress--margin > .icon-btn-wrap + .icon-btn-wrap) {
-  margin-inline-start: calc(var(--touch-target) - var(--margin-tool) - var(--space-4));
+/* So do Row progress's Turn row direction and Reset progress, and Back a row beside Row done, on the strip. */
+.margin-sheet__foot--touch :deep(.row-progress--margin > .icon-btn-wrap + .icon-btn-wrap) {
+  margin-inline-start: calc(var(--touch-target) - var(--margin-tool-compact) - var(--space-4));
 }
 
-.margin-sheet__band--touch :deep(.row-progress__steps > .icon-btn-wrap + *) {
-  margin-inline-start: calc((var(--touch-target) - var(--margin-tool)) / 2 - var(--space-4));
+.margin-sheet__foot--touch :deep(.row-progress__steps > .icon-btn-wrap + *) {
+  margin-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2 - var(--space-4));
 }
 
 /* Mirror the whole Frame on is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
@@ -875,12 +936,75 @@ const menuItems = computed<FrameToolItem[]>(() =>
   background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
-/* The title block, anchored to the inner border's bottom-left corner as seen; folded, the tab in the middle of the
- * band. */
-.margin-sheet__title {
+/* The foot (ticket 1176), anchored to the inner border's bottom-left corner as seen; folded, one line in the middle of
+ * the band. Stacked, the title block stands on the strip, which runs the sheet's width inside its border; on one line,
+ * Row progress stands at the line's end. */
+.margin-sheet__foot {
   position: absolute;
   display: flex;
+  box-sizing: border-box;
+}
+
+.margin-sheet__foot--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.margin-sheet__foot--line {
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.margin-sheet__title {
+  display: flex;
   justify-content: flex-start;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.margin-sheet__progress {
+  display: flex;
+  min-width: 0;
+}
+
+/* On one line Row progress keeps its width and the title block gives way, its name ending in an ellipsis. */
+.margin-sheet__foot--line .margin-sheet__progress {
+  flex: none;
+  margin-inline-start: auto;
+}
+
+/* The strip: one band of the title block's paper across the sheet, its rules the block's, its bottom corners rounded
+ * with the inner border; the title block above stands on it, sharing its top rule. */
+.margin-sheet__foot--stacked .margin-sheet__progress {
+  align-self: stretch;
+}
+
+.margin-sheet__foot--stacked .margin-sheet__title + .margin-sheet__progress {
+  margin-top: -1px;
+}
+
+.margin-sheet__foot--stacked .margin-sheet__title :deep(.margin-title) {
+  border-radius: 0;
+}
+
+.margin-sheet__foot--stacked :deep(.row-progress--margin) {
+  flex: 1;
+  box-sizing: border-box;
+  height: var(--margin-strip);
+  padding-inline: var(--space-2);
+  background: var(--margin-title);
+  border: 1px solid var(--margin-line);
+  border-radius: 0 0 var(--margin-border-radius) var(--margin-border-radius);
+}
+
+.margin-sheet__foot--stacked :deep(.row-progress--margin .icon-btn) {
+  width: var(--margin-tool-compact);
+  height: var(--margin-tool-compact);
+}
+
+.margin-sheet__foot--stacked :deep(.row-progress--margin .app-button) {
+  height: var(--margin-done-compact);
 }
 
 /* The name tab: 24px, `margin-title` fill, the name (Inter 600 11) and `chevron-up` when it unfolds the block. */
