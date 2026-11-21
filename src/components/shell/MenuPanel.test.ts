@@ -150,15 +150,15 @@ describe('MenuPanel (ticket 443)', () => {
 })
 
 describe('MenuPanel on every page (tickets 540, 1113)', () => {
-  /** Every row's and section's test id, in order, with the pen seen, the browser's keeping known and a signed-in account. */
+  /** Every row's and section's test id, in order, with the pen seen and a signed-in account. */
   const rowsOn = (props: Record<string, unknown>) =>
-    mountIn({ penSeen: true, kept: true, account: { email: 'ann@example.com', plan: 'free' }, ...props })
+    mountIn({ penSeen: true, account: { email: 'ann@example.com', plan: 'free' }, ...props })
       .findAll('[data-testid^="menu-"], [data-testid="theme-picker"]')
       .map((row) => row.attributes('data-testid'))
 
   it('holds the same rows in the editor, on Convert image and on the Homepage', () => {
     const editor = rowsOn({})
-    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-keep-projects', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback', 'menu-item-homepage']))
+    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback', 'menu-item-homepage']))
     expect(rowsOn({ page: 'convert-image' })).toEqual(editor)
     expect(rowsOn({ page: 'homepage' })).toEqual(editor)
   })
@@ -308,21 +308,3 @@ describe("MenuPanel in What's inside's demo editor (ticket 0797)", () => {
   })
 })
 
-describe('MenuPanel Kept by this browser (tickets 0839, 0936)', () => {
-  it('shows whether the browser keeps the Projects as a fact, not a button, with the reason behind an Info button', () => {
-    const off = mountIn({ kept: false })
-    const row = off.get('[data-testid="menu-keep-projects"]')
-    expect(row.element.tagName).toBe('DIV')
-    expect(row.text().startsWith(en.panels.menu.keepProjects)).toBe(true)
-    expect(row.get('.panel-fact-row__value').text()).toBe(en.panels.menu.keepProjectsOff)
-    expect(row.get('svg').attributes('data-icon')).toBe('device')
-    expect(row.get('[data-testid="menu-keep-projects-info"]').attributes('aria-label')).toBe(en.panels.menu.keepProjectsInfoLabel)
-
-    expect(mountIn({ kept: true }).get('[data-testid="menu-keep-projects"]').text()).toContain(en.panels.menu.keepProjectsOn)
-  })
-
-  it('is absent where the browser can\'t say, and in the demo', () => {
-    expect(mountIn().find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
-    expect(mountIn({ kept: false, demo: true }).find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
-  })
-})
