@@ -142,3 +142,7 @@ A build agent checks each of these on a 100 × 100 loom Schema with an empty bac
 - [ ] Printed in black and white, every letter is readable, empty positions are white (under their cross with Empty grid on), and overlap columns are lighter than their neighbours. Zoomed to 800 % on a Retina screen, letters and lines are sharp.
 
 The earlier cards (1.75 mm, 2.3 mm and a fixed 3 mm cell, odd and even numbers turned upwards, counts in the key) are in git history.
+
+## Lifted Frame (ticket 1177, approved 2026-11-21, not yet in the app)
+
+With the Frame's Lift saved on and Chart border on, each pad lifts off the paper by a soft shadow under its rim, drawn as three or four stacked, nearly clear copies of the rim; nothing else on the page moves (printed-output.md, Lifted Frame in exports). Not with Black and white on.
