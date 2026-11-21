@@ -55,6 +55,7 @@ export const ICON_NAMES = [
   'mirror',
   'moon',
   'more',
+  'mouse',
   'move-frame',
   'name-piece',
   'paint',

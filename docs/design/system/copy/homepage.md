@@ -45,6 +45,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | No ads or tracking · Nothing is sold to you, and nothing records what you do. (ticket 0819) | Без рекламы и слежки · Вам ничего не продают, и никто не записывает, что вы делаете. |
 | For tablets and pens · Pen mode, pen hover and big buttons for your finger. On iPad, Android and Windows. (ticket 1120: it was For iPad and Pencil, which read as iPad only; Pen mode takes any pen) | Для планшетов и стилусов · Режим пера, наведение пера и крупные кнопки под палец. На iPad, Android и Windows. |
 | Free forever · All you need is free, and nothing is paid for now. Professional extras will come later. | Бесплатно навсегда · Всё нужное бесплатно, платного сейчас нет. Позже появятся профессиональные дополнения. |
+| For computers and phones · With a mouse, right-click for tools and colors where you draw. The wheel scrolls, and with Ctrl or ⌘ it zooms. On a phone, hold the Canvas for them and pinch to zoom. (ticket 1175; the wheel, Ctrl or ⌘, the hold and the pinch as the Canvas takes them) | Для компьютеров и телефонов · С мышью щёлкните правой кнопкой: инструменты и цвета откроются там, где вы рисуете. Колесо прокручивает, а с Ctrl или ⌘ масштабирует. На телефоне удержите холст, а масштабируйте двумя пальцами. |
 | Keyboard shortcuts · Every edit has its own key. Find them all in {menu} → {help} → {shortcuts}. | Горячие клавиши · У каждой правки есть своя клавиша. Все они в {menu} → {help} → {shortcuts}. |
 | Canvas and Frame · Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count. | Холст и рамка · Рисуйте где угодно: у холста нет краёв. Рамка задаёт размер, экспорт и количество бисеринок. |
 | Techniques · Loom, peyote and brick stitch, each drawn the way its beads sit. | Техники плетения · Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер. |
@@ -63,7 +64,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | What's inside: the editor (the editor's region, for screen readers) | Что внутри: редактор |
 | Ring · Heart · Bracelet (the demo's Projects; Ring replaced Kaleidoscope, ticket 0819) | Кольцо · Сердце · Браслет |
 
-Since ticket 0819 the cards above are the coffee screen's promises, in this order: Yours, on this device · Works offline · No ads or tracking · For tablets and pens · Free forever · Keyboard shortcuts (left out on a phone). The rows were What's inside's tabs (ticket 0819); since ticket 0830 they play under four chapters, the caption showing the playing row's name and line, and a phone lists them. Ticket 0830 also moved Starters up to fifth, after Mirror.
+Since ticket 0819 the cards above are the coffee screen's promises, in this order: Yours, on this device · Works offline · No ads or tracking · Free forever, then For tablets and pens · For computers and phones · Keyboard shortcuts (ticket 1175; Keyboard shortcuts left out on a phone). The rows were What's inside's tabs (ticket 0819); since ticket 0830 they play under four chapters, the caption showing the playing row's name and line, and a phone lists them. Ticket 0830 also moved Starters up to fifth, after Mirror.
 
 ### The Homepage rework (ticket 0819)
 

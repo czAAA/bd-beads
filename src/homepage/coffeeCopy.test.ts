@@ -4,15 +4,19 @@ import { ru } from '../i18n/ru'
 import { coffeeActs, coffeePromises, coffeeRows } from './coffeeCopy'
 
 describe("The coffee screen's copy (ticket 0823)", () => {
-  it('has the six promises in order, each with its icon', () => {
-    expect(coffeePromises(en).map(({ icon, name }) => [icon, name])).toEqual([
-      ['device', 'Yours, on this device'],
-      ['cloud-off', 'Works offline'],
-      ['eye-off', 'No ads or tracking'],
-      ['pen-mode', 'For tablets and pens'],
-      ['check', 'Free forever'],
-      ['keyboard', 'Keyboard shortcuts'],
+  it('has the seven promises in order, each with its icon and its row: what it is, then how you use it (ticket 1175)', () => {
+    expect(coffeePromises(en).map(({ icon, name, row }) => [icon, name, row])).toEqual([
+      ['device', 'Yours, on this device', 'what'],
+      ['cloud-off', 'Works offline', 'what'],
+      ['eye-off', 'No ads or tracking', 'what'],
+      ['check', 'Free forever', 'what'],
+      ['pen-mode', 'For tablets and pens', 'how'],
+      ['mouse', 'For computers and phones', 'how'],
+      ['keyboard', 'Keyboard shortcuts', 'how'],
     ])
+    expect(coffeePromises(en)[5].text).toBe(
+      'With a mouse, right-click for tools and colors where you draw. The wheel scrolls, and with Ctrl or ⌘ it zooms. On a phone, hold the Canvas for them and pinch to zoom.',
+    )
   })
 
   it('says Yours, on this device without "offline", which is a promise of its own', () => {
@@ -20,12 +24,12 @@ describe("The coffee screen's copy (ticket 0823)", () => {
   })
 
   it("points Keyboard shortcuts at the Menu path in the app's own labels, in every language", () => {
-    expect(coffeePromises(en)[5].text).toBe('Every edit has its own key. Find them all in Menu → Help → Keyboard shortcuts.')
-    expect(coffeePromises(ru)[5].text).toContain(`${ru.panels.menu.help} → ${ru.shortcutsHelp.title}`)
+    expect(coffeePromises(en)[6].text).toBe('Every edit has its own key. Find them all in Menu → Help → Keyboard shortcuts.')
+    expect(coffeePromises(ru)[6].text).toContain(`${ru.panels.menu.help} → ${ru.shortcutsHelp.title}`)
   })
 
-  it('has the rows: the six promises, then Open source and Say hello (tickets 0880, 0948)', () => {
-    expect(coffeeRows(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'tablets', 'free', 'shortcuts', 'openSource', 'sayHello'])
+  it('has the rows: the seven promises, then Open source and Say hello (tickets 0880, 0948)', () => {
+    expect(coffeeRows(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'free', 'tablets', 'mouse', 'shortcuts', 'openSource', 'sayHello'])
     expect(coffeeActs(en).map(({ icon, name }) => [icon, name])).toEqual([
       ['code', 'Open source'],
       ['message', 'Say hello'],
