@@ -32,9 +32,6 @@ export const panels: PanelsTranslations = {
       keepProjectsInfo:
         'Gdy na urządzeniu brakuje miejsca, przeglądarka może usunąć dane tej aplikacji, chyba że zachowuje Twoje projekty. Przeglądarka decyduje o tym sama, więc zapisz plik projektu każdego, na którym Ci zależy.',
       buttonNames: 'Co robią przyciski',
-      liftedPieces: 'Uniesione kawałki',
-      liftedPiecesInfoLabel: 'Do czego służą Uniesione kawałki',
-      liftedPiecesInfo: 'Każdy kawałek leży na własnym tle, z cienką linią i miękkim cieniem dookoła. Po wyłączeniu kawałki leżą płasko na płótnie.',
     },
     project: {
       rename: 'Zmień nazwę „{name}”',

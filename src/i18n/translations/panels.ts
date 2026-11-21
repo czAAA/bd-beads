@@ -56,10 +56,6 @@ export interface PanelsTranslations {
       keepProjectsInfo: string
       /** Help's row that shows every strip and pill button's name at once (ticket 0927). */
       buttonNames: string
-      /** Preferences' Lifted pieces switch (ticket 1042), with what it does behind its Info button. */
-      liftedPieces: string
-      liftedPiecesInfoLabel: string
-      liftedPiecesInfo: string
     }
     project: {
       rename: string

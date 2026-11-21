@@ -112,7 +112,7 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         // What waits for Reload, heard through the same port as the editor's "Update ready" (ticket 1049).
         updates: browserAppUpdates,
         // The Menu's Account section and Kept by this browser, as in the editor (ticket 1113); a signed-in person's
-        // change of language, theme or Lifted pieces here is sent as the editor sends it (ticket 1086).
+        // change of language or theme here is sent as the editor sends it (ticket 1086).
         account: browserAccount,
         persistentStorage: browserPersistentStorage,
         // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.

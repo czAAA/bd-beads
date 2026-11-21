@@ -147,7 +147,6 @@ const accountFlow = useAccountFlow({
   settings: {
     language: { value: () => locale.value, set: setLocale },
     theme: { value: () => themePick.pick.value, set: themePick.setPick },
-    liftedPieces: { value: () => (canvasBackground.lift.on.value ? 'on' : 'off'), set: (lifted) => canvasBackground.lift.set(lifted === 'on') },
   },
   dialogs,
 })

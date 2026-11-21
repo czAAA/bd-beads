@@ -84,12 +84,12 @@ describe('the reference image on the Canvas (ReferenceImage card, ticket 0790)',
   })
 
   it('leaves the tonal tiles as they are with none shown (ticket 1008)', () => {
-    // The Canvas's tiles and the Lifted piece's shadows (ticket 1004), as with no picture.
+    // The Canvas's tiles, as with no picture.
     const without = render(framedProject())
     expect(without.beads.filter((bead) => bead.color === null)).toHaveLength(0)
-    expect(canvasBlits(without.calls)).toBe(4)
-    // With one too: the Frame's empty row lies flat beside its piece, which has no rim, so no tile is drawn again.
-    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(4)
+    expect(canvasBlits(without.calls)).toBe(3)
+    // With one too: no tile is drawn again.
+    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(3)
   })
 
   it('is never drawn where none is handed in, nor in the Frame on its own', () => {

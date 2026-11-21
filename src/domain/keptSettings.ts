@@ -1,6 +1,6 @@
 import { LOCALES } from './locale'
 
-// The Settings kept in step (glossary; ADR 0014, ticket 1086): the three settings a signed-in person finds the same on
+// The Settings kept in step (glossary; ADR 0014, ticket 1086): the two settings a signed-in person finds the same on
 // all their devices. The Worker and the app both read them here, so they agree on the names and the values.
 
 /** Each setting kept in step and the values it takes, as the account holds them and the API sends them. `device` is
@@ -8,8 +8,11 @@ import { LOCALES } from './locale'
 const KEPT_SETTING_VALUES = {
   language: LOCALES,
   theme: ['device', 'light', 'dark', 'contrast'],
-  liftedPieces: ['on', 'off'],
 } as const
+
+/** Settings once kept in step and kept no more: a device that still sends one is not refused for it, and its value is
+ * dropped. */
+const RETIRED_SETTING_NAMES: readonly string[] = ['liftedPieces']
 
 /** A setting kept in step, by its name. */
 export type KeptSettingName = keyof typeof KEPT_SETTING_VALUES
@@ -25,7 +28,7 @@ interface KeptSetting<N extends KeptSettingName> {
   changedAt: number
 }
 
-/** Settings with their change times: what a device sends, any of the three. */
+/** Settings with their change times: what a device sends, any of them. */
 export type KeptSettings = { [N in KeptSettingName]?: KeptSetting<N> }
 
 /** What a device reads of its account's settings. A setting whose value this build doesn't know (a newer build's on
@@ -54,11 +57,12 @@ function readInto<N extends KeptSettingName>(into: KeptSettings, name: N, sent: 
 }
 
 /** The changes a device sends, `{ settings: { <name>: { value, changedAt } } }`, as the Worker takes them: undefined
- * when the body is shaped otherwise, or names a setting or a value that is not one of the three's own. */
+ * when the body is shaped otherwise, or names a setting or a value that is not one of the two's own. */
 export function parseSettingsChanges(body: unknown): KeptSettings | undefined {
   if (!isRecord(body) || !isRecord(body.settings)) return undefined
   const changes: KeptSettings = {}
   for (const [name, sent] of Object.entries(body.settings)) {
+    if (RETIRED_SETTING_NAMES.includes(name)) continue
     const known = KEPT_SETTING_NAMES.find((one) => one === name)
     if (!known || !readInto(changes, known, sent)) return undefined
   }
@@ -95,7 +99,7 @@ export interface SettingsStep {
 }
 
 /** The account wins, except over a change made here and not yet sent (`waiting`), which the backend decides by its
- * time; a setting the account lacks is taken from the device, so a first sign-in uploads the device's three. */
+ * time; a setting the account lacks is taken from the device, so a first sign-in uploads the device's own. */
 export function settingsStep(account: AccountSettings, waiting: KeptSettings, device: DeviceSettings, now: number): SettingsStep {
   const step: SettingsStep = { take: {}, upload: {} }
   const settle = <N extends KeptSettingName>(name: N) => {

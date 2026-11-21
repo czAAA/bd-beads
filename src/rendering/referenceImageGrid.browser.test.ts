@@ -72,8 +72,7 @@ describe('the grid under a reference image (ticket 1008)', () => {
   it('lays the picture over the tiles, and the painted beads over the picture', () => {
     const project = framedProject()
     const { across } = rendered(project, PROJECT_THEMES.light, pictureAt(0, 0, 1000))
-    // An empty position at 100% is the picture: nothing is drawn over it, on the Canvas or in the Frame (the row
-    // just under the painted one takes their Lifted piece's shadow).
+    // An empty position at 100% is the picture: nothing is drawn over it, on the Canvas or in the Frame.
     expect(new Set(across(9, 9))).toEqual(new Set([RED]))
     expect(new Set(across(5, 3))).toEqual(new Set([RED]))
     // A painted bead still covers it.

@@ -252,11 +252,11 @@ describe('browserAccount: the Settings kept in step (ticket 1086)', () => {
     remember(ann)
     account.settingChanged('theme', 'dark')
     vi.setSystemTime(2000)
-    account.settingChanged('liftedPieces', 'off')
+    account.settingChanged('language', 'pl')
     account.settingChanged('theme', 'light')
-    expect(account.waitingSettings()).toEqual({ theme: { value: 'light', changedAt: 2000 }, liftedPieces: { value: 'off', changedAt: 2000 } })
+    expect(account.waitingSettings()).toEqual({ theme: { value: 'light', changedAt: 2000 }, language: { value: 'pl', changedAt: 2000 } })
     // A reload finds them still waiting.
-    expect((await load()).waitingSettings()).toEqual({ theme: { value: 'light', changedAt: 2000 }, liftedPieces: { value: 'off', changedAt: 2000 } })
+    expect((await load()).waitingSettings()).toEqual({ theme: { value: 'light', changedAt: 2000 }, language: { value: 'pl', changedAt: 2000 } })
   })
 
   it('drops what was waiting on Sign out, when the session has ended, and for any account but the one it waited for', async () => {
