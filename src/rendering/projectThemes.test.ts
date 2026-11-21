@@ -16,6 +16,7 @@ const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'ownColo
   canvas: 'box',
   positionMark: 'position-mark',
   pieceLine: 'line-strong',
+  offShape: 'frame-off-shape',
   frameLine: 'ink',
   ruler: 'ruler',
   rulerStrong: 'body',
@@ -53,7 +54,7 @@ describe('ProjectTheme', () => {
   })
 
   it('prints in light on the print board, whatever the app theme, in the flat bead with its rim', () => {
-    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, background: token('print-board', 'light'), ownColorRim: false, tonalTiles: false })
+    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, offShape: PROJECT_THEMES.light.canvas, background: token('print-board', 'light'), ownColorRim: false, tonalTiles: false })
   })
 
   it('draws beads in their own-color rim on screen in light and dark, the flat bead in high contrast (ticket 1003)', () => {

@@ -57,6 +57,7 @@
   --canvas-bg-1: #fafafa;
   --canvas-bg-2: #e6e3de;
   --canvas-bg-3: #cdcac4;
+  --frame-off-shape: #a5a19b; /* A Frame's Off-shape on screen (ticket 1196): where it holds no bead position, darker than every Frame background in its theme. Exports leave it white. */
   --bead-rim: rgba(20,20,19,.12);
   --bead-empty: #d8d2cc;
   --position-mark: #d8d2cc;
@@ -124,6 +125,7 @@
   --canvas-bg-1: #202020;
   --canvas-bg-2: #0e0e0e;
   --canvas-bg-3: #3b3e43;
+  --frame-off-shape: #050505; /* A Frame's Off-shape on screen (ticket 1196): where it holds no bead position, darker than every Frame background in its theme. Exports leave it white. */
   --bead-rim: rgba(255,255,255,.16);
   --bead-empty: #3c3c3c;
   --position-mark: #3c3c3c;
@@ -191,6 +193,7 @@
   --canvas-bg-1: #ffffff;
   --canvas-bg-2: #ffffff;
   --canvas-bg-3: #ffffff;
+  --frame-off-shape: #9a9a9a; /* A Frame's Off-shape on screen (ticket 1196): where it holds no bead position, darker than every Frame background in its theme. Exports leave it white. */
   --bead-rim: rgba(0,0,0,.35);
   --bead-empty: #b8b0a8;
   --position-mark: #b8b0a8;
