@@ -177,7 +177,7 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
 
 /** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame's orientation a quarter clockwise about its centre,
  * like a sheet of A4 turned on an A1. Its beads keep their own rows and columns, so nothing is rewritten and no row snaps,
- * and Row progress keeps its pointers; what it covers turns, the Canvas under it untouched. No Frame: undefined. */
+ * and with no pass done its Row direction stays as seen (spec 1182); what it covers turns, the Canvas under it untouched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom

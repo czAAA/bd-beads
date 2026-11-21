@@ -63,7 +63,6 @@ export interface CanvasTranslations {
     directionToastColumns: string
     directionToastRowsReversed: string
     directionToastColumnsReversed: string
-    /** The Frame's own rows or columns as seen across, the Frame or the Canvas turned a quarter (ticket 1101). */
     /** The Progress bar's meta after "Row 12": "of {total} · {direction}" (ticket 144). */
     ofTotal: string
     topToBottom: string

@@ -87,7 +87,7 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
  * preview showed it (ticket 0965). Conversion never edits an open Project (ADR 0010). The grid is fitted to the stated
  * dimensions (missing cells empty, surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
-  // Its progress starts in the Frame's way as it lies upright, not as the Canvas it was made on lay (spec 1182).
+  // Started again once the Canvas is upright: the Frame's way as it lies now, not as the turned Canvas had it (spec 1182).
   const project = withStartingRowProgress(withCanvas(createProject(input), { orientation: 0 }))
   const frame = frameOf(project)!
   const palette = input.palette
