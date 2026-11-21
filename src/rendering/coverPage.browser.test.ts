@@ -79,10 +79,22 @@ describe('the Cover page', () => {
     const at = (value: string) => calls.find(([written]) => written === value)?.[2] ?? Number.NaN
     const top = boardTopOf(canvas)
 
-    expect(at(words.techniqueWord)).toBeLessThan(at('Peacock cuff'))
     expect(at('Peacock cuff')).toBeLessThan(at(words.metaLine))
     expect(at(words.metaLine)).toBeLessThan(top)
     expect(top).toBeLessThan(at('1 / 2'))
+  })
+
+  it('sets the technique word under the board, above the footer', async () => {
+    const project = fixtureProject({ technique: 'loom', columns: 20, rows: 10 })
+    const words = wordsOf(project)
+    const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
+    const canvas = drawCoverPage(project, words, A4_PORTRAIT, 1, 2)
+    const calls = [...fillText.mock.calls]
+    fillText.mockRestore()
+    const at = (value: string) => calls.find(([written]) => written === value)?.[2] ?? Number.NaN
+
+    expect(at(words.techniqueWord)).toBeGreaterThan(boardTopOf(canvas))
+    expect(at(words.techniqueWord)).toBeLessThan(at('1 / 2'))
   })
 
   it('runs a long title to two lines, then an ellipsis', async () => {
@@ -100,7 +112,7 @@ describe('the Cover page', () => {
     const words = { ...wordsOf(project), name: '  ', maker: '' }
     const values = await written(() => drawCoverPage(project, words, A4_PORTRAIT, 1, 1))
 
-    expect(values.slice(0, 2)).toEqual([words.techniqueWord, expect.stringMatching(new RegExp(`^${words.colorsCount}`))])
+    expect(values[0]).toMatch(new RegExp(`^${words.colorsCount}`))
     expect(values.some((value) => value.trim() === '' || value.startsWith('by '))).toBe(false)
   })
 })
