@@ -459,13 +459,35 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
 
     it.each(['left', 'right', 'top', 'bottom'] as const)('loses beads on the side its %s handle drags in, and has them back as it drags out again', (edge) => {
       // A cut-off point made whole by a narrower Width stays whole as it widens again (ticket 0814).
-      for (const [name, made] of handleCases.slice(1)) {
+      for (const [name, made] of handleCases.filter(([name]) => name !== 'a cut-off point')) {
         const project = paintedAll(made())
         const shrunk = changed(project, { set: dragged(project, edge, -2) })
         expect(fromKeptEdge(project, edge), `${name}, ${edge}`).toEqual(expect.arrayContaining(fromKeptEdge(shrunk, edge)))
         const back = changed(shrunk, { set: dragged(shrunk, edge, 2) })
         expect(frameOf(back)!.settings, `${name}, ${edge}`).toEqual(frameOf(project)!.settings)
         expect(frameOf(back)!.beads, `${name}, ${edge}`).toEqual(frameOf(project)!.beads)
+      }
+    })
+
+    it('grows on both sides a corner handle drags, every bead staying where it lay on the Canvas', () => {
+      // Upright, so the Seam lies across: a turned earring's sides are each checked above.
+      for (const [name, made] of handleCases.filter(([name]) => name !== 'Rotate Frame')) {
+        const project = paintedAll(made())
+        const frame = frameOf(project)!
+        const grown = changed(project, { set: { ...frame, row: frame.row - 2, rows: frame.rows + 2, column: frame.column - 2, columns: frame.columns + 2 } })
+        // From the right edge, which the drag leaves put, and the Seam, which a V's tip moving with Width leaves put.
+        const fromCorner = (each: Project) => {
+          const geometry = frameGeometryOf(each)
+          const extent = geometry.extent()!
+          const seam = geometry.place({ row: 1000, column: 0 })!
+          const places: string[] = []
+          forEachBead(frameOf(each)!.beads, (row, column) => {
+            const { box } = geometry.place({ row, column })!
+            places.push(`${(extent.x + extent.width - box.x).toFixed(2)}:${(box.y - seam.box.y).toFixed(2)}`)
+          })
+          return places.sort()
+        }
+        expect(fromCorner(grown), name).toEqual(fromCorner(project))
       }
     })
 
