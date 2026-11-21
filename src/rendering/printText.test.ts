@@ -9,7 +9,8 @@ import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
 import { headerMaker, printText, RUN_NOTE_BEAD, type PrintedRunUnit } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
-import { frameOf, withFrameSheet, withLayer } from '../domain/layerRecord'
+import { frameOf, withCanvas, withFrameSheet, withLayer } from '../domain/layerRecord'
+import { rotateFrame } from '../domain/rotate'
 import { withLayers } from '../testUtils/layerFields'
 
 const at = new Date(2026, 8, 26, 14, 32)
@@ -288,5 +289,16 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(printText(big, en, 'en', at, { largeBeads: true }).largeBeads).toBe(true)
     const small = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', name: 'Charm', size: { width: 20, height: 20, unit: 'beads' } })
     expect(printText(small, en, 'en', at, { largeBeads: true }).largeBeads).toBeUndefined()
+  })
+})
+
+describe('the words follow the Frame alone, never the Canvas\'s turn (spec 1182, ticket 1186)', () => {
+  it('names the size, estimate and Rows run of a Frame the same over a Canvas turned under it alone', () => {
+    const painted = paintAt(delicaProject(0), Array.from({ length: 12 }, (_, row) => ({ row, column: row % 5 })), red.hex)
+    for (const project of [painted, rotateFrame(painted)!]) {
+      const words = printText(project, en, 'en', at, { rowByRow: true })
+      for (const turn of [90, 180, 270, 37.5]) expect(printText(withCanvas(project, { orientation: turn }), en, 'en', at, { rowByRow: true })).toEqual(words)
+    }
+    expect(printText(rotateFrame(painted)!, en, 'en', at).metaLine).toMatch(/^12×5 · /)
   })
 })

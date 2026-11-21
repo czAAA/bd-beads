@@ -1,7 +1,8 @@
 import { rotationSwapsAxes } from './grid'
 import type { Project } from './project'
 import { shownDimensions } from './projectExtent'
-import { frameOf, quarterTurnOf, projectNameOf } from './layerRecord'
+import { laidTurnOf } from './framePlacement'
+import { frameOf, projectNameOf } from './layerRecord'
 
 // The Project library's lists (ticket 145): a Project's line in them and their order.
 
@@ -23,7 +24,7 @@ function projectFrameSize(project: Project): string | undefined {
 export function shownFrameSize(project: Project): { width: number; height: number } | undefined {
   if (!frameOf(project)) return undefined
   const { columns, rows } = shownDimensions(project)
-  const [width, height] = rotationSwapsAxes(quarterTurnOf(project)) ? [rows, columns] : [columns, rows]
+  const [width, height] = rotationSwapsAxes(laidTurnOf(project)) ? [rows, columns] : [columns, rows]
   return { width, height }
 }
 

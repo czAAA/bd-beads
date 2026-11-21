@@ -4,7 +4,8 @@ import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Weave } from '../domain/weave'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
-import { type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { laidTurnOf } from '../domain/framePlacement'
+import type { Layered } from '../domain/layerRecord'
 
 // PDF page layout (tickets 162, 185, 578, 0584, 0913, 0914): the chart whole on page 1 when it fits there, else page 1 is the
 // overview and equal parts follow, at the largest bead the sheets allow and the same on every chart page; page px at 150 dpi.
@@ -123,7 +124,7 @@ type Shape = Layered
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.
 export function displayedGrid(project: Shape) {
-  const rotation = quarterTurnOf(project)
+  const rotation = laidTurnOf(project)
   const weave = frameWeave(project)
   const { columns, rows } = projectDimensions(project)
   const step = beadStepPx(weave)
@@ -149,7 +150,7 @@ export function wholeArea(project: Shape): TrimmedArea {
  * the Cover page and the PNG draw of a trimmed Schema (ticket 1128). */
 export function areaRegion(project: Shape, area: TrimmedArea): Region {
   const grid = displayedGrid(project)
-  const extent = blockExtent(frameWeave(project), quarterTurnOf(project), area.lastAcross - area.firstAcross + 1, area.lastDown - area.firstDown + 1)
+  const extent = blockExtent(frameWeave(project), laidTurnOf(project), area.lastAcross - area.firstAcross + 1, area.lastDown - area.firstDown + 1)
   return { x: area.firstAcross * grid.stepAcross, y: area.firstDown * grid.stepDown, ...extent }
 }
 
@@ -248,7 +249,7 @@ function blocksOf(project: Shape, cut: Cut): Block[] {
     cut.across.forEach(({ first: firstAcross, last: lastAcross }, across) => {
       const overlapAcross = Math.min(PRINT_PART_OVERLAP, firstAcross - start.across)
       const overlapDown = Math.min(PRINT_PART_OVERLAP, firstDown - start.down)
-      const extent = blockExtent(drawn, quarterTurnOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
+      const extent = blockExtent(drawn, laidTurnOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
       const region = { x: (firstAcross - overlapAcross) * grid.stepAcross, y: (firstDown - overlapDown) * grid.stepDown, ...extent }
       blocks.push({ across, down, letter: partLetter(blocks.length), firstAcross, lastAcross, firstDown, lastDown, overlapAcross, overlapDown, region })
     })

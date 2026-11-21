@@ -1,4 +1,5 @@
-import { frameOf, layerOf, quarterTurnOf } from '../domain/layerRecord'
+import { laidTurnOf } from '../domain/framePlacement'
+import { frameOf, layerOf } from '../domain/layerRecord'
 import { placedFrame } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { MARGIN_PX } from '../rendering/marginSizes'
@@ -33,7 +34,7 @@ export interface CuffView {
 function viewAt(project: Project, zoom: number, fontPx: number, scroll: Scroll, viewport: { width: number; height: number }) {
   const space = spaceOf(project, true)
   const { weave } = layerOf(project, 'canvas')
-  const surface = surfaceView({ space, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(project), rotation: quarterTurnOf(project), zoom, scroll, viewport })
+  const surface = surfaceView({ space, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(project), rotation: laidTurnOf(project), zoom, scroll, viewport })
   return { space, surface, rulers: rulerLayout(project, surface, { fontPx, numbers: false }) }
 }
 

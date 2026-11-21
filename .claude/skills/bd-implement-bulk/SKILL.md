@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Implement a batch of tickets end to end: plan, run, merge. You are the **orchestrator**: you never implement a ticket yourself. Each ticket is implemented by a sub-agent following `bd-implement`, in its own worktree, and you merge the pull requests in the order the plan fixes. Every rule of `CLAUDE.md` (Implementing tickets) holds for each ticket. Don't ask between steps; the exceptions are named below.
 
-Flags: `-plan` prints the plan (step 2) and stops. `-max N` caps the sub-agents running at once (default 3: each one runs typecheck, lint and vitest, its tests held to two workers, step 3's `BD_TEST_WORKERS=2`). `-budget P` is the share of the plan's 5-hour usage window a run may project up to before it holds new sub-agents back (default 85, step 3.1); `-cost P` sets the points of that window one ticket is assumed to take until the run has measured its own (default 10); `-no-budget` turns the usage gate off, leaving only `-max`.
+Flags: `-plan` prints the plan (step 2) and stops. `-max N` caps the sub-agents running at once (default 3: each one runs typecheck, lint and vitest, its tests held to two workers, step 3's `BD_TEST_WORKERS=2`). `-no-budget` turns the usage gate off (step 3.1: it lowers the cap to 2 sub-agents under 40% of the 5-hour window left, to 1 under 30%, and never stops a running one), leaving only `-max`.
 
 ## 1. Read the batch
 
@@ -58,16 +58,17 @@ Launch the first wave in one turn, as far as `-max` and the gate allow: ask the 
 
 ### 3.1 The usage gate
 
-Every sub-agent this run starts, and the orchestrator itself, draws on the same 5-hour usage window of the plan, and a sub-agent cut off by the limit loses everything it hadn't pushed. So before each launch, ask `scripts/usage-budget.sh` whether one more fits (skip this with `-no-budget`):
+Every sub-agent this run starts, and the orchestrator itself, draws on the same 5-hour usage window of the plan. The gate never holds a run back for being under 50% left; it only slows how many sub-agents run at once. Before each launch, check how much of the window is left (skip this with `-no-budget`):
 
-1. At the start of the run, make a ledger file once (`mktemp`) and keep its path; it adds up what the run has used across resets.
-2. Before each launch: `bash scripts/usage-budget.sh --running <sub-agents running now> --budget <-budget> --ledger <file> --finished <tickets whose sub-agent has reported>`, plus `--cost <-cost>` only when the user gave `-cost`. Until a ticket has finished it assumes 10 points a ticket; after that it divides what the run has used by the tickets finished. It prints one line:
-   - `start ...`: launch.
-   - `wait ... resets=HH:MM resets_at=<epoch>`: don't launch. Running sub-agents carry on, and merging (step 4) carries on. Add `paused: 5h usage at N%, next start after HH:MM` to Progress. When the next sub-agent finishes, ask again. If none is running, wait for the reset with a background command (`run_in_background`) that sleeps until `resets_at` plus two minutes; it wakes you when it exits. Then ask again.
-   - `wait ... window=seven_day`: the weekly limit is nearly used up and its reset is days away. Don't wait for it: start nothing more, let the running sub-agents and the merges finish, then end the run (step 5) with the tickets not started listed as "not started: weekly usage limit". A later run picks them up again.
-   - `unknown reason=...`: there is no usable snapshot (the status line doesn't write it, it is older than 15 minutes, or the account has no plan limits). Launch on `-max` alone and say once in Progress that the gate is off and why.
-3. The snapshot comes from the status line: it writes `rate_limits` from its stdin JSON to `~/.claude/usage-snapshot.json` (the script's header has the line), and `statusLine.refreshInterval` (60 seconds) keeps it fresh while you wait.
-4. Never stop a running sub-agent to save usage: one stopped halfway wastes what it has already spent. A conflict sub-agent (step 4.3) asks the gate the same way and goes before any ticket waiting to start, because it is what lets finished work land.
+1. Read `used=$(jq '.five_hour.used_percentage' ~/.claude/usage-snapshot.json)` (the status line writes it, the script header of `scripts/usage-budget.sh` has the line; `statusLine.refreshInterval` keeps it fresh). Left = 100 − used.
+2. The cap on sub-agents running at once, from what is left, checked fresh before every launch:
+   - 40% or more left: `-max` (no extra limit).
+   - 30% up to 40% left: at most 2 running.
+   - under 30% left: 1 running; start the next only when the running one has reported.
+   If the cap is already reached, don't launch; when a sub-agent finishes, check again. Add `usage: N% left, cap C` to Progress when the cap changes.
+3. Never stop a running sub-agent for usage, whatever is left: it finishes its ticket. The tier only decides whether a new one may start. A conflict sub-agent (step 4.3) goes through the same check and goes before any ticket waiting to start.
+4. At 98% used or more, or when the weekly window (`seven_day.used_percentage`) is at 95% or more, start nothing new: let the running sub-agents and the merges finish. For the 5-hour window, wait for `resets_at` (background `sleep` until it plus two minutes, `run_in_background`) and go on; for the weekly one end the run (step 5) with the tickets not started listed as "not started: weekly usage limit".
+5. No usable snapshot (missing, older than 15 minutes, no plan limits): launch on `-max` alone and say once in Progress that the gate is off and why.
 
 ## 4. Merge one by one
 
