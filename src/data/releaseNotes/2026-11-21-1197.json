@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "fixed",
+  "line": {
+    "en": "Zoomed out, the margin keeps both the legend and Row progress instead of dropping the legend, and the legend has a pencil to change the Bead",
+    "ru": "При уменьшении масштаба поле сохраняет и легенду, и прогресс по рядам, а не убирает легенду; у легенды есть карандаш для смены бисера",
+    "uk": "Коли масштаб зменшено, поле зберігає і легенду, і прогрес по рядках, а не прибирає легенду; у легенди є олівець для зміни бісеру",
+    "be": "Пры паменшаным маштабе поле захоўвае і легенду, і прагрэс па радах, а не прыбірае легенду; у легенды ёсць аловак для змены бісеру",
+    "zh": "缩小时页边同时保留图例和行进度，不再丢掉图例；图例旁有铅笔可更换珠子",
+    "es": "Con el zoom alejado, el margen conserva la leyenda y el avance de filas en vez de quitar la leyenda, y la leyenda tiene un lápiz para cambiar la cuenta",
+    "pl": "Po oddaleniu margines zachowuje legendę i postęp rzędów zamiast gubić legendę, a legenda ma ołówek do zmiany koralika"
+  }
+}

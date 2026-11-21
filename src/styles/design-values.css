@@ -355,6 +355,7 @@
   --margin-tool-compact: 24px; /* MarginSheet card: a tool button in the compact form. */
   --margin-title-row: 23px; /* MarginSheet card: one row of the title block (one 22px row in the compact form). */
   --margin-band-full: 72px; /* MarginSheet card: the band height, in screen pixels, from which the margin shows its full form. */
+  --margin-band-stacked: 64px; /* MarginSheet card (ticket 1197): the band height, in screen pixels, from which the compact form stacks its title row on Row progress's strip. */
   --margin-band-compact: 40px; /* MarginSheet card: the band height under which the margin folds. */
   --margin-band-folded: 31px; /* MarginSheet card: the band height under which even the folded row has no room: only the Move bar and the Frame tools button are left (tickets 0682, 1164). */
   --margin-band-inset-compact: 10px; /* MarginSheet card: the compact and folded rows in from the sheet's sides. */

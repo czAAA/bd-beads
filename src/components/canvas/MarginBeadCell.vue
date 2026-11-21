@@ -7,6 +7,7 @@ import { beadChoices, beadLabel, type Bead } from '../../domain/beads'
 import { useI18n } from '../../i18n/useI18n'
 import BeadSection from '../project/BeadSection.vue'
 import AppButton from '../ui/AppButton.vue'
+import IconButton from '../ui/IconButton.vue'
 
 /** Where this shell's popovers go: the app shell, or the Homepage demo's own box (ticket 0797). */
 const teleportTo = useShellScope().teleportTo
@@ -14,7 +15,8 @@ const teleportTo = useShellScope().teleportTo
 // The Frame's Bead in the margin's roomy title block (ticket 1015, MarginSheet card): its name and a Change button
 // that opens Layer settings' Bead pickers in a popover, in the top layer so the sheet's scale never shrinks it. A pick
 // only asks, as in the Frame panel: the shell confirms Replace Bead.
-const props = defineProps<{ bead: Bead }>()
+/** `pencil` is the legend's Change (ticket 1197): the 18px pencil alone, the Bead's name in the popover's heading. */
+const props = defineProps<{ bead: Bead; pencil?: boolean }>()
 const emit = defineEmits<{ pick: [beadId: string] }>()
 
 const { t } = useI18n()
@@ -56,9 +58,24 @@ useOverlayLayer({
 
 <template>
   <span ref="rootEl" class="margin-bead" role="group" :aria-label="t.panels.project.bead" data-testid="margin-bead">
-    <span class="margin-bead__label" aria-hidden="true">{{ t.panels.project.bead }}</span>
-    <span class="margin-bead__name" data-testid="margin-bead-name">{{ beadLabel(bead) }}</span>
+    <template v-if="!pencil">
+      <span class="margin-bead__label" aria-hidden="true">{{ t.panels.project.bead }}</span>
+      <span class="margin-bead__name" data-testid="margin-bead-name">{{ beadLabel(bead) }}</span>
+    </template>
+    <IconButton
+      v-if="pencil"
+      variant="plain"
+      icon="pencil"
+      :icon-size="12"
+      :label="`${t.form.beadPicker.change}: ${beadLabel(bead)}`"
+      :selected="open"
+      aria-haspopup="dialog"
+      :aria-expanded="open"
+      data-testid="margin-bead-change"
+      @click="open ? close() : show()"
+    />
     <AppButton
+      v-else
       variant="in-box"
       size="sm"
       :expanded="open"
@@ -71,7 +88,7 @@ useOverlayLayer({
     <!-- In the app shell: inside the sheet's scale, Safari keeps a top-layer popup where it first showed. -->
     <Teleport v-if="open" :to="teleportTo">
       <div ref="popupEl" class="margin-bead__popover anchored-popup" popover="manual" :style="anchored.style.value" role="dialog" :aria-label="t.replaceBead.selectLabel" data-testid="margin-bead-popover">
-        <span class="margin-bead__heading">{{ t.panels.project.bead }}</span>
+        <span class="margin-bead__heading">{{ pencil ? beadLabel(bead) : t.panels.project.bead }}</span>
         <BeadSection :bead="bead" :candidates="choices.candidates" :outdated="choices.outdated" @pick="pick" />
         <p class="margin-bead__hint">{{ t.form.beadPicker.hint }}</p>
       </div>
@@ -98,6 +115,13 @@ useOverlayLayer({
   min-height: 0;
   padding: 0 var(--space-8);
   font: var(--type-small);
+}
+
+/* The legend's pencil: 18px, `body`, a 12px icon, as the name's and the maker's. */
+.margin-bead :deep(.icon-btn) {
+  width: var(--margin-pencil);
+  height: var(--margin-pencil);
+  color: var(--body);
 }
 
 /* The shared popover look, as Margin color's: 12px padding, the overlay fill and line, elevation 3. */

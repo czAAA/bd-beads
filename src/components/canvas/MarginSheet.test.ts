@@ -294,6 +294,22 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
   })
 
+  it('stacks the compact title row on Row progress\'s strip from 64px, so the legend and Row progress both keep the sheet\'s width (ticket 1197)', () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.85) })
+    expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
+    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--stacked')
+    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('compact')
+    expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
+    expect(wrapper.find('.margin-sheet__progress').attributes('data-form')).toBe('margin:0')
+    expect(styleOf(wrapper, 'margin-foot')).toContain(`width: ${anchorAt(0.85).sheet.width - 12}px`)
+  })
+
+  it('keeps the compact title row and Row progress on one line just under 64px of band (ticket 1197)', () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.78) })
+    expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
+    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--line')
+  })
+
   it('folds under 40px: the Move bar and every tool that fits, the title block a tab with Row highlight and the counter with Row done at its end', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--folded')
