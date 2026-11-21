@@ -276,3 +276,11 @@ The dock's settings are named in at most nine letters in every language; a name 
 |---|---|---|---|
 | Picture · Bead · settings · Close | Картинка · Бисер · настройки · Закрыть | Картинка · Бісер · налаштування · Закрити | Obraz · Koralik · ustawienia · Zamknij |
 | {setting}: {value} | {setting}: {value} | {setting}: {value} | {setting}: {value} |
+
+## Finding the colors copy (ticket 1163)
+
+The compact Loading state (Loading card) shown in Convert image's foot and in Convert to beads' popover while a picture's colors are reduced, after the card's own delay so a quick one never flashes. No full stop, like "Reading the picture".
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Finding the colors | Подбираем цвета | Добираємо кольори | Падбіраем колеры | 正在查找颜色 | Buscando los colores | Szukam kolorów |

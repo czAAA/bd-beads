@@ -226,11 +226,17 @@ function filledUp(sampled: readonly WeightedColor[], maxColors: number, first: W
   const own = sampled.map((color) => ({ lab: color.lab, count: color.count }))
   let best = first
   let groups = first
+  let hexes = groups.map(boxColor)
   for (let round = 0; round < maxColors && groups.length < maxColors; round++) {
-    const labs = groups.map((group) => toOklab(channelsOf(boxColor(group))))
+    const labs = hexes.map((hex) => toOklab(channelsOf(hex)))
     const seeds = chooseByDifference(own, labs.length + 1, labs)
     if (seeds.length === labs.length) break
     groups = groupAround(sampled, seeds)
+    const next = groups.map(boxColor)
+    // The next round starts from the groups' colors alone: the same ones again (the join took the new seed straight
+    // back) make every round after it the same too (ticket 1163).
+    if (next.length === hexes.length && next.every((hex, at) => hex === hexes[at])) break
+    hexes = next
     if (groups.length > best.length) best = groups
   }
   return best

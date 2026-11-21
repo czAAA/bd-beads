@@ -13,13 +13,14 @@ import { canvasWeave } from '../../domain/layerWeave'
 import { brandColors, defaultPalette } from '../../domain/palette'
 import type { Grid, Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
-import { beadsReplaced, convertSampled, gridChanges, sampledColorCount, sampledColors, withConvertedBeads, type ReferenceConversion } from '../../domain/referenceConvert'
+import { beadsReplaced, conversionRequest, convertReduced, sampledCounts, gridChanges, sampledColorCount, sampledColors, withConvertedBeads, type ReferenceConversion } from '../../domain/referenceConvert'
 import { referenceHeight, samePlace, type ReferencePlace } from '../../domain/referenceImage'
 import { keepAllowedEdits } from '../../domain/allowedEdits'
 import { plural, pluralForm } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import { pictureCover } from '../../rendering/referenceCover'
 import type { MessageTone, Toast } from '../ui/useToasts'
+import { useColorReduction } from '../import/useColorReduction'
 import type { EditFn } from './useEdit'
 
 /** The fewest positions a side Convert to beads takes (ReferenceImage card); the most is the Large Schema limit, past
@@ -152,7 +153,18 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
   /** Every color the picture's beads sample, at most 256: the Colors stepper's most. */
   const colorsMax = computed(() => Math.max(1, Math.min(MAX_IMAGE_COLORS, sampled.value ? sampledColorCount(sampled.value) : 1)))
   const colors = computed(() => Math.min(colorsMax.value, chosenColors.value ?? DEFAULT_MAX_IMAGE_COLORS))
-  const conversion = computed<ReferenceConversion | undefined>(() => sampled.value && convertSampled(sampled.value, colors.value, targets.value))
+  const counted = computed(() => sampled.value && sampledCounts(sampled.value))
+  // The reduction runs off the main thread (ticket 1163); the conversion before it stays until the new one is made.
+  const { reduced, reducing } = useColorReduction(() => conversionRequest(counted.value?.counts ?? new Map(), colors.value, targets.value))
+  const finished = shallowRef<ReferenceConversion>()
+  watch(
+    [reducing, reduced],
+    () => {
+      if (!reducing.value) finished.value = sampled.value && counted.value ? convertReduced(sampled.value, counted.value, reduced.value, targets.value) : undefined
+    },
+    { flush: 'sync', immediate: true },
+  )
+  const conversion = computed(() => (sampled.value ? finished.value : undefined))
 
   /** The open Project as Convert would leave it, beads the rows marked done or the margin hold left out: the preview.
    * None while the picture is dragged: it shows as itself until it is let go and its beads are made again. */
@@ -211,7 +223,7 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
    * change, no step), and a toast whose Undo takes the beads back and shows the picture again. */
   function convert(): void {
     const made = conversion.value
-    if (!made || convertOff.value) return
+    if (!made || reducing.value || convertOff.value) return
     const outcome = deps.edit('drawing', (project) => withConvertedBeads(project, made.changes))
     converting.value = false
     if (outcome.kind !== 'applied') return
@@ -287,6 +299,8 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
     colorsMax,
     hideAfter,
     conversion,
+    /** Whether the colors are being reduced (ticket 1163): the popover shows a loading state, Convert waits. */
+    reducing,
     previewProject,
     replaced,
     convertLabel,

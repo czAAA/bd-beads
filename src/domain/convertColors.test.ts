@@ -451,3 +451,27 @@ describe('the count of colors asked is delivered (ticket 0892)', () => {
     expect(deliveredBy(3, photo, 10)).toHaveLength(3)
   })
 })
+
+describe('reduceDelivering on a noisy picture with few real colors (ticket 1163)', () => {
+  // Two flat colors with ±30 of noise a channel, a fixed seed: 3 600 beads, some 3 500 distinct colors.
+  function noisy(): Map<string, number> {
+    let seed = 1
+    const next = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296
+    const picture = new Map<string, number>()
+    for (let at = 0; at < 3600; at++) {
+      const base = at % 2 ? 200 : 40
+      const channel = () => Math.round(base + (next() - 0.5) * 60)
+      const hex = `#${[channel(), channel(), channel()].map((value) => value.toString(16).padStart(2, '0')).join('')}`
+      picture.set(hex, (picture.get(hex) ?? 0) + 1)
+    }
+    return picture
+  }
+
+  it('gives the two colors it has, however many are asked, without asking again for each', () => {
+    const started = performance.now()
+    const reduced = reduceDelivering(noisy(), 256, undefined, new Map())
+    expect(reduced.colors.length).toBeLessThanOrEqual(3)
+    // 14 s before the rounds ended when a join took the new seed straight back; 0.4 s after.
+    expect(performance.now() - started).toBeLessThan(5000)
+  })
+})

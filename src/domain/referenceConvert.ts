@@ -1,6 +1,7 @@
 import { colorAt, frameContains, withColors, type BeadChange, type BeadMap } from './canvas'
 import { clamp } from './clamp'
-import { matchFoundColors, reduceDelivering, type TargetColor } from './convertColors'
+import { LEAST_COLOR_BEADS, matchFoundColors, reduceRequested, type ReductionRequest, type TargetColor } from './convertColors'
+import type { ReducedColors } from './imageColors'
 import { footprintOf } from './footprint'
 import type { GridPosition } from './grid'
 import { MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, NO_COLOR, packedToHex, pixelPackedAt, type PixelData } from './imageConversion'
@@ -56,8 +57,8 @@ export interface ReferenceConversion {
   colorsFound: number
 }
 
-/** The sampled colors reduced to `maxColors` and matched to `targets`, none for Exact (convertColors' matchFoundColors). */
-export function convertSampled(sampled: readonly SampledPosition[], maxColors: number, targets: readonly TargetColor[] | undefined): ReferenceConversion {
+/** The distinct colors the sampled beads have, how many beads each, and the hex each bead's packed color is. */
+export function sampledCounts(sampled: readonly SampledPosition[]): SampledCounts {
   const hexes = new Map<number, string>()
   const counts = new Map<string, number>()
   for (const { color } of sampled) {
@@ -69,16 +70,38 @@ export function convertSampled(sampled: readonly SampledPosition[], maxColors: n
     }
     counts.set(hex, (counts.get(hex) ?? 0) + 1)
   }
-  const reduced = reduceDelivering(counts, clamp(maxColors, MIN_IMAGE_COLORS, MAX_IMAGE_COLORS), targets, new Map())
+  return { counts, hexes }
+}
+
+/** What sampledCounts counts. */
+export interface SampledCounts {
+  counts: Map<string, number>
+  hexes: Map<number, string>
+}
+
+/** What the reduction is asked for sampled colors counted by sampledCounts: at most `maxColors` of them. */
+export function conversionRequest(counts: ReadonlyMap<string, number>, maxColors: number, targets: readonly TargetColor[] | undefined): ReductionRequest {
+  return { counts, asked: clamp(maxColors, MIN_IMAGE_COLORS, MAX_IMAGE_COLORS), targets, choices: new Map(), leastBeads: LEAST_COLOR_BEADS }
+}
+
+/** The sampled colors, once reduced, matched to `targets` (none for Exact, convertColors' matchFoundColors) as the beads they become. */
+export function convertReduced(sampled: readonly SampledPosition[], counted: SampledCounts, reduced: ReducedColors, targets: readonly TargetColor[] | undefined): ReferenceConversion {
   const found = matchFoundColors(reduced, targets, new Map())
   const result = new Map(found.map((color) => [color.pictureHex, color.result?.hex]))
   const changes: ReferenceConversion['changes'] = []
   for (const { row, column, color } of sampled) {
-    const made = color === NO_COLOR ? undefined : result.get(reduced.byHex.get(hexes.get(color)!)!)
+    const made = color === NO_COLOR ? undefined : result.get(reduced.byHex.get(counted.hexes.get(color)!)!)
     if (made) changes.push({ row, column, color: made })
   }
   const colors = [...new Set(found.flatMap((color) => (color.result ? [color.result.hex] : [])))]
-  return { changes, colors, colorsFound: counts.size }
+  return { changes, colors, colorsFound: counted.counts.size }
+}
+
+/** The sampled colors reduced to `maxColors` and matched to `targets`, at once: the tests' way (the app reduces off the
+ * main thread, ticket 1163). @internal */
+export function convertSampled(sampled: readonly SampledPosition[], maxColors: number, targets: readonly TargetColor[] | undefined): ReferenceConversion {
+  const counted = sampledCounts(sampled)
+  return convertReduced(sampled, counted, reduceRequested(conversionRequest(counted.counts, maxColors, targets)), targets)
 }
 
 /** The changes split by the layer they land on: the Canvas, and in its own positions a Frame laid out as the Canvas is

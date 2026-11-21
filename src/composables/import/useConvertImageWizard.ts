@@ -13,7 +13,8 @@ import {
   matchFoundColors,
   newProjectPalette,
   NO_LEAST_COLOR_BEADS,
-  reduceDelivering,
+  reduceRequested,
+  type ReductionRequest,
   sourceTargets,
   type ColorSource,
   type FoundColorChoice,
@@ -52,6 +53,7 @@ import { pictureKind } from '../../domain/pictureKind'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
 import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { useColorReduction } from './useColorReduction'
 import { useConvertCleanUp } from './useConvertCleanUp'
 import { useConvertCrop, type CropBeads } from './useConvertCrop'
 import { useConvertFinishes } from './useConvertFinishes'
@@ -450,16 +452,21 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   /** Fewer codes left in the Finishes on than colors asked: as many colors come out as there are codes (ticket 0901). */
   const shortOf = (count: number) => finishes.on.value && finishes.codesLeft.value > 0 && finishes.codesLeft.value < count
   const finishesShort = computed(() => shortOf(maxColors.value))
-  /** The picture reduced for a number of colors asked, to the codes left where the Finishes leave fewer. */
-  const reducedFor = (count: number) =>
-    reduceDelivering(
-      frameSampled.value?.counts ?? new Map(),
-      shortOf(count) ? finishes.codesLeft.value : count,
-      targets.value,
-      choices.value,
-      kind.value === 'photo' ? LEAST_COLOR_BEADS : NO_LEAST_COLOR_BEADS,
-    )
-  const sampledReduced = computed(() => reducedFor(maxColors.value))
+  // Auto-fix lighting (ticket 0907): the picture corrected before the sampler reads it, so Clean up and the found colors
+  // follow the lit beads. Off until the person turns it on.
+  const lighting = useConvertLighting(image)
+  /** What the reduction is asked for a number of colors, to the codes left where the Finishes leave fewer. */
+  const requestFor = (count: number): ReductionRequest => ({
+    counts: frameSampled.value?.counts ?? new Map(),
+    asked: shortOf(count) ? finishes.codesLeft.value : count,
+    targets: targets.value,
+    choices: choices.value,
+    leastBeads: kind.value === 'photo' ? LEAST_COLOR_BEADS : NO_LEAST_COLOR_BEADS,
+  })
+  /** The picture reduced for another number of colors, on the spot (the Colors neighbours). */
+  const reducedFor = (count: number) => reduceRequested(requestFor(count))
+  // The page's own reduction runs off the main thread (ticket 1163); `reducing` shows the loading state meanwhile.
+  const { reduced: sampledReduced, reducing } = useColorReduction(() => requestFor(maxColors.value))
   // Clean up (ticket 0906): stray beads and small colors, between the reduction and the beads; the found colors follow.
   const cleanUp = useConvertCleanUp({
     kind,
@@ -470,9 +477,6 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   })
   const reduced = cleanUp.reduced
   const found = cleanUp.found
-  // Auto-fix lighting (ticket 0907): the picture corrected before the sampler reads it, so Clean up and the found colors
-  // follow the lit beads. Off until the person turns it on.
-  const lighting = useConvertLighting(image)
   /** Color by color's rows: the found colors joined by the bead color they become (ticket 0863). */
   const rows = computed(() => beadColorRows(found.value))
   const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(cleanUp.raw.value, reduced.value, found.value) : []))
@@ -754,6 +758,8 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     fileStem,
     rejection,
     reading,
+    /** Whether the colors are being reduced (ticket 1163): the converter shows a loading state meanwhile. */
+    reducing,
     readingFile,
     setFile,
     turn,

@@ -653,6 +653,7 @@ const drawingStyle = computed(() => {
                 :convert-label="pictureBar.convertLabel.value"
                 :replaced-label="pictureBar.replacedLabel.value"
                 :ready="!!pictureBar.conversion.value"
+                :reducing="pictureBar.reducing.value"
                 @close="closeConvert"
                 @source="pictureBar.setSource"
                 @colors="pictureBar.setColors"

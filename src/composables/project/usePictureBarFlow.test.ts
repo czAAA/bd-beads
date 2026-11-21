@@ -9,13 +9,13 @@ import { withReferenceImage, type ReferencePlace } from '../../domain/referenceI
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { bareProject } from '../../testUtils/layerFields'
-import { reduceDelivering } from '../../domain/convertColors'
+import { reduceRequested } from '../../domain/convertColors'
 import { usePictureBarFlow } from './usePictureBarFlow'
 
 // The color reduction itself, counted: on a photo it takes seconds, so when it runs is part of what is held (ticket 1160).
 vi.mock('../../domain/convertColors', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../domain/convertColors')>()
-  return { ...actual, reduceDelivering: vi.fn(actual.reduceDelivering) }
+  return { ...actual, reduceRequested: vi.fn(actual.reduceRequested) }
 })
 
 const RED = [255, 0, 0, 255]
@@ -164,11 +164,12 @@ describe('usePictureBarFlow (ReferenceImage card, ticket 0883)', () => {
     deps.decodePixels.mockResolvedValue({ width: 6, height: 4, data: Array.from({ length: 24 }, (_pixel, at) => [at * 10, 0, 255 - at * 10, 255]).flat() })
     flow.open()
     await flushPromises()
-    vi.mocked(reduceDelivering).mockClear()
+    vi.mocked(reduceRequested).mockClear()
     expect(flow.colorsMax.value).toBe(24)
-    expect(reduceDelivering).not.toHaveBeenCalled()
+    expect(reduceRequested).not.toHaveBeenCalled()
     expect(flow.conversion.value?.colorsFound).toBe(24)
-    expect(reduceDelivering).toHaveBeenCalledTimes(1)
+    // Made once when the picture was read, never again for reading its colors.
+    expect(reduceRequested).not.toHaveBeenCalled()
   })
 
   it('makes the beads where the picture rests, not at every move of a drag (ticket 1160)', async () => {
@@ -179,7 +180,7 @@ describe('usePictureBarFlow (ReferenceImage card, ticket 0883)', () => {
     const rested = flow.conversion.value
     expect(rested?.changes).toHaveLength(24)
     expect(flow.previewProject.value).toBeDefined()
-    vi.mocked(reduceDelivering).mockClear()
+    vi.mocked(reduceRequested).mockClear()
     // A corner dragged: the size follows, the picture shows as itself, and the popover keeps the beads it had.
     for (const width of [130, 150, 160]) {
       at.value = { x: width / 2, y: width / 3, width, angle: 0 }
@@ -188,12 +189,12 @@ describe('usePictureBarFlow (ReferenceImage card, ticket 0883)', () => {
       expect(flow.colorsMax.value).toBe(2)
     }
     expect(flow.size.value?.grid).toBe('8×5')
-    expect(reduceDelivering).not.toHaveBeenCalled()
+    expect(reduceRequested).not.toHaveBeenCalled()
     // Let go: saved where the drag left it, and its beads are made again.
     harness.replaceProject(withReferenceImage(harness.project, { ...harness.project.referenceImage!, place: at.value }))
     expect(flow.conversion.value?.changes).toHaveLength(40)
     expect(flow.previewProject.value).toBeDefined()
-    expect(reduceDelivering).toHaveBeenCalledTimes(1)
+    expect(reduceRequested).toHaveBeenCalledTimes(1)
   })
 
   it('reads no beads from a picture too big to convert (ticket 1160)', async () => {
@@ -205,10 +206,10 @@ describe('usePictureBarFlow (ReferenceImage card, ticket 0883)', () => {
     at.value = { x: 4000, y: 2667, width: 8000, angle: 0 }
     harness.replaceProject(withReferenceImage(harness.project, { ...harness.project.referenceImage!, place: at.value }))
     expect(flow.convertOff.value).toBe('too-big')
-    vi.mocked(reduceDelivering).mockClear()
+    vi.mocked(reduceRequested).mockClear()
     expect(flow.conversion.value).toBeUndefined()
     expect(flow.colorsMax.value).toBe(1)
-    expect(reduceDelivering).not.toHaveBeenCalled()
+    expect(reduceRequested).not.toHaveBeenCalled()
   })
 
   it('hands All settings the picture, its size, the match and the color count, and folds the popover away', async () => {

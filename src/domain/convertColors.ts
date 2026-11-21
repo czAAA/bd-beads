@@ -162,9 +162,23 @@ export function matchFoundColors(
   })
 }
 
-/** The picture reduced so the count asked comes out as bead colors (ticket 0892): a join onto one code, or a code under
- * the minimum of beads, frees a place, so more colors are asked of the reduction until the rows reach `asked` (a row set
- * to empty counts), or the picture has no more to give. A picture with no more colors than asked is not padded. */
+/** What reduceDelivering is asked, as one value that can be sent to a worker and back (ticket 1163). */
+export interface ReductionRequest {
+  counts: ReadonlyMap<string, number>
+  asked: number
+  targets: readonly TargetColor[] | undefined
+  choices: ColorChoices
+  leastBeads: number
+}
+
+/** reduceDelivering for a request: the one function the reduction worker and the inline path both run. */
+export function reduceRequested({ counts, asked, targets, choices, leastBeads }: ReductionRequest): ReducedColors {
+  return reduceDelivering(counts, asked, targets, choices, leastBeads)
+}
+
+/** The picture reduced so the count asked comes out as bead colors (ticket 0892): more are asked until the rows reach
+ * `asked` or the picture has no more to give; one with no more colors than asked is not padded.
+ * @internal The app reduces through reduceRequested; the tests name this one. */
 export function reduceDelivering(
   counts: ReadonlyMap<string, number>,
   asked: number,
