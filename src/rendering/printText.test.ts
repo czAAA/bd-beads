@@ -59,9 +59,11 @@ describe('printText (tickets 162, 164)', () => {
     expect(text.gramsNote).toBe('≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares.')
   })
 
-  it('names the chart cross "empty" for the key of page 1 only when the Schema has empty positions (ticket 0963)', () => {
-    expect(printText(delicaProject(4799), en, 'en', at).empty).toBe('empty')
-    expect(printText(delicaProject(4800), en, 'en', at).empty).toBeUndefined()
+  it('names the chart cross "empty" for the key of page 1 only when the Schema has empty positions and Empty grid is on (tickets 0963, 1140)', () => {
+    expect(printText(delicaProject(4799), en, 'en', at, { emptyGrid: true }).empty).toBe('empty')
+    expect(printText(delicaProject(4800), en, 'en', at, { emptyGrid: true }).empty).toBeUndefined()
+    expect(printText(delicaProject(4799), en, 'en', at).empty).toBeUndefined()
+    expect(printText(delicaProject(4799), en, 'en', at, { emptyGrid: false }).empty).toBeUndefined()
   })
 
   it('names the Bead for Beads needed\'s heading, and none for an unknown Bead (ticket 1096)', () => {

@@ -51,7 +51,7 @@ export const homepage: HomepageTranslations = {
     sections: { label: 'Sections', welcome: 'Welcome', back: 'Back', next: 'Next', firstBody: 'This is the first section.', lastBody: 'This is the last section.', goTo: 'Go to {section}', moreBelow: 'More below' },
     coffee: { title: 'Made by one family', text: 'openbeads stays free and fully local, with no ads and no tracking. If it helps your work, you can support its development through Buy Me a Coffee.', button: 'Buy me a coffee', source: 'View the source' },
     promises: {
-      device: { name: 'Yours, on this device', text: 'Runs in your browser. No account, nothing to install.' },
+      device: { name: 'Every project stays on your device', text: 'Runs in your browser. No account, nothing to install.' },
       offline: { name: 'Works offline', text: 'Once open, it keeps working without a connection.' },
       noAds: { name: 'No ads or tracking', text: 'Nothing is sold to you, and nothing records what you do.' },
       free: { name: 'Free forever', text: 'All you need is free, and nothing is paid for now. Professional extras will come later.' },

@@ -23,7 +23,7 @@ import { fillBlanks } from '../domain/fillBlanks'
 // Page 1 of the PDF drawn for real (ticket 0914; PrintPage1 card): the whole piece and Beads needed, and for most pieces
 // the whole PDF.
 
-const wordsOf = (project: ReturnType<typeof fixtureProject>) => printText(project, en, 'en', new Date())
+const wordsOf = (project: ReturnType<typeof fixtureProject>, emptyGrid = true) => printText(project, en, 'en', new Date(), { emptyGrid })
 
 /** The pages the PDF says it has. */
 async function pdfPages(blob: Blob): Promise<number> {
@@ -75,8 +75,8 @@ describe('page 1 of the PDF', () => {
       expect(layout.overview).toBeDefined()
       return faint.length
     }
-    // Off, the only faint stroke is the key's empty swatch (ticket 0963); on, every empty position's cross too.
-    expect(crosses(false)).toBe(1)
+    // Off, no faint stroke at all, the key's empty swatch included (ticket 1140); on, the swatch and every empty position's cross.
+    expect(crosses(false)).toBe(0)
     expect(crosses(true)).toBeGreaterThan(1)
   })
 
@@ -128,8 +128,8 @@ describe('page 1 of the PDF', () => {
   })
 
   it('ends its key with the cross and "empty" when the Schema has empty positions (ticket 0963)', () => {
-    const texts = (project: ReturnType<typeof fixtureProject>) => {
-      const words = wordsOf(project)
+    const texts = (project: ReturnType<typeof fixtureProject>, emptyGrid = true) => {
+      const words = wordsOf(project, emptyGrid)
       const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
       const layout = pageOneLayout(project, words)
       drawPageOne(project, words, layout, layout.plan, 1)
@@ -144,6 +144,9 @@ describe('page 1 of the PDF', () => {
     expect(texts(holed)).toContain(en.print.wordChart.empty)
     expect(texts(overview)).toContain(en.print.wordChart.empty)
     expect(texts(full)).not.toContain(en.print.wordChart.empty)
+    // With Empty grid off the chart draws no mark, so the key names none (ticket 1140).
+    expect(texts(holed, false)).not.toContain(en.print.wordChart.empty)
+    expect(texts(overview, false)).not.toContain(en.print.wordChart.empty)
   })
 
   it.each<[Locale, Translations]>([['en', en], ['ru', ru], ['uk', uk], ['be', be], ['zh', zh], ['es', es], ['pl', pl]])('fits the tech line and the maker across the page in %s', (locale, messages) => {

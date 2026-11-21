@@ -6,7 +6,7 @@ import { coffeeActs, coffeePromises, coffeeRows } from './coffeeCopy'
 describe("The coffee screen's copy (ticket 0823)", () => {
   it('has the seven promises in order, each with its icon (ticket 1175)', () => {
     expect(coffeePromises(en).map(({ icon, name }) => [icon, name])).toEqual([
-      ['device', 'Yours, on this device'],
+      ['device', 'Every project stays on your device'],
       ['cloud-off', 'Works offline'],
       ['eye-off', 'No ads or tracking'],
       ['check', 'Free forever'],
@@ -16,7 +16,7 @@ describe("The coffee screen's copy (ticket 0823)", () => {
     ])
   })
 
-  it('says Yours, on this device without "offline", which is a promise of its own', () => {
+  it('says Every project stays on your device without "offline", which is a promise of its own', () => {
     expect(coffeePromises(en)[0].text).toBe('Runs in your browser. No account, nothing to install.')
   })
 
