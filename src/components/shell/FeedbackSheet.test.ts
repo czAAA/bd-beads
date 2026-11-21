@@ -42,6 +42,11 @@ afterEach(() => {
 })
 
 describe('FeedbackSheet', () => {
+  it('starts a general Report with the message its prefill carries (the Beta chip, ticket 1198)', () => {
+    const { wrapper } = sheet(request('general', { prefill: { message: 'Convert image (beta)\n\n' } }))
+    expect((wrapper.get('[data-testid="feedback-message"]').element as HTMLTextAreaElement).value).toBe('Convert image (beta)\n\n')
+  })
+
   it('asks each Report kind for its own fields, an Email last', () => {
     expect(fieldIds('general')).toEqual(['feedback-message', 'feedback-email'])
     expect(fieldIds('translation')).toEqual(['feedback-language', 'feedback-shown', 'feedback-should-say', 'feedback-note', 'feedback-email'])

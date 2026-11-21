@@ -36,7 +36,7 @@ describe('MenuPanel (ticket 443)', () => {
     const wrapper = mountIn()
     const projects = wrapper.findAll('[data-testid="menu-panel"] section')[1]!
     const rows = projects.findAll('.panel-item').map((row) => row.text())
-    expect(rows).toEqual([en.projects.newProjectButton, en.convertImage.fileLabel, `${en.projects.heading}1`])
+    expect(rows).toEqual([en.projects.newProjectButton, `${en.convertImage.fileLabel}${en.beta.chip}`, `${en.projects.heading}1`])
     expect(projects.findAll('.panel-item__mark--sub')).toHaveLength(2)
     expect(wrapper.get('[data-testid="menu-convert-image"] svg').attributes('data-icon')).toBe('image')
     // Its own library icon (ticket 188), not the Save Project icon it used to reuse.

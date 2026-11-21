@@ -43,7 +43,7 @@ const { t } = useI18n()
 const words = computed(() => t.value.feedback)
 
 const kind = computed(() => props.request.kind)
-const message = ref('')
+const message = ref(props.request.prefill.message ?? '')
 const language = ref<Locale>(LOCALES.find((code) => code === props.request.context.uiLanguage) ?? 'en')
 const shown = ref('')
 const shouldSay = ref('')

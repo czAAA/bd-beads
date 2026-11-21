@@ -28,6 +28,8 @@ function empty(): Project {
 }
 const drawn = (): Project => (withLayers(empty(), { beads: withColors({}, [{ row: 1, column: 1, color: '#ff0000' }]) }))
 const framed = (): Project => (withLayers(empty(), { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom', beads: {} } }))
+/** A Frame with a Frame shape: a Custom frame. */
+const custom = (): Project => withLayers(empty(), { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom', shape: 'triangle', beads: {} } })
 /** A Frame big enough that its chart prints under 3 mm, so Large beads shows (ticket 1125). */
 const big = (): Project => withLayers(empty(), { frame: { row: 0, column: 0, rows: 100, columns: 100, technique: 'loom', beads: {} } })
 
@@ -326,5 +328,15 @@ describe('ExportPanel "Saves as" (ticket 1096)', () => {
     expect(fileName(again)).toBe('peacock-cuff-ada-lind_cover_chart-border.pdf')
     await again.get('[data-testid="export-pdf"]').trigger('click')
     expect(again.emitted('export-pdf')).toEqual([[undefined]])
+  })
+
+  it('puts the Beta chip on PNG and PDF only while the Frame is a Custom frame, never on File (ticket 1198)', async () => {
+    const plain = await mountPanel(framed())
+    expect(plain.find('[data-testid="beta-chip"]').exists()).toBe(false)
+    plain.unmount()
+    const shaped = await mountPanel(custom())
+    expect(shaped.find('[data-testid="export-png"] [data-testid="beta-chip"]').exists()).toBe(true)
+    expect(shaped.find('[data-testid="export-pdf"] [data-testid="beta-chip"]').exists()).toBe(true)
+    expect(shaped.findAll('[data-testid="beta-chip"]')).toHaveLength(2)
   })
 })

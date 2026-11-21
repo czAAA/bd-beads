@@ -9,6 +9,8 @@ import { starterCountWords, starterCrumb, starterName, starterSizeWords } from '
 import { useI18n } from '../../i18n/useI18n'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import StarterPicture from './StarterPicture.vue'
+import { customFrameName } from '../../domain/betaFeatures'
+import BetaChip from '../ui/BetaChip.vue'
 
 // The Starter gallery (tickets 0596, 0597; StarterGallery card), a level of the panel's subpanels: step 1 a card per
 // category, or with a `category`, step 2 a card per option of it. Two columns, one Tab stop with a roving tabindex; a
@@ -115,7 +117,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
           <StarterPicture :starter="card.starter" :pair="card.pair" upright />
         </span>
         <span class="starter-card__caption">
-          <span class="starter-card__name">{{ card.name }}</span>
+          <span class="starter-card__name">{{ card.name }}<BetaChip v-if="shown && card.starter.shape" feature="customFrames" :name="customFrameName(card.name)" /></span>
           {{ ' ' }}
           <span class="starter-card__lines">
             <template v-for="line in card.lines" :key="line">

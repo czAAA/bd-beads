@@ -60,6 +60,11 @@ export const account: AccountTranslations = {
     failed: 'Nie udało się wysłać zgłoszenia. Spróbuj później albo je skopiuj.',
     sent: 'Dziękujemy, zgłoszenie wysłane',
   },
+  beta: {
+    chip: 'Beta',
+    popover: 'Beta. To działa i jest gotowe do użycia, ale wciąż to testujemy i ulepszamy. Pomaga Twoje korzystanie i opinie: napisz, co zauważysz.',
+    send: 'Wyślij opinię',
+  },
   account: {
     section: 'Konto',
     signIn: 'Zaloguj się',

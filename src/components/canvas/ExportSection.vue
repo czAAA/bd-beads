@@ -23,6 +23,8 @@ import { frameRowOrder, ROW_WAYS } from '../../domain/rowProgress'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 import { namedChoices, pdfFileName } from '../../composables/export/pdfFileName'
 import { MAX_PDF_FILE_NAME, typedPdfFileName } from '../../domain/projectFile'
+import BetaChip from '../ui/BetaChip.vue'
+import { frameShapeOf } from '../../domain/frameShape'
 
 // The export rows (tickets 568, 0652, 0916, 1095, 1096, 1121; ExportPanel card): PNG, PDF and File (the .openbeads) in one
 // row, each saying on hover what it gives, "Saves as" (the PDF's name with its pencil), Export quality folded, Cover page, Black and white, Empty grid, Chart border (ticket 1127), Large beads, Row by row. One component for the Frame panel's Export
@@ -46,6 +48,8 @@ const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'quali
 const QUALITY_CAPTIONS = { low: 'qualityLowCaption', medium: 'qualityMediumCaption', high: 'qualityHighCaption' } as const
 const { t, locale } = useI18n()
 const frame = computed(() => frameOf(props.project))
+/** Whether the Frame has a Frame shape: PNG and PDF of one still carry the Beta chip (ticket 1198). */
+const customFrame = computed(() => !!frame.value && !!frameShapeOf(frame.value))
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
 const quality = useExportQuality()
 /** Cover page, Black and white, Empty grid, Chart border, Large beads and Row by row on this device (tickets 0916, 1096,
@@ -145,6 +149,7 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
       @click="emit('export-png')"
     >
       PNG
+      <BetaChip v-if="customFrame" feature="customFrameExports" name="PNG export" />
     </AppButton>
     <AppButton
       variant="accent-2"
@@ -158,6 +163,7 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
       @click="emit('export-pdf', typedName)"
     >
       PDF
+      <BetaChip v-if="customFrame" feature="customFrameExports" name="PDF export" />
     </AppButton>
     <ProjectFileButton @save-project-file="emit('save-project-file')" />
   </div>

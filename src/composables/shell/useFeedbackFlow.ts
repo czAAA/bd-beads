@@ -17,6 +17,8 @@ export interface FeedbackPrefill {
   hex?: string
   swatchLetter?: string
   problem?: 'wrong' | 'missing'
+  /** A general Report's starting message: the Beta chip's feature name (ticket 1198). */
+  message?: string
 }
 
 /** The Feedback sheet's question: its Report kind, the prefill, the context gathered as it opened, and the email to

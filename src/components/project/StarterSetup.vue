@@ -48,6 +48,8 @@ import { layerSummary } from './layerSettingsOf'
 import StarterPicture from './StarterPicture.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
+import { customFrameName } from '../../domain/betaFeatures'
+import BetaChip from '../ui/BetaChip.vue'
 
 // A Starter's setup (tickets 0596, 0597, 0671, 0952; StarterGallery card, Setup): the live picture, its sizes and
 // choices, the Estimated size, Use design or Start empty, then Name (New Project only) and the Frame's Layer settings
@@ -254,6 +256,9 @@ function onSubmit() {
     <div class="starter-setup__picture" role="img" :aria-label="pictureName" data-testid="starter-setup-picture">
       <StarterPicture :starter="starter" :choice="choice" :bead-id="bead?.id" :drawn-px="320" />
     </div>
+    <p v-if="starter.shape" class="starter-setup__option" data-testid="starter-setup-option">
+      {{ optionName }}<BetaChip feature="customFrames" :name="customFrameName(optionName)" />
+    </p>
 
     <template v-for="row in rows" :key="'size' in row ? row.size.id : 'pick' in row ? row.pick.id : 'system'">
       <div v-if="'size' in row" class="starter-setup__size" :data-testid="`starter-size-${row.size.id}`">
@@ -367,6 +372,12 @@ function onSubmit() {
 }
 
 /* The large live picture (StarterGallery card, Setup 1). */
+.starter-setup__option {
+  margin: 0;
+  font: var(--type-control);
+  color: var(--ink);
+}
+
 .starter-setup__picture {
   box-sizing: border-box;
   height: var(--starter-picture-height);

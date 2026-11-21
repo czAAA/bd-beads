@@ -15,6 +15,7 @@ import AppButton from '../ui/AppButton.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import IconButton from '../ui/IconButton.vue'
+import BetaChip from '../ui/BetaChip.vue'
 
 // The picture bar (ReferenceImage card, tickets 0883, 1009, 1118): a pill over the shown reference image's top edge: the
 // Move grip, Set Frame around the picture, Convert to beads, Picture over the beads, Opacity, Replace and Remove. One
@@ -203,6 +204,7 @@ function onFile(event: Event) {
       data-testid="picture-bar-convert"
       @click="emit('convert')"
     />
+    <BetaChip feature="convertToBeads" :name="words.convert.name" />
     <span class="picture-bar__divider" aria-hidden="true" />
     <IconButton
       variant="plain"

@@ -104,3 +104,13 @@ The dev site's own toast (ticket 1041, the host's Access sign-in, gone with the 
 |---|---|---|---|---|---|---|
 | Your access to this dev site has run out. | Срок доступа к этому тестовому сайту истёк. | Термін доступу до цього тестового сайту минув. | Тэрмін доступу да гэтага тэставага сайта скончыўся. | 你对这个测试站点的访问已过期。 | Tu acceso a este sitio de pruebas ha caducado. | Twój dostęp do tej strony testowej wygasł. |
 | Renew access (its button) | Продлить доступ | Поновити доступ | Аднавіць доступ | 续期访问 | Renovar acceso | Odnów dostęp |
+
+## Beta chip (ticket 1198)
+
+The chip's label, its popover and its button, one string each, never saying "free".
+
+| | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Chip | Beta | Бета | Бета | Бэта | 测试版 | Beta | Beta |
+| Popover | Beta. This works and is ready to use, but we are still testing and improving it. Your use and feedback help: tell us what you find. | Бета. Это работает и готово к использованию, но мы ещё тестируем и улучшаем. Помогают ваше использование и отзывы: расскажите, что заметили. | Бета. Це працює і готове до використання, але ми ще тестуємо й покращуємо. Допомагають ваше користування і відгуки: розкажіть, що помітили. | Бэта. Гэта працуе і гатова да выкарыстання, але мы яшчэ тэстуем і паляпшаем. Дапамагаюць ваша выкарыстанне і водгукі: раскажыце, што заўважылі. | 测试版。此功能可正常使用，但我们仍在测试和改进。你的使用和反馈会有帮助：告诉我们你的发现。 | Beta. Esto funciona y está listo para usar, pero seguimos probándolo y mejorándolo. Tu uso y tus comentarios ayudan: cuéntanos lo que encuentres. | Beta. To działa i jest gotowe do użycia, ale wciąż to testujemy i ulepszamy. Pomaga Twoje korzystanie i opinie: napisz, co zauważysz. |
+| Button | Send feedback | Отправить отзыв | Надіслати відгук | Даслаць водгук | 发送反馈 | Enviar comentarios | Wyślij opinię |
