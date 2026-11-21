@@ -25,7 +25,6 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: '删除所有项目',
       sendFeedback: '发送反馈',
       reportTranslation: '报告翻译问题',
-      buttonNames: '按钮的作用',
     },
     project: {
       rename: '重命名“{name}”',

@@ -25,7 +25,6 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: 'Удалить все проекты',
       sendFeedback: 'Отправить отзыв',
       reportTranslation: 'Сообщить об ошибке перевода',
-      buttonNames: 'Что делают кнопки',
     },
     project: {
       rename: 'Переименовать «{name}»',
