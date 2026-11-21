@@ -955,7 +955,7 @@ describe('useSelectionGesture', () => {
     }
     const canvasBeads = (project: Project | undefined) => beadsOfLayer(project!, 'canvas')
 
-    it('a drag of the grip carries the Piece: the Selection follows, the canvas shows the beads there, and the Project waits for the release', () => {
+    it('a drag of the grip carries the Piece: the Selection follows, the canvas shows the Project with the Piece lifted out and the Piece to move by so many beads, and the Project waits for the release (ticket 1151)', () => {
       const { gesture, harness } = pieceSelected()
       const before = harness.currentProject()
 
@@ -963,7 +963,10 @@ describe('useSelectionGesture', () => {
       gesture.dragAdjust({ row: 11, column: 8 })
 
       expect(gesture.selection.value).toMatchObject({ top: 7, left: 4, cells: [{ row: 7, column: 4 }, { row: 7, column: 5 }] })
-      expect(canvasBeads(gesture.carriedProject.value)[7]).toEqual({ 4: RED, 5: RED })
+      expect(canvasBeads(gesture.carriedProject.value)[5]).toEqual({ 9: BLUE })
+      expect(canvasBeads(gesture.carriedProject.value)[7]).toBeUndefined()
+      expect(canvasBeads(gesture.carriedPiece.value?.project)[5]).toEqual({ 5: RED, 6: RED })
+      expect(gesture.carriedPiece.value).toMatchObject({ rows: 2, columns: -1, from: { row: 5, column: 5 } })
       expect(harness.currentProject()).toBe(before)
 
       gesture.endAdjust()
@@ -994,11 +997,30 @@ describe('useSelectionGesture', () => {
       gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
       gesture.dragAdjust({ row: 10, column: 9 })
       gesture.dragAdjust({ row: 9, column: 9 })
-      expect(gesture.carriedProject.value).toBeUndefined()
+      expect(gesture.carriedPiece.value).toMatchObject({ rows: 0, columns: 0 })
       gesture.endAdjust()
+      expect(gesture.carriedProject.value).toBeUndefined()
 
       expect(harness.currentProject()).toBe(before)
       expect(gesture.selection.value).toBe(selection)
+    })
+
+    it('waits at the last place it could lie while the pointer is in one it can\'t, and goes on from there (ticket 1151)', () => {
+      const bare = createProject({ technique: 'loom', beadId: cubeBeadId })
+      const framed = withFrame(paintAt(bare, [{ row: 5, column: 5 }, { row: 5, column: 6 }], RED), { row: 4, column: 30, rows: 10, columns: 10 })
+      const { gesture } = setup(framed)
+      gesture.tapPiece(5, 5)
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
+      gesture.dragAdjust({ row: 9, column: 10 })
+      // Into the Frame's keep-out margin, twice (the second asks nothing more of the Piece).
+      gesture.dragAdjust({ row: 9, column: 30 })
+      gesture.dragAdjust({ row: 9, column: 30 })
+      expect(gesture.carriedPiece.value).toMatchObject({ rows: 0, columns: 1 })
+      expect(gesture.selection.value).toMatchObject({ top: 5, left: 6 })
+
+      gesture.dragAdjust({ row: 10, column: 10 })
+      expect(gesture.carriedPiece.value).toMatchObject({ rows: 1, columns: 1 })
     })
 
     it('carries on over another Piece, which shows again once it has passed (ticket 1162)', () => {
@@ -1008,9 +1030,11 @@ describe('useSelectionGesture', () => {
       // Three to the right puts its second bead on the BLUE one: it is shown on top.
       gesture.dragAdjust({ row: 9, column: 12 })
       expect(gesture.selection.value).toMatchObject({ top: 5, left: 8 })
-      expect(canvasBeads(gesture.carriedProject.value)[5]).toEqual({ 8: RED, 9: RED })
+      expect(gesture.carriedPiece.value).toMatchObject({ rows: 0, columns: 3 })
       gesture.dragAdjust({ row: 9, column: 14 })
-      expect(canvasBeads(gesture.carriedProject.value)[5]).toEqual({ 9: BLUE, 10: RED, 11: RED })
+      // The BLUE bead was never taken out of what is shown under the Piece, so it shows again once the Piece has passed.
+      expect(canvasBeads(gesture.carriedProject.value)[5]).toEqual({ 9: BLUE })
+      expect(gesture.carriedPiece.value).toMatchObject({ rows: 0, columns: 5 })
       gesture.endAdjust()
 
       expect(canvasBeads(harness.currentProject())[5]).toEqual({ 9: BLUE, 10: RED, 11: RED })

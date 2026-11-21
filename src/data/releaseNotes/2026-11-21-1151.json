@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "fixed",
+  "line": {
+    "en": "A big piece now follows the pointer smoothly when you carry it with the Piece tool",
+    "ru": "Большой фрагмент теперь плавно следует за указателем, когда вы несёте его инструментом «Фрагмент»",
+    "uk": "Великий фрагмент тепер плавно слідує за вказівником, коли ви несете його інструментом «Фрагмент»",
+    "be": "Вялікі фрагмент цяпер плаўна ідзе за ўказальнікам, калі вы нясеце яго інструментам «Фрагмент»",
+    "zh": "用“片段”工具搬动大片段时，它现在能顺畅地跟随指针",
+    "es": "Una pieza grande ahora sigue al puntero con fluidez cuando la llevas con la herramienta Pieza",
+    "pl": "Duży fragment płynnie podąża za wskaźnikiem, gdy niesiesz go narzędziem Fragment"
+  }
+}

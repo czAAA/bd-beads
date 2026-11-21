@@ -261,6 +261,33 @@ describe('ProjectSurface', () => {
     }
   })
 
+  it('lays a carried Piece on a canvas of its own, drawing no bead of the layer for a step (ticket 1151)', async () => {
+    const project = projectOf(20, 10, { frame: undefined, beads: { 2: { 2: '#e63746', 3: '#e63746' } } })
+    const piece = projectOf(20, 10, { frame: undefined, beads: { 2: { 2: '#e63746', 3: '#e63746' } } })
+    const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { carriedPiece: { project: piece, from: { row: 2, column: 2 }, rows: 0, columns: 0 } })
+    await nextTick()
+    const carry = wrapper.get<HTMLCanvasElement>('[data-testid="project-surface-carry"]').element
+    expect(carry.style.display).toBe('')
+    expect(carry.style.transform).toBe('translate(0px, 0px)')
+    const drawn = draws()
+
+    await wrapper.setProps({ carriedPiece: { project: piece, from: { row: 2, column: 2 }, rows: 1, columns: 3 } })
+    await nextTick()
+
+    expect(carry.style.transform).toMatch(/^translate\((?!0px, 0px)/)
+    expect(draws()).toBe(drawn)
+
+    // A new zoom draws the bitmap again.
+    await wrapper.setProps({ zoom: 2 })
+    await nextTick()
+    expect(draws()).toBeGreaterThan(drawn)
+
+    await wrapper.setProps({ carriedPiece: undefined })
+    await nextTick()
+    expect(carry.style.display).toBe('none')
+    wrapper.unmount()
+  })
+
   it('draws a small piece live on every zoom step, as before', async () => {
     const { wrapper } = await mountSurface(projectOf(20, 10), 0.2)
     await wrapper.setProps({ zoom: 0.1 })

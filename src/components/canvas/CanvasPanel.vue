@@ -179,6 +179,7 @@ const {
   exportOpener,
   onOpenExport,
   frameDraftProject,
+  carriedPiece,
   onFramePress,
   onFrameDrag,
   onFrameRelease,
@@ -537,6 +538,7 @@ const drawingStyle = computed(() => {
                 :outlined-cell="radialToolbox.pressed.value"
                 :mirror="mirrorOn ? mirrorSetting : undefined"
                 :selection="selection"
+                :carried-piece="carriedPiece"
                 :selection-refusals="selectionRefusals"
                 :fill-refusals="fillRefusals"
                 :label="projectLabel"

@@ -31,6 +31,8 @@ import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { cssZoomOf } from '../../composables/ui/cssZoom'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
+import { useCarryLayer } from './surface/useCarryLayer'
+import type { CarriedPieceMove } from '../../composables/tools/useSelectionGesture'
 import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
 import type { MirrorSetting } from '../../domain/mirror'
@@ -78,6 +80,9 @@ const props = withDefaults(defineProps<{
   outlinedCell?: GridPosition
   /** The rectangle the Select tool has marked out, drawn as a marquee over those beads (ticket 31). */
   selection?: Selection
+  /** A Canvas Piece held by its move grip (ticket 1151): drawn once on a canvas of its own over `project`, which has it
+   * lifted out, and laid where the pointer has brought it. */
+  carriedPiece?: CarriedPieceMove
   /** The Project's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */
   label?: string
   /** Which pointer draws and which one moves the canvas (ticket 325); absent, every pointer draws. */
@@ -155,6 +160,7 @@ const overlayEl = ref<HTMLCanvasElement>()
 const fadeEl = ref<HTMLCanvasElement>()
 const turnEl = ref<HTMLCanvasElement>()
 const standInEl = ref<HTMLCanvasElement>()
+const carryEl = ref<HTMLCanvasElement>()
 
 /** How big the surface is in its own px, measured: the canvases are exactly this big. */
 const size = ref({ width: 0, height: 0 })
@@ -433,6 +439,7 @@ const frameTurn = useFrameTurn({
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
 useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference: toRef(() => props.reference), slimSheet })
+useCarryLayer({ props: layerProps, canvas: carryEl, size: layerSize, space, surface: layerSurface, theme, frameTheme, carried: () => props.carriedPiece, oncePerFrame })
 watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flush: 'post' })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, frameTheme, marksShown, oncePerFrame,
@@ -520,6 +527,8 @@ onBeforeUnmount(() => {
       <canvas v-show="rowMotion.fadeOpacity.value > 0" ref="fadeEl" class="project-surface__canvas" :style="{ opacity: rowMotion.fadeOpacity.value }" aria-hidden="true" />
       <!-- The Frame as it was, turning a quarter over the Frame drawn turned (ticket 1016). -->
       <canvas v-show="frameTurn.turning.value" ref="turnEl" class="project-surface__canvas" data-testid="project-surface-turn" aria-hidden="true" />
+      <!-- A Piece carried by its move grip, laid where the pointer has brought it (ticket 1151). -->
+      <canvas ref="carryEl" class="project-surface__canvas" style="display: none" data-testid="project-surface-carry" aria-hidden="true" />
       <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
       <PatternDone v-if="patternDoneAt" :key="patternDoneAt.id" :sheet="patternDoneAt.sheet" :frame="patternDoneAt.frame" :stars="patternDoneAt.stars" />
     </div>
