@@ -1514,6 +1514,20 @@ describe('ProjectSurface', () => {
         await vi.waitFor(() => expect(dashed()).toBe(true))
       })
 
+      it('refuses a press anywhere off the Frame while it is expanded, beyond the margin too, and lets one on the Frame through (ticket 1169)', async () => {
+        const project = framed()
+        const slim = { compact: false, row: 28, title: 0, numbers: { left: 0, top: 0 }, rowWidth: 0 }
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'erase' }), slim })
+        const surface = wrapper.find('[data-testid="project-surface"]')
+        // Row 2, column 2 is well outside the 4-position margin round the Frame at rows and columns 10 to 13.
+        await surface.trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
+        await surface.trigger('pointerup', { button: 0 })
+        expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+        expect(surface.classes()).toContain('project-surface--refused')
+        await surface.trigger('pointerdown', { ...centreOf(project, 11, 11), button: 0, buttons: 1 })
+        expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
+      })
+
       it('keeps its own cursor for Erase, which still works there', async () => {
         const project = framed()
         const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can() })

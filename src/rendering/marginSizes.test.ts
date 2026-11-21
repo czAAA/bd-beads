@@ -42,6 +42,11 @@ const MIRROR: Record<string, { token: string } | { css: string } | { none: strin
   'icon.compact': { none: 'an IconButton’s icon size is a prop, not CSS' },
   'pass.pillPad': { none: 'only the canvas draws the current pass’s pill' },
   'pass.tick': { none: 'only the canvas draws the current pass’s tick' },
+  'expanded.gap.full': { css: '--margin-expanded-gap' },
+  'expanded.gap.compact': { css: '--margin-expanded-gap-compact' },
+  'expanded.inset.full': { css: '--margin-expanded-inset' },
+  'expanded.inset.compact': { css: '--margin-expanded-inset-compact' },
+  'expanded.numbers': { none: 'the rulers’ own gap at 100% (rulerScale), drawn by the canvas alone' },
 }
 
 /** Every number in a nested record, by its dotted path. */

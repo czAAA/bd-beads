@@ -6,6 +6,7 @@ import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
+import { UNDER_TABLET_QUERY } from '../../rendering/rulerScale'
 import type { Layer } from '../../domain/layers'
 import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads, selectionLayer } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -227,10 +228,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
+  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
+      compact: typeof window === 'undefined' ? undefined : useMediaQuery(UNDER_TABLET_QUERY),
       // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879); at the plain
       // address, the view the tab left its Project at, for a reload (ticket 1108).
       opening: openingAddress.project
@@ -240,7 +242,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
   useKeepViewOnPageHide(
     services.keptView,
     () => {
-      const view = keptView()
+      // An expanded Frame is not kept: a reload opens unexpanded, at its fit (ticket 1169).
+      const view = frameExpanded.value ? undefined : keptView()
       return activeProject.value && view && { project: activeProject.value.id, view }
     },
     () => activeProject.value !== undefined && viewPlaced.value,
@@ -738,6 +741,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
   })
 
   const { announcement, announce } = useA11yAnnouncer()
+  /** Expand the Frame and Back to the Canvas, the margin's button (ticket 1169): each press is announced once. */
+  const onToggleFrameExpand = () => announce(toggleFrameExpand() ? t.value.frame.announceFrameExpanded : t.value.frame.backToCanvas)
+  /** Escape's Back to the Canvas, announced as the button's is; whether the Frame was expanded. */
+  function backToCanvas(): boolean {
+    const was = collapseFrame()
+    if (was) announce(t.value.frame.backToCanvas)
+    return was
+  }
 
   /** Delete all and its confirmation (tickets 42, 198). */
   const deleteAll = useDeleteAllFlow({ currentProject, edit, dialogs })
@@ -1054,6 +1065,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     hasOpenLayer: () => hasOpenLayer(scope),
     anyDialogOpen: () => dialogs.open.value !== undefined,
     backOutOfSelect: backOutOfSelectOrFraming,
+    collapseFrame: backToCanvas,
     onUndo,
     onRedo,
     onSelectTool,
@@ -1331,6 +1343,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       surfaceProbe,
       /** Where the Tool pill stands over the drawing area: a Fit leaves its room clear (ticket 0850). */
       onToolPillPlaced,
+      frameExpanded,
+      slimContent,
+      onToggleFrameExpand,
+      onSlimMeasured,
     },
     /** The panels over the canvas box (AppPanels): Menu with New Project and the Projects library, Project, and the
      * Frame panel. Each control only asks; the flows do the work. */

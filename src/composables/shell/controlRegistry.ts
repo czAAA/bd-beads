@@ -37,6 +37,8 @@ export interface ControlDeps {
   /** Collapses an expanded Tool group; true if one was open. */
   /** Dismisses the paste preview, else clears the Selection; true if either was there. */
   backOutOfSelect: () => boolean
+  /** Back to the Canvas from an expanded Frame (ticket 1169); true if it was expanded. */
+  collapseFrame: () => boolean
   onUndo: () => void
   onRedo: () => void
   onSelectTool: (tool: Tool) => void
@@ -258,6 +260,8 @@ export const CONTROLS: readonly ControlAction[] = [
       if (deps.leaveMirrorMode()) return
       // Then the paste preview, the Selection.
       if (deps.backOutOfSelect()) return
+      // Then an expanded Frame goes back to the Canvas (ticket 1169).
+      if (deps.collapseFrame()) return
       // Ticket 214: with nothing left to dismiss, Escape falls through to Paint.
       if (deps.activeTool() !== 'paint') deps.onSelectTool('paint')
     },
@@ -599,6 +603,8 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !frameLocked(deps),
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrameFromStarter,
   }),
+  // The margin's Expand the Frame (ticket 1169, MarginSheet card); its name and Tooltip say Back to the Canvas while expanded.
+  unkeyed('expand-frame', (t) => t.frame.expandFrame, 'canvas', { icon: 'expand-frame' }),
   // The margin's Mirror the whole Frame (ADR 0082, MarginSheet card); its Tooltip says Mirror off while it is on.
   unkeyed('mirror-frame', (t) => t.mirror.wholeFrame, 'canvas', { icon: 'mirror' }),
   unkeyed('rotate-frame', (t) => t.frame.rotateFrameLabel, 'canvas', {
