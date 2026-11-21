@@ -32,9 +32,6 @@ export const panels: PanelsTranslations = {
       keepProjectsInfo:
         'Cuando el dispositivo se queda sin espacio, el navegador puede borrar los datos de esta app, salvo que conserve tus proyectos. El navegador lo decide por su cuenta, así que guarda un archivo de proyecto de cada uno que te importe.',
       buttonNames: 'Qué hace cada botón',
-      liftedPieces: 'Trozos en relieve',
-      liftedPiecesInfoLabel: 'Para qué sirven los Trozos en relieve',
-      liftedPiecesInfo: 'Cada trozo descansa sobre su propio fondo, con una línea fina y una sombra suave alrededor. Si lo apagas, los trozos quedan planos sobre el lienzo.',
     },
     project: {
       rename: 'Renombrar «{name}»',

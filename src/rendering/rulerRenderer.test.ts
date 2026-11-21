@@ -83,29 +83,11 @@ describe('drawRulers', () => {
   const open = withFrameSheet(base, undefined)
   const twoPieces = withLayers(open, { beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].flatMap((column) => [{ row, column, color: '#ff0000' }, { row: row + 10, column: column + 10, color: '#00ff00' }]))) })
 
-  /** A look that keeps the Piece area's rectangle: high contrast's and the exports'. */
-  const ruled = { ...LIGHT_THEME, liftedPiece: false }
-
   it('draws every Piece rectangle `line-strong`, whichever Piece is being drawn', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true, theme: ruled }))
+    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLine, LIGHT_THEME.pieceLine])
-  })
-
-  it('draws no Piece rectangle where pieces are lifted, light and dark, but the numbers where they sat (ticket 1004)', () => {
-    const { context, strokes, texts } = fakeContext()
-    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
-    expect(strokes).toHaveLength(0)
-    const kept = fakeContext()
-    drawRulers(kept.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true, theme: ruled }))
-    expect(texts).toEqual(kept.texts)
-  })
-
-  it('keeps the Piece rectangle in the draft look, which draws no contour (ticket 1004)', () => {
-    const { context, strokes } = fakeContext()
-    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 0.1, numbers: true }))
-    expect(strokes.length).toBeGreaterThan(0)
   })
 
   it('numbers the box round every bead of a layer whose Pieces are not counted yet, without its line (ticket 0716)', () => {
@@ -128,7 +110,7 @@ describe('drawRulers', () => {
     expect(off.texts).toHaveLength(0)
 
     const on = fakeContext()
-    drawRulers(on.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true, theme: ruled }))
+    drawRulers(on.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
     expect(on.strokes).toHaveLength(2)
     expect(on.texts.length).toBeGreaterThan(0)
   })
@@ -142,7 +124,7 @@ describe('drawRulers', () => {
   })
 
   it('draws a Frame\'s numbers in the margin\'s greys and the Pieces around it in the Canvas\'s, the Pieces\' hidden with Rulers off (ticket 1012)', () => {
-    const theme = { ...ruled, margin: { ...LIGHT_THEME.margin, ruler: '#111111', rulerStrong: '#222222' } }
+    const theme = { ...LIGHT_THEME, margin: { ...LIGHT_THEME.margin, ruler: '#111111', rulerStrong: '#222222' } }
     const beside = withLayers(twoPieces, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 3, columns: 3, beads: {} } })
     const on = fakeContext()
     drawRulers(on.context, { ...drawn(beside as typeof base, { zoom: 1, numbers: true }), theme })

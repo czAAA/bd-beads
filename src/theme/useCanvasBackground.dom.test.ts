@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp, defineComponent, h } from 'vue'
 import { createProject } from '../domain/createProject'
 import { withBackground, withFrameSheet } from '../domain/layerRecord'
@@ -36,38 +36,6 @@ describe('useCanvasBackground (ticket 0666)', () => {
     device.remember(3)
     expect(device.start.value).toBe(3)
     expect(device.customColor.value).toBe('#7a2e8c')
-  })
-})
-
-describe('Lifted pieces (ticket 1042)', () => {
-  beforeEach(() => localStorage.removeItem(PREFERENCES.liftedPieces.key))
-
-  it('lifts the Pieces of the Canvas and the Frame until it is switched off, and keeps the choice on the device', () => {
-    const project = withBackground(framed(), 'frame', '#336699')
-    const looks = useCanvasBackground(() => project)
-    expect([looks.lift.on.value, looks.projectTheme.value.liftedPiece, looks.frameTheme.value.liftedPiece]).toEqual([true, true, true])
-
-    looks.lift.set(false)
-
-    expect([looks.lift.on.value, looks.projectTheme.value.liftedPiece, looks.frameTheme.value.liftedPiece]).toEqual([false, false, false])
-    expect(localStorage.getItem(PREFERENCES.liftedPieces.key)).toBe('off')
-    expect(useCanvasBackground().projectTheme.value.liftedPiece).toBe(false)
-  })
-
-  it('changes nothing else of the look: the own-color rim and the tonal tiles stay', () => {
-    const looks = useCanvasBackground()
-    const lifted = looks.projectTheme.value
-    looks.lift.set(false)
-    expect(looks.projectTheme.value).toEqual({ ...lifted, liftedPiece: false })
-  })
-
-  it('has nothing to switch in high contrast, which lifts no Piece', async () => {
-    const looks = useCanvasBackground()
-    expect(looks.lift.offered.value).toBe(true)
-    document.documentElement.dataset.theme = 'contrast'
-    await vi.waitFor(() => expect(looks.lift.offered.value).toBe(false))
-    document.documentElement.dataset.theme = 'light'
-    await vi.waitFor(() => expect(looks.lift.offered.value).toBe(true))
   })
 })
 

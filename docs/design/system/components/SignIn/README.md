@@ -9,10 +9,10 @@ There are no pages and no modal: Sign in is a Subpanel of the Menu, pushed by th
 Under the header (Back, the title "Sign in" in `title`), the body is one column, 16 apart:
 
 1. **A refusal**, only when the person has just come back from Google refused (below).
-2. **What signing in is for:** one sentence in `body` / `muted`, as New Project's subtitle is. "Sign in to have the same language, theme and Lifted pieces on all your devices. Your Projects stay on this device." It says that Projects stay, so nobody expects them to follow.
+2. **What signing in is for:** one sentence in `body` / `muted`, as New Project's subtitle is. "Sign in to have the same language and theme on all your devices. Your Projects stay on this device." It says that Projects stay, so nobody expects them to follow.
 3. **What is kept**, in plain sight above the button, with the weight of a heading:
    - the heading "What openbeads keeps" in `title`;
-   - a list on `surface`, `radius-md`, padding 10 12 (a 2px `line-strong` edge in high contrast): one row per thing kept, a 16px `check` in `muted` and the words in `control` / `ink`, 6 apart. Today two rows: "Your email address" and "Three settings: language, theme and Lifted pieces";
+   - a list on `surface`, `radius-md`, padding 10 12 (a 2px `line-strong` edge in high contrast): one row per thing kept, a 16px `check` in `muted` and the words in `control` / `ink`, 6 apart. Today two rows: "Your email address" and "Two settings: language and theme";
    - one line under it in `body`: "Nothing else. From Google, only your email address: no name, no picture."
    A ticket that stores one more thing adds one row; the heading and the closing line stay.
 4. **Cloudflare's check**, only in the rare case it asks the person something (below).

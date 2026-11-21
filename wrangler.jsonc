@@ -90,7 +90,7 @@
         // Ticket 0078: per IP, the requests that start a sign-in and those that come back from Google, counted
         // together: a sign-in takes one of each, so this is about three a minute.
         { "name": "SIGN_IN_RATE", "namespace_id": "1005", "simple": { "limit": 6, "period": 60 } },
-        // Ticket 1086: per account, the changes to the Settings kept in step (language, theme, Lifted pieces). Each
+        // Ticket 1086: per account, the changes to the Settings kept in step (language, theme). Each
         // change is one request; a device past the limit sends its last change later.
         { "name": "SETTINGS_RATE", "namespace_id": "1007", "simple": { "limit": 20, "period": 60 } }
       ]

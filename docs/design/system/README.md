@@ -4,7 +4,7 @@ openbeads is a bead-pattern editor. The canvas is the largest thing on screen; e
 
 - **An editor, not a page.** Give the canvas the space. Chrome is compact: 34px controls, 16px box radii, 14px text.
 - **One accent per theme.** `accent` is orange `#fa520f` in light and neon yellow `#faff69` in dark. It marks the single most likely next action in a region (New project, Replace bead, Save project, Row done), the active tool, the current row, the brand mark and the open saved project. Nothing else is accent-colored. Two primary buttons never sit next to each other.
-- **Flat, with hairlines.** Light separates surfaces with 1px hairlines (`line`, `line-soft`, `panel-line`) and a few soft shadows (`elevation-1`–`3`). Dark uses no shadows: depth comes from four surface steps, `canvas` → `surface` → `panel` → `elevated`. One exception: what floats over the Canvas among the pieces (the Tool pill, the Radial toolbox) casts `elevation-float`, the Lifted piece's shadow, in dark too.
+- **Flat, with hairlines.** Light separates surfaces with 1px hairlines (`line`, `line-soft`, `panel-line`) and a few soft shadows (`elevation-1`–`3`). Dark uses no shadows: depth comes from four surface steps, `canvas` → `surface` → `panel` → `elevated`. One exception: what floats over the Canvas among the pieces (the Tool pill, the Radial toolbox) casts `elevation-float`, a close and a soft shadow, in dark too.
 - **Strict type roles.** Inter for anything you read or press; DM Mono, lowercase, for labels and meta; Instrument Serif italic only for the technique word (on exports) and the maker's name on exports.
 - **Nothing borrowed.** No company or product names, logos or imagery. Colors, fonts and copy are the app's own.
 
@@ -119,7 +119,7 @@ In `index.html`:
 - The Rulers card (ticket 222) and the `bead-min-*` tokens are hand-written in the repo (DESIGN.md §6).
 - Dark theme: Palette Black #1a1a1a matches the dark `board` closely, so black beads sit close to the board (the white `bead-rim` outlines them).
 - Plans, accounts and the support link on the Homepage are designs only, switched off, with no integration.
-- **The Canvas look** (approved 2026-11-14) is ahead of the app until tickets 1000 to 1004 and 1010 land: three Canvas colors per theme, tonal tiles, the calm gap, the own-color rim with the satin light (Open weave, no rim, for round beads), and the Lifted piece. The BeadBoard card's Canvas look section holds the drawing; the CanvasBackground, CanvasStrip, Rulers, Frame, MarginSheet, LayerSettings and ShortcutsHelp cards each say which ticket builds their part.
+- **The Canvas look** (approved 2026-11-14) is ahead of the app until tickets 1000 to 1003 and 1010 land: three Canvas colors per theme, tonal tiles, the calm gap, the own-color rim with the satin light (Open weave, no rim, for round beads). The BeadBoard card's Canvas look section holds the drawing; the CanvasBackground, CanvasStrip, Rulers, Frame, MarginSheet, LayerSettings and ShortcutsHelp cards each say which ticket builds their part.
 - **Expand the Frame** (approved 2026-11-20, in the app since ticket 1169): the margin sheet's new first button (`expand-frame`, `collapse-frame`), which fits the Frame between the Canvas strip and the Progress bar, sets the Tool pill aside and slims the sheet to what it holds at scale 1 (MarginSheet card, Expand the Frame; ToolPill, Rulers and CanvasStrip cards; `copy/frame.md`).
 
 ## Version

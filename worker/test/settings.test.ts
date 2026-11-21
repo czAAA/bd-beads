@@ -58,12 +58,20 @@ async function change(worker: RunningWorker, session: string, settings: Record<s
 }
 
 describe('the Settings kept in step', () => {
-  it('holds none for a new account, takes the three, and answers them with the account in one request', () =>
+  it('lets a device that still sends the retired Lifted pieces setting be heard, and keeps nothing of it', () =>
+    withWorker({}, async (worker) => {
+      const ann = await signedIn(worker, 'ann')
+      const at = Date.now() - 5000
+      const answered = await change(worker, ann, { theme: { value: 'dark', changedAt: at }, liftedPieces: { value: 'off', changedAt: at } })
+      expect(answered).toEqual({ theme: { value: 'dark', changedAt: at } })
+    }))
+
+  it('holds none for a new account, takes the two, and answers them with the account in one request', () =>
     withWorker({}, async (worker) => {
       const ann = await signedIn(worker, 'ann')
       expect(await held(worker, ann)).toEqual({})
       const at = Date.now() - 5000
-      const sent = { language: { value: 'ru', changedAt: at }, theme: { value: 'device', changedAt: at }, liftedPieces: { value: 'off', changedAt: at } }
+      const sent = { language: { value: 'ru', changedAt: at }, theme: { value: 'device', changedAt: at } }
       expect(await change(worker, ann, sent)).toEqual(sent)
       const me = await worker.fetch(`${SITE}/api/me`, { headers: cookie(ann) })
       expect(await me.json()).toEqual({ email: 'ann@example.com', plan: 'free', settings: sent })
@@ -94,7 +102,7 @@ describe('the Settings kept in step', () => {
       expect(await change(worker, ann, { theme: { value: 'light', changedAt: Date.now() } })).toMatchObject({ theme: { value: 'light' } })
     }))
 
-  it('refuses 400 anything but the three settings with their own values, and keeps nothing of such a request', () =>
+  it('refuses 400 anything but the two settings with their own values, and keeps nothing of such a request', () =>
     withWorker({}, async (worker) => {
       const ann = await signedIn(worker, 'ann')
       const at = Date.now() - 1000
@@ -107,7 +115,7 @@ describe('the Settings kept in step', () => {
         { settings: { theme: good, makerName: { value: 'Ann', changedAt: at } } },
         { settings: { theme: good, language: { value: 'xx', changedAt: at } } },
         { settings: { theme: { value: 'sepia', changedAt: at } } },
-        { settings: { liftedPieces: { value: true, changedAt: at } } },
+        { settings: { language: { value: true, changedAt: at } } },
         { settings: { theme: { value: 'dark' } } },
         { settings: { theme: { value: 'dark', changedAt: 'yesterday' } } },
         { settings: { theme: { value: 'dark', changedAt: -1 } } },

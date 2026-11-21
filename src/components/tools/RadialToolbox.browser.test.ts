@@ -57,7 +57,7 @@ describe('RadialToolbox in a browser (ticket 1064)', () => {
     expect(Math.round(ring.top - name.bottom)).toBe(tokenPx(document.body, '--space-8'))
   })
 
-  it('casts the Lifted piece\'s shadow as a filter and stands at the popover layer', async () => {
+  it('casts its shadow as a filter and stands at the popover layer', async () => {
     const { root } = await mountAt(RadialToolbox, props, { locale: 'en', width: 1280, text: false })
     const band = getComputedStyle(root.querySelector('.radial-toolbox__band')!)
     expect(band.filter).toMatch(/^drop-shadow\(.+\) drop-shadow\(.+\)$/)

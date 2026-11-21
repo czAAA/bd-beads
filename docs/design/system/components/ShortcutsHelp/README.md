@@ -28,8 +28,7 @@ earlier centred Modal.
   two columns at full width, one on an iPad mini or a 10th-generation iPad upright (744, 820px).
 - As tall as it needs, up to the panel's usual limit (MenuPanel card, Panel); past that its body scrolls with the fade
   and thumb every panel has. On a 1440×900 screen it scrolls a little.
-- **First row, full width:** Show key hints (`keyboard` icon, the label in `control`, a Switch at the end, as Lifted
-  pieces in Menu), the device's choice (ticket 438). Then a `line-soft` rule.
+- **First row, full width:** Show key hints (`keyboard` icon, the label in `control`, a Switch at the end, as the Frame card's switch rows), the device's choice (ticket 438). Then a `line-soft` rule.
 
 ## Groups
 
