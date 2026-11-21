@@ -179,7 +179,7 @@ function readCanvas(stored: StoredLayer, projectId: string, earlierBackground: b
  * (ticket 492), or with one this build does not know, takes the Canvas's. */
 function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string, earlierBackground: boolean): FrameLayer {
   const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas), earlierBackground)
-  const { row = 0, column = 0, rows = 0, columns = 0, folded, name } = stored
+  const { row = 0, column = 0, rows = 0, columns = 0, folded, name, lifted } = stored
   const laid = readFrameShape(stored, weaveOf(layer))
   const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, rows, columns }
   return {
@@ -190,6 +190,7 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string,
     columns,
     ...(folded ? { folded } : {}),
     ...(typeof name === 'string' && name ? { name } : {}),
+    ...(lifted === true ? { lifted } : {}),
     ...laid,
     rowProgress: readRowProgress(stored.rowProgress, shaped),
   }

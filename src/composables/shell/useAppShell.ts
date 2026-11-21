@@ -32,6 +32,7 @@ import { useNamePieceFlow } from '../project/useNamePieceFlow'
 import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
 import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
+import { useLiftFrameFlow } from '../tools/useLiftFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
 import { scopeRoom, useShellScope } from '../ui/shellScope'
@@ -847,6 +848,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0052, 0066). */
   const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, messages })
+  const liftFrameFlow = useLiftFrameFlow({ edit, currentProject, announce, messages })
 
   /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0052). */
   const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages })
@@ -1269,6 +1271,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onCloseMirror: mirror.close,
       onMirrorTile,
       onMirrorWholeFrame,
+      onToggleLift: liftFrameFlow.onToggleLift,
       onMirrorSelection,
       onPillTileTap: pillTileNames.onPillTileTap,
       previewCells,

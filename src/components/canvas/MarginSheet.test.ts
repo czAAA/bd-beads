@@ -505,6 +505,48 @@ describe('Mirror the whole Frame (MarginSheet card, ADR 0082)', () => {
   })
 })
 
+describe('Lift (MarginSheet card, ticket 1177)', () => {
+  const liftedFrame = () => withLayers(framed(), { frame: { ...frameOf(framed())!, lifted: true } })
+  const ids = (wrapper: ReturnType<typeof mountSheet>) => wrapper.findAll('.margin-sheet__tools button').map((button) => button.attributes('data-testid'))
+
+  it('stands between Rotate Frame and Edit Frame, named for what it does, lit as Mirror the whole Frame is, and says so once it is on', async () => {
+    const wrapper = mountSheet({ rowHighlight: true })
+    expect(ids(wrapper).slice(ids(wrapper).indexOf('margin-rotate-frame'))).toEqual(['margin-rotate-frame', 'margin-lift-frame', 'frame-edit-toggle', 'margin-export', 'margin-color', 'frame-chrome-remove'])
+    const button = control(wrapper, 'margin-lift-frame')
+    expect([button.attributes('aria-label'), button.attributes('aria-pressed')]).toEqual(['Lift the pieces', 'false'])
+    await button.trigger('click')
+    expect(wrapper.emitted('toggle-lift')).toHaveLength(1)
+
+    await wrapper.setProps({ project: liftedFrame() })
+    const on = control(wrapper, 'margin-lift-frame')
+    expect([on.attributes('aria-label'), on.attributes('aria-pressed')]).toEqual(['Lay the pieces flat', 'true'])
+    expect(on.classes()).toContain('margin-sheet__mirror--on')
+  })
+
+  it('is gone from the band and the Tab stops while Row highlight is off, and comes back with it', async () => {
+    const wrapper = mountSheet({ rowHighlight: false })
+    expect(ids(wrapper)).not.toContain('margin-lift-frame')
+    await wrapper.setProps({ anchor: anchorAt(0.2) })
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+    expect(wrapper.findAll('[role^="menuitem"]').map((item) => item.text())).not.toContain('Lift the pieces')
+    await wrapper.setProps({ anchor, rowHighlight: true })
+    expect(ids(wrapper)).toContain('margin-lift-frame')
+  })
+
+  it('is the Frame tools menu\'s Lift the pieces after Rotate Frame, with a check while on, where the band holds no button', async () => {
+    const wrapper = mountSheet({ rowHighlight: true, anchor: anchorAt(0.2), project: liftedFrame() })
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+    const items = wrapper.findAll('[role^="menuitem"]')
+    expect(items.map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Lift the pieces', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
+    expect(items[2]!.attributes('role')).toBe('menuitemcheckbox')
+    expect(items[2]!.attributes('aria-checked')).toBe('true')
+    await items[2]!.trigger('click')
+    expect(wrapper.emitted('toggle-lift')).toHaveLength(1)
+  })
+})
+
 describe('Rotate Frame waits under the pointer (ticket 1016)', () => {
   const copy = (wrapper: ReturnType<typeof mountSheet>) => wrapper.find('[data-testid="margin-rotate-copy"]')
   /** Rotate Frame pressed with a pointer of a kind, its button at (300, 20) on screen. */

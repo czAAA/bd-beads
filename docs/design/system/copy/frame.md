@@ -120,14 +120,14 @@ The margin sheet's Expand the Frame button (MarginSheet card, Expand the Frame).
 
 ## Lift copy (ticket 1177)
 
-The margin sheet's Lift button and its Frame tools item (MarginSheet card, Lift). The name is its Tooltip and changes with the state; the announcement is said once after each press. Belarusian, Spanish and Chinese are written with the build (ticket 1177). Russian, Ukrainian and Polish are proposals for review with the build; "кусочек", "шматочок" and "kawałek" are the Piece (writing.md) as the earlier Lifted pieces switch had it.
+The margin sheet's Lift button and its Frame tools item (MarginSheet card, Lift). The name is its Tooltip and changes with the state; the announcement is said once after each press. Belarusian, Spanish and Chinese were written with the build (ticket 1177) and are for review, as are the others; "кусочек", "шматочок" and "kawałek" are the Piece (writing.md) as the earlier Lifted pieces switch had it.
 
-| English | Русский | Українська | Polski |
-|---|---|---|---|
-| Lift the pieces (the button off; the menu item) | Приподнять кусочки | Підняти шматочки | Unieś kawałki |
-| Lay the pieces flat (the button on) | Положить кусочки плоско | Покласти шматочки пласко | Połóż kawałki płasko |
-| Pieces lifted (announced) | Кусочки приподняты | Шматочки підняті | Kawałki uniesione |
-| Pieces laid flat (announced) | Кусочки лежат плоско | Шматочки лежать пласко | Kawałki leżą płasko |
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Lift the pieces (the button off; the menu item) | Приподнять кусочки | Підняти шматочки | Прыпадняць кавалачкі | 抬起小块 | Elevar los trozos | Unieś kawałki |
+| Lay the pieces flat (the button on) | Положить кусочки плоско | Покласти шматочки пласко | Пакласці кавалачкі плоска | 把小块放平 | Poner los trozos planos | Połóż kawałki płasko |
+| Pieces lifted (announced) | Кусочки приподняты | Шматочки підняті | Кавалачкі прыпаднятыя | 小块已抬起 | Trozos elevados | Kawałki uniesione |
+| Pieces laid flat (announced) | Кусочки лежат плоско | Шматочки лежать пласко | Кавалачкі ляжаць плоска | 小块已放平 | Trozos planos | Kawałki leżą płasko |
 
 ## Print choices copy (ticket 0916)
 

@@ -1,5 +1,6 @@
 import { beadsFromColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
+import { withFrameLift } from '../../domain/frame'
 import { addUsedColor, addedColorId, defaultPalette, type PaletteColor } from '../../domain/palette'
 import { setPalette } from '../../domain/paletteEdits'
 import type { GridPosition } from '../../domain/grid'
@@ -65,7 +66,8 @@ export const DEMO_TECHNIQUE: Technique = starterById(DEMO_STARTER).weave.techniq
 /** A Project of the demo's, its Frame (if any) holding `frameRows`. */
 function demoProject(name: string, frameRows?: readonly string[], technique: Technique = DEFAULT_TECHNIQUE): Project {
   const size = frameRows ? { unit: 'beads' as const, width: frameRows[0].length, height: frameRows.length } : undefined
-  const project = createProject({ name, technique, beadId: DEMO_BEAD, size, background: 1 })
+  // The demo's Frame lies flat (ticket 1177): What's inside shows no Lift.
+  const project = withFrameLift(createProject({ name, technique, beadId: DEMO_BEAD, size, background: 1 }), false)
   return frameRows ? withLayer(project, 'frame', { beads: beadsFromColors(colorsOf(frameRows)) }) : project
 }
 
@@ -158,7 +160,7 @@ function frameColors(drawing: PeacockDrawing): string[][] {
  * long and 23 wide on a Canvas turned as a new peyote Project's is, so it lies across as it is woven. */
 function finishedCuff(): Project {
   const size = { unit: 'beads' as const, width: PEACOCK_CUFF.lines, height: PEACOCK_CUFF.length }
-  const project = createProject({ name: '', technique: DEMO_TECHNIQUE, beadId: DEMO_BEAD, size, background: 1 })
+  const project = withFrameLift(createProject({ name: '', technique: DEMO_TECHNIQUE, beadId: DEMO_BEAD, size, background: 1 }), false)
   return withLayer(project, 'frame', { beads: beadsFromColors(frameColors(PEACOCK_CUFF)) })
 }
 

@@ -61,7 +61,7 @@ export function createProject(input: CreateProjectInput): Project {
     // Both layers take the form's settings (ADR 0079).
     layers: [
       { id: newLayerId(), name, ...layer, orientation: startOrientation(created.technique) },
-      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, rowProgress: startingRowProgress(created.technique, startOrientation(created.technique) / 90) }] : []),
+      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, lifted: true as const, rowProgress: startingRowProgress(created.technique, startOrientation(created.technique) / 90) }] : []),
     ],
     palette,
     paletteLetters: lettersOfPalette(palette, bead.id, undefined),

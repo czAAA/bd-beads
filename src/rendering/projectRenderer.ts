@@ -3,6 +3,7 @@ import { beadRoundness, describeWeave, type Weave } from '../domain/weave'
 import type { VisiblePositions } from '../domain/weaveGeometry'
 import { beadBounds, colorAt, frameContains, type BeadMap, type Rect } from '../domain/canvas'
 import { footprintOf } from '../domain/footprint'
+import { frameLifted } from '../domain/frame'
 import type { BeadPlace, LayerGeometry } from '../domain/layerGeometry'
 import { MARGIN, withMargin } from '../domain/margin'
 import { laidFrame } from '../domain/frameOrientation'
@@ -18,6 +19,8 @@ import {
   drawBeadLetter,
   drawFlatBead,
   drawSeeThroughBead,
+  emptyOnly,
+  isOpenWeave,
   paintedOnly,
   type BeadDrawer,
   type DrawingContext,
@@ -31,6 +34,7 @@ import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { columnStrip } from './columnBand'
+import { drawLiftedFrame, LIFT_REACH_PX, liftedFrameOf, type LiftedFrame } from './liftedFrame'
 import {
   frameOriginPx,
   gridBox,
@@ -141,6 +145,12 @@ export interface RenderInput {
    * (ticket 1008); where outlines are drawn instead (high contrast, the draft look) they lie over it and the Frame's
    * empty beads are see-through. Only the editor's surface hands one in, so no export, thumbnail or example prints it. */
   reference?: DrawnReference
+  /** Draw the Frame lifted (ticket 1177, BeadBoard card, Lifted Frame) whatever Row progress shows: an export, which
+   * follows the Frame's saved Lift alone. Absent, the editor's rule: lifted while the Frame's Lift and Row highlight
+   * are on and the look has it. */
+  lift?: boolean
+  /** The color the lifted Frame's plate lies on where the theme's own Background is clear, as on the Cover page's board. */
+  liftBackground?: string
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
@@ -339,6 +349,21 @@ interface LayerDraw {
   /** Whether empty positions may be tonal tiles (ticket 1001): on the open Canvas in the full look, a reference image
    * shown or not (it lies over them, ticket 1008). Elsewhere they keep the outline and the empty bead. */
   tiles: boolean
+  /** The only positions drawn, where not every one in view is (a lifted Frame's passes, ticket 1177): the empty ones, the
+   * painted ones, or the empty ones a plate closes in, their tiles over it. */
+  only?: 'empty' | 'painted' | ((position: GridPosition) => boolean)
+}
+
+/** The Frame's plate when it is lifted (ticket 1177): traced once for its layout of beads, and kept. */
+function plateOf(project: DrawnProject): LiftedFrame | undefined {
+  const frame = frameOf(project)
+  const beads = beadsOfLayer(project, 'frame')
+  if (!frame || !beads) return undefined
+  const geometry = geometryDrawnAlone(project)
+  const weave = frameWeave(project)
+  const round = isOpenWeave(beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX, CELL_SIZE_PX)
+  const layout = JSON.stringify([weave, frame.rows, frame.columns, frame.shape, frame.settings, frame.quarterTurns])
+  return liftedFrameOf({ beads, layout, round, cellOf: (row, column) => (geometry.hasPosition({ row, column }) ? inGridPx(geometry.place({ row, column })!.box) : undefined) })
 }
 
 /** The Frame's cells, bead or empty bead, where its Layer geometry places them, from the context's origin (ticket 492).
@@ -347,14 +372,16 @@ interface LayerDraw {
 function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }): void {
   const { project, area, rows: band } = draw
   const geometry = geometryDrawnAlone(project)
+  // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
+  const framed = beadsOfLayer(project, 'frame')
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, into which a shifted column's beads hang; beads that keep no rows are all drawn.
   const inView = () => geometry.positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
-  const placed = () => inView().map((position) => ({ position, place: geometry.place(position)! }))
-  // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
-  const framed = beadsOfLayer(project, 'frame')
   const colorAtOwn = (row: number, column: number) => (framed ? colorAt(framed, row, column) : beadInSpace(project, space, row, column))
   const colorOf = ({ row, column }: GridPosition) => colorAtOwn(row, column)
+  const { only } = draw
+  const wanted = only === 'empty' ? (position: GridPosition) => colorOf(position) === null : only === 'painted' ? (position: GridPosition) => colorOf(position) !== null : only
+  const placed = () => (wanted ? inView().filter(wanted) : inView()).map((position) => ({ position, place: geometry.place(position)! }))
   if (geometry.grid && draw.draft) drawDraftFrame(context, draw, space, origin, geometry, inView, colorAtOwn)
   else if (geometry.grid) drawUprightBeads(context, draw, space, origin, placed(), colorOf)
   else drawTurnedBeads(context, draw, space, origin, placed(), colorOf, geometry)
@@ -667,6 +694,22 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
   context.restore()
 }
 
+/** A lifted Frame, in four passes (ticket 1177, BeadBoard card, Lifted Frame): its empty positions, the plate over them,
+ * the holes' tiles lying on the plate, then the painted beads over it all. */
+function drawLifted(drawPart: (part: LayerDraw) => void, draw: LayerDraw, plate: LiftedFrame, lay: () => void, project: DrawnProject): void {
+  const geometry = geometryDrawnAlone(project)
+  const beads = beadsOfLayer(project, 'frame')
+  const inHole = ({ row, column }: GridPosition) => {
+    const box = !(beads && colorAt(beads, row, column)) && geometry.place({ row, column })?.box
+    return !!box && plate.covers((box.x + box.width / 2) * CELL_SIZE_PX, (box.y + box.height / 2) * CELL_SIZE_PX)
+  }
+  const empties = { ...draw, drawBead: emptyOnly(draw.drawBead), letters: undefined }
+  drawPart({ ...empties, only: 'empty' })
+  lay()
+  drawPart({ ...empties, only: inHole })
+  drawPart({ ...draw, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined, only: 'painted' })
+}
+
 const canvasLooks = new WeakMap<ProjectTheme, ProjectTheme>()
 
 /** A theme as the Canvas draws in it: a finished row fades toward the drawing area, not a board. One object per theme,
@@ -696,8 +739,12 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const alike = !space.open || !frame || layersAlike(project)
   const bandWeave = space.open ? canvasWeave(project) : frameWeave(project)
   const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
-  const band = alike ? rows : undefined
-  const strip = alike && !band && columns ? columnStrip(bandWeave, columns) : undefined
+  // The lifted Frame's outline and shadows reach past its beads (ticket 1177): a band is cleared, cut and redrawn that
+  // much wider, else a stale shadow is left round a bead that changed. The editor shows none over a reference image.
+  const lifts = frameLifted(project) && !draft && !reference && (input.lift ?? (rowMarks && look.liftedFrame))
+  const reach = lifts ? Math.ceil(LIFT_REACH_PX / cellSizePx(bandWeave.technique, bandWeave.cell).height) : 0
+  const band = alike ? (rows && reach ? { first: rows.first - reach, last: rows.last + reach } : rows) : undefined
+  const strip = alike && !band && columns ? columnStrip(bandWeave, columns, lifts ? LIFT_REACH_PX : 0) : undefined
 
   // The backing store is in device px: clear (and paint the background, in Frame-only space) there, the whole surface
   // or just the band being drawn again, which the rest of the drawing is then cut to, then draw in CSS px scaled up to
@@ -780,7 +827,18 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
         context.restore()
       }
       const frameDrawn: LayerDraw = { ...draw, look: frameLook }
-      if (under && markLookOf(frameLook, tiles).tiles) {
+      const plate = lifts ? plateOf(project) : undefined
+      if (plate) {
+        const lay = () => {
+          // The plate is drawn in the Frame's own px; its shadows are in device px, whatever it is scaled by.
+          context.save()
+          context.translate(origin.x, origin.y)
+          context.scale(scale, scale)
+          drawLiftedFrame(context, plate, { origin: { x: 0, y: 0 }, background: input.liftBackground ?? frameLook.background, deviceScale: zoom * scale * pixelRatio, surface: { width: region.width * pixelRatio, height: region.height * pixelRatio } })
+          context.restore()
+        }
+        drawLifted(frameDraw, frameDrawn, plate, lay, project)
+      } else if (under && markLookOf(frameLook, tiles).tiles) {
         // Its tonal tiles, the reference image over them, then its painted beads (ticket 1008).
         frameDraw({ ...frameDrawn, drawBead: () => {}, letters: undefined })
         drawReferenceCut(context, under, frameBox, 'inside')
@@ -790,7 +848,14 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       }
     }
   } else if (space.hasFrame) {
-    drawFrameLayer(context, { ...draw, look: frameLook }, space, { x: 0, y: 0 })
+    const plate = lifts ? plateOf(project) : undefined
+    const frameDrawn: LayerDraw = { ...draw, look: frameLook }
+    if (plate) {
+      const lay = () => drawLiftedFrame(context, plate, { origin: { x: 0, y: 0 }, background: input.liftBackground ?? frameLook.background, deviceScale: zoom * pixelRatio, surface: { width: region.width * pixelRatio, height: region.height * pixelRatio } })
+      drawLifted((part) => drawFrameLayer(context, part, space, { x: 0, y: 0 }), frameDrawn, plate, lay, project)
+    } else {
+      drawFrameLayer(context, frameDrawn, space, { x: 0, y: 0 })
+    }
   }
   // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
   if (drawn?.over) drawReference(context, drawn)

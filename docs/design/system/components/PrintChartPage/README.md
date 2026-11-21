@@ -143,6 +143,6 @@ A build agent checks each of these on a 100 × 100 loom Schema with an empty bac
 
 The earlier cards (1.75 mm, 2.3 mm and a fixed 3 mm cell, odd and even numbers turned upwards, counts in the key) are in git history.
 
-## Lifted Frame (ticket 1177, approved 2026-11-21, not yet in the app)
+## Lifted Frame (ticket 1177)
 
 With the Frame's Lift saved on and Chart border on, each pad lifts off the paper by a soft shadow under its rim, drawn as three or four stacked, nearly clear copies of the rim; nothing else on the page moves (printed-output.md, Lifted Frame in exports). Not with Black and white on.

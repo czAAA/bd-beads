@@ -293,7 +293,7 @@ function customSheet(project: Project, shape: FrameShapeId, settings: FrameSetti
   const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave, cell)
   const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2))
   const canvas = canvasWeave(project)
-  return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
+  return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}), lifted: true }
 }
 
 /** A new Custom frame: its Frame shape, its size or all its settings, the Canvas position it goes round, any beads, its
@@ -415,9 +415,15 @@ function madeOverOtherBead(project: Project, rectangle: Rect): Project {
   const frame = frameOf(project)!
   const made = madeFrame(removedFrame(project), rectangle)
   const { beadId, bead } = frameOf(made)!
-  const kept = withFrameSheet(made, { ...frameOf(made)!, ...frameIdentity(frame), beadId, ...(bead ? { bead } : {}), rowProgress: clampPointer(frame.rowProgress, frameOf(made)!) })
+  const kept = withFrameSheet(made, { ...keptLift(frameOf(made)!, frame), ...frameIdentity(frame), beadId, ...(bead ? { bead } : {}), rowProgress: clampPointer(frame.rowProgress, frameOf(made)!) })
   const keepsName = frame.name !== undefined && frameOf(kept)!.name === undefined && !pieceNamesOf(kept)?.some((entry) => entry.name === frame.name)
   return keepsName ? withFrameSheet(kept, { ...frameOf(kept)!, name: frame.name }) : kept
+}
+
+/** A Frame made anew in place of `previous`, with `previous`'s Lift (ticket 1177). */
+function keptLift<T extends FrameSheet>(made: T, previous: FrameSheet): T {
+  const { lifted: _lifted, ...rest } = made
+  return { ...rest, ...(previous.lifted ? { lifted: true as const } : {}) } as T
 }
 
 /** A Frame made anew in place of `previous` as the same layer (ADR 0079): its id, Bead, Letters switch and Row progress,
@@ -425,7 +431,7 @@ function madeOverOtherBead(project: Project, rectangle: Rect): Project {
 function keptLayer(project: Project, previous: FrameLayer | undefined): Project {
   const made = frameOf(project)
   if (!previous || !made) return project
-  return withFrameSheet(project, { ...made, ...frameIdentity(previous), rowProgress: clampPointer(previous.rowProgress, made) })
+  return withFrameSheet(project, { ...keptLift(made, previous), ...frameIdentity(previous), rowProgress: clampPointer(previous.rowProgress, made) })
 }
 
 /** The Project with its Frame's Folded beads laid on the Canvas where they stand, over what is there (ticket 0638), as
@@ -442,7 +448,9 @@ function withFoldedLaid(project: Project): Project {
 function placedFrame(project: Project, place: FramePlacement): Project {
   const { row, column, rows, columns } = place.frame
   const sheet = { row, column, rows, columns, ...weaveOf(place.weave), ...(place.quarterTurns ? { quarterTurns: place.quarterTurns } : {}) }
-  const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {} }
+  const previous = frameOf(project)
+  // Lift starts on for a Frame laid where there was none and stays as it was in place of another (ticket 1177).
+  const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {}, ...(!previous || previous.lifted ? { lifted: true as const } : {}) }
   // A Frame laid where there was none starts in its Technique's way; one laid in place of another keeps the way the weaver chose.
   return touchFrameSheet(project, { ...frame, rowProgress: frameOf(project) ? firstPasses(rowProgressOf(project)) : startingProgress(project, sheet) })
 }
@@ -458,7 +466,7 @@ function madeCustomFrame(project: Project, rectangle: Rect): Project {
   const laid = removedFrame(project)
   const sheet = customSheet(laid, frame.shape!, settings, centre, frame.quarterTurns, heldWeave(project, 'frame'), cell)
   // It stays the same layer: its id, Bead, Letters switch and Row progress.
-  const framed = withFrameSheet(laid, { ...sheet, ...frameIdentity(frame) })
+  const framed = withFrameSheet(laid, { ...keptLift(sheet, frame), ...frameIdentity(frame) })
   const under = beadsOfLayer(laid, 'canvas')
   const hidden: (GridPosition & { color: string })[] = []
   forEachBead(beadsInFrame(under, footprintOf(framed)!), (row, column, color) => hidden.push({ row: row - sheet.row, column: column - sheet.column, color }))
