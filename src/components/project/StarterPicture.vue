@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { quarterTurnOf } from '../../domain/layerRecord'
-import { withCanvasTurned } from '../../domain/table'
+import { laidTurnOf, withLaidTurn } from '../../domain/framePlacement'
 import { designSizes, STARTER_BEAD_ID, starterProject, type Starter, type StarterChoice } from '../../domain/starters'
 import { PROJECT_THEMES } from '../../rendering/beadLook'
 import { renderProject } from '../../rendering/projectRenderer'
@@ -42,11 +41,12 @@ function draw() {
   const canvas = canvasEl.value
   const context = canvas?.getContext('2d')
   if (!canvas || !context) return
-  // A Ring's or Band's own grid is drawn unturned and shown turned whole, so no end is cut off: by its Canvas's
+  // A Ring's or Band's own grid is drawn unturned and shown turned whole, so no end is cut off: by its Frame's
   // quarters, and one more for a Band standing upright.
   const strip = props.starter.measure !== 'frame'
-  const turns = strip ? (quarterTurnOf(project.value) / 90 + (props.upright && props.starter.measure === 'band' ? 1 : 0)) % 4 : 0
-  const drawn = strip ? withCanvasTurned(project.value, 0) : project.value
+  const laid = withLaidTurn(project.value)
+  const turns = strip ? (laidTurnOf(laid) / 90 + (props.upright && props.starter.measure === 'band' ? 1 : 0)) % 4 : 0
+  const drawn = strip ? withLaidTurn(laid, 0) : laid
   const space = spaceOf(drawn, false)
   const copies = props.pair ? 2 : 1
   // The drawing's sides as shown: turned, and side by side with a gap between a pair.

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { withLaidTurn } from '../../domain/framePlacement'
 import type { Project } from '../../domain/project'
 import { thumbnailPixels } from '../../rendering/projectThumbnail'
 
 // A Project's round thumbnail (ticket 147; SavedProjects card): the whole Project on the board color, drawn at twice
-// its size for sharp screens. Redrawn only when the Project is replaced, at most once a frame while a stroke lands.
+// its size for sharp screens, by its Frame's own turn (ticket 1186). Redrawn only when the Project is replaced, at most
+// once a frame while a stroke lands.
 const props = defineProps<{ project: Project }>()
 
 /** Pixels on the longer side: the largest thumbnail, the library row's 44px (ticket 0982), at twice the density. */
@@ -17,7 +19,7 @@ function draw() {
   frame = 0
   const context = canvasEl.value?.getContext('2d')
   if (!canvasEl.value || !context) return
-  const image = thumbnailPixels(props.project, DRAWN_SIZE)
+  const image = thumbnailPixels(withLaidTurn(props.project), DRAWN_SIZE)
   canvasEl.value.width = image.width
   canvasEl.value.height = image.height
   context.putImageData(new ImageData(image.data as Uint8ClampedArray<ArrayBuffer>, image.width, image.height), 0, 0)

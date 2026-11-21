@@ -6,6 +6,7 @@ import { pageOneLayout, underLargeBeads } from './pageOneLayout'
 import { chartOnPageOne, mm, PRINT_DPI, wholeArea, type TrimmedArea } from './printPlan'
 import type { PrintedWordRow, PrintText } from './printText'
 import { pdfPageCount } from './wordChartPages'
+import { withLaidTurn } from '../domain/framePlacement'
 import { beadsOfLayer, frameOf } from '../domain/layerRecord'
 
 // The File size estimate (tickets 0588, 0914, 0915, 1096, ADR 0076): each page by its kind and content, every figure lifted to sit at or
@@ -80,8 +81,10 @@ function rowCharacters(row: PrintedWordRow): number {
   return row.runs.flat().reduce((sum, part) => sum + characters(part), 0)
 }
 
-/** The facts of an export of this Project in these words, or nothing without a Frame. */
-export function exportFacts(project: Project, words: PrintText): ExportFacts | undefined {
+/** The facts of an export of this Project in these words, or nothing without a Frame; by the Frame's own turn alone, as
+ * the export draws it (`withLaidTurn`, ticket 1186). */
+export function exportFacts(shown: Project, words: PrintText): ExportFacts | undefined {
+  const project = withLaidTurn(shown)
   const frame = frameOf(project)
   if (!frame) return undefined
   const pageOne = pageOneLayout(project, words)

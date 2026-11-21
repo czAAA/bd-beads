@@ -17,7 +17,8 @@ import { turnRowDirectionTo, type SeenWay } from '../domain/rowProgress'
 import { wordChartOf, type WordChart, type WordRun, type WordSide, type WordSpine } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
-import { frameOf, quarterTurnOf, projectNameOf, withFrameSheet } from '../domain/layerRecord'
+import { laidTurnOf, withLaidTurn } from '../domain/framePlacement'
+import { frameOf, projectNameOf, withFrameSheet } from '../domain/layerRecord'
 import { pieceFaceOf } from '../domain/pieceFaces'
 import { largeBeadsActs } from './pageOneLayout'
 import { printTones } from '../domain/printTones'
@@ -192,14 +193,16 @@ function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations
 
 /** The words an export prints; the maker's name is the Project's own, and empty prints none (ADR 0060). The Word chart
  * follows Row by row, never Letters (ticket 0916). */
-export function printText(project: Project, t: Translations, locale: Locale, at: Date, choices: PrintChoices = {}): PrintText {
+export function printText(shown: Project, t: Translations, locale: Locale, at: Date, choices: PrintChoices = {}): PrintText {
+  // Named by the Frame's own turn alone, as the export draws it (ticket 1186).
+  const project = withLaidTurn(shown)
   const bead = resolveProjectBead(project)
   const maker = (project.makerName ?? '').trim()
   // The tech line gives the trimmed size (ticket 1128): the box round the Frame's beads, measured as a Frame of that size.
   const box = paintedFrameBox(project)
   const measured = box ? withFrameSheet(project, { ...frameOf(project)!, columns: box.columns, rows: box.rows }) : project
   const { columns, rows } = shownDimensions(measured)
-  const [across, down] = rotationSwapsAxes(quarterTurnOf(project)) ? [rows, columns] : [columns, rows]
+  const [across, down] = rotationSwapsAxes(laidTurnOf(project)) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(measured, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
   const beadName = bead ? beadLabel(bead) : t.projects.unknownBeadLabel

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "A Frame turned with Rotate Frame prints as a whole chart with its rulers, the same as a Frame turned with the Canvas",
+    "ru": "Рамка, повёрнутая кнопкой «Повернуть рамку», печатается целой схемой с линейками, так же как рамка, повёрнутая вместе с холстом",
+    "uk": "Рамка, повернута кнопкою «Повернути рамку», друкується цілою схемою з лінійками, так само як рамка, повернута разом із полотном",
+    "be": "Рамка, павернутая кнопкай «Павярнуць рамку», друкуецца цэлай схемай з лінейкамі, гэтак жа як рамка, павернутая разам з палатном",
+    "zh": "用“旋转边框”转过的边框会打印成带标尺的完整图表，和随画布一起转过的边框一样",
+    "es": "Un marco girado con Girar marco se imprime como un gráfico entero con sus reglas, igual que un marco girado con el lienzo",
+    "pl": "Ramka obrócona przyciskiem Obróć ramkę drukuje się jako cały wykres z linijkami, tak samo jak ramka obrócona razem z płótnem"
+  }
+}
