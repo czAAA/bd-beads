@@ -746,7 +746,7 @@ const drawingStyle = computed(() => {
         <!-- Behind Convert image, which runs to the window's bottom (ticket 0896), it stays laid out, as the drawing area does. -->
         <ProgressBar
           class="app-shell__footer"
-          :class="{ 'app-shell__footer--none': !activeProject || !frameOf(activeProject), 'app-shell__footer--behind': page === 'convert-image' && convertSession, 'app-shell__footer--aside': frameExpanded }"
+          :class="{ 'app-shell__footer--none': !(activeProject && frameOf(activeProject)) && !(page === 'convert-image' && convertSession), 'app-shell__footer--behind': page === 'convert-image' && convertSession, 'app-shell__footer--aside': frameExpanded }"
           data-bottom-bar
           :project="activeProject"
           :row-highlight="rowHighlight"
