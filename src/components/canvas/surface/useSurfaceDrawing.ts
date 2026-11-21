@@ -14,7 +14,7 @@ import { draftPixelRatio, drawsDraft } from '../../../rendering/draftRenderer'
 import { renderProject, type SlimSheet } from '../../../rendering/projectRenderer'
 import type { DrawnReference } from '../../../rendering/referenceImage'
 import type { Space } from '../../../rendering/space'
-import type { Region, Scroll } from '../../../rendering/surfaceView'
+import type { Region, Scroll, ViewLayer } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
 
 /** How long a draw waits for its animation frame before it draws without one, in ms (ticket 1152): far longer than a
@@ -91,6 +91,8 @@ function placeCanvas(canvas: HTMLCanvasElement, box: Region): void {
 
 /** What the beads' layer draws from: the surface's props and the view state the component and its pointer hold. */
 export interface BeadLayerDeps {
+  /** Which layer's surface this draws (ticket 1187): the Canvas's, or the Frame's stacked over it. */
+  layer: ViewLayer
   props: { project: Project; zoom: number; scroll: Scroll }
   canvas: Ref<HTMLCanvasElement | undefined>
   /** The canvas under it a pan in the full look draws what it uncovers on, in the draft look (ticket 0732). */
@@ -235,9 +237,9 @@ function beadCost(project: Project): number {
   return Math.max(draftCost(layerOf(project, 'canvas').weave.technique), frame ? draftCost(frame.weave.technique) : 0)
 }
 
-/** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,
+/** Keeps one layer's beads drawn on its surface (ADR 0018, 0026; ticket 1187): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
-export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn, reference, slimSheet }: BeadLayerDeps): void {
+export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn, reference, slimSheet }: BeadLayerDeps): void {
   /** The slim sheet as one value a draw can be compared by. */
   const slimKey = () => JSON.stringify(slimSheet?.value ?? null)
   /** What the cells were last drawn from, to draw only what an edit changed. */
@@ -286,7 +288,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
           ? changedBands(before.project, project)
           : stepBands(before.project, project)
         : undefined
-    const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, canvasLetters, draftWhenSmall: true, opaque: true, reference: reference.value, slimSheet: slimSheet?.value }
+    const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, canvasLetters, draftWhenSmall: true, opaque: true, reference: reference.value, slimSheet: slimSheet?.value, layer }
 
     if (bands === undefined) {
       renderProject(context, drawing)
@@ -327,7 +329,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     placeCanvas(canvas, box)
     const region = { x: props.scroll.x + box.x, y: props.scroll.y + box.y, width: box.width, height: box.height }
     sizeCanvas(canvas, region.width, region.height, pixelRatio)
-    renderProject(context, { project: props.project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, draftWhenSmall: true, positionMarks: !!reference.value, reference: reference.value, slimSheet: slimSheet?.value })
+    renderProject(context, { project: props.project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, draftWhenSmall: true, positionMarks: !!reference.value, reference: reference.value, slimSheet: slimSheet?.value, layer })
     canvas.style.transform = ''
     canvas.style.visibility = 'visible'
     standInView = { zoom: props.zoom, scroll: { ...props.scroll }, box }

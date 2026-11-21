@@ -97,8 +97,16 @@ const TOUCH = { pointerType: 'touch', isPrimary: true }
 const PEN = { pointerType: 'pen', isPrimary: true }
 const MOUSE = { pointerType: 'mouse', isPrimary: true }
 
-/** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. */
-const draws = () => context.named('clearRect').filter(({ args }) => (args[2] as number) > 100).length / 2
+/** The surfaces stacked in the drawing area (ticket 1187): the Canvas's and the Frame's, each with beads and overlay. */
+const SURFACES = 2
+/** Times the surface has been drawn: each draws both surfaces' beads and overlays, and each starts by clearing. */
+const draws = () => context.named('clearRect').filter(({ args }) => (args[2] as number) > 100).length / (2 * SURFACES)
+/** Calls both surfaces made alike, the Canvas's first (ticket 1187): the bands they redraw. Those of one. */
+function onOneSurface<T>(calls: T[]): T[] {
+  const half = calls.length / 2
+  expect(calls.slice(half)).toEqual(calls.slice(0, half))
+  return calls.slice(0, half)
+}
 
 describe('ProjectSurface', () => {
   it('redraws each layer once per animation frame, with the last zoom and scroll, however many changes come first', async () => {
@@ -190,13 +198,13 @@ describe('ProjectSurface', () => {
       expect(cells.element.style.transform).toBe(moved)
       expect(standInCanvas.style.visibility).toBe(standIn)
       // Only the overlay was drawn, and the stand-in where it shows.
-      const whileMoving = standIn === 'visible' ? 2 : 1
+      const whileMoving = (standIn === 'visible' ? 2 : 1) * SURFACES
       expect(context.named('clearRect')).toHaveLength(whileMoving)
 
       vi.advanceTimersByTime(200)
       expect(cells.element.style.transform).toBe('')
       expect(standInCanvas.style.visibility).toBe('hidden')
-      expect(context.named('clearRect')).toHaveLength(whileMoving + 1)
+      expect(context.named('clearRect')).toHaveLength(whileMoving + SURFACES)
       wrapper.unmount()
     } finally {
       vi.useRealTimers()
@@ -217,8 +225,8 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ zoom: 0.05, scroll: { x: 10, y: 20 } })
       vi.advanceTimersByTime(10)
       expect(cells.element.style.transform).toBe('')
-      // The overlay and the beads.
-      expect(context.named('clearRect')).toHaveLength(2)
+      // The overlays and the beads.
+      expect(context.named('clearRect')).toHaveLength(2 * SURFACES)
       wrapper.unmount()
     } finally {
       vi.useRealTimers()
@@ -422,7 +430,7 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ project: painted(project, 12, 4) })
 
       // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it.
-      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
+      expect(onOneSurface(context.named('rect').map((call) => call.args))).toEqual([[0, 240, 400, 20]])
     })
 
     it('draws a band for each cluster of changed rows, as a change to rows far apart', async () => {
@@ -433,7 +441,7 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: painted(painted(project, 3, 4), 26, 4) })
 
-      expect(context.named('rect').map((call) => call.args[1])).toEqual([60, 520])
+      expect(onOneSurface(context.named('rect').map((call) => call.args[1]))).toEqual([60, 520])
     })
 
     // A shaped Frame's rows are its layout's, not rows on the screen: a Fringe earring's top is counted up from its base
@@ -618,7 +626,7 @@ describe('ProjectSurface', () => {
   // again, the one finished and the new current row.
   describe('when a Progress bar step moves Row progress', () => {
     /** The view's cut, `[x, y, width, height]`, of each band drawn again since the step. */
-    const bands = () => context.named('rect').map((call) => call.args)
+    const bands = () => onOneSurface(context.named('rect').map((call) => call.args))
     /** A tall Frame, 20 × 30 at the origin and upright (peyote comes turned), the weaver on `pass`: one Project, as Row
      * progress steps it. */
     const upright = (technique: Technique) => withLayers(projectOf(20, 30, {}, technique), { orientation: 0, ownProgress: {} })
@@ -1939,7 +1947,7 @@ describe('ProjectSurface', () => {
       await vi.waitFor(() => expect(marker()).toHaveLength(1))
       context.calls.length = 0
       await surface.trigger('pointerleave', { pointerType: 'pen' })
-      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
+      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(SURFACES))
       expect(marker()).toHaveLength(0)
 
       context.calls.length = 0
@@ -1961,7 +1969,7 @@ describe('ProjectSurface', () => {
 
       context.calls.length = 0
       await wrapper.setProps({ tools: can({ markerHidden: true }) })
-      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
+      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(SURFACES))
       expect(marker()).toHaveLength(0)
 
       context.calls.length = 0
@@ -1994,7 +2002,7 @@ describe('ProjectSurface', () => {
 
       context.calls.length = 0
       await surface.trigger('pointercancel', { pointerType: 'pen' })
-      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
+      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(SURFACES))
       expect(marker()).toHaveLength(0)
     })
 
@@ -2034,7 +2042,7 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ previewCells: [] })
 
       expect(context.named('fillRect')).toHaveLength(0)
-      expect(context.named('clearRect')).toHaveLength(1)
+      expect(context.named('clearRect')).toHaveLength(SURFACES)
     })
 
     it('follows the zoom of the view', async () => {
