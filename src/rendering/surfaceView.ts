@@ -146,7 +146,7 @@ export interface SurfaceViewInput {
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from
    * its top-left position's corner, `scale` times as wide as the Canvas's beads where its Bead is (ticket 0665; see
    * `placedFrame`). Left out, the view is one layer: the Canvas, or the Frame alone in an own space. */
-  frame?: Rect & Weave & Partial<Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'>> & { scale?: number }
+  frame?: Rect & Weave & Partial<Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'>> & { scale?: number; centre?: { x: number; y: number } }
   rotation: Rotation
   zoom: number
   /** Where the viewport's top-left corner is in displayed space; nothing when left out. */
@@ -165,6 +165,8 @@ interface FrameDrawing {
   rotation: Rotation
   scroll: Scroll
   seam: Affine
+  /** Its margin sheet in that drawing's grid px (ticket 1188): opaque, taking no press, whatever lies under it. */
+  sheet?: Region
 }
 
 /** A point carried by a plane transform. */
@@ -217,6 +219,10 @@ export interface SurfaceView {
   /** The bead under a point and the layer it is on (ADR 0066): where the Frame draws shorter than the rows it names, a
    * Frame bead and a Canvas bead share a position, and only the layer tells them apart. */
   pointToHit(point: Scroll): (GridPosition & { layer: ViewLayer }) | undefined
+  /** Whether a point is on the margin sheet of a Frame drawn on its own surface (ticket 1188), beside the Frame: where
+   * the keep-out margin refuses a press at any angle. Where the Frame is drawn as the Canvas is, its margin is the
+   * Canvas positions round it (`inMargin`). */
+  onMarginSheet(point: Scroll): boolean
   /** Whether a point is on a Custom frame where it has no bead (ticket 0592): a Seam, its centre or Off-shape, where a
    * press is refused as on the keep-out margin. */
   offShapeAt(point: Scroll): boolean
@@ -307,7 +313,8 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
   // off its shape.
   const laidOut = sheet && !sheet.geometry.grid ? sheet : undefined
   // The Canvas positions the Frame hides (ADR 0066): what it draws, which is not always the rows it names.
-  const footprint = frame && sheet ? frameFootprint(canvasWeave, frame) : undefined
+  // A Frame off the Canvas's grid covers no position (ticket 1188): only what it draws over is its.
+  const footprint = frame && sheet && !frame.centre ? frameFootprint(canvasWeave, frame) : undefined
   const layerAtAddress = (position: GridPosition): Layer => (footprint && sheet && frameContains(footprint, position) ? sheet : canvas)
   /** Grid space to displayed space, at a zoom: the matrix gridToRegion gives for a region at the origin. */
   const matrix = (at: number) => gridToRegion(space.extent, { x: 0, y: 0, width: 0, height: 0 }, at, rotation)
@@ -366,6 +373,15 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     return x >= 0 && y >= 0 && x < extent.width && y < extent.height ? { x, y } : undefined
   }
 
+  /** Whether a point of the viewport is on the margin sheet round a Frame drawn on its own (ticket 1188), off the Frame. */
+  const onMarginSheet = (point: Scroll): boolean => {
+    const margin = frameDrawing?.sheet
+    if (!sheet || !frameOwn || !margin || onSheet(point)) return false
+    const own = ownPoint(sheet, point)
+    const [x, y] = [sheet.origin.x + own.x * sheet.scale, sheet.origin.y + own.y * sheet.scale]
+    return x >= margin.x && y >= margin.y && x < margin.x + margin.width && y < margin.y + margin.height
+  }
+
   const pointToHit = (point: Scroll): (GridPosition & { layer: ViewLayer }) | undefined => {
     const [gridX, gridY] = toGrid(point)
     const at = onSheet(point)
@@ -374,6 +390,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       const found = beadIn(sheet, at.x, at.y)
       return found && { ...addressOf(sheet, found), layer: 'frame' }
     }
+    if (onMarginSheet(point)) return undefined
     const found = beadIn(canvas, gridX, gridY)
     return found && !(footprint && frameContains(footprint, found)) ? { ...found, layer: 'canvas' } : undefined
   }
@@ -392,6 +409,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     },
     beadBox: (box, layer) => inViewport(displayedBox(box, zoom, layerNamed(layer))),
     pointToHit,
+    onMarginSheet,
     offShapeAt: (point) => {
       const at = laidOut && onSheet(point)
       return !!laidOut && !!at && beadIn(laidOut, at.x, at.y) === undefined

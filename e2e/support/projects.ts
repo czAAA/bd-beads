@@ -7,7 +7,10 @@ import { seenProgressOf, type OwnRowProgress } from '../../src/domain/rowProgres
 import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
-import { canvasOf, type Layered, quarterTurnOf } from '../../src/domain/layerRecord'
+import { canvasOf, frameOf, type Layered, quarterTurnOf } from '../../src/domain/layerRecord'
+import { frameCentreOnCanvas, framePlacement, laidTurnOf, withFrameAt, withLaidTurn } from '../../src/domain/framePlacement'
+import { CELL_SIZE_PX } from '../../src/rendering/cellSize'
+import { placedFrame } from '../../src/domain/layerWeave'
 
 /** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by
  * writing it directly. */
@@ -18,9 +21,12 @@ export interface FixtureOptions {
   technique: Technique
   columns?: number
   rows?: number
+  /** The Canvas's turn. */
   rotation?: Rotation
-  /** Row progress in the Frame's own rows (along them top to bottom unless given), as the Frame lies on the turned
-   * Canvas: saved as the way it shows (ticket 1185). */
+  /** The Frame's own angle on the table (ticket 1188): upright unless given, whatever the Canvas's turn. */
+  frameTurn?: Rotation
+  /** Row progress in the Frame's own rows (along them top to bottom unless given), as the Frame lies: saved as the way
+   * it shows (ticket 1185). */
   rowProgress?: Partial<OwnRowProgress>
   /** Leave every bead empty rather than painting the busy fixture picture. */
   blank?: boolean
@@ -35,6 +41,7 @@ export function fixtureProject({
   columns = 16,
   rows = 10,
   rotation = 0,
+  frameTurn = 0,
   rowProgress,
   blank = false,
   override = [],
@@ -50,16 +57,21 @@ export function fixtureProject({
   }
 
   const [canvas, frame] = framedGrid(grid, { technique, beadId: 'toho-cube-1.5mm' }).layers
-  return {
+  const project: Project = {
     id: `fixture-${technique}`,
     layers: [
       { ...canvas, id: 'fixture-canvas', name: `Fixture ${technique}`, orientation: rotation },
-      { ...frame!, id: 'fixture-frame', angle: rotation, rowProgress: seenProgressOf({ direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress }, rotation / 90) },
+      { ...frame!, id: 'fixture-frame', angle: frameTurn, rowProgress: seenProgressOf({ direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress }, frameTurn / 90) },
     ],
     palette: defaultPaletteIds(),
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
   }
+  // The Canvas turned under an upright Frame, as Rotate canvas leaves them (ticket 1188): off the Canvas's grid, a little
+  // off its positions (its row and column, which address its cells, still the first), so it lies only by its own rows.
+  if (rotation === frameTurn || rotation === 0) return project
+  const { x, y } = framePlacement(project)!.at
+  return withFrameAt(project, { x: x + 0.3, y: y + 0.2 })
 }
 
 /** The stored library for these Projects, exactly as the app would have written it, ready for localStorage. */
@@ -80,8 +92,34 @@ export function beadCentre(
   scroll: { x: number; y: number } = { x: 0, y: 0 },
 ): { x: number; y: number } {
   const { technique, rotation } = 'layers' in project ? { technique: canvasOf(project).technique, rotation: quarterTurnOf(project) } : project
+  const shift = 'layers' in project ? frameShift(project, zoom) : undefined
+  if (shift) {
+    // The Frame's own bead, on its own surface: laid at its row and column, which only address its cells.
+    const laid = withLaidTurn(project as Project)
+    const frame = frameOf(laid)!
+    const view = surfaceView({ space: OPEN_SPACE, technique, rotation: shift.rotation, zoom, scroll, frame: placedFrame(laid) })
+    const at = view.beadToPoint({ row: row + frame.row, column: column + frame.column }, 'frame')
+    return { x: box.x + at.x + shift.x, y: box.y + at.y + shift.y }
+  }
   const at = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll }).beadToPoint({ row, column })
   return { x: box.x + at.x, y: box.y + at.y }
+}
+
+/** Where a Frame drawn otherwise than its Canvas shows (ticket 1188; ProjectSurface's `frameDrawn` pin, worked out again): its own surface is pinned at its centre where the
+ * Canvas lays it, so a bead of it lies where an upright Frame at its own quarter turn would, moved by `x` and `y`
+ * displayed px. None where the Frame lies as the Canvas is drawn. The Frame starts at the Canvas's first position. */
+export function frameShift(project: Layered, zoom: number): { rotation: Rotation; x: number; y: number } | undefined {
+  if (!frameOf(project)) return undefined
+  const laid = withLaidTurn(project as Project)
+  const rotation = laidTurnOf(laid)
+  if (rotation === quarterTurnOf(project)) return undefined
+  const { technique } = canvasOf(project)
+  const at = (shown: Layered, turn: Rotation) => {
+    const centre = frameCentreOnCanvas(shown)!
+    return surfaceView({ space: OPEN_SPACE, technique, rotation: turn, zoom }).gridToPoint(centre.x * CELL_SIZE_PX, centre.y * CELL_SIZE_PX)
+  }
+  const [pinned, own] = [at(project, quarterTurnOf(project)), at(laid, rotation)]
+  return { rotation, x: pinned.x - own.x, y: pinned.y - own.y }
 }
 
 /** A small piece in a Bead, laid out in rows of `#` (heart, red), `o` (white) and `y` (yellow), for the round Bead's

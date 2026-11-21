@@ -246,9 +246,13 @@ function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFra
  * beads compact, a Frame's placement on the table for its Canvas position (ticket 1185), its Background positions marked
  * as in the list of three (ticket 1000), and each layer's Letters switch as its own (ticket 1092). */
 export function encodeProject(project: Project): EncodedProject {
-  const [canvas, ...frames] = project.layers
-  // Each Frame's own centre, worked out as if it were the Frame laid on this Canvas.
-  const centreOf = (frame: FrameLayer) => framePlacement({ layers: [canvas, frame] })?.at
+  const [{ origin, ...canvas }, ...frames] = project.layers
+  // Each Frame's own centre, worked out as if it were the Frame laid on this Canvas, from the Canvas's origin: a file's
+  // table has its origin there (ticket 1188).
+  const centreOf = (frame: FrameLayer) => {
+    const at = framePlacement({ layers: [{ ...canvas, ...(origin ? { origin } : {}) }, frame] })?.at
+    return at && { x: at.x - (origin?.x ?? 0), y: at.y - (origin?.y ?? 0) }
+  }
   return { ...project, backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: [encodeLayer(canvas), ...frames.map((frame) => encodeFrame(frame, centreOf(frame)))] }
 }
 
@@ -264,9 +268,10 @@ function encodeLayer(layer: Project['layers'][number]): EncodedLayer {
 /** A Frame as file version 15 stores it: its own angle and its centre on the table (kept to a millionth of a bead), not
  * its Canvas position; `quarterTurns` is read from the angle, so it is not kept. */
 function encodeFrame(frame: FrameLayer, centre: { x: number; y: number } | undefined): EncodedLayer {
-  const { row: _row, column: _column, quarterTurns: _turns, ...rest } = frame
+  const { row: _row, column: _column, quarterTurns: _turns, centre: _centre, ...rest } = frame
   const rounded = (value: number) => Math.round(value * 1e6) / 1e6 || 0
-  return { ...encodeLayer(rest as FrameLayer), ...(centre ? { centre: { x: rounded(centre.x), y: rounded(centre.y) } } : {}) }
+  // One off the Canvas's grid says so (ticket 1188): optional, so it adds no format; without it the centre is a position's.
+  return { ...encodeLayer(rest as FrameLayer), ...(centre ? { centre: { x: rounded(centre.x), y: rounded(centre.y) } } : {}), ...(frame.centre ? { offGrid: true } : {}) }
 }
 
 /** The Project a file version 13 to 15 or library version 6 or 7 value holds (ticket 0664); it still goes through

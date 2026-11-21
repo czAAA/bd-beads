@@ -5,7 +5,7 @@ import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
-import type { GridPosition, Layer, PreviewCell } from '../../../domain/grid'
+import type { GridPosition, Layer, PreviewCell, Rotation } from '../../../domain/grid'
 import { CANVAS_HOLD_MS } from '../../../domain/hold'
 import { pointerDraws, type Handedness, type InputMode } from '../../../domain/inputMode'
 import { beadColorAt } from '../../../domain/layerBeads'
@@ -122,6 +122,9 @@ export interface SurfacePointerDeps {
   surface: Ref<SurfaceView>
   /** How the drawing leans off its quarter turn on screen (ticket 0672). */
   leaning: Ref<TiltedView>
+  /** The Frame's own surface where it is drawn otherwise than the Canvas (ticket 1188): its view, lean and quarter
+   * turn, which its handles are pressed on. None while it is drawn as the Canvas is. */
+  frameView?: Ref<{ surface: SurfaceView; leaning: TiltedView; rotation: Rotation } | undefined>
   /** Whether the Row progress look is drawn: a press on a finished row then toggles its dimming (ticket 352). */
   marksShown: Ref<boolean>
   /** Shows the margin's outline for a moment: a press there was refused. */
@@ -159,7 +162,7 @@ function hoversFor(event: PointerEvent): boolean {
 /** The Drawing surface's pointer and cursor (ticket 0619): it reads presses, drags, hover and the wheel (ticket 60:
  * pointer events, so mouse, touch and pen work alike) into bead positions and gestures, and picks the cursor, the bead
  * marker, the hovering Pencil's pointer and the pick chip that show for them. */
-export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, leaning, marksShown, refuse: refusePress }: SurfacePointerDeps) {
+export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, leaning, frameView, marksShown, refuse: refusePress }: SurfacePointerDeps) {
   /** Whether the chosen Tool moves the canvas right now: the Hand tool. */
   const handMoves = computed(() => props.tools.moves)
   /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
@@ -583,10 +586,36 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   /** What a press grabs of the Frame's chrome (ticket 452): a resize handle, only while edit is on; nothing otherwise,
    * so the tool gets the press. The Move handle's own press comes through `pressMoveHandle`. */
   function framePress(event: PointerEvent, touch = touchInput.value): FramePress | undefined {
-    const point = pointInDrawing(event)
     if (!props.tools.settingFrame) return undefined
-    const target = framePressAt(frameOf(props.project), surface.value, quarterTurnOf(props.project), point, touch)
+    const { view, point, rotation } = frameHandlesAt(event)
+    const target = framePressAt(frameOf(props.project), view, rotation, point, touch)
     return target.kind === 'handle' ? target : undefined
+  }
+
+  /** Where the Frame's handles stand and a pointer is among them: on the Frame's own surface where it is drawn otherwise
+   * than the Canvas (ticket 1188), the point turned onto that drawing by its own lean; else on the Canvas's. */
+  function frameHandlesAt(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { view: SurfaceView; point: { x: number; y: number }; rotation: Rotation } {
+    const own = frameView?.value
+    if (own) return { view: own.surface, point: own.leaning.toDrawn(pointOnScreen(event)), rotation: own.rotation }
+    return { view: surface.value, point: pointInDrawing(event), rotation: quarterTurnOf(props.project) }
+  }
+
+  /** The Frame's handle under a pointer, as `frameHandlesAt` finds the handles. */
+  function frameHandleUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>, touch: boolean): HandleId | undefined {
+    const { view, point } = frameHandlesAt(event)
+    return frameHandleIdAt(frameOf(props.project), view, point, touch)
+  }
+
+  /** The layer the Move handle carries the Frame by (ticket 1188): the Canvas's positions while it lies on their grid,
+   * else its own rows and columns, which lie along it on screen. */
+  function moveLayer(): ViewLayer {
+    return frameOf(props.project)?.centre ? 'frame' : 'canvas'
+  }
+
+  /** Whether a point of the drawing is on a margin sheet that refuses the tool there (ticket 1188): the sheet of a Frame
+   * drawn on its own surface, at any angle, as the keep-out margin refuses beside a Frame on the Canvas's grid. */
+  function onRefusingSheet(point: { x: number; y: number }): boolean {
+    return (props.tools.blocksMargin || props.tools.selects) && surface.value.onMarginSheet(point)
   }
 
   /** A Select drag in progress (ticket 505): every move reports the nearest bead position, over a bead or not, in the
@@ -726,7 +755,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     framing.value = true
     hideMarker()
     rootEl.value?.setPointerCapture?.(event.pointerId)
-    gestureLayer = 'canvas'
+    gestureLayer = moveLayer()
     frameGrip = { x: 0, y: 0 }
     emit('frame-press', { kind: 'move' }, beginCarry(event))
     event.preventDefault()
@@ -794,10 +823,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
       const target = framePress(event)
       if (target) {
         framing.value = true
-        hotHandle.value = frameHandleIdAt(frameOf(props.project), surface.value, pointInDrawing(event), touchInput.value)
+        hotHandle.value = frameHandleUnder(event, touchInput.value)
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
-        gestureLayer = target.kind === 'handle' ? 'frame' : 'canvas'
+        gestureLayer = target.kind === 'handle' ? 'frame' : moveLayer()
         carryGrip = undefined
         const pressed = cellUnder(event)
         const point = pointInDrawing(event)
@@ -849,9 +878,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     // A ruler number is display-only (ticket 447): the press goes to the active tool at that spot.
     const bead = beadUnder(event)
     overBead.value = bead !== undefined
-    const offShape = !bead && surface.value.offShapeAt(pointInDrawing(event))
+    const offShape = !bead && (surface.value.offShapeAt(pointInDrawing(event)) || onRefusingSheet(pointInDrawing(event)))
     overRefusedMargin.value = refusesMargin(bead) || offShape
-    // A Custom frame's Seams and Off-shape hold no bead (ticket 0592): a press there is refused, as on the margin.
+    // A Custom frame's Seams and Off-shape hold no bead (ticket 0592): a press there is refused, as on the margin, and
+    // so is one on the margin sheet of a Frame off the Canvas's grid (ticket 1188).
     if (offShape) {
       lastBead = undefined
       if (event.button === 0) refusePress()
@@ -943,7 +973,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
       hotAreaHandle.value = undefined
       const target = framePress(event)
-      hotHandle.value = target?.kind === 'handle' ? frameHandleIdAt(frameOf(props.project), surface.value, pointInDrawing(event), false) : undefined
+      hotHandle.value = target?.kind === 'handle' ? frameHandleUnder(event, false) : undefined
       handleCursor.value = target?.kind === 'move' ? 'grab' : hotHandle.value ? HANDLE_CURSORS[hotHandle.value] : undefined
     } else {
       hotAreaHandle.value = undefined
@@ -975,7 +1005,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     }
 
     overBead.value = bead !== undefined
-    overRefusedMargin.value = refusesMargin(bead) || (!bead && surface.value.offShapeAt(pointInDrawing(event)))
+    overRefusedMargin.value = refusesMargin(bead) || (!bead && (surface.value.offShapeAt(pointInDrawing(event)) || onRefusingSheet(pointInDrawing(event))))
     placeMarker()
     placePickChip(event, bead)
     if (selectDrag && event.buttons & 1) {

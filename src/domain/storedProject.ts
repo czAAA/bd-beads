@@ -5,7 +5,7 @@ import { normalizeHex } from './color'
 import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
 import type { Rotation } from './grid'
 import { nearestQuarterTurn, normalizedOrientation, quarterTurnsOff } from './canvasOrientation'
-import { frameCornerAt } from './framePlacement'
+import { frameCornerAt, withFrameAt } from './framePlacement'
 import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
@@ -42,6 +42,8 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
     /** The Frame's own angle on the table and its centre there (file version 15, ticket 1185). */
     angle?: number
     centre?: TablePoint
+    /** Whether the Frame lies off the Canvas's grid, its centre kept as saved (ticket 1188); absent, it lies on it. */
+    offGrid?: boolean
     /** Row progress as seen (file version 15), or in the Frame's own rows before it. */
     rowProgress?: Partial<RowProgress> | Partial<OwnRowProgress>
   }
@@ -205,13 +207,21 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string,
     angle,
     rowProgress: { way: 'down' },
   }
-  const placed = readCentre(stored.centre) ? { ...frame, ...frameCornerAt({ layers: [canvas, frame] }, stored.centre!) } : frame
-  const turns = quarterTurnsOff(angle, canvas.orientation)
+  // A Frame saved off the Canvas's grid keeps its centre (ticket 1188); one on it lands on the nearest position, read
+  // before its Beads are, as file version 15 always read it.
+  const placed = !readCentre(stored.centre) ? frame : stored.offGrid === true ? frameAt(canvas, frame, stored.centre!) : { ...frame, ...frameCornerAt({ layers: [canvas, frame] }, stored.centre!) }
+  const turns = placed.centre && !laid.shape ? 0 : quarterTurnsOff(angle, canvas.orientation)
   const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, ...(turns ? { quarterTurns: turns } : {}), rows, columns }
   // One stored since file version 15 keeps its way as seen; one before, in its own rows, turned as it showed.
   const held = stored.rowProgress
   const seen = (held && 'way' in held) || typeof stored.angle === 'number' ? (held as Partial<RowProgress> | undefined) : seenProgressOf(readOwnProgress(held as Partial<OwnRowProgress> | undefined), laid.shape ? 0 : nearestQuarterTurn(canvas.orientation) / 90 + earlierTurns)
   return { ...placed, rowProgress: readRowProgress(seen, shaped, nearestQuarterTurn(angle)) }
+}
+
+/** The Frame read at its saved centre on the table, its Canvas's origin the table's (ticket 1188, `withFrameAt`). */
+function frameAt(canvas: CanvasLayer, frame: FrameLayer, centre: TablePoint): FrameLayer {
+  const read = { id: '', layers: [canvas, frame], palette: [], createdAt: 0, updatedAt: 0 } as Project
+  return withFrameAt(read, centre).layers[1]!
 }
 
 /** Whether a stored centre is a point: two finite numbers. */

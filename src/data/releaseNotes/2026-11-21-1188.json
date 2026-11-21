@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "Rotate canvas turns only the Canvas: the Frame stays where it is, its rows and their way as you left them",
+    "ru": "Поворот холста поворачивает только холст: рамка остаётся на месте, её ряды и их направление не меняются",
+    "uk": "Поворот полотна повертає лише полотно: рамка лишається на місці, її ряди та їхній напрямок не змінюються",
+    "be": "Паварот палатна паварочвае толькі палатно: рамка застаецца на месцы, яе рады і іх кірунак не мяняюцца",
+    "zh": "旋转画布只转动画布：边框留在原处，它的行和行的方向保持不变",
+    "es": "Girar el lienzo gira solo el lienzo: el marco se queda donde está, con sus filas y su sentido como los dejaste",
+    "pl": "Obrót płótna obraca tylko płótno: ramka zostaje na miejscu, a jej rzędy i ich kierunek bez zmian"
+  }
+}

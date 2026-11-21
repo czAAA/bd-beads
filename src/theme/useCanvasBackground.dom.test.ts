@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp, defineComponent, h } from 'vue'
 import { createProject } from '../domain/createProject'
-import { withBackground, withFrameSheet } from '../domain/layerRecord'
+import { withBackground } from '../domain/layerRecord'
+import { withFrameSheet } from '../domain/frameSheet'
 import { PREFERENCES } from '../services/devicePreferences'
 import { provideMarginLeastScale, useCanvasBackground } from './useCanvasBackground'
 

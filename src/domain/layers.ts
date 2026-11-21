@@ -54,7 +54,10 @@ export function shownBeads(project: Layered): BeadMap {
   if (!frame) {
     return beadsOfLayer(project, 'canvas')
   }
-  const hidden = beadsWithout(beadsOfLayer(project, 'canvas'), footprintOf(project)!)
+  const covered = footprintOf(project)
+  // A Frame off the Canvas's grid covers none of its positions (ticket 1188): the Canvas's beads are what lie on them.
+  if (!covered) return beadsOfLayer(project, 'canvas')
+  const hidden = beadsWithout(beadsOfLayer(project, 'canvas'), covered)
   // Only a grid's positions are the Canvas's, moved by the Frame's corner (through millimetres in another Bead, ticket
   // 0665); a Custom frame's are named by round and place.
   return frameGeometryOf(project).grid ? beadsOver(hidden, laidOnCanvas(project, beadsOfLayer(project, 'frame')!, frame)) : hidden

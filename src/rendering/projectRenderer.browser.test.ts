@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { withCanvasTurned } from '../domain/table'
+import { withPictureTurned } from '../testUtils/layerFields'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
 import { frameOf, heldWeave, withLayer } from '../domain/layerRecord'
@@ -19,7 +19,7 @@ const SIDE = 800
 const PAINTED: readonly Cell[] = [[2, 2], [5, 4], [6, 4], [3, 7], [8, 8], [8, 9]]
 
 function projectOf(technique: Technique, bead: string, cells: readonly Cell[]): Project {
-  const made = withCanvasTurned(createProject({ technique, beadId: bead, size: { width: 12, height: 12, unit: 'beads' } }), 0)
+  const made = withPictureTurned(createProject({ technique, beadId: bead, size: { width: 12, height: 12, unit: 'beads' } }), 0)
   const project = withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') })
   return withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, cells.map(([column, row]) => ({ row, column, color: '#222222' }))) } })
 }

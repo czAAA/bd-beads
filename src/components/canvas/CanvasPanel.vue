@@ -76,6 +76,7 @@ const {
   viewPlaced,
   canvasOrientation,
   twistPhase,
+  twistMoved,
   selectionRefusals,
   fillRefusals,
   activeTool,
@@ -524,6 +525,7 @@ const drawingStyle = computed(() => {
                 :scroll="scroll"
                 :orientation="canvasOrientation"
                 :twist="twistPhase"
+                :twist-moved="twistMoved"
                 :show-rulers="showRulers"
                 :stroking="stroking"
                 :row-marks="rowHighlight"

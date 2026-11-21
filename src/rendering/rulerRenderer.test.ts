@@ -11,7 +11,8 @@ import { ROW_MOTION } from './rowMotion'
 import { rulerLayout } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
-import { beadsOfLayer, frameOf, withFrameSheet } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf } from '../domain/layerRecord'
+import { withFrameSheet } from '../domain/frameSheet'
 import { withLayers } from '../testUtils/layerFields'
 
 /** A context that writes down each rectangle drawn with `roundRect`, the style it was stroked or filled in and its text. */

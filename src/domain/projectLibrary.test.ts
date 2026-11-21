@@ -5,7 +5,7 @@ import { takeInOutside, mostRecentlyUpdated, summarizeProject } from './projectL
 import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { turnedClockwise } from '../testUtils/rotated'
-import { withFrameSheet } from './layerRecord'
+import { withFrameSheet } from './frameSheet'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 

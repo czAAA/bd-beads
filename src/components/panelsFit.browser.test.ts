@@ -21,7 +21,8 @@ import { createProject } from '../domain/createProject'
 import type { Project } from '../domain/project'
 import { moveToRow } from '../domain/rowProgress'
 import { withLayers } from '../testUtils/layerFields'
-import { frameOf, withFrameSheet } from '../domain/layerRecord'
+import { frameOf } from '../domain/layerRecord'
+import { withFrameSheet } from '../domain/frameSheet'
 
 // The strip, the Project and Menu panels, the dialogs and the forms, in every language at the layout's width edges
 // (ticket 552).

@@ -228,10 +228,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
+  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
     useCanvasFraming({
       currentProject,
-      keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
+      keepTwist: (turned, moved) => rotateCanvasFlow.onTwistCanvas(turned, moved),
       compact: typeof window === 'undefined' ? undefined : useMediaQuery(UNDER_TABLET_QUERY),
       // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879); at the plain
       // address, the view the tab left its Project at, for a reload (ticket 1108).
@@ -864,7 +864,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const liftFrameFlow = useLiftFrameFlow({ edit, currentProject, announce, messages })
 
   /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0052). */
-  const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages })
+  const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages, turnView: (to) => turnCanvas(to) })
 
   /** Remove line: the selected whole row or column of the Frame, as one undo step, asking first where it touches
    * finished rows (tickets 123, 199, 233, 0647). */
@@ -1215,6 +1215,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       canvasOrientation,
       /** Whether two fingers twist the Canvas, or it eases onto a quarter turn after them (ticket 0709). */
       twistPhase,
+      twistMoved,
       showRulers,
       /** Whether a Paint or Eraser stroke is going on, so the surface holds what it counts until it ends (ticket 0674). */
       stroking: computed(() => strokeMode.value !== null),

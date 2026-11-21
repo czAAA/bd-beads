@@ -1,8 +1,7 @@
 import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, frameOf, newLayerId, startingRowProgressOf, withLayer, withStartingRowProgress } from './layerRecord'
-import { withCanvasTurned } from './table'
+import { beadIdOfLayer, frameOf, newLayerId, startingRowProgressOf, withCanvas, withFrameFields, withLayer, withStartingRowProgress } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -88,8 +87,8 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
  * preview showed it (ticket 0965). Conversion never edits an open Project (ADR 0010). The grid is fitted to the stated
  * dimensions (missing cells empty, surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
-  // Started again once the Canvas is upright: the Frame's way as it lies now, not as the turned Canvas had it (spec 1182).
-  const project = withStartingRowProgress(withCanvasTurned(createProject(input), 0))
+  // The Canvas upright and the new Frame lying as it does (ticket 1188), its progress started as it lies then (spec 1182).
+  const project = withStartingRowProgress(withFrameFields(withCanvas(createProject(input), { orientation: 0 }), { angle: 0 }))
   const frame = frameOf(project)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>

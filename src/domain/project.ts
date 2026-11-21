@@ -59,15 +59,21 @@ export interface CanvasLayer extends LayerFields {
   /** View-only turn (tickets 28, 171, ADR 0079): the Canvas, and every layer on it, shown turned this many degrees
    * clockwise, from 0 up to a whole turn; any angle by a twist on touch (ticket 0672). Never a data transform. */
   orientation: number
+  /** Where its origin lies on the table (spec 1182, ticket 1188), in its bead widths: a turn about a pivot moves it. A
+   * view of this session, never saved: a file's table has its origin at the Canvas's. Absent, at the table's origin. */
+  origin?: { x: number; y: number }
 }
 
 /** A Frame as a layer (ADR 0066, 0079): its sheet (place, Weave, beads, Folded beads, name, Frame shape and settings)
  * with the rest of a layer, its own angle on the table and its Row progress. */
 export interface FrameLayer extends LayerFields, FrameSheet {
   /** Its own angle on the table (spec 1182), degrees clockwise from 0 up to a whole turn: no longer quarter turns on the
-   * Canvas. `quarterTurns`, how it lies on the Canvas's grid, is read from it and the Canvas's (layerRecord's frameOf).
-   * Until 1188 the Canvas carries it, so it is the Canvas's orientation plus whole quarter turns. */
+   * Canvas. `quarterTurns`, how it lies on the Canvas's grid, is read from it and the Canvas's (layerRecord's frameOf). */
   angle: number
+  /** Its centre on the table, in the Canvas's bead widths, where it lies off the Canvas's grid (ticket 1188): turned
+   * other than by whole quarters from the Canvas, or off its whole positions. Its row and column then only address its
+   * cells, and it has no quarter turns. Absent, it lies on the grid where its row and column put it. */
+  centre?: { x: number; y: number }
   rowProgress: RowProgress
 }
 

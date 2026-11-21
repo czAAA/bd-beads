@@ -5,7 +5,8 @@ import { changeFrame } from '../../src/domain/changeFrame'
 import { paintCells } from '../../src/domain/drawing'
 import { frameLayoutOf } from '../../src/domain/frameShape'
 import { onLayer } from '../../src/domain/layers'
-import { frameOf, withFrameSheet } from '../../src/domain/layerRecord'
+import { frameOf } from '../../src/domain/layerRecord'
+import { withFrameSheet } from '../../src/domain/frameSheet'
 import type { Project } from '../../src/domain/project'
 
 /** Radial on the whole loom Frame (tickets 0705, 0750; ContextBar card's Mirror bar): Mirror at Fold 4 (the Frame's ring

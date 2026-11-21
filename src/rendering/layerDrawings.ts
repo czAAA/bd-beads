@@ -6,8 +6,8 @@ import type { Scroll } from './surfaceView'
 import { tiltedView, type TiltedView } from './tiltedView'
 
 // The editor's two stacked surfaces (spec 1182, ticket 1187): the Canvas and the Frame are each drawn at their own
-// nearest quarter turn and leaned on their own about the screen's middle (`tiltedView`). While the Canvas carries the
-// Frame (until ticket 1188) both drawings are one, so every picture is as it was.
+// nearest quarter turn and leaned on their own about the screen's middle (`tiltedView`). While they lie alike both
+// drawings are one; a turn of the Canvas alone leaves the Frame's drawing where it is (ticket 1188).
 
 /** One layer's drawing: the quarter turn its surface is drawn at, how it leans on the screen, and the scroll it is shown
  * from. */
@@ -36,10 +36,11 @@ export interface FramePin {
 }
 
 /** The Frame's drawing (ticket 1187): leaning by its own `angle`, its Canvas drawn at `rotation`, and scrolled so its
- * centre shows where `pin` says. Where that is how the Canvas is drawn, the Canvas's very drawing. */
-export function frameDrawing({ screen, angle, rotation, canvas, pin }: { screen: Size; angle: number; rotation: Rotation; canvas: LayerDrawing; pin: () => FramePin }): LayerDrawing {
+ * centre shows where `pin` says. Where that is how the Canvas is drawn, the Canvas's very drawing, unless it is drawn
+ * on its `own`: off the Canvas's grid, its place is not the Canvas's positions (ticket 1188). */
+export function frameDrawing({ screen, angle, rotation, canvas, own = false, pin }: { screen: Size; angle: number; rotation: Rotation; canvas: LayerDrawing; own?: boolean; pin: () => FramePin }): LayerDrawing {
   const tilt = tiltOf(angle)
-  if (rotation === canvas.rotation && tilt === canvas.leaning.degrees) return canvas
+  if (!own && rotation === canvas.rotation && tilt === canvas.leaning.degrees) return canvas
   const leaning = tiltedView(screen, tilt)
   const { displayed, onScreen } = pin()
   const at = leaning.toDrawn(onScreen)

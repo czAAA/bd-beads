@@ -45,10 +45,12 @@ import { canvasDistance, canvasWeave, frameWeave, laidOnCanvas, sameBeadSize, we
 import { withWovenPalette } from './projectBead'
 import { clampPointer, progressWithoutLine, rowProgressStarted } from './rowProgress'
 import { frameQuarterTurnOf, lieAlike } from './table'
+import { offGridOnCanvas } from './framePlacement'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
 import { linesKeptIn, type WovenChoice } from './wovenLines'
-import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingRowProgressOf, touchFrameSheet, withFrameFields, withFrameSheet, withLayer, withPieceNames, withStartingRowProgress } from './layerRecord'
+import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingRowProgressOf, withFrameFields, withLayer, withPieceNames, withStartingRowProgress } from './layerRecord'
+import { touchFrameSheet, withFrameSheet } from './frameSheet'
 import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -68,8 +70,8 @@ export type FrameChange =
   /** One whole row or column of the Frame, counted from its first; allowed after Row progress has started, a finished
    * row taking its passes with it (ticket 0647). */
   | { removeLine: AreaLine }
-  /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0054); allowed after Row progress has
-   * started, which then travels with the Frame. */
+  /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0054): the Canvas's, or off its grid the
+   * Frame's own (ticket 1188); allowed after Row progress has started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
   /** Change the Frame's Technique or its settings (tickets 351, 477, 492, 507, 0625): the geometry changes and every
    * bead keeps its row and column, a Technique taking its settings (a Drop) with it. With a pass done another Technique
@@ -198,7 +200,9 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
 
   if ('move' in change) {
     const frame = frameOf(project)!
-    const moved = movedFrame(frame, change.move.rows, change.move.columns)
+    // Off the Canvas's grid it moves by its own rows and columns, along it on screen (ticket 1188), not the Canvas's.
+    const by = frame.centre ? canvasDistance(project, frameWeave(project), change.move.rows, change.move.columns) : { row: change.move.rows, column: change.move.columns }
+    const moved = movedFrame(frame, by.row, by.column)
     if (sameFrame(frame, moved)) {
       return { kind: 'unchanged', project }
     }
@@ -314,7 +318,7 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
   const { shape, centre, beads = {}, weave, quarterTurns } = placement
   const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ shape })!.id]: placement.size }
   const sheet = customSheet(project, shape, settings, centre, quarterTurns, weave)
-  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingRowProgressOf(sheet) })
+  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingRowProgressOf(sheet) }, { anew: true })
 }
 
 /** A Custom frame laid out again from new settings round its own centre, as it lay in `before` (the Project itself, or
@@ -402,7 +406,8 @@ function madeFrame(original: Project, rectangle: Rect): Project {
   const [under, held] = [beadsOfLayer(project, 'canvas'), beadsOfLayer(project, 'frame')]
   // What shows is lifted. Canvas beads hidden under a Frame there before stay on the Canvas; its own beads outside the
   // new rectangle go back on it.
-  const hidden = previous ? beadsInFrame(beadsInFrame(under, rectangle), footprintOf(project)!) : {}
+  const covered = previous && footprintOf(project)
+  const hidden = covered ? beadsInFrame(beadsInFrame(under, rectangle), covered) : {}
   const left = previous ? beadsWithout(shiftedBeads(held!, previous.row, previous.column), rectangle) : {}
   const canvas = beadsOver(beadsOver(beadsWithout(under, rectangle), hidden), left)
   const lifted = beadsInFrame(shownBeads(project), rectangle)
@@ -459,7 +464,7 @@ function placedFrame(project: Project, place: FramePlacement): Project {
   // Lift starts on for a Frame laid where there was none and stays as it was in place of another (ticket 1177).
   const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {}, ...(!previous || previous.lifted ? { lifted: true as const } : {}) }
   // Its progress starts afresh, in its Technique's way as it lies, whatever way the Frame it replaces ran.
-  return touchFrameSheet(project, { ...frame, rowProgress: startingRowProgressOf(sheet) })
+  return touchFrameSheet(project, { ...frame, rowProgress: startingRowProgressOf(sheet) }, { anew: true })
 }
 
 /** The Project with its Custom frame become its shape round `rectangle` (ADR 0079, ticket 0669), the smallest that
@@ -505,8 +510,13 @@ function droppedBeads(project: Project): { shown: BeadMap; folded: BeadMap } {
   if (!frameShapeOf(frame) && lieAlike(project)) {
     return { shown: laidOnCanvas(project, beads, frame), folded: laidOnCanvas(project, folded, frame) }
   }
-  const onCanvas = (sheet: Rect, dropped: BeadChange[]) => laidOnCanvas(project, withColors({}, dropped), sheet)
   const sheet = layerSheet(project, 'frame')
+  // Off the Canvas's grid each lands on the Canvas position nearest where it lies on screen (ticket 1188).
+  if (frame.centre && !frameShapeOf(frame)) {
+    const onto = { weave: canvasWeave(project), at: offGridOnCanvas(project) }
+    return { shown: withColors({}, droppedFromLayout(sheet, onto)), folded: withColors({}, droppedFromTurnedGrid(sheet, folded, onto)) }
+  }
+  const onCanvas = (sheet: Rect, dropped: BeadChange[]) => laidOnCanvas(project, withColors({}, dropped), sheet)
   const shown = onCanvas(frame, droppedFromLayout(sheet))
   if (!hasBeads(folded)) return { shown, folded: {} }
   if (!frameShapeOf(frame)) return { shown, folded: onCanvas(frame, droppedFromTurnedGrid(sheet, folded)) }
@@ -524,7 +534,8 @@ function removedFrame(project: Project): Project {
   const frame = frameOf(project)!
   const { shown: dropped, folded } = droppedBeads(project)
   // Its Folded beads land where they stand too, over the Canvas, under the beads it shows (ticket 0638).
-  const unfolded = beadsOver(beadsWithout(beadsOfLayer(project, 'canvas'), footprintOf(project)!), folded)
+  const covered = footprintOf(project)
+  const unfolded = beadsOver(covered ? beadsWithout(beadsOfLayer(project, 'canvas'), covered) : beadsOfLayer(project, 'canvas'), folded)
   const beads = beadsOver(unfolded, dropped)
   const canvas = carryNames(project, withLayer(withFrame(project, undefined), 'canvas', { beads }))
   const name = frame.name

@@ -3,7 +3,8 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
-import { frameOf, withFrameSheet } from '../../domain/layerRecord'
+import { frameOf } from '../../domain/layerRecord'
+import { withFrameSheet } from '../../domain/frameSheet'
 import { snapshotOf } from '../../domain/undoSnapshot'
 
 function newProject(): Project {

@@ -67,9 +67,9 @@ import { rowOrderOf } from './frameShape'
 import { lieAlike } from './table'
 import { changeFrame } from './changeFrame'
 import { createProject } from './createProject'
-import { rotateFrame, turnCanvasTo } from './rotate'
+import { rotateFrame } from './rotate'
 import { customFrameSize } from './frameShape'
-import { frameSheetOf, layersView } from '../testUtils/layerFields'
+import { frameSheetOf, layersView, withPictureTurned } from '../testUtils/layerFields'
 import { frameGeometryOf } from './layers'
 import { computeColorQuantities } from './beadQuantities'
 import { projectPalette } from './palette'
@@ -731,7 +731,7 @@ describe('stored-data compatibility', () => {
       // Made as it was saved: moved, turned by Rotate Frame about its centre, the Canvas twisted to 37.5° carrying it.
       const made = createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', size: { width: 6, height: 5, unit: 'beads' } })
       const moved = changeFrame(made, { move: { rows: 3, columns: -2 } })
-      const saved = turnCanvasTo(rotateFrame(moved.kind === 'changed' ? moved.project : made)!, 37.5)
+      const saved = withPictureTurned(rotateFrame(moved.kind === 'changed' ? moved.project : made)!, 37.5)
       const { row, column } = frameOf(saved)!
       expect(frameOf(opened!)).toMatchObject({ row, column, rows: 5, columns: 6, quarterTurns: 1, angle: 127.5 })
       expect(rowProgressOf(opened!)).toEqual({ way: 'left', left: 2 })

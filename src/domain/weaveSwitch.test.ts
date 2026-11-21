@@ -9,7 +9,8 @@ import { canvasWeave, frameWeave } from './layerWeave'
 import { withWeave } from './weaveSwitch'
 import { beadCell, columnCycle, rowCycle } from './weave'
 import { findBead } from './beads'
-import { canvasOf, frameOf, withFrameSheet } from './layerRecord'
+import { canvasOf, frameOf } from './layerRecord'
+import { withFrameSheet } from './frameSheet'
 import { withLayers } from '../testUtils/layerFields'
 
 describe('a Frame woven in its own Technique (ticket 492)', () => {

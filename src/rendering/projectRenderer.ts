@@ -163,12 +163,14 @@ export interface RenderInput {
  * or smaller than that. */
 function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined {
   const frame = frameOf(project)
-  if (!frame) {
+  const covered = footprintOf(project)
+  // A Frame off the Canvas's grid hides no part of it (ticket 1188): its own surface lies over it.
+  if (!frame || !covered) {
     return undefined
   }
   const canvas = canvasWeave(project)
   // With a `margin` the box also takes in the keep-out margin (ticket 501), which the Canvas draws nothing in.
-  const grown = withMargin(footprintOf(project)!, margin)
+  const grown = withMargin(covered, margin)
   const own = gridBox(canvas, grown)
   if (layersAlike(project)) {
     return own
@@ -195,7 +197,8 @@ function drawPositionMarks(
     return
   }
   const cell = cellSizePx(canvas.technique, canvas.cell)
-  const box = frameOf(project) && withMargin(footprintOf(project)!, margin)
+  const covered = footprintOf(project)
+  const box = covered && withMargin(covered, margin)
   // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
   const held = frameFootprintPx(project, margin)
   const alike = layersAlike(project)
@@ -806,7 +809,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     // The reference image over the Canvas's Background and under every bead (ticket 0790): over its tonal tiles, so
     // showing it leaves the grid as it is (ticket 1008), under the outlines drawn instead. The Frame lays its own.
     const overTiles = positionMarks && markLookOf(theme, tiles).tiles
-    const frameBox = frame ? frameGroundBox(project) : undefined
+    // A Frame off the Canvas's grid covers none of it (ticket 1188): its own surface draws it, from a Project laid so.
+    const frameBox = frame && footprintOf(project) ? frameGroundBox(project) : undefined
     // The Canvas's own part: what its surface draws (ticket 1187), the Frame's laid over it on its own.
     if (layer !== 'frame') {
       if (under && !overTiles) drawReferenceCut(context, under, frameBox, 'outside')
@@ -875,7 +879,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
   // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
   // Drawn one layer at a time, each lays it on its own part: the Frame on its sheet's box, the Canvas round it.
-  if (drawn?.over) drawReferenceCut(context, drawn, layer && frame ? sheetBoxOf(project, margin, input.slimSheet) : undefined, layer === 'frame' ? 'inside' : 'outside')
+  if (drawn?.over) drawReferenceCut(context, drawn, layer && frame && footprintOf(project) ? sheetBoxOf(project, margin, input.slimSheet) : undefined, layer === 'frame' ? 'inside' : 'outside')
 
   if (band || strip) {
     context.restore()

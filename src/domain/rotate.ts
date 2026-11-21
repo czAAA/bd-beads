@@ -7,12 +7,14 @@ import { snapColumn, snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, canvasWeave, frameWeave } from './layerWeave'
-import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, touchFrameSheet, withLayer } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, withLayer } from './layerRecord'
+import { touchFrameSheet } from './frameSheet'
 import { touch, type Project } from './project'
 import { rowProgressStarted } from './rowProgress'
 import { turnedWithFrame } from './rowWays'
 import type { WovenChoice } from './wovenLines'
-import { withCanvasTurned } from './table'
+import { withCanvasTurned } from './framePlacement'
+import type { TablePoint } from './table'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectableOn, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
@@ -209,14 +211,16 @@ export function rotateFrame(project: Project, woven: WovenChoice = 'keep'): Proj
   return touchFrameSheet(project, { ...turned, ...at, rowProgress })
 }
 
-/** Rotate canvas (ticket 471): the Canvas a quarter turn clockwise further from whatever angle it is at (ticket
- * 0672); a view, no bead changes. */
-export function rotateCanvas(project: Project): Project {
-  return turnCanvasTo(project, turnedOrientation(orientationOf(project), 90))
+/** Rotate canvas (ticket 471): the Canvas a quarter turn clockwise further from whatever angle it is at (ticket 0672),
+ * its origin moved `moved`; a view, no bead changes.
+ * @internal The flow turns through the view (turnCanvasTo); tests turn a Canvas a quarter without one. */
+export function rotateCanvas(project: Project, moved?: TablePoint): Project {
+  return turnCanvasTo(project, turnedOrientation(orientationOf(project), 90), moved)
 }
 
-/** The Canvas at an orientation, any angle in degrees (a two-finger twist, ticket 0672): its placement on the table
- * turns, carrying the Frame until 1188 (withCanvasTurned); a view, no bead changes. */
-export function turnCanvasTo(project: Project, orientation: number): Project {
-  return touch(withCanvasTurned(project, orientation), {})
+/** The Canvas at an orientation, any angle in degrees (a two-finger twist, ticket 0672), its origin moved `moved` on the
+ * table by the pivot it turned about: only the Canvas turns, the Frame stays where it is on the table (ticket 1188,
+ * withCanvasTurned); a view, no bead changes. */
+export function turnCanvasTo(project: Project, orientation: number, moved?: TablePoint): Project {
+  return touch(withCanvasTurned(project, orientation, moved), {})
 }

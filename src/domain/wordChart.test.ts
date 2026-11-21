@@ -7,7 +7,8 @@ import { paintCells } from './drawing'
 import type { Project } from './project'
 import type { Technique } from './weave'
 import { wordChartOf } from './wordChart'
-import { frameOf, withFrameSheet } from './layerRecord'
+import { frameOf } from './layerRecord'
+import { withFrameSheet } from './frameSheet'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 const HEX: Record<string, string> = { A: '#111111', B: '#222222', C: '#333333' }

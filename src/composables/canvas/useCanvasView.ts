@@ -2,8 +2,8 @@ import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, MAX_ZOOM, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
-import { layerOf, orientationOf } from '../../domain/layerRecord'
-import { footprintOf } from '../../domain/footprint'
+import { frameOf, layerOf, orientationOf } from '../../domain/layerRecord'
+import { footprintOf, frameFootprint } from '../../domain/footprint'
 import { withMargin } from '../../domain/margin'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
 import { nearestQuarterTurn, settledOrientation, tiltOf, turnedOrientation } from '../../domain/canvasOrientation'
@@ -18,7 +18,7 @@ import { shortestPan } from '../../rendering/shortestPan'
 import { visibleBeadsInSpace } from '../../rendering/projectRenderer'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Region, type Scroll, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
-import type { Size } from '../../rendering/cellSize'
+import { CELL_SIZE_PX, type Size } from '../../rendering/cellSize'
 import { drawingScrollOf, originTurnedAbout, tableScrollOf, tiltedView } from '../../rendering/tiltedView'
 
 /** One step of a two-finger gesture (ticket 0709), about `anchor`, a point of the viewport the fingers are at: the
@@ -62,7 +62,9 @@ interface FitTarget {
  * clear of itself too (ticket 0971). */
 export function fitBox(project: Project): FitTarget | undefined {
   // The sheet is laid on the Canvas round the Frame's footprint, which takes a turned Frame as it lies (ticket 0667).
-  const footprint = footprintOf(project)
+  // A Frame off the Canvas's grid covers no position (ticket 1188): the rectangle its address names is centred on it.
+  const placed = placedFrame(project)
+  const footprint = footprintOf(project) ?? (placed && frameFootprint(layerOf(project, 'canvas').weave, placed))
   if (footprint) return { box: withMargin(footprint), margin: SHEET_FIT_MARGIN_PX }
   const drawn = beadBounds(layerOf(project, 'canvas').beads)
   return drawn && { box: drawn, margin: FIT_MARGIN_PX }
@@ -85,8 +87,9 @@ export interface ViewMove {
 
 /** What the view does beyond looking: keeping the angle a twist settles on (ticket 0672). */
 export interface CanvasViewOptions {
-  /** Saves the Canvas's orientation a two-finger twist came to rest at with the Project. */
-  keepTwist?: (orientation: number) => void
+  /** Saves the Canvas's orientation a two-finger twist came to rest at with the Project, and how far its origin moved on
+   * the table as it turned about the fingers, in its bead widths (ticket 1188). */
+  keepTwist?: (orientation: number, moved: Scroll) => void
   /** What lies over the drawing area's edges (the Tool pill, ticket 0850): a fit leaves it clear. */
   covered?: () => Insets
   /** The view a Project opens at in place of its fit, this once: the address's (What's inside's Open editor from here,
@@ -128,6 +131,9 @@ export function useCanvasView(
   let opening = options.opening
   /** The Canvas's orientation while two fingers twist it, before the Project keeps where it settles. */
   const twisting = ref<number>()
+  /** Where the Canvas's origin lay on the table as the twist began (ticket 1188): how far it has moved since is what the
+   * Project keeps with the angle, so the Frame, which stays, is laid against the Canvas as it will be. */
+  let twistFrom: Scroll | undefined
   const twistPhase = ref<TwistPhase>()
   let snapTimer: ReturnType<typeof setTimeout> | undefined
   /** The orientation this view just handed the Project, which it already shows: no refit for it. */
@@ -241,7 +247,7 @@ export function useCanvasView(
       opening = undefined
       const { area, corner } = fitRoom()
       const surface = surfaceOf(project, scroll.value, area)
-      const most = footprintOf(project) ? frameFitCeiling(surface) : 1
+      const most = frameOf(project) ? frameFitCeiling(surface) : 1
       zoom.value = clampZoom(target ? surface.zoomToFit(target.box, target.margin, 'canvas', most) : 1)
       const centred = surfaceOf(project, scroll.value, area).scrollToCentre(target?.box, 'canvas')
       scroll.value = { x: centred.x - corner.x, y: centred.y - corner.y }
@@ -441,6 +447,7 @@ export function useCanvasView(
     if (turn !== undefined) {
       const from = orientation.value
       const to = turnedOrientation(from, turn)
+      twistFrom ??= { ...canvasOrigin.value }
       at = turnedAbout(at, from, to, anchor)
       clearTimeout(snapTimer)
       twisting.value = to
@@ -469,12 +476,31 @@ export function useCanvasView(
   }
 
   function settleTwist(to: number): void {
+    const moved = twistMoved.value
     twisting.value = undefined
     twistPhase.value = undefined
-    if (to !== orientationOf(currentProject())) {
-      settledAt = to
-      options.keepTwist?.(to)
-    }
+    twistFrom = undefined
+    const turned = to !== orientationOf(currentProject())
+    if (turned) settledAt = to
+    if (turned || moved.x !== 0 || moved.y !== 0) options.keepTwist?.(to, moved)
+  }
+
+  /** How far the Canvas's origin has moved on the table since the twist began, in its bead widths (ticket 1188): none
+   * outside a twist. */
+  const twistMoved = computed<Scroll>(() => {
+    if (twisting.value === undefined || !twistFrom) return { x: 0, y: 0 }
+    return { x: (canvasOrigin.value.x - twistFrom.x) / CELL_SIZE_PX, y: (canvasOrigin.value.y - twistFrom.y) / CELL_SIZE_PX }
+  })
+
+  /** Rotate canvas's turn (ticket 1188): the Canvas a quarter turn clockwise about the middle of the drawing area, the
+   * view's scroll over the table kept; how far its origin moved on the table, in its bead widths, for the Project to
+   * keep with the new angle. No refit: nothing but the Canvas turns. */
+  function turnCanvas(to: number): Scroll {
+    const before = { ...canvasOrigin.value }
+    stopGlide()
+    scroll.value = turnedAbout(scroll.value, orientation.value, to)
+    if (to !== orientation.value) settledAt = to
+    return { x: (canvasOrigin.value.x - before.x) / CELL_SIZE_PX, y: (canvasOrigin.value.y - before.y) / CELL_SIZE_PX }
   }
 
   function setZoom(value: number, anchor?: Scroll): void {
@@ -490,7 +516,7 @@ export function useCanvasView(
     isAtFit.value = false
   }
 
-  /** Shows the new Project, or a Canvas the button turned, whole. */
+  /** Shows the new Project, or a Canvas turned otherwise than by the view (Delete all), whole. */
   function refit(): void {
     if (measured()) {
       fit()
@@ -509,6 +535,7 @@ export function useCanvasView(
     clearTimeout(snapTimer)
     twisting.value = undefined
     twistPhase.value = undefined
+    twistFrom = undefined
     refit()
   })
   watch(() => orientationOf(currentProject()), (turned) => {
@@ -557,6 +584,8 @@ export function useCanvasView(
     orientation,
     tableScroll,
     twistPhase,
+    twistMoved,
+    turnCanvas,
     pinchStep,
     endTwist,
   }

@@ -24,12 +24,14 @@ function setup(project: Project | undefined, size = { width: 1000, height: 800 }
   const covered = ref(pill)
   // The Project keeps the angle a twist settles on, as the Rotate canvas flow does.
   const kept: number[] = []
-  const keepTwist = (orientation: number) => {
+  const moves: { x: number; y: number }[] = []
+  const keepTwist = (orientation: number, moved: { x: number; y: number }) => {
     kept.push(orientation)
-    current.value = turnCanvasTo(current.value!, orientation)
+    moves.push(moved)
+    current.value = turnCanvasTo(current.value!, orientation, moved)
   }
   const view = effectScope().run(() => useCanvasView(() => current.value, viewport, { keepTwist, covered: () => covered.value, opening }))!
-  return { current, viewport, covered, view, kept }
+  return { current, viewport, covered, view, kept, moves }
 }
 
 describe('useCanvasView', () => {
@@ -559,6 +561,25 @@ describe('useCanvasView', () => {
     })
   })
 
+  describe('Rotate canvas from its button (ticket 1188)', () => {
+    it('turns the Canvas a quarter about the middle of the drawing area, with no refit, and says how far its origin moved', async () => {
+      const { current, view } = setup(projectOf(20, 10))
+      view.fit()
+      view.panBy(-130, 40)
+      const middle = { x: 500, y: 400 }
+      const table = view.tableScroll.value
+      const before = view.cellAt(middle)
+      const moved = view.turnCanvas(90)
+      current.value = turnCanvasTo(current.value!, 90, moved)
+      await nextTick()
+      expect(view.cellAt(middle)).toEqual(before)
+      expect(view.tableScroll.value.x).toBeCloseTo(table.x, 6)
+      expect(view.tableScroll.value.y).toBeCloseTo(table.y, 6)
+      expect(view.isAtFit.value).toBe(false)
+      expect(Math.hypot(moved.x, moved.y)).toBeGreaterThan(1)
+    })
+  })
+
   describe('a two-finger twist (tickets 0672, 0709)', () => {
     it('turns the view live about the fingers, keeping the bead under them, and leaves the Project as it is until they lift', () => {
       const { current, view } = setup(projectOf(20, 10))
@@ -636,6 +657,29 @@ describe('useCanvasView', () => {
       } finally {
         vi.useRealTimers()
       }
+    })
+
+    it('hands the Project how far the Canvas\'s origin moved on the table, live while it twists (ticket 1188)', () => {
+      const { moves, view } = setup(projectOf(20, 10))
+      view.fit()
+      expect(view.twistMoved.value).toEqual({ x: 0, y: 0 })
+      view.pinchStep({ turn: 30, anchor: { x: 700, y: 300 } })
+      view.pinchStep({ turn: 15, anchor: { x: 650, y: 350 } })
+      const live = view.twistMoved.value
+      expect(Math.hypot(live.x, live.y)).toBeGreaterThan(1)
+      view.endTwist({ x: 650, y: 350 })
+      expect(moves).toEqual([live])
+      expect(view.twistMoved.value).toEqual({ x: 0, y: 0 })
+    })
+
+    it('keeps a twist that came back to its angle about other fingers: the Canvas moved (ticket 1188)', () => {
+      const { kept, moves, view } = setup(projectOf(20, 10))
+      view.fit()
+      view.pinchStep({ turn: 40, anchor: { x: 700, y: 300 } })
+      view.pinchStep({ turn: -40, anchor: { x: 200, y: 600 } })
+      view.endTwist({ x: 200, y: 600 })
+      expect(kept).toEqual([0])
+      expect(Math.hypot(moves[0]!.x, moves[0]!.y)).toBeGreaterThan(1)
     })
 
     it('comes to rest at once at an angle further than 10° off a quarter turn', () => {

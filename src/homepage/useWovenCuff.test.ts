@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { rowProgressPosition, seenWayOf } from '../domain/rowProgress'
+import { frameAngleOf, lieAlike } from '../domain/table'
 import { en } from '../i18n/en'
 import { rowProgressAnnouncement } from '../i18n/rowProgressWords'
 import { useWovenCuff } from './useWovenCuff'
@@ -28,6 +29,9 @@ describe('the cuff woven on the Welcome tile (ticket 1157)', () => {
   it('is the peacock cuff with Row progress on, its rows running left to right, no pass done yet', () => {
     const { woven, done, stop } = cuff()
     expect(seenWayOf(woven.project.value)).toBe('right')
+    // Its Frame lies as its peyote Canvas does, turned a quarter (ticket 1188), so it lies across as it is woven.
+    expect(lieAlike(woven.project.value)).toBe(true)
+    expect(frameAngleOf(woven.project.value)).toBe(90)
     expect(done()).toBe(0)
     expect(rowProgressPosition(woven.project.value).total).toBe(95)
     stop()
