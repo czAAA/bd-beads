@@ -7,6 +7,7 @@ import { footprintOf, frameFootprint } from '../../domain/footprint'
 import { withMargin } from '../../domain/margin'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
 import { nearestQuarterTurn, settledOrientation, tiltOf, turnedOrientation } from '../../domain/canvasOrientation'
+import { frameAngleOf, settledFrameAngle } from '../../domain/table'
 import { placedFrame } from '../../domain/layerWeave'
 import type { KeptView } from '../../domain/keptView'
 import type { OpeningView } from '../../domain/openingAddress'
@@ -29,7 +30,13 @@ export interface PinchStep {
   pan?: Scroll
   turn?: number
   anchor: Scroll
+  /** The layer a twist turns, chosen where the fingers started (ticket 1190): the Canvas when left out. */
+  target?: TwistTarget
 }
+
+/** The layer a two-finger twist turns (ticket 1190): the Frame where both fingers started on its sheet, else the
+ * Canvas. Pan and pinch move both whatever it is. */
+export type TwistTarget = 'canvas' | 'frame'
 
 /** Where a two-finger twist stands (ticket 0709): under the fingers, or easing onto the quarter turn it snaps to after
  * they lifted. The surface holds its drawing and turns it whole while either is set. */
@@ -103,6 +110,9 @@ export interface CanvasViewOptions {
   /** Saves the Canvas's orientation a two-finger twist came to rest at with the Project, and how far its origin moved on
    * the table as it turned about the fingers, in its bead widths (ticket 1188). */
   keepTwist?: (orientation: number, moved: Scroll) => void
+  /** Keeps the angle a twist of the Frame came to rest at (ticket 1190), one Undo step; 'asked' where the Rotate Frame
+   * question comes first: the view then shows it there until `releaseFrameTwist` or `easeFrameBack`. */
+  keepFrameTwist?: (angle: number) => 'kept' | 'asked'
   /** What lies over the drawing area's edges (the Tool pill, ticket 0850): a fit leaves it clear. */
   covered?: () => Insets
   /** The view a Project opens at in place of its fit, this once: the address's (What's inside's Open editor from here,
@@ -152,6 +162,11 @@ export function useCanvasView(
    * Project keeps with the angle, so the Frame, which stays, is laid against the Canvas as it will be. */
   let twistFrom: Scroll | undefined
   const twistPhase = ref<TwistPhase>()
+  /** The layer the twist under way turns, from the step it engages on (ticket 1190). */
+  let twistTarget: TwistTarget | undefined
+  /** The Frame's angle while two fingers twist it, it eases onto where it settles, or the Rotate Frame question waits
+   * (ticket 1190): what the surface shows it at, before the Project keeps it. */
+  const frameTwisting = ref<number>()
   let snapTimer: ReturnType<typeof setTimeout> | undefined
   /** The orientation this view just handed the Project, which it already shows: no refit for it. */
   let settledAt: number | undefined
@@ -497,7 +512,7 @@ export function useCanvasView(
 
   /** Two fingers moved (tickets 0672, 0709): the bead under them follows them, their spread zooms about it and, once
    * the twist has engaged, the Canvas turns about it, in one move of the view. */
-  function pinchStep({ zoom: toZoom, pan, turn, anchor }: PinchStep): void {
+  function pinchStep({ zoom: toZoom, pan, turn, anchor, target }: PinchStep): void {
     stopGlide()
     let at = scroll.value
     const next = toZoom === undefined ? zoom.value : limitZoom(toZoom)
@@ -512,7 +527,13 @@ export function useCanvasView(
       const across = leaning.value.unturned(pan)
       at = { x: at.x - across.x, y: at.y - across.y }
     }
-    if (turn !== undefined) {
+    twistTarget ??= turn === undefined ? undefined : (target ?? 'canvas')
+    if (turn !== undefined && twistTarget === 'frame') {
+      // The Frame turns about its own centre, which stays on the table: only its angle changes.
+      frameTwisting.value = turnedOrientation(frameTwisting.value ?? frameAngleOf(currentProject()!), turn)
+      clearTimeout(snapTimer)
+      twistPhase.value = 'turning'
+    } else if (turn !== undefined) {
       const from = orientation.value
       const to = turnedOrientation(from, turn)
       twistFrom ??= { ...canvasOrigin.value }
@@ -532,6 +553,7 @@ export function useCanvasView(
       pinching = false
       restSoon(0)
     }
+    if (twistTarget === 'frame') return endFrameTwist()
     const from = twisting.value
     if (from === undefined) {
       return
@@ -552,9 +574,53 @@ export function useCanvasView(
     twisting.value = undefined
     twistPhase.value = undefined
     twistFrom = undefined
+    twistTarget = undefined
     const turned = to !== orientationOf(currentProject())
     if (turned) settledAt = to
     if (turned || moved.x !== 0 || moved.y !== 0) options.keepTwist?.(to, moved)
+  }
+
+  /** The fingers lifted off a twist of the Frame (ticket 1190): it eases onto where `settledFrameAngle` puts it (the
+   * surface slides it onto whole Canvas positions there) and the Project keeps it once it has. */
+  function endFrameTwist(): void {
+    const from = frameTwisting.value
+    const project = currentProject()
+    twistTarget = undefined
+    if (from === undefined || !project) return
+    const to = settledFrameAngle(project, from)
+    if (to === from) return settleFrameTwist(to)
+    frameTwisting.value = to
+    twistPhase.value = 'settling'
+    snapTimer = setTimeout(() => settleFrameTwist(to), SNAP_MS)
+  }
+
+  function settleFrameTwist(to: number): void {
+    twistPhase.value = undefined
+    const project = currentProject()
+    if (!project || to === frameAngleOf(project) || options.keepFrameTwist?.(to) !== 'asked') frameTwisting.value = undefined
+  }
+
+  /** The Rotate Frame question a Frame twist waited on was answered and the Project keeps the angle: the Frame is shown
+   * as the Project holds it again. */
+  function releaseFrameTwist(): void {
+    clearTimeout(snapTimer)
+    frameTwisting.value = undefined
+    twistPhase.value = undefined
+  }
+
+  /** The question a Frame twist waited on was answered Cancel (ticket 1190): the Frame eases back to the angle the
+   * Project holds. The surface holds its drawing first, so the ease plays from where the Frame was shown. */
+  function easeFrameBack(): void {
+    if (frameTwisting.value === undefined) return
+    clearTimeout(snapTimer)
+    twistPhase.value = 'turning'
+    const ease = () => {
+      frameTwisting.value = frameAngleOf(currentProject()!)
+      twistPhase.value = 'settling'
+      snapTimer = setTimeout(releaseFrameTwist, SNAP_MS)
+    }
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(ease)
+    else ease()
   }
 
   /** How far the Canvas's origin has moved on the table since the twist began, in its bead widths (ticket 1188): none
@@ -610,6 +676,8 @@ export function useCanvasView(
     twisting.value = undefined
     twistPhase.value = undefined
     twistFrom = undefined
+    twistTarget = undefined
+    frameTwisting.value = undefined
     refit()
   })
   watch(() => orientationOf(currentProject()), (turned) => {
@@ -659,6 +727,10 @@ export function useCanvasView(
     tableScroll,
     twistPhase,
     twistMoved,
+    /** The Frame's angle as a twist shows it, none outside one (ticket 1190). */
+    frameTwist: readonly(frameTwisting),
+    releaseFrameTwist,
+    easeFrameBack,
     turnCanvas,
     pinchStep,
     endTwist,

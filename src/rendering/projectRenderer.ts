@@ -282,13 +282,55 @@ function drawFrameGround(
   // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
   const mark = markLookOf(frameLook, tiles)
   const pattern = !mark.tiles && geometryDrawnAlone(project).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...mark })
-  if (!pattern) {
+  if (pattern) {
+    context.fillStyle = pattern
+    context.imageSmoothingEnabled = true
+    strip(...box)
+    context.imageSmoothingEnabled = false
+  }
+  drawOffShape(context, { project, box, area, color: frameLook.offShape, skip: frameLook.offShape === frameLook.canvas })
+}
+
+/** The part of the Frame's box where it holds no bead position, in the Frame's Off-shape color, over its Background and
+ * marks (ticket 1196): a Custom frame outside its shape, a staggered row's or column's empty half bead. The box with
+ * every position's cell cut out of it, so whatever lays the positions out (a turned Frame, a Custom frame) decides. */
+function drawOffShape(context: DrawingContext, { project, box, area, color, skip }: { project: DrawnProject; box: readonly [number, number, number, number]; area: { left: number; right: number; top: number; bottom: number }; color: string; skip: boolean }): void {
+  const frame = frameOf(project)
+  if (skip || !frame) return
+  const geometry = geometryDrawnAlone(project)
+  // Loom's cells fill its box: nothing is off the shape.
+  if (geometry.grid && describeWeave(frameWeave(project)).shift === 0) return
+  const origin = frameOriginPx(canvasWeave(project), frame)
+  const scale = frameScale(project)
+  const seen = { x: (area.left - origin.x) / scale / CELL_SIZE_PX, y: (area.top - origin.y) / scale / CELL_SIZE_PX, width: (area.right - area.left) / scale / CELL_SIZE_PX, height: (area.bottom - area.top) / scale / CELL_SIZE_PX }
+  const at = (x: number, y: number) => [origin.x + x * scale, origin.y + y * scale] as const
+  const [left, top, right, bottom] = box
+  if (geometry.grid) {
+    drawStaggerEnds(context, { geometry, frame, area, color, box, at, aspect: describeWeave(frameWeave(project)).cellAspect, seen, staggers: describeWeave(frameWeave(project)).staggers })
     return
   }
-  context.fillStyle = pattern
-  context.imageSmoothingEnabled = true
+  context.save()
+  context.beginPath()
+  boxPath(context, left, top, right - left, bottom - top)
+  for (const position of geometry.positionsIn(seen)) {
+    const place = geometry.place(position)
+    if (!place) continue
+    const cell = inGridPx(place.box)
+    const [centreX, centreY] = [cell.x + cell.width / 2, cell.y + cell.height / 2]
+    const [cos, sin] = [Math.cos(place.angle), Math.sin(place.angle)]
+    const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => {
+      const [dx, dy] = [(sx! * cell.width) / 2, (sy! * cell.height) / 2]
+      return at(centreX + dx * cos - dy * sin, centreY + dx * sin + dy * cos)
+    })
+    context.moveTo(...corners[0]!)
+    for (const corner of corners.slice(1)) context.lineTo(...corner)
+    context.closePath()
+  }
+  context.clip('evenodd')
+  context.fillStyle = color
+  const strip = stripIn(context, area)
   strip(...box)
-  context.imageSmoothingEnabled = false
+  context.restore()
 }
 
 // The band of the surface, in device pixels, that a cut across the grid takes, in grid px: rows `top` to `bottom` or
@@ -547,10 +589,43 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space,
     context.moveTo(from.x * CELL_SIZE_PX, from.y * CELL_SIZE_PX)
     context.lineTo(to.x * CELL_SIZE_PX, to.y * CELL_SIZE_PX)
   }
-  context.strokeStyle = look.pieceLine
+  // Off-shape's own color on screen; an export has none and keeps its line (ticket 1196).
+  context.strokeStyle = look.offShape === look.canvas ? look.pieceLine : look.offShape
   context.lineWidth = SEAM_WIDTH_PX
   context.stroke()
   context.restore()
+}
+
+/** A staggered grid's Off-shape: the half bead at each end of a row (brick stitch) or column (peyote), one strip a line, so
+ * a big Frame costs its lines and not its positions (ticket 1196). */
+function drawStaggerEnds(
+  context: DrawingContext,
+  { geometry, frame, area, color, box, at, aspect, seen, staggers }: { geometry: LayerGeometry; frame: { rows: number; columns: number }; area: { left: number; right: number; top: number; bottom: number }; color: string; box: readonly [number, number, number, number]; at: (x: number, y: number) => readonly [number, number]; aspect: number; seen: { x: number; y: number; width: number; height: number }; staggers: 'rows' | 'columns' },
+): void {
+  const strip = stripIn(context, area)
+  const [left, top, right, bottom] = box
+  const cell = (position: GridPosition) => {
+    const own = inGridPx(geometry.place(position)!.box)
+    const [x0, y0] = at(own.x, own.y)
+    const [x1, y1] = at(own.x + own.width, own.y + own.height)
+    return { left: x0, top: y0, right: x1, bottom: y1 }
+  }
+  context.fillStyle = color
+  if (staggers === 'rows') {
+    const [from, to] = [Math.max(0, Math.floor(seen.y / aspect) - 1), Math.min(frame.rows - 1, Math.ceil((seen.y + seen.height) / aspect) + 1)]
+    for (let row = from; row <= to; row += 1) {
+      const [first, last] = [cell({ row, column: 0 }), cell({ row, column: frame.columns - 1 })]
+      strip(left, first.top, first.left, first.bottom)
+      strip(last.right, last.top, right, last.bottom)
+    }
+  } else {
+    const [from, to] = [Math.max(0, Math.floor(seen.x) - 1), Math.min(frame.columns - 1, Math.ceil(seen.x + seen.width) + 1)]
+    for (let column = from; column <= to; column += 1) {
+      const [first, last] = [cell({ row: 0, column }), cell({ row: frame.rows - 1, column })]
+      strip(first.left, top, first.right, first.top)
+      strip(last.left, last.bottom, last.right, bottom)
+    }
+  }
 }
 
 /** How Row progress shows a Frame bead (tickets 352, 434): its color lit in the current row, faded in a finished one

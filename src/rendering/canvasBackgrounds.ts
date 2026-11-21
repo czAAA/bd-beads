@@ -101,6 +101,16 @@ function customBackground(color: string): CanvasBackground {
   }
 }
 
+/** How far a Frame Background darker than the `frame-off-shape` token is taken toward ink for its own Off-shape. */
+const OFF_SHAPE_STEP = 0.5
+
+/** The Off-shape color on a Frame Background (ticket 1196): the theme's token, which every listed Background is lighter
+ * than, or, for a Custom color as dark as the token or darker, that color darkened itself. */
+function offShapeOn(token: string, background: string): string {
+  const own = channelsOf(background)
+  return relativeLuminance(own) > relativeLuminance(channelsOf(token)) ? token : toHex(mix(own, BLACK, OFF_SHAPE_STEP))
+}
+
 /** The margin color as stored (ticket 0656, MarginSheet card): Auto, a position in the theme's list as for the Canvas
  * color, or `custom` for the person's own. */
 export type MarginChoice = 'auto' | CanvasChoice
@@ -136,6 +146,7 @@ export function canvasTheme(theme: ResolvedTheme, choice: CanvasChoice, customCo
     look.positionMark = background.look.emptyBead
     look.emptyBead = background.look.emptyBead
   }
+  look.offShape = offShapeOn(base.offShape, background.color)
   look.margin = marginLookOn(marginColorOf(theme, choice, customColor, margin), look)
   return look
 }

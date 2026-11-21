@@ -1,7 +1,7 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { ownPoint } from '../ui/cssZoom'
 import type { Scroll } from '../../rendering/surfaceView'
-import type { PinchStep } from './useCanvasView'
+import type { PinchStep, TwistTarget } from './useCanvasView'
 
 interface PinchPanDeps {
   zoom: () => number
@@ -12,7 +12,12 @@ interface PinchPanDeps {
   cancelStroke: () => void
   /** Every finger is up: the twist comes to rest, about where the fingers last were (a point of the viewport). */
   endTwist: (anchor: Scroll) => void
+  /** The layer a twist turns, from where the two fingers went down (ticket 1190); the Canvas when left out. */
+  twistTarget?: (first: PointerPlace, second: PointerPlace) => TwistTarget
 }
+
+/** Where a finger went down, in client px. */
+type PointerPlace = Pick<PointerEvent, 'clientX' | 'clientY'>
 
 /** How far the fingers turn since landing before the turn is a twist and not the wobble of a pinch or pan (ticket
  * 0709): about what the popular touch apps ask. */
@@ -41,6 +46,9 @@ function shortest(degrees: number): number {
 // the surface hears nothing until all are up. Zoom follows the spread with no steps; touch only.
 export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDeps) {
   const touches = new Map<number, Scroll>()
+  /** Where each finger on the screen went down: the twist's target is chosen from them. */
+  const downs = new Map<number, PointerPlace>()
+  let target: TwistTarget = 'canvas'
   let gesturing = false
   let twisting = false
   let startSpread = 0
@@ -56,8 +64,13 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
   function onDown(event: PointerEvent) {
     if (event.pointerType !== 'touch') return
     touches.set(event.pointerId, ownPoint(scrollEl.value, event))
+    downs.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY })
     if (touches.size === 2) {
-      if (!gesturing) deps.cancelStroke()
+      if (!gesturing) {
+        deps.cancelStroke()
+        const [first, second] = [...downs.values()] as [PointerPlace, PointerPlace]
+        target = deps.twistTarget?.(first, second) ?? 'canvas'
+      }
       // A finger put down again mid-gesture starts the spread, the middle and the angle afresh, so nothing jumps.
       const [a, b] = firstTwo()
       gesturing = true
@@ -90,11 +103,12 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     if (twisting) lastAngle = turned
     // The point between the fingers stays under them as the zoom changes; moving them together moves the canvas with
     // them.
-    deps.pinch({ zoom: startZoom * (distance(a, b) / startSpread), pan: { x: mid.x - lastMid.x, y: mid.y - lastMid.y }, turn, anchor: mid })
+    deps.pinch({ zoom: startZoom * (distance(a, b) / startSpread), pan: { x: mid.x - lastMid.x, y: mid.y - lastMid.y }, turn, anchor: mid, target })
     lastMid = mid
   }
 
   function onEnd(event: PointerEvent) {
+    downs.delete(event.pointerId)
     if (!touches.delete(event.pointerId)) return
     if (touches.size === 0 && gesturing) {
       gesturing = false
@@ -116,6 +130,7 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     el.removeEventListener('pointerup', onEnd, true)
     el.removeEventListener('pointercancel', onEnd, true)
     touches.clear()
+    downs.clear()
     if (gesturing) deps.endTwist(lastMid)
     gesturing = false
     twisting = false

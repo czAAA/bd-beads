@@ -2,19 +2,19 @@ import type { GridPosition } from './grid'
 import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import type { QuarterTurns } from './frameShape'
 import { laidSize } from './frameOrientation'
-import { turnedOrientation } from './canvasOrientation'
+import { nearestQuarterTurn, turnedOrientation } from './canvasOrientation'
 import { snapColumn, snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, canvasWeave, frameWeave } from './layerWeave'
-import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, withLayer } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, withFrameFields, withLayer } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
-import { touch, type Project } from './project'
+import { touch, type FrameLayer, type Project } from './project'
 import { rowProgressStarted } from './rowProgress'
 import { turnedWithFrame } from './rowWays'
 import type { WovenChoice } from './wovenLines'
-import { withCanvasTurned } from './framePlacement'
-import type { TablePoint } from './table'
+import { withCanvasTurned, withFrameTurnedTo } from './framePlacement'
+import { frameQuarterTurnOf, type TablePoint } from './table'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectableOn, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
@@ -203,12 +203,25 @@ export function rotateFrame(project: Project, woven: WovenChoice = 'keep'): Proj
   // Upright again it starts where a Frame may (ticket 1016): a resize while turned can leave it between.
   const canvas = canvasWeave(project)
   const at = turns ? { row, column } : { row: snapRow(canvas, row), column: snapColumn(canvas, column) }
-  // With no pass done Row progress is left as it is, so the way sticks as seen (spec 1182). With a pass done, kept, the
-  // rows turn with the Frame, the way and every pointer's slot a quarter on; started over, every pointer goes back to the
-  // first pass and the way stays as seen (ticket 1184).
-  const started = rowProgressStarted(project)
-  const rowProgress = !started ? frame.rowProgress : woven === 'keep' ? turnedWithFrame(frame.rowProgress, 1) : { way: frame.rowProgress.way }
-  return touchFrameSheet(project, { ...turned, ...at, rowProgress })
+  return touchFrameSheet(project, { ...turned, ...at, rowProgress: turnedRowProgress(project, 1, woven) })
+}
+
+/** The Frame's Row progress once it has turned `turns` quarters clockwise as seen (spec 1182): with no pass done left as
+ * it is, so the way sticks as seen; with a pass done, kept, the way and every pointer's slot turned with the Frame;
+ * started over, every pointer back at the first pass, the way as seen (ticket 1184). */
+function turnedRowProgress(project: Project, turns: number, woven: WovenChoice): FrameLayer['rowProgress'] {
+  const { rowProgress } = frameOf(project)!
+  if (turns === 0 || !rowProgressStarted(project)) return rowProgress
+  return woven === 'keep' ? turnedWithFrame(rowProgress, turns) : { way: rowProgress.way }
+}
+
+/** A two-finger twist of the Frame come to rest at `angle` (ticket 1190, spec 1182): the Frame turned about its own
+ * centre (`withFrameTurnedTo`), one Undo step. Settled on another quarter turn with a pass done, `woven` answers
+ * `twistFrameQuestion` as it answers Rotate Frame's. No Frame: undefined. */
+export function twistFrameTo(project: Project, angle: number, woven: WovenChoice = 'keep'): Project | undefined {
+  if (!frameOf(project)) return undefined
+  const turns = ((nearestQuarterTurn(angle) - frameQuarterTurnOf(project) + 360) / 90) % 4
+  return touch(withFrameFields(withFrameTurnedTo(project, angle), { rowProgress: turnedRowProgress(project, turns, woven) }), {})
 }
 
 /** Rotate canvas (ticket 471): the Canvas a quarter turn clockwise further from whatever angle it is at (ticket 0672),

@@ -34,6 +34,13 @@ describe('the Canvas orientation (ticket 0672)', () => {
     expect(settledOrientation(15)).toBe(15)
     expect(settledOrientation(135)).toBe(135)
   })
+
+  it('snaps to the first base\'s quarter turns it is within 10° of, the same rule for every layer (ticket 1190)', () => {
+    expect(settledOrientation(50, [45, 0])).toBe(45)
+    expect(settledOrientation(140, [45, 0])).toBe(135)
+    expect(settledOrientation(354, [45, 0])).toBe(0)
+    expect(settledOrientation(70, [45, 0])).toBe(70)
+  })
 })
 
 describe('a turn shown as it goes (ticket 1082)', () => {
