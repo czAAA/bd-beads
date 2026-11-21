@@ -9,7 +9,9 @@ export function flatColorsPicture(): PixelData {
   return { width, height, data }
 }
 
-/** Waits for the picture the wizard was opened with to be read: its result line shows. */
+/** Waits for the picture the wizard was opened with to be read and its colors reduced (off the main thread, ticket
+ * 1163): its result line shows and the foot says it is no longer reducing. */
 export async function pictureSet(root: HTMLElement): Promise<void> {
-  for (let tries = 0; tries < 50 && !root.querySelector('[data-testid="convert-result"]'); tries += 1) await new Promise((done) => setTimeout(done, 20))
+  const settled = () => root.querySelector('[data-testid="convert-result"]') && !root.querySelector('[data-reducing]')
+  for (let tries = 0; tries < 50 && !settled(); tries += 1) await new Promise((done) => setTimeout(done, 20))
 }

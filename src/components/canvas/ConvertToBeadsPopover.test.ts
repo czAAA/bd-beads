@@ -30,6 +30,14 @@ function mountPopover(props: Record<string, unknown> = {}) {
 }
 
 describe('ConvertToBeadsPopover (ReferenceImage card, ticket 0883)', () => {
+  it('waits for the colors to be found: Convert is off while they are reduced (ticket 1163)', async () => {
+    const wrapper = mountPopover({ reducing: true })
+    expect(wrapper.get('[data-testid="convert-to-beads-convert"]').attributes('aria-disabled')).toBe('true')
+    await wrapper.setProps({ reducing: false })
+    expect(wrapper.get('[data-testid="convert-to-beads-convert"]').attributes('aria-disabled')).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it('is a dialog with its size and color count, its first control focused', () => {
     const wrapper = mountPopover()
     const dialog = wrapper.get('[data-testid="convert-to-beads"]')

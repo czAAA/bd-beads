@@ -9,6 +9,8 @@ export interface ConvertTranslations {
   convertImage: {
     /** While a chosen picture is read (Loading card). */
     readingPicture: string
+    /** While the picture's colors are reduced, past a blink (ticket 1163; Loading card). */
+    findingColors: string
     /** The New Project form's button that opens the wizard. */
     fileLabel: string
     /** The limits, shown as helper text under the file input and repeated as its `title`. */

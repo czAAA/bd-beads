@@ -4,6 +4,7 @@ import { useConvertFootLines } from '../../composables/import/useConvertFootLine
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import LoadingState from '../ui/LoadingState.vue'
 
 // The converter column's foot (ConvertImage card DS-1, ticket 0897): the Project's name, asked once on the New Project
 // form, the result in three lines, and Create Project (Add to Canvas from a reference image), on screen from the first
@@ -17,7 +18,8 @@ const { lines, heard, ready, buttonLabel } = useConvertFootLines()
 </script>
 
 <template>
-  <div class="convert-foot" role="region" :aria-label="words.resultLabel" data-testid="convert-foot">
+  <div class="convert-foot" role="region" :aria-label="words.resultLabel" data-testid="convert-foot" :data-reducing="wizard.reducing.value || undefined">
+    <LoadingState v-if="wizard.reducing.value" compact :text="t.convertImage.findingColors" data-testid="convert-finding-colors" />
     <template v-if="lines">
       <p class="convert-foot__project" data-testid="convert-project-line">
         <span class="convert-foot__label">{{ wizard.addsToCanvas ? words.footAddsTo : words.footProject }}</span> <span class="convert-foot__name">{{ wizard.projectName.value }}</span>
@@ -36,7 +38,7 @@ const { lines, heard, ready, buttonLabel } = useConvertFootLines()
     <AppButton
       variant="primary"
       class="convert-foot__create"
-      :disabled="!ready"
+      :disabled="!ready || wizard.reducing.value"
       :disabled-body="words.addPictureFirst"
       :label="buttonLabel"
       data-testid="convert-image-create"

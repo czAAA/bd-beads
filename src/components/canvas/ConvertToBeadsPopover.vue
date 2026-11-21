@@ -12,6 +12,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import InfoButton from '../ui/InfoButton.vue'
+import LoadingState from '../ui/LoadingState.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 
@@ -37,6 +38,8 @@ const props = defineProps<{
   convertLabel: string
   replacedLabel?: string
   ready: boolean
+  /** Whether the colors are being reduced: a loading state shows past a blink, and Convert waits (ticket 1163). */
+  reducing?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -137,10 +140,11 @@ onMounted(() => rootEl.value?.querySelector<HTMLElement>('button, [tabindex="0"]
       <AppSwitch v-model="hideModel" :label="words.hideAfter" data-testid="convert-to-beads-hide" />
     </div>
 
+    <LoadingState v-if="reducing" compact :text="t.convertImage.findingColors" />
     <p v-if="replacedLabel" class="convert-popover__replaces" data-testid="convert-to-beads-replaces">{{ replacedLabel }}</p>
     <div class="convert-popover__actions">
       <AppButton trailing-icon="arrow-right" data-testid="convert-to-beads-all-settings" @click="emit('all-settings')">{{ words.allSettings }}</AppButton>
-      <AppButton variant="primary" icon="convert-to-beads" :disabled="!ready" data-testid="convert-to-beads-convert" @click="emit('convert')">{{ convertLabel }}</AppButton>
+      <AppButton variant="primary" icon="convert-to-beads" :disabled="!ready || reducing" data-testid="convert-to-beads-convert" @click="emit('convert')">{{ convertLabel }}</AppButton>
     </div>
   </div>
 </template>

@@ -3,6 +3,7 @@ import type { ConvertTranslations } from '../translations/convert'
 export const convert: ConvertTranslations = {
   convertImage: {
     readingPicture: 'Leyendo la imagen',
+    findingColors: 'Buscando los colores',
     fileLabel: 'Convertir imagen',
     limitsHint: '{formats}, hasta {maxSizeMb} MB',
     createButton: 'Crear proyecto',
