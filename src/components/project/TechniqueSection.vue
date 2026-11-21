@@ -16,6 +16,8 @@ const props = defineProps<{
   /** The settings' values by id; a setting with none shows its default. */
   settings: TechniqueSettings
   disabled?: boolean
+  /** The picker stays on while the settings are off: a Frame Technique change asks once a pass is done (ticket 1184). */
+  techniqueOpen?: boolean
   techniqueDisabledBody?: string
   /** The prefix of the controls' test ids. */
   testid: string
@@ -49,8 +51,8 @@ const steppers = computed(() =>
       v-model="technique"
       :label="t.form.techniqueLabel"
       :options="options"
-      :disabled="disabled"
-      :disabled-body="disabled ? techniqueDisabledBody : undefined"
+      :disabled="disabled && !techniqueOpen"
+      :disabled-body="disabled && !techniqueOpen ? techniqueDisabledBody : undefined"
       :info="info"
       :data-testid="`${testid}-technique`"
     />

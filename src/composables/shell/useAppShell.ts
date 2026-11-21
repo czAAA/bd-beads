@@ -860,7 +860,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   })
 
   /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0052, 0066). */
-  const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, messages })
+  const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, messages, locale: () => locale.value, dialogs })
   const liftFrameFlow = useLiftFrameFlow({ edit, currentProject, announce, messages })
 
   /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0052). */
@@ -1481,6 +1481,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
       removeLinePrompt: removeLine.removeLinePrompt,
       onConfirmRemoveLine: removeLine.confirmRemoveLine,
       onCancelRemoveLine: removeLine.cancelRemoveLine,
+      rotateFramePrompt: rotateFrameFlow.rotateFramePrompt,
+      onStartOverRotateFrame: rotateFrameFlow.startOverRotateFrame,
+      onKeepRowsRotateFrame: rotateFrameFlow.keepRowsRotateFrame,
+      onCancelRotateFrame: rotateFrameFlow.cancelRotateFrame,
+      techniqueChangePrompt: frameFlow.techniqueChangePrompt,
+      onStartOverTechniqueChange: frameFlow.startOverTechniqueChange,
+      onKeepRowsTechniqueChange: frameFlow.keepRowsTechniqueChange,
+      onCancelTechniqueChange: frameFlow.cancelTechniqueChange,
       onConfirmReplaceFrame: frameFlow.confirmReplace,
       onCancelReplaceFrame: frameFlow.cancelReplace,
       pendingColorRemovalHex: removeColor.pendingColorRemovalHex,

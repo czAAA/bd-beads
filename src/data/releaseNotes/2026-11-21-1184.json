@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "new",
+  "line": {
+    "en": "With rows marked done, Rotate Frame and the Frame's Technique ask whether to start over or keep the rows",
+    "ru": "Когда ряды отмечены как готовые, поворот рамки и смена её техники спрашивают, начать заново или оставить ряды",
+    "uk": "Коли ряди позначено як готові, поворот рамки й зміна її техніки питають, почати заново чи залишити ряди",
+    "be": "Калі рады пазначаны як гатовыя, паварот рамкі і змена яе тэхнікі пытаюцца, пачаць нанова ці пакінуць рады",
+    "zh": "有行已标记完成时，旋转边框和更改边框的编织技法会先问你重新开始还是保留这些行",
+    "es": "Con filas marcadas como terminadas, girar el marco y cambiar su técnica preguntan si empezar de nuevo o conservar las filas",
+    "pl": "Gdy rzędy są oznaczone jako gotowe, obrót ramki i zmiana jej techniki pytają, czy zacząć od nowa, czy zachować rzędy"
+  }
+}

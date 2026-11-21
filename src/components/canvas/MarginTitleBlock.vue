@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { computeColorQuantities } from '../../domain/beadQuantities'
 import { frameWeave } from '../../domain/layerWeave'
+import { rowProgressStarted } from '../../domain/rowProgress'
 import { MAX_MAKER_NAME } from '../../domain/makerName'
 import { projectPalette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
@@ -49,7 +50,8 @@ const foldAction = controlAction('fold-title-block')
 const frame = computed(() => frameOf(props.project)!)
 const nameLine = computed(() => frameNameLine(t.value, frame.value.name))
 
-/** The Frame's Technique, the one its rows are woven in; locked with its reason once a pass is done. */
+/** The Frame's Technique, the one its rows are woven in; once a pass is done a change asks first (ticket 1184), and only
+ * a Custom frame's is locked, with its reason. */
 const technique = computed(() => frameWeave(props.project).technique)
 const options = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
 const techniqueLocked = computed(() => !techniqueAction.enabled?.(deps.value))
@@ -77,7 +79,9 @@ const makerLine = computed(() => ({
   testid: 'margin-maker',
 }))
 
-/** A cell per setting the Frame's Technique describes (ticket 0698), its value and, locked with the Technique, its
+/** Whether the Technique's settings wait: once a pass is done, as a Drop moves the passes. */
+const settingsLocked = computed(() => rowProgressStarted(props.project))
+/** A cell per setting the Frame's Technique describes (ticket 0698), its value and, locked once a pass is done, its
  * reason: none named here, so a Technique given a setting shows it. */
 const settings = computed(() => {
   const weave = frameWeave(props.project)
@@ -85,7 +89,7 @@ const settings = computed(() => {
   return describeWeave(weave).settings.map((setting) => ({
     setting,
     value: values[setting.id]!,
-    disabledBody: techniqueLocked.value ? weaveSettingWords(t.value, setting).locked : undefined,
+    disabledBody: settingsLocked.value ? weaveSettingWords(t.value, setting).locked : undefined,
   }))
 })
 /** The full form's grid: the setting cells sit after the Technique in row 1, the legend widens under them in row 2. */

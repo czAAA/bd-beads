@@ -7,6 +7,7 @@ import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateFrameFlow } from './useRotateFrameFlow'
+import { useDialogs } from '../shell/useDialogs'
 import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
 import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
 
@@ -26,6 +27,8 @@ function setup(project: Project | null = framed) {
     currentProject: harness.currentProject,
     announce: vi.fn(),
     messages: () => en,
+    locale: () => 'en' as const,
+    dialogs: useDialogs(),
   }
   return { deps, harness, ...useRotateFrameFlow(deps) }
 }
@@ -67,12 +70,36 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     expect(beadsOfLayer(harness.project, 'canvas')).toBe(beadsOfLayer(framed, 'canvas'))
   })
 
-  it('turns a Frame whose rows are marked done without asking, its rows turned with it, and one Undo brings it back (ticket 0647)', () => {
+  it('asks first once a row is marked done, and Cancel leaves the Project as it was (ticket 1184)', () => {
     const woven = moveToRow(framed, 1)
-    const { deps, harness, onRotateFrame } = setup(woven)
+    const { deps, harness, onRotateFrame, rotateFramePrompt, cancelRotateFrame, frameTurns } = setup(woven)
     onRotateFrame()
 
+    expect(deps.dialogs.open.value).toBe('rotate-frame')
+    expect(rotateFramePrompt.value).toEqual({
+      title: 'Turn the Frame?',
+      message: '1 row is marked done, woven top to bottom. This can be undone.',
+      startOver: 'Start over top to bottom',
+      keep: 'Keep the 1 row',
+    })
+    expect(harness.project).toBe(woven)
+
+    cancelRotateFrame()
+    expect(deps.dialogs.open.value).toBeUndefined()
+    expect(harness.project).toBe(woven)
+    expect(harness.history.canUndo.value).toBe(false)
+    expect(frameTurns.value).toBe(0)
+    expect(deps.announce).not.toHaveBeenCalled()
+  })
+
+  it('keeps the rows: the Frame turns with its rows, and one Undo brings it back (tickets 0647, 1184)', () => {
+    const woven = moveToRow(framed, 1)
+    const { deps, harness, onRotateFrame, keepRowsRotateFrame } = setup(woven)
+    onRotateFrame()
+    keepRowsRotateFrame()
+
     // Row 1 is done: the same beads stay finished, the red bead in it kept, not trimmed.
+    expect(deps.dialogs.open.value).toBeUndefined()
     expect(frameOf(harness.project)).toMatchObject({ quarterTurns: 1 })
     expect(rowProgressOf(harness.project)).toEqual(turnedWithFrame(rowProgressOf(woven), 1))
     expect(colorAt(frameOf(harness.project)!.beads, 0, 0)).toBe(RED)
@@ -81,6 +108,20 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     harness.history.onUndo()
     expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(woven))
     expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
+  })
+
+  it('starts over: the Frame turns, its progress back at the first row in the way as seen, one Undo step (ticket 1184)', () => {
+    const woven = moveToRow(framed, 1)
+    const { harness, onRotateFrame, startOverRotateFrame } = setup(woven)
+    onRotateFrame()
+    startOverRotateFrame()
+
+    expect(frameOf(harness.project)).toMatchObject({ quarterTurns: 1 })
+    expect(rowProgressOf(harness.project)).toEqual({ way: 'down' })
+
+    harness.history.onUndo()
+    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
+    expect(harness.history.canUndo.value).toBe(false)
   })
 
   it('does nothing without a Frame or without a Project', () => {

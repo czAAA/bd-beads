@@ -105,6 +105,20 @@ export const frame: FrameTranslations = {
     replaceFrame: '替换边框',
     replaceConfirmTitle: '替换边框？',
     replaceConfirmMessage: '边框里的珠子会随它一起移除。此操作可以撤销。',
+    wovenAsk: {
+      rotateTitle: '旋转边框？',
+      techniqueTitle: '改为{technique}？',
+      rowsDone: {
+        other: '已有 {count} 行标记为完成，编织方向{way}。此操作可以撤销。',
+      },
+      columnsDone: {
+        other: '已有 {count} 列标记为完成，编织方向{way}。此操作可以撤销。',
+      },
+      startOverWay: '{way}重新开始',
+      startOverTechnique: '按{technique}重新开始',
+      keepRows: { other: '保留这 {count} 行' },
+      keepColumns: { other: '保留这 {count} 列' },
+    },
     sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: '边框已设置，宽 {width}，高 {height}',
     announceRemoved: '边框已移除',

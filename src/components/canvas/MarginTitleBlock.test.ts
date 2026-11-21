@@ -97,12 +97,12 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     expect(wrapper.emitted('set-technique')).toEqual([['peyote']])
   })
 
-  it('locks the Technique once a row is done, saying why', async () => {
+  it('keeps the Technique on once a row is done, as a change asks first (ticket 1184)', async () => {
     const wrapper = mountBlock(moveToRow(framed(), 1))
     const pencil = wrapper.get('[data-testid="margin-technique-picker"] button[aria-haspopup]')
-    expect(pencil.attributes('aria-disabled')).toBe('true')
+    expect(pencil.attributes('aria-disabled')).toBeUndefined()
     await pencil.trigger('click')
-    expect(wrapper.find('[role="menuitemradio"]').exists()).toBe(false)
+    expect(wrapper.find('[role="menuitemradio"]').exists()).toBe(true)
   })
 
   it('letters its legend with each color\'s Swatch letter, at most 8, then "+n"', () => {

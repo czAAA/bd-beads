@@ -4,6 +4,7 @@ import type { Layer } from '../../domain/grid'
 import { frameOf, layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { rowProgressStarted } from '../../domain/rowProgress'
+import { frameTechniqueWaits } from '../../domain/wovenLines'
 import { techniqueName } from '../../i18n/techniqueName'
 import type { Translations } from '../../i18n/translations'
 
@@ -21,6 +22,7 @@ export function layerSettingsOf(project: Project, layer: Layer) {
     bead,
     ...(frame?.shape ? { frame } : {}),
     locked: !!frame && rowProgressStarted(project),
+    techniqueOpen: !!frame && !frameTechniqueWaits(project),
   }
 }
 

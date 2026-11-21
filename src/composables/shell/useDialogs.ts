@@ -6,6 +6,8 @@ type DialogId =
   | 'reset-progress'
   | 'remove-frame'
   | 'remove-line'
+  | 'rotate-frame'
+  | 'technique-change'
   | 'replace-frame'
   | 'remove-color'
   | 'remove-all-colors'

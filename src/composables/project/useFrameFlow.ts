@@ -36,6 +36,8 @@ import type { Edit, EditFn } from './useEdit'
 import type { OpenPanel } from '../shell/openPanel'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
+import { techniqueChangeQuestion, type TechniqueChangeQuestion, type WovenChoice } from '../../domain/wovenLines'
+import { wovenAskPrompt } from './wovenAskPrompt'
 
 export interface FrameFlowDeps {
   currentProject: () => Project | undefined
@@ -212,7 +214,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return true
   }
 
-  function applySwitch(layer: Layer, technique: Technique, values: TechniqueSettings): void {
+  function applySwitch(layer: Layer, technique: Technique, values: TechniqueSettings, woven?: WovenChoice): void {
     const project = deps.currentProject()
     if (!project) return
     const before = layerWeave(project, layer)
@@ -226,7 +228,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       return fitted.project
     }
     const outcome =
-      layer === 'frame' ? deps.edit('frame', (current) => changeFrame(current, change)) : deps.edit('exempt', rewoven)
+      layer === 'frame' ? deps.edit('frame', (current) => changeFrame(current, woven ? { ...change, woven } : change)) : deps.edit('exempt', rewoven)
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
     if (growth) deps.showToast('mirror-grown', mirrorGrownMessage(t, deps.locale(), mirrorSettingOf(deps.currentProject()!), growth), 'info')
@@ -241,8 +243,36 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (changed) deps.announce(fillBlanks(weaveSettingWords(t, changed).changed, { count: values[changed.id] ?? changed.default }))
   }
 
+  /** The question a change of the Frame's Technique asks once a pass is done (ticket 1184), and the change it waits on. */
+  const techniqueQuestion = dialogs.question<TechniqueChangeQuestion>('technique-change')
+  let pendingTechnique: { technique: Technique; values: TechniqueSettings } | undefined
+
+  /** An answer to the question: the Frame is woven in the new Technique, its rows started over or kept, one Undo step. */
+  function answerTechniqueChange(woven: WovenChoice): void {
+    const pending = pendingTechnique
+    pendingTechnique = undefined
+    techniqueQuestion.value = undefined
+    if (pending) applySwitch('frame', pending.technique, pending.values, woven)
+  }
+
+  /** The question answered Cancel: the Frame keeps its Technique and its rows. */
+  function cancelTechniqueChange(): void {
+    pendingTechnique = undefined
+    techniqueQuestion.value = undefined
+  }
+
+  /** What the Technique change dialog says while it is asked. */
+  const techniqueChangePrompt = computed(() => {
+    const asked = techniqueQuestion.value
+    if (!asked) return undefined
+    const t = deps.messages()
+    const technique = techniqueName(t, asked.technique)
+    const words = t.frame.wovenAsk
+    return wovenAskPrompt(t, deps.locale(), asked, fillBlanks(words.techniqueTitle, { technique }), fillBlanks(words.startOverTechnique, { technique }))
+  })
+
   /** Changes a layer's Technique or one of its settings (tickets 507, 0626, ADR 0038): at once, as every bead keeps its
-   * row and column. */
+   * row and column; the Frame's Technique asks first once a pass is done (ticket 1184). */
   function changeWeave(layer: Layer, change: { technique: Technique } | { setting: string; value: number }): void {
     const project = deps.currentProject()
     if (!project || (layer === 'frame' && !frameOf(project))) return
@@ -253,16 +283,23 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const values = 'setting' in change ? weaveSettings({ technique, techniqueSettings: { ...held, [change.setting]: change.value } }) : held
     if (sameWeave(current, switchedWeave(current, technique, values))) return
     if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
+    const asked = layer === 'frame' ? techniqueChangeQuestion(project, technique) : undefined
+    if (asked) {
+      pendingTechnique = { technique, values }
+      techniqueQuestion.value = asked
+      return
+    }
     applySwitch(layer, technique, values)
   }
 
-  /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, once a pass is done not at all. */
+  /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, asking first once a pass is
+   * done (ticket 1184). */
   function setTechnique(technique: Technique): void {
     changeWeave('frame', { technique })
   }
 
   /** Weaves a layer in another Technique from its Layer settings (tickets 492, 507, 0670): the Canvas's any time, since
-   * Row progress belongs to the Frame, the Frame's not once a pass is done; one Undo step. */
+   * Row progress belongs to the Frame, the Frame's asking first once a pass is done (ticket 1184); one Undo step. */
   function setLayerTechnique(layer: Layer, technique: Technique): void {
     changeWeave(layer, { technique })
   }
@@ -516,6 +553,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setTechnique,
     setLayerTechnique,
     setWeaveSetting,
+    techniqueChangePrompt,
+    startOverTechniqueChange: () => answerTechniqueChange('start-over'),
+    keepRowsTechniqueChange: () => answerTechniqueChange('keep'),
+    cancelTechniqueChange,
     fit,
     setTo,
     remove,

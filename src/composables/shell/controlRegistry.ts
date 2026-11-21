@@ -5,6 +5,7 @@ import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/fra
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
 import { hasCanvasBeads, hasProjectBeads } from '../../domain/layerBeads'
 import { rowProgressOn, rowProgressStarted } from '../../domain/rowProgress'
+import { frameTechniqueWaits } from '../../domain/wovenLines'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
@@ -646,7 +647,11 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('change-technique', (t) => t.form.techniqueLabel, 'canvas', {
     body: (t) => t.tooltips.changeTechnique,
-    enabled: (deps: ControlDeps) => !frameLocked(deps),
+    // Once a pass is done it asks first (ticket 1184); only a Custom frame's waits.
+    enabled: (deps: ControlDeps) => {
+      const project = deps.activeProject()
+      return !project || !frameTechniqueWaits(project)
+    },
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedTechnique,
   }),
   unkeyed('fit-to-drawing', (t) => t.frame.fitToDrawing, 'canvas', {
