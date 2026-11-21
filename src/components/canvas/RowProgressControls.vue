@@ -226,7 +226,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
       @click="emit('reset-progress')"
     />
     <p v-else-if="item === 'position'" class="row-progress__position row-progress__phone-hide" :data-testid="`${testid}-position`">
-      <span class="row-progress__row">{{ customPosition?.label ?? `${t.rowProgress.positionLabel} ${shownRow}` }}</span>
+      <span class="row-progress__row">{{ customPosition?.label ?? `${columnWise ? t.rowProgress.columnLabel : t.rowProgress.positionLabel} ${shownRow}` }}</span>
       {{ ' ' }}
       <span class="row-progress__of">{{
         customPosition?.of ?? fillBlanks(t.rowProgress.ofTotal, { total: position.total, direction: directionLabel })

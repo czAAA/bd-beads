@@ -17,6 +17,12 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'HomePage with Projects saved', texts: ['Бесплатный аккаунт'], at: { longest: [1900, 1280, 1024, 844, 820, 360, 320] }, fixedBy: '231' },
   { case: 'HomePage with Projects saved', texts: ['Без аккаунта'], at: { longest: [844, 820] }, fixedBy: '231' },
   { case: 'HomePage with Projects saved', texts: ['Три способа работать'], at: { longest: [390, 360, 320] }, fixedBy: '231' },
+  // The noun follows the screen (ticket 1183): the Welcome cuff, woven left to right, and the editor's peyote bar say columns.
+  { case: 'HomePage', texts: ['Назад на стовпець', 'Columna terminada'], at: { longest: [360, 320] }, fixedBy: '1191' },
+  { case: 'HomePage', texts: ['Columna terminada'], at: { longest: [1280] }, fixedBy: '1191' },
+  { case: 'HomePage', texts: ['Back a column'], at: { en: [320] }, fixedBy: '1191', borderline: true },
+  // Only the phone test's page with Projects saved shows the cuff whole at 360px; the fit test's section run doesn't.
+  { case: 'HomePage with Projects saved', texts: ['Назад на стовпець', 'Columna terminada'], at: { longest: [360] }, fixedBy: '1191', borderline: true },
 ]
 
 const quoted = (text: string) => `"${text}"`
