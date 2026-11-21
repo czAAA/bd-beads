@@ -10,7 +10,9 @@ import { surfaceView } from '../../src/rendering/surfaceView'
 import { LIGHT_THEME, satinCentre } from '../../src/rendering/beadLook'
 import { tileColorOf } from '../../src/rendering/tonalTiles'
 import { differingBlocks } from './imageDiff'
-import { beadCentre } from './projects'
+import { beadCentre, frameShift } from './projects'
+import { withLaidTurn } from '../../src/domain/framePlacement'
+import { placedFrame } from '../../src/domain/layerWeave'
 import { type Region } from '../../src/rendering/surfaceView'
 import { canvasOf, frameOf, quarterTurnOf } from '../../src/domain/layerRecord'
 
@@ -44,7 +46,11 @@ const CURRENT_ROW_LIFT = 0.1
 /** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at
  * 50% over the Canvas; the current row's are 10% brighter; a painted one carries its satin light there (ticket 1003).
  * Out of the draft look an empty one is a tonal tile, which Row progress leaves as it is (ticket 1001). */
-function expectedCentre(project: Project, row: number, column: number, satin: boolean): [number, number, number] {
+function expectedCentre(shown: Project, row: number, column: number, satin: boolean): [number, number, number] {
+  // The Frame as it is drawn, at its own quarter turn on a Canvas laid under it (ticket 1188): its beads by position.
+  const project = withLaidTurn(shown)
+  const at = frameOf(project) ? { row: row + frameOf(project)!.row, column: column + frameOf(project)!.column } : { row, column }
+  ;[row, column] = [at.row, at.column]
   const color = beadColorAt(project, row, column)
   if (color === null && satin) return rgb(tileColorOf(LIGHT_THEME.canvas))
   const flat = flatCentre(project, row, column, rgb(color ?? LIGHT_THEME.emptyBead))
@@ -128,8 +134,13 @@ export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 
 /** The pixels the Project's Frame covers on screen, from the Project's corner: turned and zoomed, to whole pixels. */
 export function shownRegion(corner: { x: number; y: number }, project: Project, zoom: number): Region {
-  const shown = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom }).beadBox(projectFrame(project))
-  return { x: Math.floor(corner.x + shown.x), y: Math.floor(corner.y + shown.y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
+  // A Frame drawn otherwise than its Canvas (ticket 1188) shows as at its own quarter turn, where its surface is pinned.
+  const shift = frameShift(project, zoom)
+  const laid = shift ? withLaidTurn(project) : project
+  const view = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: shift?.rotation ?? quarterTurnOf(project), zoom, ...(shift ? { frame: placedFrame(laid) } : {}) })
+  const shown = view.beadBox(projectFrame(laid), shift ? 'frame' : undefined)
+  const [x, y] = [corner.x + shown.x + (shift?.x ?? 0), corner.y + shown.y + (shift?.y ?? 0)]
+  return { x: Math.floor(x), y: Math.floor(y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
 }
 
 /** Writes a new reference: the pixels the Project's Frame covers. */

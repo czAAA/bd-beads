@@ -4,6 +4,7 @@ import { createProject } from './createProject'
 import { deleteAll } from './drawing'
 import { moveToRow, ownRowWayOf, rowProgressOf } from './rowProgress'
 import { rotateFrame, turnCanvasTo } from './rotate'
+import { framePlacement } from './framePlacement'
 import { replaceBead } from './projectBead'
 import { restoreSnapshot, snapshotOf, UNDO_CAP } from './undoSnapshot'
 import { mirrorSettingOf, withMirror, withMirrorMode, withMirrorPlace } from './mirror'
@@ -43,10 +44,13 @@ describe('snapshotOf and restoreSnapshot', () => {
     expect(restoreSnapshot(before, snapshot).layers[1]).toBe(before.layers[1])
   })
 
-  it('carry the Frame put back with the Canvas\'s turn as it is now, so it lies on it as it did (ticket 1185)', () => {
+  it('put the Frame back where it was on the table, under the Canvas as it lies now (ticket 1188)', () => {
     const before = rotateFrame(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 3, unit: 'beads' } }))!
-    const restored = restoreSnapshot(turnCanvasTo(deleteAll(before), 90), snapshotOf(before))
-    expect(frameOf(restored)).toMatchObject({ quarterTurns: 1, angle: 180 })
+    const turned = turnCanvasTo(withLayers(before, { beads: { 9: { 9: '#e63746' } } }), 90, { x: 3, y: -1.5 })
+    const restored = restoreSnapshot(turned, snapshotOf(before))
+    expect(canvasOf(restored)).toMatchObject({ orientation: 90, origin: { x: 3, y: -1.5 }, beads: {} })
+    expect(framePlacement(restored)).toEqual(framePlacement(before))
+    expect(rowProgressOf(restored)).toEqual(rowProgressOf(before))
     expect(ownRowWayOf(restored)).toEqual(ownRowWayOf(before))
   })
 

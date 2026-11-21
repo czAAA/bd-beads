@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { turnedWithFrame } from './rowWays'
-import { withCanvasTurned } from './table'
+import { withPictureTurned } from '../testUtils/layerFields'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
 import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, seenWayOf, stepLines, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
@@ -417,14 +417,14 @@ describe('passLine (ticket 0849)', () => {
     const leftward = toggleRowDirection(upward)
     expect(passLine(moveToRow(leftward, 1))).toEqual({ line: columns - 1, lines: columns })
     // A Canvas turned half round shows the rows the other way up, and a quarter turn their first one at the right.
-    expect(passLine(withCanvasTurned(peyote, 180))).toEqual({ line: lines, lines })
-    expect(passLine(withCanvasTurned(upward, 180))).toEqual({ line: 1, lines })
-    expect(passLine(withCanvasTurned(peyote, 90))).toEqual({ line: lines, lines })
-    expect(passLine(withCanvasTurned(peyote, 270))).toEqual({ line: 1, lines })
+    expect(passLine(withPictureTurned(peyote, 180))).toEqual({ line: lines, lines })
+    expect(passLine(withPictureTurned(upward, 180))).toEqual({ line: 1, lines })
+    expect(passLine(withPictureTurned(peyote, 90))).toEqual({ line: lines, lines })
+    expect(passLine(withPictureTurned(peyote, 270))).toEqual({ line: 1, lines })
     // A Frame lying a quarter round shows its first row at the right: its own rows are counted as seen too.
     const lying = withLayers(withFrameSheet(peyote, { ...frameOf(peyote)!, quarterTurns: 1 }), { rowProgress: turnedWithFrame(rowProgressOf(peyote), 1) })
     expect(passLine(lying)).toEqual({ line: lines, lines })
-    expect(passLine(withCanvasTurned(lying, 180))).toEqual({ line: 1, lines })
+    expect(passLine(withPictureTurned(lying, 180))).toEqual({ line: 1, lines })
     // None once every pass is done, and none where a pass is a whole line.
     expect(passLine(moveToRow(peyote, rowProgressPosition(peyote).total))).toBeUndefined()
     expect(passLine(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }))).toBeUndefined()

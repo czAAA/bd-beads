@@ -1,5 +1,5 @@
 import { findBead } from '../domain/beads'
-import { withCanvasTurned } from '../domain/table'
+import { withPictureTurned } from '../testUtils/layerFields'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { type BeadMap, withColors } from '../domain/canvas'
@@ -36,7 +36,7 @@ function projectOf(technique: Technique, columns: number, rows: number, extra: L
   const { grid, ...rest } = extra
   // Row marks are off here unless a test asks for them with `rowMarks` (a Frame turns Row progress on in the app).
   // Upright, whatever the Technique's own starting turn is (a new peyote Canvas starts turned).
-  const made = withLayers(withCanvasTurned(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), 0), rest)
+  const made = withLayers(withPictureTurned(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), 0), rest)
   // The Frame is woven as the Project is made, whatever the test overrides (ticket 492).
   const project = frameOf(made) && !rest.frame ? withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') }) : made
   return grid ? withFrameGrid(project, grid) : project

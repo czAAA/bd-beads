@@ -435,5 +435,31 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
       const point = { x: pressed.x + 2 * step.column.x + step.row.x, y: pressed.y + 2 * step.column.y + step.row.y }
       expect(view.carriedCell(from, view.pointToGrid(pressed), point, 'frame')).toEqual({ row: 3, column: 5 })
     })
+
+    describe('off the Canvas\'s grid (ticket 1188)', () => {
+      // Its margin sheet two beads round it, in its own drawing's grid px; it lies off the Canvas's grid, so it covers no
+      // Canvas position: the positions its row and column address are the Canvas's wherever it does not lie on screen.
+      const sheet = { x: 1 * CELL_SIZE_PX, y: 0, width: 8 * CELL_SIZE_PX, height: 8 * CELL_SIZE_PX }
+      const drawing = { rotation: 0 as const, scroll: { x: 10, y: -30 }, seam: seamOf(frameLean, canvasLean), sheet }
+      const away = surfaceView({ ...base, frame: { ...frame, centre: { x: 40, y: 40 } }, rotation: 0, frameDrawing: { ...drawing, scroll: { x: 900, y: 900 } } })
+      const off = surfaceView({ ...base, frame: { ...frame, centre: { x: 40, y: 40 } }, rotation: 0, frameDrawing: drawing })
+      const plain = surfaceView({ ...base, rotation: 0 })
+
+      it('leaves the Canvas positions it addresses to the Canvas where it does not lie on screen', () => {
+        const under = plain.beadToPoint({ row: 3, column: 4 })
+        expect(away.pointToHit(under)).toEqual({ row: 3, column: 4, layer: 'canvas' })
+        expect(away.onMarginSheet(under)).toBe(false)
+      })
+
+      it('takes no press on its margin sheet, at any angle, and the Frame\'s beads inside it', () => {
+        const corner = off.beadToPoint({ row: 2, column: 3 }, 'frame')
+        const step = off.beadStep('frame')
+        const beside = { x: corner.x - step.column.x - 0.2 * step.row.x, y: corner.y - step.column.y - 0.2 * step.row.y }
+        expect(off.onMarginSheet(beside)).toBe(true)
+        expect(off.pointToHit(beside)).toBeUndefined()
+        expect(off.onMarginSheet(corner)).toBe(false)
+        expect(off.pointToHit(corner)).toEqual({ row: 2, column: 3, layer: 'frame' })
+      })
+    })
   })
 })

@@ -5,6 +5,7 @@ import type { Layer, Rotation } from './grid'
 import type { PieceName } from './pieceNames'
 import { touch, type Background, type CanvasLayer, type FrameLayer, type LayerFields, type Project, type RowProgress } from './project'
 import { startingRowProgress } from './rowWays'
+import { carriedOffGrid } from './framePlacement'
 import { beadCell, heldSettings, withCell, type Weave } from './weave'
 
 // The one way to read and write a layer, the Canvas or the Frame (ADR 0079, tickets 0661, 0664): a Project holds its
@@ -57,7 +58,9 @@ export function frameOf(project: Layered | undefined): FrameLayer | undefined {
   if (!held) return undefined
   const known = readFrames.get(project!.layers)
   if (known) return known
-  const turns = quarterTurnsOff(held.angle, canvasOf(project!).orientation)
+  // Off the Canvas's grid a Frame without a shape lies on none (ticket 1188): no quarter turns, its own rows upright on
+  // its own drawing. A Custom frame's layout is still built turned by them.
+  const turns = held.centre && !held.shape ? 0 : quarterTurnsOff(held.angle, canvasOf(project!).orientation)
   const { quarterTurns: _stale, ...rest } = held
   const read = turns === (held.quarterTurns ?? 0) ? held : turns ? { ...rest, quarterTurns: turns } : rest
   readFrames.set(project!.layers, read)
@@ -148,19 +151,22 @@ export function withCanvas(project: Project, change: Partial<CanvasLayer>): Proj
   return { ...project, layers: [{ ...canvasOf(project), ...change }, ...framesOf(project)] }
 }
 
-/** The Project with its Frame laid as a sheet (ADR 0066, 0079), or removed with none; a field it leaves out is gone. Its
- * angle on the table is the Canvas's turned by the sheet's quarter turns (ticket 1185). It keeps its id, Bead, Letters and
- * Row progress, the sheet's winning; one laid anew copies the Canvas's, at the first row. Not stamped as a change. */
-export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<FrameLayer>) | undefined): Project {
+/** The Project with its Frame laid as a sheet (ADR 0066, 0079), or removed with none; a field left out is gone. A new one
+ * (or `anew`) lies as the Canvas does by the sheet's quarter turns; a changed one keeps its own angle and off the grid
+ * its place (ticket 1188, `carriedOffGrid`). Keeps its id, Bead, Letters and Row progress, the sheet's winning. */
+export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<FrameLayer>) | undefined, anew = false): Project {
   const canvas = canvasOf(project)
   if (!sheet) {
     return { ...project, layers: [canvas] }
   }
   const held = heldFrame(project)
+  const placed = anew ? undefined : held
   const kept = held ? frameIdentity(held) : { ...frameIdentity({ ...canvas, rowProgress: startingRowProgressOf(sheet) }), id: newLayerId() }
-  const { cell: _cell, quarterTurns, angle: _angle, ...laid } = sheet
-  const angle = normalizedOrientation(canvas.orientation + 90 * (quarterTurns ?? 0))
-  return { ...project, layers: [canvas, { ...kept, ...laid, angle }, ...framesOf(project).slice(1)] }
+  const { cell: _cell, quarterTurns, angle: _angle, centre: _centre, ...laid } = sheet
+  const turned = 90 * ((quarterTurns ?? 0) - (placed ? (frameOf(project)!.quarterTurns ?? 0) : 0))
+  const angle = normalizedOrientation((placed ? placed.angle : canvas.orientation) + turned)
+  const next: Project = { ...project, layers: [canvas, { ...kept, ...laid, angle }, ...framesOf(project).slice(1)] }
+  return placed?.centre ? carriedOffGrid(project, next) : next
 }
 
 /** The Project with the Frame layer's own fields set as given (its angle, its Row progress), as the Project holds them:
@@ -172,8 +178,8 @@ export function withFrameFields(project: Project, change: Partial<Pick<FrameLaye
 
 /** The Project with its Frame laid as a sheet, or removed with none, as `withFrameSheet` does, stamped as just-edited:
  * what a Frame edit commits. */
-export function touchFrameSheet(project: Project, sheet: (FrameSheet & Partial<FrameLayer>) | undefined): Project {
-  return touch(withFrameSheet(project, sheet), {})
+export function touchFrameSheet(project: Project, sheet: (FrameSheet & Partial<FrameLayer>) | undefined, anew = false): Project {
+  return touch(withFrameSheet(project, sheet, anew), {})
 }
 
 /** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Background, Letters

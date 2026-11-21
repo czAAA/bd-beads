@@ -17,7 +17,8 @@ const DEFAULT_COLOR = BUILT_IN_COLORS[0]!.hex
 
 /** Where the pointer goes to be on a bead, at the zoom the page is at. */
 async function pointOn(page: Page, technique: Technique, rotated: boolean, zoomPercent: number, row: number, column: number) {
-  return beadCentre({ technique, rotation: rotated ? 90 : 0 }, await gridBox(page), zoomPercent / 100, { row, column })
+  // Turned, the Canvas is: its Frame stays upright, drawn on its own surface (ticket 1188).
+  return beadCentre(rotated ? fixtureProject({ technique, rotation: 90 }) : { technique, rotation: 0 }, await gridBox(page), zoomPercent / 100, { row, column })
 }
 
 /** The grab cursor shows over the Canvas while Space is held (ticket 424's pan). */

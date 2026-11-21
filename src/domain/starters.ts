@@ -2,13 +2,13 @@ import { findBead, type Bead } from './beads'
 import { forEachBead, type BeadMap } from './canvas'
 import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
 import { laidSize } from './frameOrientation'
-import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings, type QuarterTurns } from './frameShape'
+import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject, type CreateProjectInput } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
 import { sameWeave, weaveOf } from './layerWeave'
-import { quarterTurnOf, withBackground, withLayer } from './layerRecord'
-import { withCanvasTurned } from './table'
+import { orientationOf, withBackground, withCanvas, withLayer } from './layerRecord'
+import { quarterTurnsOff } from './canvasOrientation'
 import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
@@ -400,12 +400,13 @@ export function placedStarter(project: Project, starter: Starter, choice: Starte
 }
 
 /** The Frame change that puts a Starter's Frame in place round a Canvas position, a Ring's or Band's length in `bead`
- * and its turn the quarters from the Canvas's own to the one it is seen at (`seenTurn`). */
+ * and its angle the one it is seen at (`seenTurn`), on the Canvas's grid. */
 function starterPlacement(project: Project, starter: Starter, choice: StarterChoice, centre: GridPosition, bead: Bead): FrameChange {
   const beads = chosenBeads(starter, choice)
   const weave = weaveIn(starter, choice)
   const seen = seenTurn(starter, weave)
-  const quarterTurns = seen === undefined ? 0 : ((((seen - quarterTurnOf(project)) / 90 + 4) % 4) as QuarterTurns | 0)
+  // Its angle on the table is the one it is seen at, laid on the Canvas's grid as a new Frame lies (ticket 1188).
+  const quarterTurns = seen === undefined ? 0 : quarterTurnsOff(seen, orientationOf(project))
   const turned = quarterTurns ? { quarterTurns } : {}
   if (starter.shape) return { custom: { shape: starter.shape, settings: customSettings(starter, choice), centre, beads, weave, ...turned } }
   const { rows, columns } = starterFrameSize(starter, choice, bead)
@@ -421,7 +422,7 @@ export function starterProject(starter: Starter, choice: StarterChoice & Pick<St
   const { name, beadId, background } = choice
   const made = createProject({ name, ...weaveIn(starter, choice), beadId, ...(background !== undefined ? { background } : {}) })
   const seen = seenTurn(starter, weaveIn(starter, choice))
-  const project = seen === undefined ? made : withCanvasTurned(made, seen)
+  const project = seen === undefined ? made : withCanvas(made, { orientation: seen })
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
   const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
   return placed.kind === 'changed' ? placed.project : project

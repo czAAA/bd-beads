@@ -2,7 +2,10 @@ import { withColors, type BeadMap, type FrameSheet } from './canvas'
 import type { GridPosition } from './grid'
 import { hasProjectBeads } from './layerBeads'
 import type { LayerSheet } from './layers'
-import { canvasOf, frameOf, startingRowProgressOf, withFrameSheet, withLayer } from './layerRecord'
+import { canvasOf, frameOf, startingRowProgressOf, withCanvas, withFrameSheet, withLayer } from './layerRecord'
+import { frameCornerAt, framePlacement } from './framePlacement'
+import { lieAlike } from './table'
+import { startOrientation } from './weave'
 import { touch, type Project } from './project'
 import { INITIAL_ROW_PROGRESS, isInitialRowProgress, rowProgressOf } from './rowProgress'
 
@@ -16,14 +19,16 @@ export function paintCells({ beads, geometry, edge }: LayerSheet, positions: Gri
   return withColors(beads, targets.map((position) => ({ ...position, color })))
 }
 
-/** Resets the open Project to as first created (CONTEXT.md's Delete all): cells emptied, both Row progress pointers at
- * the first row; name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow):
- * clearing progress is the point, so callers skip keepFinishedRows. Returns the same instance if already so. */
+/** Resets the open Project to as first created (CONTEXT.md's Delete all): cells emptied, Row progress at the first row,
+ * both turns as a new Project starts them (ticket 1188, `withFrameAlike`); name, size, Technique and Bead stay. Ignores
+ * the Row progress lock (clearing progress is the point). Returns the same instance if already so. */
 export function deleteAll(project: Project): Project {
   // Row progress starts afresh: the first pass, the Frame Technique's way as the Frame lies (spec 1182).
   const frame = frameOf(project)
   const start = frame ? startingRowProgressOf(frame) : INITIAL_ROW_PROGRESS
-  if (!hasProjectBeads(project) && !frame?.folded && isInitialRowProgress(rowProgressOf(project), start)) {
+  const turn = startOrientation(canvasOf(project).technique)
+  const laidAlike = !frame || (lieAlike(project) && !frame.quarterTurns)
+  if (!hasProjectBeads(project) && !frame?.folded && isInitialRowProgress(rowProgressOf(project), start) && canvasOf(project).orientation === turn && laidAlike) {
     return project
   }
 
@@ -31,7 +36,18 @@ export function deleteAll(project: Project): Project {
   const { pieceNames: _names, ...canvas } = canvasOf(project)
   const unnamed = { ...project, layers: [canvas, ...project.layers.slice(1)] as Project['layers'] }
   const unfolded = frame ? withFrameSheet(unnamed, { ...withoutFolded(frame), rowProgress: start }) : unnamed
-  return touch(withLayer(withLayer(unfolded, 'canvas', { beads: {} }), 'frame', { beads: {} }), {})
+  const emptied = withLayer(withLayer(unfolded, 'canvas', { beads: {} }), 'frame', { beads: {} })
+  return touch(frame ? withFrameAlike(emptied, turn) : withCanvas(emptied, { orientation: turn }), {})
+}
+
+/** The Project with its Canvas at `orientation`, its origin where it is, and its Frame lying alike on it (ticket 1188):
+ * upright on it, at the Canvas position whose corner puts its centre nearest where it was on the table. */
+function withFrameAlike(project: Project, orientation: number): Project {
+  const centre = framePlacement(project)!.at
+  const [canvas, held, ...rest] = project.layers
+  const { centre: _centre, ...frame } = held!
+  const alike: Project = { ...project, layers: [{ ...canvas, orientation }, { ...frame, angle: orientation }, ...rest] }
+  return { ...alike, layers: [alike.layers[0], { ...alike.layers[1]!, ...frameCornerAt(alike, centre) }, ...rest] }
 }
 
 /** A Frame with its Folded beads gone (ticket 0638). */

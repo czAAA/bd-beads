@@ -7,8 +7,8 @@ import { fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
 // The look of a Project held to the reference screenshots (support/referenceCheck.ts): every Technique, plain and with
-// Row progress both ways, at 100% and 300% upright and 100% rotated, marker included. Pointer tools:
-// interaction.spec.ts; overlays: overlays.spec.ts.
+// Row progress both ways, at 100% and 300% upright, and at 100% on a turned Canvas (its Frame upright, ticket 1188)
+// and as a Frame turned a quarter on an upright Canvas. Pointer tools: interaction.spec.ts; overlays: overlays.spec.ts.
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const ZOOMS = [100, 300]
 const TECHNIQUES = ['loom', 'peyote', 'brick'] as const
@@ -27,16 +27,21 @@ const scenarios = [
   })),
 ]
 
-for (const scenario of scenarios) {
-  for (const rotated of [false, true]) {
-    const orientation = rotated ? 'rotated' : 'upright'
+/** How the two layers lie: as made, the Canvas turned a quarter under an upright Frame, the Frame turned on its own. */
+const LIES = [
+  { orientation: 'upright', rotation: 0, frameTurn: 0 },
+  { orientation: 'rotated', rotation: 90, frameTurn: 0 },
+  { orientation: 'frame-turned', rotation: 0, frameTurn: 90 },
+] as const
 
+for (const scenario of scenarios) {
+  for (const { orientation, rotation, frameTurn } of LIES) {
     test(`${scenario.name}, ${orientation}`, async ({ page }) => {
-      const project = fixtureProject({ technique: scenario.technique, rotation: rotated ? 90 : 0, rowProgress: scenario.rowProgress })
+      const project = fixtureProject({ technique: scenario.technique, rotation, frameTurn, rowProgress: scenario.rowProgress })
       await openApp(page, [project])
       await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
 
-      for (const zoom of zoomsFor(rotated)) {
+      for (const zoom of zoomsFor(orientation !== 'upright')) {
         await setZoom(page, zoom)
         await page.mouse.move(5, 5)
 

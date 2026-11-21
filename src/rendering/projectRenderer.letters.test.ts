@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { withCanvasTurned } from '../domain/table'
+import { withPictureTurned } from '../testUtils/layerFields'
 import { createProject } from '../domain/createProject'
 import type { Project } from '../domain/project'
 import { drawBeadLetter, LETTER_ON_DARK, LETTER_ON_LIGHT, LIGHT_THEME, type DrawingContext } from './beadLook'
@@ -122,14 +122,14 @@ describe('a letter reads upright however the Frame or the Canvas is turned (tick
   const upright = (letters: ReturnType<typeof lettered>) => letters.length > 0 && letters.every(({ degrees, mirrored }) => degrees === 0 && !mirrored)
 
   it.each([90, 180, 270])('after Rotate canvas to %i°', (orientation) => {
-    expect(upright(lettered(withCanvasTurned(framed(), orientation)))).toBe(true)
+    expect(upright(lettered(withPictureTurned(framed(), orientation)))).toBe(true)
   })
 
   it.each([1, 2, 3])('after Rotate Frame %i times, on an upright and a turned Canvas', (turns) => {
     let project = framed()
     for (let turn = 0; turn < turns; turn += 1) project = rotateFrame(project)!
     expect(upright(lettered(project))).toBe(true)
-    expect(upright(lettered(withCanvasTurned(project, 90)))).toBe(true)
+    expect(upright(lettered(withPictureTurned(project, 90)))).toBe(true)
   })
 
   it('on its own, under a turn or a mirror the context is drawn at', () => {

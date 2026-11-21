@@ -1,25 +1,26 @@
 import { describe, expect, it, vi } from 'vitest'
-import { withCanvasTurned } from '../../domain/table'
+import { withPictureTurned } from '../../testUtils/layerFields'
 import { withColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
-import { moveToRow, ownRowWayOf, rowProgressOf } from '../../domain/rowProgress'
-import { turnedWithFrame } from '../../domain/rowWays'
+import { moveToRow, rowProgressOf, seenWayOf } from '../../domain/rowProgress'
+import { framePlacement } from '../../domain/framePlacement'
+import { canvasPlacement } from '../../domain/table'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateCanvasFlow } from './useRotateCanvasFlow'
 import { beadsOfLayer, canvasOf, orientationOf } from '../../domain/layerRecord'
-import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
+import { withLayers } from '../../testUtils/layerFields'
 
-const base = withCanvasTurned(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), 0)
+const base = withPictureTurned(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), 0)
 const framed: Project = withLayers(base, {
 frame: { technique: 'loom' as const, row: 20, column: 20, rows: 5, columns: 6, beads: {} },
   beads: withColors({}, [{ row: 21, column: 22, color: '#e63746' }]),
 })
 
-function setup(project: Project = framed) {
+function setup(project: Project = framed, turnView?: (orientation: number) => { x: number; y: number }) {
   const harness = editHarness(project)
-  const deps = { currentProject: harness.currentProject, replaceProject: harness.replaceProject, announce: vi.fn(), messages: () => en }
+  const deps = { currentProject: harness.currentProject, replaceProject: harness.replaceProject, announce: vi.fn(), messages: () => en, turnView }
   return { deps, harness, ...useRotateCanvasFlow(deps) }
 }
 
@@ -34,17 +35,26 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
     expect(seen).toEqual([90, 180, 270, 0])
   })
 
-  it('changes no bead, Frame, name or the Frame\'s own rows, and is no Undo step', () => {
+  it('turns the Canvas alone: no bead or name changes, the Frame stays where it is with its way as seen, no Undo step (ticket 1188)', () => {
     const { harness, onRotateCanvas } = setup()
     onRotateCanvas()
     expect(beadsOfLayer(harness.project, 'canvas')).toEqual(beadsOfLayer(framed, 'canvas'))
-    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(framed))
+    expect(beadsOfLayer(harness.project, 'frame')).toEqual(beadsOfLayer(framed, 'frame'))
     expect(canvasOf(harness.project).pieceNames).toEqual(canvasOf(framed).pieceNames)
-    // The Frame is carried with its rows (until 1188), so the way as seen turns a quarter with it (ticket 1185).
-    expect(rowProgressOf(harness.project)).toEqual(turnedWithFrame(rowProgressOf(framed), 1))
-    expect(ownRowWayOf(harness.project)).toEqual(ownRowWayOf(framed))
+    expect(framePlacement(harness.project)).toEqual(framePlacement(framed))
+    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(framed))
+    expect(seenWayOf(harness.project)).toBe(seenWayOf(framed))
     expect(harness.history.canUndo.value).toBe(false)
     expect(harness.resetAfterFrameChange).not.toHaveBeenCalled()
+  })
+
+  it('turns about the middle of the drawing area: the Canvas\'s origin moves as far as the view turned it', () => {
+    const turnView = vi.fn(() => ({ x: 4, y: -6 }))
+    const { harness, onRotateCanvas } = setup(framed, turnView)
+    onRotateCanvas()
+    expect(turnView).toHaveBeenCalledWith(90)
+    expect(canvasPlacement(harness.project)).toEqual({ angle: 90, at: { x: 4, y: -6 } })
+    expect(framePlacement(harness.project)).toEqual(framePlacement(framed))
   })
 
   it('still turns once a Row progress pass is done', () => {
@@ -63,11 +73,12 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
 
   it('keeps the angle a twist settled on, changing no bead, Frame or Row progress, as no Undo step and with no announcement (ticket 0672)', () => {
     const { deps, harness, onTwistCanvas } = setup(moveToRow(framed, 1))
-    onTwistCanvas(212.5)
+    onTwistCanvas(212.5, { x: -1, y: 2 })
     expect(orientationOf(harness.project)).toBe(212.5)
+    expect(canvasPlacement(harness.project).at).toEqual({ x: -1, y: 2 })
     expect(beadsOfLayer(harness.project, 'canvas')).toEqual(beadsOfLayer(framed, 'canvas'))
-    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(framed))
-    expect(rowProgressOf(harness.project)).toEqual(turnedWithFrame(rowProgressOf(moveToRow(framed, 1)), 2))
+    expect(framePlacement(harness.project)).toEqual(framePlacement(framed))
+    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(moveToRow(framed, 1)))
     expect(harness.history.canUndo.value).toBe(false)
     expect(deps.announce).not.toHaveBeenCalled()
   })

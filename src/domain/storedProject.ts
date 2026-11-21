@@ -5,7 +5,7 @@ import { normalizeHex } from './color'
 import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
 import type { Rotation } from './grid'
 import { nearestQuarterTurn, normalizedOrientation, quarterTurnsOff } from './canvasOrientation'
-import { frameCornerAt } from './framePlacement'
+import { withFrameAt } from './framePlacement'
 import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
@@ -205,13 +205,20 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string,
     angle,
     rowProgress: { way: 'down' },
   }
-  const placed = readCentre(stored.centre) ? { ...frame, ...frameCornerAt({ layers: [canvas, frame] }, stored.centre!) } : frame
-  const turns = quarterTurnsOff(angle, canvas.orientation)
+  // A Frame off the Canvas's grid keeps its centre as saved (ticket 1188); one on it lands on the position it was at.
+  const placed = readCentre(stored.centre) ? frameAt(canvas, frame, stored.centre!) : frame
+  const turns = placed.centre && !laid.shape ? 0 : quarterTurnsOff(angle, canvas.orientation)
   const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, ...(turns ? { quarterTurns: turns } : {}), rows, columns }
   // One stored since file version 15 keeps its way as seen; one before, in its own rows, turned as it showed.
   const held = stored.rowProgress
   const seen = (held && 'way' in held) || typeof stored.angle === 'number' ? (held as Partial<RowProgress> | undefined) : seenProgressOf(readOwnProgress(held as Partial<OwnRowProgress> | undefined), laid.shape ? 0 : nearestQuarterTurn(canvas.orientation) / 90 + earlierTurns)
   return { ...placed, rowProgress: readRowProgress(seen, shaped, nearestQuarterTurn(angle)) }
+}
+
+/** The Frame read at its saved centre on the table, its Canvas's origin the table's (ticket 1188, `withFrameAt`). */
+function frameAt(canvas: CanvasLayer, frame: FrameLayer, centre: TablePoint): FrameLayer {
+  const read = { id: '', layers: [canvas, frame], palette: [], createdAt: 0, updatedAt: 0 } as Project
+  return withFrameAt(read, centre).layers[1]!
 }
 
 /** Whether a stored centre is a point: two finite numbers. */

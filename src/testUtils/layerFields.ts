@@ -1,7 +1,9 @@
 import type { FrameSheet } from '../domain/canvas'
-import { canvasOf, frameOf, withCanvas, withFrameSheet, withLetters } from '../domain/layerRecord'
+import { canvasOf, frameOf, withCanvas, withFrameFields, withFrameSheet, withLetters } from '../domain/layerRecord'
+import { nearestQuarterTurn, normalizedOrientation } from '../domain/canvasOrientation'
+import { turnedWithFrame } from '../domain/rowWays'
 import { rowProgressOf, seenProgressOf, type OwnRowProgress } from '../domain/rowProgress'
-import { frameQuarterTurnOf, withCanvasTurned } from '../domain/table'
+import { frameQuarterTurnOf } from '../domain/table'
 import type { CanvasLayer, FrameLayer, LayerFields, Project, RowProgress } from '../domain/project'
 import { DEFAULT_BEAD } from '../domain/beads'
 import { DEFAULT_TECHNIQUE } from '../domain/weave'
@@ -29,8 +31,8 @@ export function withLayers(project: Project, change: LayersChange): Project {
   if ('frame' in change) {
     next = withFrameSheet(next, frame)
   }
-  // The Canvas's turn carries the Frame laid, its rows and all, as Rotate canvas does until 1188.
-  if (orientation !== undefined) next = withCanvasTurned(next, orientation)
+  // The Canvas's turn carries the Frame laid, its rows and all (`withPictureTurned`).
+  if (orientation !== undefined) next = withPictureTurned(next, orientation)
   if (rowProgress && frameOf(next)) {
     next = withFrameSheet(next, { ...frameOf(next)!, rowProgress })
   }
@@ -45,6 +47,20 @@ export function withLayers(project: Project, change: LayersChange): Project {
     next = { ...next, layers: next.layers.map((layer) => ({ ...layer, ...shared })) as Project['layers'] }
   }
   return letters !== undefined ? withLetters(withLetters(next, 'canvas', letters), 'frame', letters) : next
+}
+
+/** The whole picture turned to `orientation`: the Canvas, and the Frame laid on it carried with it, its angle turned as
+ * far and its Row progress kept on its own rows (a Custom frame's runs one way and stays). Rotate canvas no longer
+ * carries the Frame (ticket 1188); a test that wants a turned picture, as an older file opens, builds it so. */
+export function withPictureTurned(project: Project, orientation: number): Project {
+  const [from, to] = [canvasOf(project).orientation, normalizedOrientation(orientation)]
+  if (from === to) return project
+  const turned = withCanvas(project, { orientation: to })
+  const frame = project.layers[1]
+  if (!frame) return turned
+  const angle = normalizedOrientation(frame.angle + to - from)
+  const turns = (nearestQuarterTurn(angle) - nearestQuarterTurn(frame.angle)) / 90
+  return withFrameFields(turned, { angle, ...(frame.shape ? {} : { rowProgress: turnedWithFrame(frame.rowProgress, turns) }) })
 }
 
 /** Row progress given in the Frame's own rows (along them, top to bottom, unless given), as the Project's Frame lies:

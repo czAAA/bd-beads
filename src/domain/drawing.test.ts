@@ -9,6 +9,9 @@ import { paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
 import { frameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, orientationOf } from './layerRecord'
+import { rotateFrame, turnCanvasTo } from './rotate'
+import { framePlacement } from './framePlacement'
+import { lieAlike } from './table'
 import { frameSheetOf, withLayers, pointersOf } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -90,7 +93,7 @@ describe('deleteAll', () => {
     expect(pointersOf(rowProgressOf(cleared))).toEqual({})
   })
 
-  it('keeps name, size, Technique, Bead and rotation exactly as they were', () => {
+  it('keeps name, size, Technique and Bead exactly as they were', () => {
     const before = paintedAndWoven()
 
     const cleared = deleteAll(before)
@@ -100,7 +103,23 @@ describe('deleteAll', () => {
     expect(canvasOf(cleared).beadId).toBe(canvasOf(before).beadId)
     expect(frameOf(cleared)!.columns).toBe(frameOf(before)!.columns)
     expect(frameOf(cleared)!.rows).toBe(frameOf(before)!.rows)
-    expect(orientationOf(cleared)).toBe(orientationOf(before))
+  })
+
+  it('puts both turns back where a new Project starts them, the Frame alike on the Canvas under its centre (ticket 1188)', () => {
+    const made = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } })
+    const leaning = turnCanvasTo(rotateFrame(paintAt(made, [{ row: 1, column: 1 }], '#e63746'))!, 37.5, { x: 2, y: 1 })
+    expect(lieAlike(leaning)).toBe(false)
+
+    const cleared = deleteAll(leaning)
+
+    expect(orientationOf(cleared)).toBe(90)
+    expect(lieAlike(cleared)).toBe(true)
+    expect(frameOf(cleared)).toMatchObject({ angle: 90, rows: 8, columns: 6 })
+    expect(frameOf(cleared)!.quarterTurns).toBeUndefined()
+    const [was, now] = [framePlacement(leaning)!.at, framePlacement(cleared)!.at]
+    expect(Math.hypot(now.x - was.x, now.y - was.y)).toBeLessThan(1.5)
+    expect(rowProgressOf(cleared)).toEqual({ way: 'right' })
+    expect(deleteAll(cleared)).toBe(cleared)
   })
 
   it('ignores the Row progress lock: clears a finished row along with the rest', () => {
