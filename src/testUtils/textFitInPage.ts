@@ -54,9 +54,11 @@ export interface MeasureArgs {
 
 export const MEASURE_ARGS: MeasureArgs = { oneLine: ONE_LINE, userText: USER_TEXT, moreLines: MORE_LINES, cutOffByDesign: CUT_OFF_BY_DESIGN, rolling: ROLLING }
 
-/** Waits for the fonts and the animations that end, so what is measured is where things end up. */
+/** Waits for the fonts, the animations that end and a color reduction off the main thread (ticket 1163), so what is
+ * measured is where things end up. */
 export async function settleForMeasuring(): Promise<void> {
   await document.fonts.ready
+  for (let tries = 0; tries < 250 && document.querySelector('[data-reducing]'); tries += 1) await new Promise((done) => setTimeout(done, 20))
   // Two frames, for what is sized from a resize report (the Homepage's examples scale to their stage).
   await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
   // Dialogs and sheets arrive with a short animation; what is measured is where they end up.

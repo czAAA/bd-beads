@@ -20,6 +20,7 @@ import { plural, pluralForm } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import { pictureCover } from '../../rendering/referenceCover'
 import type { MessageTone, Toast } from '../ui/useToasts'
+import type { ColorReducer } from '../../services/colorReducer'
 import { useColorReduction } from '../import/useColorReduction'
 import type { EditFn } from './useEdit'
 
@@ -45,6 +46,8 @@ export interface AllSettingsRequest {
  * (a drag's place as it goes) with its bytes, how pixels and catalogs are read, the picture's shown switch, the Frame
  * flow's Set Frame around and Convert image's All settings. */
 export interface PictureBarFlowDeps {
+  /** What reduces the picture's colors (ticket 1163); the tests count its requests. */
+  reducer?: ColorReducer
   currentProject: () => Project | undefined
   edit: EditFn
   onUndo: () => void
@@ -155,7 +158,7 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
   const colors = computed(() => Math.min(colorsMax.value, chosenColors.value ?? DEFAULT_MAX_IMAGE_COLORS))
   const counted = computed(() => sampled.value && sampledCounts(sampled.value))
   // The reduction runs off the main thread (ticket 1163); the conversion before it stays until the new one is made.
-  const { reduced, reducing } = useColorReduction(() => conversionRequest(counted.value?.counts ?? new Map(), colors.value, targets.value))
+  const { reduced, reducing } = useColorReduction(() => conversionRequest(counted.value?.counts ?? new Map(), colors.value, targets.value), deps.reducer)
   const finished = shallowRef<ReferenceConversion>()
   watch(
     [reducing, reduced],

@@ -17,6 +17,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
+import LoadingState from '../ui/LoadingState.vue'
 import FormField from '../ui/form/FormField.vue'
 import ConvertBackgroundSection from './ConvertBackgroundSection.vue'
 import ConvertCleanUpSection from './ConvertCleanUpSection.vue'
@@ -197,7 +198,7 @@ const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${l
       <ConvertCleanUpSection v-else-if="open === 'clean-up'" />
     </ConvertSheet>
 
-    <div v-if="dockShown" class="convert-dock__bar" data-testid="convert-foot">
+    <div v-if="dockShown" class="convert-dock__bar" data-testid="convert-foot" :data-reducing="wizard.reducing.value || undefined">
       <div class="convert-dock__result" role="region" :aria-label="words.resultLabel">
         <template v-if="lines">
           <p v-if="layout !== 'phone'" class="convert-dock__line convert-dock__line--muted" data-testid="convert-project-line">
@@ -214,6 +215,7 @@ const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${l
           <p class="convert-dock__line convert-dock__line--muted" aria-hidden="true" data-testid="convert-result-beads">{{ lines.beads }}</p>
         </template>
         <p v-else class="convert-dock__line convert-dock__line--muted" data-testid="convert-result-none">{{ wizard.reading.value ? words.readingLine : words.bandEmpty }}</p>
+        <LoadingState v-if="wizard.reducing.value" compact :text="t.convertImage.findingColors" data-testid="convert-finding-colors" />
         <p class="convert-dock__heard" role="status" data-testid="convert-result-heard">{{ heard }}</p>
       </div>
 
@@ -249,7 +251,7 @@ const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${l
       <AppButton
         variant="primary"
         class="convert-dock__create"
-        :disabled="!ready"
+        :disabled="!ready || wizard.reducing.value"
         :disabled-body="words.addPictureFirst"
         :label="buttonLabel"
         data-testid="convert-image-create"

@@ -9,20 +9,15 @@ import { withReferenceImage, type ReferencePlace } from '../../domain/referenceI
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { bareProject } from '../../testUtils/layerFields'
+import { createColorReducer, type ColorReducer } from '../../services/colorReducer'
 import { usePictureBarFlow } from './usePictureBarFlow'
 
 // The color reduction itself, counted: on a photo it takes seconds, so when it runs is part of what is held (ticket 1160).
-const reductions = vi.hoisted(() => vi.fn())
-vi.mock('../../services/colorReducer', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../services/colorReducer')>()
-  return {
-    ...actual,
-    createColorReducer: () => {
-      const reducer = actual.createColorReducer()
-      return { ...reducer, reduce: (...args: Parameters<typeof reducer.reduce>) => (reductions(), reducer.reduce(...args)) }
-    },
-  }
-})
+const reductions = vi.fn()
+const countingReducer = (): ColorReducer => {
+  const reducer = createColorReducer()
+  return { ...reducer, reduce: (...args) => (reductions(), reducer.reduce(...args)) }
+}
 
 const RED = [255, 0, 0, 255]
 const BLUE = [0, 0, 255, 255]
@@ -51,6 +46,7 @@ function setup(start: Project = bareProject({ technique: 'loom', beads: { 0: { 0
     announce: vi.fn(),
     messages: () => en,
     locale: () => 'en' as const,
+    reducer: countingReducer(),
   }
   const flow = usePictureBarFlow(deps)
   return { harness, deps, flow, at }
