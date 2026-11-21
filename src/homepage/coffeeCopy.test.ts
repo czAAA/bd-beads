@@ -4,13 +4,14 @@ import { ru } from '../i18n/ru'
 import { coffeeActs, coffeePromises, coffeeRows } from './coffeeCopy'
 
 describe("The coffee screen's copy (ticket 0823)", () => {
-  it('has the six promises in order, each with its icon', () => {
+  it('has the seven promises in order, each with its icon (ticket 1175)', () => {
     expect(coffeePromises(en).map(({ icon, name }) => [icon, name])).toEqual([
       ['device', 'Yours, on this device'],
       ['cloud-off', 'Works offline'],
       ['eye-off', 'No ads or tracking'],
-      ['pen-mode', 'For tablets and pens'],
       ['check', 'Free forever'],
+      ['pen-mode', 'For tablets and pens'],
+      ['mouse', 'For computers and phones'],
       ['keyboard', 'Keyboard shortcuts'],
     ])
   })
@@ -20,12 +21,12 @@ describe("The coffee screen's copy (ticket 0823)", () => {
   })
 
   it("points Keyboard shortcuts at the Menu path in the app's own labels, in every language", () => {
-    expect(coffeePromises(en)[5].text).toBe('Every edit has its own key. Find them all in Menu → Help → Keyboard shortcuts.')
-    expect(coffeePromises(ru)[5].text).toContain(`${ru.panels.menu.help} → ${ru.shortcutsHelp.title}`)
+    expect(coffeePromises(en)[6].text).toBe('Every edit has its own key. Find them all in Menu → Help → Keyboard shortcuts.')
+    expect(coffeePromises(ru)[6].text).toContain(`${ru.panels.menu.help} → ${ru.shortcutsHelp.title}`)
   })
 
-  it('has the rows: the six promises, then Open source and Say hello (tickets 0880, 0948)', () => {
-    expect(coffeeRows(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'tablets', 'free', 'shortcuts', 'openSource', 'sayHello'])
+  it('has the rows: the seven promises, then Open source and Say hello (tickets 0880, 0948)', () => {
+    expect(coffeeRows(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'free', 'tablets', 'mouse', 'shortcuts', 'openSource', 'sayHello'])
     expect(coffeeActs(en).map(({ icon, name }) => [icon, name])).toEqual([
       ['code', 'Open source'],
       ['message', 'Say hello'],
