@@ -43,8 +43,6 @@ export interface ShellTranslations {
     enterWholeBeads: string
     /** Between Create Project and Convert image. */
     or: string
-    /** What New Project's open canvas is for, under the panel's title (tickets 568, 0951). */
-    openCanvasSubtitle: string
     /** The button that unfolds the Starter gallery. */
     pickStarter: string
     /** The Estimated size when the unit is mm: the same size as a count of beads, "≈ 40×30 beads" (ticket 342). */

@@ -34,7 +34,6 @@ export const shell: ShellTranslations = {
     enterHeight: '请输入高度。',
     enterWholeBeads: '请输入整数颗珠子。',
     or: '或',
-    openCanvasSubtitle: '随处绘制。需要图片或 PDF 时再设尺寸。',
     pickStarter: '选择起始方案',
     estimateBeads: '≈ {columns}×{rows} 颗',
     unnamedProject: '项目 {number}',
