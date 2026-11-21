@@ -168,8 +168,8 @@ describe('usePictureBarFlow (ReferenceImage card, ticket 0883)', () => {
     expect(flow.colorsMax.value).toBe(24)
     expect(reduceRequested).not.toHaveBeenCalled()
     expect(flow.conversion.value?.colorsFound).toBe(24)
-    // Made once when the picture was read, never again for reading its colors.
-    expect(reduceRequested).not.toHaveBeenCalled()
+    // Reading its colors does not reduce them again: they were reduced when the picture was read.
+    expect(reduceRequested).toHaveBeenCalledTimes(0)
   })
 
   it('makes the beads where the picture rests, not at every move of a drag (ticket 1160)', async () => {
