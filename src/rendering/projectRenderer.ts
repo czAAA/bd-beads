@@ -282,13 +282,51 @@ function drawFrameGround(
   // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
   const mark = markLookOf(frameLook, tiles)
   const pattern = !mark.tiles && geometryDrawnAlone(project).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...mark })
-  if (!pattern) {
-    return
+  if (pattern) {
+    context.fillStyle = pattern
+    context.imageSmoothingEnabled = true
+    strip(...box)
+    context.imageSmoothingEnabled = false
   }
-  context.fillStyle = pattern
-  context.imageSmoothingEnabled = true
+  drawOffShape(context, { project, box, area, color: frameLook.offShape, skip: frameLook.offShape === frameLook.canvas })
+}
+
+/** The part of the Frame's box where it holds no bead position, in the Frame's Off-shape color, over its Background and
+ * marks (ticket 1196): a Custom frame outside its shape, a staggered row's or column's empty half bead. The box with
+ * every position's cell cut out of it, so whatever lays the positions out (a turned Frame, a Custom frame) decides. */
+function drawOffShape(context: DrawingContext, { project, box, area, color, skip }: { project: DrawnProject; box: readonly [number, number, number, number]; area: { left: number; right: number; top: number; bottom: number }; color: string; skip: boolean }): void {
+  const frame = frameOf(project)
+  if (skip || !frame) return
+  const geometry = geometryDrawnAlone(project)
+  // Loom's cells fill its box: nothing is off the shape.
+  if (geometry.grid && describeWeave(frameWeave(project)).shift === 0) return
+  const origin = frameOriginPx(canvasWeave(project), frame)
+  const scale = frameScale(project)
+  const seen = { x: (area.left - origin.x) / scale / CELL_SIZE_PX, y: (area.top - origin.y) / scale / CELL_SIZE_PX, width: (area.right - area.left) / scale / CELL_SIZE_PX, height: (area.bottom - area.top) / scale / CELL_SIZE_PX }
+  const at = (x: number, y: number) => [origin.x + x * scale, origin.y + y * scale] as const
+  context.save()
+  context.beginPath()
+  const [left, top, right, bottom] = box
+  boxPath(context, left, top, right - left, bottom - top)
+  for (const position of geometry.positionsIn(seen)) {
+    const place = geometry.place(position)
+    if (!place) continue
+    const cell = inGridPx(place.box)
+    const [centreX, centreY] = [cell.x + cell.width / 2, cell.y + cell.height / 2]
+    const [cos, sin] = [Math.cos(place.angle), Math.sin(place.angle)]
+    const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => {
+      const [dx, dy] = [(sx! * cell.width) / 2, (sy! * cell.height) / 2]
+      return at(centreX + dx * cos - dy * sin, centreY + dx * sin + dy * cos)
+    })
+    context.moveTo(...corners[0]!)
+    for (const corner of corners.slice(1)) context.lineTo(...corner)
+    context.closePath()
+  }
+  context.clip('evenodd')
+  context.fillStyle = color
+  const strip = stripIn(context, area)
   strip(...box)
-  context.imageSmoothingEnabled = false
+  context.restore()
 }
 
 // The band of the surface, in device pixels, that a cut across the grid takes, in grid px: rows `top` to `bottom` or
@@ -547,7 +585,8 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space,
     context.moveTo(from.x * CELL_SIZE_PX, from.y * CELL_SIZE_PX)
     context.lineTo(to.x * CELL_SIZE_PX, to.y * CELL_SIZE_PX)
   }
-  context.strokeStyle = look.pieceLine
+  // Off-shape's own color on screen; an export has none and keeps its line (ticket 1196).
+  context.strokeStyle = look.offShape === look.canvas ? look.pieceLine : look.offShape
   context.lineWidth = SEAM_WIDTH_PX
   context.stroke()
   context.restore()

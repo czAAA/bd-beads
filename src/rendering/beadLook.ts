@@ -69,6 +69,9 @@ export interface ProjectTheme {
   positionMark: string
   /** The rectangle round a piece (`line-strong`), and round the piece being drawn (`muted`). */
   pieceLine: string
+  /** Where a Frame holds no bead position, on screen (`frame-off-shape`, ticket 1196): darker than the Frame's Background.
+   * Exports leave it as the canvas (white). */
+  offShape: string
   /** The Frame's line and handles (`ink`). */
   frameLine: string
   /** Ruler numbers: regular (`ruler`) and every 5th, bold (`body`). */
@@ -125,6 +128,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   canvas: '#fafafa',
   positionMark: '#d8d2cc',
   pieceLine: '#c7c7c7',
+  offShape: '#a5a19b',
   frameLine: '#1f1f1f',
   ruler: '#6a6a6a',
   rulerStrong: '#4a4a4a',
@@ -149,6 +153,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   canvas: '#202020',
   positionMark: '#3c3c3c',
   pieceLine: '#3a3a3a',
+  offShape: '#050505',
   frameLine: '#ffffff',
   ruler: '#8c8c8c',
   rulerStrong: '#cccccc',
@@ -172,6 +177,7 @@ const CONTRAST_THEME: ProjectTheme = {
   canvas: '#ffffff',
   positionMark: '#b8b0a8',
   pieceLine: '#000000',
+  offShape: '#9a9a9a',
   frameLine: '#000000',
   ruler: '#3d3d3d',
   rulerStrong: '#1f1f1f',
@@ -193,7 +199,7 @@ const CONTRAST_THEME: ProjectTheme = {
 }
 
 /** PNG and PDF exports: always light, whatever the app's theme, on the `print-board`, in the flat bead. */
-export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec', ownColorRim: false, tonalTiles: false }
+export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, offShape: LIGHT_THEME.canvas, background: '#f7f3ec', ownColorRim: false, tonalTiles: false }
 
 const flatLooks = new WeakMap<ProjectTheme, ProjectTheme>()
 

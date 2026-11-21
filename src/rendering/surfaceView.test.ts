@@ -463,3 +463,21 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
     })
   })
 })
+
+describe('a peyote Frame\'s empty half beads (ticket 1196)', () => {
+  const frame = { row: 0, column: 0, rows: 4, columns: 4, technique: 'peyote' as const }
+  const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame, rotation: 0, zoom: 1 })
+  const cell = (column: number, y: number) => ({ x: (column + 0.5) * CELL_SIZE_PX, y: y * CELL_SIZE_PX })
+
+  it('says a point in the half bead at the end of a staggered column holds no bead, and a point in a bead does', () => {
+    // Column 1 sits half a bead down: the half bead above it is off the shape, and the half bead below column 0.
+    expect(view.offShapeAt(cell(1, 0.25))).toBe(true)
+    expect(view.offShapeAt(cell(0, 4.25))).toBe(true)
+    expect(view.offShapeAt(cell(1, 1.0))).toBe(false)
+    expect(view.offShapeAt(cell(0, 0.25))).toBe(false)
+  })
+
+  it('says it of no point off the Frame', () => {
+    expect(view.offShapeAt({ x: -40, y: -40 })).toBe(false)
+  })
+})
