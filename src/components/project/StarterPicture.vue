@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { quarterTurnOf, withCanvas } from '../../domain/layerRecord'
+import { quarterTurnOf } from '../../domain/layerRecord'
+import { withCanvasTurned } from '../../domain/table'
 import { designSizes, STARTER_BEAD_ID, starterProject, type Starter, type StarterChoice } from '../../domain/starters'
 import { PROJECT_THEMES } from '../../rendering/beadLook'
 import { renderProject } from '../../rendering/projectRenderer'
@@ -45,7 +46,7 @@ function draw() {
   // quarters, and one more for a Band standing upright.
   const strip = props.starter.measure !== 'frame'
   const turns = strip ? (quarterTurnOf(project.value) / 90 + (props.upright && props.starter.measure === 'band' ? 1 : 0)) % 4 : 0
-  const drawn = strip ? withCanvas(project.value, { orientation: 0 }) : project.value
+  const drawn = strip ? withCanvasTurned(project.value, 0) : project.value
   const space = spaceOf(drawn, false)
   const copies = props.pair ? 2 : 1
   // The drawing's sides as shown: turned, and side by side with a gap between a pair.

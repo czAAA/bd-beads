@@ -94,7 +94,7 @@ export function framedGrid(grid: Grid, layer: Weave & Partial<Pick<LayerFields, 
   return {
     layers: [
       { id: 'canvas', name: '', ...own, beads: {}, orientation: 0 },
-      { id: 'frame', ...own, row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length, beads, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 } },
+      { id: 'frame', ...own, row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length, beads, angle: 0, rowProgress: { way: 'down' } },
     ],
   }
 }

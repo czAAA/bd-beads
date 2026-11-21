@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
-import { rowProgressPosition, shownWayOf } from '../domain/rowProgress'
+import { rowProgressPosition, seenWayOf } from '../domain/rowProgress'
 import { en } from '../i18n/en'
 import { rowProgressAnnouncement } from '../i18n/rowProgressWords'
 import { useWovenCuff } from './useWovenCuff'
@@ -27,7 +27,7 @@ describe('the cuff woven on the Welcome tile (ticket 1157)', () => {
 
   it('is the peacock cuff with Row progress on, its rows running left to right, no pass done yet', () => {
     const { woven, done, stop } = cuff()
-    expect(shownWayOf(woven.project.value)).toBe('right')
+    expect(seenWayOf(woven.project.value)).toBe('right')
     expect(done()).toBe(0)
     expect(rowProgressPosition(woven.project.value).total).toBe(95)
     stop()

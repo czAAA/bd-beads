@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { turnedWithFrame } from './rowWays'
 import { colorAt, withColors } from './canvas'
 import { changeFrame } from './changeFrame'
 import { createProject } from './createProject'
@@ -14,12 +15,12 @@ import { mayPlace } from './margin'
 import type { Project } from './project'
 import { removeLineRefusal } from './removeLine'
 import { rotateFrame } from './rotate'
-import { rowProgressOf, shownWayOf, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
+import { rowProgressOf, seenWayOf, toggleRowDirection, turnRowDirectionTo } from './rowProgress'
 import { turnedClockwise } from '../testUtils/rotated'
 import { copyLayerSelection, paintLayerSelection, pasteOnLayer } from './selection'
 import { wordChartOf } from './wordChart'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { ROWS_DOWN, withLayers } from '../testUtils/layerFields'
+import { withLayers } from '../testUtils/layerFields'
 
 // A Frame's orientation (ticket 0667, ADR 0079): Rotate Frame turns the Frame like a sheet on the Canvas, its beads in
 // their own rows and columns, and everything that works on the Frame as it lies follows the turn.
@@ -63,10 +64,10 @@ describe('what a turned Frame covers', () => {
 
 describe('what a turned Frame offers', () => {
   it('turns, is selected on, woven otherwise and resized (ticket 1016); it has a line removed and is made again only upright', () => {
-    for (const action of ['rotate', 'select', 'technique', 'resize'] as const) expect(frameAllows(frameOf(turned), action)).toBe(true)
+    for (const action of ['rotate', 'select', 'technique', 'resize'] as const) expect(frameAllows(turned, action)).toBe(true)
     for (const action of ['remove-line', 'from-selection'] as const) {
-      expect(frameAllows(frameOf(turned), action)).toBe(false)
-      expect(frameAllows(frameOf(upright), action)).toBe(true)
+      expect(frameAllows(turned, action)).toBe(false)
+      expect(frameAllows(upright, action)).toBe(true)
     }
     expect(changeFrame(turned, { make: { row: 19, column: 21, rows: 5, columns: 6 } })).toEqual({ kind: 'refused', reason: 'not-offered' })
     expect(removeLineRefusal(turned, { top: 19, left: 21, rows: 1, columns: 6, layer: 'frame' })).toBe('no-line')
@@ -193,16 +194,16 @@ describe("a turned Frame's handles, steppers and typed size (ticket 1016)", () =
 describe('Row progress on a turned Frame', () => {
   it('keeps the way as seen with no pass done, and steps it as seen (spec 1182)', () => {
     const thrice = rotateFrame(rotateFrame(turned)!)!
-    expect(shownWayOf(upright)).toBe('down')
-    expect(shownWayOf(turned)).toBe('down')
-    expect(shownWayOf(thrice)).toBe('down')
-    expect(shownWayOf(toggleRowDirection(turned))).toBe('right')
-    expect(shownWayOf(toggleRowDirection(toggleRowDirection(thrice)))).toBe('up')
+    expect(seenWayOf(upright)).toBe('down')
+    expect(seenWayOf(turned)).toBe('down')
+    expect(seenWayOf(thrice)).toBe('down')
+    expect(seenWayOf(toggleRowDirection(turned))).toBe('right')
+    expect(seenWayOf(toggleRowDirection(toggleRowDirection(thrice)))).toBe('up')
   })
 
   it('puts Row 1 of the Word chart on the edge its first row lies along', () => {
     // Its own rows, top to bottom on its upright grid, lie right to left once turned.
-    const lettered = withLayers(turned, { letters: true, rowProgress: ROWS_DOWN })
+    const lettered = withLayers(turned, { letters: true, ownProgress: {} })
     expect(wordChartOf(withLayers(upright, { letters: true }))!.firstEdge).toBe('top')
     expect(wordChartOf(lettered)!.firstEdge).toBe('right')
     // Its own 4 rows, not the 6 it covers as it lies, with a bead at both ends of them (the chart is trimmed, ticket 1128).
@@ -211,26 +212,27 @@ describe('Row progress on a turned Frame', () => {
   })
 })
 
-// Rotate canvas turns the whole picture, the Frame with it (ticket 1101): the way the rows run on screen counts both
-// turns, while the Row direction the Frame keeps never changes.
+// Rotate canvas turns the whole picture, the Frame with it until 1188 (ticket 1101): the way the rows run on screen
+// counts both turns, and the Frame's own rows stay its own.
 describe('Row progress on a turned Canvas', () => {
   const canvasTurned = turnedClockwise(upright)
   const bothTurned = turnedClockwise(turned)
 
   it('shows the way as seen: the Frame\'s turn plus the Canvas\'s', () => {
-    expect(shownWayOf(canvasTurned)).toBe('left')
+    expect(seenWayOf(canvasTurned)).toBe('left')
     // The turned Frame kept top to bottom as seen (spec 1182); the Canvas's turn still carries it, until ticket 1188.
-    expect(shownWayOf(bothTurned)).toBe('left')
-    expect(rowProgressOf(canvasTurned)).toEqual(rowProgressOf(upright))
+    expect(seenWayOf(bothTurned)).toBe('left')
+    // Row progress is kept as seen, so the carried Frame's way and pointers turned with it (ticket 1185).
+    expect(rowProgressOf(canvasTurned)).toEqual(turnedWithFrame(rowProgressOf(upright), 1))
     // Off a quarter turn it goes by the nearest one, as the drawing does.
-    expect(shownWayOf(withLayers(upright, { orientation: 100 }))).toBe('left')
-    expect(shownWayOf(withLayers(upright, { orientation: 30 }))).toBe('down')
+    expect(seenWayOf(withLayers(upright, { orientation: 100 }))).toBe('left')
+    expect(seenWayOf(withLayers(upright, { orientation: 30 }))).toBe('down')
   })
 
   it('runs the rows the way chosen on screen, whatever both turns are', () => {
     for (const project of [upright, turned, canvasTurned, bothTurned, turnedClockwise(bothTurned)]) {
       for (const way of ['down', 'right', 'up', 'left'] as const) {
-        expect([way, shownWayOf(turnRowDirectionTo(project, way))]).toEqual([way, way])
+        expect([way, seenWayOf(turnRowDirectionTo(project, way))]).toEqual([way, way])
       }
     }
   })
@@ -239,7 +241,7 @@ describe('Row progress on a turned Canvas', () => {
     const firstEdgeOf = { down: 'top', left: 'right', up: 'bottom', right: 'left' } as const
     for (const project of [upright, turned, canvasTurned, bothTurned]) {
       const lettered = withLayers(project, { letters: true })
-      expect(wordChartOf(lettered)!.firstEdge).toBe(firstEdgeOf[shownWayOf(lettered)])
+      expect(wordChartOf(lettered)!.firstEdge).toBe(firstEdgeOf[seenWayOf(lettered)])
     }
   })
 })

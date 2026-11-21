@@ -14,9 +14,11 @@ import { normalizeProjectName, withProjectName } from './projectName'
 const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
 /** Version 3 is the first gzipped one (ADR 0009); 4 (ADR 0066) the Frame's beads, 5 (0525) the Palette, 6 (0528) removed
- * defaults, 7 (534) the Bead's copy, 8 (0538) codes, 9 (0592) Custom frame, 10 (0638) Folded beads, 11 (0636) settings maps,
- * 12 (0664) layers, 13 (0691) brick's Drop id, 14 (0790) reference pictures; an older build refuses, never misreads. */
-const FILE_VERSION = 14
+ * defaults, 7 (534) the Bead's copy, 8 (0538) codes, 9 (0592) Custom frame, 10 (0638) Folded, 11 (0636) settings maps, 12
+ * (0664) layers, 13 (0691) Drop id, 14 (0790) pictures, 15 (1185) the Frame's placement and way as seen; older builds refuse. */
+const FILE_VERSION = 15
+/** The first version that holds reference images' pictures (ADR 0089). */
+const PICTURED_VERSION = 14
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND
@@ -41,6 +43,7 @@ const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   11: (projects) => (projects as EncodedFlatProject[]).map(decodeVersionElevenProject),
   12: (projects) => (projects as EncodedProject[]).map(decodeVersionTwelveProject),
   13: (projects) => (projects as EncodedProject[]).map(decodeProject),
+  14: (projects) => (projects as EncodedProject[]).map(decodeProject),
   [FILE_VERSION]: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 
@@ -51,8 +54,8 @@ export interface ProjectFileContents {
   pictures: FilePictures
 }
 
-/** A file's JSON from Projects and Projects already in their stored form (the library's version 6 encodes a Project as
- * file version 13 does, ticket 0716), joined as strings so a sealed Project is never decoded. */
+/** A file's JSON from Projects and Projects already in their stored form (the library's version 7 encodes a Project as
+ * file version 15 does, ticket 0716; one the library kept from version 6 reads as file version 13's, ticket 1185), joined as strings so a sealed Project is never decoded. */
 function serialize(kind: ProjectFile['kind'], projects: Project[], stored: readonly string[] = [], pictures: FilePictures = {}): string {
   const encoded = [...projects.map((project) => JSON.stringify(encodeProject(project))), ...stored]
   const pictured = Object.keys(pictures).length > 0 ? `,"pictures":${JSON.stringify(pictures)}` : ''
@@ -211,7 +214,7 @@ export function parseProjectsFile(text: string): ProjectFileContents {
     throw new Error('This openbeads file does not contain readable Projects')
   }
 
-  return { projects: read(known).map(normalizeProject), pictures: file.version === FILE_VERSION ? readPictures(file.pictures) : {} }
+  return { projects: read(known).map(normalizeProject), pictures: typeof file.version === 'number' && file.version >= PICTURED_VERSION ? readPictures(file.pictures) : {} }
 }
 
 /** The imported pictures under the ids their Projects came in under (`importProjects` keeps the order). */

@@ -8,7 +8,8 @@ import { canvasWeave, frameWeave, weaveOf } from './layerWeave'
 import { beadCell, columnCycle } from './weave'
 import type { FrameSheet } from './canvas'
 import type { FlatProject } from './flatWeave'
-import type { Grid, Project, RowProgress } from './project'
+import type { Grid, Project } from './project'
+import { nearestQuarterTurn } from './canvasOrientation'
 import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
 import { parseProjectsFile, serializeLibrary, serializeProject } from './projectFile'
 import { readProjectsFile } from '../services/projectFileCodec'
@@ -39,6 +40,8 @@ import projectFileV11Turned from './fixtures/project-file-v11-frame-turned.json?
 import projectFileV12 from './fixtures/project-file-v12-layers.json?raw'
 import projectFileV12Backgrounds from './fixtures/project-file-v12-backgrounds.json?raw'
 import projectFileV14ThreeBackgrounds from './fixtures/project-file-v14-three-backgrounds.json?raw'
+import projectFileV14PeyoteTurned from './fixtures/project-file-v14-peyote-turned-progress.json?raw'
+import projectFileV15Placement from './fixtures/project-file-v15-placement.json?raw'
 import projectFileV14LettersByLayer from './fixtures/project-file-v14-letters-by-layer.json?raw'
 import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import projectFileV13Drops from './fixtures/project-file-v13-drops.json?raw'
@@ -59,8 +62,12 @@ import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?r
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
 import { backgroundOf, beadsOfLayer, canvasOf, frameOf, lettersOn } from './layerRecord'
-import { currentPass, frameRowOrder, moveToRow, rowProgressOf } from './rowProgress'
+import { currentPass, frameRowOrder, moveToRow, ownRowWayOf, rowProgressOf, seenProgressOf, seenWayOf, type OwnRowProgress } from './rowProgress'
+import { rowOrderOf } from './frameShape'
+import { lieAlike } from './table'
 import { changeFrame } from './changeFrame'
+import { createProject } from './createProject'
+import { rotateFrame, turnCanvasTo } from './rotate'
 import { customFrameSize } from './frameShape'
 import { frameSheetOf, layersView } from '../testUtils/layerFields'
 import { frameGeometryOf } from './layers'
@@ -91,7 +98,7 @@ const brickPicture = ['R.K', '.BR', 'K.B', 'R..']
 const BEAD = 'toho-cube-1.5mm'
 /** What a Project saved with that id reads as: the id the catalog builds today and its Bead copy (ticket 534). */
 const CUBE_COPY = beadCopy(findBead(BEAD)!)
-const noProgress: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
+const noProgress: OwnRowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
 /** The Palette a Project saved before it held one opens with (ticket 0528): its Bead's built-in colors, TOHO's set. */
 const defaultIds = defaultPaletteIds(defaultPalette(CUBE_COPY.id))
@@ -113,16 +120,35 @@ function ownLetters(project: { layers: Record<string, unknown>[]; lettersByLayer
  * 1000) and each layer's own Letters, the Canvas's off where it was the Frame's copy (ticket 1092). */
 function writtenBack(stored: string): unknown {
   return JSON.parse(stored, (key, value) => {
-    // Written back as this build writes: file version 14 (ticket 0790).
-    if (key === '' && typeof value?.version === 'number' && value.version >= 13) return { ...value, version: 14 }
+    // Written back as this build writes: file version 15 (ticket 1185).
+    if (key === '' && typeof value?.version === 'number' && value.version >= 13) return { ...value, version: FILE_VERSION }
     if (key === 'beadShape') return undefined
     if (Array.isArray(value?.layers)) {
       const generic = { ...value, ...genericAsAdded(value) }
-      return { ...generic, backgroundPositions: 3, lettersByLayer: true, ...paintedAsAdded(generic), layers: ownLetters(value) }
+      return { ...generic, backgroundPositions: 3, lettersByLayer: true, ...paintedAsAdded(generic), layers: placedFrames(ownLetters(value) as Record<string, unknown>[]) }
     }
     const oldDelica = value?.id === 'miyuki/delica/11-0' && value.widthMm === 1.6 && value.heightMm === 1.3
     return oldDelica ? { ...value, widthMm: 1.3, heightMm: 1.6 } : value
   })
+}
+
+/** The current file version, which every Project file is written back as. */
+const FILE_VERSION = 15
+
+/** A stored layer list's Frames as file version 15 writes them back (ticket 1185): the Frame's own angle on the table
+ * (the Canvas's orientation plus its turn on it) and its centre there in place of its Canvas position and turn, and its
+ * Row progress the way it showed. The centre is checked by reading the file back, which lands on the same position. */
+function placedFrames([canvas, ...frames]: Record<string, unknown>[]): Record<string, unknown>[] {
+  const orientation = (canvas!.orientation as number | undefined) ?? 0
+  return [
+    canvas!,
+    ...frames.map(({ row: _row, column: _column, orientation: turn = 0, rowProgress, ...frame }) => {
+      const turns = frame.kind ? 0 : nearestQuarterTurn(orientation) / 90 + (turn as number) / 90
+      const own = (rowProgress ?? { currentRow: 0 }) as OwnRowProgress
+      const seen = seenProgressOf(frame.kind ? { currentRow: own.currentRow } : own, turns)
+      return { ...frame, angle: (orientation + (turn as number)) % 360, centre: { x: expect.any(Number), y: expect.any(Number) }, rowProgress: seen }
+    }),
+  ]
 }
 
 /** A stored Palette as this build writes it back (ticket 1070): a generic color its woven Bead's default colors no
@@ -164,7 +190,9 @@ function layered(flat: Omit<FlatProject, 'frame'> & { frame?: FrameSheet }): Pro
   const shared = { beadId, ...(bead ? { bead } : {}), ...(letters ? { letters } : {}) }
   const canvas = { id: `${flat.id}:canvas`, name, ...weaveOf({ technique, techniqueSettings }), ...shared, beads, ...(pieceNames ? { pieceNames } : {}), orientation: rotation }
   // Opening adds the colors its beads are painted in to its Palette, so each has a Swatch letter (ticket 1124).
-  return withColorsInPalette({ ...rest, layers: frame ? [canvas, { id: `${flat.id}:frame`, ...shared, ...frame, rowProgress }] : [canvas] } as Project)
+  // Its Frame lies as the Canvas does, its Row progress the way it showed (ticket 1185).
+  const seen = seenProgressOf(rowProgress, nearestQuarterTurn(rotation) / 90)
+  return withColorsInPalette({ ...rest, layers: frame ? [canvas, { id: `${flat.id}:frame`, ...shared, ...frame, angle: rotation, rowProgress: seen }] : [canvas] } as Project)
 }
 
 /** A Project the way it should read back: every field present, nothing a newer build dropped still hanging on. */
@@ -247,7 +275,7 @@ const overCapProject = expectedProject({
   updatedAt: 1720000001000,
 })
 
-const fileRowProgress: RowProgress = { direction: 'rows', currentRow: 1, currentColumn: 0 }
+const fileRowProgress: OwnRowProgress = { direction: 'rows', currentRow: 1, currentColumn: 0 }
 const fileProjects = {
   peyote: expectedProject({
     id: 'file-one',
@@ -383,10 +411,10 @@ describe('stored-data compatibility', () => {
       expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, orientation: 90 })
       // Letters was the Frame's, copied onto the Canvas: the Frame keeps it, the Canvas's own is off (ticket 1092).
       expect([lettersOn(framed!, 'canvas'), lettersOn(framed!, 'frame')]).toEqual([false, true])
-      expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, name: 'Fox', rowProgress: { currentRow: 1 } })
+      expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, angle: 180, name: 'Fox', rowProgress: { way: 'up', up: 1 } })
       expect(open!.layers).toEqual([expect.objectContaining({ id: 'open-canvas', name: 'Open sketch', beads: { [-2]: { 4: '#1a1a1a' } }, orientation: 0 })])
       saveProjects(loadProjects())
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(withDrops(libraryV5, 6))
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(withDrops(libraryV5, 7))
     })
 
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
@@ -407,7 +435,7 @@ describe('stored-data compatibility', () => {
 
       saveProjects(loadProjects())
 
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 6 })
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 7 })
       expect(loadProjects()).toEqual(expected)
     })
 
@@ -492,21 +520,22 @@ describe('stored-data compatibility', () => {
     it('opens a Frame without a shape turned by Rotate Frame, its beads in its own rows, and writes it back the same (ticket 0667)', () => {
       const [opened] = parseProjectsFile(projectFileV11Turned).projects
       expect(frameSheetOf(opened)).toEqual({ row: 8, column: 6, rows: 5, columns: 4, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, quarterTurns: 3, beads: { 0: { 0: '#e63746' }, 4: { 3: '#e63746' } } })
-      expect(rowProgressOf(opened)).toMatchObject({ direction: 'rows', currentRow: 2 })
-      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 14, projects: [{ layers: [{}, { orientation: 270 }] }] })
+      // Down its own rows, turned three quarters: left to right as it showed (ticket 1185).
+      expect(rowProgressOf(opened)).toEqual({ way: 'right', right: 2 })
+      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: FILE_VERSION, projects: [{ layers: [{}, { angle: 270 }] }] })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
     it('opens a version 10 file with the Frame\'s Folded beads beyond its edge, and writes it back the same (ticket 0638)', () => {
       const [opened] = parseProjectsFile(projectFileV10Folded).projects
       expect(frameSheetOf(opened)).toEqual({ row: 7, column: 7, rows: 6, columns: 2, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, beads: { 0: { 0: '#e63746' } }, folded: { 1: { 3: '#2f6fed' }, 4: { [-2]: '#27ae60', [-1]: '#27ae60' } } })
-      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 14 })
+      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: FILE_VERSION })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
     it('reads a version 4 file and writes it back as version 13 with the built-in Palette (tickets 0525, 0664), then the colors its beads are painted in (ticket 1124)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 14, projects: [{ palette: framedOverSketch.palette }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: FILE_VERSION, projects: [{ palette: framedOverSketch.palette }] })
       expect(framedOverSketch.palette.slice(0, defaultIds.length)).toEqual(defaultIds)
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
@@ -540,7 +569,7 @@ describe('stored-data compatibility', () => {
       expect(layersView(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 }, beads: { 0: { 0: '#2fb6ae' } } })
       expect(frameSheetOf(opened!)).toEqual({ row: 7, column: 7, rows: 2, columns: 3, technique: 'peyote', techniqueSettings: { brickDrop: 2, peyoteDrop: 1 }, beads: { 1: { 2: '#e63746' } } })
       const written = JSON.parse(serializeProject(opened!))
-      expect(written).toMatchObject({ version: 14, projects: [{ layers: [{ techniqueSettings: { brickDrop: 3 } }, { technique: 'peyote', techniqueSettings: { brickDrop: 2 } }] }] })
+      expect(written).toMatchObject({ version: FILE_VERSION, projects: [{ layers: [{ techniqueSettings: { brickDrop: 3 } }, { technique: 'peyote', techniqueSettings: { brickDrop: 2 } }] }] })
       expect(parseProjectsFile(JSON.stringify(written)).projects).toEqual([opened])
     })
 
@@ -552,8 +581,8 @@ describe('stored-data compatibility', () => {
       expect(lettersOn(opened!, 'canvas')).toBe(false)
       expect(beadsOfLayer(opened!, 'canvas')).toEqual({ 0: { 0: '#2fb6ae' }, 30: { 30: '#e63746', 31: '#e63746' } })
       expect(frameSheetOf(opened!)).toEqual({ row: 8, column: 6, rows: 3, columns: 4, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, quarterTurns: 1, name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#1a1a1a' }, 2: { 3: '#e63746' } }, folded: { 1: { 5: '#2f6fed' } } })
-      expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12, 14))
+      expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', letters: true, angle: 180, rowProgress: { way: 'up', up: 1 } })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12, FILE_VERSION))
     })
 
     it('opens a file whose layers saved a Bead shape, Real, Symmetric or none, drawn in each Bead\'s real cell, and writes no Bead shape back (ticket 0724)', () => {
@@ -647,7 +676,7 @@ describe('stored-data compatibility', () => {
       // Stored as 3 in the list of five (Stone or Midnight), it shows as 2 (Stone or Ink); the Custom color is untouched.
       expect(backgroundOf(opened!, 'canvas')).toBe(2)
       expect(backgroundOf(opened!, 'frame')).toBe('#336699')
-      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Backgrounds.replace('"background":3', '"background":2'), 14))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Backgrounds.replace('"background":3', '"background":2'), FILE_VERSION))
     })
 
     it('opens a version 14 file that marks its Background positions as in the list of three as they are, and writes it back the same (ticket 1000)', () => {
@@ -675,10 +704,44 @@ describe('stored-data compatibility', () => {
       expect([backgroundOf(opened!, 'canvas'), backgroundOf(opened!, 'frame')]).toEqual([undefined, undefined])
     })
 
+    it('opens a version 14 peyote Frame turned on a turned Canvas looking as last saved: at the angle and the way it showed, the same beads finished (ticket 1185)', () => {
+      const [opened] = parseProjectsFile(projectFileV14PeyoteTurned).projects
+      // The Canvas's quarter turn plus the Frame's own on it, at the Canvas position it was saved at.
+      expect(frameOf(opened!)).toMatchObject({ row: 2, column: 3, rows: 5, columns: 6, quarterTurns: 1, angle: 180 })
+      expect(lieAlike(opened!)).toBe(false)
+      // Its own columns from the far end, shown turned half round: left to right, each pointer on the way it showed.
+      expect(ownRowWayOf(opened!)).toEqual({ direction: 'columns', reversed: true })
+      expect(seenWayOf(opened!)).toBe('right')
+      expect(rowProgressOf(opened!)).toEqual({ way: 'right', right: 3, up: 2, left: 1 })
+      // The same passes, so the same beads finished: worked in its own columns from the far end, three passes done.
+      const frame = frameOf(opened!)!
+      const saved = rowOrderOf({ ...frameWeave(opened!), rows: frame.rows, columns: frame.columns }, { direction: 'columns', reversed: true })
+      const order = frameRowOrder(opened!)
+      expect(currentPass(rowProgressOf(opened!))).toBe(3)
+      for (let row = 0; row < frame.rows; row += 1) {
+        for (let column = 0; column < frame.columns; column += 1) expect(order.passAt({ row, column })).toBe(saved.passAt({ row, column }))
+      }
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV14PeyoteTurned))
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it('opens a version 15 file with the Frame\'s own angle and centre on the table and its way as seen, and writes it back the same (ticket 1185)', () => {
+      const [opened] = parseProjectsFile(projectFileV15Placement).projects
+      expect(canvasOf(opened!)).toMatchObject({ name: 'Leaning cuff', technique: 'peyote', orientation: 37.5 })
+      // Made as it was saved: moved, turned by Rotate Frame about its centre, the Canvas twisted to 37.5° carrying it.
+      const made = createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', size: { width: 6, height: 5, unit: 'beads' } })
+      const moved = changeFrame(made, { move: { rows: 3, columns: -2 } })
+      const saved = turnCanvasTo(rotateFrame(moved.kind === 'changed' ? moved.project : made)!, 37.5)
+      const { row, column } = frameOf(saved)!
+      expect(frameOf(opened!)).toMatchObject({ row, column, rows: 5, columns: 6, quarterTurns: 1, angle: 127.5 })
+      expect(rowProgressOf(opened!)).toEqual({ way: 'left', left: 2 })
+      expect(serializeProject(opened!)).toBe(projectFileV15Placement)
+    })
+
     it('opens a version 12 file whose Canvas a twist left at any angle, and writes it back the same (ticket 0672)', () => {
       const [opened] = parseProjectsFile(projectFileV12Twisted).projects
       expect(canvasOf(opened!)).toMatchObject({ name: 'Twisted fox', orientation: 37.5 })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Twisted, 14))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Twisted, FILE_VERSION))
     })
 
     it('keeps every Frame a version 12 file holds, and a Frame\'s own Piece names, though the app shows one (ticket 0664)', () => {

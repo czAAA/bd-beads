@@ -8,7 +8,6 @@ import type { Rect } from '../../domain/canvas'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameAllows } from '../../domain/frameShape'
 import type { GridPosition } from '../../domain/grid'
-import { frameOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { formatSizeMm } from '../../domain/projectSize'
 import { schemaDetails } from '../../domain/schemaTags'
@@ -105,7 +104,7 @@ const card = computed(() => {
   }
 })
 /** Frame is the Selection bar's: not offered for a Custom frame, whose Frame shape sets its outline (ticket 0592). */
-const framable = computed(() => frameAllows(frameOf(props.project), 'from-selection'))
+const framable = computed(() => frameAllows(props.project, 'from-selection'))
 
 function open(tag: SchemaAnchor) {
   opened.value = { anchor: tag.anchor, name: tag.name }

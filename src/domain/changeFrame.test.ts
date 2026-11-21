@@ -12,9 +12,9 @@ import { createProject } from './createProject'
 import { rowProgressOf, rowProgressOn } from './rowProgress'
 import { frameWithEdgeStep, withFrame } from './frame'
 import { frameWeave } from './layerWeave'
-import type { Project } from './project'
+import type { Project, RowProgress } from './project'
 import { beadsOfLayer, canvasOf, frameOf, withFrameSheet } from './layerRecord'
-import { frameSheetOf, type LayersChange, layersView, withLayers } from '../testUtils/layerFields'
+import { frameSheetOf, type LayersChange, layersView, withLayers, pointersOf } from '../testUtils/layerFields'
 
 const frame: Rect = { row: 10, column: 10, rows: 6, columns: 4 }
 
@@ -26,7 +26,9 @@ function framed(overrides: LayersChange = {}): Project {
   return withLayers(base, { frame: sheet(frame), ...overrides })
 }
 
-const woven = (direction: 'rows' | 'columns', currentRow = 5, currentColumn = 3) => ({ direction, currentRow, currentColumn })
+/** Row progress on an upright Frame, its rows running down (`rows`) or across (`columns`) as seen, with a pointer on
+ * each of those two ways. */
+const woven = (direction: 'rows' | 'columns', down = 5, right = 3): RowProgress => ({ way: direction === 'rows' ? 'down' : 'right', ...(down ? { down } : {}), ...(right ? { right } : {}) })
 
 describe('changeFrame naming the Frame (ticket 555)', () => {
   it('sets the name, keeps the rest of the Frame, and an empty name clears it', () => {
@@ -69,7 +71,7 @@ describe('changeFrame', () => {
       const result = changeFrame(project, { remove: true })
       if (result.kind !== 'changed') throw new Error('expected a change')
       expect(frameOf(result.project)).toBeUndefined()
-      expect(rowProgressOf(result.project)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+      expect(rowProgressOf(result.project)).toEqual({ way: 'down' })
     })
 
     it('needs a Frame to remove a line from', () => {
@@ -105,7 +107,7 @@ describe('changeFrame', () => {
     it('is on at the first Frame set, the pointers at the first pass (ticket 0664: Row progress is the Frame\'s)', () => {
       const result = changeFrame(open(), { set: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(rowProgressOf(result.project)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+      expect(rowProgressOf(result.project)).toEqual({ way: 'down' })
       expect(rowProgressOn(result.project)).toBe(true)
     })
 
@@ -121,7 +123,7 @@ describe('changeFrame', () => {
       const reset = changeFrame(removed.project, { set: frame })
       if (reset.kind !== 'changed') throw new Error('expected a change')
       expect(rowProgressOn(reset.project)).toBe(true)
-      expect(rowProgressOf(reset.project)).toMatchObject({ currentRow: 0, currentColumn: 0 })
+      expect(pointersOf(rowProgressOf(reset.project))).toEqual({})
     })
   })
 
@@ -149,8 +151,8 @@ describe('changeFrame', () => {
       const wide = framed({ frame: sheet({ row: 10, column: 10, rows: 50, columns: 30 }), rowProgress: woven(direction, 40, 25) })
       const next = withFrame(wide, { row: 0, column: 0, rows: 2, columns: 2 })
       // One past the last pass means every pass is done (ticket 411).
-      expect(rowProgressOf(next).currentRow).toBeLessThanOrEqual(2)
-      expect(rowProgressOf(next).currentColumn).toBeLessThanOrEqual(2)
+      expect((rowProgressOf(next).down ?? 0)).toBeLessThanOrEqual(2)
+      expect((rowProgressOf(next).right ?? 0)).toBeLessThanOrEqual(2)
     })
   })
 
@@ -183,14 +185,14 @@ describe('changeFrame', () => {
       const result = changeFrame(framed(), { technique: 'peyote' })
       if (result.kind !== 'changed') throw new Error('expected a change')
       // Left to right as seen, on an upright Canvas: down the Frame's columns.
-      expect(rowProgressOf(result.project)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
+      expect(rowProgressOf(result.project)).toEqual({ way: 'right' })
     })
 
     it('sets the new Technique\'s way even once the weaver has turned the rows by hand (spec 1182)', () => {
-      const turned = framed({ rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
+      const turned = framed({ ownProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
       const result = changeFrame(turned, { technique: 'peyote' })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(rowProgressOf(result.project)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
+      expect(rowProgressOf(result.project)).toEqual({ way: 'right' })
     })
 
     it('is no change to the Technique it already has', () => {
@@ -415,7 +417,7 @@ describe('changeFrame', () => {
       const project = framed({ frame: sheet(frame, frameBeads), rowProgress: woven('rows') })
       const result = changeFrame(project, { move: { rows: 2, columns: 0 } })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(rowProgressOf(result.project)).toMatchObject({ currentRow: 5, currentColumn: 3 })
+      expect(pointersOf(rowProgressOf(result.project))).toEqual({ down: 5, right: 3 })
     })
 
     it('moves by whole Canvas positions on peyote too: the Frame\'s own first row stays straight', () => {
@@ -512,7 +514,7 @@ describe('Remove Frame keeps the Frame\'s beads (ticket 497)', () => {
 
   it('clears the passes with the Frame', () => {
     const next = removed(framed({ frame: sheet(frame, frameBeads), rowProgress: woven('rows', 3, 2) }))
-    expect(rowProgressOf(next)).toMatchObject({ currentRow: 0, currentColumn: 0 })
+    expect(pointersOf(rowProgressOf(next))).toEqual({})
   })
 })
 
@@ -539,7 +541,7 @@ describe('changeFrame placing a Frame (ticket 495)', () => {
 
   it('restarts Row progress at the first pass', () => {
     const next = (changeFrame(framed({ rowProgress: woven('rows', 0, 0) }), { place }) as { project: Project }).project
-    expect(rowProgressOf(next)).toMatchObject({ currentRow: 0, currentColumn: 0 })
+    expect(pointersOf(rowProgressOf(next))).toEqual({})
   })
 
   it('is refused once a pass is done', () => {

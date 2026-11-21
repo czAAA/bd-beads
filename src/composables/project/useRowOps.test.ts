@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 import { createProject } from '../../domain/createProject'
-import { moveToRow, resetRowProgress, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
+import { moveToRow, ownRowWayOf, resetRowProgress, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
@@ -69,7 +69,9 @@ describe('useRowOps', () => {
     const turned = turnedClockwise(tracking)
     const deps = { currentProject: () => turned, replaceProject, showToast, messages: () => en }
     useRowOps(deps).onSetRowDirection('down')
-    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toMatchObject({ direction: 'columns' })
+    // Kept as seen; on the Canvas turned a quarter, down the Frame's own columns (ticket 1185).
+    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toEqual({ way: 'down' })
+    expect(ownRowWayOf(replaceProject.mock.calls[0]![0] as Project)).toEqual({ direction: 'columns' })
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
     useRowOps(deps).onSetRowDirection('right')
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumns, 'success')
@@ -84,7 +86,7 @@ describe('useRowOps', () => {
     const replaceProject = vi.fn()
     const deps = { currentProject: () => tracking, replaceProject, showToast, messages: () => en }
     useRowOps(deps).onSetRowDirection('up')
-    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toMatchObject({ direction: 'rows', reversed: true })
+    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toMatchObject({ way: 'up' })
     expect(showToast).toHaveBeenCalledWith('row-direction', en.rowProgress.directionToastRowsReversed, 'success')
 
     useRowOps(deps).onSetRowDirection('down')
@@ -106,12 +108,12 @@ describe('useRowOps', () => {
     const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 50, columns: 3, beads: {} } })
     const { deps, onGoToRow, rowPress } = setup(framed)
     onGoToRow(39)
-    expect(rowProgressOf(replaced(deps)).currentRow).toBe(39)
+    expect((rowProgressOf(replaced(deps)).down ?? 0)).toBe(39)
     expect(rowPress.value).toBeUndefined()
     // Past the end is every row done; where the pointer already is, nothing is written.
     const atEnd = setup(framed)
     atEnd.onGoToRow(80)
-    expect(rowProgressOf(replaced(atEnd.deps)).currentRow).toBe(50)
+    expect((rowProgressOf(replaced(atEnd.deps)).down ?? 0)).toBe(50)
     const still = setup(moveToRow(framed, 5))
     still.onGoToRow(5)
     expect(still.deps.replaceProject).not.toHaveBeenCalled()
@@ -141,7 +143,7 @@ describe('useRowOps', () => {
   it('moves the Row progress pointer by the given step', () => {
     const { deps, onMoveRow } = setup(tracking)
     onMoveRow(1)
-    expect(rowProgressOf(replaced(deps)).currentRow).toBe(rowProgressOf(tracking).currentRow + 1)
+    expect((rowProgressOf(replaced(deps)).down ?? 0)).toBe((rowProgressOf(tracking).down ?? 0) + 1)
   })
 
   it('does nothing with no Project open', () => {
@@ -189,10 +191,10 @@ describe('useRowOps', () => {
 
     // Undo takes back the last Edit, the beads drawn before the rows were marked; it brings no marks back.
     harness.history.onUndo()
-    expect(rowProgressOf(harness.project).currentRow).toBe(0)
+    expect((rowProgressOf(harness.project).down ?? 0)).toBe(0)
     expect(harness.history.canUndo.value).toBe(false)
 
-    rows.onGoToRow(marked.currentRow)
+    rows.onGoToRow(marked.down ?? 0)
     expect(rowProgressOf(harness.project)).toEqual(marked)
   })
 

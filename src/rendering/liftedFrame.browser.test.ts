@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { withCanvasTurned } from '../domain/table'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
-import { frameOf, heldWeave, withCanvas, withLayer } from '../domain/layerRecord'
+import { frameOf, heldWeave, withLayer } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
 import { withFrameLift } from '../domain/frame'
 import { withLayers } from '../testUtils/layerFields'
@@ -22,7 +23,7 @@ const RED = '#e63746'
 type Cell = readonly [column: number, row: number]
 
 function projectOf(cells: readonly Cell[]): Project {
-  const made = withCanvas(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), { orientation: 0 })
+  const made = withCanvasTurned(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), 0)
   const project = withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') })
   const framed = withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, cells.map(([column, row]) => ({ row, column, color: RED }))) } })
   return withFrameLift(framed, true)

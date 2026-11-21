@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { scrollAfterTurn, tiltedView } from './tiltedView'
+import { drawingScrollOf, originTurnedAbout, tableScrollOf, tiltedView } from './tiltedView'
 
 const close = (point: { x: number; y: number }) => ({ x: expect.closeTo(point.x, 6), y: expect.closeTo(point.y, 6) })
 
@@ -39,16 +39,37 @@ describe('a view leaning off its quarter turn (ticket 0672)', () => {
   })
 })
 
-describe('the scroll after the Canvas turns (ticket 0672)', () => {
+describe('a turn of the Canvas on the table (tickets 0672, 1185)', () => {
   const viewport = { width: 200, height: 200 }
+  const upright = { orientation: 0, origin: { x: 0, y: 0 }, zoom: 1 }
 
-  it('keeps it when the view leans about its middle within its quarter turn', () => {
-    expect(scrollAfterTurn({ x: 5, y: 7 }, viewport, { from: 0, to: 30 })).toEqual(close({ x: 5, y: 7 }))
+  /** The drawing's scroll after the Canvas turns `from` `to` about `anchor`, and the table scroll before and after. */
+  function turn(drawing: { x: number; y: number }, from: number, to: number, anchor = { x: 100, y: 100 }, origin = { x: 0, y: 0 }, zoom = 1) {
+    const table = tableScrollOf(drawing, viewport, { orientation: from, origin, zoom })
+    const turned = originTurnedAbout(origin, { by: to - from, anchor, table, zoom })
+    const after = drawingScrollOf(table, viewport, { orientation: to, origin: turned, zoom })
+    return { after, table, tableAfter: tableScrollOf(after, viewport, { orientation: to, origin: turned, zoom }) }
+  }
+
+  it('reads an upright drawing\'s scroll as the table scroll, and back', () => {
+    expect(tableScrollOf({ x: 5, y: 7 }, viewport, upright)).toEqual({ x: 5, y: 7 })
+    expect(drawingScrollOf({ x: 5, y: 7 }, viewport, upright)).toEqual({ x: 5, y: 7 })
   })
 
-  it('keeps the bead under the fingers there as the Canvas turns about them', () => {
+  it('keeps the drawing\'s scroll when the view leans about its middle within its quarter turn', () => {
+    expect(turn({ x: 5, y: 7 }, 0, 30).after).toEqual(close({ x: 5, y: 7 }))
+  })
+
+  it('keeps the bead under the fingers there as the Canvas turns about them, and never the table scroll', () => {
     // The bead under the right edge's middle, (200, 100) of grid space at 100%, lies at (−100, 200) once turned a
     // quarter, and stays at (200, 100) on screen.
-    expect(scrollAfterTurn({ x: 0, y: 0 }, viewport, { from: 0, to: 90, anchor: { x: 200, y: 100 } })).toEqual(close({ x: -300, y: 100 }))
+    const { after, table, tableAfter } = turn({ x: 0, y: 0 }, 0, 90, { x: 200, y: 100 })
+    expect(after).toEqual(close({ x: -300, y: 100 }))
+    expect(tableAfter).toEqual(close(table))
+  })
+
+  it('keeps the table scroll through a turn that crosses a quarter, zoomed, from where an earlier twist left the Canvas', () => {
+    const { table, tableAfter } = turn({ x: 40, y: -90 }, 37, 151, { x: 30, y: 170 }, { x: 12, y: -8 }, 1.7)
+    expect(tableAfter).toEqual(close(table))
   })
 })

@@ -11,6 +11,7 @@ import { laidSize } from './frameOrientation'
 import { beadsOfLayer, frameOf, heldWeave, type Layered, startingRowProgressOf, touchFrameSheet } from './layerRecord'
 import type { Project } from './project'
 import { clampPointer } from './rowProgress'
+import { frameQuarterTurnOf } from './table'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
 // drawn, on whole beads. Made from the Canvas it starts on a cycle of the Canvas's rows (brick stitch) or columns (peyote,
@@ -196,7 +197,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
   }
   return {
     // One made anew starts its progress afresh (spec 1182); one resized keeps its pointers inside it.
-    project: touchFrameSheet(project, { ...frame, rowProgress: current ? clampPointer(current.rowProgress, frame) : startingRowProgressOf(project, frame) }),
+    project: touchFrameSheet(project, { ...frame, rowProgress: current ? clampPointer(current.rowProgress, frame, frameQuarterTurnOf(project)) : startingRowProgressOf(frame) }),
     given: shiftedBeads(refit.given, row, column),
     taken: shiftedBeads(refit.taken, row, column),
   }

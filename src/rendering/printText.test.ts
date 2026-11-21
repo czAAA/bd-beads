@@ -10,7 +10,7 @@ import { ru } from '../i18n/ru'
 import { headerMaker, printText, RUN_NOTE_BEAD, type PrintedRunUnit } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
 import { frameOf, withFrameSheet, withLayer } from '../domain/layerRecord'
-import { ROWS_DOWN, withLayers } from '../testUtils/layerFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const at = new Date(2026, 8, 26, 14, 32)
 
@@ -141,7 +141,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('writes the rows as words with the range, the notes and the runs', () => {
     const base = createProject({ technique: 'brick', beadId: 'miyuki-delica-11-0', size: { width: 3, height: 2, unit: 'beads' } })
-    const painted = paintAt(withLayers(base, { rowProgress: ROWS_DOWN }), [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 2 }], red.hex)
+    const painted = paintAt(withLayers(base, { ownProgress: {} }), [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 2 }], red.hex)
     const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.title).toBe('Row by row')
@@ -164,7 +164,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('says where the first row is by the number it carries: the ruler\'s, 2 at the bottom of a 2-row loom worked upward (ticket 1129)', () => {
     const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 2, height: 2, unit: 'beads' } })
-    const upward = withLayers(paintAt(base, [{ row: 0, column: 0 }, { row: 1, column: 1 }], red.hex), { rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
+    const upward = withLayers(paintAt(base, [{ row: 0, column: 0 }, { row: 1, column: 1 }], red.hex), { ownProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
     const chart = printText(letters(upward), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.notes[0]).toBe('Row 2 is at the bottom of the picture.')
@@ -173,7 +173,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('says Rows 1&2 and the count for peyote, and translates the words but not the letters', () => {
     const base = createProject({ technique: 'peyote', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 2, unit: 'beads' } })
-    const chart = printText(letters(paintAt(withLayers(base, { rowProgress: ROWS_DOWN }), [{ row: 0, column: 0 }, { row: 0, column: 3 }], red.hex)), ru, 'ru', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(paintAt(withLayers(base, { ownProgress: {} }), [{ row: 0, column: 0 }, { row: 0, column: 3 }], red.hex)), ru, 'ru', at, ROW_BY_ROW).wordChart!
 
     expect({ ...chart.rows[0], runs: asLine(chart.rows[0]!.runs) }).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C 2× 1C' })
     expect(chart.notes).toContain(ru.print.wordChart.evenCount)

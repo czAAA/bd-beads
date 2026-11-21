@@ -16,7 +16,6 @@ import { controlAction, controlDeps, type ControlAction } from '../../composable
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
 import { selectionHasBeads, selectionInFinishedRows, selectionLayer, type Selection } from '../../domain/selection'
-import { frameOf } from '../../domain/layerRecord'
 import type { Rect } from '../../domain/canvas'
 import type { MirrorFit, MirrorSetting, ShapeAxes } from '../../domain/mirror'
 
@@ -162,7 +161,7 @@ const items = computed<BarItem[]>(() => {
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
   // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407); not over
   // a Custom frame, whose Frame shape sets its outline (ticket 0592).
-  if (frameAllows(frameOf(props.project), 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
+  if (frameAllows(props.project, 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   // Disabled, saying why, where the Selection reaches into finished rows (ticket 0647).
   list.push({ id: 'rotate', action: actions.rotate, group: 2, run: rotateFromBar })
   // Always offered: the Selection's rectangle becomes the Mirror's Area (ADR 0082); on a Frame Selection it says why not.

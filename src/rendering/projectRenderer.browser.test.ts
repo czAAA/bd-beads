@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { withCanvasTurned } from '../domain/table'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
-import { frameOf, heldWeave, withCanvas, withLayer } from '../domain/layerRecord'
+import { frameOf, heldWeave, withLayer } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
 import { moveToRow, rowProgressOf, stepLines, toggleRowDirection } from '../domain/rowProgress'
-import { ROWS_DOWN, withLayers } from '../testUtils/layerFields'
+import { withLayers } from '../testUtils/layerFields'
 import { DARK_THEME, type DrawingContext } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
@@ -18,7 +19,7 @@ const SIDE = 800
 const PAINTED: readonly Cell[] = [[2, 2], [5, 4], [6, 4], [3, 7], [8, 8], [8, 9]]
 
 function projectOf(technique: Technique, bead: string, cells: readonly Cell[]): Project {
-  const made = withCanvas(createProject({ technique, beadId: bead, size: { width: 12, height: 12, unit: 'beads' } }), { orientation: 0 })
+  const made = withCanvasTurned(createProject({ technique, beadId: bead, size: { width: 12, height: 12, unit: 'beads' } }), 0)
   const project = withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') })
   return withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, cells.map(([column, row]) => ({ row, column, color: '#222222' }))) } })
 }
@@ -90,7 +91,7 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again the passes 
       ['a press a few passes along', 'rows', 3, 7],
       ['Row done down the columns', 'columns', 5, 6],
     ] as const)('after %s, leaves the Canvas as a whole draw makes it', (_step, direction, from, to) => {
-      const painted = withLayers(projectOf(technique, bead, CHECKERED), { rowProgress: ROWS_DOWN })
+      const painted = withLayers(projectOf(technique, bead, CHECKERED), { ownProgress: {} })
       const turned = direction === 'columns' ? toggleRowDirection(painted) : painted
       const [before, after] = [moveToRow(turned, from), moveToRow(turned, to)]
       const step = stepLines(after, rowProgressOf(before))!

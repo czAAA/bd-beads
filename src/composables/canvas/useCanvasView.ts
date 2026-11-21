@@ -19,7 +19,7 @@ import { visibleBeadsInSpace } from '../../rendering/projectRenderer'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Region, type Scroll, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
 import type { Size } from '../../rendering/cellSize'
-import { scrollAfterTurn, tiltedView } from '../../rendering/tiltedView'
+import { drawingScrollOf, originTurnedAbout, tableScrollOf, tiltedView } from '../../rendering/tiltedView'
 
 /** One step of a two-finger gesture (ticket 0709), about `anchor`, a point of the viewport the fingers are at: the
  * zoom their spread asks for, how far their middle moved on screen, and how far they turned since the last step. `turn`
@@ -114,7 +114,11 @@ export function useCanvasView(
   options: CanvasViewOptions = {},
 ) {
   const zoom = ref(1)
+  /** The drawing's scroll: where its quarter turn is looked at from, before the lean. */
   const scroll = ref<Scroll>({ x: 0, y: 0 })
+  /** Where the Canvas's origin lies on the table (spec 1182, ticket 1185), in grid px at zoom 1 along the screen's
+   * axes: a twist swings it round the fingers, so the view's scroll over the table stays. */
+  const canvasOrigin = ref<Scroll>({ x: 0, y: 0 })
   /** Whether the view still tracks the fit rather than a place the person chose. */
   const isAtFit = ref(true)
   /** Whether the view has been set for its measured area (ticket 0991): before it, zoom and scroll are stand-ins that
@@ -136,6 +140,18 @@ export function useCanvasView(
   const orientation = computed(() => twisting.value ?? orientationOf(currentProject()) ?? 0)
   /** The screen as the drawing leans off its quarter turn. */
   const leaning = computed(() => tiltedView(viewport.value, tiltOf(orientation.value)))
+  /** The view's scroll over the table (ticket 1185): pan and zoom move it, a turn of the Canvas never does. */
+  const tableScroll = computed(() => tableScrollOf(scroll.value, viewport.value, { orientation: orientation.value, origin: canvasOrigin.value, zoom: zoom.value }))
+
+  /** The drawing's scroll once the Canvas turns `from` one orientation `to` another about `anchor` (a point of the
+   * viewport; its middle when left out): its placement on the table turns about the point under it, the table scroll
+   * staying, so the bead under the anchor stays there. */
+  function turnedAbout(drawing: Scroll, from: number, to: number, anchor: Scroll = { x: viewport.value.width / 2, y: viewport.value.height / 2 }): Scroll {
+    const place = { orientation: from, origin: canvasOrigin.value, zoom: zoom.value }
+    const table = tableScrollOf(drawing, viewport.value, place)
+    canvasOrigin.value = originTurnedAbout(place.origin, { by: to - from, anchor, table, zoom: zoom.value })
+    return drawingScrollOf(table, viewport.value, { ...place, orientation: to, origin: canvasOrigin.value })
+  }
 
   /** The Canvas as the view stands, or from another scroll or in a part of the viewport; with no Project, an empty one
    * in the default Technique. */
@@ -425,7 +441,7 @@ export function useCanvasView(
     if (turn !== undefined) {
       const from = orientation.value
       const to = turnedOrientation(from, turn)
-      at = scrollAfterTurn(at, viewport.value, { from, to, anchor })
+      at = turnedAbout(at, from, to, anchor)
       clearTimeout(snapTimer)
       twisting.value = to
       twistPhase.value = 'turning'
@@ -442,7 +458,7 @@ export function useCanvasView(
       return
     }
     const to = settledOrientation(from)
-    scroll.value = scrollAfterTurn(scroll.value, viewport.value, { from, to, anchor })
+    scroll.value = turnedAbout(scroll.value, from, to, anchor)
     if (to === from) {
       settleTwist(to)
       return
@@ -539,6 +555,7 @@ export function useCanvasView(
     cellAt,
     isAtFit,
     orientation,
+    tableScroll,
     twistPhase,
     pinchStep,
     endTwist,

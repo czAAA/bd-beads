@@ -8,7 +8,7 @@ import type { Project } from './project'
 import type { Technique } from './weave'
 import { wordChartOf } from './wordChart'
 import { frameOf, withFrameSheet } from './layerRecord'
-import { type LayersChange, ROWS_DOWN, withLayers } from '../testUtils/layerFields'
+import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 const HEX: Record<string, string> = { A: '#111111', B: '#222222', C: '#333333' }
 
@@ -22,7 +22,7 @@ function framed(technique: Technique, rows: string[], changes: LayersChange = {}
       if (letter !== '.') (beads[r] ??= {})[c] = HEX[letter]
     })
   })
-  return withLayers(base, { frame: { ...frameOf(base)!, beads }, rowProgress: ROWS_DOWN, letters: true, paletteLetters: { [HEX.A]: 'A', [HEX.B]: 'B', [HEX.C]: 'C' }, ...changes })
+  return withLayers(base, { frame: { ...frameOf(base)!, beads }, ownProgress: {}, letters: true, paletteLetters: { [HEX.A]: 'A', [HEX.B]: 'B', [HEX.C]: 'C' }, ...changes })
 }
 
 const lines = (project: Project) => wordChartOf(project)!.rows.map((row) => `${row.both ? '1&2' : row.number}${row.marker ? `(${row.marker})` : ''}: ${row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(',')}`)
@@ -53,7 +53,7 @@ describe('Word chart (ticket 0574)', () => {
   })
 
   it('starts from the Frame\'s last line once rows run bottom to top, each row keeping the ruler\'s number (ticket 1129)', () => {
-    const project = framed('loom', ['AB', 'CC'], { rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
+    const project = framed('loom', ['AB', 'CC'], { ownProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
     expect(lines(project)).toEqual(['2: 2C', '1: 1A,1B'])
     expect(wordChartOf(project)!.firstEdge).toBe('bottom')
   })
@@ -99,7 +99,7 @@ describe('Word chart (ticket 0574)', () => {
   })
 
   it('follows Row direction down the columns and says where the first row is', () => {
-    const project = framed('loom', ['AB', 'AB', 'AB'], { rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 0 } })
+    const project = framed('loom', ['AB', 'AB', 'AB'], { ownProgress: { direction: 'columns', currentRow: 0, currentColumn: 0 } })
     expect(lines(project)).toEqual(['1: 3A', '2: 3B'])
     expect(wordChartOf(project)!.firstEdge).toBe('left')
   })
@@ -121,7 +121,7 @@ describe('Word chart (ticket 0574)', () => {
     [270, 'columns', 'bottom', '1A,1C'],
   ])('at %s° with rows run %s puts Row 1 at the %s and reads %s', (rotation, direction, edge, runs) => {
     // The first line is A then B along the rows, and A then C down the columns.
-    const project = framed('loom', ['AB', 'CC'], { orientation: rotation, rowProgress: { direction, currentRow: 0, currentColumn: 0 } })
+    const project = framed('loom', ['AB', 'CC'], { orientation: rotation, ownProgress: { direction, currentRow: 0, currentColumn: 0 } })
     const chart = wordChartOf(project)!
     expect(chart.firstEdge).toBe(edge)
     expect(chart.rows[0]!.runs.map((run) => `${run.count}${run.letter}`).join(',')).toBe(runs)

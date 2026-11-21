@@ -21,12 +21,25 @@ import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../do
 /** The localStorage key of the old library, one value holding every Project (ADR 0001). */
 export const STORAGE_KEY = 'openbeads:patterns'
 
-// The stored format (ADR 0009): v1 a bare array of full hex cells, v2 compact grids, v3 compact beads by position, v4 (ADR
-// 0066) the Frame's own beads, v5 (0664, ADR 0079) the layer list, v6 (0691) brick stitch's Drop under its new id. A record
-// of the IndexedDB library holds one Project as version 6 writes it (ADR 0094).
-export const STORED_VERSION = 6
+// The stored format (ADR 0009): v1 hex cells, v2 compact grids, v3 beads by position, v4 (ADR 0066) the Frame's beads, v5
+// (0664) the layer list, v6 (0691) brick's Drop id, v7 (1185) the Frame's placement and way as seen. An IndexedDB record
+// holds one Project as version 7 writes it (ADR 0094).
+export const STORED_VERSION = 7
 /** The first version that stores the layer list, which a Project is kept sealed from (ticket 0716). */
-export const LAYERED_VERSION = 5
+const LAYERED_VERSION = 5
+
+/** Whether a stored version keeps its Projects encoded as the current one does, so they can stay sealed: versions 5 to 7
+ * differ only in fields the one decoder reads either way (a Frame's place and Row progress, ticket 1185), but for
+ * version 5's Brick block, renamed by `currentEncoded`. */
+export function keepsEncoded(version: number | undefined): version is number {
+  return version !== undefined && version >= LAYERED_VERSION && version <= STORED_VERSION
+}
+
+/** A Project encoded by a stored version that `keepsEncoded`, as the current one encodes it: version 5's Brick block
+ * read as brick stitch's Drop (ticket 0691), the beads left encoded. */
+export function currentEncoded(version: number, encoded: EncodedProject): EncodedProject {
+  return version === LAYERED_VERSION ? { ...encoded, layers: encoded.layers.map(renamedBrickBlock) } : encoded
+}
 
 export interface StoredLibrary {
   version: number
@@ -61,6 +74,7 @@ export const READERS: Record<number, (parsed: unknown) => StoredProject[]> = {
   4: (parsed) => (parsed as StoredFlatLibrary).patterns.map(decodeFlatProject),
   5: (parsed) => (parsed as StoredLibrary).patterns.map(decodeVersionTwelveProject),
   6: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
+  7: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
 }
 
 /** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned
@@ -127,10 +141,9 @@ export function parseRecords(raw: string): Map<string, StoredRecord> {
   const read = version === undefined ? undefined : READERS[version]
   const records = new Map<string, StoredRecord>()
   if (!read) throw new Error('The stored library is in a form this build cannot read')
-  if (version === STORED_VERSION || version === LAYERED_VERSION) {
+  if (keepsEncoded(version)) {
     for (const encoded of inKnownTechniques((parsed as StoredLibrary).patterns)) {
-      const current = version === STORED_VERSION ? encoded : { ...encoded, layers: encoded.layers.map(renamedBrickBlock) }
-      records.set(encoded.id, JSON.stringify(current))
+      records.set(encoded.id, JSON.stringify(currentEncoded(version, encoded)))
     }
   } else {
     for (const project of inKnownTechniques(read(parsed)).map(normalizeProject)) records.set(project.id, project)

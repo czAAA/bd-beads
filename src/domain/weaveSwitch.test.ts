@@ -56,7 +56,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   })
 
   it('counts its rows, passes and size in its own Weave: peyote\'s first line takes one pass and every later one two', () => {
-    const project = withLayers(peyoteOnLoom(), { rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
+    const project = withLayers(peyoteOnLoom(), { ownProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
     expect(rowProgressPosition(project).total).toBe(11)
     // Row 0 is pass 0, done; row 1 is pass 1 on its even positions and pass 2 on its odd.
     expect(isInFinishedRow(project, { row: 10, column: 10 })).toBe(true)

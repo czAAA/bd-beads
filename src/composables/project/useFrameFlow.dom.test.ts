@@ -14,7 +14,7 @@ import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
 import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../../domain/layerRecord'
-import { frameSheetOf, layersView, withLayers } from '../../testUtils/layerFields'
+import { frameSheetOf, layersView, withLayers, pointersOf } from '../../testUtils/layerFields'
 
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const open = withFrame(sized, undefined)
@@ -92,7 +92,7 @@ describe('useFrameFlow', () => {
     drag({ row: 0, column: 2 })
     release()
     expect(lastFrame(deps)).toEqual({ ...sizedRect, column: 2 })
-    expect(rowProgressOf(deps.harness.project).currentRow).toBe(1)
+    expect((rowProgressOf(deps.harness.project).down ?? 0)).toBe(1)
   })
 
   it('resizes the Frame by the edges of the handle it grabbed, only while the bar is open', () => {
@@ -699,7 +699,7 @@ describe('useFrameFlow', () => {
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(false)
       expect(frameOf(deps.harness.project)!.shape).toBe('star')
-      expect(rowProgressOf(deps.harness.project)).toMatchObject({ currentRow: 0, currentColumn: 0 })
+      expect(pointersOf(rowProgressOf(deps.harness.project))).toEqual({})
     })
 
     it('asks before replacing a Frame that holds beads, and replaces nothing on No', () => {

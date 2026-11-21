@@ -2,15 +2,16 @@ import type { GridPosition } from './grid'
 import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import type { QuarterTurns } from './frameShape'
 import { laidSize } from './frameOrientation'
-import { normalizedOrientation, turnedOrientation } from './canvasOrientation'
+import { turnedOrientation } from './canvasOrientation'
 import { snapColumn, snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, canvasWeave, frameWeave } from './layerWeave'
-import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, touchFrameSheet, withCanvas, withLayer } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, touchFrameSheet, withLayer } from './layerRecord'
 import { touch, type Project } from './project'
 import { rowProgressStarted } from './rowProgress'
-import { keptAsSeen } from './rowWays'
+import { turnedWithFrame } from './rowWays'
+import { withCanvasTurned } from './table'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectableOn, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
@@ -199,19 +200,20 @@ export function rotateFrame(project: Project): Project | undefined {
   // Upright again it starts where a Frame may (ticket 1016): a resize while turned can leave it between.
   const canvas = canvasWeave(project)
   const at = turns ? { row, column } : { row: snapRow(canvas, row), column: snapColumn(canvas, column) }
-  // With no pass done the way stays as seen (spec 1182): its own way and pointer slots step a quarter back. With a pass
-  // done the rows turn with the Frame, until Rotate Frame asks (ticket 1184).
-  const rowProgress = rowProgressStarted(project) ? frame.rowProgress : keptAsSeen(frame.rowProgress, 1)
+  // With no pass done Row progress is left as it is, so the way sticks as seen (spec 1182). With a pass done the rows
+  // turn with the Frame, the way and every pointer's slot a quarter on, until Rotate Frame asks (ticket 1184).
+  const rowProgress = rowProgressStarted(project) ? turnedWithFrame(frame.rowProgress, 1) : frame.rowProgress
   return touchFrameSheet(project, { ...turned, ...at, rowProgress })
 }
 
-/** Rotate canvas (ticket 471): the picture a quarter turn clockwise further from whatever angle it is at (ticket
- * 0672); only the view turns, no data changes. */
+/** Rotate canvas (ticket 471): the Canvas a quarter turn clockwise further from whatever angle it is at (ticket
+ * 0672); a view, no bead changes. */
 export function rotateCanvas(project: Project): Project {
   return turnCanvasTo(project, turnedOrientation(orientationOf(project), 90))
 }
 
-/** The Canvas shown at an orientation, any angle in degrees (a two-finger twist, ticket 0672); only the view turns. */
+/** The Canvas at an orientation, any angle in degrees (a two-finger twist, ticket 0672): its placement on the table
+ * turns, carrying the Frame until 1188 (withCanvasTurned); a view, no bead changes. */
 export function turnCanvasTo(project: Project, orientation: number): Project {
-  return touch(withCanvas(project, { orientation: normalizedOrientation(orientation) }), {})
+  return touch(withCanvasTurned(project, orientation), {})
 }

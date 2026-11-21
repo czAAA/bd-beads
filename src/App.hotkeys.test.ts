@@ -133,10 +133,10 @@ describe('App keyboard shortcuts', () => {
     await mountApp(15, 30)
 
     await pressKey({ key: 'Enter' })
-    expect(rowProgressOf(loadProjects()[0]).currentRow).toBe(1)
+    expect((rowProgressOf(loadProjects()[0]).down ?? 0)).toBe(1)
 
     await pressKey({ key: 'd' })
-    expect(rowProgressOf(loadProjects()[0]).direction).toBe('columns')
+    expect(rowProgressOf(loadProjects()[0]).way).toBe('right')
   })
 
   it('Space held over a Frame with Row progress pans and leaves the counter where it was (ticket 0835)', async () => {

@@ -2,7 +2,6 @@ import { inKnownTechniques, normalizeProject, type StoredProject } from '../doma
 import type { Project } from '../domain/project'
 import { decodeProject, type EncodedProject } from '../domain/projectEncoding'
 import { paletteFromDevice } from '../domain/palette'
-import { renamedBrickBlock } from '../domain/flatWeave'
 import {
   MOVED_FLAG,
   copyOldLibrary,
@@ -18,8 +17,9 @@ import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, readDeviceAddedColors, readDeviceP
 import { readKey } from './storageKeys'
 import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../domain/sealedProject'
 import {
-  LAYERED_VERSION,
   READERS,
+  currentEncoded,
+  keepsEncoded,
   STORAGE_KEY,
   STORED_VERSION,
   heldFromRecord,
@@ -84,12 +84,10 @@ function readStored(raw: string, keepSealed: (summary: ProjectSummary) => boolea
     const parsed: unknown = JSON.parse(raw)
     const version = versionOf(parsed)
     const read = version === undefined ? undefined : READERS[version]
-    if (read && (version === STORED_VERSION || version === LAYERED_VERSION)) {
+    if (read && keepsEncoded(version)) {
       const sealed: SealedProject[] = []
       const decoded: EncodedProject[] = []
-      // Version 5 differs only in brick stitch's Drop, stored as a Brick block: renamed here, the beads left encoded.
-      const current = (stored: EncodedProject) => (version === STORED_VERSION ? stored : { ...stored, layers: stored.layers.map(renamedBrickBlock) })
-      for (const encoded of inKnownTechniques((parsed as StoredLibrary).patterns).map(current)) {
+      for (const encoded of inKnownTechniques((parsed as StoredLibrary).patterns).map((stored) => currentEncoded(version, stored))) {
         const summary = projectSummaryOf(encoded)
         if (summary && keepSealed(summary)) sealed.push({ ...summary, stored: JSON.stringify(encoded) })
         else decoded.push(encoded)

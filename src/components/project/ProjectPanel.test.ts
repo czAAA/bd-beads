@@ -144,7 +144,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
 
   it('changes the Canvas\'s Technique while a Frame exists, every one offered, even once a Row progress pass is done', async () => {
     const triangle = { ...frameOf(project)!, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
-    const wrapper = mountPanel({ project: withLayers(project, { frame: triangle, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }) })
+    const wrapper = mountPanel({ project: withLayers(project, { frame: triangle, ownProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }) })
     const picker = wrapper.get('[data-testid="canvas-technique"] button')
     expect(picker.attributes('aria-disabled')).toBeUndefined()
     await picker.trigger('click')

@@ -24,7 +24,7 @@ import {
 import { moveLayerSelection, pieceCarry, selectionAfterMove, stepMove, wholeMove, type PieceCarry } from '../../domain/moveSelection'
 import { frameAllows } from '../../domain/frameShape'
 import { laidFrame } from '../../domain/frameOrientation'
-import { frameOf, layerOf } from '../../domain/layerRecord'
+import { layerOf } from '../../domain/layerRecord'
 import type { FrameEdge } from '../../domain/frame'
 import type { Rect } from '../../domain/canvas'
 import type { EditFn } from '../project/useEdit'
@@ -95,7 +95,7 @@ export function useSelectionGesture(
    * Frame for a Mirror-mode drag, the Frame mirroring whole (ADR 0082). The margin is the Canvas's, where a drag may
    * start (ticket 0659). */
   function refusesSelection(project: Project, at: GridPosition, marking = false): boolean {
-    return layerAt(project, at) === 'frame' && (marking || !frameAllows(frameOf(project), 'select'))
+    return layerAt(project, at) === 'frame' && (marking || !frameAllows(project, 'select'))
   }
 
   /** The Selection a Piece tap replaced, until its press ends: a press that was never a tap gives it back (ticket 1065). */
@@ -219,7 +219,7 @@ export function useSelectionGesture(
   function selectAll(): boolean {
     const project = currentProject()
     // A Frame that offers no Selection leaves Select all the Canvas's beads.
-    const all = project ? selectAllSelection(layerOf(project, 'canvas').beads, frameAllows(frameOf(project), 'select') ? laidFrame(project) : undefined) : undefined
+    const all = project ? selectAllSelection(layerOf(project, 'canvas').beads, frameAllows(project, 'select') ? laidFrame(project) : undefined) : undefined
     if (!all) {
       return false
     }

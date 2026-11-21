@@ -1,4 +1,5 @@
 import { findBead } from '../domain/beads'
+import { withCanvasTurned } from '../domain/table'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { type BeadMap, withColors } from '../domain/canvas'
@@ -12,7 +13,7 @@ import { renderProject as renderInSpace, visibleBeads, type RenderInput } from '
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
 import { withFrameGrid } from '../testUtils/frameGrid'
-import { canvasOf, frameOf, heldWeave, quarterTurnOf, withCanvas, withLayer } from '../domain/layerRecord'
+import { canvasOf, frameOf, heldWeave, quarterTurnOf, withLayer } from '../domain/layerRecord'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
@@ -35,7 +36,7 @@ function projectOf(technique: Technique, columns: number, rows: number, extra: L
   const { grid, ...rest } = extra
   // Row marks are off here unless a test asks for them with `rowMarks` (a Frame turns Row progress on in the app).
   // Upright, whatever the Technique's own starting turn is (a new peyote Canvas starts turned).
-  const made = withLayers(withCanvas(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), { orientation: 0 }), rest)
+  const made = withLayers(withCanvasTurned(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), 0), rest)
   // The Frame is woven as the Project is made, whatever the test overrides (ticket 492).
   const project = frameOf(made) && !rest.frame ? withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') }) : made
   return grid ? withFrameGrid(project, grid) : project
@@ -361,7 +362,7 @@ describe('renderProject', () => {
     })
 
     it('fades the beads in rows before the current one, when rows run along the grid\'s rows', () => {
-      const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
+      const project = projectOf('loom', 3, 3, { ownProgress: progress('rows') })
 
       const dimmed = beadsDrawn(project, whole(project), 1, false, true).map(({ dimmed }) => dimmed)
 
@@ -369,7 +370,7 @@ describe('renderProject', () => {
     })
 
     it('fades the beads in columns before the current one, when rows run down the grid\'s columns', () => {
-      const project = projectOf('loom', 3, 3, { rowProgress: progress('columns') })
+      const project = projectOf('loom', 3, 3, { ownProgress: progress('columns') })
 
       const dimmed = beadsDrawn(project, whole(project), 1, false, true).map(({ dimmed }) => dimmed)
 
@@ -377,13 +378,13 @@ describe('renderProject', () => {
     })
 
     it('fades nothing while the pointer is still on the first row, the row being woven', () => {
-      const project = projectOf('loom', 3, 3, { rowProgress: { ...progress('rows'), currentRow: 0, currentColumn: 0 } })
+      const project = projectOf('loom', 3, 3, { ownProgress: { ...progress('rows'), currentRow: 0, currentColumn: 0 } })
 
       expect(beadsDrawn(project, whole(project), 1, false, true).some(({ dimmed }) => dimmed)).toBe(false)
     })
 
     it('draws finished rows at their normal color while they are shown (hover or a tap, ticket 352)', () => {
-      const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
+      const project = projectOf('loom', 3, 3, { ownProgress: progress('rows') })
       const { context } = recordingContext()
       const beads: BeadShape[] = []
 
@@ -405,7 +406,7 @@ describe('renderProject', () => {
 
     it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
       const colors = (direction: 'rows' | 'columns', showFinished: boolean) => {
-        const project = filled(projectOf('loom', 3, 3, { rowProgress: progress(direction) }))
+        const project = filled(projectOf('loom', 3, 3, { ownProgress: progress(direction) }))
         return beadsDrawn(project, whole(project), 1, showFinished, true).map(({ color }) => color)
       }
       const red = '#e63746'
@@ -420,7 +421,7 @@ describe('renderProject', () => {
     })
 
     it('brightens only the pass on peyote, not the whole line', () => {
-      const project = filled(projectOf('peyote', 4, 3, { rowProgress: { ...progress('rows'), currentRow: 1 } }))
+      const project = filled(projectOf('peyote', 4, 3, { ownProgress: { ...progress('rows'), currentRow: 1 } }))
 
       const lit = beadsDrawn(project, whole(project), 1, false, true).filter(({ color }) => color === brighten('#e63746', 0.1)).length
 
@@ -428,13 +429,13 @@ describe('renderProject', () => {
     })
 
     it('leaves an empty cell of the current row as it is: no brightening where there is no bead (ticket 411)', () => {
-      const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
+      const project = projectOf('loom', 3, 3, { ownProgress: progress('rows') })
 
       expect(beadsDrawn(project, whole(project), 1, false, true).every(({ color }) => color === null)).toBe(true)
     })
 
     it('fades nothing while the renderer is told to draw no row marks (an export)', () => {
-      const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
+      const project = projectOf('loom', 3, 3, { ownProgress: progress('rows') })
 
       expect(beadsDrawn(project, whole(project)).some(({ dimmed }) => dimmed)).toBe(false)
     })
@@ -1028,7 +1029,7 @@ describe('the draft look zoomed out (ticket 0676)', () => {
 
   it('leaves the Canvas clear under the Frame and its margin, and draws the Frame\'s empty beads and finished rows as their look does', () => {
     const images = withDraftCanvas()
-    const project = withLayers(framedPiece('loom'), { rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
+    const project = withLayers(framedPiece('loom'), { ownProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
     const { context } = recordingContext()
 
     renderInSpace(context, { project, space: spaceOf(project, true), region: SCREEN, zoom: 0.2, rowMarks: true, draftWhenSmall: true })

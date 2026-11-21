@@ -1,14 +1,15 @@
 import { colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type FrameSheet } from './canvas'
-import { rowOrderOf, type ShapedSheet } from './frameShape'
+import { frameShapeOf, rowOrderOf, type ShapedSheet } from './frameShape'
 import type { GridPosition, Rotation } from './grid'
 import { sameBeads } from './layerBeads'
-import { beadsOfLayer, frameOf, type Layered, quarterTurnOf, touchFrameSheet, withLayer } from './layerRecord'
+import { beadsOfLayer, frameOf, type Layered, touchFrameSheet, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
 import type { LayerGeometry } from './layerGeometry'
 import { frameWeave } from './layerWeave'
 import type { Project, RowProgress } from './project'
 import type { RowOrder, RowWay } from './rowOrder'
-import { ownDirection, ownWayOf, turnedWay, type ShownWay } from './rowWays'
+import { ownRowWay, seenWayOfOwn, turnedWay, type SeenWay } from './rowWays'
+import { frameQuarterTurnOf } from './table'
 import type { AreaLine } from './removeLine'
 import type { PassDirection } from './weaveGeometry'
 
@@ -17,7 +18,7 @@ import type { PassDirection } from './weaveGeometry'
 
 /** Row progress exactly as a freshly created Project starts out — also what Delete all (ticket 42) resets it back
  * to. */
-export const INITIAL_ROW_PROGRESS: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
+export const INITIAL_ROW_PROGRESS: RowProgress = { way: 'down' }
 
 /** The Frame's Row progress (ADR 0079): where its weaver is; a Canvas without a Frame is at the first row. */
 export function rowProgressOf(project: Layered): RowProgress {
@@ -30,17 +31,13 @@ function withRowProgress(project: Project, rowProgress: RowProgress): Project {
   return frame ? touchFrameSheet(project, { ...frame, rowProgress }) : project
 }
 
+/** The four ways as seen, each with its own pointer (ticket 0589). */
+const SEEN_WAYS: readonly SeenWay[] = ['down', 'right', 'up', 'left']
+
 /** Whether Row progress is already exactly as it starts afresh (`start`, see startingRowProgressOf, or
  * INITIAL_ROW_PROGRESS with no Frame), so deleteAll has nothing left to reset. */
 export function isInitialRowProgress(rowProgress: RowProgress, start: RowProgress = INITIAL_ROW_PROGRESS): boolean {
-  return (
-    rowProgress.direction === start.direction &&
-    !rowProgress.reversed === !start.reversed &&
-    !rowProgress.currentRowBack &&
-    !rowProgress.currentColumnBack &&
-    rowProgress.currentRow === INITIAL_ROW_PROGRESS.currentRow &&
-    rowProgress.currentColumn === INITIAL_ROW_PROGRESS.currentColumn
-  )
+  return rowProgress.way === start.way && SEEN_WAYS.every((way) => !rowProgress[way])
 }
 
 /** Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055), of any kind (a
@@ -48,23 +45,20 @@ export function isInitialRowProgress(rowProgress: RowProgress, start: RowProgres
  * saved flag is ignored. */
 export const rowProgressOn = (project: Layered): boolean => frameOf(project) !== undefined
 
-type PointerKey = 'currentRow' | 'currentColumn' | 'currentRowBack' | 'currentColumnBack'
-
-/** Which of the four pointers the weaver's current way (axis and end) counts on. */
-function pointerKey({ direction, reversed }: Pick<RowProgress, 'direction' | 'reversed'>): PointerKey {
-  if (direction === 'rows') return reversed ? 'currentRowBack' : 'currentRow'
-  return reversed ? 'currentColumnBack' : 'currentColumn'
-}
-
 /** The pass the weaver is on, in the current way; every pass before it is finished. */
 export function currentPass(rowProgress: RowProgress): number {
-  return rowProgress[pointerKey(rowProgress)] ?? 0
+  return rowProgress[rowProgress.way] ?? 0
 }
 
 /** Row progress with every pointer back at the first pass, the way the weaver runs unchanged. */
 function firstPasses(rowProgress: RowProgress): RowProgress {
-  const { currentRowBack: _row, currentColumnBack: _column, ...rest } = rowProgress
-  return { ...rest, currentRow: 0, currentColumn: 0 }
+  return { way: rowProgress.way }
+}
+
+/** Row progress with the pointer of `way` set, a first pass left out. */
+function withPointer(rowProgress: RowProgress, way: SeenWay, pass: number): RowProgress {
+  const { [way]: _was, ...rest } = rowProgress
+  return pass > 0 ? { ...rest, [way]: pass } : (rest as RowProgress)
 }
 
 /** Keeps a pointer inside 0..passes: one past the last pass means every pass is done (ticket 411), which fills the
@@ -78,24 +72,12 @@ function passesOf(sheet: ShapedSheet, way: RowWay): number {
   return rowOrderOf(sheet, way).count
 }
 
-/** The bottom to top and right to left pointers inside the Frame; absent while neither has moved. */
-function clampedBack(rowProgress: Partial<RowProgress>, sheet: ShapedSheet): Partial<RowProgress> {
-  const { currentRowBack, currentColumnBack } = rowProgress
-  return {
-    ...(currentRowBack ? { currentRowBack: clampRow(currentRowBack, passesOf(sheet, { direction: 'rows', reversed: true })) } : {}),
-    ...(currentColumnBack ? { currentColumnBack: clampRow(currentColumnBack, passesOf(sheet, { direction: 'columns', reversed: true })) } : {}),
-  }
-}
-
-/** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame
- * change uses. */
-export function clampPointer(rowProgress: RowProgress, sheet: ShapedSheet): RowProgress {
-  return {
-    ...rowProgress,
-    currentRow: clampRow(rowProgress.currentRow, passesOf(sheet, { direction: 'rows' })),
-    currentColumn: clampRow(rowProgress.currentColumn, passesOf(sheet, { direction: 'columns' })),
-    ...clampedBack(rowProgress, sheet),
-  }
+/** Row progress with every pointer inside the Frame lying at `turn` (its nearest quarter turn on the table): each way
+ * as seen counts the passes of the Frame's own axis and end it runs. A Custom frame's Row order runs one way, along its
+ * rows, so it keeps that one pointer. The one clamp a Frame change and an opened file use. */
+export function clampPointer(rowProgress: RowProgress, sheet: ShapedSheet, turn: Rotation): RowProgress {
+  if (frameShapeOf(sheet)) return withPointer({ way: 'down' }, 'down', clampRow(rowProgress.down ?? 0, passesOf(sheet, { direction: 'rows' })))
+  return SEEN_WAYS.reduce((clamped, way) => withPointer(clamped, way, clampRow(rowProgress[way] ?? 0, passesOf(sheet, ownRowWay(way, turn)))), { way: rowProgress.way } as RowProgress)
 }
 
 /** What a Frame's Row order is built from beside its rectangle and Weave: its Frame shape, a Custom frame's settings and turn. */
@@ -103,46 +85,59 @@ function laidOf(frame: FrameSheet | undefined): Pick<ShapedSheet, 'shape' | 'set
   return { shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns }
 }
 
-/** Row progress as a stored Project holds it, read inside its Frame (or the box round its beads): an old file's
- * `enabled` and `decided` are dropped, as Row progress follows the Frame (ticket 426, 434), and every pointer is
- * clamped to the passes. */
-export function readRowProgress(stored: (Partial<RowProgress> & { currentRow: number }) | undefined, sheet: ShapedSheet): RowProgress {
-  const rowProgress: Partial<RowProgress> & { currentRow: number } = stored ?? { currentRow: 0 }
-  const turns = rowOrderOf(sheet, { direction: 'rows' }).turns
-  return {
-    // Turn row direction isn't offered where the Row order is worked one way only (a Custom frame, ticket 0594).
-    direction: turns ? (rowProgress.direction ?? 'rows') : 'rows',
-    currentRow: clampRow(rowProgress.currentRow, passesOf(sheet, { direction: 'rows' })),
-    currentColumn: clampRow(rowProgress.currentColumn ?? 0, passesOf(sheet, { direction: 'columns' })),
-    ...(turns && rowProgress.reversed === true ? { reversed: true } : {}),
-    ...clampedBack(rowProgress, sheet),
-  }
+/** Row progress as an older file held it (before file version 15): a direction along the Frame's own rows or columns
+ * and an end, with a pointer for each of its own four ways. */
+export interface OwnRowProgress {
+  direction?: PassDirection
+  reversed?: boolean
+  currentRow: number
+  currentColumn?: number
+  currentRowBack?: number
+  currentColumnBack?: number
+}
+
+/** An older file's Row progress as seen (ticket 1185): the way it showed, its own way turned `shownTurns` quarters (the
+ * Canvas's nearest quarter turn plus the Frame's turn on it), each pointer moved to the slot of the way it showed. */
+export function seenProgressOf(own: OwnRowProgress, shownTurns: number): RowProgress {
+  const ownWay = seenWayOfOwn({ direction: own.direction ?? 'rows', ...(own.reversed ? { reversed: true } : {}) }, 0)
+  const pointers: [SeenWay, number | undefined][] = [['down', own.currentRow], ['right', own.currentColumn], ['up', own.currentRowBack], ['left', own.currentColumnBack]]
+  return pointers.reduce((seen, [way, count]) => (count ? { ...seen, [turnedWay(way, shownTurns)]: count } : seen), { way: turnedWay(ownWay, shownTurns) } as RowProgress)
+}
+
+/** Row progress as a stored Project holds it, read inside its Frame lying at `turn`: a way it doesn't know reads as top
+ * to bottom, and every pointer is clamped to the passes (see clampPointer). */
+export function readRowProgress(stored: Partial<Record<keyof RowProgress, unknown>> | undefined, sheet: ShapedSheet, turn: Rotation): RowProgress {
+  const way = SEEN_WAYS.find((each) => each === stored?.way) ?? 'down'
+  const counts = SEEN_WAYS.flatMap((each) => {
+    const count = stored?.[each]
+    return typeof count === 'number' && Number.isFinite(count) ? [[each, Math.round(count)] as const] : []
+  })
+  return clampPointer({ way, ...Object.fromEntries(counts) }, sheet, turn)
 }
 
 /** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it
  * (ticket 411). */
 export function rowProgressStarted(project: Layered): boolean {
-  const { currentRow, currentColumn, currentRowBack, currentColumnBack } = rowProgressOf(project)
-  return rowProgressOn(project) && (currentRow > 0 || currentColumn > 0 || !!currentRowBack || !!currentColumnBack)
+  const rowProgress = rowProgressOf(project)
+  return rowProgressOn(project) && SEEN_WAYS.some((way) => !!rowProgress[way])
 }
-
-/** The four pointers and the way each counts (ticket 0589). */
-const POINTER_WAYS: readonly (readonly [PointerKey, RowWay])[] = [
-  ['currentRow', { direction: 'rows' }],
-  ['currentColumn', { direction: 'columns' }],
-  ['currentRowBack', { direction: 'rows', reversed: true }],
-  ['currentColumnBack', { direction: 'columns', reversed: true }],
-]
 
 /** Whether a Frame line is one of the rows worked `way`, rather than a line across them. */
 export const lineRunsAlong = (line: AreaLine, way: RowWay): boolean => (line.axis === 'row') === (way.direction === 'rows')
 
-/** The beads of a Frame line in passes finished `way` (the way the rows run now unless given): how many, and how many
- * passes they make up. */
-export function finishedOnLine(project: Layered, line: AreaLine, way: RowWay = rowProgressOf(project)): { beads: number; passes: number } {
+/** The Frame's own axis and end (spec 1182, see ownRowWay) that its rows run as seen `way` (the way they run now unless
+ * given), on its nearest quarter turn; a Custom frame's Row order runs along its rows. */
+export function ownRowWayOf(project: Layered, way: SeenWay = rowProgressOf(project).way): RowWay {
+  const frame = frameOf(project)
+  return frame && frameShapeOf(frame) ? { direction: 'rows' } : ownRowWay(way, frameQuarterTurnOf(project))
+}
+
+/** The beads of a Frame line in passes finished `way` as seen (the way the rows run now unless given): how many, and
+ * how many passes they make up. */
+export function finishedOnLine(project: Layered, line: AreaLine, way: SeenWay = rowProgressOf(project).way): { beads: number; passes: number } {
   const { rows = 0, columns = 0 } = frameOf(project) ?? {}
-  const pointer = rowProgressOf(project)[pointerKey(way)] ?? 0
-  const order = rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, way)
+  const pointer = rowProgressOf(project)[way] ?? 0
+  const order = rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, ownRowWayOf(project, way))
   const length = line.axis === 'row' ? columns : rows
   const at = (along: number) => (line.axis === 'row' ? { row: line.index, column: along } : { row: along, column: line.index })
   const finished = Array.from({ length }, (_bead, along) => order.passAt(at(along))).filter((pass) => pass < pointer)
@@ -153,12 +148,10 @@ export function finishedOnLine(project: Layered, line: AreaLine, way: RowWay = r
  * along it goes back by that row's finished passes, so the rows after it, moved up, stay finished; a line across the
  * rows leaves them finished, a bead short. */
 export function progressWithoutLine(project: Layered, line: AreaLine): RowProgress {
-  const rowProgress = { ...rowProgressOf(project) }
-  for (const [key, way] of POINTER_WAYS) {
-    const { passes } = lineRunsAlong(line, way) ? finishedOnLine(project, line, way) : { passes: 0 }
-    if (passes > 0) rowProgress[key] = (rowProgress[key] ?? 0) - passes
-  }
-  return rowProgress
+  return SEEN_WAYS.reduce((rowProgress, way) => {
+    const { passes } = lineRunsAlong(line, ownRowWayOf(project, way)) ? finishedOnLine(project, line, way) : { passes: 0 }
+    return passes > 0 ? withPointer(rowProgress, way, (rowProgress[way] ?? 0) - passes) : rowProgress
+  }, rowProgressOf(project))
 }
 
 /** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is
@@ -167,29 +160,14 @@ export function resetRowProgress(project: Project): Project {
   return withRowProgress(project, firstPasses(rowProgressOf(project)))
 }
 
-export type { ShownWay }
+export type { SeenWay }
 
-/** Which way the rows run as the Frame lies (ticket 0667, ADR 0079): its own way (top to bottom, left to right and back),
- * turned as its own rows lie on screen. */
-function shownWay(rowProgress: Pick<RowProgress, 'direction' | 'reversed'>, quarterTurns = 0): ShownWay {
-  return turnedWay(ownWayOf(rowProgress), quarterTurns)
-}
-
-/** How the Frame's own rows lie as seen (ticket 1101): turned with the Frame on the Canvas, then with the Canvas's
- * nearest quarter turn; the Progress bar and the Word chart both read it. */
-export function seenRotation(project: Layered): Rotation {
-  return ((quarterTurnOf(project) + 90 * (frameOf(project)?.quarterTurns ?? 0)) % 360) as Rotation
-}
-
-/** The same in quarter turns clockwise. */
-function seenTurns(project: Layered): number {
-  return seenRotation(project) / 90
-}
-
-/** Which way the Frame's rows run on screen (ticket 1101): turned with the Frame and with the Canvas, so the Progress
- * bar's words and arrows say what the maker sees; the Row direction the Frame keeps never changes with either turn. */
-export function shownWayOf(project: Layered): ShownWay {
-  return shownWay(rowProgressOf(project), seenTurns(project))
+/** Which way the Frame's rows run as seen (spec 1182): the way Row progress keeps, on the Frame's nearest quarter turn,
+ * so the Progress bar's words and arrows say what the maker sees. A Custom frame's run along its own rows, turned as it
+ * lies. */
+export function seenWayOf(project: Layered): SeenWay {
+  const frame = frameOf(project)
+  return frame && frameShapeOf(frame) ? seenWayOfOwn({ direction: 'rows' }, frameQuarterTurnOf(project)) : rowProgressOf(project).way
 }
 
 /** Whether the weaver's lines are columns as seen (spec 1182): left to right and right to left are columns, top to
@@ -197,29 +175,26 @@ export function shownWayOf(project: Layered): ShownWay {
  * rows. What every word naming them asks: the labels, the buttons, the toasts and the counter. */
 export function columnsAsSeen(project: Layered): boolean {
   if (!frameRowOrder(project).turns) return false
-  const way = shownWayOf(project)
+  const way = seenWayOf(project)
   return way === 'left' || way === 'right'
 }
 
 /** The four ways Turn row direction lists, in the order a press of its `D` key steps through them (ticket 0973). */
-export const ROW_WAYS: readonly ShownWay[] = ['down', 'right', 'up', 'left']
+export const ROW_WAYS: readonly SeenWay[] = SEEN_WAYS
 
 /** The `D` key: the rows on to the next of the four ways as seen, in the list's order (ROW_WAYS), leaving the grid and
  * the turns alone. */
 export function toggleRowDirection(project: Project): Project {
-  return turnRowDirectionTo(project, ROW_WAYS[(ROW_WAYS.indexOf(shownWayOf(project)) + 1) % ROW_WAYS.length]!)
+  return turnRowDirectionTo(project, ROW_WAYS[(ROW_WAYS.indexOf(seenWayOf(project)) + 1) % ROW_WAYS.length]!)
 }
 
-/** Points the weaver's rows the way they are to run on screen (ticket 0973, UX-060; both turns, ticket 1101): each
- * way keeps its own pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
+/** Points the weaver's rows the way they are to run as seen (ticket 0973, UX-060; spec 1182): each way keeps its own
+ * pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
  * Row order is worked one way only. */
-export function turnRowDirectionTo(project: Project, way: ShownWay): Project {
-  if (!frameRowOrder(project).turns) return project
-  const own = turnedWay(way, -seenTurns(project))
+export function turnRowDirectionTo(project: Project, way: SeenWay): Project {
   const rowProgress = rowProgressOf(project)
-  if (ownWayOf(rowProgress) === own) return project
-  const { reversed: _reversed, ...rest } = rowProgress
-  return withRowProgress(project, { ...rest, ...ownDirection(own) })
+  if (!frameRowOrder(project).turns || rowProgress.way === way) return project
+  return withRowProgress(project, { ...rowProgress, way })
 }
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
@@ -237,11 +212,11 @@ export function passLine(project: Layered): { line: number; lines: number } | un
   const order = frameRowOrder(project)
   const pass = currentPass(rowProgressOf(project))
   if (!frame || order.stepOf || pass >= order.count) return undefined
-  const { direction } = rowProgressOf(project)
+  const { direction } = ownRowWayOf(project)
   const lines = direction === 'columns' ? frame.columns : frame.rows
   const line = order.lineOf(pass)
-  // The Frame's own lines as seen: where both turns show them running up or to the left, the rulers count from the far end.
-  const seen = shownWay({ direction }, seenTurns(project))
+  // The Frame's own lines as seen: where they lie running up or to the left, the rulers count from the far end.
+  const seen = seenWayOfOwn({ direction }, frameQuarterTurnOf(project))
   const fromEnd = seen === 'up' || seen === 'left'
   return order.count === lines || line === undefined ? undefined : { line: fromEnd ? lines - line : line + 1, lines }
 }
@@ -250,7 +225,7 @@ export function passLine(project: Layered): { line: number; lines: number } | un
  * passes go. A Canvas with no Frame has no passes, counted in its own Weave. */
 export function frameRowOrder(project: Layered): RowOrder {
   const { rows = 0, columns = 0 } = frameOf(project) ?? {}
-  return rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, rowProgressOf(project))
+  return rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, ownRowWayOf(project))
 }
 
 /** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. `order` is the
@@ -313,7 +288,7 @@ export function rowPassesOf(project: Layered): (row: number, column: number) => 
  * Undefined where that is no set of lines: the way turned (every pass changes), a pass off one line (a Custom frame). */
 export function stepLines(project: Layered, before: RowProgress): { direction: PassDirection; lines: number[] } | undefined {
   const after = rowProgressOf(project)
-  if (!frameOf(project) || before.direction !== after.direction || !!before.reversed !== !!after.reversed) return undefined
+  if (!frameOf(project) || before.way !== after.way) return undefined
   const order = frameRowOrder(project)
   const [from, to] = [currentPass(before), currentPass(after)].sort((a, b) => a - b) as [number, number]
   const lines = new Set<number>()
@@ -322,7 +297,7 @@ export function stepLines(project: Layered, before: RowProgress): { direction: P
     if (line === undefined) return undefined
     lines.add(line)
   }
-  return { direction: after.direction, lines: [...lines].sort((a, b) => a - b) }
+  return { direction: ownRowWayOf(project).direction, lines: [...lines].sort((a, b) => a - b) }
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
@@ -362,5 +337,6 @@ export function finishedRowsHold(before: Project, after: Project): boolean {
  * finished row and to go back to an earlier one. */
 export function moveToRow(project: Project, row: number): Project {
   const { total } = rowProgressPosition(project)
-  return withRowProgress(project, { ...rowProgressOf(project), [pointerKey(rowProgressOf(project))]: clampRow(row, total) })
+  const rowProgress = rowProgressOf(project)
+  return withRowProgress(project, withPointer(rowProgress, rowProgress.way, clampRow(row, total)))
 }
