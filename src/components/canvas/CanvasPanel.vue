@@ -31,7 +31,7 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { litPillTool, type PillRect } from '../../domain/toolPill'
+import { expandedPillPosition, litPillTool, type PillPosition, type PillRect } from '../../domain/toolPill'
 import { useShellScope } from '../../composables/ui/shellScope'
 import { hasGuides, selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
@@ -387,12 +387,29 @@ function bindDrawing(el: unknown) {
 const drawingSize = useElementSize(drawingEl)
 // Nothing in the drawing area scrolls the drawn Canvas away from what sits on it (ticket 1107).
 useDrawingScrollGuard(drawingEl)
+/** A move of the pill while the Frame is expanded: kept until Back to the Canvas, the device's edge left as it is. */
+const expandedPillMove = ref<PillPosition>()
+watch(frameExpanded, (expanded) => expanded || (expandedPillMove.value = undefined))
+/** Where the pill stands: its own edge, or while the Frame is expanded the edge that leaves the Frame the most room
+ * (ticket 1176), by the sheet's shape against the drawing area's. */
+const shownPillPosition = computed<PillPosition>({
+  get: () => {
+    const sheet = frameAnchor.value?.sheet
+    if (!frameExpanded.value || !sheet) return toolPillPosition.value
+    const area = { width: drawingSize.width.value, height: drawingSize.height.value }
+    return expandedPillMove.value ?? expandedPillPosition(toolPillPosition.value, sheet, area)
+  },
+  set: (position) => {
+    if (frameExpanded.value) expandedPillMove.value = position
+    else toolPillPosition.value = position
+  },
+})
 /** The Tool pill where it now stands: the Selection bar keeps clear of it, and a Fit too (ticket 0850), in the drawing
  * area as it is now. */
 function onPillRect(rect: PillRect | undefined) {
   pillRect.value = rect
   const el = drawingEl.value
-  if (el) onToolPillPlaced(rect, { width: el.clientWidth, height: el.clientHeight }, toolPillPosition.value)
+  if (el) onToolPillPlaced(rect, { width: el.clientWidth, height: el.clientHeight }, shownPillPosition.value)
 }
 const selectionLayerStyle = computed(() => {
   const el = drawingEl.value
@@ -651,7 +668,7 @@ const drawingStyle = computed(() => {
           <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
           <ToolPill
             v-if="activeProject"
-            v-model:position="toolPillPosition"
+            v-model:position="shownPillPosition"
             v-model:popover-open="toolPillPopoverOpen"
             :mirror-on="mirrorOn"
             :mirror-marking="mirrorMarking"
