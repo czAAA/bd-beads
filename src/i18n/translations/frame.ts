@@ -17,6 +17,9 @@ export interface FrameTranslations {
     noFrameLine: string
     /** The Frame panel's Select a frame row, the hint shown once it is on, and the line under the off exports (ticket 568). */
     selectAFrame: string
+    selectAPieceFrame: string
+    selectPieceFrameHint: string
+    selectPieceFrameTouchHint: string
     selectFrameHint: string
     exportNeedsFrame: string
     sizeHeading: string
