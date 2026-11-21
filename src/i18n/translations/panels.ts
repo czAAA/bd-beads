@@ -47,13 +47,6 @@ export interface PanelsTranslations {
       /** Help's Send feedback row and the link under it that open the Feedback sheet (tickets 0700, 1144). */
       sendFeedback: string
       reportTranslation: string
-      /** The row that shows whether the browser keeps the Projects (tickets 0839, 0936), its value, and its Info
-       * button's name and Tooltip, which say why. */
-      keepProjects: string
-      keepProjectsOn: string
-      keepProjectsOff: string
-      keepProjectsInfoLabel: string
-      keepProjectsInfo: string
       /** Help's row that shows every strip and pill button's name at once (ticket 0927). */
       buttonNames: string
     }

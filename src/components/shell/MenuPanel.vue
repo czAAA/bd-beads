@@ -11,7 +11,6 @@ import type { ThemePick } from '../../theme/theme'
 import { useThemePick } from '../../theme/useThemePick'
 import type { Account } from '../../domain/account'
 import AccountSection from './AccountSection.vue'
-import PanelFactRow from './PanelFactRow.vue'
 import PanelItem from './PanelItem.vue'
 import PanelPicker from './PanelPicker.vue'
 import PanelSection from './PanelSection.vue'
@@ -44,8 +43,6 @@ const props = withDefaults(
     /** The Homepage's demo editor (ticket 0797): only the Projects and Keyboard shortcuts, so nothing in the demo
      * changes the app; its New Project empties the demo, with no form. */
     demo?: boolean
-    /** Whether the browser keeps the Projects (tickets 0839, 0936): the row shows it; absent where it can't say. */
-    kept?: boolean
     /** The signed-in account (ticket 0078); none for a Guest. */
     account?: Account
     /** A press on Sign in: whether its Subpanel may open, false once a toast said signing in can't be done now. */
@@ -60,7 +57,6 @@ const props = withDefaults(
     inputMode: 'mouse',
     handedness: 'right',
     penSeen: false,
-    kept: undefined,
     account: undefined,
     mayOpenSignIn: () => Promise.resolve(true),
   },
@@ -155,16 +151,6 @@ const inputOptions = computed(() => [
       <PanelItem icon="library" :value="countUnknown ? undefined : String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}
       </PanelItem>
-      <!-- Whether the browser keeps the Projects, as a fact with its reason behind an Info button (tickets 0839, 0936). -->
-      <PanelFactRow
-        v-if="!demo && kept !== undefined"
-        icon="device"
-        :label="t.panels.menu.keepProjects"
-        :value="kept ? t.panels.menu.keepProjectsOn : t.panels.menu.keepProjectsOff"
-        :info-label="t.panels.menu.keepProjectsInfoLabel"
-        :body="t.panels.menu.keepProjectsInfo"
-        testid="menu-keep-projects"
-      />
     </PanelSection>
 
     <PanelSection v-if="!demo" id="menu:preferences" :label="t.panels.menu.preferences">

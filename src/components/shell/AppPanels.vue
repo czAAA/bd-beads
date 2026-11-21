@@ -88,7 +88,6 @@ const {
   shortcutsOpen,
   onShowButtonNames,
   onOpenFeedback,
-  projectsKept,
   exportChoice,
   signInOpen,
   menuOpensOnList,
@@ -212,7 +211,6 @@ const chosenStarter = ref<StarterId>()
       :pen-seen="inputModeAvailable"
       :handedness="handedness"
       :demo="demo"
-      :kept="projectsKept"
       :account="account"
       :may-open-sign-in="mayOpenSignIn"
       @new-project="demo ? onStartDemoAfresh() : ((phoneSavedProjectsOpen = false), (signInOpen = false), (shortcutsOpen = false))"
