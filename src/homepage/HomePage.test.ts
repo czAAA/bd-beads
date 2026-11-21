@@ -10,7 +10,6 @@ import { beadCell } from '../domain/weave'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 import { memoryAccount } from '../services/memoryAccount'
 import { choosePanelOption } from '../testUtils/choosePanelOption'
-import { hasOpenLayer } from '../composables/ui/useOverlayLayer'
 import type { NotesSource } from '../services/notesFile'
 import WelcomeCuff from './WelcomeCuff.vue'
 
@@ -249,19 +248,6 @@ describe('HomePage', () => {
     await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="shortcuts-help"]').exists()).toBe(false)
-  })
-
-  it('names the strip\'s buttons from What the buttons do, until Escape (tickets 0927, 1113)', async () => {
-    const wrapper = page()
-    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
-    await wrapper.get('[data-testid="menu-item-button-names"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
-    expect(hasOpenLayer()).toBe(true)
-
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    await nextTick()
-    expect(hasOpenLayer()).toBe(false)
   })
 
   it('asks before it deletes the account, from the Menu\'s Account section (ticket 1113)', async () => {

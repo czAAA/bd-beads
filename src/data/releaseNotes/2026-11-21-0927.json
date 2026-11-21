@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "Help no longer has What the buttons do: hover or hold a button to read its name",
+    "ru": "В Справке больше нет пункта «Что делают кнопки»: наведите на кнопку или удержите её, чтобы прочитать название",
+    "uk": "У Довідці більше немає пункту «Що роблять кнопки»: наведіть на кнопку або утримуйте її, щоб прочитати назву",
+    "be": "У Даведцы больш няма пункта «Што робяць кнопкі»: навядзіце на кнопку або ўтрымлівайце яе, каб прачытаць назву",
+    "zh": "帮助中不再有“按钮的作用”：悬停或长按按钮即可查看名称",
+    "es": "La Ayuda ya no tiene Qué hace cada botón: pasa el cursor por un botón o mantenlo pulsado para leer su nombre",
+    "pl": "Pomoc nie ma już pozycji Co robią przyciski: najedź na przycisk lub przytrzymaj go, aby przeczytać jego nazwę"
+  }
+}
