@@ -34,7 +34,6 @@ export const shell: ShellTranslations = {
     enterHeight: 'Enter a height.',
     enterWholeBeads: 'Enter a whole number of beads.',
     or: 'or',
-    openCanvasSubtitle: 'Draw anywhere. Set the size when you want a picture or a PDF.',
     pickStarter: 'Pick a starter',
     estimateBeads: '≈ {columns}×{rows} beads',
     unnamedProject: 'Project {number}',

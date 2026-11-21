@@ -85,7 +85,7 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
 <template>
   <!--
     The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel, titled once by the panel ("New
-    Project", ticket 0951): what its open canvas is for, Name (optional, "Project 1" when left empty), Maker's name
+    Project", ticket 0951): Name (optional, "Project 1" when left empty), Maker's name
     (ticket 182, also optional), the Layer settings both layers start from (the section the Project and Frame panels
     share, ticket 0670) without its Background (ticket 0881), Technique and Bead each with an Info button saying what they
     decide (ticket 0951), then the primary Create Project and the secondary Convert image and Pick a starter (ticket
@@ -93,8 +93,6 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
     image opens its own popup on a copy of these values (spec 0645).
   -->
   <form id="new-project-form" class="new-project-form" novalidate @submit.prevent="onSubmit">
-    <p class="new-project-form__subtitle" data-testid="open-canvas-subtitle">{{ t.form.openCanvasSubtitle }}</p>
-
     <NamesSection ref="names" v-model:name="name" v-model:maker-name="makerName" :name-placeholder="namePlaceholder" />
 
     <LayerSettings
@@ -146,14 +144,6 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
 .new-project-form__convert :deep(.new-project-form__convert-button) {
   width: 100%;
   height: var(--field-height);
-}
-
-.new-project-form__subtitle {
-  margin: 0;
-  font: var(--type-meta);
-  font-family: var(--font-sans);
-  color: var(--muted);
-  text-wrap: balance;
 }
 
 .new-project-form__starters {
