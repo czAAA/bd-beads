@@ -62,8 +62,11 @@ async function signOut() {
 <template>
   <PanelSection :id="ACCOUNT_SECTION" ref="section" :label="t.account.section">
     <template v-if="!account">
-      <PanelItem icon="account" sub stays data-testid="menu-sign-in" @select="openSignIn">{{ t.account.signIn }}</PanelItem>
-      <p class="account-section__note" data-testid="menu-account-note">{{ t.account.guestNote }}</p>
+      <!-- The sentence follows the label on its own line, muted, and wraps under it when the row is too narrow. -->
+      <PanelItem icon="account" sub stays data-wrap-ok data-testid="menu-sign-in" @select="openSignIn">
+        {{ t.account.signIn }}
+        <span class="account-section__inline-note" data-testid="menu-account-note">{{ t.account.guestNote }}</span>
+      </PanelItem>
     </template>
     <template v-else>
       <!-- A fact, not a button. A long address cuts at its end, so the whole of it is the row's Tooltip. -->
@@ -98,6 +101,12 @@ async function signOut() {
 .account-section__settings :deep(.icon-btn-wrap) {
   margin-block: calc(var(--space-8) * -1);
   vertical-align: middle;
+}
+
+.account-section__inline-note {
+  margin-left: var(--space-4);
+  font: var(--type-small);
+  color: var(--muted);
 }
 
 .account-section__tip {
