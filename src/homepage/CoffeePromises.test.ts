@@ -11,12 +11,12 @@ function promises() {
 afterEach(() => mounted?.unmount())
 
 describe('The promises under the band (tickets 0880, 0948)', () => {
-  it('show the six promises by name, nothing to press, each with its line for screen readers', () => {
+  it('show the seven promises by name in two rows, nothing to press, each with its line for screen readers (ticket 1175)', () => {
     const wrapper = promises()
+    const ids = (selector: string) => wrapper.get(selector).findAll('li').map((item) => item.attributes('data-testid')!.replace('homepage-coffee-promise-', ''))
+    expect(ids('[data-testid="homepage-coffee-promises-what"]')).toEqual(['device', 'offline', 'noAds', 'free'])
+    expect(ids('[data-testid="homepage-coffee-promises-how"]')).toEqual(['tablets', 'mouse', 'shortcuts'])
     const items = wrapper.get('[data-testid="homepage-coffee-promises"]').findAll('li')
-    expect(items.map((item) => item.attributes('data-testid'))).toEqual(
-      ['device', 'offline', 'noAds', 'tablets', 'free', 'shortcuts'].map((id) => `homepage-coffee-promise-${id}`),
-    )
     expect(items[1].text()).toBe(`${en.homepage.promises.offline.name}. ${en.homepage.promises.offline.text}`)
     expect(wrapper.get('[data-testid="homepage-coffee-promises"]').find('button, a, [tabindex]').exists()).toBe(false)
   })
