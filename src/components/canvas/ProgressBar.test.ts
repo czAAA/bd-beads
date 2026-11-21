@@ -292,38 +292,13 @@ describe('ProgressBar', () => {
 })
 
 describe('ProgressBar with no Frame (ticket 233)', () => {
-  function unframedProject(): Project {
-    const rest = withFrameSheet(makeProject(), undefined)
-    return rest
-  }
-
-  it('shows what a Frame is for and Fit a Frame and export a picture, and no row buttons (tickets 426, 0847, 0944)', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
+  it('shows no row buttons and no no-Frame line: the canvas footer is not drawn without a Frame', () => {
+    const wrapper = mount(ProgressBar, { props: { project: withFrameSheet(makeProject(), undefined) } })
 
     expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="progress-bar-reset"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(ru.frame.progressMarkPiece)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
-
-    // It needs something drawn; with a bead it asks the app to frame it and export a picture.
-    const button = () => wrapper.get('[data-testid="progress-bar-fit-frame"]')
-    expect(button().text()).toBe(ru.frame.fitAndExport)
-    await button().trigger('click')
-    expect(wrapper.emitted('fit-and-export')).toBeUndefined()
-    await wrapper.setProps({ project: withLayers(unframedProject(), { beads: { 0: { 0: '#e63746' } } }) })
-    await button().trigger('click')
-    expect(wrapper.emitted('fit-and-export')).toHaveLength(1)
-  })
-
-  it('picks the Select tool from its line, a button whose only icons are the Select and Frame chips (ticket 0944)', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
-    const line = wrapper.get('[data-testid="progress-bar-needs-frame"]')
-
-    expect(line.element.tagName).toBe('BUTTON')
-    expect(line.findAll('[data-icon]').map((icon) => icon.attributes('data-icon'))).toEqual(['select', 'frame'])
-    await line.trigger('click')
-    expect(wrapper.emitted('select-tool')).toEqual([['select']])
+    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-fit-frame"]').exists()).toBe(false)
   })
 })
 

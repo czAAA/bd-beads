@@ -448,12 +448,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     showToast('select-frame', touch.value ? t.value.frame.selectFrameTouchHint : t.value.frame.selectFrameHint, 'info')
   }
 
-  /** The Progress bar's Fit a Frame and export a picture (ticket 0847, O-03): Fit to drawing, then Export on Picture. */
-  function onFitAndExport() {
-    frameFlow.fit()
-    if (frameOf(currentProject())) overlays.showExport('strip-export', 'png')
-  }
-
   /** The end of a Select press: when the drag was made to set the Frame, the Frame is set to it; in Mirror mode its
    * rectangle is the Mirror's Area at once (ADR 0082), the Selection gone and the tool before Mirror mode back (ticket
    * 0845); a click that dragged nothing makes none. */
@@ -1319,7 +1313,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onToggleFramePanel: frameFlow.toggleBar,
       onEditFrame: editFrame,
       onFrameKey,
-      onFitAndExport,
       onRemoveFrame: frameFlow.remove,
       onFramePress: frameFlow.press,
       onFrameDrag: frameFlow.drag,

@@ -164,7 +164,6 @@ const {
   onToggleFramePanel,
   surfaceInputMode,
   handedness,
-  onFitAndExport,
   onEditFrame,
   onFrameKey,
   onRemoveFrame,
@@ -740,13 +739,14 @@ const drawingStyle = computed(() => {
         />
 
         <!--
-          Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open, since its
-          first control is Remove frame (ticket 426); with none open the Canvas footer stays, empty (ticket 0748).
+          Progress bar (ticket 144): along the canvas box's bottom edge, only while the open Project has a Frame, since Row
+          progress counts the Frame's rows (ticket 426); without one the footer isn't drawn, so the drawing area takes
+          its room.
         -->
         <!-- Behind Convert image, which runs to the window's bottom (ticket 0896), it stays laid out, as the drawing area does. -->
         <ProgressBar
           class="app-shell__footer"
-          :class="{ 'app-shell__footer--behind': page === 'convert-image' && convertSession, 'app-shell__footer--aside': frameExpanded }"
+          :class="{ 'app-shell__footer--none': !activeProject || !frameOf(activeProject), 'app-shell__footer--behind': page === 'convert-image' && convertSession, 'app-shell__footer--aside': frameExpanded }"
           data-bottom-bar
           :project="activeProject"
           :row-highlight="rowHighlight"
@@ -755,8 +755,6 @@ const drawingStyle = computed(() => {
           @reset-progress="onResetProgress"
           @set-row-direction="onSetRowDirection"
           @toggle-row-highlight="toggleRowHighlight"
-          @fit-and-export="onFitAndExport"
-          @select-tool="onSelectTool"
           @go-to-row="onGoToRow"
           @show-row="onShowRow"
         />
@@ -950,6 +948,10 @@ const drawingStyle = computed(() => {
 /* Convert image has no Progress bar (ticket 0896): it takes the footer's row too, and the editor's waits beneath it. */
 .app-shell__page--to-bottom {
   grid-row: 2 / 4;
+}
+
+.app-shell__footer--none {
+  display: none;
 }
 
 .app-shell__footer--behind {

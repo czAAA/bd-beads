@@ -704,12 +704,6 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('remap-color', (t) => t.convertImage.wizard.change, 'colors', { icon: 'palette', body: (t) => t.tooltips.remapColor }),
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
   ...CROP_HANDLES.map((handle) => unkeyed(`crop-${handle}`, (t) => t.convertImage.wizard.crop[handle], 'edit')),
-  // The Progress bar's way from the first beads to a picture (ticket 0847): Fit to drawing, then Export on Picture.
-  unkeyed('fit-and-export', (t) => t.frame.fitAndExport, 'canvas', {
-    icon: 'image',
-    body: (t) => t.tooltips.fitAndExport,
-    ...fitsDrawing,
-  }),
   // The Progress bar's counter (ticket 0849, F-04-14): opens Go to row, for a weaver who started from a printed chart.
   unkeyed('go-to-row', (t) => t.rowProgress.goToRow, 'rowProgress', { body: (t) => t.rowProgress.goToRowBody }),
 ]

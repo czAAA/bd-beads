@@ -29,8 +29,11 @@ export const canvas: CanvasTranslations = {
       holdForName: 'hold a button for its name',
     },
     firstRun: {
-      storage: 'Your Projects are saved only in this browser, on this device.',
-      paintMouse: 'Click or drag to place beads in the chosen color.',
+      storage: 'Your Projects are saved only in this browser.',
+      paintMouse: 'Click {paint} or drag to place beads in the chosen color {palette}.',
+      setFrame: 'Select {select}, then set a Frame {frame} to export or start progress.',
+      saveKeys: '{key} or Save {save} to save the file on this device.',
+      saveTouch: 'Save {save} to save the file on this device.',
     },
   },
   rowProgress: {

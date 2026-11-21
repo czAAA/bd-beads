@@ -198,7 +198,6 @@ export const tools: ToolsTranslations = {
     rulers: '标尺为你的珠子编号。',
     rowDirection: '切换行的方向：从上到下、从左到右、从下到上或从右到左。',
     rowHighlight: '显示或隐藏当前行和已标记完成的行上的标记。',
-    fitAndExport: '让边框贴合所有珠子，然后打开图片导出。',
     pasteToolTouch: '点按要放置副本的位置。',
     noBeadsToNumber: '没有可编号的珠子。',
     framePanelBeads: '边框标出你要导出和编织的部分。打开导出、所需珠子（{total}）、边框的大小、旋转和移除。',
