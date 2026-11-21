@@ -3,7 +3,8 @@ import type { Rotation } from '../domain/grid'
 import { paintedFrameBox, projectDimensions } from '../domain/projectExtent'
 import { displayedGrid, planPrint, PRINT_BEAD_MIN_MM, PRINT_BEAD_TWO_LETTER_MM, wholeArea, type PlanOptions, type PrintPart, type PrintPlan, type TrimmedArea } from './printPlan'
 import { chartCellOf, customChart, type ChartBead } from './customChart'
-import { beadsOfLayer, frameOf, type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { laidTurnOf } from '../domain/framePlacement'
+import { beadsOfLayer, frameOf, type Layered } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
 
 // A chart page's color key (tickets 579, 0585): the colors on the page, the overlap included since it is drawn there, and
@@ -43,7 +44,7 @@ export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): str
   const { columns, rows } = projectDimensions(project)
   const found = new Set<string>()
   forEachBead(beadsOfLayer(project, 'frame')!, (row, column, hex) => {
-    const [across, down] = displayedAt(quarterTurnOf(project), columns, rows, column, row)
+    const [across, down] = displayedAt(laidTurnOf(project), columns, rows, column, row)
     if (onPart(across, down)) {
       found.add(hex)
     }
@@ -83,7 +84,7 @@ export function trimmedArea(project: Layered): TrimmedArea {
     const box = paintedFrameBox(project)
     const { columns, rows } = projectDimensions(project)
     const corner = (row: number, column: number) => {
-      const [across, down] = displayedAt(quarterTurnOf(project), columns, rows, column, row)
+      const [across, down] = displayedAt(laidTurnOf(project), columns, rows, column, row)
       return { across, down }
     }
     cells = box ? [corner(box.row, box.column), corner(box.row + box.rows - 1, box.column + box.columns - 1)] : []

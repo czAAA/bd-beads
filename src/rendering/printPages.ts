@@ -22,7 +22,8 @@ import {
 import { OVERVIEW_CUT_LABEL } from './overviewLayout'
 import type { PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
-import { type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { laidTurnOf } from '../domain/framePlacement'
+import type { Layered } from '../domain/layerRecord'
 
 // Drawing the printed pages (ticket 162; printed-output.md, PrintChartPage card; page 1 is pageOnePage.ts). The chart first,
 // the rest is small in the margins. Nothing is drawn behind or over the chart: the sheets are open to share. Paper is
@@ -241,7 +242,7 @@ export function downNumber(trim: TrimmedArea, index: number): number {
  * reverses one axis (composing gridToRegion's per-turn mapping), across at 90° and 180°, down at 180° and 270°, so a
  * bead and the ruler number over it agree at every turn (ticket 1122). */
 export function displayedCellOf(project: RulerShape, { row, column }: GridPosition): { across: number; down: number } {
-  const rotation = quarterTurnOf(project)
+  const rotation = laidTurnOf(project)
   const { columns, rows } = projectDimensions(project)
   const [across, down, wide, tall] = rotationSwapsAxes(rotation) ? [row, column, rows, columns] : [column, row, columns, rows]
   const acrossReversed = rotation === 90 || rotation === 180

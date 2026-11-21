@@ -7,6 +7,7 @@ import { useRowMotion } from '../components/canvas/surface/useRowMotion'
 import { rowItemsWidth, useFittingForm } from '../composables/canvas/useFittingForm'
 import { useA11yAnnouncer } from '../composables/ui/useA11yAnnouncer'
 import { useElementSize } from '../composables/ui/useElementSize'
+import { withLaidTurn } from '../domain/framePlacement'
 import { useI18n } from '../i18n/useI18n'
 import { renderOverlay } from '../rendering/overlayRenderer'
 import { renderProject } from '../rendering/projectRenderer'
@@ -47,7 +48,8 @@ const woven = useWovenCuff({
   announce,
   messages: () => t.value,
 })
-const project = woven.project
+/** The cuff as it is drawn: by its Frame's own turn (ticket 1186), as every preview is. */
+const project = computed(() => withLaidTurn(woven.project.value))
 
 /** Drawn at the least zoom at which the editor's rulers number their steps, then shown as wide as the tile gives, its
  * numbers drawn for that width. */

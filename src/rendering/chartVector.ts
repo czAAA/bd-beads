@@ -14,7 +14,8 @@ import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { gridToRegion, inGridPx, regionInGridSpace } from './surfaceView'
 import { chartCellOf, customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
-import { type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { laidTurnOf } from '../domain/framePlacement'
+import type { Layered } from '../domain/layerRecord'
 import type { PrintText } from './printText'
 
 // A chart as drawing (ticket 0585, ADR 0043; PrintChartPage card): PDF operators on a chart page and page 1, sharp at any
@@ -109,7 +110,7 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
   const description = describeWeave(weave)
   const size = cellSizePx(weave.technique, weave.cell)
   const space = spaceOf(project, false)
-  const matrix = gridToRegion(space.extent, part.region, plan.zoom, quarterTurnOf(project))
+  const matrix = gridToRegion(space.extent, part.region, plan.zoom, laidTurnOf(project))
   const [a, b, c, d, e, f] = matrix
   const at = (x: number, y: number): [number, number] => [a * x + c * y + e, b * x + d * y + f]
   const rectOf = (x: number, y: number, width: number, height: number): Box => {
@@ -118,7 +119,7 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
     return { x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) }
   }
   const geometry = geometryDrawnAlone(project)
-  const seen = regionInGridSpace(space.extent, part.region, plan.zoom, quarterTurnOf(project))
+  const seen = regionInGridSpace(space.extent, part.region, plan.zoom, laidTurnOf(project))
   const inView = { x: seen.left / CELL_SIZE_PX, y: seen.top / CELL_SIZE_PX, width: (seen.right - seen.left) / CELL_SIZE_PX, height: (seen.bottom - seen.top) / CELL_SIZE_PX }
   const placed: PlacedBead[] = []
   for (const position of geometry.positionsIn(inView)) {

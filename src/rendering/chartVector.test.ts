@@ -22,7 +22,8 @@ import { displayedExtentPx } from './surfaceView'
 import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions } from '../domain/projectExtent'
 import { wordChartOf } from '../domain/wordChart'
-import { frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
+import { frameOf, orientationOf, quarterTurnOf, withCanvas, withFrameSheet } from '../domain/layerRecord'
+import { withLaidTurn } from '../domain/framePlacement'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 // The PrintChartPage card's Acceptance list, on a 100 × 100 loom Schema with an empty background, White beads and dark
@@ -681,17 +682,6 @@ describe('Empty grid and Chart border (ticket 1127)', () => {
   })
 })
 
-describe('a turned Frame\'s chart page (ticket 0667)', () => {
-  it('prints the Frame as it lies, each bead turned with it, and with no rulers', () => {
-    const upright = schema('peyote', 6, 4, { letters: false, paletteLetters: LETTERS })
-    const project = rotateFrame(upright)!
-    const pdf = chartOf(project).content.toString()
-    const turned = pdf.split('\n').filter((line) => / l .* h [BfS]$/.test(line) && !line.includes(' c '))
-    expect(turned.length).toBe(6 * 4)
-    expect(texts(pdf).every((text) => /^[A-Z]+$/.test(text.value))).toBe(true)
-  })
-})
-
 describe('every bead shape at the smallest and the largest bead (ticket 0913)', () => {
   /** Loom with round beads, its first row painted. */
   function round(columns: number, rows: number): Project {
@@ -903,5 +893,56 @@ describe('a Custom frame prints every bead (ticket 1132)', () => {
     const whole = wholeChart(project, plan.zoom)
     const overview = customChart(project, { x: 0, y: 0, ...whole }, plan.zoom)!.beads.map(placeOf)
     expect([...overview].sort()).toEqual([...places].sort())
+  })
+})
+
+describe('a Canvas turn never changes the chart: it follows the Frame alone (spec 1182, ticket 1186)', () => {
+  /** A small painted Custom frame on a loom Canvas. */
+  function triangle(): Project {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a triangle')
+    const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, [...frameLayoutOf(frameOf(placed.project)!)!.positions], DARK))
+    return withLayers(painted, { paletteLetters: LETTERS, letters: false })
+  }
+
+  /** Every chart page's drawing and its plan, the page key's colors in it, as the export draws them. */
+  function chartPages(shown: Project) {
+    const project = withLaidTurn(shown)
+    const plan = planWithKey(project)
+    return { plan, pages: plan.parts.map((part) => pdfOf(project, plan, [part], LETTERS, plan.page.height, EMPTY_GRID_ON).content.toString()) }
+  }
+
+  const plain: [string, () => Project][] = [
+    ['an upright peyote Frame', () => schema('peyote', 14, 9)],
+    ['a brick stitch Frame turned a quarter', () => rotateFrame(schema('brick', 14, 9))!],
+    ['a loom Frame turned twice', () => rotateFrame(rotateFrame(schema('loom', 14, 9))!)!],
+  ]
+  const custom: [string, () => Project][] = [
+    ['a Custom frame', triangle],
+    ['a Custom frame turned a quarter', () => rotateFrame(triangle())!],
+  ]
+
+  it.each(plain)('prints %s the same over a Canvas turned under it alone, at any angle', (_, make) => {
+    const project = make()
+    const printed = chartPages(project)
+    for (const turn of [90, 180, 270, 37.5, 316]) expect(chartPages(withCanvas(project, { orientation: turn }))).toEqual(printed)
+  })
+
+  it.each([plain[0]!, ...custom])('prints %s on a Canvas turned with it as before 1186, a lean dropped', (_, make) => {
+    for (const turn of [90, 270]) {
+      const project = withLayers(make(), { orientation: turn })
+      const { plan } = chartPages(project)
+      expect(plan).toEqual(planWithKey(project))
+      expect(chartPages(project).pages).toEqual(plan.parts.map((part) => pdfOf(project, plan, [part], LETTERS, plan.page.height, EMPTY_GRID_ON).content.toString()))
+      expect(chartPages(withLayers(make(), { orientation: turn + 3 }))).toEqual(chartPages(project))
+    }
+  })
+
+  it.each(['loom', 'peyote', 'brick'] as const)('prints a %s Frame turned by Rotate Frame (ticket 0667) as the same Frame carried round by the Canvas, rulers and all', (technique) => {
+    const upright = schema(technique, 14, 9)
+    const turned = withLaidTurn(rotateFrame(upright)!)
+    expect(chartPages(turned)).toEqual(chartPages(withLayers(upright, { orientation: orientationOf(upright) + 90 })))
+    expect(rulerTexts(turned, planWithKey(turned), planWithKey(turned).parts)).not.toEqual([])
   })
 })

@@ -1,8 +1,11 @@
+import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
 import { laidSize } from './frameOrientation'
-import type { GridPosition } from './grid'
-import { frameOf, type Layered } from './layerRecord'
+import { frameShapeOf } from './frameShape'
+import type { GridPosition, Rotation } from './grid'
+import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameFields, type Layered } from './layerRecord'
 import { canvasWeave, frameScale, frameWeave } from './layerWeave'
-import { canvasPlacement, frameAngleOf, type Placement, type TablePoint } from './table'
+import type { Project } from './project'
+import { canvasPlacement, frameAngleOf, frameQuarterTurnOf, type Placement, type TablePoint } from './table'
 import { describeWeave } from './weave'
 
 // The Frame's placement on the table (spec 1182, ticket 1185): its own angle and its centre, worked out from the Canvas
@@ -66,4 +69,25 @@ export function frameCornerAt(project: Layered, centre: TablePoint): GridPositio
     }
   }
   return best.at
+}
+
+/** The quarter turn the Frame's laid rectangle is seen at (spec 1182, ticket 1186): its nearest quarter turn, less the
+ * quarters its rows lie turned in that rectangle (none once `withLaidTurn` laid it, but a Custom frame's), never a lean.
+ * What exports, previews and sizes as seen go by; with no Frame, the Canvas's, the only layer there is to show. */
+export function laidTurnOf(project: Layered): Rotation {
+  const frame = frameOf(project)
+  return frame ? nearestQuarterTurn(frameQuarterTurnOf(project) - 90 * (frame.quarterTurns ?? 0)) : quarterTurnOf(project)
+}
+
+/** The Project as every export and preview draws it (ticket 1186): the Frame at its nearest quarter turn, no lean, on
+ * a Canvas laid at `turn` under it: a Frame upright, by its own rows whatever the Canvas's turn, a Custom frame (its
+ * layout built turned on the grid) as many quarters off as it lies. As it is when it already lies so, or has no Frame. */
+export function withLaidTurn(project: Project, turn?: Rotation): Project {
+  const frame = frameOf(project)
+  if (!frame) return project
+  const lies = frameShapeOf(frame) ? 90 * (frame.quarterTurns ?? 0) : 0
+  const under = turn ?? nearestQuarterTurn(frameQuarterTurnOf(project) - lies)
+  const angle = normalizedOrientation(under + lies)
+  if (canvasOf(project).orientation === under && project.layers[1]?.angle === angle) return project
+  return withFrameFields(withCanvas(project, { orientation: under }), { angle })
 }
