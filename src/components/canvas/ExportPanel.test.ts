@@ -131,7 +131,7 @@ describe('ExportPanel (ticket 0652)', () => {
     const wrapper = await mountPanel(empty())
     const fit = wrapper.get('[data-testid="export-fit"]')
 
-    expect(rows(wrapper)).toEqual(['export-select-frame', 'export-fit'])
+    expect(rows(wrapper)).toEqual(['export-select-frame', 'export-select-piece-frame', 'export-fit'])
 
     expect(fit.attributes('aria-disabled')).toBe('true')
     await fit.trigger('click')
