@@ -48,7 +48,6 @@ import ShortcutsHelp from '../components/shell/ShortcutsHelp.vue'
 import ConfirmModal from '../components/ui/ConfirmModal.vue'
 import { useAccountFlow } from '../composables/shell/useAccountFlow'
 import { usePenInputMode } from '../composables/shell/usePenInputMode'
-import { provideButtonNames } from '../composables/ui/useButtonNames'
 import { useThemePick } from '../theme/useThemePick'
 import { memoryAccount } from '../services/memoryAccount'
 import { useDevicePreferences } from '../services/devicePreferences'
@@ -119,8 +118,8 @@ const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 const canvasBackground = useCanvasBackground()
 const feedback = useFeedbackFlow({ feedback: props.feedback, locale: () => locale.value, messages: () => t.value, showToast, dialogs })
 const zoom = useHomepageZoom()
-// The Menu holds the editor's rows (ticket 1113): the device's settings, the Shortcuts help, What
-// the buttons do and the Account section work here; New Project, Convert image and Sign in open the editor on them.
+// The Menu holds the editor's rows (ticket 1113): the device's settings, the Shortcuts help and
+// the Account section work here; New Project, Convert image and Sign in open the editor on them.
 const preferences = useDevicePreferences()
 const toolsPosition = preferences.get('toolPillPosition')
 const pen = usePenInputMode(preferences)
@@ -129,7 +128,6 @@ const shortcutsOpen = ref(false)
 watch(menuOpen, (open) => {
   if (!open) shortcutsOpen.value = false
 })
-const buttonNames = provideButtonNames()
 const themePick = useThemePick()
 const accountFlow = useAccountFlow({
   account: props.account ?? memoryAccount(),
@@ -143,11 +141,6 @@ const accountFlow = useAccountFlow({
   },
   dialogs,
 })
-/** A Menu row that does its thing over the page: the panel goes first, as in the editor. */
-function fromMenu(act: () => void) {
-  menuOpen.value = false
-  act()
-}
 /** The width from which What's inside has its editor, as in the CSS (481px): a phone has the plain list (ticket 0797). */
 const EDITOR_FROM = 481
 const bodyEl = ref<HTMLElement>()
@@ -517,7 +510,6 @@ const savedProjects = controlAction('saved-projects')
             @update:input-mode="pen.setInputMode"
             @update:handedness="pen.setHandedness"
             @shortcuts="shortcutsOpen = true"
-            @button-names="fromMenu(buttonNames.show)"
             @feedback="feedback.onOpenFeedback"
           />
           <template #sub="{ depth }">

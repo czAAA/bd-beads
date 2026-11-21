@@ -86,7 +86,6 @@ const {
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
   shortcutsOpen,
-  onShowButtonNames,
   onOpenFeedback,
   exportChoice,
   signInOpen,
@@ -222,7 +221,6 @@ const chosenStarter = ref<StarterId>()
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="(shortcutsOpen = true), (signInOpen = false), (phoneSavedProjectsOpen = false)"
-      @button-names="onShowButtonNames"
       @feedback="onOpenFeedback"
     />
     <ProjectPanel

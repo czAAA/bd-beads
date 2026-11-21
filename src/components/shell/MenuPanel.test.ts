@@ -118,7 +118,7 @@ describe('MenuPanel (ticket 443)', () => {
     const panel = wrapper.getComponent(MenuPanel)
     const group = (label: string) => wrapper.findAll('[role="group"]').find((each) => each.find('h3').text() === label)!
     const rows = group(en.panels.menu.help).findAll('.panel-item').map((row) => row.attributes('data-testid'))
-    expect(rows.slice(0, 4)).toEqual(['menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback', 'menu-report-translation'])
+    expect(rows.slice(0, 3)).toEqual(['menu-item-shortcuts', 'menu-item-feedback', 'menu-report-translation'])
     expect(group(en.panels.menu.preferences).find('[data-testid="menu-report-translation"]').exists()).toBe(false)
     const feedback = wrapper.get('[data-testid="menu-item-feedback"]')
     expect(feedback.text()).toBe(en.panels.menu.sendFeedback)
@@ -128,17 +128,6 @@ describe('MenuPanel (ticket 443)', () => {
     await feedback.trigger('click')
     await link.trigger('click')
     expect(panel.emitted('feedback')).toEqual([['general'], ['translation']])
-  })
-
-  it('asks for every button\'s name from Help\'s What the buttons do, on every page but the demo (tickets 0927, 1113)', async () => {
-    const wrapper = mountIn()
-    const row = wrapper.get('[data-testid="menu-item-button-names"]')
-    expect(row.text()).toBe(en.panels.menu.buttonNames)
-    await row.trigger('click')
-    expect(wrapper.getComponent(MenuPanel).emitted('button-names')).toHaveLength(1)
-
-    for (const page of ['homepage', 'convert-image']) expect(mountIn({ page }).find('[data-testid="menu-item-button-names"]').exists()).toBe(true)
-    expect(mountIn({ demo: true }).find('[data-testid="menu-item-button-names"]').exists()).toBe(false)
   })
 
   // Folding and remembering is PanelSection's; the Menu names each section for it.
@@ -158,7 +147,7 @@ describe('MenuPanel on every page (tickets 540, 1113)', () => {
 
   it('holds the same rows in the editor, on Convert image and on the Homepage', () => {
     const editor = rowsOn({})
-    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-button-names', 'menu-item-feedback', 'menu-item-homepage']))
+    expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-feedback', 'menu-item-homepage']))
     expect(rowsOn({ page: 'convert-image' })).toEqual(editor)
     expect(rowsOn({ page: 'homepage' })).toEqual(editor)
   })
