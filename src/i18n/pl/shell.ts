@@ -34,7 +34,6 @@ export const shell: ShellTranslations = {
     enterHeight: 'Wpisz wysokość.',
     enterWholeBeads: 'Wpisz całkowitą liczbę koralików.',
     or: 'lub',
-    openCanvasSubtitle: 'Rysuj, gdzie chcesz. Ustaw rozmiar, gdy zechcesz obraz lub PDF.',
     pickStarter: 'Wybierz starter',
     estimateBeads: '≈ {columns}×{rows} koralików',
     unnamedProject: 'Projekt {number}',

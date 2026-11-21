@@ -27,11 +27,11 @@ describe('NewProjectForm', () => {
     expect(panelOptionShown(wrapper, 'bead-size')).toBe(BEAD_CATALOG[0]!.size)
   })
 
-  it('opens with its one sentence and no heading of its own, then Create Project, the one primary, before Convert image and Pick a starter (tickets 568, 0866, 0951)', () => {
+  it('opens with no sentence or heading of its own, then Create Project, the one primary, before Convert image and Pick a starter (tickets 568, 0866, 0951)', () => {
     const wrapper = mount(NewProjectForm, { props })
 
     expect(wrapper.find('h1, h2, h3').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="open-canvas-subtitle"]').text()).toBe(ru.form.openCanvasSubtitle)
+    expect(wrapper.find('[data-testid="open-canvas-subtitle"]').exists()).toBe(false)
     const buttons = [...wrapper.element.querySelectorAll('[data-testid="create-project"], [data-testid="convert-image"], [data-testid="pick-starter"]')]
     expect(buttons.map((button) => [button.getAttribute('data-testid'), button.classList.contains('app-button--primary')])).toEqual([
       ['create-project', true],
