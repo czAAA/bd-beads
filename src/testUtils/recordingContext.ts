@@ -20,6 +20,7 @@ export function recordingContext() {
     moveTo = record('pathMoveTo')
     lineTo = record('pathLineTo')
     arc = record('pathArc')
+    arcTo = record('pathArcTo')
     closePath = record('pathClose')
   }
   Object.assign(globalThis, { Path2D: RecordedPath2D })

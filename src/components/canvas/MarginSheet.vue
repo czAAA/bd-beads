@@ -67,6 +67,8 @@ const emit = defineEmits<{
   /** Mirror the whole Frame pressed: the Mirror onto the whole Frame, or off while it is there (ADR 0082). */
   mirror: []
   rotate: []
+  /** Lift pressed (ticket 1177): the Frame's pieces stand off the grid or lie flat. */
+  'toggle-lift': []
   'toggle-edit': []
   /** Export, hung from the button it was asked from: the sheet's Export or, folded, its Frame tools menu. */
   export: [opener: ExportOpener]
@@ -98,6 +100,7 @@ const actions = {
   expand: controlAction('expand-frame'),
   mirror: controlAction('mirror-frame'),
   rotate: controlAction('rotate-frame'),
+  lift: controlAction('lift-frame'),
   edit: controlAction('edit-frame'),
   export: controlAction('strip-export'),
   color: controlAction('margin-color'),
@@ -401,12 +404,19 @@ watch(frame, (now) => now || rotateCopy.drop())
 /** Mirror the whole Frame's name: "Mirror off" while it is on (MarginSheet card). */
 const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOff : undefined))
 
+/** Lift is on the band only while Row highlight is on (MarginSheet card, Lift): with it off the Frame lies flat. */
+const liftShown = computed(() => rotatable.value && !!props.rowHighlight)
+const liftOn = computed(() => !!frame.value?.lifted)
+/** Lift's name says Lay the pieces flat while it is on. */
+const liftName = computed(() => (liftOn.value ? t.value.frame.layPiecesFlat : undefined))
+
 /** The Frame tools menu holds the tools the band shows no button for (MarginSheet card, Zoom forms); Mirror the whole
  * Frame first, checked while on, shown as Rotate Frame is. */
 const menuItems = computed<FrameToolItem[]>(() =>
   [
     rotatable.value && { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
     rotatable.value && { id: 'rotate', action: actions.rotate, run: rotateFromBand },
+    liftShown.value && { id: 'lift', action: actions.lift, run: () => emit('toggle-lift'), checked: liftOn.value },
     editable.value && !editShown.value && { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
     { id: 'export', action: actions.export, run: () => emit('export', 'margin-frame-tools') },
     !colorShown.value && { id: 'color', action: actions.color, run: () => (colorOpen.value = true) },
@@ -479,6 +489,18 @@ const menuItems = computed<FrameToolItem[]>(() =>
             @click="emit('mirror')"
           />
           <IconButton v-if="rotatable" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" data-rotate-from="button" @click="rotateFromBand" />
+          <IconButton
+            v-if="liftShown"
+            variant="plain"
+            class="margin-sheet__tool"
+            :class="{ 'margin-sheet__mirror--on': liftOn }"
+            :icon-size="iconSize"
+            :action="actions.lift"
+            :label="liftName"
+            :pressed="liftOn"
+            data-testid="margin-lift-frame"
+            @click="emit('toggle-lift')"
+          />
         </template>
         <IconButton
           v-if="editShown"
@@ -757,7 +779,7 @@ const menuItems = computed<FrameToolItem[]>(() =>
   margin-inline-start: calc((var(--touch-target) - var(--margin-tool)) / 2 - var(--space-4));
 }
 
-/* Mirror the whole Frame on is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
+/* Mirror the whole Frame on, and Lift on, is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
  * Edit Frame's `ink`, the Mirror being a setting that stays on. */
 .margin-sheet__tools :deep(.margin-sheet__mirror--on),
 .margin-sheet__tools :deep(.margin-sheet__mirror--on:hover) {

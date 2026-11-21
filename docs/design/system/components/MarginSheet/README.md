@@ -46,7 +46,7 @@ The one exception: on the Homepage's What's inside, the demo Frame's band has no
 - **A press** makes the whole Frame the Mirror's Area (a Canvas Area is dropped, its Mode and Axes kept, counts clamped; onto a Custom frame the Axes become the shape's own), enters Mirror mode and shows the Mirror bar above the sheet (ContextBar card); one Undo step. **Pressed while on** it turns the Mirror off, as Close mirror does.
 - **Shown and hidden as Rotate Frame is**, in every form that has the tools; with Row progress started it stays (mirroring does not change the Frame). In the folded and bare forms it is the first item of the **Frame tools** menu, "Mirror the whole Frame", with a check (`check`, `accent-strong`) while on and `role="menuitemcheckbox"`.
 
-### Lift (ticket 1177; approved 2026-11-21, not yet in the app)
+### Lift (ticket 1177)
 
 - **The button:** between Rotate Frame and Edit Frame, the `lift-frame` icon. On, it takes the band's own selected look, Mirror the whole Frame's (filled `accent` with its icon in `on-accent`, `aria-pressed="true"`, in every theme), not Edit Frame's `ink` fill: Lift is a setting that stays on, not a mode of the Frame. Off, the band's plain look.
 - **What it does:** turns the Frame's **Lift** on and off, a saved setting of the Frame that draws its pieces lifted (BeadBoard card, Lifted Frame) on screen and in exports. One Undo step. A press changes nothing else: no bead, no Row progress.

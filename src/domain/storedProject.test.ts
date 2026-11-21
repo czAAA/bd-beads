@@ -193,3 +193,23 @@ describe('normalizeProject', () => {
     expect(rowProgressOf(normalized).currentColumn).toBe(10)
   })
 })
+
+describe('a Frame\'s Lift when a Project is read (ticket 1177)', () => {
+  const saved = () => JSON.parse(JSON.stringify(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } })))
+
+  it('opens flat when it was saved without Lift, and lifted when it was saved with it', () => {
+    const plain = saved()
+    const frame = plain.layers.find((layer: { rowProgress?: unknown }) => layer.rowProgress)
+    delete frame.lifted
+    expect(frameOf(normalizeProject(plain))!.lifted).toBeUndefined()
+    frame.lifted = true
+    expect(frameOf(normalizeProject(plain))!.lifted).toBe(true)
+  })
+
+  it('reads anything else as flat', () => {
+    const stored = saved()
+    stored.layers.find((layer: { rowProgress?: unknown }) => layer.rowProgress).lifted = 'yes'
+    expect(frameOf(normalizeProject(stored))!.lifted).toBeUndefined()
+  })
+})
+

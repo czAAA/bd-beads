@@ -607,6 +607,8 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('expand-frame', (t) => t.frame.expandFrame, 'canvas', { icon: 'expand-frame' }),
   // The margin's Mirror the whole Frame (ADR 0082, MarginSheet card); its Tooltip says Mirror off while it is on.
   unkeyed('mirror-frame', (t) => t.mirror.wholeFrame, 'canvas', { icon: 'mirror' }),
+  // The margin's Lift (ticket 1177, MarginSheet card); its name and Tooltip say Lay the pieces flat while it is on.
+  unkeyed('lift-frame', (t) => t.frame.liftPieces, 'canvas', { icon: 'lift-frame' }),
   unkeyed('rotate-frame', (t) => t.frame.rotateFrameLabel, 'canvas', {
     icon: 'rotate',
     body: (t) => t.tooltips.rotateFrame,

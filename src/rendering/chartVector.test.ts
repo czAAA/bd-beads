@@ -4,6 +4,7 @@ import { rotateFrame } from '../domain/rotate'
 import { FRAME_SHAPE_IDS, type FrameShapeId, frameLayoutOf } from '../domain/frameShape'
 import { onLayer } from '../domain/layers'
 import { createProject } from '../domain/createProject'
+import { withFrameLift } from '../domain/frame'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
 import { TECHNIQUES, type Technique } from '../domain/weave'
@@ -30,7 +31,8 @@ const DARK = '#1f2a44'
 const LETTERS = { '#ffffff': 'A', [DARK]: 'B', '#f2c94c': 'AA' }
 
 function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra: LayersChange = {}): Project {
-  const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
+  // Flat: a lifted Frame's pads carry a shadow (ticket 1177), which its own tests count.
+  const base = withFrameLift(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), false)
   // Dark in the top left 10 × 10, White in the next 5 columns of its first 10 rows, a pale yellow beyond them; the rest empty.
   const beads: Record<number, Record<number, string>> = {}
   for (let row = 0; row < 10; row += 1) {
@@ -62,7 +64,7 @@ const texts = (content: string) => [...content.matchAll(/BT \/(F[12]) ([\d.]+) T
 
 /** A Schema of `columns` × `rows` with every position painted. */
 function full(technique: Technique, beadId: string, columns: number, rows: number, orientation: number, techniqueSettings?: Record<string, number>): Project {
-  const base = createProject({ technique, beadId, ...(techniqueSettings ? { techniqueSettings } : {}), size: { width: columns, height: rows, unit: 'beads' } })
+  const base = withFrameLift(createProject({ technique, beadId, ...(techniqueSettings ? { techniqueSettings } : {}), size: { width: columns, height: rows, unit: 'beads' } }), false)
   const { columns: wide, rows: tall } = frameOf(base)!
   const beads = Object.fromEntries(Array.from({ length: tall }, (_, row) => [row, Object.fromEntries(Array.from({ length: wide }, (_, column) => [column, DARK]))]))
   return withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation, paletteLetters: LETTERS, letters: false })
@@ -196,7 +198,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
   })
 
   it('marks an empty position among round beads with the same cross, 40 % of the bead across, with Empty grid on (ticket 0818)', () => {
-    const base = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 4, height: 4, unit: 'beads' } })
+    const base = withFrameLift(createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 4, height: 4, unit: 'beads' } }), false)
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads: { 0: { 0: DARK } } }, paletteLetters: LETTERS, letters: false })
     const { plan, part, content } = chartOf(project, 0, EMPTY_GRID_ON)
     const arms = crossArms(content.toString())
@@ -506,7 +508,7 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
   })
 
   it('keeps a round bead\'s circle and its hairline edge, with no line between the circles', () => {
-    const base = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 12, height: 12, unit: 'beads' } })
+    const base = withFrameLift(createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 12, height: 12, unit: 'beads' } }), false)
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads: { 0: Object.fromEntries(Array.from({ length: 12 }, (_, column) => [column, DARK])) } }, paletteLetters: LETTERS, letters: false })
     const plan = planPrint(project, { keyRows: 2 })
     const { rounds, lines } = drawn(project, plan, plan.parts)
@@ -602,6 +604,24 @@ describe('Empty grid and Chart border (ticket 1127)', () => {
 
     expect(rims).toHaveLength(1)
     expect(off).toEqual(on.filter((call) => call !== rims[0]))
+  })
+
+  it('stands a lifted Frame\'s pad off the paper with stacked, ever darker copies of the rim under it, and with no rim, or in one ink, draws none (ticket 1177)', () => {
+    const flat = schema('loom', 30, 30)
+    const lifted = withFrameLift(flat, true)
+    const plan = planPrint(flat, { keyRows: 2 })
+    const filled = (made: string[]) => made.filter((call) => call.startsWith('round') && call.includes('"fill"'))
+    expect(filled(calls(flat, plan, EMPTY_GRID_ON))).toHaveLength(0)
+    const shadowed = filled(calls(lifted, plan, EMPTY_GRID_ON))
+    // Four copies, then the paper over the rim's middle.
+    expect(shadowed).toHaveLength(5)
+    const shades = shadowed.slice(0, 4).map((call) => Number.parseInt((JSON.parse(call.slice(call.indexOf('[')))[5].fill as string).slice(1, 3), 16))
+    expect(shades).toEqual([...shades].sort((a, b) => b - a))
+    expect(new Set(shades).size).toBe(4)
+    expect(shadowed[4]).toContain(`"fill":"${PRINT_COLORS.paper}"`)
+    expect(filled(calls(lifted, plan, { rim: false, emptyGrid: true }))).toHaveLength(0)
+    // The page's drawing is otherwise as it was.
+    expect(calls(lifted, plan, EMPTY_GRID_ON).filter((call) => !shadowed.includes(call))).toEqual(calls(flat, plan, EMPTY_GRID_ON))
   })
 
   it('with Empty grid off leaves every empty position bare paper and draws the colored beads as with it on', () => {

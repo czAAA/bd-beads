@@ -354,7 +354,7 @@ describe('changeFrame', () => {
       const beads = withColors({}, [{ row: 11, column: 12, color: '#111111' }, { row: 40, column: 40, color: '#999999' }])
       const result = changeFrame(open(beads), { make: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(frameSheetOf(result.project)).toEqual(sheet(frame, withColors({}, [{ row: 1, column: 2, color: '#111111' }])))
+      expect(frameSheetOf(result.project)).toEqual({ ...sheet(frame, withColors({}, [{ row: 1, column: 2, color: '#111111' }])), lifted: true })
       expect(beadsOfLayer(result.project, 'canvas')).toEqual(withColors({}, [{ row: 40, column: 40, color: '#999999' }]))
     })
 
@@ -830,5 +830,31 @@ describe('a Frame in a Bead of its own is read on the Canvas through millimetres
     if (made.kind !== 'changed') throw new Error('expected a change')
     expect(frameOf(made.project)).toMatchObject({ beadId: 'toho/round/8-0', id: frameOf(before)!.id })
     expect(beadsOfLayer(made.project, 'frame')).toEqual({ 0: { 0: RED, 1: RED }, 1: { 0: BLUE, 1: BLUE } })
+  })
+})
+
+describe('a Frame\'s Lift (ticket 1177)', () => {
+  const lifted = (project: Project) => !!frameOf(project)?.lifted
+  const apply = (project: Project, change: FrameChange) => (changeFrame(project, change) as { project: Project }).project
+  const place = { frame: { row: 2, column: 3, rows: 8, columns: 5 }, weave: { technique: 'peyote' as const } }
+  const withLift = (project: Project, on: boolean) => withFrameSheet(project, { ...frameOf(project)!, ...(on ? { lifted: true as const } : {}) })
+
+  it('starts on for a Frame made new, by Frame from Selection, Fit to drawing, a Starter or a Custom frame', () => {
+    const none = withFrame(framed(), undefined)
+    expect(lifted(apply(none, { make: { row: 2, column: 2, rows: 4, columns: 4 } }))).toBe(true)
+    expect(lifted(apply(none, { place }))).toBe(true)
+    expect(lifted(apply(none, { custom: { shape: 'triangle', size: 2, centre: { row: 20, column: 30 } } }))).toBe(true)
+  })
+
+  it('is kept when the Frame is replaced in place, on or off', () => {
+    expect(lifted(apply(withLift(framed(), true), { place }))).toBe(true)
+    expect(lifted(apply(withLift(framed(), false), { place }))).toBe(false)
+    expect(lifted(apply(withLift(framed(), false), { make: { row: 2, column: 2, rows: 4, columns: 4 } }))).toBe(false)
+    expect(lifted(apply(withLift(framed(), true), { make: { row: 2, column: 2, rows: 4, columns: 4 } }))).toBe(true)
+  })
+
+  it('is kept when the Frame is resized, and a Frame saved before it lies flat', () => {
+    expect(lifted(apply(withLift(framed(), true), { set: { ...frame, columns: 6 } }))).toBe(true)
+    expect(lifted(framed())).toBe(false)
   })
 })

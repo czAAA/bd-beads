@@ -54,7 +54,7 @@ function lastFrame(deps: ReturnType<typeof setup>['deps']) {
   const last = deps.replaceProject.mock.calls.at(-1)?.[0]
   const frame = last && frameSheetOf(last)
   if (!frame) return undefined
-  const { beads: _beads, name: _name, technique: _technique, techniqueSettings: _settings, ...rectangle } = frame
+  const { beads: _beads, name: _name, lifted: _lifted, technique: _technique, techniqueSettings: _settings, ...rectangle } = frame
   return rectangle
 }
 
@@ -73,7 +73,7 @@ describe('useFrameFlow', () => {
     const { deps, draftProject, press, drag, release } = setup(sized)
     press({ kind: 'move' }, { row: 1, column: 1 })
     drag({ row: 2, column: 3 })
-    expect(frameSheetOf(draftProject.value!)).toEqual({ ...sizedRect, technique: 'loom', row: 1, column: 2, beads: {} })
+    expect(frameSheetOf(draftProject.value!)).toEqual({ ...sizedRect, technique: 'loom', row: 1, column: 2, beads: {}, lifted: true })
     release()
     expect(draftProject.value).toBe(deps.harness.project)
   })

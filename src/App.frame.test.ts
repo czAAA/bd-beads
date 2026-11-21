@@ -74,7 +74,7 @@ const savedFrame = () => {
   const [project] = loadProjects()
   const frame = project && frameSheetOf(project)
   if (!frame) return undefined
-  const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
+  const { beads: _beads, name: _name, lifted: _lifted, technique: _technique, ...rectangle } = frame
   return rectangle
 }
 

@@ -116,7 +116,7 @@
     {
       "name": "BeadBoard",
       "group": "Canvas",
-      "summary": "How a Pattern is drawn: beads on a rounded board, with rulers and the current-row marker, and the Lifted Frame, a ground, outline and shadow round a Frame's pieces (approved 2026-11-21, ticket 1177 builds it)."
+      "summary": "How a Pattern is drawn: beads on a rounded board, with rulers and the current-row marker, and the Lifted Frame, a ground, outline and shadow round a Frame's pieces (ticket 1177)."
     },
     {
       "name": "BeadHover",

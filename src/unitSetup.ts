@@ -4,6 +4,9 @@ if (typeof Path2D === 'undefined') {
   Object.assign(globalThis, {
     Path2D: class {
       roundRect(): void {}
+      moveTo(): void {}
+      arcTo(): void {}
+      closePath(): void {}
       addPath(): void {}
     },
   })
