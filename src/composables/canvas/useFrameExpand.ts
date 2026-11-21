@@ -61,13 +61,12 @@ export function useFrameExpand(deps: FrameExpandDeps) {
     return { compact: deps.compact.value, row, title, rowWidth, numbers: frameNumberBands(project, across, fontPx) }
   })
 
-  /** The room the slim sheet and the gap round it take from each side of the drawing area, past the Frame's beads, at
-   * a zoom: what a fit leaves clear. A Frame narrower than its row widens the sheet, which a fit does not count. */
+  /** The room the slim sheet takes from each side of the drawing area, past the Frame's beads, at a zoom: what a fit
+   * leaves clear. No gap round it (ticket 1176): the sheet is the margin. A Frame narrower than its row widens the
+   * sheet, which a fit does not count. */
   function room(zoom: number): Insets {
-    const held = content.value!
-    const sides = slimSheetSides({ ...held, rowWidth: 0 }, 0)
-    const gap = MARGIN_PX.expanded.gap[held.compact ? 'compact' : 'full']
-    const past = frameOutsetPx(zoom) + gap
+    const sides = slimSheetSides({ ...content.value!, rowWidth: 0 }, 0)
+    const past = frameOutsetPx(zoom)
     return { top: sides.top + past, right: sides.right + past, bottom: sides.bottom + past, left: sides.left + past }
   }
 

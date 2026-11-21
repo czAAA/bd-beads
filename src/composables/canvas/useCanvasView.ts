@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
-import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
+import { clampZoom, MAX_ZOOM, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
 import { layerOf, orientationOf } from '../../domain/layerRecord'
 import { footprintOf } from '../../domain/footprint'
@@ -167,7 +167,7 @@ export function useCanvasView(
   }
 
   /** The expanded Frame's fit (ticket 1169): its beads as large as the room its slim sheet and the Tool pill leave
-   * allows (ticket 1176: the pill stays while expanded), within the Fit limits, centred there. Worked out twice, as the
+   * allows (ticket 1176: the pill stays while expanded), up to the zoom's 400% with no bead cap, centred there. Worked out twice, as the
    * Frame's line, which the sheet stands off, moves with the zoom. */
   function expandedFit(project: Project, sheetRoom: (zoom: number) => Insets): ShownView | undefined {
     const footprint = footprintOf(project)
@@ -183,7 +183,8 @@ export function useCanvasView(
     for (let pass = 0; pass < 2; pass += 1) {
       area = { width: Math.max(1, viewport.value.width - insets.left - insets.right), height: Math.max(1, viewport.value.height - insets.top - insets.bottom) }
       const surface = surfaceOf(project, scroll.value, area)
-      at = clampZoom(surface.zoomToFit(footprint, { width: 0, height: 0 }, 'canvas', frameFitCeiling(surface)))
+      // Only the zoom's own ceiling (ticket 1176): Fit's 48px bead cap would leave a small Frame short of the screen.
+      at = clampZoom(surface.zoomToFit(footprint, { width: 0, height: 0 }, 'canvas', MAX_ZOOM))
       insets = room(at)
     }
     const centred = surfaceOf(project, scroll.value, area, at).scrollToCentre(footprint, 'canvas')

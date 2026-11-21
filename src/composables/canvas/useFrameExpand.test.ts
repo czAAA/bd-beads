@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
+import { MAX_ZOOM } from '../../domain/grid'
 import { footprintOf } from '../../domain/footprint'
 import { canvasOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
@@ -39,7 +40,7 @@ function beadsOnScreen(project: Project, zoom: number, scroll: { x: number; y: n
 }
 
 describe('useFrameExpand (ticket 1169)', () => {
-  it('fits the Frame into the drawing area clear of the Tool pill, which stays (ticket 1176), its slim sheet and the gap', () => {
+  it('fits the Frame into the drawing area clear of the Tool pill, which stays, and its slim sheet, with no gap round it (ticket 1176)', () => {
     const project = framed(60, 20)
     const { view, expand, stop } = setup(project)
     const before = view.zoom.value
@@ -48,7 +49,7 @@ describe('useFrameExpand (ticket 1169)', () => {
     expect(view.zoom.value).toBeGreaterThan(before)
     const room = expand.room(view.zoom.value)
     const beads = beadsOnScreen(project, view.zoom.value, view.scroll.value)
-    // Across, the width is what binds: the beads end where the pill, the sheet's sides and the gap leave off, to a
+    // Across, the width is what binds: the beads end where the pill and the sheet's sides leave off, to a
     // rounding.
     const pill = 120
     expect(beads.x).toBeGreaterThanOrEqual(pill + room.left - 1)
@@ -59,12 +60,15 @@ describe('useFrameExpand (ticket 1169)', () => {
     stop()
   })
 
-  it('stops at the Fit limits: a bead no further than 48px from the next', () => {
-    const { view, expand, stop } = setup(framed(4, 3))
+  it('grows a small Frame past Fit\'s 48px bead, to the screen or the 400% zoom (ticket 1176)', () => {
+    const { view, expand, stop } = setup(framed(12, 6))
+    view.fit()
+    const fitted = view.zoom.value
     expand.toggle()
-    const project = framed(4, 3)
-    const beads = beadsOnScreen(project, view.zoom.value, view.scroll.value)
-    expect(beads.width / 4).toBeLessThanOrEqual(LARGEST_FIT_BEAD_PX + 0.5)
+    const beads = beadsOnScreen(framed(12, 6), view.zoom.value, view.scroll.value)
+    expect(beads.width / 12).toBeGreaterThan(LARGEST_FIT_BEAD_PX)
+    expect(view.zoom.value).toBeGreaterThan(fitted)
+    expect(view.zoom.value).toBeLessThanOrEqual(MAX_ZOOM)
     stop()
   })
 
@@ -122,13 +126,13 @@ describe('useFrameExpand (ticket 1169)', () => {
     stop()
   })
 
-  it('takes the smaller insets and gap under bp-tablet', () => {
+  it('takes the smaller inset under bp-tablet', () => {
     const { compact, expand, stop } = setup(framed(60, 20))
     expand.toggle()
     const wide = expand.room(1)
     compact.value = true
     const narrow = expand.room(1)
-    expect(wide.right - narrow.right).toBe(6 + 8 - (4 + 4))
+    expect(wide.right - narrow.right).toBe(6 - 4)
     stop()
   })
 })
