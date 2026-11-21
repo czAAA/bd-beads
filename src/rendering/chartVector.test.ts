@@ -932,9 +932,10 @@ describe('a Canvas turn never changes the chart: it follows the Frame alone (spe
   it.each([plain[0]!, ...custom])('prints %s on a Canvas turned with it as before 1186, a lean dropped', (_, make) => {
     for (const turn of [90, 270]) {
       const project = withLayers(make(), { orientation: turn })
-      const { plan } = chartPages(project)
-      expect(plan).toEqual(planWithKey(project))
-      expect(chartPages(project).pages).toEqual(plan.parts.map((part) => pdfOf(project, plan, [part], LETTERS, plan.page.height, EMPTY_GRID_ON).content.toString()))
+      // Before 1186 the chart was drawn straight from the Project, at the Canvas's quarter turn.
+      const before = planWithKey(project)
+      const printed = chartPages(project)
+      expect(printed).toEqual({ plan: before, pages: before.parts.map((part) => pdfOf(project, before, [part], LETTERS, before.page.height, EMPTY_GRID_ON).content.toString()) })
       expect(chartPages(withLayers(make(), { orientation: turn + 3 }))).toEqual(chartPages(project))
     }
   })
