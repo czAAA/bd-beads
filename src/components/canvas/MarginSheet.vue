@@ -12,7 +12,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { rowProgressOf, rowProgressPosition, type ShownWay } from '../../domain/rowProgress'
+import { columnsAsSeen, rowProgressPosition, type ShownWay } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
@@ -247,7 +247,7 @@ const progressFitting = useFittingForm({
   // What it reads: Row done or Column done, the counter, the language (ticket 0851).
   labels: () => {
     const { current, total } = rowProgressPosition(props.project)
-    return JSON.stringify([locale.value, rowProgressOf(props.project).direction, current, total, touch.value, !!props.expanded])
+    return JSON.stringify([locale.value, columnsAsSeen(props.project), current, total, touch.value, !!props.expanded])
   },
 })
 /** Row progress shown: expanded, where the Progress bar is set aside, always, the strip at its least where none fits. */

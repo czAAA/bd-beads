@@ -68,10 +68,13 @@ const emit = defineEmits<{ back: []; forward: [] }>()
 
 /* Phone widths (tickets 411, 556): the pair can't share a row with the rest in every language at 360px, so it takes a
  * second row, half the bar each, 4px apart with 6px side padding and 2px between icon and label, so the longest labels
- * fit at 320px. A button is wrapped (for its Tooltip) only while it has one, so a lone button is a flex item too. */
+ * fit at 320px. Where a label is too long for half (a narrower bar, "Back a column", ticket 1183), each takes a row of its
+ * own, the bar's whole width, so no label is cut. A button is wrapped (for its Tooltip) only while it has one, so a
+ * lone button is a flex item too. */
 @media (max-width: 30rem) {
   .progress-moves {
     flex: 1 1 100%;
+    flex-wrap: wrap;
     min-width: 0;
     gap: var(--space-4);
   }
@@ -79,12 +82,11 @@ const emit = defineEmits<{ back: []; forward: [] }>()
   .progress-moves > .app-button,
   .progress-moves :deep(.app-button-wrap) {
     flex: 1 1 0;
-    min-width: 0;
+    min-width: max-content;
   }
 
   .progress-moves :deep(.app-button) {
     width: 100%;
-    min-width: 0;
     padding-inline: var(--space-6);
     gap: var(--space-2);
     justify-content: center;
