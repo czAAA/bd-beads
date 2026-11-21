@@ -25,3 +25,5 @@ Once the PR is open, you are done: don't watch its CI. No `gh pr checks --watch`
 Commit your work to the ticket's branch, in its worktree (`bd-worktree`), never on `main`.
 
 End your final message with a `Skills used:` line listing every skill you invoked during the implementation (e.g. `bd-tdd`, `bd-review`), or `none`.
+
+When a PR was opened, put its link on its own line right after the `Skills used:` line. Then the PR needs no mention anywhere above it (no number, no link), unless the prose itself needs to refer to it.
