@@ -49,7 +49,8 @@ import { offGridOnCanvas } from './framePlacement'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
 import { linesKeptIn, type WovenChoice } from './wovenLines'
-import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingRowProgressOf, touchFrameSheet, withFrameFields, withFrameSheet, withLayer, withPieceNames, withStartingRowProgress } from './layerRecord'
+import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingRowProgressOf, withFrameFields, withLayer, withPieceNames, withStartingRowProgress } from './layerRecord'
+import { touchFrameSheet, withFrameSheet } from './frameSheet'
 import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -317,7 +318,7 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
   const { shape, centre, beads = {}, weave, quarterTurns } = placement
   const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ shape })!.id]: placement.size }
   const sheet = customSheet(project, shape, settings, centre, quarterTurns, weave)
-  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingRowProgressOf(sheet) }, true)
+  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingRowProgressOf(sheet) }, { anew: true })
 }
 
 /** A Custom frame laid out again from new settings round its own centre, as it lay in `before` (the Project itself, or
@@ -463,7 +464,7 @@ function placedFrame(project: Project, place: FramePlacement): Project {
   // Lift starts on for a Frame laid where there was none and stays as it was in place of another (ticket 1177).
   const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {}, ...(!previous || previous.lifted ? { lifted: true as const } : {}) }
   // Its progress starts afresh, in its Technique's way as it lies, whatever way the Frame it replaces ran.
-  return touchFrameSheet(project, { ...frame, rowProgress: startingRowProgressOf(sheet) }, true)
+  return touchFrameSheet(project, { ...frame, rowProgress: startingRowProgressOf(sheet) }, { anew: true })
 }
 
 /** The Project with its Custom frame become its shape round `rectangle` (ADR 0079, ticket 0669), the smallest that

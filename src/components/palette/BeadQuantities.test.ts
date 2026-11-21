@@ -10,7 +10,8 @@ import { provideBeadColors, type BeadColors } from '../../composables/palette/us
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import { addedColorId, defaultPalette, defaultPaletteIds } from '../../domain/palette'
 import { paintAt } from '../../testUtils/layers'
-import { beadsOfLayer, withFrameSheet } from '../../domain/layerRecord'
+import { beadsOfLayer } from '../../domain/layerRecord'
+import { withFrameSheet } from '../../domain/frameSheet'
 import { withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))

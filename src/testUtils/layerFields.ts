@@ -1,5 +1,6 @@
 import type { FrameSheet } from '../domain/canvas'
-import { canvasOf, frameOf, withCanvas, withFrameFields, withFrameSheet, withLetters } from '../domain/layerRecord'
+import { canvasOf, frameOf, withCanvas, withFrameFields, withLetters } from '../domain/layerRecord'
+import { withFrameSheet } from '../domain/frameSheet'
 import { nearestQuarterTurn, normalizedOrientation } from '../domain/canvasOrientation'
 import { turnedWithFrame } from '../domain/rowWays'
 import { rowProgressOf, seenProgressOf, type OwnRowProgress } from '../domain/rowProgress'

@@ -7,7 +7,7 @@ import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useProjectLabels } from './useProjectLabels'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
-import { withFrameSheet } from '../../domain/layerRecord'
+import { withFrameSheet } from '../../domain/frameSheet'
 import { withLayers } from '../../testUtils/layerFields'
 
 const bead = BEAD_CATALOG.find((candidate) => candidate.id === 'toho/cube/1.5mm')!

@@ -6,7 +6,7 @@ import { withColors } from '../../domain/canvas'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
-import { withFrameSheet } from '../../domain/layerRecord'
+import { withFrameSheet } from '../../domain/frameSheet'
 import { withLayers } from '../../testUtils/layerFields'
 import { withProjectName } from '../../domain/projectName'
 

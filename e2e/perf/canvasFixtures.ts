@@ -5,7 +5,7 @@ import type { BeadMap, Rect } from '../../src/domain/canvas'
 import type { Grid, Project } from '../../src/domain/project'
 import type { Technique } from '../../src/domain/weave'
 import { fixtureProject } from '../support/projects'
-import { withFrameSheet } from '../../src/domain/layerRecord'
+import { withFrameSheet } from '../../src/domain/frameSheet'
 import { frameSheetOf, type LayersChange, withLayers } from '../../src/testUtils/layerFields'
 
 // The shapes the big-Canvas performance check opens (ticket 0673, "Canvas performance for large patterns"): many

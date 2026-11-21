@@ -13,7 +13,8 @@ import { rowProgressOf, rowProgressOn } from './rowProgress'
 import { frameWithEdgeStep, withFrame } from './frame'
 import { frameWeave } from './layerWeave'
 import type { Project, RowProgress } from './project'
-import { beadsOfLayer, canvasOf, frameOf, withFrameSheet } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
+import { withFrameSheet } from './frameSheet'
 import { frameSheetOf, type LayersChange, layersView, withLayers, pointersOf } from '../testUtils/layerFields'
 
 const frame: Rect = { row: 10, column: 10, rows: 6, columns: 4 }

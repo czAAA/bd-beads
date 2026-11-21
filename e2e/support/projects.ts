@@ -105,7 +105,7 @@ export function beadCentre(
   return { x: box.x + at.x, y: box.y + at.y }
 }
 
-/** Where a Frame drawn otherwise than its Canvas shows (ticket 1188): its own surface is pinned at its centre where the
+/** Where a Frame drawn otherwise than its Canvas shows (ticket 1188; ProjectSurface's `frameDrawn` pin, worked out again): its own surface is pinned at its centre where the
  * Canvas lays it, so a bead of it lies where an upright Frame at its own quarter turn would, moved by `x` and `y`
  * displayed px. None where the Frame lies as the Canvas is drawn. The Frame starts at the Canvas's first position. */
 export function frameShift(project: Layered, zoom: number): { rotation: Rotation; x: number; y: number } | undefined {

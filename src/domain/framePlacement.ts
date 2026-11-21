@@ -6,8 +6,7 @@ import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameFields, type Lay
 import { canvasWeave, frameScale, frameWeave } from './layerWeave'
 import type { FrameLayer, Project } from './project'
 import { canvasPlacement, frameAngleOf, frameQuarterTurnOf, type Placement, type TablePoint } from './table'
-import { describeWeave } from './weave'
-import { snapColumn, snapRow } from './frame'
+import { columnCycle, describeWeave, rowCycle } from './weave'
 
 // The Frame's placement on the table (spec 1182, ticket 1185): its own angle and its centre, worked out from the Canvas
 // position it lies at through the Canvas's placement, and back. What file version 15 keeps of where the Frame is.
@@ -123,7 +122,8 @@ export function withFrameAt(project: Project, centre: TablePoint): Project {
   const off = { ...onGrid, centre: { ...centre } }
   const corner = frameCornerAt(withHeld(project, off), centre)
   const weave = canvasWeave(project)
-  return withHeld(project, { ...off, row: snapRow(weave, corner.row), column: snapColumn(weave, corner.column) })
+  const snapped = (at: number, cycle: number) => at - (((at % cycle) + cycle) % cycle)
+  return withHeld(project, { ...off, row: snapped(corner.row, rowCycle(weave)), column: snapped(corner.column, columnCycle(weave)) })
 }
 
 /** The Project with its Canvas turned to `orientation` and its origin moved `moved` on the table (a turn about a pivot,

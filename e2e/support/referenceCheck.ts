@@ -46,11 +46,11 @@ const CURRENT_ROW_LIFT = 0.1
 /** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at
  * 50% over the Canvas; the current row's are 10% brighter; a painted one carries its satin light there (ticket 1003).
  * Out of the draft look an empty one is a tonal tile, which Row progress leaves as it is (ticket 1001). */
-function expectedCentre(shown: Project, row: number, column: number, satin: boolean): [number, number, number] {
+function expectedCentre(shown: Project, ownRow: number, ownColumn: number, satin: boolean): [number, number, number] {
   // The Frame as it is drawn, at its own quarter turn on a Canvas laid under it (ticket 1188): its beads by position.
   const project = withLaidTurn(shown)
-  const at = frameOf(project) ? { row: row + frameOf(project)!.row, column: column + frameOf(project)!.column } : { row, column }
-  ;[row, column] = [at.row, at.column]
+  const frame = frameOf(project)
+  const [row, column] = [ownRow + (frame?.row ?? 0), ownColumn + (frame?.column ?? 0)]
   const color = beadColorAt(project, row, column)
   if (color === null && satin) return rgb(tileColorOf(LIGHT_THEME.canvas))
   const flat = flatCentre(project, row, column, rgb(color ?? LIGHT_THEME.emptyBead))

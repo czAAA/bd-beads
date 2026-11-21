@@ -20,7 +20,8 @@ vi.mock('../../rendering/projectExport', () => ({
 }))
 import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
 import { usePrintChoices } from './usePrintChoices'
-import { canvasOf, frameOf, withFrameSheet } from '../../domain/layerRecord'
+import { canvasOf, frameOf } from '../../domain/layerRecord'
+import { withFrameSheet } from '../../domain/frameSheet'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
 /** Big enough that its chart prints under 3 mm, where Large beads acts (ticket 1125). */

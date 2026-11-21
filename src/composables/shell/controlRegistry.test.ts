@@ -13,6 +13,7 @@ import type { Locale } from '../../domain/locale'
 import { CROP_HANDLES } from '../../domain/convertSize'
 import { CONTROLS, chordMatches, controlAction } from './controlRegistry'
 import { bareProject } from '../../testUtils/layerFields'
+import { turnCanvasTo } from '../../domain/rotate'
 
 const LANGUAGES: Record<Locale, Translations> = { en, ru, uk, be, zh, es, pl }
 
@@ -115,6 +116,14 @@ describe('the control registry', () => {
     expect(remove.disabledBody?.(en, deps(project(false, 0)))).toBe(en.tooltips.noFrameToRemove)
     // A bin, as every other remove (ticket 475).
     expect(remove.icon).toBe('delete')
+  })
+
+  it('says Remove row/column waits for the layers to lie alike, while the Frame does not (ticket 1188)', () => {
+    const remove = CONTROLS.find((control) => control.id === 'remove-line')!
+    const framed = bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })
+    const deps = (activeProject: unknown) => ({ activeProject: () => activeProject }) as never
+    expect(remove.disabledBody?.(en, deps(framed))).toBe(en.tooltips.removeLineDisabled)
+    expect(remove.disabledBody?.(en, deps(turnCanvasTo(framed, 90, { x: 0.5, y: 0 })))).toBe(en.tooltips.removeLineNotAlike)
   })
 
   it('gives every action that can be disabled a reason, in every language', () => {
