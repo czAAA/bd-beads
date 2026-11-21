@@ -163,10 +163,19 @@ describe('Edit Frame', () => {
     expect(savedFrame()).not.toEqual({ row: 3, column: 4, rows: 2, columns: 4 })
   })
 
+  /** Remove Frame, from the band or, on this small Frame's narrow sheet, from the Frame tools menu (ticket 1195). */
+  async function removeFromSheet(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
+    if (!wrapper.find('[data-testid="frame-chrome-remove"]').exists()) {
+      await wrapper.get('[data-testid="margin-frame-tools"]').trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-testid="margin-frame-tools-remove"]').trigger('click')
+    } else await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+  }
+
   it('removes the Frame on confirm and not on Cancel, goes with it, and is closed again for a Frame brought back by Undo', async () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
-    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await removeFromSheet(wrapper)
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
@@ -174,7 +183,7 @@ describe('Edit Frame', () => {
 
     // The dialog took focus, so the handles closed, as Menu and Project do (ticket 475).
     await toggleEdit(wrapper)
-    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await removeFromSheet(wrapper)
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toBeUndefined()
@@ -374,15 +383,13 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(surface().props('slim')).toBeUndefined()
   })
 
-  it('opens the Export panel from its Export button, hung from that button', async () => {
+  it('opens the Export panel from the Frame tools menu where its sheet is too narrow for the Export button (ticket 1195)', async () => {
     const wrapper = await mountOpen(sheetProject())
-    await wrapper.get('[data-testid="margin-export"]').trigger('click')
+    await wrapper.get('[data-testid="margin-frame-tools"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="margin-frame-tools-export"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="margin-export"]').attributes('aria-pressed')).toBe('true')
-    await wrapper.get('[data-testid="margin-export"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
   })
 
   it('sets the Frame\'s Drop from its title block\'s stepper (ticket 0698)', async () => {
