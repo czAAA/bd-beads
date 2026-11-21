@@ -26,7 +26,8 @@ describe("the Welcome section's words (tickets 0830, 1157)", () => {
 
   it('lists the Techniques by name in the line, the first capitalised', () => {
     expect(welcomeLine(en, 'en')).toBe('Loom, peyote, and brick stitch.')
-    expect(welcomeLine(ru, 'ru')).toBe('Ткачество, мозаичное плетение и кирпичное плетение.')
+    expect(welcomeLine(ru, 'ru')).toBe('Ткачество, мозаичное и кирпичное плетение.')
+    expect(welcomeLine(uk, 'uk')).toBe('Ткацтво, мозаїчне і цегляне плетіння.')
     expect(welcomeLine(zh, 'zh')).toBe('织机、佩奥和砖形。')
   })
 

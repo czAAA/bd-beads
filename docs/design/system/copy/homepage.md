@@ -113,7 +113,7 @@ The free list (ticket 0740), one row each, in this order. It names the app's fea
 | {n} Starters for {categories} (a counted word) | {n} шаблон / шаблона / шаблонов: {categories} |
 | More on the way (muted, with a plus) | Скоро будет больше |
 
-The names are joined as the language joins a list (`formatList`): English with a serial comma, "loom, peyote, and brick stitch". The counted rows take the language's counted forms (ticket 0742; the Russian rows had an em dash, which the Russian copy never uses).
+The names are joined as the language joins a list (`formatList`): English with a serial comma, "loom, peyote, and brick stitch". The counted rows take the language's counted forms (ticket 0742; the Russian rows had an em dash, which the Russian copy never uses). A noun the names share at the end is said once, at the end: Russian "ткачество, мозаичное и кирпичное плетение".
 
 "An open Canvas" is the owner's wording for the Homepage only; everywhere else the copy says Canvas, never "open canvas" (ADR 0050).
 
