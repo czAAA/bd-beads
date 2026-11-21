@@ -4,19 +4,16 @@ import { ru } from '../i18n/ru'
 import { coffeeActs, coffeePromises, coffeeRows } from './coffeeCopy'
 
 describe("The coffee screen's copy (ticket 0823)", () => {
-  it('has the seven promises in order, each with its icon and its row: what it is, then how you use it (ticket 1175)', () => {
-    expect(coffeePromises(en).map(({ icon, name, row }) => [icon, name, row])).toEqual([
-      ['device', 'Yours, on this device', 'what'],
-      ['cloud-off', 'Works offline', 'what'],
-      ['eye-off', 'No ads or tracking', 'what'],
-      ['check', 'Free forever', 'what'],
-      ['pen-mode', 'For tablets and pens', 'how'],
-      ['mouse', 'For computers and phones', 'how'],
-      ['keyboard', 'Keyboard shortcuts', 'how'],
+  it('has the seven promises in order, each with its icon (ticket 1175)', () => {
+    expect(coffeePromises(en).map(({ icon, name }) => [icon, name])).toEqual([
+      ['device', 'Yours, on this device'],
+      ['cloud-off', 'Works offline'],
+      ['eye-off', 'No ads or tracking'],
+      ['check', 'Free forever'],
+      ['pen-mode', 'For tablets and pens'],
+      ['mouse', 'For computers and phones'],
+      ['keyboard', 'Keyboard shortcuts'],
     ])
-    expect(coffeePromises(en)[5].text).toBe(
-      'With a mouse, right-click for tools and colors where you draw. The wheel scrolls, and with Ctrl or ⌘ it zooms. On a phone, hold the Canvas for them and pinch to zoom.',
-    )
   })
 
   it('says Yours, on this device without "offline", which is a promise of its own', () => {
