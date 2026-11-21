@@ -19,7 +19,7 @@ import { turnedClockwise } from '../testUtils/rotated'
 import { copyLayerSelection, paintLayerSelection, pasteOnLayer } from './selection'
 import { wordChartOf } from './wordChart'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { withLayers } from '../testUtils/layerFields'
+import { ROWS_DOWN, withLayers } from '../testUtils/layerFields'
 
 // A Frame's orientation (ticket 0667, ADR 0079): Rotate Frame turns the Frame like a sheet on the Canvas, its beads in
 // their own rows and columns, and everything that works on the Frame as it lies follows the turn.
@@ -191,16 +191,18 @@ describe("a turned Frame's handles, steppers and typed size (ticket 1016)", () =
 })
 
 describe('Row progress on a turned Frame', () => {
-  it('runs as its own rows do, turned with it', () => {
+  it('keeps the way as seen with no pass done, and steps it as seen (spec 1182)', () => {
     const thrice = rotateFrame(rotateFrame(turned)!)!
     expect(shownWayOf(upright)).toBe('down')
-    expect(shownWayOf(turned)).toBe('left')
-    expect(shownWayOf(toggleRowDirection(turned))).toBe('down')
-    expect(shownWayOf(toggleRowDirection(toggleRowDirection(thrice)))).toBe('left')
+    expect(shownWayOf(turned)).toBe('down')
+    expect(shownWayOf(thrice)).toBe('down')
+    expect(shownWayOf(toggleRowDirection(turned))).toBe('right')
+    expect(shownWayOf(toggleRowDirection(toggleRowDirection(thrice)))).toBe('up')
   })
 
   it('puts Row 1 of the Word chart on the edge its first row lies along', () => {
-    const lettered = withLayers(turned, { letters: true })
+    // Its own rows, top to bottom on its upright grid, lie right to left once turned.
+    const lettered = withLayers(turned, { letters: true, rowProgress: ROWS_DOWN })
     expect(wordChartOf(withLayers(upright, { letters: true }))!.firstEdge).toBe('top')
     expect(wordChartOf(lettered)!.firstEdge).toBe('right')
     // Its own 4 rows, not the 6 it covers as it lies, with a bead at both ends of them (the chart is trimmed, ticket 1128).
@@ -217,7 +219,8 @@ describe('Row progress on a turned Canvas', () => {
 
   it('shows the way as seen: the Frame\'s turn plus the Canvas\'s', () => {
     expect(shownWayOf(canvasTurned)).toBe('left')
-    expect(shownWayOf(bothTurned)).toBe('up')
+    // The turned Frame kept top to bottom as seen (spec 1182); the Canvas's turn still carries it, until ticket 1188.
+    expect(shownWayOf(bothTurned)).toBe('left')
     expect(rowProgressOf(canvasTurned)).toEqual(rowProgressOf(upright))
     // Off a quarter turn it goes by the nearest one, as the drawing does.
     expect(shownWayOf(withLayers(upright, { orientation: 100 }))).toBe('left')

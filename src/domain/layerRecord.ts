@@ -138,7 +138,7 @@ export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<Fr
   if (!sheet) {
     return { ...project, layers: [canvas] }
   }
-  const kept = frameOf(project) ? frameIdentity(frameOf(project)!) : { ...frameIdentity({ ...canvas, rowProgress: startingProgress(project, sheet) }), id: newLayerId() }
+  const kept = frameOf(project) ? frameIdentity(frameOf(project)!) : { ...frameIdentity({ ...canvas, rowProgress: startingRowProgressOf(project, sheet) }), id: newLayerId() }
   const { cell: _cell, ...laid } = sheet
   return { ...project, layers: [canvas, { ...kept, ...laid }, ...framesOf(project).slice(1)] }
 }
@@ -162,10 +162,18 @@ export function frameIdentity({ id, beadId, bead, background, letters, rowProgre
   }
 }
 
-/** Row progress for a Frame of this sheet's Technique laid on this Project's Canvas: at the first pass, the rows running
- * the Technique's starting way as the Canvas lies. */
-export function startingProgress(project: Layered, { technique, shape }: Pick<FrameSheet, 'technique' | 'shape'>): RowProgress {
-  return startingRowProgress(technique, quarterTurnOf(project) / 90, !!shape)
+/** The starting way (spec 1182): Row progress afresh, the rows running the Frame Technique's own way as the Frame lies
+ * on screen (its own turns and, until 1188, the Canvas's nearest); every fresh start asks it, never the Canvas's
+ * Technique. */
+export function startingRowProgressOf(project: Layered, { technique, shape, quarterTurns }: Pick<FrameSheet, 'technique' | 'shape' | 'quarterTurns'>): RowProgress {
+  return startingRowProgress(technique, quarterTurnOf(project) / 90 + (quarterTurns ?? 0), !!shape)
+}
+
+/** The Project with its Frame's Row progress started afresh (see startingRowProgressOf); the same Project without a
+ * Frame. Not stamped as a change. */
+export function withStartingRowProgress(project: Project): Project {
+  const frame = frameOf(project)
+  return frame ? { ...project, layers: [canvasOf(project), { ...frame, rowProgress: startingRowProgressOf(project, frame) }, ...framesOf(project).slice(1)] } : project
 }
 
 /** The Canvas's orientation (ADR 0079): the turn the whole picture is shown at, in degrees, any angle (ticket 0672);

@@ -63,20 +63,20 @@ describe('useRowOps', () => {
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
   })
 
-  it('names the way the rows now run as seen, the Canvas turned, in the Frame\'s own rows or columns (ticket 1101)', () => {
+  it('names the way the rows now run as seen, the Canvas turned, with the noun as seen (spec 1182)', () => {
     const showToast = vi.fn()
     const replaceProject = vi.fn()
     const turned = turnedClockwise(tracking)
     const deps = { currentProject: () => turned, replaceProject, showToast, messages: () => en }
     useRowOps(deps).onSetRowDirection('down')
     expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toMatchObject({ direction: 'columns' })
-    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumnsTopToBottom, 'success')
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
     useRowOps(deps).onSetRowDirection('right')
-    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRowsLeftToRight, 'success')
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumns, 'success')
     useRowOps(deps).onSetRowDirection('up')
-    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumnsBottomToTop, 'success')
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRowsReversed, 'success')
     useRowOps({ ...deps, currentProject: () => toggleRowDirection(turned) }).onSetRowDirection('left')
-    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRowsRightToLeft, 'success')
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumnsReversed, 'success')
   })
 
   it('turns the rows the way chosen from Turn row direction\'s list, with its toast, and the way they run already turns nothing (ticket 0973)', () => {

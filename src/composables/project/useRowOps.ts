@@ -1,7 +1,7 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
-import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, shownWayOf, toggleRowDirection, turnRowDirectionTo, type ShownWay } from '../../domain/rowProgress'
+import { columnsAsSeen, moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, shownWayOf, toggleRowDirection, turnRowDirectionTo, type ShownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { rowProgressAnnouncement } from '../../i18n/rowProgressWords'
 import type { Translations } from '../../i18n/translations'
@@ -62,14 +62,11 @@ export function useRowOps(deps: RowOpsDeps) {
       deps.replaceProject(turned)
       // Said once per change, whether the list or the key turned it (ticket 411).
       const t = deps.messages().rowProgress
-      // The Frame's own rows or columns, running the way they are seen, the Frame and the Canvas turned (ticket 1101).
-      const toasts = {
-        rows: { down: t.directionToastRows, up: t.directionToastRowsReversed, right: t.directionToastRowsLeftToRight, left: t.directionToastRowsRightToLeft },
-        columns: { right: t.directionToastColumns, left: t.directionToastColumnsReversed, down: t.directionToastColumnsTopToBottom, up: t.directionToastColumnsBottomToTop },
-      }
-      const toast = toasts[rowProgressOf(turned).direction][shownWayOf(turned)]
+      // The way as seen names its noun too (spec 1182): top to bottom and bottom to top are rows, the others columns.
+      const toasts = { down: t.directionToastRows, up: t.directionToastRowsReversed, right: t.directionToastColumns, left: t.directionToastColumnsReversed }
+      const toast = toasts[shownWayOf(turned)]
       // The way left keeps its own pointer: said, so its rows marked done don't look lost (ticket 0849, F-04-04).
-      const kept = rowProgressPosition(project).current > 0 ? (rowProgressOf(project).direction === 'columns' ? t.columnsKeptToast : t.rowsKeptToast) : undefined
+      const kept = rowProgressPosition(project).current > 0 ? (columnsAsSeen(project) ? t.columnsKeptToast : t.rowsKeptToast) : undefined
       deps.showToast('row-direction', kept ? fillBlanks(t.directionKeptToast, { toast, kept }) : toast, 'success')
     }
   }
@@ -138,7 +135,7 @@ export function useRowOps(deps: RowOpsDeps) {
   /** Says why a drawing did not land: rows marked done took it back (ticket 0848). One toast, replaced, not stacked. */
   function tellMarkedDone(project: Project) {
     const t = deps.messages().rowProgress
-    deps.showToast('marked-done', rowProgressOf(project).direction === 'columns' ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
+    deps.showToast('marked-done', columnsAsSeen(project) ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
   }
 
   return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onSetRowDirection, onMoveRow, onGoToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }

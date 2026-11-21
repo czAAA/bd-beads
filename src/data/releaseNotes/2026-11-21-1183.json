@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "fixed",
+  "line": {
+    "en": "Row progress always starts in the Frame's own way: loom top to bottom, peyote left to right, brick stitch bottom to top, and Rotate Frame keeps the way you see",
+    "ru": "Прогресс по рядам всегда начинается так, как плетут в технике рамки: станок сверху вниз, мозаика слева направо, кирпичный стежок снизу вверх, а Повернуть рамку сохраняет направление, которое вы видите",
+    "uk": "Прогрес за рядами завжди починається так, як плетуть у техніці рамки: верстат згори вниз, мозаїка зліва направо, цегляний стібок знизу вгору, а Повернути рамку зберігає напрямок, який ви бачите",
+    "be": "Прагрэс па радках заўсёды пачынаецца так, як пляцуць у тэхніцы рамкі: станок зверху ўніз, мазаіка злева направа, цагляны сцежак знізу ўверх, а Павярнуць рамку захоўвае кірунак, які вы бачыце",
+    "zh": "行进度总是按边框技法本身的方向开始：织机从上到下，佩奥特从左到右，砖缝从下到上；旋转边框会保留你看到的方向",
+    "es": "El progreso por filas siempre empieza en el sentido de la técnica del marco: telar de arriba abajo, peyote de izquierda a derecha, punto ladrillo de abajo arriba, y Girar marco mantiene el sentido que ves",
+    "pl": "Postęp rzędów zawsze zaczyna się w kierunku techniki ramki: krosno od góry do dołu, peyote od lewej do prawej, ścieg cegiełkowy od dołu do góry, a Obróć ramkę zachowuje kierunek, który widzisz"
+  }
+}

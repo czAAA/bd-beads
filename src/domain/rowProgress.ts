@@ -8,7 +8,7 @@ import type { LayerGeometry } from './layerGeometry'
 import { frameWeave } from './layerWeave'
 import type { Project, RowProgress } from './project'
 import type { RowOrder, RowWay } from './rowOrder'
-import { CLOCKWISE, type ShownWay } from './rowWays'
+import { ownDirection, ownWayOf, turnedWay, type ShownWay } from './rowWays'
 import type { AreaLine } from './removeLine'
 import type { PassDirection } from './weaveGeometry'
 
@@ -30,7 +30,7 @@ function withRowProgress(project: Project, rowProgress: RowProgress): Project {
   return frame ? touchFrameSheet(project, { ...frame, rowProgress }) : project
 }
 
-/** Whether Row progress is already exactly the just-created state of a Frame like this one (see startingRowProgress, or
+/** Whether Row progress is already exactly as it starts afresh (`start`, see startingRowProgressOf, or
  * INITIAL_ROW_PROGRESS with no Frame), so deleteAll has nothing left to reset. */
 export function isInitialRowProgress(rowProgress: RowProgress, start: RowProgress = INITIAL_ROW_PROGRESS): boolean {
   return (
@@ -62,7 +62,7 @@ export function currentPass(rowProgress: RowProgress): number {
 }
 
 /** Row progress with every pointer back at the first pass, the way the weaver runs unchanged. */
-export function firstPasses(rowProgress: RowProgress): RowProgress {
+function firstPasses(rowProgress: RowProgress): RowProgress {
   const { currentRowBack: _row, currentColumnBack: _column, ...rest } = rowProgress
   return { ...rest, currentRow: 0, currentColumn: 0 }
 }
@@ -170,10 +170,9 @@ export function resetRowProgress(project: Project): Project {
 export type { ShownWay }
 
 /** Which way the rows run as the Frame lies (ticket 0667, ADR 0079): its own way (top to bottom, left to right and back),
- * turned with the Frame on the Canvas, whose own rows and pointers do not change. */
-function shownWay({ direction, reversed }: Pick<RowProgress, 'direction' | 'reversed'>, quarterTurns = 0): ShownWay {
-  const own: ShownWay = direction === 'rows' ? (reversed ? 'up' : 'down') : reversed ? 'left' : 'right'
-  return CLOCKWISE[(CLOCKWISE.indexOf(own) + quarterTurns) % 4]!
+ * turned as its own rows lie on screen. */
+function shownWay(rowProgress: Pick<RowProgress, 'direction' | 'reversed'>, quarterTurns = 0): ShownWay {
+  return turnedWay(ownWayOf(rowProgress), quarterTurns)
 }
 
 /** How the Frame's own rows lie as seen (ticket 1101): turned with the Frame on the Canvas, then with the Canvas's
@@ -193,34 +192,34 @@ export function shownWayOf(project: Layered): ShownWay {
   return shownWay(rowProgressOf(project), seenTurns(project))
 }
 
-/** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
- * alone. */
-export function toggleRowDirection(project: Project): Project {
-  if (!frameRowOrder(project).turns) {
-    return project
-  }
-  const { direction, reversed } = rowProgressOf(project)
-  // The four ways in turn: top to bottom, left to right, bottom to top, right to left (ticket 0589).
-  const next = direction === 'rows'
-    ? { direction: 'columns' as const, reversed }
-    : { direction: 'rows' as const, reversed: reversed ? undefined : true }
-  return withRowProgress(project, { ...rowProgressOf(project), ...next })
+/** Whether the weaver's lines are columns as seen (spec 1182): left to right and right to left are columns, top to
+ * bottom and bottom to top rows, whatever the Frame's own lines are. A Custom frame's run along its rows, so they are
+ * rows. What every word naming them asks: the labels, the buttons, the toasts and the counter. */
+export function columnsAsSeen(project: Layered): boolean {
+  if (!frameRowOrder(project).turns) return false
+  const way = shownWayOf(project)
+  return way === 'left' || way === 'right'
 }
 
 /** The four ways Turn row direction lists, in the order a press of its `D` key steps through them (ticket 0973). */
 export const ROW_WAYS: readonly ShownWay[] = ['down', 'right', 'up', 'left']
+
+/** The `D` key: the rows on to the next of the four ways as seen, in the list's order (ROW_WAYS), leaving the grid and
+ * the turns alone. */
+export function toggleRowDirection(project: Project): Project {
+  return turnRowDirectionTo(project, ROW_WAYS[(ROW_WAYS.indexOf(shownWayOf(project)) + 1) % ROW_WAYS.length]!)
+}
 
 /** Points the weaver's rows the way they are to run on screen (ticket 0973, UX-060; both turns, ticket 1101): each
  * way keeps its own pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
  * Row order is worked one way only. */
 export function turnRowDirectionTo(project: Project, way: ShownWay): Project {
   if (!frameRowOrder(project).turns) return project
-  const own = CLOCKWISE[(CLOCKWISE.indexOf(way) - seenTurns(project) + 4) % 4]!
+  const own = turnedWay(way, -seenTurns(project))
   const rowProgress = rowProgressOf(project)
-  if (shownWay(rowProgress) === own) return project
-  const direction = own === 'down' || own === 'up' ? 'rows' : 'columns'
-  const reversed = own === 'up' || own === 'left' ? true : undefined
-  return withRowProgress(project, { ...rowProgress, direction, reversed })
+  if (ownWayOf(rowProgress) === own) return project
+  const { reversed: _reversed, ...rest } = rowProgress
+  return withRowProgress(project, { ...rest, ...ownDirection(own) })
 }
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
