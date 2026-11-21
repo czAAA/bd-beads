@@ -306,7 +306,7 @@ const sheetLook = computed(() => {
 
 /** The rulers of a view, laid out once: the overlay draws them and a press asks them what it selects, so the two
  * cannot disagree. */
-const rulersIn = (view: SurfaceView, project: Project = props.project) => rulerLayout(project, view, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, expanded: !!props.slim, pieces: pieces.value })
+const rulersIn = (view: SurfaceView, project: Project = props.project) => rulerLayout(project, view, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, expanded: !!props.slim, expandedFontPx: props.slim?.fontPx, pieces: pieces.value })
 const rulers = computed(() => rulersIn(surface.value))
 /** The Frame's rulers lie on its own surface (ticket 1187), laid out in its drawing's view. */
 const frameRulers = computed(() => (drawnAlike.value ? rulers.value : rulersIn(frameSurface.value, frameProject.value)))
@@ -426,7 +426,7 @@ const slimBox = computed(() => {
   const frame = frameOf(props.project)
   if (!props.slim || !frame) return undefined
   const line = frameSurface.value.frameBox(frame)
-  const sides = slimSheetSides(props.slim, line.width)
+  const sides = slimSheetSides(props.slim, line.width, line.height)
   return { x: line.x - sides.left, y: line.y - sides.top, width: line.width + sides.left + sides.right, height: line.height + sides.top + sides.bottom }
 })
 /** The slim sheet as the canvas draws it: its box in grid px, its corners in screen px. */

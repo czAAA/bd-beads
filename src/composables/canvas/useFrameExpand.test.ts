@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
 import { MAX_ZOOM } from '../../domain/grid'
@@ -21,11 +21,16 @@ function setup(project: Project) {
   const viewport = ref({ width: 1000, height: 600 })
   const compact = ref(false)
   let room: CanvasViewOptions['expanded'] = () => undefined
+  let fitted = (_pitch: number) => {}
+  let leave = () => {}
+  const covered = () => ({ top: 0, right: 0, bottom: 0, left: 120 })
   const scope = effectScope()
   const { view, expand } = scope.run(() => {
-    const view = useCanvasView(() => current.value, viewport, { covered: () => ({ top: 0, right: 0, bottom: 0, left: 120 }), expanded: () => room?.() })
-    const expand = useFrameExpand({ currentProject: () => current.value, viewport, zoom: view.zoom, scroll: view.scroll, isAtFit: view.isAtFit, orientation: view.orientation, compact, fit: view.fit, showView: view.showView })
+    const view = useCanvasView(() => current.value, viewport, { covered, expanded: () => room?.(), fitted: (pitch) => fitted(pitch), leaveExpanded: () => leave() })
+    const expand = useFrameExpand({ currentProject: () => current.value, viewport, zoom: view.zoom, scroll: view.scroll, isAtFit: view.isAtFit, orientation: view.orientation, compact, covered, fit: view.fit, showView: view.showView })
     room = () => (expand.expanded.value ? expand.room : undefined)
+    fitted = expand.fitted
+    leave = expand.collapse
     return { view, expand }
   })!
   view.fit()
@@ -39,6 +44,9 @@ function beadsOnScreen(project: Project, zoom: number, scroll: { x: number; y: n
   return surface.beadBox(footprintOf(project)!, 'canvas')
 }
 
+/** The loom bead's longer step on screen at a zoom, the pitch the numbers follow. */
+const pitchOf = (zoom: number) => beadsOnScreen(framed(1, 1), zoom, { x: 0, y: 0 }).height
+
 describe('useFrameExpand (ticket 1169)', () => {
   it('fits the Frame into the drawing area clear of the Tool pill, which stays, and its slim sheet, with no gap round it (ticket 1176)', () => {
     const project = framed(60, 20)
@@ -47,7 +55,7 @@ describe('useFrameExpand (ticket 1169)', () => {
     expect(expand.toggle()).toBe(true)
     expect(expand.expanded.value).toBe(true)
     expect(view.zoom.value).toBeGreaterThan(before)
-    const room = expand.room(view.zoom.value)
+    const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
     const beads = beadsOnScreen(project, view.zoom.value, view.scroll.value)
     // Across, the width is what binds: the beads end where the pill and the sheet's sides leave off, to a
     // rounding.
@@ -60,15 +68,38 @@ describe('useFrameExpand (ticket 1169)', () => {
     stop()
   })
 
-  it('grows a small Frame past Fit\'s 48px bead, to the screen or the 400% zoom (ticket 1176)', () => {
-    const { view, expand, stop } = setup(framed(12, 6))
+  it('grows a small Frame past Fit\'s 48px bead and the 400% zoom, to the room\'s edge (tickets 1176, 1194)', () => {
+    const { view, expand, stop } = setup(framed(3, 3))
     view.fit()
     const fitted = view.zoom.value
     expand.toggle()
-    const beads = beadsOnScreen(framed(12, 6), view.zoom.value, view.scroll.value)
-    expect(beads.width / 12).toBeGreaterThan(LARGEST_FIT_BEAD_PX)
-    expect(view.zoom.value).toBeGreaterThan(fitted)
-    expect(view.zoom.value).toBeLessThanOrEqual(MAX_ZOOM)
+    const beads = beadsOnScreen(framed(3, 3), view.zoom.value, view.scroll.value)
+    const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
+    expect(beads.width / 3).toBeGreaterThan(LARGEST_FIT_BEAD_PX)
+    expect(view.zoom.value).toBeGreaterThan(Math.max(fitted, MAX_ZOOM))
+    // The height binds: the beads meet what the sheet needs above and below.
+    expect(600 - room.top - room.bottom - beads.height).toBeLessThan(10)
+    stop()
+  })
+
+  it('makes the numbers about 40% of the bead pitch, 12px to 28px, held while zooming (ticket 1194)', () => {
+    const { view, expand, stop } = setup(framed(6, 6))
+    expand.toggle()
+    const font = expand.content.value!.fontPx
+    expect(font).toBe(28)
+    view.setZoom(view.zoom.value * 1.2)
+    expect(expand.content.value!.fontPx).toBe(font)
+    const wide = setup(framed(200, 60))
+    wide.expand.toggle()
+    expect(wide.expand.content.value!.fontPx).toBe(12)
+    wide.stop()
+    stop()
+  })
+
+  it('fills the whole room: the sheet takes the area less the pill, the Frame centred in it (ticket 1194)', () => {
+    const { expand, stop } = setup(framed(6, 6))
+    expand.toggle()
+    expect(expand.content.value!.fill).toEqual({ width: 880, height: 600 })
     stop()
   })
 
@@ -95,7 +126,7 @@ describe('useFrameExpand (ticket 1169)', () => {
     await nextTick()
     expect(view.isAtFit.value).toBe(true)
     const beads = beadsOnScreen(framed(60, 20), view.zoom.value, view.scroll.value)
-    const room = expand.room(view.zoom.value)
+    const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
     // Centred in the room the Tool pill, 120px along the left, and the sheet leave.
     expect(beads.x + beads.width / 2).toBeCloseTo(120 + room.left + (1400 - 120 - room.left - room.right) / 2, 0)
     stop()
@@ -129,10 +160,57 @@ describe('useFrameExpand (ticket 1169)', () => {
   it('takes the smaller inset under bp-tablet', () => {
     const { compact, expand, stop } = setup(framed(60, 20))
     expand.toggle()
-    const wide = expand.room(1)
+    const wide = expand.room(1, 30)
     compact.value = true
-    const narrow = expand.room(1)
+    const narrow = expand.room(1, 30)
     expect(wide.right - narrow.right).toBe(6 - 4)
     stop()
+  })
+
+  describe('zooming out (ticket 1194)', () => {
+    it('goes back to the Canvas when a zoom out rests under 95% of the fit, and springs back above it, a zoom in staying', async () => {
+      vi.useFakeTimers()
+      try {
+        const { view, expand, stop } = setup(framed(60, 20))
+        view.setZoom(0.5)
+        const was = { zoom: view.zoom.value }
+        expand.toggle()
+        const fit = view.zoom.value
+        view.setZoom(fit * 1.3)
+        vi.advanceTimersByTime(200)
+        expect(expand.expanded.value).toBe(true)
+        expect(view.zoom.value).toBeCloseTo(fit * 1.3, 5)
+        view.setZoom(fit * 0.97)
+        vi.advanceTimersByTime(200)
+        expect(expand.expanded.value).toBe(true)
+        expect(view.isAtFit.value).toBe(true)
+        view.setZoom(fit * 0.9)
+        expect(expand.expanded.value).toBe(true)
+        vi.advanceTimersByTime(200)
+        expect(expand.expanded.value).toBe(false)
+        expect(view.zoom.value).toBe(was.zoom)
+        stop()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('waits for the fingers to lift before it decides', () => {
+      vi.useFakeTimers()
+      try {
+        const { view, expand, stop } = setup(framed(60, 20))
+        expand.toggle()
+        const fit = view.zoom.value
+        view.pinchStep({ zoom: fit * 0.5, anchor: { x: 500, y: 300 } })
+        vi.advanceTimersByTime(500)
+        expect(expand.expanded.value).toBe(true)
+        view.endTwist({ x: 500, y: 300 })
+        vi.advanceTimersByTime(1)
+        expect(expand.expanded.value).toBe(false)
+        stop()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
   })
 })

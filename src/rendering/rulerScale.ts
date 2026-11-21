@@ -52,6 +52,17 @@ export function rulerFontAtFull(underTablet: boolean): number {
   return underTablet ? 12 : 11
 }
 
+/** The expanded Frame's ruler numbers grow with the bead: this share of its pitch, from 12px to 28px (Rulers card,
+ * ticket 1194). */
+const EXPANDED_NUMBER_SHARE = 0.4
+const EXPANDED_NUMBER_LEAST_PX = 12
+const EXPANDED_NUMBER_MOST_PX = 28
+
+/** The numbers' size on an expanded Frame's sheet, for a bead `pitch` px apart on screen. */
+export function expandedNumberPx(pitch: number): number {
+  return Math.min(EXPANDED_NUMBER_MOST_PX, Math.max(EXPANDED_NUMBER_LEAST_PX, Math.round(pitch * EXPANDED_NUMBER_SHARE)))
+}
+
 /** The line of a Frame, off its beads, at this zoom: the Frame's handles and presses use it too. */
 export function frameOutsetPx(zoom: number): number {
   return FRAME_OUTSET_PX * outsetShare(zoom)

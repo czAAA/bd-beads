@@ -19,6 +19,8 @@ export interface CanvasFramingDeps {
   opening?: CanvasViewOptions['opening']
   /** Under bp-tablet (ticket 1169): the expanded Frame's sheet takes its smaller insets and gap there. */
   compact?: Ref<boolean>
+  /** A zoom out that rests under the expanded fit goes Back to the Canvas as its button does, announced (ticket 1194). */
+  backByZoom?: () => void
 }
 
 /** How the canvas is sized and zoomed (tickets 27, 57, 197; ADR 0020): the measured area, fit zoom and the strip's
@@ -34,9 +36,9 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
 
   /** Expand the Frame's room, set once it is made below: the view fits into it while the Frame is expanded. */
   let expandedRoom: CanvasViewOptions['expanded'] = () => undefined
-  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, lineUpFrame, turnCanvas, pinchStep, endTwist, fit, showView } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, keepFrameTwist: deps.keepFrameTwist, covered: () => toolPillCover.value, opening: deps.opening, expanded: () => expandedRoom?.() })
+  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, lineUpFrame, turnCanvas, pinchStep, endTwist, fit, showView } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, keepFrameTwist: deps.keepFrameTwist, covered: () => toolPillCover.value, opening: deps.opening, expanded: () => expandedRoom?.(), fitted: (pitch) => frameExpand.fitted(pitch), leaveExpanded: () => (deps.backByZoom ? deps.backByZoom() : frameExpand.collapse()) })
   /** Expand the Frame (ticket 1169): the Frame fitted to the whole drawing area, the Tool pill set aside. */
-  const frameExpand = useFrameExpand({ currentProject: deps.currentProject, viewport, zoom, scroll, isAtFit, orientation, compact: deps.compact ?? ref(false), fit, showView })
+  const frameExpand = useFrameExpand({ currentProject: deps.currentProject, viewport, zoom, scroll, isAtFit, orientation, compact: deps.compact ?? ref(false), covered: () => toolPillCover.value, fit, showView })
   expandedRoom = () => (frameExpand.expanded.value ? frameExpand.room : undefined)
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
