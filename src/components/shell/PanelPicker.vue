@@ -31,9 +31,12 @@ const props = defineProps<{
   toolbar?: boolean
   /** An Info button beside the label, holding what the setting decides (New Project's Technique, ticket 0951). */
   info?: { label: string; body: string; testid: string }
+  /** A quiet link closing the list, under the options (the Language list's Report a translation problem, ticket 1144): picking it closes the list and emits `footer`. */
+  footer?: { label: string; testid: string }
   options: readonly { value: T; label: string; icon?: IconName; lang?: string; /** What the button shows when the name is long (a language's code). */ shortLabel?: string }[]
 }>()
 const value = defineModel<T>({ required: true })
+const emit = defineEmits<{ footer: [] }>()
 
 const open = ref(false)
 const rootEl = ref<HTMLElement>()
@@ -58,7 +61,7 @@ const buttonName = computed(() => {
 })
 
 function items(): HTMLElement[] {
-  return [...(listEl.value?.querySelectorAll<HTMLElement>('[role="menuitemradio"]') ?? [])]
+  return [...(listEl.value?.querySelectorAll<HTMLElement>('[role="menuitemradio"], [role="menuitem"]') ?? [])]
 }
 
 async function show() {
@@ -105,6 +108,11 @@ function onButtonKeydown(event: KeyboardEvent) {
 function choose(next: T) {
   value.value = next
   close()
+}
+
+function chooseFooter() {
+  close()
+  emit('footer')
 }
 
 function onListKeydown(event: KeyboardEvent) {
@@ -191,6 +199,7 @@ function onListKeydown(event: KeyboardEvent) {
           <span v-else class="panel-picker__gap" aria-hidden="true" />
           <span>{{ option.label }}</span>
         </button>
+        <button v-if="footer" class="ui-control panel-picker__footer" type="button" role="menuitem" tabindex="-1" :data-testid="footer.testid" @click="chooseFooter">{{ footer.label }}</button>
       </div>
     </Teleport>
   </div>
@@ -367,6 +376,44 @@ function onListKeydown(event: KeyboardEvent) {
   border: 0;
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+.panel-picker__footer {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--panel-item-secondary-height);
+  margin-top: var(--space-4);
+  padding: 0 var(--space-10);
+  font: var(--type-meta);
+  color: var(--muted);
+  text-align: left;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--overlay-line);
+  border-radius: 0 0 calc(var(--radius-md) - var(--space-4) - 1px) calc(var(--radius-md) - var(--space-4) - 1px);
+  cursor: pointer;
+}
+
+.panel-picker__footer:focus {
+  background: var(--overlay-hover);
+}
+
+.panel-picker__footer:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+@media (hover: hover) {
+  .panel-picker__footer:hover {
+    background: var(--overlay-hover);
+  }
+}
+
+@media (pointer: coarse) {
+  .panel-picker__footer {
+    min-height: var(--panel-row-touch);
+  }
 }
 
 /* The first and last option run parallel to the list's corner (ticket 1080): `radius-md` less the 4px padding and the

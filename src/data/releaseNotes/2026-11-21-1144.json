@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-21",
+  "kind": "changed",
+  "line": {
+    "en": "Report a translation problem moved to the bottom of the language list",
+    "ru": "«Сообщить об ошибке перевода» переехало в конец списка языков",
+    "uk": "«Повідомити про помилку перекладу» переїхало в кінець списку мов",
+    "be": "«Паведаміць пра памылку перакладу» пераехала ў канец спісу моў",
+    "zh": "“报告翻译问题”移到了语言列表的底部",
+    "es": "Informar de un problema de traducción pasó al final de la lista de idiomas",
+    "pl": "Zgłoś błąd tłumaczenia trafiło na dół listy języków"
+  }
+}
