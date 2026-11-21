@@ -1233,6 +1233,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       canRedo,
       onUndo,
       onRedo,
+      /** The Language list's Report a translation problem (the strip's). */
+      onOpenFeedback: feedback.onOpenFeedback,
       activeTool,
       selectedColorHex,
       selectedColorId,

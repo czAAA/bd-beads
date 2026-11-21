@@ -192,8 +192,6 @@ const inputOptions = computed(() => [
       <!-- Keyboard shortcuts is Menu's Subpanel (ticket 1159, ShortcutsHelp card), wider than Menu; the key shows where a keyboard is. -->
       <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" sub stays data-testid="menu-item-shortcuts" @select="emit('shortcuts'); context?.openSub()">{{ t.shortcutsHelp.title }}</PanelItem>
       <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
-      <!-- Report a translation problem sits under Send feedback: both open the FeedbackSheet (tickets 0700, 1144). -->
-      <PanelItem v-if="!demo" secondary data-testid="menu-report-translation" @select="emit('feedback', 'translation')">{{ t.panels.menu.reportTranslation }}</PanelItem>
       <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="onHomepage ? 'page' : undefined" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>
 

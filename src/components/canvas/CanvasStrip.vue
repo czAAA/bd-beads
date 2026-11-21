@@ -74,6 +74,8 @@ const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
   reset: []
+  /** Report a translation problem, at the bottom of the Language list. */
+  'report-translation': []
 }>()
 
 const { t, locale, setLocale } = useI18n()
@@ -301,7 +303,9 @@ function onControlsKeydown(event: KeyboardEvent) {
           :label="t.languageSwitcher.ariaLabel"
           icon="globe"
           :options="languageOptions"
+          :footer="{ label: t.panels.menu.reportTranslation, testid: 'menu-report-translation' }"
           data-testid="language-switcher"
+          @footer="emit('report-translation')"
           @update:model-value="setLocale"
         />
       </div>

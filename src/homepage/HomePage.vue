@@ -451,6 +451,7 @@ const savedProjects = controlAction('saved-projects')
             @zoom-in="zoom.zoomIn"
             @zoom-out="zoom.zoomOut"
             @reset="zoom.reset"
+            @report-translation="feedback.onOpenFeedback('translation')"
           >
             <!-- On a phone the way in is the phone bar's; the strip keeps Projects library, its icon and count (ticket 0827). -->
             <template v-if="phone && !isNew" #way-in>
