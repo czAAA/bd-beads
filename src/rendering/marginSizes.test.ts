@@ -22,6 +22,7 @@ const MIRROR: Record<string, { token: string } | { css: string } | { none: strin
   'legible.text': { none: 'the sheet’s browser test holds every word it draws to it' },
   'legible.button': { none: 'the sheet’s browser test holds every button it draws to it' },
   'band.full': { css: '--margin-band-full' },
+  'band.stacked': { css: '--margin-band-stacked' },
   'band.compact': { css: '--margin-band-compact' },
   'band.folded': { css: '--margin-band-folded' },
   roomy: { css: '--margin-band-roomy' },

@@ -28,21 +28,19 @@ English follows the audit's proposal (F-01-10, F-03-15); the other languages are
 
 ## Row in view copy (ticket 0934)
 
-After Row done, Back a row and Go to row the announcer says where the weaving is, in the counter's own words, once per move (ScreenReaders card): `{unit}` is Row or Column, a Custom frame says its pass as the counter does ("Round 3 of 9"), and the last pass done says Pattern done. Show row sits beside Go to row's name (ProgressBar card).
+After Row done and Back a row the announcer says where the weaving is, in the counter's own words, once per move (ScreenReaders card): `{unit}` is Row or Column, a Custom frame says its pass as the counter does ("Round 3 of 9"), and the last pass done says Pattern done.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
 | {unit} {current} of {total} (announced) | {unit} {current} из {total} | {unit} {current} з {total} | {unit} {current} з {total} | 第 {current} {unit}，共 {total} {unit} | {unit} {current} de {total} | {unit} {current} z {total} |
 | Pass {current} of {total}, row {line} (announced, peyote) | Проход {current} из {total}, ряд {line} | Прохід {current} з {total}, ряд {line} | Праход {current} з {total}, рад {line} | 第 {current} 趟，共 {total} 趟，第 {line} 行 | Pasada {current} de {total}, fila {line} | Przejście {current} z {total}, rząd {line} |
 | Pass {current} of {total}, column {line} | Проход {current} из {total}, столбец {line} | Прохід {current} з {total}, стовпець {line} | Праход {current} з {total}, слупок {line} | 第 {current} 趟，共 {total} 趟，第 {line} 列 | Pasada {current} de {total}, columna {line} | Przejście {current} z {total}, kolumna {line} |
-| Show row (Go to row's button) | Показать ряд | Показати ряд | Паказаць рад | 显示当前行 | Mostrar fila | Pokaż rząd |
-| Show column | Показать столбец | Показати стовпець | Паказаць слупок | 显示当前列 | Mostrar columna | Pokaż kolumnę |
 
 English follows the audit's proposal (UX-015, UX-017); the other languages are proposals for review with the build.
 
 ## The Progress bar's words (ticket 0972)
 
-The counter names its step in the announcer's words: `{unit} {current} of {total}` above ("Row 7 of 10", "Pass 3 of 27" on peyote, with "· row 2" after it); the announcer reads the same step with the rulers' row, `{step}, row {line}`. Where the number counts passes, Go to row is Go to pass, the noun of its field, and an Info button beside its name holds the passes sentence. The back step says where it goes.
+The counter names its step in the announcer's words: `{unit} {current} of {total}` above ("Row 7 of 10", "Pass 3 of 27" on peyote, with "· row 2" after it); the announcer reads the same step with the rulers' row, `{step}, row {line}`. The back step says where it goes.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
@@ -50,7 +48,5 @@ The counter names its step in the announcer's words: `{unit} {current} of {total
 | Back a column | Назад на столбец | Назад на стовпець | Назад на слупок | 退回一列 | Atrás una columna | Kolumna wstecz |
 | This row is marked done. Press Back a row to change it. | Этот ряд отмечен как готовый. Нажмите «Назад на ряд», чтобы изменить его. | Цей ряд позначено як готовий. Натисніть «Назад на ряд», щоб змінити його. | Гэты рад пазначаны як гатовы. Націсніце «Назад на рад», каб змяніць яго. | 这一行已标记为完成。按“退回一行”即可更改。 | Esta fila está marcada como terminada. Pulsa «Atrás una fila» para cambiarla. | Ten rząd jest oznaczony jako gotowy. Naciśnij „Rząd wstecz”, aby go zmienić. |
 | {step}, row {line} (announced, peyote) | {step}, ряд {line} | {step}, ряд {line} | {step}, рад {line} | {step}，第 {line} 行 | {step}, fila {line} | {step}, rząd {line} |
-| Go to pass | Перейти к проходу | Перейти до проходу | Перайсці да прахода | 跳到趟 | Ir a la pasada | Przejdź do przejścia |
-| What a pass is (Info button) | Что такое проход | Що таке прохід | Што такое праход | 什么是趟 | Qué es una pasada | Czym jest przejście |
 
 English follows the audit (UX-059, UX-062, UX-063); whether a peyote beader says "pass" or "row" for a step is open for a beader's answer.

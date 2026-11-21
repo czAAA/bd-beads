@@ -232,9 +232,13 @@ const keyLabel = computed(() =>
         <div class="margin-title__cell margin-title__meta" data-testid="margin-size">{{ size }}</div>
         <div v-if="form !== 'line'" class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
       </template>
-      <div v-if="form !== 'brief'" class="margin-title__cell margin-title__legend" :style="form === 'full' ? grid.legend : undefined" role="img" :aria-label="legendLabel" data-testid="margin-legend">
-        <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
-        <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
+      <div v-if="form !== 'brief'" class="margin-title__cell margin-title__legend" :style="form === 'full' ? grid.legend : undefined">
+        <span class="margin-title__legend-colors" role="img" :aria-label="legendLabel" data-testid="margin-legend">
+          <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
+          <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
+        </span>
+        <!-- The legend's Change (ticket 1197): the Bead's pickers in a popover, then the Frame panel's Replace bead. -->
+        <MarginBeadCell v-if="frameBead" :bead="frameBead" pencil @pick="emit('replace-bead', $event)" />
       </div>
       <div class="margin-title__cell margin-title__letters" :style="form === 'full' ? grid.letters : undefined">
         <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
@@ -345,6 +349,12 @@ const keyLabel = computed(() =>
 }
 
 .margin-title__legend {
+  gap: var(--space-4);
+}
+
+.margin-title__legend-colors {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-4);
 }
 

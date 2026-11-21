@@ -104,21 +104,6 @@ describe('useRowOps', () => {
     expect(showToast).toHaveBeenLastCalledWith('row-direction', `${en.rowProgress.directionToastRowsReversed} ${en.rowProgress.columnsKeptToast}`, 'success')
   })
 
-  it('goes straight to a row with Go to row, playing nothing (ticket 0849, F-04-14)', () => {
-    const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 50, columns: 3, beads: {} } })
-    const { deps, onGoToRow, rowPress } = setup(framed)
-    onGoToRow(39)
-    expect((rowProgressOf(replaced(deps)).down ?? 0)).toBe(39)
-    expect(rowPress.value).toBeUndefined()
-    // Past the end is every row done; where the pointer already is, nothing is written.
-    const atEnd = setup(framed)
-    atEnd.onGoToRow(80)
-    expect((rowProgressOf(replaced(atEnd.deps)).down ?? 0)).toBe(50)
-    const still = setup(moveToRow(framed, 5))
-    still.onGoToRow(5)
-    expect(still.deps.replaceProject).not.toHaveBeenCalled()
-  })
-
   it('brings the row it reaches into view and says it in the counter\'s words, once per move (ticket 0934)', () => {
     const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 10, columns: 3, beads: {} } })
     const announce = vi.fn()
@@ -128,7 +113,7 @@ describe('useRowOps', () => {
     at(5).onMoveRow(1)
     expect(announce).toHaveBeenLastCalledWith('Row 7 of 10')
     at(5).onMoveRow(-1)
-    at(0).onGoToRow(3)
+    at(0).onMoveRow(1)
     at(9).onMoveRow(1)
     expect(announce).toHaveBeenLastCalledWith(en.rowProgress.patternDone)
     expect(announce).toHaveBeenCalledTimes(4)
@@ -176,7 +161,7 @@ describe('useRowOps', () => {
     expect(replaced(deps)).toEqual(resetRowProgress(started))
   })
 
-  it('Reset progress is not undone by Undo, and Go to row brings the marks back, as its question says (ticket 0979)', () => {
+  it('Reset progress is not undone by Undo (ticket 0979)', () => {
     const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 5, columns: 3, beads: {} } })
     const harness = editHarness(framed)
     const painted = (project: Project) => withFrameGrid(project, frameGrid(project).map((row) => row.map((cell) => ({ ...cell, color: '#ff0000' }))))
@@ -184,7 +169,6 @@ describe('useRowOps', () => {
     const rows = useRowOps({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, showToast: vi.fn(), messages: () => en })
     rows.onMoveRow(1)
     rows.onMoveRow(1)
-    const marked = rowProgressOf(harness.project)
     rows.onResetProgress()
     rows.onConfirmResetProgress()
     expect(frameGrid(harness.project).flat().every((cell) => cell.color === '#ff0000')).toBe(true)
@@ -193,9 +177,6 @@ describe('useRowOps', () => {
     harness.history.onUndo()
     expect((rowProgressOf(harness.project).down ?? 0)).toBe(0)
     expect(harness.history.canUndo.value).toBe(false)
-
-    rows.onGoToRow(marked.down ?? 0)
-    expect(rowProgressOf(harness.project)).toEqual(marked)
   })
 
   describe('the press the Pattern\'s motion plays from (ticket 0730)', () => {

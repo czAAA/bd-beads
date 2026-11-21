@@ -178,6 +178,25 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     expect(wrapper.emitted('set-letters')).toEqual([[true]])
   })
 
+  describe('the legend\'s Change (ticket 1197)', () => {
+    it('opens the Bead\'s pickers from a pencil beside the legend, a pick asking to Replace Bead', async () => {
+      const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form: 'compact' }, attachTo: document.body })
+      const own = findBead('toho/cube/1.5mm')!
+      expect(wrapper.find('[data-testid="margin-bead-popover"]').exists()).toBe(false)
+      await wrapper.get('[data-testid="margin-bead-change"]').trigger('click')
+      expect(wrapper.get('[data-testid="margin-bead-popover"]').text()).toContain('Sets size, weight and colors.')
+      const other = beadChoices(own).candidates.find((bead) => bead.brand.id !== own.brand.id)!
+      await choosePanelOption(wrapper, 'bead-brand', other.brand.id)
+      expect(wrapper.emitted('replace-bead')).toHaveLength(1)
+      wrapper.unmount()
+    })
+
+    it('is not in the brief block, which has no legend', () => {
+      const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form: 'brief' } })
+      expect(wrapper.find('[data-testid="margin-bead-change"]').exists()).toBe(false)
+    })
+  })
+
   describe('roomy, where the band has room (ticket 1015)', () => {
     const mountRoomy = (project: Project) => mount(MarginTitleBlock, { props: { project, form: 'roomy' }, attachTo: document.body })
 

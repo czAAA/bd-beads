@@ -80,7 +80,7 @@ export function useRowOps(deps: RowOpsDeps) {
     turnTo((project) => turnRowDirectionTo(project, way))
   }
 
-  /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or Go to row's jump. The row it
+  /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or the Homepage cuff's jump. The row it
    * reaches is brought into view and said aloud (ticket 0934). */
   function moveTo(pass: (from: number) => number, pressed: boolean) {
     const project = deps.currentProject()
@@ -102,9 +102,9 @@ export function useRowOps(deps: RowOpsDeps) {
     moveTo((from) => from + delta, true)
   }
 
-  /** Go to row (ticket 0849, F-04-14): the pointer straight to a pass, zero-based, for a weaver who started from a
-   * printed chart; every pass before it is then marked done. Not an undo step, as Row done isn't. */
-  function onGoToRow(pass: number) {
+  /** The pointer straight to a pass, zero-based, playing nothing: the Homepage cuff's loop going back to the start. Not
+   * an undo step, as Row done isn't. */
+  function jumpToRow(pass: number) {
     moveTo(() => pass, false)
   }
 
@@ -137,5 +137,5 @@ export function useRowOps(deps: RowOpsDeps) {
     deps.showToast('marked-done', columnsAsSeen(project) ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
   }
 
-  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onSetRowDirection, onMoveRow, onGoToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
+  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onSetRowDirection, onMoveRow, jumpToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
 }

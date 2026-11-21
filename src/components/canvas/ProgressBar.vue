@@ -30,10 +30,6 @@ const emit = defineEmits<{
   /** A way chosen from Turn row direction's list (ticket 0973). */
   'set-row-direction': [way: SeenWay]
   'toggle-row-highlight': []
-  /** Go to row, from the counter (ticket 0849): the pass to point at, from 0. */
-  'go-to-row': [pass: number]
-  /** Go to row's Show row (ticket 0934): bring the current row back into view. */
-  'show-row': []
 }>()
 
 const { locale } = useI18n()
@@ -57,7 +53,7 @@ const countFit = useFittingForm({
     const items = [...(row?.children ?? [])].filter((item): item is HTMLElement => item instanceof HTMLElement && getComputedStyle(item).display !== 'none')
     return rootEl.value ? rowItemsWidth(items, Number.parseFloat(getComputedStyle(rootEl.value).columnGap) || 0) : 0
   },
-  observed: () => [rootEl.value?.querySelector('.row-progress__counter-button')],
+  observed: () => [rootEl.value?.querySelector('.row-progress__count')],
   labels: () => (props.project ? JSON.stringify([locale.value, columnsAsSeen(props.project), rowProgressPosition(props.project)]) : locale.value),
 })
 </script>
@@ -77,8 +73,6 @@ const countFit = useFittingForm({
       @reset-progress="emit('reset-progress')"
       @set-row-direction="emit('set-row-direction', $event)"
       @toggle-row-highlight="emit('toggle-row-highlight')"
-      @go-to-row="emit('go-to-row', $event)"
-      @show-row="emit('show-row')"
     />
     </slot>
   </div>

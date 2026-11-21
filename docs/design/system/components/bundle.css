@@ -276,6 +276,7 @@
   --margin-tool-compact: 24px;
   --margin-title-row: 23px;
   --margin-band-full: 72px;
+  --margin-band-stacked: 64px; /* MarginSheet card (ticket 1197): the band height, in screen pixels, from which the compact form stacks its title row on Row progress's strip. */
   --margin-band-compact: 40px;
   --margin-band-folded: 31px;
   --margin-band-inset-compact: 10px;

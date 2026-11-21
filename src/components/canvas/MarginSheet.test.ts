@@ -81,7 +81,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
   it('holds Expand the Frame, the Move bar and the tools in its top band, and Row progress under the title block, in that order and with their names (ticket 1176)', () => {
     const wrapper = mountSheet()
     const named = (testid: string) => control(wrapper, testid).findAll('button').map((button) => button.attributes('aria-label') ?? button.text())
-    expect(named('margin-progress')).toEqual(['Turn row direction', 'Reset progress', 'Row 1 of 111/11', 'Back a row', 'Row done'])
+    expect(named('margin-progress')).toEqual(['Turn row direction', 'Reset progress', 'Back a row', 'Row done'])
     expect(named('margin-band')).toEqual([
       'Expand the Frame',
       'Move Frame',
@@ -119,22 +119,6 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     await control(wrapper, 'margin-progress-next').trigger('click')
     await control(wrapper, 'margin-progress-previous').trigger('click')
     expect(wrapper.emitted('move-row')).toEqual([[1], [-1]])
-  })
-
-  it('opens Go to row from the strip\'s counter and passes on its Go and Show row, as the Progress bar does (ticket 1176)', async () => {
-    const wrapper = mountSheet()
-    await control(wrapper, 'margin-progress-compact-position').trigger('click')
-    const popover = () => document.querySelector<HTMLElement>('[data-testid="go-to-row"]')!
-    const field = popover().querySelector<HTMLInputElement>('[data-testid="go-to-row-field"]')!
-    field.value = '5'
-    field.dispatchEvent(new Event('input'))
-    await nextTick()
-    popover().querySelector('form')!.dispatchEvent(new Event('submit'))
-    expect(wrapper.emitted('go-to-row')).toEqual([[4]])
-    await control(wrapper, 'margin-progress-compact-position').trigger('click')
-    await nextTick()
-    popover().querySelector<HTMLElement>('[data-testid="go-to-row-show"]')!.click()
-    expect(wrapper.emitted('show-row')).toHaveLength(1)
   })
 
   it('hands the Move bar\'s press and keys to the canvas, and shows it dragged until the press ends', async () => {
@@ -292,6 +276,22 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('compact')
     expect(Number.parseFloat(styleOf(wrapper, 'margin-foot').split('bottom: ')[1]!)).toBeCloseTo(6)
     expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
+  })
+
+  it('stacks the compact title row on Row progress\'s strip from 64px, so the legend and Row progress both keep the sheet\'s width (ticket 1197)', () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.85) })
+    expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
+    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--stacked')
+    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('compact')
+    expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
+    expect(wrapper.find('.margin-sheet__progress').attributes('data-form')).toBe('margin:0')
+    expect(styleOf(wrapper, 'margin-foot')).toContain(`width: ${anchorAt(0.85).sheet.width - 12}px`)
+  })
+
+  it('keeps the compact title row and Row progress on one line just under 64px of band (ticket 1197)', () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.78) })
+    expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
+    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--line')
   })
 
   it('folds under 40px: the Move bar and every tool that fits, the title block a tab with Row highlight and the counter with Row done at its end', () => {

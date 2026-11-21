@@ -17,6 +17,10 @@ export const MARGIN_PX = {
     /** The full form's compact title row on Row progress's strip (ticket 1176; the two-row block from 68 until then),
      * 10px in, clear of the Frame's line and its outset. */
     full: 72,
+    /** The compact form's stacked foot (ticket 1197): from here the compact title row stands on Row progress's strip, so
+     * the legend and Row progress both keep the sheet's width; under it they share one line. 6px border, the 22px row,
+     * the 26px strip (a rule shared) and the room the Frame's line and its outset keep. */
+    stacked: 64,
     /** The compact row, 8px in, clear of the Frame's line; under it the sheet folds. */
     compact: 40,
     /** The folded row, 24px, between the sheet's edge and the Frame's line; under it the sheet is bare. */

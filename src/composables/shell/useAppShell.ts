@@ -959,7 +959,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
-  /** The row the weaver is on kept in view (ticket 0934): after each row move, Go to row's Show row and an opening. */
+  /** The row the weaver is on kept in view (ticket 0934): after each row move and an opening. */
   const { showRow } = useRowInView({ currentProject, bringIntoView, placed: viewPlaced, isAtFit })
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
   const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs, announce, showRow })
@@ -1357,8 +1357,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSetRowDirection: rowOps.onSetRowDirection,
       onMoveRow: rowOps.onMoveRow,
       onResetProgress: rowOps.onResetProgress,
-      onGoToRow: rowOps.onGoToRow,
-      onShowRow: () => showRow(),
       // The margin sheet's tools and title block (ticket 0657): the flows the Frame and Project panels ask too
       onRotateFrame: rotateFrameFlow.onRotateFrame,
       onRenameFrame: frameFlow.rename,

@@ -81,10 +81,6 @@ const emit = defineEmits<{
   /** A way chosen from Turn row direction's list (ticket 0973). */
   'set-row-direction': [way: SeenWay]
   'toggle-row-highlight': []
-  /** Go to row, from the strip's counter (ticket 1176): the pass to point at, from 0. */
-  'go-to-row': [pass: number]
-  /** Go to row's Show row: the current row brought back into view. */
-  'show-row': []
   rename: [name: string]
   'set-technique': [technique: Technique]
   /** A setting of the Frame's Technique, by its id (ticket 0698). */
@@ -189,14 +185,17 @@ const titleForms = computed<readonly TitleForm[]>(() => (props.expanded ? EXPAND
 // and folded, one line: Row progress at its end, beside the title block, giving up the same.
 type ProgressFit = `${'margin' | 'compact' | 'folded'}:${0 | 1 | 2}` | 'margin:0:short'
 const STRIP_FITS: readonly ProgressFit[] = ['margin:0', 'margin:0:short', 'margin:1', 'margin:2']
+const LINE_FITS: readonly ProgressFit[] = ['compact:0', 'compact:1', 'compact:2']
 const PROGRESS_FITS: Record<MarginForm, readonly ProgressFit[]> = {
   full: STRIP_FITS,
-  compact: ['compact:0', 'compact:1', 'compact:2'],
+  compact: LINE_FITS,
   folded: ['folded:0', 'folded:2'],
   bare: [],
 }
 /** Under the title block, or beside it on one line. */
-const stacked = computed(() => !!props.expanded || form.value === 'full')
+const stacked = computed(
+  () => !!props.expanded || form.value === 'full' || (form.value === 'compact' && props.anchor.band >= MARGIN_PX.band.stacked * (least.value ?? MARGIN_PX.scale.min)),
+)
 /** The places of the sheet's form, in screen px at its scale. */
 const place = computed(() => {
   if (props.expanded) return { top: expandedInset.value, side: expandedInset.value, border: expandedInset.value }
@@ -243,7 +242,7 @@ const tabWidth = ref(0)
 /** Whether the title block is shown in some form: Name and size on the margin is on (MarginSheet card). */
 const titleOn = computed(() => canvas.margin.titleBlock.value && !!frame.value)
 const progressFitting = useFittingForm({
-  forms: () => (frame.value ? (props.expanded ? STRIP_FITS : PROGRESS_FITS[form.value]) : []),
+  forms: () => (frame.value ? (props.expanded || stacked.value ? STRIP_FITS : PROGRESS_FITS[form.value]) : []),
   // The strip has the sheet's whole width; on one line it leaves the title block its tab, the name uncut.
   room: () => (stacked.value ? footRoomAt1.value : footRoomAt1.value - MARGIN_PX.gap - (titleOn.value ? tabWidth.value : 0)),
   measure: progressWidth,
@@ -653,8 +652,6 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
           @reset-progress="emit('reset-progress')"
           @set-row-direction="emit('set-row-direction', $event)"
           @toggle-row-highlight="emit('toggle-row-highlight')"
-          @go-to-row="emit('go-to-row', $event)"
-          @show-row="emit('show-row')"
         />
       </div>
     </div>

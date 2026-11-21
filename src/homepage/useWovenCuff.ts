@@ -53,7 +53,7 @@ export function useWovenCuff(deps: WovenCuffDeps): { project: ShallowRef<Project
     if (taken || deps.reducedMotion() || !deps.shown() || stepMs <= 0) return
     const resting = done() >= passes
     timer = setTimeout(() => {
-      if (resting) rows.onGoToRow(0)
+      if (resting) rows.jumpToRow(0)
       else rows.onMoveRow(1)
       schedule()
     }, resting ? holdMs : stepMs)

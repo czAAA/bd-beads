@@ -124,7 +124,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* The shared popover look (Go to row's): the overlay fill and line, elevation 3; a menu's 4px padding round its items. */
+/* The shared popover look: the overlay fill and line, elevation 3; a menu's 4px padding round its items. */
 .row-direction {
   position: fixed;
   z-index: var(--z-popover);
