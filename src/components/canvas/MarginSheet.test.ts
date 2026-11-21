@@ -42,6 +42,11 @@ function anchorAt(zoom: number): FrameAnchor {
   }
 }
 const anchor = anchorAt(1)
+/** The folded form's sheet, the width given: the band holds as many tools as that width fits (ticket 1195). */
+const foldedOfWidth = (width: number): FrameAnchor => {
+  const at = anchorAt(0.45)
+  return { ...at, sheet: { ...at.sheet, width } }
+}
 
 function framed(): Project {
   return withLayers(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), { frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} } })
@@ -289,10 +294,10 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
   })
 
-  it('folds under 40px: the Move bar, Margin color and Frame tools, the title block a tab with Row highlight and the counter with Row done at its end', () => {
+  it('folds under 40px: the Move bar and every tool that fits, the title block a tab with Row highlight and the counter with Row done at its end', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--folded')
-    expect(names(wrapper)).toEqual(['Expand the Frame', 'Move Frame', 'Margin color', 'Frame tools'])
+    expect(names(wrapper)).toEqual(['Expand the Frame', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
     expect(control(wrapper, 'margin-progress').findAll('button').map((button) => button.attributes('aria-label') ?? button.text())).toEqual(['Row highlight', 'Row done'])
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(false)
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
@@ -350,31 +355,62 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(handle().classes()).toContain('margin-sheet__yielding')
   })
 
-  it('offers the tools the folded band has no room for in its Frame tools menu, each asking as its button does', async () => {
+  it('keeps every tool on the folded band and no Frame tools button where the sheet has the room (ticket 1195)', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.45) })
+    expect(wrapper.find('[data-testid="margin-frame-tools"]').exists()).toBe(false)
+    expect(control(wrapper, 'margin-band').findAll('.margin-sheet__tools button').map((button) => button.attributes('aria-label'))).toEqual([
+      'Mirror the whole Frame',
+      'Rotate Frame',
+      'Edit Frame',
+      'Export',
+      'Margin color',
+      'Remove Frame',
+    ])
+  })
+
+  it('puts the tools a narrow band has no room for in its Frame tools menu, the least used first, each asking as its button does', async () => {
+    const wrapper = mountSheet({ anchor: foldedOfWidth(250) })
     const menu = () => control(wrapper, 'margin-frame-tools')
     const items = async () => {
       await menu().trigger('click')
       await nextTick()
       return wrapper.findAll('[role^="menuitem"]')
     }
-    expect((await items()).map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Remove Frame'])
+    expect(control(wrapper, 'margin-band').findAll('.margin-sheet__tools button').map((button) => button.attributes('aria-label'))).toEqual(['Rotate Frame', 'Edit Frame', 'Frame tools'])
+    expect((await items()).map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Export', 'Margin color', 'Remove Frame'])
     expect(control(wrapper, 'margin-frame-tools-mirror').attributes('role')).toBe('menuitemcheckbox')
     expect(control(wrapper, 'margin-frame-tools-mirror').attributes('aria-checked')).toBe('false')
-    for (const id of ['mirror', 'rotate', 'edit', 'export', 'remove']) {
+    for (const id of ['mirror', 'export', 'remove']) {
       if (!wrapper.find('[role^="menuitem"]').exists()) await items()
       await control(wrapper, `margin-frame-tools-${id}`).trigger('click')
     }
     expect(wrapper.emitted('mirror')).toHaveLength(1)
-    expect(wrapper.emitted('rotate')).toHaveLength(1)
-    expect(wrapper.emitted('toggle-edit')).toHaveLength(1)
     // Export hangs from the menu's button, the one it was asked from.
     expect(wrapper.emitted('export')).toEqual([['margin-frame-tools']])
     expect(wrapper.emitted('remove')).toHaveLength(1)
+    await items()
+    await control(wrapper, 'margin-frame-tools-color').trigger('click')
+    await nextTick()
+    expect(document.querySelector('[data-testid="margin-color-popover"]')).not.toBeNull()
   })
 
-  it('keeps Edit Frame in the Frame tools menu once a row is done, disabled with its reason (ticket 0975)', async () => {
+  it('takes a tool to the menu and brings it back as the sheet narrows and widens, and as Lift comes with Row highlight', async () => {
+    const wrapper = mountSheet({ anchor: foldedOfWidth(250) })
+    const onBand = () => control(wrapper, 'margin-band').findAll('.margin-sheet__tools button').map((button) => button.attributes('data-testid'))
+    expect(onBand()).toEqual(['margin-rotate-frame', 'frame-edit-toggle', 'margin-frame-tools'])
+    await wrapper.setProps({ anchor: foldedOfWidth(1000) })
+    expect(onBand()).not.toContain('margin-frame-tools')
+    expect(onBand()).toContain('margin-mirror-frame')
+    await wrapper.setProps({ anchor: foldedOfWidth(250), rowHighlight: true })
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+    expect(wrapper.findAll('[role^="menuitem"]').map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Lift the pieces', 'Export', 'Margin color', 'Remove Frame'])
+  })
+
+  it('keeps Edit Frame on the band once a row is done, disabled with its reason, and in the menu with the same reason where there is no room (ticket 0975)', async () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.45), project: moveToRow(framed(), 1) })
+    expect(control(wrapper, 'frame-edit-toggle').attributes('aria-disabled')).toBe('true')
+    await wrapper.setProps({ anchor: foldedOfWidth(140) })
     await control(wrapper, 'margin-frame-tools').trigger('click')
     await nextTick()
     const edit = control(wrapper, 'margin-frame-tools-edit').get('[role="menuitem"]')
@@ -395,24 +431,23 @@ describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
   const toolNames = (wrapper: ReturnType<typeof mountSheet>) =>
     control(wrapper, 'margin-band').findAll('.margin-sheet__tools button').map((button) => button.attributes('aria-label'))
 
-  it('keeps Edit Frame and the Frame tools button on the band, full, compact and folded', () => {
-    for (const zoom of [1, 0.6, 0.45]) expect(toolNames(mountSheet({ anchor: anchorAt(zoom) })), `${zoom}`).toEqual(['Edit Frame', 'Frame tools'])
+  it('keeps every tool on the band where it has the room, full and compact, with no Frame tools button', () => {
+    for (const zoom of [1, 0.9]) expect(toolNames(mountSheet({ anchor: anchorAt(zoom) })), `${zoom}`).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
   })
 
-  it('lists Mirror, Rotate, Export, Margin color and Remove Frame in the Frame tools menu with their names, each running its own action', async () => {
-    const wrapper = mountSheet()
+  it('lists the tools the wider spacing leaves no room for in the Frame tools menu with their names, each running its own action', async () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.45) })
+    expect(toolNames(wrapper)).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Frame tools'])
     const items = async () => {
       await control(wrapper, 'margin-frame-tools').trigger('click')
       await nextTick()
       return wrapper.findAll('[role^="menuitem"]')
     }
-    expect((await items()).map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Export', 'Margin color', 'Remove Frame'])
-    for (const id of ['mirror', 'rotate', 'export', 'remove']) {
+    expect((await items()).map((item) => item.text())).toEqual(['Export', 'Margin color', 'Remove Frame'])
+    for (const id of ['export', 'remove']) {
       if (!wrapper.find('[role^="menuitem"]').exists()) await items()
       await control(wrapper, `margin-frame-tools-${id}`).trigger('click')
     }
-    expect(wrapper.emitted('mirror')).toHaveLength(1)
-    expect(wrapper.emitted('rotate')).toHaveLength(1)
     expect(wrapper.emitted('export')).toEqual([['margin-frame-tools']])
     expect(wrapper.emitted('remove')).toHaveLength(1)
     await items()
@@ -659,10 +694,10 @@ describe('Rotate Frame waits under the pointer (ticket 1016)', () => {
   })
 
   it.each([
-    ['folded', 0.45],
-    ['bare', 0.2],
-  ])('pressed from the %s Frame tools menu, closes it and stands where the item was pressed (ticket 1164)', async (_form, zoom) => {
-    const wrapper = mountSheet({ anchor: anchorAt(zoom) })
+    ['folded', foldedOfWidth(140)],
+    ['bare', anchorAt(0.2)],
+  ])('pressed from the %s Frame tools menu, closes it and stands where the item was pressed (ticket 1164)', async (_form, at) => {
+    const wrapper = mountSheet({ anchor: at })
     await control(wrapper, 'margin-frame-tools').trigger('click')
     await nextTick()
     const item = control(wrapper, 'margin-frame-tools-rotate')
@@ -735,7 +770,7 @@ describe('Expand the Frame (MarginSheet card, ticket 1169)', () => {
     await nextTick()
     const last = () => (wrapper.emitted('slim')!.at(-1)! as [{ row: number; title: number; rowWidth: number }])[0]
     const foot = () => control(wrapper, 'margin-foot').element.getBoundingClientRect().height
-    expect(last()).toEqual({ row: MARGIN_PX.tool, title: foot(), rowWidth: 0 })
+    expect(last()).toEqual({ row: MARGIN_PX.tool, title: foot(), rowWidth: 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap })
     useCanvasBackground().margin.setTitleBlock(false)
     await nextTick()
     expect(last().title).toBe(foot())
