@@ -12,8 +12,8 @@ import { fillBlanks } from '../domain/fillBlanks'
 import { frameLifted } from '../domain/frame'
 import type { Project } from '../domain/project'
 
-// The Cover page (ticket 1096; PrintCover card): its technique word, title, maker, colors and tech line at the top (ticket
-// 1141), then the finished piece in color on the pale board, and the footer. It opens the PDF while the Cover page switch
+// The Cover page (ticket 1096; PrintCover card): its title, maker, colors and tech line at the top (ticket
+// 1141), then the finished piece in color on the pale board with the technique word under it, and the footer. It opens the PDF while the Cover page switch
 // is on; the page a maker shows or sells the pattern with, so it holds no chart and no Beads needed.
 
 /** The piece as the app draws it in the light theme (its own-color rim and satin light) on the print board, with nothing
@@ -30,6 +30,8 @@ const SHADOW = { down: mm(2.6), blur: mm(3.7), alpha: 0.16 }
 /** Between the tech line and the board under it, and between the title block and the tech line's rule. */
 const BOARD_GAP = mm(9.5)
 const TECH_GAP = mm(5.8)
+/** Between the board's bottom edge and the technique word under it. */
+const CAPTION_GAP = mm(5)
 /** Between the rows of the title block, and between the title and the colors beside it. */
 const ROW_GAP = mm(1.6)
 const COLUMN_GAP = mm(6)
@@ -104,7 +106,7 @@ function titleLines(context: CanvasRenderingContext2D, title: string, width: num
   return [...lines.slice(0, TITLE_LINES - 1), `${last}${ELLIPSIS}`]
 }
 
-/** The title block: the technique word, the title and "by {maker}" on the left, the piece's colors and the Total's words
+/** The title block: the title and "by {maker}" on the left, the piece's colors and the Total's words
  * on the right, the two columns sharing a bottom line. Returns that line. */
 function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, top: number): number {
   const right = page.width - PRINT_MARGIN
@@ -120,7 +122,6 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
   context.letterSpacing = `${TITLE_TRACKING * pt(SIZE.title)}px`
   const title = words.name.trim() ? titleLines(context, words.name.trim(), titleWidth) : []
   const rows = [
-    { value: words.techniqueWord, style: TECHNIQUE_FONT, size: pt(SIZE.technique), color: PRINT_COLORS.accentStrong },
     ...title.map((value) => ({ value, style: TITLE_FONT, size: pt(SIZE.title), color: PRINT_COLORS.ink })),
     ...(words.maker ? [{ value: fillBlanks(words.labels.byMaker, { maker: words.maker }), style: MAKER_FONT, size: pt(SIZE.maker), color: PRINT_COLORS.muted }] : []),
   ]
@@ -166,7 +167,10 @@ export function drawCoverPage(project: Project, words: PrintText, page: PageSize
   context.stroke()
   const techBottom = ruleY + TECH_LINE_GAP + pt(SIZE.meta)
   text(context, words.metaLine, PRINT_MARGIN, techBottom - pt(SIZE.meta) * DESCENT, META_FONT, PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
-  drawPiece(context, project, coverPageLayout(project, page, techBottom + BOARD_GAP))
+  const layout = coverPageLayout(project, page, techBottom + BOARD_GAP)
+  drawPiece(context, project, layout)
+  const captionBottom = layout.board.y + layout.board.height + CAPTION_GAP + pt(SIZE.technique)
+  text(context, words.techniqueWord, PRINT_MARGIN, captionBottom - pt(SIZE.technique) * DESCENT, TECHNIQUE_FONT, PRINT_COLORS.accentStrong, 'left', page.width - PRINT_MARGIN * 2)
 
   drawFooter(context, page, words, pageNumber, pageCount)
   return canvas
