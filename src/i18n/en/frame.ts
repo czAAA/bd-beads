@@ -105,6 +105,22 @@ export const frame: FrameTranslations = {
     replaceFrame: 'Replace Frame',
     replaceConfirmTitle: 'Replace Frame?',
     replaceConfirmMessage: 'The Frame\'s beads will be removed with it. This can be undone.',
+    wovenAsk: {
+      rotateTitle: 'Turn the Frame?',
+      techniqueTitle: 'Change to {technique}?',
+      rowsDone: {
+        one: '{count} row is marked done, woven {way}. This can be undone.',
+        other: '{count} rows are marked done, woven {way}. This can be undone.',
+      },
+      columnsDone: {
+        one: '{count} column is marked done, woven {way}. This can be undone.',
+        other: '{count} columns are marked done, woven {way}. This can be undone.',
+      },
+      startOverWay: 'Start over {way}',
+      startOverTechnique: 'Start over for {technique}',
+      keepRows: { one: 'Keep the {count} row', other: 'Keep the {count} rows' },
+      keepColumns: { one: 'Keep the {count} column', other: 'Keep the {count} columns' },
+    },
     sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: 'Frame set, width {width}, height {height}',
     announceRemoved: 'Frame removed',

@@ -11,6 +11,7 @@ import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, touchFrameSh
 import { touch, type Project } from './project'
 import { rowProgressStarted } from './rowProgress'
 import { turnedWithFrame } from './rowWays'
+import type { WovenChoice } from './wovenLines'
 import { withCanvasTurned } from './table'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
@@ -176,10 +177,10 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
   return covered
 }
 
-/** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame's orientation a quarter clockwise about its centre,
- * like a sheet of A4 turned on an A1. Its beads keep their own rows and columns, so nothing is rewritten and no row snaps,
- * and with no pass done its Row direction stays as seen (spec 1182); what it covers turns, the Canvas under it untouched. No Frame: undefined. */
-export function rotateFrame(project: Project): Project | undefined {
+/** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame a quarter clockwise about its centre, its beads in
+ * their own rows and columns, the Canvas untouched, its Row direction as seen (spec 1182). With a pass done `woven`
+ * answers rotateFrameQuestion (ticket 1184): keep the rows, or start over. No Frame: undefined. */
+export function rotateFrame(project: Project, woven: WovenChoice = 'keep'): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom
   const frame = frameOf(project)
@@ -200,9 +201,11 @@ export function rotateFrame(project: Project): Project | undefined {
   // Upright again it starts where a Frame may (ticket 1016): a resize while turned can leave it between.
   const canvas = canvasWeave(project)
   const at = turns ? { row, column } : { row: snapRow(canvas, row), column: snapColumn(canvas, column) }
-  // With no pass done Row progress is left as it is, so the way sticks as seen (spec 1182). With a pass done the rows
-  // turn with the Frame, the way and every pointer's slot a quarter on, until Rotate Frame asks (ticket 1184).
-  const rowProgress = rowProgressStarted(project) ? turnedWithFrame(frame.rowProgress, 1) : frame.rowProgress
+  // With no pass done Row progress is left as it is, so the way sticks as seen (spec 1182). With a pass done, kept, the
+  // rows turn with the Frame, the way and every pointer's slot a quarter on; started over, every pointer goes back to the
+  // first pass and the way stays as seen (ticket 1184).
+  const started = rowProgressStarted(project)
+  const rowProgress = !started ? frame.rowProgress : woven === 'keep' ? turnedWithFrame(frame.rowProgress, 1) : { way: frame.rowProgress.way }
   return touchFrameSheet(project, { ...turned, ...at, rowProgress })
 }
 

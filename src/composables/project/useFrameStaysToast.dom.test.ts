@@ -93,11 +93,14 @@ describe('useFrameStaysToast (ticket 0935)', () => {
     expect(matching.showToast).not.toHaveBeenCalled()
   })
 
-  it('offers only Open Frame where the Frame cannot take the Technique, a pass being done', () => {
-    const { showToast, setTechnique, actions } = setup(moveToRow(framed, 1))
+  it('still offers Change the Frame too with a pass done, which asks first and changes nothing yet (ticket 1184)', () => {
+    const woven = moveToRow(framed, 1)
+    const { harness, showToast, setTechnique, actions } = setup(woven)
     setTechnique('canvas', 'loom')
     expect(showToast).toHaveBeenCalledOnce()
-    expect(actions().map((action) => action?.label)).toEqual(['Open Frame', undefined])
+    expect(actions().map((action) => action?.label)).toEqual(['Change the Frame too', 'Open Frame'])
+    actions()[0]!.run()
+    expect(layerOf(harness.project, 'frame')!.weave.technique).toBe('peyote')
   })
 
   it('says the Frame stays on its Bead after the Canvas takes another, and asks the Frame panel’s Replace Bead on Change the Frame too', async () => {

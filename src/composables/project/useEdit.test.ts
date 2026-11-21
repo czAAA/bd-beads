@@ -115,7 +115,7 @@ describe('useEdit', () => {
 
     it('hands back the refusal and records nothing', () => {
       const ctx = editHarness(moveToRow(base, 1))
-      expect(ctx.edit('frame', (project) => changeFrame(project, { technique: 'peyote' }))).toEqual({ kind: 'refused', reason: 'locked' })
+      expect(ctx.edit('frame', (project) => changeFrame(project, { set: { row: 0, column: 0, rows: 2, columns: 2 } }))).toEqual({ kind: 'refused', reason: 'locked' })
       expect(ctx.history.canUndo.value).toBe(false)
       expect(ctx.resetAfterFrameChange).not.toHaveBeenCalled()
     })

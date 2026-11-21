@@ -47,7 +47,8 @@ import { clampPointer, progressWithoutLine, rowProgressStarted } from './rowProg
 import { frameQuarterTurnOf, lieAlike } from './table'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
-import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingRowProgressOf, touchFrameSheet, withFrameSheet, withLayer, withPieceNames, withStartingRowProgress } from './layerRecord'
+import { linesKeptIn, type WovenChoice } from './wovenLines'
+import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, startingRowProgressOf, touchFrameSheet, withFrameFields, withFrameSheet, withLayer, withPieceNames, withStartingRowProgress } from './layerRecord'
 import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -71,9 +72,9 @@ export type FrameChange =
    * started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
   /** Change the Frame's Technique or its settings (tickets 351, 477, 492, 507, 0625): the geometry changes and every
-   * bead keeps its row and column. A Technique takes its settings with it (peyote and brick stitch their Drop); the same
-   * Technique changes just those. */
-  | WeaveChange
+   * bead keeps its row and column, a Technique taking its settings (a Drop) with it. With a pass done another Technique
+   * starts over, or keeps the whole lines with `woven: 'keep'` (ticket 1184, techniqueChangeQuestion). */
+  | (WeaveChange & { woven?: WovenChoice })
   /** Put a new Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
    * the Canvas under the new one is hidden, not changed. Empty, or holding a Starter's design (ticket 0633), and turned
    * where a Starter's strip lies across the Canvas's own lines (ticket 0832). */
@@ -132,10 +133,10 @@ export function frameChangeDiscardsProgress(project: Project, change: FrameChang
 /** Why the change would be refused on this Project, or undefined when it would be allowed. Cheap: it builds nothing. */
 export function frameChangeRefusal(project: Project, change: FrameChange): FrameChangeRefusal | undefined {
   // Remove Frame is how the weaver lets go of finished passes: it clears them with the Frame (ticket 426, ADR 0055).
-  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change) && !('move' in change) && !('name' in change) && !('removeLine' in change)) {
+  const frame = frameOf(project)
+  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change) && !('move' in change) && !('name' in change) && !('removeLine' in change) && !asksForTechnique(frame, change)) {
     return 'locked'
   }
-  const frame = frameOf(project)
   if (frame && frameRefuses(project, frame, change)) {
     return 'not-offered'
   }
@@ -162,6 +163,13 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
     return 'cuts-schema'
   }
   return undefined
+}
+
+/** Whether the change weaves the Frame in another Technique, which asks once a pass is done rather than waiting (ticket
+ * 1184): a Frame with no Frame shape only, as a Custom frame's Technique still waits. Its own settings alone (a Drop)
+ * still wait. */
+function asksForTechnique(frame: FrameSheet | undefined, change: FrameChange): boolean {
+  return !!frame && !frameShapeOf(frame) && 'technique' in change && change.technique !== frame.technique
 }
 
 /** The Project with the Frame changed, or why not. The Palette follows the woven layer's Bead where the change swaps
@@ -245,7 +253,9 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
     // A Custom frame's layout follows its Weave (a Fringe earring's top, ticket 0814): laid out again round its centre,
     // each bead keeping its row and column, those with no place in it folded until a layout has one again.
     const woven = frameOf(rewoven)!
-    return { kind: 'changed', project: frameShapeOf(woven) ? withFrameSheet(rewoven, resettled(rewoven, woven, woven.settings ?? {}, woven.quarterTurns, project)) : withStartingWay(project, rewoven) }
+    if (frameShapeOf(woven)) return { kind: 'changed', project: withFrameSheet(rewoven, resettled(rewoven, woven, woven.settings ?? {}, woven.quarterTurns, project)) }
+    const keeps = 'woven' in change && change.woven === 'keep' && rowProgressStarted(project) && woven.technique !== frameOf(project)!.technique
+    return { kind: 'changed', project: keeps ? withFrameFields(rewoven, { rowProgress: linesKeptIn(project, rewoven) }) : withStartingWay(project, rewoven) }
   }
 
   if ('make' in change) {
@@ -263,8 +273,7 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
 }
 
 /** A Frame rewoven in another Technique starts its progress afresh, in the new Technique's way as it lies (spec 1182),
- * whatever way it ran before; only its settings changed, it keeps its way. With a pass done the change is refused first
- * (frameChangeRefusal). */
+ * whatever way it ran before, its passes done too unless kept (ticket 1184); only its settings changed, it keeps its way. */
 function withStartingWay(before: Project, after: Project): Project {
   return frameOf(before)?.technique === frameOf(after)?.technique ? after : withStartingRowProgress(after)
 }

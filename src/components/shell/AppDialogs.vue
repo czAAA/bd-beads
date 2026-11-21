@@ -30,6 +30,14 @@ const {
   removeLinePrompt,
   onCancelRemoveLine,
   onConfirmRemoveLine,
+  rotateFramePrompt,
+  onStartOverRotateFrame,
+  onKeepRowsRotateFrame,
+  onCancelRotateFrame,
+  techniqueChangePrompt,
+  onStartOverTechniqueChange,
+  onKeepRowsTechniqueChange,
+  onCancelTechniqueChange,
   onCancelReplaceFrame,
   onConfirmReplaceFrame,
   pendingColorRemovalHex,
@@ -173,6 +181,36 @@ const importMessage = computed(() => {
     :cancel-label="t.removeLine.cancelButton"
     @confirm="onConfirmRemoveLine"
     @cancel="onCancelRemoveLine"
+  />
+
+  <!-- Rotate Frame and a Frame Technique change once a pass is done (ticket 1184; ConfirmDialogs card): keep the rows
+       is the confirm, start over the side action, Cancel leaves the Frame as it was. -->
+  <ConfirmModal
+    v-if="open === 'rotate-frame' && rotateFramePrompt"
+    data-testid="rotate-frame-modal"
+    :title="rotateFramePrompt.title"
+    :message="rotateFramePrompt.message"
+    :confirm-label="rotateFramePrompt.keep"
+    :confirm-danger="false"
+    :extra-label="rotateFramePrompt.startOver"
+    :cancel-label="t.frame.removeConfirmCancel"
+    @confirm="onKeepRowsRotateFrame"
+    @extra="onStartOverRotateFrame"
+    @cancel="onCancelRotateFrame"
+  />
+
+  <ConfirmModal
+    v-if="open === 'technique-change' && techniqueChangePrompt"
+    data-testid="technique-change-modal"
+    :title="techniqueChangePrompt.title"
+    :message="techniqueChangePrompt.message"
+    :confirm-label="techniqueChangePrompt.keep"
+    :confirm-danger="false"
+    :extra-label="techniqueChangePrompt.startOver"
+    :cancel-label="t.frame.removeConfirmCancel"
+    @confirm="onKeepRowsTechniqueChange"
+    @extra="onStartOverTechniqueChange"
+    @cancel="onCancelTechniqueChange"
   />
 
   <ConfirmModal

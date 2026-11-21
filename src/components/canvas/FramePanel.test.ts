@@ -445,9 +445,9 @@ describe('FramePanel (ticket 473)', () => {
     expect(header.text()).toContain('Loom · TOHO Cube 1.5mm')
   })
 
-  it('holds the Frame\'s Technique once a pass is done, never its Bead or Background (ticket 0670)', () => {
+  it('keeps the Frame\'s Technique on once a pass is done, as it asks first (ticket 1184), and never holds its Bead or Background (ticket 0670)', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
-    expect(wrapper.get('[data-testid="frame-technique"] button').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="frame-technique"] button').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.get('[data-testid="bead-size"] button').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-background-section"] [aria-disabled="true"]').exists()).toBe(false)
   })

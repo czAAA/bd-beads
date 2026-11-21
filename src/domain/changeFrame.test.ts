@@ -54,7 +54,7 @@ describe('changeFrame', () => {
   describe('refusals', () => {
     const changes: [string, FrameChange][] = [
       ['set', { set: { row: 0, column: 0, rows: 2, columns: 2 } }],
-      ['technique', { technique: 'peyote' }],
+      ['technique settings', { techniqueSettings: { peyoteDrop: 2 } }],
     ]
     it.each(changes)('refuses %s once Row progress is on and a pass is done (ticket 411)', (_name, change) => {
       const project = framed({ rowProgress: woven('rows') })

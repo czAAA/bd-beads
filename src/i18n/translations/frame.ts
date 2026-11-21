@@ -113,6 +113,18 @@ export interface FrameTranslations {
     replaceFrame: string
     replaceConfirmTitle: string
     replaceConfirmMessage: string
+    /** What Rotate Frame and a Frame Technique change ask once a pass is done (ticket 1184; ConfirmDialogs card); Cancel
+     * is removeConfirmCancel. Columns where the way runs across as seen; `{way}` is the way's name, lowercased. */
+    wovenAsk: {
+      rotateTitle: string
+      techniqueTitle: string
+      rowsDone: PluralForms
+      columnsDone: PluralForms
+      startOverWay: string
+      startOverTechnique: string
+      keepRows: PluralForms
+      keepColumns: PluralForms
+    }
     /** The one line under a Frame control that says what the Frame is. */
     /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 ≈ 2.1 × 2.1 cm". */
     sizeTooltip: string

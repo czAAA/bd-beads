@@ -13,6 +13,7 @@ import { starterById, starterDesign } from '../../domain/starters'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
+import { useDialogs } from '../shell/useDialogs'
 import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../../domain/layerRecord'
 import { frameSheetOf, layersView, withLayers, pointersOf } from '../../testUtils/layerFields'
 
@@ -35,6 +36,7 @@ function setup(project: Project | null = sized) {
     locale: () => 'en' as const,
     centreOn: vi.fn(),
     visibleCentre: vi.fn(() => ({ row: 20, column: 30 })),
+    dialogs: useDialogs(),
   }
   return { deps: { ...deps, replaceProject: harness.replaceProject, harness }, ...useFrameFlow(deps) }
 }
@@ -528,9 +530,49 @@ describe('useFrameFlow', () => {
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
     })
 
-    it('leaves the Frame\'s Technique alone while Row progress is on', () => {
-      const { deps, setTechnique } = setup(moveToRow(sized, 1))
+  })
+
+  describe('the Frame\'s Technique once a row is marked done (ticket 1184)', () => {
+    const woven = moveToRow(sized, 2)
+
+    it('asks first, and Cancel leaves the Project as it was', () => {
+      const { deps, setTechnique, techniqueChangePrompt, cancelTechniqueChange } = setup(woven)
+      setTechnique('brick')
+      expect(deps.dialogs.open.value).toBe('technique-change')
+      expect(techniqueChangePrompt.value).toEqual({
+        title: 'Change to Brick stitch?',
+        message: '2 rows are marked done, woven top to bottom. This can be undone.',
+        startOver: 'Start over for Brick stitch',
+        keep: 'Keep the 2 rows',
+      })
+      expect(deps.harness.project).toBe(woven)
+      cancelTechniqueChange()
+      expect(deps.dialogs.open.value).toBeUndefined()
+      expect(deps.harness.project).toBe(woven)
+      expect(deps.harness.history.canUndo.value).toBe(false)
+    })
+
+    it('starts over for the new Technique: its own way, every row back, one Undo step', () => {
+      const { deps, setTechnique, startOverTechniqueChange } = setup(woven)
+      setTechnique('brick')
+      startOverTechniqueChange()
+      expect(frameOf(deps.harness.project)?.technique).toBe('brick')
+      expect(rowProgressOf(deps.harness.project)).toEqual({ way: 'up' })
+      expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project).toMatchObject({ layers: woven.layers })
+      expect(deps.harness.history.canUndo.value).toBe(false)
+    })
+
+    it('keeps the whole rows woven in the current way, in the new Technique\'s passes, one Undo step', () => {
+      const { deps, setTechnique, keepRowsTechniqueChange } = setup(woven)
       setTechnique('peyote')
+      keepRowsTechniqueChange()
+      expect(frameOf(deps.harness.project)?.technique).toBe('peyote')
+      // Two whole rows: peyote's first row is one pass and the second two, so the pointer is at the fourth pass.
+      expect(rowProgressOf(deps.harness.project)).toEqual({ way: 'down', down: 3 })
+      deps.harness.history.onUndo()
+      expect(rowProgressOf(deps.harness.project)).toEqual(rowProgressOf(woven))
       expect(frameOf(deps.harness.project)?.technique).toBe('loom')
     })
   })

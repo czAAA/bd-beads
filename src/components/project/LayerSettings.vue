@@ -34,8 +34,10 @@ const props = defineProps<{
   background?: Background
   /** The Frame it sets, for a Custom frame's shape settings; none for the Canvas, a draft or a Frame with no shape. */
   frame?: Pick<FrameSheet, 'shape' | 'settings'>
-  /** A Row progress pass is done: what moves positions (the Technique, its settings, the shape settings) waits. */
+  /** A Row progress pass is done: what moves positions (its Technique's settings, the shape settings) waits. */
   locked?: boolean
+  /** Its Technique can still change while locked, asking first what to do with the rows woven (ticket 1184). */
+  techniqueOpen?: boolean
   /** Technique and Bead each with an Info button saying what they decide: New Project's, for a stranger who has not
    * met the words (ticket 0951). */
   explained?: boolean
@@ -75,6 +77,7 @@ const choices = computed(() => beadChoices(props.bead))
       :without-settings="withoutTechniqueSettings"
       :explained="explained"
       :disabled="locked"
+      :technique-open="techniqueOpen"
       :technique-disabled-body="locked ? t.tooltips.rowProgressLockedTechnique : undefined"
       :testid="testid"
       @update:technique="emit('set-technique', $event)"
