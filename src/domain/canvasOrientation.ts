@@ -37,9 +37,15 @@ export function tiltOf(orientation: number): number {
   return lean > 180 ? lean - 360 : lean
 }
 
-/** Where a twist comes to rest as the fingers lift: on its nearest quarter turn when within about 10° of it. */
-export function settledOrientation(orientation: number): number {
-  return Math.abs(tiltOf(orientation)) <= SNAP_DEGREES ? nearestQuarterTurn(orientation) : normalizedOrientation(orientation)
+/** Where a twist comes to rest as the fingers lift (one rule for both layers, spec 1182): on the first of `bases`'
+ * quarter turns it is within about 10° of (a base at an angle, or a quarter off it), else where it is. The Canvas's
+ * base is the screen; the Frame's are the Canvas's angle, then the screen (`settledFrameAngle`). */
+export function settledOrientation(orientation: number, bases: readonly number[] = [0]): number {
+  for (const base of bases) {
+    const off = orientation - base
+    if (Math.abs(tiltOf(off)) <= SNAP_DEGREES) return normalizedOrientation(base + nearestQuarterTurn(off))
+  }
+  return normalizedOrientation(orientation)
 }
 
 /** Where a turn shown as it goes (the Rotate canvas icon's bead, ticket 1082) goes next, from the unbounded angle it shows

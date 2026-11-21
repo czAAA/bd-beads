@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import { usePinchPan } from './usePinchPan'
+import type { TwistTarget } from './useCanvasView'
 
-function setup(zoom = 1, drawnAt?: number) {
+function setup(zoom = 1, drawnAt?: number, twistTarget?: (a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) => TwistTarget) {
   const el = document.createElement('div')
   document.body.append(el)
   // The area drawn larger by CSS zoom (ticket 1071), its box from (40, 20) on screen.
@@ -16,7 +17,7 @@ function setup(zoom = 1, drawnAt?: number) {
   })
   const cancelStroke = vi.fn()
   const endTwist = vi.fn()
-  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, pinch, cancelStroke, endTwist }))
+  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, pinch, cancelStroke, endTwist, twistTarget }))
 
   const heard: string[] = []
   const child = document.createElement('div')
@@ -34,6 +35,24 @@ function setup(zoom = 1, drawnAt?: number) {
 }
 
 describe('usePinchPan', () => {
+  it('turns the layer both fingers went down on, chosen as the second lands and kept through the gesture (ticket 1190)', () => {
+    // The Frame's sheet is left of x = 100 on screen.
+    const onFrame = (a: { clientX: number }, b: { clientX: number }): TwistTarget => (a.clientX < 100 && b.clientX < 100 ? 'frame' : 'canvas')
+    const t = setup(1, undefined, onFrame)
+    t.fire('pointerdown', 1, 10, 10)
+    // The first finger moved off the sheet before the second landed: where it went down counts.
+    t.fire('pointermove', 1, 150, 10)
+    t.fire('pointerdown', 2, 60, 60)
+    t.fire('pointermove', 2, 400, 400)
+    expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ target: 'frame' }))
+    t.fire('pointerup', 1, 150, 10)
+    t.fire('pointerup', 2, 400, 400)
+    t.fire('pointerdown', 1, 10, 10)
+    t.fire('pointerdown', 2, 160, 60)
+    t.fire('pointermove', 2, 170, 60)
+    expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ target: 'canvas' }))
+  })
+
   it('leaves a one-finger stroke to the surface', () => {
     const t = setup()
     t.fire('pointerdown', 1, 10, 10)
@@ -70,7 +89,7 @@ describe('usePinchPan', () => {
     t.fire('pointerdown', 2, 100, 0)
     t.fire('pointermove', 2, 200, 20)
     expect(t.pinch).toHaveBeenCalledOnce()
-    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 } })
+    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 }, target: 'canvas' })
   })
 
   it('does not twist for the small turn a pinch or pan carries (ticket 0709)', () => {
@@ -128,7 +147,7 @@ describe('usePinchPan', () => {
     t.fire('pointerdown', 1, 40, 20)
     t.fire('pointerdown', 2, 240, 20)
     t.fire('pointermove', 2, 440, 60)
-    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 } })
+    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 }, target: 'canvas' })
   })
 
   it('ignores a mouse and a pen', () => {

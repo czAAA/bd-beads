@@ -42,6 +42,8 @@ import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { canvasOf, frameOf, lettersOn, projectNameOf, withStartBackground } from '../../domain/layerRecord'
+import { frameShapeOf } from '../../domain/frameShape'
+import { withFrameTurnedTo } from '../../domain/framePlacement'
 import { canvasWeave } from '../../domain/layerWeave'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
@@ -228,10 +230,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
+  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned, moved) => rotateCanvasFlow.onTwistCanvas(turned, moved),
+      keepFrameTwist: (angle) => rotateFrameFlow.onTwistFrame(angle),
       compact: typeof window === 'undefined' ? undefined : useMediaQuery(UNDER_TABLET_QUERY),
       // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879); at the plain
       // address, the view the tab left its Project at, for a reload (ticket 1108).
@@ -711,6 +714,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
       radialToolbox.endHold()
     },
     endTwist,
+    // Both fingers down on a rectangular Frame's sheet twist the Frame (ticket 1190); a Custom frame turns by its button.
+    twistTarget: (first, second) => {
+      const frame = frameOf(currentProject())
+      const probe = surfaceProbe.value
+      return frame && !frameShapeOf(frame) && probe?.onFrameSheet(first) && probe.onFrameSheet(second) ? 'frame' : 'canvas'
+    },
   })
 
   /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206). */
@@ -860,7 +869,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   })
 
   /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0052, 0066). */
-  const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, messages, locale: () => locale.value, dialogs })
+  const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, messages, locale: () => locale.value, dialogs, frameTwistView: () => ({ releaseFrameTwist, easeFrameBack }) })
   const liftFrameFlow = useLiftFrameFlow({ edit, currentProject, announce, messages })
 
   /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0052). */
@@ -1326,7 +1335,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
       framePanelOpen: frameFlow.barOpen,
       // What the canvas shows in place of the open Project: a Piece held by its move grip where the release will leave
       // it (ticket 1013), else the Frame's draft.
-      frameDraftProject: computed(() => carriedProject.value ?? frameFlow.draftProject.value),
+      // A Frame under a two-finger twist is shown at the twist's angle until the Project keeps it (ticket 1190).
+      frameDraftProject: computed(() => {
+        const shown = carriedProject.value ?? frameFlow.draftProject.value
+        return shown && frameTwist.value !== undefined ? withFrameTurnedTo(shown, frameTwist.value) : shown
+      }),
       // The Piece held by its move grip, moved as a bitmap over that Project with it lifted out (ticket 1151).
       carriedPiece,
       onToggleFramePanel: frameFlow.toggleBar,
@@ -1552,6 +1565,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
 interface SurfaceProbe {
   /** A bead's middle on screen, in client pixels. */
   beadOnScreen(position: GridPosition): { x: number; y: number } | undefined
+  /** Whether a point in client pixels is on the Frame or its margin sheet as drawn (ticket 1190). */
+  onFrameSheet(point: Pick<PointerEvent, 'clientX' | 'clientY'>): boolean
 }
 
 /** How a shell differs from the editor's own. */

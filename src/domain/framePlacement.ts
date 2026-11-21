@@ -52,8 +52,8 @@ export function framePlacement(project: Layered): Placement | undefined {
 
 /** The Canvas position whose corner puts the Frame's centre at `centre` on the table (`framePlacement` undone): the
  * nearest, so a placement read back from a file lands on the very position it was worked out from. The Frame's own row
- * and column are not read. */
-export function frameCornerAt(project: Layered, centre: TablePoint): GridPosition {
+ * and column are not read. `startOnly`: the nearest a Frame may start on (a whole cycle where rows or columns alternate). */
+export function frameCornerAt(project: Layered, centre: TablePoint, startOnly = false): GridPosition {
   const extent = laidExtent(project)
   const canvas = canvasPlacement(project)
   const local = turned({ x: centre.x - canvas.at.x, y: centre.y - canvas.at.y }, -canvas.angle)
@@ -61,9 +61,13 @@ export function frameCornerAt(project: Layered, centre: TablePoint): GridPositio
   const aspect = describeWeave(canvasWeave(project)).cellAspect
   const guess = { row: Math.round(target.y / aspect), column: Math.round(target.x) }
   let best = { at: guess, off: Infinity }
+  const weave = canvasWeave(project)
+  const [rows, columns] = startOnly ? [rowCycle(weave), columnCycle(weave)] : [1, 1]
+  const starts = (at: number, cycle: number) => ((at % cycle) + cycle) % cycle === 0
   // A shifted Weave puts a corner up to half a bead off the plain lattice, so the nearest is among the guess's neighbours.
-  for (let row = guess.row - 2; row <= guess.row + 2; row += 1) {
-    for (let column = guess.column - 2; column <= guess.column + 2; column += 1) {
+  for (let row = guess.row - 1 - rows; row <= guess.row + 1 + rows; row += 1) {
+    for (let column = guess.column - 1 - columns; column <= guess.column + 1 + columns; column += 1) {
+      if (!starts(row, rows) || !starts(column, columns)) continue
       const corner = cornerOf(project, { row, column })
       const off = Math.hypot(corner.x - target.x, corner.y - target.y)
       if (off < best.off) best = { at: { row, column }, off }
@@ -124,6 +128,19 @@ export function withFrameAt(project: Project, centre: TablePoint): Project {
   const weave = canvasWeave(project)
   const snapped = (at: number, cycle: number) => at - (((at % cycle) + cycle) % cycle)
   return withHeld(project, { ...off, row: snapped(corner.row, rowCycle(weave)), column: snapped(corner.column, columnCycle(weave)) })
+}
+
+/** The Project with its Frame turned to `angle` on the table about its own centre (a two-finger twist, ticket 1190):
+ * at the Canvas's angle or whole quarters off it, slid onto the nearest whole Canvas position a Frame may start on, so it
+ * lies on the Canvas's grid; at any other angle off the grid, where it is. Its Row progress untouched; not stamped. */
+export function withFrameTurnedTo(project: Project, angle: number): Project {
+  const held = project.layers[1]
+  const placed = framePlacement(project)
+  if (!held || !placed) return project
+  const { centre: _was, ...onGrid } = held
+  const turned = withHeld(project, { ...onGrid, angle: normalizedOrientation(angle) })
+  if (normalizedOrientation(angle - canvasOf(project).orientation) % 90 !== 0) return withFrameAt(turned, placed.at)
+  return withHeld(turned, { ...turned.layers[1]!, ...frameCornerAt(turned, placed.at, true) })
 }
 
 /** The Project with its Canvas turned to `orientation` and its origin moved `moved` on the table (a turn about a pivot,

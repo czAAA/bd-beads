@@ -13,6 +13,8 @@ export interface CanvasFramingDeps {
   currentProject: () => Project | undefined
   /** Saves the Canvas's orientation a two-finger twist settled on (ticket 0672), and how far its origin moved (1188). */
   keepTwist?: CanvasViewOptions['keepTwist']
+  /** Keeps the angle a two-finger twist of the Frame settled on, or asks first (ticket 1190). */
+  keepFrameTwist?: CanvasViewOptions['keepFrameTwist']
   /** The view a Project opens at this once, in place of its fit: the address's (ticket 0879) or a reload's (1108). */
   opening?: CanvasViewOptions['opening']
   /** Under bp-tablet (ticket 1169): the expanded Frame's sheet takes its smaller insets and gap there. */
@@ -32,7 +34,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
 
   /** Expand the Frame's room, set once it is made below: the view fits into it while the Frame is expanded. */
   let expandedRoom: CanvasViewOptions['expanded'] = () => undefined
-  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, twistMoved, turnCanvas, pinchStep, endTwist, fit, showView } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening, expanded: () => expandedRoom?.() })
+  const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, turnCanvas, pinchStep, endTwist, fit, showView } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, keepFrameTwist: deps.keepFrameTwist, covered: () => toolPillCover.value, opening: deps.opening, expanded: () => expandedRoom?.() })
   /** Expand the Frame (ticket 1169): the Frame fitted to the whole drawing area, the Tool pill set aside. */
   const frameExpand = useFrameExpand({ currentProject: deps.currentProject, viewport, zoom, scroll, isAtFit, orientation, compact: deps.compact ?? ref(false), fit, showView })
   expandedRoom = () => (frameExpand.expanded.value ? frameExpand.room : undefined)
@@ -96,6 +98,9 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     orientation,
     twistPhase,
     twistMoved,
+    frameTwist,
+    releaseFrameTwist,
+    easeFrameBack,
     turnCanvas,
     pinchStep,
     endTwist,

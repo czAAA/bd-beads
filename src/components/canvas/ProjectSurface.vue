@@ -35,7 +35,7 @@ import type { TiltedView } from '../../rendering/tiltedView'
 import { canvasDrawing, frameDrawing, seamOf, type LayerDrawing } from '../../rendering/layerDrawings'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { cssZoomOf } from '../../composables/ui/cssZoom'
+import { cssZoomOf, ownPoint } from '../../composables/ui/cssZoom'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
 import { useCarryLayer } from './surface/useCarryLayer'
 import type { CarriedPieceMove } from '../../composables/tools/useSelectionGesture'
@@ -342,7 +342,7 @@ watch(() => props.twist, (phase) => {
   if (!phase) held.value = undefined
   else if (!held.value) hold()
 })
-watch([() => props.orientation, () => props.zoom, () => props.scroll], () => {
+watch([() => props.orientation, () => frameAngleOf(props.project), () => props.zoom, () => props.scroll], () => {
   if (props.twist !== 'turning') return
   clearTimeout(holdTimer)
   holdTimer = setTimeout(hold, SETTLE_MS)
@@ -578,7 +578,17 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   return { x: box.left + shown.x * zoom, y: box.top + shown.y * zoom }
 }
 
-defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen, opensToolbox })
+/** Whether a point in client pixels is on the Frame or its margin sheet as drawn, at any angle: where both fingers
+ * start for a twist to turn the Frame (ticket 1190). */
+function onFrameSheet(point: Pick<PointerEvent, 'clientX' | 'clientY'>): boolean {
+  const frame = frameOf(props.project)
+  if (!frame || !rootEl.value) return false
+  const at = frameLeaning.value.toDrawn(ownPoint(rootEl.value, point))
+  const box = sheetIn(frameSurface.value) ?? frameSurface.value.frameBox(frame)
+  return at.x >= box.x && at.y >= box.y && at.x <= box.x + box.width && at.y <= box.y + box.height
+}
+
+defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen, opensToolbox, onFrameSheet })
 
 onMounted(() => {
   measure()

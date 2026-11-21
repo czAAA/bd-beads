@@ -1,4 +1,4 @@
-import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
+import { nearestQuarterTurn, normalizedOrientation, settledOrientation } from './canvasOrientation'
 import type { Rotation } from './grid'
 import { canvasOf, frameOf, type Layered } from './layerRecord'
 
@@ -33,6 +33,12 @@ export function frameAngleOf(project: Layered): number {
  * axis and end worked from it, ticket 1185). Its lean is only the view's. */
 export function frameQuarterTurnOf(project: Layered): Rotation {
   return nearestQuarterTurn(frameAngleOf(project))
+}
+
+/** Where a Frame twisted to `angle` comes to rest as the fingers lift (spec 1182, ticket 1190): on the Canvas's angle,
+ * or a quarter off it, within about 10°, else on the screen's nearest quarter turn within about 10°, else leaning. */
+export function settledFrameAngle(project: Layered, angle: number): number {
+  return settledOrientation(angle, [canvasOf(project).orientation, 0])
 }
 
 /** Whether the Frame lies alike with the Canvas (spec 1182): at its angle and on whole positions, its cells on the
