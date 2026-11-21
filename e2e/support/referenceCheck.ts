@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Project } from '../../src/domain/project'
-import { isInCurrentRow, isInFinishedRow } from '../../src/domain/rowProgress'
+import { isInFinishedRow } from '../../src/domain/rowProgress'
 import { projectFrame } from '../../src/domain/projectExtent'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
@@ -40,11 +40,8 @@ function rgb(hex: string): [number, number, number] {
 /** How much of its own color a finished bead keeps in every theme, over the Canvas (50%, ticket 375). */
 const FINISHED_SHARE = 0.5
 
-/** How far the current row's beads are lifted toward white (10%, ticket 352). */
-const CURRENT_ROW_LIFT = 0.1
-
 /** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at
- * 50% over the Canvas; the current row's are 10% brighter; a painted one carries its satin light there (ticket 1003).
+ * 50% over the Canvas; the current row's keep their own color; a painted one carries its satin light there (ticket 1003).
  * Out of the draft look an empty one is a tonal tile, which Row progress leaves as it is (ticket 1001). */
 function expectedCentre(shown: Project, ownRow: number, ownColumn: number, satin: boolean): [number, number, number] {
   // The Frame as it is drawn, at its own quarter turn on a Canvas laid under it (ticket 1188): its beads by position.
@@ -60,9 +57,6 @@ function expectedCentre(shown: Project, ownRow: number, ownColumn: number, satin
 }
 
 function flatCentre(project: Project, row: number, column: number, own: [number, number, number]): [number, number, number] {
-  if (isInCurrentRow(project, { row, column })) {
-    return own.map((channel) => channel + (255 - channel) * CURRENT_ROW_LIFT) as [number, number, number]
-  }
   if (!isInFinishedRow(project, { row, column })) {
     return own
   }
