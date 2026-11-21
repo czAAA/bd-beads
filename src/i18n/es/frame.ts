@@ -12,7 +12,7 @@ export const frame: FrameTranslations = {
     fitNothing: 'Todavía no hay nada dibujado a lo que ajustar un marco.',
     noFrameLine: 'Un marco fija el tamaño, las exportaciones y Cuentas necesarias.',
     selectAFrame: 'Arrastrar un marco',
-    selectAPieceFrame: 'Seleccionar un trozo para hacer un marco',
+    selectAPieceFrame: 'Marco a partir de un trozo',
     selectPieceFrameHint: 'Toca un trozo del lienzo para enmarcarlo. Esc cancela.',
     selectPieceFrameTouchHint: 'Toca un trozo del lienzo para enmarcarlo. Elige una herramienta para cancelar.',
     selectFrameHint: 'Arrastra sobre el lienzo para seleccionar el marco. Esc cancela.',
