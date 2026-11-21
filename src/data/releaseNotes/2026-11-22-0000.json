@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "fixed",
+  "line": {
+    "en": "Row progress on a brick stitch Drop marks all the rows of a block as the current row, not only one",
+    "ru": "Прогресс по рядам на кирпичном шве с дропом отмечает текущими все ряды блока, а не только один",
+    "uk": "Прогрес по рядах на цегляному шві з дропом позначає поточними всі ряди блока, а не лише один",
+    "be": "Прагрэс па радах на цаглянай страчцы з дропам адзначае бягучымі ўсе рады блока, а не толькі адзін",
+    "zh": "砖形针法的多珠落针现在会把一组所有行都标为当前行，而不只是一行",
+    "es": "El progreso por filas en una caída de punto de ladrillo marca como actuales todas las filas del bloque, no solo una",
+    "pl": "Postęp rzędów na ściegu ceglanym z dropem oznacza jako bieżące wszystkie rzędy bloku, nie tylko jeden"
+  }
+}
