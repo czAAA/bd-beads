@@ -2,8 +2,8 @@ import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, MAX_ZOOM, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
-import { layerOf, orientationOf } from '../../domain/layerRecord'
-import { footprintOf } from '../../domain/footprint'
+import { frameOf, layerOf, orientationOf } from '../../domain/layerRecord'
+import { footprintOf, frameFootprint } from '../../domain/footprint'
 import { withMargin } from '../../domain/margin'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
 import { nearestQuarterTurn, settledOrientation, tiltOf, turnedOrientation } from '../../domain/canvasOrientation'
@@ -62,7 +62,9 @@ interface FitTarget {
  * clear of itself too (ticket 0971). */
 export function fitBox(project: Project): FitTarget | undefined {
   // The sheet is laid on the Canvas round the Frame's footprint, which takes a turned Frame as it lies (ticket 0667).
-  const footprint = footprintOf(project)
+  // A Frame off the Canvas's grid covers no position (ticket 1188): the rectangle its address names is centred on it.
+  const placed = placedFrame(project)
+  const footprint = footprintOf(project) ?? (placed && frameFootprint(layerOf(project, 'canvas').weave, placed))
   if (footprint) return { box: withMargin(footprint), margin: SHEET_FIT_MARGIN_PX }
   const drawn = beadBounds(layerOf(project, 'canvas').beads)
   return drawn && { box: drawn, margin: FIT_MARGIN_PX }
@@ -245,7 +247,7 @@ export function useCanvasView(
       opening = undefined
       const { area, corner } = fitRoom()
       const surface = surfaceOf(project, scroll.value, area)
-      const most = footprintOf(project) ? frameFitCeiling(surface) : 1
+      const most = frameOf(project) ? frameFitCeiling(surface) : 1
       zoom.value = clampZoom(target ? surface.zoomToFit(target.box, target.margin, 'canvas', most) : 1)
       const centred = surfaceOf(project, scroll.value, area).scrollToCentre(target?.box, 'canvas')
       scroll.value = { x: centred.x - corner.x, y: centred.y - corner.y }

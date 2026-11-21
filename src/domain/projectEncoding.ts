@@ -270,7 +270,8 @@ function encodeLayer(layer: Project['layers'][number]): EncodedLayer {
 function encodeFrame(frame: FrameLayer, centre: { x: number; y: number } | undefined): EncodedLayer {
   const { row: _row, column: _column, quarterTurns: _turns, centre: _centre, ...rest } = frame
   const rounded = (value: number) => Math.round(value * 1e6) / 1e6 || 0
-  return { ...encodeLayer(rest as FrameLayer), ...(centre ? { centre: { x: rounded(centre.x), y: rounded(centre.y) } } : {}) }
+  // One off the Canvas's grid says so (ticket 1188): optional, so it adds no format; without it the centre is a position's.
+  return { ...encodeLayer(rest as FrameLayer), ...(centre ? { centre: { x: rounded(centre.x), y: rounded(centre.y) } } : {}), ...(frame.centre ? { offGrid: true } : {}) }
 }
 
 /** The Project a file version 13 to 15 or library version 6 or 7 value holds (ticket 0664); it still goes through
