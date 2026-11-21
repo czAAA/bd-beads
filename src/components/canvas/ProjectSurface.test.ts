@@ -1366,12 +1366,12 @@ describe('ProjectSurface', () => {
         await nextTick()
         expect(redShown()).toBe(true)
 
-        // Undo to before the first row was finished: the same spot is now a row still to weave.
+        // Undo to before the first row was finished: the same spot is now the current row, in its own color as ever.
         context.calls.length = 0
         await wrapper.setProps({ project: resetRowProgress(project) })
         await nextTick()
         await nextTick()
-        expect(redShown()).toBe(false)
+        expect(redShown()).toBe(true)
 
         // Finished again.
         context.calls.length = 0

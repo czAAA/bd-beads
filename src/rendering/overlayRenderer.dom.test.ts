@@ -246,10 +246,9 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, theme: flatLook(DEFAULT_THEME), rowMotion: { glints: [{ pass: 1, elapsed: 0.35 * ROW_MOTION.glint }] } })
 
-      expect(insides(named, '#e63746').map((box) => box.slice(2))).toEqual(Array(4).fill([20 - 2 * inset, 20 - 2 * inset]))
-      expect(insides(named, lifted).map((box) => box.slice(2))).toEqual(Array(4).fill([22 - 2 * inset, 22 - 2 * inset]))
-      const order = named('fillRect').map((call) => call.fillStyle)
-      expect(order.indexOf(lifted)).toBeGreaterThan(order.lastIndexOf('#e63746'))
+      // The raised pass is in the same color as the glinted one now, told apart by size: 20px its own, 22px raised.
+      const sizes = insides(named, '#e63746').map((box) => box.slice(2))
+      expect(sizes).toEqual([...Array(4).fill([20 - 2 * inset, 20 - 2 * inset]), ...Array(4).fill([22 - 2 * inset, 22 - 2 * inset])])
     })
 
     it('casts one shadow under the pass, a row\'s touching beads one shape: black, blurred 5px (a `shadowBlur` of twice that), 2px down, 24% in light and 72% in dark, following the zoom', () => {
@@ -338,7 +337,6 @@ describe('renderOverlay', () => {
       const later = recordingContext()
       renderOverlay(later.context, { project, region: whole(project), zoom: 1, rowMotion: { glints: [{ pass: 1, elapsed: ROW_MOTION.dimDelay }] } })
       expect(glinted(later.calls)).toEqual([])
-      expect(plainRed(later.calls)).toEqual([])
 
       const off = recordingContext()
       renderOverlay(off.context, { project, region: whole(project), zoom: 1, rowMarks: false, rowMotion: { glints: [{ pass: 1, elapsed: 0.35 * ROW_MOTION.glint }] } })
