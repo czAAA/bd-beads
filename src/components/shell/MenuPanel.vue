@@ -142,12 +142,12 @@ const inputOptions = computed(() => [
     <AccountSection v-if="!demo" :account="account" :leave="leave" :may-open-sign-in="mayOpenSignIn" :sign-in-here="!onHomepage" @sign-in="emit('sign-in')" @sign-out="emit('sign-out')" @delete-account="emit('delete-account')" />
     <PanelSection id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
-      <PanelItem icon="plus" accent :sub="formHere" :stays="formHere" data-testid="menu-new-project" @select="formHere ? openNewProject() : emit('new-project')">{{ actions.newProject.name(t) }}</PanelItem>
+      <PanelItem icon="plus" accent :sub="formHere" :stays="formHere" data-testid="menu-new-project" :name="actions.newProject.name(t)" :body="t.tooltips.newProject" @select="formHere ? openNewProject() : emit('new-project')">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Convert image is an App page (ADR 0086): while it is open, its row is the current page. -->
-      <PanelItem icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" @select="converting || emit('convert-image')">
+      <PanelItem icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" :name="actions.convertImage.name(t)" :body="t.tooltips.convertImage" @select="converting || emit('convert-image')">
         {{ actions.convertImage.name(t) }}<BetaChip feature="convertImage" :name="actions.convertImage.name(t)" />
       </PanelItem>
-      <PanelItem icon="library" :value="countUnknown ? undefined : String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
+      <PanelItem icon="library" :value="countUnknown ? undefined : String(projectCount)" sub stays data-testid="menu-saved-projects" :name="actions.savedProjects.name(t)" :body="t.panels.menu.tooltipProjectsLibrary" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}
       </PanelItem>
     </PanelSection>
@@ -167,6 +167,7 @@ const inputOptions = computed(() => [
         icon="grid"
         :options="positionOptions"
         data-testid="menu-tools-position"
+        :body="t.panels.menu.tooltipToolsPosition"
         @update:model-value="emit('update:toolsPosition', $event)"
       />
       <PanelPicker
@@ -193,14 +194,14 @@ const inputOptions = computed(() => [
       <!-- Keyboard shortcuts is Menu's Subpanel (ticket 1159, ShortcutsHelp card), wider than Menu; the key shows where a keyboard is. -->
       <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" sub stays data-testid="menu-item-shortcuts" @select="emit('shortcuts'); context?.openSub()">{{ t.shortcutsHelp.title }}</PanelItem>
       <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
-      <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="onHomepage ? 'page' : undefined" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
+      <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="onHomepage ? 'page' : undefined" data-testid="menu-item-homepage" :name="t.header.homepageItem" :body="t.panels.menu.tooltipHomepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>
 
     <PanelSection v-if="!demo" id="menu:about" :label="t.panels.menu.about">
       <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
-      <PanelItem icon="code" :href="SOURCE_URL" external data-testid="menu-item-source">{{ t.header.sourceItem }}</PanelItem>
+      <PanelItem icon="code" :href="SOURCE_URL" external data-testid="menu-item-source" :name="t.header.sourceItem" :body="t.panels.menu.tooltipSource">{{ t.header.sourceItem }}</PanelItem>
       <PanelItem icon="eye-off" :href="PRIVACY_URL" external data-testid="menu-item-privacy">{{ t.account.privacy }}</PanelItem>
-      <PanelItem v-if="COFFEE_URL" icon="coffee" accent-icon :href="COFFEE_URL" external data-testid="menu-item-coffee">{{ t.panels.menu.coffee }}</PanelItem>
+      <PanelItem v-if="COFFEE_URL" icon="coffee" accent-icon :href="COFFEE_URL" external data-testid="menu-item-coffee" :name="t.panels.menu.coffee" :body="t.panels.menu.tooltipCoffee">{{ t.panels.menu.coffee }}</PanelItem>
       <div class="menu-panel__version" data-testid="menu-version">
         <span>{{ t.panels.menu.version }}</span>
         <span class="menu-panel__number">{{ BUILD_VERSION }} <span class="menu-panel__build">· {{ BUILD_MARK }}</span></span>

@@ -184,7 +184,7 @@ export const tools: ToolsTranslations = {
     noBeadsToFit: '没有可贴合的珠子。',
     zoomFit: '缩放以显示全部内容。',
     colors: '设置用于涂色的颜色。',
-    newProject: '开始一块空白画布。',
+    newProject: '开始一个空白项目，或从起始方案开始。',
     importFile: '从 .openbeads 文件打开项目。',
     changeName: '更改印在导出文件上的制作者姓名。',
     convertImage: '把图片变成图样。',

@@ -21,16 +21,18 @@ const props = withDefaults(
     /** It unfolds rows under it (ticket 1058): whether they show, said by `aria-expanded` and the fold mark. */
     expanded?: boolean
     disabled?: boolean
-    /** What a disabled item's Tooltip is named and says. */
+    /** What the item's Tooltip is named: it says `body`, or for a disabled item `disabledBody`. */
     name?: string
     disabledBody?: string
+    /** What the item does, in its Tooltip (named by `name`); a disabled item says why instead. */
+    body?: string
     href?: string
     external?: boolean
     /** Leave the panel open (Import: its file picker belongs to the open panel). */
     stays?: boolean
     secondary?: boolean
   }>(),
-  { icon: undefined, value: undefined, danger: false, accent: false, accentIcon: false, sub: false, expanded: undefined, disabled: false, name: undefined, disabledBody: undefined, href: undefined, external: false, stays: false, secondary: false },
+  { icon: undefined, value: undefined, danger: false, accent: false, accentIcon: false, sub: false, expanded: undefined, disabled: false, name: undefined, disabledBody: undefined, body: undefined, href: undefined, external: false, stays: false, secondary: false },
 )
 const emit = defineEmits<{ select: [] }>()
 const context = inject(PANEL_CONTEXT)
@@ -38,6 +40,8 @@ const context = inject(PANEL_CONTEXT)
 const folds = computed(() => props.expanded !== undefined)
 /** The design system draws one chevron-left: › (a subpanel, a folded row) is it turned, an unfolded row's is down. */
 const turned = computed(() => props.sub || props.expanded === false)
+/** The Tooltip a `body` gives the item, named by `name`: none without both. */
+const tip = computed(() => (props.body && props.name ? { name: props.name, body: props.body, announce: false } : undefined))
 const mark = computed(() => {
   if (props.external) return 'external'
   if (props.expanded) return 'chevron-down'
@@ -64,29 +68,40 @@ function onClick(event: Event) {
     </button>
   </AppTooltip>
   <component
-    :is="href ? 'a' : 'button'"
+    :is="tip ? AppTooltip : 'span'"
     v-else
-    v-bind="$attrs"
-    class="ui-control panel-item"
-    :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent, 'panel-item--secondary': secondary, 'panel-item--folded': expanded === false }"
-    :type="href ? undefined : 'button'"
-    :href="href"
-    :target="external ? '_blank' : undefined"
-    :rel="external ? 'noopener' : undefined"
-    :aria-disabled="disabled || undefined"
-    :aria-expanded="expanded"
-    @click="onClick"
+    v-bind="tip ?? {}"
+    :class="tip ? 'panel-item-wrap' : 'panel-item-bare'"
   >
-    <AppIcon v-if="icon" :name="icon" :size="16" :class="{ 'panel-item__icon--accent': accentIcon }" />
-    <span class="panel-item__label"><slot /></span>
-    <span v-if="value" class="panel-item__value">{{ value }}</span>
-    <AppIcon v-if="mark" :name="mark" :size="14" class="panel-item__mark" :class="{ 'panel-item__mark--sub': turned }" />
+    <component
+      :is="href ? 'a' : 'button'"
+      v-bind="$attrs"
+      class="ui-control panel-item"
+      :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent, 'panel-item--secondary': secondary, 'panel-item--folded': expanded === false }"
+      :type="href ? undefined : 'button'"
+      :href="href"
+      :target="external ? '_blank' : undefined"
+      :rel="external ? 'noopener' : undefined"
+      :aria-disabled="disabled || undefined"
+      :aria-expanded="expanded"
+      @click="onClick"
+    >
+      <AppIcon v-if="icon" :name="icon" :size="16" :class="{ 'panel-item__icon--accent': accentIcon }" />
+      <span class="panel-item__label"><slot /></span>
+      <span v-if="value" class="panel-item__value">{{ value }}</span>
+      <AppIcon v-if="mark" :name="mark" :size="14" class="panel-item__mark" :class="{ 'panel-item__mark--sub': turned }" />
+    </component>
   </component>
 </template>
 
 <style scoped>
 .panel-item-wrap {
   display: block;
+}
+
+/* No Tooltip: the wrapper takes no box, so the row lays out as before. */
+.panel-item-bare {
+  display: contents;
 }
 
 .panel-item {

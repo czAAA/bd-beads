@@ -192,7 +192,7 @@ export const tools: ToolsTranslations = {
     noBeadsToFit: 'Нет бисеринок, под которые можно подогнать рамку.',
     zoomFit: 'Показать всё целиком.',
     colors: 'Настройте цвета для рисования.',
-    newProject: 'Начать с пустого холста.',
+    newProject: 'Начать пустой проект или выбрать шаблон.',
     importFile: 'Открыть проект из файла .openbeads.',
     changeName: 'Изменить имя автора при экспорте.',
     convertImage: 'Превратить картинку в схему.',

@@ -39,8 +39,8 @@ const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
   <template v-else>
     <p class="export-rows__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
     <!-- The one-tap way first once something is drawn (ticket 0944); `frame`, as `fit` is the zoom's. -->
-    <PanelItem v-if="!nothingToFit" icon="frame" stays data-testid="export-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
-    <PanelItem icon="select" data-testid="export-select-frame" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
+    <PanelItem v-if="!nothingToFit" icon="frame" stays data-testid="export-fit" :name="t.frame.fitAFrame" :body="t.tooltips.fitToDrawing" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
+    <PanelItem icon="select" data-testid="export-select-frame" :name="t.frame.selectAFrame" :body="t.frame.selectFrameHint" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
     <PanelItem icon="piece" data-testid="export-select-piece-frame" @select="emit('select-piece-frame')">{{ t.frame.selectAPieceFrame }}</PanelItem>
     <PanelItem v-if="nothingToFit" icon="frame" stays disabled :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="export-fit">{{ t.frame.fitAFrame }}</PanelItem>
     <div class="export-rows__files">

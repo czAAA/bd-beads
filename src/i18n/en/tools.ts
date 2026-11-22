@@ -188,7 +188,7 @@ export const tools: ToolsTranslations = {
     noBeadsToFit: 'There are no beads to fit.',
     zoomFit: 'Zoom to fit everything.',
     colors: 'Set up the colors to paint with.',
-    newProject: 'Start an empty Canvas.',
+    newProject: 'Start a blank Project, or begin from a Starter.',
     importFile: 'Open a Project from a .openbeads file.',
     changeName: "Change the maker's name printed on exports.",
     convertImage: 'Turn a picture into a bead pattern.',

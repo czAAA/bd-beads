@@ -192,7 +192,7 @@ export const tools: ToolsTranslations = {
     noBeadsToFit: 'Nie ma koralików do dopasowania.',
     zoomFit: 'Powiększ tak, aby zmieściło się wszystko.',
     colors: 'Ustaw kolory do malowania.',
-    newProject: 'Zacznij puste płótno.',
+    newProject: 'Zacznij pusty projekt albo wybierz starter.',
     importFile: 'Otwórz projekt z pliku .openbeads.',
     changeName: 'Zmień imię twórcy drukowane w eksportach.',
     convertImage: 'Zamień obraz w schemat.',

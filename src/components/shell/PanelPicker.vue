@@ -20,6 +20,8 @@ const props = defineProps<{
   bare?: boolean
   disabled?: boolean
   disabledBody?: string
+  /** What the setting does, in the button's Tooltip (Tools position). */
+  body?: string
   /** The button is this icon alone, named by `label` in its Tooltip (the margin title block's Technique pencil, ticket
    * 0657); the value is shown beside it by the host. */
   iconOnly?: IconName
@@ -49,6 +51,7 @@ const chosen = computed(() => props.options.find((option) => option.value === va
 /** The button's Tooltip: why it is off, or for a pencil its name. */
 const tooltip = computed(() => {
   if (props.disabled && props.disabledBody) return { name: props.label, disabled: true as const, disabledBody: props.disabledBody, announce: false }
+  if (props.body) return { name: props.label, body: props.body, announce: false }
   return props.iconOnly || props.toolbar ? { name: props.label, announce: false } : undefined
 })
 /** The button's text: a code or word shown for the value; the name always says label and value. */

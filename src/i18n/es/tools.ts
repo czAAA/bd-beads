@@ -190,7 +190,7 @@ export const tools: ToolsTranslations = {
     noBeadsToFit: 'No hay cuentas a las que ajustar.',
     zoomFit: 'Haz zoom para ver todo.',
     colors: 'Prepara los colores con los que pintar.',
-    newProject: 'Emtrozo un lienzo vacío.',
+    newProject: 'Empieza un proyecto vacío o parte de un punto de partida.',
     importFile: 'Abre un proyecto desde un archivo .openbeads.',
     changeName: 'Cambia el nombre de quien lo hace que se imprime en las exportaciones.',
     convertImage: 'Convierte una imagen en un esquema.',
