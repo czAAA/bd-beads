@@ -24,11 +24,15 @@ describe('useToolAndColor', () => {
     expect(previewColor.value).toBe(selectedColorHex())
   })
 
-  it('opens on the remembered color: its swatch, or else a Custom color', () => {
+  it('opens on the remembered color’s swatch when the Palette has it', () => {
     const palette = createPalette(defaultPaletteIds())
     const blue = palette.byId('blue')!
     const onSwatch = useToolAndColor({ leaveSelectTool: vi.fn(), palette: () => palette, paintColor: ref(blue.hex) })
     expect(onSwatch.selectedColorId.value).toBe('blue')
+  })
+
+  it('opens on the remembered color as a Custom color when the Palette lacks it', () => {
+    const palette = createPalette(defaultPaletteIds())
     const onCustom = useToolAndColor({ leaveSelectTool: vi.fn(), palette: () => palette, paintColor: ref('#123456') })
     expect(onCustom.selectedColorId.value).toBeUndefined()
     expect(onCustom.selectedColorHex()).toBe('#123456')
