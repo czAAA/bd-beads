@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PanelPicker from './PanelPicker.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 
 const options = [
   { value: 'left', label: 'Left' },
@@ -21,6 +22,11 @@ const button = () => wrapper.get('button[aria-haspopup]')
 const items = () => wrapper.findAll('[role="menuitemradio"]')
 
 describe('PanelPicker (ticket 0553)', () => {
+  it('says what its setting does in a Tooltip when given a body', () => {
+    const picker = mount(PanelPicker, { props: { label: 'Tools position', body: 'Put the tools somewhere.', options, modelValue: 'top' } })
+    expect(picker.findComponent(AppTooltip).props()).toMatchObject({ name: 'Tools position', body: 'Put the tools somewhere.' })
+  })
+
   it('is named "{label}: {value}" and starts closed', () => {
     wrapper = mountPicker()
     expect(button().attributes('aria-label')).toBe('Tools position: Top')

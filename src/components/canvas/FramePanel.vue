@@ -262,9 +262,9 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
     <div v-if="!frame" class="frame-panel__none">
       <p class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.starters.title, { opener: 'frame-from-starter' })">{{ t.frame.fromStarter }}</PanelItem>
-      <PanelItem icon="select" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
+      <PanelItem icon="select" data-testid="frame-select" :name="t.frame.selectAFrame" :body="t.frame.selectFrameHint" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
       <PanelItem icon="piece" data-testid="frame-select-piece" @select="emit('select-piece-frame')">{{ t.frame.selectAPieceFrame }}</PanelItem>
-      <PanelItem icon="frame" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
+      <PanelItem icon="frame" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" :body="t.tooltips.fitToDrawing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
       <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
     </div>
 
@@ -416,7 +416,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
             <span class="frame-panel__estimate-value">{{ estimate }}</span>
             <InfoButton :label="t.size.estimateLabel" :body="t.frame.estimateInfo" data-testid="frame-estimate-info" />
           </div>
-          <PanelItem icon="select" :disabled="locked" :name="t.frame.selectAFrame" :disabled-body="t.tooltips.rowProgressLockedFrame" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
+          <PanelItem icon="select" :disabled="locked" :name="t.frame.selectAFrame" :disabled-body="t.tooltips.rowProgressLockedFrame" :body="t.frame.selectFrameHint" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
           <!-- Replace Frame (ticket 0596): the Starter gallery, its Frame put in place of this one. -->
           <PanelItem
             icon="frame"

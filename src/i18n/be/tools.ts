@@ -192,7 +192,7 @@ export const tools: ToolsTranslations = {
     noBeadsToFit: 'Няма бісерын, пад якія можна падагнаць рамку.',
     zoomFit: 'Паказаць усё цалкам.',
     colors: 'Наладзьце колеры для малявання.',
-    newProject: 'Пачаць з пустога палатна.',
+    newProject: 'Пачаць пусты праект або абраць шаблон.',
     importFile: 'Адкрыць праект з файла .openbeads.',
     changeName: 'Змяніць імя майстра пры экспарце.',
     convertImage: 'Ператварыць малюнак у схему.',

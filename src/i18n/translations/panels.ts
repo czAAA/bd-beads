@@ -40,6 +40,11 @@ export interface PanelsTranslations {
       themeLight: string
       themeDark: string
       tooltipDeleteAll: string
+      tooltipProjectsLibrary: string
+      tooltipToolsPosition: string
+      tooltipHomepage: string
+      tooltipSource: string
+      tooltipCoffee: string
       /** Delete all Projects? with the count (ticket 0984). */
       deleteAllTitle: PluralForms
       deleteAllMessage: string

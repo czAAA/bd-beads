@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PanelItem from './PanelItem.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import { PANEL_CONTEXT } from './panelContext'
 
 function mountItem(props: Record<string, unknown>) {
@@ -10,6 +11,18 @@ function mountItem(props: Record<string, unknown>) {
 }
 
 describe('PanelItem', () => {
+  it('still selects when it has a Tooltip', async () => {
+    const { wrapper } = mountItem({ name: 'Export', body: 'Save the picture.' })
+    await wrapper.get('button').trigger('click')
+    expect(wrapper.emitted('select')).toHaveLength(1)
+  })
+
+  it('says what it does in a Tooltip when given a name and a body, and has none otherwise', async () => {
+    const { wrapper } = mountItem({ name: 'Export', body: 'Save the picture.' })
+    expect(wrapper.findComponent(AppTooltip).props()).toMatchObject({ name: 'Export', body: 'Save the picture.' })
+    expect(mountItem({}).wrapper.findComponent(AppTooltip).exists()).toBe(false)
+  })
+
   it('closes its panel when pressed, unless it stays', async () => {
     const { wrapper, close } = mountItem({})
     await wrapper.get('button').trigger('click')
