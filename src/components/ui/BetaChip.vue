@@ -178,7 +178,7 @@ useOverlayLayer({ isOpen: () => open.value, root: () => wrapEl.value, close: hid
 
 /* Inside a button the label keeps the left and the chip sits centered in the free space after it, whatever the button's
    width or the language: auto margins on both sides. */
-:global(.app-button) > .beta-chip {
+:global(.app-button > .beta-chip) {
   margin-inline: auto;
 }
 
