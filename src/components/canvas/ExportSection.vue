@@ -208,6 +208,27 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-8);
   padding: var(--space-4) var(--space-10);
+  container-type: inline-size;
+}
+
+/* A third of a narrow row has no room for the icon, the name and a Beta chip: the buttons that carry the chip drop their
+   icon, so the chip stays inside the button's edge (ticket 1198). */
+@container (max-width: 400px) {
+  .export-section__files :deep(.app-button:has(> .beta-chip) > .icon) {
+    display: none;
+  }
+}
+
+/* Narrower still (a phone's longest Beta word): the button and the chip squeeze their padding too. */
+@container (max-width: 300px) {
+  .export-section__files :deep(.app-button:has(> .beta-chip)) {
+    gap: var(--space-2);
+    padding-inline: var(--space-6) var(--space-4);
+  }
+
+  .export-section__files :deep(.app-button > .beta-chip .beta-chip__label) {
+    padding-inline: var(--space-2);
+  }
 }
 
 .export-section__files > *,

@@ -176,14 +176,21 @@ useOverlayLayer({ isOpen: () => open.value, root: () => wrapEl.value, close: hid
   white-space: nowrap;
 }
 
-/* Inside a button the label keeps the left and the chip sits centered in the free space after it, whatever the button's
-   width or the language: auto margins on both sides. */
+/* Inside a button the label keeps the start and the chip sits at the end, wholly inside the edge: its own space before
+   the edge, and a button of a narrow column (the Export row's thirds) squeezes the gaps and the chip's padding before the
+   chip could touch or cross the edge. */
 :global(.app-button > .beta-chip) {
-  margin-inline: auto;
+  margin-inline: auto 0;
 }
 
 :global(.app-button:has(> .beta-chip)) {
+  gap: var(--space-4);
   justify-content: flex-start;
+  padding-inline: var(--space-8) var(--space-6);
+}
+
+:global(.app-button > .beta-chip .beta-chip__label) {
+  padding-inline: var(--space-4);
 }
 
 .beta-chip__label {
