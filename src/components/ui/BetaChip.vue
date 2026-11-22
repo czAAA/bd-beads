@@ -82,6 +82,17 @@ function hideSoon() {
   closeTimer = setTimeout(hide, CLOSE_DELAY_MS)
 }
 
+/** Focus a script gave it (a panel opening onto its first control) is not a keyboard user's: it opens nothing. */
+function onFocusIn(event: FocusEvent) {
+  const target = event.target as HTMLElement
+  try {
+    if (target === document.activeElement && !target.matches(':focus-visible')) return
+  } catch {
+    // No :focus-visible here: treat it as keyboard focus.
+  }
+  void show()
+}
+
 function onFocusOut(event: FocusEvent) {
   if (!wrapEl.value?.contains(event.relatedTarget as Node | null)) hide()
 }
@@ -124,7 +135,7 @@ useOverlayLayer({ isOpen: () => open.value, root: () => wrapEl.value, close: hid
     class="beta-chip"
     @pointerenter="(event: PointerEvent) => event.pointerType === 'mouse' && show()"
     @pointerleave="hideSoon"
-    @focusin="show"
+    @focusin="onFocusIn"
     @focusout="onFocusOut"
     @click.stop
     @keydown.stop
