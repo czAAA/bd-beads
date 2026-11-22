@@ -84,28 +84,16 @@ export function rowsOrder(weave: Weave & { rows: number; columns: number }, { di
   const staggeredRows = !columnWise && description.shifted && description.staggers === 'rows' && !description.twoPasses
   const block = staggeredRows ? description.rowCycle / DROP_BLOCKS_A_CYCLE : 1
   if (block > 1) {
-    const blockOf = (weaving: number) => Math.floor(mirrorLine(weaving, lines, reversed) / block)
-    const passOfLine: number[] = []
-    const firstLines: number[] = []
-    for (let weaving = 0; weaving < lines; weaving += 1) {
-      if (weaving === 0 || blockOf(weaving) !== blockOf(weaving - 1)) firstLines.push(weaving)
-      passOfLine.push(firstLines.length - 1)
-    }
-    const dropCount = firstLines.length
+    const edge = Math.floor(mirrorLine(0, lines, reversed) / block)
+    const passOf = (row: number) => Math.abs(Math.floor(row / block) - edge)
+    const woven = Array.from({ length: lines }, (_, line) => mirrorLine(line, lines, reversed))
+    const rowsOf = (pass: number) => woven.filter((row) => passOf(row) === pass)
     return {
       turns: true,
-      count: dropCount,
-      passAt: ({ row }) => passOfLine[mirrorLine(row, lines, reversed)] ?? dropCount,
-      positionsOf: (pass) => {
-        if (pass < 0 || pass >= dropCount) return []
-        const end = firstLines[pass + 1] ?? lines
-        const positions: GridPosition[] = []
-        for (let weaving = firstLines[pass]!; weaving < end; weaving += 1) {
-          for (let column = 0; column < length; column += 1) positions.push({ row: mirrorLine(weaving, lines, reversed), column })
-        }
-        return positions
-      },
-      lineOf: (pass) => mirrorLine(firstLines[pass] ?? 0, lines, reversed),
+      count: lines && passOf(mirrorLine(lines - 1, lines, reversed)) + 1,
+      passAt: ({ row }) => passOf(row),
+      positionsOf: (pass) => rowsOf(pass).flatMap((row) => Array.from({ length }, (_, column) => ({ row, column }))),
+      lineOf: (pass) => rowsOf(pass)[0] ?? 0,
     }
   }
   const count = passes.count(lines, direction)

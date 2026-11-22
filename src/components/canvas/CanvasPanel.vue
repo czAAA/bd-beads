@@ -146,7 +146,6 @@ const {
   onMirrorTile,
   onPillTileTap,
   onMirrorWholeFrame,
-  onToggleLift,
   onMirrorSelection,
   selectedColorHex,
   selectedColorId,
@@ -841,7 +840,6 @@ const drawingStyle = computed(() => {
             @slim="onSlimMeasured"
             @mirror="onMirrorWholeFrame"
             @rotate="onRotateFrame"
-            @toggle-lift="onToggleLift"
             @toggle-edit="onEditFrame"
             @export="onOpenExport"
             @remove="onRemoveFrame"

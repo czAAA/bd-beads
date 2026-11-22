@@ -193,8 +193,6 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
     ...(current?.shape ? { shape: current.shape } : {}),
     ...(current?.settings ? { settings: current.settings } : {}),
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
-    // A Frame made anew starts lifted (ticket 1177); one resized keeps its own choice.
-    ...(!current || current.lifted ? { lifted: true as const } : {}),
   }
   return {
     // One made anew starts its progress afresh (spec 1182); one resized keeps its pointers inside it.
@@ -202,18 +200,4 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
     given: shiftedBeads(refit.given, row, column),
     taken: shiftedBeads(refit.taken, row, column),
   }
-}
-
-/** Whether the Frame's pieces are lifted off the grid (ticket 1177): the saved Lift, which an export follows. */
-export function frameLifted(project: Layered): boolean {
-  return !!frameOf(project)?.lifted
-}
-
-/** The Project with the Frame's Lift turned on or off (ticket 1177): nothing else changes, no bead and no Row progress;
- * the same Project when there is no Frame or it already is so. */
-export function withFrameLift(project: Project, lifted: boolean): Project {
-  const frame = frameOf(project)
-  if (!frame || !!frame.lifted === lifted) return project
-  const { lifted: _was, ...rest } = frame
-  return touchFrameSheet(project, lifted ? { ...rest, lifted: true } : rest)
 }

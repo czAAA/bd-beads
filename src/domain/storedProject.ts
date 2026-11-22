@@ -189,7 +189,7 @@ function readCanvas(stored: StoredLayer, projectId: string, earlierBackground: b
  * plus its quarter turns, at its Canvas position, its Row progress the way it showed. */
 function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string, earlierBackground: boolean): FrameLayer {
   const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas), earlierBackground)
-  const { row = 0, column = 0, rows = 0, columns = 0, folded, name, lifted } = stored
+  const { row = 0, column = 0, rows = 0, columns = 0, folded, name } = stored
   const laid = readFrameShape(stored, weaveOf(layer))
   // Before file version 15 a Frame kept its quarter turns on the Canvas: one, two or three, anything else none.
   const earlierTurns = stored.quarterTurns === 1 || stored.quarterTurns === 2 || stored.quarterTurns === 3 ? stored.quarterTurns : 0
@@ -202,7 +202,6 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string,
     columns,
     ...(folded ? { folded } : {}),
     ...(typeof name === 'string' && name ? { name } : {}),
-    ...(lifted === true ? { lifted } : {}),
     ...laid,
     angle,
     rowProgress: { way: 'down' },
