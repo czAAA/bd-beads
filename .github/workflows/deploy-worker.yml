@@ -65,6 +65,17 @@ jobs:
         with:
           name: dist
           path: dist
+      # The worker installs all of its list or nothing, so one listed file the host doesn't get stops every device
+      # from updating (ticket 1204): refuse the deploy instead.
+      - name: Check the build holds every file sw.js lists
+        run: |
+          sed -n 's/^const PRECACHE = //p' dist/sw.js | jq -r '.[]' > "$RUNNER_TEMP/precache.txt"
+          if [ ! -s "$RUNNER_TEMP/precache.txt" ]; then echo "::error::dist/sw.js has no list of files"; exit 1; fi
+          failed=0
+          while IFS= read -r file; do
+            if [ ! -f "dist/$file" ]; then echo "::error::sw.js lists $file, which the build to deploy lacks"; failed=1; fi
+          done < "$RUNNER_TEMP/precache.txt"
+          exit "$failed"
       - name: Apply the core database's migrations
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -107,3 +118,17 @@ jobs:
           done
           echo "::error::$URL/api/health didn't answer ok with version $COMMIT; last answer: $body"
           exit 1
+      # What the host serves, not what was sent to it: the same list, asked of the deployed Worker (ticket 1204).
+      - name: Smoke check every file sw.js lists
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          headers=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
+          failed=0
+          while IFS= read -r file; do
+            code=$(curl -s -L -o /dev/null -w '%{http_code}' --max-time 10 "${headers[@]}" "$URL/$file" || true)
+            if [ "$code" != 200 ]; then echo "::error::$URL/$file answered $code: no device could install this build's worker"; failed=1; fi
+          done < "$RUNNER_TEMP/precache.txt"
+          exit "$failed"
