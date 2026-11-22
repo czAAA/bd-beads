@@ -30,10 +30,10 @@ export const canvas: CanvasTranslations = {
     },
     firstRun: {
       storage: '你的项目只保存在这个浏览器里。',
-      paintMouse: '点击 {paint} 或拖动，放上所选颜色 {palette} 的珠子。',
-      setFrame: '选择 {select}，再设置边框 {frame}，即可导出或开始进度。',
-      saveKeys: '{key} 或“保存” {save}，把文件保存到这台设备。',
-      saveTouch: '“保存” {save}，把文件保存到这台设备。',
+      paintMouse: '点击**涂色**或拖动，放上所选颜色的珠子。',
+      setFrame: '用**选择**，再设置**边框**，即可导出或开始进度。',
+      saveKeys: '{key} 或**保存**，把文件保存到这台设备。',
+      saveTouch: '**保存**，把文件保存到这台设备。',
     },
   },
   rowProgress: {

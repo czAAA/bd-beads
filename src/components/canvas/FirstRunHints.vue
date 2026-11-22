@@ -2,25 +2,22 @@
 import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useHelpDevice } from '../../composables/ui/useKeyHints'
-import AppIcon from '../ui/AppIcon.vue'
-import KeyChip from '../ui/KeyChip.vue'
 
-// What an empty Project says (FirstRunHints card, tickets 0798, 0920): the next step, what a Frame is for, where Projects
-// are kept and how to save. `{name}` in a word stands for a chip. Decoration only: hidden from screen readers and
-// pointers, so the first press on the canvas paints the first bead.
+// What an empty Project says (FirstRunHints card, tickets 0920, 1200): a tool's name is a word set off as `**Name**`,
+// `{key}` the save key; no chips or icons. Decoration only: hidden from screen readers and pointers, so the first
+// press on the canvas paints the first bead.
 const { t } = useI18n()
 const { device, modKey } = useHelpDevice()
 
-const ICONS = new Set(['paint', 'palette', 'select', 'frame', 'save'] as const)
-type IconName = typeof ICONS extends Set<infer N> ? N : never
-type Part = { text: string } | { icon: IconName } | { key: true }
+type Part = { text: string } | { name: string } | { key: true }
 
-/** A line cut at its `{name}` places: text, chips for the icons, the key chip for `{key}`. */
+/** A line cut at its `**name**` words and its `{key}`. */
 function parts(line: string): Part[] {
-  return line.split(/\{(\w+)\}/).flatMap((piece, i): Part[] => {
-    if (i % 2 === 0) return piece ? [{ text: piece }] : []
-    if (piece === 'key') return [{ key: true }]
-    return ICONS.has(piece as IconName) ? [{ icon: piece as IconName }] : [{ text: piece }]
+  return line.split(/(\*\*[^*]+\*\*|\{key\})/).flatMap((piece): Part[] => {
+    if (!piece) return []
+    if (piece === '{key}') return [{ key: true }]
+    if (piece.startsWith('**')) return [{ name: piece.slice(2, -2) }]
+    return [{ text: piece }]
   })
 }
 
@@ -43,8 +40,8 @@ const lines = computed(() => {
         <p :class="line.cls" :data-testid="line.id">
           <template v-for="(part, i) in line.parts" :key="i">
             <template v-if="'text' in part">{{ part.text }}</template>
-            <KeyChip v-else-if="'key' in part" class="hint-chip first-run-hints__chip">{{ modKey('S') }}</KeyChip>
-            <span v-else class="hint-chip first-run-hints__chip"><AppIcon :name="part.icon" :size="14" /></span>
+            <span v-else-if="'key' in part" class="first-run-hints__name first-run-hints__key">{{ modKey('S') }}</span>
+            <span v-else class="first-run-hints__name">{{ part.name }}</span>
           </template>
         </p>
       </template>
@@ -104,10 +101,15 @@ const lines = computed(() => {
   text-wrap: balance;
 }
 
-/* A chip stands inline with the words, the chip's 20px box centred on the line. */
-.first-run-hints__chip {
-  vertical-align: middle;
-  margin-inline: var(--space-2);
+/* A tool's name is a word in the line: one step up in weight and color, no box and no icon (ticket 1200). The save key
+ * is the same, in the mono face. */
+.first-run-hints__name {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.first-run-hints__key {
+  font-family: var(--font-mono);
 }
 
 /* A narrow screen balances it. */

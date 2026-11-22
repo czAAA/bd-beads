@@ -30,10 +30,10 @@ export const canvas: CanvasTranslations = {
     },
     firstRun: {
       storage: 'Tus proyectos se guardan solo en este navegador.',
-      paintMouse: 'Haz clic {paint} o arrastra para poner cuentas del color elegido {palette}.',
-      setFrame: 'Selecciona {select} y luego fija un marco {frame} para exportar o empezar el progreso.',
-      saveKeys: '{key} o Guardar {save} para guardar el archivo en este dispositivo.',
-      saveTouch: 'Guardar {save} para guardar el archivo en este dispositivo.',
+      paintMouse: 'Haz clic en **Pintar** o arrastra para poner cuentas del color elegido.',
+      setFrame: 'Elige **Seleccionar** y luego fija un **marco** para exportar o empezar el progreso.',
+      saveKeys: '{key} o **Guardar** para guardar el archivo en este dispositivo.',
+      saveTouch: '**Guardar** para guardar el archivo en este dispositivo.',
     },
   },
   rowProgress: {
