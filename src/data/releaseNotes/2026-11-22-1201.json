@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "changed",
+  "line": {
+    "en": "Menu leaves out the row for the page you are on, and has an Editor row on the Homepage and on Convert image",
+    "ru": "В меню нет строки той страницы, на которой вы находитесь, а на главной и в конвертере появилась строка «Редактор»",
+    "uk": "У меню немає рядка сторінки, на якій ви перебуваєте, а на головній і в конвертері з'явився рядок «Редактор»",
+    "be": "У меню няма радка старонкі, на якой вы знаходзіцеся, а на галоўнай і ў канвертары з'явіўся радок «Рэдактар»",
+    "zh": "菜单不再显示当前页面自己的那一行，首页和图片转换页新增了“编辑器”一行",
+    "es": "El menú omite la fila de la página en la que estás y añade una fila Editor en el Inicio y en Convertir imagen",
+    "pl": "Menu pomija wiersz strony, na której jesteś, a na stronie głównej i w konwerterze ma wiersz Edytor"
+  }
+}

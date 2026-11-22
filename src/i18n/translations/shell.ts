@@ -126,6 +126,7 @@ export interface ShellTranslations {
   header: {
     menuButton: string
     homepageItem: string
+    editorItem: string
     /** The HeaderMenu's link to the repository (ADR 0031, ticket 269): the AGPL-3.0 network clause requires a hosted
      * copy to offer one. */
     sourceItem: string

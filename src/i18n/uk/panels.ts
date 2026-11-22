@@ -23,6 +23,7 @@ export const panels: PanelsTranslations = {
       tooltipProjectsLibrary: 'Відкрити, перейменувати чи видалити проєкт, або відкрити файл проєкту.',
       tooltipToolsPosition: 'Розмістити інструменти ліворуч, праворуч, угорі або внизу.',
       tooltipHomepage: 'Відкрити сайт openbeads.',
+      tooltipEditor: 'Відкрити редактор.',
       tooltipSource: 'Переглянути код на GitHub.',
       tooltipCoffee: 'Підтримати розробника. Це єдиний спосіб лишити все в застосунку безкоштовним.',
       deleteAllTitle: { one: 'Видалити {count} проєкт?', few: 'Видалити всі {count} проєкти?', many: 'Видалити всі {count} проєктів?', other: 'Видалити всі {count} проєкту?' },
