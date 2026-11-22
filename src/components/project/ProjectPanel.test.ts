@@ -283,4 +283,20 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(header.attributes('aria-expanded')).toBe('false')
     expect(header.text()).toContain('Loom · TOHO Cube 1.5mm')
   })
+
+  it('says a docked save reminder under the save state, with a cross and the save icon (ticket 1192)', async () => {
+    const wrapper = mountPanel()
+    expect(wrapper.find('[data-testid="save-note"]').exists()).toBe(false)
+
+    await wrapper.setProps({ saveNote: { beads: 200, lastFileAt: 1 } })
+    expect(wrapper.get('[data-testid="save-note-text"]').text()).toBe('200 beads since the last file')
+
+    await wrapper.get('[data-testid="save-note-dismiss"]').trigger('click')
+    expect(wrapper.emitted('dismiss-save-note')).toHaveLength(1)
+    await wrapper.get('[data-testid="save-note-save"]').trigger('click')
+    expect(wrapper.emitted('save-project-file')).toHaveLength(1)
+
+    await wrapper.setProps({ saveNote: { beads: 200 } })
+    expect(wrapper.get('[data-testid="save-note-text"]').text()).toBe(en.saveReminder.noFileWhy)
+  })
 })

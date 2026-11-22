@@ -42,6 +42,8 @@ const props = defineProps<{
   referenceImage?: 'none' | 'shown' | 'hidden'
   /** Whether the Frame panel is open, so the Frame button shows lit. */
   frameOpen?: boolean
+  /** The save reminder waits in the Project panel (ticket 1192): an accent dot on the Project button. */
+  saveNote?: boolean
   canUndo?: boolean
   canRedo?: boolean
   zoomPercent?: number
@@ -202,6 +204,7 @@ function onControlsKeydown(event: KeyboardEvent) {
           @click="emit('select-panel', 'project')"
         >
           <span class="canvas-strip__label canvas-strip__project-name" data-user-text>{{ projectName }}</span>
+          <span v-if="saveNote && openPanel !== 'project'" class="canvas-strip__note-dot" aria-hidden="true" data-testid="strip-project-dot" />
         </AppButton>
         <AppButton
           v-if="project"
@@ -417,6 +420,16 @@ function onControlsKeydown(event: KeyboardEvent) {
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
+}
+
+/* The save reminder waiting in the Project panel (ticket 1192): an accent dot after the Project's name. */
+.canvas-strip__note-dot {
+  flex: none;
+  width: var(--note-dot-size);
+  height: var(--note-dot-size);
+  margin-inline-start: var(--space-6);
+  background: var(--accent-strong);
+  border-radius: var(--radius-full);
 }
 
 /* The open Project's name (ticket 0858): one line, cut with an ellipsis, so a long one never crowds the Brand. */

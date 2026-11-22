@@ -92,6 +92,7 @@ export const projects: ProjectsTranslations = {
     announce: 'Koralików od ostatniego pliku: {count}. Zapisz plik projektu, żeby je zachować.',
     since: { one: '{count} koralik od ostatniego pliku', few: '{count} koraliki od ostatniego pliku', many: '{count} koralików od ostatniego pliku', other: '{count} koralika od ostatniego pliku' },
     noFileWhy: 'przeglądarka może wyczyścić twoją pracę, plik zostanie',
+    dismiss: 'Odrzuć',
   },
   transfer: {
     exportLibraryButton: 'Zapisz wszystko w pliku projektu',

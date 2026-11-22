@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "changed",
+  "line": {
+    "en": "The save reminder stays on the canvas for a minute or two, then moves into the Project panel, with a dot on Project in the strip",
+    "ru": "Напоминание о сохранении остаётся на холсте минуту-две, затем переезжает в панель Проекта, а на кнопке Проекта в полосе появляется точка",
+    "uk": "Нагадування про збереження залишається на полотні хвилину-дві, потім переходить у панель Проєкту, а на кнопці Проєкту в смузі з'являється крапка",
+    "be": "Напамін пра захаванне застаецца на палатне хвіліну-дзве, потым пераходзіць у панэль Праекта, а на кнопцы Праекта ў паласе з'яўляецца кропка",
+    "zh": "保存提醒会在画布上停留一两分钟，然后移到“作品”面板，工具条上的“作品”按钮会出现一个小圆点",
+    "es": "El recordatorio para guardar se queda en el lienzo uno o dos minutos y luego pasa al panel del Proyecto, con un punto en Proyecto en la barra",
+    "pl": "Przypomnienie o zapisie zostaje na płótnie minutę lub dwie, potem przechodzi do panelu Projektu, a na przycisku Projektu w pasku pojawia się kropka"
+  }
+}

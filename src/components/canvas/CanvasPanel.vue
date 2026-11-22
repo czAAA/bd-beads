@@ -68,6 +68,7 @@ const {
   saveRing,
   onSaveProjectFile,
   onHoldSaveRing,
+  saveNoteDocked,
   onSurfaceDrawn,
   bindCanvasArea,
   bindCanvasScroll,
@@ -456,6 +457,7 @@ const drawingStyle = computed(() => {
         :rulers="showRulers"
         :reference-image="onEditor && activeProject ? referenceState : undefined"
         :frame-open="framePanelOpen"
+        :save-note="onEditor && saveNoteDocked"
         :can-undo="canUndo"
         :can-redo="canRedo"
         :open-panel="openPanel === 'export' && exportOpener !== 'strip-export' ? null : openPanel"

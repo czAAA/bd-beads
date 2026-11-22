@@ -15,6 +15,7 @@ import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import LayerSettings from './LayerSettings.vue'
 import ProjectHead from './ProjectHead.vue'
+import type { SinceFile } from '../../domain/beadsSinceFile'
 import ReferenceImageSection from './ReferenceImageSection.vue'
 import { layerSettingsOf, layerSummary } from './layerSettingsOf'
 
@@ -33,6 +34,8 @@ const props = defineProps<{
   /** The Save row's value: the Project's Linked file's name (ADR 0090), else its last saved file's (ticket 0859); none
    * before its first. */
   lastFileName?: string
+  /** The save reminder that left the canvas for here (ticket 1192): the head says it under the save state. */
+  saveNote?: SinceFile
   /** Save as is offered only where the browser can link a file (ADR 0090). */
   canSaveAs?: boolean
   /** A PNG or PDF is being drawn (ticket 1058): the unfolded export rows wait, as in the Export panel. */
@@ -40,6 +43,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   rename: [name: string]
+  'dismiss-save-note': []
   /** The Canvas's Layer settings (ticket 0670), each naming its layer as the Frame panel's do. */
   'set-technique': [layer: Layer, technique: Technique]
   'set-weave-setting': [layer: Layer, id: string, value: number]
@@ -90,6 +94,9 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       :unsaved="unsaved"
       :reference-not-saved="reference?.notSaved"
       :open-elsewhere="openElsewhere"
+      :save-note="saveNote"
+      @dismiss-save-note="emit('dismiss-save-note')"
+      @save-project-file="emit('save-project-file')"
       @rename="emit('rename', $event)"
       @save-maker-name="emit('save-maker-name', $event)"
       @save="emit('save')"

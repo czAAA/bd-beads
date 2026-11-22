@@ -7,6 +7,8 @@ import IconButton from '../ui/IconButton.vue'
 import NamesSection from './NamesSection.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { projectNameOf } from '../../domain/layerRecord'
+import type { SinceFile } from '../../domain/beadsSinceFile'
+import { plural } from '../../i18n/plural'
 
 // The head of the Project panel, always shown (ProjectPanel card, ticket 554): the `project:` title with the local save
 // state, the Project's name and maker. Each layer's Technique is in its Layer settings (ticket 0670). It only asks.
@@ -18,14 +20,18 @@ const props = defineProps<{
   referenceNotSaved?: boolean
   /** The Project is open in another tab (ticket 0937): nothing drawn here is saved. */
   openElsewhere?: boolean
+  /** The save reminder, moved here from the canvas (ticket 1192): what the Project file is behind by. */
+  saveNote?: SinceFile
 }>()
 const emit = defineEmits<{
   rename: [name: string]
   'save-maker-name': [name: string]
   save: []
+  'save-project-file': []
+  'dismiss-save-note': []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved || props.referenceNotSaved || props.openElsewhere ? 'unsaved' : 'saved'))
 const stateText = computed(() =>
@@ -40,6 +46,13 @@ const stateText = computed(() =>
       : fillBlanks(t.value.panels.project.notSaved, { reason: t.value.panels.project.saveRefused }),
 )
 
+const noteText = computed(() =>
+  props.saveNote === undefined
+    ? ''
+    : props.saveNote.lastFileAt === undefined
+      ? t.value.saveReminder.noFileWhy
+      : plural(locale.value, props.saveNote.beads, t.value.saveReminder.since),
+)
 </script>
 
 <template>
@@ -56,6 +69,13 @@ const stateText = computed(() =>
           <span v-else class="project-head__dot" />
         </span>
       </div>
+    </div>
+
+    <!-- The save reminder after its while on the canvas (ticket 1192): in the save state's own style, then the cross and the save icon. -->
+    <div v-if="saveNote" class="project-head__state project-head__note" data-testid="save-note">
+      <p class="project-head__text" data-testid="save-note-text">{{ noteText }}</p>
+      <IconButton variant="plain" icon="close" :label="t.saveReminder.dismiss" tooltip data-testid="save-note-dismiss" @click="emit('dismiss-save-note')" />
+      <IconButton variant="plain" icon="save" :label="t.saveReminder.label" tooltip data-testid="save-note-save" @click="emit('save-project-file')" />
     </div>
 
     <NamesSection
@@ -130,6 +150,10 @@ const stateText = computed(() =>
   height: 5.5px;
   background: var(--accent-strong);
   border-radius: var(--radius-full);
+}
+
+.project-head__note {
+  justify-content: flex-end;
 }
 
 .project-head__lines {

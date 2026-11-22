@@ -141,4 +141,42 @@ describe('useSaveReminder', () => {
 
     expect(ring.shown.value).toBe(false)
   })
+
+  describe('docking (ticket 1192)', () => {
+    it('stays on the canvas for 90 s, then docks into the Project panel', async () => {
+      const { ring, land } = await setup()
+      await land(150)
+      await vi.advanceTimersByTimeAsync(3000)
+      expect([ring.shown.value, ring.docked.value]).toEqual([true, false])
+
+      await vi.advanceTimersByTimeAsync(89_999)
+      expect(ring.docked.value).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect([ring.shown.value, ring.docked.value]).toEqual([true, true])
+    })
+
+    it('dismiss hides it until a further 100 beads, then it is back on the canvas', async () => {
+      const { ring, land } = await setup()
+      await land(150)
+      await vi.advanceTimersByTimeAsync(3000 + 90_000)
+      ring.dismiss()
+      expect([ring.shown.value, ring.docked.value]).toEqual([false, false])
+
+      await land(160)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(ring.shown.value).toBe(false)
+
+      await land(250)
+      await vi.advanceTimersByTimeAsync(3000)
+      expect([ring.shown.value, ring.docked.value]).toEqual([true, false])
+    })
+
+    it('saving (the count back to 0) clears the dock', async () => {
+      const { ring, land } = await setup()
+      await land(150)
+      await vi.advanceTimersByTimeAsync(3000 + 90_000)
+      await land(0)
+      expect([ring.shown.value, ring.docked.value]).toEqual([false, false])
+    })
+  })
 })
