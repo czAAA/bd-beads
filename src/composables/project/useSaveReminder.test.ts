@@ -178,7 +178,6 @@ describe('useSaveReminder', () => {
       expect([ring.shown.value, ring.docked.value]).toEqual([true, true])
     })
 
-
     it('saving (the count back to 0) clears the dock', async () => {
       const { ring, land } = await setup()
       await land(150)

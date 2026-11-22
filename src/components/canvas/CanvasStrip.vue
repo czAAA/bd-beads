@@ -422,9 +422,8 @@ function onControlsKeydown(event: KeyboardEvent) {
   }
 }
 
-/* The save reminder waiting in the Project panel (ticket 1192): an accent dot after the Project's name. */
-/* On the Project icon's top-right corner (its 15px box after the text button's padding), like a badge: the Project's
- * name keeps its place whether the dot shows or not. */
+/* The save reminder waiting in the Project panel (ticket 1192): an accent dot on the Project icon's top-right corner (its
+ * 15px box after the text button's padding), like a badge, so the Project's name keeps its place with or without it. */
 .canvas-strip__panel-buttons :deep(.canvas-strip__project) {
   position: relative;
 }
