@@ -121,7 +121,7 @@ describe('useFrameExpand (ticket 1169)', () => {
   it('fits again when the window is resized, moved by hand or not', async () => {
     const { view, expand, viewport, stop } = setup(framed(60, 20))
     expand.toggle()
-    view.panBy(40, 0)
+    view.carryBy(40, 0)
     viewport.value = { width: 1400, height: 600 }
     await nextTick()
     expect(view.isAtFit.value).toBe(true)
@@ -211,6 +211,71 @@ describe('useFrameExpand (ticket 1169)', () => {
       } finally {
         vi.useRealTimers()
       }
+    })
+  })
+
+  describe('moving the view by hand', () => {
+    /** Expanded from a view of its own, kept to come back to. */
+    function expandedFrom() {
+      const made = setup(framed(60, 20))
+      made.view.setZoom(0.5)
+      made.view.panBy(30, 10)
+      const was = { zoom: made.view.zoom.value, scroll: { ...made.view.scroll.value } }
+      made.expand.toggle()
+      return { ...made, was }
+    }
+
+    it('goes back to the Canvas at once on a drag or a scroll, which then moves the Canvas', () => {
+      for (const move of ['panBy', 'scrollBy'] as const) {
+        const { view, expand, was, stop } = expandedFrom()
+        view[move](20, 0)
+        expect(expand.expanded.value).toBe(false)
+        expect(view.zoom.value).toBe(was.zoom)
+        expect(view.scroll.value.x).toBeCloseTo(was.scroll.x + (move === 'panBy' ? -20 : 20), 5)
+        stop()
+      }
+    })
+
+    it('stays for the edge scroll a drag carries', () => {
+      const { view, expand, stop } = expandedFrom()
+      view.carryBy(20, 0)
+      expect(expand.expanded.value).toBe(true)
+      stop()
+    })
+
+    it('goes back on a two-finger pan, a pinch zoom carrying the fingers along staying', () => {
+      const { view, expand, was, stop } = expandedFrom()
+      const fit = view.zoom.value
+      view.pinchStep({ zoom: fit * 1.4, pan: { x: 30, y: 0 }, anchor: { x: 500, y: 300 } })
+      expect(expand.expanded.value).toBe(true)
+      view.endTwist({ x: 530, y: 300 })
+      const zoomed = view.zoom.value
+      view.pinchStep({ zoom: zoomed, pan: { x: 10, y: 0 }, anchor: { x: 500, y: 300 } })
+      expect(expand.expanded.value).toBe(true)
+      view.pinchStep({ zoom: zoomed * 1.02, pan: { x: 20, y: 0 }, anchor: { x: 510, y: 300 } })
+      expect(expand.expanded.value).toBe(false)
+      // The rest of the pinch pans the Canvas at the zoom it went back to, the fingers' spread let go.
+      view.pinchStep({ zoom: zoomed * 1.05, pan: { x: 5, y: 0 }, anchor: { x: 515, y: 300 } })
+      expect(view.zoom.value).toBe(was.zoom)
+      view.endTwist({ x: 515, y: 300 })
+      stop()
+    })
+
+    it('goes back on a twist, which then turns the Canvas', () => {
+      const { view, expand, was, stop } = expandedFrom()
+      view.pinchStep({ zoom: view.zoom.value, turn: 20, anchor: { x: 500, y: 300 } })
+      expect(expand.expanded.value).toBe(false)
+      expect(view.zoom.value).toBe(was.zoom)
+      expect(view.orientation.value).toBe(20)
+      stop()
+    })
+
+    it('goes back on Rotate canvas, which then turns the Canvas', () => {
+      const { view, expand, was, stop } = expandedFrom()
+      view.turnCanvas(90)
+      expect(expand.expanded.value).toBe(false)
+      expect(view.zoom.value).toBe(was.zoom)
+      stop()
     })
   })
 })
