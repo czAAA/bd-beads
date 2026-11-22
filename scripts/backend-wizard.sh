@@ -217,12 +217,14 @@ gh_env_secret() {
     SKIPPED+=("GitHub environment secret $1: gh secret set $1 --env production")
   fi
 }
+# gh_env_var NAME VALUE [REPO]: a variable in the production environment of REPO (default: this repo).
 gh_env_var() {
-  if gh variable set "$1" --env production --body "$2" >/dev/null; then
-    printf '  %s✓ set%s GitHub variable %s (production environment)\n' "$GREEN" "$RESET" "$1"
+  local repo=(); [[ -n "${3:-}" ]] && repo=(--repo "$3")
+  if gh variable set "$1" --env production --body "$2" "${repo[@]}" >/dev/null; then
+    printf '  %s✓ set%s GitHub variable %s (production environment%s)\n' "$GREEN" "$RESET" "$1" "${3:+, $3}"
   else
     warn "gh could not set $1"
-    SKIPPED+=("GitHub environment variable $1: gh variable set $1 --env production --body <value>")
+    SKIPPED+=("GitHub environment variable $1: gh variable set $1 --env production ${3:+--repo $3 }--body <value>")
   fi
 }
 
@@ -394,11 +396,9 @@ phase_h3() {
   step "  watchdog-production: period 15 minutes, grace 30 minutes"
   step "  backup-weekly: period 7 days, grace 1 day"
   say "The ping URLs (https://hc-ping.com/<uuid>, on each check's page) are secrets. Wrangler asks for"
-  say "watchdog-dev's, then watchdog-production's;"
-  say "gh then asks for backup-weekly's."
+  say "watchdog-dev's, then watchdog-production's. backup-weekly's goes to the backup repo in phase h9."
   put_secret HEALTHCHECK_URL dev
   put_secret HEALTHCHECK_URL production
-  gh_env_secret HEALTHCHECK_BACKUP_URL
 
   stage "Cloudflare (H3d): the analytics token"
   say "The watchdog reads today's usage with a read-only token."
@@ -419,7 +419,7 @@ phase_h4() {
   ask AGE_PUBLIC_KEY "Paste the public key (age1...):"
   [[ "$AGE_PUBLIC_KEY" == age1* ]] || { warn "That doesn't look like an age public key; re-run this phase."; exit 1; }
   write_env AGE_PUBLIC_KEY "$AGE_PUBLIC_KEY"
-  gh_env_var AGE_PUBLIC_KEY "$AGE_PUBLIC_KEY"
+  gh_env_var AGE_PUBLIC_KEY "$AGE_PUBLIC_KEY" "$BACKUP_REPO"
   say "Tell the agent: \"H4 done\"."
 }
 
@@ -651,7 +651,8 @@ cf_token_active() {
 hc_ping_url() {
   local url
   read -r url || true
-  [[ "$url" == https://* ]]
+  # The workflow adds /fail itself; a trailing slash or a pasted /start, /fail makes Healthchecks answer 400.
+  [[ "$url" == https://* && "$url" != */ && "$url" != */start && "$url" != */fail ]]
 }
 
 # backup_latest_dispatch: the id of the newest manual run of the backup workflow, or nothing.
@@ -683,18 +684,18 @@ backup_run_production() {
 
 phase_h9() {
   need_gh
-  BACKUP_TOKEN_PERMISSION=$(_existing BACKUP_TOKEN_PERMISSION || printf 'D1 Read')
+  BACKUP_TOKEN_PERMISSION=$(_existing BACKUP_TOKEN_PERMISSION || printf 'D1 Edit')
 
   stage "Cloudflare: the backup's own token"
   say "The backup gets its own token, D1 only: the deploy's token can also put a Worker on the account."
   if confirm "Is the token bd-beads-backup already made (an earlier run)?"; then
     say "Kept as it is ($BACKUP_TOKEN_PERMISSION)."
   else
-    BACKUP_TOKEN_PERMISSION="D1 Read"
+    BACKUP_TOKEN_PERMISSION="D1 Edit"
     open_url "https://dash.cloudflare.com/profile/api-tokens"
     step "Create Token → Create Custom Token. Name it bd-beads-backup."
-    step "Permissions: Account → D1 → Read. Nothing else."
-    note "Cloudflare's docs don't say whether an export needs Read or Edit; stage 3 tries Read and says if Edit is needed."
+    step "Permissions: Account → D1 → Edit. Nothing else."
+    note "Edit, not Read: an export fails with Authentication error 10000 on D1 Read (tried 2026-11-22)."
     step "Account Resources: Include → this one account only. No IP filter (GitHub's runners), no expiry."
     step "Create it and keep its page open: the next stage asks for it."
     pause "Token created and visible? Press Enter."
@@ -721,13 +722,10 @@ phase_h9() {
   until backup_run_production; do
     warn "The run failed. The end of its failed steps' log:"
     gh run view "$BACKUP_RUN_ID" --repo "$BACKUP_REPO" --log-failed | tail -n 30 || true
-    if [[ "$BACKUP_TOKEN_PERMISSION" == "D1 Read" ]] &&
-      confirm "Does the export fail on the token's rights (Authentication error, or not authorized)?"; then
-      open_url "https://dash.cloudflare.com/profile/api-tokens"
-      step "bd-beads-backup → Edit: Account → D1 → Edit instead of Read. Save. The token's value stays the same."
-      pause "Saved? Press Enter to run again."
-      BACKUP_TOKEN_PERMISSION="D1 Edit"
-      write_env BACKUP_TOKEN_PERMISSION "$BACKUP_TOKEN_PERMISSION"
+    if confirm "Does only the Healthchecks ping fail (error 400 or 404)? Then fix its URL and run again."; then
+      open_url "https://healthchecks.io/"
+      step "Open backup-weekly and copy its ping URL exactly: https://hc-ping.com/..., no trailing slash."
+      backup_secret HEALTHCHECK_BACKUP_URL "Paste the ping URL (hidden):" hc_ping_url
     else
       write_env BACKUP_RUN failed
       warn "Tell the agent the run failed (run $BACKUP_RUN_ID); it reads the log itself."
