@@ -8,7 +8,8 @@ import NamesSection from './NamesSection.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { projectNameOf } from '../../domain/layerRecord'
 import type { SinceFile } from '../../domain/beadsSinceFile'
-import { plural } from '../../i18n/plural'
+import { saveReminderMeta } from '../../i18n/saveReminderWords'
+import AppTooltip from '../ui/AppTooltip.vue'
 
 // The head of the Project panel, always shown (ProjectPanel card, ticket 554): the `project:` title with the local save
 // state, the Project's name and maker. Each layer's Technique is in its Layer settings (ticket 0670). It only asks.
@@ -20,15 +21,13 @@ const props = defineProps<{
   referenceNotSaved?: boolean
   /** The Project is open in another tab (ticket 0937): nothing drawn here is saved. */
   openElsewhere?: boolean
-  /** The save reminder, moved here from the canvas (ticket 1192): what the Project file is behind by. */
-  saveNote?: SinceFile
+  /** The open Project's Beads since last file (ticket 1192): its Project file's state, under the save state. */
+  sinceFile?: SinceFile
 }>()
 const emit = defineEmits<{
   rename: [name: string]
   'save-maker-name': [name: string]
   save: []
-  'save-project-file': []
-  'dismiss-save-note': []
 }>()
 
 const { t, locale } = useI18n()
@@ -46,13 +45,10 @@ const stateText = computed(() =>
       : fillBlanks(t.value.panels.project.notSaved, { reason: t.value.panels.project.saveRefused }),
 )
 
-const noteText = computed(() =>
-  props.saveNote === undefined
-    ? ''
-    : props.saveNote.lastFileAt === undefined
-      ? t.value.saveReminder.noFileWhy
-      : plural(locale.value, props.saveNote.beads, t.value.saveReminder.since),
-)
+const since = computed<SinceFile>(() => props.sinceFile ?? { beads: 0 })
+/** The Project file holds every bead: one was saved and nothing was drawn since. A status, never a button. */
+const fileSaved = computed(() => since.value.lastFileAt !== undefined && since.value.beads === 0)
+const fileMeta = computed(() => saveReminderMeta(t.value.saveReminder, locale.value, since.value, Date.now()))
 </script>
 
 <template>
@@ -71,12 +67,22 @@ const noteText = computed(() =>
       </div>
     </div>
 
-    <!-- The save reminder after its while on the canvas (ticket 1192): in the save state's own style, then the cross and the save icon. -->
-    <div v-if="saveNote" class="project-head__state project-head__note" data-testid="save-note">
-      <p class="project-head__text" data-testid="save-note-text">{{ noteText }}</p>
-      <IconButton variant="plain" icon="close" :label="t.saveReminder.dismiss" tooltip data-testid="save-note-dismiss" @click="emit('dismiss-save-note')" />
-      <IconButton variant="plain" icon="save" :label="t.saveReminder.label" tooltip data-testid="save-note-save" @click="emit('save-project-file')" />
-    </div>
+    <!-- The Project file's state (ticket 1192), in the save state's own style: a tick or a cross, the why in its Tooltip. -->
+    <AppTooltip class="project-head__file-tip" :name="t.panels.project.savedDevice" :body="t.saveReminder.body" :meta="fileMeta" :announce="false">
+      <div
+        class="project-head__state project-head__file"
+        :class="{ 'project-head__state--unsaved': !fileSaved }"
+        role="img"
+        tabindex="0"
+        :aria-label="fileSaved ? t.panels.project.savedDevice : t.panels.project.notSavedDevice"
+        data-testid="file-state"
+      >
+        <p class="project-head__text" aria-hidden="true">{{ t.panels.project.savedDevice }}</p>
+        <span class="project-head__icon" aria-hidden="true">
+          <AppIcon :name="fileSaved ? 'check' : 'close'" :size="16" :data-testid="fileSaved ? 'file-state-tick' : 'file-state-cross'" />
+        </span>
+      </div>
+    </AppTooltip>
 
     <NamesSection
       class="project-head__lines"
@@ -152,8 +158,17 @@ const noteText = computed(() =>
   border-radius: var(--radius-full);
 }
 
-.project-head__note {
-  justify-content: flex-end;
+.project-head__file-tip {
+  align-self: flex-end;
+}
+
+.project-head__file {
+  border-radius: var(--radius-sm);
+}
+
+.project-head__file:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .project-head__lines {

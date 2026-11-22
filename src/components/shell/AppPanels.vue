@@ -58,8 +58,7 @@ const {
   onSaveProjectFileAs,
   canSaveAs,
   lastFileName,
-  saveNote,
-  onDismissSaveNote,
+  sinceFile,
   onExportLibraryFile,
   saveNow,
   onSaveMakerName,
@@ -236,11 +235,10 @@ const chosenStarter = ref<StarterId>()
       :open-elsewhere="openElsewhere"
       :reference="referencePanel"
       :last-file-name="lastFileName"
-      :save-note="saveNote"
+      :since-file="sinceFile"
       :can-save-as="canSaveAs"
       :exporting="exporting"
       @rename="onRenameProject"
-      @dismiss-save-note="onDismissSaveNote"
       @pick-reference-image="referenceImage.pick($event, 'panel')"
       @set-reference-opacity="referenceImage.setOpacity"
       @remove-reference-image="referenceImage.requestRemove"

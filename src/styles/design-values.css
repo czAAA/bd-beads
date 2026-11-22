@@ -8,7 +8,8 @@
   --starter-hover-scale: 1.04; /* StarterGallery card: a card's picture under the pointer. */
   --starter-press-scale: 0.97; /* StarterGallery card: a card's picture while pressed. */
   --starter-picture-height: 280px; /* StarterGallery card: the setup's large live picture. */
-  --note-dot-size: 6px; /* Strip: the accent dot on Project while the save reminder waits in its panel. */
+  --note-dot-size: 6px; /* Strip: the accent dot on Project's icon, top-right, while the save reminder waits in its panel. */
+  --note-dot-icon: calc(15rem / 16); /* Strip: the Project icon's 15px box (in rem, as AppIcon draws it) the dot sits on the corner of. */
   --starter-size-dot: 5px; /* StarterGallery card: the dot on the chip of the design's own size. */
   --convert-preview-phone: 300px; /* PhoneForms card: the converter's preview above the step on a phone, at most (it gives way to the step). Goes with ticket 0911 (DS-4). */
   --convert-preview-min: 160px; /* PhoneForms card: the least the preview keeps above the step; from ticket 0911 (DS-4) the beads at a sheet's full detent. */
