@@ -66,6 +66,10 @@ const EXPANDED_FIT_PASSES = 6
 const LEAVES_EXPANDED_UNDER = 0.95
 /** How long a wheel or button zoom stays still before it counts as at rest (ticket 1194). */
 const ZOOM_REST_MS = 150
+/** How far two fingers carry an expanded Frame, in px on screen, before it counts as a pan by hand and goes back to the
+ * Canvas, unless their spread has zoomed it by this share or more meanwhile (a pinch zoom carries its fingers along). */
+const PAN_LEAVES_EXPANDED_PX = 24
+const PINCH_ZOOMS_PAST = 0.1
 /** How far past the expanded fit a zoom in may go, as a share of it. */
 const EXPANDED_ZOOM_IN_SHARE = 2
 /** A button's zoom step beyond the usual ceiling, where `stepZoom` stops. */
@@ -125,7 +129,8 @@ export interface CanvasViewOptions {
   expanded?: () => ((zoom: number, pitch: number) => Insets) | undefined
   /** The expanded fit's bead pitch on screen, in px, once worked out (ticket 1194): the sheet's numbers grow with it. */
   fitted?: (pitch: number) => void
-  /** A zoom out that rests under the expanded fit (ticket 1194): Back to the Canvas, announced as its button is. */
+  /** A zoom out that rests under the expanded fit (ticket 1194), or a move of the view by hand: Back to the Canvas,
+   * announced as its button is. */
   leaveExpanded?: () => void
 }
 
@@ -173,12 +178,18 @@ export function useCanvasView(
   /** The frame of the glide `bringIntoView` plays, until it lands or the view is moved some other way, and where to. */
   let glide: number | undefined
   let gliding: Scroll | undefined
+  /** Where `glideView` takes the view, while it does: a move by hand finishes the glide at once. */
+  let glidingView: ShownView | undefined
   /** The zoom of the expanded fit as it was last worked out (ticket 1194): where a zoom out leaves or springs back, and
    * what the zoom ceiling is while expanded. */
   let expandedFitZoom: number | undefined
   let restTimer: ReturnType<typeof setTimeout> | undefined
   /** Two fingers are still down on an expanded Frame: a zoom out waits for them to lift. */
   let pinching = false
+  /** The pinch under way as it found an expanded Frame: the zoom it began at and how far its fingers have carried the
+   * view since, and whether it went back to the Canvas, the rest of it then panning and turning at the zoom it went
+   * back to. */
+  let pinchOnExpanded: { from: number; travel: number; left: boolean } | undefined
 
   /** The Canvas's orientation as shown: the twist's while one runs, else the Project's. */
   const orientation = computed(() => twisting.value ?? orientationOf(currentProject()) ?? 0)
@@ -350,9 +361,29 @@ export function useCanvasView(
     return { zoom: zoom.value, middle: { x: at.x + viewport.value.width / 2, y: at.y + viewport.value.height / 2 } }
   }
 
-  /** Moves the canvas under the viewport by a distance on screen (a drag, a wheel): the content follows the pointer,
-   * so the scroll goes the other way. */
+  /** A move of the view by hand while the Frame is expanded (a drag, a scroll, a two-finger pan or twist, Rotate
+   * canvas): Back to the Canvas first, at once rather than gliding, for the move to go on from there. Whether it was. */
+  function leaveByHand(): boolean {
+    if (!options.expanded?.()) return false
+    options.leaveExpanded?.()
+    const to = glidingView
+    if (to) {
+      stopGlide()
+      zoom.value = to.zoom
+      scroll.value = to.scroll
+    }
+    return true
+  }
+
+  /** Moves the canvas under the viewport by a distance on screen by hand (a drag, the Hand tool, a wheel): the content
+   * follows the pointer, so the scroll goes the other way. An expanded Frame goes back to the Canvas first. */
   function panBy(dx: number, dy: number): void {
+    leaveByHand()
+    carryBy(dx, dy)
+  }
+
+  /** Moves the canvas as `panBy` does, the Frame staying expanded: the edge scroll a drag near the edge carries. */
+  function carryBy(dx: number, dy: number): void {
     stopGlide()
     const across = leaning.value.unturned({ x: dx, y: dy })
     scroll.value = { x: scroll.value.x - across.x, y: scroll.value.y - across.y }
@@ -379,6 +410,7 @@ export function useCanvasView(
     if (glide !== undefined) cancelAnimationFrame(glide)
     glide = undefined
     gliding = undefined
+    glidingView = undefined
   }
 
   /** Moves the view to a zoom and a scroll together, eased over the base duration, or at once under reduced motion or
@@ -393,6 +425,7 @@ export function useCanvasView(
       return
     }
     gliding = to.scroll
+    glidingView = to
     let start: number | undefined
     const step = (time: number) => {
       start ??= time
@@ -401,7 +434,10 @@ export function useCanvasView(
       zoom.value = done ? to.zoom : from.zoom + (to.zoom - from.zoom) * eased
       scroll.value = done ? to.scroll : { x: from.scroll.x + (to.scroll.x - from.scroll.x) * eased, y: from.scroll.y + (to.scroll.y - from.scroll.y) * eased }
       if (!done) glide = requestAnimationFrame(step)
-      else glide = gliding = undefined
+      else {
+        glide = gliding = undefined
+        glidingView = undefined
+      }
     }
     glide = requestAnimationFrame(step)
   }
@@ -513,9 +549,11 @@ export function useCanvasView(
   /** Two fingers moved (tickets 0672, 0709): the bead under them follows them, their spread zooms about it and, once
    * the twist has engaged, the Canvas turns about it, in one move of the view. */
   function pinchStep({ zoom: toZoom, pan, turn, anchor, target }: PinchStep): void {
+    twistTarget ??= turn === undefined ? undefined : (target ?? 'canvas')
+    if (options.expanded?.()) leaveByFingers(toZoom, pan, turn === undefined ? undefined : twistTarget)
     stopGlide()
     let at = scroll.value
-    const next = toZoom === undefined ? zoom.value : limitZoom(toZoom)
+    const next = toZoom === undefined || pinchOnExpanded?.left ? zoom.value : limitZoom(toZoom)
     if (next !== zoom.value) {
       if (options.expanded?.()) pinching = true
       // The spread zooms about where the fingers were before this step's move, which the move then carries along.
@@ -527,7 +565,6 @@ export function useCanvasView(
       const across = leaning.value.unturned(pan)
       at = { x: at.x - across.x, y: at.y - across.y }
     }
-    twistTarget ??= turn === undefined ? undefined : (target ?? 'canvas')
     if (turn !== undefined && twistTarget === 'frame') {
       // The Frame turns about its own centre, which stays on the table: only its angle changes.
       frameTwisting.value = turnedOrientation(frameTwisting.value ?? frameAngleOf(currentProject()!), turn)
@@ -546,9 +583,23 @@ export function useCanvasView(
     isAtFit.value = false
   }
 
+  /** A pinch step on the expanded Frame: a twist of the Canvas, or fingers that carry it farther than their spread
+   * zooms it, go back to the Canvas; a twist of the Frame stays. */
+  function leaveByFingers(toZoom: number | undefined, pan: Scroll | undefined, twisted: TwistTarget | undefined): void {
+    const pinch = (pinchOnExpanded ??= { from: zoom.value, travel: 0, left: false })
+    pinch.travel += pan ? Math.hypot(pan.x, pan.y) : 0
+    if (twisted === 'frame') return
+    const spread = toZoom === undefined ? 0 : Math.abs(toZoom / pinch.from - 1)
+    const pans = pinch.travel > PAN_LEAVES_EXPANDED_PX && spread < PINCH_ZOOMS_PAST
+    if (twisted !== 'canvas' && !pans) return
+    pinch.left = leaveByHand()
+    pinching = false
+  }
+
   /** The fingers lifted (a point of the viewport): the twist comes to rest about them, easing onto a quarter turn
    * within about 10° of it, and the Project keeps the angle once it has. */
   function endTwist(anchor?: Scroll): void {
+    pinchOnExpanded = undefined
     if (pinching) {
       pinching = false
       restSoon(0)
@@ -657,6 +708,7 @@ export function useCanvasView(
    * view's scroll over the table kept; how far its origin moved on the table, in its bead widths, for the Project to
    * keep with the new angle. No refit: nothing but the Canvas turns. */
   function turnCanvas(to: number): Scroll {
+    leaveByHand()
     const before = { ...canvasOrigin.value }
     stopGlide()
     scroll.value = turnedAbout(scroll.value, orientation.value, to)
@@ -737,6 +789,7 @@ export function useCanvasView(
     fit,
     showView,
     panBy,
+    carryBy,
     scrollBy,
     centreOn,
     bringIntoView,

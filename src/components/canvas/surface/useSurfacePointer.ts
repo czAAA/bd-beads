@@ -44,6 +44,8 @@ export interface SurfacePointerEvents {
   'hover-end': []
   /** The canvas was dragged by this many px (the Hand tool, the middle button, a right-button drag). */
   pan: [dx: number, dy: number]
+  /** A drag held near the edge carried the canvas this many px along (the edge scroll): not a move by hand. */
+  carry: [dx: number, dy: number]
   /** The wheel or a trackpad scrolled the canvas by this many px. */
   scroll: [dx: number, dy: number]
   /** Ctrl/⌘ + wheel (or a trackpad pinch) asked to change the zoom by this factor about a point of the viewport. */
@@ -732,7 +734,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     const point = pointInDrawing(heldPointer)
     const { dx, dy } = edgeScrollStep(pointOnScreen(heldPointer), size.value, onGlass(heldPointer.pointerType))
     if (dx !== 0 || dy !== 0) {
-      emit('pan', -dx, -dy)
+      emit('carry', -dx, -dy)
       // After the parent has applied the pan, so the cell under the still pointer is the new one.
       void nextTick(() => followHeldDrag(point))
     }

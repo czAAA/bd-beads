@@ -230,13 +230,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, lineUpFrame, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
+  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, carryBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, lineUpFrame, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned, moved) => rotateCanvasFlow.onTwistCanvas(turned, moved),
       keepFrameTwist: (angle) => rotateFrameFlow.onTwistFrame(angle),
       compact: typeof window === 'undefined' ? undefined : useMediaQuery(UNDER_TABLET_QUERY),
-      backByZoom: () => void backToCanvas(),
+      backByHand: () => void backToCanvas(),
       // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879); at the plain
       // address, the view the tab left its Project at, for a reload (ticket 1108).
       opening: openingAddress.project
@@ -1250,6 +1250,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** How many times a confirmed Remove frame has dropped the Frame's beads, which it is seen dropping by (ticket 1189). */
       frameDrops: frameFlow.frameDrops,
       panBy,
+      carryBy,
       /** The bead in the middle of the view: what the Homepage's demo opens the editor on (ticket 0879). */
       visibleCentre,
       scrollBy,

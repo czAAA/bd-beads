@@ -97,6 +97,7 @@ const {
   onRedo,
   onOpenFeedback,
   panBy,
+  carryBy,
   scrollBy,
   setZoom,
   zoomIn,
@@ -553,6 +554,7 @@ const drawingStyle = computed(() => {
                 @cell-hover="onCellHover"
                 @hover-end="onHoverEnd"
                 @pan="panBy"
+                @carry="carryBy"
                 @scroll="scrollBy"
                 @zoom-by="(factor, anchor) => setZoom(zoom * factor, anchor)"
                 @frame-press="onFramePress"
