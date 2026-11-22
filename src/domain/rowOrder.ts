@@ -68,6 +68,9 @@ function mirrorLine(line: number, lines: number, reversed: boolean | undefined):
   return reversed ? lines - 1 - line : line
 }
 
+/** A stagger's cycle holds a shifted and an unshifted block of Drop lines. */
+const DROP_BLOCKS_A_CYCLE = 2
+
 /** The rows Row order (ticket 347): a Frame without a shape woven line by line in its Weave's passes, loom and brick stitch
  * one pass a line, peyote two after the first. */
 export function rowsOrder(weave: Weave & { rows: number; columns: number }, { direction, reversed }: RowWay): RowOrder {
@@ -76,6 +79,35 @@ export function rowsOrder(weave: Weave & { rows: number; columns: number }, { di
   const length = columnWise ? weave.rows : weave.columns
   const description = describeWeave(weave)
   const passes = description.passes
+  // A Drop of N on rows that stagger (brick stitch): the N rows of a block are woven in one pass, the blocks kept
+  // whole from the stagger's own top, so woven from the far end the first pass may hold fewer rows.
+  const staggeredRows = !columnWise && description.shifted && description.staggers === 'rows' && !description.twoPasses
+  const block = staggeredRows ? description.rowCycle / DROP_BLOCKS_A_CYCLE : 1
+  if (block > 1) {
+    const blockOf = (weaving: number) => Math.floor(mirrorLine(weaving, lines, reversed) / block)
+    const passOfLine: number[] = []
+    const firstLines: number[] = []
+    for (let weaving = 0; weaving < lines; weaving += 1) {
+      if (weaving === 0 || blockOf(weaving) !== blockOf(weaving - 1)) firstLines.push(weaving)
+      passOfLine.push(firstLines.length - 1)
+    }
+    const dropCount = firstLines.length
+    return {
+      turns: true,
+      count: dropCount,
+      passAt: ({ row }) => passOfLine[mirrorLine(row, lines, reversed)] ?? dropCount,
+      positionsOf: (pass) => {
+        if (pass < 0 || pass >= dropCount) return []
+        const end = firstLines[pass + 1] ?? lines
+        const positions: GridPosition[] = []
+        for (let weaving = firstLines[pass]!; weaving < end; weaving += 1) {
+          for (let column = 0; column < length; column += 1) positions.push({ row: mirrorLine(weaving, lines, reversed), column })
+        }
+        return positions
+      },
+      lineOf: (pass) => mirrorLine(firstLines[pass] ?? 0, lines, reversed),
+    }
+  }
   const count = passes.count(lines, direction)
   return {
     turns: true,
