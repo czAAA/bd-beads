@@ -36,6 +36,8 @@ const props = defineProps<{
   lastFileName?: string
   /** The open Project's Beads since last file (ticket 1192): the head says whether its Project file holds them all. */
   sinceFile?: SinceFile
+  /** The save ring has moved off the Canvas into the head: a Save Project file button sits after the cross. */
+  saveReminder?: boolean
   /** Save as is offered only where the browser can link a file (ADR 0090). */
   canSaveAs?: boolean
   /** A PNG or PDF is being drawn (ticket 1058): the unfolded export rows wait, as in the Export panel. */
@@ -94,9 +96,11 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       :reference-not-saved="reference?.notSaved"
       :open-elsewhere="openElsewhere"
       :since-file="sinceFile"
+      :save-reminder="saveReminder"
       @rename="emit('rename', $event)"
       @save-maker-name="emit('save-maker-name', $event)"
       @save="emit('save')"
+      @save-project-file="emit('save-project-file')"
     />
 
     <PanelSection id="project:canvas" :label="canvasLabel" :summary="canvasSummary">

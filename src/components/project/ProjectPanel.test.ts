@@ -300,4 +300,12 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(row().attributes('aria-label')).toBe(en.panels.project.savedDevice)
     expect(row().find('[data-testid="file-state-tick"]').exists()).toBe(true)
   })
+
+  it('offers Save Project file just after the cross once the save ring has left the Canvas', async () => {
+    const wrapper = mountPanel()
+    expect(wrapper.find('[data-testid="save-reminder-in-panel"]').exists()).toBe(false)
+    await wrapper.setProps({ saveReminder: true })
+    await wrapper.get('[data-testid="save-reminder-in-panel"]').trigger('click')
+    expect(wrapper.emitted('save-project-file')).toHaveLength(1)
+  })
 })

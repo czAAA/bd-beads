@@ -9,6 +9,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { projectNameOf } from '../../domain/layerRecord'
 import type { SinceFile } from '../../domain/beadsSinceFile'
 import { saveReminderMeta } from '../../i18n/saveReminderWords'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import AppTooltip from '../ui/AppTooltip.vue'
 
 // The head of the Project panel, always shown (ProjectPanel card, ticket 554): the `project:` title with the local save
@@ -23,14 +24,18 @@ const props = defineProps<{
   openElsewhere?: boolean
   /** The open Project's Beads since last file (ticket 1192): its Project file's state, under the save state. */
   sinceFile?: SinceFile
+  /** The save ring has left the Canvas (SaveReminder card): its Save Project file button sits just after the cross. */
+  saveReminder?: boolean
 }>()
 const emit = defineEmits<{
   rename: [name: string]
   'save-maker-name': [name: string]
   save: []
+  'save-project-file': []
 }>()
 
 const { t, locale } = useI18n()
+const saveFile = controlAction('save-project-file')
 
 const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved || props.referenceNotSaved || props.openElsewhere ? 'unsaved' : 'saved'))
 const stateText = computed(() =>
@@ -68,21 +73,24 @@ const fileMeta = computed(() => saveReminderMeta(t.value.saveReminder, locale.va
     </div>
 
     <!-- The Project file's state (ticket 1192), in the save state's own style: a tick or a cross, the why in its Tooltip. -->
-    <AppTooltip class="project-head__file-tip" :name="t.panels.project.savedDevice" :body="t.saveReminder.body" :meta="fileMeta" :announce="false">
-      <div
-        class="project-head__state project-head__file"
-        :class="{ 'project-head__state--unsaved': !fileSaved }"
-        role="img"
-        tabindex="0"
-        :aria-label="fileSaved ? t.panels.project.savedDevice : t.panels.project.notSavedDevice"
-        data-testid="file-state"
-      >
-        <p class="project-head__text" aria-hidden="true">{{ t.panels.project.savedDevice }}</p>
-        <span class="project-head__icon" aria-hidden="true">
-          <AppIcon :name="fileSaved ? 'check' : 'close'" :size="16" :data-testid="fileSaved ? 'file-state-tick' : 'file-state-cross'" />
-        </span>
-      </div>
-    </AppTooltip>
+    <div class="project-head__file-row">
+      <AppTooltip class="project-head__file-tip" :name="t.panels.project.savedDevice" :body="t.saveReminder.body" :meta="fileMeta" :announce="false">
+        <div
+          class="project-head__state project-head__file"
+          :class="{ 'project-head__state--unsaved': !fileSaved }"
+          role="img"
+          tabindex="0"
+          :aria-label="fileSaved ? t.panels.project.savedDevice : t.panels.project.notSavedDevice"
+          data-testid="file-state"
+        >
+          <p class="project-head__text" aria-hidden="true">{{ t.panels.project.savedDevice }}</p>
+          <span class="project-head__icon" aria-hidden="true">
+            <AppIcon :name="fileSaved ? 'check' : 'close'" :size="16" :data-testid="fileSaved ? 'file-state-tick' : 'file-state-cross'" />
+          </span>
+        </div>
+      </AppTooltip>
+      <IconButton v-if="saveReminder" variant="plain" :icon="saveFile.icon" :label="saveFile.name(t)" tooltip data-testid="save-reminder-in-panel" @click="emit('save-project-file')" />
+    </div>
 
     <NamesSection
       class="project-head__lines"
@@ -158,8 +166,11 @@ const fileMeta = computed(() => saveReminderMeta(t.value.saveReminder, locale.va
   border-radius: var(--radius-full);
 }
 
-.project-head__file-tip {
-  align-self: flex-end;
+.project-head__file-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-4);
 }
 
 .project-head__file {
