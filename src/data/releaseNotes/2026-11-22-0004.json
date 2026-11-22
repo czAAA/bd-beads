@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "fixed",
+  "line": {
+    "en": "A refreshed page opens on the color you last painted with, not the first swatch",
+    "ru": "После обновления страницы открывается цвет, которым вы рисовали последним, а не первый образец",
+    "uk": "Після оновлення сторінки відкривається колір, яким ви малювали останнім, а не перший зразок",
+    "be": "Пасля абнаўлення старонкі адкрываецца колер, якім вы малявалі апошнім, а не першы ўзор",
+    "zh": "刷新页面后会回到你上次使用的颜色，而不是第一个色块",
+    "es": "Al recargar la página se abre con el último color que usaste, no con la primera muestra",
+    "pl": "Odświeżona strona otwiera się z kolorem, którym malowano ostatnio, a nie z pierwszą próbką"
+  }
+}
