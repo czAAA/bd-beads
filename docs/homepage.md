@@ -45,7 +45,11 @@ The Homepage card (`docs/design/system/components/Homepage/README.md`) describes
   title (`homepageTitle`, which the tab shows too), the description and the copy a new visitor sees, from the functions
   the sections draw from (`welcomePromises`, `insideChapters`, `freeListGroups`), and the build writes them into
   `index.html` (`vite.crawler.ts`; `docs/deploy.md`, What crawlers read). A section's new copy reaches the page only
-  when `pageCopy.ts` takes it, and only copy the drawn page shows belongs there.
+  when `pageCopy.ts` takes it, and only copy the drawn page shows belongs there. It also carries the drawn
+  page's links (`links`: the editor, the source, every change, Buy me a coffee; the build adds the addresses,
+  `linkAddress`) and the names of What's inside's rows (`features`, the data's `featureList`); the data names the
+  Welcome picture and the two editor screenshots too (ticket 1203). A link goes into `links` only when the drawn
+  page has it.
 - Each language has its own addresses (ticket 1053): `/ru/` is the Homepage and `/ru/app/` the editor in Russian, built
   by `vite.crawler.ts` for every language (`docs/deploy.md`, What crawlers read). `i18n/addressLocale.ts` reads the
   code: `followAddressLocale`, called by `homepage/homepage.ts` and `main.ts` before the language loads, makes it the

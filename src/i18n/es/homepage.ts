@@ -2,7 +2,7 @@ import type { HomepageTranslations } from '../translations/homepage'
 
 export const homepage: HomepageTranslations = {
   homepage: {
-    pageTitle: 'Creador gratis de patrones de cuentas: telar, peyote, punto ladrillo',
+    pageTitle: 'Patrones de cuentas gratis: telar, peyote, ladrillo',
     description: 'Creador gratis de patrones de cuentas para telar, peyote y punto ladrillo. Convierte una foto en patrón, cuenta cada color y marca las filas hechas. Sin cuenta.',
     makeFirstProject: 'Crea tu primer proyecto',
     openEditor: 'Abrir el editor',

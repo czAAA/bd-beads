@@ -2,7 +2,7 @@ import type { HomepageTranslations } from '../translations/homepage'
 
 export const homepage: HomepageTranslations = {
   homepage: {
-    pageTitle: 'Darmowy kreator wzorów koralikowych: krosno, peyote, ścieg ceglasty',
+    pageTitle: 'Wzory koralikowe za darmo: krosno, peyote, ceglasty',
     description: 'Darmowy kreator wzorów koralikowych na krosno, peyote i ścieg ceglasty. Zamień zdjęcie we wzór, policz każdy kolor, zaznaczaj utkane rzędy. Bez konta.',
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',
