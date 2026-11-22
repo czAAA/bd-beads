@@ -218,7 +218,7 @@ const FRAME_SHAPES: Readonly<Record<FrameShapeId, FrameShape>> = {
     sides: { left: 'topWidth', right: 'topWidth', top: 'topRows', bottom: 'fringeLength' },
     settle: settledFringe,
     renamed: (before, after, weave, side) => fringeRenamed(before as FringeSettings, after as FringeSettings, fringeTopOf(weave), side),
-    layout: (settings, _depth, weave) => fringeLayout(settings as FringeSettings, fringeTopOf(weave)),
+    layout: (settings, depth, weave) => fringeLayout(settings as FringeSettings, fringeTopOf(weave), depth),
     followsWeave: true,
   }),
 }

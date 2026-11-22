@@ -392,8 +392,11 @@ const STRAND_ROW = 1000
  * as the body grows under it. */
 const BODY_ROW = -1000
 
-/** How far below the base row the strands hang, past touching, so the Seam between them shows. */
-const FRINGE_GAP = 0.25
+/** How far below the base row the strands hang, past touching, so the Seam between them shows: as tall as the gap a
+ * row of a bead shallower than it is wide used to leave under itself (ticket 1199), in bead widths. */
+function fringeGap(depth: number): number {
+  return 1 - Math.min(depth, 1)
+}
 
 /** How long a strand is (StarterGallery card): the Fringe length straight; in a V the middle one or pair the Fringe
  * length, two beads shorter a strand out from the middle, and never less than one bead. */
@@ -432,18 +435,18 @@ export function fringePointRows(topWidth: number, top: FringeTop = BRICK_TOP): n
 /** A row-woven top (ticket 0814): its body's rows from the base up, brick stitch's alternating the Width and a bead
  * fewer half a bead in a block of Drop rows at a time, loom's all the Width; then its point, a brick block or loom row
  * at a time a stitch shorter on each side, half a bead in or a bead in. Each bead with the height its column hangs at. */
-function rowsTop({ topWidth, topRows }: FringeSettings, top: FringeTop, positions: LayoutPosition[]): number[] {
+function rowsTop({ topWidth, topRows }: FringeSettings, top: FringeTop, positions: LayoutPosition[], depth: number): number[] {
   const point = fringePointRows(topWidth, top)
   const body = Math.max(0, topRows - point)
   const shifted = top.lines === 'shiftedRows'
   for (let line = 0; line < body; line += 1) {
     const inset = shifted ? Math.floor(line / top.drop) % 2 : 0
-    for (let column = 0; column < topWidth - inset; column += 1) positions.push({ row: BODY_ROW + line, column, panel: 0, angle: 0, x: inset / 2 + column, y: -line })
+    for (let column = 0; column < topWidth - inset; column += 1) positions.push({ row: BODY_ROW + line, column, panel: 0, angle: 0, x: inset / 2 + column, y: -line * depth })
   }
   for (let row = 0; row < Math.min(topRows, point); row += 1) {
     const step = shifted ? Math.floor(row / top.drop) : row
     const beads = shifted ? topWidth - step : topWidth - 2 * step
-    for (let column = 0; column < beads; column += 1) positions.push({ row, column, panel: 0, angle: 0, x: (shifted ? step / 2 : step) + column, y: -(body + row) })
+    for (let column = 0; column < beads; column += 1) positions.push({ row, column, panel: 0, angle: 0, x: (shifted ? step / 2 : step) + column, y: -(body + row) * depth })
   }
   return Array.from({ length: topWidth }, () => 0)
 }
@@ -451,15 +454,15 @@ function rowsTop({ topWidth, topRows }: FringeSettings, top: FringeTop, position
 /** A peyote top (ticket 0814): its columns, every other block of Drop half a bead lower out from the middle one, each a
  * stitch shorter a block outwards; a column's beads named from its base up, the body's first, then the point's. Each
  * column's base height comes back, for its strand. */
-function columnsTop({ topWidth, topRows }: FringeSettings, top: FringeTop, positions: LayoutPosition[]): number[] {
+function columnsTop({ topWidth, topRows }: FringeSettings, top: FringeTop, positions: LayoutPosition[], depth: number): number[] {
   const point = fringePointRows(topWidth, top)
   const body = Math.max(0, topRows - point)
   const { middle } = peyoteBlocks(topWidth, top.drop)
   return Array.from({ length: topWidth }, (_unused, column) => {
     const out = Math.abs(Math.floor(column / top.drop) - middle)
-    const base = (out % 2) / 2
-    for (let line = 0; line < body; line += 1) positions.push({ row: BODY_ROW + line, column, panel: 0, angle: 0, x: column, y: base - line })
-    for (let row = 0; row < Math.min(topRows, point - out); row += 1) positions.push({ row, column, panel: 0, angle: 0, x: column, y: base - (body + row) })
+    const base = ((out % 2) / 2) * depth
+    for (let line = 0; line < body; line += 1) positions.push({ row: BODY_ROW + line, column, panel: 0, angle: 0, x: column, y: base - line * depth })
+    for (let row = 0; row < Math.min(topRows, point - out); row += 1) positions.push({ row, column, panel: 0, angle: 0, x: column, y: base - (body + row) * depth })
     return base
   })
 }
@@ -467,24 +470,25 @@ function columnsTop({ topWidth, topRows }: FringeSettings, top: FringeTop, posit
 /** A Fringe earring (tickets 0597, 0814): its top in brick stitch, loom or peyote, a strand hanging under each column of
  * its base, a Seam between. The top is a point tapering from the Width (cut off by fewer Top rows), over a full-width
  * body of the rest. Every bead lies upright. */
-export function fringeLayout(settings: FringeSettings, top: FringeTop = BRICK_TOP): FrameLayout {
+export function fringeLayout(settings: FringeSettings, top: FringeTop = BRICK_TOP, depth = 1): FrameLayout {
   const { topWidth, topRows, fringeStyle, fringeLength } = settings
-  return remembered(`fringe:${topWidth}:${topRows}:${fringeStyle}:${fringeLength}:${top.lines}:${top.drop}:${top.twoPasses}`, () => {
+  return remembered(`fringe:${topWidth}:${topRows}:${fringeStyle}:${fringeLength}:${top.lines}:${top.drop}:${top.twoPasses}:${depth}`, () => {
+    const gap = fringeGap(depth)
     const positions: LayoutPosition[] = []
-    const bases = top.lines === 'columns' ? columnsTop(settings, top, positions) : rowsTop(settings, top, positions)
+    const bases = top.lines === 'columns' ? columnsTop(settings, top, positions, depth) : rowsTop(settings, top, positions, depth)
     for (let strand = 0; strand < topWidth; strand += 1) {
       for (let bead = 0; bead < strandLength(settings, strand); bead += 1) {
-        positions.push({ row: STRAND_ROW + bead, column: strand, panel: strand + 1, angle: 0, x: strand, y: bases[strand]! + 1 + FRINGE_GAP + bead })
+        positions.push({ row: STRAND_ROW + bead, column: strand, panel: strand + 1, angle: 0, x: strand, y: bases[strand]! + depth + gap + bead * depth })
       }
     }
     const panels: LayoutPanel[] = [{ part: 0, order: 0 }, ...Array.from({ length: topWidth }, (_unused, strand) => ({ part: strand + 1, order: strand + 1, strand: true as const }))]
     const level = bases.every((base) => base === 0)
     // Under a peyote top the Seam steps with its columns' bases.
     const seams: (readonly [LayoutPoint, LayoutPoint])[] = level
-      ? [[{ x: -0.5, y: (1 + FRINGE_GAP) / 2 }, { x: topWidth - 0.5, y: (1 + FRINGE_GAP) / 2 }]]
-      : bases.map((base, column) => [{ x: column - 0.5, y: base + (1 + FRINGE_GAP) / 2 }, { x: column + 0.5, y: base + (1 + FRINGE_GAP) / 2 }] as const)
+      ? [[{ x: -0.5, y: (depth + gap) / 2 }, { x: topWidth - 0.5, y: (depth + gap) / 2 }]]
+      : bases.map((base, column) => [{ x: column - 0.5, y: base + (depth + gap) / 2 }, { x: column + 0.5, y: base + (depth + gap) / 2 }] as const)
     const lower = bases.flatMap((base, column) => (base > 0 ? [column] : []))
-    return boxed({ positions, panels, seams, beadDepth: 1, symmetry: MIRRORED_ACROSS, ...(top.twoPasses ? { twoPasses: { lower } } : {}) }, { x: (topWidth - 1) / 2, y: 0 })
+    return boxed({ positions, panels, seams, beadDepth: depth, symmetry: MIRRORED_ACROSS, ...(top.twoPasses ? { twoPasses: { lower } } : {}) }, { x: (topWidth - 1) / 2, y: 0 })
   })
 }
 

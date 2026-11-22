@@ -553,7 +553,8 @@ describe('a Fringe earring (ticket 0597)', () => {
   })
 
   it('is one part with its strands, a Seam between the top and the strands, and no joins', () => {
-    const layout = earring()
+    // A bead a row shallower than wide leaves the gap the Seam lies in.
+    const layout = fringeLayout({ topWidth: 8, topRows: 5, fringeStyle: 'straight', fringeLength: 12 }, undefined, 0.8)
     expect(layout.panels).toEqual([{ part: 0, order: 0 }, ...[1, 2, 3, 4, 5, 6, 7, 8].map((part) => ({ part, order: part, strand: true }))])
     expect(layout.joins).toEqual([])
     expect(layout.seams).toHaveLength(1)
@@ -567,6 +568,47 @@ describe('a Fringe earring (ticket 0597)', () => {
     sharesNothing(layout)
     liesInside(layout)
     expect(layoutPositionAt(layout, 0.71, layout.height - 0.71)).toBeUndefined()
+  })
+
+  describe('with its rows on the Bead\'s pitch (ticket 1199)', () => {
+    const deep = (depth: number, fringeTop?: FringeTop) => fringeLayout({ topWidth: 6, topRows: 7, fringeStyle: 'straight', fringeLength: 4 }, fringeTop, depth)
+    const tops = [
+      ['brick stitch', { lines: 'shiftedRows', drop: 1, twoPasses: false }],
+      ['loom', { lines: 'rows', drop: 1, twoPasses: false }],
+    ] as const
+
+    it.each(tops)('puts the rows of a %s top, and a strand\'s beads, a bead\'s depth apart, with nothing added', (_name, woven) => {
+      for (const depth of [0.8, 1, 1.4]) {
+        const layout = deep(depth, woven)
+        const column = (index: number) => layout.positions.filter((bead) => bead.panel === index).map(({ y }) => y).sort((a, b) => a - b)
+        const strand = column(1)
+        for (let bead = 1; bead < strand.length; bead += 1) expect(strand[bead]! - strand[bead - 1]!).toBeCloseTo(depth)
+        const rows = [...new Set(top(layout).map(({ y }) => y))].sort((a, b) => a - b)
+        for (let row = 1; row < rows.length; row += 1) expect(rows[row]! - rows[row - 1]!).toBeCloseTo(depth)
+        expect(layout.beadDepth).toBe(depth)
+      }
+    })
+
+    it('puts a peyote top\'s column beads a depth apart and its columns half a depth off each other', () => {
+      // A peyote top's Width is odd.
+      const layout = fringeLayout({ topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 4 }, { lines: 'columns', drop: 1, twoPasses: true }, 0.8)
+      const middle = top(layout).filter(({ column }) => column === 3).map(({ y }) => y).sort((a, b) => a - b)
+      for (let bead = 1; bead < middle.length; bead += 1) expect(middle[bead]! - middle[bead - 1]!).toBeCloseTo(0.8)
+      const base = (column: number) => Math.max(...top(layout).filter((bead) => bead.column === column).map(({ y }) => y))
+      expect(Math.abs(base(2) - base(3))).toBeCloseTo(0.4)
+    })
+
+    it('leaves between the top and its strands the gap a row used to leave, and none where rows never did', () => {
+      const gapOf = (depth: number) => {
+        const layout = deep(depth)
+        const base = Math.max(...top(layout).map(({ y }) => y))
+        const first = Math.min(...layout.positions.filter(({ panel }) => panel > 0).map(({ y }) => y))
+        return first - base - depth
+      }
+      expect(gapOf(0.8)).toBeCloseTo(0.2)
+      expect(gapOf(1)).toBeCloseTo(0)
+      expect(gapOf(1.4)).toBeCloseTo(0)
+    })
   })
 
   describe('with its top woven in another Technique (ticket 0814)', () => {
