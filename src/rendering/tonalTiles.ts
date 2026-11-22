@@ -1,5 +1,5 @@
 import { BLACK_WHITE_BALANCE, channelsOf, fromCielab, mix, relativeLuminance, toCielab, toHex } from '../domain/color'
-import type { DrawingContext, ProjectTheme } from './beadLook'
+import { RIM_PX, type DrawingContext, type ProjectTheme } from './beadLook'
 import { drawsDraft } from './draftRenderer'
 import { cachedSprite } from './sprites'
 
@@ -26,9 +26,6 @@ const GAP_TOWARD_TILE = 0.42
 /** How far the edge just inside a Frame's empty tile steps from the Frame's Background toward ink, in L*: twice the
  * tile's, so the 1.5px gap between two tiles in a row shows (an empty brick row read as one bar without it). */
 const TILE_EDGE_STEP_L = 2 * TILE_STEP_L
-
-/** How wide that edge is, in grid px: a flat bead's rim (beadLook.ts). */
-const TILE_EDGE_PX = 0.75
 
 const steppedColors = new Map<string, string>()
 
@@ -108,7 +105,8 @@ function addTilePath(context: DrawingContext, { x, y, width, height, cornerRadiu
   const inset = TILE_INSET_PX + further
   const [left, top] = [x + inset, y + inset]
   const [right, bottom] = [x + width - inset, y + height - inset]
-  const radius = Math.max(0, Math.min(Math.max(TILE_LEAST_CORNER_PX, cornerRadius) - further, (right - left) / 2, (bottom - top) / 2))
+  const corner = Math.max(TILE_LEAST_CORNER_PX, cornerRadius) - further
+  const radius = Math.max(0, Math.min(corner, (right - left) / 2, (bottom - top) / 2))
   context.moveTo(left + radius, top)
   context.arcTo(right, top, right, bottom, radius)
   context.arcTo(right, bottom, left, bottom, radius)
@@ -126,12 +124,12 @@ export function fillTiles(context: DrawingContext, cells: readonly TileCell[], c
   context.fill()
 }
 
-/** A tile in `color` with an edge TILE_EDGE_PX wide just inside it in `edge`. */
+/** A tile in `color` with an edge a flat bead's rim wide (RIM_PX) just inside it in `edge`. */
 function fillEdgedTile(context: DrawingContext, cell: TileCell, color: string, edge: string): void {
   fillTiles(context, [cell], color)
   context.beginPath()
   addTilePath(context, cell)
-  addTilePath(context, cell, TILE_EDGE_PX)
+  addTilePath(context, cell, RIM_PX)
   context.fillStyle = edge
   context.fill('evenodd')
 }

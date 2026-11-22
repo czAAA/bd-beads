@@ -259,8 +259,8 @@ export const BEAD_GAP_PX = 1
 /** How far a bead stands in from its cell on each side. */
 const GAP_PX = BEAD_GAP_PX / 2
 
-/** Width of the faint rim inside each bead's edge, in the Project's own px. */
-const RIM_PX = 0.75
+/** Width of the faint rim inside each bead's edge, in the Project's own px; a Frame's empty tile's edge too. */
+export const RIM_PX = 0.75
 
 /** Below this luma (0-255) a bead is near-black. */
 const NEAR_BLACK_LUMA = 45

@@ -520,7 +520,7 @@ describe('the Frame\'s empty positions', () => {
   it.each([
     ['dark', '#0b1d2a'],
     ['light', '#efe6d8'],
-  ] as const)('edges each %s tile in a color from the Frame\'s own Background, so a row of them never reads as one bar', (theme, background) => {
+  ] as const)('fills each tile and its edge in colors from the Frame\'s own Background, on a %s one', (theme, background) => {
     const fills = emptyFrameFills('brick', background, PROJECT_THEMES[theme])
     expect(fills).toContain(tileColorOf(background))
     expect(fills).toContain(tileEdgeColorOf(background))
