@@ -32,6 +32,7 @@ function firstWindow(page: Page) {
       names: controls.map((element) => element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName),
       cut: controls.filter((element) => element.getBoundingClientRect().bottom > window.innerHeight + 0.5).map((element) => element.dataset.testid),
       columnOverflow: column.scrollHeight - column.clientHeight,
+      dbg: [...column.querySelectorAll<HTMLElement>("*")].filter((e) => e.getBoundingClientRect().height > 12).map((e) => `${e.dataset.testid ?? e.className}:${Math.round(e.getBoundingClientRect().height)}`).join(" | "),
     }
   })
 }
@@ -70,7 +71,7 @@ test.describe('Convert image layouts', () => {
       const colorsWrap = (await page.getByTestId('convert-result-colors').boundingBox())!.height - (await page.getByTestId('convert-result-size').boundingBox())!.height
       // The line under Colors says the beads are real and their colors approximate on a second line (ticket 0966).
       const matchedWrap = (await page.getByTestId('convert-matched').boundingBox())!.height / 2
-      if (viewport.width === 1440) expect(shown.columnOverflow).toBeLessThanOrEqual(lightingRow + colorsWrap + matchedWrap)
+      if (viewport.width === 1440) expect(shown.columnOverflow, shown.dbg).toBeLessThanOrEqual(lightingRow + colorsWrap + matchedWrap)
       const above = await page.getByTestId('convert-column').evaluate((column) => {
         column.scrollTop = column.scrollHeight
         const button = column.querySelector('[data-testid="convert-clean-up-button"]')!.getBoundingClientRect()
