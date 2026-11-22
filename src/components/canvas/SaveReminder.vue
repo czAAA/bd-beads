@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
-import { lastFileAgo } from '../../domain/beadsSinceFile'
-import { fillBlanks } from '../../domain/fillBlanks'
-import { groupThousands } from '../../domain/formatNumber'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { plural } from '../../i18n/plural'
+import { saveReminderMeta } from '../../i18n/saveReminderWords'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import { actionKey } from '../ui/controlAction'
@@ -31,14 +29,15 @@ const { t, locale } = useI18n()
 const save = controlAction('save-project-file')
 const countId = useId()
 
-const count = computed(() => groupThousands(props.beads, locale.value))
 /** What the count counts, said in the label itself (ticket 0858), not a bare "+n" read as "n beads not saved". While the
  * Project has never had a file, "since the last file" means nothing: the label says why to save instead (ticket 0987),
  * since on a coarse pointer the Tooltip that says it is a long-press away. */
 const countOrWhy = computed(() =>
   props.lastFileAt === undefined ? t.value.saveReminder.noFileWhy : plural(locale.value, props.beads, t.value.saveReminder.since),
 )
-const countLine = computed(() => fillBlanks(t.value.saveReminder.count, { count: count.value }))
+/** The Tooltip's quiet lines: the count, then the last file. */
+const meta = computed(() => saveReminderMeta(t.value.saveReminder, locale.value, { beads: props.beads, lastFileAt: props.lastFileAt }, Date.now()))
+const countLine = computed(() => meta.value[0])
 /** How wide the label may be: from the ring's right edge to 8px short of the screen's left edge, so it is never cut;
  * measured while it is open, again whenever the window is resized. A count with no room left on the line is left out,
  * so the label is as wide as the words it shows. */
@@ -73,11 +72,6 @@ watch(
   { immediate: true },
 )
 onBeforeUnmount(() => window.removeEventListener('resize', onResize))
-const lastLine = computed(() => {
-  if (props.lastFileAt === undefined) return t.value.saveReminder.noFile
-  const { value, unit } = lastFileAgo(props.lastFileAt, Date.now())
-  return fillBlanks(t.value.saveReminder.lastFile, { when: new Intl.RelativeTimeFormat(locale.value, { numeric: 'auto' }).format(value, unit) })
-})
 </script>
 
 <template>
@@ -87,7 +81,7 @@ const lastLine = computed(() => {
     :name="t.saveReminder.label"
     :hotkey="actionKey(save)"
     :body="t.saveReminder.body"
-    :meta="[countLine, lastLine]"
+    :meta="meta"
     align="end"
     :announce="false"
   >

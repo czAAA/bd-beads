@@ -83,6 +83,10 @@ export interface PanelsTranslations {
       makerLabel: string
       savedLocal: string
       notSavedYet: string
+      /** The Project file's state in the Project panel's head: its tick or cross says whether it holds every bead. */
+      savedDevice: string
+      /** What a screen reader hears for that row with the cross. */
+      notSavedDevice: string
       addMaker: string
       changeMaker: string
       beadBrand: string
