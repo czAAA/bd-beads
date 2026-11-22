@@ -176,6 +176,9 @@ export async function convertPicture(page: Page, buffer: Buffer): Promise<void> 
   await page.getByTestId('convert-image').click()
   await page.getByTestId('convert-choose-file').setInputFiles({ name: 'fixture.png', mimeType: 'image/png', buffer })
   await page.getByTestId('convert-image-canvas').waitFor()
+  // The colors are reduced off the main thread (ticket 1163): until they land the foot shows its loading line too, a line
+  // taller than the settled page, so a measure or screenshot taken then sees a page no person is left looking at.
+  await expect(page.getByTestId('convert-finding-colors')).toHaveCount(0)
 }
 
 /** Opens one of the Convert image column's popovers by its button (ticket 0896): Bead and Technique, Size or Colors. */
