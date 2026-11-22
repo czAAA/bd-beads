@@ -30,7 +30,7 @@ import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { unframedSchemas } from '../../domain/schemaTags'
-import { surfaceView, type Scroll, type SurfaceView, type SurfaceViewInput } from '../../rendering/surfaceView'
+import { surfaceView, type Region, type Scroll, type SurfaceView, type SurfaceViewInput } from '../../rendering/surfaceView'
 import type { TiltedView } from '../../rendering/tiltedView'
 import { canvasDrawing, frameDrawing, seamOf, type LayerDrawing } from '../../rendering/layerDrawings'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
@@ -270,22 +270,47 @@ const frameDrawn = computed<LayerDrawing>(() => {
 /** Whether the Frame is drawn as the Canvas is: one drawing, one view, as while the Canvas carries it. */
 const drawnAlike = computed(() => frameDrawn.value === canvasDrawn.value)
 
-/** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
- * agree with what is drawn. Its points are the Canvas drawing's; the Frame layer lies in it by its own transform. */
-const surface = computed(() => {
-  const canvas = canvasDrawn.value
-  const frame = frameDrawn.value
-  // Its margin sheet, as its own surface draws it, takes no press whatever lies under it (ticket 1188).
-  const sheet = drawnAlike.value ? undefined : marginSheetPx(withFrameLaidAt(props.project, frame.rotation))?.sheet
-  return viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn, drawnAlike.value ? undefined : { rotation: frame.rotation, scroll: frame.scroll, seam: seamOf(frame.leaning, canvas.leaning), sheet })
-})
 /** The view the Frame's own surface is drawn through: its drawing's points. */
-const frameSurface = computed(() => (drawnAlike.value ? surface.value : viewAt(frameDrawn.value.rotation, frameDrawn.value.scroll, frameDrawn.value.leaning.drawn)))
-const frameLeaning = computed(() => frameDrawn.value.leaning)
+const frameSurface = computed((): SurfaceView => viewAt(frameDrawn.value.rotation, frameDrawn.value.scroll, frameDrawn.value.leaning.drawn))
 /** The Project as the Frame's own surface draws it: its Frame on the grid of a Canvas at that surface's quarter turn,
  * which its margin sheet, rulers and title block are laid out on (ticket 1188). */
 const frameProject = computed(() => withFrameLaidAt(props.project, frameDrawn.value.rotation))
 
+/** The expanded Frame's slim sheet in the view's px (ticket 1169): round the Frame's line by what it holds. */
+const slimBox = computed(() => {
+  const frame = frameOf(props.project)
+  if (!props.slim || !frame) return undefined
+  const line = frameSurface.value.frameBox(frame)
+  const sides = slimSheetSides(props.slim, line.width, line.height)
+  return { x: line.x - sides.left, y: line.y - sides.top, width: line.width + sides.left + sides.right, height: line.height + sides.top + sides.bottom }
+})
+/** The slim sheet as the canvas draws it: its box in grid px, its corners in screen px. */
+const slimSheet = computed<SlimSheet | undefined>(() => {
+  const box = slimBox.value
+  if (!box || !props.slim) return undefined
+  const corners = [frameSurface.value.pointToGrid({ x: box.x, y: box.y }), frameSurface.value.pointToGrid({ x: box.x + box.width, y: box.y + box.height })]
+  const x = Math.min(corners[0]!.x, corners[1]!.x)
+  const y = Math.min(corners[0]!.y, corners[1]!.y)
+  const sheet = { x, y, width: Math.abs(corners[1]!.x - corners[0]!.x), height: Math.abs(corners[1]!.y - corners[0]!.y) }
+  return { sheet, radius: props.slim.compact ? MARGIN_PX.sheetRadius.compact : MARGIN_PX.sheetRadius.full }
+})
+
+/** The Frame's margin sheet in the Frame drawing's grid px, none without a Frame: the one box the sheet is drawn from,
+ * placed by and takes no press on. Expanded, the slim sheet. Read by `surface` only while the Frame is drawn apart, as
+ * `frameSurface` falls back to `surface` otherwise: read it from there and the two cycle. */
+const sheetGrid = computed((): Region | undefined => slimSheet.value?.sheet ?? marginSheetPx(frameProject.value)?.sheet)
+
+/** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
+ * agree with what is drawn. Its points are the Canvas drawing's; the Frame layer lies in it by its own transform. */
+const surface = computed((): SurfaceView => {
+  const canvas = canvasDrawn.value
+  const frame = frameDrawn.value
+  // Its margin sheet, as its own surface draws it, takes no press whatever lies under it (ticket 1188).
+  // Expanded, that is the slim sheet drawn in its place, not the 4-position one (a Canvas turned apart from the Frame).
+  const sheet = drawnAlike.value ? undefined : sheetGrid.value
+  return viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn, drawnAlike.value ? undefined : { rotation: frame.rotation, scroll: frame.scroll, seam: seamOf(frame.leaning, canvas.leaning), sheet })
+})
+const frameLeaning = computed(() => frameDrawn.value.leaning)
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
  * until it ends (ticket 0674). */
 const pieces = computed<RuledPieces>((previous) =>
@@ -421,32 +446,11 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-/** The expanded Frame's slim sheet in the view's px (ticket 1169): round the Frame's line by what it holds. */
-const slimBox = computed(() => {
-  const frame = frameOf(props.project)
-  if (!props.slim || !frame) return undefined
-  const line = frameSurface.value.frameBox(frame)
-  const sides = slimSheetSides(props.slim, line.width, line.height)
-  return { x: line.x - sides.left, y: line.y - sides.top, width: line.width + sides.left + sides.right, height: line.height + sides.top + sides.bottom }
-})
-/** The slim sheet as the canvas draws it: its box in grid px, its corners in screen px. */
-const slimSheet = computed<SlimSheet | undefined>(() => {
-  const box = slimBox.value
-  if (!box || !props.slim) return undefined
-  const corners = [frameSurface.value.pointToGrid({ x: box.x, y: box.y }), frameSurface.value.pointToGrid({ x: box.x + box.width, y: box.y + box.height })]
-  const x = Math.min(corners[0]!.x, corners[1]!.x)
-  const y = Math.min(corners[0]!.y, corners[1]!.y)
-  const sheet = { x, y, width: Math.abs(corners[1]!.x - corners[0]!.x), height: Math.abs(corners[1]!.y - corners[0]!.y) }
-  return { sheet, radius: props.slim.compact ? MARGIN_PX.sheetRadius.compact : MARGIN_PX.sheetRadius.full }
-})
-
-/** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. Expanded, the slim
- * sheet. */
+/** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. */
 function sheetIn(view: SurfaceView): { x: number; y: number; width: number; height: number } | undefined {
-  if (slimBox.value && view === frameSurface.value) return slimBox.value
-  const grid = marginSheetPx(frameProject.value)
+  const grid = sheetGrid.value
   if (!grid) return undefined
-  const corners = [view.gridToPoint(grid.sheet.x, grid.sheet.y), view.gridToPoint(grid.sheet.x + grid.sheet.width, grid.sheet.y + grid.sheet.height)]
+  const corners = [view.gridToPoint(grid.x, grid.y), view.gridToPoint(grid.x + grid.width, grid.y + grid.height)]
   return {
     x: Math.min(corners[0].x, corners[1].x),
     y: Math.min(corners[0].y, corners[1].y),
