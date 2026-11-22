@@ -1,13 +1,13 @@
 {
   "date": "2026-11-22",
-  "kind": "fixed",
+  "kind": "changed",
   "line": {
-    "en": "A refreshed page opens on the color you last painted with, not the first swatch",
-    "ru": "После обновления страницы открывается цвет, которым вы рисовали последним, а не первый образец",
-    "uk": "Після оновлення сторінки відкривається колір, яким ви малювали останнім, а не перший зразок",
-    "be": "Пасля абнаўлення старонкі адкрываецца колер, якім вы малявалі апошнім, а не першы ўзор",
-    "zh": "刷新页面后会回到你上次使用的颜色，而不是第一个色块",
-    "es": "Al recargar la página se abre con el último color que usaste, no con la primera muestra",
-    "pl": "Odświeżona strona otwiera się z kolorem, którym malowano ostatnio, a nie z pierwszą próbką"
+    "en": "The Project panel says with a check or a cross whether the Project file on this device holds every bead, and the save reminder's dot sits on the Project icon's corner",
+    "ru": "Панель Проекта галочкой или крестиком показывает, есть ли в файле проекта на этом устройстве все бусины, а точка напоминания о сохранении стоит в углу значка Проекта",
+    "uk": "Панель Проєкту галочкою або хрестиком показує, чи є у файлі проєкту на цьому пристрої всі бісерини, а крапка нагадування про збереження стоїть у куті значка Проєкту",
+    "be": "Панэль Праекта птушкай або крыжыкам паказвае, ці ёсць у файле праекта на гэтай прыладзе ўсе бісерыны, а кропка напаміну пра захаванне стаіць у куце значка Праекта",
+    "zh": "“作品”面板用勾或叉显示此设备上的作品文件是否包含全部珠子，保存提醒的圆点改在“作品”图标的右上角",
+    "es": "El panel del Proyecto indica con una marca o una cruz si el archivo de Proyecto de este dispositivo tiene todas las cuentas, y el punto del recordatorio para guardar queda en la esquina del icono del Proyecto",
+    "pl": "Panel Projektu pokazuje znaczkiem lub krzyżykiem, czy plik Projektu na tym urządzeniu ma wszystkie koraliki, a kropka przypomnienia o zapisie jest w rogu ikony Projektu"
   }
 }

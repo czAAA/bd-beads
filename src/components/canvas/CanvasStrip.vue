@@ -422,14 +422,21 @@ function onControlsKeydown(event: KeyboardEvent) {
   }
 }
 
-/* The save reminder waiting in the Project panel (ticket 1192): an accent dot after the Project's name. */
+/* The save reminder waiting in the Project panel (ticket 1192): an accent dot on the Project icon's top-right corner (its
+ * 15px box after the text button's padding), like a badge, so the Project's name keeps its place with or without it. */
+.canvas-strip__panel-buttons :deep(.canvas-strip__project) {
+  position: relative;
+}
+
 .canvas-strip__note-dot {
-  flex: none;
+  position: absolute;
+  top: calc(50% - var(--note-dot-icon) / 2 - var(--note-dot-size) / 2);
+  inset-inline-start: calc(var(--space-6) + var(--note-dot-icon) - var(--note-dot-size) / 2);
   width: var(--note-dot-size);
   height: var(--note-dot-size);
-  margin-inline-start: var(--space-6);
   background: var(--accent-strong);
   border-radius: var(--radius-full);
+  pointer-events: none;
 }
 
 /* The open Project's name (ticket 0858): one line, cut with an ellipsis, so a long one never crowds the Brand. */

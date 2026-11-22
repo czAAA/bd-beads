@@ -1,6 +1,6 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
-import { changedRows } from '../../../domain/canvas'
+import { changedRows, type FrameSheet } from '../../../domain/canvas'
 import { beadTotal } from '../../../domain/openingLimits'
 import { frameOf, layerOf } from '../../../domain/layerRecord'
 import { INITIAL_ROW_PROGRESS, rowProgressOf, stepLines } from '../../../domain/rowProgress'
@@ -159,16 +159,23 @@ type Bands = { rows: Band[] } | { columns: Band[] }
 /** Past this many changed rows, drawing them one band at a time costs more than drawing the lot. */
 const MOST_ROWS_WORTH_A_BAND = 40
 
+/** Whether a Frame's own rows and columns are lines of the Canvas, off by its first row and column: not where it has a
+ * Frame shape, whose layout places each bead, nor where Rotate Frame turned it, its own rows lying across the Canvas's
+ * or the other way up. */
+function ownLinesOnCanvas(sheet: Pick<FrameSheet, 'shape' | 'quarterTurns'> | undefined): boolean {
+  return !sheet?.shape && !sheet?.quarterTurns
+}
+
 // Bands of rows an edit changed, to draw just those (rows within two apart share a band; neighbours are drawn anyway).
 // Empty when nothing changed; undefined when so much did (Undo, Fill) that drawing all again is
 // cheaper.
 function changedBands(before: Project, after: Project): Bands | undefined {
   // The Frame's rows are not the Canvas's where it is woven otherwise or in a Bead of another size (tickets 492, 0665),
   // nor rows on the screen where it has a Frame shape, whose layout places each bead (a Fringe earring's top is counted
-  // up from its base row, its strands from row 1000): draw it all again.
+  // up from its base row, its strands from row 1000), or is turned: draw it all again.
   const frame = layerOf(after, 'frame')
   const sheet = frameOf(after)
-  if (frame && (!layersAlike(after) || sheet?.shape) && layerOf(before, 'frame')?.beads !== frame.beads) {
+  if (frame && (!layersAlike(after) || !ownLinesOnCanvas(sheet)) && layerOf(before, 'frame')?.beads !== frame.beads) {
     return undefined
   }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.
@@ -210,12 +217,12 @@ function withoutProgress(project: Project): Project {
 
 /** The bands of a Progress bar step (ticket 1038), when nothing but the Frame's Row progress changed: the Canvas rows,
  * or columns where the rows run down it, of the passes whose look changed. Undefined where they are not lines of the
- * Canvas (a Frame shape, a Frame woven otherwise or in a Bead of another size) or too many to pay. */
+ * Canvas (a Frame shape or a turned Frame, a Frame woven otherwise or in a Bead of another size) or too many to pay. */
 function stepBands(before: Project, after: Project): Bands | undefined {
   const frame = frameOf(after)
   const painted = (layer: 'canvas' | 'frame') => changedRows(layerOf(before, layer)?.beads ?? {}, layerOf(after, layer)?.beads ?? {}).length > 0
   const samePaint = !painted('canvas') && !painted('frame')
-  if (!frame || frame.shape || !layersAlike(after) || !samePaint || !sameDrawing(withoutProgress(before), withoutProgress(after))) {
+  if (!frame || !ownLinesOnCanvas(frame) || !layersAlike(after) || !samePaint || !sameDrawing(withoutProgress(before), withoutProgress(after))) {
     return undefined
   }
   const step = stepLines(after, rowProgressOf(before))

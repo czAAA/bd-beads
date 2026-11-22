@@ -1456,9 +1456,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSaveProjectFile: exportFlow.onSave,
       onSaveProjectFileAs: exportFlow.onSaveAs,
       canSaveAs: exportFlow.canSaveAs,
-      /** The docked reminder the Project panel's head shows, with the count and last file it tells; none while on the canvas. */
-      saveNote: computed(() => (saveReminder.inPanel.value ? sinceFile.current.value : undefined)),
-      onDismissSaveNote: saveReminder.dismiss,
+      /** The open Project's Beads since last file: the Project panel's head says whether its Project file holds them all. */
+      sinceFile: sinceFile.current,
       // The Save row's value (ticket 0859): the Linked file, else the last file saved of the open Project, by any route.
       lastFileName: computed(() => exportFlow.linkedFileName.value ?? sinceFile.current.value.fileName),
       onSaveMakerName: exportFlow.onSaveMakerName,

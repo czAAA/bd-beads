@@ -284,19 +284,20 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(header.text()).toContain('Loom · TOHO Cube 1.5mm')
   })
 
-  it('says a docked save reminder under the save state, with a cross and the save icon (ticket 1192)', async () => {
+  it('says whether the Project file is saved on this device with a tick or a cross, the rest in its Tooltip', async () => {
     const wrapper = mountPanel()
-    expect(wrapper.find('[data-testid="save-note"]').exists()).toBe(false)
+    const row = () => wrapper.get('[data-testid="file-state"]')
+    expect(row().text()).toBe(en.panels.project.savedDevice)
+    expect(row().attributes('aria-label')).toBe(en.panels.project.notSavedDevice)
+    expect(row().find('[data-testid="file-state-cross"]').exists()).toBe(true)
 
-    await wrapper.setProps({ saveNote: { beads: 200, lastFileAt: 1 } })
-    expect(wrapper.get('[data-testid="save-note-text"]').text()).toBe('200 beads since the last file')
+    await wrapper.setProps({ sinceFile: { beads: 200, lastFileAt: 1 } })
+    expect(row().find('[data-testid="file-state-cross"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="save-note-dismiss"]').exists()).toBe(false)
 
-    await wrapper.get('[data-testid="save-note-dismiss"]').trigger('click')
-    expect(wrapper.emitted('dismiss-save-note')).toHaveLength(1)
-    await wrapper.get('[data-testid="save-note-save"]').trigger('click')
-    expect(wrapper.emitted('save-project-file')).toHaveLength(1)
-
-    await wrapper.setProps({ saveNote: { beads: 200 } })
-    expect(wrapper.get('[data-testid="save-note-text"]').text()).toBe(en.saveReminder.noFileWhy)
+    await wrapper.setProps({ sinceFile: { beads: 0, lastFileAt: 1 } })
+    expect(row().text()).toBe(en.panels.project.savedDevice)
+    expect(row().attributes('aria-label')).toBe(en.panels.project.savedDevice)
+    expect(row().find('[data-testid="file-state-tick"]').exists()).toBe(true)
   })
 })
