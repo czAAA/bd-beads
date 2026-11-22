@@ -23,6 +23,7 @@ export const panels: PanelsTranslations = {
       tooltipProjectsLibrary: '打开、重命名或删除项目，或打开项目文件。',
       tooltipToolsPosition: '把工具放在左侧、右侧、顶部或底部。',
       tooltipHomepage: '打开 openbeads 网站。',
+      tooltipEditor: '打开编辑器。',
       tooltipSource: '在 GitHub 上查看代码。',
       tooltipCoffee: '支持开发者。这是让应用里的一切保持免费的唯一方式。',
       deleteAllTitle: { other: '删除全部 {count} 个项目？' },
