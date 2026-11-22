@@ -2,7 +2,8 @@ name: Deploy
 
 # Deploys the app and the backend Worker to Cloudflare (ticket 71, spec 385, docs/deploy.md). A push to main builds once
 # and deploys dev (`bd-beads-dev`). When the pushed commit is a Production release (ticket 1044, spec 1043, ADR 0096),
-# production (`bd-beads`) is then deployed from the same build, once dev's smoke check has passed. A manual run
+# production (`bd-beads`) is then deployed from the same build, once dev's smoke check has passed and a real browser
+# has installed the app from dev (ticket 1205). A manual run
 # redeploys production from the newest release commit, never from main's head (until a first release exists, it
 # deploys main's head). Which commit is a release is `scripts/release.ts`'s answer alone. Each deploy is
 # `deploy-worker.yml`: each database's migrations, then the code, then a smoke check that /api/health answers with the
@@ -84,13 +85,54 @@ jobs:
       commit: ${{ needs.build.outputs.commit }}
     secrets: inherit
 
-  # On a push, only after dev's deploy of the same build passed its smoke check; on a manual run, straight from the build.
+  # A real browser installs the app from dev's address, as a device would, and opens it offline (ticket 1205,
+  # scripts/install-check.ts): CI's browser checks run on `vite preview`, which has none of the host's headers,
+  # redirects, Access or 404s. Its own job, so the only secret it gets is the Access service token, never the
+  # Cloudflare token. It reads the worker's cache name from the build's own `sw.js`.
+  dev-install:
+    name: Install check (dev)
+    needs: [build, dev]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.build.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist
+      # The Playwright version package.json pins; its browser is downloaded, not an install script's work.
+      - run: npx playwright install --with-deps chromium
+      - name: A browser installs this build's worker from dev and opens it offline
+        env:
+          URL: ${{ needs.dev.outputs.url }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          if [ -z "$CF_ACCESS_CLIENT_ID" ]; then
+            echo "::error::No CF_ACCESS_CLIENT_ID in the production environment: dev answers only through Access (ticket 395)"
+            exit 1
+          fi
+          node scripts/install-check.ts dist "$URL"
+
+  # On a push, only after dev's deploy of the same build passed its smoke check and a browser installed it from dev; on a
+  # manual run, straight from the build.
   production:
     name: Deploy (production)
-    needs: [build, dev]
+    needs: [build, dev, dev-install]
     if: >-
       !cancelled() && needs.build.result == 'success' &&
-      (github.event_name == 'workflow_dispatch' || (needs.build.outputs.release == 'true' && needs.dev.result == 'success'))
+      (github.event_name == 'workflow_dispatch' ||
+      (needs.build.outputs.release == 'true' && needs.dev.result == 'success' && needs.dev-install.result == 'success'))
     uses: ./.github/workflows/deploy-worker.yml
     with:
       worker: production
