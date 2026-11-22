@@ -86,6 +86,33 @@ describe('a round shape packed by its layer\'s Bead (ticket 0723)', () => {
 })
 
 describe('the Row order of a Frame without a shape', () => {
+  it('weaves a brick stitch Drop of N as N rows a pass, a block of the stagger together, from either end', () => {
+    const brick = sheet(5, 3, { technique: 'brick', techniqueSettings: { brickDrop: 2 } })
+    const down = rowOrderOf(brick, { direction: 'rows' })
+    expect(down.count).toBe(3)
+    expect(down.positionsOf(0).map(({ row }) => row)).toEqual([0, 0, 0, 1, 1, 1])
+    expect(down.positionsOf(2)).toEqual([0, 1, 2].map((column) => ({ row: 4, column })))
+    expect(down.passAt({ row: 3, column: 1 })).toBe(1)
+    expect([0, 1, 2].map((pass) => down.lineOf(pass))).toEqual([0, 2, 4])
+  })
+
+  it('weaves a brick stitch Drop from the far end with the stagger\'s blocks whole, the first pass the rows left over', () => {
+    const brick = sheet(5, 3, { technique: 'brick', techniqueSettings: { brickDrop: 2 } })
+    // The lone last row first, then rows 3 and 2, then 1 and 0.
+    const up = rowOrderOf(brick, { direction: 'rows', reversed: true })
+    expect(up.count).toBe(3)
+    expect(up.positionsOf(0).map(({ row }) => row)).toEqual([4, 4, 4])
+    expect(up.positionsOf(1).map(({ row }) => row)).toEqual([3, 3, 3, 2, 2, 2])
+    expect(up.passAt({ row: 0, column: 0 })).toBe(2)
+    expect(up.lineOf(1)).toBe(3)
+  })
+
+  it('weaves a brick stitch Drop that divides the height, or down its columns, a line a pass where it has no block', () => {
+    const even = rowOrderOf(sheet(4, 3, { technique: 'brick', techniqueSettings: { brickDrop: 2 } }), { direction: 'rows', reversed: true })
+    expect([0, 1].map((pass) => even.positionsOf(pass).map(({ row }) => row))).toEqual([[3, 3, 3, 2, 2, 2], [1, 1, 1, 0, 0, 0]])
+    expect(rowOrderOf(sheet(4, 3, { technique: 'brick', techniqueSettings: { brickDrop: 2 } }), { direction: 'columns' }).count).toBe(3)
+  })
+
   it('weaves peyote one pass for the first row and two for each later one, the level columns first from the top', () => {
     const order = rowOrderOf(sheet(3, 4, { technique: 'peyote' }), { direction: 'rows' })
     expect(order.count).toBe(5)
