@@ -549,7 +549,8 @@ export function useCanvasView(
   /** Two fingers moved (tickets 0672, 0709): the bead under them follows them, their spread zooms about it and, once
    * the twist has engaged, the Canvas turns about it, in one move of the view. */
   function pinchStep({ zoom: toZoom, pan, turn, anchor, target }: PinchStep): void {
-    if (options.expanded?.()) leavesByFingers(toZoom, pan, turn === undefined ? undefined : (twistTarget ?? target ?? 'canvas'))
+    twistTarget ??= turn === undefined ? undefined : (target ?? 'canvas')
+    if (options.expanded?.()) leaveByFingers(toZoom, pan, turn === undefined ? undefined : twistTarget)
     stopGlide()
     let at = scroll.value
     const next = toZoom === undefined || pinchOnExpanded?.left ? zoom.value : limitZoom(toZoom)
@@ -564,7 +565,6 @@ export function useCanvasView(
       const across = leaning.value.unturned(pan)
       at = { x: at.x - across.x, y: at.y - across.y }
     }
-    twistTarget ??= turn === undefined ? undefined : (target ?? 'canvas')
     if (turn !== undefined && twistTarget === 'frame') {
       // The Frame turns about its own centre, which stays on the table: only its angle changes.
       frameTwisting.value = turnedOrientation(frameTwisting.value ?? frameAngleOf(currentProject()!), turn)
@@ -585,12 +585,13 @@ export function useCanvasView(
 
   /** A pinch step on the expanded Frame: a twist of the Canvas, or fingers that carry it farther than their spread
    * zooms it, go back to the Canvas; a twist of the Frame stays. */
-  function leavesByFingers(toZoom: number | undefined, pan: Scroll | undefined, twisted: TwistTarget | undefined): void {
+  function leaveByFingers(toZoom: number | undefined, pan: Scroll | undefined, twisted: TwistTarget | undefined): void {
     const pinch = (pinchOnExpanded ??= { from: zoom.value, travel: 0, left: false })
     pinch.travel += pan ? Math.hypot(pan.x, pan.y) : 0
-    const spread = toZoom === undefined ? 0 : Math.abs(toZoom / pinch.from - 1)
     if (twisted === 'frame') return
-    if (twisted !== 'canvas' && (pinch.travel <= PAN_LEAVES_EXPANDED_PX || spread >= PINCH_ZOOMS_PAST)) return
+    const spread = toZoom === undefined ? 0 : Math.abs(toZoom / pinch.from - 1)
+    const pans = pinch.travel > PAN_LEAVES_EXPANDED_PX && spread < PINCH_ZOOMS_PAST
+    if (twisted !== 'canvas' && !pans) return
     pinch.left = leaveByHand()
     pinching = false
   }

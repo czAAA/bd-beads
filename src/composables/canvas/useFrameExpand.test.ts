@@ -225,15 +225,17 @@ describe('useFrameExpand (ticket 1169)', () => {
       return { ...made, was }
     }
 
-    it('goes back to the Canvas at once on a drag or a scroll, which then moves the Canvas', () => {
-      for (const move of ['panBy', 'scrollBy'] as const) {
-        const { view, expand, was, stop } = expandedFrom()
-        view[move](20, 0)
-        expect(expand.expanded.value).toBe(false)
-        expect(view.zoom.value).toBe(was.zoom)
-        expect(view.scroll.value.x).toBeCloseTo(was.scroll.x + (move === 'panBy' ? -20 : 20), 5)
-        stop()
-      }
+    // A drag moves the content with the pointer, a scroll the other way: the view's scroll goes `by` along.
+    it.each([
+      { move: 'panBy', by: -20 },
+      { move: 'scrollBy', by: 20 },
+    ] as const)('goes back to the Canvas at once on $move, which then moves the Canvas', ({ move, by }) => {
+      const { view, expand, was, stop } = expandedFrom()
+      view[move](20, 0)
+      expect(expand.expanded.value).toBe(false)
+      expect(view.zoom.value).toBe(was.zoom)
+      expect(view.scroll.value.x).toBeCloseTo(was.scroll.x + by, 5)
+      stop()
     })
 
     it('stays for the edge scroll a drag carries', () => {
