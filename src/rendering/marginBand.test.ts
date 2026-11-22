@@ -25,11 +25,11 @@ describe('which Frame tools stand on the band (MarginSheet card, ticket 1195)', 
     const whole = bandRowWidth('folded', ALL, false, false, false)
     const seen: (readonly BandToolId[] | undefined)[] = []
     for (let room = whole; room >= 0; room--) if (!seen.length || seen.at(-1)?.join() !== left(room)?.join()) seen.push(left(room))
-    expect(seen.slice(0, -1).map((gone) => gone!.length)).toEqual([0, 1, 2, 3, 4, 5, 6, 7])
+    expect(seen.slice(0, -1).map((gone) => gone!.length)).toEqual([0, 1, 2, 3, 4, 5, 6])
     expect(left(whole - 1)).toEqual(['remove'])
     expect(seen[3]).toEqual(['export', 'color', 'remove'])
-    expect(seen[6]).toContain('rotate')
-    expect(seen[6]).not.toContain('edit')
+    expect(seen[5]).toContain('rotate')
+    expect(seen[5]).not.toContain('edit')
     expect(seen.at(-1)).toBeUndefined()
   })
 

@@ -4,13 +4,13 @@ import { MARGIN_PX } from './marginSizes'
 // card, Zoom forms, ticket 1195): one rule by the band's width, for every form and pointer.
 
 /** A Frame tool of the band, by its id. */
-export type BandToolId = 'mirror' | 'rotate' | 'lift' | 'edit' | 'export' | 'color' | 'remove'
+export type BandToolId = 'mirror' | 'rotate' | 'edit' | 'export' | 'color' | 'remove'
 
 /** The band's tools in the order they stand on it, left to right. */
-export const BAND_ORDER: readonly BandToolId[] = ['mirror', 'rotate', 'lift', 'edit', 'export', 'color', 'remove']
+export const BAND_ORDER: readonly BandToolId[] = ['mirror', 'rotate', 'edit', 'export', 'color', 'remove']
 
 /** The order the tools leave the band for the menu where the width runs out: the least used first, Edit Frame last. */
-const OVERFLOW_ORDER: readonly BandToolId[] = ['remove', 'export', 'color', 'lift', 'mirror', 'rotate', 'edit']
+const OVERFLOW_ORDER: readonly BandToolId[] = ['remove', 'export', 'color', 'mirror', 'rotate', 'edit']
 
 /** The band's row: tools of 28px (full) or 24px (compact and folded). */
 export type BandRow = 'full' | 'compact' | 'folded'
@@ -23,7 +23,7 @@ export interface BandFit {
 }
 
 export interface BandToolsDeps {
-  /** The tools the Frame offers now (Lift only with Row highlight on, and so on), in any order. */
+  /** The tools the Frame offers now (Mirror and Rotate only where the Frame can be turned, and so on), in any order. */
   tools: readonly BandToolId[]
   /** The rows to try, widest first. */
   rows: readonly BandRow[]

@@ -3,7 +3,6 @@
 import file from '../../docs/design/system/components/Homepage/winter-charms.json'
 import { beadsFromColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
-import { withFrameLift } from '../domain/frame'
 import { withLayer } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
@@ -178,7 +177,7 @@ export function charmProject(id: string): Project | undefined {
     )
     const technique = charm.technique as Technique
     const size = { unit: 'beads' as const, width: charm.width, height: rows.length }
-    const made = withFrameLift(createProject({ name: charm.name, technique, beadId: file.bead, size, background: 1 }), false)
+    const made = createProject({ name: charm.name, technique, beadId: file.bead, size, background: 1 })
     project = withLayer(made, 'frame', { beads: beadsFromColors(rows) })
     projects.set(id, project)
   }

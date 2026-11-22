@@ -1,4 +1,3 @@
-import { frameLifted } from '../domain/frame'
 import { projectDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type GridPosition } from '../domain/grid'
@@ -6,7 +5,6 @@ import type { Project } from '../domain/project'
 import { drawFlatBead, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import type { PrintInk } from './printInk'
-import { LIFT_REACH_PX } from './liftedFrame'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import {
@@ -205,19 +203,16 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
 
   // The page may be scaled (blankPage): the beads are drawn at that resolution too, then laid in at layout size.
   const scale = context.getTransform().a
-  // A lifted Frame (ticket 1177) is drawn in colour pages only, its plate and shadows a little past the beads.
-  const lift = frameLifted(project) && !ink.oneInk
-  const bleed = lift ? LIFT_REACH_PX * zoom : 0
   const tile = document.createElement('canvas')
-  tile.width = Math.max(1, Math.ceil((region.width + 2 * bleed) * scale))
-  tile.height = Math.max(1, Math.ceil((region.height + 2 * bleed) * scale))
+  tile.width = Math.max(1, Math.ceil(region.width * scale))
+  tile.height = Math.max(1, Math.ceil(region.height * scale))
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
-  const scaled = { x: (region.x - bleed) * scale, y: (region.y - bleed) * scale, width: tile.width, height: tile.height }
+  const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
   // The cross's line is `print-line-cell` and at least a device pixel, so it prints at 150 dpi too.
   const crossLine = Math.max(CROSS_LINE * scale, 1) / (zoom * scale)
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: ink.overviewTheme, rowMarks: false, drawBead: crossWhereEmpty(crossLine, emptyGrid, ink), lift, liftBackground: ink.colors.board })
-  context.drawImage(tile, at.x - bleed, at.y - bleed, tile.width / scale, tile.height / scale)
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: ink.overviewTheme, rowMarks: false, drawBead: crossWhereEmpty(crossLine, emptyGrid, ink) })
+  context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
 export interface Span {

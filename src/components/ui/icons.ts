@@ -49,7 +49,6 @@ export const ICON_NAMES = [
   'info',
   'keyboard',
   'library',
-  'lift-frame',
   'link',
   'menu',
   'message',

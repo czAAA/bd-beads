@@ -118,17 +118,6 @@ The margin sheet's Expand the Frame button (MarginSheet card, Expand the Frame).
 | Back to the Canvas (the button while expanded) | Вернуться к холсту | Повернутися до полотна | Вярнуцца да палатна | 回到画布 | Volver al lienzo | Wróć do płótna |
 | Frame expanded (announced) | Рамка развёрнута | Рамку розгорнуто | Рамка разгорнута | 边框已展开 | Marco expandido | Ramka rozwinięta |
 
-## Lift copy (ticket 1177)
-
-The margin sheet's Lift button and its Frame tools item (MarginSheet card, Lift). The name is its Tooltip and changes with the state; the announcement is said once after each press. Belarusian, Spanish and Chinese were written with the build (ticket 1177) and are for review, as are the others; "кусочек", "шматочок" and "kawałek" are the Piece (writing.md) as the earlier Lifted pieces switch had it.
-
-| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
-|---|---|---|---|---|---|---|
-| Lift the pieces (the button off; the menu item) | Приподнять кусочки | Підняти шматочки | Прыпадняць кавалачкі | 抬起小块 | Elevar los trozos | Unieś kawałki |
-| Lay the pieces flat (the button on) | Положить кусочки плоско | Покласти шматочки пласко | Пакласці кавалачкі плоска | 把小块放平 | Poner los trozos planos | Połóż kawałki płasko |
-| Pieces lifted (announced) | Кусочки приподняты | Шматочки підняті | Кавалачкі прыпаднятыя | 小块已抬起 | Trozos elevados | Kawałki uniesione |
-| Pieces laid flat (announced) | Кусочки лежат плоско | Шматочки лежать пласко | Кавалачкі ляжаць плоска | 小块已放平 | Trozos planos | Kawałki leżą płasko |
-
 ## Print choices copy (ticket 0916)
 
 The Printable chart's two switches in the Export panel and the Frame panel's export section (ExportPanel card), each with its Info button. "Row by row" is the Word chart's own title in every language, so the switch and the pages it adds share a name. Letters no longer changes the PDF, so its Info body says what it does now. The page count reuses "{count} page" / "{count} pages"; no new copy. English is the ticket's; the other languages are proposals for review with the build.

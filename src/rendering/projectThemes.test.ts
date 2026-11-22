@@ -11,7 +11,7 @@ const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/sys
 const token = (name: string, theme: Theme) => tokens.color.tokens.find((entry) => entry.name === name)!.value[theme]
 
 /** DESIGN.md §4.2: which token each ProjectTheme field copies. */
-const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'ownColorRim' | 'tonalTiles' | 'liftedFrame' | 'finished' | 'margin' | 'chip'>, string> = {
+const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'ownColorRim' | 'tonalTiles' | 'finished' | 'margin' | 'chip'>, string> = {
   background: 'board',
   canvas: 'box',
   positionMark: 'position-mark',

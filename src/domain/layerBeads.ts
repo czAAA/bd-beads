@@ -78,7 +78,6 @@ export function sameLayers(a: Layered, b: Layered): boolean {
     x.name === y.name &&
     x.shape === y.shape &&
     x.quarterTurns === y.quarterTurns &&
-    !x.lifted === !y.lifted &&
     [...names].every((name) => x.settings?.[name] === y.settings?.[name]) &&
     sameBeads(a, b) &&
     (x.folded === y.folded || !anyChangedPosition(x.folded ?? {}, y.folded ?? {}))
