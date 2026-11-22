@@ -300,7 +300,6 @@ describe('the copy of the old library', () => {
     ['version 1', libraryV1],
     ['version 2', libraryV2],
     ['an over-cap version 2', libraryV2OverCap],
-    ['version 3', libraryV3],
     ['version 4', libraryV4],
     ['version 4 with a Brick block', libraryV4BrickBlock],
     ['version 5', libraryV5],
@@ -360,8 +359,10 @@ describe('the copy of the old library', () => {
     expect(await records()).toEqual([])
   })
 
-  it('sets the flag and starts empty for an old library this build cannot read, leaving the value as it is', async () => {
-    const unreadable = '{"version":99,"patterns":[{"from":"the future"}]}'
+  it.each([
+    ['a newer version', '{"version":99,"patterns":[{"from":"the future"}]}'],
+    ['version 3 (ticket 0391)', libraryV3],
+  ])('sets the flag and starts empty for an old library this build cannot read, %s, leaving the value as it is', async (_label, unreadable) => {
     localStorage.setItem(STORAGE_KEY, unreadable)
 
     const { store } = await startTab()

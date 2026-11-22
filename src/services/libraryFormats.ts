@@ -1,15 +1,14 @@
 import { inKnownTechniques, normalizeProject, type StoredProject } from '../domain/storedProject'
 import type { Project } from '../domain/project'
 import {
-  decodeEarlierProject,
   decodeFlatProject,
+  decodeGridProject,
   decodeProject,
   decodeVersionTwelveProject,
   encodeProject,
   type EncodedFlatProject,
   type EncodedGridProject,
   type EncodedProject,
-  type EncodedVersionThreeProject,
 } from '../domain/projectEncoding'
 import { liftFlatWeave, renamedBrickBlock, type SavedProject } from '../domain/flatWeave'
 import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../domain/sealedProject'
@@ -53,12 +52,6 @@ interface StoredFlatLibrary {
   patterns: EncodedFlatProject[]
 }
 
-/** The same envelope as version 3 wrote it, before the Frame had beads of its own (temporary, see versionThree.ts). */
-interface StoredVersionThreeLibrary {
-  version: number
-  patterns: EncodedVersionThreeProject[]
-}
-
 /** The same envelope as version 2 wrote it: every Project a fixed grid of cells, before the Canvas (ADR 0026). */
 interface StoredGridLibrary {
   version: number
@@ -66,11 +59,11 @@ interface StoredGridLibrary {
 }
 
 // Every readable stored format by version: each takes parsed JSON and returns plain Projects. v1 is recognised by being
-// an array; a reader may throw on a wrong shape, which the callers treat like unparseable JSON.
+// an array; a reader may throw on a wrong shape, which the callers treat like unparseable JSON. v3 is no longer read
+// (ticket 0391): only test devices held it, and its value is kept aside like any other this build can't read.
 export const READERS: Record<number, (parsed: unknown) => StoredProject[]> = {
   1: (parsed) => (parsed as SavedProject[]).map(liftFlatWeave),
-  2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodeEarlierProject),
-  3: (parsed) => (parsed as StoredVersionThreeLibrary).patterns.map(decodeEarlierProject),
+  2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodeGridProject),
   4: (parsed) => (parsed as StoredFlatLibrary).patterns.map(decodeFlatProject),
   5: (parsed) => (parsed as StoredLibrary).patterns.map(decodeVersionTwelveProject),
   6: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),

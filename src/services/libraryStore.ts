@@ -1,7 +1,6 @@
-import { inKnownTechniques, normalizeProject, type StoredProject } from '../domain/storedProject'
+import { inKnownTechniques, normalizeProject } from '../domain/storedProject'
 import type { Project } from '../domain/project'
 import { decodeProject, type EncodedProject } from '../domain/projectEncoding'
-import { paletteFromDevice } from '../domain/palette'
 import {
   MOVED_FLAG,
   copyOldLibrary,
@@ -13,7 +12,6 @@ import {
   takeInOldLibrary,
   type LibraryConnection,
 } from './indexedLibraryStore'
-import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, readDeviceAddedColors, readDevicePaletteOrder } from './legacyDevicePalette'
 import { readKey } from './storageKeys'
 import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../domain/sealedProject'
 import {
@@ -51,26 +49,6 @@ function keepUnreadable(raw: string): void {
   }
 }
 
-// TEMPORARY (ticket 0525): removed at the public release (ticket 0391). A Project stored before the Palette belonged to
-// it is given the added colors and slot order this device kept, once: they are written into the library, and only then
-// are the device keys removed.
-function withDevicePalette(stored: StoredProject[], sealed: readonly SealedProject[]): StoredProject[] {
-  const withoutPalette = stored.filter((project) => (project as Partial<Project>).palette === undefined)
-  const added = readDeviceAddedColors(localStorage)
-  const order = readDevicePaletteOrder(localStorage)
-  if (withoutPalette.length === 0 || (added.length === 0 && order.length === 0)) return stored
-  const palette = paletteFromDevice(added, order)
-  const migrated = stored.map((project) => (withoutPalette.includes(project) ? { ...project, palette } : project))
-  try {
-    saveProjects(migrated.map(normalizeProject), sealed)
-    localStorage.removeItem(ADDED_COLORS_KEY)
-    localStorage.removeItem(PALETTE_ORDER_KEY)
-  } catch {
-    // No room to write: the device keys stay, and the next load tries again.
-  }
-  return migrated
-}
-
 /** The library as the editor opens it (ticket 0716): Projects decoded, and those kept sealed in their stored form. */
 interface OpenedLibrary {
   projects: Project[]
@@ -92,10 +70,10 @@ function readStored(raw: string, keepSealed: (summary: ProjectSummary) => boolea
         if (summary && keepSealed(summary)) sealed.push({ ...summary, stored: JSON.stringify(encoded) })
         else decoded.push(encoded)
       }
-      return { projects: withDevicePalette(decoded.map(decodeProject), sealed).map(normalizeProject), sealed }
+      return { projects: decoded.map(decodeProject).map(normalizeProject), sealed }
     }
     if (read) {
-      return { projects: withDevicePalette(inKnownTechniques(read(parsed)), []).map(normalizeProject), sealed: [] }
+      return { projects: inKnownTechniques(read(parsed)).map(normalizeProject), sealed: [] }
     }
   } catch {
     // Unparseable, or not the shape the version it claims implies — the same situation either way: unreadable here.
@@ -128,8 +106,7 @@ function openStored(keepSealed: (summary: ProjectSummary) => boolean): OpenedLib
   const opened = raw === null ? { projects: [], sealed: [] } : readStored(raw, keepSealed)
   if (raw !== null && !opened) keepUnreadable(raw)
   const library = opened ?? { projects: [], sealed: [] }
-  // Read again: opening may have moved the device's old Palette into the library (withDevicePalette).
-  seen = { raw: readKey(localStorage, STORAGE_KEY), records: new Map([...library.projects, ...library.sealed].map((project) => [project.id, project])) }
+  seen = { raw, records: new Map([...library.projects, ...library.sealed].map((project) => [project.id, project])) }
   return library
 }
 

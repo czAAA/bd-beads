@@ -49,7 +49,7 @@ describe('ProjectImport import', () => {
     try {
       for (const compact of [false, true]) {
         const input = mount(ProjectImport, { props: { projects: [], compact } }).find('[data-testid="import-file"]')
-        expect(input.attributes('accept')).toBe('.openbeads,.json')
+        expect(input.attributes('accept')).toBe('.openbeads')
       }
     } finally {
       Reflect.deleteProperty(navigator, 'maxTouchPoints')

@@ -7,7 +7,7 @@ import { createProject } from './createProject'
 import { DEFAULT_COLOR_FILES } from './defaultColors'
 import { canvasTheme } from '../rendering/canvasBackgrounds'
 import type { ResolvedTheme } from '../theme/theme'
-import { BUILT_IN_COLORS, addUsedColor, brandColors, familyOf, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, removeAllAddedColors, restoreAddedColor, startColorId, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
+import { BUILT_IN_COLORS, addUsedColor, brandColors, familyOf, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, removeAddedColor, removeAllAddedColors, restoreAddedColor, startColorId, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
@@ -148,18 +148,6 @@ describe('createPalette (ticket 0530)', () => {
     const many: PaletteColor[] = Array.from({ length: 16 }, (_, i) => ({ id: `c${i}`, hex: `#0000${i.toString(16).padStart(2, '0')}` }))
     const palette = createPalette(many.map((color) => color.id), many)
     expect(palette.colors).toHaveLength(16)
-  })
-})
-
-describe('paletteFromDevice (temporary, ticket 0525)', () => {
-  it('lays the device\'s added colors out in its slot order', () => {
-    const order = ['red', addedColorId('#111111'), 'black']
-    expect(paletteFromDevice(['#111111', '#222222'], order).slice(0, 3)).toEqual(order)
-    expect(paletteFromDevice(['#111111', '#222222'], order).at(-1)).toBe(addedColorId('#222222'))
-  })
-
-  it('closes up over a color that was removed', () => {
-    expect(paletteFromDevice([], ['red', addedColorId('#999999')])).not.toContain(addedColorId('#999999'))
   })
 })
 

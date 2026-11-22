@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
-import { LEGACY_MAKER_NAME_KEY } from './services/legacyMakerName'
 import { createProject } from './domain/createProject'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
@@ -54,7 +53,6 @@ describe("App maker line: the Project's own Maker's name (ADR 0060, tickets 443,
     await flushPromises()
 
     expect(savedName()).toBe('Maria Kovaleva')
-    expect(localStorage.getItem(LEGACY_MAKER_NAME_KEY)).toBeNull()
     expect(wrapper.get('[data-testid="project-maker"]').text()).toBe('Maria Kovaleva')
     expect(wrapper.get('[data-testid="project-maker-edit"]').attributes('aria-label')).toBe(en.panels.project.changeMaker)
   })
@@ -89,14 +87,5 @@ describe("App maker line: the Project's own Maker's name (ADR 0060, tickets 443,
 
     expect(savedName()).toBeUndefined()
     expect(wrapper.find('[data-testid="project-maker-add"]').exists()).toBe(true)
-  })
-
-  it("copies a saved device-wide name into a Project with none on the first load, then clears the device value (temporary)", async () => {
-    localStorage.setItem(LEGACY_MAKER_NAME_KEY, 'Maria')
-    mountApp()
-    await flushPromises()
-
-    expect(savedName()).toBe('Maria')
-    expect(localStorage.getItem(LEGACY_MAKER_NAME_KEY)).toBeNull()
   })
 })

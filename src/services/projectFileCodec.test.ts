@@ -11,7 +11,7 @@ import { serializeLibrary } from '../domain/projectFile'
 import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
 import { canvasOf, frameOf } from '../domain/layerRecord'
 import { newReferenceImage, withReferenceImage } from '../domain/referenceImage'
-import { layersView, withLayers } from '../testUtils/layerFields'
+import { withLayers } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -108,18 +108,10 @@ describe('refusing a file', () => {
   })
 })
 
-describe('a plain .json file from before ADR 0048 (deprecated)', () => {
-  it('still imports', async () => {
+describe('a plain .json file from before ADR 0048 (ticket 0391)', () => {
+  it('is refused, as any file that is not a gzipped Project file', async () => {
     const project = withColorsInPalette(paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746'))
-    const file = JSON.stringify({ kind: 'bd-beads/pattern', version: 3, patterns: [legacyRecordOf(project)] }, null, 2)
-    expect((await readProjectsFile(asFile(file))).projects.map(layersView)).toEqual([layersView(project)])
-    const library = JSON.stringify({ kind: 'bd-beads/library', version: 2, patterns: [legacyRecordOf(project)] })
-    expect((await readProjectsFile(asFile(library))).projects.map(layersView)).toEqual([layersView(project)])
-  })
-
-  it('refuses an unknown kind or version', async () => {
-    await expect(readProjectsFile(asFile('{"kind":"bd-beads/pattern","version":99,"patterns":[]}'))).rejects.toThrow()
-    await expect(readProjectsFile(asFile('{"kind":"openbeads/project","version":3,"projects":[]}'))).rejects.toThrow()
+    await expect(readProjectsFile(asFile(JSON.stringify({ kind: 'bd-beads/pattern', version: 3, patterns: [legacyRecordOf(project)] })))).rejects.toThrow('not gzipped')
   })
 })
 

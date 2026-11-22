@@ -45,7 +45,6 @@ import { frameShapeOf } from '../../domain/frameShape'
 import { withFrameTurnedTo } from '../../domain/framePlacement'
 import { canvasWeave } from '../../domain/layerWeave'
 import { useExportFlow } from '../export/useExportFlow'
-import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import type { OpenPanel } from './openPanel'
@@ -120,10 +119,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Which App page fills the canvas box, and the leave guard the page may register (ADR 0085, ticket 0756). */
   const appPage = useAppPage()
-
-  // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 391 removes
-  // it.
-  if (!demo) migrateLegacyMakerName(services.libraryStore)
 
   // The Project library and persistence (ticket 55, ADR 0012): replaceProject is the single commit point for the open
   // Project and saves as it lands; a dragged stroke defers its save per cell and writes once at the end (see

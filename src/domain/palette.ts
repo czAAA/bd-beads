@@ -279,15 +279,6 @@ export function restoreAddedColor(ids: PaletteIds, colorId: string, slot: number
   return all.includes(colorId) ? ids : [...all.slice(0, slot), colorId, ...all.slice(slot)]
 }
 
-/** The ids of the added colors a device kept before the Palette belonged to a Project (temporary, ticket 0525), laid
- * out in the slot order it kept: the Palette that device's Projects were painted with. */
-export function paletteFromDevice(added: readonly string[], order: readonly string[]): string[] {
-  const kept = new Set(added.map(addedColorId))
-  const placed = order.filter((id) => !isAddedColorId(id) || kept.has(id))
-  const unplaced = [...defaultPaletteIds(), ...kept].filter((id) => !placed.includes(id))
-  return paletteColors([...placed, ...unplaced]).map((color) => color.id)
-}
-
 /** A slot's color dragged to another slot: the ids with it taken out and put at `to`, the ones between shifting by
  * one. */
 export function moveSlot(ids: readonly string[], from: number, to: number): string[] {

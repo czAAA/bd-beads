@@ -8,7 +8,7 @@ import { BUILT_IN_COLORS } from './palette'
 import { createProject } from './createProject'
 import { normalizeProject } from './storedProject'
 import type { Grid, Project } from './project'
-import { decodeBeads, decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
+import { decodeBeads, decodeGridProject, decodeProject, encodeProject } from './projectEncoding'
 import { beadBounds, beadCount, type BeadMap } from './canvas'
 import { beadTotal } from './openingLimits'
 import { projectColors } from './layerBeads'
@@ -208,26 +208,10 @@ describe('encodeProject / decodeProject', () => {
     const { beads: _beads, frame: _frame, ...base } = legacyRecordOf(makeProject(3, 2))
     const stored = { ...base, columns: 3, rows: 2, cells: { colors: ['#ff0000', '#00ff00'], runs: '1,0x3,2,0' } }
 
-    const read = normalizeProject(decodeEarlierProject(stored))
+    const read = normalizeProject(decodeGridProject(stored))
 
     expect(frameSheetOf(read)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
     expect(beadsOfLayer(read, 'canvas')).toEqual({})
-  })
-
-  it('still reads what version 3 stored: the beads inside the Frame move into it, the covered ones become Canvas beads', () => {
-    const { beads: _beads, frame: _frame, ...base } = legacyRecordOf(makeProject(2, 2))
-    const stored = {
-      ...base,
-      frame: { row: 10, column: 10, rows: 2, columns: 2 },
-      encodedBeads: { colors: ['#ff0000', '#00ff00'], rows: { 10: '10:1,0,2', 40: '40:2' } },
-      encodedCoveredBeads: { colors: ['#0000ff'], rows: { 11: '11:1' } },
-    }
-
-    const read = normalizeProject(decodeEarlierProject(stored))
-
-    expect(frameSheetOf(read)).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
-    expect(beadsOfLayer(read, 'canvas')).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
-    expect(read).not.toHaveProperty('coveredBeads')
   })
 })
 
