@@ -30,7 +30,7 @@ import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { unframedSchemas } from '../../domain/schemaTags'
-import { surfaceView, type Scroll, type SurfaceView, type SurfaceViewInput } from '../../rendering/surfaceView'
+import { surfaceView, type Region, type Scroll, type SurfaceView, type SurfaceViewInput } from '../../rendering/surfaceView'
 import type { TiltedView } from '../../rendering/tiltedView'
 import { canvasDrawing, frameDrawing, seamOf, type LayerDrawing } from '../../rendering/layerDrawings'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
@@ -272,15 +272,16 @@ const drawnAlike = computed(() => frameDrawn.value === canvasDrawn.value)
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. Its points are the Canvas drawing's; the Frame layer lies in it by its own transform. */
-const surface = computed(() => {
+const surface = computed((): SurfaceView => {
   const canvas = canvasDrawn.value
   const frame = frameDrawn.value
   // Its margin sheet, as its own surface draws it, takes no press whatever lies under it (ticket 1188).
-  const sheet = drawnAlike.value ? undefined : marginSheetPx(withFrameLaidAt(props.project, frame.rotation))?.sheet
+  // Expanded, that is the slim sheet drawn in its place, not the 4-position one (a Canvas turned apart from the Frame).
+  const sheet = drawnAlike.value ? undefined : sheetGrid.value
   return viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn, drawnAlike.value ? undefined : { rotation: frame.rotation, scroll: frame.scroll, seam: seamOf(frame.leaning, canvas.leaning), sheet })
 })
 /** The view the Frame's own surface is drawn through: its drawing's points. */
-const frameSurface = computed(() => (drawnAlike.value ? surface.value : viewAt(frameDrawn.value.rotation, frameDrawn.value.scroll, frameDrawn.value.leaning.drawn)))
+const frameSurface = computed((): SurfaceView => (drawnAlike.value ? surface.value : viewAt(frameDrawn.value.rotation, frameDrawn.value.scroll, frameDrawn.value.leaning.drawn)))
 const frameLeaning = computed(() => frameDrawn.value.leaning)
 /** The Project as the Frame's own surface draws it: its Frame on the grid of a Canvas at that surface's quarter turn,
  * which its margin sheet, rulers and title block are laid out on (ticket 1188). */
@@ -440,13 +441,16 @@ const slimSheet = computed<SlimSheet | undefined>(() => {
   return { sheet, radius: props.slim.compact ? MARGIN_PX.sheetRadius.compact : MARGIN_PX.sheetRadius.full }
 })
 
-/** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. Expanded, the slim
- * sheet. */
+/** The Frame's margin sheet in the Frame drawing's grid px, none without a Frame: the one box the sheet is drawn from,
+ * placed by and takes no press on. Expanded, the slim sheet. Read by `surface` only while the Frame is drawn apart, as
+ * `frameSurface` falls back to `surface` otherwise: read it from there and the two cycle. */
+const sheetGrid = computed((): Region | undefined => slimSheet.value?.sheet ?? marginSheetPx(frameProject.value)?.sheet)
+
+/** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. */
 function sheetIn(view: SurfaceView): { x: number; y: number; width: number; height: number } | undefined {
-  if (slimBox.value && view === frameSurface.value) return slimBox.value
-  const grid = marginSheetPx(frameProject.value)
+  const grid = sheetGrid.value
   if (!grid) return undefined
-  const corners = [view.gridToPoint(grid.sheet.x, grid.sheet.y), view.gridToPoint(grid.sheet.x + grid.sheet.width, grid.sheet.y + grid.sheet.height)]
+  const corners = [view.gridToPoint(grid.x, grid.y), view.gridToPoint(grid.x + grid.width, grid.y + grid.height)]
   return {
     x: Math.min(corners[0].x, corners[1].x),
     y: Math.min(corners[0].y, corners[1].y),
