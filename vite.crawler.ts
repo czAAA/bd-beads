@@ -1,10 +1,11 @@
 import type { Plugin, Rollup } from 'vite'
 import { runnerImport } from 'vite'
+import { SOURCE_URL } from './src/data/sourceLink.ts'
 import { LOCALES, type Locale } from './src/domain/locale.ts'
 
 // What crawlers read (ticket 1055): each language's Homepage (`ru/`, ticket 1053) with its title, description, address
-// and copy from src/homepage/pageCopy.ts, the editor in its folder (`ru/app/`), `robots.txt` and `sitemap.xml`. Plain
-// built pages, no rewrite rules; the page says nothing the drawn Homepage doesn't, and the app replaces the copy.
+// and copy from pageCopy.ts, the editor in its folder (`ru/app/`), `robots.txt`, `sitemap.xml`, `security.txt` (ticket
+// 1202). Plain built pages, no rewrite rules; the page says nothing the drawn Homepage doesn't, the app replaces the copy.
 
 /** A run of copy under its heading, as `CopySection` in src/homepage/pageCopy.ts has it: the build can't read the
  * app's types, which import without extensions, so it says the shape it writes. */
@@ -34,6 +35,8 @@ export const SITE_URL = 'https://openbeads.com/'
 
 export const ROBOTS_FILE = 'robots.txt'
 export const SITEMAP_FILE = 'sitemap.xml'
+/** Where RFC 9116 has a site say how to report a security problem. Wrangler uploads a `.well-known` folder too. */
+export const SECURITY_FILE = '.well-known/security.txt'
 
 /** The module the build reads the Homepage's words from, run by Vite as the app's code is. */
 const COPY_MODULE = '/src/homepage/pageCopy.ts'
@@ -233,6 +236,24 @@ export function robotsText(site: string): string {
   return ['User-agent: *', 'Disallow: /api/', '', `Sitemap: ${new URL(SITEMAP_FILE, site).href}`, ''].join('\n')
 }
 
+/** How long a `security.txt` holds: RFC 9116 asks for under a year, and every deploy writes a new one. */
+const SECURITY_DAYS = 364
+
+/** `security.txt` (RFC 9116, ticket 1202): the same private channel SECURITY.md names, GitHub's private vulnerability
+ * report, expiring a little under a year after `built`, so each deploy moves it on and nobody renews it by hand. */
+export function securityText(site: string, built: Date): string {
+  const expires = new Date(built.getTime() + SECURITY_DAYS * 24 * 60 * 60 * 1000)
+  expires.setUTCHours(0, 0, 0, 0)
+  return [
+    `Contact: ${SOURCE_URL}/security/advisories/new`,
+    `Expires: ${expires.toISOString().replace('.000Z', 'Z')}`,
+    `Policy: ${SOURCE_URL}/blob/main/SECURITY.md`,
+    'Preferred-Languages: en',
+    `Canonical: ${new URL(SECURITY_FILE, site).href}`,
+    '',
+  ].join('\n')
+}
+
 /** `sitemap.xml`: the Homepages' addresses, as `sitemapAddresses` gives them. */
 export function sitemapText(urls: string[]): string {
   return [
@@ -259,7 +280,7 @@ export function withoutLanguageFolder(url: string): string {
 }
 
 /** Writes each language's Homepage at build time, its words in its page, beside the editor in its language, and
- * `robots.txt` and `sitemap.xml`. */
+ * `robots.txt`, `sitemap.xml` and `security.txt`. */
 export function crawlerPages(site = process.env.SITE_URL || SITE_URL): Plugin {
   let root = ''
   let define: Record<string, unknown> = {}
@@ -298,6 +319,7 @@ export function crawlerPages(site = process.env.SITE_URL || SITE_URL): Plugin {
         }
         this.emitFile({ type: 'asset', fileName: ROBOTS_FILE, source: robotsText(site) })
         this.emitFile({ type: 'asset', fileName: SITEMAP_FILE, source: sitemapText(sitemapAddresses(site)) })
+        this.emitFile({ type: 'asset', fileName: SECURITY_FILE, source: securityText(site, new Date()) })
       },
     },
   }

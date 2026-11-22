@@ -20,6 +20,8 @@ import {
   previewTags,
   robotsText,
   ROBOTS_FILE,
+  SECURITY_FILE,
+  securityText,
   SITE_URL,
   SITEMAP_FILE,
   sitemapAddresses,
@@ -67,6 +69,19 @@ describe('what the build writes for crawlers (ticket 1055)', () => {
   it('lets everything be crawled but the API, and names the sitemap', () => {
     expect(robotsText(SITE_URL)).toBe('User-agent: *\nDisallow: /api/\n\nSitemap: https://openbeads.com/sitemap.xml\n')
     expect(sitemapText([SITE_URL])).toContain('<loc>https://openbeads.com/</loc>')
+  })
+
+  it('names the private vulnerability report in security.txt, expiring under a year after the build (ticket 1202)', () => {
+    expect(securityText(SITE_URL, new Date('2026-11-22T15:30:00Z'))).toBe(
+      [
+        'Contact: https://github.com/czAAA/bd-beads/security/advisories/new',
+        'Expires: 2027-11-21T00:00:00Z',
+        'Policy: https://github.com/czAAA/bd-beads/blob/main/SECURITY.md',
+        'Preferred-Languages: en',
+        'Canonical: https://openbeads.com/.well-known/security.txt',
+        '',
+      ].join('\n'),
+    )
   })
 
   it('gives each language’s Homepage one address, the English one the main address, and names them all (ticket 1053)', () => {
@@ -148,9 +163,10 @@ describe('the built Homepage (ticket 1055)', () => {
     for (const { folder } of HOMEPAGES) for (const hash of inlineScriptHashes(built(homepageFile(folder)))) expect(headers).toContain(hash)
   })
 
-  it('has robots.txt and the sitemap of every language’s Homepage beside it, and every editor asks not to be indexed', () => {
+  it('has robots.txt, security.txt and the sitemap of every language’s Homepage beside it, and every editor asks not to be indexed', () => {
     expect(readFileSync(join(outDir, ROBOTS_FILE), 'utf8')).toBe(robotsText(SITE_URL))
     expect(readFileSync(join(outDir, SITEMAP_FILE), 'utf8')).toBe(sitemapText(sitemapAddresses(SITE_URL)))
+    expect(readFileSync(join(outDir, SECURITY_FILE), 'utf8')).toMatch(/^Contact: .+\nExpires: \d{4}-\d\d-\d\dT00:00:00Z\n/)
     for (const { folder } of HOMEPAGES) expect(built(editorFile(folder)), editorFile(folder)).toContain('<meta name="robots" content="noindex" />')
   })
 
