@@ -107,7 +107,7 @@ Most search engines and AI crawlers read a page without running its scripts, so 
 
 ## The human steps
 
-The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h8`; h6 is ticket 400's domain, h7 ticket 395's service token, h8 the steps before the public release, ticket 391), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.
+The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h9`; h6 is ticket 400's domain, h7 ticket 395's service token, h8 the steps before the public release, ticket 391, h9 the backup's token and first run in its private repo, ticket 396), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.
 
 ## Adding a tester
 
