@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "fixed",
+  "line": {
+    "en": "Update ready shows again: a newer version reaches a device that already has the app",
+    "ru": "«Обновление готово» снова появляется: новая версия доходит до устройства, где приложение уже есть",
+    "uk": "«Оновлення готове» знову з’являється: нова версія доходить до пристрою, де застосунок уже є",
+    "be": "«Абнаўленне гатова» зноў з’яўляецца: новая версія даходзіць да прылады, дзе праграма ўжо ёсць",
+    "zh": "“更新已就绪”重新出现：新版本能送达已装有应用的设备",
+    "es": "Actualización lista vuelve a aparecer: una versión más nueva llega a un dispositivo que ya tiene la app",
+    "pl": "Aktualizacja gotowa znów się pojawia: nowsza wersja dociera do urządzenia, które ma już aplikację"
+  }
+}

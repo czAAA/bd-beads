@@ -126,6 +126,9 @@ jobs:
           name: dist
           path: dist
           if-no-files-found: error
+          # A folder named with a dot is left out unless asked for, and `sw.js` lists `.well-known/security.txt`: a
+          # file the host can't serve fails every install of a newer worker, so no device updates (ticket 1204).
+          include-hidden-files: true
 
   # The visual tests are split across runners with Playwright's own sharding (the tests are fullyParallel, so it splits
   # by test, not by file). Every test lands in exactly one part; the reference screenshots stay one folder.

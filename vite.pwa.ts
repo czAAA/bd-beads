@@ -42,6 +42,14 @@ export function renderServiceWorker(template: string, dir: string): { source: st
   return { source, precache }
 }
 
+/** The file list a built worker carries, read back from its source: the one reader of what `renderServiceWorker`
+ * writes, for the deploy's checks of that list (ticket 1204). */
+export function precacheOf(source: string): string[] {
+  const match = /^const PRECACHE = (\[.*\])$/m.exec(source)
+  if (!match) throw new Error('no precache list in the worker')
+  return JSON.parse(match[1]) as string[]
+}
+
 /** Writes `sw.js` once every other file is there (public/ is copied by then), so its list is the whole build. No
  * library: ADR 0045. */
 export function offlineShell(): Plugin {

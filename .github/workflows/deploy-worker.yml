@@ -65,6 +65,10 @@ jobs:
         with:
           name: dist
           path: dist
+      # The worker installs all of its list or nothing, so one listed file the host doesn't get stops every device
+      # from updating (ticket 1204): refuse the deploy instead.
+      - name: Check the build holds every file sw.js lists
+        run: node scripts/precache-guard.ts dist
       - name: Apply the core database's migrations
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -107,3 +111,10 @@ jobs:
           done
           echo "::error::$URL/api/health didn't answer ok with version $COMMIT; last answer: $body"
           exit 1
+      # What the host serves, not what was sent to it: the same list, asked of the deployed Worker (ticket 1204).
+      - name: Smoke check every file sw.js lists
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: node scripts/precache-guard.ts dist "$URL"

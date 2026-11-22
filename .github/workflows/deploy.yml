@@ -70,6 +70,9 @@ jobs:
           name: dist
           path: dist
           if-no-files-found: error
+          # A folder named with a dot is left out unless asked for, and `sw.js` lists `.well-known/security.txt`: a
+          # file the host can't serve fails every install of a newer worker, so no device updates (ticket 1204).
+          include-hidden-files: true
 
   dev:
     name: Deploy (dev)
