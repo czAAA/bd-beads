@@ -59,6 +59,7 @@ const {
   canSaveAs,
   lastFileName,
   sinceFile,
+  saveReminderInPanel,
   onExportLibraryFile,
   saveNow,
   onSaveMakerName,
@@ -236,6 +237,7 @@ const chosenStarter = ref<StarterId>()
       :reference="referencePanel"
       :last-file-name="lastFileName"
       :since-file="sinceFile"
+      :save-reminder="saveReminderInPanel"
       :can-save-as="canSaveAs"
       :exporting="exporting"
       @rename="onRenameProject"

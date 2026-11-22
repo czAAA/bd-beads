@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "changed",
+  "line": {
+    "en": "Once the save reminder leaves the Canvas, a Save Project file button waits in the Project panel, just after the cross",
+    "ru": "Когда напоминание о сохранении уходит с холста, кнопка «Сохранить файл проекта» ждёт в панели проекта, сразу после крестика",
+    "uk": "Коли нагадування про збереження зникає з полотна, кнопка «Зберегти файл проєкту» чекає в панелі проєкту, одразу після хрестика",
+    "be": "Калі напамін пра захаванне знікае з палатна, кнопка «Захаваць файл праекта» чакае ў панэлі праекта, адразу пасля крыжыка",
+    "zh": "保存提醒离开画布后，“保存项目文件”按钮会出现在项目面板中，紧跟在叉号之后",
+    "es": "Cuando el aviso de guardado sale del lienzo, un botón Guardar archivo del proyecto espera en el panel del proyecto, justo después de la cruz",
+    "pl": "Gdy przypomnienie o zapisie znika z płótna, przycisk Zapisz plik projektu czeka w panelu projektu, tuż za krzyżykiem"
+  }
+}
