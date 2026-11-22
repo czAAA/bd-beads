@@ -466,6 +466,22 @@ describe('ProjectSurface', () => {
       expect(draws()).toBe(1)
     })
 
+    // A turned Frame's own rows lie across the Canvas's rows (Rotate Frame): a band of Canvas rows at its own row would
+    // clear and draw a strip across the bead, leaving one painted away from where that strip crosses it unshown.
+    it.each([1, 2, 3])('draws everything again when a bead of a Frame turned %i quarters is painted', async (turns) => {
+      viewport = { width: 400, height: 600 }
+      let turned = projectOf(20, 30)
+      for (let turn = 0; turn < turns; turn += 1) turned = rotateFrame(turned)!
+      const { wrapper } = await mountSurface(turned)
+      context.calls.length = 0
+
+      const beads = frameOf(turned)!.beads
+      await wrapper.setProps({ project: withLayer(turned, 'frame', { beads: { ...beads, 0: { 19: '#e63746' } } }) })
+
+      expect(context.named('rect')).toHaveLength(0)
+      expect(draws()).toBe(1)
+    })
+
     it('draws no beads at all when nothing in view changed, and only redraws the overlay', async () => {
       viewport = { width: 400, height: 600 }
       const project = projectOf(20, 30)
@@ -665,6 +681,15 @@ describe('ProjectSurface', () => {
       await step(weaving(from, technique), weaving(to, technique))
 
       expect(bands()).toEqual(drawn)
+    })
+
+    // Turned by Rotate Frame, its own rows lie across the Canvas's: a band of Canvas rows would miss the passes.
+    it('draws everything again on a Frame Rotate Frame turned', async () => {
+      const turned = rotateFrame(tall.loom)!
+      await step(moveToRow(turned, 12), moveToRow(turned, 13))
+
+      expect(context.named('rect')).toHaveLength(0)
+      expect(draws()).toBe(1)
     })
 
     it('draws again a strip down the view where the rows run down the Frame\'s columns', async () => {
