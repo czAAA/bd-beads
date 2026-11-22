@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "fixed",
+  "line": {
+    "en": "Each empty place in a Frame shows as a bead of its own, so empty rows of brick stitch no longer run together into bars",
+    "ru": "Каждое пустое место в рамке видно как отдельная бисеринка, и пустые ряды кирпичного шва больше не сливаются в полосы",
+    "uk": "Кожне порожнє місце в рамці видно як окрему бісерину, і порожні ряди цегляного шва більше не зливаються в смуги",
+    "be": "Кожнае пустое месца ў рамцы відаць як асобную бісерыну, і пустыя рады цаглянай страчкі больш не зліваюцца ў палосы",
+    "zh": "边框里的每个空位都显示为一颗独立的珠子，砖形针法的空行不再连成一条条横杠",
+    "es": "Cada hueco vacío de un marco se ve como una cuenta propia, así que las filas vacías de punto de ladrillo ya no se juntan en barras",
+    "pl": "Każde puste miejsce w ramce widać jako osobny koralik, więc puste rzędy ściegu ceglanego nie zlewają się już w paski"
+  }
+}

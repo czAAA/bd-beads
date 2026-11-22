@@ -23,22 +23,43 @@ const TILE_LEAST_CORNER_PX = 1.5
  * everywhere on the Canvas. */
 const GAP_TOWARD_TILE = 0.42
 
-const tileColors = new Map<string, string>()
-const gapColors = new Map<string, string>()
+/** How far the edge just inside a Frame's empty tile steps from the Frame's Background toward ink, in L*: twice the
+ * tile's, so the 1.5px gap between two tiles in a row shows (an empty brick row read as one bar without it). */
+const TILE_EDGE_STEP_L = 2 * TILE_STEP_L
 
-/** The tile on a Background: the color moved TILE_STEP_L toward ink with its hue kept, lighter on a dark Background
- * and darker on a light one, by the rule that picks the look a Custom color is drawn in (canvasBackgrounds.ts).
- * @internal Tests and the visual check name the tile a Background gives. */
-export function tileColorOf(background: string): string {
-  let tile = tileColors.get(background)
-  if (tile === undefined) {
+/** How wide that edge is, in grid px: a flat bead's rim (beadLook.ts). */
+const TILE_EDGE_PX = 0.75
+
+const steppedColors = new Map<string, string>()
+
+/** A Background moved `step` L* toward ink with its hue kept, lighter on a dark Background and darker on a light one,
+ * by the rule that picks the look a Custom color is drawn in (canvasBackgrounds.ts). */
+function steppedToInk(background: string, step: number): string {
+  const key = `${background}|${step}`
+  let stepped = steppedColors.get(key)
+  if (stepped === undefined) {
     const channels = channelsOf(background)
     const lab = toCielab(channels)
     const toward = relativeLuminance(channels) < BLACK_WHITE_BALANCE ? 1 : -1
-    tile = toHex(fromCielab({ ...lab, l: lab.l + toward * TILE_STEP_L }))
-    tileColors.set(background, tile)
+    stepped = toHex(fromCielab({ ...lab, l: lab.l + toward * step }))
+    steppedColors.set(key, stepped)
   }
-  return tile
+  return stepped
+}
+
+const gapColors = new Map<string, string>()
+
+/** The tile on a Background: the color moved TILE_STEP_L toward ink.
+ * @internal Tests and the visual check name the tile a Background gives. */
+export function tileColorOf(background: string): string {
+  return steppedToInk(background, TILE_STEP_L)
+}
+
+/** The edge of a Frame's empty tile on the Frame's Background (ticket 1001 follow-up, BeadBoard card, Tonal tiles): the
+ * Background moved TILE_EDGE_STEP_L toward ink, so every empty position of the Frame reads as a bead of its own.
+ * @internal Tests name the edge a Background gives. */
+export function tileEdgeColorOf(background: string): string {
+  return steppedToInk(background, TILE_EDGE_STEP_L)
 }
 
 /** The gap between tiles on a Background: the Background moved GAP_TOWARD_TILE of the way to its tile (Night `#202020`
@@ -81,12 +102,13 @@ export interface TileCell {
   cornerRadius: number
 }
 
-/** Adds the tile of a cell to the current path: the cell TILE_INSET_PX in on every side, its corner the bead's and
- * never under TILE_LEAST_CORNER_PX. */
-function addTilePath(context: DrawingContext, { x, y, width, height, cornerRadius }: TileCell): void {
-  const [left, top] = [x + TILE_INSET_PX, y + TILE_INSET_PX]
-  const [right, bottom] = [x + width - TILE_INSET_PX, y + height - TILE_INSET_PX]
-  const radius = Math.min(Math.max(TILE_LEAST_CORNER_PX, cornerRadius), (right - left) / 2, (bottom - top) / 2)
+/** Adds the tile of a cell to the current path: the cell TILE_INSET_PX in on every side (`further` more for the inside
+ * of its edge), its corner the bead's and never under TILE_LEAST_CORNER_PX. */
+function addTilePath(context: DrawingContext, { x, y, width, height, cornerRadius }: TileCell, further = 0): void {
+  const inset = TILE_INSET_PX + further
+  const [left, top] = [x + inset, y + inset]
+  const [right, bottom] = [x + width - inset, y + height - inset]
+  const radius = Math.max(0, Math.min(Math.max(TILE_LEAST_CORNER_PX, cornerRadius) - further, (right - left) / 2, (bottom - top) / 2))
   context.moveTo(left + radius, top)
   context.arcTo(right, top, right, bottom, radius)
   context.arcTo(right, bottom, left, bottom, radius)
@@ -104,13 +126,23 @@ export function fillTiles(context: DrawingContext, cells: readonly TileCell[], c
   context.fill()
 }
 
-/** One empty position of the Frame as its tile, blitted from a bitmap made once at its size on the screen: a Frame
- * can hold tens of thousands, too many to fill as paths (as beads are, beadLook.ts). */
-export function drawTile(context: DrawingContext, cell: TileCell, color: string, deviceScale: number): void {
+/** A tile in `color` with an edge TILE_EDGE_PX wide just inside it in `edge`. */
+function fillEdgedTile(context: DrawingContext, cell: TileCell, color: string, edge: string): void {
+  fillTiles(context, [cell], color)
+  context.beginPath()
+  addTilePath(context, cell)
+  addTilePath(context, cell, TILE_EDGE_PX)
+  context.fillStyle = edge
+  context.fill('evenodd')
+}
+
+/** One empty position of the Frame as its tile, edged in `edge` (`tileEdgeColorOf` the Frame's Background), blitted
+ * from a bitmap made once at its size on the screen: a Frame can hold tens of thousands, too many to fill as paths. */
+export function drawTile(context: DrawingContext, cell: TileCell, color: string, edge: string, deviceScale: number): void {
   const { x, y, width, height, cornerRadius } = cell
   const [across, down] = [Math.max(1, Math.round(width * deviceScale)), Math.max(1, Math.round(height * deviceScale))]
-  const key = `tile|${across}|${down}|${width}x${height}|${cornerRadius}|${color}`
-  const sprite = cachedSprite(key, across, width, (own) => fillTiles(own, [{ ...cell, x: 0, y: 0 }], color), down)
+  const key = `tile|${across}|${down}|${width}x${height}|${cornerRadius}|${color}|${edge}`
+  const sprite = cachedSprite(key, across, width, (own) => fillEdgedTile(own, { ...cell, x: 0, y: 0 }, color, edge), down)
   if (sprite) context.drawImage(sprite, x, y, width, height)
-  else fillTiles(context, [cell], color)
+  else fillEdgedTile(context, cell, color, edge)
 }
