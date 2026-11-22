@@ -24,8 +24,8 @@ import { BUILD_MARK, BUILD_VERSION } from '../../data/build'
 import BetaChip from '../ui/BetaChip.vue'
 
 // The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): five folding sections, the same rows on every page
-// (1113) but the demo's Projects and shortcuts (0797); the Homepage's New Project and Sign in open the editor, pushing no
-// Subpanel. A row that leaves the page awaits `leave` first; Convert image is the current page while open (0756).
+// (1113) but the demo's and a page's own row (1201); the Homepage's New Project and Sign in open the editor, no Subpanel.
+// A row that leaves the page awaits `leave` first.
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */
@@ -71,6 +71,8 @@ const emit = defineEmits<{
   'saved-projects': []
   'new-project': []
   'convert-image': []
+  /** The Editor row on the Homepage: the page opens the editor itself, in its language, as its other ways in do. */
+  'open-editor': []
   'update:toolsPosition': [position: PillPosition]
   'update:inputMode': [mode: InputMode]
   'update:handedness': [hand: Handedness]
@@ -114,6 +116,13 @@ async function openHomepage(event: MouseEvent) {
   if (await props.leave()) location.assign(homepageHref.value)
 }
 
+/** The Editor row opens the editor from the Homepage (the page does it, with its box handoff) and from Convert image
+ * (the page lets go, back to the editor in this document), then the panel goes. */
+async function openEditor() {
+  if (onHomepage.value) return emit('open-editor')
+  if (await props.leave()) context?.close()
+}
+
 const themeOptions = computed<{ value: ThemePick; icon: IconName; label: string }[]>(() => [
   { value: 'device', icon: 'device', label: t.value.theme.matchDevice },
   { value: 'light', icon: 'sun', label: t.value.panels.menu.themeLight },
@@ -143,8 +152,8 @@ const inputOptions = computed(() => [
     <PanelSection id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
       <PanelItem icon="plus" accent :sub="formHere" :stays="formHere" data-testid="menu-new-project" :name="actions.newProject.name(t)" :body="t.tooltips.newProject" @select="formHere ? openNewProject() : emit('new-project')">{{ actions.newProject.name(t) }}</PanelItem>
-      <!-- Convert image is an App page (ADR 0086): while it is open, its row is the current page. -->
-      <PanelItem icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" :name="actions.convertImage.name(t)" :body="t.tooltips.convertImage" @select="converting || emit('convert-image')">
+      <!-- Convert image is an App page (ADR 0086) and a tool: left out only while its page is open. -->
+      <PanelItem v-if="!converting" icon="image" data-testid="menu-convert-image" :name="actions.convertImage.name(t)" :body="t.tooltips.convertImage" @select="emit('convert-image')">
         {{ actions.convertImage.name(t) }}<BetaChip feature="convertImage" :name="actions.convertImage.name(t)" />
       </PanelItem>
       <PanelItem icon="library" :value="countUnknown ? undefined : String(projectCount)" sub stays data-testid="menu-saved-projects" :name="actions.savedProjects.name(t)" :body="t.panels.menu.tooltipProjectsLibrary" @select="emit('saved-projects'); context?.openSub()">
@@ -194,7 +203,9 @@ const inputOptions = computed(() => [
       <!-- Keyboard shortcuts is Menu's Subpanel (ticket 1159, ShortcutsHelp card), wider than Menu; the key shows where a keyboard is. -->
       <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" sub stays data-testid="menu-item-shortcuts" @select="emit('shortcuts'); context?.openSub()">{{ t.shortcutsHelp.title }}</PanelItem>
       <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
-      <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="onHomepage ? 'page' : undefined" data-testid="menu-item-homepage" :name="t.header.homepageItem" :body="t.panels.menu.tooltipHomepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
+      <!-- Page rows (ticket 1201): Homepage, then Editor; each is left out on its own page. -->
+      <PanelItem v-if="!demo && !onHomepage" icon="bead" :href="homepageHref" data-testid="menu-item-homepage" :name="t.header.homepageItem" :body="t.panels.menu.tooltipHomepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
+      <PanelItem v-if="!demo && page !== 'editor'" icon="pencil" data-testid="menu-item-editor" :name="t.header.editorItem" :body="t.panels.menu.tooltipEditor" @select="openEditor">{{ t.header.editorItem }}</PanelItem>
     </PanelSection>
 
     <PanelSection v-if="!demo" id="menu:about" :label="t.panels.menu.about">

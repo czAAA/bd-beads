@@ -23,6 +23,7 @@ export const panels: PanelsTranslations = {
       tooltipProjectsLibrary: 'Open, rename or delete a Project, or open a Project file.',
       tooltipToolsPosition: 'Put the tools on the left, right, top or bottom.',
       tooltipHomepage: 'Open the openbeads website.',
+      tooltipEditor: 'Open the editor.',
       tooltipSource: 'Read the code on GitHub.',
       tooltipCoffee: "Support the developer. It's the only way to keep everything in the app free.",
       deleteAllTitle: { one: 'Delete {count} Project?', other: 'Delete all {count} Projects?' },

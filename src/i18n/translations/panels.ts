@@ -43,6 +43,7 @@ export interface PanelsTranslations {
       tooltipProjectsLibrary: string
       tooltipToolsPosition: string
       tooltipHomepage: string
+      tooltipEditor: string
       tooltipSource: string
       tooltipCoffee: string
       /** Delete all Projects? with the count (ticket 0984). */

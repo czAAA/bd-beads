@@ -134,19 +134,18 @@ describe('App Convert image as an App page (ADR 0086)', () => {
     wrapper.unmount()
   })
 
-  it('opens from the Menu’s Convert image row, under New Project, which shows as the current page while it is open', async () => {
+  it('opens from the Menu’s Convert image row, under New Project, which is left out while it is open', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     await openPanel(wrapper, 'strip-menu')
     const rows = wrapper.findAll('[data-testid="menu-new-project"], [data-testid="menu-convert-image"]').map((row) => row.attributes('data-testid'))
     expect(rows).toEqual(['menu-new-project', 'menu-convert-image'])
-    expect(wrapper.get('[data-testid="menu-convert-image"]').attributes('aria-current')).toBeUndefined()
 
     await wrapper.get('[data-testid="menu-convert-image"]').trigger('click')
     await flushPromises()
     expect(page(wrapper).exists()).toBe(true)
 
     await openPanel(wrapper, 'strip-menu')
-    expect(wrapper.get('[data-testid="menu-convert-image"]').attributes('aria-current')).toBe('page')
+    expect(wrapper.find('[data-testid="menu-convert-image"]').exists()).toBe(false)
     wrapper.unmount()
   })
 

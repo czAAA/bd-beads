@@ -202,15 +202,15 @@ describe('HomePage', () => {
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
   })
 
-  it('opens the editor\'s Menu panel from the strip, with Homepage as the current page', async () => {
+  it('opens the editor\'s Menu panel from the strip, with no Homepage row and an Editor row', async () => {
     const wrapper = page()
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
 
     expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-expanded')).toBe('true')
-    const item = wrapper.get('[data-testid="menu-item-homepage"]')
-    expect(item.attributes('aria-current')).toBe('page')
-    expect(item.attributes('href')).toBe(import.meta.env.BASE_URL)
+    expect(wrapper.find('[data-testid="menu-item-homepage"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="menu-item-editor"]').trigger('click')
+    expect(wrapper.emitted('openEditor')).toHaveLength(1)
   })
 
   it.each([

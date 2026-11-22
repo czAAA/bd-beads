@@ -142,18 +142,33 @@ describe('MenuPanel on every page (tickets 540, 1113)', () => {
       .findAll('[data-testid^="menu-"], [data-testid="theme-picker"]')
       .map((row) => row.attributes('data-testid'))
 
-  it('holds the same rows in the editor, on Convert image and on the Homepage', () => {
+  it('leaves a page\'s own row out on that page, and keeps every other row in the same place (ticket 1201)', () => {
     const editor = rowsOn({})
     expect(editor).toEqual(expect.arrayContaining(['menu-account', 'menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-tools-position', 'menu-input-mode', 'menu-handedness', 'menu-item-shortcuts', 'menu-item-feedback', 'menu-item-homepage']))
-    expect(rowsOn({ page: 'convert-image' })).toEqual(editor)
-    expect(rowsOn({ page: 'homepage' })).toEqual(editor)
+    expect(editor).not.toContain('menu-item-editor')
+    const withEditor = editor.flatMap((id) => (id === 'menu-item-homepage' ? [id, 'menu-item-editor'] : [id]))
+    expect(rowsOn({ page: 'homepage' })).toEqual(withEditor.filter((id) => id !== 'menu-item-homepage'))
+    expect(rowsOn({ page: 'convert-image' })).toEqual(withEditor.filter((id) => id !== 'menu-convert-image'))
   })
 
-  it('shows Homepage as the current page on the Homepage, and links to it unmarked in the editor', () => {
-    expect(mountIn({ page: 'homepage' }).get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBe('page')
-    const editor = mountIn()
-    expect(editor.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBeUndefined()
-    expect(editor.get('[data-testid="menu-item-homepage"]').attributes('href')).toBe(import.meta.env.BASE_URL)
+  it('puts Homepage then Editor in Help, with no current-page mark anywhere', () => {
+    const convert = mountIn({ page: 'convert-image' })
+    const help = convert.findAll('[data-testid="menu-item-homepage"], [data-testid="menu-item-editor"]').map((row) => row.attributes('data-testid'))
+    expect(help).toEqual(['menu-item-homepage', 'menu-item-editor'])
+    for (const page of ['editor', 'homepage', 'convert-image'] as const) expect(mountIn({ page }).find('[aria-current]').exists()).toBe(false)
+    expect(mountIn().get('[data-testid="menu-item-homepage"]').attributes('href')).toBe(import.meta.env.BASE_URL)
+  })
+
+  it('opens the editor from the Homepage by asking the page, and from Convert image by letting the page go', async () => {
+    const home = mountIn({ page: 'homepage' })
+    await home.get('[data-testid="menu-item-editor"]').trigger('click')
+    expect(home.findComponent(MenuPanel).emitted('open-editor')).toHaveLength(1)
+
+    const leave = vi.fn(async () => true)
+    const convert = mountIn({ page: 'convert-image', leave })
+    await convert.get('[data-testid="menu-item-editor"]').trigger('click')
+    expect(leave).toHaveBeenCalledOnce()
+    expect(convert.findComponent(MenuPanel).emitted('open-editor')).toBeUndefined()
   })
 
   it('holds Saved Projects with its count, opening its subpanel, also while the library is empty (ticket 0716)', () => {
@@ -185,17 +200,14 @@ describe('MenuPanel on every page (tickets 540, 1113)', () => {
 })
 
 describe('MenuPanel Convert image row and leaving (ticket 0756)', () => {
-  it('asks to convert, and shows the row as the current page while the converter is open, where it asks nothing', async () => {
+  it('asks to convert, and leaves the row out while the converter is open (ticket 1201)', async () => {
     const editor = mountIn()
-    expect(editor.get('[data-testid="menu-convert-image"]').attributes('aria-current')).toBeUndefined()
     await editor.get('[data-testid="menu-convert-image"]').trigger('click')
     const asked = (editor.findComponent(MenuPanel).emitted('convert-image') ?? []).length
     expect(asked).toBe(1)
 
     const converting = mountIn({ page: 'convert-image' })
-    expect(converting.get('[data-testid="menu-convert-image"]').attributes('aria-current')).toBe('page')
-    await converting.get('[data-testid="menu-convert-image"]').trigger('click')
-    expect(converting.findComponent(MenuPanel).emitted('convert-image')).toBeUndefined()
+    expect(converting.find('[data-testid="menu-convert-image"]').exists()).toBe(false)
     expect(converting.find('[data-testid="menu-new-project"]').exists()).toBe(true)
   })
 

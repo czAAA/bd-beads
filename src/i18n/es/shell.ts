@@ -88,6 +88,7 @@ export const shell: ShellTranslations = {
   header: {
     menuButton: 'Menú',
     homepageItem: 'Inicio',
+    editorItem: 'Editor',
     sourceItem: 'Código fuente',
     projectPanelLabel: 'Proyecto',
     projectButtonNamed: 'Proyecto: {name}',

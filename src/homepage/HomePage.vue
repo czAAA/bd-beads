@@ -506,6 +506,7 @@ const savedProjects = controlAction('saved-projects')
             :may-open-sign-in="accountFlow.mayOpenSignIn"
             @new-project="emit('newProject')"
             @convert-image="emit('convertImage')"
+            @open-editor="emit('openEditor')"
             @saved-projects="(shortcutsOpen = false), showSavedProjects()"
             @sign-in="emit('createAccount')"
             @sign-out="accountFlow.onSignOut"

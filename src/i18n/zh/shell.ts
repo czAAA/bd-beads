@@ -87,6 +87,7 @@ export const shell: ShellTranslations = {
   header: {
     menuButton: '菜单',
     homepageItem: '首页',
+    editorItem: '编辑器',
     sourceItem: '源代码',
     projectPanelLabel: '项目',
     projectButtonNamed: '项目：{name}',
