@@ -14,6 +14,9 @@ import {
   type HomepageCopy,
   homepageFile,
   HOMEPAGES,
+  linkAddress,
+  liveReleaseDate,
+  STORE_SCREENSHOTS,
   OPEN_GRAPH_LOCALES,
   PREVIEW_SIZE,
   previewFile,
@@ -165,7 +168,7 @@ describe('the built Homepage (ticket 1055)', () => {
 
   it('has robots.txt, security.txt and the sitemap of every language’s Homepage beside it, and every editor asks not to be indexed', () => {
     expect(readFileSync(join(outDir, ROBOTS_FILE), 'utf8')).toBe(robotsText(SITE_URL))
-    expect(readFileSync(join(outDir, SITEMAP_FILE), 'utf8')).toBe(sitemapText(sitemapAddresses(SITE_URL)))
+    expect(readFileSync(join(outDir, SITEMAP_FILE), 'utf8')).toBe(sitemapText(sitemapAddresses(SITE_URL), liveReleaseDate()))
     expect(readFileSync(join(outDir, SECURITY_FILE), 'utf8')).toMatch(/^Contact: .+\nExpires: \d{4}-\d\d-\d\dT00:00:00Z\n/)
     for (const { folder } of HOMEPAGES) expect(built(editorFile(folder)), editorFile(folder)).toContain('<meta name="robots" content="noindex" />')
   })
@@ -193,6 +196,11 @@ describe('the built Homepage (ticket 1055)', () => {
   it('gives each language its own words, and the main address none of a language folder’s mark', () => {
     expect(new Set(LOCALES.map((locale) => copies.get(locale)!.title)).size).toBe(LOCALES.length)
     expect(new Set(LOCALES.map((locale) => copies.get(locale)!.description)).size).toBe(LOCALES.length)
+    // A result shows about 60 characters of a title and 160 of a description (ticket 1203).
+    for (const locale of LOCALES) {
+      expect(copies.get(locale)!.title.length, locale).toBeLessThanOrEqual(64)
+      expect(copies.get(locale)!.description.length, locale).toBeLessThanOrEqual(165)
+    }
     expect(page).toMatch(/<html lang="en">/)
     expect(built(editorFile())).toMatch(/<html lang="en">/)
   })
@@ -220,6 +228,40 @@ describe('the built Homepage (ticket 1055)', () => {
       expect(metaContents(head, 'twitter:image'), file).toEqual([image])
     }
     expect(pngSize(readFileSync(join(outDir, previewFile(locale))))).toEqual(PREVIEW_SIZE)
+  })
+
+  /** The data of a built Homepage, parsed. */
+  const dataOf = (html: string) => JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '{}') as Record<string, unknown>
+
+  it.each([{ locale: 'en' as Locale, folder: undefined }, { locale: 'ru' as Locale, folder: 'ru' as Locale }])('gives the Homepage in $locale the links the drawn one has, in its language (ticket 1203)', ({ locale, folder }) => {
+    const html = built(homepageFile(folder))
+    const app = html.slice(html.indexOf('<div id="app">'), html.indexOf('</body>'))
+    const own = copies.get(locale)!
+    expect(own.links.map(({ id }) => id)).toEqual(['editor', 'source', 'changelog', 'coffee'])
+    for (const { id, text } of own.links) expect(app, id).toContain(`<a href="${escapeHtml(linkAddress(id, folder))}">${escapeHtml(text)}</a>`)
+    expect(app).toContain(folder ? `href="/${folder}/app/"` : 'href="/app/"')
+    // Nothing more: the four the drawn page has.
+    expect(app.match(/<a /g)).toHaveLength(4)
+  })
+
+  it.each([{ locale: 'en' as Locale, folder: undefined }, { locale: 'ru' as Locale, folder: 'ru' as Locale }])('names the pictures and the features in the data of the Homepage in $locale, every picture a file in the build (ticket 1203)', ({ locale, folder }) => {
+    const data = dataOf(built(homepageFile(folder))) as { image: { url: string; width: number; height: number }; screenshot: { url: string; width: number; height: number }[]; featureList: string[] }
+    const own = copies.get(locale)!
+    expect(data.image).toMatchObject({ '@type': 'ImageObject', url: new URL(previewFile(locale), SITE_URL).href, ...PREVIEW_SIZE })
+    expect(data.screenshot.map(({ url, width, height }) => ({ url, width, height }))).toEqual(STORE_SCREENSHOTS.map(({ file, width, height }) => ({ url: new URL(file, SITE_URL).href, width, height })))
+    for (const { url, width, height } of [data.image, ...data.screenshot]) expect(pngSize(readFileSync(join(outDir, new URL(url).pathname))), url).toEqual({ width, height })
+    expect(data.featureList).toEqual(own.features)
+    expect(data).not.toHaveProperty('aggregateRating')
+  })
+
+  it('dates each Homepage in the sitemap by the live release, not by the build (ticket 1203)', () => {
+    const sitemap = readFileSync(join(outDir, SITEMAP_FILE), 'utf8')
+    const live = (JSON.parse(readFileSync(join(repo, 'src/data/releases.json'), 'utf8')) as { date: string }[]).at(-1)!.date
+    expect(sitemap.match(/<lastmod>[^<]*<\/lastmod>/g)).toEqual(LOCALES.map(() => `<lastmod>${live}</lastmod>`))
+    // The screenshots' sizes are the manifest's, which the store listing reads.
+    const manifest = JSON.parse(readFileSync(join(repo, 'public/manifest.webmanifest'), 'utf8')) as { screenshots: { src: string; sizes: string }[] }
+    expect(manifest.screenshots.map(({ src, sizes }) => ({ src, sizes }))).toEqual(STORE_SCREENSHOTS.map(({ file, width, height }) => ({ src: file, sizes: `${width}x${height}` })))
+    expect(liveReleaseDate([{ date: '2026-11-17' }, { date: '2026-11-22' }])).toBe('2026-11-22')
   })
 
   it('has the page the host shows at an address with none, which asks not to be indexed', () => {

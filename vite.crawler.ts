@@ -1,6 +1,9 @@
 import type { Plugin, Rollup } from 'vite'
 import { runnerImport } from 'vite'
-import { SOURCE_URL } from './src/data/sourceLink.ts'
+import { COFFEE_URL } from './src/data/coffeeLink.ts'
+import { CHANGELOG_URL, SOURCE_URL } from './src/data/sourceLink.ts'
+import { editorUrl } from './src/homepage/homepageRoute.ts'
+import releases from './src/data/releases.json' with { type: 'json' }
 import { LOCALES, type Locale } from './src/domain/locale.ts'
 
 // What crawlers read (ticket 1055): each language's Homepage (`ru/`, ticket 1053) with its title, description, address
@@ -28,6 +31,8 @@ export interface HomepageCopy {
   title: string
   description: string
   sections: CopySection[]
+  links: { id: 'editor' | 'source' | 'changelog' | 'coffee'; text: string }[]
+  features: string[]
 }
 
 /** The app's one public address: the Homepage's canonical link and the sitemap name it. `SITE_URL` sets a fork's. */
@@ -105,13 +110,30 @@ function sectionHtml(section: CopySection, level: number): string {
   ].join('')
 }
 
-/** The page's copy as HTML: Welcome's heading the page's one `h1`, the other sections' `h2`, their groups' `h3`. */
-export function copyHtml(copy: HomepageCopy): string {
-  return `<div class="${COPY_CLASS}">${copy.sections.map((section, index) => sectionHtml(section, index === 0 ? 1 : 2)).join('')}</div>`
+/** Where each link of the drawn Homepage goes, from the same addresses the app uses (ticket 1203): the editor in the
+ * language's folder, the source, the changelog and the coffee page. */
+export function linkAddress(id: HomepageCopy['links'][number]['id'], folder?: Locale): string {
+  if (id === 'editor') return editorUrl(folder ? `/${folder}/` : '/')
+  return { source: SOURCE_URL, changelog: CHANGELOG_URL, coffee: COFFEE_URL }[id]
+}
+
+/** The page's copy as HTML: Welcome's heading the page's one `h1`, the other sections' `h2`, their groups' `h3`, then
+ * the links the drawn page has. */
+export function copyHtml(copy: HomepageCopy, folder?: Locale): string {
+  const links = copy.links
+    .map(({ id, text }) => ({ text, href: linkAddress(id, folder) }))
+    .map(({ text, href }) => `<li><a href="${escapeHtml(href)}">${escapeHtml(text)}</a></li>`)
+  return `<div class="${COPY_CLASS}">${copy.sections.map((section, index) => sectionHtml(section, index === 0 ? 1 : 2)).join('')}<nav><ul>${links.join('')}</ul></nav></div>`
 }
 
 /** What a search engine reads the page as (schema.org): a free web application. No rating: there are no reviews. */
-function applicationData(copy: HomepageCopy, url: string): Record<string, unknown> {
+function applicationData(copy: HomepageCopy, url: string, site: string): Record<string, unknown> {
+  const picture = (file: string, { width, height }: { width: number; height: number }) => ({
+    '@type': 'ImageObject',
+    url: new URL(file, site).href,
+    width,
+    height,
+  })
   return {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -122,9 +144,18 @@ function applicationData(copy: HomepageCopy, url: string): Record<string, unknow
     applicationCategory: 'DesignApplication',
     operatingSystem: 'Any',
     isAccessibleForFree: true,
+    image: picture(previewFile(copy.locale), PREVIEW_SIZE),
+    screenshot: STORE_SCREENSHOTS.map(({ file, width, height }) => picture(file, { width, height })),
+    featureList: copy.features,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   }
 }
+
+/** The two editor screenshots the store listing uses (ticket 1057), as the manifest names them, each with its size. */
+export const STORE_SCREENSHOTS = [
+  { file: 'screenshots/editor-wide.png', width: 1366, height: 768 },
+  { file: 'screenshots/editor-tall.png', width: 820, height: 1180 },
+] as const
 
 /** The picture a link preview shows for a language's Homepage (ticket 1056): its Welcome as the app draws it, at the
  * size Open Graph and the Twitter card read best, made by `npm run store:images` into public/. */
@@ -185,7 +216,7 @@ function tagHtml({ tag, attrs = {}, children }: HeadTag): string {
 function headTags(copy: HomepageCopy, site: string): HeadTag[] {
   const url = homepageAddress(site, copy.locale)
   // `<` written as an escape, so no text in the data can end its script.
-  const data = JSON.stringify(applicationData(copy, url)).replace(/</g, '\\u003c')
+  const data = JSON.stringify(applicationData(copy, url, site)).replace(/</g, '\\u003c')
   return [
     { tag: 'meta', attrs: { name: 'description', content: copy.description } },
     { tag: 'link', attrs: { rel: 'canonical', href: url } },
@@ -216,7 +247,7 @@ function withHeadTags(html: string, tags: HeadTag[]): string {
 
 /** A Homepage's page: the built one in its language, with its copy and its head's tags written in. */
 function homepageHtml(template: string, copy: HomepageCopy, site: string, folder?: Locale): string {
-  return withHeadTags(inLanguage(withCopy(template, copy), copy.locale, folder), headTags(copy, site))
+  return withHeadTags(inLanguage(withCopy(template, copy, folder), copy.locale, folder), headTags(copy, site))
 }
 
 /** An editor's page: the built one in its language, with its language's Homepage card for a link preview. */
@@ -225,9 +256,9 @@ function editorHtml(template: string, copy: HomepageCopy, site: string, folder?:
 }
 
 /** The page with its title and copy written in: the title in place of the source's, the copy inside the app's box. */
-export function withCopy(html: string, copy: HomepageCopy): string {
+export function withCopy(html: string, copy: HomepageCopy, folder?: Locale): string {
   if (!TITLE.test(html) || !html.includes(APP)) throw new Error(`The Homepage's page has no <title> or no ${APP} to write its copy into`)
-  return html.replace(TITLE, `<title>${escapeHtml(copy.title)}</title>`).replace(APP, `<div id="app">${copyHtml(copy)}</div>`)
+  return html.replace(TITLE, `<title>${escapeHtml(copy.title)}</title>`).replace(APP, `<div id="app">${copyHtml(copy, folder)}</div>`)
 }
 
 /** `robots.txt`: everything may be crawled but the API, and the sitemap is named. The editor asks for no index in its
@@ -254,12 +285,20 @@ export function securityText(site: string, built: Date): string {
   ].join('\n')
 }
 
-/** `sitemap.xml`: the Homepages' addresses, as `sitemapAddresses` gives them. */
-export function sitemapText(urls: string[]): string {
+/** The date of the release that is live: the last in `src/data/releases.json`, never the build's own, which moves with
+ * every deploy and teaches a search engine to ignore it. */
+export function liveReleaseDate(record: readonly { date: string }[] = releases): string {
+  const date = record.at(-1)?.date
+  if (!date) throw new Error('src/data/releases.json holds no release to date the sitemap by')
+  return date
+}
+
+/** `sitemap.xml`: the Homepages' addresses, as `sitemapAddresses` gives them, each with the live release's date. */
+export function sitemapText(urls: string[], lastmod = liveReleaseDate()): string {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...urls.map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`),
+    ...urls.map((url) => `  <url><loc>${escapeHtml(url)}</loc><lastmod>${lastmod}</lastmod></url>`),
     '</urlset>',
     '',
   ].join('\n')

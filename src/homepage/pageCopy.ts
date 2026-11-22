@@ -36,6 +36,10 @@ interface HomepageCopy {
   title: string
   description: string
   sections: CopySection[]
+  /** What the drawn page lets a visitor open, by what it points at: the build gives each its address. */
+  links: { id: 'editor' | 'source' | 'changelog' | 'coffee'; text: string }[]
+  /** What the app does: the names of What's inside's rows. */
+  features: string[]
 }
 
 /** The page's title, as the tab and a search result show it: ending on the app's name. */
@@ -64,6 +68,14 @@ export function homepageCopy(t: Translations, locale: Locale): HomepageCopy {
         groups: freeListGroups(t, locale).map((group) => ({ heading: group.name, rows: group.rows })),
       },
     ],
+    // The same words the drawn buttons carry: Open the editor, the source, every change, Buy me a coffee.
+    links: [
+      { id: 'editor', text: t.homepage.openEditor },
+      { id: 'source', text: t.homepage.coffee.source },
+      { id: 'changelog', text: t.homepage.whatsNew.history },
+      { id: 'coffee', text: t.homepage.coffee.button },
+    ],
+    features: insideChapters(t, locale).flatMap((chapter) => chapter.rows.map((row) => row.name)),
   }
 }
 
