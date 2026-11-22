@@ -157,5 +157,8 @@
   { "version": "1.14.21", "date": "2026-11-22", "notes": [
     { "name": "2026-11-22-1201", "version": "1.14.20", "kind": "changed" },
     { "name": "2026-11-22-1199", "version": "1.14.21", "kind": "fixed" }
+  ] },
+  { "version": "1.14.22", "date": "2026-11-22", "notes": [
+    { "name": "2026-11-22-1204", "version": "1.14.22", "kind": "fixed" }
   ] }
 ]
