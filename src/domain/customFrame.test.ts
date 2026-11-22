@@ -348,8 +348,8 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     expect(rowProgressOn(project)).toBe(true)
   })
 
-  it('reads settings it was not given as the shape\'s defaults, and a body under its point of an even number of rows (ticket 0814)', () => {
-    expect(frameOf(earring({ topWidth: 5, topRows: 9 }))!.settings).toEqual({ topWidth: 5, topRows: 8, fringeStyle: 'straight', fringeLength: 12 })
+  it('reads settings it was not given as the shape\'s defaults, and Top rows no taller than its point, never a body under it', () => {
+    expect(frameOf(earring({ topWidth: 5, topRows: 9 }))!.settings).toEqual({ topWidth: 5, topRows: 4, fringeStyle: 'straight', fringeLength: 12 })
   })
 
   describe('with its top woven in another Technique (ticket 0814)', () => {
@@ -366,27 +366,29 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       expect(settingValuesOf(frameOf(peyote)!).find(({ name }) => name === 'topWidth')).toMatchObject({ min: 3, max: 29 })
     })
 
-    it('grows a peyote or loom body a row at a time, and a 2-drop brick body four rows at a time', () => {
+    it('stops Top rows at the point in peyote, loom and 2-drop brick: there is never a body under it', () => {
       // A peyote Width of 5 tapers in 3 lines, a loom one in 3 rows; a 2-drop brick Width of 6 in 10 rows.
-      expect(frameOf(changed(woven('peyote', undefined, { ...settings, topWidth: 5, topRows: 3 }), { settings: { topRows: 4 } }))!.settings!.topRows).toBe(4)
-      expect(frameOf(changed(woven('loom', undefined, { ...settings, topWidth: 5, topRows: 3 }), { settings: { topRows: 4 } }))!.settings!.topRows).toBe(4)
+      const peyote = woven('peyote', undefined, { ...settings, topWidth: 5, topRows: 3 })
+      expect(changeFrame(peyote, { settings: { topRows: 4 } }).kind).toBe('unchanged')
+      expect(frameOf(changed(peyote, { settings: { topRows: 2 } }))!.settings!.topRows).toBe(2)
+      expect(changeFrame(woven('loom', undefined, { ...settings, topWidth: 5, topRows: 3 }), { settings: { topRows: 4 } }).kind).toBe('unchanged')
       const brick = woven('brick', { brickDrop: 2 }, { ...settings, topRows: 10 })
-      expect(frameOf(changed(brick, { settings: { topRows: 11 } }))!.settings!.topRows).toBe(14)
+      expect(changeFrame(brick, { settings: { topRows: 11 } }).kind).toBe('unchanged')
     })
 
     it('switches its top\'s Technique keeping each bead\'s row and column, folding what has no place, the strands untouched, as one change', () => {
       const project = paintFrame(earring(), [base, { row: 3, column: 1 }, strandEnd], RED)
       const loom = changed(project, { technique: 'loom' })
-      expect(frameOf(loom)).toMatchObject({ technique: 'loom', settings })
-      // A loom row 3 of a Width of 6 has no place: the point tapers to a pair in 3 rows, a body row under them.
+      expect(frameOf(loom)).toMatchObject({ technique: 'loom', settings: { ...settings, topRows: 3 } })
+      // A loom row 3 of a Width of 6 has no place: the point tapers to a pair in 3 rows, which cuts Top rows to 3.
       expect(frameOf(loom)!.beads).toEqual({ [base.row]: { [base.column]: RED }, [strandEnd.row]: { [strandEnd.column]: RED } })
       expect(colorAt(frameOf(loom)!.folded!, 3, 1)).toBe(RED)
-      expect(frameOf(changed(loom, { technique: 'brick' }))!.beads).toEqual(frameOf(project)!.beads)
+      expect(frameOf(changed(loom, { technique: 'brick' }))!.beads).toEqual(frameOf(loom)!.beads)
       // Peyote makes the even Width odd.
       const peyote = changed(project, { technique: 'peyote' })
       expect(frameOf(peyote)!.settings!.topWidth).toBe(5)
       // Saved and opened again, its settings are read in its own Weave.
-      const tall = changed(peyote, { settings: { topRows: 6 } })
+      const tall = changed(peyote, { settings: { topRows: 2 } })
       expect(parseProjectsFile(serializeProject(tall)).projects).toEqual([withColorsInPalette(tall)])
       // On 2-drop the base row's block is two rows of the Width.
       expect(frameLayoutOf(frameOf(changed(project, { techniqueSettings: { brickDrop: 2 } }))!)!.positions.filter(({ row }) => row === 1)).toHaveLength(6)
@@ -439,18 +441,19 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
 
     /** The Starter's own sizes: a whole point and no body. */
     const starter = { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 10 } as const
-    const handleCases: [string, () => Project][] = [
-      ['a cut-off point', () => earring()],
-      ['the Starter\'s whole point', () => earring(starter)],
-      ['a body under the point', () => earring({ ...starter, topRows: 8 })],
-      ['a 2-drop top', () => changed(earring(starter), { techniqueSettings: { brickDrop: 2 } })],
-      ['a loom top', () => changed(earring(starter), { technique: 'loom' })],
-      ['a V fringe', () => earring({ ...starter, fringeStyle: 'v' })],
-      ['Rotate Frame', () => rotateFrame(earring(starter))!],
+    /** Each with the side its handle drives Top rows by: the top, or a turned earring's right. */
+    const handleCases: [string, () => Project, 'top' | 'right'][] = [
+      ['a cut-off point', () => earring(), 'top'],
+      ['the Starter\'s whole point', () => earring(starter), 'top'],
+      ['a 2-drop top', () => changed(earring(starter), { techniqueSettings: { brickDrop: 2 } }), 'top'],
+      ['a loom top', () => changed(earring(starter), { technique: 'loom' }), 'top'],
+      ['a V fringe', () => earring({ ...starter, fringeStyle: 'v' }), 'top'],
+      ['Rotate Frame', () => rotateFrame(earring(starter))!, 'right'],
     ]
 
     it.each(['left', 'right', 'top', 'bottom'] as const)('grows on the side its %s handle drags, every bead staying where it lay on the Canvas', (edge) => {
-      for (const [name, made] of handleCases) {
+      // A whole point has no room above it: only a cut-off one grows on top, which a turned earring's right side is.
+      for (const [name, made] of handleCases.filter(([name, , topSide]) => topSide !== edge || name === 'a cut-off point')) {
         const project = paintedAll(made())
         const grown = changed(project, { set: dragged(project, edge, 2) })
         expect(frameOf(grown)!.settings, `${name}, ${edge}`).not.toEqual(frameOf(project)!.settings)
@@ -514,11 +517,12 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
 
     it('changes Top rows by its top handle, growing upwards with the strands staying put', () => {
       const project = earring()
-      const taller = changed(project, { set: dragged(project, 'top', 3) })
-      expect(frameOf(taller)!.settings).toMatchObject({ topWidth: 6, fringeLength: 9 })
-      expect(frameOf(taller)!.settings!.topRows).toBeGreaterThan(5)
+      const taller = changed(project, { set: dragged(project, 'top', 1) })
+      expect(frameOf(taller)!.settings).toMatchObject({ topWidth: 6, fringeLength: 9, topRows: 5 })
       expect(edges(taller).bottom).toBe(edges(project).bottom)
       expect(edges(taller).top).toBeLessThan(edges(project).top)
+      // A whole point is as tall as it goes: dragging further out changes nothing, never a body under it.
+      expect(changeFrame(taller, { set: dragged(taller, 'top', 3) }).kind).toBe('unchanged')
     })
 
     it('changes Fringe length by its bottom handle, the top staying put', () => {
@@ -556,35 +560,31 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     it('drives the setting of the shape\'s side a handle sits on once Rotate Frame has turned it', () => {
       // A quarter turn clockwise lays the top on the right and the strands on the left.
       const turned = rotateFrame(earring())!
-      expect(frameOf(changed(turned, { set: dragged(turned, 'right', 3) }))!.settings!.topRows).toBeGreaterThan(5)
+      expect(frameOf(changed(turned, { set: dragged(turned, 'right', 1) }))!.settings!.topRows).toBe(5)
       expect(frameOf(changed(turned, { set: dragged(turned, 'left', 3) }))!.settings).toEqual({ ...settings, fringeLength: 12 })
       expect(frameOf(changed(turned, { set: dragged(turned, 'bottom', 2) }))!.settings).toEqual({ ...settings, topWidth: 8 })
     })
 
-    it('takes Top rows past its point two brick rows at a time, and keeps the body as tall when Width changes', () => {
+    it('stops Top rows at its point, and keeps a whole point whole when Width changes', () => {
       // A Width of 6 tapers to a pair in 5 rows.
       const point = changed(earring(), { settings: { topRows: 5 } })
-      const body = changed(point, { settings: { topRows: 6 } })
-      expect(frameOf(body)!.settings!.topRows).toBe(7)
-      expect(frameOf(changed(body, { settings: { topRows: 6 } }))!.settings!.topRows).toBe(5)
-      expect(frameOf(changed(body, { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 9 })
-      expect(frameOf(changed(body, { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 5 })
-      // A whole point stays whole with no body under it, and a cut-off one keeps its rows where the point has them.
+      expect(changeFrame(point, { settings: { topRows: 6 } }).kind).toBe('unchanged')
+      expect(frameOf(changed(point, { settings: { topRows: 4 } }))!.settings!.topRows).toBe(4)
+      // A whole point stays whole, and a cut-off one keeps its rows where the point has them.
       expect(frameOf(changed(point, { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 3 })
       expect(frameOf(changed(point, { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 7 })
       expect(frameOf(changed(earring(), { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 4 })
       expect(frameOf(changed(earring(), { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 3 })
     })
 
-    it('keeps the point\'s beads in the point as the body grows and shrinks, the body\'s given-up rows folded until they come back', () => {
-      const tall = changed(earring(), { settings: { topRows: 9 } })
-      // The body's fourth row, named from -1000 up.
-      const bodyBead = frameLayoutOf(frameOf(tall)!)!.positions.find(({ row }) => row === -1000 + 3)!
-      const painted = paintFrame(tall, [base, bodyBead], RED)
-      const short = changed(painted, { settings: { topRows: 7 } })
+    it('folds the point\'s given-up rows as Top rows shrink, until they come back', () => {
+      const whole = changed(earring(), { settings: { topRows: 5 } })
+      const topBead = frameLayoutOf(frameOf(whole)!)!.positions.find(({ row }) => row === 4)!
+      const painted = paintFrame(whole, [base, topBead], RED)
+      const short = changed(painted, { settings: { topRows: 3 } })
       expect(frameOf(short)!.beads).toEqual({ [base.row]: { [base.column]: RED } })
-      expect(colorAt(frameOf(short)!.folded!, bodyBead.row, bodyBead.column)).toBe(RED)
-      expect(frameOf(changed(short, { settings: { topRows: 9 } }))!.beads).toEqual(frameOf(painted)!.beads)
+      expect(colorAt(frameOf(short)!.folded!, topBead.row, topBead.column)).toBe(RED)
+      expect(frameOf(changed(short, { settings: { topRows: 5 } }))!.beads).toEqual(frameOf(painted)!.beads)
     })
   })
 

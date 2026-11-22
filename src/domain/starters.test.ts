@@ -254,14 +254,14 @@ describe('an Earring Starter (ticket 0597)', () => {
     expect(designDifferences(straight, { sizes: { fringeLength: 12 }, picks: { fringeStyle: 'v' } })).toEqual([{ size: straight.sizes[2] }, { pick: straight.picks[0] }])
   })
 
-  it('offers Top rows past its point, a brick body two rows at a time, and keeps the body as tall when the Width changes (ticket 0814)', () => {
+  it('offers Top rows up to its point, never a body under it, and keeps a whole point whole when the Width changes (ticket 0814)', () => {
     const straight = starterById('straightFringe')
-    // A Width of 6 tapers to a pair in 5 rows; the highest body up to 60 Top rows is 54 rows.
-    expect(starterSizeRanges(straight, { topWidth: 6 }).topRows).toEqual({ min: 1, max: 59 })
+    // A Width of 6 tapers to a pair in 5 rows: its Top rows go no higher.
+    expect(starterSizeRanges(straight, { topWidth: 6 }).topRows).toEqual({ min: 1, max: 5 })
     expect(starterSizeRanges(straight, {}).topWidth).toEqual({ min: 2, max: 30 })
-    expect(sizesWith(straight, { topWidth: 7, topRows: 6 }, 'topRows', 7)).toMatchObject({ topWidth: 7, topRows: 8 })
-    expect(sizesWith(straight, { topWidth: 7, topRows: 8 }, 'topRows', 7)).toMatchObject({ topRows: 6 })
-    expect(sizesWith(straight, { topWidth: 7, topRows: 8 }, 'topWidth', 9)).toMatchObject({ topWidth: 9, topRows: 10 })
+    expect(sizesWith(straight, { topWidth: 7, topRows: 6 }, 'topRows', 7)).toMatchObject({ topWidth: 7, topRows: 6 })
+    expect(sizesWith(straight, { topWidth: 7, topRows: 6 }, 'topRows', 5)).toMatchObject({ topRows: 5 })
+    expect(sizesWith(straight, { topWidth: 7, topRows: 6 }, 'topWidth', 9)).toMatchObject({ topWidth: 9, topRows: 8 })
   })
 
   it('moves a V fringe\'s length with its Width, as the style picked has it (ticket 0816)', () => {

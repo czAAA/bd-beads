@@ -86,7 +86,7 @@ export interface FrameShape extends FrameRules {
    * them every handle steps its first setting. */
   sides?: Readonly<Record<FrameEdge, FrameSettingName>>
   /** Its numbered settings, each already within its range, kept to the values its layout takes together, a changed one
-   * moved on the way it was changed from `before` (a Fringe earring's brick body, ticket 0814, and V fringe, ticket 0816);
+   * moved on the way it was changed from `before` (a Fringe earring's top, ticket 0814, and V fringe, ticket 0816);
    * without it every value in range is one. */
   settle?(read: NumberedSettings, weave: Weave, before?: FrameSettings): NumberedSettings
   /** Where a bead goes as the resize handle on one side of the shape moves its settings from `before` to `after`, so it
@@ -124,7 +124,7 @@ const KALEIDOCYCLE_PART: FrameSetting = { id: 'partSize', labelKey: 'partSize', 
 const KITE_ROWS: FrameSetting = { id: 'rows', labelKey: 'rows', min: 4, max: 60, step: 1, default: 21, presets: [15, 21, 30], lossOnChange: true }
 /** A Fringe earring's base row, its rows up to a pair at the top, and its longest strand (StarterGallery card). */
 const TOP_WIDTH: FrameSetting = { id: 'topWidth', labelKey: 'topWidth', min: 2, max: 30, step: 1, default: 7, presets: [5, 7, 9], lossOnChange: true }
-/** As many as its point needs and a body under it as tall again (ticket 0814). */
+/** As many as its point needs, and no more: the top is always a point (ticket 0814). */
 const TOP_ROWS: FrameSetting = { id: 'topRows', labelKey: 'topRows', min: 1, max: 60, step: 1, default: 6, presets: [4, 6, 8], lossOnChange: true }
 const FRINGE_LENGTH: FrameSetting = { id: 'fringeLength', labelKey: 'fringeLength', min: 2, max: 80, step: 1, default: 12, presets: [8, 12, 16], lossOnChange: true }
 
@@ -185,9 +185,9 @@ function settledFringe(read: NumberedSettings, weave: Weave, before?: FrameSetti
   return { ...top, fringeLength: Math.min(FRINGE_LENGTH.max, Math.max(FRINGE_LENGTH.min, length)) }
 }
 
-/** A Fringe earring's top kept together (ticket 0814): a peyote Width odd in blocks of Drop, a brick body in pairs of
- * Drop rows. A changed Width keeps a whole point whole with its body as tall, a cut-off one its rows where the new point
- * has them; a value between two allowed is the one the change moved towards, or the one below. */
+/** A Fringe earring's top kept together (ticket 0814): a peyote Width odd in blocks of Drop. The top is always a point:
+ * Top rows stop at the point's height, so no full-width body grows under it. A changed Width keeps a whole point whole,
+ * a cut-off one its rows where the new point has them. */
 function settledFringeTop(read: NumberedSettings, weave: Weave, before?: NumberedSettings): NumberedSettings {
   const top = fringeTopOf(weave)
   const blocks = top.lines === 'columns' ? 2 * top.drop : 1
@@ -195,12 +195,9 @@ function settledFringeTop(read: NumberedSettings, weave: Weave, before?: Numbere
   const width = onGrid(read.topWidth!, firstWidth, blocks, firstWidth, onGrid(TOP_WIDTH.max, firstWidth, blocks, firstWidth, TOP_WIDTH.max), before?.topWidth)
   const point = fringePointRows(width, top)
   const widthChanged = before !== undefined && before.topWidth !== width
-  const body = widthChanged ? before.topRows! - fringePointRows(before.topWidth!, top) : undefined
-  const rows = body === undefined ? read.topRows! : body >= 0 ? point + body : Math.min(read.topRows!, point)
-  if (rows <= point) return { ...read, topWidth: width, topRows: Math.min(rows, TOP_ROWS.max) }
-  const step = top.lines === 'shiftedRows' ? 2 * top.drop : 1
-  const highest = TOP_ROWS.max <= point ? TOP_ROWS.max : onGrid(TOP_ROWS.max, point, step, point, TOP_ROWS.max)
-  return { ...read, topWidth: width, topRows: onGrid(rows, point, step, point, highest, widthChanged ? undefined : before?.topRows) }
+  const wasWhole = before !== undefined && before.topRows! >= fringePointRows(before.topWidth!, top)
+  const rows = widthChanged && wasWhole ? point : Math.min(read.topRows!, point)
+  return { ...read, topWidth: width, topRows: Math.min(rows, TOP_ROWS.max) }
 }
 
 /** The registry, one entry per Frame shape, like the Starters'. */
@@ -327,7 +324,7 @@ export function settingValuesOf(frame: Pick<FrameSheet, 'shape' | 'settings'> & 
 }
 
 /** A Custom frame's settings changed (ticket 0814): those asked over its own, each within its range, kept together the
- * way the change moved them (a Fringe earring's brick body steps two rows, a Width keeps the body). As `settingsOf`
+ * way the change moved them (a Fringe earring's Top rows stop at its point, a Width keeps a whole point whole). As `settingsOf`
  * reads them. */
 export function changedSettings(frame: Pick<FrameSheet, 'shape' | 'settings'> & Woven, asked: FrameSettings): FrameSettings {
   const shape = frameShapeOf(frame)!
@@ -498,7 +495,7 @@ export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings' | '
       const held = positions.filter((position) => layoutPosition(layout, position)).length
       if (held === positions.length) return settings
       if (!best || held > best.held) best = { settings, held }
-      // Each a step up in turn, as a change of it would go, so a Fringe earring's body grows too (ticket 0814).
+      // Each a step up in turn, as a change of it would go, so a Fringe earring's top follows too (ticket 0814).
       const grown = shape.settings.reduce((each, { id }) => changedSettings({ ...frame, settings: each }, { [id]: each[id]! + 1 }), settings)
       if (sameSettings(grown, settings)) break
       settings = grown
