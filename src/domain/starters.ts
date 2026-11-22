@@ -251,15 +251,15 @@ export function designFits(starter: Starter, choice: Pick<StarterChoice, 'sizes'
 }
 
 /** The range each of a Starter's sizes may take with the others as they are: on a Fringe earring, Top rows up to the
- * highest its brick body keeps (ticket 0814). */
+ * height of its point (ticket 0814). */
 export function starterSizeRanges(starter: Starter, sizes: StarterSizes, weave: Weave = starter.weave): Partial<Record<StarterSizeName, { min: number; max: number }>> {
   const custom = new Map(settingValuesOf({ shape: starter.shape, settings: customSettings(starter, { sizes }), ...weave }).map((each) => [each.name as StarterSizeName, each]))
   return Object.fromEntries(starter.sizes.map(({ id, min, max }) => [id, { min, max: custom.get(id)?.max ?? max }]))
 }
 
 /** A Starter's sizes with one set from its stepper or a chip (ticket 0814): within its range, and on a Custom frame
- * Starter kept together as a change of its Frame shape's settings keeps them (a Fringe earring's body steps two rows,
- * a Width keeps it as tall, and a V fringe's length moves with it, ticket 0816, as the choices `picks` have it). */
+ * Starter kept together as a change of its Frame shape's settings keeps them (a Fringe earring's Top rows stop at its
+ * point, a Width keeps a whole point whole, and a V fringe's length moves with it, ticket 0816, as the choices `picks` have it). */
 export function sizesWith(starter: Starter, sizes: StarterSizes, id: StarterSizeName, value: number, weave: Weave = starter.weave, picks?: StarterPicks): StarterSizes {
   const { min, max } = starterSizeRanges(starter, sizes, weave)[id]!
   const set = { ...sizes, [id]: Math.min(max, Math.max(min, Math.round(value))) }

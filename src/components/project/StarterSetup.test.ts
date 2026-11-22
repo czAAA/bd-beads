@@ -131,8 +131,8 @@ describe('the Starter setup', () => {
     // Widened as a whole point, the top took a row more.
     expect(text(wrapper, 'starter-design-note')).toBe('The design is made for brick stitch 1-drop, 6 top rows. Set it back to turn the design on.')
     await choosePanelOption(wrapper, 'starter-technique', 'brick')
-    // Back in brick stitch, 7 rows of a Width of 7 come to its whole point, the design's 6.
-    expect(design(wrapper)).toBe(en.starters.useDesign)
+    // Peyote's point of a Width of 7 is 4 rows, so its Top rows were cut to 4 and stay so in brick stitch: not the design's 6.
+    expect(design(wrapper)).toBe(en.starters.startEmpty)
   })
 
   it('makes each of the Frame\'s Layer settings changeable, the Estimated size and count following the Bead and Technique (ticket 0671)', async () => {
@@ -171,13 +171,13 @@ describe('the Starter setup', () => {
     expect(design(wrapper)).toBe(en.starters.useDesign)
   })
 
-  it('takes an earring\'s Top rows past its point two rows at a time, and keeps its body as tall when the Width changes (ticket 0814)', async () => {
+  it('stops an earring\'s Top rows at its point, and keeps a whole point whole when the Width changes (ticket 0814)', async () => {
     const wrapper = mountSetup('straightFringe')
-    await wrapper.get('[data-testid="starter-size-increase-topRows"]').trigger('click')
-    expect(text(wrapper, 'starter-size-value-topRows')).toBe('8')
-    await wrapper.get('[data-testid="starter-size-preset-topWidth-5"]').trigger('click')
     expect(text(wrapper, 'starter-size-value-topRows')).toBe('6')
-    expect(text(wrapper, 'starter-design-note')).toBe('The design is made for 7 wide. Set it back to turn the design on.')
+    expect(wrapper.get('[data-testid="starter-size-increase-topRows"]').attributes('disabled')).toBeDefined()
+    await wrapper.get('[data-testid="starter-size-preset-topWidth-5"]').trigger('click')
+    expect(text(wrapper, 'starter-size-value-topRows')).toBe('4')
+    expect(text(wrapper, 'starter-design-note')).toBe('The design is made for 7 wide, 6 top rows. Set it back to turn the design on.')
   })
 
   /** An open Project on Delica 11/0, the Bead the StarterGallery card measures with. */

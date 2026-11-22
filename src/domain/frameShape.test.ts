@@ -338,26 +338,26 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     expect(rowOrderOf({ ...earring, quarterTurns: 2 }, { direction: 'rows' }).positionsOf(4)).toEqual([0, 1, 2, 3, 4].map((bead) => ({ row: 1000 + bead, column: 1 })))
   })
 
-  it('steps a Fringe earring\'s body from its base row up before its point (ticket 0814)', () => {
+  it('steps a Fringe earring\'s point from its base row up (ticket 0814)', () => {
     const earring = { shape: 'fringeEarring' as const, settings: { topWidth: 3, topRows: 2 + 2, fringeStyle: 'straight' as const, fringeLength: 2 }, rows: 1, columns: 1, technique: 'brick' as const }
     const order = rowOrderOf(earring, { direction: 'rows' })
-    expect(order.count).toBe(4 + 3)
-    expect([0, 1, 2, 3].map((pass) => order.stepOf?.(pass))).toEqual([1, 2, 3, 4].map((number) => ({ kind: 'row', number })))
-    expect([0, 1, 2, 3].map((pass) => order.positionsOf(pass).length)).toEqual([3, 2, 3, 2])
-    // The point's base row comes after the body, its beads as they were named without one.
-    expect(order.positionsOf(2)).toEqual([0, 1, 2].map((column) => ({ row: 0, column })))
+    // Top rows past the point of 2 rows are cut to it: no body is stepped before it.
+    expect(order.count).toBe(2 + 3)
+    expect([0, 1].map((pass) => order.stepOf?.(pass))).toEqual([1, 2].map((number) => ({ kind: 'row', number })))
+    expect([0, 1].map((pass) => order.positionsOf(pass).length)).toEqual([3, 2])
+    expect(order.positionsOf(0)).toEqual([0, 1, 2].map((column) => ({ row: 0, column })))
   })
 
   it('weaves a Fringe earring\'s peyote top as a peyote Frame: its first line in one pass, each later one in two, its higher columns then its lower (ticket 0814)', () => {
-    const earring = { shape: 'fringeEarring' as const, settings: { topWidth: 3, topRows: 2 + 1, fringeStyle: 'straight' as const, fringeLength: 1 }, rows: 1, columns: 1, technique: 'peyote' as const }
+    const earring = { shape: 'fringeEarring' as const, settings: { topWidth: 5, topRows: 3, fringeStyle: 'straight' as const, fringeLength: 1 }, rows: 1, columns: 1, technique: 'peyote' as const }
     const order = rowOrderOf(earring, { direction: 'rows' })
-    // A body line, then the point's two lines, each after the first in two passes, then three strands.
-    expect(order.count).toBe(1 + 2 + 1 + 3)
-    expect(order.positionsOf(0)).toEqual([0, 1, 2].map((column) => ({ row: -1000, column })))
+    // The point's three lines, the first in one pass, each later one in two, then five strands: no body line comes before it.
+    expect(order.count).toBe(4 + 5)
+    expect(order.positionsOf(0)).toEqual([0, 1, 2, 3, 4].map((column) => ({ row: 0, column })))
     // The middle column sits higher than the two beside it, so its bead is the first pass of a line.
-    expect(order.positionsOf(1)).toEqual([{ row: 0, column: 1 }])
-    expect(order.positionsOf(2)).toEqual([0, 2].map((column) => ({ row: 0, column })))
-    expect(order.positionsOf(3)).toEqual([{ row: 1, column: 1 }])
+    expect(order.positionsOf(1)).toEqual([{ row: 1, column: 2 }])
+    expect(order.positionsOf(2)).toEqual([1, 3].map((column) => ({ row: 1, column })))
+    expect(order.positionsOf(3)).toEqual([{ row: 2, column: 2 }])
     expect([0, 1, 2, 3].map((pass) => order.stepOf?.(pass))).toEqual([1, 2, 3, 4].map((number) => ({ kind: 'row', number })))
   })
 
