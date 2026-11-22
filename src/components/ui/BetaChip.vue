@@ -176,6 +176,16 @@ useOverlayLayer({ isOpen: () => open.value, root: () => wrapEl.value, close: hid
   white-space: nowrap;
 }
 
+/* Inside a button the label keeps the left and the chip sits centered in the free space after it, whatever the button's
+   width or the language: auto margins on both sides. */
+:global(.app-button > .beta-chip) {
+  margin-inline: auto;
+}
+
+:global(.app-button:has(> .beta-chip)) {
+  justify-content: flex-start;
+}
+
 .beta-chip__label {
   padding: 0 var(--space-6);
   font: var(--type-meta-tiny);
