@@ -55,6 +55,7 @@ import type { AccountService } from '../services/account'
 import ToastRegion from '../components/ui/ToastRegion.vue'
 import { useDialogs } from '../composables/shell/useDialogs'
 import { useFeedbackFlow } from '../composables/shell/useFeedbackFlow'
+import { provideBetaFeedback } from '../composables/ui/betaFeedback'
 import { useToasts } from '../composables/ui/useToasts'
 import type { FeedbackService } from '../services/feedback'
 import type { NotesSource } from '../services/notesFile'
@@ -117,6 +118,7 @@ const dialogs = useDialogs()
 const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 const canvasBackground = useCanvasBackground()
 const feedback = useFeedbackFlow({ feedback: props.feedback, locale: () => locale.value, messages: () => t.value, showToast, dialogs })
+provideBetaFeedback((subject) => feedback.onOpenFeedback('general', { message: `${subject}\n\n` }))
 const zoom = useHomepageZoom()
 // The Menu holds the editor's rows (ticket 1113): the device's settings, the Shortcuts help and
 // the Account section work here; New Project, Convert image and Sign in open the editor on them.

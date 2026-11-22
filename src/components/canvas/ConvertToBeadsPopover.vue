@@ -15,6 +15,7 @@ import InfoButton from '../ui/InfoButton.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import BetaChip from '../ui/BetaChip.vue'
 
 // The Convert to beads popover (ReferenceImage card, ticket 0883): a non-modal dialog beside the reference image, its
 // top level with the picture bar's, so the picture's place stays in view. Size, match to (Exact first), Colors, Hide the
@@ -85,7 +86,7 @@ useOverlayLayer({
   keepsPress: (event) => event.target instanceof Element && event.target.closest('[data-testid="reference-adjust"], [data-testid="picture-bar"]') !== null,
 })
 
-onMounted(() => rootEl.value?.querySelector<HTMLElement>('button, [tabindex="0"]')?.focus({ preventScroll: true }))
+onMounted(() => rootEl.value?.querySelector<HTMLElement>('button, [tabindex="0"]:not(.beta-chip__label)')?.focus({ preventScroll: true }))
 </script>
 
 <template>
@@ -98,7 +99,7 @@ onMounted(() => rootEl.value?.querySelector<HTMLElement>('button, [tabindex="0"]
     data-testid="convert-to-beads"
   >
     <div class="convert-popover__head">
-      <h2 :id="titleId" class="convert-popover__title">{{ words.name }}</h2>
+      <h2 :id="titleId" class="convert-popover__title">{{ words.name }}<BetaChip feature="convertToBeads" :name="words.name" /></h2>
       <IconButton variant="plain" icon="close" :label="t.referenceImage.bar.close" data-testid="convert-to-beads-close" @click="close" />
     </div>
 

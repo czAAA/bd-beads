@@ -60,6 +60,11 @@ export const account: AccountTranslations = {
     failed: '报告未能发送。稍后再试，或复制下来。',
     sent: '谢谢，报告已发送',
   },
+  beta: {
+    chip: '测试版',
+    popover: '测试版。此功能可正常使用，但我们仍在测试和改进。你的使用和反馈会有帮助：告诉我们你的发现。',
+    send: '发送反馈',
+  },
   account: {
     section: '账户',
     signIn: '登录',

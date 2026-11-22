@@ -13,6 +13,7 @@ import AppMessage from '../ui/AppMessage.vue'
 import InfoButton from '../ui/InfoButton.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import FileButton from '../ui/form/FileButton.vue'
+import BetaChip from '../ui/BetaChip.vue'
 
 // The preview with no picture yet (ConvertImage card DS-1, ticket 0896): the drop zone holding every way in, Choose file,
 // Paste and (on touch) Take photo, the two equal choices in one secondary look (ticket 0970), with what pictures work behind an Info button and a refused file's Message between
@@ -51,6 +52,7 @@ const readingDetail = computed(() => {
       <AppIcon name="image" :size="34" class="convert-drop__icon" />
       <span class="convert-drop__title">
         <span class="convert-drop__title-text">{{ lines.title }}</span>
+        <BetaChip feature="convertImage" :name="t.convertImage.fileLabel" />
         <InfoButton :label="words.whatPictures" :body="note" data-testid="convert-picture-note" />
       </span>
       <span class="convert-drop__line">{{ lines.line }}</span>

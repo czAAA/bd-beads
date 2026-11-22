@@ -21,6 +21,7 @@ import { COFFEE_URL } from '../../data/coffeeLink'
 import { PRIVACY_URL } from '../../data/privacyLink'
 import { SOURCE_URL } from '../../data/sourceLink'
 import { BUILD_MARK, BUILD_VERSION } from '../../data/build'
+import BetaChip from '../ui/BetaChip.vue'
 
 // The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): five folding sections, the same rows on every page
 // (1113) but the demo's Projects and shortcuts (0797); the Homepage's New Project and Sign in open the editor, pushing no
@@ -144,7 +145,7 @@ const inputOptions = computed(() => [
       <PanelItem icon="plus" accent :sub="formHere" :stays="formHere" data-testid="menu-new-project" @select="formHere ? openNewProject() : emit('new-project')">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Convert image is an App page (ADR 0086): while it is open, its row is the current page. -->
       <PanelItem icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" @select="converting || emit('convert-image')">
-        {{ actions.convertImage.name(t) }}
+        {{ actions.convertImage.name(t) }}<BetaChip feature="convertImage" :name="actions.convertImage.name(t)" />
       </PanelItem>
       <PanelItem icon="library" :value="countUnknown ? undefined : String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}

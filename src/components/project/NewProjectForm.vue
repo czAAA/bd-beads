@@ -10,6 +10,7 @@ import LayerSettings from './LayerSettings.vue'
 import NamesSection from './NamesSection.vue'
 import AppButton from '../ui/AppButton.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
+import BetaChip from '../ui/BetaChip.vue'
 
 const { t, locale } = useI18n()
 
@@ -125,7 +126,7 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
         data-testid="convert-image"
         @click="emit('convert-image', currentInput())"
       >
-        {{ t.convertImage.fileLabel }}
+        {{ t.convertImage.fileLabel }}<BetaChip feature="convertImage" :name="t.convertImage.fileLabel" />
       </AppButton>
       <p class="new-project-form__hint" data-testid="convert-image-limits">{{ limitsHint }}</p>
     </div>

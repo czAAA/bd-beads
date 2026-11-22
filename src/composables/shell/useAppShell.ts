@@ -77,6 +77,7 @@ import { useKeepViewOnPageHide } from '../canvas/useKeepViewOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
 import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
+import { provideBetaFeedback } from '../ui/betaFeedback'
 import { useArmedToolToasts } from '../tools/useArmedToolToasts'
 import { usePillTileNames } from '../tools/usePillTileNames'
 import { provideColorPick, provideMoveColor, providePaletteLetters, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
@@ -368,6 +369,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs, accountEmail: () => accountFlow.account.value?.email })
   const beadColors = useBeadColors({ currentProject, palette, addUsed, select: (colorId) => onSelectColor(colorId), remove: (colorId) => removeColor.onRemoveAddedColorOrAsk(colorId), selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback })
   provideBeadColors(beadColors)
+  provideBetaFeedback((subject) => feedback.onOpenFeedback('general', { message: `${subject}\n\n` }))
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
   const {

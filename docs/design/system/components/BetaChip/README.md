@@ -1,0 +1,11 @@
+# BetaChip
+
+A small **Beta** label after the name of a feature that works but is still being tested (ticket 1198). One component (`src/components/ui/BetaChip.vue`) and one registry (`src/domain/betaFeatures.ts`, `BETA_FEATURES`): each place that names a feature in beta reads its flag, so the next release removes the chip by emptying the registry.
+
+- **Shape:** the word in `meta-tiny`, `accent-2` text and a 1px `accent-2` edge on `accent-2-soft`, `radius-full`, padding 0 6, 6px after the name it follows, never wrapped. Text-sized, no icon. No new tokens: the second accent already marks the export buttons (ticket 1121).
+- **High contrast:** the same tokens (`accent-2` is 8.4:1 on white there, and the soft fill is white).
+- **Where:** only where a feature is named as an entry point or heading: a Menu row, a button, a card, a title. Never in running prose, a toast, a tour, What's new, the shortcuts help or an exported file.
+- **Opening:** hover (a mouse), keyboard focus or a tap (a touch screen has no hover) opens a small popover under the chip, above it where there is no room; a second tap, Escape, a press outside or focus leaving closes it. It is a focusable control (`role="button"`, one Tab stop) that keeps its clicks and keys to itself, so inside a button or row it never presses it.
+- **Popover:** the Tooltip's fill, edge, radius and shadow, with a line of text and **Send feedback** (a small `secondary` button) under it. Send feedback opens the Feedback sheet (`general` Report kind) with the message started as the feature's name and "(beta)": "Convert image (beta)", "Convert to beads (beta)", "Custom frame: Kite (beta)", "PNG export (beta)", "PDF export (beta)". Where no Feedback sheet is handed down (a component mounted alone), the popover has the text only.
+- **Copy:** `copy/account.md`, "Beta chip (ticket 1198)". The text never says "free": no promise about price in the UI.
+- **Places:** Convert image (the Menu row, New Project's Convert image button, the Convert image page's drop zone title), Convert to beads (the picture bar beside its button, the popover's heading), Custom frame Starters (an option card of the gallery, the picked Starter's line in its setup), and PNG and PDF while the Project has a Custom frame. Not the strip's Reference image button, a rectangle Starter, nor the File (.openbeads) button.

@@ -6,7 +6,8 @@ import type { StarterCategoryId } from '../../domain/starters'
 import { en } from '../../i18n/en'
 
 /** The words a control shows, as read: one space between its parts (ticket 0940). */
-const shown = (element: { text: () => string }) => element.text().replace(/\s+/g, ' ')
+/** A card's words, without its Beta chip (ticket 1198: the Custom frame Starters carry one). */
+const shown = (element: { text: () => string }) => element.text().replace('Beta', '').replace(/\s+/g, ' ')
 
 beforeEach(() => {
   localStorage.clear()

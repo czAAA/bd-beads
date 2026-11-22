@@ -1289,3 +1289,6 @@ body {
 @media (prefers-reduced-motion: reduce) { .bb-save-ring-label { translate: none; } }
 /* KeyboardFocus (ticket 0857): on a lit (ink-filled) control the ring is surface, inside its ink edge. */
 :where(.bb-theme button[aria-pressed="true"], .bb-theme button[aria-checked="true"], .e-theme4 button[aria-checked="true"], .bb-margin-tool[aria-pressed="true"], .bb-strip-toggle[aria-pressed="true"]):focus-visible, .ix-seg.is-on:focus-visible, .ix-seg.is-on.is-focus { outline-color: var(--surface); outline-offset: calc(var(--focus-offset) - var(--focus-width, 2px)); }
+
+/* BetaChip card (ticket 1198): accent-2 text and edge on accent-2-soft, text-sized, after a feature's name */
+.bb-beta-chip { display: inline-block; margin-inline-start: var(--space-6); padding: 0 var(--space-6); border: 1px solid var(--accent-2); border-radius: var(--radius-full); background: var(--accent-2-soft); color: var(--accent-2); font: var(--type-meta-tiny); white-space: nowrap; vertical-align: middle; }

@@ -62,6 +62,12 @@ export interface AccountTranslations {
     failed: string
     sent: string
   }
+  /** The Beta chip (ticket 1198): its label, what its popover says and its Send feedback button. */
+  beta: {
+    chip: string
+    popover: string
+    send: string
+  }
   /** Signing in (ticket 0078; MenuPanel and SignIn cards, `copy/account.md` Sign-in copy): the Menu's Account section, the
    * Sign in Subpanel and its toasts. The words are Sign in and Sign out; the plans Free account and Pro. */
   account: {
