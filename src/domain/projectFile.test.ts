@@ -245,23 +245,23 @@ describe('single-Project roundtrip', () => {
     expect(parseProjectsFile(serializeProject(both)).projects).toEqual([withColorsInPalette(both)])
   })
 
-  it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
+  it('refuses a file of the next version rather than read it as this one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
     file.version = 16
     expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 16')
   })
 
-  it('carries the Palette through a file (ticket 0525), and reads a version 4 file as its Bead\'s built-in colors', () => {
+  it('carries the Palette through a file (ticket 0525), and reads one whose Palette is missing as its Bead\'s built-in colors', () => {
     const [first, ...rest] = defaultPaletteIds(defaultPalette(cubeBead.id))
     const custom = setPalette(decoratedProject(), [first!, addedColorId('#123456'), ...rest])
     const file = JSON.parse(serializeProject(custom))
     expect(file.projects[0].palette).toEqual(custom.palette)
     expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([withColorsInPalette(custom)])
 
-    const four = legacyFile([custom], 4)
-    delete four.projects[0]!.palette
+    const five = legacyFile([custom], 5)
+    delete five.projects[0]!.palette
     // Then the color its bead is painted in, so the bead has a Swatch letter (ticket 1124).
-    expect(parseProjectsFile(JSON.stringify(four)).projects[0]!.palette).toEqual([...defaultPaletteIds(defaultPalette(cubeBead.id)), addedColorId('#e63746')])
+    expect(parseProjectsFile(JSON.stringify(five)).projects[0]!.palette).toEqual([...defaultPaletteIds(defaultPalette(cubeBead.id)), addedColorId('#e63746')])
   })
 
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
@@ -447,8 +447,8 @@ describe('parseProjectsFile', () => {
 
   it('rejects a file whose projects are not Projects', () => {
     expect(() =>
-      parseProjectsFile('{"kind":"openbeads/library","version":3,"projects":[{"id":"x"}]}'),
-    ).toThrow()
+      parseProjectsFile('{"kind":"openbeads/library","version":15,"projects":[{"id":"x"}]}'),
+    ).toThrow('does not contain readable Projects')
   })
 
   it('rejects a version 12 Project with no layers, or a layer without its Bead or beads (ticket 0664)', () => {

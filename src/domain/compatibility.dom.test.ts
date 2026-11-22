@@ -10,19 +10,15 @@ import type { FrameSheet } from './canvas'
 import type { FlatProject } from './flatWeave'
 import type { Grid, Project } from './project'
 import { nearestQuarterTurn } from './canvasOrientation'
-import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
-import { parseProjectsFile, serializeLibrary, serializeProject } from './projectFile'
+import { parseProjectsFile, serializeProject } from './projectFile'
 import { readProjectsFile } from '../services/projectFileCodec'
 import { gzipJson } from '../testUtils/gzipJson'
 import { loadProjects, saveProjects } from '../services/libraryStore'
-import libraryFile from './fixtures/library-file.json?raw'
 import libraryV1 from './fixtures/library-v1.json?raw'
 import libraryV2 from './fixtures/library-v2.json?raw'
 import libraryV2OverCap from './fixtures/library-v2-over-cap.json?raw'
-import libraryFileV3 from './fixtures/library-file-v3-openbeads.json?raw'
 import libraryFileV3Framed from './fixtures/library-file-v3-framed-covered.json?raw'
 import libraryFileV4 from './fixtures/library-file-v4-openbeads.json?raw'
-import libraryFileV4Weave from './fixtures/library-file-v4-openbeads-frame-weave.json?raw'
 import libraryV3 from './fixtures/library-v3.json?raw'
 import libraryV4 from './fixtures/library-v4.json?raw'
 import libraryV4Weave from './fixtures/library-v4-frame-weave.json?raw'
@@ -57,10 +53,6 @@ import projectFileV14OldKaleidocycle from './fixtures/project-file-v14-old-kalei
 import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
-import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
-import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
-import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
-import projectFile from './fixtures/project-file.json?raw'
 import { backgroundOf, beadsOfLayer, canvasOf, frameOf, lettersOn } from './layerRecord'
 import { currentPass, frameRowOrder, moveToRow, ownRowWayOf, rowProgressOf, seenProgressOf, seenWayOf, type OwnRowProgress } from './rowProgress'
 import { rowOrderOf } from './frameShape'
@@ -75,8 +67,8 @@ import { computeColorQuantities } from './beadQuantities'
 import { projectPalette } from './palette'
 import { wordChartOf } from './wordChart'
 
-// Stored-data compatibility (ticket 103, ADR 0018): the renderer work changes how a Project is drawn, not how it is
-// kept, so every library and file format the app has written must keep opening as exactly the Projects it held.
+// Stored-data compatibility (ticket 103, ADR 0018): every library and file format the app has written keeps opening as
+// exactly the Projects it held, but for those only test devices held before the release, refused (ticket 0391).
 // Fixtures are literal files generated once, never by the code under test.
 
 const STORAGE_KEY = 'openbeads:patterns'
@@ -275,40 +267,8 @@ const overCapProject = expectedProject({
   updatedAt: 1720000001000,
 })
 
-const fileRowProgress: OwnRowProgress = { direction: 'rows', currentRow: 1, currentColumn: 0 }
-const fileProjects = {
-  peyote: expectedProject({
-    id: 'file-one',
-    name: 'Shared peyote',
-    technique: 'peyote',
-    grid: grid(peyotePicture),
-    rowProgress: fileRowProgress,
-    createdAt: 1730000000000,
-    updatedAt: 1730000001000,
-  }),
-  loom: expectedProject({
-    id: 'file-a',
-    name: 'Loom in a file',
-    technique: 'loom',
-    grid: grid(loomPicture),
-    rowProgress: fileRowProgress,
-    createdAt: 1730000000000,
-    updatedAt: 1730000001000,
-  }),
-  brick: expectedProject({
-    id: 'file-b',
-    name: 'Brick in a file',
-    technique: 'brick',
-    grid: grid(brickPicture),
-    rowProgress: fileRowProgress,
-    createdAt: 1730000000000,
-    updatedAt: 1730000001000,
-  }),
-}
-
-/** What version 3 stored as a Frame over a sketch and what the Frame sheet reads it as (ADR 0066): the beads inside the
- * old Frame are the Frame's own, counted from its first bead; the bead it covered is an ordinary Canvas bead; the name
- * anchored inside the Frame is the Frame's, the one outside stays on the Canvas. */
+/** A Frame over a sketch as library version 4 stored it and the Frame sheet reads it (ADR 0066): the Frame's own beads,
+ * counted from its first bead, the Canvas's beside them, the Frame's name its own and the one outside on the Canvas. */
 const framedOverSketch: Project = layered({
   id: 'v3-framed',
   name: 'Framed over a sketch',
@@ -373,10 +333,11 @@ describe('stored-data compatibility', () => {
       expect(loadProjects()).toEqual([overCapProject])
     })
 
-    it('opens a version 3 library (the Frame a rectangle of the Canvas, beads it covered kept aside) as the same picture on the Frame sheet (ADR 0066)', () => {
+    it('keeps a version 3 library aside as one it cannot read, from before the Frame held its beads (ticket 0391)', () => {
       localStorage.setItem(STORAGE_KEY, libraryV3)
 
-      expect(loadProjects()).toEqual([framedOverSketch, unframedSketch])
+      expect(loadProjects()).toEqual([])
+      expect(localStorage.getItem('openbeads:patterns:unreadable')).toBe(libraryV3)
     })
 
     it('opens a version 4 library as it is, and saves it back with the Palette each Project now holds (ticket 0525)', () => {
@@ -418,7 +379,7 @@ describe('stored-data compatibility', () => {
     })
 
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
-      for (const stored of [libraryV1, libraryV2, libraryV2OverCap, libraryV3, libraryV4, libraryV4BrickBlock, libraryV5]) {
+      for (const stored of [libraryV1, libraryV2, libraryV2OverCap, libraryV4, libraryV4BrickBlock, libraryV5]) {
         localStorage.setItem(STORAGE_KEY, stored)
         loadProjects()
       }
@@ -451,28 +412,15 @@ describe('stored-data compatibility', () => {
   })
 
   describe('Project files', () => {
-    it('opens a single-Project file as the Project it held (plain JSON, before ADR 0048)', () => {
-      expect(parseLegacyProjectsFile(projectFile).projects).toEqual([fileProjects.peyote])
+    it('opens a gzipped .openbeads Project file (ADR 0048)', async () => {
+      const one = new File([await gzipJson(projectFileV12)], 'a.openbeads')
+      expect((await readProjectsFile(one)).projects).toEqual(parseProjectsFile(projectFileV12).projects)
     })
 
-    it('opens a whole-library file as every Project it held, in order (plain JSON, before ADR 0048)', () => {
-      expect(parseLegacyProjectsFile(libraryFile).projects).toEqual([fileProjects.loom, fileProjects.brick])
-    })
-
-    it('opens a gzipped .openbeads Project file and library file (ADR 0048)', async () => {
-      const one = new File([await gzipJson(projectFileV3)], 'a.openbeads')
-      const many = new File([await gzipJson(libraryFileV3)], 'b.openbeads')
-      expect((await readProjectsFile(one)).projects).toEqual([fileProjects.peyote])
-      expect((await readProjectsFile(many)).projects).toEqual([fileProjects.loom, fileProjects.brick])
-    })
-
-    it('opens a version 3 file with a Frame over a covered sketch as the same picture on the Frame sheet, and a version 4 file as it is (ADR 0066)', async () => {
-      const one = await readProjectsFile(new File([await gzipJson(projectFileV3Framed)], 'd.openbeads'))
-      const many = await readProjectsFile(new File([await gzipJson(libraryFileV3Framed)], 'e.openbeads'))
-      expect(one.projects).toEqual([framedOverSketch])
-      expect(many.projects).toEqual([framedOverSketch, unframedSketch])
-      expect((await readProjectsFile(new File([await gzipJson(projectFileV4)], 'f.openbeads'))).projects).toEqual([framedOverSketch])
-      expect((await readProjectsFile(new File([await gzipJson(libraryFileV4)], 'g.openbeads'))).projects).toEqual([framedOverSketch, unframedSketch])
+    it('refuses a version 3 or 4 file, Project or library, as any version this build does not know (ticket 0391)', async () => {
+      for (const [stored, version] of [[projectFileV3Framed, 3], [libraryFileV3Framed, 3], [projectFileV4, 4], [libraryFileV4, 4]] as const) {
+        await expect(readProjectsFile(new File([await gzipJson(stored)], 'old.openbeads'))).rejects.toThrow(`Unsupported openbeads file version: ${version}`)
+      }
     })
 
     it('opens a version 7 file with the Bead copy of a Bead the catalog does not have, and writes it back the same (ticket 534)', () => {
@@ -533,14 +481,6 @@ describe('stored-data compatibility', () => {
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it('reads a version 4 file and writes it back as version 13 with the built-in Palette (tickets 0525, 0664), then the colors its beads are painted in (ticket 1124)', () => {
-      const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: FILE_VERSION, projects: [{ palette: framedOverSketch.palette }] })
-      expect(framedOverSketch.palette.slice(0, defaultIds.length)).toEqual(defaultIds)
-      const library = parseProjectsFile(libraryFileV4Weave).projects
-      expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
-    })
-
     it('opens a version 6 file with a removed default and a flat Brick block on both layers, the Brick block in each layer\'s settings (ticket 0636)', () => {
       const [opened] = parseProjectsFile(projectFileV6BrickBlock).projects
       expect(layersView(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 }, removedDefaults: ['#2fb6ae'], beads: { [-3]: { [-1]: '#e63746' } } })
@@ -549,7 +489,7 @@ describe('stored-data compatibility', () => {
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it.each([4, 5, 7, 8, 9, 10])('opens the same file labelled version %i as the same Project: every version 4 to 10 stores the Brick block flat (ticket 0636)', (version) => {
+    it.each([5, 7, 8, 9, 10])('opens the same file labelled version %i as the same Project: every version 5 to 10 stores the Brick block flat (ticket 0636)', (version) => {
       const [six] = parseProjectsFile(projectFileV6BrickBlock).projects
 
       const relabelled = { ...JSON.parse(projectFileV6BrickBlock), version }
@@ -760,22 +700,6 @@ describe('stored-data compatibility', () => {
       expect(project!.palette).toEqual([...BUILT_IN_COLORS.map((color) => addedColorId(color.hex)), 'added-123456'])
       expect(project!.removedDefaults).toBeUndefined()
       expect(parseProjectsFile(serializeProject(project!)).projects).toEqual([project])
-    })
-
-    it('gives the Frame of a file written before it had a Weave of its own the Project\'s (ticket 492)', () => {
-      expect(parseProjectsFile(projectFileV4).projects).toEqual([framedOverSketch])
-    })
-
-    it('gives the Frame of a version 3 file the Project\'s Weave, its Drop included (ticket 492)', async () => {
-      const [framed] = (await readProjectsFile(new File([await gzipJson(projectFileV3Framed)], 'd.openbeads'))).projects
-      expect(frameOf(framed)).toMatchObject({ technique: canvasOf(framed).technique })
-    })
-
-    it('opens a Project file that holds a Brick block (ticket 477) as brick stitch\'s Drop, and one without as 1', async () => {
-      const [block] = (await readProjectsFile(new File([await gzipJson(projectFileBrickBlock)], 'c.openbeads'))).projects
-      expect(canvasOf(block!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
-      const [plain] = (await readProjectsFile(new File([await gzipJson(projectFileV3)], 'a.openbeads'))).projects
-      expect(canvasOf(plain).techniqueSettings?.brickDrop ?? 1).toBe(1)
     })
 
     it('opens a Kite saved on its old layout on the new one at the same Rows, each bead whose row and place remain in its colour (ticket 0874)', () => {

@@ -1,6 +1,5 @@
 import { parseProjectsFile, serializeLibrary, serializeProject, serializeStoredProject, type FilePictures } from '../domain/projectFile'
 import type { Project } from '../domain/project'
-import { parseLegacyProjectsFile } from './legacyProjectFile'
 
 // Project files to and from gzipped `.openbeads` bytes (ADR 0048) with the browser's CompressionStream; the domain
 // keeps only the JSON.
@@ -108,14 +107,12 @@ function pictureBlobs(projects: readonly Project[], pictures: FilePictures): Pic
   return blobs
 }
 
-// Reads Projects from a picked file: gzip (by magic bytes) to the current reader, else the legacy JSON reader. Throws,
-// importing nothing, on bad input.
+// Reads Projects from a picked file: gzip (by magic bytes) to the reader; anything else, the plain `.json` of builds
+// before ADR 0048 included (ticket 0391), isn't one. Throws, importing nothing, on bad input.
 export async function readProjectsFile(file: Blob): Promise<ReadProjectFile> {
   if (file.size > MAX_FILE_BYTES) throw new Error('Project file is over the size limit')
   const bytes = new Uint8Array(await file.arrayBuffer())
-  if (!isGzip(bytes)) {
-    return { projects: parseLegacyProjectsFile(new TextDecoder().decode(bytes)).projects, pictures: new Map() }
-  }
+  if (!isGzip(bytes)) throw new Error('Not an openbeads file: it is not gzipped')
   const unpacked = await unpack(bytes)
   const contents = parseProjectsFile(new TextDecoder().decode(unpacked))
   return { projects: contents.projects, pictures: pictureBlobs(contents.projects, contents.pictures) }

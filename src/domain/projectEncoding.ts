@@ -7,7 +7,6 @@ import { framePlacement } from './framePlacement'
 import { liftFlatWeave, renamedBrickBlock, renamedBrickBlocks, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import type { FrameLayer, Grid, Project } from './project'
 import type { GridProject, LayeredProject, StoredLayer } from './storedProject'
-import type { VersionThreeProject } from './versionThree'
 import { settingsOffDefault, type Weave } from './weave'
 
 /** The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with
@@ -39,13 +38,6 @@ export type EncodedLayer = Omit<StoredLayer, 'beads' | 'folded' | 'quarterTurns'
 /** A Project as a file (version 13) and the library (version 6) store it (ticket 0664): what is one per file, and its
  * layers in order, the Canvas first; how many backgrounds the list their positions are in held (ticket 1000). */
 export type EncodedProject = Omit<Project, 'layers'> & Pick<LayeredProject, 'backgroundPositions' | 'lettersByLayer'> & { layers: EncodedLayer[] }
-
-/** A Project as version 3 stored it (temporary, see versionThree.ts): all the beads together, the Frame a bare
- * rectangle, the beads it covered beside them. */
-export type EncodedVersionThreeProject = Omit<VersionThreeProject, 'beads' | 'coveredBeads'> & {
-  encodedBeads: EncodedBeads
-  encodedCoveredBeads?: EncodedBeads
-}
 
 /** A Project as stored before the Canvas (ADR 0009's original shape): `columns` × `rows` cells as row-major runs.
  * Read only. */
@@ -310,14 +302,8 @@ function decodedFlat({ encodedBeads, frame, ...rest }: EncodedFlatProject): Save
   return { ...rest, beads: decodeBeads(encodedBeads), ...(frame ? { frame: decodeFrame(frame) } : {}) }
 }
 
-/** The Project a stored value of version 1 to 3 holds, whichever shape wrote it (temporary, see versionThree.ts), its
- * flat Brick block in its settings map; a grid-shaped one and a version 3 one still go through normalizeProject. */
-export function decodeEarlierProject(encoded: EncodedVersionThreeProject | EncodedGridProject): VersionThreeProject | GridProject {
-  if ('encodedBeads' in encoded) {
-    const { encodedBeads, encodedCoveredBeads, ...rest } = encoded
-    return liftFlatWeave({ ...rest, beads: decodeBeads(encodedBeads), ...(encodedCoveredBeads ? { coveredBeads: decodeBeads(encodedCoveredBeads) } : {}) })
-  }
-  const { cells, ...rest } = encoded
+/** The Project a library value of version 2 holds (before the Canvas, ADR 0026), its flat Brick block in its settings
+ * map; it still goes through normalizeProject, which gives it a Frame the size of its grid. */
+export function decodeGridProject({ cells, ...rest }: EncodedGridProject): GridProject {
   return liftFlatWeave({ ...rest, grid: decodeCells(cells, rest.columns, rest.rows) })
 }
-

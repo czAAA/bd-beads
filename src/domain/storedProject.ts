@@ -16,7 +16,6 @@ import { readReferenceImage } from './referenceImage'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
 import { readRowProgress, seenProgressOf, type OwnRowProgress } from './rowProgress'
 import type { TablePoint } from './table'
-import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { beadCell, isTechnique, withCell, type Technique, type Weave } from './weave'
 
 // Reading a Project from storage or a file (CONTEXT.md, docs/testing.md's Stored-data compatibility): every shape an
@@ -60,7 +59,7 @@ export interface LayeredProject extends Omit<Project, 'layers'> {
 }
 
 /** A Project in any shape a store or file has held it in, for normalizeProject to read. */
-export type StoredProject = LayeredProject | SavedProject | GridProject | VersionThreeProject
+export type StoredProject = LayeredProject | SavedProject | GridProject
 
 function isGridProject(project: StoredProject): project is GridProject {
   return Array.isArray((project as GridProject).grid)
@@ -137,17 +136,24 @@ export function normalizeProject(stored: StoredProject): Project {
 }
 
 /** A Project saved before its layers (ticket 0664) as its layers: the Canvas from its own fields, its rotation its
- * orientation, the Frame with its Row progress, both with its Bead and Letters. A grid-shaped one gets a
- * Frame the size of its grid, a version 3 one its Frame's beads lifted into it (versionThree.ts, temporary). */
-function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): LayeredProject {
-  const upright: SavedProject | VersionThreeProject = isGridProject(stored)
+ * orientation, the Frame with its Row progress, both with its Bead and Letters. A grid-shaped one gets a Frame the size
+ * of its grid that holds its beads, in its Weave. */
+function layeredOf(stored: SavedProject | GridProject): LayeredProject {
+  const project = (isGridProject(stored)
     ? {
         ...stored,
-        beads: beadsFromColors(stored.grid.map((row) => row.map((cell) => cell.color))),
-        frame: { row: 0, column: 0, columns: stored.columns, rows: stored.rows },
+        beads: {},
+        frame: {
+          row: 0,
+          column: 0,
+          columns: stored.columns,
+          rows: stored.rows,
+          beads: beadsFromColors(stored.grid.map((row) => row.map((cell) => cell.color))),
+          technique: stored.technique,
+          ...(stored.techniqueSettings ? { techniqueSettings: stored.techniqueSettings } : {}),
+        },
       }
-    : stored
-  const project = (isVersionThree(upright) ? liftVersionThree(upright) : upright) as ProjectWithLegacyFields
+    : stored) as ProjectWithLegacyFields
   const {
     colorBeadOverrides: _legacyOverrides,
     widthMm: _legacyWidthMm,

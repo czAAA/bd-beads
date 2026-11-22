@@ -1,7 +1,6 @@
-import { inKnownTechniques, normalizeProject, type GridProject, type StoredProject } from './storedProject'
+import { inKnownTechniques, normalizeProject, type StoredProject } from './storedProject'
 import type { Project } from './project'
-import { decodeEarlierProject, decodeFlatProject, decodeProject, decodeVersionElevenProject, decodeVersionTwelveProject, encodeProject, type EncodedFlatProject, type EncodedLayer, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
-import type { VersionThreeProject } from './versionThree'
+import { decodeFlatProject, decodeProject, decodeVersionElevenProject, decodeVersionTwelveProject, encodeProject, type EncodedFlatProject, type EncodedLayer, type EncodedProject } from './projectEncoding'
 import type { FlatProject } from './flatWeave'
 import { isTechnique } from './weave'
 import { frameOf, projectNameOf } from './layerRecord'
@@ -31,14 +30,12 @@ interface ProjectFile {
 /** Reference image pictures by Project id, each its stored bytes in base64 (ADR 0089). */
 export type FilePictures = Readonly<Record<string, string>>
 
-/** Versions 4 to 10 differ only in fields normalizeProject reads when present; each stores a layer's Brick block flat. */
-const FLAT_WEAVE_VERSIONS = [4, 5, 6, 7, 8, 9, 10]
+/** Versions 5 to 10 differ only in fields normalizeProject reads when present; each stores a layer's Brick block flat. */
+const FLAT_WEAVE_VERSIONS = [5, 6, 7, 8, 9, 10]
 
-// Every readable file version: each takes the file's encoded Projects and returns Projects for normalizeProject. The
-// readers of version 3 (versionThree.ts) and 4 (ticket 0525; it has no Palette, so gets the built-in twelve) are
-// temporary, removed at the public release (ticket 0391).
+// Every readable file version: each takes the file's encoded Projects and returns Projects for normalizeProject. Versions
+// 3 and 4, from before the Frame held its beads and the Project its Palette, are refused as unknown (ticket 0391).
 const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
-  3: (projects) => (projects as EncodedVersionThreeProject[]).map(decodeEarlierProject) as (VersionThreeProject | GridProject)[],
   ...Object.fromEntries(FLAT_WEAVE_VERSIONS.map((version) => [version, (projects: unknown[]) => (projects as EncodedFlatProject[]).map(decodeFlatProject)])),
   11: (projects) => (projects as EncodedFlatProject[]).map(decodeVersionElevenProject),
   12: (projects) => (projects as EncodedProject[]).map(decodeVersionTwelveProject),
@@ -151,19 +148,17 @@ export function whyNotOpened(file: { name: string; type: string }): UnopenedFile
   return /\.openbeads$/i.test(file.name) ? 'damaged' : 'not-project'
 }
 
-/** Whether a parsed value has the fields of a Project saved before its layers, in either the beads shape or the
- * older grid shape. */
-export function looksLikeProject(value: unknown): value is StoredProject {
-  const project = value as Partial<FlatProject & GridProject> | null
-  const hasBeads = typeof project?.beads === 'object' && project.beads !== null
-  const hasGrid = typeof project?.columns === 'number' && typeof project.rows === 'number' && Array.isArray(project.grid)
+/** Whether a parsed value has the fields of a Project saved before its layers (file versions 5 to 11). */
+function looksLikeProject(value: unknown): value is StoredProject {
+  const project = value as Partial<FlatProject> | null
   return (
     typeof project === 'object' &&
     project !== null &&
     typeof project.id === 'string' &&
     isTechnique(project.technique) &&
     typeof project.beadId === 'string' &&
-    (hasBeads || hasGrid)
+    typeof project.beads === 'object' &&
+    project.beads !== null
   )
 }
 
