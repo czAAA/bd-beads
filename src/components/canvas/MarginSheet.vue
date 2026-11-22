@@ -68,8 +68,6 @@ const emit = defineEmits<{
   /** Mirror the whole Frame pressed: the Mirror onto the whole Frame, or off while it is there (ADR 0082). */
   mirror: []
   rotate: []
-  /** Lift pressed (ticket 1177): the Frame's pieces stand off the grid or lie flat. */
-  'toggle-lift': []
   'toggle-edit': []
   /** Export, hung from the button it was asked from: the sheet's Export or, folded, its Frame tools menu. */
   export: [opener: ExportOpener]
@@ -101,7 +99,6 @@ const actions = {
   expand: controlAction('expand-frame'),
   mirror: controlAction('mirror-frame'),
   rotate: controlAction('rotate-frame'),
-  lift: controlAction('lift-frame'),
   edit: controlAction('edit-frame'),
   export: controlAction('strip-export'),
   color: controlAction('margin-color'),
@@ -311,10 +308,8 @@ const footStyle = computed(() => ({
 const bandRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * place.value.side))
 const bandLeft = computed(() => place.value.side)
 
-/** Lift is on the band only while Row highlight is on (MarginSheet card, Lift): with it off the Frame lies flat. */
-const liftShown = computed(() => rotatable.value && !!props.rowHighlight)
 /** The Frame's tools now, and which stand on the band and which are under the Frame tools button (ticket 1195). */
-const offered = computed<Record<BandToolId, boolean>>(() => ({ mirror: rotatable.value, rotate: rotatable.value, lift: liftShown.value, edit: editable.value, export: true, color: true, remove: true }))
+const offered = computed<Record<BandToolId, boolean>>(() => ({ mirror: rotatable.value, rotate: rotatable.value, edit: editable.value, export: true, color: true, remove: true }))
 const toolIds = computed(() => BAND_ORDER.filter((id) => offered.value[id]))
 const bandFit = computed<BandFit | undefined>(() =>
   bandTools({ tools: toolIds.value, rows: props.expanded ? EXPANDED_ROW_FITS : ROW_FITS[form.value], room: bandRoom.value / scale.value, touch: touch.value, expanded: !!props.expanded }),
@@ -448,16 +443,11 @@ watch(frame, (now) => now || rotateCopy.drop())
 /** Mirror the whole Frame's name: "Mirror off" while it is on (MarginSheet card). */
 const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOff : undefined))
 
-const liftOn = computed(() => !!frame.value?.lifted)
-/** Lift's name says Lay the pieces flat while it is on. */
-const liftName = computed(() => (liftOn.value ? t.value.frame.layPiecesFlat : undefined))
-
 /** Every Frame tool as a menu item: the bare Frame tools button's menu holds them all, the band's only those it has no
  * room for (MarginSheet card, Zoom forms); Mirror the whole Frame first, checked while on, shown as Rotate Frame is. */
 const toolItems = computed<Record<BandToolId, FrameToolItem>>(() => ({
   mirror: { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
   rotate: { id: 'rotate', action: actions.rotate, run: rotateFromBand },
-  lift: { id: 'lift', action: actions.lift, run: () => emit('toggle-lift'), checked: liftOn.value },
   edit: { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
   export: { id: 'export', action: actions.export, run: () => emit('export', 'margin-frame-tools') },
   color: { id: 'color', action: actions.color, run: () => (colorOpen.value = true) },
@@ -512,18 +502,6 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
           @click="emit('mirror')"
         />
         <IconButton v-if="onBand('rotate')" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" data-rotate-from="button" @click="rotateFromBand" />
-        <IconButton
-          v-if="onBand('lift')"
-          variant="plain"
-          class="margin-sheet__tool"
-          :class="{ 'margin-sheet__mirror--on': liftOn }"
-          :icon-size="iconSize"
-          :action="actions.lift"
-          :label="liftName"
-          :pressed="liftOn"
-          data-testid="margin-lift-frame"
-          @click="emit('toggle-lift')"
-        />
         <IconButton
           v-if="onBand('edit')"
           variant="plain"
@@ -812,7 +790,7 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
   margin-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2 - var(--space-4));
 }
 
-/* Mirror the whole Frame on, and Lift on, is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
+/* Mirror the whole Frame on is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
  * Edit Frame's `ink`, the Mirror being a setting that stays on. */
 .margin-sheet__tools :deep(.margin-sheet__mirror--on),
 .margin-sheet__tools :deep(.margin-sheet__mirror--on:hover) {

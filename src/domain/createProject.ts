@@ -61,7 +61,7 @@ export function createProject(input: CreateProjectInput): Project {
     id: crypto.randomUUID(),
     layers: [
       canvas,
-      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, lifted: true as const, angle: canvas.orientation, rowProgress: startingRowProgressOf(created) }] : []),
+      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, angle: canvas.orientation, rowProgress: startingRowProgressOf(created) }] : []),
     ],
     palette,
     paletteLetters: lettersOfPalette(palette, bead.id, undefined),

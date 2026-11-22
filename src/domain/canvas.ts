@@ -36,9 +36,6 @@ export interface FrameSheet extends Rect, Weave {
   settings?: FrameSettings
   /** How many quarter turns clockwise Rotate Frame has given a Custom frame's layout (ticket 0594). Absent: none. */
   quarterTurns?: QuarterTurns
-  /** Its Lift (ticket 1177): the pieces stand off the grid, on screen and in every export. A setting of the Frame, saved
-   * with it; absent in a Project saved before it, which lies flat until Lift is pressed. */
-  lifted?: true
 }
 
 /** One bead's color at a position, or null where nothing is painted. */

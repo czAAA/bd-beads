@@ -1,5 +1,4 @@
-import { BLACK, fromHex, mix, toHex, WHITE } from '../domain/color'
-import { frameLifted } from '../domain/frame'
+import { fromHex, mix, toHex, WHITE } from '../domain/color'
 import { HELVETICA_CAP_HEIGHT, helveticaWidth } from '../domain/helvetica'
 import type { PageDrawing } from '../domain/pdfContent'
 import type { SwatchLetters } from '../domain/swatchLetters'
@@ -42,16 +41,6 @@ const KEY_SWATCH_MM = 3
  * from its side, in mm. */
 const COLUMN_NUMBER_GAP_MM = 1.5
 const ROW_NUMBER_GAP_MM = 1.3
-/** The soft shadow of a lifted Frame under a chart's rim (ticket 1177, printed-output.md): a PDF's drawing has no blur or
- * transparency, so it is a few stacked copies of the rim, each a little lower and wider than the last and a little darker,
- * as nearly clear black laid on the paper. Outermost first; in mm and as black's share. */
-const PAD_SHADOW_STEPS = [
-  { grow: 1.2, down: 0.5, share: 0.03 },
-  { grow: 0.9, down: 0.4, share: 0.04 },
-  { grow: 0.6, down: 0.3, share: 0.05 },
-  { grow: 0.3, down: 0.2, share: 0.06 },
-] as const
-
 /** `print-rim-gap`, in mm: how far the rim stands clear of the outermost beads (ticket 1126). */
 const RIM_GAP_MM = 1
 /** The room a row number has in its band, in mm: `print-ruler` less the rim's gap and its own (2.7 mm). */
@@ -271,17 +260,6 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
   // The chart's one rim, `print-rim-gap` clear of its outermost beads; the ruler numbers stand outside it (ticket 1126).
   const rim = outset(chart, mm(RIM_GAP_MM))
   const { colors } = ink
-  // A lifted Frame's pad stands off the paper: the shadow hangs on the rim, so with no rim, or in one ink, there is none.
-  if (look.rim && !ink.oneInk && frameLifted(project)) {
-    let laid = 1
-    for (const { grow, down, share } of PAD_SHADOW_STEPS) {
-      laid *= 1 - share
-      const copy = outset({ ...rim, y: rim.y + mm(down) }, mm(grow))
-      content.roundRect(copy.x * K, copy.y * K, copy.width * K, copy.height * K, PAD_RADIUS + mmPt(grow), { fill: toHex(mix(fromHex(colors.paper)!, BLACK, 1 - laid)) })
-    }
-    // The paper over the copies' middle: only what stands out round the rim is shadow.
-    content.roundRect(rim.x * K, rim.y * K, rim.width * K, rim.height * K, PAD_RADIUS, { fill: colors.paper })
-  }
   if (look.rim) content.roundRect(rim.x * K, rim.y * K, rim.width * K, rim.height * K, PAD_RADIUS, { stroke: colors.faint, lineWidth: PAD_LINE })
 
   const custom = customChart(project, part.region, plan.zoom)

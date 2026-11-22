@@ -87,9 +87,6 @@ export interface ProjectTheme {
   /** Whether empty positions are tonal tiles from the Background (ticket 1001, BeadBoard card, Tonal tiles): the screen
    * in light and dark. High contrast and exports keep the `positionMark` outline and the `emptyBead` bead. */
   tonalTiles: boolean
-  /** Whether a Frame with Lift on stands off the grid (ticket 1177, BeadBoard card, Lifted Frame): the screen in light and
-   * dark. High contrast keeps it flat; an export asks for it by itself. */
-  liftedFrame: boolean
   /** The rim of a near-black bead, where a dark `rim` would vanish: white in light and dark, the theme's own `rim`
    * in high contrast. */
   rimOnBlack: string
@@ -136,7 +133,6 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   rim: 'rgba(20,20,19,.12)',
   ownColorRim: true,
   tonalTiles: true,
-  liftedFrame: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
@@ -161,7 +157,6 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   rim: WHITE_RIM,
   ownColorRim: true,
   tonalTiles: true,
-  liftedFrame: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
@@ -185,7 +180,6 @@ const CONTRAST_THEME: ProjectTheme = {
   rim: 'rgba(0,0,0,.35)',
   ownColorRim: false,
   tonalTiles: false,
-  liftedFrame: false,
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
@@ -250,13 +244,6 @@ export interface BeadShape {
 }
 
 export type BeadDrawer = (context: DrawingContext, bead: BeadShape) => void
-
-/** A bead drawer that draws the empty beads only: the painted ones are drawn over them later. */
-export function emptyOnly(draw: BeadDrawer): BeadDrawer {
-  return (context, bead) => {
-    if (bead.color === null) draw(context, bead)
-  }
-}
 
 /** A bead drawer that draws the painted beads only: the empty ones are drawn already, under them. */
 export function paintedOnly(draw: BeadDrawer): BeadDrawer {
