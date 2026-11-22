@@ -1182,14 +1182,14 @@ describe('ProjectSurface', () => {
       frames.splice(0).forEach((frame) => frame())
       await nextTick()
 
-      const [dx, dy] = wrapper.emitted('pan')!.at(-1) as number[]
+      const [dx, dy] = wrapper.emitted('carry')!.at(-1) as number[]
       expect(dx).toBeLessThan(0)
       expect(Math.abs(dy)).toBe(0)
       expect(wrapper.emitted('cell-primary-move')!.length).toBe(moves + 1)
 
       await surface.trigger('pointerup')
       frames.splice(0).forEach((frame) => frame())
-      expect(wrapper.emitted('pan')).toHaveLength(1)
+      expect(wrapper.emitted('carry')).toHaveLength(1)
     })
 
     it('scrolls at full speed for a finger held at the very edge of the glass, which it cannot go past (ticket 0805)', async () => {
@@ -1203,7 +1203,7 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointermove', { ...TOUCH, clientX: 996, clientY: 400, buttons: 1 })
       frames.splice(0).forEach((frame) => frame())
 
-      expect((wrapper.emitted('pan')!.at(-1) as number[])[0]).toBe(-16)
+      expect((wrapper.emitted('carry')!.at(-1) as number[])[0]).toBe(-16)
     })
   })
 
@@ -2304,7 +2304,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     frames.splice(0).forEach((frame) => frame())
     await nextTick()
 
-    expect((wrapper.emitted('pan')!.at(-1) as number[])[0]).toBeLessThan(0)
+    expect((wrapper.emitted('carry')!.at(-1) as number[])[0]).toBeLessThan(0)
     expect(wrapper.emitted('selection-drag')!.length).toBe(drags + 1)
   })
 })
@@ -2448,7 +2448,7 @@ describe('ProjectSurface with a Frame', () => {
     frames.splice(0).forEach((frame) => frame())
     await nextTick()
 
-    const [dx, dy] = wrapper.emitted('pan')!.at(-1) as number[]
+    const [dx, dy] = wrapper.emitted('carry')!.at(-1) as number[]
     expect(dx).toBeLessThan(0)
     expect(Math.abs(dy)).toBe(0)
     expect(wrapper.emitted('frame-drag')!.length).toBe(drags + 1)
@@ -2463,7 +2463,7 @@ describe('ProjectSurface with a Frame', () => {
     await wrapper.find('[data-testid="project-surface"]').trigger('pointermove', { buttons: 1, clientX: 500, clientY: 400, pointerId: 1 })
     frames.splice(0).forEach((frame) => frame())
     await nextTick()
-    expect(wrapper.emitted('pan')).toBeUndefined()
+    expect(wrapper.emitted('carry')).toBeUndefined()
   })
 
   it('draws beads as usual with no Frame', async () => {

@@ -188,6 +188,13 @@ export const PREFERENCES = {
     parse: (raw) => raw.split(',').flatMap((hex) => normalizeHex(hex) ?? []).slice(0, RECENT_COLORS_KEPT),
     write: (colors) => (colors.length ? colors.join(',') : null),
   }),
+  /** The paint color the maker last had, as `#rrggbb`: a refresh opens on it, not on the Palette's default. */
+  paintColor: preference<string | undefined>({
+    key: 'openbeads:paint-color',
+    fallback: undefined,
+    parse: normalizeHex,
+    write: (hex) => hex ?? null,
+  }),
   /** The panel sections folded shut on this device, as `panel:section` ids (ticket 0553): every section is open until
    * it is closed. */
   panelSectionsClosed: preference<readonly string[]>({
