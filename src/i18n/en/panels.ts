@@ -60,6 +60,8 @@ export const panels: PanelsTranslations = {
       makerLabel: 'maker:',
       savedLocal: 'Saved in this browser',
       notSavedYet: 'Not saved yet',
+      savedDevice: 'Saved on this device',
+      notSavedDevice: 'Not saved on this device',
       addMaker: 'Add your name for exports',
       changeMaker: "Change the maker's name",
       beadBrand: 'Brand',

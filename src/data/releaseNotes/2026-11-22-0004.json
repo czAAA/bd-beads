@@ -2,12 +2,12 @@
   "date": "2026-11-22",
   "kind": "changed",
   "line": {
-    "en": "The Radial toolbox waits a little longer when you hold the Canvas, so its circle starts only after your bead shows",
-    "ru": "Инструменты и цвета у указателя ждут чуть дольше, когда вы удерживаете холст: круг появляется только после бусины",
-    "uk": "Інструменти й кольори біля вказівника чекають трохи довше, коли ви утримуєте полотно: коло з'являється лише після намистини",
-    "be": "Інструменты і колеры каля паказальніка чакаюць крыху даўжэй, калі вы ўтрымліваеце палатно: кола з'яўляецца толькі пасля пацеркі",
-    "zh": "按住画布时，指针旁的工具和颜色会多等一会儿，圆圈在珠子出现之后才开始",
-    "es": "Las herramientas y los colores junto al puntero esperan un poco más al mantener pulsado el lienzo: el círculo empieza solo después de la cuenta",
-    "pl": "Narzędzia i kolory przy wskaźniku czekają nieco dłużej po przytrzymaniu płótna: okrąg pojawia się dopiero po koraliku"
+    "en": "The Project panel says with a check or a cross whether the Project file on this device holds every bead, and the save reminder's dot sits on the Project icon's corner",
+    "ru": "Панель Проекта галочкой или крестиком показывает, есть ли в файле проекта на этом устройстве все бусины, а точка напоминания о сохранении стоит в углу значка Проекта",
+    "uk": "Панель Проєкту галочкою або хрестиком показує, чи є у файлі проєкту на цьому пристрої всі бісерини, а крапка нагадування про збереження стоїть у куті значка Проєкту",
+    "be": "Панэль Праекта птушкай або крыжыкам паказвае, ці ёсць у файле праекта на гэтай прыладзе ўсе бісерыны, а кропка напаміну пра захаванне стаіць у куце значка Праекта",
+    "zh": "“作品”面板用勾或叉显示此设备上的作品文件是否包含全部珠子，保存提醒的圆点改在“作品”图标的右上角",
+    "es": "El panel del Proyecto indica con una marca o una cruz si el archivo de Proyecto de este dispositivo tiene todas las cuentas, y el punto del recordatorio para guardar queda en la esquina del icono del Proyecto",
+    "pl": "Panel Projektu pokazuje znaczkiem lub krzyżykiem, czy plik Projektu na tym urządzeniu ma wszystkie koraliki, a kropka przypomnienia o zapisie jest w rogu ikony Projektu"
   }
 }

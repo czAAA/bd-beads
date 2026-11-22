@@ -99,8 +99,8 @@ The app is Vue 3 and TypeScript, built with Vite. The backend is a Cloudflare Wo
 | --- | --- |
 | `npm run check` | Runs `npm run typecheck`, `npm run lint` and knip, which finds unused code. Run it before pushing |
 | `npm run test:related -- <changed files>` | The unit and component tests related to a change, the browser component tests among them where Chromium is installed |
-| `npm run test:full` | Runs `npm test`, the whole unit suite: the unit and component tests, the browser component tests where Chromium is installed (What's inside's whole tours among them) and the backend Worker's tests. It skips itself on a slow machine, where CI runs the suite |
-| `npm run visual` | The [visual check](docs/testing/visual-check.md). Playwright draws fixture Projects in Chromium and compares the grid with reference screenshots. The first run needs `npx playwright install chromium` |
+| `npm run test:full` | Runs `npm test`, the whole unit suite: the unit and component tests, the browser component tests where Chromium is installed (What's inside's whole tours among them) and the backend Worker's tests; then `npm run visual`, the whole visual check. It skips itself on a slow machine, where CI runs the suite |
+| `npm run visual` | The [visual check](docs/testing/visual-check.md). Playwright draws fixture Projects in Chromium and compares the grid with reference screenshots. It runs in CI's own Linux container when Docker is running; without Docker, only on Linux, and the first run there needs `npx playwright install chromium` |
 | `npm run perf` | The [performance check](docs/testing/performance-check.md). It prints frames per second and main-thread time at a CPU slowdown. Run it by hand on an idle machine |
 
 CI runs typecheck, lint, the unit tests and the visual check on every pull request to `main`. [docs/testing/ci.md](docs/testing/ci.md) lists the required checks.
