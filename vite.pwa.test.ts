@@ -5,19 +5,12 @@ import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { HEADERS_FILE } from './vite.headers.ts'
-import { filesBelow, HOST_FILES, NOT_PRECACHED, REDIRECTS_FILE, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
+import { filesBelow, HOST_FILES, NOT_PRECACHED, precacheOf, REDIRECTS_FILE, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
 import { LOCALES } from './src/domain/locale.ts'
 import { readNotesFile } from './src/domain/notesFile.ts'
 
 const repo = import.meta.dirname
 const template = readFileSync(resolve(repo, 'pwa/serviceWorker.js'), 'utf8')
-
-/** The list a built worker carries, read from its source the way the browser would run it. */
-function precacheOf(source: string): string[] {
-  const match = /const PRECACHE = (\[.*\])$/m.exec(source)
-  if (!match) throw new Error('no precache list in the worker')
-  return JSON.parse(match[1]) as string[]
-}
 
 /** What the installed app's PNG icons may weigh together in the offline copy (ticket 1057): a few fonts' worth. */
 const ICON_BUDGET = 100 * 1024
