@@ -95,6 +95,7 @@ export function useSaveReminder(deps: SaveReminderDeps) {
         reset()
         const project = deps.project()
         shown.value = project !== undefined && step >= 0
+        armDock()
         reached = step
         pendingLabel = project !== undefined && before?.[0] !== id && staleOnOpen(deps.since(), project.createdAt, limit, now())
         settle()
@@ -121,10 +122,14 @@ export function useSaveReminder(deps: SaveReminderDeps) {
     { immediate: true },
   )
 
-  watch(shown, (on) => {
+  /** (Re)starts the wait before the ring docks, whenever it shows undocked. `shown` alone can't say: it can already be
+   * true when the watcher is made or when a Project opens, and `reset` clears the timer without it changing. */
+  function armDock() {
     clearTimeout(dockTimer)
-    if (on && !docked.value) dockTimer = setTimeout(() => void (docked.value = true), DOCK_MS)
-  })
+    if (shown.value && !docked.value) dockTimer = setTimeout(() => void (docked.value = true), DOCK_MS)
+  }
+
+  watch(shown, armDock)
 
   watch(deps.busy, (busy) => {
     if (!busy) settle()
