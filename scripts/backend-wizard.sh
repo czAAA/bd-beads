@@ -177,7 +177,8 @@ finish() {
 
 
 # STAGES: human steps of ticket 71 (spec 385), one phase per run (h1 account/R2/billing, h2 tokens, h3 Access/Google,
-# h4 backup age key, h5 remove Flint 2 secrets, h6 the domain, h7 no health bypass, h8 before the public release); run
+# h4 backup age key, h5 remove Flint 2 secrets, h6 the domain, h7 no health bypass, h8 before the public release, h9 the
+# backup's private repo); run
 # `bash scripts/backend-wizard.sh hN` only when the agent asks.
 # No secret goes in chat, a file or a log: only ids, site keys, host names and the age public key are saved.
 
@@ -604,6 +605,158 @@ phase_h8() {
   say "Tell the agent: \"H8 done\"; it reads the answers from $ENV_FILE."
 }
 
+# The weekly backup runs from this private repo, so only the maintainer can download its copies (ticket 396).
+BACKUP_REPO="czAAA/bd-beads-backup"
+
+# backup_secret NAME PROMPT [CHECK]: reads a value hidden, optionally checks it with the function CHECK (which gets it
+# on stdin), and pipes it straight into the backup repo's production environment. It is never echoed, never in argv,
+# never written to a file.
+backup_secret() {
+  local name="$1" value=""
+  printf '  %s%s%s ' "$BOLD" "$2" "$RESET"
+  read -rs value || true
+  printf '\n'
+  [[ -n "$value" ]] || { warn "Nothing pasted; re-run this phase."; exit 1; }
+  if [[ -n "${3:-}" ]] && ! printf '%s' "$value" | "$3"; then
+    value=""
+    warn "That value didn't pass the check; re-run this phase."
+    exit 1
+  fi
+  if printf '%s' "$value" | gh secret set "$name" --env production --repo "$BACKUP_REPO" >/dev/null; then
+    WRITTEN_SECRET+=("$name ($BACKUP_REPO, production environment)")
+    printf '  %s✓ set%s %s in %s\n' "$GREEN" "$RESET" "$name" "$BACKUP_REPO"
+  else
+    warn "gh could not set $name"
+    SKIPPED+=("$name in $BACKUP_REPO's production environment: re-run phase h9")
+  fi
+  value=""
+}
+
+# cf_token_active: the token on stdin is one Cloudflare calls active. It goes to curl as a header on stdin, not argv.
+cf_token_active() {
+  local token
+  read -r token || true
+  printf 'Authorization: Bearer %s\n' "$token" |
+    curl -fsS -m 15 -H @- https://api.cloudflare.com/client/v4/user/tokens/verify 2>/dev/null |
+    grep -Eq '"status": ?"active"'
+}
+
+# hc_ping_url: the value on stdin looks like a Healthchecks ping URL.
+hc_ping_url() {
+  local url
+  read -r url || true
+  [[ "$url" == https://* ]]
+}
+
+# backup_latest_dispatch: the id of the newest manual run of the backup workflow, or nothing.
+backup_latest_dispatch() {
+  gh run list --repo "$BACKUP_REPO" --workflow backup.yml --event workflow_dispatch --limit 1 \
+    --json databaseId --jq '.[0].databaseId // empty'
+}
+
+# backup_run_production: starts a manual production run, waits for it, and leaves its id in BACKUP_RUN_ID. Fails when
+# the run fails.
+backup_run_production() {
+  local before id=""
+  before=$(backup_latest_dispatch)
+  # Checked by hand: under the caller's `until`, set -e is off in here.
+  gh workflow run backup.yml --repo "$BACKUP_REPO" --ref main -f worker=production >/dev/null ||
+    { warn "gh couldn't start the Backup workflow in $BACKUP_REPO."; exit 1; }
+  say "Started; waiting for GitHub to list the run..."
+  for _ in $(seq 1 30); do
+    sleep 2
+    id=$(backup_latest_dispatch)
+    [[ -n "$id" && "$id" != "$before" ]] && break
+    id=""
+  done
+  [[ -n "$id" ]] || { warn "The run didn't show up; look at $BACKUP_REPO's Actions tab, then re-run this phase."; exit 1; }
+  BACKUP_RUN_ID="$id"
+  write_env BACKUP_RUN_ID "$id"
+  gh run watch "$id" --repo "$BACKUP_REPO" --interval 10 --exit-status
+}
+
+phase_h9() {
+  need_gh
+  BACKUP_TOKEN_PERMISSION=$(_existing BACKUP_TOKEN_PERMISSION || printf 'D1 Read')
+
+  stage "Cloudflare: the backup's own token"
+  say "The backup gets its own token, D1 only: the deploy's token can also put a Worker on the account."
+  if confirm "Is the token bd-beads-backup already made (an earlier run)?"; then
+    say "Kept as it is ($BACKUP_TOKEN_PERMISSION)."
+  else
+    BACKUP_TOKEN_PERMISSION="D1 Read"
+    open_url "https://dash.cloudflare.com/profile/api-tokens"
+    step "Create Token → Create Custom Token. Name it bd-beads-backup."
+    step "Permissions: Account → D1 → Read. Nothing else."
+    note "Cloudflare's docs don't say whether an export needs Read or Edit; stage 3 tries Read and says if Edit is needed."
+    step "Account Resources: Include → this one account only. No IP filter (GitHub's runners), no expiry."
+    step "Create it and keep its page open: the next stage asks for it."
+    pause "Token created and visible? Press Enter."
+  fi
+  write_env BACKUP_TOKEN_PERMISSION "$BACKUP_TOKEN_PERMISSION"
+
+  stage "GitHub: the backup repo's two secrets"
+  say "Both go to $BACKUP_REPO's production environment, hidden, straight from here to GitHub."
+  local have
+  have=$(gh secret list --env production --repo "$BACKUP_REPO" --json name --jq '[.[].name] | join(" ")' || true)
+  if [[ " $have " == *" CLOUDFLARE_API_TOKEN "* && " $have " == *" HEALTHCHECK_BACKUP_URL "* ]] &&
+    confirm "Both secrets are already set (an earlier run). Keep them?"; then
+    say "Kept as they are."
+  else
+    backup_secret CLOUDFLARE_API_TOKEN "Paste the bd-beads-backup token (hidden):" cf_token_active
+    open_url "https://healthchecks.io/"
+    step "Open the check backup-weekly (the same one as today) and copy its ping URL."
+    backup_secret HEALTHCHECK_BACKUP_URL "Paste the ping URL (hidden):" hc_ping_url
+  fi
+
+  stage "GitHub: one manual production run"
+  say "A manual run of the Backup workflow in $BACKUP_REPO, production: export, encrypt, upload, ping."
+  note "A failed run pings backup-weekly's /fail, so Healthchecks may email you; the next passing run clears it."
+  until backup_run_production; do
+    warn "The run failed. The end of its failed steps' log:"
+    gh run view "$BACKUP_RUN_ID" --repo "$BACKUP_REPO" --log-failed | tail -n 30 || true
+    if [[ "$BACKUP_TOKEN_PERMISSION" == "D1 Read" ]] &&
+      confirm "Does the export fail on the token's rights (Authentication error, or not authorized)?"; then
+      open_url "https://dash.cloudflare.com/profile/api-tokens"
+      step "bd-beads-backup → Edit: Account → D1 → Edit instead of Read. Save. The token's value stays the same."
+      pause "Saved? Press Enter to run again."
+      BACKUP_TOKEN_PERMISSION="D1 Edit"
+      write_env BACKUP_TOKEN_PERMISSION "$BACKUP_TOKEN_PERMISSION"
+    else
+      write_env BACKUP_RUN failed
+      warn "Tell the agent the run failed (run $BACKUP_RUN_ID); it reads the log itself."
+      exit 1
+    fi
+  done
+  write_env BACKUP_RUN passed
+
+  stage "age: the copy opens with your private key"
+  say "The copy is downloaded to a temporary folder; one file is decrypted to the screen only, never to disk."
+  command -v age >/dev/null 2>&1 || { warn "Install age first (pacman -S age, brew install age), then re-run."; exit 1; }
+  local key=""
+  BACKUP_DIR=$(mktemp -d)
+  local dir="$BACKUP_DIR"
+  # Gone however the phase ends, a failed download included.
+  trap 'rm -rf "$BACKUP_DIR"' EXIT
+  gh run download "$BACKUP_RUN_ID" --repo "$BACKUP_REPO" --dir "$dir"
+  step "Copy the line starting AGE-SECRET-KEY-1 from the key in your password manager."
+  printf '  %sPaste the private key (hidden):%s ' "$BOLD" "$RESET"
+  read -rs key || true
+  printf '\n'
+  if [[ "$key" == AGE-SECRET-KEY-1* ]]; then
+    say "The first lines of core's dump:"
+    # The key reaches age through a pipe, not a file; only the dump's first lines are shown. Without pipefail, head
+    # closing early isn't a failure; a wrong key shows as age's own error instead of SQL.
+    (set +o pipefail; age --decrypt --identity <(printf '%s\n' "$key") "$dir"/*/core.sql.age | head -n 3 | cut -c1-120)
+  else
+    warn "That isn't an age private key."
+  fi
+  key=""
+  rm -rf "$dir"
+  release_check BACKUP_DECRYPTS "Does it look like SQL (PRAGMA, CREATE TABLE, INSERT)?"
+  say "Tell the agent: \"H9 done\"; it reads the answers from $ENV_FILE and removes the public repo's backup next."
+}
+
 case "${1:-}" in
   h1) TOTAL_STAGES=6; banner "Backend H1: the Cloudflare account"; phase_h1 ;;
   h2) TOTAL_STAGES=4; banner "Backend H2: tokens"; phase_h2 ;;
@@ -613,7 +766,8 @@ case "${1:-}" in
   h6) TOTAL_STAGES=5; banner "Backend H6: the domain on both Workers, and Google sign-in"; phase_h6 ;;
   h7) TOTAL_STAGES=3; banner "Backend H7: nobody outside Access reaches a Worker"; phase_h7 ;;
   h8) TOTAL_STAGES=8; banner "Backend H8: before the public release (ticket 391)"; phase_h8 ;;
-  *) echo "Usage: bash scripts/backend-wizard.sh h1|h2|h3|h4|h5|h6|h7|h8   (tickets 71 and 391's human steps, in order)"; exit 2 ;;
+  h9) TOTAL_STAGES=4; banner "Backend H9: the backup in its own private repo (ticket 396)"; phase_h9 ;;
+  *) echo "Usage: bash scripts/backend-wizard.sh h1|h2|h3|h4|h5|h6|h7|h8|h9   (tickets 71, 391 and 396's human steps, in order)"; exit 2 ;;
 esac
 
 finish
