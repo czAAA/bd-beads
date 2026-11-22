@@ -38,8 +38,6 @@ export function useSaveReminder(deps: SaveReminderDeps) {
   const labelOpen = ref(false)
   /** The ring has stayed on the canvas its while and moved into the Project panel, with a dot on the strip's Project. */
   const docked = ref(false)
-  /** Closed with the cross: nothing shows again until the count reaches a further step. */
-  let dismissed = false
   let dockTimer: ReturnType<typeof setTimeout> | undefined
   /** The highest label step reached since the Project opened: Undo then Redo past it opens nothing again. */
   let reached = -1
@@ -81,7 +79,6 @@ export function useSaveReminder(deps: SaveReminderDeps) {
     clearTimeout(idleTimer)
     clearTimeout(dockTimer)
     docked.value = false
-    dismissed = false
     closeLabel()
     pendingAppear = pendingLabel = false
   }
@@ -108,12 +105,6 @@ export function useSaveReminder(deps: SaveReminderDeps) {
         reached = -1
         return
       }
-      if (dismissed && step > reached) {
-        // A further step: the reminder comes back on the canvas.
-        dismissed = false
-        docked.value = false
-      }
-      if (dismissed) return
       if (!shown.value && !pendingAppear) pendingAppear = pendingLabel = true
       else if (step > reached) pendingLabel = true
       reached = Math.max(reached, step)
@@ -142,14 +133,6 @@ export function useSaveReminder(deps: SaveReminderDeps) {
     if (!on && labelOpen.value) closeTimer = setTimeout(closeLabel, LEAVE_MS)
   }
 
-  /** The cross in the Project panel: the reminder goes until a further step. */
-  function dismiss() {
-    dismissed = true
-    docked.value = false
-    shown.value = false
-    closeLabel()
-  }
-
   onScopeDispose(() => {
     clearTimeout(dockTimer)
     clearTimeout(idleTimer)
@@ -160,5 +143,5 @@ export function useSaveReminder(deps: SaveReminderDeps) {
   const onCanvas = computed(() => shown.value && !docked.value)
   const inPanel = computed(() => shown.value && docked.value)
 
-  return { shown, onCanvas, inPanel, labelOpen, docked, threshold, hold, dismiss }
+  return { shown, onCanvas, inPanel, labelOpen, docked, threshold, hold }
 }

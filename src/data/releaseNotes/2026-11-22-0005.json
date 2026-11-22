@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "changed",
+  "line": {
+    "en": "Scrolling, dragging or turning the Canvas while the Frame is expanded goes back to the Canvas",
+    "ru": "Прокрутка, перетаскивание или поворот холста при развёрнутой рамке возвращают к холсту",
+    "uk": "Прокручування, перетягування або поворот полотна при розгорнутій рамці повертають до полотна",
+    "be": "Пракрутка, перацягванне або паварот палатна пры разгорнутай рамцы вяртаюць да палатна",
+    "zh": "边框展开时，滚动、拖动或旋转画布都会回到画布",
+    "es": "Desplazar, arrastrar o girar el lienzo con el marco expandido vuelve al lienzo",
+    "pl": "Przewijanie, przeciąganie lub obracanie płótna przy rozwiniętej ramce wraca do płótna"
+  }
+}

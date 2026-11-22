@@ -85,3 +85,13 @@ describe('CanvasStrip Project name (ticket 0858)', () => {
     expect(rectOf(root, '[data-testid="strip-project"]').width).toBeLessThan(60)
   })
 })
+
+describe('CanvasStrip save dot (ticket 1192)', () => {
+  it.each([800, 1280])("sits on the Project icon's top-right corner at %ipx", async (width) => {
+    const { root } = await mountAt(inShell(CanvasStrip, { ...props, saveNote: true }), {}, { locale: 'en', width })
+    const icon = rectOf(root, '[data-testid="strip-project"] svg')
+    const dot = rectOf(root, '[data-testid="strip-project-dot"]')
+    expect(Math.abs((dot.left + dot.right) / 2 - icon.right)).toBeLessThanOrEqual(1)
+    expect(Math.abs((dot.top + dot.bottom) / 2 - icon.top)).toBeLessThanOrEqual(1)
+  })
+})

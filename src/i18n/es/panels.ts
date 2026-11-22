@@ -60,6 +60,8 @@ export const panels: PanelsTranslations = {
       makerLabel: 'autor:',
       savedLocal: 'Guardado en este navegador',
       notSavedYet: 'Aún sin guardar',
+      savedDevice: 'Guardado en este dispositivo',
+      notSavedDevice: 'No guardado en este dispositivo',
       addMaker: 'Tu nombre al exportar',
       changeMaker: 'Cambiar el nombre del autor',
       beadBrand: 'Marca',
