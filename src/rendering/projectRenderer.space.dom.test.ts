@@ -16,7 +16,7 @@ import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
 import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { changeFrame } from '../domain/changeFrame'
-import { gapColorOf, TILE_INSET_PX, tileColorOf } from './tonalTiles'
+import { gapColorOf, TILE_INSET_PX, tileColorOf, tileEdgeColorOf } from './tonalTiles'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 /** Where the Frame starts: peyote's must be an even column, as its columns alternate (ticket 0734). */
@@ -503,5 +503,26 @@ describe('a Frame in a Bead of its own over the Canvas (ticket 0665)', () => {
 
   it('draws it unscaled on its own, as an export does', () => {
     expect(render(halfSize(), false).named('scale')).toEqual([])
+  })
+})
+
+describe('the Frame\'s empty positions', () => {
+  /** The fills a Frame with no bead painted makes on the tile's own canvas, on a Frame Background of `background`. */
+  function emptyFrameFills(technique: Technique, background: string, theme: ProjectTheme) {
+    const tile = recordingContext()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(tile.context as unknown as CanvasRenderingContext2D)
+    const base = framedProject(technique)
+    const project = withLayers(base, { frame: { ...weaveOf(frameOf(base)!), technique, row: 6, column: frameColumn(technique), rows: 4, columns: 3, beads: {} } })
+    render(project, true, { theme, frameTheme: { ...theme, canvas: background }, zoom: 1.37 })
+    return tile.named('fill').map((call) => call.fillStyle)
+  }
+
+  it.each([
+    ['dark', '#0b1d2a'],
+    ['light', '#efe6d8'],
+  ] as const)('fills each tile and its edge in colors from the Frame\'s own Background, on a %s one', (theme, background) => {
+    const fills = emptyFrameFills('brick', background, PROJECT_THEMES[theme])
+    expect(fills).toContain(tileColorOf(background))
+    expect(fills).toContain(tileEdgeColorOf(background))
   })
 })

@@ -28,7 +28,7 @@ import { marginForm, marginScale } from './marginForm'
 import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
-import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
+import { drawTile, gapColorOf, markLookOf, tileEdgeColorOf } from './tonalTiles'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { columnStrip } from './columnBand'
 import {
@@ -510,13 +510,14 @@ function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   // An empty position is a tonal tile where they are drawn (ticket 1001).
   const mark = markLookOf(look, draw.tiles)
+  const edge = tileEdgeColorOf(look.canvas)
   for (const { position: own, place } of beads) {
     const box = inGridPx(place.box)
     const painted = colorOf(own)
     const { shown, dimmed } = progressLook(draw, space, own, painted)
     const sized = box.width !== CELL_SIZE_PX || box.height !== CELL_SIZE_PX ? { width: box.width, height: box.height } : {}
     const bead = { x: origin.x + box.x, y: origin.y + box.y, size: CELL_SIZE_PX, ...sized, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look }
-    if (painted === null && mark.tiles) drawTile(context, { x: bead.x, y: bead.y, width: box.width, height: box.height, cornerRadius }, mark.color, bead.deviceScale)
+    if (painted === null && mark.tiles) drawTile(context, { x: bead.x, y: bead.y, width: box.width, height: box.height, cornerRadius }, mark.color, edge, bead.deviceScale)
     else if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
     else drawBead(context, bead)
     const letter = painted === null ? undefined : letters?.[painted]
@@ -533,6 +534,7 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space,
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw
   const weave = frameWeave(project)
   const mark = markLookOf(look, draw.tiles)
+  const edge = tileEdgeColorOf(look.canvas)
   context.save()
   context.translate(origin.x, origin.y)
   // The beads are turned, so their bitmaps are smoothed as they are laid down.
@@ -547,7 +549,7 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space,
     context.translate(box.x + box.width / 2, box.y + box.height / 2)
     context.rotate(place.angle)
     const bead = { ...centred, size: box.width, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look }
-    if (painted === null && mark.tiles) drawTile(context, { ...centred, cornerRadius }, mark.color, bead.deviceScale)
+    if (painted === null && mark.tiles) drawTile(context, { ...centred, cornerRadius }, mark.color, edge, bead.deviceScale)
     else if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
     else drawBead(context, bead)
     const letter = painted === null ? undefined : letters?.[painted]
