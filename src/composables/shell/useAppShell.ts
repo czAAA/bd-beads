@@ -382,7 +382,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onSelectCustomColor: selectCustomColor,
     onCustomColorAdded,
     onStartOn,
-  } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
+  } = useToolAndColor({
+    leaveSelectTool,
+    palette: () => palette.value,
+    paintColor: services.devicePreferences.get('paintColor'),
+  })
 
   /** Where the Tool pill is docked, what its colour control shows and the recent colours (ticket 439, ADR 0046). */
   const toolPill = useToolPill({

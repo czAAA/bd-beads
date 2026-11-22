@@ -81,6 +81,17 @@ describe.each(CASES)('the $name preference', ({ name, key, saved, read, other, s
   })
 })
 
+describe('the paint color preference', () => {
+  it('reads a valid color, drops an invalid one, and is forgotten when cleared', () => {
+    const storage = memory({ 'openbeads:paint-color': '#ABCDEF' })
+    const paint = createDevicePreferences(storage).get('paintColor')
+    expect(paint.value).toBe('#abcdef')
+    paint.value = undefined
+    expect(storage.data.has('openbeads:paint-color')).toBe(false)
+    expect(createDevicePreferences(memory({ 'openbeads:paint-color': 'red' })).get('paintColor').value).toBeUndefined()
+  })
+})
+
 describe('the recent colors preference (ticket 439)', () => {
   it('reads only valid colours, newest first, at most eight', () => {
     const saved = '#111111,red,#222222,#333333,#444444,#555555,#666666,#777777,#888888,#999999'

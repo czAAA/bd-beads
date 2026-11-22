@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import { normalizeHex } from '../../domain/color'
 import { startColorId, type Palette } from '../../domain/palette'
 import type { Tool } from '../../domain/tool'
@@ -10,6 +10,8 @@ export interface ToolAndColorDeps {
   palette: () => Palette
   /** Called whenever a tool is chosen, even the one already active: choosing a tool ends Set Frame. */
   onToolChosen?: () => void
+  /** The device's last paint color (`#rrggbb`): the color a refresh opens on, kept up to date as the color changes. */
+  paintColor?: Ref<string | undefined>
 }
 
 // The active tool and the paint color (tickets 58, 171, 206; ADR 0020): which of the four tools is active, and which of
@@ -26,6 +28,17 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
   const customColor = ref<string | undefined>(undefined)
 
   const activeTool = ref<Tool>('paint')
+
+  // A refresh opens on the color last painted with: its Palette swatch if the Palette has it, else as the Custom color.
+  const remembered = deps.paintColor?.value
+  if (remembered) {
+    const swatch = deps.palette().byHex(remembered)
+    if (swatch) selectedColorId.value = swatch.id
+    else {
+      customColor.value = remembered
+      selectedColorId.value = undefined
+    }
+  }
 
   /** The current paint color's hex: the selected Palette color or the Custom color — whichever is
    * active; null when none is. */
@@ -90,6 +103,13 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
    * on a dark one and red on a light one, on whichever tool is in hand. Only then: a later Background keeps the color. */
   function onStartOn(background: string) {
     selectedColorId.value = startColorId(deps.palette(), background)
+  }
+
+  if (deps.paintColor) {
+    const paintColor = deps.paintColor
+    watch(selectedColorHex, (hex) => {
+      if (hex) paintColor.value = hex
+    })
   }
 
   return {
