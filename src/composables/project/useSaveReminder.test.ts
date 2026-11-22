@@ -155,6 +155,29 @@ describe('useSaveReminder', () => {
       expect([ring.shown.value, ring.docked.value]).toEqual([true, true])
     })
 
+    it('docks a ring that was already showing when the app opened a Project past the threshold', async () => {
+      const { ring } = await setup({ since: { beads: 200 } })
+      expect([ring.shown.value, ring.docked.value]).toEqual([true, false])
+
+      await vi.advanceTimersByTimeAsync(90_000)
+      expect([ring.shown.value, ring.docked.value]).toEqual([true, true])
+    })
+
+    it('docks again for a second Project opened while the ring was showing', async () => {
+      const { ring, project, since, land } = await setup()
+      await land(200)
+      await vi.advanceTimersByTimeAsync(3000 + 90_000)
+      expect(ring.docked.value).toBe(true)
+
+      since.value = { beads: 200 }
+      project.value = { id: 'b', createdAt: Date.now() }
+      await nextTick()
+      expect([ring.shown.value, ring.docked.value]).toEqual([true, false])
+
+      await vi.advanceTimersByTimeAsync(90_000)
+      expect([ring.shown.value, ring.docked.value]).toEqual([true, true])
+    })
+
     it('dismiss hides it until a further 100 beads, then it is back on the canvas', async () => {
       const { ring, land } = await setup()
       await land(150)

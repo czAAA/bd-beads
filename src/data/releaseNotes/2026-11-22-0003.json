@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "fixed",
+  "line": {
+    "en": "The save reminder now moves into the Project panel after a minute or two when a Project opens with it already showing",
+    "ru": "Напоминание о сохранении теперь переезжает в панель Проекта через минуту-две и тогда, когда Проект открыт с уже показанным напоминанием",
+    "uk": "Нагадування про збереження тепер переходить у панель Проєкту за хвилину-дві й тоді, коли Проєкт відкрито з уже показаним нагадуванням",
+    "be": "Напамін пра захаванне цяпер пераходзіць у панэль Праекта праз хвіліну-дзве і тады, калі Праект адкрыты з ужо паказаным напамінам",
+    "zh": "打开作品时若保存提醒已经显示，它现在也会在一两分钟后移到“作品”面板",
+    "es": "El recordatorio para guardar ahora pasa al panel del Proyecto tras uno o dos minutos también cuando un Proyecto se abre con el recordatorio ya visible",
+    "pl": "Przypomnienie o zapisie przechodzi teraz do panelu Projektu po minucie lub dwóch także wtedy, gdy Projekt otwiera się z już widocznym przypomnieniem"
+  }
+}
