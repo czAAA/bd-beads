@@ -136,6 +136,7 @@ export interface ProjectsTranslations {
     since: PluralForms
     /** In place of the count while the Project has never had a file (ticket 0987): why to save. */
     noFileWhy: string
+    dismiss: string
   }
   /** Open Project file and Save all Projects to a Project file, in the Projects library (ticket 0859: the file's one name). */
   transfer: {

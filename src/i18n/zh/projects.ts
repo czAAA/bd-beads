@@ -92,6 +92,7 @@ export const projects: ProjectsTranslations = {
     announce: '自上次保存文件后的珠子：{count}。保存项目文件以留住它们。',
     since: { other: '自上次文件后 {count} 颗珠子' },
     noFileWhy: '浏览器可能清除作品，文件会一直保留',
+    dismiss: '忽略',
   },
   transfer: {
     exportLibraryButton: '将所有项目保存到项目文件',

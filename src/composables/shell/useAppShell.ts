@@ -1210,9 +1210,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
       toasts,
       dismissToast,
       /** The save ring (ticket 0796): shown, its label, the count and last file it tells, and Save. */
-      saveRing: computed(() => ({ shown: saveReminder.shown.value, labelOpen: saveReminder.labelOpen.value, ...sinceFile.current.value })),
+      saveRing: computed(() => ({ shown: saveReminder.onCanvas.value, labelOpen: saveReminder.labelOpen.value, ...sinceFile.current.value })),
       onSaveProjectFile: exportFlow.onSave,
       onHoldSaveRing: saveReminder.hold,
+      /** The ring has moved into the Project panel: the strip's Project shows a dot (ticket 1192). */
+      saveNoteDocked: saveReminder.inPanel,
       /** The surface drew every bead in view: the safe start's first drawn frame (ticket 0716). */
       onSurfaceDrawn: safeStart.onDrawn,
       // The view
@@ -1450,6 +1452,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSaveProjectFile: exportFlow.onSave,
       onSaveProjectFileAs: exportFlow.onSaveAs,
       canSaveAs: exportFlow.canSaveAs,
+      /** The docked reminder the Project panel's head shows, with the count and last file it tells; none while on the canvas. */
+      saveNote: computed(() => (saveReminder.inPanel.value ? sinceFile.current.value : undefined)),
+      onDismissSaveNote: saveReminder.dismiss,
       // The Save row's value (ticket 0859): the Linked file, else the last file saved of the open Project, by any route.
       lastFileName: computed(() => exportFlow.linkedFileName.value ?? sinceFile.current.value.fileName),
       onSaveMakerName: exportFlow.onSaveMakerName,

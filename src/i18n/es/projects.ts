@@ -92,6 +92,7 @@ export const projects: ProjectsTranslations = {
     announce: 'Cuentas desde el último archivo: {count}. Guarda un archivo de proyecto para conservarlas.',
     since: { one: '{count} cuenta desde el último archivo', many: '{count} de cuentas desde el último archivo', other: '{count} cuentas desde el último archivo' },
     noFileWhy: 'el navegador puede borrar tu trabajo, un archivo se queda',
+    dismiss: 'Descartar',
   },
   transfer: {
     exportLibraryButton: 'Guardar todo en un archivo de proyecto',

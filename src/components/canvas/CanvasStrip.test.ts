@@ -32,6 +32,17 @@ describe('CanvasStrip', () => {
     expect(Object.keys(wrapper.emitted())).toEqual(expect.arrayContaining(['rotate-canvas', 'toggle-rulers', 'undo', 'redo', 'zoom-in', 'zoom-out', 'reset']))
   })
 
+  it('shows an accent dot on Project while the save reminder waits in its panel, and not while that panel is open (ticket 1192)', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project } })
+    expect(wrapper.find('[data-testid="strip-project-dot"]').exists()).toBe(false)
+
+    await wrapper.setProps({ saveNote: true })
+    expect(wrapper.find('[data-testid="strip-project-dot"]').exists()).toBe(true)
+
+    await wrapper.setProps({ openPanel: 'project' })
+    expect(wrapper.find('[data-testid="strip-project-dot"]').exists()).toBe(false)
+  })
+
   it('has a Buy me a coffee link to the Coffee link, in a new tab with noopener (ticket 560)', () => {
     const link = mount(CanvasStrip, { props: { project } }).get('[data-testid="strip-coffee"]')
 

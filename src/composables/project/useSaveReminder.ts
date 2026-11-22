@@ -1,4 +1,4 @@
-import { onScopeDispose, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { labelStep, SAVE_THRESHOLD, saveThreshold, staleOnOpen, type SinceFile } from '../../domain/beadsSinceFile'
 import type { PersistentStorage } from '../../services/persistentStorage'
 
@@ -21,6 +21,8 @@ export interface SaveReminderDeps {
 const IDLE_MS = 3000
 /** How long the label stays open (`--save-ring-label-time`). */
 const LABEL_MS = 4000
+/** How long the ring stays on the canvas before it moves into the Project panel (one and a half minutes). */
+const DOCK_MS = 90_000
 /** How long after the pointer or focus leaves a held label closes. */
 const LEAVE_MS = 1000
 
@@ -34,6 +36,11 @@ export function useSaveReminder(deps: SaveReminderDeps) {
 
   const shown = ref(false)
   const labelOpen = ref(false)
+  /** The ring has stayed on the canvas its while and moved into the Project panel, with a dot on the strip's Project. */
+  const docked = ref(false)
+  /** Closed with the cross: nothing shows again until the count reaches a further step. */
+  let dismissed = false
+  let dockTimer: ReturnType<typeof setTimeout> | undefined
   /** The highest label step reached since the Project opened: Undo then Redo past it opens nothing again. */
   let reached = -1
   let lastLanded = -Infinity
@@ -72,6 +79,9 @@ export function useSaveReminder(deps: SaveReminderDeps) {
 
   function reset() {
     clearTimeout(idleTimer)
+    clearTimeout(dockTimer)
+    docked.value = false
+    dismissed = false
     closeLabel()
     pendingAppear = pendingLabel = false
   }
@@ -97,6 +107,12 @@ export function useSaveReminder(deps: SaveReminderDeps) {
         reached = -1
         return
       }
+      if (dismissed && step > reached) {
+        // A further step: the reminder comes back on the canvas.
+        dismissed = false
+        docked.value = false
+      }
+      if (dismissed) return
       if (!shown.value && !pendingAppear) pendingAppear = pendingLabel = true
       else if (step > reached) pendingLabel = true
       reached = Math.max(reached, step)
@@ -104,6 +120,11 @@ export function useSaveReminder(deps: SaveReminderDeps) {
     },
     { immediate: true },
   )
+
+  watch(shown, (on) => {
+    clearTimeout(dockTimer)
+    if (on && !docked.value) dockTimer = setTimeout(() => void (docked.value = true), DOCK_MS)
+  })
 
   watch(deps.busy, (busy) => {
     if (!busy) settle()
@@ -116,10 +137,23 @@ export function useSaveReminder(deps: SaveReminderDeps) {
     if (!on && labelOpen.value) closeTimer = setTimeout(closeLabel, LEAVE_MS)
   }
 
+  /** The cross in the Project panel: the reminder goes until a further step. */
+  function dismiss() {
+    dismissed = true
+    docked.value = false
+    shown.value = false
+    closeLabel()
+  }
+
   onScopeDispose(() => {
+    clearTimeout(dockTimer)
     clearTimeout(idleTimer)
     clearTimeout(closeTimer)
   })
 
-  return { shown, labelOpen, threshold, hold }
+  /** The ring is on the canvas, or (docked) its note is in the Project panel with a dot on the strip. */
+  const onCanvas = computed(() => shown.value && !docked.value)
+  const inPanel = computed(() => shown.value && docked.value)
+
+  return { shown, onCanvas, inPanel, labelOpen, docked, threshold, hold, dismiss }
 }

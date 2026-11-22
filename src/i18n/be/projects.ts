@@ -92,6 +92,7 @@ export const projects: ProjectsTranslations = {
     announce: 'Бісерын з апошняга файла: {count}. Захавайце файл праекта, каб яны засталіся.',
     since: { one: '{count} бісерынка з апошняга файла', few: '{count} бісерынкі з апошняга файла', many: '{count} бісерынак з апошняга файла', other: '{count} бісерынкі з апошняга файла' },
     noFileWhy: 'браўзер можа ачысціць працу, файл застанецца',
+    dismiss: 'Схаваць',
   },
   transfer: {
     exportLibraryButton: 'Захаваць усё ў файл праекта',
