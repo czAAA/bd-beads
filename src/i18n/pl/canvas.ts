@@ -30,10 +30,10 @@ export const canvas: CanvasTranslations = {
     },
     firstRun: {
       storage: 'Twoje projekty są zapisane tylko w tej przeglądarce.',
-      paintMouse: 'Kliknij {paint} lub przeciągnij, aby kłaść koraliki wybranego koloru {palette}.',
-      setFrame: 'Zaznacz {select}, a potem ustaw ramkę {frame}, aby eksportować lub zacząć postęp.',
-      saveKeys: '{key} lub Zapisz {save}, aby zapisać plik na tym urządzeniu.',
-      saveTouch: 'Zapisz {save}, aby zapisać plik na tym urządzeniu.',
+      paintMouse: 'Kliknij **Maluj** lub przeciągnij, aby kłaść koraliki wybranego koloru.',
+      setFrame: 'Wybierz **Zaznacz**, a potem ustaw **ramkę**, aby eksportować lub zacząć postęp.',
+      saveKeys: '{key} lub **Zapisz**, aby zapisać plik na tym urządzeniu.',
+      saveTouch: '**Zapisz**, aby zapisać plik na tym urządzeniu.',
     },
   },
   rowProgress: {

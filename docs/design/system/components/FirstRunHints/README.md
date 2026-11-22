@@ -14,9 +14,10 @@ What an empty Project says: the next step, how to place a bead, and under it one
 
 Centred on the drawing area, under the CanvasHint line. What to do comes first; where the work lives is a calm fact under it, no alarm words, no warning colour or icon.
 
-- The lead line in Inter 16px medium (`--hint-storage-lead`), `body`, at most 36rem wide: the next step in the Paint tool's own Tooltip words, "Tap or drag to place beads in the chosen color." on touch, and in mouse words, "Click or drag to place beads in the chosen color.", with a mouse (ticket 0920). Touch or mouse is the one rule for every help line (`useHelpDevice`, writing.md "A help line fits the device in hand").
+- The lead line in Inter 16px medium (`--hint-storage-lead`), `body`, at most 36rem wide: the next step in mouse words, "Click **Paint** or drag to place beads in the chosen color.", and on touch the Paint tool's own Tooltip, "Tap or drag to place beads in the chosen color." (ticket 0920). Touch or mouse is the one rule for every help line (`useHelpDevice`, writing.md "A help line fits the device in hand").
+- **A tool's name is a word, not a chip (ticket 1200, approved 2026-11-22 on the local canvas "First run hints, quieter", option A).** Paint, Select, Frame and Save are written in the line in Inter medium (500) and `ink`, at the size of the line; the save key (Ctrl+S, ⌘S) is the same in DM Mono. No chip box, no border, no fill and no icon: the boxed icons read as louder than the sentence they sat in. The Palette is not mentioned. The names are the tools' own words in each language, written into the line and set off in the copy as `**name**`.
 - 6px under it the storage line in Inter 14px (`--hint-storage`), `muted`, at most 36rem wide, one line: "Your Projects are saved only in this browser, on this device." A screen too narrow for it balances it (`text-wrap: balance`).
-- No path to the Project file and no chips (ticket 0920): the welcome says no more about keeping a file than where the work lives; the Save reminder asks for the file once there is work to keep.
+- No path to the Project file (ticket 0920): the welcome says no more about keeping a file than where the work lives; the Save reminder asks for the file once there is work to keep.
 - No buttons: opening a file, Convert image and Keyboard shortcuts stay in Menu.
 - It sits on the canvas overlay layer (`z-canvas-overlay`), under the Tool pill, the strip and every popover, and does not move with the canvas.
 - Nothing covers it when a Project is created (ticket 0839): the browser is asked to keep the Projects only at the first Project file or export, with no question of the app's (ticket 0936).
@@ -32,4 +33,4 @@ The same welcome, at the desktop sizes. No CanvasHint line.
 
 The copy in every language is in `copy/canvas.md`, "First-run welcome copy".
 
-Hand-written from the approved canvas (2026-10-31, ticket 0738); static rendition. The welcome cut down to the storage lines in the repo (2026-11-05, tickets 0795 and 0798), then led by the next step with the storage as one quiet line under it (2026-11-14, ticket 0920, Impeccable UX audit UX-001).
+Hand-written from the approved canvas (2026-10-31, ticket 0738); static rendition. The welcome cut down to the storage lines in the repo (2026-11-05, tickets 0795 and 0798), then led by the next step with the storage as one quiet line under it (2026-11-14, ticket 0920, Impeccable UX audit UX-001). The tool names turned from icon chips into words (2026-11-22, ticket 1200).

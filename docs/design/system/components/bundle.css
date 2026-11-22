@@ -1230,6 +1230,9 @@ body {
 .bb-hint-welcome { display: flex; flex-direction: column; align-items: center; text-align: center; color: var(--muted); }
 .bb-hint-lead { margin: 0; font: var(--hint-storage-lead); color: var(--body); }
 .bb-hint-storage { margin: 6px 0 0; font: var(--hint-storage); }
+/* Ticket 1200: a tool's name in a hint line is a word, medium weight in `ink`; the save key is the same in mono. No chip, no icon. */
+.bb-hint-name { font-weight: 500; color: var(--ink); }
+.bb-hint-key { font-family: var(--font-mono); }
 @media (prefers-reduced-motion: no-preference) { .bb-hint-layer { transition: opacity var(--duration-fast) var(--ease-out); } }
 
 /* Homepage scroll story (tickets 0739, 0740, 0801; Homepage card): the page's ground, a section turning, the growing free list, the switched-off plans and their stamp. */

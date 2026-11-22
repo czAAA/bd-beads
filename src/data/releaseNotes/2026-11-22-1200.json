@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-22",
+  "kind": "changed",
+  "line": {
+    "en": "The welcome on an empty Project names its tools in words, without the boxed icons",
+    "ru": "Приветствие на пустом проекте называет инструменты словами, без значков в рамках",
+    "uk": "Привітання на порожньому проєкті називає інструменти словами, без значків у рамках",
+    "be": "Прывітанне на пустым праекце называе інструменты словамі, без значкоў у рамках",
+    "zh": "空项目上的欢迎语用文字说出工具名称，不再用带框的图标",
+    "es": "El saludo de un Proyecto vacío nombra las herramientas con palabras, sin iconos en recuadros",
+    "pl": "Powitanie w pustym projekcie nazywa narzędzia słowami, bez ikon w ramkach"
+  }
+}
