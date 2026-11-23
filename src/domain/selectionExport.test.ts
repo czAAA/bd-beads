@@ -57,6 +57,21 @@ describe('selectionExportProject', () => {
     expect(beadsOfLayer(part, 'frame')![5 - frame.row]?.[2 - frame.column]).toBe(RED)
   })
 
+  it('is not offered on a Custom frame, and a Frame Selection outside the Frame has nothing to export', () => {
+    const custom = withLayer(withFrame(canvas('loom'), { row: 2, column: 2, rows: 6, columns: 6 }), 'frame', { beads: {} })
+    const shaped = { ...custom, layers: [custom.layers[0], { ...custom.layers[1]!, shape: 'triangle' }] } as unknown as Project
+    expect(selectionExportable(shaped, { top: 3, left: 3, rows: 2, columns: 2, layer: 'frame' })).toBe(false)
+    expect(selectionExportProject(custom, { top: 9, left: 9, rows: 2, columns: 2, layer: 'frame' }, 'part')).toBeUndefined()
+  })
+
+  it('snaps a Frame Selection on peyote through the Frame\'s own Weave', () => {
+    const project = withLayer(withFrame(canvas('peyote', 16, 16), { row: 2, column: 2, rows: 10, columns: 10 }), 'frame', { beads: withColors({}, [{ row: 5, column: 5, color: RED }]) })
+    const part = selectionExportProject(project, { top: 7, left: 7, rows: 3, columns: 3, layer: 'frame' }, 'part')!
+    const frame = frameOf(part)!
+    const weave = heldWeave(project, 'frame')!
+    expect([frame.row - 2, frame.column - 2]).toEqual([snapRow(weave, 5), snapColumn(weave, 5)])
+  })
+
   it('is offered on the Canvas', () => {
     expect(selectionExportable(canvas('loom'), { top: 0, left: 0, rows: 2, columns: 2, layer: 'canvas' })).toBe(true)
   })

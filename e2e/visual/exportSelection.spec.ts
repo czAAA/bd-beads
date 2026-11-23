@@ -21,7 +21,8 @@ test('the Selection bar’s Export opens the folded Export panel for the Selecti
   await page.mouse.move(5, 5)
   await settle(page)
 
-  await page.waitForTimeout(500)
+  // The bar arms a moment after a Selection is made (ticket 499): wait until its button answers.
+  await expect(page.getByTestId('context-bar-export')).not.toHaveAttribute('aria-disabled', 'true')
   await page.getByTestId('context-bar-export').click()
   await expect(page.getByTestId('export-panel-scope')).toHaveText(/^Exporting the Selection · \d+×\d+$/)
   await expect(page.getByTestId('export-cover-page')).toHaveCount(0)
