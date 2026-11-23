@@ -21,6 +21,10 @@ on:
         description: The commit the build was made from, which this deploys and the smoke check expects.
         type: string
         required: true
+    outputs:
+      url:
+        description: The address Wrangler reports for the deploy, which the browser check opens (ticket 1205).
+        value: ${{ jobs.deploy.outputs.url }}
 
 permissions:
   contents: read
@@ -30,6 +34,8 @@ jobs:
     name: Migrate, deploy and check
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
     # One deploy per Worker at a time, never cancelled halfway through its migrations. Dev and production each queue
     # on their own.
     concurrency:
