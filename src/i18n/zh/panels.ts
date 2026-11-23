@@ -31,6 +31,10 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: '删除所有项目',
       sendFeedback: '发送反馈',
       reportTranslation: '报告翻译问题',
+      countOpens: '统计打开次数',
+      countOpensInfo: '统计打开次数的作用',
+      countOpensBody: '应用每天告诉 openbeads 一次它被打开了，只带版本号，不含任何能认出你的信息。',
+      countOpensBlocked: '你的浏览器要求网站不要跟踪它，所以应用不做任何统计。',
     },
     project: {
       rename: '重命名“{name}”',

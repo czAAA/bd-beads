@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { provide, defineComponent, h } from 'vue'
 import MenuPanel from './MenuPanel.vue'
@@ -309,3 +309,36 @@ describe("MenuPanel in What's inside's demo editor (ticket 0797)", () => {
   })
 })
 
+describe("MenuPanel's count of app opens (ticket 1209)", () => {
+  const privacyControl = (sent: boolean) =>
+    Object.defineProperty(navigator, 'globalPrivacyControl', { value: sent, configurable: true })
+
+  beforeEach(() => privacyControl(false))
+  afterAll(() => Reflect.deleteProperty(navigator, 'globalPrivacyControl'))
+
+  it('is on by default under the privacy policy, and off removes the day kept for it', async () => {
+    localStorage.setItem('openbeads:opened-day', '2026-11-20')
+    const wrapper = mountIn()
+    const row = wrapper.get('[data-testid="menu-count-opens"]').element.closest('.panel-switch-row')
+    const privacy = wrapper.get('[data-testid="menu-item-privacy"]').element
+    expect(privacy.compareDocumentPosition(row!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const control = wrapper.get('[data-testid="menu-count-opens"]')
+    expect(control.attributes('aria-checked')).toBe('true')
+    await control.trigger('click')
+    expect(control.attributes('aria-checked')).toBe('false')
+    // What off removes is switchOpenCount's, asserted in its own test; here only that the switch reaches it.
+    expect(localStorage.getItem('openbeads:opened-day')).toBeNull()
+    expect(wrapper.find('[data-testid="menu-count-opens-info"]').exists()).toBe(true)
+  })
+
+  it('shows off and can\'t be turned on when the browser sends Global Privacy Control', async () => {
+    privacyControl(true)
+    const wrapper = mountIn()
+    const control = wrapper.get('[data-testid="menu-count-opens"]')
+    expect(control.attributes('aria-checked')).toBe('false')
+    expect(control.attributes('aria-disabled')).toBe('true')
+    await control.trigger('click')
+    expect(control.attributes('aria-checked')).toBe('false')
+    expect(localStorage.getItem('openbeads:count-opens')).toBeNull()
+  })
+})

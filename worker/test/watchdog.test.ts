@@ -120,6 +120,18 @@ describe('the watchdog', () => {
     })
   })
 
+  it("reports the day's app opens against OPENS_DAILY_LIMIT, and pings /fail on the day it was reached (ticket 1209)", () =>
+    withWatchdog({ vars: { OPENS_DAILY_LIMIT: 50 } }, async (worker) => {
+      await worker.coreDb.prepare("INSERT INTO open_days (day, opens) VALUES ('2026-10-10', 51), ('2026-10-11', 50)").run()
+      await worker.scheduled(NOON)
+      expect(onePing(worker).url).toBe(PING)
+      expect(onePing(worker).body).toContain('App opens today (this Worker; over means the ceiling was reached): 50 (warn level 50)')
+      await worker.coreDb.prepare("UPDATE open_days SET opens = 51 WHERE day = '2026-10-11'").run()
+      worker.outbound.length = 0
+      await worker.scheduled(NOON)
+      expect(onePing(worker).url).toBe(`${PING}/fail`)
+    }))
+
   it('groups counts by thousands, from 0 up to millions', () =>
     withWatchdog({ today: { requests: 1234567, rowsWritten: 0, errors: 999 } }, async (worker) => {
       await worker.scheduled(NOON)

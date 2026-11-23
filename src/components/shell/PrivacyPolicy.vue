@@ -14,13 +14,17 @@ const { t, locale } = useI18n()
     <article class="privacy__text">
       <p v-if="locale !== 'en'" class="privacy__language" :lang="locale" data-testid="privacy-english-only">{{ t.privacy.englishOnly }}</p>
       <h1 class="privacy__title">Privacy policy</h1>
-      <p class="privacy__meta">openbeads.com · Last updated 20 November 2026</p>
+      <p class="privacy__meta">openbeads.com · Last updated 23 November 2026</p>
 
       <h2>In short</h2>
       <ul>
         <li>openbeads works without an account. Your Projects and settings stay in your browser, on your device.</li>
         <li>An account is optional. It keeps your email address and two settings, so they are the same on all your devices.</li>
-        <li>No ads, no analytics, no tracking, no selling of data.</li>
+        <li>
+          The app tells openbeads once a day that it was opened, with its version and whether it was opened before, and
+          nothing that identifies you or your device. You can switch this off in the Menu.
+        </li>
+        <li>No ads, no tracking, no selling of data.</li>
         <li>You can delete your account at any time, from the app.</li>
       </ul>
 
@@ -35,6 +39,15 @@ const { t, locale } = useI18n()
         Your Projects, your Palette, your settings and every preference are kept by your browser on your device, and are
         never sent to openbeads. The app works with no account and with no internet. Once you have work saved, it asks your
         browser to keep this data and not clear it to save space; the browser decides. Deleting your browser's data for openbeads.com deletes it.
+      </p>
+      <p data-testid="privacy-opens">
+        Once a day, when you open the app, it tells openbeads that it was opened: whether it was opened in this browser
+        before and, if so, roughly how long ago (a day, a week, a month or longer), whether it was opened as an installed app
+        or in a browser tab, and the app's version. Nothing else is sent with it: no account, no cookie, no id, no language
+        or country. openbeads' server keeps only the number of opens per day for each combination, never your IP address or
+        browser, so the number can't be traced to you or your device. To know whether it was opened before, the app keeps
+        the day it last did this in your browser's storage. Switch off Count app opens in the Menu, under About, and nothing
+        is sent any more and that day is removed. If your browser sends Global Privacy Control, nothing is sent at all.
       </p>
 
       <h2>With an account</h2>
@@ -58,12 +71,16 @@ const { t, locale } = useI18n()
       </p>
 
       <h2>Cookies and browser storage</h2>
-      <p>openbeads sets no cookies unless you sign in, and none for advertising or analytics. Signing in uses two:</p>
+      <p>openbeads sets no cookies unless you sign in, and none for advertising or tracking. Signing in uses two:</p>
       <ul>
         <li>a sign-in cookie that lasts 10 minutes, while you are at Google;</li>
         <li>the session cookie, for 90 days or until you sign out.</li>
       </ul>
-      <p>Everything else the app remembers is in your browser's storage on your device and is not sent anywhere.</p>
+      <p>
+        Everything else the app remembers is in your browser's storage on your device and is not sent anywhere. One entry
+        there is for the count of opens: the day the app last told openbeads it was opened. Switching off Count app opens
+        in the Menu, or Global Privacy Control in your browser, turns the count off, and the entry is removed.
+      </p>
 
       <h2>Feedback</h2>
       <p>
@@ -106,8 +123,8 @@ const { t, locale } = useI18n()
 
       <h2>Why and your rights</h2>
       <p>
-        The account is kept to give you the service you asked for, and only while you have it. The security checks and
-        feedback rely on openbeads' legitimate interest in a working, safe service. You can ask to see, correct, download or
+        The account is kept to give you the service you asked for, and only while you have it. The security checks,
+        feedback and the count of opens rely on openbeads' legitimate interest in a working, safe service. You can ask to see, correct, download or
         delete your data, or object to how it is used, by writing to
         <a :href="`mailto:${PRIVACY_CONTACT}`">{{ PRIVACY_CONTACT }}</a>. You can also complain to your data protection
         authority.

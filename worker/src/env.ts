@@ -54,6 +54,13 @@ export interface Env {
   /** Reports this Worker takes per UTC day (ticket 1051); the watchdog reports the day it was reached. */
   FEEDBACK_DAILY_LIMIT?: number | string
 
+  /** App opens per IP, 2 per 60 seconds, and from every address together, 60 per 60 seconds at one location (ticket
+   * 1209); declared under `ratelimits`. */
+  OPENS_RATE?: RateLimit
+  OPENS_RATE_ALL?: RateLimit
+  /** App opens this Worker counts per UTC day (ticket 1209): past it nothing is written; the watchdog reports the day. */
+  OPENS_DAILY_LIMIT?: number | string
+
   UPLOAD_CAP_D1_BYTES?: number | string
   UPLOAD_CAP_R2_MB?: number | string
   BLOBS_STORAGE_LIMIT_MB?: number | string
@@ -80,6 +87,7 @@ export interface Env {
 /** The variables that hold a number: every limit and warn level. */
 export type NumberVar =
   | 'FEEDBACK_DAILY_LIMIT'
+  | 'OPENS_DAILY_LIMIT'
   | 'UPLOAD_CAP_D1_BYTES'
   | 'UPLOAD_CAP_R2_MB'
   | 'BLOBS_STORAGE_LIMIT_MB'

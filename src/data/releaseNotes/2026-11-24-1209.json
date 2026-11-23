@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-24",
+  "kind": "changed",
+  "line": {
+    "en": "The app now tells openbeads once a day that it was opened, with nothing that says who you are; Count app opens in the Menu, under About, switches it off",
+    "ru": "Раз в день приложение теперь сообщает openbeads, что его открыли, без всего, что говорит, кто вы; «Считать открытия» в меню, в разделе «О приложении», выключает это",
+    "uk": "Раз на день застосунок тепер повідомляє openbeads, що його відкрили, без нічого, що каже, хто ви; «Рахувати відкриття» в меню, у розділі «Про застосунок», вимикає це",
+    "be": "Раз на дзень праграма цяпер паведамляе openbeads, што яе адкрылі, без нічога, што кажа, хто вы; «Лічыць адкрыцці» ў меню, у раздзеле «Пра праграму», выключае гэта",
+    "zh": "应用现在每天告诉 openbeads 一次它被打开了，不含任何能认出你的信息；在菜单的“关于”中关闭“统计打开次数”即可停止",
+    "es": "La app ahora le dice a openbeads una vez al día que se abrió, sin nada que diga quién eres; Contar aperturas, en el menú, en Acerca de, lo desactiva",
+    "pl": "Aplikacja raz dziennie mówi teraz openbeads, że ją otwarto, bez niczego, co mówi, kim jesteś; Licz otwarcia w menu, w sekcji O aplikacji, to wyłącza"
+  }
+}

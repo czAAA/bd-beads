@@ -15,6 +15,7 @@ import LibraryUnopened from './components/shell/LibraryUnopened.vue'
 import { browserDevicePreferences } from './services/devicePreferences'
 import { browserLibraryStore } from './services/libraryStore'
 import { startOfflineShell } from './services/offlineShell'
+import { startOpenCount } from './services/appOpened'
 import { installTouchFocusGuard } from './services/touchFocusGuard'
 import { growIntoEditor } from './homepage/boxHandoff'
 import { markArrived } from './homepage/homepageRoute'
@@ -53,5 +54,7 @@ void browserLibraryStore.count().then((count) => {
     document.getElementById('splash')?.remove()
     void growIntoEditor()
     startOfflineShell(import.meta.env.BASE_URL)
+    // The editor only, never the Homepage or its demo (ticket 1209): the day's one ping, sent in the background.
+    startOpenCount()
   })
 })
