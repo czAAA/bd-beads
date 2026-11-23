@@ -44,6 +44,9 @@ for (const { kind, open } of KINDS) {
       const page = await context.newPage()
       await page.route('https://challenges.cloudflare.com/**', (route) => route.abort())
       await openApp(page, [fixtureProject({ technique: 'loom' })])
+      // No motion at all: the sheet's fade-in, running or not when captured, moved some of its blocks a pixel. That
+      // depended on timing, so the check failed now and then with no change (a reduced-motion fade still runs).
+      await page.addStyleTag({ content: '*, *::before, *::after { animation: none !important; transition: none !important }' })
       await open(page)
       const sheet = page.getByTestId('feedback-sheet')
       await expect(sheet).toHaveAttribute('data-kind', kind)
