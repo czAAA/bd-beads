@@ -41,6 +41,15 @@ describe('AppSwatch', () => {
     expect(wrapper.get('.app-tooltip__key').text()).toBe('Shift+3')
   })
 
+  it('says the hex, not a note about approximate colors, in a Bead color\'s Tooltip', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, tooltipName: '23 Silver-lined Aqua', approximate: true } })
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+
+    expect(wrapper.get('.app-tooltip__name').text()).toBe('23 Silver-lined Aqua')
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('#6b3fa0')
+    expect(wrapper.get('button').classes()).toContain('swatch__chip--approximate')
+  })
+
   it('has no key chip without a hotkey', async () => {
     const wrapper = mount(AppSwatch, { props })
     await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
