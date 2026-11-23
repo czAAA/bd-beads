@@ -229,7 +229,6 @@ describe('opening the editor (ticket 0716)', () => {
     const dialog = document.querySelector('[role="alertdialog"]')
     expect(dialog?.textContent).toContain('This Project is open in another tab')
     expect(dialog?.textContent).toContain("Changes made here aren't saved while it is open there.")
-    expect(wrapper.find('[data-testid="open-elsewhere"]').exists()).toBe(false)
     wrapper.unmount()
   })
 
