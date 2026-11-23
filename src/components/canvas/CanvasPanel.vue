@@ -33,7 +33,7 @@ import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { expandedPillPosition, litPillTool, type PillPosition, type PillRect } from '../../domain/toolPill'
 import { useShellScope } from '../../composables/ui/shellScope'
-import { hasGuides, selectionLayer } from '../../domain/selection'
+import { selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
 import { beadOfLayer, frameOf, layerOf } from '../../domain/layerRecord'
@@ -328,10 +328,6 @@ const frameTooltip = computed(() => {
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead, frame.technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { ...seenSize(frame), estimate })
 })
-
-/** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar
- * then shrinks to the size instead of hiding. */
-const selectionGuided = computed(() => !!selection.value && hasGuides(selection.value) && showRulers.value !== false)
 
 /** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Bead of the layer it
  * is on (tickets 415, 0665). */
@@ -780,7 +776,7 @@ const drawingStyle = computed(() => {
             :selection="selection"
             :anchor="selectionAnchor"
             :gesturing="surfacePressing"
-            :size-only="selectionGuided && !mirrorAdjusting"
+            :size-only="!mirrorAdjusting"
             :paste-armed="pasteProjectionActive"
             :has-clipboard="hasClipboard()"
             :project="activeProject"

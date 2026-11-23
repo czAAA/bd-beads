@@ -48,6 +48,19 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     expect(wrapper.find('[data-testid="context-bar-select-all"]').exists()).toBe(false)
   })
 
+  it('shows the size of a small Selection while it is being dragged, not only after (ticket 1208)', async () => {
+    const wrapper = await mountWithProject(3, 30)
+    await pickTool(wrapper, 'select')
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 }) // 2 beads: too few for handles or ruler numbers
+
+    const size = wrapper.get('[data-testid="context-bar-size"]')
+    expect(size.text()).toMatch(/^2×1 ≈ /)
+    expect(size.isVisible()).toBe(true)
+    expect(wrapper.get('[data-testid="context-bar"]').isVisible()).toBe(true)
+    await wrapper.find('.app-shell').trigger('mouseup')
+  })
+
   it('removes the selected line through the registry\'s Remove line command', async () => {
     const wrapper = await mountWithProject(3, 30)
     await pickTool(wrapper, 'select')

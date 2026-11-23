@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-24",
+  "kind": "fixed",
+  "line": {
+    "en": "Dragging out a small Selection shows its size in beads and cm from the first cell",
+    "ru": "Когда вы выделяете небольшую область, её размер в бисеринах и сантиметрах виден с первой клетки",
+    "uk": "Коли ви виділяєте невелику область, її розмір у бісеринах і сантиметрах видно з першої клітинки",
+    "be": "Калі вы вылучаеце невялікую вобласць, яе памер у бісерынках і сантыметрах відаць з першай клеткі",
+    "zh": "拖出小范围选区时，从第一格起就显示它的珠数和厘米尺寸",
+    "es": "Al arrastrar una selección pequeña, su tamaño en cuentas y cm se ve desde la primera celda",
+    "pl": "Przy zaznaczaniu małego obszaru jego rozmiar w koralikach i cm widać od pierwszej komórki"
+  }
+}
