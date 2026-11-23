@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { homepageUrl } from '../../homepage/homepageRoute'
+import { LOCALE_OPTIONS } from '../../domain/locale'
 import type { ThemePick } from '../../theme/theme'
 import { useThemePick } from '../../theme/useThemePick'
 import type { Account } from '../../domain/account'
@@ -86,7 +87,7 @@ const emit = defineEmits<{
   'delete-account': []
 }>()
 
-const { t } = useI18n()
+const { t, locale, setLocale } = useI18n()
 const { pick, setPick } = useThemePick()
 const { shown: hintsShown } = useKeyHints()
 const context = inject(PANEL_CONTEXT)
@@ -162,6 +163,14 @@ const inputOptions = computed(() => [
     </PanelSection>
 
     <PanelSection v-if="!demo" id="menu:preferences" :label="t.panels.menu.preferences">
+      <PanelPicker
+        :model-value="locale"
+        :label="t.languageSwitcher.ariaLabel"
+        icon="globe"
+        :options="LOCALE_OPTIONS"
+        data-testid="menu-language"
+        @update:model-value="setLocale"
+      />
       <PanelPicker
         :model-value="pick"
         :label="t.theme.groupLabel"
