@@ -1,7 +1,7 @@
 import { MB, numberVar, type Env, type NumberVar } from '../env'
 
 /** What the watchdog measures (spec 385, its warn levels). Counts are per UTC day; sizes are bytes. */
-type Measure = 'api-requests' | 'd1-rows-written' | 'worker-errors' | 'r2-storage' | 'core-db' | 'blobs-db' | 'reports'
+type Measure = 'api-requests' | 'd1-rows-written' | 'worker-errors' | 'r2-storage' | 'core-db' | 'blobs-db' | 'reports' | 'opens'
 
 /** Today's readings; a measure that couldn't be read is left out. */
 export type Usage = Partial<Record<Measure, number>>
@@ -29,6 +29,8 @@ const MEASURES: Record<Measure, MeasureSpec> = {
   'blobs-db': { level: 'WARN_BLOBS_DB_MB', unit: 'MB', label: () => 'blobs database size' },
   // Its level is the limit itself: the count passes it only by the Report that was refused (ticket 1051).
   reports: { level: 'FEEDBACK_DAILY_LIMIT', unit: 'count', label: () => 'Reports today (this Worker; over means refused)' },
+  // The same for app opens (ticket 1209): a day over its ceiling is a day whose count is known to be junk.
+  opens: { level: 'OPENS_DAILY_LIMIT', unit: 'count', label: () => 'App opens today (this Worker; over means the ceiling was reached)' },
 }
 
 /** Whole numbers grouped by regex, not `toLocaleString`: the first `Intl` call in a fresh isolate initialises ICU

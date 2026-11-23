@@ -92,7 +92,11 @@
         { "name": "SIGN_IN_RATE", "namespace_id": "1005", "simple": { "limit": 6, "period": 60 } },
         // Ticket 1086: per account, the changes to the Settings kept in step (language, theme). Each
         // change is one request; a device past the limit sends its last change later.
-        { "name": "SETTINGS_RATE", "namespace_id": "1007", "simple": { "limit": 20, "period": 60 } }
+        { "name": "SETTINGS_RATE", "namespace_id": "1007", "simple": { "limit": 20, "period": 60 } },
+        // Ticket 1209: app opens, one a day per device. Per IP, two a minute (a person opening two tabs); every address
+        // together, 60 a minute at one Cloudflare location, so many addresses can't write fast.
+        { "name": "OPENS_RATE", "namespace_id": "1009", "simple": { "limit": 2, "period": 60 } },
+        { "name": "OPENS_RATE_ALL", "namespace_id": "1011", "simple": { "limit": 60, "period": 60 } }
       ]
     },
     "production": {
@@ -137,7 +141,10 @@
         // About five sign-ins a minute per IP, two requests each; dev's is tighter (spec 0385).
         { "name": "SIGN_IN_RATE", "namespace_id": "1006", "simple": { "limit": 10, "period": 60 } },
         // Changes to the Settings kept in step, per account; dev's is tighter (spec 0385).
-        { "name": "SETTINGS_RATE", "namespace_id": "1008", "simple": { "limit": 30, "period": 60 } }
+        { "name": "SETTINGS_RATE", "namespace_id": "1008", "simple": { "limit": 30, "period": 60 } },
+        // App opens (ticket 1209), the same as dev's.
+        { "name": "OPENS_RATE", "namespace_id": "1010", "simple": { "limit": 2, "period": 60 } },
+        { "name": "OPENS_RATE_ALL", "namespace_id": "1012", "simple": { "limit": 60, "period": 60 } }
       ]
     }
   }

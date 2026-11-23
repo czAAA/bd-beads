@@ -15,6 +15,8 @@ defineProps<{
   body?: string
   /** The switch's test id; its Info button's is the same with `-info`. */
   testid: string
+  /** Shown but can't be flipped (the count of app opens under Global Privacy Control, ticket 1209). */
+  disabled?: boolean
 }>()
 const on = defineModel<boolean>({ required: true })
 </script>
@@ -26,7 +28,7 @@ const on = defineModel<boolean>({ required: true })
       {{ label }}
       <InfoButton v-if="infoLabel && body" :label="infoLabel" :body="body" :data-testid="`${testid}-info`" />
     </span>
-    <AppSwitch v-model="on" :label="label" :data-testid="testid" />
+    <AppSwitch v-model="on" :label="label" :disabled="disabled" :data-testid="testid" />
   </div>
 </template>
 

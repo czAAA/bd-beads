@@ -31,6 +31,10 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: 'Выдаліць усе праекты',
       sendFeedback: 'Адправіць водгук',
       reportTranslation: 'Паведаміць пра памылку перакладу',
+      countOpens: 'Лічыць адкрыцці',
+      countOpensInfo: 'Што робіць падлік адкрыццяў',
+      countOpensBody: 'Раз на дзень праграма паведамляе openbeads, што яе адкрылі: толькі версію, нічога пра тое, хто вы.',
+      countOpensBlocked: 'Ваш браўзер просіць сайты не сачыць за ім, таму праграма нічога не лічыць.',
     },
     project: {
       rename: 'Перайменаваць «{name}»',

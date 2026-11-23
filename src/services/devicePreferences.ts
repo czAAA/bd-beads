@@ -10,6 +10,7 @@ import { normalizeHex } from '../domain/color'
 import { DEFAULT_EXPORT_QUALITY, parseExportQuality, type ExportQuality } from '../domain/exportQuality'
 import { FIRST_CONVERT_CHOICES, parseConvertChoices, writeConvertChoices, type ConvertChoices } from '../domain/convertChoices'
 import { parseRowByRowWay, type RowByRowWay } from '../domain/rowByRowWay'
+import { isUtcDay } from '../domain/appOpened'
 import { readKey, removeKey } from './storageKeys'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
@@ -232,6 +233,16 @@ export const PREFERENCES = {
     fallback: [],
     parse: (raw) => raw.split(',').filter((tile) => tile.length > 0),
     write: (tiles) => (tiles.length ? tiles.join(',') : null),
+  }),
+  /** Whether this device counts its app opens (ticket 1209, ADR 0102): on until switched off, this device's alone, never
+   * one of the Settings kept in step. */
+  countOpens: onUntilOff('openbeads:count-opens'),
+  /** The UTC day this device last told the backend it was opened (ticket 1209), `YYYY-MM-DD`; none until the first. */
+  openedDay: preference<string | null>({
+    key: 'openbeads:opened-day',
+    fallback: null,
+    parse: (raw) => (isUtcDay(raw) ? raw : undefined),
+    write: (day) => day,
   }),
 }
 

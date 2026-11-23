@@ -26,7 +26,8 @@
     "store:images": "E2E_PORT=${E2E_PORT:-4179} playwright test -c playwright.store.config.ts",
     "release": "node scripts/make-release.ts",
     "changelog": "node scripts/changelog.ts",
-    "changelog:print": "node scripts/changelog.ts --print"
+    "changelog:print": "node scripts/changelog.ts --print",
+    "opens": "node scripts/opens.ts"
   },
   "dependencies": {
     "@floating-ui/vue": "^2.0.1",

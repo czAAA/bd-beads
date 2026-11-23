@@ -59,6 +59,7 @@ export interface RunningWorker {
  * `wrangler.jsonc`). Made-up values, the same for both: a test that needs another passes it in `vars`. */
 const TEST_LEVELS: Record<string, number> = {
   FEEDBACK_DAILY_LIMIT: 30,
+  OPENS_DAILY_LIMIT: 50,
   UPLOAD_CAP_D1_BYTES: 1_990_000,
   UPLOAD_CAP_R2_MB: 90,
   BLOBS_STORAGE_LIMIT_MB: 50,

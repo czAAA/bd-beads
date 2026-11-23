@@ -12,6 +12,7 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 | Preferences · Language · Theme · Tools position · Input · Pen · Mouse | Настройки · Язык · Тема · Положение инструментов · Ввод · Перо · Мышь |
 | Left · Top · Right · Bottom · Light · Dark · Match device · High contrast | Слева · Сверху · Справа · Снизу · Светлая · Тёмная · Как на устройстве · Высокий контраст |
 | Help · Keyboard shortcuts · Homepage · About · Source code · Version | Справка · Сочетания клавиш · Главная · О приложении · Исходный код · Версия |
+| Count app opens · What counting opens does · Once a day the app tells openbeads it was opened, with its version and nothing that says who you are. · Your browser asks sites not to track it, so the app counts nothing. (ticket 1209) | Считать открытия · Что делает подсчёт открытий · Раз в день приложение сообщает openbeads, что его открыли: только версию, ничего о том, кто вы. · Ваш браузер просит сайты не отслеживать его, поэтому приложение ничего не считает. |
 | Rename {name} · Technique · Bead: · Replace bead · Canvas | Переименовать «{name}» · Техника · Бисер: · Заменить бисер · Холст |
 | saved · this device · unsaved changes · Not saved. {reason} · Try again | сохранено · на этом устройстве · есть несохранённые изменения · Не сохранено. {reason} · Повторить |
 | Save Project · Export · PNG · PDF · Project file | Сохранить проект · Экспорт · PNG · PDF · Файл проекта |

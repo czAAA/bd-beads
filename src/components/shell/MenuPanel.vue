@@ -6,6 +6,7 @@ import { pagesBase } from '../../i18n/addressLocale'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
+import { useOpenCount } from '../../composables/shell/useOpenCount'
 import { homepageUrl } from '../../homepage/homepageRoute'
 import { LOCALE_OPTIONS } from '../../domain/locale'
 import type { ThemePick } from '../../theme/theme'
@@ -15,6 +16,7 @@ import AccountSection from './AccountSection.vue'
 import PanelItem from './PanelItem.vue'
 import PanelPicker from './PanelPicker.vue'
 import PanelSection from './PanelSection.vue'
+import PanelSwitchRow from './PanelSwitchRow.vue'
 import type { IconName } from '../ui/icons'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
@@ -90,6 +92,7 @@ const emit = defineEmits<{
 const { t, locale, setLocale } = useI18n()
 const { pick, setPick } = useThemePick()
 const { shown: hintsShown } = useKeyHints()
+const openCount = useOpenCount()
 const context = inject(PANEL_CONTEXT)
 
 /** Under the address's language folder when it names one (ticket 1053), which the language switch changes. */
@@ -221,6 +224,17 @@ const inputOptions = computed(() => [
       <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
       <PanelItem icon="code" :href="SOURCE_URL" external data-testid="menu-item-source" :name="t.header.sourceItem" :body="t.panels.menu.tooltipSource">{{ t.header.sourceItem }}</PanelItem>
       <PanelItem icon="eye-off" :href="PRIVACY_URL" external data-testid="menu-item-privacy">{{ t.account.privacy }}</PanelItem>
+      <!-- The day's count of app opens (ticket 1209), under the policy that says what it sends; off for good with Global Privacy Control. -->
+      <PanelSwitchRow
+        icon="cloud"
+        :model-value="openCount.on.value"
+        :disabled="openCount.blocked"
+        :label="t.panels.menu.countOpens"
+        :info-label="t.panels.menu.countOpensInfo"
+        :body="openCount.blocked ? t.panels.menu.countOpensBlocked : t.panels.menu.countOpensBody"
+        testid="menu-count-opens"
+        @update:model-value="openCount.setOn"
+      />
       <PanelItem v-if="COFFEE_URL" icon="coffee" accent-icon :href="COFFEE_URL" external data-testid="menu-item-coffee" :name="t.panels.menu.coffee" :body="t.panels.menu.tooltipCoffee">{{ t.panels.menu.coffee }}</PanelItem>
       <div class="menu-panel__version" data-testid="menu-version">
         <span>{{ t.panels.menu.version }}</span>

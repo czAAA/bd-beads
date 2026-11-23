@@ -53,6 +53,12 @@ export interface PanelsTranslations {
       /** Help's Send feedback row and the link under it that open the Feedback sheet (tickets 0700, 1144). */
       sendFeedback: string
       reportTranslation: string
+      /** About's switch for the day's count of app opens (ticket 1209): its name, Info button, what it does, and what it
+       * says when the browser sends Global Privacy Control. */
+      countOpens: string
+      countOpensInfo: string
+      countOpensBody: string
+      countOpensBlocked: string
     }
     project: {
       rename: string

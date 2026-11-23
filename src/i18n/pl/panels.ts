@@ -31,6 +31,10 @@ export const panels: PanelsTranslations = {
       deleteAllConfirm: 'Usuń wszystkie projekty',
       sendFeedback: 'Wyślij opinię',
       reportTranslation: 'Zgłoś błąd tłumaczenia',
+      countOpens: 'Licz otwarcia',
+      countOpensInfo: 'Co robi liczenie otwarć',
+      countOpensBody: 'Raz dziennie aplikacja mówi openbeads, że ją otwarto, podając wersję i nic, co mówi, kim jesteś.',
+      countOpensBlocked: 'Twoja przeglądarka prosi strony, by jej nie śledziły, więc aplikacja nic nie liczy.',
     },
     project: {
       rename: 'Zmień nazwę „{name}”',
