@@ -148,12 +148,19 @@ describe('postPing', () => {
     const fetch = vi.fn(async () => new Response(null, { status: 503 }))
     vi.stubGlobal('fetch', fetch)
     const ping = { first: true, installed: false, version: '1.14.22' }
-    expect(await postPing(ping)).toBe(true)
+    expect(await postPing(ping, 'openbeads.com')).toBe(true)
     expect(fetch).toHaveBeenCalledWith('/api/opened', expect.objectContaining({ method: 'POST', credentials: 'omit', body: JSON.stringify(ping) }))
+  })
+
+  it("sends dev's Access cookie, or Access answers the ping with its login page", async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetch)
+    await postPing({ first: true, installed: false, version: '1.14.22' }, 'dev.openbeads.com')
+    expect(fetch).toHaveBeenCalledWith('/api/opened', expect.objectContaining({ credentials: 'same-origin' }))
   })
 
   it('is no answer when the request fails', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('offline'))))
-    expect(await postPing({ first: true, installed: false, version: '1.14.22' })).toBe(false)
+    expect(await postPing({ first: true, installed: false, version: '1.14.22' }, 'openbeads.com')).toBe(false)
   })
 })

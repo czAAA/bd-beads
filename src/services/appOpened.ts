@@ -69,13 +69,16 @@ function browserPlace(): OpenCountPlace {
   }
 }
 
-/** Without credentials, so a signed-in person's ping carries no session cookie and can't be tied to their account.
- * @internal Its test reads the request it makes. */
-export async function postPing(ping: OpenPing): Promise<boolean> {
+/** Cloudflare Access closes all of dev, and answers a request without its cookie with its login page. */
+const ACCESS_HOST = 'dev.openbeads.com'
+
+/** Without credentials, so a signed-in person's ping carries no session cookie and can't be tied to their account;
+ * on dev only, its own cookies, for Access. @internal Its test reads the request it makes. */
+export async function postPing(ping: OpenPing, host: string): Promise<boolean> {
   try {
     await fetch('/api/opened', {
       method: 'POST',
-      credentials: 'omit',
+      credentials: host === ACCESS_HOST ? 'same-origin' : 'omit',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(ping),
     })
@@ -87,5 +90,7 @@ export async function postPing(ping: OpenPing): Promise<boolean> {
 
 /** The editor's start (main.ts): counts this open in the background. */
 export function startOpenCount(): void {
-  void countThisOpen({ preferences: browserDevicePreferences, place: browserPlace(), version: BUILD_VERSION, now: () => new Date(), post: postPing })
+  const place = browserPlace()
+  const post = (ping: OpenPing) => postPing(ping, place.host)
+  void countThisOpen({ preferences: browserDevicePreferences, place, version: BUILD_VERSION, now: () => new Date(), post })
 }
