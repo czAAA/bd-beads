@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import MarginTitleBlock from './MarginTitleBlock.vue'
-import { beadChoices, findBead } from '../../domain/beads'
+import { beadChoices, beadLabel, findBead } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { projectPalette } from '../../domain/palette'
 import { moveToRow } from '../../domain/rowProgress'
@@ -189,6 +189,16 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
       await choosePanelOption(wrapper, 'bead-brand', other.brand.id)
       expect(wrapper.emitted('replace-bead')).toHaveLength(1)
       wrapper.unmount()
+    })
+
+    it('shows the Bead\'s name beside the pencil in the full form, as the Technique does', () => {
+      const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form: 'full' } })
+      expect(text(wrapper, 'margin-bead-name')).toBe(beadLabel(findBead('toho/cube/1.5mm')!))
+    })
+
+    it.each(['compact', 'line'] as const)('keeps the pencil alone in the %s form, where the row is tight', (form) => {
+      const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form } })
+      expect(wrapper.find('[data-testid="margin-bead-name"]').exists()).toBe(false)
     })
 
     it('is not in the brief block, which has no legend', () => {

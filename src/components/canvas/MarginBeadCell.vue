@@ -15,8 +15,9 @@ const teleportTo = useShellScope().teleportTo
 // The Frame's Bead in the margin's roomy title block (ticket 1015, MarginSheet card): its name and a Change button
 // that opens Layer settings' Bead pickers in a popover, in the top layer so the sheet's scale never shrinks it. A pick
 // only asks, as in the Frame panel: the shell confirms Replace Bead.
-/** `pencil` is the legend's Change (ticket 1197): the 18px pencil alone, the Bead's name in the popover's heading. */
-const props = defineProps<{ bead: Bead; pencil?: boolean }>()
+/** `pencil` is the legend's Change (ticket 1197): the 18px pencil, the Bead's name in the popover's heading.
+ * `named` (with `pencil`) puts the name before it, as the Technique's cell, where the row has the room (ticket 1213). */
+const props = defineProps<{ bead: Bead; pencil?: boolean; named?: boolean }>()
 const emit = defineEmits<{ pick: [beadId: string] }>()
 
 const { t } = useI18n()
@@ -58,10 +59,8 @@ useOverlayLayer({
 
 <template>
   <span ref="rootEl" class="margin-bead" role="group" :aria-label="t.panels.project.bead" data-testid="margin-bead">
-    <template v-if="!pencil">
-      <span class="margin-bead__label" aria-hidden="true">{{ t.panels.project.bead }}</span>
-      <span class="margin-bead__name" data-testid="margin-bead-name">{{ beadLabel(bead) }}</span>
-    </template>
+    <span v-if="!pencil" class="margin-bead__label" aria-hidden="true">{{ t.panels.project.bead }}</span>
+    <span v-if="!pencil || named" class="margin-bead__name" :class="{ 'margin-bead__name--clipped': pencil }" data-testid="margin-bead-name">{{ beadLabel(bead) }}</span>
     <IconButton
       v-if="pencil"
       variant="plain"
@@ -107,6 +106,13 @@ useOverlayLayer({
 .margin-bead__label {
   font: var(--type-meta-small);
   color: var(--body);
+}
+
+.margin-bead__name--clipped {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Change is 24px, the least a button on the sheet is drawn at (MarginSheet card, Legible). */
