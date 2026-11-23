@@ -160,5 +160,14 @@
   ] },
   { "version": "1.14.22", "date": "2026-11-22", "notes": [
     { "name": "2026-11-22-1204", "version": "1.14.22", "kind": "fixed" }
+  ] },
+  { "version": "1.15.3", "date": "2026-11-23", "notes": [
+    { "name": "2026-11-23-1207", "version": "1.14.23", "kind": "changed" },
+    { "name": "2026-11-23-1206", "version": "1.14.24", "kind": "fixed" },
+    { "name": "2026-11-24-1208", "version": "1.14.25", "kind": "fixed" },
+    { "name": "2026-11-23-1210", "version": "1.15.0", "kind": "new" },
+    { "name": "2026-11-24-1209", "version": "1.15.1", "kind": "changed" },
+    { "name": "2026-11-23-1211", "version": "1.15.2", "kind": "changed" },
+    { "name": "2026-11-23-1213", "version": "1.15.3", "kind": "changed" }
   ] }
 ]
