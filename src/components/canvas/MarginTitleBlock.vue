@@ -238,7 +238,7 @@ const keyLabel = computed(() =>
           <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
         </span>
         <!-- The legend's Change (ticket 1197): the Bead's pickers in a popover, then the Frame panel's Replace bead. -->
-        <MarginBeadCell v-if="frameBead" :bead="frameBead" pencil @pick="emit('replace-bead', $event)" />
+        <MarginBeadCell v-if="frameBead" :bead="frameBead" pencil :named="form === 'full'" @pick="emit('replace-bead', $event)" />
       </div>
       <div class="margin-title__cell margin-title__letters" :style="form === 'full' ? grid.letters : undefined">
         <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
