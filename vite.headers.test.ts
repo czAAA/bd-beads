@@ -25,6 +25,22 @@ describe('inlineScriptHashes', () => {
   })
 })
 
+describe('inlineScriptHashes and data scripts (ticket 1212)', () => {
+  it('names no data script, however its type is written', () => {
+    const data = `<script type="application/ld+json">{"a":1}</script><script type='application/json'>{}</script><script type=importmap>{}</script>`
+    expect(inlineScriptHashes(data)).toEqual([])
+  })
+
+  it('still names a script with no type, an empty one, module or a JavaScript type, in any case', () => {
+    const runs = `<script type="">var a = 1</script><script TYPE="Text/JavaScript">var a = 1</script><script type=module>var a = 1</script><script type="application/x-ecmascript">var a = 1</script>`
+    expect(inlineScriptHashes(runs)).toEqual([VAR_A, VAR_A, VAR_A, VAR_A])
+  })
+
+  it('reads only the `type` attribute, not one that merely ends in it', () => {
+    expect(inlineScriptHashes('<script data-type="x">var a = 1</script>')).toEqual([VAR_A])
+  })
+})
+
 describe('securityHeaders', () => {
   const headers = securityHeaders([page, "<script>alert('Hello, world.');</script>"])
   const policy = headers['Content-Security-Policy']
