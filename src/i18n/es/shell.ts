@@ -77,7 +77,9 @@ export const shell: ShellTranslations = {
   storage: {
     saveFailedMessage:
       'No se pudo guardar en este navegador. Tu último cambio solo está en pantalla. Libera espacio en el navegador o guarda un archivo de proyecto para conservarlo.',
-    openElsewhere: 'Este proyecto está abierto en otra pestaña. Los cambios hechos aquí no se guardan mientras siga abierto allí.',
+    openElsewhere: 'Este proyecto está abierto en otra pestaña',
+    openElsewhereBody: 'Los cambios hechos aquí no se guardan mientras siga abierto allí.',
+    openAnotherProject: 'Abrir otro proyecto',
     keptToast: 'Este navegador conservará tus proyectos.',
     libraryUnopened: 'No se pudieron abrir los proyectos de este dispositivo. Recarga para intentarlo de nuevo.',
     reload: 'Recargar',

@@ -22,6 +22,7 @@ type DialogId =
   | 'open-large-project'
   | 'remove-reference-image'
   | 'delete-account'
+  | 'open-elsewhere'
 
 interface Asked {
   id: DialogId

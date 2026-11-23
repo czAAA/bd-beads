@@ -76,7 +76,9 @@ export const shell: ShellTranslations = {
   },
   storage: {
     saveFailedMessage: '无法保存到此浏览器。你最近的修改只在屏幕上。请释放浏览器空间，或保存项目文件以保留修改。',
-    openElsewhere: '此项目已在另一个标签页中打开。在那里打开期间，这里的更改不会保存。',
+    openElsewhere: '此项目已在另一个标签页中打开',
+    openElsewhereBody: '在那里打开期间，这里的更改不会保存。',
+    openAnotherProject: '打开其他项目',
     keptToast: '此浏览器会保留你的项目。',
     libraryUnopened: '无法打开此设备上的项目。重新加载后再试一次。',
     reload: '重新加载',

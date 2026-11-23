@@ -73,6 +73,8 @@ const {
   onCancelDeleteAllProjects,
   onConfirmDeleteAccount,
   onCancelDeleteAccount,
+  onWorkHere,
+  onOpenAnotherProject,
   deleteAllCount,
   onSaveAllBeforeDeleteAll,
   naming,
@@ -352,6 +354,20 @@ const importMessage = computed(() => {
     :cancel-label="t.panels.project.cancel"
     @confirm="onConfirmDeleteAccount"
     @cancel="onCancelDeleteAccount"
+  />
+
+  <!-- Two tabs on one Project (tickets 0834, 0937): this tab saves nothing while the other has it, so it asks before any
+       edit. Closing the tab isn't offered: a browser lets a page close only a tab it opened itself. -->
+  <ConfirmModal
+    v-if="open === 'open-elsewhere'"
+    data-testid="open-elsewhere-modal"
+    :title="t.storage.openElsewhere"
+    :message="t.storage.openElsewhereBody"
+    :confirm-label="t.storage.workHere"
+    :cancel-label="t.storage.openAnotherProject"
+    :confirm-danger="false"
+    @confirm="onWorkHere"
+    @cancel="onOpenAnotherProject"
   />
 
   <NamePieceModal v-if="open === 'name-piece' && naming" :name="naming.name" @save="onSavePieceName" @cancel="onCancelPieceName" />

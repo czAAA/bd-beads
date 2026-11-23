@@ -107,8 +107,11 @@ export interface ShellTranslations {
   /** Storage's own voice in the UI: what it says when a write to this device didn't get through (ticket 55). */
   storage: {
     saveFailedMessage: string
-    /** The notice row's line while the open Project is open in another tab first (ticket 0834). */
+    /** The dialog's title while the open Project is open in another tab first (tickets 0834, 0937), its message, and
+     * its way out that is not Work here instead. */
     openElsewhere: string
+    openElsewhereBody: string
+    openAnotherProject: string
     /** The browser's yes, said back once at the first Project file (tickets 0839, 0936); a no says nothing. */
     keptToast: string
     /** The full-page message when the Projects saved on this device couldn't be opened (ticket 1020, spec 1018). */

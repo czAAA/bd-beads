@@ -4,8 +4,8 @@ import { beadCentre, fixtureProject } from '../support/projects'
 import { frameGrid } from '../../src/testUtils/frameGrid'
 import type { Project } from '../../src/domain/project'
 
-// Two tabs on one Project, with the browser's own Web Locks (ticket 0937): the second is read-only and says so, and
-// Work here instead moves the Project to it, the first tab then read-only in its turn.
+// Two tabs on one Project, with the browser's own Web Locks (ticket 0937): the second asks in a dialog before any edit,
+// its Canvas read-only behind it, and Work here instead moves the Project to it, the first tab then asking in its turn.
 
 const painted = (project: Project) => frameGrid(project).flat().filter((cell) => cell.color !== null).length
 
@@ -21,28 +21,35 @@ async function stroke(page: Page) {
   await settle(page)
 }
 
-test('a second tab draws nothing until Work here instead, then the first tab is the read-only one', async ({ browser }) => {
+test('a second tab draws nothing until Work here instead, then the first tab is the one that asks', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
   const project = fixtureProject({ technique: 'loom', blank: true })
   const first = await context.newPage()
   await openApp(first, [project])
   const second = await context.newPage()
   await openApp(second, [project])
+
+  await expect(second.getByTestId('open-elsewhere-modal')).toBeVisible()
+  await expect(first.getByTestId('open-elsewhere-modal')).toHaveCount(0)
+
+  // Open another Project puts the question aside for Saved Projects; back on the Canvas a stroke asks again.
+  await second.getByTestId('confirm-modal-cancel').click()
+  await expect(second.getByTestId('open-elsewhere-modal')).toHaveCount(0)
+  await expect(second.getByTestId('project-list')).toBeVisible()
+  await second.keyboard.press('Escape')
+  await expect(second.getByTestId('project-list')).toHaveCount(0)
   await setZoom(second, 100)
-
-  await expect(second.getByTestId('open-elsewhere-message')).toBeVisible()
-  await expect(first.getByTestId('open-elsewhere')).toHaveCount(0)
-
+  await expect(second.getByTestId('open-elsewhere-modal')).toHaveCount(0)
   await stroke(second)
 
   expect(painted(await savedProject(second))).toBe(0)
   await expect(second.getByTestId('strip-undo')).toHaveAttribute('aria-disabled', 'true')
-  await expect(second.getByTestId('announcer')).toHaveText("This Project is open in another tab. Changes made here aren't saved while it is open there.")
+  await expect(second.getByTestId('open-elsewhere-modal')).toBeVisible()
 
-  await second.getByTestId('open-elsewhere-work-here').click()
+  await second.getByTestId('confirm-modal-confirm').click()
 
-  await expect(second.getByTestId('open-elsewhere')).toHaveCount(0)
-  await expect(first.getByTestId('open-elsewhere-message')).toBeVisible()
+  await expect(second.getByTestId('open-elsewhere-modal')).toHaveCount(0)
+  await expect(first.getByTestId('open-elsewhere-modal')).toBeVisible()
   await stroke(second)
   await expect.poll(async () => painted(await savedProject(second))).toBe(6)
   await context.close()
