@@ -45,10 +45,6 @@ const { t } = useI18n()
 const mark = computed(() => markOn(props.color))
 const tooltip = computed(() => {
   const name = props.tooltipName ?? t.value.palette.colorLabel
-  if (props.lockedBody === undefined && props.approximate !== undefined) {
-    const words = t.value.palette.beadColors
-    return { name, body: props.approximate ? words.approximateBody : words.measuredBody, hotkey: props.hotkey, announce: true }
-  }
   return props.lockedBody === undefined
     ? { name, body: props.color, hotkey: props.hotkey, announce: !props.label.toLowerCase().includes(props.color.toLowerCase()) }
     : { name, disabled: true as const, disabledBody: props.lockedBody, announce: true }
