@@ -161,3 +161,40 @@ describe('Rotate\'s copy', () => {
     })
   }
 })
+
+// Fits the box (ticket 1206): where not every item fits beside the size, the size leaves the bar for a chip above it and
+// what still doesn't fit goes under "…", which is never cut off.
+describe('the Selection bar on a narrow screen', () => {
+  const narrow = { ...selectionProps, selectActive: true, hasClipboard: true, longSize: '128×96 ≈ 16.3 × 12.2 cm', anchor: { box: { left: 40, top: 160, width: 200, height: 120 }, viewport: { width: 260, height: 640 } } }
+
+  it('keeps the bar and its "…" inside the box, with the size as a chip', async () => {
+    const { root } = await mountAt(ContextBar, { ...narrow, selectionSummary: narrow.longSize } as unknown as Record<string, unknown>, { locale: 'en', width: 260 })
+    await vi.waitFor(() => expect(root.querySelector('[data-testid="context-bar-copy"]')?.getAttribute('aria-disabled')).toBeNull())
+    await settleForMeasuring()
+    const bar = root.querySelector('.context-bar')!
+    const box = bar.getBoundingClientRect()
+    expect(box.right).toBeLessThanOrEqual(260 - 8 + 0.5)
+    expect(box.left).toBeGreaterThanOrEqual(8 - 0.5)
+    const more = root.querySelector('[data-testid="context-bar-more"]')!.getBoundingClientRect()
+    expect(more.right).toBeLessThanOrEqual(box.right + 0.5)
+    const chip = root.querySelector('.context-bar__size--chip')!
+    expect(chip.textContent).toBe(narrow.longSize)
+    expect(chip.getBoundingClientRect().bottom).toBeLessThanOrEqual(box.top)
+  })
+
+  it('leaves the size in the bar where everything fits', async () => {
+    const { root } = await mountAt(ContextBar, selectionProps as unknown as Record<string, unknown>, { locale: 'en', width: 800 })
+    await settleForMeasuring()
+    expect(root.querySelector('.context-bar__size--chip')).toBeNull()
+    expect(root.querySelector('[data-testid="context-bar-more"]')).toBeNull()
+  })
+
+  it('puts the chip below the bar where the box has no room above it', async () => {
+    const top = { ...narrow, selectionSummary: narrow.longSize, anchor: { ...narrow.anchor, box: { left: 40, top: 0, width: 200, height: 120 } } }
+    const { root } = await mountAt(ContextBar, top as unknown as Record<string, unknown>, { locale: 'en', width: 260 })
+    await vi.waitFor(() => expect(root.querySelector('[data-testid="context-bar-copy"]')?.getAttribute('aria-disabled')).toBeNull())
+    await settleForMeasuring()
+    const bar = root.querySelector('.context-bar')!.getBoundingClientRect()
+    expect(root.querySelector('.context-bar__size--chip')!.getBoundingClientRect().top).toBeGreaterThanOrEqual(bar.bottom)
+  })
+})
