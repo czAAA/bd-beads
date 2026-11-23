@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-23",
+  "kind": "changed",
+  "line": {
+    "en": "Language is in the Menu again, and stays in the strip next to Export; the strip's tools show an arrow where they scroll on",
+    "ru": "Язык снова есть в меню и остаётся в полосе рядом с «Экспортировать»; у прокручиваемых инструментов в полосе появилась стрелка",
+    "uk": "Мова знову є в меню й лишається в смузі поруч з «Експортувати»; у прокручуваних інструментів у смузі з’явилася стрілка",
+    "be": "Мова зноў ёсць у меню і застаецца ў паласе побач з «Экспартаваць»; у інструментаў паласы, якія пракручваюцца, з’явілася стрэлка",
+    "zh": "语言又回到了菜单中，并固定在顶部栏的“导出”旁；顶部栏的工具可滚动时会显示箭头",
+    "es": "El idioma vuelve a estar en el menú y sigue en la franja junto a «Exportar»; las herramientas de la franja muestran una flecha cuando se pueden desplazar",
+    "pl": "Język znów jest w menu i zostaje na pasku obok „Eksportuj”; narzędzia na pasku pokazują strzałkę, gdy można je przewinąć"
+  }
+}

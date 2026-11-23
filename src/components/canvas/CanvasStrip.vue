@@ -20,7 +20,7 @@ import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import PanelPicker from '../shell/PanelPicker.vue'
-import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
+import { LOCALE_OPTIONS } from '../../domain/locale'
 import { rotateCanvasIcon } from './rotateCanvasIcon'
 import { imageInputAccept } from '../../domain/imageConversion'
 import type { OpenPanel } from '../../composables/shell/openPanel'
@@ -81,8 +81,6 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale, setLocale } = useI18n()
-/** Language, between Fit and Export: each language by its own name, the button showing its code ("EN"). */
-const languageOptions = LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], shortLabel: localeCode(code), lang: code }))
 
 /** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there (ADR 0035). */
 const actions = {
@@ -158,6 +156,14 @@ const controlsRoving = useRovingFocus(controlsEl, { selector: 'button:not([role=
 /** The right slot's scrolling row (ticket 0843): which of its edges cut a control, so that edge fades. */
 const scrollerEl = ref<HTMLElement>()
 const cut = useScrollCut(scrollerEl)
+
+/** How much of the row's width a chevron's press scrolls. */
+const SCROLL_STEP = 0.8
+/** A chevron's press: the scrolling row goes most of its width towards that end. */
+function scrollBy(direction: -1 | 1) {
+  const row = scrollerEl.value
+  row?.scrollBy({ left: direction * row.clientWidth * SCROLL_STEP, behavior: 'smooth' })
+}
 
 /** ↓ on a closed panel's button opens it, as Enter does; true when it did. */
 function openOnArrowDown(event: KeyboardEvent): boolean {
@@ -263,55 +269,60 @@ function onControlsKeydown(event: KeyboardEvent) {
       </div>
       <span v-if="project" class="canvas-strip__divider" aria-hidden="true" data-testid="strip-divider-history" />
       <!-- Everything between Undo · Redo and Export, in a row that scrolls sideways where the strip is too narrow (ticket 0843). -->
-      <div ref="scrollerEl" class="canvas-strip__scroller" :data-cut="cut" data-testid="canvas-strip-scroller">
-        <!-- Expand (ticket 0830): words only, the icon set has none for it; it keeps the width of the wider word. -->
-        <AppButton v-if="expand" class="canvas-strip__expand" size="sm" data-testid="strip-expand" @click="emit('toggle-expand')">
-          <span class="canvas-strip__expand-word" :data-other="expand === 'expand' ? t.homepage.inside.collapse : t.homepage.inside.expand">{{
-            expand === 'expand' ? t.homepage.inside.expand : t.homepage.inside.collapse
-          }}</span>
-        </AppButton>
-        <div v-if="project" class="canvas-strip__tools">
-          <template v-if="referenceImage">
-            <IconButton
-              variant="plain"
-              :icon-size="18"
-              :action="actions.referenceImage"
-              :selected="referenceImage === 'none' ? undefined : referenceImage === 'shown'"
-              :shortcut="referenceImage === 'none' ? '' : undefined"
-              :tooltip="referenceTooltip"
-              data-testid="strip-reference-image"
-              @click="onReferenceImage"
-            />
-            <span ref="referencePickerEl" hidden>
-              <FileButton :label="actions.referenceImage.name(t)" :accept="referenceAccept" tabindex="-1" data-testid="strip-reference-image-input" @change="onReferenceFile" />
-            </span>
-          </template>
-          <template v-if="!demo">
-            <IconButton variant="plain" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')">
-              <AppIcon :name="rotateIcon" :size="18" :turn="rotateTurn" />
-            </IconButton>
-            <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulersLit" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
-          </template>
+      <div class="canvas-strip__scroll-wrap" data-testid="canvas-strip-scroller-wrap">
+        <div ref="scrollerEl" class="canvas-strip__scroller" :data-cut="cut" data-testid="canvas-strip-scroller">
+          <!-- Expand (ticket 0830): words only, the icon set has none for it; it keeps the width of the wider word. -->
+          <AppButton v-if="expand" class="canvas-strip__expand" size="sm" data-testid="strip-expand" @click="emit('toggle-expand')">
+            <span class="canvas-strip__expand-word" :data-other="expand === 'expand' ? t.homepage.inside.collapse : t.homepage.inside.expand">{{
+              expand === 'expand' ? t.homepage.inside.expand : t.homepage.inside.collapse
+            }}</span>
+          </AppButton>
+          <div v-if="project" class="canvas-strip__tools">
+            <template v-if="referenceImage">
+              <IconButton
+                variant="plain"
+                :icon-size="18"
+                :action="actions.referenceImage"
+                :selected="referenceImage === 'none' ? undefined : referenceImage === 'shown'"
+                :shortcut="referenceImage === 'none' ? '' : undefined"
+                :tooltip="referenceTooltip"
+                data-testid="strip-reference-image"
+                @click="onReferenceImage"
+              />
+              <span ref="referencePickerEl" hidden>
+                <FileButton :label="actions.referenceImage.name(t)" :accept="referenceAccept" tabindex="-1" data-testid="strip-reference-image-input" @change="onReferenceFile" />
+              </span>
+            </template>
+            <template v-if="!demo">
+              <IconButton variant="plain" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')">
+                <AppIcon :name="rotateIcon" :size="18" :turn="rotateTurn" />
+              </IconButton>
+              <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulersLit" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
+            </template>
+          </div>
+          <div v-if="zoomPercent !== undefined && !demo" class="canvas-strip__zoom" :data-zoom-percent="zoomPercent" data-testid="canvas-strip-zoom">
+            <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
+            <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= min" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
+            <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
+          </div>
         </div>
-        <div v-if="zoomPercent !== undefined && !demo" class="canvas-strip__zoom" :data-zoom-percent="zoomPercent" data-testid="canvas-strip-zoom">
-          <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
-          <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= min" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
-          <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
-        </div>
-        <!-- Language: the Menu's picker, moved here, after Fit and before Export; on every page but the demo. -->
-        <PanelPicker
-          v-if="!demo"
-          toolbar
-          :model-value="locale"
-          :label="t.languageSwitcher.ariaLabel"
-          icon="globe"
-          :options="languageOptions"
-          :footer="{ label: t.panels.menu.reportTranslation, testid: 'menu-report-translation' }"
-          data-testid="language-switcher"
-          @footer="emit('report-translation')"
-          @update:model-value="setLocale"
-        />
+        <!-- The row goes on: a chevron where a control is cut; a press scrolls that way. -->
+        <span v-if="cut === 'start' || cut === 'both'" class="canvas-strip__more canvas-strip__more--start" aria-hidden="true" data-testid="strip-more-start" @click="scrollBy(-1)"><AppIcon name="chevron-left" :size="12" /></span>
+        <span v-if="cut === 'end' || cut === 'both'" class="canvas-strip__more canvas-strip__more--end" aria-hidden="true" data-testid="strip-more-end" @click="scrollBy(1)"><AppIcon name="chevron-left" :size="12" /></span>
       </div>
+      <!-- Language: the Menu's picker again, pinned beside Export so it is always in sight; on every page but the demo. -->
+      <PanelPicker
+        v-if="!demo"
+        toolbar
+        :model-value="locale"
+        :label="t.languageSwitcher.ariaLabel"
+        icon="globe"
+        :options="LOCALE_OPTIONS"
+        :footer="{ label: t.panels.menu.reportTranslation, testid: 'menu-report-translation' }"
+        data-testid="language-switcher"
+        @footer="emit('report-translation')"
+        @update:model-value="setLocale"
+      />
       <span v-if="project && !demo" class="canvas-strip__divider" aria-hidden="true" data-testid="strip-divider-export" />
       <!-- Export (tickets 0652, 0843): the strip's last button, in its right corner, never scrolled away; lit while the
            Export panel is open. -->
@@ -501,6 +512,33 @@ function onControlsKeydown(event: KeyboardEvent) {
   scrollbar-width: none;
 }
 
+.canvas-strip__scroll-wrap {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+/* The cue that the row goes on: a small chevron over the faded edge. */
+.canvas-strip__more {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: var(--strip-fade);
+  height: 100%;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.canvas-strip__more--start {
+  left: 0;
+}
+
+.canvas-strip__more--end {
+  right: 0;
+  transform: scaleX(-1);
+}
+
 .canvas-strip__scroller::-webkit-scrollbar {
   display: none;
 }
@@ -661,17 +699,39 @@ a.canvas-strip__brand:focus-visible {
   }
 }
 
-/* Language under 1024px: the code alone ("EN"), as wide as an icon button at least, so the cluster still fits a
- * tablet; the globe and the chevron come back from 1024px up. */
-@container shell (max-width: 1023px) {
+/* Language: the code alone ("EN"), as wide as an icon button at least, so the cluster still fits a tablet; the globe
+ * and the chevron come back from 1024px up. */
+.canvas-strip__controls :deep(:is(.panel-picker__lead, .panel-picker__chevron)) {
+  display: none;
+}
+
+.canvas-strip__controls :deep(.panel-picker--toolbar .panel-picker__button) {
+  justify-content: center;
+  min-width: var(--control-height-plain);
+  padding: 0 var(--space-4);
+}
+
+@container shell (min-width: 1024px) {
   .canvas-strip__controls :deep(:is(.panel-picker__lead, .panel-picker__chevron)) {
-    display: none;
+    display: inline-flex;
   }
 
   .canvas-strip__controls :deep(.panel-picker--toolbar .panel-picker__button) {
-    justify-content: center;
-    min-width: var(--control-height-plain);
-    padding: 0 var(--space-4);
+    justify-content: flex-start;
+    min-width: 0;
+    padding: 0 var(--space-4) 0 var(--space-6);
+  }
+}
+
+/* A 320px window: the pinned Language gives back the room its code's padding had, so the whole cluster fits. */
+@container shell (max-width: 340px) {
+  .canvas-strip__controls :deep(.panel-picker--toolbar .panel-picker__button) {
+    min-width: 0;
+    padding: 0 var(--space-2);
+  }
+
+  .canvas-strip__controls :deep(.icon-btn--plain) {
+    width: calc(var(--control-height-plain) - var(--space-4));
   }
 }
 

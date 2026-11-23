@@ -4,6 +4,7 @@ import { provide, defineComponent, h } from 'vue'
 import MenuPanel from './MenuPanel.vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { en } from '../../i18n/en'
+import { LOCALE_NAMES } from '../../domain/locale'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 
@@ -69,10 +70,12 @@ describe('MenuPanel (ticket 443)', () => {
     expect(version.text()).not.toContain('0.0.0')
   })
 
-  it('has the theme as a picker, and no Language: that is in the strip', () => {
+  it('has the theme and Language as pickers; Language is the strip\'s picker again, in its own place here', async () => {
     const wrapper = mountIn()
     expect(panelOptionShown(wrapper, 'theme-picker')).toBe(en.theme.matchDevice)
-    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(false)
+    expect(panelOptionShown(wrapper, 'menu-language')).toBe('English')
+    await choosePanelOption(wrapper, 'menu-language', 'pl')
+    expect(panelOptionShown(wrapper, 'menu-language')).toBe(LOCALE_NAMES.pl)
   })
 
   // How a theme is stored, Match device as none, is devicePreferences'.

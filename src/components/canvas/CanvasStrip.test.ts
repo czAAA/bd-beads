@@ -122,9 +122,9 @@ describe('CanvasStrip', () => {
     const wrapper = mount(CanvasStrip, { props: { project, referenceImage: 'none', canUndo: true, zoomPercent: 100 } })
     const scroller = wrapper.get('[data-testid="canvas-strip-scroller"]')
     for (const id of ['strip-undo', 'strip-redo', 'strip-export']) expect(scroller.find(`[data-testid="${id}"]`).exists(), id).toBe(false)
-    for (const id of ['strip-reference-image', 'strip-rotate-canvas', 'strip-rulers', 'zoom-in', 'zoom-out', 'zoom-reset', 'language-switcher']) expect(scroller.find(`[data-testid="${id}"]`).exists(), id).toBe(true)
+    for (const id of ['strip-reference-image', 'strip-rotate-canvas', 'strip-rulers', 'zoom-in', 'zoom-out', 'zoom-reset']) expect(scroller.find(`[data-testid="${id}"]`).exists(), id).toBe(true)
     const children = Array.from(wrapper.get('[data-testid="canvas-strip-controls"]').element.children)
-    expect(children.map((child) => child.getAttribute('data-testid') ?? child.querySelector('[data-testid]')?.getAttribute('data-testid'))).toEqual(['strip-undo', 'strip-divider-history', 'canvas-strip-scroller', 'strip-divider-export', 'strip-export'])
+    expect(children.map((child) => child.getAttribute('data-testid') ?? child.querySelector('[data-testid]')?.getAttribute('data-testid'))).toEqual(['strip-undo', 'strip-divider-history', 'canvas-strip-scroller-wrap', 'language-switcher', 'strip-divider-export', 'strip-export'])
     expect(wrapper.get('[data-testid="strip-divider-history"]').attributes('aria-hidden')).toBe('true')
   })
 

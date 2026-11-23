@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import CanvasStrip from './CanvasStrip.vue'
 import { createProject } from '../../domain/createProject'
 import { inShell, mountAt, resizeTo } from '../../testUtils/browserFit'
@@ -28,7 +28,14 @@ describe('CanvasStrip on a phone (ticket 0843)', () => {
     expect(row.scrollWidth).toBeGreaterThan(row.clientWidth)
     expect(row.dataset.cut).toBe('end')
     expect(getComputedStyle(row).maskImage).not.toBe('none')
+    // The cue: a chevron at the cut edge, and Language pinned outside the row, before Export.
+    expect(root.querySelector('[data-testid="strip-more-end"]')).not.toBeNull()
+    expect(row.contains(root.querySelector('[data-testid="language-switcher"]'))).toBe(false)
+    expect(rectOf(root, '[data-testid="language-switcher"]').right).toBeLessThanOrEqual(exportButton.left)
 
+    // A press on the chevron scrolls the row towards that end.
+    root.querySelector<HTMLElement>('[data-testid="strip-more-end"]')!.click()
+    await vi.waitFor(() => expect(row.scrollLeft).toBeGreaterThan(0))
     row.scrollLeft = 8
     row.dispatchEvent(new Event('scroll'))
     await settleForMeasuring()
