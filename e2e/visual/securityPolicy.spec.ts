@@ -47,3 +47,12 @@ test.describe('with motion', () => {
     expect(refused).toEqual([])
   })
 })
+
+test('a Homepage keeps its data script whole, and nothing is refused for it', async ({ page }) => {
+  const refused = await watchPolicy(page)
+  await openApp(page, [fixtureProject({ technique: 'loom' })], './', { canvasHidden: true })
+  const data = await page.evaluate(() => document.querySelector('script[type="application/ld+json"]')?.textContent ?? '')
+  expect(JSON.parse(data)).toMatchObject({ '@type': 'WebApplication' })
+  await settle(page)
+  expect(refused).toEqual([])
+})

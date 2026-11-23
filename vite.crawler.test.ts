@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -160,9 +161,12 @@ describe('the built Homepage (ticket 1055)', () => {
     expect(parsed).not.toHaveProperty('review')
   })
 
-  it('names every inline script of every page, the data included, in the policy it is sent with', () => {
+  it('names every inline script that runs in the policy it is sent with, and not the data script (ticket 1212)', () => {
     const headers = readFileSync(join(outDir, HEADERS_FILE), 'utf8')
-    expect(inlineScriptHashes(page).length).toBeGreaterThanOrEqual(2)
+    expect(inlineScriptHashes(page).length).toBeGreaterThanOrEqual(1)
+    const data = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(page)?.[1] ?? ''
+    expect(data).not.toBe('')
+    expect(headers).not.toContain(`'sha256-${createHash('sha256').update(data).digest('base64')}'`)
     for (const { folder } of HOMEPAGES) for (const hash of inlineScriptHashes(built(homepageFile(folder)))) expect(headers).toContain(hash)
   })
 

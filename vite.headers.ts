@@ -16,10 +16,19 @@ const TURNSTILE = 'https://challenges.cloudflare.com'
  * script this missed would only be refused by the policy, never let through. */
 const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi
 
-/** The `'sha256-…'` source of every inline script in `html`, in order: what a policy names to let that script run. */
+/** Whether a script element is one a browser runs (ticket 1212): no `type`, an empty one, `module` or a JavaScript
+ * type, all of which hold "script". Any other `type` is data (`ld+json`): never run, so a hash would allow nothing.
+ * A script wrongly taken for data is refused, never let through. */
+function runs(attributes: string): boolean {
+  const type = /(?:^|\s)type\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(attributes)
+  const value = (type?.[1] ?? type?.[2] ?? type?.[3] ?? '').trim().toLowerCase()
+  return value === '' || value === 'module' || value.includes('script')
+}
+
+/** The `'sha256-…'` source of every inline script that runs in `html`, in order: what a policy names to let it run. */
 export function inlineScriptHashes(html: string): string[] {
   return [...html.matchAll(SCRIPT)]
-    .filter(([, attributes]) => !/\bsrc\s*=/i.test(attributes ?? ''))
+    .filter(([, attributes]) => !/\bsrc\s*=/i.test(attributes ?? '') && runs(attributes ?? ''))
     .map(([, , text]) => `'sha256-${createHash('sha256').update(text ?? '').digest('base64')}'`)
 }
 

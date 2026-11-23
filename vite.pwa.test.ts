@@ -131,7 +131,8 @@ describe('the production build (ticket 69)', () => {
     let inline = 0
     for (const page of ['index.html', 'app/index.html']) {
       for (const [, attributes, text] of readFileSync(join(outDir, page), 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
-        if (/\bsrc=/.test(attributes!)) continue
+        // A file, or data a browser never runs (ticket 1212): neither needs a hash.
+        if (/\bsrc=/.test(attributes!) || /\btype="application\/ld\+json"/.test(attributes!)) continue
         inline += 1
         expect(scripts, `${page}: ${text!.trim().slice(0, 60)}`).toContain(`'sha256-${createHash('sha256').update(text!).digest('base64')}'`)
       }
