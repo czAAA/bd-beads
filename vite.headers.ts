@@ -17,21 +17,14 @@ const TURNSTILE = 'https://challenges.cloudflare.com'
 const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi
 
 /** Whether a script element's attributes make it one a browser runs (ticket 1212): no `type`, an empty one, `module` or
- * a JavaScript type (HTML's "JavaScript MIME type", old spellings too). Any other `type` is data (`application/ld+json`):
- * never run, so the policy never checks it and a hash would allow nothing. One wrongly taken for data is only refused. */
+ * a JavaScript type (`text/javascript`, `application/ecmascript`, old `jscript`: all hold "script"). Any other `type` is
+ * data (`application/ld+json`): never run, so the policy never checks it and a hash would allow nothing. A data type
+ * that holds "script" is only hashed for nothing; a script wrongly taken for data is refused, never let through. */
 function runs(attributes: string): boolean {
   const type = /(?:^|\s)type\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(attributes)
   const value = (type?.[1] ?? type?.[2] ?? type?.[3] ?? '').trim().toLowerCase()
-  return value === '' || value === 'module' || JAVASCRIPT_TYPES.has(value)
+  return value === '' || value === 'module' || value.includes('script')
 }
-
-const JAVASCRIPT_TYPES = new Set([
-  'text/javascript', 'application/javascript', 'application/x-javascript', 'application/ecmascript',
-  'application/x-ecmascript', 'text/ecmascript', 'text/jscript', 'text/livescript', 'text/x-ecmascript',
-  'text/x-javascript', 'text/javascript1.0', 'text/javascript1.1', 'text/javascript1.2', 'text/javascript1.3',
-  'text/javascript1.4', 'text/javascript1.5', 'text/jscript1.0', 'text/jscript1.1', 'text/jscript1.2',
-  'text/jscript1.3', 'text/jscript1.4', 'text/jscript1.5',
-])
 
 /** The `'sha256-…'` source of every inline script that runs in `html`, in order: what a policy names to let it run. */
 export function inlineScriptHashes(html: string): string[] {
