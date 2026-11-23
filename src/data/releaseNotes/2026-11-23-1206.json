@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-23",
+  "kind": "fixed",
+  "line": {
+    "en": "The Selection bar's tools stay within reach on a narrow screen, and its size shows above it",
+    "ru": "Кнопки панели выделения остаются доступными на узком экране, а размер показан над ней",
+    "uk": "Кнопки панелі виділення лишаються доступними на вузькому екрані, а розмір показано над нею",
+    "be": "Кнопкі панэлі вылучэння застаюцца даступнымі на вузкім экране, а памер паказаны над ёй",
+    "zh": "在窄屏上，选区栏的工具都能点到，尺寸显示在栏的上方",
+    "es": "Las herramientas de la barra de selección siguen a mano en una pantalla estrecha, y su tamaño se muestra encima",
+    "pl": "Narzędzia paska zaznaczenia pozostają w zasięgu na wąskim ekranie, a jego rozmiar widać nad nim"
+  }
+}

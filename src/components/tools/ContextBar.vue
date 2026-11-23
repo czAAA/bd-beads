@@ -6,6 +6,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useRotateCopy } from '../../composables/ui/useRotateCopy'
 import { ownPoint } from '../../composables/ui/cssZoom'
+import { type BarFitInput, fitItems } from '../../composables/tools/selectionBarFit'
 import { areaBarPlacement, BAR_EDGE_PX, type BarBox, barOutOfView, type SelectionAnchor, selectionBarPlacement, type SheetArea } from '../../composables/tools/selectionBarPlacement'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -178,6 +179,8 @@ const items = computed<BarItem[]>(() => {
 const BAR_ITEM_GAP_PX = 2
 const BAR_SIDE_PADDING_PX = 2
 const BAR_DIVIDER_PX = 1 + 2 * 3
+/** The chip's distance from the bar. */
+const CHIP_GAP_PX = 6
 
 const rootEl = ref<HTMLElement>()
 // One Tab stop; ←/→ step along the buttons and stop at the ends (ADR 0075).
@@ -187,20 +190,33 @@ const readoutEl = ref<HTMLElement>()
 const bar = useElementSize(rootEl, { box: 'border-box' })
 const readout = useElementSize(readoutEl)
 
-/** How many buttons fit beside the readout in the canvas box's width (a button is as wide as the bar is high); every
- * one with no measured box (a test). */
-const capacity = computed(() => {
+/** What the bar's fit reads from where it is drawn (a test with no measured box fits everything). */
+function fitInput(lead: number[]): BarFitInput | undefined {
   const viewport = props.anchor?.viewport.width
-  if (!viewport || !readout.width.value || !bar.height.value) return Infinity
+  if (!viewport || !readout.width.value || !bar.height.value) return undefined
   const style = rootEl.value ? getComputedStyle(rootEl.value) : undefined
-  const gap = Number.parseFloat(style?.columnGap ?? '') || BAR_ITEM_GAP_PX
-  const side = Number.parseFloat(style?.paddingLeft ?? '') || BAR_SIDE_PADDING_PX
-  const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * (side + BAR_DIVIDER_PX)
-  return Math.max(1, Math.floor(room / (bar.height.value + gap)) - (gripArea.value ? 1 : 0))
+  return {
+    room: viewport - 2 * BAR_EDGE_PX,
+    button: bar.height.value,
+    gap: Number.parseFloat(style?.columnGap ?? '') || BAR_ITEM_GAP_PX,
+    side: Number.parseFloat(style?.paddingLeft ?? '') || BAR_SIDE_PADDING_PX,
+    divider: BAR_DIVIDER_PX,
+    lead: [...(gripArea.value ? [bar.height.value] : []), ...lead],
+    groups: items.value.map((item) => item.group),
+  }
+}
+/** Not every item fits beside the readout: it leaves the bar for a chip above it, so the bar's room goes to the tools
+ * (ContextBar card, Fits the box, ticket 1206). */
+const readoutChip = computed(() => {
+  const input = fitInput([readout.width.value])
+  return !mirrorShown.value && !!input && fitItems(input) < items.value.length
 })
-const overflowing = computed(() => items.value.length > capacity.value)
-const shown = computed(() => (overflowing.value ? items.value.slice(0, Math.max(0, capacity.value - 1)) : items.value))
-const folded = computed(() => (overflowing.value ? items.value.slice(shown.value.length) : []))
+const shownCount = computed(() => {
+  const input = fitInput(readoutChip.value ? [] : [readout.width.value])
+  return input ? fitItems(input) : items.value.length
+})
+const shown = computed(() => items.value.slice(0, shownCount.value))
+const folded = computed(() => items.value.slice(shownCount.value))
 
 /** This bar is the Mirror bar: it is given the Mirror and no Selection (the Selection bar is another ContextBar). */
 const mirrorShown = computed(() => props.selectionSummary === undefined && !!props.mirror)
@@ -247,6 +263,15 @@ const placement = computed<{ left: number; top: number; below: boolean } | undef
   // card, Placement).
   const keepSide = mirrorShown.value && props.mirror!.setting.place?.layer === 'frame'
   return selectionBarPlacement(anchor.box, size, anchor.viewport, props.obstacle, { keepSide })
+})
+/** The readout's chip lies on the side of the bar away from its Selection, the bar's own height and 6px off it; where the
+ * canvas box has no room there, on the other side. */
+const chipBelow = computed(() => {
+  const at = placement.value
+  const viewport = placedAnchor.value?.viewport
+  if (!at || !viewport) return false
+  const room = bar.height.value + CHIP_GAP_PX
+  return at.below ? at.top + bar.height.value + room + BAR_EDGE_PX <= viewport.height : at.top - room < BAR_EDGE_PX
 })
 /** The bar gone out of view with its Area (ticket 0779): wholly outside the canvas box, hidden so Tab never reaches it. */
 const away = computed(() => {
@@ -327,7 +352,13 @@ watch(
     @keydown.capture="rotateCopy.forgetPress"
   >
     <AreaMoveGrip v-if="gripArea" v-show="!compact" :area="gripArea" :piece="!!selection?.cells" @press="emit('move-press', $event, gripArea)" @key="emit('move-key', $event, gripArea)" />
-    <span v-show="!mirrorShown || mirrorFit === 0 || compact" ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ readoutText }}</span>
+    <span
+      v-show="!mirrorShown || mirrorFit === 0 || compact"
+      ref="readoutEl"
+      class="context-bar__size"
+      :class="{ 'context-bar__size--chip': readoutChip && !compact, 'context-bar__size--chip-below': readoutChip && !compact && chipBelow }"
+      data-testid="context-bar-size"
+    >{{ readoutText }}</span>
     <MirrorBarItems
       v-if="mirrorShown"
       v-show="!compact"
@@ -446,6 +477,32 @@ watch(
   font: var(--type-meta);
   color: color-mix(in srgb, var(--canvas) 74%, transparent);
   white-space: nowrap;
+}
+
+/* The size readout where it doesn't fit the bar (ticket 1206): a chip of the bar's own look, centred above it (below
+ * it where the box has no room above), out of the bar's flow so the bar's room goes to the tools. Its 6px gap is
+ * CHIP_GAP_PX's, in step. */
+.context-bar__size--chip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  background: var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-3);
+  transform: translateX(-50%);
+}
+
+.context-bar__size--chip-below {
+  top: calc(100% + 6px);
+  bottom: auto;
+}
+
+:root[data-theme='dark'] .context-bar__size--chip {
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
 }
 
 .context-bar__divider {
