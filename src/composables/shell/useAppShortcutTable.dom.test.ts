@@ -40,6 +40,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onRotate: vi.fn(),
     selectionInFinishedRows: () => false,
     selectionOnFrame: () => false,
+    selectionExportable: () => false,
     canRemoveSelectedLine: () => true,
     canNamePiece: () => false,
     hasPaintColor: () => true,

@@ -30,7 +30,7 @@ describe('NamesSection (ticket 568)', () => {
     expect(wrapper.get('[data-testid="field-counter"]').text()).toBe(`${MAX_PROJECT_NAME - 5}/${MAX_PROJECT_NAME}`)
   })
 
-  it('inline shows each name as a line with a pencil, saved at once, and will not save an empty Name', async () => {
+  it('inline shows the name as a line with a pencil, and no maker name (ticket 1210), saved at once, and will not save an empty Name', async () => {
     const wrapper = mount(NamesSection, { props: { name: 'Moth', makerName: '', inline: true } })
 
     expect(wrapper.get('[data-testid="project-name"]').text()).toBe('Moth')
@@ -46,9 +46,6 @@ describe('NamesSection (ticket 568)', () => {
     await wrapper.get('[data-testid="project-name-save"]').trigger('click')
     expect(wrapper.emitted('update:name')).toEqual([['Heron']])
 
-    await wrapper.get('[data-testid="project-maker-add"]').trigger('click')
-    await wrapper.get('[data-testid="project-maker-input"]').setValue('Ada')
-    await wrapper.get('[data-testid="project-maker-save"]').trigger('click')
-    expect(wrapper.emitted('update:makerName')).toEqual([['Ada']])
+    expect(wrapper.find('[data-testid="project-maker-row"]').exists()).toBe(false)
   })
 })

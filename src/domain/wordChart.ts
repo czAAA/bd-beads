@@ -1,5 +1,5 @@
 import { colorAt, type Rect } from './canvas'
-import type { GridPosition, Rotation } from './grid'
+import { rotationSwapsAxes, type GridPosition, type Rotation } from './grid'
 import { frameRowOrder, ownRowWayOf } from './rowProgress'
 import { frameQuarterTurnOf } from './table'
 import { frameWeave } from './layerWeave'
@@ -123,6 +123,7 @@ export function wordChartOf(project: Project): WordChart | undefined {
     kept.splice(0, 2, { pass: first.pass, positions: [...first.positions, ...second.positions].sort((p, q) => key(p) - key(q)) })
   }
   const rulerNumber = rulerNumberOf(direction, shown, box, frame)
+  const numbered = frame.numberFrom ? numberedFrom(direction, shown, frame, frame.numberFrom) : rulerNumber
 
   const rows: WordRow[] = kept.map(({ pass, positions }, index) => {
     const colors = positions.map(({ row, column }) => {
@@ -137,7 +138,7 @@ export function wordChartOf(project: Project): WordChart | undefined {
     hasEmpty ||= colors.includes(undefined)
     const line = order.lineOf(pass)
     // Peyote counts its passes, two a line, from Rows 1&2; a line woven in one pass carries its ruler's number.
-    const number = twoPasses ? (index === 0 ? 1 : index + 2) : line === undefined ? index + 1 : rulerNumber(line)
+    const number = twoPasses ? (index === 0 ? 1 : index + 2) : line === undefined ? index + 1 : numbered(line)
     return { number, both: twoPasses && index === 0, ...(marker ? { marker } : {}), runs: runsOf(colors) }
   })
 
@@ -157,6 +158,16 @@ function rulerNumberOf(direction: PassDirection, shown: Rotation, box: Rect | un
   const [first, count] = direction === 'rows' ? [box?.row ?? 0, box?.rows ?? frame.rows] : [box?.column ?? 0, box?.columns ?? frame.columns]
   const edge = FIRST_EDGE[direction][shown]
   return edge === 'top' || edge === 'left' ? (line) => line - first + 1 : (line) => first + count - line
+}
+
+/** A Selection export's line numbers (ticket 1210): the whole chart's, counted from `from`, the displayed row or column
+ * its first line lies at, so a part from row 12 prints 12, 13...; a line from the edge the chart counts from. */
+function numberedFrom(direction: PassDirection, shown: Rotation, frame: { rows: number; columns: number }, from: { across: number; down: number }): (line: number) => number {
+  const swaps = rotationSwapsAxes(shown)
+  const offset = (direction === 'rows') === !swaps ? from.down : from.across
+  const edge = FIRST_EDGE[direction][shown]
+  const total = direction === 'rows' ? frame.rows : frame.columns
+  return edge === 'top' || edge === 'left' ? (line) => line - offset + 1 : (line) => total - line - offset
 }
 
 /** A pass's letters in order as runs of one letter: `undefined` for an empty position. */

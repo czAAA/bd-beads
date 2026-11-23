@@ -116,8 +116,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
     return true
   }
 
-  async function runExport(nameOf: (project: Project) => string | Promise<string>, make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string) {
-    const project = deps.currentProject()
+  async function runExport(nameOf: (project: Project) => string | Promise<string>, make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, part?: Project) {
+    const project = part ?? deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
     if (!project || !frameOf(project) || exporting.value) {
       return
@@ -230,7 +230,9 @@ export function useExportFlow(deps: ExportFlowDeps) {
    * (ADR 0060). */
   const wordsOf = (code: PrintCode, project: Project) => code.printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value)
 
-  function onExportPng() {
+  /** `part` is a Selection's export (ticket 1210, `selectionPart`): the Project laid on just the Selection, which is
+   * exported in place of the open one. */
+  function onExportPng(part?: Project) {
     // The words the picture prints (tickets 164, 0583), in the app's language, with the Project's maker's name (ADR 0060).
     // It is the Cover page, one file (ticket 1096; PngExport card).
     const dpi = pngDpiFor(quality.value)
@@ -242,12 +244,13 @@ export function useExportFlow(deps: ExportFlowDeps) {
       },
       'png',
       'image/png',
+      part,
     )
   }
 
   /** `typedName` is a name typed in the Export panel for this export (ticket 1096), saved as it is; without one the name
    * says which print switches are on. */
-  function onExportPdf(typedName?: string) {
+  function onExportPdf(typedName?: string, part?: Project) {
     // The words the pages print (ticket 162), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
       // Large beads is named only where it acts (ticket 1125), which takes the print code to know.
@@ -258,6 +261,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
       },
       'pdf',
       'application/pdf',
+      part,
     )
   }
 

@@ -233,6 +233,8 @@ export interface ToolsTranslations {
     cutNoBeads: string
     fillSelection: string
     frameFromSelection: string
+    exportSelection: string
+    exportSelectionCustom: string
     pasteDisabled: string
     pasteTool: string
     /** The Mirror tile's line (ticket 0703). */

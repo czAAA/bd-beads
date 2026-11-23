@@ -36,6 +36,17 @@ describe('useOverlayVisibility', () => {
     expect(openPanel.value).toBeNull()
   })
 
+  it('hangs the Export panel from the Selection bar scoped to the Selection, and is the Frame\'s again from any other button or once closed (ticket 1210)', () => {
+    const { openPanel, exportOpener, exportScope, onOpenExport, onOpenSelectionExport } = setup()
+    onOpenSelectionExport()
+    expect([openPanel.value, exportOpener.value, exportScope.value]).toEqual(['export', 'context-bar-export', 'selection'])
+    onOpenExport('strip-export')
+    expect([openPanel.value, exportOpener.value, exportScope.value]).toEqual(['export', 'strip-export', 'frame'])
+    onOpenSelectionExport()
+    onOpenSelectionExport()
+    expect([openPanel.value, exportScope.value]).toEqual([null, 'frame'])
+  })
+
   it('opens Export from the Project panel as the strip\'s button does, on no row (tickets 0843, 0956)', () => {
     const { openPanel, exportOpener, exportChoice, onSelectPanel, showExport } = setup()
     showExport('strip-export', 'png')

@@ -69,6 +69,14 @@ export interface FrameTranslations {
     /** The line under the print switches (ticket 1096, ExportPanel card), before the PDF's file name; the word each switch adds
      * to that name, after an underscore; and the pencil that renames the file for this export, its name and Tooltip. */
     savesAs: string
+    /** The fold that holds the Export panel's quality and switches (ticket 1210). */
+    exportSettings: string
+    /** The maker's name row of the Export panel, the Project's own (ticket 1210; NameOnExports card). */
+    nameOnExports: string
+    /** The Export panel's first line over a Selection: its size in beads. */
+    exportingSelection: string
+    /** A Selection export's file name in the Frame's place when no named Piece gives one. */
+    partFileName: string
     fileWordCover: string
     fileWordBlackAndWhite: string
     fileWordEmptyGrid: string

@@ -22,30 +22,30 @@ function mountApp() {
 }
 
 async function openProject(wrapper: ReturnType<typeof mountApp>) {
-  await openPanel(wrapper, 'strip-project')
+  await openPanel(wrapper, 'strip-export')
   await flushPromises()
 }
 
 const savedName = () => loadProjects()[0]?.makerName
-const field = (wrapper: ReturnType<typeof mountApp>) => wrapper.find<HTMLInputElement>('[data-testid="project-maker-input"]')
-const save = (wrapper: ReturnType<typeof mountApp>) => wrapper.get('[data-testid="project-maker-form"]').trigger('submit')
+const field = (wrapper: ReturnType<typeof mountApp>) => wrapper.find<HTMLInputElement>('[data-testid="export-maker-name-input"]')
+const save = (wrapper: ReturnType<typeof mountApp>) => wrapper.get('[data-testid="export-maker-name-form"]').trigger('submit')
 
 describe("App maker line: the Project's own Maker's name (ADR 0060, tickets 443, 554)", () => {
-  it('reads "+ Add your name for exports" until one is set, with no field open', async () => {
+  it('reads "Your name" until one is set, with no field open', async () => {
     const wrapper = mountApp()
     await openProject(wrapper)
 
-    expect(wrapper.get('[data-testid="project-maker-row"]').text()).toContain(en.panels.project.makerLabel)
-    expect(wrapper.get('[data-testid="project-maker-add"]').text()).toBe(en.panels.project.addMaker)
+    expect(wrapper.get('[data-testid="export-maker-name-row"]').text()).toContain(en.frame.nameOnExports)
+    expect(wrapper.get('[data-testid="export-maker-name-add"]').text()).toBe(en.saveBox.yourName)
     expect(field(wrapper).exists()).toBe(false)
-    expect(wrapper.find('[data-testid="project-maker-edit"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="export-maker-name-edit"]').exists()).toBe(false)
   })
 
   it('sets the name on this Project from the field, trimmed, up to 40, and then shows the name with a pencil', async () => {
     const wrapper = mountApp()
     await openProject(wrapper)
 
-    await wrapper.get('[data-testid="project-maker-add"]').trigger('click')
+    await wrapper.get('[data-testid="export-maker-name-add"]').trigger('click')
     await flushPromises()
     expect(field(wrapper).attributes('maxlength')).toBe('40')
     await field(wrapper).setValue('  Maria Kovaleva ')
@@ -53,17 +53,17 @@ describe("App maker line: the Project's own Maker's name (ADR 0060, tickets 443,
     await flushPromises()
 
     expect(savedName()).toBe('Maria Kovaleva')
-    expect(wrapper.get('[data-testid="project-maker"]').text()).toBe('Maria Kovaleva')
-    expect(wrapper.get('[data-testid="project-maker-edit"]').attributes('aria-label')).toBe(en.panels.project.changeMaker)
+    expect(wrapper.get('[data-testid="export-maker-name"]').text()).toBe('Maria Kovaleva')
+    expect(wrapper.get('[data-testid="export-maker-name-edit"]').attributes('aria-label')).toBe(en.panels.project.changeMaker)
   })
 
   it('the pencil swaps the name for the field to change it', async () => {
     saveProjects([{ ...fox(), makerName: 'Maria' }])
     const wrapper = mountApp()
     await openProject(wrapper)
-    expect(wrapper.get('[data-testid="project-maker"]').text()).toBe('Maria')
+    expect(wrapper.get('[data-testid="export-maker-name"]').text()).toBe('Maria')
 
-    await wrapper.get('[data-testid="project-maker-edit"]').trigger('click')
+    await wrapper.get('[data-testid="export-maker-name-edit"]').trigger('click')
     await flushPromises()
     expect(field(wrapper).element.value).toBe('Maria')
     await field(wrapper).setValue('Anna')
@@ -71,7 +71,7 @@ describe("App maker line: the Project's own Maker's name (ADR 0060, tickets 443,
     await flushPromises()
 
     expect(savedName()).toBe('Anna')
-    expect(wrapper.get('[data-testid="project-maker"]').text()).toBe('Anna')
+    expect(wrapper.get('[data-testid="export-maker-name"]').text()).toBe('Anna')
   })
 
   it('clears the name when the field is saved empty, returning the line to unset', async () => {
@@ -79,13 +79,13 @@ describe("App maker line: the Project's own Maker's name (ADR 0060, tickets 443,
     const wrapper = mountApp()
     await openProject(wrapper)
 
-    await wrapper.get('[data-testid="project-maker-edit"]').trigger('click')
+    await wrapper.get('[data-testid="export-maker-name-edit"]').trigger('click')
     await flushPromises()
     await field(wrapper).setValue('')
     await save(wrapper)
     await flushPromises()
 
     expect(savedName()).toBeUndefined()
-    expect(wrapper.find('[data-testid="project-maker-add"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="export-maker-name-add"]').exists()).toBe(true)
   })
 })

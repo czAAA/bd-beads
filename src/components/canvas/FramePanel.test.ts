@@ -52,10 +52,12 @@ function mountPanel(project = framed()) {
 }
 const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent(PanelHost).emitted('close')
 
-/** The bar with Export quality unfolded, as it shows folded (ticket 1121). */
+/** The bar with Export settings unfolded, as they show folded (tickets 1121, 1210). */
 async function mountWithExport(project = framed()) {
   const wrapper = mountBar(project)
-  await wrapper.get('[data-testid="frame-export"] [data-testid="quality-fold"]').trigger('click')
+  // The fold is kept on the device, so a second mount finds it open.
+  const fold = wrapper.get('[data-testid="frame-export"] .panel-section__header')
+  if (fold.attributes('aria-expanded') !== 'true') await fold.trigger('click')
   // The File size estimates' print code comes after the rows (ticket 0991).
   await vi.dynamicImportSettled()
   await flushPromises()
@@ -399,6 +401,7 @@ describe('FramePanel (ticket 473)', () => {
     const sections = wrapper.findAll('.panel-section')
     expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([
       en.panels.project.exportHeading,
+      en.frame.exportSettings,
       en.quantities.heading,
       en.frame.sizeHeading,
       en.layerSettings.frameHeading,
@@ -412,7 +415,7 @@ describe('FramePanel (ticket 473)', () => {
 
   it('shows Export always open, its heading with no fold (ticket 1121)', () => {
     const wrapper = mountBar()
-    expect(wrapper.find('[data-testid="frame-export"] .panel-section__header').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-export"] > h3 button').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-export"] h3').text()).toBe(en.panels.project.exportHeading)
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(true)
   })

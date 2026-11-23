@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-23",
+  "kind": "new",
+  "line": {
+    "en": "Export just the part you selected from the Selection bar, as a picture or a chart; the Export panel also keeps your name on exports and folds its settings",
+    "ru": "Экспортируйте только выделенную часть кнопкой «Экспорт» на панели выделения, картинкой или схемой; в панели экспорта теперь имя на экспорте, а настройки свёрнуты",
+    "uk": "Експортуйте лише виділену частину кнопкою «Експорт» на панелі виділення, картинкою або схемою; у панелі експорту тепер ім’я на експорті, а налаштування згорнуті",
+    "be": "Экспартуйце толькі вылучаную частку кнопкай «Экспарт» на панэлі вылучэння, малюнкам або схемай; у панэлі экспарту цяпер імя на экспарце, а налады згорнутыя",
+    "zh": "可在选区栏中只导出选中的部分，保存为图片或图纸；导出面板现在也包含导出署名，并将设置折叠起来",
+    "es": "Exporta solo la parte que seleccionaste desde la barra de selección, como imagen o esquema; el panel de exportación incluye ahora tu nombre y pliega sus ajustes",
+    "pl": "Eksportuj tylko zaznaczoną część z paska zaznaczenia, jako obrazek lub schemat; panel eksportu ma teraz imię na eksporcie i zwija ustawienia"
+  }
+}

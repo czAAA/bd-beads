@@ -97,6 +97,9 @@ export interface TrimmedArea {
   lastAcross: number
   firstDown: number
   lastDown: number
+  /** The displayed index the part's numbers count from, when a Selection's export goes on from a whole chart's (ticket
+   * 1210); absent: `firstAcross` and `firstDown`, counting from 1 at the trimmed chart. */
+  numberFrom?: { across: number; down: number }
 }
 
 export interface PrintPlan {

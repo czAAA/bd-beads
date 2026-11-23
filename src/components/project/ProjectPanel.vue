@@ -98,7 +98,6 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       :since-file="sinceFile"
       :save-reminder="saveReminder"
       @rename="emit('rename', $event)"
-      @save-maker-name="emit('save-maker-name', $event)"
       @save="emit('save')"
       @save-project-file="emit('save-project-file')"
     />
@@ -130,7 +129,7 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
       <PanelItem :icon="exportAction.icon" :expanded="exportOpen" :aria-controls="exportRowsId" data-testid="project-export" @select="exportOpen = !exportOpen">{{ exportAction.name(t) }}</PanelItem>
       <div v-if="exportOpen" :id="exportRowsId" class="project-panel__export" role="group" :aria-label="exportAction.name(t)" data-testid="project-export-rows">
-        <ExportRows :project="project" :exporting="exporting" @fit="emit('fit')" @select-frame="emit('select-frame')" @select-piece-frame="emit('select-piece-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" @save-project-file="emit('save-project-file')" />
+        <ExportRows :project="project" :exporting="exporting" @fit="emit('fit')" @select-frame="emit('select-frame')" @select-piece-frame="emit('select-piece-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" @save-project-file="emit('save-project-file')" @save-maker-name="emit('save-maker-name', $event)" />
       </div>
       <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="project-delete" @select="emit('delete')">{{ remove.name(t) }}</PanelItem>

@@ -29,7 +29,6 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   rename: [name: string]
-  'save-maker-name': [name: string]
   save: []
   'save-project-file': []
 }>()
@@ -96,9 +95,7 @@ const fileMeta = computed(() => saveReminderMeta(t.value.saveReminder, locale.va
       class="project-head__lines"
       inline
       :name="projectNameOf(project)"
-      :maker-name="project.makerName ?? ''"
       @update:name="emit('rename', $event)"
-      @update:maker-name="emit('save-maker-name', $event)"
     />
 
   </section>

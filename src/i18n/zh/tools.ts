@@ -172,6 +172,8 @@ export const tools: ToolsTranslations = {
     cutNoBeads: '所选区域内没有可剪切的珠子。',
     fillSelection: '用当前颜色填充选区。',
     frameFromSelection: '将选区设为边框。',
+    exportSelection: '保存选区的图片或图纸。',
+    exportSelectionCustom: '暂时无法导出自定义边框上的选区。',
     pasteDisabled: '请先复制一个区域。',
     pasteTool: '悬停预览复制的图块，点击即可盖章。',
     mirror: '拖出一个区域，在其中镜像。',

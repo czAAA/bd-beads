@@ -82,6 +82,19 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
   })
 })
 
+describe('useExportFlow of a Selection (ticket 1210)', () => {
+  it('exports the part it is given in the open Project\'s place, named by it', async () => {
+    const part = withFrameSheet(project, { ...frameOf(project)!, name: 'part' })
+    const flow = setup()
+    await flow.onExportPng(part)
+    await flow.onExportPdf(undefined, part)
+
+    expect(vi.mocked(exportProjectPng).mock.calls[0]![0]).toBe(part)
+    expect(vi.mocked(exportProjectPdf).mock.calls[0]![0]).toBe(part)
+    expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(part, 'png'), expect.stringContaining('part')])
+  })
+})
+
 describe('useExportFlow Letters (tickets 0573, 1092)', () => {
   it('turns each layer\'s Letters on and off on its own, saved with the open Project', () => {
     const replaced: Project[] = []

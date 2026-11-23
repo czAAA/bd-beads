@@ -41,7 +41,9 @@ test('the New Project form’s Name and Maker’s name are the Project’s, aske
   await expect(page.getByTestId('convert-image-wizard')).toHaveCount(0)
   await page.getByTestId('strip-project').click()
   await expect(page.getByTestId('project-panel')).toContainText('Spring bracelet')
-  await expect(page.getByTestId('project-panel')).toContainText('Olga')
+  // The maker's name is the Export panel's Name on exports now (ticket 1210).
+  await page.getByTestId('strip-export').click()
+  await expect(page.getByTestId('export-maker-name')).toHaveText('Olga')
 })
 
 for (const viewport of [

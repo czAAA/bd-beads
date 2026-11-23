@@ -10,16 +10,15 @@ import TextField from '../ui/form/TextField.vue'
 import EditableLine from './EditableLine.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// The Project's Name and Maker's name, shared by New Project and the Project panel (tickets 182, 554, 568): two open
-// fields, or `inline` a line each with a pencil, saved at once, refusing an empty Name. A change is `update:name` or
-// `update:makerName`; each name has the one limit and counter Rename has (ticket 0854).
+// The Project's Name and Maker's name for New Project (tickets 182, 554, 568): two open fields. `inline`, in the Project
+// panel, is the Name alone as a pencil line saved at once (the maker's name is the Export panel's, ticket 1210).
 const props = defineProps<{
   /** What the Name field shows while empty: the chosen Bead, as the form's hint. */
   namePlaceholder?: string
   inline?: boolean
 }>()
 const name = defineModel<string>('name', { required: true })
-const makerName = defineModel<string>('makerName', { required: true })
+const makerName = defineModel<string>('makerName', { default: '' })
 
 const { t } = useI18n()
 const rename = controlAction('rename-project')
@@ -48,18 +47,6 @@ defineExpose({ focusName })
       :normalize="normalizeProjectName"
       testid="project-name"
       @save="name = $event"
-    />
-    <EditableLine
-      small
-      :label="t.panels.project.makerLabel"
-      :value="makerName"
-      :edit-label="t.panels.project.changeMaker"
-      :empty-text="t.panels.project.addMaker"
-      :placeholder="t.saveBox.yourName"
-      :maxlength="MAX_MAKER_NAME"
-      :normalize="(raw) => raw.trim()"
-      testid="project-maker"
-      @save="makerName = $event"
     />
   </div>
   <div v-else class="names-section" data-testid="names-section">

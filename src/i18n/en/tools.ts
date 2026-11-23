@@ -176,6 +176,8 @@ export const tools: ToolsTranslations = {
     cutNoBeads: 'No beads in the selection to cut.',
     fillSelection: 'Fill the Selection with the current color.',
     frameFromSelection: 'Make the Selection the Frame.',
+    exportSelection: 'Save a picture or a chart of the Selection.',
+    exportSelectionCustom: 'A Selection on a Custom frame can’t be exported yet.',
     pasteDisabled: 'Copy an area first.',
     pasteTool: 'Hover to preview the copied piece, then stamp it with a click.',
     mirror: 'Drag an area to mirror inside.',

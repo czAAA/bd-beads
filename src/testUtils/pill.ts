@@ -5,7 +5,7 @@ import { chooseLanguage } from './chooseLanguage'
 
 type Wrapper = ReturnType<typeof mount>
 
-type Sheet = 'strip-project' | 'strip-menu' | 'strip-frame'
+type Sheet = 'strip-project' | 'strip-menu' | 'strip-frame' | 'strip-export'
 
 /** Opens Menu or Project (CanvasStrip card, ticket 443): the strip's button toggles, so an open panel
  * is left alone and the other is swapped in. */

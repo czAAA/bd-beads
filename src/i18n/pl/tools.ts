@@ -180,6 +180,8 @@ export const tools: ToolsTranslations = {
     cutNoBeads: 'W zaznaczeniu nie ma koralików do wycięcia.',
     fillSelection: 'Wypełnia zaznaczenie bieżącym kolorem.',
     frameFromSelection: 'Zamienia zaznaczenie w ramkę.',
+    exportSelection: 'Zapisuje obrazek lub schemat zaznaczenia.',
+    exportSelectionCustom: 'Zaznaczenia na ramce niestandardowej nie można jeszcze wyeksportować.',
     pasteDisabled: 'Najpierw skopiuj obszar.',
     pasteTool: 'Najedź, aby zobaczyć skopiowany fragment, i kliknij, aby go odcisnąć.',
     mirror: 'Zaznacz obszar, aby odbijać wewnątrz niego.',

@@ -4,3 +4,4 @@
 export { estimatePdf, estimatePng, exportFacts } from './exportEstimate'
 export { exportProjectPdf, exportProjectPng } from './projectExport'
 export { printText } from './printText'
+export { selectionPart } from './selectionPart'

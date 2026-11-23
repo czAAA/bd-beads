@@ -9,6 +9,8 @@ import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuali
 import { withFrameSheet } from '../../domain/frameSheet'
 import { withLayers } from '../../testUtils/layerFields'
 import { withProjectName } from '../../domain/projectName'
+import { frameOf } from '../../domain/layerRecord'
+import type { Selection } from '../../domain/selection'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -34,7 +36,9 @@ const custom = (): Project => withLayers(empty(), { frame: { row: 2, column: 3, 
 const big = (): Project => withLayers(empty(), { frame: { row: 0, column: 0, rows: 100, columns: 100, technique: 'loom', beads: {} } })
 
 /** The panel with its File size estimates there: the print code they are worked out with comes after (ticket 0991). */
-async function mountPanel(project: Project) {
+async function mountPanel(project: Project, { settingsOpen = true }: { settingsOpen?: boolean } = {}) {
+  // The settings are folded until opened (ticket 1210); the rows' tests read them, so they start open.
+  if (settingsOpen) localStorage.setItem('openbeads:panel-sections-opened', 'export:settings')
   const wrapper = mount(ExportPanel, { props: { project }, attachTo: document.body })
   await vi.dynamicImportSettled()
   await flushPromises()
@@ -79,28 +83,38 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(wrapper.emitted('save-project-file')).toHaveLength(1)
   })
 
-  it('puts Saves as right under the buttons, then Export quality and the switches (ticket 1121)', async () => {
+  it('puts Saves as right under the buttons, then Name on exports, then Export quality and the switches (tickets 1121, 1210)', async () => {
     const wrapper = await mountPanel(big())
-    const ids = ['export-png', 'export-pdf', 'export-project-file', 'export-file-name', 'quality-slider', 'export-cover-page', 'export-black-and-white', 'export-empty-grid', 'export-chart-border', 'export-large-beads', 'export-row-by-row']
+    const ids = ['export-png', 'export-pdf', 'export-project-file', 'export-file-name', 'export-maker-name-row', 'quality-slider', 'export-cover-page', 'export-black-and-white', 'export-empty-grid', 'export-chart-border', 'export-large-beads', 'export-row-by-row']
     const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ids.includes(id!))
 
     expect(order).toEqual(ids)
   })
 
-  it('folds Export quality every time the rows show, the chosen stop beside it, and a press unfolds the slider (ticket 1121)', async () => {
-    const wrapper = await mountPanel(framed())
-    const fold = () => wrapper.get('[data-testid="quality-fold"]')
+  it('folds Export settings at first, with the quality and every switch under it, and keeps it open once opened (ticket 1210)', async () => {
+    const wrapper = await mountPanel(framed(), { settingsOpen: false })
+    const fold = () => wrapper.get('[aria-controls]')
 
+    expect(wrapper.text()).toContain(en.frame.exportSettings)
     expect(fold().attributes('aria-expanded')).toBe('false')
-    expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityMedium)
-    expect(has(wrapper, 'quality-range')).toBe(false)
+    expect(['quality-slider', 'export-cover-page', 'export-row-by-row'].filter((id) => has(wrapper, id))).toEqual([])
+    expect(['export-png', 'export-file-name', 'export-maker-name-row'].filter((id) => has(wrapper, id))).toHaveLength(3)
     await fold().trigger('click')
-    expect(fold().attributes('aria-expanded')).toBe('true')
-    expect(has(wrapper, 'quality-range')).toBe(true)
+    expect(['quality-slider', 'export-cover-page', 'export-row-by-row'].filter((id) => has(wrapper, id))).toHaveLength(3)
 
     wrapper.unmount()
-    const again = await mountPanel(framed())
-    expect(again.get('[data-testid="quality-fold"]').attributes('aria-expanded')).toBe('false')
+    const again = await mountPanel(framed(), { settingsOpen: false })
+    expect(again.get('[aria-controls]').attributes('aria-expanded')).toBe('true')
+  })
+
+  it('has Name on exports under Saves as, saving the maker name as typed (ticket 1210)', async () => {
+    const wrapper = await mountPanel({ ...framed(), makerName: 'Ada Lind' })
+    expect(wrapper.get('[data-testid="export-maker-name"]').text()).toBe('Ada Lind')
+    expect(wrapper.get('[data-testid="export-maker-name-row"]').text()).toContain(en.frame.nameOnExports)
+    await wrapper.get('[data-testid="export-maker-name-edit"]').trigger('click')
+    await wrapper.get('[data-testid="export-maker-name-input"]').setValue(' Bo ')
+    await wrapper.get('[data-testid="export-maker-name-form"]').trigger('submit')
+    expect(wrapper.emitted('save-maker-name')).toEqual([['Bo']])
   })
 
   it('says to set a frame with none, offers Fit first with the Frame icon, then Drag a Frame, and shows no export rows (ticket 0944)', async () => {
@@ -338,5 +352,36 @@ describe('ExportPanel "Saves as" (ticket 1096)', () => {
     expect(shaped.find('[data-testid="export-png"] [data-testid="beta-chip"]').exists()).toBe(true)
     expect(shaped.find('[data-testid="export-pdf"] [data-testid="beta-chip"]').exists()).toBe(true)
     expect(shaped.findAll('[data-testid="beta-chip"]')).toHaveLength(2)
+  })
+})
+
+describe('ExportPanel over a Selection (ticket 1210)', () => {
+  const selection: Selection = { top: 1, left: 1, rows: 3, columns: 4, layer: 'canvas' }
+
+  async function mountSelection(project: Project) {
+    const wrapper = mount(ExportPanel, { props: { project, selection }, attachTo: document.body })
+    await vi.dynamicImportSettled()
+    await flushPromises()
+    return wrapper
+  }
+
+  it('says what it exports with its size in beads, the same rows under it as the Frame\'s', async () => {
+    const wrapper = await mountSelection(drawn())
+    expect(wrapper.get('[data-testid="export-panel-scope"]').text()).toBe('Exporting the Selection · 4×3')
+    expect(wrapper.find('[data-testid="export-panel-project"]').exists()).toBe(false)
+    expect(['export-png', 'export-pdf', 'export-project-file', 'export-file-name', 'export-maker-name-row'].filter((id) => has(wrapper as Panel, id))).toHaveLength(5)
+  })
+
+  it('hands the Selection laid as a Frame with each export, named part in the file name\'s Frame place', async () => {
+    const wrapper = await mountSelection(drawn())
+    await wrapper.get('[data-testid="export-png"]').trigger('click')
+    await wrapper.get('[data-testid="export-pdf"]').trigger('click')
+
+    const [png] = wrapper.emitted('export-png')![0] as [Project]
+    const [typed, pdf] = wrapper.emitted('export-pdf')![0] as [string | undefined, Project]
+    expect([frameOf(png)!.rows, frameOf(png)!.columns, frameOf(png)!.name]).toEqual([3, 4, en.frame.partFileName])
+    expect(typed).toBeUndefined()
+    expect(frameOf(pdf)!.name).toBe(en.frame.partFileName)
+    expect(wrapper.get('[data-testid="export-file-name"]').text()).toMatch(/-part/)
   })
 })

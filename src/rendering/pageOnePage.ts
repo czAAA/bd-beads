@@ -59,7 +59,7 @@ function drawOverview(context: CanvasRenderingContext2D, project: Project, overv
   const grid = displayedGrid(project)
   const every = grid.stepAcross * overview.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
   // A Custom frame's beads keep no rows and columns to number (ticket 0594).
-  if (geometryDrawnAlone(project).grid) drawRulers(context, project, overview.zoom, board, { first: trim.firstAcross, last: trim.lastAcross }, { first: trim.firstDown, last: trim.lastDown }, ink, every)
+  if (geometryDrawnAlone(project).grid) drawRulers(context, project, overview.zoom, board, { first: trim.firstAcross, last: trim.lastAcross, ...(trim.numberFrom ? { from: trim.numberFrom.across } : {}) }, { first: trim.firstDown, last: trim.lastDown, ...(trim.numberFrom ? { from: trim.numberFrom.down } : {}) }, ink, every)
   if (plan.parts.length > 1) drawParts(context, project, plan, labels, overview.zoom, board, ink)
 }
 

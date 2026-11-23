@@ -178,6 +178,8 @@ export const tools: ToolsTranslations = {
     cutNoBeads: 'No hay cuentas en la selección para cortar.',
     fillSelection: 'Rellena la selección con el color actual.',
     frameFromSelection: 'Convierte la selección en el marco.',
+    exportSelection: 'Guarda una imagen o un esquema de la selección.',
+    exportSelectionCustom: 'Aún no se puede exportar una selección sobre un marco personalizado.',
     pasteDisabled: 'Copia primero una zona.',
     pasteTool: 'Pasa el cursor para ver la pieza copiada y haz clic para estamparla.',
     mirror: 'Arrastra un área para reflejar dentro de ella.',

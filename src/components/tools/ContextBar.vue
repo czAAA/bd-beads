@@ -16,6 +16,7 @@ import AreaMoveGrip from './AreaMoveGrip.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
+import { selectionExportable } from '../../domain/selectionExport'
 import { selectionHasBeads, selectionInFinishedRows, selectionLayer, type Selection } from '../../domain/selection'
 import type { Rect } from '../../domain/canvas'
 import type { MirrorFit, MirrorSetting, ShapeAxes } from '../../domain/mirror'
@@ -80,6 +81,7 @@ const emit = defineEmits<{
   'clear-selection': []
   rotate: []
   'mirror-selection': []
+  'export-selection': []
   'update:mirror': [setting: MirrorSetting]
   'close-mirror': []
   'select-all': []
@@ -102,6 +104,7 @@ const actions = {
   frame: controlAction('frame-from-selection'),
   rotate: controlAction('rotate'),
   mirrorSelection: controlAction('mirror-selection'),
+  exportSelection: controlAction('export-selection'),
   removeLine: controlAction('remove-line'),
   namePiece: controlAction('name-piece'),
   clear: controlAction('empty-selection'),
@@ -118,6 +121,7 @@ const deps = computed(() =>
     canNamePiece: () => !!props.canNamePiece,
     hasPaintColor: () => props.hasPaintColor,
     selectionOnFrame: () => !!props.selection && selectionLayer(props.project, props.selection) === 'frame',
+    selectionExportable: () => !!props.selection && selectionExportable(props.project, props.selection),
   }),
 )
 
@@ -167,6 +171,7 @@ const items = computed<BarItem[]>(() => {
   list.push({ id: 'rotate', action: actions.rotate, group: 2, run: rotateFromBar })
   // Always offered: the Selection's rectangle becomes the Mirror's Area (ADR 0082); on a Frame Selection it says why not.
   list.push({ id: 'mirror-selection', action: actions.mirrorSelection, group: 2, run: () => emit('mirror-selection') })
+  list.push({ id: 'export', action: actions.exportSelection, group: 2, run: () => emit('export-selection') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
   if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
   list.push({ id: 'clear', action: actions.clear, group: 3, run: () => emit('clear-selection'), danger: true })

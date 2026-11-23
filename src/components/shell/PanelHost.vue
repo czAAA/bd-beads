@@ -14,6 +14,8 @@ const props = defineProps<{
   only: readonly PanelId[]
   /** The button it hangs from, by test id, when not its descriptor's: Export from the margin sheet (ticket 0657). */
   anchor?: string
+  /** A press on the canvas leaves the panel open (ticket 1210: the Selection's Export, while the Selection is moved).*/
+  keepsCanvas?: boolean
 }>()
 const emit = defineEmits<{ close: []; placed: [box: Region] }>()
 
@@ -30,6 +32,7 @@ const panel = computed(() => (props.open && props.only.includes(props.open) ? PA
     :skips-fields="panel.skipsFields"
     :width="panel.width"
     :align="panel.align"
+    :keeps-canvas="keepsCanvas"
     @close="emit('close')"
     @placed="emit('placed', $event)"
   >

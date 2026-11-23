@@ -1,6 +1,6 @@
 # NameOnExports
 
-Where the Maker's name for a Project's PDF and PNG exports is set: the last row of Project (ProjectPanel card). It belongs to the Project, not the device (ADR 0060, ticket 0441).
+Where the Maker's name for a Project's PDF and PNG exports is set: a row of the Export panel under "Saves as" (ExportPanel card, ticket 1210; it was the Project panel's `maker:` line). It belongs to the Project, not the device (ADR 0060, ticket 0441).
 
 - **Unset:** an open TextField, label "Name on exports", placeholder "Your name", counter "n/40" from 30 characters on (TextField card, ticket 0854), hint "Printed on this Project's PDF and PNG exports." Enter or leaving the field saves; empty prints no name.
 - **Set:** one row, the label in `label` style, the name in Inter 500 and a pencil ("Edit Name on exports"). The pencil swaps the name for the field; clearing it returns the row to unset.

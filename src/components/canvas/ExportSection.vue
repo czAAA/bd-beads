@@ -3,6 +3,7 @@ import { computed, ref, shallowRef, useId } from 'vue'
 import EditableLine from '../project/EditableLine.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectFileButton from './ProjectFileButton.vue'
+import PanelSection from '../shell/PanelSection.vue'
 import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
 import ChipRadioGroup from '../ui/form/ChipRadioGroup.vue'
@@ -23,6 +24,7 @@ import { frameRowOrder, ROW_WAYS } from '../../domain/rowProgress'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 import { namedChoices, pdfFileName } from '../../composables/export/pdfFileName'
 import { MAX_PDF_FILE_NAME, typedPdfFileName } from '../../domain/projectFile'
+import { MAX_MAKER_NAME } from '../../domain/makerName'
 import BetaChip from '../ui/BetaChip.vue'
 import { frameShapeOf } from '../../domain/frameShape'
 
@@ -42,6 +44,8 @@ const emit = defineEmits<{
   'export-pdf': [typedName?: string]
   /** File (ticket 1121): the Project's .openbeads file, as the Project panel's Save Project file. */
   'save-project-file': []
+  /** Name on exports (ticket 1210): the Project's own maker's name, saved at once. */
+  'save-maker-name': [name: string]
 }>()
 
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
@@ -127,6 +131,18 @@ const fileLine = computed(() => ({
   fileName: true,
   testid: 'export-file-name',
 }))
+/** The Project's Name on exports (ticket 1210; NameOnExports card): the row under "Saves as", the same name the margin's
+ * pencil edits. */
+const makerLine = computed(() => ({
+  label: t.value.frame.nameOnExports,
+  value: props.project.makerName ?? '',
+  editLabel: t.value.panels.project.changeMaker,
+  emptyText: t.value.saveBox.yourName,
+  placeholder: t.value.saveBox.yourName,
+  maxlength: MAX_MAKER_NAME,
+  normalize: (raw: string) => raw.trim(),
+  testid: 'export-maker-name',
+}))
 /** Empty brings the made name back. */
 function onRename(name: string) {
   typedName.value = name || undefined
@@ -170,33 +186,38 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
   <div class="export-section__file">
     <EditableLine v-bind="fileLine" @save="onRename" />
   </div>
-  <div class="export-section__quality">
-    <QualitySlider
-      :label="t.frame.exportQuality"
-      :stops="qualityStops"
-      :hint="qualityHint"
-      :model-value="quality"
-      :disabled="exportBusy"
-      foldable
-      @update:model-value="quality = parseExportQuality($event) ?? quality"
-    />
-    <p v-if="highPngDpi" class="export-section__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
+  <div class="export-section__file">
+    <EditableLine v-bind="makerLine" @save="emit('save-maker-name', $event)" />
   </div>
-  <PanelSwitchRow v-model="cover" :label="t.frame.coverPageLabel" :info-label="t.frame.coverPageInfoLabel" :body="t.frame.coverPageLine" testid="export-cover-page" />
-  <PanelSwitchRow v-model="blackAndWhite" :label="t.frame.blackAndWhiteLabel" :info-label="t.frame.blackAndWhiteInfoLabel" :body="t.frame.blackAndWhiteLine" testid="export-black-and-white" />
-  <PanelSwitchRow v-model="emptyGrid" :label="t.frame.emptyGridLabel" :info-label="t.frame.emptyGridInfoLabel" :body="t.frame.emptyGridLine" testid="export-empty-grid" />
-  <PanelSwitchRow v-model="chartBorder" :label="t.frame.chartBorderLabel" :info-label="t.frame.chartBorderInfoLabel" :body="t.frame.chartBorderLine" testid="export-chart-border" />
-  <PanelSwitchRow v-if="largeBeadsShown" v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
-  <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
-  <div v-if="rowWayShown" class="export-section__way" data-testid="export-row-by-row-way">
-    <span :id="rowWayLabelId" class="export-section__way-label">{{ t.frame.rowByRowWayLabel }}</span>
-    <ChipRadioGroup
-      :model-value="rowByRowWay"
-      :options="rowWayOptions"
-      :labelledby="rowWayLabelId"
-      @update:model-value="rowByRowWay = $event ?? rowByRowWay"
-    />
-  </div>
+  <!-- The settings fold (ticket 1210): folded until opened, then kept on this device. -->
+  <PanelSection id="export:settings" folded :label="t.frame.exportSettings">
+    <div class="export-section__quality">
+      <QualitySlider
+        :label="t.frame.exportQuality"
+        :stops="qualityStops"
+        :hint="qualityHint"
+        :model-value="quality"
+        :disabled="exportBusy"
+        @update:model-value="quality = parseExportQuality($event) ?? quality"
+      />
+      <p v-if="highPngDpi" class="export-section__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
+    </div>
+    <PanelSwitchRow v-model="cover" :label="t.frame.coverPageLabel" :info-label="t.frame.coverPageInfoLabel" :body="t.frame.coverPageLine" testid="export-cover-page" />
+    <PanelSwitchRow v-model="blackAndWhite" :label="t.frame.blackAndWhiteLabel" :info-label="t.frame.blackAndWhiteInfoLabel" :body="t.frame.blackAndWhiteLine" testid="export-black-and-white" />
+    <PanelSwitchRow v-model="emptyGrid" :label="t.frame.emptyGridLabel" :info-label="t.frame.emptyGridInfoLabel" :body="t.frame.emptyGridLine" testid="export-empty-grid" />
+    <PanelSwitchRow v-model="chartBorder" :label="t.frame.chartBorderLabel" :info-label="t.frame.chartBorderInfoLabel" :body="t.frame.chartBorderLine" testid="export-chart-border" />
+    <PanelSwitchRow v-if="largeBeadsShown" v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
+    <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
+    <div v-if="rowWayShown" class="export-section__way" data-testid="export-row-by-row-way">
+      <span :id="rowWayLabelId" class="export-section__way-label">{{ t.frame.rowByRowWayLabel }}</span>
+      <ChipRadioGroup
+        :model-value="rowByRowWay"
+        :options="rowWayOptions"
+        :labelledby="rowWayLabelId"
+        @update:model-value="rowByRowWay = $event ?? rowByRowWay"
+      />
+    </div>
+  </PanelSection>
   <slot />
   <LoadingState v-if="exporting" class="export-section__loading" compact :text="exportingText" />
 </template>

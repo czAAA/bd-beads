@@ -242,17 +242,9 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.emitted('rename')).toBeUndefined()
   })
 
-  it('shows the maker smaller, or "Add your name for exports" with none, and saves it trimmed', async () => {
+  it('shows no maker line: Name on exports is the Export panel\'s (ticket 1210)', () => {
     const wrapper = mountPanel()
-    expect(wrapper.get('[data-testid="project-maker-add"]').text()).toBe(en.panels.project.addMaker)
-    await wrapper.get('[data-testid="project-maker-add"]').trigger('click')
-    await wrapper.get('[data-testid="project-maker-input"]').setValue(' Maria ')
-    await wrapper.get('[data-testid="project-maker-form"]').trigger('submit')
-    expect(wrapper.emitted('save-maker-name')).toEqual([['Maria']])
-
-    await wrapper.setProps({ project: { ...project, makerName: 'Maria' } })
-    expect(wrapper.get('[data-testid="project-maker"]').text()).toBe('Maria')
-    expect(wrapper.get('[data-testid="project-maker-edit"]').attributes('aria-label')).toBe(en.panels.project.changeMaker)
+    expect(wrapper.find('[data-testid="project-maker-row"]').exists()).toBe(false)
   })
 
   it('in high contrast replaces the swatches of the canvas section with a line', async () => {
