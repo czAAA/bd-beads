@@ -150,6 +150,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
     openElsewhere,
     workHere,
   } = useProjectLibrary(services.libraryStore, { held: safeStart.held, locks: services.projectLocks })
+  /** The dialog asking a tab whose Project is open in another tab whether to work here instead: up while it is open
+   * there, and back on any press on the read-only Canvas once put aside for Open another Project. */
+  const openElsewhereAsked = dialogs.flag('open-elsewhere')
   const openingAddress = services.openingAddress()
   // `?open=saved-projects` lands with no Project open; `?project=<id>` is opened below, through the Saved Projects pick.
   if (openingAddress.savedProjects || openingAddress.project) activeProjectId.value = undefined
@@ -758,9 +761,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
     mirror: () => mirror.setting.value,
     pasteAt: pasteAtCell,
     pickColorAt,
-    // Open in another tab (ticket 0937): the Canvas is read-only, and a press says why again.
+    // Open in another tab (ticket 0937): the Canvas is read-only, and a press asks again whether to work here.
     readOnly: () => openElsewhere.value,
-    onReadOnlyPress: () => announce(t.value.storage.openElsewhere),
+    onReadOnlyPress: () => {
+      openElsewhereAsked.value = true
+    },
   })
 
   const { announcement, announce } = useA11yAnnouncer()
@@ -1135,13 +1140,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onSaveProjectFileAs: exportFlow.onSaveAs,
   })
 
-  // Another tab has the open Project now (ticket 0937): this tab's Undo steps and Selection were made on beads it no
-  // longer saves.
+  // Another tab has the open Project now (ticket 0937): this tab asks whether to work here instead, and its Undo steps
+  // and Selection, made on beads it no longer saves, go. Once it is this tab's again, the question goes.
   watch(openElsewhere, (elsewhere) => {
+    openElsewhereAsked.value = elsewhere
     if (!elsewhere) return
     resetHistory()
     resetSelection()
-  })
+  }, { immediate: true })
 
   watch(activeProjectId, () => {
     resetHistory()
@@ -1183,10 +1189,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onPictureForConvert: convertImage.onPicture,
       dialogOpen: dialogs.open,
       page: appPage.page,
-      /** The open Project is open in another tab first (ticket 0834): the notice row says its changes here aren't saved,
-       * and Work here instead takes it over (ticket 0937). */
-      openElsewhere,
-      onWorkHere: workHere,
     },
     /** The canvas box (CanvasPanel): its strip, the drawing surface, the Tool pill, the Context and Progress bars, the
      * toasts. */
@@ -1503,6 +1505,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
     dialogs: {
       t,
       open: dialogs.open,
+      /** The open Project is open in another tab first (ticket 0834): Work here instead takes it over (ticket 0937), and
+       * Open another Project puts the question aside for Saved Projects, the Canvas still read-only. */
+      onWorkHere: workHere,
+      onOpenAnotherProject: () => {
+        openElsewhereAsked.value = false
+        overlays.openMenuOnSavedProjects()
+      },
       activeProject,
       saveFailed,
       onConfirmDeleteAll: deleteAll.onConfirmDeleteAll,

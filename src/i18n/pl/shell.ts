@@ -77,7 +77,9 @@ export const shell: ShellTranslations = {
   storage: {
     saveFailedMessage:
       'Nie udało się zapisać w tej przeglądarce. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo zapisz plik projektu, żeby jej nie stracić.',
-    openElsewhere: 'Ten projekt jest otwarty w innej karcie. Zmiany wprowadzone tutaj nie są zapisywane, dopóki jest tam otwarty.',
+    openElsewhere: 'Ten projekt jest otwarty w innej karcie',
+    openElsewhereBody: 'Zmiany wprowadzone tutaj nie są zapisywane, dopóki jest tam otwarty.',
+    openAnotherProject: 'Otwórz inny projekt',
     keptToast: 'Ta przeglądarka zachowa Twoje projekty.',
     libraryUnopened: 'Nie udało się otworzyć projektów na tym urządzeniu. Załaduj ponownie, aby spróbować jeszcze raz.',
     reload: 'Załaduj ponownie',

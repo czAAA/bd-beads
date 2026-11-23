@@ -22,8 +22,6 @@ const {
   onPictureForConvert,
   dialogOpen,
   page,
-  openElsewhere,
-  onWorkHere,
 } = useShellFrame()
 </script>
 
@@ -40,7 +38,7 @@ const {
       (see useProjectLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
       A press on it is not a press outside an open panel (ticket 0985): its buttons act on the first press.
     -->
-    <div v-if="saveFailed || missedProject || openElsewhere" class="app-shell__notices" data-notice-row data-testid="app-notices">
+    <div v-if="saveFailed || missedProject" class="app-shell__notices" data-notice-row data-testid="app-notices">
       <!-- Safe start (ticket 0716): the Project that didn't open last time stays shut, named here with a way out. -->
       <AppMessage v-if="missedProject" tone="warning" placement="notice" data-testid="missed-project" @close="onDismissMissed">
         <span data-testid="missed-project-message">{{ fillBlanks(t.opening.didNotOpen, { name: missedProject.name }) }}</span>
@@ -56,14 +54,6 @@ const {
           <AppButton variant="in-box" size="sm" icon="save" data-testid="save-failed-export" @click="onSaveProjectFile">
             {{ t.panels.project.saveFile }}
           </AppButton>
-        </template>
-      </AppMessage>
-      <!-- Two tabs (ticket 0834): the first to open a Project keeps it; this one shows its beads and saves none of its own,
-           its Canvas read-only, until Work here instead takes the Project over (ticket 0937). -->
-      <AppMessage v-if="openElsewhere" tone="warning" placement="notice" :closable="false" data-testid="open-elsewhere">
-        <span data-testid="open-elsewhere-message">{{ t.storage.openElsewhere }}</span>
-        <template #actions>
-          <AppButton variant="in-box" size="sm" data-testid="open-elsewhere-work-here" @click="onWorkHere">{{ t.storage.workHere }}</AppButton>
         </template>
       </AppMessage>
     </div>

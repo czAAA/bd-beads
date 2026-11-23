@@ -77,7 +77,9 @@ export const shell: ShellTranslations = {
   storage: {
     saveFailedMessage:
       "Couldn't save in this browser. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it.",
-    openElsewhere: "This Project is open in another tab. Changes made here aren't saved while it is open there.",
+    openElsewhere: 'This Project is open in another tab',
+    openElsewhereBody: "Changes made here aren't saved while it is open there.",
+    openAnotherProject: 'Open another Project',
     keptToast: 'This browser will keep your Projects.',
     libraryUnopened: "The Projects on this device couldn't be opened. Reload to try again.",
     reload: 'Reload',

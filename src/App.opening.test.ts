@@ -220,28 +220,48 @@ describe('opening the editor (ticket 0716)', () => {
     expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Older')
   })
 
-  it('says so in the notice row when the open Project is open in another tab first', async () => {
+  it('asks in a dialog that blocks the Canvas when the open Project is open in another tab first (ticket 0937)', async () => {
     storeLibrary([withLayers(project('Shared', 2000), { id: OPEN_ELSEWHERE })])
 
-    const wrapper = mount(App)
+    const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
 
-    expect(wrapper.get('[data-testid="open-elsewhere-message"]').text()).toBe(
-      "This Project is open in another tab. Changes made here aren't saved while it is open there.",
-    )
+    const dialog = document.querySelector('[role="alertdialog"]')
+    expect(dialog?.textContent).toContain('This Project is open in another tab')
+    expect(dialog?.textContent).toContain("Changes made here aren't saved while it is open there.")
+    expect(wrapper.find('[data-testid="open-elsewhere"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('turns the tools off while the Project is open in another tab, and gives them back once Work here instead takes it (ticket 0937)', async () => {
     storeLibrary([withLayers(project('Shared', 2000), { id: OPEN_ELSEWHERE })])
 
-    const wrapper = mount(App)
+    const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
     expect(wrapper.get('[data-testid="pill-tool-paint"]').attributes('aria-disabled')).toBe('true')
 
-    await wrapper.get('[data-testid="open-elsewhere-work-here"]').trigger('click')
+    document.querySelector<HTMLElement>('[data-testid="confirm-modal-confirm"]')?.click()
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="open-elsewhere"]').exists()).toBe(false)
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
     expect(wrapper.get('[data-testid="pill-tool-paint"]').attributes('aria-disabled')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('opens the Projects library from the dialog to pick another Project, the Canvas staying read-only', async () => {
+    storeLibrary([withLayers(project('Shared', 2000), { id: OPEN_ELSEWHERE })])
+
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+
+    const openAnother = document.querySelector<HTMLElement>('[data-testid="confirm-modal-cancel"]')
+    expect(openAnother?.textContent?.trim()).toBe('Open another Project')
+    openAnother?.click()
+    await flushPromises()
+
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+    expect(wrapper.find('[data-testid="project-list"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="pill-tool-paint"]').attributes('aria-disabled')).toBe('true')
+    wrapper.unmount()
   })
 })

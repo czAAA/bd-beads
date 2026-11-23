@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-23",
+  "kind": "changed",
+  "line": {
+    "en": "A Project open in another tab asks first: work on it here instead, or open another Project",
+    "ru": "Проект, открытый в другой вкладке, сначала спрашивает: работать с ним здесь или открыть другой проект",
+    "uk": "Проєкт, відкритий в іншій вкладці, спершу питає: працювати з ним тут чи відкрити інший проєкт",
+    "be": "Праект, адкрыты ў іншай укладцы, спачатку пытаецца: працаваць з ім тут ці адкрыць іншы праект",
+    "zh": "在另一个标签页中打开的项目会先询问：改在这里处理它，还是打开其他项目",
+    "es": "Un proyecto abierto en otra pestaña pregunta primero: trabajar en él aquí o abrir otro proyecto",
+    "pl": "Projekt otwarty w innej karcie najpierw pyta: pracować nad nim tutaj czy otworzyć inny projekt"
+  }
+}
