@@ -8,6 +8,7 @@ import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
 import { UNDER_TABLET_QUERY } from '../../rendering/rulerScale'
 import type { Layer } from '../../domain/layers'
+import { selectionExportable } from '../../domain/selectionExport'
 import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads, selectionLayer } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { SheetArea } from '../tools/selectionBarPlacement'
@@ -1017,6 +1018,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
   const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch, openPanel })
+
+  // The Export panel of the Selection bar (ticket 1210) goes when its Selection is dropped or the tool changes, and stays
+  // while the Selection is moved or resized.
+  watch([() => !!selection.value, activeTool], ([held], [wasHeld]) => {
+    if (openPanel.value === 'export' && overlays.exportScope.value === 'selection' && (!held || wasHeld === held)) openPanel.value = null
+  })
   // A Project the address names opens as a pick from Saved Projects does (a gated one asks first); a load that opened
   // none of a library that has some lands on Saved Projects (ticket 0716).
   if (openingAddress.project && !safeStart.held) savedProjectConfirms.onRequestSwitch(openingAddress.project)
@@ -1110,6 +1117,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onRotate: rotateFlow.onRotate,
     selectionInFinishedRows: () => rotateFlow.heldBack.value,
     selectionOnFrame: () => !!selection.value && !!currentProject() && selectionLayer(currentProject()!, selection.value) === 'frame',
+    selectionExportable: () => !!selection.value && !!currentProject() && selectionExportable(currentProject()!, selection.value),
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
     canNamePiece: () => namePiece.canNamePiece.value,
@@ -1301,6 +1309,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onMirrorTile,
       onMirrorWholeFrame,
       onMirrorSelection,
+      onExportSelection: overlays.onOpenSelectionExport,
       onPillTileTap: pillTileNames.onPillTileTap,
       previewCells,
       previewStamp,
@@ -1486,6 +1495,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, 'frame'),
       // The row the Export panel opens on (ticket 0843)
       exportChoice: overlays.exportChoice,
+      // What the Export panel exports (ticket 1210): the Frame, or the Selection the bar's Export button names.
+      exportScope: overlays.exportScope,
+      exportSelection: selection,
     },
     /** The dialogs (AppDialogs): which one the registry shows, what each asks about, and its answers. */
     dialogs: {

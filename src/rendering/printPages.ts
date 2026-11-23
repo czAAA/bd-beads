@@ -218,6 +218,8 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
 export interface Span {
   first: number
   last: number
+  /** The index counted as 1, when not `first` (a Selection's export goes on from a whole chart's numbers, ticket 1210). */
+  from?: number
 }
 
 type RulerShape = Layered
@@ -225,12 +227,12 @@ type RulerShape = Layered
 /** The number paper gives a displayed column (ticket 1129; PrintChartPage card, Rulers): counted from 1 at the trimmed
  * chart's left, whichever way the Schema is turned, so a part from column 61 counts on 61, 62…. The editor keeps its own. */
 export function acrossNumber(trim: TrimmedArea, index: number): number {
-  return index - trim.firstAcross + 1
+  return index - (trim.numberFrom?.across ?? trim.firstAcross) + 1
 }
 
 /** The same for a displayed row, counted from 1 at the trimmed chart's top. */
 export function downNumber(trim: TrimmedArea, index: number): number {
-  return index - trim.firstDown + 1
+  return index - (trim.numberFrom?.down ?? trim.firstDown) + 1
 }
 
 /** Where a position stands in the displayed chart, across and down from 0: each quarter turn swaps columns and rows and
@@ -259,7 +261,7 @@ const OVERVIEW_NUMBER_PT = 6.5
 export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, ink: PrintInk, every: 5 | 10 = 10): void {
   const grid = displayedGrid(project)
   const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
-  const numberOf = (span: Span, index: number) => index - span.first + 1
+  const numberOf = (span: Span, index: number) => index - (span.from ?? span.first) + 1
   const shown = (value: number) => value === 1 || value % every === 0
   // The widest number across, measured at the largest size: the size shrinks with it where it would not fit.
   const widest = (span: Span) => {
@@ -297,13 +299,13 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
   context.lineWidth = pt(0.5)
   context.beginPath()
   for (let index = across.first + 1; index <= across.last; index += 1) {
-    if ((index - across.first) % 10 !== 0) continue
+    if ((numberOf(across, index) - 1) % 10 !== 0) continue
     const x = at.x + (index - across.first) * grid.stepAcross * zoom
     context.moveTo(x, at.y - PRINT_BOARD_PAD)
     context.lineTo(x, at.y + at.height + PRINT_BOARD_PAD)
   }
   for (let index = down.first + 1; index <= down.last; index += 1) {
-    if ((index - down.first) % 10 !== 0) continue
+    if ((numberOf(down, index) - 1) % 10 !== 0) continue
     const y = at.y + (index - down.first) * grid.stepDown * zoom
     context.moveTo(at.x - PRINT_BOARD_PAD, y)
     context.lineTo(at.x + at.width + PRINT_BOARD_PAD, y)

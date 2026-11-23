@@ -72,6 +72,8 @@ export interface ControlDeps {
   selectionInFinishedRows: () => boolean
   /** The Selection is on the Frame, which mirrors whole, so the Selection bar's Mirror is held back (ADR 0082). */
   selectionOnFrame: () => boolean
+  /** The Selection can be exported (ticket 1210): not one on a Custom frame, which the Selection bar's Export holds back. */
+  selectionExportable: () => boolean
   /** Whether Remove row/column applies right now: a whole row or column of the Frame or a Piece area is selected. */
   canRemoveSelectedLine: () => boolean
   onRemoveSelectedLine: () => void
@@ -524,6 +526,13 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !deps.selectionOnFrame(),
     disabledBody: (t: Translations) => t.mirror.frameMirrorsWhole,
   }),
+  // The Selection bar's Export (ticket 1210): the Export panel for the Selection alone; no key.
+  unkeyed('export-selection', (t) => t.panels.project.exportHeading, 'edit', {
+    icon: 'export',
+    body: (t) => t.tooltips.exportSelection,
+    enabled: (deps: ControlDeps) => deps.selectionExportable(),
+    disabledBody: (t: Translations) => t.tooltips.exportSelectionCustom,
+  }),
   {
     id: 'name-piece',
     icon: 'name-piece',
@@ -744,7 +753,7 @@ export function chordMatches(chord: Chord, event: KeyboardEvent): boolean {
 
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls
  * passes this, not the handlers. */
-export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'selectionInFinishedRows' | 'selectionOnFrame' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
+export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'selectionInFinishedRows' | 'selectionOnFrame' | 'selectionExportable' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
 export function controlDeps(state: ControlState): ControlDeps {

@@ -36,6 +36,10 @@ export interface FrameSheet extends Rect, Weave {
   settings?: FrameSettings
   /** How many quarter turns clockwise Rotate Frame has given a Custom frame's layout (ticket 0594). Absent: none. */
   quarterTurns?: QuarterTurns
+  /** Only on a Frame made to export a Selection (ticket 1210, `selectionExportProject`): the displayed row and column
+   * the whole chart counts as 1 lie this far before the Frame's own first, so the part's numbers go on from the chart's.
+   * Never saved. */
+  numberFrom?: { across: number; down: number }
 }
 
 /** One bead's color at a position, or null where nothing is painted. */

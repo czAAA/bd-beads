@@ -13,6 +13,7 @@ import { en } from '../../i18n/en'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import { FakeResizeObserver } from '../../testUtils/fakeResizeObserver'
 import { frameOf } from '../../domain/layerRecord'
+import { withFrameSheet } from '../../domain/frameSheet'
 import { MIRROR_OFF, mirrorFit, mirrorReach, type MirrorMode } from '../../domain/mirror'
 import type { Technique } from '../../domain/weave'
 import IconButton from '../ui/IconButton.vue'
@@ -54,7 +55,7 @@ describe('ContextBar', () => {
     expect(wrapper.emitted('select-all')).toHaveLength(1)
   })
 
-  it('shows the size readout, then Copy, Cut, Fill, Frame, Rotate, Mirror and Clear selection, icon-only', async () => {
+  it('shows the size readout, then Copy, Cut, Fill, Frame, Rotate, Mirror, Export and Clear selection, icon-only', async () => {
     const wrapper = mount(ContextBar, {
       props: { project: drawn, selection, selectionSummary: '3×5 ≈ 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false },
     })
@@ -62,7 +63,7 @@ describe('ContextBar', () => {
 
     expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 ≈ 0.5 × 0.8 cm')
     const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
-    expect(ids).toEqual(['context-bar-move', 'context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-mirror-selection', 'context-bar-clear'])
+    expect(ids).toEqual(['context-bar-move', 'context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-mirror-selection', 'context-bar-export', 'context-bar-clear'])
     for (const id of ids) expect(wrapper.get(`[data-testid="${id}"]`).text(), id).toBe('')
     expect(wrapper.get('[data-testid="context-bar-copy"]').attributes('aria-label')).toBe('Copy')
     expect(wrapper.get('[data-testid="context-bar-clear"]').attributes('aria-label')).toBe('Remove selected beads')
@@ -226,6 +227,22 @@ describe('ContextBar', () => {
     expect(onFrame.get('[data-testid="context-bar-mirror-selection"]').attributes('aria-disabled')).toBe('true')
     await onFrame.get('[data-testid="context-bar-mirror-selection"]').trigger('click')
     expect(onFrame.emitted('mirror-selection')).toBeUndefined()
+  })
+
+  it('offers Export after Mirror, which opens the Export panel for the Selection, and holds it back on a Custom frame (ticket 1210)', async () => {
+    const props = { selection, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false, project: drawn }
+    const wrapper = mount(ContextBar, { props })
+    const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
+    expect(ids.indexOf('context-bar-export')).toBe(ids.indexOf('context-bar-mirror-selection') + 1)
+    await arm()
+    expect(wrapper.get('[data-testid="context-bar-export"]').attributes('aria-label')).toBe('Export')
+    await wrapper.get('[data-testid="context-bar-export"]').trigger('click')
+    expect(wrapper.emitted('export-selection')).toHaveLength(1)
+
+    const custom = withFrameSheet(drawn, { row: 0, column: 0, rows: 6, columns: 6, technique: 'loom', shape: 'triangle', beads: {} })
+    const onCustom = mount(ContextBar, { props: { ...props, project: custom, selection: { ...selection, layer: 'frame' as const } } })
+    await arm()
+    expect(onCustom.get('[data-testid="context-bar-export"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('offers Rotate once a pass is done on the Canvas and clear of finished rows, and disables it saying why where the Selection reaches into them (ticket 0647)', async () => {

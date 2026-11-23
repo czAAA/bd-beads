@@ -30,6 +30,8 @@ const props = defineProps<{
   width?: string
   /** The button edge the dropdown lines up with, `start` when not given. */
   align?: 'start' | 'end'
+  /** A press on the canvas's drawing leaves the panel open, so a Selection it exports can be moved or resized (ticket 1210). */
+  keepsCanvas?: boolean
   /** The first subpanel's title; a panel with a `sub` slot gives one. */
   subTitle?: string
   /** A figure at the right of the subpanel's header (the library's count). */
@@ -107,6 +109,8 @@ const onOwnBar = (target: EventTarget | null) => target instanceof Node && !!own
  * stays, since the Menu may open on its own while a notice shows (ticket 0985). */
 const NOTICE_ROW = '[data-notice-row]'
 const onNoticeRow = (target: EventTarget | null) => target instanceof Element && target.closest(NOTICE_ROW) !== null
+/** The canvas's drawing, and the Selection bar over it, whose presses move the Selection a panel exports. */
+const onCanvas = (target: EventTarget | null) => target instanceof Element && target.closest('[data-testid="project-surface"], [data-testid="context-bar"]') !== null
 const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start', () => 'below', barTop)
 /** The dropdown is as tall as the room allows below its button (above the bottom bar, else 16px clear of the window's
  * bottom edge) and scrolls inside past that. */
@@ -154,7 +158,7 @@ useOverlayLayer({
   close: onEscape,
   // The strip's own buttons are left alone, since their click swaps or closes the panel.
   isOpener: (target) => target.closest(OPENERS) !== null,
-  keepsPress: (event) => onOwnBar(event.target) || onNoticeRow(event.target),
+  keepsPress: (event) => onOwnBar(event.target) || onNoticeRow(event.target) || (!!props.keepsCanvas && onCanvas(event.target)),
   onOutsidePress: () => {
     pressClosed.markPressClosed()
     emit('close')

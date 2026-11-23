@@ -102,6 +102,7 @@ export function trimmedArea(project: Layered): TrimmedArea {
     lastAcross: Math.min(whole.lastAcross, area.lastAcross),
     firstDown: Math.max(whole.firstDown, area.firstDown),
     lastDown: Math.min(whole.lastDown, area.lastDown),
+    ...(frame.numberFrom ? { numberFrom: frame.numberFrom } : {}),
   }
 }
 

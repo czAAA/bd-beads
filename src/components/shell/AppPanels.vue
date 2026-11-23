@@ -72,7 +72,6 @@ const {
   handedness,
   setHandedness,
   openPanel,
-  exportOpener,
   framePanelShown,
   frameOpensOnStarters,
   frameOpensOnSettings,
@@ -91,6 +90,9 @@ const {
   shortcutsOpen,
   onOpenFeedback,
   exportChoice,
+  exportOpener,
+  exportScope,
+  exportSelection,
   signInOpen,
   menuOpensOnList,
   account,
@@ -103,6 +105,10 @@ const {
   onSignOut,
   onRequestDeleteAccount,
 } = usePanelsContext()
+
+/** The button the Export panel hangs from: the Selection bar's Export, or its "..." where the bar folded the button away
+ * (ticket 1210). */
+const exportAnchor = computed(() => (exportOpener.value === 'context-bar-export' && !document.querySelector('[data-testid="context-bar-export"]') ? 'context-bar-more' : exportOpener.value))
 
 /** The reference image's state the Project panel shows (ticket 0790). */
 const referencePanel = computed(() => ({
@@ -145,6 +151,7 @@ const chosenStarter = ref<StarterId>()
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @save-project-file="onSaveProjectFile"
+      @save-maker-name="onSaveMakerName"
       @set-letters="onSetLetters"
       @key="onFrameKey"
       @set-settings="onSetFrameSettings"
@@ -174,17 +181,19 @@ const chosenStarter = ref<StarterId>()
   </PanelHost>
 
   <!-- The Export panel (tickets 0652, 0657): the strip's Export button's or the margin sheet's, hung from the one pressed. -->
-  <PanelHost v-if="activeProject && openPanel === 'export'" open="export" :only="['export']" :anchor="exportOpener" @close="openPanel = null">
+  <PanelHost v-if="activeProject && openPanel === 'export'" open="export" :only="['export']" :anchor="exportAnchor" :keeps-canvas="exportScope === 'selection'" @close="openPanel = null">
     <ExportPanel
       :project="activeProject"
       :exporting="exporting"
       :opens-on="exportChoice"
+      :selection="exportScope === 'selection' ? exportSelection : undefined"
       @fit="onFitFrame"
       @select-frame="onSelectFrame('export')"
       @select-piece-frame="onSelectPieceFrame('export')"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @save-project-file="onSaveProjectFile"
+      @save-maker-name="onSaveMakerName"
     />
   </PanelHost>
 

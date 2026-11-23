@@ -149,6 +149,7 @@ const {
   onPillTileTap,
   onMirrorWholeFrame,
   onMirrorSelection,
+  onExportSelection,
   selectedColorHex,
   selectedColorId,
   customColor,
@@ -793,6 +794,7 @@ const drawingStyle = computed(() => {
             @clear-selection="onClearSelection"
             @rotate="onRotate"
             @mirror-selection="onMirrorSelection"
+            @export-selection="onExportSelection"
             @select-all="onSelectAll"
             @remove-line="onRemoveSelectedLine"
             @name-piece="onNamePiece"
