@@ -62,7 +62,7 @@ describe('the Miyuki Round color catalog', () => {
     expect(now).not.toBe(before)
 
     const made = createProject({ technique: 'peyote', beadId: findBead('miyuki/round/11-0')!.id, name: '', makerName: '' })
-    const old = setPalette(made, [...defaultPaletteIds(), addedColorId(before)], { [before]: '10' })
+    const old = setPalette(made, [...defaultPaletteIds(), addedColorId(before)], { [before]: { catalog: 'miyuki-round', code: '10' } })
     const opened = parseProjectsFile(serializeProject(old)).projects[0]!
 
     expect(projectPalette(opened).colors.find((color) => color.hex === before)).toMatchObject({ hex: before, code: '10' })

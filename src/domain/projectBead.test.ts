@@ -6,7 +6,6 @@ import { normalizeProject } from './storedProject'
 import { replaceBead, resolveProjectBead, projectCell } from './projectBead'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import type { Project } from './project'
-import { defaultPalette } from './palette'
 import { BEAD_CATALOG, beadCopy } from './beads'
 import { estimatedSizeMm } from './projectSize'
 import { paintAt } from '../testUtils/layers'
@@ -161,27 +160,25 @@ describe('each layer has its own Bead (ticket 0665, ADR 0079)', () => {
 
   it("replaces the Canvas's Bead when asked, leaving the Frame's, the woven one, and the Palette as they were", () => {
     const before = made()
-    const replaced = replaceBead(before, delica, undefined, 'canvas')
+    const replaced = replaceBead(before, delica, 'canvas')
     expect(canvasOf(replaced).beadId).toBe(delica.id)
     expect(frameOf(replaced)!.beadId).toBe(roundBead.id)
     expect(replaced.palette).toBe(before.palette)
     expect(resolveProjectBead(replaced)).toEqual(beadCopy(roundBead))
   })
 
-  it("replaces the Canvas's Bead on a Project with no Frame, whichever layer is asked, and the Palette follows it", () => {
+  it("replaces the Canvas's Bead on a Project with no Frame, whichever layer is asked", () => {
     const open = withLayers(made(), { frame: undefined })
-    const replaced = replaceBead(open, delica, undefined, 'frame')
+    const replaced = replaceBead(open, delica, 'frame')
     expect(canvasOf(replaced).beadId).toBe(delica.id)
-    expect(replaced.palette).toContain(defaultPalette(delica.id).find((color) => color.family === 'beige')!.id)
   })
 
-  it("moves the Palette with the Frame's Bead, and one Undo puts both back", () => {
+  it("leaves the Palette and its codes as they were when the Frame's Bead changes, and one Undo puts the Bead back (ADR 0103)", () => {
     const before = made()
     const replaced = replaceBead(before, delica)
-    expect(replaced.palette).toContain(defaultPalette(delica.id).find((color) => color.family === 'beige')!.id)
+    expect([replaced.palette, replaced.paletteCodes]).toEqual([before.palette, before.paletteCodes])
     const undone = restoreSnapshot(replaced, snapshotOf(before))
     expect(frameOf(undone)!.beadId).toBe(roundBead.id)
-    expect(undone.palette).toEqual(before.palette)
   })
 
   it('reads the Project\'s Bead and how it is drawn from the woven layer, the Frame', () => {

@@ -8,11 +8,14 @@ import { placedStarter, starterById } from '../../domain/starters'
 import type { Project } from '../../domain/project'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 import type { ColorCatalog } from '../../domain/colorCatalog'
-import { addedColorId, defaultPalette, defaultPaletteIds } from '../../domain/palette'
+import { addedColorId, defaultPalette, defaultPaletteIds, type PaletteCodes } from '../../domain/palette'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer } from '../../domain/layerRecord'
 import { withFrameSheet } from '../../domain/frameSheet'
 import { withLayers } from '../../testUtils/layerFields'
+
+/** Codes of the test Project's own Bead, TOHO's (ADR 0103). */
+const tohoCodes = (codes: Record<string, string>): PaletteCodes => Object.fromEntries(Object.entries(codes).map(([hex, code]) => [hex, { catalog: 'toho', code }]))
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
@@ -68,7 +71,7 @@ describe('BeadQuantities', () => {
   describe('names a color by its code and name, its hex only in a Tooltip (ticket 0760)', () => {
     const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
     const added = addedColorId('#123456')
-    const coded = (codes?: Record<string, string>) => paintAt({ ...project(), palette: [...defaultPaletteIds(), added], ...(codes ? { paletteCodes: codes } : {}) }, [{ row: 0, column: 0 }], '#123456')
+    const coded = (codes?: Record<string, string>) => paintAt({ ...project(), palette: [...defaultPaletteIds(), added], ...(codes ? { paletteCodes: tohoCodes(codes) } : {}) }, [{ row: 0, column: 0 }], '#123456')
 
     const mountWith = (project: Project, beadColors?: BeadColors) =>
       mount(defineComponent({ setup() { if (beadColors) provideBeadColors(beadColors); return () => h(BeadQuantities, { project }) } }))
@@ -299,7 +302,7 @@ describe('BeadQuantities on a Star (ticket 0875)', () => {
 
 describe('BeadQuantities names what to buy (ticket 0974)', () => {
   const added = addedColorId('#123456')
-  const coded = () => paintAt({ ...project(), palette: [...defaultPaletteIds(), added], paletteCodes: { '#123456': '49' } }, [{ row: 0, column: 0 }], '#123456')
+  const coded = () => paintAt({ ...project(), palette: [...defaultPaletteIds(), added], paletteCodes: tohoCodes({ '#123456': '49' }) }, [{ row: 0, column: 0 }], '#123456')
 
   it('names the Frame\'s Bead under the heading', () => {
     const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], RED.hex))

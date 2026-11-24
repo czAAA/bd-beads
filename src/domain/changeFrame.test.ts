@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest'
 import { type BeadMap, colorAt, type FrameSheet, type Rect, withColors } from './canvas'
 import { TECHNIQUES } from './weave'
-import { defaultPalette } from './palette'
 import { findBead } from './beads'
 import { squareBead } from '../testUtils/squareBead'
 import { replaceBead } from './projectBead'
@@ -735,12 +734,13 @@ describe('a Frame in a Bead of its own is read on the Canvas through millimetres
     expect(removed.kind === 'changed' && beadsOfLayer(removed.project, 'canvas')).toEqual(canvas)
   })
 
-  it("moves the Palette to the Canvas's Bead on Remove Frame, in the same step, when the woven Bead changes", () => {
-    const lime = defaultPalette('toho/round/8-0').find((color) => color.family === 'lime')!.id
+  it('changes no Palette color or code on Remove Frame or on making a Frame, though the woven Bead changes (ADR 0103)', () => {
     const before = inOtherBead('miyuki/delica/11-0')
-    expect(before.palette).not.toContain(lime)
     const removed = changeFrame(before, { remove: true })
-    expect(removed.kind === 'changed' && removed.project.palette).toContain(lime)
+    if (removed.kind !== 'changed') throw new Error('expected a change')
+    expect([removed.project.palette, removed.project.paletteCodes]).toEqual([before.palette, before.paletteCodes])
+    const made = changeFrame(removed.project, { make: { row: 2, column: 3, rows: 2, columns: 2 } })
+    expect(made.kind === 'changed' && [made.project.palette, made.project.paletteCodes]).toEqual([before.palette, before.paletteCodes])
   })
 
   it('folds what a resize gives up rather than giving it to the Canvas, whose positions are not its own', () => {

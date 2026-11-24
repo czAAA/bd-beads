@@ -44,7 +44,7 @@ function pupilCodes(project: Project): (string | undefined)[] {
   const { row, column } = placeOf(project)
   return PUPIL_BEADS.map(({ line, along }) => {
     const color = beadColorAt(project, row + along, column + line, 'frame')
-    return color ? project.paletteCodes?.[color.toLowerCase()] : undefined
+    return color ? project.paletteCodes?.[color.toLowerCase()]?.code : undefined
   })
 }
 

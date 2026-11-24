@@ -1,12 +1,12 @@
 import { watch, type Ref } from 'vue'
-import type { Bead } from '../../domain/beads'
+import { colorCatalogOf, type Bead } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import { beadColorTargets, nearestTarget, sourceTargets, type TargetColor } from '../../domain/convertColors'
 import type { PixelData } from '../../domain/imageConversion'
 import { beadColorAt } from '../../domain/layerBeads'
 import { beadIdOfLayer } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/layers'
-import { brandColors, defaultPalette } from '../../domain/palette'
+import { brandColors, defaultPalette, type PaletteCode } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { pictureColorAt } from '../../domain/referenceConvert'
 import type { ReferencePlace } from '../../domain/referenceImage'
@@ -26,7 +26,7 @@ export interface PickColorDeps {
   currentProject: () => Project | null | undefined
   /** Chooses a colour as the paint colour; it joins the Palette, with its code when it has one, and the recent colours
    * (tickets 398, 1119). */
-  onSelectCustomColor: (hex: string, code?: string) => void
+  onSelectCustomColor: (hex: string, code?: PaletteCode) => void
   /** The Reference image while it is shown, else none (ticket 1119). Without it only beads are picked from. */
   picture?: () => PickedPicture | undefined
   decodePixels?: (blob: Blob) => Promise<PixelData>
@@ -70,7 +70,9 @@ export function usePickColor(deps: PickColorDeps) {
     const hex = pixels && pictureColorAt(pixels, at)
     if (!hex || !deps.picking.value || deps.currentProject()?.id !== project.id) return
     const match = nearestTarget(hex, targets)
-    deps.onSelectCustomColor(match.hex, match.code)
+    // Both the catalog's codes and the default colors are of the Bead's own Color catalog (ADR 0103).
+    const catalog = colorCatalogOf(deps.beadColors?.bead.value?.id)
+    deps.onSelectCustomColor(match.hex, match.code && catalog ? { catalog, code: match.code } : undefined)
     deps.picking.value = false
   }
 

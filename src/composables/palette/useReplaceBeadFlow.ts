@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { beadPitchMm, colorCatalogOf, findBead, type Bead } from '../../domain/beads'
+import { beadPitchMm, findBead, type Bead } from '../../domain/beads'
 import type { Layer } from '../../domain/grid'
 import { relaidInBead } from '../../domain/changeFrame'
 import { beadOfLayer, frameOf } from '../../domain/layerRecord'
@@ -7,7 +7,6 @@ import { replaceBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeInMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
-import { loadColorCatalog } from '../../services/colorCatalogs'
 import type { EditFn } from '../project/useEdit'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
@@ -76,17 +75,13 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   }
 
   /** Confirms Replace Bead (ticket 48, ADR 0007): the chosen layer's Bead, one undo step, exempt as it draws nothing; a
-   * Custom frame's rectangle follows its new layout in it (ticket 0723). With coded swatches the new Bead's Color catalog
-   * loads first, so those it lists keep their codes in the same step (ticket 0538); one that won't load drops them. */
-  async function onConfirmReplaceBead() {
+   * Custom frame's rectangle follows its new layout in it (ticket 0723). The Palette and its codes stay (ADR 0103). */
+  function onConfirmReplaceBead() {
     const bead = pendingBead.value
     const chosen = pending.value?.layer
     pending.value = undefined
     if (!bead || !chosen) return
-    const catalogId = colorCatalogOf(bead.id)
-    const coded = Object.keys(deps.currentProject()?.paletteCodes ?? {}).length > 0
-    const catalog = coded && catalogId ? await loadColorCatalog(catalogId).catch(() => undefined) : undefined
-    deps.edit('exempt', (project) => relaidInBead(project, replaceBead(project, bead, catalog, chosen)))
+    deps.edit('exempt', (project) => relaidInBead(project, replaceBead(project, bead, chosen)))
   }
 
   return {

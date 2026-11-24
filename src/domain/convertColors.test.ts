@@ -201,7 +201,7 @@ describe('newProjectPalette', () => {
       undefined,
       choices({ '#ff0000': { kind: 'remap', target: { hex: '#e63746', colorId: 'red' } } }),
     )
-    expect(newProjectPalette(BUILT_IN_COLORS, found)).toEqual({
+    expect(newProjectPalette(BUILT_IN_COLORS, found, 'miyuki-delica')).toEqual({
       ids: [...BUILT_IN_COLORS.map((color) => color.id), addedColorId('#123456'), addedColorId('#abcdef')],
       codes: {},
     })
@@ -210,15 +210,15 @@ describe('newProjectPalette', () => {
   it('brings each Bead color’s code, a built-in hex too, and holds a merged color once', () => {
     const targets = beadColorTargets(catalog, '11/0', BUILT_IN_COLORS)
     const found = matchFoundColors(reduced({ '#ff0000': 4, '#ee1111': 2, '#fefefe': 1 }), targets, choices({ '#ee1111': { kind: 'remap', target: { hex: '#d02020', code: 'DB1' } } }))
-    expect(newProjectPalette(BUILT_IN_COLORS, found)).toEqual({
+    expect(newProjectPalette(BUILT_IN_COLORS, found, 'miyuki-delica')).toEqual({
       ids: [...BUILT_IN_COLORS.map((color) => color.id), addedColorId('#d02020')],
-      codes: { '#d02020': 'DB1', '#ffffff': 'DB5' },
+      codes: { '#d02020': { catalog: 'miyuki-delica', code: 'DB1' }, '#ffffff': { catalog: 'miyuki-delica', code: 'DB5' } },
     })
   })
 
   it('adds nothing for an emptied color', () => {
     const found = matchFoundColors(reduced({ '#123456': 1 }), undefined, choices({ '#123456': { kind: 'empty' } }))
-    expect(newProjectPalette(BUILT_IN_COLORS, found).ids).toEqual(BUILT_IN_COLORS.map((color) => color.id))
+    expect(newProjectPalette(BUILT_IN_COLORS, found, 'miyuki-delica').ids).toEqual(BUILT_IN_COLORS.map((color) => color.id))
   })
 })
 
@@ -255,7 +255,7 @@ describe('the least distance between delivered colors (ticket 0890)', () => {
       [['#1a1a1a', '#383838'], 70, 'DB10'],
       [['#e8e8e8'], 10, 'DB200'],
     ])
-    expect(newProjectPalette([], found).codes).toEqual({ '#202020': 'DB10', '#e0e0e0': 'DB200' })
+    expect(newProjectPalette([], found, 'miyuki-delica').codes).toEqual({ '#202020': { catalog: 'miyuki-delica', code: 'DB10' }, '#e0e0e0': { catalog: 'miyuki-delica', code: 'DB200' } })
   })
 
   it('leaves a picture kept as it is with its own colors, however alike', () => {
@@ -300,7 +300,7 @@ describe('a color used by a handful of beads (ticket 0891)', () => {
       [['#e8e8e8'], 40],
     ])
     expect(convertFrame([['#202080', '#e8e8e8']], picture, found)).toEqual([[{ color: black.hex }, { color: found[1]!.result!.hex }]])
-    expect(newProjectPalette([], found).codes).toEqual({ '#202020': 'DB10', '#e0e0e0': 'DB200' })
+    expect(newProjectPalette([], found, 'miyuki-delica').codes).toEqual({ '#202020': { catalog: 'miyuki-delica', code: 'DB10' }, '#e0e0e0': { catalog: 'miyuki-delica', code: 'DB200' } })
   })
 
   it('counts the beads of a code, so two small colors that match one code reaching the minimum stay', () => {

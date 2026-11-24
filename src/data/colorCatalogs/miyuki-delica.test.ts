@@ -25,7 +25,7 @@ describe('the Miyuki Delica color catalog', () => {
     expect(now).not.toBe(before)
 
     const made = createProject({ technique: 'loom', beadId: findBead('miyuki/delica/11-0')!.id, name: '', makerName: '' })
-    const old = setPalette(made, [...defaultPaletteIds(), addedColorId(before)], { [before]: 'DB2394' })
+    const old = setPalette(made, [...defaultPaletteIds(), addedColorId(before)], { [before]: { catalog: 'miyuki-delica', code: 'DB2394' } })
     const opened = parseProjectsFile(serializeProject(old)).projects[0]!
 
     const held = projectPalette(opened).colors.find((color) => color.hex === before)

@@ -7,6 +7,7 @@ import { isFrameShape, type QuarterTurns } from './frameShape'
 import { framePlacement } from './framePlacement'
 import { liftFlatWeave, renamedBrickBlock, renamedBrickBlocks, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import type { FrameLayer, Grid, Project } from './project'
+import { storedPalette } from './palette'
 import type { GridProject, LayeredProject, StoredLayer } from './storedProject'
 import { settingsOffDefault, type Weave } from './weave'
 
@@ -37,8 +38,9 @@ export type EncodedFlatProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeav
 export type EncodedLayer = Omit<StoredLayer, 'beads' | 'folded' | 'quarterTurns'> & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
 /** A Project as a file (version 13) and the library (version 6) store it (ticket 0664): what is one per file, and its
- * layers in order, the Canvas first; how many backgrounds the list their positions are in held (ticket 1000). */
-export type EncodedProject = Omit<Project, 'layers'> & Pick<LayeredProject, 'backgroundPositions' | 'lettersByLayer'> & { layers: EncodedLayer[] }
+ * layers in order, the Canvas first; how many backgrounds the list their positions are in held (ticket 1000); since file
+ * version 16 (library 8) its Palette in sections (ADR 0103). */
+export type EncodedProject = Omit<Project, 'layers' | 'palette' | 'paletteCodes'> & Pick<LayeredProject, 'backgroundPositions' | 'lettersByLayer'> & ReturnType<typeof storedPalette> & { layers: EncodedLayer[] }
 
 /** A Project as stored before the Canvas (ADR 0009's original shape): `columns` × `rows` cells as row-major runs.
  * Read only. */
@@ -235,9 +237,9 @@ function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFra
   return { ...place, ...(isFrameShape(kind) ? { shape: kind } : {}), beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
-/** A Project as a file and the library store it (ticket 0664): each layer's settings at their defaults left out, its
- * beads compact, a Frame's placement on the table for its Canvas position (ticket 1185), its Background positions marked
- * as in the list of three (ticket 1000), and each layer's Letters switch as its own (ticket 1092). */
+/** A Project as a file and the library store it (ticket 0664): layer settings at their defaults left out, beads compact,
+ * a Frame's place on the table (ticket 1185), Background positions of the list of three (ticket 1000), each layer's own
+ * Letters switch (ticket 1092), and the Palette in its sections (file version 16, ADR 0103). */
 export function encodeProject(project: Project): EncodedProject {
   const [{ origin, ...canvas }, ...frames] = project.layers
   // Each Frame's own centre, worked out as if it were the Frame laid on this Canvas, from the Canvas's origin: a file's
@@ -246,7 +248,8 @@ export function encodeProject(project: Project): EncodedProject {
     const at = framePlacement({ layers: [{ ...canvas, ...(origin ? { origin } : {}) }, frame] }, frameIdOf(frame))?.at
     return at && { x: at.x - (origin?.x ?? 0), y: at.y - (origin?.y ?? 0) }
   }
-  return { ...project, backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: [encodeLayer(canvas), ...frames.map((frame) => encodeFrame(frame, centreOf(frame)))] }
+  const { palette, paletteCodes, ...rest } = project
+  return { ...rest, ...storedPalette(palette, paletteCodes), backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: [encodeLayer(canvas), ...frames.map((frame) => encodeFrame(frame, centreOf(frame)))] }
 }
 
 function encodeLayer(layer: Project['layers'][number]): EncodedLayer {
@@ -267,7 +270,7 @@ function encodeFrame(frame: FrameLayer, centre: { x: number; y: number } | undef
   return { ...encodeLayer(rest as FrameLayer), ...(centre ? { centre: { x: rounded(centre.x), y: rounded(centre.y) } } : {}), ...(frame.centre ? { offGrid: true } : {}) }
 }
 
-/** The Project a file version 13 to 15 or library version 6 or 7 value holds (ticket 0664); it still goes through
+/** The Project a file version 13 to 16 or library version 6 to 8 value holds (ticket 0664); it still goes through
  * normalizeProject. A Frame stored before version 15 has its orientation read back as its quarter turns on the Canvas. */
 export function decodeProject(encoded: EncodedProject): LayeredProject {
   const [canvas, ...frames] = encoded.layers.map(decodeLayer)
