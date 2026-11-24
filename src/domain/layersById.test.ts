@@ -88,7 +88,7 @@ describe('a Frame named by its id (ticket 1216)', () => {
     expect([lettersOn(lettered, SECOND), backgroundOf(lettered, SECOND)]).toEqual([true, 2])
   })
 
-  it('removes only the Frame named, and lays a new one under the id it is named by', () => {
+  it('removes only the Frame named', () => {
     const project = twoFrames()
     const removed = withFrameSheet(project, undefined, { frame: SECOND })
     expect(framesOf(removed)).toEqual([frameOf(project)])
@@ -178,6 +178,10 @@ describe('a Frame named by its id (ticket 1216)', () => {
     const placed = changed(placedStarter(project, starter, { sizes: designSizes(starter), useDesign: true }, { row: 30, column: 30 }, SECOND))
     firstUntouched(project, placed)
     expect(frameById(placed, SECOND)!.shape).toBe('triangle')
+    // A Custom frame named turns about its own centre, in its own Weave.
+    const turned = rotateFrame(placed, 'keep', SECOND)!
+    firstUntouched(project, turned)
+    expect(frameById(turned, SECOND)!.quarterTurns).toBe(1)
   })
 
   it('is how every domain and renderer module reaches a Frame: never by its place in the list', () => {

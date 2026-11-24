@@ -185,7 +185,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
 }
 
 /** A Kaleidocycle's Word chart says, after where it starts, that it is one face of the piece (ticket 0876). */
-function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations['print']['wordChart'], ref: FrameRef = FIRST_FRAME): PrintedWordChart {
+function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations['print']['wordChart'], ref: FrameRef): PrintedWordChart {
   const face = pieceFaceOf(frameById(project, ref)?.shape)
   if (!face) return chart
   const note = fillBlanks(t.faceNote, { parts: face.parts, total: face.total })

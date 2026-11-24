@@ -286,7 +286,7 @@ function drawFrameGround(
 /** The part of the Frame's box where it holds no bead position, in the Frame's Off-shape color, over its Background and
  * marks (ticket 1196): a Custom frame outside its shape, a staggered row's or column's empty half bead. The box with
  * every position's cell cut out of it, so whatever lays the positions out (a turned Frame, a Custom frame) decides. */
-function drawOffShape(context: DrawingContext, { project, box, area, color, skip }: { project: DrawnProject; box: readonly [number, number, number, number]; area: { left: number; right: number; top: number; bottom: number }; color: string; skip: boolean }, ref: FrameRef = FIRST_FRAME): void {
+function drawOffShape(context: DrawingContext, { project, box, area, color, skip }: { project: DrawnProject; box: readonly [number, number, number, number]; area: { left: number; right: number; top: number; bottom: number }; color: string; skip: boolean }, ref: FrameRef): void {
   const frame = frameById(project, ref)
   if (skip || !frame) return
   const geometry = geometryDrawnAlone(project, ref)
@@ -403,7 +403,7 @@ interface LayerDraw {
 /** The Frame's cells, bead or empty bead, where its Layer geometry places them, from the context's origin (ticket 492).
  * `origin` is where its first position sits in grid px. `space` is the Frame on its own: its positions counted from 0,
  * and `toAbsolute` the address of its first. */
-function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, ref: FrameRef = FIRST_FRAME): void {
+function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, ref: FrameRef): void {
   const { project, area, rows: band } = draw
   const geometry = geometryDrawnAlone(project, ref)
   // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
@@ -421,7 +421,7 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
 
 /** The Frame's beads in the draft look (ticket 0676): a pixel a bead in its Row progress color, empty ones as an empty
  * bead, no letters. A whole draw keeps the whole Frame's image, which a pan or zoom then lays down again. */
-function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, geometry: LayerGeometry, inView: () => GridPosition[], colorAtOwn: (row: number, column: number) => string | null, ref: FrameRef = FIRST_FRAME): void {
+function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, geometry: LayerGeometry, inView: () => GridPosition[], colorAtOwn: (row: number, column: number) => string | null, ref: FrameRef): void {
   const { project, look, rowMarks, showFinished, rows: band } = draw
   const weave = frameWeave(project, ref)
   // What progressLook says of a bead, with a color's fill mixed once for the draw, not once a bead: a whole Frame's
@@ -506,7 +506,7 @@ interface PlacedBead {
 
 /** Beads standing upright in rows and columns, each in its box: the current row's lit (ticket 352), an empty cell left
  * as it is (ticket 411). */
-function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, ref: FrameRef = FIRST_FRAME): void {
+function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, ref: FrameRef): void {
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw
   const weave = frameWeave(project, ref)
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
@@ -532,7 +532,7 @@ function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space
 /** Beads that lie at their panels' angles (ADR 0077, ticket 0592): each at its centre, turned, and the Layer's Seams as
  * thin lines; round the shape the Canvas's colour, no position marks. Finished rounds fade and the current one is lit as
  * a Frame's rows are (ticket 0594). */
-function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, geometry: LayerGeometry, ref: FrameRef = FIRST_FRAME): void {
+function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, geometry: LayerGeometry, ref: FrameRef): void {
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw
   const weave = frameWeave(project, ref)
   const mark = markLookOf(look, draw.tiles)
@@ -618,7 +618,7 @@ const SEAM_WIDTH_PX = 1
 
 /** The Canvas's beads, bead by bead or as one draft image, with the Frame's footprint cut out so none shows over it.
  * What every bead shares (its Weave's description, cell, corners, the margin) is worked out once (ticket 0676). */
-function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space, ref: FrameRef = FIRST_FRAME): void {
+function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space, ref: FrameRef): void {
   const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin, canvasLetters } = draw
   const rotation = quarterTurnOf(project)
   const beads = beadsOfLayer(project, 'canvas')

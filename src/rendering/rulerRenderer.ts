@@ -74,7 +74,7 @@ const pillOf = (label: RulerLabel, pad: number) => ({ x: label.x, y: label.y, wi
  * margin sheet, in its colors and at its scale, a Piece's on the Canvas. */
 type Looks = Record<RulerLabel['kind'], { theme: ProjectTheme; scale: RulerScale }>
 
-function looksOf({ project, layout, theme }: Pick<RulerDrawInput, 'project' | 'layout' | 'theme'>, ref: FrameRef = FIRST_FRAME): Looks {
+function looksOf({ project, layout, theme }: Pick<RulerDrawInput, 'project' | 'layout' | 'theme'>, ref: FrameRef): Looks {
   return {
     frame: { theme: frameById(project, ref) ? { ...theme, ruler: theme.margin.ruler, rulerStrong: theme.margin.rulerStrong } : theme, scale: layout.frameScale },
     piece: { theme, scale: layout.scale },
@@ -137,7 +137,7 @@ function passOnScreen({ project, surface, layout }: RulerDrawInput, at?: number,
 /** Whether a ruler number is the current pass's own: only the Frame's can be, never a Piece's on the same Canvas line
  * (ticket 1115). A Frame that does not lie alike has rulers counting the cells it covers, not its own rows (ticket 0667): none of its
  * numbers is. */
-function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProject, ref: FrameRef = FIRST_FRAME): boolean {
+function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProject, ref: FrameRef): boolean {
   const frame = frameById(project, ref)
   if (label.kind !== 'frame' || !frame || !lieAlike(project, ref)) return false
   const columns = ownRowWayOf(project, undefined, ref).direction === 'columns'

@@ -69,7 +69,7 @@ export type RuledProject = Layered
 // The boxes that carry rulers: the Frame as it lies (ticket 0667), then every Piece area of more than 4 beads (the
 // caller picks those near the viewport; only with the Rulers on, ticket 1012). A Custom frame has no box of its own: its
 // beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
-function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPieces, ref: FrameRef = FIRST_FRAME): RuledBox[] {
+function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPieces, ref: FrameRef): RuledBox[] {
   const frame = frameById(project, ref)
   const own: RuledBox[] = []
   if (frame && !frameShapeOf(frame)) {
@@ -344,7 +344,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   const laid = boxes.map((box) => ({
     kind: box.kind,
     ...(box.kind === 'frame'
-      ? layBox(box, frameWeave(project, ref), { origin: frameOriginPx(canvasWeave(project), frameById(project, ref)!), offset: frameById(project, ref)!, layer: ref, size: frameBeadScale(project), stepped: expanded }, surface, viewport, frameScale)
+      ? layBox(box, frameWeave(project, ref), { origin: frameOriginPx(canvasWeave(project), frameById(project, ref)!), offset: frameById(project, ref)!, layer: ref, size: frameBeadScale(project, ref), stepped: expanded }, surface, viewport, frameScale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
   // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.

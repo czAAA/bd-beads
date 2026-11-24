@@ -28,7 +28,7 @@ export interface ChartBead {
  * Every bead is given, wherever it lies: the caller keeps those of its own part. */
 export function customChart(project: Layered, region: Region, zoom: number, ref: FrameRef = FIRST_FRAME): { beads: ChartBead[]; seams: [LayoutPoint, LayoutPoint][] } | undefined {
   const frame = frameById(project, ref)
-  const geometry = geometryDrawnAlone(project)
+  const geometry = geometryDrawnAlone(project, ref)
   if (!frame || geometry.grid) return undefined
   const weave = frameWeave(project, ref)
   // The Frame drawn on its own, as a chart is: its first position at 0, 0.

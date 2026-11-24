@@ -64,7 +64,7 @@ export function firstPassAfterLines(order: RowOrder, lines: number): number {
 
 /** The whole lines done the way the rows run now, and that way as seen: what both questions tell. Nothing with no pass
  * done, or on a Custom frame, which keeps its own rules (its order turns with its layout and its pointer stays). */
-function wovenLinesOf(project: Layered, ref: FrameRef = FIRST_FRAME): WovenLines | undefined {
+function wovenLinesOf(project: Layered, ref: FrameRef): WovenLines | undefined {
   const frame = frameById(project, ref)
   if (!frame || frameShapeOf(frame) || !rowProgressStarted(project, ref)) return undefined
   const rowProgress = rowProgressOf(project, ref)
@@ -80,7 +80,7 @@ export function rotateFrameQuestion(project: Layered, ref: FrameRef = FIRST_FRAM
 /** What a Frame twist come to rest at `angle` asks first (ticket 1190): Rotate Frame's question where it settles on
  * another quarter turn as seen, nothing where it leans about the one it was read by. */
 export function twistFrameQuestion(project: Layered, angle: number, ref: FrameRef = FIRST_FRAME): RotateFrameQuestion | undefined {
-  return nearestQuarterTurn(angle) === frameQuarterTurnOf(project, ref) ? undefined : rotateFrameQuestion(project)
+  return nearestQuarterTurn(angle) === frameQuarterTurnOf(project, ref) ? undefined : rotateFrameQuestion(project, ref)
 }
 
 /** What a change of the Frame's Technique to `technique` asks first (ticket 1184), or nothing where it goes at once:
@@ -93,7 +93,7 @@ export function techniqueChangeQuestion(project: Layered, technique: Technique, 
 }
 
 /** The Frame's Row order the rows run `way` as seen. */
-function orderFor(project: Layered, way: SeenWay, ref: FrameRef = FIRST_FRAME): RowOrder {
+function orderFor(project: Layered, way: SeenWay, ref: FrameRef): RowOrder {
   const { rows = 0, columns = 0 } = frameById(project, ref) ?? {}
   return rowOrderOf({ ...frameWeave(project, ref), rows, columns }, ownRowWayOf(project, way, ref))
 }

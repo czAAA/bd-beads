@@ -106,7 +106,7 @@ export function convertSampled(sampled: readonly SampledPosition[], maxColors: n
 
 /** The changes split by the layer they land on: the Canvas, and in its own positions a Frame laid out as the Canvas is
  * (a grid woven alike); under any other Frame nothing, as it hides the Canvas there and has no positions to match. */
-function byLayer(project: Project, changes: readonly BeadChange[], ref: FrameRef = FIRST_FRAME): { canvas: BeadChange[]; frame: BeadChange[] } {
+function byLayer(project: Project, changes: readonly BeadChange[], ref: FrameRef): { canvas: BeadChange[]; frame: BeadChange[] } {
   const covered = footprintOf(project, ref)
   const frame = frameById(project, ref)
   const geometry = frame && layersAlike(project, ref) ? frameGeometryOf(project, ref) : undefined

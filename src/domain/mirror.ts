@@ -1,7 +1,7 @@
 import { frameContains, type Rect } from './canvas'
 import { beadUnder, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutSymmetry } from './frameLayout'
 import { frameLayoutOf } from './frameShape'
-import { isFrameLayer, type FrameId, type FrameRef, type GridPosition } from './grid'
+import { type FrameId, type FrameRef, type GridPosition } from './grid'
 import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { type Layered, FIRST_FRAME, frameById } from './layerRecord'
 import { mayPlace } from './margin'
@@ -815,8 +815,9 @@ export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting:
 export function mirroredOnCanvas<T extends GridPosition>(project: Project, setting: MirrorSetting, cells: readonly T[], ref: FrameRef = FIRST_FRAME): T[] {
   if (!isMirrorOn(setting)) return [...cells]
   const framed = frameById(project, ref) !== undefined
-  const onFrame = cells.filter((cell) => framed && isFrameLayer(layerAt(project, cell)))
-  const onCanvas = new Set(cells.filter((cell) => !framed || !isFrameLayer(layerAt(project, cell))))
+  const own = frameById(project, ref)
+  const onFrame = cells.filter((cell) => framed && frameById(project, layerAt(project, cell)) === own)
+  const onCanvas = new Set(cells.filter((cell) => !framed || layerAt(project, cell) === 'canvas'))
   const placeable = (cell: T) => onCanvas.has(cell) || mayPlace(project, cell)
   const mirroredCanvas = onCanvas.size > 0 ? counterparts(layerSheet(project, 'canvas'), setting, [...onCanvas]).positions.filter(placeable) : []
   if (onFrame.length === 0) return mirroredCanvas

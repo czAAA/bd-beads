@@ -201,7 +201,7 @@ function roundThePair(letters: readonly (string | undefined)[], { pair }: SpineR
 /** A Custom frame's Word chart (ticket 0594): one line per pass of its Row order, numbered from 1, each round read round
  * the shape and each Kite row back and forth from the wing it starts at (ticket 0874); a join is a line of its own with
  * no runs. */
-function customWordChart(project: Project, order: RowOrder, ref: FrameRef = FIRST_FRAME): WordChart {
+function customWordChart(project: Project, order: RowOrder, ref: FrameRef): WordChart {
   const beads = beadsOfLayer(project, ref)!
   let hasEmpty = false
   let parts = false

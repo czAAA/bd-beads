@@ -127,7 +127,7 @@ export function fitToDrawing(project: Layered, ref: FrameRef = FIRST_FRAME): Rec
 /** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
  * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas; a turned one's corner
  * goes where its edges lie (`turnedOrigin`). */
-function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect, ref: FrameRef = FIRST_FRAME): GridPosition {
+function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect, ref: FrameRef): GridPosition {
   if (turnedGrid(current)) return turnedOrigin(project, current, rectangle, ref)
   const moved = canvasDistance(project, heldWeave(project, ref)!, rectangle.row - current.row, rectangle.column - current.column, ref)
   return { row: current.row + moved.row, column: current.column + moved.column }
@@ -135,7 +135,7 @@ function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect, r
 
 /** Where a turned Frame resized to its own `rectangle` starts on the Canvas (ticket 1016): along each side as seen, the
  * edge whose own edge did not move stays; where both did (a typed size), the change is shared as they grew. */
-function turnedOrigin(project: Project, current: FrameSheet, rectangle: Rect, ref: FrameRef = FIRST_FRAME): GridPosition {
+function turnedOrigin(project: Project, current: FrameSheet, rectangle: Rect, ref: FrameRef): GridPosition {
   const own = frameWeave(project, ref)
   const grew: Record<FrameEdge, number> = {
     top: current.row - rectangle.row,

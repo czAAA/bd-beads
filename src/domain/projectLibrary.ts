@@ -23,7 +23,7 @@ function projectFrameSize(project: Project): string | undefined {
 /** The Frame's width and height in beads as the Project looks (the rotated view's swapped); none without a Frame. */
 export function shownFrameSize(project: Project, ref: FrameRef = FIRST_FRAME): { width: number; height: number } | undefined {
   if (!frameById(project, ref)) return undefined
-  const { columns, rows } = shownDimensions(project)
+  const { columns, rows } = shownDimensions(project, ref)
   const [width, height] = rotationSwapsAxes(laidTurnOf(project, ref)) ? [rows, columns] : [columns, rows]
   return { width, height }
 }

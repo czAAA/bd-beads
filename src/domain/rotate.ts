@@ -209,7 +209,7 @@ export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: 
 /** The Frame's Row progress once it has turned `turns` quarters clockwise as seen (spec 1182): with no pass done left as
  * it is, so the way sticks as seen; with a pass done, kept, the way and every pointer's slot turned with the Frame;
  * started over, every pointer back at the first pass, the way as seen (ticket 1184). */
-function turnedRowProgress(project: Project, turns: number, woven: WovenChoice, ref: FrameRef = FIRST_FRAME): FrameLayer['rowProgress'] {
+function turnedRowProgress(project: Project, turns: number, woven: WovenChoice, ref: FrameRef): FrameLayer['rowProgress'] {
   const { rowProgress } = frameById(project, ref)!
   if (turns === 0 || !rowProgressStarted(project, ref)) return rowProgress
   return woven === 'keep' ? turnedWithFrame(rowProgress, turns) : { way: rowProgress.way }
