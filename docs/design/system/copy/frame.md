@@ -192,3 +192,19 @@ Export quality and the two switches stand under both files, Picture then Printab
 | What each quality gives (the Info button's name; replaces "What the lowest quality is for") | Что даёт каждое качество | Що дає кожна якість | Што дае кожная якасць | 各档质量的效果 | Qué da cada calidad | Co daje każda jakość |
 | Quality is for the picture only. Low draws the picture at {low} DPI: a small file, and one a phone can always make. Medium is {medium} DPI, for print. High is {high} DPI, the sharpest. The printable chart is drawn in lines and stays sharp at any zoom. (its Info body; it took in the line that stood under the stops) | Качество влияет только на картинку. Низкое рисует картинку в {low} DPI: файл маленький, и телефон всегда с ним справится. Среднее: {medium} DPI, для печати. Высокое: {high} DPI, самое чёткое. Схема для печати нарисована линиями и остаётся чёткой при любом увеличении. | Якість впливає лише на картинку. Низька малює картинку в {low} DPI: файл малий, і телефон завжди з ним впорається. Середня: {medium} DPI, для друку. Висока: {high} DPI, найчіткіша. Схему для друку намальовано лініями, і вона лишається чіткою за будь-якого збільшення. | Якасць уплывае толькі на карцінку. Нізкая малюе карцінку ў {low} DPI: файл малы, і тэлефон заўсёды з ім справіцца. Сярэдняя: {medium} DPI, для друку. Высокая: {high} DPI, найвыразнейшая. Схема для друку намалявана лініямі і застаецца выразнай пры любым павелічэнні. | 质量只影响图片。低：图片按 {low} DPI 绘制，文件小，手机总能生成。中：{medium} DPI，适合打印。高：{high} DPI，最清晰。可打印图表由线条绘制，任意放大都清晰。 | La calidad solo afecta a la imagen. Baja dibuja la imagen a {low} DPI: un archivo pequeño, que un móvil siempre puede crear. Media es {medium} DPI, para imprimir. Alta es {high} DPI, la más nítida. El gráfico para imprimir se dibuja con líneas y se ve nítido con cualquier zoom. | Jakość dotyczy tylko obrazu. Niska rysuje obraz w {low} DPI: mały plik, który telefon zawsze utworzy. Średnia to {medium} DPI, do druku. Wysoka to {high} DPI, najostrzejsza. Wykres do druku jest rysowany liniami i pozostaje ostry przy każdym powiększeniu. |
 | It changes the picture too: the picture is the chart’s first page. (appended to Large beads' Info body until ticket 1096, when Picture became the Cover page; gone in every language) | Меняет и картинку: она и есть первая страница схемы. | Змінює й картинку: вона і є першою сторінкою схеми. | Мяняе і карцінку: яна і ёсць першая старонка схемы. | 图片也会随之改变：图片就是图样的第一页。 | También cambia la imagen: la imagen es la primera página del gráfico. | Zmienia też obraz: obraz to pierwsza strona wykresu. |
+
+## Several Frames (approved 2026-11-24, ticket 1221; built by 1222 and 1223)
+
+The Frames in the Project panel, the ··· Frame popover and the Margin color popover's Background row (ProjectPanel and MarginSheet cards). Strings not listed keep their existing keys (Frame from starter, Fit a Frame to the drawing, Drag a Frame, the band's tool names, Beads needed, Estimated size, the edge names, Reset progress, Show row marks, the four directions). Languages other than English and Russian are written when built.
+
+| English | Russian |
+| --- | --- |
+| add a frame (section label) | добавить рамку |
+| A Project holds up to 4 Frames. (why the add ways are disabled) | В проекте не больше 4 рамок. |
+| Show this Frame | Показать рамку |
+| Export this Frame… | Экспорт этой рамки… |
+| Remove Frame… | Убрать рамку… |
+| size (popover section label) | размер |
+| beads (after Width × Height) | бисеринок |
+| Rows are marked done. Reset progress to change the size. | Ряды отмечены как готовые. Сбросьте прогресс, чтобы изменить размер. |
+| background (Margin color popover's second row) | фон |
