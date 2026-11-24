@@ -10,8 +10,9 @@ import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { frameAllows } from '../../domain/frameShape'
-import type { Project } from '../../domain/project'
+import type { FrameEdge } from '../../domain/frame'
+import { frameAllows, type FrameSettings } from '../../domain/frameShape'
+import type { Background, Project } from '../../domain/project'
 import { columnsAsSeen, rowProgressPosition, type SeenWay } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
@@ -23,7 +24,8 @@ import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
 import EditableLine from '../project/EditableLine.vue'
 import MarginColorPopover from './MarginColorPopover.vue'
-import MarginFrameTools, { type FrameToolItem } from './MarginFrameTools.vue'
+import MarginFrameTools from './MarginFrameTools.vue'
+import type { FrameToolItem } from './framePopoverTools'
 import MarginMoveBar from './MarginMoveBar.vue'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import { frameNameLine } from './marginFrameName'
@@ -66,6 +68,8 @@ const props = defineProps<{
   /** The Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): the sheet is slim, at scale 1, its forms
    * going by width alone, with no Move bar. */
   expanded?: boolean
+  /** The Frame's settings popover is asked to open (ticket 1222): the Frame stays toast's Open Frame. */
+  popoverAsked?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -91,6 +95,15 @@ const emit = defineEmits<{
   /** Replace Bead asked from the roomy title block's Change (ticket 1015): the Frame panel's own question. */
   'replace-bead': [beadId: string]
   'set-letters': [on: boolean]
+  /** The settings popover's size, its edge steppers and a Custom frame's own settings (ticket 1222). */
+  step: [edge: FrameEdge, step: 1 | -1]
+  resize: [columns: number, rows: number]
+  'set-settings': [change: FrameSettings]
+  /** The Frame's Background, from the Margin color popover's second row (ticket 1222). */
+  'set-background': [background: Background]
+  /** The settings popover is gone, so what it held settles into one Undo step; or it opened as asked. */
+  'settle-settings': []
+  'popover-opened': []
   /** Expand the Frame, or Back to the Canvas while expanded (ticket 1169). */
   'toggle-expand': []
   /** What the slim sheet's row and title block measure, while expanded: the canvas lays the sheet round them. */
@@ -469,9 +482,18 @@ const toolItems = computed<Record<BandToolId, FrameToolItem>>(() => ({
   remove: { id: 'remove', action: actions.remove, run: () => emit('remove') },
 }))
 const allItems = computed(() => toolIds.value.map((id) => toolItems.value[id]))
-/** The ··· menu is always there and holds every tool, the band's own among them as second triggers (ticket 1220, MarginSheet
+/** The ··· popover is always there and holds every tool, the band's own among them as second triggers (ticket 1220, MarginSheet
  * card: the Frame popover). */
 const menuItems = allItems
+const popoverBindings = computed(() => ({ project: props.project, asked: props.popoverAsked }))
+const popoverHandlers = {
+  step: (edge: FrameEdge, step: 1 | -1) => emit('step', edge, step),
+  resize: (columns: number, rows: number) => emit('resize', columns, rows),
+  'set-settings': (change: FrameSettings) => emit('set-settings', change),
+  'reset-progress': () => emit('reset-progress'),
+  settle: () => emit('settle-settings'),
+  opened: () => emit('popover-opened'),
+}
 </script>
 
 <template>
@@ -558,7 +580,7 @@ const menuItems = allItems
           <span v-if="dividerShown" class="margin-sheet__divider" aria-hidden="true" />
           <IconButton variant="plain" :icon-size="iconSize" :action="actions.remove" :deps="deps" class="margin-sheet__tool margin-sheet__remove" data-testid="frame-chrome-remove" @click="emit('remove')" />
         </template>
-        <MarginFrameTools :items="menuItems" :deps="deps" :frame="own" />
+        <MarginFrameTools v-bind="popoverBindings" :items="menuItems" :deps="deps" :frame="own" v-on="popoverHandlers" />
       </div>
     </div>
 
@@ -577,7 +599,7 @@ const menuItems = allItems
         <IconButton variant="plain" :icon="expandIcon" :icon-size="MARGIN_PX.icon.compact" :action="actions.expand" :label="expandName" data-testid="margin-handle-expand-frame" @click="emit('toggle-expand')" />
       </span>
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
-      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools :items="allItems" :deps="deps" :frame="own" /></span>
+      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools v-bind="popoverBindings" :items="allItems" :deps="deps" :frame="own" v-on="popoverHandlers" /></span>
     </div>
 
     <!-- The foot (ticket 1176): the title block in the bottom-left corner, Row progress under it across the sheet, or
@@ -682,7 +704,7 @@ const menuItems = allItems
       />
     </div>
 
-    <MarginColorPopover v-if="colorOpen && colorButton" :project="project" :anchor="colorButton" @close="colorOpen = false" />
+    <MarginColorPopover v-if="colorOpen && colorButton" :project="project" :frame="own" :anchor="colorButton" @set-background="emit('set-background', $event)" @close="colorOpen = false" />
   </div>
 </template>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { firstFrameId, soloFrame } from '../../domain/layerRecord'
+import { lastEditedFrameId, soloFrame } from '../../domain/layerRecord'
 import { onMounted, ref, watch } from 'vue'
 import { withLaidTurn } from '../../domain/framePlacement'
 import type { Project } from '../../domain/project'
@@ -20,8 +20,8 @@ function draw() {
   frame = 0
   const context = canvasEl.value?.getContext('2d')
   if (!canvasEl.value || !context) return
-  // Of one Frame (spec 1214): the first until the thumbnail draws the Last edited Frame (ticket 1222).
-  const shown = firstFrameId(props.project)
+  // Of one Frame (spec 1214): the Last edited Frame (ticket 1222).
+  const shown = lastEditedFrameId(props.project)
   const image = thumbnailPixels(withLaidTurn(soloFrame(props.project, shown), undefined, shown), DRAWN_SIZE, shown)
   canvasEl.value.width = image.width
   canvasEl.value.height = image.height

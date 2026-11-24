@@ -71,7 +71,7 @@ The one glossary of the words the app shows, in every language: CONTEXT.md and t
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | A Project made from a picture |
 | Maker | автор | The name on exports: Имя автора, автор: {maker}, Изменить имя автора; never мастер (ticket 0864) |
-| The Frame's edges | Сверху · Снизу · Слева · Справа | The edge cells of the Frame panel's size; a word with no room moves to its glyph's Tooltip (ticket 0864) |
+| The Frame's edges | Сверху · Снизу · Слева · Справа | The edge cells of the Frame settings popover's size; a word with no room moves to its glyph's Tooltip (ticket 0864) |
 
 ## Ukrainian, Belarusian, Chinese, Spanish and Polish (ticket 368)
 

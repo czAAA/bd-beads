@@ -117,7 +117,7 @@ void Promise.all([loadLocale(browserDevicePreferences.get('locale').value), brow
         openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).
         onMakeFirstProject: () => goToEditor(firstProjectAddress(editor())),
-        // Start from a ready design: the same, opened on the Frame panel's Starter gallery (ticket 0953).
+        // Start from a ready design: the same, opened on the Project panel's Starter gallery (ticket 0953).
         onStartFromStarter: () => goToEditor(firstStarterAddress(editor())),
         onOpenEditor: () => goToEditor(),
         // Create free account (ticket 0391): the editor, opened on the Sign in Subpanel.

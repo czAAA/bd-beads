@@ -1,23 +1,18 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 import { beadChoices, type Bead } from '../../domain/beads'
-import type { FrameSheet } from '../../domain/canvas'
-import { FRINGE_STYLES, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import type { Layer } from '../../domain/grid'
 import type { Background } from '../../domain/project'
 import type { Technique, TechniqueSettings } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
-import AppStepper from '../ui/form/AppStepper.vue'
-import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import BackgroundSection from './BackgroundSection.vue'
 import BeadSection from './BeadSection.vue'
 import InfoButton from '../ui/InfoButton.vue'
-import MarkedDoneLine from './MarkedDoneLine.vue'
 import TechniqueSection from './TechniqueSection.vue'
 
 // Layer settings (ADR 0079, ticket 0670; LayerSettings card): the one section that sets a layer, wherever a layer is
-// set (the New Project form, the Project panel's Canvas section, the Frame panel). Its Technique and that Technique's
-// settings, a Custom frame's shape settings, its Bead, and its Background (none in the New Project form, ticket 0881). It only asks.
+// set (the New Project form, the Project panel's Canvas section, a Starter's setup). Its Technique and that Technique's
+// settings, its Bead, and its Background (none in the New Project form, ticket 0881). It only asks.
 const props = defineProps<{
   layer: Layer
   technique: Technique
@@ -32,9 +27,7 @@ const props = defineProps<{
   /** Its Background as it shows: its own, or the device's last pick where it has none. None for the New Project form,
    * which offers no picker: a Project starts on the device's last pick, set later in the Project panel (ticket 0881). */
   background?: Background
-  /** The Frame it sets, for a Custom frame's shape settings; none for the Canvas, a draft or a Frame with no shape. */
-  frame?: Pick<FrameSheet, 'shape' | 'settings'>
-  /** A Row progress pass is done: what moves positions (its Technique's settings, the shape settings) waits. */
+  /** A Row progress pass is done: what moves positions (its Technique's settings) waits. */
   locked?: boolean
   /** Its Technique can still change while locked, asking first what to do with the rows woven (ticket 1184). */
   techniqueOpen?: boolean
@@ -47,23 +40,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   'set-technique': [technique: Technique]
   'set-setting': [id: string, value: number]
-  'set-shape-settings': [change: FrameSettings]
   'pick-bead': [beadId: string]
   'set-background': [background: Background]
-  /** Reset progress, from the line under the shape settings rows marked done hold (ticket 0848); the caller asks. */
-  'reset-progress': []
 }>()
 
 const { t } = useI18n()
-const fringeLabelId = useId()
 const beadLabelId = useId()
 const backgroundLabelId = useId()
 
-/** A Custom frame's settings (tickets 0592, 0593, 0597), each its value, its range now and its words. */
-const shapeSettings = computed(() => (props.frame ? settingValuesOf(props.frame).map((setting) => ({ ...setting, words: t.value.frame.sizeSettings[setting.name] })) : []))
-/** A Fringe earring's Fringe style, the setup's names (ticket 0597); none for any other Frame. */
-const fringeStyle = computed(() => props.frame && fringeStyleOf(props.frame))
-const fringeOptions = computed(() => FRINGE_STYLES.map((value) => ({ value, label: t.value.starters.picks.fringeStyle.options[value] })))
 /** What the Bead could switch to, and whether its own copy has gone out of date (ticket 534). */
 const choices = computed(() => beadChoices(props.bead))
 </script>
@@ -83,41 +67,6 @@ const choices = computed(() => beadChoices(props.bead))
       @update:technique="emit('set-technique', $event)"
       @set-setting="(id, value) => emit('set-setting', id, value)"
     />
-
-    <!-- A Custom frame is sized by its settings (tickets 0592, 0593, 0597): growing adds empty rounds, rows or beads
-         outside, shrinking folds what it leaves out (ticket 0640). -->
-    <div v-if="shapeSettings.length" class="layer-settings__shape">
-      <div v-for="setting in shapeSettings" :key="setting.name" class="layer-settings__row" :data-testid="`frame-setting-${setting.name}`">
-        <span class="layer-settings__label">{{ setting.words.label }}</span>
-        <AppStepper
-          :model-value="setting.value"
-          :min="setting.min"
-          :max="setting.max"
-          :decrease-label="setting.words.less"
-          :increase-label="setting.words.more"
-          :value-label="setting.words.label"
-          :disabled="locked"
-          tooltip
-          :disabled-body="t.tooltips.frameSizeLocked"
-          :decrease-testid="`frame-setting-${setting.name}-less`"
-          :increase-testid="`frame-setting-${setting.name}-more`"
-          :value-testid="`frame-setting-${setting.name}-value`"
-          @update:model-value="emit('set-shape-settings', { [setting.name]: $event })"
-        />
-      </div>
-      <div v-if="fringeStyle" class="layer-settings__style">
-        <span :id="fringeLabelId" class="layer-settings__label">{{ t.frame.fringeStyle.label }}</span>
-        <SegmentedControl
-          :model-value="fringeStyle"
-          :options="fringeOptions"
-          :labelledby="fringeLabelId"
-          :disabled="locked"
-          data-testid="frame-fringe-style"
-          @update:model-value="emit('set-shape-settings', { fringeStyle: $event as FringeStyle })"
-        />
-      </div>
-      <MarkedDoneLine v-if="locked" testid="frame-size-locked" @reset-progress="emit('reset-progress')" />
-    </div>
 
     <div class="layer-settings__group" role="group" :aria-labelledby="beadLabelId">
       <span class="layer-settings__label layer-settings__heading">
@@ -144,27 +93,6 @@ const choices = computed(() => beadChoices(props.bead))
 /* The Technique's steppers line up with its picker. */
 .layer-settings :deep(.setting-stepper) {
   padding: 0 var(--space-10);
-}
-
-.layer-settings__shape {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  padding: 0 var(--space-10);
-}
-
-.layer-settings__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  min-height: var(--panel-item-height);
-}
-
-.layer-settings__style {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
 }
 
 .layer-settings__label {

@@ -45,9 +45,9 @@ function mountApp() {
   return wrapper
 }
 
-/** The PNG and PDF buttons are in the Frame panel (tickets 443, 555), its Export always open (ticket 1121). */
+/** The PNG and PDF buttons are in the Export panel (tickets 0652, 1222). */
 async function openExportMenu(wrapper: ReturnType<typeof mount>) {
-  await openPanel(wrapper, 'strip-frame')
+  await openPanel(wrapper, 'strip-export')
 }
 
 describe('App PNG and PDF export (tickets 73, 74)', () => {

@@ -195,16 +195,16 @@ Export quality and the two switches stand under both files, Picture then Printab
 
 ## Several Frames (approved 2026-11-24, ticket 1221; built by 1222 and 1223)
 
-The Frames in the Project panel, the ··· Frame popover and the Margin color popover's Background row (ProjectPanel and MarginSheet cards). Strings not listed keep their existing keys (Frame from starter, Fit a Frame to the drawing, Drag a Frame, the band's tool names, Beads needed, Estimated size, the edge names, Reset progress, Show row marks, the four directions). Languages other than English and Russian are written when built.
+The Frames in the Project panel, the ··· Frame popover and the Margin color popover's Background row (ProjectPanel and MarginSheet cards). Strings not listed keep their existing keys (Frame from starter, Fit a Frame to the drawing, Drag a Frame, the band's tool names, Beads needed, Estimated size, the edge names, Reset progress, Show row marks, the four directions; the popover's "size", "beads" and "Rows are marked done. Reset progress to change the size." are `sizeHeading`, `sizeUnit` and `sizeLockedLine`, and "background" is the Layer settings' Background). The other languages were written with the build (ticket 1222); "A Project holds up to {count} Frames." is counted in the language's own forms (Frame, Frames; рамки, рамок), so raising the limit needs no new copy.
 
-| English | Russian |
-| --- | --- |
-| add a frame (section label) | добавить рамку |
-| A Project holds up to 4 Frames. (why the add ways are disabled) | В проекте не больше 4 рамок. |
-| Show this Frame | Показать рамку |
-| Export this Frame… | Экспорт этой рамки… |
-| Remove Frame… | Убрать рамку… |
-| size (popover section label) | размер |
-| beads (after Width × Height) | бисеринок |
-| Rows are marked done. Reset progress to change the size. | Ряды отмечены как готовые. Сбросьте прогресс, чтобы изменить размер. |
-| background (Margin color popover's second row) | фон |
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+| --- | --- | --- | --- | --- | --- | --- |
+| add a frame (section label) | добавить рамку | додати рамку | дадаць рамку | 添加边框 | añadir un marco | dodaj ramkę |
+| A Project holds up to {count} Frames. (why the add ways are disabled) | В проекте не больше {count} рамок. | У проєкті не більше {count} рамок. | У праекце не больш за {count} рамак. | 一个项目最多有 {count} 个边框。 | Un proyecto admite hasta {count} marcos. | Projekt może mieć do {count} ramek. |
+| Show this Frame | Показать рамку | Показати рамку | Паказаць рамку | 显示此边框 | Mostrar este marco | Pokaż tę ramkę |
+| Export this Frame… | Экспорт этой рамки… | Експорт цієї рамки… | Экспарт гэтай рамкі… | 导出此边框… | Exportar este marco… | Eksportuj tę ramkę… |
+| Remove Frame… | Убрать рамку… | Прибрати рамку… | Прыбраць рамку… | 移除边框… | Quitar marco… | Usuń ramkę… |
+| Frame {n} (a new Frame's name, n the lowest number no Frame uses) | Рамка {n} | Рамка {n} | Рамка {n} | 边框 {n} | Marco {n} | Ramka {n} |
+| Too close to {name}. Frames and their margins can’t meet. (the refusal naming the Frame in the way) | Слишком близко к «{name}». Рамки и их поля не могут соприкасаться. | Надто близько до «{name}». Рамки та їхні поля не можуть торкатися. | Занадта блізка да «{name}». Рамкі і іх палі не могуць датыкацца. | 离“{name}”太近。边框及其边距不能相接。 | Demasiado cerca de {name}. Los marcos y sus márgenes no pueden tocarse. | Za blisko: {name}. Ramki i ich marginesy nie mogą się stykać. |
+
+As built, beyond the card (ticket 1222): the Margin color popover also holds the **Name and size on the margin** Switch and the line on what the margin is (the Frame panel's margin section had both); a Frame with no name (a Project saved before every Frame had one) is called by the default its place in the Project gives it, "Frame 1", "Frame 2", in lists and messages, and a new Frame takes the lowest number none of the others goes by.

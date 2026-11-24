@@ -2,7 +2,7 @@ import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, MAX_ZOOM, MIN_ZOOM, stepZoom, isFrameLayer, type FrameId, type FrameRef, type GridPosition, type Layer } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
-import { frameIdOf, frameOf, framesOf, layerOf, orientationOf, firstFrameId } from '../../domain/layerRecord'
+import { frameIdOf, framesOf, layerOf, orientationOf, firstFrameId } from '../../domain/layerRecord'
 import { footprintOf, frameFootprint } from '../../domain/footprint'
 import { withMargin } from '../../domain/margin'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
@@ -43,7 +43,7 @@ export type TwistTarget = Layer
 export type TwistPhase = 'turning' | 'settling'
 
 /** The rulers' gutter round drawn beads (CanvasStrip and BeadBoard cards). */
-export const RULER_GUTTER_PX = 28
+const RULER_GUTTER_PX = 28
 
 /** Room left clear round the drawn beads at the fit level: the ruler gutter and a little air.
  * @internal Its test works out the fit zoom with it. */
@@ -82,8 +82,8 @@ interface FitTarget {
 }
 
 /** What a view fits to: the Frame with its keep-out margin, its Margin sheet, when there is one (ticket 0850, so the
- * sheet's title block is in view), otherwise the box round every bead, otherwise nothing; what the Frame panel keeps
- * clear of itself too (ticket 0971). */
+ * sheet's title block is in view), otherwise the box round every bead, otherwise nothing.
+ * @internal Its test works out the fit target with it. */
 export function fitBox(project: Project): FitTarget | undefined {
   // The sheet is laid on the Canvas round the Frame's footprint, which takes a turned Frame as it lies (ticket 0667).
   // A Frame off the Canvas's grid covers no position (ticket 1188): the rectangle its address names is centred on it.
@@ -103,10 +103,13 @@ export function fitBox(project: Project): FitTarget | undefined {
   return drawn && { box: drawn, margin: FIT_MARGIN_PX }
 }
 
-/** The layer a block is measured in: the Frame's own for the Frame itself (ticket 492), the Canvas's for anything else. */
+/** The layer a block is measured in: a Frame's own for that Frame itself (ticket 492), the Canvas's for anything else. */
 function layerOfBox(project: Project, box: Rect): ViewLayer {
-  const frame = laidFrame(project, firstFrameId(project))
-  return frame && sameFrame(box, frame) ? firstFrameId(project) : 'canvas'
+  const own = framesOf(project).map(frameIdOf).find((ref) => {
+    const frame = laidFrame(project, ref)
+    return frame && sameFrame(box, frame)
+  })
+  return own ?? 'canvas'
 }
 
 /** A move `bringIntoView` made (ticket 0971), so `putBack` can take it back: the scroll it went to, at which zoom, the
@@ -353,7 +356,9 @@ export function useCanvasView(
       opening = undefined
       const { area, corner } = fitRoom()
       const surface = surfaceOf(project, scroll.value, area)
-      const most = frameOf(project) ? frameFitCeiling(surface, firstFrameId(project)) : 1
+      // Every Frame's sheet is in view, so the one with the largest beads sets how far it may zoom in (ticket 1222).
+      const ceilings = framesOf(project).map((frame) => frameFitCeiling(surface, frameIdOf(frame)))
+      const most = ceilings.length > 0 ? Math.min(...ceilings) : 1
       zoom.value = clampZoom(target ? surface.zoomToFit(target.box, target.margin, 'canvas', most) : 1)
       const centred = surfaceOf(project, scroll.value, area).scrollToCentre(target?.box, 'canvas')
       scroll.value = { x: centred.x - corner.x, y: centred.y - corner.y }

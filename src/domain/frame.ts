@@ -1,9 +1,9 @@
-import { footprintOf } from './footprint'
+import { footprintOf, footprintsOf } from './footprint'
 import { beadBounds, beadsOver, beadsWithout, sameFrame, type FrameSheet, type Rect } from './canvas'
 import { refitSheet, type SheetBeads } from './folding'
 import type { GridPosition, FrameRef } from './grid'
 import { columnCycle, rowCycle, type Weave } from './weave'
-import { withMargin } from './margin'
+import { beadsShown, withMargin } from './margin'
 import { canvasDistance, frameWeave, laidOnCanvas } from './layerWeave'
 import { shapeSide, turnedGrid } from './frameShape'
 import { laidSize } from './frameOrientation'
@@ -109,12 +109,13 @@ export function frameResizedAround(weave: Weave, frame: Rect, columns: number, r
 }
 
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined when there is none: the Frame's own beads and
- * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
+ * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. For a
+ * Frame the Project lacks, the new Frame Fit adds (ticket 1222), it wraps the Canvas beads no Frame covers. */
 export function fitToDrawing(project: Layered, ref: FrameRef): Rect | undefined {
   const frame = frameById(project, ref)
   const covered = footprintOf(project, ref)
   const canvas = beadsOfLayer(project, 'canvas')
-  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), laidOnCanvas(project, beadsOfLayer(project, ref)!, frame, ref)) : canvas
+  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), laidOnCanvas(project, beadsOfLayer(project, ref)!, frame, ref)) : frame ? canvas : beadsShown(canvas, footprintsOf(project))
   const bounds = beadBounds(shown)
   if (!bounds) {
     return undefined

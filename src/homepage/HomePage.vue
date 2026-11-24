@@ -84,7 +84,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
-  /** The first Project, made at once and opened on the Frame panel's Starter gallery (ticket 0953). */
+  /** The first Project, made at once and opened on the Project panel's Starter gallery (ticket 0953). */
   startFromStarter: []
   openEditor: []
   /** Create free account, and the Menu's Sign in: the editor, on the Sign in Subpanel (tickets 0391, 1113). */

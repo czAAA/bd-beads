@@ -6,7 +6,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
 import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
-import { frameOf, firstFrameId } from '../../domain/layerRecord'
+import { frameOf, lastEditedFrameId } from '../../domain/layerRecord'
 import { columnsAsSeen, rowProgressPosition } from '../../domain/rowProgress'
 import { rowItemsWidth, useFittingForm } from '../../composables/canvas/useFittingForm'
 import { useElementSize } from '../../composables/ui/useElementSize'
@@ -40,6 +40,8 @@ const roving = useRovingFocus(rootEl, { axis: () => 'horizontal', managesTabInde
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
 const hasFrame = computed(() => props.project !== undefined && frameOf(props.project) !== undefined)
+/** The Frame it is of (ticket 1222): the Last edited Frame, until the bar is retired for each Frame's own strip. */
+const shown = computed(() => lastEditedFrameId(props.project))
 
 /** The counter's words where the bar's row has room for them, else its short form, "5/30" (ticket 1183): a long
  * language's "Column done" leaves too little at a width the counter's words otherwise fit. */
@@ -54,7 +56,7 @@ const countFit = useFittingForm({
     return rootEl.value ? rowItemsWidth(items, Number.parseFloat(getComputedStyle(rootEl.value).columnGap) || 0) : 0
   },
   observed: () => [rootEl.value?.querySelector('.row-progress__count')],
-  labels: () => (props.project ? JSON.stringify([locale.value, columnsAsSeen(props.project, firstFrameId(props.project)), rowProgressPosition(props.project, firstFrameId(props.project))]) : locale.value),
+  labels: () => (props.project ? JSON.stringify([locale.value, columnsAsSeen(props.project, shown.value), rowProgressPosition(props.project, shown.value)]) : locale.value),
 })
 </script>
 
@@ -64,6 +66,7 @@ const countFit = useFittingForm({
     <RowProgressControls
       v-if="project && hasFrame"
       :project="project"
+      :frame="shown"
       :row-highlight="rowHighlight"
       :row-press="rowPress"
       form="bar"

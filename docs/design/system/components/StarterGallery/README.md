@@ -1,6 +1,6 @@
 # StarterGallery
 
-The Starter gallery: ready-made designs, each putting one Frame in place, filled or empty. It opens from New Project's **Pick a starter** and from the Frame panel: **Frame from starter** with no Frame, or the **Replace Frame** row under the Frame's size when there is one (held still once a pass is done), in the panel's subpanels: step 1 the categories, step 2 a category's options, then one option's setup. (Spec 0590, ticket 0595; design canvas link on ticket 0595 in the private docs repo.)
+The Starter gallery: ready-made designs, each putting one Frame in place, filled or empty. It opens from New Project's **Pick a starter** and from the Project panel's Frames section: **Frame from starter**, which adds a new Frame, one of up to four (ticket 1222; Replace Frame is retired: Remove Frame, then add), in the panel's subpanels: step 1 the categories, step 2 a category's options, then one option's setup. (Spec 0590, ticket 0595; design canvas link on ticket 0595 in the private docs repo.)
 
 Built by ticket 0596 (step 1, the Shapes and the setup) and ticket 0597 (Earrings, Rings and Bands).
 
@@ -81,7 +81,7 @@ EU ring sizes are the inside circumference in mm; US is worked out from it to th
 
 - Back and Escape go up one level at a time; focus lands on the card or row that opened the level. A level is entered on its first card, or the setup on its first field.
 - From New Project: setup → Shapes (focus on the option's card) → Starter (on the category's card) → New Project (on Pick a starter) → the Menu list, or closed when New Project was the view the panel opened on.
-- From the Frame panel: up to the Frame panel, focus on the row that opened Starter; Escape there closes the panel and focus goes to the Frame button.
+- From the Project panel: up to the Project panel, focus on the row that opened Starter; Escape there closes the panel and focus goes to the Project button.
 - The panel is a `dialog` while a level shows and Tab stays inside it. In an open Bead picker, Escape closes the picker only; in the Replace Frame question it is Cancel. Closing the panel resets it to its root and drops the setup.
 
 ## Panel width

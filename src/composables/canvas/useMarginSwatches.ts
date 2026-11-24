@@ -6,8 +6,8 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBackgroundSwatches } from './useBackgroundSwatches'
 
 /** The margin color's swatches (tickets 0656, 0657, 0666, 0683; MarginSheet card): Auto first (split, the Canvas's
- * own Background and the margin color), then the theme's five, the Canvas's dotted. One source for the Frame panel's
- * margin section and the sheet's Margin color popover, so the two pick alike. */
+ * own Background and the margin color), then the theme's five, the Canvas's dotted. One source for the sheet's Margin
+ * color popover and its picker (the Frame panel's margin section is retired, ticket 1222). */
 export function useMarginSwatches(project: () => Layered | undefined) {
   const { t } = useI18n()
   const canvas = useCanvasBackground(project)

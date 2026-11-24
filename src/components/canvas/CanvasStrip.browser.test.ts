@@ -81,7 +81,7 @@ describe('CanvasStrip Project name (ticket 0858)', () => {
       const name = root.querySelector<HTMLElement>('[data-testid="strip-project"] .canvas-strip__label')!
       expect(name.getBoundingClientRect().height, `${width}px`).toBeLessThan(24)
       expect(name.scrollWidth, `${width}px`).toBeGreaterThan(name.clientWidth)
-      expect(rectOf(root, '[data-testid="strip-frame"]').right, `${width}px`).toBeLessThanOrEqual(rectOf(root, '[data-testid="canvas-brand"]').left)
+      expect(rectOf(root, '[data-testid="strip-project"]').right, `${width}px`).toBeLessThanOrEqual(rectOf(root, '[data-testid="canvas-brand"]').left)
     }
   })
 

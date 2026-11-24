@@ -2,6 +2,7 @@
 import { computed, shallowRef } from 'vue'
 import ExportRows from './ExportRows.vue'
 import type { Project } from '../../domain/project'
+import type { FrameId } from '../../domain/grid'
 import type { Selection } from '../../domain/selection'
 import { useI18n } from '../../i18n/useI18n'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -13,6 +14,8 @@ import type { ExportChoice } from '../../composables/shell/openPanel'
 // (ExportRows), the ones the Project panel's Export row unfolds (ticket 1058).
 const props = defineProps<{
   project: Project
+  /** The Frame the rows are of (ticket 1222): the one picked, else the Last edited Frame. */
+  frame?: FrameId
   /** Exports this Selection alone, from the Selection bar's Export (ticket 1210); absent, the Project's Frame. */
   selection?: Selection
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
@@ -25,6 +28,7 @@ const emit = defineEmits<{
   fit: []
   'select-frame': []
   'select-piece-frame': []
+  'pick-frame': [frame: FrameId]
   /** `part` is a Selection's Project to export in the open one's place (ticket 1210). */
   'export-png': [part?: Project]
   'export-pdf': [typedName?: string, part?: Project]
@@ -58,7 +62,7 @@ const title = computed(() => (props.selection ? fillBlanks(t.value.frame.exporti
         <span class="export-panel__project" data-user-text data-testid="export-panel-project">· {{ projectNameOf(project) }}</span>
       </span>
     </div>
-    <ExportRows v-if="shown" :project="shown" :exporting="exporting" :opens-on="opensOn" @fit="emit('fit')" @select-frame="emit('select-frame')" @select-piece-frame="emit('select-piece-frame')" @export-png="onPng" @export-pdf="onPdf" @save-project-file="emit('save-project-file')" @save-maker-name="emit('save-maker-name', $event)" />
+    <ExportRows v-if="shown" :project="shown" :frame="selection ? undefined : frame" :exporting="exporting" :opens-on="opensOn" @fit="emit('fit')" @select-frame="emit('select-frame')" @select-piece-frame="emit('select-piece-frame')" @pick-frame="emit('pick-frame', $event)" @export-png="onPng" @export-pdf="onPdf" @save-project-file="emit('save-project-file')" @save-maker-name="emit('save-maker-name', $event)" />
   </div>
 </template>
 

@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
-import { currentZoomPercent, gridBox, openApp, openColorPopover, savedProject, settle, setZoom } from '../support/app'
+import { gridBox, openApp, openColorPopover, savedProject, settle, setZoom } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { frameOf } from '../../src/domain/layerRecord'
 import { frameGrid } from '../../src/testUtils/frameGrid'
 
-/** The margin sheet's Move bar and Edit Frame are drawn at the sheet's scale, its band over 72px held between 0.6 and 1.5 (tickets 0657, 0698); the Frame panel hangs from the strip's Frame button (tickets 475, 510). Measured by their boxes, not compared with a picture. */
+/** The margin sheet's Move bar and Edit Frame are drawn at the sheet's scale, its band over 72px held between 0.6 and 1.5 (tickets 0657, 0698); the Frame's settings popover hangs from its sheet's ··· button (ticket 1222). Measured by their boxes, not compared with a picture. */
 
 type Box = { x: number; y: number; width: number; height: number }
 
@@ -25,92 +25,51 @@ for (const [zoom, scale] of [[100, 1], [400, 1.5]] as const) {
     const page = await context.newPage()
     await openApp(page, [fixtureProject({ technique: 'loom', columns: 40 })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-    // Zoom first: a press on the strip's zoom buttons closes the bar, as it does Menu and Project (ticket 475).
     await setZoom(page, zoom)
-    await page.getByTestId('strip-frame').click()
+    // At 100% the sheet's ··· button is on screen: its popover is 21rem wide, the root font size scaling it.
+    if (zoom === 100) {
+      await page.getByTestId('margin-frame-tools').first().click()
+      await settle(page)
+      const rootPx = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize))
+      // Its content stands inside the popover's 14px padding and 1px line.
+      const inner = (await box(page, 'frame-popover')).width
+      const pad = 2 * (0.875 * rootPx) + 2
+      expect(inner + pad).toBeCloseTo(21 * rootPx, 0)
+      for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
+        const step = await box(page, testid)
+        // 26px halves as tall as a picker (1.5rem, which the root font size scales).
+        expect(step.width).toBe(26)
+        expect(step.height).toBeLessThanOrEqual(32)
+      }
+    }
 
     const handle = await box(page, 'frame-move-handle')
     const pencil = await box(page, 'frame-edit-toggle')
-    const bar = await box(page, 'panel-dropdown')
 
     for (const [drawn, px] of [[handle.width, 56], [handle.height, 28], [pencil.width, 28], [pencil.height, 28]]) expect(drawn).toBeCloseTo(px * scale, 1)
-    expect(bar.width).toBe(585)
-    for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
-      const step = await box(page, testid)
-      // 26px halves as tall as a picker (1.5rem, which the root font size scales).
-      expect(step.width).toBe(26)
-      expect(step.height).toBeLessThanOrEqual(32)
-    }
     expect(overlaps(handle, pencil)).toBe(false)
     await context.close()
   })
 }
 
-for (const [name, viewport, hasTouch] of [['iPad', { width: 1366, height: 1024 }, true], ['laptop', { width: 1470, height: 956 }, false]] as const) {
-  test(`opening the Frame panel pans the Frame beside it, not under it, and closing puts it back, on the ${name} (ticket 0971)`, async ({ browser }) => {
-    const context = await browser.newContext({ colorScheme: 'light', viewport, hasTouch, reducedMotion: 'reduce' })
-    const page = await context.newPage()
-    // The Summer bracelet's size at 100%: 24 columns, which the panel covered 21 of. (Its fit is larger, ticket 0964.)
-    await openApp(page, [fixtureProject({ technique: 'loom', columns: 24, rows: 10 })])
-    await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-    await setZoom(page, 100)
-    const surface = await box(page, 'project-surface')
-    const closed = await box(page, 'frame-edit-toggle')
-    await page.getByTestId('strip-frame').click()
-    await settle(page)
-    const panel = await box(page, 'panel-dropdown')
-    // The canvas is not pushed; the view moves under it, so the Frame's columns, the first one too, lie right of the panel.
-    expect(await box(page, 'project-surface')).toEqual(surface)
-    const zoom = (await currentZoomPercent(page)) / 100
-    const grid = await gridBox(page)
-    const frame = frameOf(await savedProject(page))!
-    const first = beadCentre({ technique: 'loom', rotation: 0 }, grid, zoom, { row: frame.row, column: frame.column })
-    const last = beadCentre({ technique: 'loom', rotation: 0 }, grid, zoom, { row: frame.row, column: frame.column + frame.columns - 1 })
-    expect(first.x).toBeGreaterThan(panel.x + panel.width)
-    expect(last.x).toBeLessThan(viewport.width)
-
-    await page.keyboard.press('Escape')
-    await settle(page)
-    expect(await box(page, 'frame-edit-toggle')).toEqual(closed)
-    await context.close()
-  })
-}
-
-test('closing the Frame panel leaves a view the person moved where they left it (ticket 0971)', async ({ browser }) => {
-  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1366, height: 1024 }, reducedMotion: 'reduce' })
-  const page = await context.newPage()
-  await openApp(page, [fixtureProject({ technique: 'loom', columns: 24, rows: 10 })])
-  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-  await settle(page)
-  await page.getByTestId('strip-frame').click()
-  await settle(page)
-  // A wheel over the Canvas beside the panel pans it, as a person's own move.
-  await page.mouse.move(1200, 500)
-  await page.mouse.wheel(40, 0)
-  await settle(page)
-  const moved = await box(page, 'frame-edit-toggle')
-  await page.keyboard.press('Escape')
-  await settle(page)
-  expect(await box(page, 'frame-edit-toggle')).toEqual(moved)
-  await context.close()
-})
-
-test('panning the canvas moves the Frame but not a bar opened from the strip, and the handle keeps its size', async ({ browser }) => {
+test('a popover opened from the sheet stays on its button as the canvas is panned, and the handle keeps its size', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
   const page = await context.newPage()
-  await openApp(page, [fixtureProject({ technique: 'loom', columns: 40, rows: 40 })])
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 40, rows: 12 })])
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-  await setZoom(page, 400)
-  await page.getByTestId('strip-frame').click()
+  await setZoom(page, 100)
+  await page.getByTestId('margin-frame-tools').first().click()
+  await settle(page)
 
-  const before = { bar: await box(page, 'panel-dropdown'), handle: await box(page, 'frame-move-handle') }
-  await page.locator('.app-shell__canvas-scroll').evaluate((element) => element.scrollBy(300, 200))
+  const before = { popover: await box(page, 'frame-popover'), button: await box(page, 'margin-frame-tools') }
+  await page.locator('.app-shell__canvas-scroll').evaluate((element) => element.scrollBy(-60, 40))
   await page.waitForTimeout(100)
-  const after = { bar: await box(page, 'panel-dropdown'), handle: await box(page, 'frame-move-handle') }
+  const after = { popover: await box(page, 'frame-popover'), button: await box(page, 'margin-frame-tools'), handle: await box(page, 'frame-move-handle') }
 
-  expect(after.bar).toEqual(before.bar)
-  // At 400% the sheet is drawn at its largest scale, 1.5 (ticket 0698).
-  expect([after.handle.width, after.handle.height]).toEqual([56 * 1.5, 28 * 1.5])
+  // Its top-layer popover follows its button (MarginSheet card, As built 0698), the distance it was from it.
+  expect(after.popover.x - after.button.x).toBeCloseTo(before.popover.x - before.button.x, 0)
+  expect(after.popover.y - after.button.y).toBeCloseTo(before.popover.y - before.button.y, 0)
+  expect([after.handle.width, after.handle.height]).toEqual([56, 28])
   await context.close()
 })
 

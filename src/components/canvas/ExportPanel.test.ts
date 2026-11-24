@@ -7,10 +7,14 @@ import { withColors } from '../../domain/canvas'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
+import { pngDpiFor } from '../../rendering/exportDpi'
+import { fillBlanks } from '../../domain/fillBlanks'
+import InfoButton from '../ui/InfoButton.vue'
 import { withFrameSheet } from '../../domain/frameSheet'
 import { withLayers } from '../../testUtils/layerFields'
 import { withProjectName } from '../../domain/projectName'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, withLayer } from '../../domain/layerRecord'
+import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
 import type { Selection } from '../../domain/selection'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
@@ -50,7 +54,71 @@ const has = (wrapper: Panel, testId: string) => wrapper.find(`[data-testid="${te
 /** The ways to a Frame, in the panel's order. */
 const rows = (wrapper: Panel) => wrapper.findAll('[data-testid="export-fit"], [data-testid="export-select-frame"], [data-testid="export-select-piece-frame"]').map((row) => row.attributes('data-testid'))
 
+describe('ExportPanel with several Frames (spec 1214, ticket 1222)', () => {
+  const pick = (wrapper: Panel) => wrapper.find('[data-testid="export-frame-pick"]')
+
+  it('shows a Frame dropdown with more than one Frame, starting on the Last edited, and none with one', async () => {
+    expect(pick(await mountPanel(framed())).exists()).toBe(false)
+    const two = { ...twoFrames(), lastEditedFrame: SECOND }
+    const wrapper = await mountPanel(withLayer(two, SECOND, { name: 'Earring' }))
+    expect(pick(wrapper).exists()).toBe(true)
+    expect(wrapper.get('[data-testid="export-frame-button"]').text()).toContain('Earring')
+  })
+
+  it('starts on the Frame it is given, and says which one a pick asks for', async () => {
+    const two = twoFrames()
+    const wrapper = mount(ExportPanel, { props: { project: withLayer(two, SECOND, { name: 'Earring' }), frame: firstOf(two) }, attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="export-frame-button"]').text()).toContain('Frame 1')
+    await wrapper.get('[data-testid="export-frame-button"]').trigger('click')
+    await wrapper.get(`[data-testid="export-frame-${SECOND}"]`).trigger('click')
+    expect(wrapper.emitted('pick-frame')).toEqual([[SECOND]])
+  })
+})
+
 describe('ExportPanel (ticket 0652)', () => {
+  it('offers Export quality with Medium chosen, remembers a pick on the device and waits while exporting (ticket 576)', async () => {
+    const wrapper = await mountPanel(framed())
+    const range = wrapper.get<HTMLInputElement>('[data-testid="quality-range"]')
+    expect(range.attributes('aria-label')).toBe(en.frame.exportQuality)
+    expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityMedium)
+    expect(wrapper.findAll('[role="radio"] b').map((word) => word.text())).toEqual([en.frame.qualityLow, en.frame.qualityMedium, en.frame.qualityHigh])
+    await wrapper.get('[data-testid="quality-stop-high"]').trigger('click')
+    expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityHigh)
+    expect(localStorage.getItem('openbeads:export-quality')).toBe('high')
+    await range.setValue(0)
+    expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
+    await wrapper.setProps({ exporting: 'png' })
+    expect(range.element.disabled).toBe(true)
+    expect(wrapper.get('[data-testid="quality-stop-high"]').attributes('disabled')).toBeDefined()
+    wrapper.unmount()
+    expect((await mountPanel(framed())).get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
+  })
+
+  it('captions each stop in words, keeps the dpi for the Info note and says the slider is for the picture (tickets 0583, 0957)', async () => {
+    const small = await mountPanel(framed())
+    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe(en.frame.qualityLowCaption)
+    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe(en.frame.qualityHighCaption)
+    expect(small.get('[data-testid="quality-stop-medium"]').text()).toBe(en.frame.qualityMedium + en.frame.qualityMediumCaption)
+    expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
+    expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
+    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toBe(`${en.frame.qualityMedium}, ${en.frame.qualityMediumCaption}`)
+    expect(small.get('[role="radiogroup"]').text()).not.toContain('DPI')
+  })
+
+  it('says what High is when this device cannot draw a 450 dpi page, and gives that dpi in the Info note (tickets 572, 0957)', async () => {
+    expect((await mountPanel(framed())).find('[data-testid="quality-pdf-capped"]').exists()).toBe(false)
+    vi.mocked(pngDpiFor).mockImplementation((quality) => ({ low: 150, medium: 300, high: 300 })[quality])
+    try {
+      const wrapper = await mountPanel(framed())
+      expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(fillBlanks(en.frame.qualityPdfCapped, { n: 300 }))
+      expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe(en.frame.qualityHighCaption)
+      expect(wrapper.getComponent(InfoButton).props('body')).toBe(fillBlanks(en.frame.qualityHint, { low: 150, medium: 300, high: 300 }))
+    } finally {
+      vi.mocked(pngDpiFor).mockImplementation((quality) => PNG_DPI_BY_QUALITY[quality])
+    }
+  })
+
   it('names the open Project on the title line, with or without a Frame (ticket 0986)', async () => {
     for (const project of [framed(), empty()]) {
       const wrapper = await mountPanel(withProjectName(project, 'Loom cuff'))

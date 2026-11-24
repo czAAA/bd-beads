@@ -75,15 +75,16 @@ describe("What's inside's demo editor (ticket 0797)", () => {
     await nextTick()
     expect(hasProjectBeads(wired.canvas.activeProject.value!)).toBe(true)
 
-    // The export quality chosen in the Frame panel of the demo's Heart.
+    // The export quality chosen in the Project panel's Export rows of the demo's Heart.
     wired.panels.activeProjectId.value = wired.panels.projects.value.find((project) => project.layers[0].name === 'Heart')!.id
     await nextTick()
-    wired.canvas.onToggleFramePanel()
+    await wrapper.get('[data-testid="strip-project"]').trigger('click')
     await flushPromises()
-    await wrapper.get('[data-testid="frame-export"] .panel-section__header').trigger('click')
+    await wrapper.get('[data-testid="project-export"]').trigger('click')
+    await wrapper.get('[data-testid="project-export-rows"] .panel-section__header').trigger('click')
     await wrapper.get('[data-testid="quality-stop-high"]').trigger('click')
     await flushPromises()
-    await wrapper.get('[data-testid="strip-frame"]').trigger('click')
+    await wrapper.get('[data-testid="strip-project"]').trigger('click')
 
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await flushPromises()

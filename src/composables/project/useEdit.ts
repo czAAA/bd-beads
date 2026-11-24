@@ -7,7 +7,7 @@ import { sameBeads, sameLayers } from '../../domain/layerBeads'
 import { frameOf, layerOf, type Layered, firstFrameId, withLastEdited } from '../../domain/layerRecord'
 import { sameMirrorBar } from '../../domain/mirror'
 import { withColorsInPalette } from '../../domain/paletteEdits'
-import type { Layer } from '../../domain/grid'
+import type { FrameRef, Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
 import type { ReplaceOptions } from './useProjectLibrary'
@@ -27,7 +27,8 @@ export interface EditCommands {
 /** What an Edit came to. */
 export type EditOutcome =
   | { kind: 'unchanged' }
-  | { kind: 'refused'; reason: FrameChangeRefusal }
+  /** `met` is the Frame a change would have run into (reason 'meets-frame'). */
+  | { kind: 'refused'; reason: FrameChangeRefusal; met?: FrameRef }
   | { kind: 'applied' }
 
 /** A layer's Technique (ADR 0079), none for a Frame the Project lacks: an edit that changes it resets the session built
@@ -134,7 +135,7 @@ export function useEdit(deps: EditDeps) {
    * changed is then the Last edited Frame (ticket 1220). */
   function applyFrame(from: Project, result: FrameChangeResult, before: () => void): EditOutcome {
     if (result.kind === 'refused') {
-      return { kind: 'refused', reason: result.reason }
+      return { kind: 'refused', reason: result.reason, met: result.met }
     }
     if (result.kind === 'unchanged') {
       return { kind: 'unchanged' }

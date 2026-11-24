@@ -57,8 +57,7 @@ export const reference: ReferenceTranslations = {
     },
     frameAround: {
       name: '给图片加边框',
-      body: '在图片所在处放一个 {size} 的边框。会替换你现有的边框。',
-      bodyNew: '在图片所在处放一个 {size} 的边框。',
+      body: '在图片所在处放一个 {size} 的边框。',
       tag: '新边框 · {size}',
     },
     convert: {

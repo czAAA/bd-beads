@@ -40,8 +40,6 @@ const {
   onStartOverTechniqueChange,
   onKeepRowsTechniqueChange,
   onCancelTechniqueChange,
-  onCancelReplaceFrame,
-  onConfirmReplaceFrame,
   pendingColorRemovalHex,
   removeColorMessage,
   removeSectionTitle,
@@ -218,17 +216,6 @@ const importMessage = computed(() => {
     @confirm="onKeepRowsTechniqueChange"
     @extra="onStartOverTechniqueChange"
     @cancel="onCancelTechniqueChange"
-  />
-
-  <ConfirmModal
-    v-if="open === 'replace-frame'"
-    data-testid="replace-frame-modal"
-    :title="t.frame.replaceConfirmTitle"
-    :message="t.frame.replaceConfirmMessage"
-    :confirm-label="t.frame.replaceFrame"
-    :cancel-label="t.frame.removeConfirmCancel"
-    @confirm="onConfirmReplaceFrame"
-    @cancel="onCancelReplaceFrame"
   />
 
   <ConfirmModal

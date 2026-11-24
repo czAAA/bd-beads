@@ -33,12 +33,12 @@ function mountPanel(props: Record<string, unknown> = {}) {
 describe('ProjectPanel (tickets 443, 554, 0670)', () => {
   it('has the head, then the Canvas\'s Layer settings, the reference image and the Project\'s own rows, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'save-project-file', 'project-export', 'project-clear', 'project-delete']
+    const order = ['project-head', 'project-frames', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'save-project-file', 'project-export', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas, outside the Frame', 'reference image'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['add a frame', 'Frame 1', 'Canvas, outside the Frame', 'reference image'])
     expect(wrapper.get('[data-testid="project-rows"]').find('.panel-section__header').exists()).toBe(false)
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
@@ -139,7 +139,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
   })
 
   it('heads the Canvas section Canvas, outside the Frame with a Frame on the Canvas, and Canvas with none (ticket 0935)', () => {
-    const label = (wrapper: ReturnType<typeof mountPanel>) => wrapper.get('.panel-section__label').text()
+    const label = (wrapper: ReturnType<typeof mountPanel>) => wrapper.get('[data-testid="canvas-section"]').element.closest('.panel-section')!.querySelector('.panel-section__label')!.textContent
     expect(label(mountPanel())).toBe(en.layerSettings.canvasOutsideFrame)
     expect(label(mountPanel({ project: withFrame(project, undefined, frameIdIn(project)) }))).toBe(en.panels.project.canvas)
   })
@@ -271,10 +271,11 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
   it('folds a section shut and shows its summary', async () => {
     localStorage.removeItem('openbeads:panel-sections-closed')
     const wrapper = mountPanel()
-    const header = wrapper.findAll('.panel-section__header')[0]!
-    await header.trigger('click')
-    expect(header.attributes('aria-expanded')).toBe('false')
-    expect(header.text()).toContain('Loom · TOHO Cube 1.5mm')
+    const header = wrapper.get('[data-testid="canvas-technique"]').element.closest('.panel-section')!.querySelector<HTMLElement>('.panel-section__header')!
+    header.click()
+    await nextTick()
+    expect(header.getAttribute('aria-expanded')).toBe('false')
+    expect(header.textContent).toContain('Loom · TOHO Cube 1.5mm')
   })
 
   it('says whether the Project file is saved on this device with a tick or a cross, the rest in its Tooltip', async () => {

@@ -35,7 +35,7 @@ A Tools-group tool, next to Eraser, that removes the specific row or column the 
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
-Swaps a layer's Bead for a different catalog entry, from that layer's Layer settings (the Project panel's Canvas section, the Frame panel; tickets 0670, 0687, ADR 0079), after a confirmation that gives the Bead's size in mm before and after and, for the Frame, its Estimated size; the Palette stays as it is (ADR 0103). The Schema size and every painted cell stay as they are, whichever unit the Project was created in — see ADR 0007. Each layer is drawn at its own Bead's real size.
+Swaps a layer's Bead for a different catalog entry, from that layer's Layer settings (the Project panel's Canvas section, the Frame's title block; tickets 0670, 0687, ADR 0079), after a confirmation that gives the Bead's size in mm before and after and, for the Frame, its Estimated size; the Palette stays as it is (ADR 0103). The Schema size and every painted cell stay as they are, whichever unit the Project was created in — see ADR 0007. Each layer is drawn at its own Bead's real size.
 _Avoid_: change bead, swap bead, resize pattern
 
 **Custom color**:
@@ -114,7 +114,7 @@ The Selection bar's command, after Rotate, always shown: it makes the Selection'
 _Avoid_: Flip, mirror selection, reflect
 
 **Export (Selection bar)**:
-The Selection bar's command after Mirror (ticket 1210): it opens the Export panel, the same one the Canvas strip and the Frame panel open, hanging off the bar, for the Selection alone. It works with or without a Frame, for any Selection on its own layer, and a Piece exports only its beads. In the Frame the chart keeps the Frame's Row direction and numbers; on the Canvas it takes the Technique's default and counts from 1 at its top-left as seen. On peyote and brick stitch it snaps outward as Frame (from Selection) does, silently. The file names a named Piece, else `part`.
+The Selection bar's command after Mirror (ticket 1210): it opens the Export panel, the same one the Canvas strip and a Frame's sheet open, hanging off the bar, for the Selection alone. It works with or without a Frame, for any Selection on its own layer, and a Piece exports only its beads. In the Frame the chart keeps the Frame's Row direction and numbers; on the Canvas it takes the Technique's default and counts from 1 at its top-left as seen. On peyote and brick stitch it snaps outward as Frame (from Selection) does, silently. The file names a named Piece, else `part`.
 _Avoid_: export selection mode, partial export, crop export
 
 **Undo**:

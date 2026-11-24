@@ -109,9 +109,12 @@ export type FrameChangeRefusal =
   /** The Frame does not offer it (ADR 0079): a Custom frame has no plain rows to remove and is woven only in its shape's
    * Techniques, and a Frame without a Frame shape has no settings. */
   | 'not-offered'
+  /** The change would bring the Frame, with its margin, into another Frame's margin (spec 1214, ticket 1222): `met` names
+   * that Frame. A move or resize stops short of it instead. */
+  | 'meets-frame'
 
 export type FrameChangeResult =
-  | { kind: 'refused'; reason: FrameChangeRefusal }
+  | { kind: 'refused'; reason: FrameChangeRefusal; met?: FrameRef }
   /** Nothing differs; `project` is the same instance that came in. */
   | { kind: 'unchanged'; project: Project }
   | { kind: 'changed'; project: Project }
@@ -164,12 +167,13 @@ function asksForTechnique(frame: FrameSheet | undefined, change: FrameChange): b
 
 /** The Project with a Frame changed (the one named, ticket 1216), or why not; no color changes (ADR 0103). A move or
  * resize that would bring it into another Frame's margin stops at the last place allowed, any other change that would
- * is not taken (spec 1214, ticket 1218). */
+ * is refused, naming that Frame (spec 1214, tickets 1218, 1222). */
 export function changeFrame(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
   const result = frameChanged(project, change, ref)
   if (result.kind !== 'changed' || !frameMet(result.project, ref) || frameMet(project, ref)) return result
   const stopped = stoppedChange(project, change, ref)
-  return stopped === undefined || stopped === project ? { kind: 'unchanged', project } : { kind: 'changed', project: stopped }
+  if (stopped === undefined) return { kind: 'refused', reason: 'meets-frame', met: frameMet(result.project, ref) }
+  return stopped === project ? { kind: 'unchanged', project } : { kind: 'changed', project: stopped }
 }
 
 /** A move or resize (`set`) of the Frame stopped at the last place allowed, one whole bead at a time; none for any other
@@ -197,8 +201,8 @@ function stoppedChange(project: Project, change: FrameChange, ref: FrameRef): Pr
   })
 }
 
-/** `changeFrame` with no regard to the other Frames. */
-function frameChanged(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
+/** `changeFrame` with no regard to the other Frames: for a new Frame that is then moved clear of them (`landedClear`). */
+export function frameChanged(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
   const reason = frameChangeRefusal(project, change, ref)
   if (reason) {
     return { kind: 'refused', reason }

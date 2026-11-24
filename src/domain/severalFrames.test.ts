@@ -9,8 +9,9 @@ import { createProject } from './createProject'
 import { footprintsOf } from './footprint'
 import { withFrameSheet } from './frameSheet'
 import { frameMet, twistStop } from './frameSpacing'
+import { fitToDrawing } from './frame'
 import type { FrameId, GridPosition } from './grid'
-import { backgroundOf, beadsOfLayer, canvasOf, frameById, frameIdOf, framesOf, lastEditedFrameId, lettersOn, newLayerId, NO_FRAME, soloFrame, withBackground, withLastEdited, withLayer, withLetters } from './layerRecord'
+import { backgroundOf, beadsOfLayer, canvasOf, frameById, frameIdOf, framesOf, lastEditedFrameId, lettersOn, newFrameId, newLayerId, NO_FRAME, soloFrame, withBackground, withLastEdited, withLayer, withLetters } from './layerRecord'
 import { framePlacement } from './framePlacement'
 import { projectFileName } from './projectFile'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
@@ -150,6 +151,32 @@ describe('a Starter on an open Project (ticket 1218)', () => {
     expect(framesOf(placed).map(frameIdOf)).toEqual([firstOf(project), added])
     expect(frameById(placed, firstOf(project))).toEqual(frameById(project, firstOf(project)))
     expect(frameById(placed, added)!.shape).toBe('triangle')
+  })
+})
+
+describe('a new Frame among the others (spec 1214, ticket 1222)', () => {
+  it('is refused where it would meet another Frame\'s margin, naming that Frame, and made where it is clear', () => {
+    const project = twoFrames()
+    const added = newFrameId(project)
+    const near = changeFrame(project, { make: { row: 2, column: 6, rows: 4, columns: 4 } }, added)
+    expect(near).toEqual({ kind: 'refused', reason: 'meets-frame', met: firstOf(project) })
+    const clear = changed(changeFrame(project, { make: { row: 40, column: 40, rows: 4, columns: 4 } }, added))
+    expect(framesOf(clear)).toHaveLength(3)
+  })
+
+  it('lands a Starter put over another Frame at the nearest place clear of it, the Frame there as it was', () => {
+    const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
+    const project = withFrameSheet(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdIn(base) })
+    const starter = starterById('triangle')
+    const added = newFrameId(project)
+    const placed = changed(placedStarter(project, starter, { sizes: designSizes(starter), useDesign: false }, { row: 3, column: 2 }, added))
+    expect(frameMet(placed, added)).toBeUndefined()
+    expect(frameById(placed, firstOf(project))).toEqual(frameById(project, firstOf(project)))
+  })
+
+  it('fits a new Frame round the Canvas beads no Frame covers, those under a Frame or its margin left out', () => {
+    const project = withLayers(twoFrames(), { beads: withColors({}, [{ row: 1, column: 1, color: RED }, { row: 40, column: 41, color: RED }, { row: 42, column: 43, color: RED }]) })
+    expect(fitToDrawing(project, newFrameId(project))).toEqual({ row: 40, column: 41, rows: 3, columns: 3 })
   })
 })
 

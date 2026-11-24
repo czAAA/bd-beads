@@ -15,7 +15,7 @@ The tools as a pill floating over the drawing area (ticket 439, ADR 0046; ToolPi
 _Avoid_: Dock (retired), toolbar, rail, tab bar
 
 **Panel**:
-A dropdown that hangs from a Canvas strip button, built on one parent component, `AppPanel`: **Menu panel** (`MenuPanel`), **Project panel** (`ProjectPanel`) and **Frame panel** (`FramePanel`). The word is "panel" everywhere (code, specs, tickets); the button keeps its label ("Menu", "Project", "Frame"). A panel can stack **Subpanels** over its root.
+A dropdown that hangs from a Canvas strip button, built on one parent component, `AppPanel`: **Menu panel** (`MenuPanel`) and **Project panel** (`ProjectPanel`). The word is "panel" everywhere (code, specs, tickets); the button keeps its label ("Menu", "Project"). A panel can stack **Subpanels** over its root.
 _Avoid_: sheet (for these three), dropdown, Frame bar (retired name), PanelShell (retired name)
 
 **Menu**:
@@ -39,7 +39,7 @@ One sent Feedback sheet, which becomes one GitHub issue in the private docs repo
 _Avoid_: ticket (a ticket is what the maintainer writes after triage), issue (the GitHub side), message
 
 **Subpanel** (was Panel sub-view):
-A level inside a panel (Menu panel, Project panel, Frame panel), stacked over its root (ticket 493): the header shows a Back arrow and the subpanel's title, the body swaps to the subpanel and Back returns one level, to the panel's root list from the first. Built into `AppPanel`, so every panel inherits it. The first user is **New Project** (the Menu's accent-coloured row): the New Project form is a subpanel, not a sheet. Opening it leaves the open Project untouched until Create; Back and closing the panel discard the form's draft; Create and Convert image close the panel. The Menu opens straight on it while the library has no saved Project and from the empty-canvas bar's New Project button; otherwise it opens at the root. Escape pops a level, except on the first level when it was the starting view, where it closes the panel.
+A level inside a panel (Menu panel, Project panel), stacked over its root (ticket 493): the header shows a Back arrow and the subpanel's title, the body swaps to the subpanel and Back returns one level, to the panel's root list from the first. Built into `AppPanel`, so every panel inherits it. The first user is **New Project** (the Menu's accent-coloured row): the New Project form is a subpanel, not a sheet. Opening it leaves the open Project untouched until Create; Back and closing the panel discard the form's draft; Create and Convert image close the panel. The Menu opens straight on it while the library has no saved Project and from the empty-canvas bar's New Project button; otherwise it opens at the root. Escape pops a level, except on the first level when it was the starting view, where it closes the panel.
 _Avoid_: New Project panel, New Project modal (gone)
 
 **New Project**:

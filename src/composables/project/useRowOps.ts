@@ -1,6 +1,6 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { frameIdOf, frameOf, framesOf, firstFrameId } from '../../domain/layerRecord'
+import { frameIdOf, frameOf, framesOf, lastEditedFrameId } from '../../domain/layerRecord'
 import { columnsAsSeen, moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, seenWayOf, toggleRowDirection, turnRowDirectionTo, type SeenWay } from '../../domain/rowProgress'
 import type { FrameRef } from '../../domain/grid'
 import type { Project } from '../../domain/project'
@@ -54,9 +54,9 @@ export function useRowOps(deps: RowOpsDeps) {
   // Remove Frame and leaving the Project stop it too, however they come about.
   watch([() => deps.currentProject()?.id, () => frameOf(deps.currentProject()) !== undefined], stopRowMotion)
 
-  /** The Frame a Row progress control names (ticket 1218): the one given, else the first until each Frame has its own
-   * strip (ticket 1220). */
-  const named = (given: FrameRef | undefined): FrameRef => given ?? firstFrameId(deps.currentProject())
+  /** The Frame a Row progress control acts on (ticket 1218): the one whose strip it is on, else the Last edited Frame
+   * (ticket 1222), which the Progress bar and the keys are of. */
+  const named = (given: FrameRef | undefined): FrameRef => given ?? lastEditedFrameId(deps.currentProject())
 
   /** Writes the Project with a Frame's rows turned another way, and says so: not an undo step (ticket 32). */
   function turnTo(frame: FrameRef, turn: (project: Project) => Project) {
@@ -153,7 +153,7 @@ export function useRowOps(deps: RowOpsDeps) {
   function tellMarkedDone(project: Project) {
     const t = deps.messages().rowProgress
     // The Frame whose rows hold the drawing back: the first with a pass done.
-    const holding = framesOf(project).map(frameIdOf).find((frame) => rowProgressStarted(project, frame)) ?? firstFrameId(project)
+    const holding = framesOf(project).map(frameIdOf).find((frame) => rowProgressStarted(project, frame)) ?? lastEditedFrameId(project)
     deps.showToast('marked-done', columnsAsSeen(project, holding) ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
   }
 

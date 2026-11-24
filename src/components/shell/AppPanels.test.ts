@@ -1,31 +1,31 @@
-import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
+import { frameIdIn } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import AppDialogs from './AppDialogs.vue'
 import AppPanels from './AppPanels.vue'
 import CanvasStrip from '../canvas/CanvasStrip.vue'
-import { changeFrame } from '../../domain/changeFrame'
 import { createProject } from '../../domain/createProject'
 import { withColors } from '../../domain/canvas'
 import { findBead } from '../../domain/beads'
 import { loadProjects, saveProjects } from '../../services/libraryStore'
 import { en } from '../../i18n/en'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { mountShellParts, mountShellPartsOn } from '../../testUtils/shellHost'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
 import { memoryAccount } from '../../services/memoryAccount'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
-import { backgroundOf, canvasOf, frameOf, layerOf } from '../../domain/layerRecord'
+import { backgroundOf, canvasOf, frameIdOf, frameOf, framesOf, layerOf } from '../../domain/layerRecord'
+import { MAX_FRAMES } from '../../domain/frameLimit'
 import { withFrameSheet } from '../../domain/frameSheet'
 import { withLayers } from '../../testUtils/layerFields'
-import { moveToRow, rowProgressStarted } from '../../domain/rowProgress'
 import { newReferenceImage, withReferenceImage } from '../../domain/referenceImage'
 import { projectFileNameOf } from '../../domain/projectFile'
 import { downloadFile } from '../../services/fileDownload'
 
 vi.mock('../../services/fileDownload', () => ({ downloadFile: vi.fn() }))
 
-/** Menu, Project and the Frame panel reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
+/** Menu, Project and Export reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
  * test per control → flow. What the panels hold is in MenuPanel and ProjectPanel, Back, Escape and focus in AppPanel
  * and useOverlayLayer, the rules in the flows, and a strip button opening its panel in the App tests. */
 
@@ -234,7 +234,7 @@ describe('Project', () => {
     expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' } })
   })
 
-  it('says the Frame stays after the Canvas takes another Technique; its actions reach the Frame panel\'s change and open it on its settings (ticket 0935)', async () => {
+  it('says the Frame stays after the Canvas takes another Technique; its actions reach the Frame\'s own change and ask for its settings popover (tickets 0935, 1222)', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
     await choose(mounted, 'canvas-technique', 'brick')
@@ -247,8 +247,7 @@ describe('Project', () => {
     await choose(mounted, 'canvas-technique', 'peyote')
     toast()!.secondAction!.run()
     await flushPromises()
-    expect(mounted.panels.framePanelShown.value).toBe(true)
-    expect(mounted.wrapper.find('[data-panel-entry] [data-testid="frame-layer-settings"]').exists()).toBe(true)
+    expect(mounted.canvas.framePopoverAsked.value).toBe(frameIdIn(loadProjects()[0]!))
   })
 
   it('removes the reference image after a confirmation, saved with no Undo step (ticket 0790)', async () => {
@@ -340,77 +339,87 @@ describe('Project', () => {
   })
 })
 
-describe('The Frame panel', () => {
-  it('sets the Frame from its Layer settings: Technique, its settings and Bead as Undo steps (ticket 0670)', async () => {
-    const mounted = mountPanels()
-    await mounted.openPanel('frame')
-    await choose(mounted, 'frame-technique', 'brick')
-    await click(mounted, 'frame-brick-drop-more')
-    await choose(mounted, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
-    await click(mounted, 'confirm-modal-confirm')
-    const saved = () => loadProjects()[0]
-    expect(layerOf(saved(), frameIdIn(saved()))).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beadId: 'toho/round/11-0' })
-    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadId: 'toho/cube/1.5mm' })
+describe('The Project panel\'s Frames (ticket 1222)', () => {
+  /** Unfolds "add a frame", which folds once the Project has a Frame. */
+  async function unfoldAdd(mounted: Mounted) {
+    if (mounted.wrapper.find('[data-testid="frame-from-starter"]').exists()) return
+    await mounted.wrapper.get('[data-testid="project-frames-add"] .panel-section__header').trigger('click')
+  }
 
-    mounted.canvas.onUndo()
-    expect(layerOf(saved(), frameIdIn(saved()))).toMatchObject({ weave: { technique: 'brick' }, beadId: 'toho/cube/1.5mm' })
-  })
-
-  it('resets progress from the line under the held size, after the Reset progress question (ticket 0848)', async () => {
-    saveProjects([moveToRow(moth(), 2, frameIdIn(moth()))])
-    const mounted = mountPanels()
-    await mounted.openPanel('frame')
-    await click(mounted, 'frame-size-locked-reset')
-    await click(mounted, 'confirm-modal-confirm')
-    expect(rowProgressStarted(loadProjects()[0]!, frameIdIn(loadProjects()[0]))).toBe(false)
-  })
-
-  it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {
-    const open = withFrameSheet(moth(), undefined, { frame: frameIdIn(moth()) })
-    saveProjects([open])
-    const mounted = mountPanels()
-    await mounted.openPanel('frame')
+  /** Frame from starter's Triangle, put on the open Project through the panel's Subpanel. */
+  async function addTriangle(mounted: Mounted) {
+    await mounted.openPanel('project')
+    await unfoldAdd(mounted)
     await click(mounted, 'frame-from-starter')
     await click(mounted, 'starter-category-shapes')
     await click(mounted, 'starter-card-triangle')
     await click(mounted, 'create-starter-project')
+  }
 
-    expect(frameOf(loadProjects()[0])).toMatchObject({ shape: 'triangle' })
+  it('puts a Starter on the open Project as its Frame, and closes the panel (tickets 555, 0596)', async () => {
+    const open = withFrameSheet(moth(), undefined, { frame: frameIdIn(moth()) })
+    saveProjects([open])
+    const mounted = mountPanels()
+    await addTriangle(mounted)
+
+    expect(frameOf(loadProjects()[0])).toMatchObject({ shape: 'triangle', name: fillBlanks(en.frame.defaultName, { n: 1 }) })
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('saves each press of a Custom frame\'s stepper at once, and they are one Undo step once the panel closes (ticket 0640)', async () => {
-    const placed = changeFrame(moth(), { custom: { shape: 'triangle', size: 6, centre: { row: 20, column: 20 } } }, frameIdIn(moth()))
-    if (placed.kind !== 'changed') throw new Error(placed.kind)
-    saveProjects([placed.project])
+  it('adds a Starter\'s Frame beside the one there, which stays as it is', async () => {
     const mounted = mountPanels()
-    await mounted.openPanel('frame')
-    await click(mounted, 'frame-setting-rounds-less')
-    await click(mounted, 'frame-setting-rounds-less')
-    expect(frameOf(loadProjects()[0])!.settings).toEqual({ rounds: 4 })
-    mounted.panels.openPanel.value = null
-    await nextTick()
-    mounted.canvas.onUndo()
-    expect(frameOf(loadProjects()[0])!.settings).toEqual({ rounds: 6 })
+    const before = frameOf(loadProjects()[0])!
+    await addTriangle(mounted)
+
+    const frames = framesOf(loadProjects()[0]!)
+    expect(frames).toHaveLength(2)
+    expect(frames[0]).toEqual(before)
+    expect(frames[1]).toMatchObject({ shape: 'triangle' })
+  })
+
+  it('lists the Frames by name, each with its own rows; Remove Frame… asks, Export this Frame… opens Export on it (tickets 1221, 1222)', async () => {
+    const mounted = mountPanels()
+    await addTriangle(mounted)
+    await mounted.openPanel('project')
+    const listed = mounted.wrapper.findAll('[data-testid="project-frame"]')
+    expect(listed).toHaveLength(2)
+    const second = frameIdOf(framesOf(loadProjects()[0]!)[1]!)
+
+    // With two Frames each folds: the second is unfolded to reach its rows.
+    await listed[1]!.get('.panel-section__header').trigger('click')
+    await click(mounted, 'project-frame-export')
+    expect(mounted.panels.openPanel.value).toBe('export')
+    expect(mounted.panels.exportedFrame.value).toBe(second)
+  })
+
+  it('disables every way of making a Frame at the most Frames, saying why', async () => {
+    let full = moth()
+    for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { row: made * 20, column: 0, rows: 5, columns: 5, technique: 'loom', beads: {} }, { frame: frameIdOf({ id: `frame-${made}` }) })
+    saveProjects([full])
+    const mounted = mountPanels()
+    await mounted.openPanel('project')
+    await unfoldAdd(mounted)
+    expect(mounted.wrapper.get('[data-testid="frame-from-starter"]').attributes('aria-disabled')).toBe('true')
+    expect(mounted.wrapper.get('[data-testid="frame-fit"]').attributes('aria-disabled')).toBe('true')
+    expect(mounted.wrapper.get('[data-testid="frame-select"]').attributes('aria-disabled')).toBe('true')
   })
 })
 
 describe('Backgrounds (ticket 0666)', () => {
-  it('saves the Canvas\'s from the Project panel and the Frame\'s from the Frame panel, each on its own', async () => {
+  it('saves the Canvas\'s from the Project panel and the Frame\'s from its Margin color popover, each on its own', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
     await click(mounted, 'background-color-stone')
     expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(2)
 
-    await mounted.openPanel('frame')
-    await click(mounted, 'background-color-pebble')
-    expect(backgroundOf(loadProjects()[0], FRAME_ID)).toBe(3)
+    mounted.canvas.onSetFrameBackground(frameIdIn(loadProjects()[0]!), 3)
+    expect(backgroundOf(loadProjects()[0], frameIdIn(loadProjects()[0]!))).toBe(3)
     expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(2)
   })
 
   it('starts a new Project\'s layers on the last one picked', async () => {
     const mounted = mountPanels()
-    await mounted.openPanel('frame')
+    await mounted.openPanel('project')
     await click(mounted, 'background-color-stone')
     await mounted.openPanel('menu')
     await click(mounted, 'menu-new-project')
@@ -425,11 +434,11 @@ describe('Backgrounds (ticket 0666)', () => {
 })
 
 describe('The Export panel', () => {
-  it.each(['export', 'frame'] as const)('saves the Project file from the %s panel\'s File, as Save Project file does (ticket 1121)', async (panel) => {
+  it('saves the Project file from the panel\'s File, as Save Project file does (ticket 1121)', async () => {
     vi.mocked(downloadFile).mockClear()
     saveProjects([moth()])
     const mounted = mountPanels()
-    await mounted.openPanel(panel)
+    await mounted.openPanel('export')
     await click(mounted, 'export-project-file')
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileNameOf('Moth'), expect.any(Uint8Array), 'application/json'))
   })

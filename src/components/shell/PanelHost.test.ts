@@ -18,7 +18,7 @@ describe('PanelHost (ticket 511)', () => {
   })
 
   it('shows nothing for a panel it is not given', () => {
-    const wrapper = mount(PanelHost, { props: { open: 'frame', only: ['menu', 'project'] } })
+    const wrapper = mount(PanelHost, { props: { open: 'export', only: ['menu', 'project'] } })
     expect(wrapper.findComponent(AppPanel).exists()).toBe(false)
   })
 })

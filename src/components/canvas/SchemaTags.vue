@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { firstFrameId } from '../../domain/layerRecord'
 import { computed, nextTick, onMounted, onUpdated, reactive, ref, watch } from 'vue'
 import { cardPlacement, tagPlacement, type SchemaAnchor, type SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -7,7 +6,6 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Rect } from '../../domain/canvas'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { frameAllows } from '../../domain/frameShape'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { formatSizeMm } from '../../domain/projectSize'
@@ -104,8 +102,6 @@ const card = computed(() => {
     swatches: details.colors.slice(0, SWATCHES_SHOWN),
   }
 })
-/** Frame is the Selection bar's: not offered for a Custom frame, whose Frame shape sets its outline (ticket 0592). */
-const framable = computed(() => frameAllows(props.project, 'from-selection', firstFrameId(props.project)))
 
 function open(tag: SchemaAnchor) {
   opened.value = { anchor: tag.anchor, name: tag.name }
@@ -177,7 +173,7 @@ const borderStyle = ({ box }: SchemaAnchor) => ({ left: px(box.left), top: px(bo
         </div>
         <div class="schema-card__actions">
           <AppButton size="sm" :action="actions.rename" data-testid="schema-card-rename" @click="emit('rename', card.anchor)" />
-          <AppButton v-if="framable" variant="primary" size="sm" :action="actions.frame" :deps="deps" data-testid="schema-card-frame" @click="emit('frame', card.piece)" />
+          <AppButton variant="primary" size="sm" :action="actions.frame" :deps="deps" data-testid="schema-card-frame" @click="emit('frame', card.piece)" />
           <span class="schema-card__close"><IconButton variant="plain" :action="actions.close" data-testid="schema-card-close" @click="close(true)" /></span>
         </div>
       </div>

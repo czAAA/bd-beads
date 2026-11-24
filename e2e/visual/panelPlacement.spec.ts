@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { openApp, closePanel, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** Menu, Project, the Frame panel and the Export panel are one panel (tickets 510, 511, 0652), placed by AppPanel alone: a
+/** Menu, Project and the Export panel are one panel (tickets 510, 511, 0652), placed by AppPanel alone: a
  * dropdown under its own button on every screen size, the same for all four wherever they are mounted. Export's button is in
  * the strip's right corner, so its panel lines up with the button's right edge. */
 
@@ -15,7 +15,7 @@ const WIDTHS = [
 ] as const
 
 for (const [name, width, height] of WIDTHS) {
-  test(`Menu, Project, Frame and Export are placed alike on ${name}`, async ({ browser }) => {
+  test(`Menu, Project and Export are placed alike on ${name}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width, height }, reducedMotion: 'reduce', hasTouch: width < 1024 })
     const page = await context.newPage()
     await openApp(page, [fixtureProject({ technique: 'loom' })])
@@ -24,7 +24,7 @@ for (const [name, width, height] of WIDTHS) {
     const exportAtFirst = (await page.getByTestId('strip-export').boundingBox())!
     expect(exportAtFirst.x).toBeGreaterThanOrEqual(0)
     expect(exportAtFirst.x + exportAtFirst.width).toBeLessThanOrEqual(width)
-    for (const id of ['strip-menu', 'strip-project', 'strip-frame', 'strip-export'] as const) {
+    for (const id of ['strip-menu', 'strip-project', 'strip-export'] as const) {
       await closePanel(page)
       await page.getByTestId(id).click()
       await settle(page)
@@ -45,7 +45,7 @@ for (const [name, width, height] of WIDTHS) {
   })
 }
 
-test('on the iPad the open Project panel leaves the Tool pill at its default place free (ticket 0971)', async ({ browser }) => {
+test('on the iPad the open Project panel, with its Frames, ends above the Progress bar and scrolls inside (tickets 0971, 1222)', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'dark', viewport: { width: 1366, height: 1024 }, reducedMotion: 'reduce', hasTouch: true })
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom' })])
@@ -53,7 +53,7 @@ test('on the iPad the open Project panel leaves the Tool pill at its default pla
   await page.getByTestId('strip-project').click()
   await settle(page)
   const panel = (await page.getByTestId('panel-dropdown').boundingBox())!
-  const pill = (await page.getByTestId('tool-pill').boundingBox())!
-  expect(panel.y + panel.height).toBeLessThanOrEqual(pill.y)
+  const bar = (await page.getByTestId('progress-bar').boundingBox())!
+  expect(panel.y + panel.height).toBeLessThanOrEqual(bar.y)
   await context.close()
 })

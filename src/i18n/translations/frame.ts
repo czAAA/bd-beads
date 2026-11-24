@@ -120,9 +120,17 @@ export interface FrameTranslations {
     removeConfirmCancel: string
     addFromStarter: string
     addFrameButton: string
-    replaceFrame: string
-    replaceConfirmTitle: string
-    replaceConfirmMessage: string
+    /** A new Frame's name (spec 1214, ticket 1222): "Frame {n}", n the lowest number no Frame uses. */
+    defaultName: string
+    /** The refusal naming the Frame in the way: `{name}`. */
+    meetsFrame: string
+    /** The Project panel's Frames section: the add ways' heading, why they are off at the most Frames (counted, the most Frames), and a Frame's
+     * three rows. */
+    addFrameHeading: string
+    framesFull: PluralForms
+    showFrame: string
+    exportThisFrame: string
+    removeThisFrame: string
     /** What Rotate Frame and a Frame Technique change ask once a pass is done (ticket 1184; ConfirmDialogs card); Cancel
      * is removeConfirmCancel. Columns where the way runs across as seen; `{way}` is the way's name, lowercased. */
     wovenAsk: {

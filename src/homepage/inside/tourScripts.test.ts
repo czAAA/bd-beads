@@ -21,11 +21,13 @@ function fakeHand(controls: string = '') {
   const laid: unknown[] = []
   /** What it did with the Radial toolbox, in order. */
   const ring: string[] = []
+  /** The Techniques set without a press: where the title block's pencil is not on the sheet. */
+  const techniques: string[] = []
   const name = (target: Target) => (typeof target === 'string' ? target : 'control')
   const hand = {
     instant: false,
     root,
-    canvas: { activeProject: ref(undefined), referenceImage: { image: ref(undefined) }, convertSession: ref(undefined), onSelectColor: () => {}, onSelectTool: () => {} },
+    canvas: { activeProject: ref(undefined), onSetFrameTechnique: (technique: string) => techniques.push(technique), referenceImage: { image: ref(undefined) }, convertSession: ref(undefined), onSelectColor: () => {}, onSelectTool: () => {} },
     press: async (target: Target) => (presses.push(name(target)), document.createElement('button')),
     pressWith: async (target: Target) => void presses.push(name(target)),
     find: async () => document.createElement('div'),
@@ -43,8 +45,22 @@ function fakeHand(controls: string = '') {
     slideTo: async (_target: Target, ms: number) => void (ring.push('slide'), times.push(ms)),
     closeToolbox: async () => void ring.push('close'),
   }
-  return { hand: hand as unknown as Hand, presses, times, stroked, laid, ring }
+  return { hand: hand as unknown as Hand, presses, times, stroked, laid, ring, techniques }
 }
+
+describe("What's inside's Technique row (ticket 1222)", () => {
+  it("changes the Frame's Technique with the title block's pencil, and as the pencil would where the sheet has no room for it", async () => {
+    const pencil = fakeHand('<div data-testid="margin-technique-picker"></div>')
+    await TOUR_SCRIPTS.techniques(pencil.hand)
+    expect(pencil.presses.length).toBeGreaterThan(0)
+    expect(pencil.techniques).toEqual([])
+
+    const bare = fakeHand()
+    await TOUR_SCRIPTS.techniques(bare.hand)
+    expect(bare.presses).toEqual([])
+    expect(bare.techniques.at(-1)).toBe('peyote')
+  })
+})
 
 describe("What's inside's Mirror row (ticket 0802)", () => {
   it("mirrors the whole Frame with the band's own button where the band shows it (full, compact)", async () => {
@@ -76,15 +92,15 @@ describe("What's inside's rows in the order they play (ticket 0830)", () => {
   it('closes the Mirror before the Starter gallery, the Mirror row left it on (Convert image plays between them since 0949)', async () => {
     const { hand, presses } = fakeHand()
     await TOUR_SCRIPTS.starters(hand)
-    expect(presses.slice(0, 4)).toEqual(['pill-tool-mirror', 'mirror-bar-close', 'strip-frame', 'frame-replace-from-starter'])
+    expect(presses.slice(0, 6)).toEqual(['pill-tool-mirror', 'mirror-bar-close', 'margin-frame-tools', 'margin-frame-tools-remove', 'confirm-modal-confirm', 'strip-project'])
+    expect(presses).toContain('frame-from-starter')
   })
 
   it("starts the Reference image row by clearing the Starter's ring, and sets the cuff's Frame over its Frame with none removed (ticket 0831)", async () => {
     const { hand, presses } = fakeHand()
     await TOUR_SCRIPTS.reference(hand)
-    expect(presses.slice(0, 2)).toEqual(['pill-tool-select', 'context-bar-clear'])
+    expect(presses.slice(0, 5)).toEqual(['margin-frame-tools', 'margin-frame-tools-remove', 'confirm-modal-confirm', 'pill-tool-select', 'context-bar-clear'])
     expect(presses).toContain('context-bar-frame')
-    expect(presses).not.toContain('frame-chrome-remove')
   })
 })
 
@@ -94,7 +110,7 @@ describe("What's inside's Reference image row is short (ticket 0949)", () => {
     await TOUR_SCRIPTS.reference(hand)
     expect(stroked).toHaveLength(TRACED_BY_HAND)
     expect(laid).toHaveLength(PEACOCK_CUFF.lines * PEACOCK_CUFF.length)
-    expect(presses.filter((id) => id.startsWith('margin-') || id.startsWith('mirror-bar'))).toEqual([])
+    expect(presses.filter((id) => id.startsWith('margin-') || id.startsWith('mirror-bar'))).toEqual(['margin-frame-tools', 'margin-frame-tools-remove'])
   })
 })
 

@@ -104,8 +104,8 @@ export function firstFrameId(project: Layered | undefined): FrameId {
 
 /** The Last edited Frame (spec 1214, ticket 1220): the Frame most recently painted on or changed, the first while none
  * was, or `NO_FRAME` in a Project with none. What Export's Frame choice and the library thumbnail start on (ticket 1222). */
-export function lastEditedFrameId(project: Layered & { lastEditedFrame?: string }): FrameId {
-  const named = project.lastEditedFrame && framesOf(project).find((frame) => frame.id === project.lastEditedFrame)
+export function lastEditedFrameId(project: (Layered & { lastEditedFrame?: string }) | undefined): FrameId {
+  const named = project?.lastEditedFrame && framesOf(project).find((frame) => frame.id === project.lastEditedFrame)
   return named ? frameIdOf(named) : firstFrameId(project)
 }
 
@@ -170,6 +170,14 @@ export function withFrameById(project: Project, frame: Layer, change: (held: Fra
 /** A new id for a layer (ADR 0079): unique within its Project. */
 export function newLayerId(): string {
   return crypto.randomUUID()
+}
+
+/** A new Frame's id in a Project (ticket 1222): one none of its layers has, whichever id `newLayerId` gives first. */
+export function newFrameId(project: Layered): FrameId {
+  const taken = new Set(project.layers.map((layer) => layer.id))
+  let id = newLayerId()
+  while (taken.has(id)) id = crypto.randomUUID()
+  return id as FrameId
 }
 
 /** A layer's Weave as its record holds it (ticket 0625): its Technique and its settings map, read from that map alone

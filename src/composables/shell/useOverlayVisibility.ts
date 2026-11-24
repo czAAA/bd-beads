@@ -1,4 +1,4 @@
-import { ref, watch, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import type { FrameId } from '../../domain/grid'
 import type { ExportChoice, ExportOpener, ExportScope, OpenPanel } from './openPanel'
 
@@ -20,10 +20,16 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
   /** The Frame the Export panel exports (ticket 1220): the one whose sheet's Export button opened it; none where nothing
    * names a Frame, the Last edited Frame then. */
   const exportFrame = ref<FrameId>()
+  /** The Frame picked in Export's Frame dropdown (ticket 1222), shown with more than one Frame. */
+  const exportPick = ref<FrameId>()
+  /** The Frame exported: the one picked, else the one whose sheet's button opened the panel, else none (the Last edited
+   * Frame then). */
+  const exportedFrame = computed(() => exportPick.value ?? exportFrame.value)
   watch(openPanel, (sheet) => {
     if (sheet !== 'export') {
       exportScope.value = 'frame'
       exportFrame.value = undefined
+      exportPick.value = undefined
     }
   }, { flush: 'sync' })
 
@@ -53,9 +59,22 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
   function showExport(from: ExportOpener, choice?: ExportChoice, frame?: FrameId) {
     exportOpener.value = from
     exportFrame.value = frame
+    exportPick.value = undefined
     exportChoice.value = choice
     exportScope.value = 'frame'
     openPanel.value = 'export'
+  }
+
+  /** Whether the Project panel opens on its Starter gallery (ticket 0953, 1222): Start from a ready design's first Project,
+   * as its Frame from starter row opens it. Clears once the panel is gone or swapped. */
+  const projectOpensOnStarters = ref(false)
+  watch(openPanel, (sheet) => {
+    if (sheet !== 'project') projectOpensOnStarters.value = false
+  }, { flush: 'sync' })
+
+  function openProjectOnStarters() {
+    projectOpensOnStarters.value = true
+    openPanel.value = 'project'
   }
 
   /** Whether Menu opens on a subpanel: New Project (the empty-canvas bar's button, spec 0478), or Saved Projects when
@@ -137,6 +156,10 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     exportChoice,
     exportScope,
     exportFrame,
+    exportPick,
+    exportedFrame,
+    projectOpensOnStarters,
+    openProjectOnStarters,
     onOpenSelectionExport,
     menuOpensOnForm,
     openMenuOnForm,

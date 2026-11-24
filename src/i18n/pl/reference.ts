@@ -57,8 +57,7 @@ export const reference: ReferenceTranslations = {
     },
     frameAround: {
       name: 'Ramka wokół obrazu',
-      body: 'Ramka {size} tam, gdzie leży obraz. Zastąpi Twoją ramkę.',
-      bodyNew: 'Ramka {size} tam, gdzie leży obraz.',
+      body: 'Ramka {size} tam, gdzie leży obraz.',
       tag: 'nowa ramka · {size}',
     },
     convert: {

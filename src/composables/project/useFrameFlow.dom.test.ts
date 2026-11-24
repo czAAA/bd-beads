@@ -1,12 +1,13 @@
 import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
-import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
-import { frameById } from '../../domain/layerRecord'
 import { describe, expect, it, vi } from 'vitest'
 import { withColors, type Rect } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
 import type { FrameShapeId } from '../../domain/frameShape'
 import { createProject } from '../../domain/createProject'
-import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
+import { moveToRow, rowProgressOf, rowProgressStarted } from '../../domain/rowProgress'
+import { MAX_FRAMES } from '../../domain/frameLimit'
+import { frameMet } from '../../domain/frameSpacing'
+import { withFrameSheet } from '../../domain/frameSheet'
 import { withFrame } from '../../domain/frame'
 import { laidFrame, seenSize } from '../../domain/frameOrientation'
 import { rotateFrame } from '../../domain/rotate'
@@ -17,7 +18,7 @@ import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
 import { useDialogs } from '../shell/useDialogs'
-import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../../domain/layerRecord'
+import { beadsOfLayer, canvasOf, frameIdOf, frameOf, framesOf, withLayer } from '../../domain/layerRecord'
 import { frameSheetOf, layersView, withLayers, pointersOf } from '../../testUtils/layerFields'
 
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
@@ -289,19 +290,6 @@ describe('useFrameFlow', () => {
     expect(frameOf(deps.harness.project)!.beads).toEqual({ 0: { 1: '#ff0000', 3: '#00ff00' }, 3: { 0: '#0000ff' } })
   })
 
-  it('opens the panel on its Starter gallery this once: closed, it opens on its own list again (ticket 0953)', () => {
-    const flow = setup()
-    flow.openOnStarters()
-    expect([flow.barShown.value, flow.opensOnStarters.value]).toEqual([true, true])
-    flow.closeBar()
-    flow.toggleBar()
-    expect([flow.barShown.value, flow.opensOnStarters.value]).toEqual([true, false])
-
-    const none = setup(null)
-    none.openOnStarters()
-    expect([none.barOpen.value, none.opensOnStarters.value]).toEqual([false, false])
-  })
-
   it('sets the Frame to a Selection\'s rectangle as one undo step, and leaves the bar closed (tickets 415, 473)', () => {
     const { deps, settingFrame, setTo } = setup(open)
     setTo({ row: 2, column: 3, rows: 4, columns: 5 })
@@ -309,14 +297,24 @@ describe('useFrameFlow', () => {
     expect(settingFrame.value).toBe(false)
   })
 
-  it('sets the Frame round the reference image: Add Frame with none, in the old one\'s place with one, one Undo step (ticket 0883)', () => {
+  it('adds a Frame round the reference image, a second beside the first, one Undo step each (tickets 0883, 1222)', () => {
     const { deps, setAround } = setup(open)
     setAround({ row: 2, column: 3, rows: 4, columns: 5 })
-    expect(rect(frameOf(deps.harness.project)!)).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5 })
-    setAround({ row: 0, column: 0, rows: 6, columns: 6 })
-    expect(rect(frameOf(deps.harness.project)!)).toMatchObject({ row: 0, column: 0, rows: 6, columns: 6 })
+    expect(rect(frameOf(deps.harness.project)!)).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5, name: 'Frame 1' })
+    setAround({ row: 30, column: 3, rows: 6, columns: 6 })
+    expect(framesOf(deps.harness.project).map((frame) => rect(frame))).toMatchObject([{ row: 2, column: 3 }, { row: 30, column: 3, rows: 6, columns: 6, name: 'Frame 2' }])
     deps.harness.history.onUndo()
-    expect(rect(frameOf(deps.harness.project)!)).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5 })
+    expect(framesOf(deps.harness.project)).toHaveLength(1)
+  })
+
+  it('refuses a Frame that would meet another Frame\'s margin, naming that Frame (ticket 1222)', () => {
+    const { deps, setAround, setTo } = setup(open)
+    setAround({ row: 2, column: 3, rows: 4, columns: 5 })
+    const calls = deps.replaceProject.mock.calls.length
+    setTo({ row: 2, column: 10, rows: 4, columns: 5 })
+    setAround({ row: 8, column: 3, rows: 4, columns: 5 })
+    expect(deps.replaceProject).toHaveBeenCalledTimes(calls)
+    expect(deps.showToast).toHaveBeenCalledWith('frame-meets', 'Too close to Frame 1. Frames and their margins can’t meet.', 'warning')
   })
 
   describe('explains a snap that grew the Frame (ticket 570)', () => {
@@ -364,39 +362,12 @@ describe('useFrameFlow', () => {
     expect(settingFrame.value).toBe(true)
   })
 
-  it('shows the bar only when opened, apart from the handles, once a pass is done too, and closes it (tickets 473, 475, 510)', () => {
-    const closed = setup()
-    expect(closed.barShown.value).toBe(false)
-    closed.toggleBar()
-    expect(closed.barShown.value).toBe(true)
-    closed.closeBar()
-    expect(closed.barShown.value).toBe(false)
-    const done = setup(moveToRow(sized, 1, frameIdIn(sized)))
-    expect(done.barShown.value).toBe(false)
-    done.toggleBar()
-    expect([done.barShown.value, done.settingFrame.value]).toEqual([true, false])
-    done.toggleHandles()
-    expect(done.settingFrame.value).toBe(false)
-    expect(setup(open).barShown.value).toBe(false)
-  })
-
-  it('opens the panel with no Frame too, and keeps it open when the Frame goes (ticket 555)', () => {
-    const bare = setup(open)
-    bare.toggleBar()
-    expect(bare.barShown.value).toBe(true)
-    const framedFlow = setup()
-    framedFlow.toggleBar()
-    framedFlow.remove()
-    framedFlow.confirmRemove()
-    expect(framedFlow.barShown.value).toBe(true)
-  })
-
-  it('names the Frame as one Undo step, and an empty name clears it, even once a pass is done (ticket 555)', () => {
+  it('names the Frame as one Undo step, and an empty name gives Frame 1 back, even once a pass is done (tickets 555, 1222)', () => {
     const { deps, rename } = setup(moveToRow(sized, 1, frameIdIn(sized)))
     rename('Moth wing')
     expect(frameOf(deps.harness.project)!.name).toBe('Moth wing')
     rename('')
-    expect(frameOf(deps.harness.project)!.name).toBeUndefined()
+    expect(frameOf(deps.harness.project)!.name).toBe('Frame 1')
     expect(deps.replaceProject).toHaveBeenCalledTimes(2)
   })
 
@@ -737,7 +708,7 @@ describe('useFrameFlow', () => {
     })
   })
 
-  describe('Add Frame from Starter and Replace Frame (tickets 495, 0596)', () => {
+  describe('Add Frame from Starter (tickets 495, 0596, 1222)', () => {
     const star = starterById('star')
 
     it('puts the Starter\'s design in the middle of the view in an open Project, over the Canvas, as one announced Undo step', () => {
@@ -761,38 +732,32 @@ describe('useFrameFlow', () => {
       expect(frameOf(deps.harness.project)).toMatchObject({ shape: 'star', beads: {} })
     })
 
-    it('replaces an empty Frame at once, starting Row progress at the first pass', () => {
-      const { deps, placeFromStarter, replaceConfirmOpen } = setup(sized)
+    it('adds a Frame beside the one there, which stays as it is, named Frame 2 once the first is Frame 1 (ticket 1222)', () => {
+      const first = withLayers(sized, { frame: { ...frameOf(sized)!, name: 'Frame 1' } })
+      const { deps, placeFromStarter } = setup(first)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
-      expect(replaceConfirmOpen.value).toBe(false)
-      expect(frameOf(deps.harness.project)!.shape).toBe('star')
-      expect(pointersOf(rowProgressOf(deps.harness.project, frameIdIn(deps.harness.project)))).toEqual({})
-    })
-
-    it('asks before replacing a Frame that holds beads, and replaces nothing on No', () => {
-      const drawn = withLayers(sized, { frame: { ...frameOf(sized)!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } })
-      const { deps, placeFromStarter, replaceConfirmOpen, cancelReplace } = setup(drawn)
-      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
-      expect(replaceConfirmOpen.value).toBe(true)
-      expect(deps.replaceProject).not.toHaveBeenCalled()
-      cancelReplace()
-      expect(replaceConfirmOpen.value).toBe(false)
-      expect(deps.replaceProject).not.toHaveBeenCalled()
-    })
-
-    it('drops the old Frame with its beads on Yes, as one Undo step', () => {
-      const drawn = withLayers(sized, { frame: { ...frameOf(sized)!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } })
-      const { deps, placeFromStarter, confirmReplace } = setup(drawn)
-      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
-      confirmReplace()
-      expect(deps.replaceProject).toHaveBeenCalledTimes(1)
-      expect(frameOf(deps.harness.project)!.shape).toBe('star')
+      const frames = framesOf(deps.harness.project)
+      expect(frames).toHaveLength(2)
+      expect(frames[0]).toEqual(framesOf(first)[0])
+      expect(frames[1]).toMatchObject({ shape: 'star', name: 'Frame 2' })
+      expect(pointersOf(rowProgressOf(deps.harness.project, frameIdOf(frames[1]!)))).toEqual({})
+      expect(frameMet(deps.harness.project, frameIdOf(frames[1]!))).toBeUndefined()
       deps.harness.history.onUndo()
-      expect(frameSheetOf(deps.harness.project)).toEqual(frameSheetOf(drawn))
+      expect(framesOf(deps.harness.project)).toEqual(framesOf(first))
     })
 
-    it('does nothing once a pass is done', () => {
-      const { deps, placeFromStarter } = setup(moveToRow(sized, 1, frameIdIn(sized)))
+    it('adds a Frame while a pass is done on another, which keeps its passes', () => {
+      const done = moveToRow(sized, 1, frameIdIn(sized))
+      const { deps, placeFromStarter } = setup(done)
+      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
+      expect(framesOf(deps.harness.project)).toHaveLength(2)
+      expect(rowProgressStarted(deps.harness.project, frameIdIn(done))).toBe(true)
+    })
+
+    it('adds nothing at the most Frames', () => {
+      let full: Project = sized
+      for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { row: made * 30, column: 0, rows: 3, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdOf({ id: `more-${made}` }) })
+      const { deps, placeFromStarter } = setup(full)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
@@ -846,10 +811,9 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   }
 
   it('shows each Rounds press at once, folds what fewer Rounds leave out without asking, and commits once the panel closes (ticket 0640)', () => {
-    const { deps, setSettings, barOpen } = setup(custom('triangle', 9))
+    const { deps, setSettings } = setup(custom('triangle', 9))
     deps.harness.replaceProject(withLayers(deps.harness.project, { frame: { ...frameOf(deps.harness.project)!, beads: { 8: { 0: '#ff0000' } } } }))
     const painted = deps.harness.project
-    barOpen.value = true
     setSettings({ rounds: 8 })
     expect(frameOf(deps.harness.project)).toMatchObject({ settings: { rounds: 8 }, beads: {} })
     setSettings({ rounds: 7 })
@@ -857,21 +821,21 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     expect(frameOf(deps.harness.project)).toMatchObject({ settings: { rounds: 10 } })
     expect(deps.announce).toHaveBeenLastCalledWith('Rounds: 10')
     expect(deps.harness.history.canUndo.value).toBe(false)
-    barOpen.value = false
+    deps.settle()
     expect(deps.harness.history.canUndo.value).toBe(true)
     deps.harness.history.onUndo()
     expect(frameSheetOf(deps.harness.project)).toEqual(frameSheetOf(painted))
     expect(deps.harness.history.canUndo.value).toBe(false)
   })
 
-  it('replaces it by a rectangular Frame round the reference image, its own beads going with it, one Undo step (tickets 0883, 1215)', () => {
+  it('adds a rectangular Frame round the reference image beside it, the Custom frame and its beads left as they were (tickets 0883, 1222)', () => {
     const { deps, setAround } = setup(custom('triangle', 9))
     deps.harness.replaceProject(withLayers(deps.harness.project, { frame: { ...frameOf(deps.harness.project)!, beads: { 8: { 0: '#ff0000' } } } }))
     const painted = deps.harness.project
-    setAround({ row: 2, column: 3, rows: 4, columns: 5 })
-    expect(frameOf(deps.harness.project)).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5 })
-    expect(frameOf(deps.harness.project)?.shape).toBeUndefined()
-    expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual({})
+    setAround({ row: 100, column: 100, rows: 4, columns: 5 })
+    expect(framesOf(deps.harness.project)).toHaveLength(2)
+    expect(framesOf(deps.harness.project)[0]).toEqual(framesOf(painted)[0])
+    expect(framesOf(deps.harness.project)[1]).toMatchObject({ row: 100, column: 100, rows: 4, columns: 5 })
     deps.harness.history.onUndo()
     expect(frameSheetOf(deps.harness.project)).toEqual(frameSheetOf(painted))
   })
@@ -951,110 +915,17 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   })
 })
 
-describe('useFrameFlow opening on its settings (ticket 0935)', () => {
-  it('opens the Frame panel on its settings, and the next opening from the strip at its top', () => {
-    const { openOnSettings, opensOnSettings, barOpen, toggleBar, closeBar } = setup()
-    openOnSettings()
-    expect(barOpen.value).toBe(true)
-    expect(opensOnSettings.value).toBe(true)
-    closeBar()
-    toggleBar()
-    expect(barOpen.value).toBe(true)
-    expect(opensOnSettings.value).toBe(false)
-  })
-})
-
-describe('every Frame change names its Frame (ticket 1218)', () => {
-  /** That `change` left the first Frame as it was, changed the second, and that one Undo puts the second back. */
-  function changesOnlySecond(project: Project, change: (flow: ReturnType<typeof setup>) => void) {
-    const flow = setup(project)
-    change(flow)
-    const { harness } = flow.deps
-    expect(frameById(harness.project, firstOf(project))).toEqual(frameById(project, firstOf(project)))
-    expect(frameById(harness.project, SECOND)).not.toEqual(frameById(project, SECOND))
-    harness.history.onUndo()
-    expect(frameById(harness.project, SECOND)).toEqual(frameById(project, SECOND))
-    expect(harness.history.canUndo.value).toBe(false)
-  }
-
-  it('steps an edge, sizes, renames and reweaves only the Frame named', () => {
-    const project = twoFrames()
-    changesOnlySecond(project, (flow) => flow.stepEdge('right', 1, SECOND))
-    changesOnlySecond(project, (flow) => flow.resizeTo(6, 8, SECOND))
-    changesOnlySecond(project, (flow) => flow.rename('Earring', SECOND))
-    changesOnlySecond(project, (flow) => flow.setTechnique('peyote', SECOND))
+describe('useFrameFlow asking for a Frame\'s settings popover (tickets 0935, 1222)', () => {
+  it('names the Frame whose ··· button is asked to open it, and brings that Frame into view', () => {
+    const { deps, openSettings, popoverAsked } = setup()
+    openSettings()
+    expect(popoverAsked.value).toBe(frameIdIn(deps.harness.project))
+    expect(deps.centreOn).toHaveBeenCalledWith(frameOf(deps.harness.project))
   })
 
-  it('sets a Custom frame\'s shape settings on the Frame named', () => {
-    const made = changeFrame(twoFrames(), { custom: { shape: 'triangle', size: 9, centre: { row: 40, column: 40 } } }, SECOND)
-    if (made.kind !== 'changed') throw new Error(made.kind)
-    changesOnlySecond(made.project, (flow) => {
-      flow.setSettings({ rounds: 8 }, SECOND)
-      flow.deps.harness.editing.settle()
-    })
-  })
-})
-
-describe('each Frame has its own state (ticket 1220)', () => {
-  const project = twoFrames()
-  const first = firstOf(project)
-
-  it('keeps the edit pencil of each Frame its own: turning one on or off leaves the other as it was', () => {
-    const { toggleHandles, settingFrames, settingFrame } = setup(project)
-    expect(settingFrame.value).toBe(false)
-    toggleHandles(SECOND)
-    expect(settingFrames.value).toEqual([SECOND])
-    toggleHandles(first)
-    expect(settingFrames.value).toEqual([first, SECOND])
-    toggleHandles(SECOND)
-    expect(settingFrames.value).toEqual([first])
-    expect(settingFrame.value).toBe(true)
-  })
-
-  it('holds the handles of a Frame with a pass done off, and the other Frame\'s on', () => {
-    const { toggleHandles, settingFrames } = setup(moveToRow(project, 1, SECOND))
-    toggleHandles(SECOND)
-    toggleHandles(first)
-    expect(settingFrames.value).toEqual([first])
-  })
-
-  it('resizes the Frame whose handle was pressed, the drag shown on it alone, the other as it was', () => {
-    const { deps, toggleHandles, press, drag, release, draftProject } = setup(project)
-    toggleHandles(SECOND)
-    press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 25, column: 23 }, SECOND)
-    drag({ row: 27, column: 24 })
-    expect(frameById(draftProject.value!, SECOND)).toMatchObject({ rows: 8, columns: 5 })
-    expect(frameById(draftProject.value!, first)).toEqual(frameById(project, first))
-    release()
-    expect(frameById(deps.harness.project, SECOND)).toMatchObject({ rows: 8, columns: 5 })
-    expect(frameById(deps.harness.project, first)).toBe(frameById(project, first))
-  })
-
-  it('moves the Frame whose Move bar was pressed, by the keys of its own sheet too, and no other', () => {
-    const { deps, press, drag, release, onKey } = setup(project)
-    press({ kind: 'move' }, { row: 21, column: 21 }, SECOND)
-    drag({ row: 22, column: 21 })
-    release()
-    expect(frameById(deps.harness.project, SECOND)).toMatchObject({ row: 21, column: 20 })
-    expect(onKey(new KeyboardEvent('keydown', { key: 'ArrowRight' }), first)).toBe(true)
-    expect(frameById(deps.harness.project, first)).toMatchObject({ row: 0, column: 1 })
-    expect(frameById(deps.harness.project, SECOND)).toMatchObject({ row: 21, column: 20 })
-  })
-
-  it('asks to remove the Frame whose sheet asked, and removes that Frame alone', () => {
-    const { deps, remove, confirmRemove, removeConfirmOpen } = setup(project)
-    remove(SECOND)
-    expect(removeConfirmOpen.value).toBe(true)
-    confirmRemove()
-    expect(frameById(deps.harness.project, SECOND)).toBeUndefined()
-    expect(frameById(deps.harness.project, first)).toBe(frameById(project, first))
-  })
-
-  it('makes the Frame it changed the Last edited Frame', () => {
-    const { deps, rename } = setup(project)
-    rename('Earring', SECOND)
-    expect(deps.harness.project.lastEditedFrame).toBe(SECOND)
-    rename('Gerdan', first)
-    expect(deps.harness.project.lastEditedFrame).toBe(first)
+  it('asks for none without a Frame', () => {
+    const { openSettings, popoverAsked } = setup(open)
+    openSettings()
+    expect(popoverAsked.value).toBeUndefined()
   })
 })

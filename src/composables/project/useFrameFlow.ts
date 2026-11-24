@@ -1,5 +1,5 @@
-import { computed, ref, watch, type Ref } from 'vue'
-import { hasBeads, type FrameSheet, type Rect, sameFrame } from '../../domain/canvas'
+import { computed, ref, watch } from 'vue'
+import { type FrameSheet, type Rect, sameFrame } from '../../domain/canvas'
 import {
   fitToDrawing,
   frameResizedAround,
@@ -16,7 +16,10 @@ import { changeCanvasWeave, changeFrame, frameChangeRefusal, framedAround } from
 import { changedSetting, frameAllows, settingValuesOf, settingsOf, sizeSettingOf, turnedGrid, type FrameSettings } from '../../domain/frameShape'
 import { placedStarter, type Starter, type StarterChoice, type StarterLayerSettings } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
-import { frameById, frameIdOf, frameOf, framesOf, frameToLay, heldWeave, layerOf, firstFrameId } from '../../domain/layerRecord'
+import { frameById, frameIdOf, frameOf, framesOf, heldWeave, layerOf, firstFrameId, newFrameId } from '../../domain/layerRecord'
+import { framesFull } from '../../domain/frameLimit'
+import { nextFrameName } from '../../domain/frameNames'
+import { frameLabel } from '../../i18n/frameLabel'
 import { copyLayerSelection, type CopiedBlock } from '../../domain/selection'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { laidFrame, ownEdge, ownSize, seenSize, turnedWithEdges } from '../../domain/frameOrientation'
@@ -31,8 +34,7 @@ import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
-import type { Edit, EditFn } from './useEdit'
-import type { OpenPanel } from '../shell/openPanel'
+import type { Edit, EditFn, EditOutcome } from './useEdit'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 import { techniqueChangeQuestion, type TechniqueChangeQuestion, type WovenChoice } from '../../domain/wovenLines'
@@ -42,7 +44,7 @@ export interface FrameFlowDeps {
   currentProject: () => Project | undefined
   edit: EditFn
   /** Edit's held Frame change and its settle (ticket 0640): a Custom frame's steppers show each press at once and
-   * commit once, when the Frame panel closes. */
+   * commit once, when the Frame popover closes. */
   hold: Edit['hold']
   settle: Edit['settle']
   announce: (message: string) => void
@@ -53,8 +55,6 @@ export interface FrameFlowDeps {
   centreOn: (frame: Rect) => void
   /** The Canvas position under the middle of the view, or nothing until the area is measured. */
   visibleCentre: () => GridPosition | undefined
-  /** The app's one open panel (ticket 510): the Frame panel is open while it is 'frame'. Its own when none is given. */
-  openPanel?: Ref<OpenPanel | null>
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
   /** Puts a block of beads on the clipboard and starts Paste mode, as Cut does (ticket 1215): what Remove and copy ends
@@ -81,20 +81,11 @@ type Gesture =
 /** The Frames a Project holds, none while no Project is open. */
 const framesIn = (project: Project | undefined) => (project ? framesOf(project) : [])
 
-// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054): the edit pencil shows the handles and the strip's Frame
-// button opens the Frame panel; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
-// Move handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
+// Editing the Frames (CONTEXT.md, ADRs 0026, 0046, 0054, 0066): the edit pencil shows a Frame's handles, off once Row
+// progress has started (ticket 411), though the Move handle still carries the Frame with its beads. Each resize is one
+// announced Undo step that touches no bead. A Project holds up to MAX_FRAMES Frames; every way of making one adds.
 export function useFrameFlow(deps: FrameFlowDeps) {
-  /** The weaver's choice on the edit toggle (the Frame panel open); false until they turn it on. Never saved. */
-  const openPanel = deps.openPanel ?? ref<OpenPanel | null>(null)
   const dialogs = deps.dialogs ?? useDialogs()
-  const barOpen = computed({
-    get: () => openPanel.value === 'frame',
-    set: (on: boolean) => {
-      if (on) openPanel.value = 'frame'
-      else if (openPanel.value === 'frame') openPanel.value = null
-    },
-  })
   /** The Frames whose edit pencil is on (ticket 510): their handles show; none until the weaver turns one on. Each Frame
    * has its own (ticket 1220), so turning one on or off leaves the others as they were. Never saved. */
   const handlesFor = ref<readonly FrameId[]>([])
@@ -130,25 +121,17 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Whether any Frame's handles and steppers are on. */
   const settingFrame = computed(() => settingFrames.value.length > 0)
 
-  /** Whether the Frame panel shows: a Project and the panel opened, with or without a Frame (ticket 555). Once a pass
-   * is done it holds the size, Rotate Frame and Remove Frame (tickets 475, 0647: a panel that closes on a press outside
-   * cannot stay up for good). */
-  const barShown = computed(() => !!deps.currentProject() && barOpen.value)
-
-  // The panel is closed whenever a Project opens (ticket 473), and the handles go off with it or when the Frame goes; a
-  // Frame made or a lock changing only drops a drag in progress.
+  // The handles go off when a Project opens or when their Frame goes; a Frame made or a lock changing only drops a drag
+  // in progress.
   watch(
     [() => deps.currentProject()?.id, () => framesIn(deps.currentProject()).map((frame) => frame.id).join()],
     ([id, framed], [previousId]) => {
-      if (id !== previousId) barOpen.value = false
       if (id !== previousId) handlesFor.value = []
       else handlesFor.value = handlesFor.value.filter((frame) => framed.split(',').includes(frame))
     },
     { flush: 'sync' },
   )
   watch([() => deps.currentProject()?.id, () => !!frameOf(deps.currentProject()), locked], cancel, { flush: 'sync' })
-  // The steppers' presses are one Undo step, taken as the panel closes (ticket 0640).
-  watch(barOpen, (open) => open || deps.settle(), { flush: 'sync' })
 
   /** The edit pencil of a Frame's sheet (ticket 1220): shows or hides that Frame's handles, the others' as they were;
    * nothing happens without it. */
@@ -158,39 +141,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     handlesFor.value = on ? handlesFor.value.filter((each) => each !== frame) : [...handlesFor.value, frame as FrameId]
   }
 
-  /** The Frame panel opens on its settings (ticket 0935), as the Frame stays toast's Open Frame asks; cleared once it
-   * closes, so the strip's Frame button opens it at its top. */
-  const opensOnSettings = ref(false)
-  watch(barOpen, (open) => open || (opensOnSettings.value = false), { flush: 'sync' })
+  /** The Frame whose settings popover is asked to open (ticket 1222), as the Frame stays toast's Open Frame does: its
+   * sheet's ··· button opens it and says so. */
+  const popoverAsked = ref<FrameId>()
 
-  /** Opens the Frame panel with its settings in view (ticket 0935). */
-  function openOnSettings(): void {
-    if (!deps.currentProject()) return
-    opensOnSettings.value = true
-    barOpen.value = true
-  }
-
-  /** The strip's Frame button: opens or closes the Frame panel, with or without a Frame (ticket 555). Once Row progress
-   * has started the panel still opens, for the size and Remove Frame. */
-  function toggleBar(): void {
-    if (deps.currentProject()) barOpen.value = !barOpen.value
-  }
-
-  /** Whether the Frame panel opens already on its Starter gallery (ticket 0953): set by Start from a ready design's
-   * first Project, cleared as the panel closes. */
-  const opensOnStarters = ref(false)
-  watch(barOpen, (open) => open || (opensOnStarters.value = false), { flush: 'sync' })
-
-  /** The Frame panel opened on its Starter gallery, as its Frame from starter row opens it (ticket 0953). */
-  function openOnStarters(): void {
-    if (!deps.currentProject()) return
-    opensOnStarters.value = true
-    barOpen.value = true
-  }
-
-  /** The bar closed by Escape or a press outside it. */
-  function closeBar(): void {
-    barOpen.value = false
+  /** Opens a Frame's settings popover, the Frame brought into view first. */
+  function openSettings(frame: FrameRef = firstFrameId(deps.currentProject())): void {
+    if (!frameById(deps.currentProject(), frame)) return
+    bringIntoView(frame)
+    popoverAsked.value = frame as FrameId
   }
 
   /** What a resize left, said as the Frame is sized: its width and height, or a Custom frame's size setting. */
@@ -206,24 +165,52 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return fillBlanks(t.frame.announceSet, { width: columns, height: rows })
   }
 
-  /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step.
-   * A resize or removal acts on the Frame named (ticket 1218), the first until each Frame has its own sheet (ticket 1220). */
-  function commit(frame: Rect | undefined, how: 'set' | 'make' | 'around' = 'set', given?: FrameRef): boolean {
+  /** A new Frame's reference (ticket 1222): an id none of the open Project's layers has. */
+  const newFrameRef = (): FrameRef => newFrameId(deps.currentProject()!)
+
+  /** The names the other Frames go by, a Frame with none by the default its place gives it (spec 1214). */
+  const namesTaken = (project: Project, ref: FrameRef): string[] =>
+    framesIn(project).flatMap((each, at) => (each.id === ref ? [] : [frameLabel(deps.messages(), each, at)]))
+
+  /** The Project with the Frame `ref` named as a Frame is when it has none (spec 1214): "Frame N", N the lowest number free,
+   * and left as it is where the Piece it was made from named it. */
+  function withDefaultName(project: Project, ref: FrameRef): Project {
+    const frame = frameById(project, ref)
+    if (!frame || frame.name) return project
+    const named = changeFrame(project, { name: nextFrameName(deps.messages().frame.defaultName, namesTaken(project, ref)) }, ref)
+    return named.kind === 'changed' ? named.project : project
+  }
+
+  /** What a Frame change that was refused tells (spec 1214, ticket 1222): a change that would bring the Frame into another
+   * Frame's margin says which Frame is in the way. */
+  function tellRefusal(outcome: EditOutcome): void {
+    if (outcome.kind !== 'refused' || outcome.reason !== 'meets-frame' || !outcome.met) return
+    const t = deps.messages()
+    const frames = framesIn(deps.currentProject())
+    const at = frames.findIndex((each) => each.id === outcome.met)
+    deps.showToast('frame-meets', fillBlanks(t.frame.meetsFrame, { name: at < 0 ? '' : frameLabel(t, frames[at]!, at) }), 'warning')
+  }
+
+  /** Commits a Frame resized (`set`), made new round beads (`make`, `around`) or removed, as one undo step. It acts on
+   * the Frame `given` (ticket 1218): a new one's own reference, named at once, refused naming the Frame in the way (1222). */
+  function commit(frame: Rect | undefined, how: 'set' | 'make' | 'around', given: FrameRef): boolean {
     const before = deps.currentProject()
+    if (frame && how !== 'set' && !frameById(before, given) && framesFull(before)) return false
     const outcome = deps.edit('frame', (project) => {
-      const ref = given ?? frameToLay(project)
-      return frame && how === 'around' ? framedAround(project, frame, ref) : changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }, ref)
+      const made = frame && how === 'around' ? framedAround(project, frame, given) : changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }, given)
+      return made.kind === 'changed' && frame && how !== 'set' ? { ...made, project: withDefaultName(made.project, given) } : made
     })
-    if (outcome.kind === 'refused') return false
+    if (outcome.kind === 'refused') {
+      tellRefusal(outcome)
+      return false
+    }
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
-    const ref = given ?? firstFrameId(deps.currentProject())
-    const left = frameById(deps.currentProject(), ref)
-    deps.announce(frame && left ? describe(left, frameById(before, ref)) : deps.messages().frame.announceRemoved)
+    const left = frameById(deps.currentProject(), given)
+    deps.announce(frame && left ? describe(left, frameById(before, given)) : deps.messages().frame.announceRemoved)
     return true
   }
 
-  /** The Frame a change names (ticket 1218): the one given, else the first until each Frame has its own sheet (ticket
-   * 1220). */
+  /** The Frame a change names (ticket 1218): the one given, else the first (what the keys use, ticket 1222). */
   function named(given: FrameRef | undefined): FrameRef {
     return given ?? firstFrameId(deps.currentProject())
   }
@@ -249,6 +236,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     }
     const outcome =
       isFrameLayer(layer) ? deps.edit('frame', (current) => changeFrame(current, woven ? { ...change, woven } : change, layer)) : deps.edit('exempt', rewoven)
+    if (outcome.kind === 'refused') return tellRefusal(outcome)
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
     if (growth) deps.showToast('mirror-grown', mirrorGrownMessage(t, deps.locale(), mirrorSettingOf(deps.currentProject()!), growth), 'info')
@@ -409,21 +397,22 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!sameFrame(next, held)) commit(next, 'set', ref)
   }
 
-  /** A Frame's name, typed in the Frame panel (ticket 555): one Undo step; empty clears it. */
+  /** A Frame's name, typed on its sheet (ticket 555): one Undo step; empty gives "Frame N" back, N the lowest number no
+   * other Frame uses (spec 1214). */
   function rename(name: string, frame?: FrameRef): void {
     const ref = named(frame)
-    deps.edit('frame', (project) => changeFrame(project, { name }, ref))
+    deps.edit('frame', (project) => changeFrame(project, { name: name || nextFrameName(deps.messages().frame.defaultName, namesTaken(project, ref)) }, ref))
   }
 
-  // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step. A named Piece's
-  // Selection snaps to that Schema, starting on an even row where rows alternate (ticket 407) or an even column where
-  // columns do (ticket 0734); with a Frame already set, it moves it there.
+  // Frame from a Selection (tickets 415, 452, 1222): a new Frame holding a copy of the beads in its rectangle, one Undo
+  // step, refused naming the Frame it would meet. A named Piece's Selection snaps to that Schema, starting on an even row
+  // where rows alternate (ticket 407) or an even column where columns do (ticket 0734).
   function setTo(frame: Rect): void {
     const project = deps.currentProject()
     const snapped = project ? snappedFrame(heldWeave(project, 'canvas'), frame) : frame
     const top = snapped.row
     const left = snapped.column
-    const applied = commit(snapped, 'make')
+    const applied = commit(snapped, 'make', newFrameRef())
     // Ticket 570: a toast saying how many rows or columns the snap added to what was picked.
     const words = deps.messages().frame
     if (applied && top < frame.row) deps.showToast('frame-snapped', plural(deps.locale(), frame.row - top, words.snapAddedTop), 'info')
@@ -433,14 +422,16 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Set Frame around the picture (ticket 0883): the Frame becomes the rectangle round the reference image's beads,
    * already snapped where a Frame may start (domain's framedAround: a Custom frame becomes rectangular). One Undo step. */
   function setAround(frame: Rect): void {
-    commit(frame, 'around')
+    commit(frame, 'around', newFrameRef())
   }
 
+  /** Fit a Frame to the drawing (ticket 1222): a new Frame round the beads no Frame covers. */
   function fit(): void {
     const project = deps.currentProject()
     if (!project) return
-    const frame = fitToDrawing(project, firstFrameId(project))
-    if (frame) commit(frame, 'make')
+    const ref = newFrameRef()
+    const frame = fitToDrawing(project, ref)
+    if (frame) commit(frame, 'make', ref)
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
 
@@ -488,38 +479,26 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (commit(undefined, 'set', ref) && block) deps.copyToClipboard?.(block)
   }
 
-  /** Whether the Replace Frame question is open; the pending Starter waits behind it (tickets 495, 0596). */
-  const replaceConfirmOpen = dialogs.flag('replace-frame')
-  let pendingPlace: (() => void) | undefined
-
-  /** Puts a Frame in place now, or once the weaver agrees to replace a Frame that holds beads, as they go with it. */
-  function replaceAsking(place: () => void): void {
-    const project = deps.currentProject()
-    if (!project || locked.value) return
-    const frame = layerOf(project, firstFrameId(project))
-    if (frame && hasBeads(frame.beads)) {
-      pendingPlace = place
-      replaceConfirmOpen.value = true
-      return
-    }
-    place()
-  }
-
-  /** Add Frame from Starter and Replace Frame (tickets 495, 0596, 0671): the Starter's Frame in the setup's Layer
-   * settings, pre-filled with its design or empty, round the middle of the view, in place of any Frame there; one Undo
-   * step. Replacing a Frame that holds beads asks first, as they go with it. */
+  /** Add Frame from Starter (tickets 495, 0596, 0671, 1222): the Starter's Frame as a new Frame in the setup's Layer
+   * settings, pre-filled with its design or empty, round the middle of the view or the nearest place clear of every other
+   * Frame's margin; one Undo step. */
   function placeFromStarter(starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>): void {
-    replaceAsking(() => {
-      const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
-      const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre, frameToLay(project)))
-      const t = deps.messages()
-      const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
-      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { shape: starterName(t, starter), size }))
+    const before = deps.currentProject()
+    if (!before || framesFull(before)) return
+    const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
+    const ref = newFrameRef()
+    const outcome = deps.edit('frame', (project) => {
+      const placed = placedStarter(project, starter, choice, centre, ref)
+      return placed.kind === 'changed' ? { ...placed, project: withDefaultName(placed.project, ref) } : placed
     })
+    const t = deps.messages()
+    const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
+    if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { shape: starterName(t, starter), size }))
+    else tellRefusal(outcome)
   }
 
-  /** A Custom frame's setting from the Frame panel (tickets 0592, 0593, 0597, 0640): a stepper's press shows at once
-   * and is held, all of them one Undo step once the panel closes; the Fringe style is a step of its own. Nothing is
+  /** A Custom frame's setting from its settings popover (tickets 0592, 0593, 0597, 0640): a stepper's press shows at once
+   * and is held, all of them one Undo step once the popover closes; the Fringe style is a step of its own. Nothing is
    * asked, as what a smaller setting leaves out folds until it grows again (ADR 0066). Held still once a pass is done. */
   function setSettings(change: FrameSettings, given?: FrameRef): void {
     const ref = named(given)
@@ -529,6 +508,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const command = (current: Project) => changeFrame(current, { settings: change }, ref)
     const outcome = name === 'fringeStyle' ? deps.edit('frame', command) : deps.hold(command)
     const settled = frameById(deps.currentProject(), ref)
+    if (outcome.kind === 'refused') return tellRefusal(outcome)
     if (outcome.kind !== 'applied' || !settled) return
     const t = deps.messages()
     if (name === 'fringeStyle') {
@@ -537,20 +517,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     }
     const value = settingValuesOf(settled).find((each) => each.name === name)?.value
     deps.announce(fillBlanks(t.frame.sizeSettings[name].announce, { count: String(value) }))
-  }
-
-  /** The Replace Frame question answered No: nothing changes. */
-  function cancelReplace(): void {
-    replaceConfirmOpen.value = false
-    pendingPlace = undefined
-  }
-
-  /** The question answered Yes: the Frame goes and the new one is made, as one Undo step. */
-  function confirmReplace(): void {
-    replaceConfirmOpen.value = false
-    const place = pendingPlace
-    pendingPlace = undefined
-    place?.()
   }
 
   /** A key on a focused Frame handle (ticket 452): arrows move the Frame with its beads, Shift + arrows resize it
@@ -580,20 +546,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setAround,
     settingFrame,
     settingFrames,
-    barShown,
-    opensOnStarters,
-    openOnStarters,
     /** The Project as the canvas draws it while a drag has not committed: a Move drag shows the beads travelling
      * too, exactly as the release will leave them. */
     draftProject,
     frameLocked: locked,
-    barOpen,
     handlesFor,
     toggleHandles,
-    toggleBar,
-    opensOnSettings,
-    openOnSettings,
-    closeBar,
+    popoverAsked,
+    openSettings,
     press,
     drag,
     release,
@@ -618,11 +578,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     removeFramePrompt,
     placeFromStarter,
     setSettings,
-    replaceConfirmOpen,
-    cancelReplace,
-    confirmReplace,
     onKey,
     bringIntoView,
   }
 }
-

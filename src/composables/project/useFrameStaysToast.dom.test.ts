@@ -1,4 +1,4 @@
-import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { findBead } from '../../domain/beads'
 import type { Layer } from '../../domain/grid'
@@ -39,7 +39,7 @@ function setup(project: Project = framed) {
     currentProject: harness.currentProject,
     messages: () => en,
     showToast,
-    setFrameTechnique: (technique) => stays.afterChange('technique', () => frameFlow.setLayerTechnique(FRAME_ID, technique)),
+    setFrameTechnique: (technique, frame) => stays.afterChange('technique', () => frameFlow.setLayerTechnique(frame, technique)),
     requestFrameBead,
     openFrameSettings,
   })
@@ -105,13 +105,13 @@ describe('useFrameStaysToast (ticket 0935)', () => {
     expect(layerOf(harness.project, frameIdIn(harness.project))!.weave.technique).toBe('peyote')
   })
 
-  it('says the Frame stays on its Bead after the Canvas takes another, and asks the Frame panel’s Replace Bead on Change the Frame too', async () => {
+  it('says the Frame stays on its Bead after the Canvas takes another, and asks the Frame’s Replace Bead on Change the Frame too', async () => {
     const { harness, showToast, requestFrameBead, setBead, actions } = setup()
     await setBead('canvas', 'miyuki/delica/11-0')
     expect(beadIdOfLayer(harness.project, 'canvas')).toBe('miyuki/delica/11-0')
     expect(showToast.mock.calls[0]?.[1]).toBe('The Canvas is Miyuki Delica 11/0 now. The Frame stays TOHO Cube 1.5mm.')
     actions()[0]!.run()
-    expect(requestFrameBead).toHaveBeenCalledWith('miyuki/delica/11-0')
+    expect(requestFrameBead).toHaveBeenCalledWith('miyuki/delica/11-0', frameIdIn(harness.project))
     await setBead(frameIdIn(harness.project), 'miyuki/delica/11-0')
     expect(showToast).toHaveBeenCalledOnce()
   })

@@ -19,7 +19,8 @@ import ReferencePictureBar from './ReferencePictureBar.vue'
 import ReferencePreviews from './ReferencePreviews.vue'
 import ConvertToBeadsPopover from './ConvertToBeadsPopover.vue'
 import { usePictureBarLayout } from '../../composables/canvas/usePictureBarLayout'
-import { rowProgressStarted } from '../../domain/rowProgress'
+import { framesFull } from '../../domain/frameLimit'
+import { framesFullReason } from '../../i18n/framesFullReason'
 import ProgressBar from './ProgressBar.vue'
 import SchemaTags from './SchemaTags.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
@@ -38,7 +39,7 @@ import { useShellScope } from '../../composables/ui/shellScope'
 import { selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
-import { beadOfLayer, frameById, frameIdOf, frameOf, framesOf, layerOf, firstFrameId } from '../../domain/layerRecord'
+import { beadOfLayer, frameById, frameIdOf, frameOf, framesOf, layerOf } from '../../domain/layerRecord'
 import type { FrameId } from '../../domain/grid'
 import { placeFrame } from '../../domain/mirror'
 import type { Project } from '../../domain/project'
@@ -65,7 +66,6 @@ const {
   deletedProjectName,
   openMenuOnSavedProjects,
   activeProject,
-  settledProject,
   openElsewhere,
   projectLabel,
   toasts,
@@ -170,8 +170,13 @@ const {
   frameTurned,
   expandedFrame,
   exportFrame,
-  framePanelOpen,
-  onToggleFramePanel,
+  framePopoverAsked,
+  onFramePopoverOpened,
+  onStepFrameEdge,
+  onResizeFrame,
+  onSetFrameSettings,
+  onSetFrameBackground,
+  onSettleFrameSettings,
   surfaceInputMode,
   handedness,
   onEditFrame,
@@ -322,8 +327,8 @@ const barTooltips = computed(() => {
   const off = pictureBar.convertOff.value
   const framed = pictureBar.frameBox.value
   return {
-    frame: fillBlanks(frameOf(project) ? words.frameAround.body : words.frameAround.bodyNew, { size: framed ? `${framed.columns}×${framed.rows}` : size }),
-    frameOff: project && rowProgressStarted(project, firstFrameId(project)) ? t.value.tooltips.rowProgressLockedFrame : !pictureBar.box.value ? words.convert.tooSmall : undefined,
+    frame: fillBlanks(words.frameAround.body, { size: framed ? `${framed.columns}×${framed.rows}` : size }),
+    frameOff: framesFull(project) ? framesFullReason(t.value, locale.value) : !pictureBar.box.value ? words.convert.tooSmall : undefined,
     convert: fillBlanks(words.convert.body, { size }),
     convertOff: off === 'too-small' ? words.convert.tooSmall : off === 'too-big' ? words.convert.tooBig : undefined,
   }
@@ -470,10 +475,8 @@ const drawingStyle = computed(() => {
         :demo="demo"
         :expand="demoExpand"
         :project="onEditor ? activeProject : undefined"
-        :settled-project="onEditor ? settledProject : undefined"
         :rulers="showRulers"
         :reference-image="onEditor && activeProject ? referenceState : undefined"
-        :frame-open="framePanelOpen"
         :save-note="onEditor && saveNoteDocked"
         :can-undo="canUndo"
         :can-redo="canRedo"
@@ -482,7 +485,6 @@ const drawingStyle = computed(() => {
         @select-panel="onSelectPanel"
         @toggle-expand="onToggleDemoExpand"
         @close="onCloseConvertImage"
-        @toggle-frame="onToggleFramePanel"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
         @toggle-reference-image="referenceImage.toggleShown"
@@ -862,6 +864,13 @@ const drawingStyle = computed(() => {
             :without-not-done="demo"
             :placing="!viewPlaced"
             :expanded="expandedFrame === id"
+            :popover-asked="framePopoverAsked === id"
+            @step="(edge, step) => onStepFrameEdge(edge, step, id)"
+            @resize="(columns, rows) => onResizeFrame(columns, rows, id)"
+            @set-settings="onSetFrameSettings($event, id)"
+            @set-background="onSetFrameBackground(id, $event)"
+            @settle-settings="onSettleFrameSettings"
+            @popover-opened="onFramePopoverOpened"
             @toggle-expand="onToggleFrameExpand(id)"
             @slim="onSlimMeasured"
             @mirror="onMirrorWholeFrame(id)"

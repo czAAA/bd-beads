@@ -88,7 +88,7 @@ describe("What's inside's first rows on the ring (ticket 0831)", () => {
 describe("What's inside's Starters row on the ring (ticket 0832)", () => {
   it("lays the Starter's ring where the band was: the same Frame, 36 long and 7 wide", async () => {
     const project = await applyThrough(await demoEditor(), 'starters')
-    expect(placeOf(project)).toEqual({ row: 11, column: 11, rows: 36, columns: 7 })
+    expect(placeOf(project)).toEqual({ row: 10, column: 12, rows: 36, columns: 7 })
     expect(linesOf(project), "the Starter's own ring, not the eyes").not.toEqual(PEACOCK_RING.rows)
   }, 60000)
 })
