@@ -145,13 +145,13 @@ describe('a Frame off the Canvas\'s grid (ticket 1188)', () => {
     expect(beadsOfLayer(opened!, 'frame')).toEqual(beadsOfLayer(project, 'frame'))
   })
 
-  it('drops its beads on Remove frame where they lie on screen, a quarter off needing no turn (ticket 1189)', () => {
+  it('takes its beads with it on Remove frame, dropping none onto the Canvas (tickets 1189, 1215)', () => {
     const upright = withLayer(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } }), 'frame', { beads: { 0: { 0: '#e63746', 1: '#1a1a1a' } } })
     // The Canvas turned a quarter about its origin: what lay at (x, y) on the table is at (y, -x) on the Canvas's axes.
     const project = turnCanvasTo(upright, 90)
     const removed = changeFrame(project, { remove: true })
     if (removed.kind !== 'changed') throw new Error('expected the Frame removed')
     expect(frameOf(removed.project)).toBeUndefined()
-    expect(beadsOfLayer(removed.project, 'canvas')).toEqual({ [-1]: { 0: '#e63746' }, [-2]: { 0: '#1a1a1a' } })
+    expect(beadsOfLayer(removed.project, 'canvas')).toEqual({})
   })
 })

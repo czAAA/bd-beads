@@ -1,6 +1,6 @@
 import { findBead, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
-import { fringeLayout, fringePointRows, fringeRenamed, type FringeTop, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
+import { fringeLayout, fringePointRows, fringeRenamed, type FringeTop, kaleidocycleLayout, kiteLayout, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { FrameEdge } from './frame'
 import type { GridDimensions, GridPosition } from './grid'
 import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, type LayerGeometry } from './layerGeometry'
@@ -478,30 +478,6 @@ export function sizedSettings(frame: Laid & Pick<FrameSheet, 'rows' | 'columns' 
   while (value < setting.max && miss(value + 1) < miss(value)) value += 1
   while (value > setting.min && miss(value - 1) < miss(value)) value -= 1
   return at(value)
-}
-
-/** A Custom frame's settings grown until its layout holds every one of these positions, or as far as they go: where
- * Remove Frame finds its Folded beads (ticket 0669), as growing it back would show them. Its numbered settings step up
- * together, in its own Fringe style first, then in each other. */
-export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings' | 'cell'> & Woven, positions: readonly GridPosition[]): FrameSettings {
-  const shape = frameShapeOf(frame)!
-  const start = settingsOf(frame)!
-  const styles = shape.styles ? [start.fringeStyle, ...shape.styles.filter((style) => style !== start.fringeStyle)] : [start.fringeStyle]
-  let best: { settings: FrameSettings; held: number } | undefined
-  for (const style of styles) {
-    let settings: FrameSettings = { ...start, ...(style ? { fringeStyle: style } : {}) }
-    for (;;) {
-      const layout = shape.layout(settings, depthOf(frame), wovenIn(shape, frame))
-      const held = positions.filter((position) => layoutPosition(layout, position)).length
-      if (held === positions.length) return settings
-      if (!best || held > best.held) best = { settings, held }
-      // Each a step up in turn, as a change of it would go, so a Fringe earring's top follows too (ticket 0814).
-      const grown = shape.settings.reduce((each, { id }) => changedSettings({ ...frame, settings: each }, { [id]: each[id]! + 1 }), settings)
-      if (sameSettings(grown, settings)) break
-      settings = grown
-    }
-  }
-  return best!.settings
 }
 
 /** Whether two Custom frames' settings, as `settingsOf` reads them, are the same. */

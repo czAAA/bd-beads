@@ -1,4 +1,4 @@
-import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
+import { forEachBead, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { type GridPosition } from './grid'
 import { touchKey, type Weave } from './weave'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
@@ -87,20 +87,6 @@ export function namedPiecesFrom(project: Layered, walked: WalkedPieces): NamedPi
     const piece = walked.anchored.get(numericKey({ row, column }))
     return piece ? [{ name, anchor: { row, column }, row: piece.row, column: piece.column, rows: piece.rows, columns: piece.columns, beads: piece.beads }] : []
   })
-}
-
-/** The name of the first named Piece (an unframed Schema) that `frame` would cut, some beads in, some out (ticket 407).
- * A Frame frames a Schema whole or not at all. */
-export function namedPieceCutBy(project: Layered, frame: Rect): string | undefined {
-  const { beads, weave } = canvasPieces(project)
-  for (const { name, row, column } of pieceNamesOf(project) ?? []) {
-    const members = pieceBeadsAt(beads, weave, { row, column })
-    const inside = members.filter((at) => frameContains(frame, at)).length
-    if (inside > 0 && inside < members.length) {
-      return name
-    }
-  }
-  return undefined
 }
 
 /** The name of the Piece that holds the bead at `position`, if it has one. */

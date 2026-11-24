@@ -428,6 +428,14 @@ export function useSelectionGesture(
     return copied
   }
 
+  /** Puts a block of beads that came from no Selection (a removed Frame's, ticket 1215) on the clipboard and arms paste
+   * mode, as Cut leaves it. */
+  function copyBlock(block: CopiedBlock): void {
+    copiedBlock.value = block
+    selection.value = undefined
+    pasteDismissed.value = false
+  }
+
   /** Paste mode on again without stamping (ticket 447): the Selection bar's Paste button and the Paste tool. False
    * with an empty clipboard. */
   function armPaste(): boolean {
@@ -531,6 +539,7 @@ export function useSelectionGesture(
     leaveSelectTool,
     copy,
     cut,
+    copyBlock,
     armPaste,
     dismissPaste,
     fill,

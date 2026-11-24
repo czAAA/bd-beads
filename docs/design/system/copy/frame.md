@@ -47,7 +47,7 @@ The Frame panel, the Move handle and the edit pencil (Frame card). The Russian i
 
 ## Copy changed in ticket 0489
 
-Remove Frame? names what goes (Frame card, ConfirmDialogs card). The Russian is the approved confirm pattern (Confirm in Sentence patterns).
+Remove Frame? names what goes (Frame card, ConfirmDialogs card): the Frame with all its beads, and the rows marked done once a pass is done (ticket 1215). Its side action is "Remove and copy" (Russian: "Убрать и скопировать"), which keeps the beads on the clipboard. The Russian is the approved confirm pattern (Confirm in Sentence patterns).
 
 | English | Russian |
 | --- | --- |

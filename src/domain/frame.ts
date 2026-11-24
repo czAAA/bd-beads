@@ -1,11 +1,10 @@
 import { footprintOf } from './footprint'
-import { beadBounds, beadsOver, beadsWithout, sameFrame, shiftedBeads, type BeadMap, type FrameSheet, type Rect } from './canvas'
-import { refitSheet } from './folding'
+import { beadBounds, beadsOver, beadsWithout, sameFrame, type FrameSheet, type Rect } from './canvas'
+import { refitSheet, type SheetBeads } from './folding'
 import type { GridPosition } from './grid'
 import { columnCycle, rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
 import { canvasDistance, frameWeave, laidOnCanvas } from './layerWeave'
-import { tradesWithCanvas } from './frameGrowth'
 import { shapeSide, turnedGrid } from './frameShape'
 import { laidSize } from './frameOrientation'
 import { beadsOfLayer, frameOf, heldWeave, type Layered, startingRowProgressOf } from './layerRecord'
@@ -154,32 +153,22 @@ function turnedOrigin(project: Project, current: FrameSheet, rectangle: Rect): G
 }
 
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
- * place, those outside a smaller Frame are dropped or, woven unlike the Canvas, folded (ticket 0638), the Canvas is
- * never touched, a Frame set anew is empty, Row progress stays inside it; an unchanged Frame is the same Project. */
+ * place, those outside a smaller Frame fold and show again when it grows back, the Canvas is never touched (ticket
+ * 1215), a Frame set anew is empty, Row progress stays inside it; an unchanged Frame is the same Project. */
 export function withFrame(project: Project, rectangle: Rect | undefined): Project {
-  return withFrameGiving(project, rectangle).project
-}
-
-/** `withFrame`, and the beads the resized Frame trades with the Canvas, by Canvas position. Woven like the Canvas it
- * gives up those it no longer holds and takes in the Canvas beads `offered` where it shows none of its own (ticket
- * 0639); woven unlike it, it folds and takes nothing (ticket 0638). The resize lays and lifts them there. */
-export function withFrameGiving(project: Project, rectangle: Rect | undefined, offered: BeadMap = {}): { project: Project; given: BeadMap; taken: BeadMap } {
   if (sameFrame(frameOf(project), rectangle)) {
-    return { project, given: {}, taken: {} }
+    return project
   }
   const current = frameOf(project)
   // With the Frame gone the passes are gone too (ticket 426): Row progress is the Frame's (ADR 0079).
   if (!rectangle) {
-    return { project: touchFrameSheet(project, undefined), given: {}, taken: {} }
+    return touchFrameSheet(project, undefined)
   }
   const { rows, columns } = rectangle
   const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
   const holds = (at: GridPosition) => at.row >= 0 && at.row < rows && at.column >= 0 && at.column < columns
-  // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638) and takes what is offered (ticket
-  // 0639); one made anew is empty.
-  const refit = current
-    ? refitSheet(current, !tradesWithCanvas(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
-    : { beads: {}, given: {}, taken: {} }
+  // A resized Frame keeps what it holds and folds the rest (ticket 1215); one made anew is empty.
+  const refit: SheetBeads = current ? refitSheet(current, { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds) : { beads: {} }
   const frame: FrameSheet = {
     row,
     column,
@@ -194,10 +183,6 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
     ...(current?.settings ? { settings: current.settings } : {}),
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }
-  return {
-    // One made anew starts its progress afresh (spec 1182); one resized keeps its pointers inside it.
-    project: touchFrameSheet(project, { ...frame, rowProgress: current ? clampPointer(current.rowProgress, frame, frameQuarterTurnOf(project)) : startingRowProgressOf(frame) }),
-    given: shiftedBeads(refit.given, row, column),
-    taken: shiftedBeads(refit.taken, row, column),
-  }
+  // One made anew starts its progress afresh (spec 1182); one resized keeps its pointers inside it.
+  return touchFrameSheet(project, { ...frame, rowProgress: current ? clampPointer(current.rowProgress, frame, frameQuarterTurnOf(project)) : startingRowProgressOf(frame) })
 }

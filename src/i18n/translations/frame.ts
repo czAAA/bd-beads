@@ -111,10 +111,12 @@ export interface FrameTranslations {
     heightLabel: string
     fitToDrawing: string
     removeFrame: string
-    /** The question before Remove frame throws away finished rows (ticket 426). */
+    /** The question before Remove frame (tickets 426, 1215): the message names Row progress once a pass is done. */
     removeConfirmTitle: string
     removeConfirmMessage: string
+    removeConfirmMessageDone: string
     removeConfirmButton: string
+    removeAndCopyButton: string
     removeConfirmCancel: string
     addFromStarter: string
     addFrameButton: string
@@ -141,8 +143,6 @@ export interface FrameTranslations {
     announceMoved: string
     /** Fit to drawing with nothing drawn: there is nothing to wrap. */
     announceNothingToFit: string
-    /** A Frame that would cut through a named Piece is refused (ticket 407); `{name}` is the Schema's name. */
-    refusedCutsSchema: string
     /** The Frame shapes' names (tickets 0592, 0596): the Shapes' names in the Starter gallery and what is announced. */
     shapes: Record<FrameShapeId, string>
     /** A Custom frame's size setting in the Frame panel, one entry per setting (tickets 0592, 0593): its stepper, the

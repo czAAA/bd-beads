@@ -193,6 +193,16 @@ describe('Edit Frame', () => {
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(editing(wrapper)).toBe(false)
   })
+
+  it('removes and copies from the dialog\'s side action: the Frame goes and Paste mode is on (ticket 1215)', async () => {
+    const wrapper = await mountOpen(framedProject())
+    await toggleEdit(wrapper)
+    await removeFromSheet(wrapper)
+    await wrapper.get('[data-testid="confirm-modal-extra"]').trigger('click')
+    await flushPromises()
+    expect(savedFrame()).toBeUndefined()
+    expect(wrapper.find('[data-testid="pill-tool-paste"]').attributes('aria-pressed')).toBe('true')
+  })
 })
 
 describe('A Frame from the panel with no Frame', () => {

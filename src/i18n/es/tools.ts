@@ -147,7 +147,7 @@ export const tools: ToolsTranslations = {
     frameEdgeOut: 'Amplía el marco una cuenta por este lado.',
     frameEdgeIn: 'Reduce el marco una cuenta por este lado.',
     frameEdgeInDisabled: 'El marco ya no se puede reducir más por este lado.',
-    removeFrame: 'Quita el marco. Las cuentas se quedan donde están.',
+    removeFrame: 'Quita el marco y sus cuentas, o cópialas antes.',
     noFrameToRemove: 'No hay ningún marco que quitar.',
     frameFromStarter: 'Crea un marco desde un punto de partida en el centro de la vista.',
     replaceFrame: 'Cambia el marco por otro de un punto de partida.',
