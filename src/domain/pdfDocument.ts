@@ -13,6 +13,16 @@ export interface PdfPage {
   /** The page's drawing operators (`PdfContent`), zlib-compressed, laid over the picture: its letters are text in the
    * built-in Helvetica faces. */
   drawing?: Uint8Array
+  /** Links over the page (ticket 1233): rectangles in points from the page's top left corner, each opening `uri`. */
+  links?: PdfLink[]
+}
+
+interface PdfLink {
+  x: number
+  y: number
+  width: number
+  height: number
+  uri: string
 }
 
 const encoder = new TextEncoder()
@@ -48,7 +58,7 @@ export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number, ti
   object(1, ['<< /Type /Catalog /Pages 2 0 R /ViewerPreferences << /PrintScaling /None >> >>'])
   const numbers = pages.map((page) => {
     const at = next
-    next += page.drawing ? 4 : 3
+    next += (page.drawing ? 4 : 3) + (page.links?.length ?? 0)
     return at
   })
   object(2, [`<< /Type /Pages /Count ${pages.length} /Kids [${numbers.map((at) => `${at} 0 R`).join(' ')}] >>`])
@@ -59,8 +69,11 @@ export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number, ti
     const number = numbers[index]!
     const size = `${widthPt.toFixed(2)} ${heightPt.toFixed(2)}`
     const contents = page.drawing ? `[${number + 1} 0 R ${number + 3} 0 R]` : `${number + 1} 0 R`
+    const links = page.links ?? []
+    const first = number + (page.drawing ? 4 : 3)
+    const annotations = links.length > 0 ? ` /Annots [${links.map((_, at) => `${first + at} 0 R`).join(' ')}]` : ''
     object(number, [
-      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${size}] /Resources << /XObject << /Im0 ${number + 2} 0 R >> /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contents} >>`,
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${size}] /Resources << /XObject << /Im0 ${number + 2} 0 R >> /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contents}${annotations} >>`,
     ])
     const content = `q ${widthPt.toFixed(2)} 0 0 ${heightPt.toFixed(2)} 0 0 cm /Im0 Do Q`
     object(number + 1, [`<< /Length ${content.length} >>\nstream\n${content}\nendstream`])
@@ -77,6 +90,12 @@ export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number, ti
     if (page.drawing) {
       object(number + 3, [`<< /Filter /FlateDecode /Length ${page.drawing.length} >>\nstream\n`, page.drawing, '\nendstream'])
     }
+    links.forEach((link, at) => {
+      const left = link.x.toFixed(2)
+      const bottom = (heightPt - link.y - link.height).toFixed(2)
+      const rect = `[${left} ${bottom} ${(link.x + link.width).toFixed(2)} ${(heightPt - link.y).toFixed(2)}]`
+      object(first + at, [`<< /Type /Annot /Subtype /Link /Rect ${rect} /Border [0 0 0] /A << /S /URI /URI (${link.uri.replace(/[\\()]/g, '\\$&')}) >> >>`])
+    })
   })
 
   const info = next

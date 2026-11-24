@@ -1,10 +1,13 @@
 import { frameIdIn } from '../testUtils/frameId'
+import jsQR from 'jsqr'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { toHex } from '../domain/color'
 import { en } from '../i18n/en'
 import { drawCoverPage } from './coverPage'
+import { COVER_URL, coverFooterBox } from './coverFooter'
 import { coverPageLayout } from './coverPageLayout'
+import { mm } from './printPlan'
 import { pageOneLayout } from './pageOneLayout'
 import { loadPrintFonts } from './printPages'
 import { PRINT_COLORS } from './printColors'
@@ -51,7 +54,7 @@ describe('the Cover page', () => {
   it('shows the piece in color on the board, an empty position as bare board', () => {
     // A column empty inside the piece, which trimming keeps (ticket 1128): nothing above it casts a shadow there.
     const project = fixtureProject({ technique: 'loom', columns: 6, rows: 6, override: Array.from({ length: 6 }, (_, row) => ({ row, column: 2, color: null })) })
-    const canvas = drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2)
+    const { canvas } = drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2)
     const { board, piece } = coverPageLayout(project, frameIdIn(project), A4_PORTRAIT, boardTopOf(canvas))
     const bead = piece.width / 6
 
@@ -74,7 +77,7 @@ describe('the Cover page', () => {
     const project = fixtureProject({ technique: 'loom', columns: 20, rows: 10 })
     const words = wordsOf(project)
     const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
-    const canvas = drawCoverPage(project, words, A4_PORTRAIT, 1, 2)
+    const { canvas } = drawCoverPage(project, words, A4_PORTRAIT, 1, 2)
     const calls = [...fillText.mock.calls]
     fillText.mockRestore()
     const at = (value: string) => calls.find(([written]) => written === value)?.[2] ?? Number.NaN
@@ -89,7 +92,7 @@ describe('the Cover page', () => {
     const project = fixtureProject({ technique: 'loom', columns: 20, rows: 10 })
     const words = wordsOf(project)
     const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
-    const canvas = drawCoverPage(project, words, A4_PORTRAIT, 1, 2)
+    const { canvas } = drawCoverPage(project, words, A4_PORTRAIT, 1, 2)
     const calls = [...fillText.mock.calls]
     fillText.mockRestore()
     const at = (value: string) => calls.find(([written]) => written === value)?.[2] ?? Number.NaN
@@ -115,6 +118,70 @@ describe('the Cover page', () => {
 
     expect(values[0]).toMatch(new RegExp(`^${words.colorsCount}`))
     expect(values.some((value) => value.trim() === '' || value.startsWith('by '))).toBe(false)
+  })
+})
+
+describe("the Cover page's footer (ticket 1233; PrintCover card, The address)", () => {
+  beforeAll(loadPrintFonts)
+  const project = fixtureProject({ technique: 'loom', columns: 20, rows: 10 })
+
+  it('says where it was made, with the tag, the date, "scan to open" and the page number', async () => {
+    const words = wordsOf(project)
+    const values = await written(() => drawCoverPage(project, words, A4_PORTRAIT, 1, 2))
+
+    expect(values).toEqual(expect.arrayContaining(['Made with ', 'openbeads.com', words.labels.coverTag, words.exportedAt, 'scan to open', '1 / 2']))
+  })
+
+  it('has a QR code that reads https://openbeads.com, in the picture, also in Black and white', () => {
+    for (const words of [wordsOf(project), { ...wordsOf(project), blackAndWhite: true }]) {
+      const { canvas } = drawCoverPage(project, words, A4_PORTRAIT, 1, 2, 2)
+      const { data, width, height } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height)
+      expect(jsQR(data, width, height)?.data).toBe(COVER_URL)
+    }
+  })
+
+  it('links the address and the code in the PDF, with the code as drawing', () => {
+    const page = drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2, 1, true)
+
+    expect(page.links.map((link) => link.uri)).toEqual([COVER_URL, COVER_URL])
+    expect(page.drawing).toContain(' re f')
+    expect(drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2).drawing).toBeUndefined()
+  })
+
+  it('puts "12 / 12" at the right margin and the long date drawn, and closes inside its margins at its worst', () => {
+    const words = { ...wordsOf(project), exportedAt: '24 Nov 2026, 14:35', name: 'A very long name for a cuff that a maker typed to say every last thing about it' }
+    const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
+    drawCoverPage(project, words, A4_PORTRAIT, 12, 12)
+    const calls = [...fillText.mock.calls]
+    fillText.mockRestore()
+    const box = coverFooterBox(A4_PORTRAIT)
+
+    expect(calls.find(([value]) => value === '12 / 12')?.[1]).toBe(A4_PORTRAIT.width - mm(10))
+    // The date's line ends before the "scan to open" label starts.
+    const date = calls.find(([value]) => value === words.exportedAt)!
+    const label = calls.find(([value]) => value === 'scan to open')!
+    const probe = document.createElement('canvas').getContext('2d')!
+    probe.font = '7px "DM Mono", monospace'
+    expect((date[1] as number) + probe.measureText(words.exportedAt).width * (150 / 72)).toBeLessThan((label[1] as number) - mm(20))
+    // The technique word's baseline plus its descent stays above the footer's highest point, the code's quiet zone.
+    expect((calls.find(([value]) => value === words.techniqueWord)?.[2] as number) + mm(1.5)).toBeLessThan(box.top)
+  })
+
+  it('is on the Cover page only, and the PDF links it', async () => {
+    const words = wordsOf(project)
+    let pdf = ''
+    const values = await written(async () => (pdf = await (await exportProjectPdf(project, words, 150)).text()))
+
+    expect(values.filter((value) => value === 'openbeads.com')).toHaveLength(1)
+    expect(values.filter((value) => value === 'scan to open')).toHaveLength(1)
+    expect(pdf.match(/\/URI \(https:\/\/openbeads\.com\)/g)).toHaveLength(2)
+    expect((await written(() => exportProjectPdf(project, wordsOf(project, false), 150))).filter((value) => value === 'openbeads.com')).toHaveLength(0)
+  }, 60_000)
+
+  it("is on Picture's file, which has no links", async () => {
+    const values = await written(() => exportProjectPng(project, wordsOf(project), 150))
+
+    expect(values).toEqual(expect.arrayContaining(['openbeads.com', 'scan to open', '1 / 1']))
   })
 })
 

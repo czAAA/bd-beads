@@ -66,7 +66,7 @@ function drawOverview(context: CanvasRenderingContext2D, project: Project, overv
 
 /** The footer of the Cover page, page 1 and the list pages: the mark, the brand and the date and time on the left, the page
  * number on the right ("1 / 3"). The Cover page's is always in color. */
-export function drawFooter(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, pageNumber: number, pageCount: number, ink: PrintInk = COLOR_INK): void {
+function drawFooter(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, pageNumber: number, pageCount: number, ink: PrintInk = COLOR_INK): void {
   const { colors } = ink
   const baseline = page.height - PRINT_MARGIN - mm(1)
   drawMark(context, PRINT_MARGIN, baseline - mm(3.4), mm(4), colors.accent)

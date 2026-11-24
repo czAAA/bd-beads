@@ -1,7 +1,9 @@
 import type { FrameRef } from '../domain/grid'
 import { drawFlatBead, parseColor, PRINT_THEME, type BeadDrawer, type ProjectTheme } from './beadLook'
 import { coverPageLayout, type CoverPageLayout } from './coverPageLayout'
-import { drawFooter } from './pageOnePage'
+import { PdfContent } from '../domain/pdfContent'
+import { K } from './chartVector'
+import { drawCoverFooter, type PageLink } from './coverFooter'
 import { blankPage, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { mm, PRINT_MARGIN, type PageSize } from './printPlan'
@@ -147,8 +149,16 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
   return bottom
 }
 
+/** A Cover page: its picture, and for a PDF (`vector`) the QR code as drawing in points over it and the links to lay over the
+ * address and the code. The PNG has the code in its picture and no links. */
+export interface CoverPage {
+  canvas: HTMLCanvasElement
+  drawing?: string
+  links: PageLink[]
+}
+
 /** The Cover page (ticket 1096; PrintCover card), `pageNumber` of `pageCount`, `scale` times the layout's px. */
-export function drawCoverPage(project: Project, words: PrintText, page: PageSize, pageNumber: number, pageCount: number, scale = 1): HTMLCanvasElement {
+export function drawCoverPage(project: Project, words: PrintText, page: PageSize, pageNumber: number, pageCount: number, scale = 1, vector = false): CoverPage {
   const { canvas, context } = blankPage(page, scale)
   const bottom = drawTitleBlock(context, page, words, PRINT_MARGIN)
 
@@ -166,6 +176,7 @@ export function drawCoverPage(project: Project, words: PrintText, page: PageSize
   const captionBottom = layout.board.y + layout.board.height + CAPTION_GAP + pt(SIZE.technique)
   text(context, words.techniqueWord, PRINT_MARGIN, captionBottom - pt(SIZE.technique) * DESCENT, TECHNIQUE_FONT, PRINT_COLORS.accentStrong, 'left', page.width - PRINT_MARGIN * 2)
 
-  drawFooter(context, page, words, pageNumber, pageCount)
-  return canvas
+  const pdf = vector ? new PdfContent(page.height * K) : undefined
+  const links = drawCoverFooter(context, page, words, pageNumber, pageCount, pdf)
+  return { canvas, ...(pdf ? { drawing: pdf.toString() } : {}), links }
 }
