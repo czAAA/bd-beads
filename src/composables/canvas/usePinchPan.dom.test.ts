@@ -3,7 +3,7 @@ import { effectScope, ref } from 'vue'
 import { usePinchPan } from './usePinchPan'
 import type { TwistTarget } from './useCanvasView'
 
-function setup(zoom = 1, drawnAt?: number, twistTarget?: (a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) => TwistTarget) {
+function setup(zoom = 1, drawnAt?: number, twistTarget?: (a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) => TwistTarget, nextFrame?: (run: () => void) => void) {
   const el = document.createElement('div')
   document.body.append(el)
   // The area drawn larger by CSS zoom (ticket 1071), its box from (40, 20) on screen.
@@ -17,7 +17,7 @@ function setup(zoom = 1, drawnAt?: number, twistTarget?: (a: { clientX: number; 
   })
   const cancelStroke = vi.fn()
   const endTwist = vi.fn()
-  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, pinch, cancelStroke, endTwist, twistTarget }))
+  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, pinch, cancelStroke, endTwist, twistTarget, nextFrame }))
 
   const heard: string[] = []
   const child = document.createElement('div')
@@ -114,6 +114,62 @@ describe('usePinchPan', () => {
     // Engaged, it follows back under the threshold too.
     t.fire('pointermove', 1, 0, 0)
     expect(t.turns().at(-1)).toBeCloseTo(-45, 6)
+  })
+
+  describe('the glue twist (ticket 1227)', () => {
+    /** A twist of the fingers that has engaged (90° of it), the frames held back until `frame()` runs them. */
+    function glued(twistTarget?: () => TwistTarget) {
+      const queued: Array<() => void> = []
+      const t = setup(1, undefined, twistTarget, (run) => queued.push(run))
+      const frame = () => queued.splice(0).forEach((run) => run())
+      t.fire('pointerdown', 1, 0, 0)
+      t.fire('pointerdown', 2, 100, 0)
+      t.fire('pointermove', 2, 100, 100)
+      return { ...t, frame, queued }
+    }
+    const shown = (t: ReturnType<typeof glued>) => t.turns().reduce<number>((sum, turn) => sum + (turn ?? 0), 0)
+
+    it('shows 85% of the way to the fingers on each frame and catches up when they stop', () => {
+      const t = glued()
+      expect(shown(t)).toBe(0)
+      t.fire('pointermove', 1, 100, 0)
+      // The fingers are 45° on from where the twist engaged: nothing is shown before a frame.
+      expect(shown(t)).toBe(0)
+      t.frame()
+      expect(shown(t)).toBeCloseTo(45 * 0.85, 6)
+      t.frame()
+      expect(shown(t)).toBeCloseTo(45 * (1 - 0.15 ** 2), 6)
+      for (let i = 0; i < 20; i++) t.frame()
+      expect(shown(t)).toBeCloseTo(45, 6)
+      expect(t.queued).toHaveLength(0)
+    })
+
+    it('follows a jittering finger by the fraction of its jump, not the jump', () => {
+      const t = glued()
+      t.fire('pointermove', 1, 100, 0)
+      t.frame()
+      const before = shown(t)
+      t.fire('pointermove', 1, 100, 10)
+      t.fire('pointermove', 1, 100, 0)
+      t.frame()
+      expect(shown(t) - before).toBeCloseTo((45 - before) * 0.85, 6)
+    })
+
+    it('shows what is left at once as the fingers lift, before the twist settles', () => {
+      const t = glued()
+      t.fire('pointermove', 1, 100, 0)
+      t.fire('pointerup', 2, 100, 100)
+      t.fire('pointerup', 1, 100, 0)
+      expect(shown(t)).toBeCloseTo(45, 6)
+      expect(t.endTwist).toHaveBeenCalledOnce()
+    })
+
+    it('glues a twist of the Frame the same, the target kept', () => {
+      const t = glued(() => 'frame')
+      t.fire('pointermove', 1, 100, 0)
+      t.frame()
+      expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ turn: expect.closeTo(45 * 0.85, 6), target: 'frame' }))
+    })
   })
 
   it('turns the short way across the line where the angle wraps round', () => {
