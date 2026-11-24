@@ -134,6 +134,7 @@ export function useRowOps(deps: RowOpsDeps) {
   /** The Reset progress question answered No: nothing changes. */
   function onCancelResetProgress() {
     resetProgressConfirmOpen.value = false
+    resetting = undefined
   }
 
   /** Reset progress after the question: the pointers go back to the first row, the direction stays. */

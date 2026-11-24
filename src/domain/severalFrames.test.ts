@@ -46,21 +46,27 @@ describe('each Frame keeps its own margin (ticket 1218)', () => {
     expect(mayPlace(project, { row: 1, column: 1 })).toBe(true)
   })
 
-  it('takes back Paint, Paste and Rotate in either margin, and lets Erase through', () => {
+  it('takes back Paint in either margin', () => {
     const painted = keepAllowedEdits(project, rawPaint(project, [inFirst, inSecond, { row: 12, column: 12 }], RED))
     expect([inFirst, inSecond, { row: 12, column: 12 }].map(({ row, column }) => colorAt(beadsOfLayer(painted, 'canvas'), row, column))).toEqual([null, null, RED])
+  })
 
+  it('takes back a Paste in either margin', () => {
     const block: CopiedBlock = { rows: 1, columns: 10, colors: [Array<string>(10).fill(RED)], anchor: { row: 0, column: 0 } }
     const pasted = keepAllowedEdits(project, pasteOnLayer(project, block, { row: 18, column: 10 }))
     const row = beadsOfLayer(pasted, 'canvas')[18] ?? {}
     expect(Object.keys(row).map(Number)).toEqual([10, 11, 12, 13, 14, 15])
+  })
 
+  it('takes back a Rotate in either margin', () => {
     const strip = rawPaint(project, Array.from({ length: 9 }, (_, i) => ({ row: 12, column: 18 + i })), RED)
     const drawn = keepAllowedEdits(project, strip)
     const turned = keepAllowedEdits(drawn, rotateSelection(drawn, { top: 12, left: 18, rows: 1, columns: 9 }).project)
     expect(colorAt(beadsOfLayer(turned, 'canvas'), 15, 22)).toBe(RED)
     expect(colorAt(beadsOfLayer(turned, 'canvas'), 16, 22)).toBeNull()
+  })
 
+  it('lets Erase through in either margin', () => {
     const legacy = withLayers(project, { beads: withColors({}, [{ ...inSecond, color: RED }]) })
     const erased = keepAllowedEdits(legacy, rawPaint(legacy, [inSecond], null))
     expect(colorAt(beadsOfLayer(erased, 'canvas'), inSecond.row, inSecond.column)).toBeNull()

@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { rotateFrame, twistFrameTo } from '../../domain/rotate'
+import { twistStop } from '../../domain/frameSpacing'
 import type { Project } from '../../domain/project'
 import { rotateFrameQuestion, twistFrameQuestion, type RotateFrameQuestion, type WovenChoice } from '../../domain/wovenLines'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -67,7 +68,8 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   function onTwistFrame(angle: number, given?: FrameRef): 'kept' | 'asked' {
     const project = deps.currentProject()
     const frame = given ?? firstFrameId(project)
-    const asked = project && twistFrameQuestion(project, angle, frame)
+    // Asked of where the twist stops, short of another Frame's margin (ticket 1218).
+    const asked = project && twistFrameQuestion(project, twistStop(project, angle, frame), frame)
     if (asked) {
       twistedTo = angle
       asking = frame
