@@ -179,7 +179,7 @@ describe('the Tool pill', () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     await wrapper.get('[data-testid="margin-mirror-frame"]').trigger('click')
     await flushPromises()
-    expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'frame' })
+    expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'frame', frame: frameIdIn(loadProjects()[0]!) })
 
     await pickColor(wrapper, defaultColorOf('red').id)
     await pickTool(wrapper, 'paint')
