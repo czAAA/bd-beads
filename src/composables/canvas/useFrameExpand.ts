@@ -20,8 +20,8 @@ export interface SlimMeasures {
 }
 
 /** Until the sheet measures itself: the full row, and the two-row title block on Row progress's strip (ticket 1176), the
- * tallest it holds. */
-const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: 2 * 23 + 1 + MARGIN_PX.strip - 1, rowWidth: 0 }
+ * tallest it holds: a 23px row over the legend's (ticket 1213). */
+const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: 23 + MARGIN_PX.legendRow + 1 + MARGIN_PX.strip - 1, rowWidth: 0 }
 
 /** What Expand the Frame works the view through (`useCanvasView`). */
 export interface FrameExpandDeps {

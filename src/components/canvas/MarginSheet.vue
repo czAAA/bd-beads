@@ -175,7 +175,13 @@ const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['line', '
 /** Expanded (ticket 1169): the two-row block, the one row with its pencils, the compact row, then the name with the
  * legend and Letters, then the tab; never roomy. */
 const EXPANDED_TITLE_FORMS: readonly TitleForm[] = ['full', 'line', 'compact', 'key', 'tab']
-const titleForms = computed<readonly TitleForm[]>(() => (props.expanded ? EXPANDED_TITLE_FORMS : TITLE_FORMS[form.value]))
+/** Whether the compact row's two-line legend stands clear of the Frame's line (ticket 1213): under it, `brief`. */
+const legendFits = computed(() => props.anchor.band >= MARGIN_PX.band.legend * (least.value ?? MARGIN_PX.scale.min))
+const titleForms = computed<readonly TitleForm[]>(() => {
+  if (props.expanded) return EXPANDED_TITLE_FORMS
+  const forms = TITLE_FORMS[form.value]
+  return form.value === 'compact' && !legendFits.value ? forms.filter((shown) => shown !== 'compact') : forms
+})
 
 // Row progress under the title block (ticket 1176): full and expanded, the strip across the sheet, which first shortens
 // its counter (`:short`), then gives up its track (`:1`), then its counter (`:2`), Row done staying to the last. Compact

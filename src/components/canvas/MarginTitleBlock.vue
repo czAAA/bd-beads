@@ -147,7 +147,7 @@ const keyLabel = computed(() =>
 </script>
 
 <template>
-  <div class="margin-title" :class="`margin-title--${form === 'brief' || form === 'key' || form === 'line' ? 'compact' : form}`" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
+  <div class="margin-title" :class="[`margin-title--${form === 'brief' || form === 'key' || form === 'line' ? 'compact' : form}`, { 'margin-title--keyed': form !== 'brief' && form !== 'roomy' }]" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
     <!-- Roomy (ticket 1015): what the Frame is on the left, what it is made of on the right. -->
     <template v-if="form === 'roomy'">
       <div class="margin-title__identity">
@@ -233,12 +233,13 @@ const keyLabel = computed(() =>
         <div v-if="form !== 'line'" class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
       </template>
       <div v-if="form !== 'brief'" class="margin-title__cell margin-title__legend" :style="form === 'full' ? grid.legend : undefined">
+        <!-- The legend's Change (ticket 1197) on its top line, the Bead's label before it (ticket 1213): the Bead's pickers
+             in a popover, then the Frame panel's Replace bead. The colors under them. -->
+        <MarginBeadCell v-if="frameBead" :bead="frameBead" pencil @pick="emit('replace-bead', $event)" />
         <span class="margin-title__legend-colors" role="img" :aria-label="legendLabel" data-testid="margin-legend">
           <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
           <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
         </span>
-        <!-- The legend's Change (ticket 1197): the Bead's pickers in a popover, then the Frame panel's Replace bead. -->
-        <MarginBeadCell v-if="frameBead" :bead="frameBead" pencil :named="form === 'full'" @pick="emit('replace-bead', $event)" />
       </div>
       <div class="margin-title__cell margin-title__letters" :style="form === 'full' ? grid.letters : undefined">
         <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
@@ -252,12 +253,13 @@ const keyLabel = computed(() =>
 </template>
 
 <style scoped>
-/* Two rows of 23px with 1px rules between the cells, on `margin-title`, its bottom-left corner rounded with the inner
- * border (MarginSheet card). Row 1: the name, the Technique, "by" the maker over two cells; row 2: the sizes, the
- * legend, Letters; the fold button over both. Compact: one 22px row (ticket 0658). */
+/* Two rows, 23px and the legend's 36px, with 1px rules between the cells, on `margin-title`, its bottom-left corner
+ * rounded with the inner border (MarginSheet card). Row 1: the name, the Technique, "by" the maker over two cells; row
+ * 2: the sizes, the legend, Letters; the fold button over both. Compact: one 24px row (ticket 0658), the legend's 36px
+ * where it holds the legend (ticket 1213). */
 .margin-title {
   display: grid;
-  grid-template-rows: repeat(2, var(--margin-title-row));
+  grid-template-rows: var(--margin-title-row) var(--margin-legend-row);
   box-sizing: border-box;
   color: var(--ink);
   background: var(--margin-title);
@@ -269,6 +271,10 @@ const keyLabel = computed(() =>
   grid-auto-columns: max-content;
   grid-auto-flow: column;
   grid-template-rows: var(--margin-done-compact);
+}
+
+.margin-title--compact.margin-title--keyed {
+  grid-template-rows: var(--margin-legend-row);
 }
 
 .margin-title__cell {
@@ -348,8 +354,12 @@ const keyLabel = computed(() =>
   padding: 0;
 }
 
+/* Two lines (ticket 1213): the Bead's label with its pencil, the colors under them, 2px apart. */
 .margin-title__legend {
-  gap: var(--space-4);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-2);
 }
 
 .margin-title__legend-colors {

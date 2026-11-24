@@ -12,9 +12,11 @@ import NewProjectForm from '../project/NewProjectForm.vue'
 /** The Menu card's gap between a button and its list. */
 const GAP = 4
 
-// The margin pencil is pushed only by the longest Technique names; a New Project row is pushed in any language.
+// The margin pencil is pushed only by the longest Technique names; a New Project row is pushed in any language. The
+// sheet at 125%, where the pencil stands far enough from the screen's left edge for its list to end at the button's right
+// (at 100% the list opens from its left instead, ticket 1213).
 const CASES: [name: string, host: Component, picker: string, locale: FitLocale][] = [
-  ['the margin Technique pencil', marginSheetHost(1), 'margin-technique-picker', 'longest'],
+  ['the margin Technique pencil', marginSheetHost(1.25), 'margin-technique-picker', 'longest'],
   ['New Project Technique', NewProjectForm, 'new-project-technique', 'en'],
 ]
 

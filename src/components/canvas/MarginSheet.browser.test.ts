@@ -110,11 +110,11 @@ const formOf = (root: HTMLElement) => root.querySelector('[data-testid="margin-s
 
 describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
   for (const locale of FIT_LOCALES) {
-    it(`is full at 100% and 90%, compact at 60% and folded at 45%, nothing clipped or overlapping, in ${locale}`, async () => {
+    it(`is full at 100%, compact at 95%, 70% and 60%, folded at 45%, nothing clipped or overlapping, in ${locale} (ticket 1213: full from 100%)`, async () => {
       zoom.value = 1
       columns.value = 40
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
-      for (const [at, form] of [[1, 'full'], [0.9, 'full'], [0.6, 'compact'], [0.45, 'folded']] as const) {
+      for (const [at, form] of [[1, 'full'], [0.95, 'compact'], [0.7, 'compact'], [0.6, 'compact'], [0.45, 'folded']] as const) {
         zoom.value = at
         await settled(root)
         expect(formOf(root), `${at}`).toBe(form)
@@ -165,15 +165,18 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
       }
     })
 
-    it(`keeps the title block in one row on Row progress's strip from 90% to 150%, clear of the Frame's line, in ${locale} (ticket 1176)`, async () => {
+    it(`keeps the title block in one row on Row progress's strip from 100% to 150%, the Bead's label over the legend, clear of the Frame's line, in ${locale} (tickets 1176, 1213)`, async () => {
       zoom.value = 1
       columns.value = 40
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
       const titleForm = () => root.querySelector('[data-testid="margin-title"]')?.getAttribute('data-form')
-      for (const at of [0.9, 1, 1.25, 1.5]) {
+      for (const at of [1, 1.25, 1.5]) {
         zoom.value = at
         await settled(root)
         expect(titleForm(), `${at}`).toBe('line')
+        const name = root.querySelector('[data-testid="margin-bead-name"]')!.getBoundingClientRect()
+        const colors = root.querySelector('[data-testid="margin-legend"]')!.getBoundingClientRect()
+        expect(name.bottom, `${at}`).toBeLessThanOrEqual(colors.top + 0.5)
         expect(root.querySelector('.margin-sheet__progress')?.getAttribute('data-form'), `${at}`).toBe('margin:0')
         expect(problems(root), `${at}`).toEqual([])
       }

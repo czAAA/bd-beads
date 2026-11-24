@@ -16,9 +16,10 @@ async function box(page: Page, testid: string): Promise<Box> {
 
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 
-// The sheet's full form, from 51% (tickets 0658, 0698): a loom bead is 20px at 100%, so the band is 80px there and the
-// scale 80 / 72; from 135% it is held at 1.5. Under 23% only the Move bar and the Frame tools button are left (tickets 0682, 1164).
-for (const [zoom, scale] of [[100, 80 / 72], [400, 1.5]] as const) {
+// The sheet's full form, from 100% (tickets 0658, 0698, 1213): a loom bead is 20px at 100%, so the band is 80px there,
+// the drafting sheet's own, and at 125% the scale 1.25; from 150% it is held at 1.5. Under 23% only the Move bar and the
+// Frame tools button are left (tickets 0682, 1164).
+for (const [zoom, scale] of [[125, 1.25], [400, 1.5]] as const) {
   test(`the handle and pencil are drawn at the sheet's scale and clear each other, and the bar keeps its size, at ${zoom}%`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()

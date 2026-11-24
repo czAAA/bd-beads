@@ -83,7 +83,7 @@ describe('useFrameExpand (ticket 1169)', () => {
   })
 
   it('makes the numbers about 40% of the bead pitch, 12px to 28px, held while zooming (ticket 1194)', () => {
-    const { view, expand, stop } = setup(framed(6, 6))
+    const { view, expand, stop } = setup(framed(5, 5))
     expand.toggle()
     const font = expand.content.value!.fontPx
     expect(font).toBe(28)
