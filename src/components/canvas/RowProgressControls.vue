@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FrameId } from '../../domain/grid'
 import { firstFrameId } from '../../domain/layerRecord'
 import { computed, ref, watch } from 'vue'
 import { columnsAsSeen, frameRowOrder, rowProgressPosition, seenWayOf, type SeenWay } from '../../domain/rowProgress'
@@ -21,6 +22,9 @@ import { fillBlanks } from '../../domain/fillBlanks'
 // is the sheet's strip, `compact` and `folded` its smaller forms; `woven` the Homepage cuff's (1157).
 const props = withDefaults(defineProps<{
   project: Project
+  /** The Frame whose Row progress this is (ticket 1220): its own pointer, counter and direction; the first when none is
+   * named. */
+  frame?: FrameId
   /** Whether the Canvas draws the Row progress look (ticket 474): the Switch is on while it does. */
   rowHighlight?: boolean
   form: 'bar' | 'margin' | 'compact' | 'folded' | 'woven'
@@ -66,9 +70,10 @@ const actions = {
 function keyedHere<Action extends { chords: readonly unknown[] }>(action: Action): Action {
   return props.form === 'woven' ? { ...action, chords: [] } : action
 }
-const deps = computed(() => controlDeps({ activeProject: () => props.project }))
+const own = computed(() => props.frame ?? firstFrameId(props.project))
+const deps = computed(() => controlDeps({ activeProject: () => props.project, frame: () => own.value }))
 
-const position = computed(() => rowProgressPosition(props.project, firstFrameId(props.project)))
+const position = computed(() => rowProgressPosition(props.project, own.value))
 
 /** Rows before the current one are finished. */
 const finishedShare = computed(() => (position.value.total > 0 ? position.value.current / position.value.total : 0))
@@ -82,7 +87,7 @@ watch(
   },
 )
 
-const columnWise = computed(() => columnsAsSeen(props.project, firstFrameId(props.project)))
+const columnWise = computed(() => columnsAsSeen(props.project, own.value))
 
 /** Row done and Back a row name what is woven in the direction the rows run: a row, or a column (ticket 411). */
 const doneLabel = computed(() => (columnWise.value ? t.value.rowProgress.columnNextButton : t.value.rowProgress.nextButton))
@@ -98,14 +103,14 @@ const allDoneBody = computed(() => (columnWise.value ? t.value.rowProgress.every
 
 /** The counter names its step, "Row 7 of 10", and on peyote, where a line takes two passes, "Pass 3 of 27 · row 2"
  * with the rulers' row (tickets 0849 F-04-03, 0972): the announcer's own words. A narrow bar shows "7/10". */
-const count = computed(() => rowProgressCount(t.value.rowProgress, props.project))
+const count = computed(() => rowProgressCount(t.value.rowProgress, props.project, own.value))
 /** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): none for a Frame without a
  * Frame shape. */
-const customPosition = computed(() => customPassWords(t.value.rowProgress, props.project, shownRow.value))
+const customPosition = computed(() => customPassWords(t.value.rowProgress, props.project, shownRow.value, own.value))
 
 /** The way the arrows point: drawn for top to bottom (ticket 0589), turned to the way the rows run as seen, which Row
  * progress keeps (spec 1182). */
-const arrowTurn = computed(() => seenWayOf(props.project, firstFrameId(props.project)))
+const arrowTurn = computed(() => seenWayOf(props.project, own.value))
 
 const directionLabel = computed(() => seenWayWords(t.value.rowProgress, arrowTurn.value).name)
 
@@ -116,7 +121,7 @@ function toggleDirection(event: MouseEvent) {
   directionButton.value = event.currentTarget as HTMLElement
   directionOpen.value = !directionOpen.value
 }
-const turns = computed(() => frameRowOrder(props.project, firstFrameId(props.project)).turns)
+const turns = computed(() => frameRowOrder(props.project, own.value).turns)
 /** Row highlight is Show row marks in that list, so the bar's stands alone only where the rows run one way (a Custom
  * frame). One lit Switch at most (ticket 0981, UX-092): the margin's smaller forms, with no list, keep theirs only while
  * the bar's is in its list. */

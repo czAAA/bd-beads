@@ -32,13 +32,13 @@ export const MOVED_FLAG = 'openbeads:library-in-indexeddb'
 /** The `meta` row that remembers what the old library held when it was last taken in. */
 const OLD_LIBRARY = 'old-library'
 
-/** What `stored` is in a record: a Project as library version 8 writes it (ticket 1225). A record of another format is
+/** What `stored` is in a record: a Project as library version 9 writes it (ticket 1220). A record of another format is
  * left alone. @internal Tests read records with it. */
-export const RECORD_FORMAT = 3
-/** The record formats this build reads, and writes over: version 6's (1) and 7's (2) differ only in fields the one
- * decoder reads either way (a Frame's place and Row progress, ticket 1185; the Palette's sections, ticket 1225), so they
- * are read as they are and saved as the current one. */
-const READ_FORMATS: readonly number[] = [1, 2, RECORD_FORMAT]
+export const RECORD_FORMAT = 4
+/** The record formats this build reads, and writes over: version 6's (1) to 8's (3) differ only in fields the one
+ * decoder reads either way (a Frame's place, ticket 1185; the Palette's sections, 1225; the Last edited Frame, 1220), so
+ * they are read as they are and saved as the current one. */
+const READ_FORMATS: readonly number[] = [1, 2, 3, RECORD_FORMAT]
 
 /** A Project's record. */
 interface LibraryRecord {

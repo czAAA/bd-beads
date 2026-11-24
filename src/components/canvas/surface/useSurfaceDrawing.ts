@@ -2,7 +2,7 @@ import { onBeforeUnmount, toValue, watch, type MaybeRefOrGetter, type Ref } from
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import { changedRows, type FrameSheet } from '../../../domain/canvas'
 import { beadTotal } from '../../../domain/openingLimits'
-import { beadsOfLayer, frameIdOf, frameOf, framesOf, layerOf, firstFrameId } from '../../../domain/layerRecord'
+import { beadsOfLayer, frameById, frameIdOf, framesOf, layerOf, firstFrameId } from '../../../domain/layerRecord'
 import type { FrameRef } from '../../../domain/grid'
 import { INITIAL_ROW_PROGRESS, rowProgressOf, stepLines } from '../../../domain/rowProgress'
 import { layersAlike } from '../../../domain/layerWeave'
@@ -207,17 +207,17 @@ function ownLinesOnCanvas(sheet: Pick<FrameSheet, 'shape' | 'quarterTurns'> | un
 // Bands of rows an edit changed, to draw just those (rows within two apart share a band; neighbours are drawn anyway).
 // Empty when nothing changed; undefined when so much did (Undo, Fill) that drawing all again is
 // cheaper.
-function changedBands(before: Project, after: Project): Bands | undefined {
+function changedBands(before: Project, after: Project, ref: FrameRef): Bands | undefined {
   // The Frame's rows are not the Canvas's where it is woven otherwise or in a Bead of another size (tickets 492, 0665),
   // nor rows on the screen where it has a Frame shape, whose layout places each bead (a Fringe earring's top is counted
   // up from its base row, its strands from row 1000), or is turned: draw it all again.
-  const frame = layerOf(after, firstFrameId(after))
-  const sheet = frameOf(after)
-  if (frame && (!layersAlike(after, firstFrameId(after)) || !ownLinesOnCanvas(sheet)) && layerOf(before, firstFrameId(before))?.beads !== frame.beads) {
+  const frame = layerOf(after, ref)
+  const sheet = frameById(after, ref)
+  if (frame && (!layersAlike(after, ref) || !ownLinesOnCanvas(sheet)) && layerOf(before, ref)?.beads !== frame.beads) {
     return undefined
   }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.
-  const framed = (project: Project) => layerOf(project, firstFrameId(project))?.beads ?? {}
+  const framed = (project: Project) => layerOf(project, ref)?.beads ?? {}
   const frameTop = sheet?.row ?? 0
   const changed = [
     ...new Set([
@@ -255,15 +255,15 @@ function withoutProgress(project: Project): Project {
 /** The bands of a Progress bar step (ticket 1038), when nothing but the Frame's Row progress changed: the Canvas rows,
  * or columns where the rows run down it, of the passes whose look changed. Undefined where they are not lines of the
  * Canvas (a Frame shape or a turned Frame, a Frame woven otherwise or in a Bead of another size) or too many to pay. */
-function stepBands(before: Project, after: Project): Bands | undefined {
-  const frame = frameOf(after)
-  const beadsOf = (project: Project, layer: 'canvas' | 'frame') => layerOf(project, layer === 'canvas' ? layer : firstFrameId(project))?.beads ?? {}
+function stepBands(before: Project, after: Project, ref: FrameRef): Bands | undefined {
+  const frame = frameById(after, ref)
+  const beadsOf = (project: Project, layer: 'canvas' | 'frame') => layerOf(project, layer === 'canvas' ? layer : ref)?.beads ?? {}
   const painted = (layer: 'canvas' | 'frame') => changedRows(beadsOf(before, layer), beadsOf(after, layer)).length > 0
   const samePaint = !painted('canvas') && !painted('frame')
-  if (!frame || !ownLinesOnCanvas(frame) || !layersAlike(after, firstFrameId(after)) || !samePaint || !sameDrawing(withoutProgress(before), withoutProgress(after))) {
+  if (!frame || !ownLinesOnCanvas(frame) || !layersAlike(after, ref) || !samePaint || !sameDrawing(withoutProgress(before), withoutProgress(after))) {
     return undefined
   }
-  const step = stepLines(after, rowProgressOf(before, firstFrameId(before)), firstFrameId(after))
+  const step = stepLines(after, rowProgressOf(before, ref), ref)
   const across = step?.direction === 'columns'
   const bands = step && bandsOf(step.lines.map((line) => line + (across ? frame.column : frame.row)))
   return bands && (across ? { columns: bands } : { rows: bands })
@@ -319,7 +319,10 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
     placeCanvas(canvas, box)
     const region = { x: props.scroll.x + box.x, y: props.scroll.y + box.y, width: box.width, height: box.height }
     const project = props.project
-    const letters = shownLetters(project, firstFrameId(project))
+    // The Frame this layer draws as its own: the one its layer names (the expanded one may not be the first, ticket 1220).
+    const named = toValue(layer)
+    const ownFrame: FrameRef = named === 'canvas' ? firstFrameId(project) : named
+    const letters = shownLetters(project, ownFrame)
     const canvasLetters = shownLetters(project, 'canvas')
     const resized = sizeCanvas(canvas, region.width, region.height, pixelRatio)
     const context = canvas.getContext('2d')
@@ -346,8 +349,8 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
       sameReference(before.reference, reference.value) &&
       sameOthers(before.others, drawn.others)
         ? sameDrawing(before.project, project)
-          ? changedBands(before.project, project)
-          : stepBands(before.project, project)
+          ? changedBands(before.project, project, ownFrame)
+          : stepBands(before.project, project, ownFrame)
         : undefined
     const drawing = { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, canvasLetters, draftWhenSmall: true, opaque: true, reference: reference.value, slimSheet: slimSheet?.value, layer: toValue(layer) }
 

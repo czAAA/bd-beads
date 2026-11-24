@@ -4,7 +4,7 @@ import { finishedRowsHold } from '../../domain/rowProgress'
 import { sameFrame } from '../../domain/canvas'
 import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
 import { sameBeads, sameLayers } from '../../domain/layerBeads'
-import { frameOf, layerOf, type Layered, firstFrameId } from '../../domain/layerRecord'
+import { frameOf, layerOf, type Layered, firstFrameId, withLastEdited } from '../../domain/layerRecord'
 import { sameMirrorBar } from '../../domain/mirror'
 import { withColorsInPalette } from '../../domain/paletteEdits'
 import type { Layer } from '../../domain/grid'
@@ -94,7 +94,7 @@ export function useEdit(deps: EditDeps) {
 
     if (kind === 'frame') {
       const result = (command as EditCommands['frame'])(project)
-      return applyFrame(result, () => step(snapshotOf(project), result.kind === 'changed' ? result.project : project))
+      return applyFrame(project, result, () => step(snapshotOf(project), result.kind === 'changed' ? result.project : project))
     }
 
     const made = (command as EditCommands['drawing'])(project)
@@ -107,7 +107,7 @@ export function useEdit(deps: EditDeps) {
     const updated = withColorsInPalette(kept)
     // A change that took the Mirror bar's settings too (an Area grown to fit them, ticket 1027) puts them back with it.
     step(snapshotOf(project, { mirrorBar: !sameMirrorBar(project.mirror, updated.mirror) }), updated)
-    deps.replaceProject(updated)
+    deps.replaceProject(withLastEdited(project, updated))
     // A command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
     if (!sameFrame(frameOf(project), frameOf(updated)) || techniqueOf(project, 'canvas') !== techniqueOf(updated, 'canvas')) {
       deps.resetAfterFrameChange()
@@ -123,15 +123,16 @@ export function useEdit(deps: EditDeps) {
     if (!project) {
       return { kind: 'unchanged' }
     }
-    return applyFrame(command(project), () => {
+    return applyFrame(project, command(project), () => {
       if (held?.id === project.id) return
       settle()
       held = { id: project.id, baseline: snapshotOf(project) }
     })
   }
 
-  /** A Frame change's result put on the open Project, after `before` takes its Undo step or holds it. */
-  function applyFrame(result: FrameChangeResult, before: () => void): EditOutcome {
+  /** A Frame change's result put on the open Project, after `before` takes its Undo step or holds it; the Frame it
+   * changed is then the Last edited Frame (ticket 1220). */
+  function applyFrame(from: Project, result: FrameChangeResult, before: () => void): EditOutcome {
     if (result.kind === 'refused') {
       return { kind: 'refused', reason: result.reason }
     }
@@ -139,7 +140,7 @@ export function useEdit(deps: EditDeps) {
       return { kind: 'unchanged' }
     }
     before()
-    deps.replaceProject(withColorsInPalette(result.project))
+    deps.replaceProject(withLastEdited(from, withColorsInPalette(result.project)))
     deps.resetAfterFrameChange()
     return { kind: 'applied' }
   }
@@ -177,7 +178,7 @@ export function useEdit(deps: EditDeps) {
       return keepAllowedEdits(current, made)
     }, project)
     if (updated !== project) {
-      deps.replaceProject(updated, { deferSave: true })
+      deps.replaceProject(withLastEdited(project, updated), { deferSave: true })
     }
   }
 
@@ -211,7 +212,7 @@ export function useEdit(deps: EditDeps) {
     if (!project) {
       return
     }
-    const restored = restoreSnapshot(project, snapshot)
+    const restored = withLastEdited(project, restoreSnapshot(project, snapshot))
     deps.replaceProject(restored)
     if (!sameFrame(frameOf(restored), frameOf(project)) || techniqueOf(restored, 'canvas') !== techniqueOf(project, 'canvas') || techniqueOf(restored, firstFrameId(restored)) !== techniqueOf(project, firstFrameId(project))) {
       deps.resetAfterFrameChange()

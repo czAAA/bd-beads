@@ -1,4 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
+import type { FrameId } from '../../domain/grid'
 import type { ExportChoice, ExportOpener, ExportScope, OpenPanel } from './openPanel'
 
 // The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu and Project
@@ -16,8 +17,14 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
   /** What the Export panel exports (ticket 1210): the Frame's, or the Selection's from the Selection bar's button. It
    * is the Frame's again as soon as the panel is gone. */
   const exportScope = ref<ExportScope>('frame')
+  /** The Frame the Export panel exports (ticket 1220): the one whose sheet's Export button opened it; none where nothing
+   * names a Frame, the Last edited Frame then. */
+  const exportFrame = ref<FrameId>()
   watch(openPanel, (sheet) => {
-    if (sheet !== 'export') exportScope.value = 'frame'
+    if (sheet !== 'export') {
+      exportScope.value = 'frame'
+      exportFrame.value = undefined
+    }
   }, { flush: 'sync' })
 
   /** A strip button's panel; the Project panel's Export row opens Export as the strip's button does (ticket 0956). */
@@ -28,9 +35,9 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
 
   /** Export from the strip or from the margin sheet: the same panel, hung from the button pressed. Pressing the
    * button it hangs from again closes it; the other one moves it there. */
-  function onOpenExport(from: ExportOpener) {
-    if (openPanel.value === 'export' && exportOpener.value === from) openPanel.value = null
-    else showExport(from)
+  function onOpenExport(from: ExportOpener, frame?: FrameId) {
+    if (openPanel.value === 'export' && exportOpener.value === from && exportFrame.value === frame) openPanel.value = null
+    else showExport(from, undefined, frame)
   }
 
   /** The Selection bar's Export (ticket 1210): the panel hung from that button, exporting the Selection; pressed again
@@ -43,8 +50,9 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
 
   /** Export opened, never closed, by what leads to it from no Frame (ticket 0847): the Progress bar's Fit a Frame and
    * export a picture, and a Frame selected from the Export panel. */
-  function showExport(from: ExportOpener, choice?: ExportChoice) {
+  function showExport(from: ExportOpener, choice?: ExportChoice, frame?: FrameId) {
     exportOpener.value = from
+    exportFrame.value = frame
     exportChoice.value = choice
     exportScope.value = 'frame'
     openPanel.value = 'export'
@@ -128,6 +136,7 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     showExport,
     exportChoice,
     exportScope,
+    exportFrame,
     onOpenSelectionExport,
     menuOpensOnForm,
     openMenuOnForm,

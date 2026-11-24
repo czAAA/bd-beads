@@ -135,8 +135,15 @@ watch(placed, (style) => {
   })
 })
 
+/** The selector of the button a panel hangs from: its test id, and where it stands on one Frame's sheet among several,
+ * the Frame after an `@` (ticket 1220). */
+function anchorSelector(anchor: string): string {
+  const [id, frame] = anchor.split('@')
+  return frame ? `[data-testid="${id}"][data-frame="${frame}"]` : `[data-testid="${id}"]`
+}
+
 function place() {
-  anchorEl.value = findInShell(`[data-testid="${props.anchor}"]`) ?? undefined
+  anchorEl.value = findInShell(anchorSelector(props.anchor)) ?? undefined
   anchored.follow()
 }
 watch(() => props.anchor, () => {
@@ -239,13 +246,13 @@ defineExpose({ place, el: panelEl, box: dropdownStyle })
 let opener: HTMLElement | null = null
 const pressClosed = usePressClosed()
 onMounted(() => {
-  opener = findInShell(`[data-testid="${props.anchor}"]`)
+  opener = findInShell(anchorSelector(props.anchor))
   place()
   void nextTick(focusEntry)
 })
 onBeforeUnmount(() => {
   anchored.stop()
-  const target = findInShell(`[data-testid="${props.anchor}"]`) ?? opener
+  const target = findInShell(anchorSelector(props.anchor)) ?? opener
   // A dialog the panel opened (Delete) takes focus itself and gives it back when it closes. Focus moves to
   // the button before the dialog mounts, so the button is what the dialog gives it back to (ticket 0939).
   if (pressClosed.wasPressClosed() || findInShell('.app-modal')) return

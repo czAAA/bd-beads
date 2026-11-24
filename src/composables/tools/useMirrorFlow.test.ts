@@ -1,5 +1,5 @@
 import { frameIdIn } from '../../testUtils/frameId'
-import { SECOND, twoFrames } from '../../testUtils/twoFrames'
+import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import { changeFrame } from '../../domain/changeFrame'
@@ -57,7 +57,7 @@ describe('useMirrorFlow (ADR 0082, ticket 0750)', () => {
 
   it('mirrors the whole Frame, its rect the Frame\'s, and closes as one Undo step keeping the settings', () => {
     const { flow, harness } = setup()
-    flow.placeWholeFrame()
+    flow.placeWholeFrame(frameIdIn(harness.project))
     expect(flow.onFrame.value).toBe(true)
     expect(flow.rect.value).toEqual({ row: 0, column: 0, rows: 3, columns: 5 })
     expect(flow.areaSelection.value).toBeUndefined()
@@ -274,5 +274,13 @@ describe('Mirror the whole Frame names its Frame (ticket 1218)', () => {
     expect(flow.rect.value).toEqual({ row: 0, column: 0, rows: 6, columns: 4 })
     harness.history.onUndo()
     expect(mirrorSettingOf(harness.project!).place).toBeNull()
+  })
+
+  it('is on one Frame\'s sheet only: the Frame it is placed on (ticket 1220)', () => {
+    const harness = editHarness(twoFrames())
+    const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, showToast: vi.fn(), messages: () => en, locale: () => 'en' })
+    expect([flow.onFrameOf(SECOND), flow.onFrameOf(firstOf(twoFrames()))]).toEqual([false, false])
+    flow.placeWholeFrame(SECOND)
+    expect([flow.onFrameOf(SECOND), flow.onFrameOf(firstOf(harness.project))]).toEqual([true, false])
   })
 })

@@ -9,6 +9,7 @@ import type { Project } from '../../domain/project'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView } from '../../rendering/surfaceView'
 import { withLayers } from '../../testUtils/layerFields'
+import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
 import { LARGEST_FIT_BEAD_PX, useCanvasView, type CanvasViewOptions } from './useCanvasView'
 import { useFrameExpand } from './useFrameExpand'
 
@@ -24,11 +25,13 @@ function setup(project: Project) {
   let room: CanvasViewOptions['expanded'] = () => undefined
   let fitted = (_pitch: number) => {}
   let leave = () => {}
+  let made: ReturnType<typeof useFrameExpand> | undefined
   const covered = () => ({ top: 0, right: 0, bottom: 0, left: 120 })
   const scope = effectScope()
   const { view, expand } = scope.run(() => {
-    const view = useCanvasView(() => current.value, viewport, { covered, expanded: () => room?.(), fitted: (pitch) => fitted(pitch), leaveExpanded: () => leave() })
+    const view = useCanvasView(() => current.value, viewport, { covered, expanded: () => room?.(), expandedFrame: () => made?.expandedFrame.value, fitted: (pitch) => fitted(pitch), leaveExpanded: () => leave() })
     const expand = useFrameExpand({ currentProject: () => current.value, viewport, zoom: view.zoom, scroll: view.scroll, isAtFit: view.isAtFit, orientation: view.orientation, compact, covered, fit: view.fit, showView: view.showView })
+    made = expand
     room = () => (expand.expanded.value ? expand.room : undefined)
     fitted = expand.fitted
     leave = expand.collapse
@@ -280,5 +283,47 @@ describe('useFrameExpand (ticket 1169)', () => {
       expect(view.zoom.value).toBe(was.zoom)
       stop()
     })
+  })
+})
+
+describe('each Frame is expanded on its own (ticket 1220)', () => {
+  it('expands the Frame whose sheet asked, fits it, and leaves the other as it was', () => {
+    const project = twoFrames()
+    const { view, expand, stop } = setup(project)
+    expect(expand.toggle(SECOND)).toBe(true)
+    expect(expand.expandedFrame.value).toBe(SECOND)
+    // The view fits the second Frame: its beads are on screen, and the first Frame's are not.
+    const { technique, cell } = canvasOf(project)
+    const surface = surfaceView({ space: OPEN_SPACE, technique, cell, rotation: 0, zoom: view.zoom.value, scroll: view.scroll.value, viewport: { width: 1000, height: 600 } })
+    const second = surface.beadBox(footprintOf(project, SECOND)!, 'canvas')
+    expect([second.x >= 0, second.y >= 0, second.x + second.width <= 1000, second.y + second.height <= 600]).toEqual([true, true, true, true])
+    const first = surface.beadBox(footprintOf(project, firstOf(project))!, 'canvas')
+    expect(first.x + first.width <= 0 || first.y + first.height <= 0).toBe(true)
+    stop()
+  })
+
+  it('takes the view over from one Frame to another, and goes back to the Canvas as it was before the first', () => {
+    const project = twoFrames()
+    const { view, expand, stop } = setup(project)
+    const was = view.zoom.value
+    expand.toggle(SECOND)
+    expect(expand.toggle(firstOf(project))).toBe(true)
+    expect(expand.expandedFrame.value).toBe(firstOf(project))
+    expect(expand.toggle(firstOf(project))).toBe(false)
+    expect(expand.expanded.value).toBe(false)
+    expect(view.zoom.value).toBe(was)
+    stop()
+  })
+
+  it('goes back when the expanded Frame is removed, the other staying', async () => {
+    const project = twoFrames()
+    const { current, view, expand, stop } = setup(project)
+    const was = view.zoom.value
+    expand.toggle(SECOND)
+    current.value = { ...project, layers: [project.layers[0], project.layers[1]!] }
+    await nextTick()
+    expect(expand.expanded.value).toBe(false)
+    expect(view.zoom.value).toBe(was)
+    stop()
   })
 })

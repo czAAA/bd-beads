@@ -17,6 +17,8 @@ export interface FrameToolItem {
 const props = defineProps<{
   items: readonly FrameToolItem[]
   deps: ReturnType<typeof controlDeps>
+  /** The Frame whose sheet this is (ticket 1220): the Export panel hangs from this button when it asked. */
+  frame?: string
 }>()
 
 const { t } = useI18n()
@@ -24,7 +26,7 @@ const disabled = (item: FrameToolItem) => (item.action.enabled ? !item.action.en
 </script>
 
 <template>
-  <MenuButton variant="plain" class="margin-sheet__tool" icon="more" icon-only :label="t.frame.margin.frameTools" align="end" data-testid="margin-frame-tools">
+  <MenuButton variant="plain" class="margin-sheet__tool" icon="more" icon-only :label="t.frame.margin.frameTools" align="end" :data-frame="frame" data-testid="margin-frame-tools">
     <AppMenuItem
       v-for="item in items"
       :key="item.id"

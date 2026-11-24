@@ -1,6 +1,6 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { frameOf, firstFrameId } from '../../domain/layerRecord'
+import { frameIdOf, frameOf, framesOf, firstFrameId } from '../../domain/layerRecord'
 import { columnsAsSeen, moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, seenWayOf, toggleRowDirection, turnRowDirectionTo, type SeenWay } from '../../domain/rowProgress'
 import type { FrameRef } from '../../domain/grid'
 import type { Project } from '../../domain/project'
@@ -29,6 +29,8 @@ export interface RowOpsDeps {
 export interface RowPress {
   /** Tells this press from the one before. */
   id: number
+  /** The Frame whose pointer it moved (ticket 1220): the glints play on that Frame's beads. */
+  frame: FrameRef
   /** Row done, or Row not done. */
   done: boolean
   /** The pass it left and the one it reached, in the Row direction it was pressed in. */
@@ -97,7 +99,7 @@ export function useRowOps(deps: RowOpsDeps) {
     const to = rowProgressPosition(moved, frame).current
     if (to === from) return
     // Said before the write, so the surface that redraws for it already knows the press. A jump plays nothing.
-    if (pressed) rowPress.value = { id: ++presses, done: to > from, from, to, patternDone: to === total }
+    if (pressed) rowPress.value = { id: ++presses, frame, done: to > from, from, to, patternDone: to === total }
     else stopRowMotion()
     deps.replaceProject(moved)
     deps.showRow?.()
@@ -150,7 +152,9 @@ export function useRowOps(deps: RowOpsDeps) {
   /** Says why a drawing did not land: rows marked done took it back (ticket 0848). One toast, replaced, not stacked. */
   function tellMarkedDone(project: Project) {
     const t = deps.messages().rowProgress
-    deps.showToast('marked-done', columnsAsSeen(project, firstFrameId(project)) ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
+    // The Frame whose rows hold the drawing back: the first with a pass done.
+    const holding = framesOf(project).map(frameIdOf).find((frame) => rowProgressStarted(project, frame)) ?? firstFrameId(project)
+    deps.showToast('marked-done', columnsAsSeen(project, holding) ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
   }
 
   return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onSetRowDirection, onMoveRow, jumpToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }

@@ -1,5 +1,6 @@
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import type { FrameId } from '../../domain/grid'
 import { useOverlayVisibility } from './useOverlayVisibility'
 
 function setup() {
@@ -34,6 +35,19 @@ describe('useOverlayVisibility', () => {
     onOpenExport('margin-export')
     onOpenExport('margin-export')
     expect(openPanel.value).toBeNull()
+  })
+
+  it('exports the Frame whose sheet\'s Export opened the panel, and no Frame once it is gone or another button opens it (ticket 1220)', () => {
+    const { openPanel, exportFrame, onOpenExport, onSelectPanel } = setup()
+    onOpenExport('margin-export', 'second' as FrameId)
+    expect([openPanel.value, exportFrame.value]).toEqual(['export', 'second'])
+    onOpenExport('margin-export', 'third' as FrameId)
+    expect([openPanel.value, exportFrame.value]).toEqual(['export', 'third'])
+    onOpenExport('margin-export', 'third' as FrameId)
+    expect([openPanel.value, exportFrame.value]).toEqual([null, undefined])
+    onOpenExport('margin-export', 'second' as FrameId)
+    onSelectPanel('export')
+    expect([openPanel.value, exportFrame.value]).toEqual(['export', undefined])
   })
 
   it('hangs the Export panel from the Selection bar scoped to the Selection, and is the Frame\'s again from any other button or once closed (ticket 1210)', () => {

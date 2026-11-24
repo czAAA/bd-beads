@@ -1,9 +1,10 @@
 import { frameIdIn } from '../../src/testUtils/frameId'
 import { expect, test, type Page } from '@playwright/test'
-import { frameOf, orientationOf } from '../../src/domain/layerRecord'
-import { lieAlike } from '../../src/domain/table'
+import { frameById, frameIdOf, frameOf, orientationOf } from '../../src/domain/layerRecord'
+import { frameAngleOf, lieAlike } from '../../src/domain/table'
 import { currentZoomPercent, openApp, savedProject, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
+import { withFrameSheet } from '../../src/domain/frameSheet'
 
 // A two-finger twist on touch (ticket 1190): one that starts on the Frame's sheet turns the Frame about its centre, one
 // anywhere else the Canvas, and pan and pinch move both, in Safari's engine at an iPad's density, as the owner's iPad.
@@ -142,4 +143,21 @@ test('a twist paced like an iPad\'s catches up with the fingers once they stop, 
   await page.getByTestId('zoom-reset').click()
   await expect.poll(async () => orientationOf(await savedProject(page))).toBe(0)
   expect(frameOf(await savedProject(page))!.angle).toBe(0)
+})
+
+test('a twist on one of two Frames turns that Frame alone (ticket 1220)', async ({ page }) => {
+  const second = frameIdOf({ id: 'second' })
+  const base = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
+  const pair = withFrameSheet(base, { row: 1, column: 22, rows: 8, columns: 6, beads: {}, technique: 'loom' }, { frame: second })
+  await openApp(page, [pair])
+  await settle(page)
+  await expect(page.getByTestId('margin-sheet')).toHaveCount(2)
+  const sheet = (await page.locator(`[data-testid="margin-sheet"][data-frame="${second}"]`).boundingBox())!
+  await twoFingers(page, twist({ x: sheet.x + sheet.width / 2, y: sheet.y + sheet.height / 2 }, 35, 20))
+  const saved = await savedProject(page)
+  expect(frameAngleOf(saved, second)).toBeGreaterThan(15)
+  expect(frameAngleOf(saved, second)).toBeLessThan(35)
+  expect(frameAngleOf(saved, frameIdIn(saved))).toBe(0)
+  expect(frameById(saved, second)).toBeDefined()
+  expect(orientationOf(saved)).toBe(0)
 })

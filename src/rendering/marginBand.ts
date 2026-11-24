@@ -65,7 +65,8 @@ export function bandRowWidth(row: BandRow, shown: readonly BandToolId[], menu: b
  * menu button in `OVERFLOW_ORDER`. None where not even the row with the menu button alone fits. */
 export function bandTools({ tools, rows, room, touch, expanded }: BandToolsDeps): BandFit | undefined {
   const all = BAND_ORDER.filter((id) => tools.includes(id))
-  const fits = (row: BandRow, shown: readonly BandToolId[]) => bandRowWidth(row, shown, shown.length < all.length, touch, expanded) <= room
+  // The Frame tools button is always there (ticket 1220), so every row counts it.
+  const fits = (row: BandRow, shown: readonly BandToolId[]) => bandRowWidth(row, shown, true, touch, expanded) <= room
   const whole = rows.find((row) => fits(row, all))
   if (whole) return { row: whole, onBand: all, overflow: [] }
   const row = rows.at(-1)

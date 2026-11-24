@@ -8,7 +8,6 @@ import { MAX_MAKER_NAME } from '../../domain/makerName'
 import { projectPalette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { beadLabel } from '../../domain/beads'
-import { resolveProjectBead } from '../../domain/projectBead'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave, TECHNIQUES, weaveSettings, type Technique } from '../../domain/weave'
 import { listedColorName } from '../../i18n/colorName'
@@ -24,14 +23,15 @@ import IconButton from '../ui/IconButton.vue'
 import MarginBeadCell from './MarginBeadCell.vue'
 import MarginSettingCell from './MarginSettingCell.vue'
 import { frameNameLine } from './marginFrameName'
-import { frameOf, lettersOn, firstFrameId } from '../../domain/layerRecord'
+import type { FrameId } from '../../domain/grid'
+import { beadOfLayer, frameById, lettersOn, firstFrameId } from '../../domain/layerRecord'
 
 // The margin sheet's title block (MarginSheet card, tickets 0657, 0658, 0698, 1170), in its bottom-left corner as seen:
 // the name, Technique, its settings and maker edited in place, the sizes, the lettered legend, Letters and fold; compact,
 // one row of them. It only asks; the shell's flows do the work, as from the Frame and Project panels.
 /** `roomy` is the taller block where the band has room (ticket 1015): the name leads, the Bead with Change, and a color
  * key with each color's bead count. `brief` is the compact row without its legend, where the sheet is too narrow. */
-const props = withDefaults(defineProps<{ project: Project; form?: 'roomy' | 'full' | 'line' | 'compact' | 'brief' | 'key' }>(), { form: 'full' })
+const props = withDefaults(defineProps<{ project: Project; form?: 'roomy' | 'full' | 'line' | 'compact' | 'brief' | 'key'; frame?: FrameId }>(), { form: 'full' })
 
 const emit = defineEmits<{
   rename: [name: string]
@@ -48,12 +48,14 @@ const { t, locale } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const techniqueAction = controlAction('change-technique')
 const foldAction = controlAction('fold-title-block')
-const frame = computed(() => frameOf(props.project)!)
+/** The Frame this block is the title of (ticket 1220): the one named, else the first. */
+const own = computed(() => props.frame ?? firstFrameId(props.project))
+const frame = computed(() => frameById(props.project, own.value)!)
 const nameLine = computed(() => frameNameLine(t.value, frame.value.name))
 
 /** The Frame's Technique, the one its rows are woven in; once a pass is done a change asks first (ticket 1184), and only
  * a Custom frame's is locked, with its reason. */
-const technique = computed(() => frameWeave(props.project, firstFrameId(props.project)).technique)
+const technique = computed(() => frameWeave(props.project, own.value).technique)
 const options = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
 const techniqueLocked = computed(() => !techniqueAction.enabled?.(deps.value))
 /** The Technique's pencil, the Project's picker, in the full and the roomy block. */
@@ -81,11 +83,11 @@ const makerLine = computed(() => ({
 }))
 
 /** Whether the Technique's settings wait: once a pass is done, as a Drop moves the passes. */
-const settingsLocked = computed(() => rowProgressStarted(props.project, firstFrameId(props.project)))
+const settingsLocked = computed(() => rowProgressStarted(props.project, own.value))
 /** A cell per setting the Frame's Technique describes (ticket 0698), its value and, locked once a pass is done, its
  * reason: none named here, so a Technique given a setting shows it. */
 const settings = computed(() => {
-  const weave = frameWeave(props.project, firstFrameId(props.project))
+  const weave = frameWeave(props.project, own.value)
   const values = weaveSettings(weave)
   return describeWeave(weave).settings.map((setting) => ({
     setting,
@@ -115,7 +117,7 @@ const by = computed(() => {
 
 const size = computed(() => `${frame.value.columns} × ${frame.value.rows}`)
 /** The Frame's Bead, or none for one no longer known. */
-const frameBead = computed(() => resolveProjectBead(props.project))
+const frameBead = computed(() => beadOfLayer(props.project, own.value).bead)
 const estimate = computed(() => {
   const bead = frameBead.value
   return bead ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead, frame.value.technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
@@ -130,7 +132,7 @@ const legend = computed(() => {
     const index = palette.colors.findIndex((color) => color.hex === hex)
     return index < 0 ? palette.colors.length : index
   }
-  const used = computeColorQuantities(props.project, palette, firstFrameId(props.project)).sort((a, b) => slot(a.hex) - slot(b.hex))
+  const used = computeColorQuantities(props.project, palette, own.value).sort((a, b) => slot(a.hex) - slot(b.hex))
   return used.map(({ colorId, hex, count }) => ({
     hex,
     count,
@@ -227,7 +229,7 @@ defineExpose({ leastWidth })
           <MarginBeadCell v-if="frameBead" :bead="frameBead" @pick="emit('replace-bead', $event)" />
           <span class="margin-title__letters">
             <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
-            <AppSwitch :model-value="lettersOn(project, firstFrameId(project))" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+            <AppSwitch :model-value="lettersOn(project, own)" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
           </span>
           <span class="margin-title__fold">
             <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />
@@ -291,7 +293,7 @@ defineExpose({ leastWidth })
       </div>
       <div class="margin-title__cell margin-title__letters" :style="form === 'full' ? grid.letters : undefined">
         <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
-        <AppSwitch :model-value="lettersOn(project, firstFrameId(project))" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+        <AppSwitch :model-value="lettersOn(project, own)" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
       </div>
       <div class="margin-title__cell margin-title__fold" :style="form === 'full' ? grid.fold : undefined">
         <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />

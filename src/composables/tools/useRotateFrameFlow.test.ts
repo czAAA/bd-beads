@@ -157,7 +157,7 @@ describe('a two-finger twist of the Frame (ticket 1190)', () => {
 
   it('keeps the angle it came to rest at as one Undo step, unannounced, never counted as a press', () => {
     const { deps, harness, onTwistFrame, frameTurns } = twistSetup(framed)
-    expect(onTwistFrame(30)).toBe('kept')
+    expect(onTwistFrame(30, frameIdIn(framed))).toBe('kept')
     expect(frameOf(harness.project)!.angle).toBe(30)
     expect(deps.announce).not.toHaveBeenCalled()
     expect(frameTurns.value).toBe(0)
@@ -169,7 +169,7 @@ describe('a two-finger twist of the Frame (ticket 1190)', () => {
   it('asks Rotate Frame\'s question where it settled on another quarter turn with a pass done; Cancel eases it back', () => {
     const woven = moveToRow(framed, 1, frameIdIn(framed))
     const { deps, harness, onTwistFrame, cancelRotateFrame, view } = twistSetup(woven)
-    expect(onTwistFrame(90)).toBe('asked')
+    expect(onTwistFrame(90, frameIdIn(framed))).toBe('asked')
     expect(deps.dialogs.open.value).toBe('rotate-frame')
     expect(harness.project).toBe(woven)
     cancelRotateFrame()
@@ -181,7 +181,7 @@ describe('a two-finger twist of the Frame (ticket 1190)', () => {
   it('keeps the twist with the answer, its rows kept or started over, one Undo step', () => {
     const woven = moveToRow(framed, 1, frameIdIn(framed))
     const kept = twistSetup(woven)
-    kept.onTwistFrame(90)
+    kept.onTwistFrame(90, frameIdIn(framed))
     kept.keepRowsRotateFrame()
     expect(frameOf(kept.harness.project)).toMatchObject({ angle: 90, quarterTurns: 1 })
     expect(rowProgressOf(kept.harness.project, frameIdIn(kept.harness.project))).toEqual(turnedWithFrame(rowProgressOf(woven, frameIdIn(woven)), 1))
@@ -191,7 +191,7 @@ describe('a two-finger twist of the Frame (ticket 1190)', () => {
     expect(kept.harness.history.canUndo.value).toBe(false)
 
     const over = twistSetup(woven)
-    over.onTwistFrame(270)
+    over.onTwistFrame(270, frameIdIn(framed))
     over.startOverRotateFrame()
     expect(frameOf(over.harness.project)!.angle).toBe(270)
     expect(rowProgressOf(over.harness.project, frameIdIn(over.harness.project))).toEqual({ way: 'down' })
@@ -200,7 +200,7 @@ describe('a two-finger twist of the Frame (ticket 1190)', () => {
   it('asks nothing for a lean about the quarter turn it is read by, a pass done', () => {
     const woven = moveToRow(framed, 1, frameIdIn(framed))
     const { harness, onTwistFrame } = twistSetup(woven)
-    expect(onTwistFrame(20)).toBe('kept')
+    expect(onTwistFrame(20, frameIdIn(framed))).toBe('kept')
     expect(rowProgressOf(harness.project, frameIdIn(harness.project))).toEqual(rowProgressOf(woven, frameIdIn(woven)))
   })
 })

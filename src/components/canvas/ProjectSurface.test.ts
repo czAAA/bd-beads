@@ -9,7 +9,7 @@ import { createProject } from '../../domain/createProject'
 import { changeFrame } from '../../domain/changeFrame'
 import type { Project, RowProgress } from '../../domain/project'
 import { rotateFrame } from '../../domain/rotate'
-import type { GridPosition } from '../../domain/grid'
+import type { FrameId, GridPosition } from '../../domain/grid'
 import type { Technique } from '../../domain/weave'
 import { DARK_THEME, DEFAULT_THEME, fadeOver, PROJECT_THEMES } from '../../rendering/beadLook'
 import { SETTLE_MS } from '../../rendering/gestureView'
@@ -2362,7 +2362,7 @@ describe('ProjectSurface with a Frame', () => {
   /** A press on the Move bar's button, handed to the surface the way MarginSheet does (tickets 473, 0657). */
   function pressMoveHandle(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], at: [number, number], pointerType = 'mouse'): void {
     const event = { button: 0, clientX: at[0], clientY: at[1], pointerId: 1, pointerType, isPrimary: true, preventDefault: () => {} }
-    ;(wrapper.vm as unknown as { pressMoveHandle(event: PointerEvent): void }).pressMoveHandle(event as unknown as PointerEvent)
+    ;(wrapper.vm as unknown as { pressMoveHandle(event: PointerEvent, frame: FrameId): void }).pressMoveHandle(event as unknown as PointerEvent, frameIdIn(wrapper.props('project') as Project))
   }
 
   it('reports the Frame\'s place always, with edit on or off, and its margin sheet 4 beads round it (ticket 0657)', async () => {
@@ -2373,6 +2373,40 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.band).toBe(80)
     expect(anchor.sheet.left).toBeCloseTo(anchor.box.left + 7 - 80)
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
+  })
+
+  describe('with two Frames (ticket 1220)', () => {
+    // The second Frame, 4 × 6 at row 10, column 14: its beads 280 to 360 across and 200 to 320 down, in 20 px beads.
+    const pair = () => twoFrames({ row: 10, column: 14 })
+    const surfaceOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.vm as unknown as { frameSheetAt(point: { clientX: number; clientY: number }): FrameId | undefined }
+
+    it('reports each Frame\'s place and margin sheet, round its own beads', async () => {
+      const { wrapper } = await mountSurface(pair())
+      const anchors = wrapper.emitted('frame-anchors')!.at(-1)![0] as Record<string, FrameAnchor>
+      expect(Object.keys(anchors)).toEqual([frameIdIn(pair()), SECOND])
+      expect(anchors[SECOND]!.sheet.left).toBeCloseTo(280 - 80)
+      expect(anchors[frameIdIn(pair())]!.sheet.left).toBeCloseTo(-80)
+    })
+
+    it('tells which Frame a point is on, by its beads or its margin sheet, none off both', async () => {
+      const { wrapper } = await mountSurface(pair())
+      expect(surfaceOf(wrapper).frameSheetAt({ clientX: 300, clientY: 250 })).toBe(SECOND)
+      expect(surfaceOf(wrapper).frameSheetAt({ clientX: 20, clientY: 20 })).toBe(frameIdIn(pair()))
+      expect(surfaceOf(wrapper).frameSheetAt({ clientX: 195, clientY: 20 })).toBeUndefined()
+    })
+
+    it('grabs the handle of the Frame being set, and tells which Frame it is', async () => {
+      const { wrapper } = await mountSurface(pair(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }), settingFrames: [SECOND] })
+      // The bottom-right handle of the second Frame, 15px out from its corner.
+      await gesture(wrapper, [375, 335], [385, 345])
+      expect(wrapper.emitted('frame-press')!.map(([target, , frame]) => [target, frame])).toEqual([[{ kind: 'handle', edges: ['bottom', 'right'] }, SECOND]])
+    })
+
+    it('leaves the handles of a Frame whose edit is off to the tool', async () => {
+      const { wrapper } = await mountSurface(pair(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }), settingFrames: [frameIdIn(pair())] })
+      await gesture(wrapper, [375, 335], [375, 335])
+      expect(wrapper.emitted('frame-press')).toBeUndefined()
+    })
   })
 
   it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {
@@ -2519,7 +2553,7 @@ describe('ProjectSurface with a Frame', () => {
     }
     inHighContrast()
     const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
-    const lastPass: RowPress = { id: 1, done: true, from: 9, to: 10, patternDone: true }
+    const lastPass: RowPress = { id: 1, frame: frameIdIn(woven(10)), done: true, from: 9, to: 10, patternDone: true }
     const patternDone = (wrapper: VueWrapper) => wrapper.find('[data-testid="pattern-done"]')
 
     it('plays Pattern done after the press that marks the last pass, then shows the finished passes at full color', async () => {
@@ -2604,7 +2638,7 @@ describe('ProjectSurface with a Frame', () => {
       await at(0)
       await at(ROW_MOTION.patternDoneDelay)
       expect(patternDone(wrapper).exists()).toBe(true)
-      await wrapper.setProps({ project: woven(9), rowPress: { id: 2, done: false, from: 10, to: 9, patternDone: false } })
+      await wrapper.setProps({ project: woven(9), rowPress: { id: 2, frame: frameIdIn(woven(9)), done: false, from: 10, to: 9, patternDone: false } })
       expect(patternDone(wrapper).exists()).toBe(false)
 
       await wrapper.setProps({ project: woven(10), rowPress: { ...lastPass, id: 3 } })

@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
-import type { GridPosition, PreviewCell } from '../../../domain/grid'
+import type { FrameId, GridPosition, PreviewCell } from '../../../domain/grid'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
 import type { PasteStamp, Selection } from '../../../domain/selection'
@@ -15,7 +15,7 @@ import { AREA_SHEET_OUTSET, type HandleId } from '../../../rendering/frameHandle
 import { sizeCanvas, type LaidFrame } from './useSurfaceDrawing'
 import { drawPlaced, placementOf } from '../../../rendering/placedDrawing'
 import { spaceOf } from '../../../rendering/space'
-import { firstFrameId, frameOf } from '../../../domain/layerRecord'
+import { firstFrameId, framesOf } from '../../../domain/layerRecord'
 import { isMirrorOn, type MirrorSetting } from '../../../domain/mirror'
 
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
@@ -38,7 +38,7 @@ export function useMarginCue(props: { project: Project; selectionRefusals?: numb
   let refusedTimer: ReturnType<typeof setTimeout> | undefined
   let fadeFrame: number | undefined
   const opacity = ref(0)
-  const wanted = computed(() => frameOf(props.project) !== undefined && refusedPress.value)
+  const wanted = computed(() => framesOf(props.project).length > 0 && refusedPress.value)
 
   watch(wanted, (shown) => {
     if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
@@ -93,7 +93,10 @@ export interface SurfaceOverlayDeps {
     outlinedCell?: GridPosition
     selection?: Selection
     showRulers?: boolean
-    frameTooltip?: string
+    /** The size Tooltip at each Frame's corner, by its id (ticket 1220). */
+    frameTooltips?: Readonly<Record<string, string>>
+    /** The Frames whose handles are on (ticket 1220): the first while the tools say one is and none is named. */
+    settingFrames?: readonly FrameId[]
     /** The sizes beside a hot corner of the Selection and of the Mirror's Canvas Area ("12 × 7 ≈ 1.9 × 1.1 cm"). */
     selectionTooltip?: string
     areaTooltip?: string
@@ -111,28 +114,34 @@ export interface SurfaceOverlayDeps {
   frameTheme: Ref<ProjectTheme>
   marksShown: Ref<boolean>
   /** Where the bead-shaped marker stands for the pointer, if anywhere (ticket 353). */
-  markerAt: Ref<{ x: number; y: number; layer: ViewLayer } | undefined>
+  markerAt: Ref<{ x: number; y: number; layer: ViewLayer; screen: { x: number; y: number } } | undefined>
+  /** The marker's place in a Frame's own drawing (ticket 1220), where that is not the Canvas's. */
+  markerIn: (frame: FrameId, marker: { screen: { x: number; y: number } }) => { x: number; y: number } | undefined
   /** Whether a Frame gesture is in progress: the size tooltip shows meanwhile. */
   framing: Ref<boolean>
   /** Whether the last pointer was a finger: the Frame's and Selection's handles are the larger ones. */
   touchInput: Ref<boolean>
   /** The Frame's handle under the pointer or being dragged: drawn grown, its corner with the size Tooltip (ticket 0657). */
   hotHandle: Ref<HandleId | undefined>
+  /** The Frame that handle belongs to (ticket 1220). */
+  hotFrame: Ref<FrameId | undefined>
   /** The handle of the Selection, or else of the Mirror's Canvas Area, under the pointer or dragged (ticket 0807). */
   hotAreaHandle: Ref<HandleId | undefined>
   marginOpacity: Ref<number>
   /** Row done's glints and the marker's glide (ticket 0730), while they play. */
   rowMotion: Ref<RowMotion | undefined>
+  /** Another Frame's own (ticket 1220). */
+  rowMotionOf: (frame: FrameId) => RowMotion | undefined
   oncePerFrame: (draw: () => void) => () => void
   /** The Frame surface's other Frames (ticket 1219): each one's rulers, Row progress, Selection and previews, on its own
-   * placement. Its handles, margin outline and the marker stay the first Frame's until 1220. */
+   * placement. Its handles, margin outline, glints and the marker are its own (ticket 1220). */
   others?: Ref<readonly LaidFrame[]>
 }
 
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { layer, props, canvas: canvasEl, size, space, surface, rulers, theme, frameTheme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion, others } = deps
+  const { layer, props, canvas: canvasEl, size, space, surface, rulers, theme, frameTheme, marksShown, markerAt, framing, touchInput, hotHandle, hotFrame, hotAreaHandle, marginOpacity, rowMotion, rowMotionOf, markerIn, others } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -143,7 +152,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
   /** The Frame's size tooltip follows a size change that did not come from a drag (an edge stepper, a key) for a
    * moment. */
   watch(
-    () => [frameOf(props.project)?.columns, frameOf(props.project)?.rows],
+    () => framesOf(props.project).map((frame) => `${frame.columns}×${frame.rows}`).join(),
     () => {
       if (!props.tools.settingFrame || framing.value) return
       sizeFlash.value = true
@@ -157,6 +166,27 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
   function hotArea(tooltip: string | undefined, grabbed: boolean): { hot?: HandleId; tooltip: string } {
     const hot = grabbed ? hotAreaHandle.value : undefined
     return { hot, tooltip: hot?.includes('-') ? (tooltip ?? '') : '' }
+  }
+
+  /** What a Frame's handles are drawn with while they are on (ticket 1220): each Frame its own, the hot one grown with its
+   * own size beside its corner. */
+  function editingOf(frame: ViewLayer) {
+    const { tools } = props
+    if (!tools.settingFrame || frame === 'canvas' || !(props.settingFrames ?? [firstFrameId(props.project)]).includes(frame)) return undefined
+    return { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltips?.[frame] ?? '') : '', hot: hotFrame.value === frame ? hotHandle.value : undefined }
+  }
+
+  /** The bead-shaped marker over the pointer, when one shows (ticket 353): on the Canvas's overlay at its own point, on
+   * the Frame it is over at its point in that Frame's own drawing, so a leaning Frame's is where the pointer is
+   * (ticket 1220). */
+  function pointerOn(frame?: FrameId) {
+    const { tools } = props
+    const marker = markerAt.value
+    if (!marker || tools.tool || tools.moves || tools.markerHidden || tools.picking || tools.selects) return undefined
+    const wanted = frame ?? toValue(layer)
+    if (marker.layer !== wanted) return undefined
+    const at = wanted === 'canvas' ? marker : markerIn(wanted as FrameId, marker)
+    return at && { ...at, layer: marker.layer, color: props.previewColor ?? null }
   }
 
   /** Draws the overlay: everything over the beads that comes and goes with a tool or the pointer. */
@@ -181,15 +211,15 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         theme: theme.value,
         frameTheme: frameTheme.value,
         rowMarks: marksShown.value,
-        letters: shownLetters(props.project, firstFrameId(props.project)),
-        pointer: markerAt.value && !tools.tool && !tools.moves && !tools.markerHidden && !tools.picking && !tools.selects ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
+        letters: shownLetters(props.project, toValue(layer) === 'canvas' ? firstFrameId(props.project) : toValue(layer)),
+        pointer: pointerOn(),
         // The bead the open Radial toolbox was pressed on keeps the outline, in place of any hover preview (ticket 1076).
         preview: props.outlinedCell ? { cells: [props.outlinedCell], color: null } : !tools.picking && (props.previewStamp || (props.previewCells?.length ?? 0) > 0) ? { cells: props.previewCells ?? [], stamp: props.previewStamp, color: props.previewColor ?? null } : undefined,
         selection: props.selection,
         // In Mirror mode the Selection is the rubber band marking out the Area (ticket 0806).
         marksArea: tools.marksArea,
         marginOutline: marginOpacity.value,
-        frameEditing: tools.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '', hot: hotHandle.value } : undefined,
+        frameEditing: editingOf(toValue(layer)),
         selectionHandles: tools.selects ? { surface: surface.value, touch: touchInput.value, ...hotArea(props.selectionTooltip, !!props.selection) } : undefined,
         rulers: { layout: rulers.value, surface: surface.value },
         mirror: props.mirror && isMirrorOn(props.mirror) ? props.mirror : undefined,
@@ -208,13 +238,13 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
           frameTheme: frame.theme,
           rowMarks: frame.marks,
           letters: shownLetters(frame.project, frame.ref),
-          pointer: undefined,
-          marginOutline: 0,
-          frameEditing: undefined,
+          pointer: pointerOn(frame.ref as FrameId),
+          marginOutline: marginOpacity.value,
+          frameEditing: editingOf(frame.ref),
           selectionHandles: drawing.selectionHandles && { ...drawing.selectionHandles, surface: frame.surface },
           rulers: { layout: frame.rulers, surface: frame.surface },
           mirrorArea: drawing.mirrorArea && { ...drawing.mirrorArea, surface: frame.surface },
-          rowMotion: undefined,
+          rowMotion: rowMotionOf(frame.ref as FrameId),
           areaSheet: drawing.areaSheet && { ...drawing.areaSheet, surface: frame.surface },
           layer: frame.ref,
           over: true,
@@ -245,7 +275,11 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.tools.selects,
       () => props.tools.marksArea,
       () => props.tools.picking,
-      () => props.frameTooltip,
+      () => props.frameTooltips,
+      () => props.settingFrames,
+      hotFrame,
+      // The other Frames' glints and glides play as they go (a string, so an unchanged one is no change, ticket 1220).
+      () => others?.value?.map((frame) => JSON.stringify(rowMotionOf(frame.ref as FrameId) ?? null)).join('|'),
       () => props.selectionTooltip,
       () => props.areaTooltip,
       () => props.mirror,

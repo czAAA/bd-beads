@@ -40,6 +40,7 @@ import projectFileV14ThreeBackgrounds from './fixtures/project-file-v14-three-ba
 import projectFileV14PeyoteTurned from './fixtures/project-file-v14-peyote-turned-progress.json?raw'
 import projectFileV15Placement from './fixtures/project-file-v15-placement.json?raw'
 import projectFileV16Sections from './fixtures/project-file-v16-palette-sections.json?raw'
+import projectFileV17LastEdited from './fixtures/project-file-v17-last-edited-frame.json?raw'
 import projectFileV14LettersByLayer from './fixtures/project-file-v14-letters-by-layer.json?raw'
 import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import projectFileV13Drops from './fixtures/project-file-v13-drops.json?raw'
@@ -55,7 +56,7 @@ import projectFileV14OldKaleidocycle from './fixtures/project-file-v14-old-kalei
 import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
-import { backgroundOf, beadsOfLayer, canvasOf, frameOf, lettersOn } from './layerRecord'
+import { backgroundOf, beadsOfLayer, canvasOf, frameOf, lastEditedFrameId, lettersOn } from './layerRecord'
 import { currentPass, frameRowOrder, moveToRow, ownRowWayOf, rowProgressOf, seenProgressOf, seenWayOf, type OwnRowProgress } from './rowProgress'
 import { rowOrderOf } from './frameShape'
 import { lieAlike } from './table'
@@ -128,7 +129,7 @@ function writtenBack(stored: string): unknown {
 }
 
 /** The current file version, which every Project file is written back as. */
-const FILE_VERSION = 16
+const FILE_VERSION = 17
 
 /** A stored layer list's Frames as file version 15 writes them back (ticket 1185): the Frame's own angle on the table
  * (the Canvas's orientation plus its turn on it) and its centre there in place of its Canvas position and turn, and its
@@ -401,7 +402,7 @@ describe('stored-data compatibility', () => {
       expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, angle: 180, name: 'Fox', rowProgress: { way: 'up', up: 1 } })
       expect(open!.layers).toEqual([expect.objectContaining({ id: 'open-canvas', name: 'Open sketch', beads: { [-2]: { 4: '#1a1a1a' } }, orientation: 0 })])
       saveProjects(loadProjects())
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(withDrops(libraryV5, 8))
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(withDrops(libraryV5, 9))
     })
 
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
@@ -422,7 +423,7 @@ describe('stored-data compatibility', () => {
 
       saveProjects(loadProjects())
 
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 8 })
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 9 })
       expect(loadProjects()).toEqual(expected)
     })
 
@@ -705,7 +706,7 @@ describe('stored-data compatibility', () => {
       expect(rowProgressOf(opened!, frameIdIn(opened))).toEqual({ way: 'left', left: 2 })
       // Written back as version 16, its Palette in sections (ADR 0103).
       const [stored] = JSON.parse(projectFileV15Placement).projects
-      expect(JSON.parse(serializeProject(opened!))).toEqual({ ...JSON.parse(projectFileV15Placement), version: 16, projects: [{ ...stored, ...inSections(stored) }] })
+      expect(JSON.parse(serializeProject(opened!))).toEqual({ ...JSON.parse(projectFileV15Placement), version: 17, projects: [{ ...stored, ...inSections(stored) }] })
     })
 
     it('opens a version 16 file with its Palette in sections, each code in its own catalog, and writes it back the same (ADR 0103)', () => {
@@ -714,7 +715,16 @@ describe('stored-data compatibility', () => {
       expect(palette.sections.map((section) => [section.id, section.colors.length])).toEqual([['miyuki-delica', 16], ['custom', 2], ['toho', 1]])
       expect(palette.byHex('#f15b55')).toMatchObject({ code: '341', catalog: 'toho' })
       expect(palette.byHex('#0d0d0d')).toMatchObject({ code: 'DB10', catalog: 'miyuki-delica', family: 'black' })
-      expect(serializeProject(opened!)).toBe(projectFileV16Sections)
+      expect(JSON.parse(serializeProject(opened!))).toEqual({ ...JSON.parse(projectFileV16Sections), version: 17 })
+    })
+
+    it('opens a version 17 file with its Last edited Frame, and writes it back the same (ticket 1220)', () => {
+      const [opened] = parseProjectsFile(projectFileV17LastEdited).projects
+      expect(lastEditedFrameId(opened!)).toBe(frameIdIn(opened))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV17LastEdited))
+      // A Frame the file names that the Project lacks is dropped.
+      const gone = projectFileV17LastEdited.replace('"lastEditedFrame":"60c4e391-d153-4f64-b487-5e298cfd5fc2"', '"lastEditedFrame":"nobody"')
+      expect(parseProjectsFile(gone).projects[0]!.lastEditedFrame).toBeUndefined()
     })
 
     it('opens a version 12 file whose Canvas a twist left at any angle, and writes it back the same (ticket 0672)', () => {

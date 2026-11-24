@@ -29,7 +29,8 @@ import MarginTitleBlock from './MarginTitleBlock.vue'
 import { frameNameLine } from './marginFrameName'
 import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
-import { frameOf, firstFrameId } from '../../domain/layerRecord'
+import type { FrameId } from '../../domain/grid'
+import { frameById, firstFrameId } from '../../domain/layerRecord'
 import { useRotateCopy, type RotateCopyPlace } from '../../composables/ui/useRotateCopy'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 import type { SlimMeasures } from '../../composables/canvas/useFrameExpand'
@@ -41,6 +42,9 @@ import { slimInset } from '../../rendering/slimSheet'
 // their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, the Move bar.
 const props = defineProps<{
   project: Project
+  /** The Frame whose sheet this is (ticket 1220): every control on it acts on this Frame alone; the first when none is
+   * named. */
+  frame?: FrameId
   anchor: FrameAnchor
   /** Whether the Frame's handles are on (Edit Frame): the sheet's edge is outlined in the accent meanwhile. */
   editing: boolean
@@ -94,7 +98,8 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const deps = computed(() => controlDeps({ activeProject: () => props.project }))
+const own = computed(() => props.frame ?? firstFrameId(props.project))
+const deps = computed(() => controlDeps({ activeProject: () => props.project, frame: () => own.value }))
 const actions = {
   expand: controlAction('expand-frame'),
   mirror: controlAction('mirror-frame'),
@@ -106,14 +111,14 @@ const actions = {
   show: controlAction('show-title-block'),
 }
 
-const frame = computed(() => frameOf(props.project))
+const frame = computed(() => frameById(props.project, own.value))
 const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
 /** The name the tab reads and is named by, or "Name this Frame". */
 const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
-const rotatable = computed(() => frameAllows(props.project, 'rotate', firstFrameId(props.project)))
+const rotatable = computed(() => frameAllows(props.project, 'rotate', own.value))
 /** Edit Frame, on a turned Frame too (ticket 1016), so no tool shifts as it turns. A Frame with a row done holds still,
  * its Edit Frame kept in place, disabled, saying why (ticket 0975). */
-const editable = computed(() => frameAllows(props.project, 'resize', firstFrameId(props.project)))
+const editable = computed(() => frameAllows(props.project, 'resize', own.value))
 
 const canvas = useCanvasBackground(() => props.project)
 /** A finger: its 44px hit areas stand the band's tools further apart (ticket 0976). */
@@ -254,8 +259,8 @@ const progressFitting = useFittingForm({
   observed: () => [progressEl.value?.firstElementChild],
   // What it reads: Row done or Column done, the counter, the language (ticket 0851).
   labels: () => {
-    const { current, total } = rowProgressPosition(props.project, firstFrameId(props.project))
-    return JSON.stringify([locale.value, columnsAsSeen(props.project, firstFrameId(props.project)), current, total, touch.value, !!props.expanded])
+    const { current, total } = rowProgressPosition(props.project, own.value)
+    return JSON.stringify([locale.value, columnsAsSeen(props.project, own.value), current, total, touch.value, !!props.expanded])
   },
 })
 /** Row progress shown: expanded, where the Progress bar is set aside, always, the strip at its least where none fits. */
@@ -464,7 +469,9 @@ const toolItems = computed<Record<BandToolId, FrameToolItem>>(() => ({
   remove: { id: 'remove', action: actions.remove, run: () => emit('remove') },
 }))
 const allItems = computed(() => toolIds.value.map((id) => toolItems.value[id]))
-const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((id) => toolItems.value[id]) : allItems.value))
+/** The ··· menu is always there and holds every tool, the band's own among them as second triggers (ticket 1220, MarginSheet
+ * card: the Frame popover). */
+const menuItems = allItems
 </script>
 
 <template>
@@ -473,6 +480,7 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
     class="margin-sheet"
     :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare', 'margin-sheet--arriving': arriving, 'margin-sheet--expanded': expanded }]"
     :style="sheetStyle"
+    :data-frame="own"
     data-testid="margin-sheet"
   >
     <div
@@ -530,6 +538,7 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
           :icon-size="iconSize"
           :action="actions.export"
           :selected="exportOpen"
+          :data-frame="own"
           data-testid="margin-export"
           @click="emit('export', 'margin-export')"
         />
@@ -549,7 +558,7 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
           <span v-if="dividerShown" class="margin-sheet__divider" aria-hidden="true" />
           <IconButton variant="plain" :icon-size="iconSize" :action="actions.remove" :deps="deps" class="margin-sheet__tool margin-sheet__remove" data-testid="frame-chrome-remove" @click="emit('remove')" />
         </template>
-        <MarginFrameTools v-if="menuItems.length" :items="menuItems" :deps="deps" />
+        <MarginFrameTools :items="menuItems" :deps="deps" :frame="own" />
       </div>
     </div>
 
@@ -568,7 +577,7 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
         <IconButton variant="plain" :icon="expandIcon" :icon-size="MARGIN_PX.icon.compact" :action="actions.expand" :label="expandName" data-testid="margin-handle-expand-frame" @click="emit('toggle-expand')" />
       </span>
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
-      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools :items="allItems" :deps="deps" /></span>
+      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools :items="allItems" :deps="deps" :frame="own" /></span>
     </div>
 
     <!-- The foot (ticket 1176): the title block in the bottom-left corner, Row progress under it across the sheet, or
@@ -586,6 +595,7 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
           v-if="title !== 'tab'"
           ref="titleBlock"
           :project="project"
+          :frame="own"
           :form="title"
           @rename="emit('rename', $event)"
           @set-technique="emit('set-technique', $event)"
@@ -629,6 +639,7 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
       <div v-if="progressForm" ref="progressEl" class="margin-sheet__progress" :data-form="progressFit" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
         <RowProgressControls
           :project="project"
+          :frame="own"
           :row-highlight="rowHighlight"
           :row-press="rowPress"
           :form="progressForm"
