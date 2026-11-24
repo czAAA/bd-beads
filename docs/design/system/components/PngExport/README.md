@@ -6,7 +6,7 @@ The PNG export: **the Cover page as a picture** (ticket 1096; PrintCover card), 
 
 - **One file, whatever the piece**: however big it is and however many colors it has, there are no list pages and no further files. Its footer reads "1 / 1".
 - **Whatever the switches say**: it is saved whether or not the Cover page switch is on (that switch is the PDF's). Large beads, Row by row, Empty grid and Chart border change only the PDF (the Cover page has no chart and shows no empty positions, ticket 1127); the picture is always in color.
-- The footer is the Cover page's (the mark, "openbeads" and the date and time on the left, the page number on the right).
+- The footer is the Cover page's (the mark, "openbeads" and the date and time on the left, the page number on the right). Approved 2026-11-24, not yet in the app (ticket 1233): it is the Cover page's new footer, with "Made with openbeads.com", the tag and the QR code (PrintCover card, "The address").
 - Drawn at 150, 300 or 450 dpi by the Export quality (QualitySlider card): 1240 × 1754, 2480 × 3508 or 3720 × 5262 px. A device that cannot hold a 450 dpi page draws High at 300. The PDF is not affected.
 - Set in the print fonts (Inter, DM Mono, Instrument Serif), in the app's language. No wide layout, no watermark.
 - File name `{project}-{frame}-{maker}.png` (ticket 0720, printed-output.md), with no switch's word in it (ExportPanel card).
