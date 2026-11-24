@@ -1,10 +1,8 @@
-// The design canvas (bd-ux-design skill): reads the options listed in canvas.html's <main id="canvas"> and draws one
-// artboard per option and size, with pan and zoom, a state, theme and language switcher, and numbered comment pins
-// kept by serve.mjs in comments.json. A pin takes a press only in comment mode, so it never covers the design's own controls. No dependencies; colors and type come from the design system's tokens.
+// The design page (bd-ux-design skill, SKILL.md step 3): reads canvas.html's <main id="canvas"> and draws a dark,
+// scrolling page: per question a section, its options stacked as full-width rows (label, then the live mockup scaled
+// to the page), comment pins kept by serve.mjs (pressable only in comment mode). No dependencies; tokens only.
 ;(() => {
   const SIZES = { desktop: [1710, 907], ipad: [1366, 1024], 'ipad-portrait': [1024, 1366], phone: [390, 844] }
-  const GAP = 160
-  const LABEL = 380
   const main = document.getElementById('canvas')
   const split = (text) => (text ?? '').split(/\s+/).filter(Boolean)
   const sizeOf = (name) => SIZES[name] ?? name.split('x').map(Number)
@@ -14,25 +12,44 @@
 
   const storeKey = 'bd-design:' + location.pathname
   const saved = JSON.parse(sessionStorage.getItem(storeKey) || '{}')
-  const view = { x: saved.x ?? 0, y: saved.y ?? 0, k: saved.k ?? 0 }
   let theme = themes.includes(saved.theme) ? saved.theme : themes[0]
   let lang = langs.includes(saved.lang) ? saved.lang : langs[0]
   let commenting = false
   let listOpen = saved.list ?? false
   let comments = []
 
+  // Groups: each <section data-group> is one question; options straight under <main> are one untitled group.
+  const groups = [...main.querySelectorAll(':scope > [data-group]')].map((el) => ({ el, id: el.dataset.group,
+    title: el.dataset.title || el.dataset.group, question: el.dataset.question || '', sections: [...el.querySelectorAll('[data-option]')] }))
+  const loose = [...main.querySelectorAll(':scope > [data-option]')]
+  if (loose.length) groups.unshift({ el: main, id: '', title: '', question: '', sections: loose })
+  const recommendation = main.querySelector(':scope > [data-recommendation]')
+
   const boards = []
-  for (const el of main.querySelectorAll('[data-option]')) {
-    const states = split(el.dataset.states || 'default')
-    for (const size of split(el.dataset.sizes).length ? split(el.dataset.sizes) : defaultSizes) {
-      const [width, height] = sizeOf(size)
-      const id = `${el.dataset.option}@${size}`
-      const state = states.includes(saved.states?.[id]) ? saved.states[id] : states[0]
-      boards.push({ id, option: el.dataset.option, size, width, height, states, state, src: el.dataset.src,
-        name: el.dataset.name || el.dataset.option, idea: el.dataset.idea || '', tradeoff: el.dataset.tradeoff || '' })
+  const options = []
+  for (const group of groups) {
+    group.options = []
+    for (const el of group.sections) {
+      const states = split(el.dataset.states || 'default')
+      const name = el.dataset.name || el.dataset.option
+      const option = { id: el.dataset.option, name, short: name.split(' · ')[0], group, boards: [],
+        idea: el.dataset.idea || '', tradeoff: el.dataset.tradeoff || '' }
+      const sizes = split(el.dataset.sizes).length ? split(el.dataset.sizes) : split(group.el.dataset.sizes).length && group.el !== main ? split(group.el.dataset.sizes) : defaultSizes
+      for (const size of sizes) {
+        const [width, height] = sizeOf(size)
+        const id = `${el.dataset.option}@${size}`
+        const state = states.includes(saved.states?.[id]) ? saved.states[id] : states[0]
+        const board = { id, option: el.dataset.option, group: group.id, size, width, height, states, state, src: el.dataset.src, name }
+        boards.push(board)
+        option.boards.push(board)
+      }
+      group.options.push(option)
+      options.push(option)
     }
   }
-  window.designCanvas = { boards, themes, langs }
+  const allSizes = [...new Set(boards.map((board) => board.size))]
+  let size = allSizes.includes(saved.size) ? saved.size : allSizes[0]
+  window.designCanvas = { boards, themes, langs, groups: groups.map((g) => ({ id: g.id, title: g.title, options: g.options.map((o) => o.id) })) }
 
   function h(tag, props = {}, ...children) {
     const el = document.createElement(tag)
@@ -44,178 +61,125 @@
     el.append(...children.filter((child) => child != null && child !== false))
     return el
   }
+  const segment = (values, current, pick, label) => h('div', { class: 'dc-seg', role: 'group', 'aria-label': label }, ...values.map((value) =>
+    h('button', { type: 'button', 'data-value': value, 'aria-pressed': String(value === current), onclick: () => pick(value) }, value)))
+  const hashOf = (board) => '#' + new URLSearchParams({ state: board.state, theme, lang })
+  const press = (group, value) => [...group.children].forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.value === value)))
 
-  // The page's parts
-  const world = h('div', { class: 'dc-world' })
-  const stage = h('div', { class: 'dc-stage' }, world)
-  const zoomLabel = h('span', { class: 'dc-zoom' })
+  // The bar: back home, the options (a press scrolls to one; ← → step), the view switches, comments.
   const countLabel = h('span', {})
   const stateSelect = h('select', { 'aria-label': 'State of every artboard', onchange: () => setAllStates(stateSelect.value) },
-    h('option', { value: '' }, 'State: each its own'),
-    ...[...new Set(boards.flatMap((board) => board.states))].map((state) => h('option', { value: state }, `State: ${state}`)))
-  const segment = (values, current, pick) => h('div', { class: 'dc-segment' }, ...values.map((value) =>
-    h('button', { type: 'button', 'data-value': value, 'aria-pressed': String(value === current), onclick: () => pick(value) }, value)))
-  const themeSegment = segment(themes, theme, setTheme)
-  const langSegment = segment(langs, lang, setLang)
-  const commentButton = h('button', { type: 'button', class: 'dc-button', 'aria-pressed': 'false', onclick: () => setCommenting(!commenting) }, 'Comment (C)')
-  const listButton = h('button', { type: 'button', class: 'dc-button', onclick: () => setList(!listOpen) }, 'Comments ', countLabel)
+    h('option', { value: '' }, 'state: each its own'),
+    ...[...new Set(boards.flatMap((board) => board.states))].map((state) => h('option', { value: state }, `state: ${state}`)))
+  const sizeSegment = segment(allSizes, size, setSize, 'Size')
+  const themeSegment = segment(themes, theme, setTheme, 'Theme of the mockups')
+  const langSegment = segment(langs, lang, setLang, 'Language')
+  const commentButton = h('button', { type: 'button', class: 'dc-btn', 'aria-pressed': 'false', onclick: () => setCommenting(!commenting) }, 'Comment (C)')
+  const listButton = h('button', { type: 'button', class: 'dc-btn', onclick: () => setList(!listOpen) }, 'Comments ', countLabel)
+  const nav = h('nav', { class: 'dc-nav', 'aria-label': 'Go to an option (← →)' }, ...groups.map((group) =>
+    h('div', { class: 'dc-seg' }, ...group.options.map((option) => h('button', { type: 'button', 'data-value': option.id, title: option.name,
+      onclick: () => goToOption(options.indexOf(option)) }, option.short)))))
   const bar = h('header', { class: 'dc-bar' },
-    h('div', { class: 'dc-title' }, h('strong', {}, main.dataset.title || document.title), h('span', {}, main.dataset.question || '')),
-    stateSelect, themes.length > 1 && themeSegment, langs.length > 1 && langSegment,
-    h('button', { type: 'button', class: 'dc-button', onclick: () => fit() }, 'Fit (0)'),
-    h('button', { type: 'button', class: 'dc-button', onclick: () => zoomTo(1) }, '100% (1)'),
-    zoomLabel, commentButton, listButton)
+    h('a', { class: 'dc-home', href: '/', title: 'Every design', 'aria-label': 'Every design' }, '←'),
+    h('span', { class: 'dc-bar-title' }, main.dataset.title || document.title),
+    options.length > 1 && nav,
+    h('span', { class: 'dc-fill' }),
+    allSizes.length > 1 && sizeSegment, themes.length > 1 && themeSegment, langs.length > 1 && langSegment, stateSelect,
+    commentButton, listButton)
+
+  // The page: title, the question, a section per question, the recommendation.
+  const page = h('div', { class: 'dc-page' },
+    h('div', { class: 'dc-top' }, h('h1', {}, main.dataset.title || document.title),
+      main.dataset.question && h('p', { class: 'dc-lede' }, main.dataset.question),
+      h('p', { class: 'dc-meta' }, [`${options.length} option${options.length === 1 ? '' : 's'}`, groups.length > 1 && `${groups.length} questions`,
+        allSizes.map((s) => { const [w, hh] = sizeOf(s); return `${s} ${w}×${hh}` }).join(' / ')].filter(Boolean).join(' · '))))
+  for (const group of groups) {
+    group.section = h('section', { class: 'dc-group', 'data-group': group.id },
+      h('h2', {}, group.title || (groups.length > 1 ? 'more options' : 'the options')),
+      group.question && h('p', { class: 'dc-lede' }, group.question))
+    for (const option of group.options) {
+      option.el = h('article', { class: 'dc-option', 'data-option': option.id })
+      for (const board of option.boards) {
+        board.chips = segment(board.states, board.state, (state) => setState(board, state), `States of ${board.name}`)
+        board.label = h('header', { class: 'dc-label' },
+          h('div', { class: 'dc-label-text' },
+            h('h3', {}, option.short !== option.name ? h('span', { class: 'dc-letter' }, option.short) : null, option.short !== option.name ? option.name.slice(option.short.length + 3) : option.name),
+            option.idea && h('p', {}, option.idea),
+            option.tradeoff && h('p', { class: 'dc-tradeoff' }, h('span', {}, 'trade-off '), option.tradeoff)),
+          board.chips)
+        board.frame = h('iframe', { src: board.src + hashOf(board), title: board.name, width: board.width, height: board.height })
+        board.pins = h('div', { class: 'dc-pins' })
+        board.catcher = h('div', { class: 'dc-catch', onclick: (event) => compose(board, event) })
+        board.layer = h('div', { class: 'dc-layer', style: `width:${board.width}px;height:${board.height}px` }, board.frame, board.catcher, board.pins)
+        board.el = h('div', { class: 'dc-board', 'data-board': board.id }, h('span', { class: 'dc-size' }, `${board.size} ${board.width}×${board.height}`), board.layer)
+        board.wrap = h('div', { class: 'dc-row', 'data-size': board.size }, board.label, board.el)
+        option.el.append(board.wrap)
+      }
+      group.section.append(option.el)
+    }
+    page.append(group.section)
+  }
+  if (recommendation) page.append(h('section', { class: 'dc-group' }, h('h2', {}, 'recommendation'), h('div', { class: 'dc-rec' }, ...recommendation.childNodes)))
   const list = h('aside', { class: 'dc-list', hidden: !listOpen })
   const note = h('div', { class: 'dc-note', hidden: true })
   main.hidden = true
-  document.body.append(bar, stage, list, note)
+  document.body.append(bar, page, list, note)
+  new ResizeObserver(() => document.documentElement.style.setProperty('--bar-h', bar.offsetHeight + 'px')).observe(bar)
 
-  // Layout: a row per size, a column per option.
-  let bounds = { width: 0, height: 0 }
-  let top = LABEL
-  for (const size of [...new Set(boards.map((board) => board.size))]) {
-    let left = 0
-    const row = boards.filter((board) => board.size === size)
-    for (const board of row) {
-      Object.assign(board, { left, top })
-      left += board.width + GAP
-      bounds.width = Math.max(bounds.width, left - GAP)
+  /** Each artboard drawn at the page's width (never above 100%); its pins and comment points stay in its own px. */
+  function layout() {
+    for (const board of boards) {
+      board.wrap.hidden = board.size !== size
+      if (board.wrap.hidden) continue
+      const room = board.el.clientWidth || page.clientWidth
+      board.k = Math.min(1, room / board.width)
+      board.layer.style.transform = `scale(${board.k})`
+      board.layer.style.setProperty('--k', board.k)
+      board.el.style.height = Math.round(board.height * board.k) + 'px'
     }
-    top += row[0].height + LABEL
-  }
-  bounds.height = top - LABEL
-
-  const hashOf = (board) => '#' + new URLSearchParams({ state: board.state, theme, lang })
-  for (const board of boards) {
-    board.chips = h('div', { class: 'dc-chips' }, ...board.states.map((state) =>
-      h('button', { type: 'button', 'data-value': state, onclick: () => setState(board, state) }, state)))
-    board.frame = h('iframe', { src: board.src + hashOf(board), title: board.name, width: board.width, height: board.height })
-    board.pins = h('div', { class: 'dc-pins' })
-    board.catcher = h('div', { class: 'dc-catch', onclick: (event) => compose(board, event) })
-    board.el = h('article', { class: 'dc-board', 'data-board': board.id,
-      style: `left:${board.left}px;top:${board.top}px;width:${board.width}px;height:${board.height}px` },
-      h('header', { class: 'dc-label' },
-        h('button', { type: 'button', class: 'dc-name', onclick: () => fit(board) }, board.name),
-        h('span', { class: 'dc-size' }, `${board.size} ${board.width}×${board.height}`),
-        h('p', {}, board.idea, board.tradeoff && h('em', {}, ` Trade-off: ${board.tradeoff}`)),
-        board.chips),
-      board.frame, board.catcher, board.pins)
-    board.frame.addEventListener('load', () => forward(board))
-    world.append(board.el)
   }
 
-  // View
   function remember() {
-    sessionStorage.setItem(storeKey, JSON.stringify({ ...view, theme, lang, list: listOpen,
+    sessionStorage.setItem(storeKey, JSON.stringify({ theme, lang, size, list: listOpen,
       states: Object.fromEntries(boards.map((board) => [board.id, board.state])) }))
   }
-  function draw() {
-    world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.k})`
-    document.documentElement.style.setProperty('--k', view.k)
-    zoomLabel.textContent = Math.round(view.k * 100) + '%'
-    remember()
-  }
-  function fit(board) {
-    const box = board
-      ? { left: board.left, top: board.top - LABEL + 40, width: board.width, height: board.height + LABEL - 40 }
-      : { left: 0, top: 0, width: bounds.width, height: bounds.height }
-    const room = stage.getBoundingClientRect()
-    view.k = Math.min(2, Math.max(0.03, Math.min((room.width - 48) / box.width, (room.height - 48) / box.height)))
-    view.x = (room.width - box.width * view.k) / 2 - box.left * view.k
-    view.y = (room.height - box.height * view.k) / 2 - box.top * view.k
-    draw()
-  }
-  function zoomTo(k, cx, cy) {
-    const room = stage.getBoundingClientRect()
-    const px = (cx ?? room.left + room.width / 2) - room.left
-    const py = (cy ?? room.top + room.height / 2) - room.top
-    const next = Math.min(4, Math.max(0.03, k))
-    view.x = px - (px - view.x) * (next / view.k)
-    view.y = py - (py - view.y) * (next / view.k)
-    view.k = next
-    draw()
-    hideNote()
-  }
-  function panBy(dx, dy) {
-    view.x += dx
-    view.y += dy
-    draw()
-    hideNote()
-  }
 
-  /** Wheel, pinch and keys from one window: the page itself, or an artboard's frame (its points are in its own px). */
-  function listen(win, toPage, mayScroll) {
-    let pinchFrom = 1
-    win.addEventListener('wheel', (event) => {
-      const zooming = event.ctrlKey || event.metaKey
-      if (!zooming && mayScroll?.(event)) return
-      event.preventDefault()
-      const at = toPage(event)
-      if (zooming) zoomTo(view.k * Math.exp(-event.deltaY * 0.01), at.x, at.y)
-      else panBy(-event.deltaX, -event.deltaY)
-    }, { passive: false })
-    win.addEventListener('gesturestart', (event) => {
-      event.preventDefault()
-      pinchFrom = view.k
-    })
-    win.addEventListener('gesturechange', (event) => {
-      event.preventDefault()
-      const at = toPage(event)
-      zoomTo(pinchFrom * event.scale, at.x, at.y)
-    })
-    win.addEventListener('keydown', (event) => {
-      if (event.metaKey || event.ctrlKey || event.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName ?? '')) return
-      if (event.key === '0') fit()
-      else if (event.key === '1') zoomTo(1)
-      else if (event.key === 'c') setCommenting(!commenting)
-      else if (event.key === 'Escape' && win === window) setCommenting(false)
-      else if (event.key === '=' || event.key === '+') zoomTo(view.k * 1.25)
-      else if (event.key === '-') zoomTo(view.k / 1.25)
-    })
+  // Options in the bar
+  let current = -1
+  function goToOption(index) {
+    if (!options.length) return
+    current = (index + options.length) % options.length
+    for (const button of nav.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button.dataset.value === options[current].id))
+    options[current].el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-  function scrollsInside(event) {
-    const vertical = Math.abs(event.deltaY) >= Math.abs(event.deltaX)
-    for (let el = event.target; el && el.nodeType === 1; el = el.parentElement) {
-      const style = el.ownerDocument.defaultView.getComputedStyle(el)
-      const isRoot = el === el.ownerDocument.documentElement
-      const scrolls = (value) => value === 'auto' || value === 'scroll' || (isRoot && value !== 'hidden' && value !== 'clip')
-      if (vertical ? scrolls(style.overflowY) && el.scrollHeight > el.clientHeight + 1 : scrolls(style.overflowX) && el.scrollWidth > el.clientWidth + 1) return true
-    }
-    return false
-  }
-  function forward(board) {
-    const toPage = (event) => {
-      const rect = board.frame.getBoundingClientRect()
-      return { x: rect.left + event.clientX * view.k, y: rect.top + event.clientY * view.k }
-    }
+  addEventListener('keydown', (event) => {
+    if (event.metaKey || event.ctrlKey || event.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName ?? '')) return
+    if (event.key === 'c') setCommenting(!commenting)
+    else if (event.key === 'Escape') setCommenting(false)
+    else if (event.key === 'ArrowRight') goToOption(current + 1)
+    else if (event.key === 'ArrowLeft') goToOption(current < 0 ? -1 : current - 1)
+    else return
+    event.preventDefault()
+  })
+  // Keys pressed while a mockup has focus reach the page too (C, Escape, the arrows), except inside its fields.
+  for (const board of boards) board.frame.addEventListener('load', () => {
     try {
-      listen(board.frame.contentWindow, toPage, scrollsInside)
+      board.frame.contentWindow.addEventListener('keydown', (event) => {
+        if (/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName ?? '') || !/^(c|ArrowLeft|ArrowRight)$/.test(event.key)) return
+        dispatchEvent(new KeyboardEvent('keydown', { key: event.key }))
+      })
     } catch {
-      // A frame that left this origin can't be listened to; the page's own wheel still pans beside it.
+      // A frame that left this origin can't be listened to.
     }
-  }
-  listen(window, (event) => ({ x: event.clientX, y: event.clientY }), (event) => !stage.contains(event.target))
-  let drag = null
-  stage.addEventListener('pointerdown', (event) => {
-    if (event.target !== stage && event.target !== world) return
-    drag = { x: event.clientX, y: event.clientY }
-    stage.setPointerCapture(event.pointerId)
   })
-  stage.addEventListener('pointermove', (event) => {
-    if (!drag) return
-    panBy(event.clientX - drag.x, event.clientY - drag.y)
-    drag = { x: event.clientX, y: event.clientY }
-  })
-  stage.addEventListener('pointerup', () => (drag = null))
-  stage.addEventListener('pointercancel', () => (drag = null))
 
-  // States, theme, language
+  // States, size, theme, language
   function show(board) {
     board.frame.contentWindow?.location.replace(new URL(board.src, location.href).href.split('#')[0] + hashOf(board))
     mark(board)
   }
   function mark(board) {
-    for (const chip of board.chips.children) chip.setAttribute('aria-pressed', String(chip.dataset.value === board.state))
+    press(board.chips, board.state)
     drawPins()
     remember()
   }
@@ -230,11 +194,14 @@
       show(board)
     }
   }
-  const press = (group, value) => [...group.children].forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.value === value)))
+  function setSize(next) {
+    size = next
+    press(sizeSegment, size)
+    layout()
+    remember()
+  }
   function setTheme(next) {
     theme = next
-    document.documentElement.dataset.theme = theme
-    document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
     press(themeSegment, theme)
     boards.forEach(show)
   }
@@ -253,10 +220,10 @@
 
   // Comments
   const api = (path, method = 'GET', data) =>
-    fetch('/api/comments' + path, { method, headers: { 'content-type': 'application/json' }, body: data && JSON.stringify(data) }).then((r) => r.json())
+    fetch(new URL('api/comments' + path, location.href), { method, headers: { 'content-type': 'application/json' }, body: data && JSON.stringify(data) }).then((r) => r.json())
   async function loadComments() {
-    const list = await api('').catch(() => [])
-    comments = Array.isArray(list) ? list : []
+    const got = await api('').catch(() => [])
+    comments = Array.isArray(got) ? got : []
     drawPins()
   }
   function drawPins() {
@@ -267,11 +234,11 @@
     }
     const open = comments.filter((c) => !c.resolved).length
     countLabel.textContent = `${open} open / ${comments.length}`
-    list.replaceChildren(h('h2', {}, 'Comments'), ...(comments.length ? comments : [null]).map((c) => c
-      ? h('button', { type: 'button', class: 'dc-row' + (c.resolved ? ' is-resolved' : ''), onclick: () => goTo(c) },
+    list.replaceChildren(h('h2', {}, 'comments'), ...(comments.length ? comments : [null]).map((c) => c
+      ? h('button', { type: 'button', class: 'dc-item' + (c.resolved ? ' is-resolved' : ''), onclick: () => goTo(c) },
           h('b', {}, `${c.id}`), h('span', { class: 'dc-where' }, `${c.board} · ${c.state}${c.resolved ? ' · resolved' : ''}`),
           h('span', {}, c.text), c.reply && h('span', { class: 'dc-reply' }, `↳ ${c.reply}`))
-      : h('p', {}, 'None yet. Press C, then click an artboard.')))
+      : h('p', {}, 'None yet. Press C, then click a mockup.')))
   }
   function setCommenting(on) {
     commenting = on
@@ -295,8 +262,8 @@
     note.style.top = Math.max(8, Math.min(innerHeight - box.height - 8, y + 14)) + 'px'
   }
   function compose(board, event) {
-    const rect = board.el.getBoundingClientRect()
-    const at = { x: Math.round((event.clientX - rect.left) / view.k), y: Math.round((event.clientY - rect.top) / view.k) }
+    const rect = board.layer.getBoundingClientRect()
+    const at = { x: Math.round((event.clientX - rect.left) / board.k), y: Math.round((event.clientY - rect.top) / board.k) }
     let target = ''
     try {
       const el = board.frame.contentDocument.elementFromPoint(at.x, at.y)
@@ -313,17 +280,15 @@
       await loadComments()
     }
     field.addEventListener('keydown', (e) => {
+      e.stopPropagation()
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
         save()
-      } else if (e.key === 'Escape') {
-        e.stopPropagation()
-        hideNote()
-      }
+      } else if (e.key === 'Escape') hideNote()
     })
     note.replaceChildren(h('strong', {}, `${board.id} · ${board.state}`), field,
-      h('div', { class: 'dc-actions' }, h('button', { type: 'button', class: 'dc-button', onclick: hideNote }, 'Cancel'),
-        h('button', { type: 'button', class: 'dc-button is-primary', onclick: save }, 'Save')))
+      h('div', { class: 'dc-actions' }, h('button', { type: 'button', class: 'dc-btn', onclick: hideNote }, 'Cancel'),
+        h('button', { type: 'button', class: 'dc-btn is-primary', onclick: save }, 'Save')))
     placeNote(event.clientX, event.clientY)
     field.focus()
   }
@@ -335,30 +300,58 @@
     }
     note.replaceChildren(h('strong', {}, `${c.id} · ${c.board} · ${c.state}${c.resolved ? ' · resolved' : ''}`), h('p', {}, c.text),
       c.reply && h('p', { class: 'dc-reply' }, `↳ ${c.reply}`),
-      h('div', { class: 'dc-actions' }, h('button', { type: 'button', class: 'dc-button', onclick: () => change() }, 'Delete'),
-        h('button', { type: 'button', class: 'dc-button', onclick: () => change({ resolved: !c.resolved }) }, c.resolved ? 'Reopen' : 'Resolve')))
+      h('div', { class: 'dc-actions' }, h('button', { type: 'button', class: 'dc-btn', onclick: () => change() }, 'Delete'),
+        h('button', { type: 'button', class: 'dc-btn', onclick: () => change({ resolved: !c.resolved }) }, c.resolved ? 'Reopen' : 'Resolve')))
     const rect = pin.getBoundingClientRect()
     placeNote(rect.right, rect.bottom)
   }
   function goTo(c) {
     const board = boards.find((b) => b.id === c.board)
     if (!board) return
+    if (board.size !== size) setSize(board.size)
     if (board.states.includes(c.state) && board.state !== c.state) setState(board, c.state)
-    fit(board)
+    board.wrap.scrollIntoView({ block: 'start' })
     const pin = board.pins.querySelector(`[data-id="${c.id}"]`)
-    if (pin) openNote(c, pin)
+    if (pin) requestAnimationFrame(() => openNote(c, pin))
   }
 
   // Start
-  document.documentElement.dataset.theme = theme
-  document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
+  // The page itself is always dark, as the save-reminder page was; the mockups take the theme the switch picks.
+  document.documentElement.dataset.theme = 'dark'
+  document.documentElement.style.colorScheme = 'dark'
   boards.forEach(mark)
-  if (view.k) draw()
-  else fit()
+  layout()
+  scrollTo(0, saved.y ?? 0)
+  addEventListener('scroll', () => sessionStorage.setItem(storeKey, JSON.stringify({ ...JSON.parse(sessionStorage.getItem(storeKey) || '{}'), y: scrollY })), { passive: true })
   loadComments()
-  addEventListener('resize', () => draw())
+  window.designCanvas.ready = document.fonts.ready.then(() => {
+    layout()
+    scrollTo(0, saved.y ?? 0)
+  })
+  // Lay out again only when the page's width changes; the heights layout() sets would otherwise loop the observer.
+  let laidWidth = 0
+  new ResizeObserver(() => {
+    if (page.clientWidth === laidWidth) return
+    laidWidth = page.clientWidth
+    requestAnimationFrame(layout)
+  }).observe(page)
+  /** What lies on what: a label over an artboard or over other text, or text wider than its box. */
+  window.designCanvas.layoutTrouble = () => {
+    const shown = boards.filter((b) => !b.wrap.hidden)
+    const texts = [...shown.map((b) => ({ el: b.label, name: `label of ${b.id}` })),
+      ...groups.map((g) => ({ el: g.section.querySelector('h2'), name: `header of group ${g.id || 'options'}` }))]
+    const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5
+    const found = []
+    texts.forEach((text, i) => {
+      const box = text.el.getBoundingClientRect()
+      for (const board of shown) if (hit(box, board.el.getBoundingClientRect())) found.push(`${text.name} lies over artboard ${board.id}`)
+      for (const other of texts.slice(i + 1)) if (hit(box, other.el.getBoundingClientRect())) found.push(`${text.name} lies over ${other.name}`)
+      for (const el of text.el.querySelectorAll('*')) if (el.scrollWidth > el.clientWidth + 1) found.push(`${text.name}: text wider than its box`)
+    })
+    return [...new Set(found)]
+  }
   if (window.EventSource && !/[?&]static\b/.test(location.search)) {
-    const events = new EventSource('/api/events')
+    const events = new EventSource(new URL('api/events', location.href))
     events.addEventListener('reload', () => location.reload())
     events.addEventListener('comments', loadComments)
   }

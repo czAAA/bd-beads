@@ -14,7 +14,8 @@ The helpers are beside this file; none needs a dependency beyond the repo's Play
 | `init.mjs <dir> "<Title>" a b c` | Scaffolds a topic: `canvas.html`, `shared.css`, `options/<id>.html`, `comments.json`. Never overwrites. |
 | `ground.mjs <url> <selector>` | Measures a real part on a dev server: box, type, colors, radius, shadow, each named by its token. |
 | `audit.mjs <dir>` | Opens every option at every size, state, theme and language in WebKit at 2× and reports findings as text. |
-| `serve.mjs <dir> [--open]` | The local server: the canvas, the repo's tokens, fonts and icons, the comments, live reload. |
+| `serve.mjs [<dir>] [--open]` | The one local server for every topic: a homepage of them, each canvas, the repo's tokens, fonts and icons, the comments, live reload. |
+| `home.mjs`, `home.css` | The homepage at `/`: a titled tile per topic with a live preview, newest first, and a find field. |
 | `canvas.js`, `canvas.css`, `option.js` | The canvas page and the helper every option loads. Don't copy them into a topic. |
 
 Paths, once per session:
@@ -22,14 +23,15 @@ Paths, once per session:
 ```bash
 S=.claude/skills/bd-ux-design                                              # this checkout's copy of the skill
 MAIN=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")   # the main checkout, also from a worktree
-D=$MAIN/.scratch-design/<topic-slug>                                         # the design; a worktree would take it along when removed
-grep -qx '.scratch-design/' "$MAIN/.git/info/exclude" || echo '.scratch-design/' >> "$MAIN/.git/info/exclude"
+UX=$(dirname "$MAIN")/bd-beads-ux                                           # every design, beside the repo: never in a commit
+D=$UX/<topic-slug>                                                           # this design
 ```
 
 ## Rules that hold in every step
 
-**Storage.** Everything before sign-off is uncommitted, in `$D`: the canvas, the options, `shared.css`,
-`comments.json`, `audit.txt`, `crops/`. Never in `.gitignore`, never in a commit. Old topics stay: never delete one.
+**Storage.** Everything before sign-off is in `$D`, a folder of `$UX` (`../bd-beads-ux`, beside the repo, not a git
+repo): the canvas, the options, `shared.css`, `comments.json`, `audit.txt`, `crops/`. Being outside the repo, none of it
+can reach a commit or the lint. Old topics stay: never delete one.
 Pictures you take for yourself go in the session's scratchpad or `$D/crops/`.
 
 **Tokens (the reason this skill exists).**
@@ -98,14 +100,27 @@ one. Each has a letter, a short name, its idea in one line and what it costs in 
 that differ, show ASCII wireframes in chat and ask.
 
 ```bash
-node $S/init.mjs $D "<Title>" a b c
+node $S/init.mjs $D "<Title>" a b c            # one question
+node $S/init.mjs $D "<Title>" 1a 1b 2a 2b 3    # several questions: a group per number
 ```
+
+**The page.** `canvas.html` is drawn as a dark page you scroll, in the feel of the save-reminder mockups
+(`$UX/save-reminder-mockups.html`): a serif title, the question as the lede, lowercase mono section
+labels, a section per question under a long rule, and that question's options **stacked as rows**: each option's
+letter, name, idea, trade-off and state switches, then its live mockup at the page's width, then the next option. A
+canvas that asks several things puts each question's options in its own `<section data-group>`, so a section holds
+only the alternatives to that one question. Text sits in the flow above its mockup and never lies over it.
 
 Then edit, in place:
 - **`canvas.html`**: the whole canvas is its `<main id="canvas">`. `data-title`, `data-question`, `data-sizes`
   (`desktop ipad`), `data-themes` (`light dark contrast`: the app has all three), `data-langs` (`en ru`), and one
-  `<section>` per option with `data-name="A · Name"`, `data-idea`, `data-tradeoff`, `data-src`, `data-states`. The
-  canvas draws one artboard per option and size, at the device's real size.
+  `<section>` per option with `data-name="A · Name"`, `data-idea`, `data-tradeoff`, `data-src`, `data-states`. Each
+  option is an artboard per size at the device's real size, scaled down to the page's width; the bar's size switch
+  shows one size at a time. Several questions: wrap each one's options in `<section data-group="1"
+  data-title="1 · Short name" data-question="What it decides">` (`data-sizes` on a group sets its sizes). Keep
+  `data-idea` and `data-tradeoff` to a line each. Your pick goes last, in `<aside data-recommendation>` (HTML, **bold**
+  the option): it is drawn as the accent callout at the page's end.
+- The bar has a button per option (the part of `data-name` before ` · `): a press scrolls to it, ← and → step.
 - **`shared.css`**: the real component CSS, once.
 - **`options/<id>.html`**: one page per option, the screen as it would be, at any of the sizes. Its `<style>` holds
   only what this option draws differently.
@@ -149,7 +164,8 @@ WebKit at 2×, every option × size × state × theme × language, the motion sa
 `data-goto` control really pressed (a press that is covered or shows the wrong state is a finding). It reports,
 grouped, one line per distinct finding: text cut off or spilling out of its box, parts off the screen, texts or
 controls overlapping, a color or shadow that is no token, tap targets under 44px (24px on `desktop`, which is
-mouse-first), more than one thing moving at once, endless motion, a `data-goto` to an unlisted state, a language with
+mouse-first), more than one thing moving at once, a label or section header on the page lying over a mockup or other
+text (checked at 1710×907 and 1366×1024), endless motion, a `data-goto` to an unlisted state, a language with
 no strings, console errors and files that didn't load. The full list is `$D/audit.txt`.
 
 Fix with small edits and run again until it prints `clean: nothing found`. `data-audit-ok="clip"` (or `overlap`,
@@ -160,14 +176,26 @@ artboard; `--browser chromium` compares. Report the audit as text: the head line
 ## 6. Show it
 
 ```bash
-node $S/serve.mjs $D --open      # run_in_background: true; prints http://127.0.0.1:<port>/canvas.html, opens Safari
+SV=$MAIN/.claude/skills/bd-ux-design/serve.mjs   # the main checkout's copy: a worktree's goes away with the worktree
+node $SV --status || (nohup node $SV > "$UX/.server.log" 2>&1 &)   # detached: outlives this session
+node $SV $D --open               # prints http://127.0.0.1:<port>/<topic>/canvas.html on the running one, opens Safari
 ```
 
-It picks a free port from 4310, serves on 127.0.0.1 only, and reloads the open page when a file in `$D` changes (the
-place, zoom and states are kept). Run again, it prints the running one's URL; `--stop` ends it. Leave it running while
-the owner reviews. Give the owner the URL and, in a few lines: each option's letter, name, idea and trade-off, which
-one you would pick and why, and how to comment: **C, then click an artboard, type, Enter**. Pan with two fingers,
-zoom with a pinch or ⌘-scroll, `0` fits everything, a click on an option's name fits that artboard.
+Never start it with `run_in_background` (it would die with the session) and never stop one another session
+started: `--status` prints the running one's URL, or exits 1 when there is none.
+
+Before showing, fill `<aside data-recommendation>` with your pick and why.
+
+**One server for all the work.** It serves the whole `$UX` (`../bd-beads-ux`), not one topic: `/` is the homepage,
+with a titled tile per topic (live preview, question, options, open comments, date, "Signed off" once
+`canvas-options.html` exists), older prototypes and loose pages in a section below (one with nothing to preview gets no tile); each topic is at
+`/<topic>/canvas.html`, and its header's ← goes back home. If one is already running (any session's, from any
+worktree), this only prints and opens the topic's URL on it; a new topic needs no restart, it appears on the
+homepage at once. It picks a free port from 4310, serves on 127.0.0.1 only, and reloads an open page when its files
+change (the scroll place, size and states are kept). Don't stop it at the end of a session: it is the owner's place to
+browse every design. Leave it running while the owner reviews. Give the owner the URL and, in a few lines: each option's letter, name, idea and trade-off, which
+one you would pick and why, and how to comment: **C, then click a mockup, type, Enter**. Scroll down through the
+options, or jump with the bar's option buttons (or ← →); the bar also switches size, theme, language and every state.
 
 ## 7. The comments loop
 
@@ -193,7 +221,7 @@ round with one line per comment (number, what changed) and the audit's last line
 When the owner picks a direction:
 
 1. **Cut the canvas.** `cp $D/canvas.html $D/canvas-options.html` (the round as it was), then in `canvas.html` keep
-   only the chosen `<section>`, its final states, and the chosen name in `data-title`. The other options' files stay.
+   only the chosen `<section>` (one per group when there were several questions), its final states, and the chosen name in `data-title`. The other options' files stay.
    Audit once more.
 2. **The design system, in place, committed** (`DESIGN.md` §6). This is the only committed part, and it goes the
    normal way: a ticket in the docs repo (`docs/agents/issue-tracker.md`), a worktree from the `bd-worktree` skill, a
@@ -210,4 +238,4 @@ When the owner picks a direction:
 5. **Left for a human**, said explicitly: what only the owner's eyes or hands can settle (a real iPad, a real
    trackpad), and which PR waits for their merge.
 
-Stop the server (`node $S/serve.mjs $D --stop`) once the owner is done looking.
+Leave the server running: other topics live on it too. `node $S/serve.mjs --stop` only when the owner asks.
