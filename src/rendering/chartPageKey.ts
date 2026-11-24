@@ -1,10 +1,10 @@
 import { forEachBead } from '../domain/canvas'
-import type { Rotation } from '../domain/grid'
+import type { Rotation, FrameRef } from '../domain/grid'
 import { paintedFrameBox, projectDimensions } from '../domain/projectExtent'
 import { displayedGrid, planPrint, PRINT_BEAD_MIN_MM, PRINT_BEAD_TWO_LETTER_MM, wholeArea, type PlanOptions, type PrintPart, type PrintPlan, type TrimmedArea } from './printPlan'
 import { chartCellOf, customChart, type ChartBead } from './customChart'
 import { laidTurnOf } from '../domain/framePlacement'
-import { beadsOfLayer, frameOf, type Layered } from '../domain/layerRecord'
+import { beadsOfLayer, type Layered, FIRST_FRAME, frameById } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
 
 // A chart page's color key (tickets 579, 0585): the colors on the page, the overlap included since it is drawn there, and
@@ -28,14 +28,14 @@ function displayedAt(rotation: Rotation, columns: number, rows: number, column: 
 }
 
 /** The colors in the parts' beads, overlap included. */
-export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): string[] {
-  const frame = frameOf(project)
+export function colorsOnPage(project: Counted, parts: readonly PrintPart[], ref: FrameRef = FIRST_FRAME): string[] {
+  const frame = frameById(project, ref)
   if (!frame) return []
   const onPart = (across: number, down: number) => parts.some((part) => across >= part.firstAcross - part.overlapAcross && across <= part.lastAcross && down >= part.firstDown - part.overlapDown && down <= part.lastDown)
   // A Custom frame's beads lie at angles: each counts in the cell its centre falls in (ticket 0594).
-  const custom = customChart(project, { x: 0, y: 0, width: 0, height: 0 }, 1)
+  const custom = customChart(project, { x: 0, y: 0, width: 0, height: 0 }, 1, ref)
   if (custom) {
-    const { stepAcross, stepDown } = displayedGrid(project)
+    const { stepAcross, stepDown } = displayedGrid(project, ref)
     return [...new Set(custom.beads.flatMap((bead) => {
       const { across, down } = chartCellOf(bead, stepAcross, stepDown)
       return bead.color && onPart(across, down) ? [bead.color] : []
@@ -43,8 +43,8 @@ export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): str
   }
   const { columns, rows } = projectDimensions(project)
   const found = new Set<string>()
-  forEachBead(beadsOfLayer(project, 'frame')!, (row, column, hex) => {
-    const [across, down] = displayedAt(laidTurnOf(project), columns, rows, column, row)
+  forEachBead(beadsOfLayer(project, ref)!, (row, column, hex) => {
+    const [across, down] = displayedAt(laidTurnOf(project, ref), columns, rows, column, row)
     if (onPart(across, down)) {
       found.add(hex)
     }
@@ -71,20 +71,20 @@ function cornerCells(bead: ChartBead, stepAcross: number, stepDown: number): { a
 /** The rows and columns from the first bead to the last, across and down (ticket 1128; PrintChartPage card): what the PDF
  * and the PNG print, empty positions between beads kept. A Custom frame's are the rectangle round its colored beads; a
  * Schema with no beads prints whole. */
-export function trimmedArea(project: Layered): TrimmedArea {
+export function trimmedArea(project: Layered, ref: FrameRef = FIRST_FRAME): TrimmedArea {
   const whole = wholeArea(project)
-  const frame = frameOf(project)
+  const frame = frameById(project, ref)
   if (!frame) return whole
-  const custom = customChart(project, { x: 0, y: 0, width: 0, height: 0 }, 1)
+  const custom = customChart(project, { x: 0, y: 0, width: 0, height: 0 }, 1, ref)
   let cells: { across: number; down: number }[]
   if (custom) {
-    const { stepAcross, stepDown } = displayedGrid(project)
+    const { stepAcross, stepDown } = displayedGrid(project, ref)
     cells = custom.beads.flatMap((bead) => (bead.color === null ? [] : cornerCells(bead, stepAcross, stepDown)))
   } else {
-    const box = paintedFrameBox(project)
+    const box = paintedFrameBox(project, ref)
     const { columns, rows } = projectDimensions(project)
     const corner = (row: number, column: number) => {
-      const [across, down] = displayedAt(laidTurnOf(project), columns, rows, column, row)
+      const [across, down] = displayedAt(laidTurnOf(project, ref), columns, rows, column, row)
       return { across, down }
     }
     cells = box ? [corner(box.row, box.column), corner(box.row + box.rows - 1, box.column + box.columns - 1)] : []

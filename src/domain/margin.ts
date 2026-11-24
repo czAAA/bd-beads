@@ -1,6 +1,6 @@
 import { footprintOf } from './footprint'
 import { forEachChangedPosition, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
-import type { GridPosition } from './grid'
+import { isFrameLayer, type GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
 import { sameBeads } from './layerBeads'
 import { beadsOfLayer, type Layered, withLayer } from './layerRecord'
@@ -55,7 +55,7 @@ export function mayPlace(project: Layered, position: GridPosition, margin: numbe
 /** Whether a position lies in the Frame's margin: within MARGIN of the Frame's footprint (ADR 0066), but not in it. A
  * position that names the Frame's layer is in the Frame, whatever its number says. */
 export function inMargin(frame: Rect | undefined, position: GridPosition, margin: number = MARGIN): boolean {
-  return !!frame && position.layer !== 'frame' && frameContains(withMargin(frame, margin), position) && !frameContains(frame, position)
+  return !!frame && !isFrameLayer(position.layer) && frameContains(withMargin(frame, margin), position) && !frameContains(frame, position)
 }
 
 /** What a Piece tap's Selection may be (ticket 433, ADR 0051, spec 432): wholly inside the Frame, wholly clear of its

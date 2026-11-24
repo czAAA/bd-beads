@@ -1,5 +1,5 @@
-import type { Layer } from './grid'
-import { frameOf, withLayer } from './layerRecord'
+import { isFrameLayer, type Layer } from './grid'
+import { frameById, withLayer } from './layerRecord'
 import { layerWeave, sameWeave, weaveOf } from './layerWeave'
 import { touch, type Project } from './project'
 import type { Technique, TechniqueSettings, Weave } from './weave'
@@ -24,7 +24,7 @@ export function switchedWeave(current: Weave, technique: Technique, settings: Te
 export function withWeave(project: Project, layer: Layer, change: WeaveChange): Project {
   const current = layerWeave(project, layer)
   const weave = switchedWeave(current, 'technique' in change ? change.technique : current.technique, change.techniqueSettings)
-  if ((layer === 'frame' && !frameOf(project)) || sameWeave(current, weave)) {
+  if ((isFrameLayer(layer) && !frameById(project, layer)) || sameWeave(current, weave)) {
     return project
   }
   return touch(withLayer(project, layer, { weave }), {})

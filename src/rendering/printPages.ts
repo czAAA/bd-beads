@@ -1,6 +1,6 @@
 import { projectDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
-import { rotationSwapsAxes, type GridPosition } from '../domain/grid'
+import { rotationSwapsAxes, type GridPosition, type FrameRef } from '../domain/grid'
 import type { Project } from '../domain/project'
 import { drawFlatBead, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
@@ -21,7 +21,7 @@ import { OVERVIEW_CUT_LABEL } from './overviewLayout'
 import type { PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
 import { laidTurnOf } from '../domain/framePlacement'
-import type { Layered } from '../domain/layerRecord'
+import { type Layered, FIRST_FRAME } from '../domain/layerRecord'
 
 // Drawing the printed pages (ticket 162; printed-output.md, PrintChartPage card; page 1 is pageOnePage.ts). The chart first,
 // the rest is small in the margins. Nothing is drawn behind or over the chart: the sheets are open to share. Paper is
@@ -238,8 +238,8 @@ export function downNumber(trim: TrimmedArea, index: number): number {
 /** Where a position stands in the displayed chart, across and down from 0: each quarter turn swaps columns and rows and
  * reverses one axis (composing gridToRegion's per-turn mapping), across at 90° and 180°, down at 180° and 270°, so a
  * bead and the ruler number over it agree at every turn (ticket 1122). */
-export function displayedCellOf(project: RulerShape, { row, column }: GridPosition): { across: number; down: number } {
-  const rotation = laidTurnOf(project)
+export function displayedCellOf(project: RulerShape, { row, column }: GridPosition, ref: FrameRef = FIRST_FRAME): { across: number; down: number } {
+  const rotation = laidTurnOf(project, ref)
   const { columns, rows } = projectDimensions(project)
   const [across, down, wide, tall] = rotationSwapsAxes(rotation) ? [row, column, rows, columns] : [column, row, columns, rows]
   const acrossReversed = rotation === 90 || rotation === 180

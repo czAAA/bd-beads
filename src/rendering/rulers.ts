@@ -2,7 +2,7 @@ import type { Rect } from '../domain/canvas'
 import { frameShapeOf } from '../domain/frameShape'
 import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, type Weave } from '../domain/weave'
-import type { GridPosition } from '../domain/grid'
+import type { GridPosition, FrameRef } from '../domain/grid'
 import { canvasWeave, frameScale as frameBeadScale, frameWeave } from '../domain/layerWeave'
 import { hasGuides, type Selection } from '../domain/selection'
 import type { MarginForm } from './marginForm'
@@ -10,7 +10,7 @@ import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
-import { frameOf, type Layered } from '../domain/layerRecord'
+import { type Layered, FIRST_FRAME, frameById } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers along the left and the top of the Frame
 // and of each Piece as seen, whatever is turned (ticket 1170). Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -33,6 +33,8 @@ export const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
 /** Something rulers hang from: a rectangle of beads and the line round it. */
 export interface RuledBox extends Rect {
   kind: 'frame' | 'piece'
+  /** The layer it is measured on (ticket 1216): a Frame's box its Frame, a Piece's the Canvas. */
+  layer: ViewLayer
   /** How far outside its beads its line sits. */
   outset: number
   /** False for the box round every bead of a layer whose Pieces aren't counted yet (ticket 0716): numbers, no line. */
@@ -67,18 +69,18 @@ export type RuledProject = Layered
 // The boxes that carry rulers: the Frame as it lies (ticket 0667), then every Piece area of more than 4 beads (the
 // caller picks those near the viewport; only with the Rulers on, ticket 1012). A Custom frame has no box of its own: its
 // beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
-function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPieces): RuledBox[] {
-  const frame = frameOf(project)
+function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPieces, ref: FrameRef = FIRST_FRAME): RuledBox[] {
+  const frame = frameById(project, ref)
   const own: RuledBox[] = []
   if (frame && !frameShapeOf(frame)) {
-    const { row, column, rows, columns } = laidRect({ ...frame, cell: frameWeave(project).cell })
-    own.push({ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset })
+    const { row, column, rows, columns } = laidRect({ ...frame, cell: frameWeave(project, ref).cell })
+    own.push({ row, column, rows, columns, kind: 'frame', layer: ref, outset: scale.frameOutset })
   }
   return [
     ...own,
     ...(pieces.areas ?? [])
       .filter(hasGuides)
-      .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, ...(pieces.uncounted ? { outlined: false as const } : {}) })),
+      .map((piece) => ({ ...piece, kind: 'piece' as const, layer: 'canvas' as const, outset: scale.pieceOutset, ...(pieces.uncounted ? { outlined: false as const } : {}) })),
   ]
 }
 
@@ -324,7 +326,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
-export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, expandedFontPx, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
+export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, expandedFontPx, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions, ref: FrameRef = FIRST_FRAME): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
   const scale = rulerScale(surface.zoom, fontPx)
@@ -334,15 +336,15 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   const frameScale = expanded ? { ...scale, fontPx: expandedFontPx ?? atFull.fontPx, gap: atFull.gap } : sheetScale !== undefined ? { ...scale, fontPx: fontPx * sheetScale } : scale
   const scaleOf = (kind: RuledBox['kind']) => (kind === 'frame' ? frameScale : scale)
   const reachOf = (kind: RuledBox['kind']) => scaleOf(kind).fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
-  const boxes = ruledBoxes(project, scale, pieces).filter((box) => {
-    const shown = surface.beadBox(box, box.kind === 'frame' ? 'frame' : 'canvas')
+  const boxes = ruledBoxes(project, scale, pieces, ref).filter((box) => {
+    const shown = surface.beadBox(box, box.layer)
     const reach = reachOf(box.kind)
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
   const laid = boxes.map((box) => ({
     kind: box.kind,
     ...(box.kind === 'frame'
-      ? layBox(box, frameWeave(project), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame', size: frameBeadScale(project), stepped: expanded }, surface, viewport, frameScale)
+      ? layBox(box, frameWeave(project, ref), { origin: frameOriginPx(canvasWeave(project), frameById(project, ref)!), offset: frameById(project, ref)!, layer: ref, size: frameBeadScale(project), stepped: expanded }, surface, viewport, frameScale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
   // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.
@@ -366,10 +368,10 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
 /** How thick the Frame's numbers stand on the left and on the top as seen, at `fontPx` (ticket 1169): the slim sheet of
  * an expanded Frame is as wide there as they are. `across` is a Canvas turned a quarter, whose left side then numbers
  * the Frame's columns and its top its rows. None for a Custom frame, which has no rulers. */
-export function frameNumberBands(project: RuledProject, across: boolean, fontPx: number): { left: number; top: number } {
-  const frame = frameOf(project)
+export function frameNumberBands(project: RuledProject, across: boolean, fontPx: number, ref: FrameRef = FIRST_FRAME): { left: number; top: number } {
+  const frame = frameById(project, ref)
   if (!frame || frameShapeOf(frame)) return { left: 0, top: 0 }
-  const { rows, columns } = laidRect({ ...frame, cell: frameWeave(project).cell })
+  const { rows, columns } = laidRect({ ...frame, cell: frameWeave(project, ref).cell })
   const row = labelBox(String(rows), false, fontPx)
   const columnSizes = [labelBox(String(Math.min(columns, TURNED_FROM - 1)), false, fontPx), ...(columns >= TURNED_FROM ? [labelBox(String(columns), true, fontPx)] : [])]
   const column = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }

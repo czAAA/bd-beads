@@ -1,3 +1,4 @@
+import { frameIdOf } from './layerRecord'
 import { BACKGROUND_POSITIONS } from './background'
 import { hasBeads, knownBounds, sortedKeys, type BeadMap, type FrameSheet } from './canvas'
 import { knownRowColors } from './layerBeads'
@@ -242,7 +243,7 @@ export function encodeProject(project: Project): EncodedProject {
   // Each Frame's own centre, worked out as if it were the Frame laid on this Canvas, from the Canvas's origin: a file's
   // table has its origin there (ticket 1188).
   const centreOf = (frame: FrameLayer) => {
-    const at = framePlacement({ layers: [{ ...canvas, ...(origin ? { origin } : {}) }, frame] })?.at
+    const at = framePlacement({ layers: [{ ...canvas, ...(origin ? { origin } : {}) }, frame] }, frameIdOf(frame))?.at
     return at && { x: at.x - (origin?.x ?? 0), y: at.y - (origin?.y ?? 0) }
   }
   return { ...project, backgroundPositions: BACKGROUND_POSITIONS, lettersByLayer: true, layers: [encodeLayer(canvas), ...frames.map((frame) => encodeFrame(frame, centreOf(frame)))] }

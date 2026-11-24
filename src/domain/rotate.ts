@@ -1,4 +1,4 @@
-import type { GridPosition } from './grid'
+import type { FrameRef, GridPosition, Layer } from './grid'
 import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import type { QuarterTurns } from './frameShape'
 import { laidSize } from './frameOrientation'
@@ -6,8 +6,8 @@ import { nearestQuarterTurn, turnedOrientation } from './canvasOrientation'
 import { snapColumn, snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
-import { canvasDistance, canvasWeave, frameWeave } from './layerWeave'
-import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, withFrameFields, withLayer } from './layerRecord'
+import { canvasDistance, canvasWeave, frameWeave, layerWeave } from './layerWeave'
+import { beadsOfLayer, canvasOf, heldWeave, orientationOf, withFrameFields, withLayer, FIRST_FRAME, frameById } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
 import { touch, type FrameLayer, type Project } from './project'
 import { rowProgressStarted } from './rowProgress'
@@ -125,7 +125,7 @@ export function rotateLayerSelection(project: Project, selection: Selection): Ro
   const local = selectionInLayer(project, layer, selection)
   const before = layerSheet(project, layer)
   if (!before.geometry.grid) {
-    return rotateCustomSelection(project, local, before)
+    return rotateCustomSelection(project, local, before, layer)
   }
   const { edge } = before
   const result = turnedBeads(before, local, 0, selectableOn(project, before))
@@ -135,7 +135,7 @@ export function rotateLayerSelection(project: Project, selection: Selection): Ro
   const origin = positionOnCanvas(project, layer, { row: turned.top, column: turned.left })
   const cells = turned.cells?.filter((cell) => !edge || frameContains(edge, cell)).map((cell) => positionOnCanvas(project, layer, cell))
   return {
-    project: rotated === project || layer === 'frame' ? rotated : withCanvasNames(project, rotated, result),
+    project: rotated === project || layer !== 'canvas' ? rotated : withCanvasNames(project, rotated, result),
     selection: { ...turned, top: origin.row, left: origin.column, layer, ...(cells ? { cells } : {}) },
     covered: rotated === project ? 0 : coveredByRotation(before, { beads: beadsOfLayer(rotated, layer)! }, local, turned),
     dropped: 0,
@@ -153,13 +153,13 @@ function withCanvasNames(project: Project, rotated: Project, turn: ReturnType<ty
 /** A Selection over a Custom frame turned (ticket 0594): its beads a quarter turn about its middle on screen, each on the
  * nearest free position of the panel under it, those on a Seam or Off-shape dropped; the rectangle turns as on a Frame
  * of its Weave. */
-function rotateCustomSelection(project: Project, local: Selection, sheet: LayerSheet): RotatedSelection & { covered: number; dropped: number } {
+function rotateCustomSelection(project: Project, local: Selection, sheet: LayerSheet, ref: Layer): RotatedSelection & { covered: number; dropped: number } {
   const { lifted, landed, dropped } = turnedOnLayout(sheet, local)
   const covered = coveredOnLayout(sheet, landed, lifted)
-  const rotated = onLayer(project, 'frame', ({ beads }) => withColors(withColors(beads, lifted.map(({ row, column }) => ({ row, column, color: null }))), landed))
-  const turned = rotatedSelection(frameWeave(project), local)
-  const origin = positionOnCanvas(project, 'frame', { row: turned.top, column: turned.left })
-  return { project: rotated, selection: { ...turned, top: origin.row, left: origin.column, layer: 'frame' }, covered: rotated === project ? 0 : covered, dropped }
+  const rotated = onLayer(project, ref, ({ beads }) => withColors(withColors(beads, lifted.map(({ row, column }) => ({ row, column, color: null }))), landed))
+  const turned = rotatedSelection(layerWeave(project, ref), local)
+  const origin = positionOnCanvas(project, ref, { row: turned.top, column: turned.left })
+  return { project: rotated, selection: { ...turned, top: origin.row, left: origin.column, layer: ref }, covered: rotated === project ? 0 : covered, dropped }
 }
 
 /** How many beads outside the Selection the turn replaced: under the turned footprint, outside the old rectangle,
@@ -182,46 +182,46 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
 /** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame a quarter clockwise about its centre, its beads in
  * their own rows and columns, the Canvas untouched, its Row direction as seen (spec 1182). With a pass done `woven`
  * answers rotateFrameQuestion (ticket 1184): keep the rows, or start over. No Frame: undefined. */
-export function rotateFrame(project: Project, woven: WovenChoice = 'keep'): Project | undefined {
-  const custom = turnedCustomFrame(project)
+export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: FrameRef = FIRST_FRAME): Project | undefined {
+  const custom = turnedCustomFrame(project, ref)
   if (custom) return custom
-  const frame = frameOf(project)
+  const frame = frameById(project, ref)
   if (!frame) {
     return undefined
   }
-  const own = frameWeave(project)
+  const own = frameWeave(project, ref)
   const turns = ((frame.quarterTurns ?? 0) + 1) % 4
   const { quarterTurns: _turns, ...upright } = frame
   const turned: FrameSheet = { ...upright, ...(turns ? { quarterTurns: turns as QuarterTurns } : {}) }
   // Its centre stays: the corner moves by half what it covered less half what it covers now, so turns come back to it.
   const half = (sheet: FrameSheet) => {
     const { rows, columns } = laidSize({ ...sheet, ...own })
-    return canvasDistance(project, own, Math.floor(rows / 2), Math.floor(columns / 2))
+    return canvasDistance(project, own, Math.floor(rows / 2), Math.floor(columns / 2), ref)
   }
   const [was, now] = [half(frame), half(turned)]
   const [row, column] = [frame.row + was.row - now.row, frame.column + was.column - now.column]
   // Upright again it starts where a Frame may (ticket 1016): a resize while turned can leave it between.
   const canvas = canvasWeave(project)
   const at = turns ? { row, column } : { row: snapRow(canvas, row), column: snapColumn(canvas, column) }
-  return touchFrameSheet(project, { ...turned, ...at, rowProgress: turnedRowProgress(project, 1, woven) })
+  return touchFrameSheet(project, { ...turned, ...at, rowProgress: turnedRowProgress(project, 1, woven, ref) }, { frame: ref })
 }
 
 /** The Frame's Row progress once it has turned `turns` quarters clockwise as seen (spec 1182): with no pass done left as
  * it is, so the way sticks as seen; with a pass done, kept, the way and every pointer's slot turned with the Frame;
  * started over, every pointer back at the first pass, the way as seen (ticket 1184). */
-function turnedRowProgress(project: Project, turns: number, woven: WovenChoice): FrameLayer['rowProgress'] {
-  const { rowProgress } = frameOf(project)!
-  if (turns === 0 || !rowProgressStarted(project)) return rowProgress
+function turnedRowProgress(project: Project, turns: number, woven: WovenChoice, ref: FrameRef = FIRST_FRAME): FrameLayer['rowProgress'] {
+  const { rowProgress } = frameById(project, ref)!
+  if (turns === 0 || !rowProgressStarted(project, ref)) return rowProgress
   return woven === 'keep' ? turnedWithFrame(rowProgress, turns) : { way: rowProgress.way }
 }
 
 /** A two-finger twist of the Frame come to rest at `angle` (ticket 1190, spec 1182): the Frame turned about its own
  * centre (`withFrameTurnedTo`), one Undo step. Settled on another quarter turn with a pass done, `woven` answers
  * `twistFrameQuestion` as it answers Rotate Frame's. No Frame: undefined. */
-export function twistFrameTo(project: Project, angle: number, woven: WovenChoice = 'keep'): Project | undefined {
-  if (!frameOf(project)) return undefined
-  const turns = ((nearestQuarterTurn(angle) - frameQuarterTurnOf(project) + 360) / 90) % 4
-  return touch(withFrameFields(withFrameTurnedTo(project, angle), { rowProgress: turnedRowProgress(project, turns, woven) }), {})
+export function twistFrameTo(project: Project, angle: number, woven: WovenChoice = 'keep', ref: FrameRef = FIRST_FRAME): Project | undefined {
+  if (!frameById(project, ref)) return undefined
+  const turns = ((nearestQuarterTurn(angle) - frameQuarterTurnOf(project, ref) + 360) / 90) % 4
+  return touch(withFrameFields(withFrameTurnedTo(project, angle, ref), { rowProgress: turnedRowProgress(project, turns, woven, ref) }, ref), {})
 }
 
 /** Rotate canvas (ticket 471): the Canvas a quarter turn clockwise further from whatever angle it is at (ticket 0672),

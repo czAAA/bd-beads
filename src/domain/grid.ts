@@ -46,8 +46,23 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead, techniqu
   return { columns: beadsFor(size.widthMm, widthMm), rows: beadsFor(size.heightMm, heightMm) }
 }
 
-/** The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. */
-export type Layer = 'canvas' | 'frame'
+declare const frameIdBrand: unique symbol
+
+/** A Frame named by its layer id (ADR 0079, ticket 1216): the id it is saved with, read through layerRecord's
+ * `frameIdOf`, so no other string passes for one. */
+export type FrameId = string & { readonly [frameIdBrand]: true }
+
+/** A Frame as a command names it: by its id, or by `'frame'`, the old name of the first Frame, which only layerRecord.ts
+ * reads and which goes once the UI names Frames by id (ticket 1217). */
+export type FrameRef = FrameId | 'frame'
+
+/** A layer of a Project (ADR 0066, 0079): the Canvas, or one of the Frames laid over it, by reference. */
+export type Layer = 'canvas' | FrameRef
+
+/** Whether a layer reference names a Frame, in either form. */
+export function isFrameLayer(layer: Layer | undefined): layer is FrameRef {
+  return layer !== undefined && layer !== 'canvas'
+}
 
 export interface GridPosition {
   row: number

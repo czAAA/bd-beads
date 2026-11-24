@@ -1,3 +1,4 @@
+import type { FrameRef } from '../domain/grid'
 import { forEachBead, type BeadMap, type Rect } from '../domain/canvas'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX } from './cellSize'
@@ -7,7 +8,7 @@ import { chartOnPageOne, mm, PRINT_DPI, wholeArea, type TrimmedArea } from './pr
 import type { PrintedWordRow, PrintText } from './printText'
 import { pdfPageCount } from './wordChartPages'
 import { withLaidTurn } from '../domain/framePlacement'
-import { beadsOfLayer, frameOf } from '../domain/layerRecord'
+import { beadsOfLayer, FIRST_FRAME, frameById } from '../domain/layerRecord'
 
 // The File size estimate (tickets 0588, 0914, 0915, 1096, ADR 0076): each page by its kind and content, every figure lifted to sit at or
 // above 65 real Projects measured on 2026-10-27 (8 to 237 beads a side, 1 to 300 colors, three Techniques), so never below
@@ -83,13 +84,13 @@ function rowCharacters(row: PrintedWordRow): number {
 
 /** The facts of an export of this Project in these words, or nothing without a Frame; by the Frame's own turn alone, as
  * the export draws it (`withLaidTurn`, ticket 1186). */
-export function exportFacts(shown: Project, words: PrintText): ExportFacts | undefined {
-  const project = withLaidTurn(shown)
-  const frame = frameOf(project)
+export function exportFacts(shown: Project, words: PrintText, ref: FrameRef = FIRST_FRAME): ExportFacts | undefined {
+  const project = withLaidTurn(shown, undefined, ref)
+  const frame = frameById(project, ref)
   if (!frame) return undefined
   const pageOne = pageOneLayout(project, words)
   const { plan } = pageOne
-  const { filled, edges } = beadsOf(frame, beadsOfLayer(project, 'frame')!)
+  const { filled, edges } = beadsOf(frame, beadsOfLayer(project, ref)!)
   const pdfPages = pdfPageCount(plan, words)
   const cells = Math.max(filled, Math.round((frame.columns * frame.rows * cellsIn(plan.trim)) / cellsIn(wholeArea(project))))
   return {

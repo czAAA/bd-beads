@@ -1,3 +1,4 @@
+import { frameIdOf, heldFrameById } from './layerRecord'
 import { beadCopy, beadLabel, findBead, readBeadCopy, type Bead } from './beads'
 import { BACKGROUND_POSITIONS, readBackground } from './background'
 import { beadsFromColors, type FrameSheet } from './canvas'
@@ -214,7 +215,7 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string,
   }
   // A Frame saved off the Canvas's grid keeps its centre (ticket 1188); one on it lands on the nearest position, read
   // before its Beads are, as file version 15 always read it.
-  const placed = !readCentre(stored.centre) ? frame : stored.offGrid === true ? frameAt(canvas, frame, stored.centre!) : { ...frame, ...frameCornerAt({ layers: [canvas, frame] }, stored.centre!) }
+  const placed = !readCentre(stored.centre) ? frame : stored.offGrid === true ? frameAt(canvas, frame, stored.centre!) : { ...frame, ...frameCornerAt({ layers: [canvas, frame] }, stored.centre!, false, frameIdOf(frame)) }
   const turns = placed.centre && !laid.shape ? 0 : quarterTurnsOff(angle, canvas.orientation)
   const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, ...(turns ? { quarterTurns: turns } : {}), rows, columns }
   // One stored since file version 15 keeps its way as seen; one before, in its own rows, turned as it showed.
@@ -226,7 +227,7 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string,
 /** The Frame read at its saved centre on the table, its Canvas's origin the table's (ticket 1188, `withFrameAt`). */
 function frameAt(canvas: CanvasLayer, frame: FrameLayer, centre: TablePoint): FrameLayer {
   const read = { id: '', layers: [canvas, frame], palette: [], createdAt: 0, updatedAt: 0 } as Project
-  return withFrameAt(read, centre).layers[1]!
+  return heldFrameById(withFrameAt(read, centre, frameIdOf(frame)), frameIdOf(frame))!
 }
 
 /** Whether a stored centre is a point: two finite numbers. */

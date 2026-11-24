@@ -1,5 +1,5 @@
 import { colorAt, withColors, type BeadChange, type BeadMap } from './canvas'
-import type { GridPosition } from './grid'
+import { isFrameLayer, type GridPosition } from './grid'
 import { layerSheet, onLayer, positionOnCanvas } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasOf } from './layerRecord'
@@ -50,7 +50,7 @@ function liftedFrom(project: Project, selection: Selection) {
   const sheet = layerSheet(project, layer)
   if (!sheet.geometry.grid) return undefined
   const selectable = selectableOn(project, sheet)
-  const finished = (cell: GridPosition) => layer === 'frame' && isInFinishedRow(project, { ...positionOnCanvas(project, 'frame', cell), layer: 'frame' })
+  const finished = (cell: GridPosition) => isFrameLayer(layer) && isInFinishedRow(project, { ...positionOnCanvas(project, layer, cell), layer }, layer)
   const lifted: BeadChange[] = []
   for (const { row, column } of selectionCells(sheet, selectionInLayer(project, layer, selection), selectable)) {
     const color = colorAt(sheet.beads, row, column)

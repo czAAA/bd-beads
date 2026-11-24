@@ -1,9 +1,9 @@
 import { frameContains, type Rect } from './canvas'
 import { beadUnder, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutSymmetry } from './frameLayout'
 import { frameLayoutOf } from './frameShape'
-import type { GridPosition } from './grid'
+import { isFrameLayer, type FrameId, type FrameRef, type GridPosition } from './grid'
 import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet } from './layers'
-import { frameOf, type Layered } from './layerRecord'
+import { type Layered, FIRST_FRAME, frameById } from './layerRecord'
 import { mayPlace } from './margin'
 import { touch, type Project } from './project'
 import { describeWeave, type Technique, type Weave } from './weave'
@@ -33,9 +33,14 @@ const MAX_FOLD = 8
 /** The most a grid takes: the quarter turn (ticket 0751). */
 export const MAX_GRID_FOLD = 4
 
-/** Where the Mirror is (glossary: Area): a rectangle of the Canvas, in its positions, or the whole Frame, never a
- * smaller part of it (ADR 0082). */
-export type MirrorPlace = { layer: 'canvas'; area: Rect } | { layer: 'frame' }
+/** Where the Mirror is (glossary: Area): a rectangle of the Canvas, in its positions, or a whole Frame, never a
+ * smaller part of it (ADR 0082), named by its id (ticket 1216): none names the first Frame, as every file saved it. */
+export type MirrorPlace = { layer: 'canvas'; area: Rect } | { layer: 'frame'; frame?: FrameId }
+
+/** The Frame a whole-Frame Mirror place is on (ticket 1216). */
+function placeFrame(place: { frame?: FrameId }): FrameRef {
+  return place.frame ?? FIRST_FRAME
+}
 
 /** The Mirror, one per Project (ADR 0082): the Mode, the Axes, Radial's Fold, the Axis counts (N axes cut the Area into
  * N + 1 equal strips) and its place. Saved with the Project, off by default. */
@@ -60,10 +65,11 @@ export const MIRROR_OFF: MirrorSetting = { mode: 'mirror', axes: { leftRight: fa
 export function mirrorSettingOf(project: Layered & Pick<Project, 'mirror'>): MirrorSetting {
   const setting = project.mirror ?? MIRROR_OFF
   if (setting.place?.layer !== 'frame') return setting
-  const frame = frameOf(project)
+  const ref = placeFrame(setting.place)
+  const frame = frameById(project, ref)
   if (!frame) return { ...setting, place: null }
   // A whole Frame that is a grid takes only the turns a grid does (ticket 0751); a Custom frame keeps its side count.
-  return shapeAxesOf(project) ? setting : { ...setting, fold: gridFold(setting.fold, { row: 0, column: 0, rows: frame.rows, columns: frame.columns }) }
+  return shapeAxesOf(project, ref) ? setting : { ...setting, fold: gridFold(setting.fold, { row: 0, column: 0, rows: frame.rows, columns: frame.columns }) }
 }
 
 /** The Project with the Mirror bar's settings (Mode, Axes, counts) taken, its place as it is. Not an Undo step: a
@@ -111,7 +117,7 @@ export function mirrorFitOf(project: Project, setting: MirrorSetting): MirrorFit
  * row and column; none for a Frame the Project does not have. */
 export function placeRect(project: Layered, place: MirrorPlace): Rect | undefined {
   if (place.layer === 'canvas') return place.area
-  const frame = frameOf(project)
+  const frame = frameById(project, placeFrame(place))
   return frame && { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
 }
 
@@ -121,7 +127,7 @@ export function placeRect(project: Layered, place: MirrorPlace): Rect | undefine
 export function withMirrorPlace(project: Project, place: MirrorPlace | undefined): Project {
   const before = mirrorSettingOf(project)
   if (!place) return touch(project, { mirror: { ...before, place: null } })
-  const shape = place.layer === 'frame' ? shapeAxesOf(project) : undefined
+  const shape = place.layer === 'frame' ? shapeAxesOf(project, placeFrame(place)) : undefined
   // Leaving a Custom frame, straight off it or after Close mirror there, its fixed Axes stay behind (Left–right).
   const left = !shape ? shapeAxesOf(project) : undefined
   const offShape = !!left && (before.place?.layer === 'frame' || (!before.place && MIRROR_AXES.every((axis) => before.axes[axis] === left.axes[axis]) && before.fold === (left.sides ?? before.fold)))
@@ -707,8 +713,8 @@ export interface ShapeAxes {
 }
 
 /** The open Project's Frame shape's Axes; none without a Custom frame. */
-export function shapeAxesOf(project: Layered): ShapeAxes | undefined {
-  const frame = frameOf(project)
+export function shapeAxesOf(project: Layered, ref: FrameRef = FIRST_FRAME): ShapeAxes | undefined {
+  const frame = frameById(project, ref)
   const symmetry = frame?.shape ? frameLayoutOf(frame)?.symmetry : undefined
   if (!symmetry) return undefined
   return { axes: shapeOwnAxes(symmetry), ...(symmetry.fold >= ROUND_FOLD ? { sides: symmetry.fold } : {}) }
@@ -806,16 +812,16 @@ export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting:
 /** `counterparts` for Canvas positions (the hover preview, ticket 0703): those on the Frame are mapped through the
  * Frame's own positions and come back as Canvas positions naming their layer; the Canvas's own inside a Canvas Area, a
  * counterpart the keep-out margin or a finished row refuses left out, as the Edit drops it. */
-export function mirroredOnCanvas<T extends GridPosition>(project: Project, setting: MirrorSetting, cells: readonly T[]): T[] {
+export function mirroredOnCanvas<T extends GridPosition>(project: Project, setting: MirrorSetting, cells: readonly T[], ref: FrameRef = FIRST_FRAME): T[] {
   if (!isMirrorOn(setting)) return [...cells]
-  const framed = frameOf(project) !== undefined
-  const onFrame = cells.filter((cell) => framed && layerAt(project, cell) === 'frame')
-  const onCanvas = new Set(cells.filter((cell) => !framed || layerAt(project, cell) !== 'frame'))
+  const framed = frameById(project, ref) !== undefined
+  const onFrame = cells.filter((cell) => framed && isFrameLayer(layerAt(project, cell)))
+  const onCanvas = new Set(cells.filter((cell) => !framed || !isFrameLayer(layerAt(project, cell))))
   const placeable = (cell: T) => onCanvas.has(cell) || mayPlace(project, cell)
   const mirroredCanvas = onCanvas.size > 0 ? counterparts(layerSheet(project, 'canvas'), setting, [...onCanvas]).positions.filter(placeable) : []
   if (onFrame.length === 0) return mirroredCanvas
-  const sheet = layerSheet(project, 'frame')
-  const local = onFrame.map((cell) => ({ ...cell, ...positionInLayer(project, 'frame', cell) }))
-  const mirrored = counterparts(sheet, setting, local).positions.map((cell) => ({ ...cell, ...positionOnCanvas(project, 'frame', cell), layer: 'frame' as const }))
+  const sheet = layerSheet(project, ref)
+  const local = onFrame.map((cell) => ({ ...cell, ...positionInLayer(project, ref, cell) }))
+  const mirrored = counterparts(sheet, setting, local).positions.map((cell) => ({ ...cell, ...positionOnCanvas(project, ref, cell), layer: ref }))
   return [...mirroredCanvas, ...mirrored]
 }

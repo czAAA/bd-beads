@@ -1,3 +1,4 @@
+import type { FrameRef } from '../domain/grid'
 import { fromHex, mix, toHex, WHITE } from '../domain/color'
 import { HELVETICA_CAP_HEIGHT, helveticaWidth } from '../domain/helvetica'
 import type { PageDrawing } from '../domain/pdfContent'
@@ -14,7 +15,7 @@ import { gridToRegion, inGridPx, regionInGridSpace } from './surfaceView'
 import { chartCellOf, customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { laidTurnOf } from '../domain/framePlacement'
-import type { Layered } from '../domain/layerRecord'
+import { type Layered, FIRST_FRAME } from '../domain/layerRecord'
 import type { PrintText } from './printText'
 
 // A chart as drawing (ticket 0585, ADR 0043; PrintChartPage card): PDF operators on a chart page and page 1, sharp at any
@@ -65,8 +66,8 @@ function tint(hex: string, amount: number): string {
 }
 
 /** Whether the Project's beads are drawn round (a circle in the cell) rather than as squares. */
-export function beadsAreRound(project: Layered): boolean {
-  const weave = frameWeave(project)
+export function beadsAreRound(project: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+  const weave = frameWeave(project, ref)
   return beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX >= CELL_SIZE_PX * 0.4
 }
 
@@ -92,14 +93,14 @@ interface PlacedBead {
 /** The positions of a part, bead by bead, for any Technique, rotation or Bead: each bead in view where the Layer
  * geometry places it, through the page's transform.
  * @internal Its test checks where each bead lands on its own. */
-export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): PlacedBead[] {
+export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart, ref: FrameRef = FIRST_FRAME): PlacedBead[] {
   const first = { across: part.firstAcross - part.overlapAcross, down: part.firstDown - part.overlapDown }
   const last = { across: part.lastAcross - first.across, down: part.lastDown - first.down }
-  const weave = frameWeave(project)
+  const weave = frameWeave(project, ref)
   const description = describeWeave(weave)
   const size = cellSizePx(weave.technique, weave.cell)
-  const space = spaceOf(project, false)
-  const matrix = gridToRegion(space.extent, part.region, plan.zoom, laidTurnOf(project))
+  const space = spaceOf(project, false, ref)
+  const matrix = gridToRegion(space.extent, part.region, plan.zoom, laidTurnOf(project, ref))
   const [a, b, c, d, e, f] = matrix
   const at = (x: number, y: number): [number, number] => [a * x + c * y + e, b * x + d * y + f]
   const rectOf = (x: number, y: number, width: number, height: number): Box => {
@@ -107,8 +108,8 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
     const [x2, y2] = at(x + width, y + height)
     return { x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) }
   }
-  const geometry = geometryDrawnAlone(project)
-  const seen = regionInGridSpace(space.extent, part.region, plan.zoom, laidTurnOf(project))
+  const geometry = geometryDrawnAlone(project, ref)
+  const seen = regionInGridSpace(space.extent, part.region, plan.zoom, laidTurnOf(project, ref))
   const inView = { x: seen.left / CELL_SIZE_PX, y: seen.top / CELL_SIZE_PX, width: (seen.right - seen.left) / CELL_SIZE_PX, height: (seen.bottom - seen.top) / CELL_SIZE_PX }
   const placed: PlacedBead[] = []
   for (const position of geometry.positionsIn(inView)) {
@@ -119,12 +120,12 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
     const below = { row: position.row + 1, column: position.column }
     const share = Math.min(height, description.box(below, size.width, size.height).y - y)
     const cell = rectOf(x, y, width, share)
-    const shown = displayedCellOf(project, position)
+    const shown = displayedCellOf(project, position, ref)
     const across = shown.across - first.across
     const down = shown.down - first.down
     // Beads past the part's edge belong to its neighbour.
     if (across < 0 || down < 0 || across > last.across || down > last.down) continue
-    placed.push({ box, cell, color: beadInSpace(project, space, position.row, position.column), across, down })
+    placed.push({ box, cell, color: beadInSpace(project, space, position.row, position.column, ref), across, down })
   }
   return placed
 }

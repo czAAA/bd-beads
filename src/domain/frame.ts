@@ -1,13 +1,13 @@
 import { footprintOf } from './footprint'
 import { beadBounds, beadsOver, beadsWithout, sameFrame, type FrameSheet, type Rect } from './canvas'
 import { refitSheet, type SheetBeads } from './folding'
-import type { GridPosition } from './grid'
+import type { GridPosition, FrameRef } from './grid'
 import { columnCycle, rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
 import { canvasDistance, frameWeave, laidOnCanvas } from './layerWeave'
 import { shapeSide, turnedGrid } from './frameShape'
 import { laidSize } from './frameOrientation'
-import { beadsOfLayer, frameOf, heldWeave, type Layered, startingRowProgressOf } from './layerRecord'
+import { beadsOfLayer, heldWeave, type Layered, startingRowProgressOf, FIRST_FRAME, frameById } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
 import type { Project } from './project'
 import { clampPointer } from './rowProgress'
@@ -110,11 +110,11 @@ export function frameResizedAround(weave: Weave, frame: Rect, columns: number, r
 
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined when there is none: the Frame's own beads and
  * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
-export function fitToDrawing(project: Layered): Rect | undefined {
-  const frame = frameOf(project)
-  const covered = footprintOf(project)
+export function fitToDrawing(project: Layered, ref: FrameRef = FIRST_FRAME): Rect | undefined {
+  const frame = frameById(project, ref)
+  const covered = footprintOf(project, ref)
   const canvas = beadsOfLayer(project, 'canvas')
-  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), laidOnCanvas(project, beadsOfLayer(project, 'frame')!, frame)) : canvas
+  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), laidOnCanvas(project, beadsOfLayer(project, ref)!, frame, ref)) : canvas
   const bounds = beadBounds(shown)
   if (!bounds) {
     return undefined
@@ -127,16 +127,16 @@ export function fitToDrawing(project: Layered): Rect | undefined {
 /** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
  * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas; a turned one's corner
  * goes where its edges lie (`turnedOrigin`). */
-function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect): GridPosition {
-  if (turnedGrid(current)) return turnedOrigin(project, current, rectangle)
-  const moved = canvasDistance(project, heldWeave(project, 'frame')!, rectangle.row - current.row, rectangle.column - current.column)
+function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect, ref: FrameRef = FIRST_FRAME): GridPosition {
+  if (turnedGrid(current)) return turnedOrigin(project, current, rectangle, ref)
+  const moved = canvasDistance(project, heldWeave(project, ref)!, rectangle.row - current.row, rectangle.column - current.column, ref)
   return { row: current.row + moved.row, column: current.column + moved.column }
 }
 
 /** Where a turned Frame resized to its own `rectangle` starts on the Canvas (ticket 1016): along each side as seen, the
  * edge whose own edge did not move stays; where both did (a typed size), the change is shared as they grew. */
-function turnedOrigin(project: Project, current: FrameSheet, rectangle: Rect): GridPosition {
-  const own = frameWeave(project)
+function turnedOrigin(project: Project, current: FrameSheet, rectangle: Rect, ref: FrameRef = FIRST_FRAME): GridPosition {
+  const own = frameWeave(project, ref)
   const grew: Record<FrameEdge, number> = {
     top: current.row - rectangle.row,
     left: current.column - rectangle.column,
@@ -148,24 +148,24 @@ function turnedOrigin(project: Project, current: FrameSheet, rectangle: Rect): G
     const [before, after] = [Math.abs(grew[shapeSide(first, current.quarterTurns)]), Math.abs(grew[shapeSide(last, current.quarterTurns)])]
     return before + after === 0 ? 0 : before / (before + after)
   }
-  const moved = canvasDistance(project, own, Math.round((now.rows - was.rows) * share('top', 'bottom')), Math.round((now.columns - was.columns) * share('left', 'right')))
+  const moved = canvasDistance(project, own, Math.round((now.rows - was.rows) * share('top', 'bottom')), Math.round((now.columns - was.columns) * share('left', 'right')), ref)
   return { row: current.row - moved.row, column: current.column - moved.column }
 }
 
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
  * place, those outside a smaller Frame fold and show again when it grows back, the Canvas is never touched (ticket
  * 1215), a Frame set anew is empty, Row progress stays inside it; an unchanged Frame is the same Project. */
-export function withFrame(project: Project, rectangle: Rect | undefined): Project {
-  if (sameFrame(frameOf(project), rectangle)) {
+export function withFrame(project: Project, rectangle: Rect | undefined, ref: FrameRef = FIRST_FRAME): Project {
+  if (sameFrame(frameById(project, ref), rectangle)) {
     return project
   }
-  const current = frameOf(project)
+  const current = frameById(project, ref)
   // With the Frame gone the passes are gone too (ticket 426): Row progress is the Frame's (ADR 0079).
   if (!rectangle) {
-    return touchFrameSheet(project, undefined)
+    return touchFrameSheet(project, undefined, { frame: ref })
   }
   const { rows, columns } = rectangle
-  const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
+  const { row, column } = current ? resizedOrigin(project, current, rectangle, ref) : rectangle
   const holds = (at: GridPosition) => at.row >= 0 && at.row < rows && at.column >= 0 && at.column < columns
   // A resized Frame keeps what it holds and folds the rest (ticket 1215); one made anew is empty.
   const refit: SheetBeads = current ? refitSheet(current, { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds) : { beads: {} }
@@ -177,12 +177,12 @@ export function withFrame(project: Project, rectangle: Rect | undefined): Projec
     beads: refit.beads,
     ...(refit.folded ? { folded: refit.folded } : {}),
     // A Frame made anew is woven as the Canvas is (ticket 492); one resized keeps its own.
-    ...heldWeave(project, current ? 'frame' : 'canvas')!,
+    ...heldWeave(project, current ? ref : 'canvas')!,
     ...(current?.name ? { name: current.name } : {}),
     ...(current?.shape ? { shape: current.shape } : {}),
     ...(current?.settings ? { settings: current.settings } : {}),
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }
   // One made anew starts its progress afresh (spec 1182); one resized keeps its pointers inside it.
-  return touchFrameSheet(project, { ...frame, rowProgress: current ? clampPointer(current.rowProgress, frame, frameQuarterTurnOf(project)) : startingRowProgressOf(frame) })
+  return touchFrameSheet(project, { ...frame, rowProgress: current ? clampPointer(current.rowProgress, frame, frameQuarterTurnOf(project, ref)) : startingRowProgressOf(frame) }, { frame: ref })
 }

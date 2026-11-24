@@ -3,11 +3,11 @@ import { forEachBead, type BeadMap } from './canvas'
 import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
 import { laidSize } from './frameOrientation'
 import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
-import type { GridDimensions, GridPosition } from './grid'
+import type { GridDimensions, GridPosition, FrameRef } from './grid'
 import { createProject, type CreateProjectInput } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
 import { sameWeave, weaveOf } from './layerWeave'
-import { orientationOf, withBackground, withCanvas, withLayer } from './layerRecord'
+import { orientationOf, withBackground, withCanvas, withLayer, FIRST_FRAME } from './layerRecord'
 import { quarterTurnsOff } from './canvasOrientation'
 import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
@@ -388,14 +388,14 @@ function chosenBeads(starter: Starter, choice: StarterChoice): BeadMap {
 /** Add Frame from Starter and Replace Frame (tickets 0596, 0633, 0671): the Starter's Frame round a Canvas position, in
  * place of any Frame, in the setup's Layer settings (ADR 0079), with its design or empty, colours as painted; the Canvas
  * as it is, the Frame turned by what it lacks, so a Ring or Band lies across (0832) and a shape stands as charted (0872). */
-export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition): FrameChangeResult {
+export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition, ref: FrameRef = FIRST_FRAME): FrameChangeResult {
   const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
   const placement = starterPlacement(project, starter, choice, centre, bead ?? resolveProjectBead(project)!)
-  const placed = changeFrame(project, placement)
+  const placed = changeFrame(project, placement, ref)
   if (placed.kind !== 'changed' || (!bead && choice.background === undefined)) return placed
   // Laid again once it has its Bead, a replaced Frame keeping it, so it lies round the centre at that Bead's size.
-  const dressed = withLayer(placed.project, 'frame', { bead })
-  const relaid = changeFrame(choice.background === undefined ? dressed : withBackground(dressed, 'frame', choice.background), placement)
+  const dressed = withLayer(placed.project, ref, { bead })
+  const relaid = changeFrame(choice.background === undefined ? dressed : withBackground(dressed, ref, choice.background), placement, ref)
   return relaid.kind === 'changed' ? { kind: 'changed', project: withWovenPalette(project, relaid.project) } : relaid
 }
 

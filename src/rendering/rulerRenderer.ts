@@ -1,3 +1,4 @@
+import type { FrameRef } from '../domain/grid'
 import type { Rect } from '../domain/canvas'
 import { currentPass, frameRowOrder, ownRowWayOf, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import { lieAlike } from '../domain/table'
@@ -10,7 +11,7 @@ import type { Region, SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
 import { areaHandles, frameHandles, outsetBox, type Handle, type HandleId, type Outset } from './frameHandles'
-import { frameOf } from '../domain/layerRecord'
+import { FIRST_FRAME, frameById } from '../domain/layerRecord'
 import { ROW_MOTION, easeIn, easeStandard } from './rowMotion'
 
 /** The mono stack every number and label on the canvas is set in. */
@@ -30,7 +31,7 @@ export interface RulerDrawInput {
   layout: RulerLayout
   pixelRatio: number
   theme: ProjectTheme
-  /** Whether the current pass is marked, on its number or by a tick. Defaults to `rowProgressOn(project)` (tickets 434, 0685). */
+  /** Whether the current pass is marked, on its number or by a tick. Defaults to `rowProgressOn(project, ref)` (tickets 434, 0685). */
   rowMarks?: boolean
   /** Row done or Row not done just pressed (ticket 0730): the pass the marker left and the ms since, so the pill and the
    * tick glide on from it, or fade out once every pass is done. */
@@ -39,7 +40,7 @@ export interface RulerDrawInput {
 
 /** The box's line: a rounded rectangle just outside its outermost beads. */
 function strokeBoxLine(context: DrawingContext, box: RuledBox, surface: SurfaceView, theme: ProjectTheme): void {
-  const shown = surface.beadBox(box, box.kind === 'frame' ? 'frame' : 'canvas')
+  const shown = surface.beadBox(box, box.layer)
   const outset = box.outset
   const isFrame = box.kind === 'frame'
   context.setLineDash([])
@@ -73,9 +74,9 @@ const pillOf = (label: RulerLabel, pad: number) => ({ x: label.x, y: label.y, wi
  * margin sheet, in its colors and at its scale, a Piece's on the Canvas. */
 type Looks = Record<RulerLabel['kind'], { theme: ProjectTheme; scale: RulerScale }>
 
-function looksOf({ project, layout, theme }: Pick<RulerDrawInput, 'project' | 'layout' | 'theme'>): Looks {
+function looksOf({ project, layout, theme }: Pick<RulerDrawInput, 'project' | 'layout' | 'theme'>, ref: FrameRef = FIRST_FRAME): Looks {
   return {
-    frame: { theme: frameOf(project) ? { ...theme, ruler: theme.margin.ruler, rulerStrong: theme.margin.rulerStrong } : theme, scale: layout.frameScale },
+    frame: { theme: frameById(project, ref) ? { ...theme, ruler: theme.margin.ruler, rulerStrong: theme.margin.rulerStrong } : theme, scale: layout.frameScale },
     piece: { theme, scale: layout.scale },
   }
 }
@@ -118,15 +119,16 @@ interface PassOnScreen {
   box: RuledBox
 }
 
-function passOnScreen({ project, surface, layout }: RulerDrawInput, pass = currentPass(rowProgressOf(project))): PassOnScreen | undefined {
-  const frame = frameOf(project)
+function passOnScreen({ project, surface, layout }: RulerDrawInput, at?: number, ref: FrameRef = FIRST_FRAME): PassOnScreen | undefined {
+  const pass = at ?? currentPass(rowProgressOf(project, ref))
+  const frame = frameById(project, ref)
   const box = layout.boxes.find((ruled) => ruled.kind === 'frame')
-  const order = frameRowOrder(project)
+  const order = frameRowOrder(project, ref)
   const line = pass < order.count ? order.lineOf(pass) : undefined
   if (!frame || !box || line === undefined) return undefined
-  const columns = ownRowWayOf(project).direction === 'columns'
-  const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, 'frame')
-  const along = surface.beadStep('frame')[columns ? 'row' : 'column']
+  const columns = ownRowWayOf(project, undefined, ref).direction === 'columns'
+  const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, ref)
+  const along = surface.beadStep(ref)[columns ? 'row' : 'column']
   // A Frame lying a quarter round runs its own rows the other way on screen (ticket 0667).
   const across = Math.abs(along.x) >= Math.abs(along.y) !== ((frame.quarterTurns ?? 0) % 2 === 1)
   return { line, across, first, box }
@@ -135,17 +137,17 @@ function passOnScreen({ project, surface, layout }: RulerDrawInput, pass = curre
 /** Whether a ruler number is the current pass's own: only the Frame's can be, never a Piece's on the same Canvas line
  * (ticket 1115). A Frame that does not lie alike has rulers counting the cells it covers, not its own rows (ticket 0667): none of its
  * numbers is. */
-function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProject): boolean {
-  const frame = frameOf(project)
-  if (label.kind !== 'frame' || !frame || !lieAlike(project)) return false
-  const columns = ownRowWayOf(project).direction === 'columns'
+function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProject, ref: FrameRef = FIRST_FRAME): boolean {
+  const frame = frameById(project, ref)
+  if (label.kind !== 'frame' || !frame || !lieAlike(project, ref)) return false
+  const columns = ownRowWayOf(project, undefined, ref).direction === 'columns'
   return label.axis === (columns ? 'column' : 'row') && label.position - (columns ? frame.column : frame.row) === pass.line
 }
 
 // Where the current pass has no number drawn (the compact and folded forms, Rulers off, a turned Frame, a Ruler step
 // past it), a `marker` tick from the Frame's line in to the beads (ticket 0685): inside the line, so never under a tool.
 function drawPassTicks(context: DrawingContext, { surface }: RulerDrawInput, { across, first, box }: Pick<PassOnScreen, 'across' | 'first' | 'box'>, theme: ProjectTheme): void {
-  const shown = surface.beadBox(box, 'frame')
+  const shown = surface.beadBox(box, box.layer)
   const thick = MARGIN_PX.pass.tick
   const reach = box.outset + FRAME_LINE_PX / 2
   const ticks = across
@@ -160,10 +162,10 @@ function drawPassTicks(context: DrawingContext, { surface }: RulerDrawInput, { a
 }
 
 /** Draws the lines and the Ruler layout's numbers and dots, in the viewport's own px over whatever is drawn. */
-export function drawRulers(context: DrawingContext, input: RulerDrawInput): void {
-  const { project, surface, layout, pixelRatio, rowMarks = rowProgressOn(project) } = input
+export function drawRulers(context: DrawingContext, input: RulerDrawInput, ref: FrameRef = FIRST_FRAME): void {
+  const { project, surface, layout, pixelRatio, rowMarks = rowProgressOn(project, ref) } = input
   // The Frame's rulers sit on its margin sheet (ticket 0656), a Piece's on the Canvas (ticket 1012).
-  const looks = looksOf(input)
+  const looks = looksOf(input, ref)
   const { theme } = looks.piece
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
@@ -175,17 +177,17 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   }
   // The current pass is marked on its number, or by a tick where it has none (MarginSheet card, ticket 0685).
   const marked = rowMarks && layout.passMark
-  const pass = marked ? passOnScreen(input) : undefined
+  const pass = marked ? passOnScreen(input, undefined, ref) : undefined
   const pad = MARGIN_PX.pass.pillPad * layout.sheetScale
   const { glide } = input
-  const left = marked && glide && glide.elapsed < ROW_MOTION.glide ? passOnScreen(input, glide.from) : undefined
-  if (glide && left && glide.from !== currentPass(rowProgressOf(project))) {
-    drawGliding(context, input, { left, reached: pass, elapsed: glide.elapsed }, looks, pad)
+  const left = marked && glide && glide.elapsed < ROW_MOTION.glide ? passOnScreen(input, glide.from, ref) : undefined
+  if (glide && left && glide.from !== currentPass(rowProgressOf(project, ref))) {
+    drawGliding(context, input, { left, reached: pass, elapsed: glide.elapsed }, looks, pad, ref)
     return
   }
   let numbered = false
   for (const label of layout.labels) {
-    const current = pass !== undefined && numbersPass(label, pass, project)
+    const current = pass !== undefined && numbersPass(label, pass, project, ref)
     numbered ||= current
     drawLabel(context, label, looks, current && pad)
   }
@@ -206,14 +208,14 @@ const mix = (a: number, b: number, t: number) => a + (b - a) * t
 // Row done's marker (ticket 0730, Rulers card): the pill glides from the number of the pass it left to the next one's
 // on the ruler that numbers both (ticket 1170), the two numbers crossfading, and the tick glides along the Frame's line. Once every
 // pass is done there is no next one: the pill and the tick fade out where they were.
-function drawGliding(context: DrawingContext, input: RulerDrawInput, motion: { left: PassOnScreen; reached?: PassOnScreen; elapsed: number }, looks: Looks, pad: number): void {
+function drawGliding(context: DrawingContext, input: RulerDrawInput, motion: { left: PassOnScreen; reached?: PassOnScreen; elapsed: number }, looks: Looks, pad: number, ref: FrameRef): void {
   const { project, layout } = input
   const { theme } = looks.frame
   const { left, reached, elapsed } = motion
   const t = easeStandard(elapsed / ROW_MOTION.glide)
   const fade = 1 - easeIn(Math.min(1, elapsed / ROW_MOTION.markFade))
-  const fromLabels = layout.labels.filter((label) => numbersPass(label, left, project))
-  const toLabels = reached ? layout.labels.filter((label) => numbersPass(label, reached, project)) : []
+  const fromLabels = layout.labels.filter((label) => numbersPass(label, left, project, ref))
+  const toLabels = reached ? layout.labels.filter((label) => numbersPass(label, reached, project, ref)) : []
   // A band is the run of numbers on one side: its pass's numbers share an x or a y with each other.
   const sameBand = (a: RulerLabel, b: RulerLabel) => Math.abs(a.x - b.x) < 1 || Math.abs(a.y - b.y) < 1
   for (const label of layout.labels) {

@@ -1,7 +1,7 @@
 import { beadsDiffer, colorCatalogOf, type Bead } from './beads'
 import type { ColorCatalog } from './colorCatalog'
 import type { Layer } from './grid'
-import { beadIdOfLayer, beadOfLayer, frameOf, type Layered, weaveOfLayer, withLayer } from './layerRecord'
+import { beadIdOfLayer, beadOfLayer, frameById, type Layered, weaveOfLayer, withLayer, wovenLayerOf } from './layerRecord'
 import { projectColors } from './layerBeads'
 import { codesForBead, codesInPalette, defaultPalette, paletteForBead, type PaletteColor, type PaletteCodes } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -13,21 +13,21 @@ import { beadCell, type BeadCell } from './weave'
 
 /** How the woven layer's Bead is drawn, from its own copy (ADR 0068, ticket 0724): none for a Bead nobody knows. */
 export function projectCell(project: Layered): BeadCell | undefined {
-  return beadCell(beadOfLayer(project, 'frame').bead, (weaveOfLayer(project, 'frame') ?? weaveOfLayer(project, 'canvas')).technique)
+  return beadCell(beadOfLayer(project, wovenLayerOf(project)).bead, (weaveOfLayer(project, wovenLayerOf(project)) ?? weaveOfLayer(project, 'canvas')).technique)
 }
 
 /** The Bead a Project is woven from (ticket 37, ADR 0079): the Frame's when there is one, else the Canvas's, its own
  * copy (ticket 534), so a catalog change or a retired Bead leaves it alone. What its sizes, counts and weight are read
  * in. Undefined for an id nobody knows; callers show a placeholder, not a raw id. */
 export function resolveProjectBead(project: Layered): Bead | undefined {
-  return beadOfLayer(project, 'frame').bead
+  return beadOfLayer(project, wovenLayerOf(project)).bead
 }
 
 /** Swaps a layer's Bead (tickets 48, 0665, ADR 0007, 0079): the Frame's or the Canvas's, the Canvas's on a Project with
  * no Frame. Painted cells keep their hex and position; the Palette follows when the woven layer's Bead changes, in the
  * same change (see `withWovenPalette`). The same Project for the Bead that layer already has. */
-export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog, layer: Layer = 'frame'): Project {
-  const target = frameOf(project) ? layer : 'canvas'
+export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog, layer?: Layer): Project {
+  const target = layer === 'canvas' ? 'canvas' : layer && frameById(project, layer) ? layer : wovenLayerOf(project)
   const own = beadOfLayer(project, target).bead
   if (own?.id === bead.id && !beadsDiffer(own, bead)) {
     return project
@@ -40,8 +40,8 @@ export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog
  * see paletteForBead); a swatch keeps its code if `catalog` (the new Bead's) lists it in its size (ticket 0538), or with
  * none while Color catalog and size stay. The same `after` when the woven Bead is as it was. */
 export function withWovenPalette(before: Project, after: Project, catalog?: ColorCatalog): Project {
-  const [from, to] = [beadOfLayer(before, 'frame').bead, beadOfLayer(after, 'frame').bead]
-  const [fromId, toId] = [beadIdOfLayer(before, 'frame'), beadIdOfLayer(after, 'frame')]
+  const [from, to] = [beadOfLayer(before, wovenLayerOf(before)).bead, beadOfLayer(after, wovenLayerOf(after)).bead]
+  const [fromId, toId] = [beadIdOfLayer(before, wovenLayerOf(before)), beadIdOfLayer(after, wovenLayerOf(after))]
   if (fromId === toId && (!from || !to || !beadsDiffer(from, to))) {
     return after
   }

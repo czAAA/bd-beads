@@ -3,7 +3,7 @@ import { touch, type Project } from './project'
 import type { Layer } from './grid'
 import { projectColors } from './layerBeads'
 import { lettersFor, withLetter, type SwatchLetters } from './swatchLetters'
-import { beadIdOfLayer, lettersOn, type Layered } from './layerRecord'
+import { beadIdOfLayer, lettersOn, type Layered, wovenLayerOf } from './layerRecord'
 
 // The Project's Palette (ADR 0002, ticket 0525): its swatches, the defaults removed, catalog codes and Swatch letters,
 // which change together.
@@ -17,7 +17,7 @@ export function lettersOfPalette(palette: PaletteIds, beadId: string, kept: unkn
  * remembered as removed (ticket 0528). `codes` join it by hex and a swatch's code leaves with it (ticket 0538). */
 export function setPalette(project: Project, palette: PaletteIds, codes: PaletteCodes = {}): Project {
   const removed = removedDefaultsAfter(project.palette, palette, project.removedDefaults ?? [])
-  const beadId = beadIdOfLayer(project, 'frame')
+  const beadId = beadIdOfLayer(project, wovenLayerOf(project))
   const kept = codesInPalette({ ...project.paletteCodes, ...codes }, palette, defaultPalette(beadId))
   const { removedDefaults: _removed, paletteCodes: _codes, ...rest } = project
   const paletteLetters = lettersOfPalette(palette, beadId, project.paletteLetters)
@@ -34,7 +34,7 @@ export function withUsedColors(palette: PaletteIds, project: Layered, builtIns: 
  * another Project, a Frame grown back over its Folded beads) and opening does. Not stamped: adding takes no code and
  * removes no default. The same Project when none is missing. */
 export function withColorsInPalette(project: Project): Project {
-  const beadId = beadIdOfLayer(project, 'frame')
+  const beadId = beadIdOfLayer(project, wovenLayerOf(project))
   const palette = withUsedColors(project.palette, project, defaultPalette(beadId))
   return palette === project.palette ? project : { ...project, palette, paletteLetters: lettersOfPalette(palette, beadId, project.paletteLetters) }
 }
