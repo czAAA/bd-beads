@@ -194,24 +194,39 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return fillBlanks(t.frame.announceSet, { width: columns, height: rows })
   }
 
-  /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step. */
-  function commit(frame: Rect | undefined, how: 'set' | 'make' | 'around' = 'set'): boolean {
+  /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step.
+   * A resize or removal acts on the Frame named (ticket 1218), the first until each Frame has its own sheet (ticket 1220). */
+  function commit(frame: Rect | undefined, how: 'set' | 'make' | 'around' = 'set', given?: FrameRef): boolean {
     const before = deps.currentProject()
-    const outcome = deps.edit('frame', (project) =>
-      frame && how === 'around' ? framedAround(project, frame, frameToLay(project)) : changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }, frameToLay(project)),
-    )
+    const outcome = deps.edit('frame', (project) => {
+      const ref = given ?? frameToLay(project)
+      return frame && how === 'around' ? framedAround(project, frame, ref) : changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }, ref)
+    })
     if (outcome.kind === 'refused') return false
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
-    const left = frameOf(deps.currentProject())
-    deps.announce(frame && left ? describe(left, frameOf(before)) : deps.messages().frame.announceRemoved)
+    const ref = given ?? firstFrameId(deps.currentProject())
+    const left = frameById(deps.currentProject(), ref)
+    deps.announce(frame && left ? describe(left, frameById(before, ref)) : deps.messages().frame.announceRemoved)
     return true
+  }
+
+  /** The Frame a change names (ticket 1218): the one given, else the first until each Frame has its own sheet (ticket
+   * 1220). */
+  function named(given: FrameRef | undefined): FrameRef {
+    return given ?? firstFrameId(deps.currentProject())
+  }
+
+  /** Whether the Frame named holds still: a pass is done on it. */
+  function lockedOn(frame: FrameRef): boolean {
+    const project = deps.currentProject()
+    return !!project && rowProgressStarted(project, frame)
   }
 
   function applySwitch(layer: Layer, technique: Technique, values: TechniqueSettings, woven?: WovenChoice): void {
     const project = deps.currentProject()
     if (!project) return
     const before = layerWeave(project, layer)
-    const width = frameOf(project)?.settings?.topWidth
+    const width = frameById(project, layer)?.settings?.topWidth
     const change = { technique, techniqueSettings: values }
     // A Canvas Mirror Area the new Weave does not fit grows in the same Undo step (ticket 1029); the Message says so.
     let growth: MirrorGrowth | undefined
@@ -226,7 +241,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const t = deps.messages()
     if (growth) deps.showToast('mirror-grown', mirrorGrownMessage(t, deps.locale(), mirrorSettingOf(deps.currentProject()!), growth), 'info')
     // A Fringe earring's top switched to peyote keeps a middle column, so its Width may move (ticket 0814).
-    const kept = isFrameLayer(layer) ? frameOf(deps.currentProject())?.settings?.topWidth : undefined
+    const kept = isFrameLayer(layer) ? frameById(deps.currentProject(), layer)?.settings?.topWidth : undefined
     if (kept !== undefined && kept !== width) deps.showToast('frame-odd-width', fillBlanks(t.frame.oddWidthNote, { count: kept }), 'info')
     if (technique !== before.technique) {
       deps.announce(fillBlanks(t.frame.announceTechnique, { technique: techniqueName(t, technique) }))
@@ -285,10 +300,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     applySwitch(layer, technique, values)
   }
 
-  /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, asking first once a pass is
-   * done (ticket 1184). */
-  function setTechnique(technique: Technique): void {
-    changeWeave(firstFrameId(deps.currentProject()), { technique })
+  /** Weaves a Frame of the open Project in another Technique (tickets 351, 507, 1218): one Undo step, asking first once
+   * a pass is done (ticket 1184). */
+  function setTechnique(technique: Technique, frame?: FrameRef): void {
+    changeWeave(named(frame), { technique })
   }
 
   /** Weaves a layer in another Technique from its Layer settings (tickets 492, 507, 0670): the Canvas's any time, since
@@ -358,26 +373,31 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** An edge stepper's press (ticket 417): one edge as seen a bead out (1) or in (-1), one Undo step; a step that would
    * empty the Frame is none. On a turned Frame it is the own edge lying there that steps (ticket 1016). */
-  function stepEdge(edge: FrameEdge, step: 1 | -1): void {
+  function stepEdge(edge: FrameEdge, step: 1 | -1, frame?: FrameRef): void {
     const project = deps.currentProject()
-    if (!project || !frameOf(project) || locked.value) return
-    const next = frameWithEdgeStep(frameWeave(project, firstFrameId(project)), frameOf(project)!, ownEdge(frameOf(project)!, edge), step)
-    if (next !== frameOf(project)) commit(next)
+    const ref = named(frame)
+    const held = frameById(project, ref)
+    if (!project || !held || lockedOn(ref)) return
+    const next = frameWithEdgeStep(frameWeave(project, ref), held, ownEdge(held, edge), step)
+    if (next !== held) commit(next, 'set', ref)
   }
 
   /** The size typed into the Frame panel (ticket 473): both sides grow or shrink evenly about the Frame, one Undo step.
    * Width and Height are as seen, a turned Frame's own swapped (ticket 1016). */
-  function resizeTo(columns: number, rows: number): void {
+  function resizeTo(columns: number, rows: number, frame?: FrameRef): void {
     const project = deps.currentProject()
-    if (!project || !frameOf(project) || locked.value) return
-    const own = ownSize(frameOf(project)!, { columns, rows })
-    const next = frameResizedAround(frameWeave(project, firstFrameId(project)), frameOf(project)!, own.columns, own.rows)
-    if (!sameFrame(next, frameOf(project))) commit(next)
+    const ref = named(frame)
+    const held = frameById(project, ref)
+    if (!project || !held || lockedOn(ref)) return
+    const own = ownSize(held, { columns, rows })
+    const next = frameResizedAround(frameWeave(project, ref), held, own.columns, own.rows)
+    if (!sameFrame(next, held)) commit(next, 'set', ref)
   }
 
-  /** The Frame's name, typed in the Frame panel (ticket 555): one Undo step; empty clears it. */
-  function rename(name: string): void {
-    deps.edit('frame', (project) => changeFrame(project, { name }, firstFrameId(project)))
+  /** A Frame's name, typed in the Frame panel (ticket 555): one Undo step; empty clears it. */
+  function rename(name: string, frame?: FrameRef): void {
+    const ref = named(frame)
+    deps.edit('frame', (project) => changeFrame(project, { name }, ref))
   }
 
   // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step. A named Piece's
@@ -483,14 +503,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** A Custom frame's setting from the Frame panel (tickets 0592, 0593, 0597, 0640): a stepper's press shows at once
    * and is held, all of them one Undo step once the panel closes; the Fringe style is a step of its own. Nothing is
    * asked, as what a smaller setting leaves out folds until it grows again (ADR 0066). Held still once a pass is done. */
-  function setSettings(change: FrameSettings): void {
-    const project = deps.currentProject()
-    const frame = frameOf(project)
-    if (!frame || !settingsOf(frame) || locked.value) return
+  function setSettings(change: FrameSettings, given?: FrameRef): void {
+    const ref = named(given)
+    const frame = frameById(deps.currentProject(), ref)
+    if (!frame || !settingsOf(frame) || lockedOn(ref)) return
     const name = changedSetting(change)
-    const command = (current: Project) => changeFrame(current, { settings: change }, firstFrameId(current))
+    const command = (current: Project) => changeFrame(current, { settings: change }, ref)
     const outcome = name === 'fringeStyle' ? deps.edit('frame', command) : deps.hold(command)
-    const settled = frameOf(deps.currentProject())
+    const settled = frameById(deps.currentProject(), ref)
     if (outcome.kind !== 'applied' || !settled) return
     const t = deps.messages()
     if (name === 'fringeStyle') {

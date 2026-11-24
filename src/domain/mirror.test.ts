@@ -274,6 +274,9 @@ describe('the one Mirror of a Project (ADR 0082, ticket 0750)', () => {
     expect(readMirrorSetting(JSON.parse(JSON.stringify(saved)), firstForm)).toEqual(saved)
     expect(readMirrorSetting(JSON.parse(JSON.stringify({ ...saved, place: null })), firstForm)).toEqual({ ...saved, place: null })
     expect(readMirrorSetting({ ...saved, place: { layer: 'canvas', area: 'x' } }, firstForm)?.place).toBeNull()
+    // A whole Frame keeps the Frame it names (ticket 1218); one saved naming none is still the first's.
+    expect(readMirrorSetting({ ...saved, place: { layer: 'frame', frame: 'second' } }, firstForm)?.place).toEqual({ layer: 'frame', frame: 'second' })
+    expect(readMirrorSetting({ ...saved, place: { layer: 'frame', frame: 3 } }, firstForm)?.place).toEqual({ layer: 'frame' })
     expect(readMirrorSetting({ mode: 'sideways', axes: 3 }, firstForm)).toBeUndefined()
     expect(readMirrorSetting({ ...MIRROR_OFF, fold: 20, place: null }, firstForm)?.fold).toBe(8)
     // On a Canvas Area the Fold is a grid's: 4 in a square one, 2 out of square (ticket 0751).

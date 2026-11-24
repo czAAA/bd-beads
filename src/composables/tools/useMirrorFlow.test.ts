@@ -1,4 +1,5 @@
 import { frameIdIn } from '../../testUtils/frameId'
+import { SECOND, twoFrames } from '../../testUtils/twoFrames'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import { changeFrame } from '../../domain/changeFrame'
@@ -261,5 +262,17 @@ describe('the Area sticks to Fitting sizes as it is dragged, made or moved (tick
     expect(columns.some((each) => each > before.columns)).toBe(true)
     expect(columns.every((each) => each >= before.columns)).toBe(true)
     expect(showToast).toHaveBeenCalled()
+  })
+})
+
+describe('Mirror the whole Frame names its Frame (ticket 1218)', () => {
+  it('places the Mirror on the Frame named, one Undo step', () => {
+    const harness = editHarness(twoFrames())
+    const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, showToast: vi.fn(), messages: () => en, locale: () => 'en' })
+    flow.placeWholeFrame(SECOND)
+    expect(mirrorSettingOf(harness.project!).place).toEqual({ layer: 'frame', frame: SECOND })
+    expect(flow.rect.value).toEqual({ row: 0, column: 0, rows: 6, columns: 4 })
+    harness.history.onUndo()
+    expect(mirrorSettingOf(harness.project!).place).toBeNull()
   })
 })

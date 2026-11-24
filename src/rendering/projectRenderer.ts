@@ -2,7 +2,7 @@ import { isFrameLayer, type FrameRef, type GridPosition, type Rotation } from '.
 import { beadRoundness, describeWeave, type Weave } from '../domain/weave'
 import type { VisiblePositions } from '../domain/weaveGeometry'
 import { beadBounds, colorAt, frameContains, type BeadMap, type Rect } from '../domain/canvas'
-import { footprintOf } from '../domain/footprint'
+import { footprintOf, footprintsOf } from '../domain/footprint'
 import type { BeadPlace, LayerGeometry } from '../domain/layerGeometry'
 import { MARGIN, withMargin } from '../domain/margin'
 import { laidFrame } from '../domain/frameOrientation'
@@ -42,7 +42,7 @@ import {
   type Region,
   type ViewLayer,
 } from './surfaceView'
-import { beadsOfLayer, firstFrameId, type Layered, quarterTurnOf, frameById } from '../domain/layerRecord'
+import { beadsOfLayer, firstFrameId, frameIdOf, framesOf, type Layered, quarterTurnOf, frameById } from '../domain/layerRecord'
 import { drawReference, EMPTY_BEAD_OPACITY, type DrawnReference } from './referenceImage'
 import { blockAround, drawDraftBlock, drawsDraft, keptDraft, layDraft, type DraftImageOf, type DraftPainter } from './draftRenderer'
 
@@ -616,14 +616,14 @@ function progressLook({ rowMarks, showFinished, passes, lit }: LayerDraw, space:
 /** A Seam's width in grid px: a hairline at 100%. */
 const SEAM_WIDTH_PX = 1
 
-/** The Canvas's beads, bead by bead or as one draft image, with the Frame's footprint cut out so none shows over it.
- * What every bead shares (its Weave's description, cell, corners, the margin) is worked out once (ticket 0676). */
-function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space, ref: FrameRef): void {
+/** The Canvas's beads, bead by bead or as one draft image, with every Frame's footprint cut out so none shows over it
+ * (ticket 1218). What every bead shares (its Weave's description, cell, corners, the margins) is worked out once
+ * (ticket 0676). */
+function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
   const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin, canvasLetters } = draw
   const rotation = quarterTurnOf(project)
   const beads = beadsOfLayer(project, 'canvas')
-  const covered = footprintOf(project, ref)
-  const keptOut = covered && withMargin(covered, margin)
+  const keptOut = footprintsOf(project).map((covered) => withMargin(covered, margin))
   const weave = canvasWeave(project)
   const description = describeWeave(weave)
   const cell = cellSizePx(weave.technique, weave.cell)
@@ -637,13 +637,14 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space,
   const rowsInView = Object.keys(beads).map(Number).filter((row) => row >= firstRow && row <= lastRow).sort((a, b) => a - b)
   // The beads round the margin reach into its edge (a shifted row hangs half a bead across, a shifted column down): cut
   // out its box so none shows inside the outline (the outer rectangle is the view, a cell wider each side).
-  const footprint = frameFootprintPx(project, margin, ref)
-  const cutOut = footprint !== undefined && rowsInView.length > 0
-  if (footprint && cutOut) {
+  const footprints = framesOf(project).flatMap((frame) => frameFootprintPx(project, margin, frameIdOf(frame)) ?? [])
+  const cutOut = footprints.length > 0 && rowsInView.length > 0
+  if (cutOut) {
     context.save()
     context.beginPath()
     boxPath(context, area.left - CELL_SIZE_PX, area.top - CELL_SIZE_PX, area.right - area.left + 2 * CELL_SIZE_PX, area.bottom - area.top + 2 * CELL_SIZE_PX)
-    boxPath(context, footprint.x, footprint.y, footprint.width, footprint.height)
+    // Frames never meet (spec 1214), so the holes never overlap and the even-odd rule cuts each one out.
+    for (const footprint of footprints) boxPath(context, footprint.x, footprint.y, footprint.width, footprint.height)
     context.clip('evenodd')
   }
   // The beads of a row in view; a row's beads never overlap, so in any order. The keep-out margin covers any bead that
@@ -652,7 +653,7 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space,
     const stored = beads[row]!
     for (const key in stored) {
       const column = Number(key)
-      if (column < first || column > last || (keptOut && frameContains(keptOut, { row, column }))) continue
+      if (column < first || column > last || keptOut.some((covered) => frameContains(covered, { row, column }))) continue
       take(column, stored[column]!)
     }
   }
@@ -858,7 +859,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       const marked = input.slimSheet ? 0 : margin
       if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin: marked, tiles }, ref)
       if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
-      drawCanvasLayer(context, draw, space, ref)
+      drawCanvasLayer(context, draw, space)
     }
     if (frame && frameBox && layer !== 'canvas') {
       drawMarginSheet(context, project, ref, margin, zoom, theme.margin, input.slimSheet)

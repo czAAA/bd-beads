@@ -1,4 +1,5 @@
 import { frameIdIn } from '../../testUtils/frameId'
+import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 import { createProject } from '../../domain/createProject'
@@ -265,5 +266,24 @@ describe('useRowOps', () => {
     expect(deps.showToast).toHaveBeenLastCalledWith('marked-done', en.rowProgress.markedDoneToast, 'info')
     tellMarkedDone(toggleRowDirection(base, frameIdIn(base)))
     expect(deps.showToast).toHaveBeenLastCalledWith('marked-done', en.rowProgress.columnMarkedDoneToast, 'info')
+  })
+})
+
+describe('Row progress names its Frame (ticket 1218)', () => {
+  it('moves and turns the rows of the Frame named alone, and says that Frame\'s row', () => {
+    const project = twoFrames()
+    const announce = vi.fn()
+    const { deps } = setup(project)
+    const flow = useRowOps({ ...deps, announce })
+    flow.onMoveRow(1, SECOND)
+    const moved = deps.replaceProject.mock.calls[0]![0] as Project
+    expect(rowProgressOf(moved, SECOND).down).toBe(1)
+    expect(rowProgressOf(moved, firstOf(project))).toEqual(rowProgressOf(project, firstOf(project)))
+    expect(announce).toHaveBeenCalledWith('Row 2 of 6')
+    deps.replaceProject.mockClear()
+    flow.onSetRowDirection('right', SECOND)
+    const turned = deps.replaceProject.mock.calls[0]![0] as Project
+    expect(rowProgressOf(turned, SECOND).way).not.toEqual(rowProgressOf(project, SECOND).way)
+    expect(rowProgressOf(turned, firstOf(project))).toEqual(rowProgressOf(project, firstOf(project)))
   })
 })

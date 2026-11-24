@@ -28,7 +28,7 @@ function cornerOf(project: Layered, position: GridPosition): TablePoint {
 
 /** How far the Frame reaches across and down as it lies on the Canvas, in the Canvas's bead widths: its laid rows and
  * columns in its own Weave, as many times larger as its Bead is. */
-function laidExtent(project: Layered, ref: FrameRef): TablePoint {
+export function laidExtent(project: Layered, ref: FrameRef): TablePoint {
   const weave = frameWeave(project, ref)
   const own = describeWeave(weave)
   const { rows, columns } = laidSize({ ...frameById(project, ref)!, ...weave })

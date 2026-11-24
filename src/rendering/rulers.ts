@@ -327,7 +327,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
 export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, expandedFontPx, pieces: given }: RulerLayoutOptions, ref: FrameRef): RulerLayout {
-  const pieces = given ?? ruledPieces(undefined, project, { numbers, stroking: false }, ref)
+  const pieces = given ?? ruledPieces(undefined, project, { numbers, stroking: false })
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
   const scale = rulerScale(surface.zoom, fontPx)

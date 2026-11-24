@@ -1,4 +1,6 @@
 import { frameIdIn } from '../../testUtils/frameId'
+import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
+import { frameById } from '../../domain/layerRecord'
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
@@ -97,5 +99,17 @@ describe('useRemoveLineFlow', () => {
     onRemoveSelectedLine()
     expect(harness.history.canUndo.value).toBe(false)
     expect(harness.replaceProject).not.toHaveBeenCalled()
+  })
+})
+
+describe('Remove line names its Frame (ticket 1218)', () => {
+  it('takes the line out of the Frame the Selection is on, and Undo puts back only that', () => {
+    const project = twoFrames()
+    const { harness, onRemoveSelectedLine } = setup({ project, selection: { top: 21, left: 20, rows: 1, columns: 4, layer: SECOND } })
+    onRemoveSelectedLine()
+    expect(frameById(harness.project, SECOND)).toMatchObject({ rows: 5, columns: 4 })
+    expect(frameById(harness.project, firstOf(project))).toEqual(frameById(project, firstOf(project)))
+    harness.history.onUndo()
+    expect(frameById(harness.project, SECOND)).toEqual(frameById(project, SECOND))
   })
 })

@@ -1,8 +1,8 @@
 import { beadBounds, changedPositions, frameContains, type BeadMap, type Rect } from '../domain/canvas'
-import type { GridPosition, FrameRef } from '../domain/grid'
+import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
 import { beadsOfLayer, pieceNamesOf } from '../domain/layerRecord'
-import { footprintOf } from '../domain/footprint'
+import { footprintsOf } from '../domain/footprint'
 import { beadsShown, withMargin } from '../domain/margin'
 import { namedPieces, namedPiecesFrom, type NamedPiece } from '../domain/pieceNames'
 import { type WalkedPieces } from '../domain/pieces'
@@ -32,14 +32,14 @@ export type IdleWalk = (beads: BeadMap, weave: Weave, anchors: readonly GridPosi
 const AREA_REACH = 2
 const NAMED_REACH = 1
 
-/** The Pieces to rule for `project`, counted from the beads that show, none under the Frame or its margin (ticket 1012).
+/** The Pieces to rule for `project`, counted from the beads that show, none under a Frame or its margin (tickets 1012, 1218).
  * While a stroke goes on (ticket 0674) the last count is kept and the area or named Piece each changed bead touches
  * grows to hold it (a bead touching none starts an area), so a step costs its rows. Its end counts again (ticket 0731). */
-export function ruledPieces(previous: RuledPieces | undefined, project: RuledProject, { numbers, stroking, idleWalk }: { numbers: boolean; stroking: boolean; idleWalk?: IdleWalk }, ref: FrameRef): RuledPieces {
+export function ruledPieces(previous: RuledPieces | undefined, project: RuledProject, { numbers, stroking, idleWalk }: { numbers: boolean; stroking: boolean; idleWalk?: IdleWalk }): RuledPieces {
   const weave = canvasWeave(project)
   const beads = beadsOfLayer(project, 'canvas')
-  const footprint = footprintOf(project, ref)
-  const shown = beadsShown(beads, footprint)
+  const footprints = footprintsOf(project)
+  const shown = beadsShown(beads, footprints)
   const held = stroking && previous && previous.touch === touchKey(weave) && (previous.areas !== undefined) === numbers
   if (!held && (numbers || pieceNamesOf(project)?.length) && tooManyToWalk(beads)) {
     // Never walked on open or in a press (ticket 0716): in idle time under the size gate, never above it.
@@ -51,8 +51,8 @@ export function ruledPieces(previous: RuledPieces | undefined, project: RuledPro
     return { beads, touch: touchKey(weave), areas: numbers ? pieceAreasOf(shown, weave) : undefined, named: namedPieces(project) }
   }
   if (previous.beads === beads) return previous
-  const covered = footprint && withMargin(footprint)
-  const painted = changedPositions(previous.beads, beads).filter((at) => beads[at.row]?.[at.column] !== undefined && !(covered && frameContains(covered, at)))
+  const covered = footprints.map((footprint) => withMargin(footprint))
+  const painted = changedPositions(previous.beads, beads).filter((at) => beads[at.row]?.[at.column] !== undefined && !covered.some((cover) => frameContains(cover, at)))
   const areas = previous.areas && painted.reduce(grownAreas, previous.areas)
   const named = previous.named.map((piece) => painted.reduce((grown: NamedPiece, at) => (reaches(grown, at, NAMED_REACH) && !frameContains(grown, at) ? { ...grown, ...holding(grown, at) } : grown), piece))
   return { beads, touch: previous.touch, areas, named, ...(previous.uncounted ? { uncounted: true as const } : {}) }
