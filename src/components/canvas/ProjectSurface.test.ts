@@ -15,6 +15,7 @@ import { DARK_THEME, DEFAULT_THEME, fadeOver, PROJECT_THEMES } from '../../rende
 import { SETTLE_MS } from '../../rendering/gestureView'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
+import { SECOND, twoFrames } from '../../testUtils/twoFrames'
 import { surfaceView } from '../../rendering/surfaceView'
 import { tileColorOf } from '../../rendering/tonalTiles'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
@@ -481,6 +482,20 @@ describe('ProjectSurface', () => {
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
+    })
+
+    it('draws again only the Frame an edit painted, round its own sheet, when the Project has two (ticket 1219)', async () => {
+      // The second Frame, 4 × 6 at row 10, column 14: its margin sheet columns 10 to 21 and rows 6 to 19, in 20 px beads.
+      const project = twoFrames({ row: 10, column: 14 })
+      const { wrapper } = await mountSurface(project)
+      context.calls.length = 0
+
+      await wrapper.setProps({ project: withLayer(project, SECOND, { beads: { 0: { 0: '#e63746' } } }) })
+
+      // One cut and one clear, round that sheet and a pixel past it; the Canvas and the first Frame stay as drawn.
+      expect(context.named('rect').map((call) => call.args)).toEqual([[199, 119, 242, 282]])
+      expect(context.named('clearRect').filter(({ args }) => args[2] === 242)).toHaveLength(1)
+      expect(context.named('clearRect').filter(({ args }) => args[2] === VIEWPORT.width)).toHaveLength(SURFACES)
     })
 
     it('draws no beads at all when nothing in view changed, and only redraws the overlay', async () => {

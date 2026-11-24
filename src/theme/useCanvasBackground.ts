@@ -70,6 +70,9 @@ export function useCanvasBackground(
   projectTheme: ComputedRef<ProjectTheme>
   /** The Frame's colors on its own background; the Canvas's without a Frame. */
   frameTheme: ComputedRef<ProjectTheme>
+  /** Any Frame's colors on its own background (ticket 1219): one object per look, so a draw keeps what it keeps per
+   * theme. */
+  frameThemeOf: (layer: Layer) => ProjectTheme
   margin: MarginColor
   /** Keeps a Background as the device's last pick, a Custom color as its last Custom color too. */
   remember: (background: Background) => void
@@ -98,6 +101,7 @@ export function useCanvasBackground(
   const canvasBackground = computed(() => backgroundOfLayer('canvas'))
   const frameBackground = computed(() => backgroundOfLayer(firstFrameId(project())))
   const canvasPick = computed(() => pickOf(canvasBackground.value))
+  const frameLooks = new Map<string, ProjectTheme>()
   return {
     start,
     customColor: readonly(customColor),
@@ -111,6 +115,13 @@ export function useCanvasBackground(
       const { choice: frameChoice, customColor: frameColor } = pickOf(frameBackground.value)
       return canvasTheme(theme.value, frameChoice, frameColor)
     }),
+    frameThemeOf(layer) {
+      const { choice: frameChoice, customColor: frameColor } = pickOf(backgroundOfLayer(layer))
+      const key = JSON.stringify([theme.value, frameChoice, frameColor])
+      let look = frameLooks.get(key)
+      if (!look) frameLooks.set(key, (look = canvasTheme(theme.value, frameChoice, frameColor)))
+      return look
+    },
     margin: {
       choice: readonly(marginChoice),
       customColor: readonly(marginCustomColor),
