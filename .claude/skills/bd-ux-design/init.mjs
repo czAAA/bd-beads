@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Scaffolds one design topic (bd-ux-design skill): canvas.html, shared.css, options/<id>.html and an empty comments.json.
 //   node init.mjs <designDir> "<Title>" a b c     never overwrites a file that is already there
+//   node init.mjs <designDir> "<Title>" 1a 1b 2a 2b 3   several questions: a <section data-group> per number
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -20,15 +21,22 @@ const write = (file, text) => {
   fs.writeFileSync(target, text)
   console.log(`created ${file}`)
 }
-const sections = ids.map((id) => `      <section
-        data-option="${id}"
-        data-name="${id.toUpperCase()} · Name"
-        data-idea="The idea in one line."
-        data-tradeoff="What it costs."
-        data-src="options/${id}.html"
-        data-states="default open long"
-      ></section>`)
-write('canvas.html', template('canvas-template.html').replaceAll('__TITLE__', title).replace('__OPTIONS__', sections.join('\n')))
+const section = (id, pad) => `${pad}<section
+${pad}  data-option="${id}"
+${pad}  data-name="${id.toUpperCase()} · Name"
+${pad}  data-idea="The idea in one line."
+${pad}  data-tradeoff="What it costs."
+${pad}  data-src="options/${id}.html"
+${pad}  data-states="default open long"
+${pad}></section>`
+// Ids like 1a 1b 2a 2b 3 are several questions: one <section data-group> per number, its options in one row.
+const questions = ids.every((id) => /^\d+[a-z]*$/.test(id)) ? [...new Set(ids.map((id) => id.match(/^\d+/)[0]))] : []
+const options = questions.length > 1
+  ? questions.map((n) => `      <section data-group="${n}" data-title="${n} · The question's short name" data-question="What this question decides, in one line">
+${ids.filter((id) => id.match(/^\d+/)[0] === n).map((id) => section(id, '        ')).join('\n')}
+      </section>`)
+  : ids.map((id) => section(id, '      '))
+write('canvas.html', template('canvas-template.html').replaceAll('__TITLE__', title).replace('__OPTIONS__', options.join('\n')))
 write('shared.css', template('shared-template.css'))
 write('comments.json', '[]\n')
 for (const id of ids) write(`options/${id}.html`, template('option-template.html').replaceAll('__TITLE__', title).replaceAll('__ID__', id.toUpperCase()))

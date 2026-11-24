@@ -211,19 +211,27 @@ const settle = (page) => page.evaluate(() => Promise.race([
 ]))
 
 const playwright = loadPlaywright()
-const server = await startServer({ dir, port: 0, watch: false })
+const server = await startServer({ dir: path.dirname(dir), port: 0, watch: false })
 const browser = await playwright[browserName].launch()
-const origin = new URL(server.url).origin
+// The server serves the topic's parent folder: every address of this topic starts with its name.
+const origin = new URL(server.url).origin + '/' + encodeURIComponent(path.basename(dir))
 const findings = []
 let views = 0
 try {
   const first = await browser.newPage({ viewport: { width: 1710, height: 907 }, deviceScaleFactor: 2 })
   const trouble = []
   first.on('pageerror', (error) => trouble.push(String(error.message)))
-  first.on('response', (response) => response.status() >= 400 && !new URL(response.url()).pathname.startsWith('/options/') && trouble.push(`${response.status()} ${new URL(response.url()).pathname}`))
+  first.on('response', (response) => response.status() >= 400 && !new URL(response.url()).pathname.includes('/options/') && trouble.push(`${response.status()} ${new URL(response.url()).pathname}`))
   await first.goto(`${origin}/canvas.html?static`)
-  const canvas = await first.evaluate(() => window.designCanvas)
+  const canvas = await first.evaluate(() => window.designCanvas && (({ boards, themes, langs }) => ({ boards, themes, langs }))(window.designCanvas))
   if (!canvas?.boards.length) throw new Error('canvas.html lists no options (window.designCanvas is empty)')
+  // The canvas itself: no label or group header may lie over an artboard or other text, at either window size.
+  await first.evaluate(() => window.designCanvas.ready)
+  for (const [width, height] of [[1710, 907], [1366, 1024]]) {
+    await first.setViewportSize({ width, height })
+    await first.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))))
+    for (const detail of await first.evaluate(() => window.designCanvas.layoutTrouble())) findings.push({ board: 'canvas', view: `${width}×${height}`, kind: 'layout', where: 'canvas.html', detail })
+  }
   for (const text of trouble) findings.push({ board: 'canvas', view: '', kind: 'error', where: 'canvas.html', detail: text })
   await first.close()
 

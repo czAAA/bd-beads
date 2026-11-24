@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// The local design server (bd-ux-design skill): serves one design folder with the repo's tokens, fonts and icons,
-// keeps its comments.json, and tells the open page to reload when a file changes. 127.0.0.1 only, no dependencies.
+// The local design server (bd-ux-design skill): one server for every topic in ../bd-beads-ux/, a homepage of them at
+// `/`, each topic at `/<topic>/canvas.html` with its comments; live reload. 127.0.0.1 only, no dependencies.
 // Usage: run it with no arguments, or see SKILL.md, steps 6 and 7.
 import http from 'node:http'
 import fs from 'node:fs'
@@ -8,6 +8,7 @@ import path from 'node:path'
 import { execFile, execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
+import { homePage } from './home.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 export const REPO = path.resolve(HERE, '../../..')
@@ -38,7 +39,19 @@ const TYPES = {
   '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.woff': 'font/woff', '.txt': 'text/plain; charset=utf-8',
 }
 
-/** Where an address is read from: the mounts first, then the design folder, then the app's `public/`. */
+/** The design root every session shares: bd-beads-ux beside the main checkout (also from a worktree), outside the
+ *  repo so nothing in it can be committed. */
+export function designRoot() {
+  try {
+    const common = execFileSync('git', ['-C', REPO, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).trim()
+    return path.join(path.dirname(path.dirname(common)), 'bd-beads-ux')
+  } catch {
+    return path.join(path.dirname(REPO), 'bd-beads-ux')
+  }
+}
+const TOPIC = /^[\w.-]+$/
+
+/** Where an address is read from: the mounts first, then the design root, then the app's `public/`. */
 function mounts(dir) {
   return [
     ['/_canvas/', HERE],
@@ -93,16 +106,19 @@ function body(req) {
 const COMMENT_FIELDS = ['board', 'state', 'theme', 'lang', 'x', 'y', 'target', 'text', 'resolved', 'reply']
 const pick = (from) => Object.fromEntries(COMMENT_FIELDS.filter((key) => key in from).map((key) => [key, from[key]]))
 
-/** Starts the server for one design folder. `port` 0 takes any free port; otherwise the first free from `port` up. */
+/** Starts the server for the design root `dir` (a folder of topics). `port` 0 takes any free port; otherwise the first
+ *  free from `port` up. */
 export async function startServer({ dir, port = FIRST_PORT, watch = true }) {
-  const commentsFile = path.join(dir, 'comments.json')
-  const listeners = new Set()
+  dir = path.resolve(dir)
+  const listeners = new Map() // topic ('' for the homepage) → open event streams
+  const streams = (topic) => listeners.get(topic) ?? listeners.set(topic, new Set()).get(topic)
   const send = (res, status, data, type = 'application/json; charset=utf-8') => {
     res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store' })
     res.end(typeof data === 'string' || Buffer.isBuffer(data) ? data : JSON.stringify(data))
   }
 
-  async function comments(req, res, id) {
+  async function comments(req, res, topic, id) {
+    const commentsFile = path.join(dir, topic, 'comments.json')
     const list = readComments(commentsFile)
     if (req.method === 'GET') return send(res, 200, list)
     if (req.method === 'POST' && !id) {
@@ -135,19 +151,32 @@ export async function startServer({ dir, port = FIRST_PORT, watch = true }) {
     try {
       const url = new URL(req.url, 'http://localhost')
       // Only this Mac's own pages: another site's page, or a name pointed at 127.0.0.1, is refused.
-      const local = (host) => /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host ?? '')
+      // DESIGN_TAILNET_HOST (one exact name, e.g. macair.tail440810.ts.net) also lets the owner's tailnet device in, on request only.
+      const tail = process.env.DESIGN_TAILNET_HOST
+      const local = (host) => /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host ?? '') || (!!tail && (host ?? '').replace(/:\d+$/, '') === tail)
       if (!local(req.headers.host) || (req.headers.origin && !local(new URL(req.headers.origin).host))) return send(res, 403, { error: 'local only' })
       const urlPath = decodeURIComponent(url.pathname)
-      const api = urlPath.match(/^\/api\/comments(?:\/(\d+))?$/)
-      if (api) return await comments(req, res, api[1])
-      if (urlPath === '/api/events') {
+      const api = urlPath.match(/^\/([^/]+)\/api\/comments(?:\/(\d+))?$/)
+      if (api) {
+        if (!TOPIC.test(api[1]) || !fs.existsSync(path.join(dir, api[1], 'canvas.html'))) return send(res, 404, { error: 'no such topic' })
+        return await comments(req, res, api[1], api[2])
+      }
+      const events = urlPath.match(/^\/(?:([^/]+)\/)?api\/events$/)
+      if (events) {
         res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' })
         res.write('retry: 1000\n\n')
-        listeners.add(res)
-        req.on('close', () => listeners.delete(res))
+        const set = streams(events[1] ?? '')
+        set.add(res)
+        req.on('close', () => set.delete(res))
         return
       }
-      const file = resolveFile(dir, urlPath === '/' ? '/canvas.html' : urlPath)
+      if (urlPath === '/' || urlPath === '/index.html') return send(res, 200, homePage(dir), TYPES['.html'])
+      const topicHome = urlPath.match(/^\/([^/]+)\/?$/)
+      if (topicHome && fs.existsSync(path.join(dir, topicHome[1], 'canvas.html'))) {
+        res.writeHead(302, { location: `/${topicHome[1]}/canvas.html` })
+        return res.end()
+      }
+      const file = resolveFile(dir, urlPath.endsWith('/') ? urlPath + 'index.html' : urlPath)
       if (!file) return send(res, 404, `not found: ${urlPath}`, 'text/plain; charset=utf-8')
       send(res, 200, fs.readFileSync(file), TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream')
     } catch (error) {
@@ -157,17 +186,20 @@ export async function startServer({ dir, port = FIRST_PORT, watch = true }) {
 
   let watcher
   if (watch) {
+    // A topic's page hears its own files; the homepage hears every change (a new topic, a new comment, a new title).
     let timer
-    const pending = new Set()
+    const pending = new Map()
     watcher = fs.watch(dir, { recursive: true }, (_event, name) => {
-      if (!name || /(^|\/)(\.server\.json|audit\.(json|txt)|crops\/|\.DS_Store)/.test(name)) return
-      pending.add(name === 'comments.json' ? 'comments' : 'reload')
+      if (!name || /(^|\/)(\.server\.(json|log)|audit\.(json|txt)|crops\/|node_modules\/|\.DS_Store)/.test(name)) return
+      const parts = name.split(path.sep)
+      const topic = parts.length > 1 ? parts[0] : ''
+      pending.set(topic, pending.get(topic) === 'reload' || parts.at(-1) !== 'comments.json' ? 'reload' : 'comments')
       clearTimeout(timer)
       timer = setTimeout(() => {
-        const event = pending.has('reload') ? 'reload' : 'comments'
+        for (const [topic, event] of pending) for (const res of streams(topic)) res.write(`event: ${event}\ndata: 1\n\n`)
+        if (pending.size) for (const res of streams('')) res.write('event: reload\ndata: 1\n\n')
         pending.clear()
-        for (const res of listeners) res.write(`event: ${event}\ndata: 1\n\n`)
-      }, 120)
+      }, 150)
     })
   }
 
@@ -189,10 +221,10 @@ export async function startServer({ dir, port = FIRST_PORT, watch = true }) {
   }
   return {
     port: bound,
-    url: `http://127.0.0.1:${bound}/canvas.html`,
+    url: `http://127.0.0.1:${bound}/`,
     close: () => {
       watcher?.close()
-      for (const res of listeners) res.end()
+      for (const set of listeners.values()) for (const res of set) res.end()
       return new Promise((resolve) => server.close(resolve))
     },
   }
@@ -210,13 +242,19 @@ function running(stateFile) {
 
 async function main() {
   const args = process.argv.slice(2)
-  const dir = path.resolve(args[0] ?? '')
-  if (!args.length || !fs.existsSync(path.join(dir, 'canvas.html'))) {
-    console.error('usage: node serve.mjs <designDir with canvas.html> [--open] [--port N]   start, or name the one running\n' +
-      '       node serve.mjs <designDir> --stop | --comments [--all] | --resolve <id> "<reply>"')
+  const given = args[0] && !args[0].startsWith('--') ? path.resolve(args[0]) : null
+  // A topic folder (it has canvas.html) names its topic; no folder means the shared root of every topic.
+  const isTopic = !!given && fs.existsSync(path.join(given, 'canvas.html'))
+  const root = isTopic ? path.dirname(given) : (given ?? designRoot())
+  const topic = isTopic ? path.basename(given) : ''
+  if ((given && !isTopic && !fs.existsSync(given)) || (!isTopic && args.some((a) => a === '--comments' || a === '--resolve'))) {
+    console.error('usage: node serve.mjs [designDir] [--open] [--port N]   start the one server, or name the one running;\n' +
+      '         designDir: a topic (prints its canvas) or the root (default: ../bd-beads-ux beside the main checkout)\n' +
+      '       node serve.mjs --stop | --status\n' +
+      '       node serve.mjs <topicDir> --comments [--all] | --resolve <id> "<reply>"')
     process.exit(2)
   }
-  const commentsFile = path.join(dir, 'comments.json')
+  const commentsFile = isTopic ? path.join(given, 'comments.json') : ''
   if (args.includes('--comments')) {
     const list = readComments(commentsFile).filter((c) => args.includes('--all') || !c.resolved)
     for (const c of list) {
@@ -235,9 +273,15 @@ async function main() {
     writeComments(commentsFile, list)
     return console.log(`#${id} resolved`)
   }
-  const stateFile = path.join(dir, '.server.json')
+  fs.mkdirSync(root, { recursive: true })
+  const stateFile = path.join(root, '.server.json')
+  const pageOf = (base) => base + (topic ? `${topic}/canvas.html` : '')
   const open = (url) => args.includes('--open') && execFile('open', ['-a', 'Safari', url])
   const already = running(stateFile)
+  if (args.includes('--status')) {
+    console.log(already ? pageOf(already.url) : 'not running')
+    process.exit(already ? 0 : 1)
+  }
   if (args.includes('--stop')) {
     if (already) process.kill(already.pid)
     fs.rmSync(stateFile, { force: true })
@@ -245,12 +289,12 @@ async function main() {
     return
   }
   if (already) {
-    console.log(already.url)
-    open(already.url)
+    console.log(pageOf(already.url))
+    open(pageOf(already.url))
     return
   }
   const portArg = args.indexOf('--port')
-  const { url, port } = await startServer({ dir, port: portArg >= 0 ? Number(args[portArg + 1]) : FIRST_PORT })
+  const { url, port } = await startServer({ dir: root, port: portArg >= 0 ? Number(args[portArg + 1]) : FIRST_PORT })
   fs.writeFileSync(stateFile, JSON.stringify({ pid: process.pid, port, url }) + '\n')
   const bye = () => {
     fs.rmSync(stateFile, { force: true })
@@ -258,8 +302,8 @@ async function main() {
   }
   process.on('SIGINT', bye)
   process.on('SIGTERM', bye)
-  console.log(url)
-  open(url)
+  console.log(pageOf(url))
+  open(pageOf(url))
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main()
