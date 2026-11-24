@@ -1,5 +1,6 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Rotation } from '../domain/grid'
+import type { Layer, Rotation } from '../domain/grid'
 import type { Rect } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
 import { createProject } from '../domain/createProject'
@@ -48,7 +49,7 @@ type TestRowProgress = RowProgress & { marks?: boolean }
 type OwnTestProgress = Partial<OwnRowProgress> & { marks?: boolean }
 
 function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: Parameters<typeof renderOverlayWith>[1]): void {
-  renderOverlayWith(context, { rowMarks: (rowProgressOf(input.project) as TestRowProgress).marks !== false, ...input })
+  renderOverlayWith(context, { rowMarks: (rowProgressOf(input.project, frameIdIn(input.project)) as TestRowProgress).marks !== false, ...input })
 }
 
 /** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
@@ -62,7 +63,7 @@ function projectOf(technique: Technique, columns: number, rows: number, { marks,
     beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
   }
   const made = withLayers(project, { frame: { ...frameOf(project)!, beads }, orientation: rotation, ownProgress: own })
-  return marks === false ? withLayers(made, { rowProgress: { ...rowProgressOf(made), marks } as TestRowProgress }) : made
+  return marks === false ? withLayers(made, { rowProgress: { ...rowProgressOf(made, frameIdIn(made)), marks } as TestRowProgress }) : made
 }
 
 function whole(project: Project, zoom = 1) {
@@ -279,7 +280,7 @@ describe('renderOverlay', () => {
       const falls = ([90, 180, 270] as const).map((rotation) => {
         const project = projectOf('loom', 4, 5, { currentRow: 2 }, rotation)
         const { context, shadows } = shadowRecording()
-        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true) })
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)) })
         return shadows.map(({ down, shapes }) => ({ down, shapes }))
       })
 
@@ -367,15 +368,15 @@ describe('renderOverlay', () => {
 
   describe('the pass being woven on a Custom frame (ticket 0594)', () => {
     it('rings each bead of the current round turned to its panel\'s angle, and only the beads that hold a colour', () => {
-      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
+      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } }, frameIdIn(open))
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
       const round = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row === 1)
-      const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746'))
-      const project = moveToRow(painted, 1)
+      const painted = onLayer(placed.project, FRAME_ID, (view) => paintCells(view, round.slice(0, 4), '#e63746'))
+      const project = moveToRow(painted, 1, frameIdIn(painted))
       const { context, calls, named } = recordingContext()
 
-      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true) })
+      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)) })
 
       expect(named('rotate').map((call) => call.args[0])).toEqual(expect.arrayContaining(round.slice(0, 4).map(({ angle }) => angle)))
       // Each of the four beads casts its part of the shadow, is lifted and is ringed, all turned: twelve turns, no more.
@@ -388,14 +389,14 @@ describe('renderOverlay', () => {
     })
 
     it('glints the round just finished one bead at a time in its Row order, each turned to its panel (ticket 0730)', () => {
-      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
+      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } }, frameIdIn(open))
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
       const round = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row === 1)
-      const project = moveToRow(onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746')), 2)
+      const project = moveToRow(onLayer(placed.project, FRAME_ID, (view) => paintCells(view, round.slice(0, 4), '#e63746')), 2, frameIdIn(onLayer(placed.project, FRAME_ID, (view) => paintCells(view, round.slice(0, 4), '#e63746'))))
       const washed = (elapsed: number) => {
         const { context, calls } = recordingContext()
-        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), rowMotion: { glints: [{ pass: 1, elapsed }] } })
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)), rowMotion: { glints: [{ pass: 1, elapsed }] } })
         return calls.filter((call) => call.name === 'fill' && call.fillStyle === GLINT_COLOR && call.globalAlpha > 0)
       }
 
@@ -680,11 +681,11 @@ describe('renderOverlay', () => {
 
     it('shows the Frame\'s hot corners round it in `marker` when the surface is known: four brackets and four edge bars, the brackets alone on touch (tickets 414, 0807)', () => {
       const project = projectOf('loom', 6, 5, noProgress)
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
 
       for (const [touch, bars] of [[false, 4], [true, 0]] as const) {
         const { context, named } = recordingContext()
-        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: selected, selectionHandles: { surface, touch } })
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)), selection: selected, selectionHandles: { surface, touch } })
 
         expect(named('stroke').map((call) => call.strokeStyle)).toEqual(Array(4).fill(DEFAULT_THEME.marker))
         expect(named('roundRect').map((call) => call.fillStyle)).toEqual(Array(bars).fill(DEFAULT_THEME.marker))
@@ -693,10 +694,10 @@ describe('renderOverlay', () => {
 
     it('grows the hot corner on its disc and shows the size Tooltip beside it, as the Frame\'s (ticket 0807)', () => {
       const project = projectOf('loom', 6, 5, noProgress)
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
       const { context, named } = recordingContext()
 
-      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: selected, selectionHandles: { surface, touch: false, hot: 'bottom-right', tooltip: '4 × 3' } })
+      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)), selection: selected, selectionHandles: { surface, touch: false, hot: 'bottom-right', tooltip: '4 × 3' } })
 
       expect(named('arc')).toHaveLength(1)
       expect(named('fill').map((call) => [call.fillStyle, call.globalAlpha])).toContainEqual([DEFAULT_THEME.marker, 0.18])
@@ -705,21 +706,21 @@ describe('renderOverlay', () => {
 
     it('shows the Frame\'s size Tooltip while it is dragged or stepped with the Rulers off too (ticket 1012)', () => {
       const project = projectOf('loom', 6, 5, noProgress)
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
       const { context, named } = recordingContext()
 
-      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), rulers: { layout: rulerLayout(project, surface, { fontPx: 11, numbers: false }), surface }, frameEditing: { touch: false, tooltip: '6 × 5', hot: 'bottom-right' } })
+      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)), rulers: { layout: rulerLayout(project, surface, { fontPx: 11, numbers: false }, frameIdIn(project)), surface }, frameEditing: { touch: false, tooltip: '6 × 5', hot: 'bottom-right' } })
 
       expect(named('fillText').map((call) => call.args[0])).toContain('6 × 5')
     })
 
     it('shows no handles on a Selection of fewer than five beads, the same size rulers need (ticket 435)', () => {
       const project = projectOf('loom', 6, 5, noProgress)
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
 
       for (const [rows, columns, count] of [[1, 1, 0], [2, 2, 0], [1, 5, 8], [2, 3, 8]] as const) {
         const { context, named } = recordingContext()
-        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: { top: 0, left: 0, rows, columns }, selectionHandles: { surface, touch: false } })
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)), selection: { top: 0, left: 0, rows, columns }, selectionHandles: { surface, touch: false } })
 
         expect(named('stroke')).toHaveLength(count / 2)
       }
@@ -757,7 +758,7 @@ describe('renderOverlay', () => {
       const project = withLayers(projectOf('peyote', 4, 4, { marks: false }), { frame: { technique: 'peyote' as const, row: 5, column: 6, rows: 4, columns: 5, beads: {} } })
       const { context, calls, named } = recordingContext()
 
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, mirror: on({ leftRight: true, topBottom: true }) })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, mirror: on({ leftRight: true, topBottom: true }) })
 
       // Column 6 of a peyote Canvas is 120px in, and unshifted; row 5 sits at 5 × 20px (ticket 0734).
       expect(named('translate').map((call) => call.args)).toContainEqual([120, 100])
@@ -790,14 +791,14 @@ describe('renderOverlay', () => {
   describe('a Canvas Area (ticket 0750, ContextBar card\'s Mirror bar)', () => {
     const on = (axes: Partial<MirrorSetting['axes']>, place = inArea(2, 3, 2, 2)): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes }, place })
     const fills = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'fillRect').map((call) => call.args)
-    const open = () => (changeFrame(projectOf('loom', 6, 5, { marks: false }), { remove: true }) as { project: Project }).project
+    const open = () => (changeFrame(projectOf('loom', 6, 5, { marks: false }), { remove: true }, frameIdIn(projectOf('loom', 6, 5, { marks: false }))) as { project: Project }).project
 
     it('draws the Area as the Selection\'s rectangle round its cells with its Axes inside it, and the hot corners in `mirror` when the view is known', () => {
       const project = open()
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
       const { context, calls, named } = recordingContext()
 
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), mirrorArea: { surface, touch: false } })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), mirrorArea: { surface, touch: false } })
 
       // The Axis line first; the brackets' arms after it, in the viewport's px.
       expect(lines(calls)[0]).toEqual([[80, 40], [80, 80]])
@@ -811,7 +812,7 @@ describe('renderOverlay', () => {
     it('reads apart from a Selection on screen with it: the Selection\'s line `marker`, the Area\'s `mirror` (ticket 0806)', () => {
       const project = open()
       const { context, calls } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: { top: 0, left: 0, rows: 1, columns: 2 }, mirror: on({ leftRight: true }) })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: { top: 0, left: 0, rows: 1, columns: 2 }, mirror: on({ leftRight: true }) })
 
       const strips = calls.filter((call) => call.name === 'fillRect')
       expect(strips.slice(0, 4).every((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
@@ -823,11 +824,11 @@ describe('renderOverlay', () => {
       const project = open()
       const band = { top: 1, left: 1, rows: 2, columns: 3 }
       const marking = recordingContext()
-      renderOverlay(marking.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: band, marksArea: true })
+      renderOverlay(marking.context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: band, marksArea: true })
       expect(marking.named('fillRect').map((call) => call.fillStyle)).toEqual(Array(4).fill(DEFAULT_THEME.mirror))
 
       const selecting = recordingContext()
-      renderOverlay(selecting.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: band })
+      renderOverlay(selecting.context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: band })
       expect(selecting.named('fillRect').map((call) => call.fillStyle)).toEqual(Array(4).fill(DEFAULT_THEME.marker))
     })
 
@@ -836,7 +837,7 @@ describe('renderOverlay', () => {
       const inside = { row: 2, column: 3 }
       const outside = { row: 0, column: 0 }
       const painting = recordingContext()
-      renderOverlay(painting.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), preview: { cells: [inside, outside], color: '#e63746' } })
+      renderOverlay(painting.context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), preview: { cells: [inside, outside], color: '#e63746' } })
 
       // The fill of each bead, then the one ring, round the bead inside the Area, its inner edge 1.5px in.
       const rings = painting.named('fill').filter((call) => call.args[0] === 'evenodd')
@@ -847,15 +848,15 @@ describe('renderOverlay', () => {
       expect(inner![0]! - outer![0]!).toBe(1.5)
 
       const erasing = recordingContext()
-      renderOverlay(erasing.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), preview: { cells: [inside, outside], color: null } })
+      renderOverlay(erasing.context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), preview: { cells: [inside, outside], color: null } })
       expect(erasing.named('fill').map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.mirror, DEFAULT_THEME.outline])
     })
 
     it('washes the half positions its edge cuts on peyote in `mirror`, as a Selection\'s are in its colour (ticket 1149)', () => {
-      const project = (changeFrame(projectOf('peyote', 6, 5, { marks: false }), { remove: true }) as { project: Project }).project
+      const project = (changeFrame(projectOf('peyote', 6, 5, { marks: false }), { remove: true }, frameIdIn(projectOf('peyote', 6, 5, { marks: false }))) as { project: Project }).project
       const { context, calls } = recordingContext()
 
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }) })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }) })
 
       const covers = calls.filter((call) => call.name === 'fillRect' && call.fillStyle === DEFAULT_THEME.canvas).map((call) => call.args)
       const washes = calls.filter((call) => call.name === 'fillRect' && call.fillStyle === DEFAULT_THEME.mirror && call.globalAlpha === 0.16).map((call) => call.args)
@@ -866,14 +867,14 @@ describe('renderOverlay', () => {
     it('draws no line in a direction one bead across, its chip being off', () => {
       const project = open()
       const { context, calls } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true, topBottom: true }, inArea(2, 3, 1, 2)) })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true, topBottom: true }, inArea(2, 3, 1, 2)) })
       expect(lines(calls)).toEqual([[[80, 40], [80, 60]]])
     })
 
     it('turns Radial about the Area\'s centre, its ring and rays there, in Repeat mode too', () => {
       const project = open()
       const { context, calls, named } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: { ...on({ radial: true }, inArea(0, 2, 3, 3)), mode: 'repeat', fold: 2 } })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: { ...on({ radial: true }, inArea(0, 2, 3, 3)), mode: 'repeat', fold: 2 } })
 
       expect(named('arc')[0]!.args.slice(0, 3)).toEqual([70, 30, 8])
       const drawn = lines(calls)
@@ -884,13 +885,13 @@ describe('renderOverlay', () => {
     it('draws no Area while the Mirror is off', () => {
       const project = open()
       const { context, named } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1 })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1 })
       expect(named('fillRect')).toHaveLength(0)
     })
   })
 
   describe('the Area sheet round a Selection and a Canvas Area (ContextBar card, ticket 0808)', () => {
-    const open = () => (changeFrame(projectOf('loom', 6, 5, { marks: false }), { remove: true }) as { project: Project }).project
+    const open = () => (changeFrame(projectOf('loom', 6, 5, { marks: false }), { remove: true }, frameIdIn(projectOf('loom', 6, 5, { marks: false }))) as { project: Project }).project
     const region = { x: 0, y: 0, width: 200, height: 160 }
     const outset = AREA_SHEET_OUTSET
     const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: inArea(2, 3, 2, 2) }
@@ -899,9 +900,9 @@ describe('renderOverlay', () => {
 
     it('runs a band round each, the Mirror\'s first so the Selection\'s lies over it, at 16% with a 55% edge, 40px over the top and 10px round the rest', () => {
       const project = open()
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: region })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 1, viewport: region })
       const { context, named } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2 }, mirror, areaSheet: { surface, outset } })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2 }, mirror, areaSheet: { surface, outset } })
 
       expect(bands(named).map((call) => [call.fillStyle, call.globalAlpha])).toEqual([[DEFAULT_THEME.mirror, 0.16], [DEFAULT_THEME.marker, 0.16]])
       // The Area's 2 × 2 beads at (60, 40), 20px each: its sheet from 10px left of it and 10px over it, radius 8.
@@ -911,9 +912,9 @@ describe('renderOverlay', () => {
 
     it('is the same in screen px at every zoom', () => {
       const project = open()
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 2, viewport: region })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 2, viewport: region })
       const { context, named } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region, zoom: 2, mirror, areaSheet: { surface, outset } })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 2, mirror, areaSheet: { surface, outset } })
 
       const [x, y, width, height] = named('roundRect')[0]!.args as number[]
       const box = surface.beadBox(mirror.place!.layer === 'canvas' ? mirror.place!.area : { row: 0, column: 0, rows: 0, columns: 0 }, 'canvas')
@@ -922,20 +923,20 @@ describe('renderOverlay', () => {
 
     it('is drawn round a rectangle Selection whatever the tool, not round a Piece\'s shape, and never without the surface (an export)', () => {
       const project = open()
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: region })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 1, viewport: region })
       const shape = recordingContext()
-      renderOverlay(shape.context, { project, space: spaceOf(project, true), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2, cells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] }, areaSheet: { surface, outset } })
+      renderOverlay(shape.context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2, cells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] }, areaSheet: { surface, outset } })
       expect(bands(shape.named)).toHaveLength(0)
       const exported = recordingContext()
-      renderOverlay(exported.context, { project, space: spaceOf(project, true), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2 }, mirror })
+      renderOverlay(exported.context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2 }, mirror })
       expect(bands(exported.named)).toHaveLength(0)
     })
 
     it('carries the hot corners on its outer edge', () => {
       const project = open()
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: region })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true, frameIdIn(project)), rotation: 0, zoom: 1, viewport: region })
       const { context, named } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region, zoom: 1, mirror, mirrorArea: { surface, touch: false }, areaSheet: { surface, outset } })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, mirror, mirrorArea: { surface, touch: false }, areaSheet: { surface, outset } })
 
       // The top and bottom edges' bars, 12 × 4, centred on the sheet's edges at (80, 30) and (80, 90), just outside them.
       const edgeBars = named('roundRect').slice(1).map((call) => call.args as number[])
@@ -985,10 +986,10 @@ describe('renderOverlay', () => {
 
     /** A Star Frame of three rounds a square, drawn alone; where its layout's centre is, in the Frame's px at zoom 1. */
     const star = () => {
-      const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-      const placed = changeFrame(blank, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
+      const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
+      const placed = changeFrame(blank, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } }, frameIdIn(blank))
       if (placed.kind !== 'changed') throw new Error('expected a Star')
-      const { centre } = frameGeometryOf(placed.project).symmetry!()
+      const { centre } = frameGeometryOf(placed.project, frameIdIn(placed.project)).symmetry!()
       return { project: placed.project, centre: { x: centre.x * CELL_SIZE_PX, y: centre.y * CELL_SIZE_PX } }
     }
     const leans = ([from, to]: [number[], number[]]) => Math.abs((to[0]! - from[0]!) / (to[1]! - from[1]!))
@@ -1039,7 +1040,7 @@ describe('renderOverlay', () => {
       const { project } = star()
       const { row, column } = frameLayoutOf(frameOf(project)!)!.positions[0]!
       const turned = recordingContext()
-      renderOverlay(turned.context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'mirror'), preview: { cells: [{ row, column, layer: 'frame' }], color: null } })
+      renderOverlay(turned.context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'mirror'), preview: { cells: [{ row, column, layer: FRAME_ID }], color: null } })
       expect(turned.named('fill').map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.mirror])
     })
   })
@@ -1050,7 +1051,7 @@ describe('renderOverlay', () => {
     it('strokes a dashed 1px outline round the margin at the given opacity', () => {
       const { context, calls, named } = recordingContext()
 
-      renderOverlay(context, { project: framed, space: spaceOf(framed, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 2, marginOutline: 0.5 })
+      renderOverlay(context, { project: framed, space: spaceOf(framed, true, frameIdIn(framed)), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 2, marginOutline: 0.5 })
 
       expect(named('setLineDash')[0]!.args[0]).toEqual([2, 1.5])
       const stroke = calls.find((call) => call.name === 'stroke')!
@@ -1061,7 +1062,7 @@ describe('renderOverlay', () => {
     const outline = (technique: Technique, frame: Rect) => {
       const project = withLayers(projectOf(technique, 4, 4, { marks: false }), { frame: { technique, ...frame, beads: {} } })
       const { context, calls } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
       const [x, , width, height] = calls.find((call) => call.name === 'roundRect')!.args as number[]
       return { x, width, height, outer: withMargin(frame) }
     }
@@ -1088,7 +1089,7 @@ describe('renderOverlay', () => {
     it('draws nothing while it is faded out', () => {
       const { context, calls } = recordingContext()
 
-      renderOverlay(context, { project: framed, space: spaceOf(framed, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 0 })
+      renderOverlay(context, { project: framed, space: spaceOf(framed, true, frameIdIn(framed)), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 0 })
 
       expect(calls.some((call) => call.name === 'stroke')).toBe(false)
     })
@@ -1107,7 +1108,7 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
     const project = mixed()
     const { context, calls } = recordingContext()
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1 })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1 })
 
     expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
     // Pass 1 is row 1's even beads, columns 0 and 2: x 0 and 40, y 20 (columns 0 and 2 are unshifted).
@@ -1117,13 +1118,13 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
 
   it('outlines a Selection of the Frame inside the Frame\'s layer and one of the Canvas outside it', () => {
     const project = withLayers(mixed(), { rowProgress: { way: 'down', marks: false } as TestRowProgress })
-    const draw = (layer: 'canvas' | 'frame', top: number) => {
+    const draw = (layer: Layer, top: number) => {
       const { context, calls } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top, left: 3, rows: 1, columns: 1, layer } })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top, left: 3, rows: 1, columns: 1, layer } })
       return calls
     }
 
-    const inFrame = draw('frame', 3)
+    const inFrame = draw(frameIdIn(project), 3)
     expect(inFrame.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
     expect(inFrame.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([0, 20, 20, 2])
     const onCanvas = draw('canvas', 9)
@@ -1151,7 +1152,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const project = canvas()
     const { context, named } = recordingContext()
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300)), color: null } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300)), color: null } })
 
     expect(named('fillRect').length).toBeGreaterThan(0)
     expect(named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
@@ -1162,7 +1163,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const project: Project = withLayers(base, { frame: { ...frameOf(base)!, row: 2, column: 3 } })
     const { context, named } = recordingContext()
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300), 2, 3), color: null } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300), 2, 3), color: null } })
 
     expect(calls(named('translate'))).toEqual([[60, 40]])
     expect(named('fillRect').length).toBeGreaterThan(0)
@@ -1176,7 +1177,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const project = canvas()
     const { context, named } = recordingContext()
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, preview: { cells: [], stamp: stampOf(block(300, 300), 0, 0), color: null } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, preview: { cells: [], stamp: stampOf(block(300, 300), 0, 0), color: null } })
 
     expect(named('fillRect')).toHaveLength(0)
     expect(named('drawImage').map((call) => [call.globalAlpha, ...call.args.slice(1)])).toEqual([[0.6, 0, 0, 300, 300, 0, 0, 6000, 6000]])
@@ -1190,13 +1191,13 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const region = cellsOf(stampOf(block(300, 300))).map(({ row, column }) => ({ row, column }))
     const near = recordingContext()
 
-    renderOverlay(near.context, { project, space: spaceOf(project, true), region: window, zoom: 1, preview: { cells: region, color: RED } })
+    renderOverlay(near.context, { project, space: spaceOf(project, true, frameIdIn(project)), region: window, zoom: 1, preview: { cells: region, color: RED } })
     expect(near.named('fillRect').length).toBeGreaterThan(0)
     expect(near.named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
 
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(scratch as unknown as CanvasRenderingContext2D)
     const far = recordingContext()
-    renderOverlay(far.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, preview: { cells: region, color: RED } })
+    renderOverlay(far.context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, preview: { cells: region, color: RED } })
     expect(far.named('fillRect')).toHaveLength(0)
     expect(far.named('drawImage').map((call) => [call.globalAlpha, ...call.args.slice(1)])).toEqual([[0.6, 0, 0, 300, 300, 0, 0, 6000, 6000]])
   })
@@ -1209,12 +1210,12 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const { context, named } = recordingContext()
     const cells = [{ row: 0, column: 0 }, { row: 0, column: 3 }]
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, mirror, preview: { cells, color: RED } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, mirror, preview: { cells, color: RED } })
 
     expect(named('drawImage')).toHaveLength(0)
     // Outside the Area the same two beads are a draft image.
     const outside = recordingContext()
-    renderOverlay(outside.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, mirror, preview: { cells: cells.map(({ row, column }) => ({ row: row + 10, column })), color: RED } })
+    renderOverlay(outside.context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, mirror, preview: { cells: cells.map(({ row, column }) => ({ row: row + 10, column })), color: RED } })
     expect(outside.named('drawImage')).toHaveLength(1)
   })
 
@@ -1229,8 +1230,8 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
       const stamped = recordingContext()
       const listed = recordingContext()
 
-      renderOverlay(stamped.context, { project, space: spaceOf(project, true), region, zoom: 1, preview: { cells: [], stamp, color: null } })
-      renderOverlay(listed.context, { project, space: spaceOf(project, true), region, zoom: 1, preview: { cells: cellsOf(stamp), color: null } })
+      renderOverlay(stamped.context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, preview: { cells: [], stamp, color: null } })
+      renderOverlay(listed.context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, preview: { cells: cellsOf(stamp), color: null } })
 
       expect(stamped.calls.length).toBeGreaterThan(2)
       expect(stamped.calls).toEqual(listed.calls)
@@ -1242,7 +1243,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const { context, named } = recordingContext()
     const colors = [[RED, RED, '#2f6fed', RED], [RED, RED, RED, RED], [RED, RED, RED, RED]]
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, preview: { cells: [], stamp: stampOf(colors), color: null } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, preview: { cells: [], stamp: stampOf(colors), color: null } })
 
     expect(new Set([...named('fill'), ...named('fillRect')].map((call) => call.fillStyle))).toEqual(new Set([RED, '#2f6fed']))
   })
@@ -1252,7 +1253,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const cells = Array.from({ length: 300 * 300 }, (_, index) => ({ row: Math.floor(index / 300), column: index % 300 }))
     const { context, named } = recordingContext()
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { ...window, x: 10, y: 10 }, zoom: 1, selection: { top: 0, left: 0, rows: 300, columns: 300, cells } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { ...window, x: 10, y: 10 }, zoom: 1, selection: { top: 0, left: 0, rows: 300, columns: 300, cells } })
 
     expect(named('fillRect').length).toBeGreaterThan(0)
     expect(named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
@@ -1263,7 +1264,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const { context, named } = recordingContext()
     const cells = [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 0 }]
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2, cells } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2, cells } })
 
     const sides = named('fillRect').map((call) => (call.args as number[]).join(' ')).sort()
     // The line under the second bead runs on into the corner the third bead makes with the first.
@@ -1275,7 +1276,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const { context, named } = recordingContext()
     const cells = [{ row: 0, column: 0 }, { row: 0, column: 1 }]
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 1, columns: 2, cells } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 1, columns: 2, cells } })
 
     // The second column lies half a bead lower: each bead's side against the other is drawn for its free half only, and
     // the lines across run on into the two corners the step makes.
@@ -1288,7 +1289,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const { context, named } = recordingContext()
     const cells = [{ row: 0, column: 0 }, { row: 1, column: 0 }]
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 1, cells } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 1, cells } })
 
     // The second row lies half a bead to the right: the lines across stop at the step and close its two corners.
     const sides = named('fillRect').map((call) => (call.args as number[]).join(' ')).sort()
@@ -1300,7 +1301,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const project: Project = withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
     const { context, calls } = recordingContext()
 
-    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 3, left: 3, rows: 1, columns: 1, layer: 'frame', cells: [{ row: 3, column: 3 }] } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 3, left: 3, rows: 1, columns: 1, layer: FRAME_ID, cells: [{ row: 3, column: 3 }] } })
 
     expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
     expect(calls.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([0, 20, 20, 2])
@@ -1315,7 +1316,7 @@ describe('the overlay of a Frame in a Bead of its own (ticket 0665)', () => {
       const { context, named } = recordingContext()
       // The flat bead, whose lifted beads draw no satin light of their own to move to and scale (ticket 1003).
       const theme = flatLook(DEFAULT_THEME)
-      renderOverlay(context, { project, space: spaceOf(project, open), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, theme })
+      renderOverlay(context, { project, space: spaceOf(project, open, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, theme })
       return named
     }
     const scale = 1 / findBead('toho/cube/1.5mm')!.widthMm

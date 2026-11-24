@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { withColorsInPalette } from './paletteEdits'
 import { beadCopy, findBead } from './beads'
@@ -371,7 +372,7 @@ describe('stored-data compatibility', () => {
       expect(framed!.layers.map((layer) => layer.id)).toEqual(['layer-canvas', 'layer-frame'])
       expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, orientation: 90 })
       // Letters was the Frame's, copied onto the Canvas: the Frame keeps it, the Canvas's own is off (ticket 1092).
-      expect([lettersOn(framed!, 'canvas'), lettersOn(framed!, 'frame')]).toEqual([false, true])
+      expect([lettersOn(framed!, 'canvas'), lettersOn(framed!, frameIdIn(framed!))]).toEqual([false, true])
       expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, angle: 180, name: 'Fox', rowProgress: { way: 'up', up: 1 } })
       expect(open!.layers).toEqual([expect.objectContaining({ id: 'open-canvas', name: 'Open sketch', beads: { [-2]: { 4: '#1a1a1a' } }, orientation: 0 })])
       saveProjects(loadProjects())
@@ -447,8 +448,8 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV14OldKaleidocycle).projects
       expect(frameOf(opened!)).toMatchObject({ shape: 'kaleidocycle', settings: { partSize: 3 } })
       // Saved on the second of the three joins that closed the ring: the Tetras of triangles 4 and 5, one of each pair.
-      expect(currentPass(rowProgressOf(opened!))).toBe(28)
-      const order = frameRowOrder(opened!)
+      expect(currentPass(rowProgressOf(opened!, frameIdIn(opened)))).toBe(28)
+      const order = frameRowOrder(opened!, frameIdIn(opened))
       expect(order.count).toBe(30)
       expect(order.stepOf?.(28)).toEqual({ kind: 'join', step: 'ring', parts: [3, 4, 5, 6] })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
@@ -456,8 +457,8 @@ describe('stored-data compatibility', () => {
 
     it('keeps a Warped Square\'s Row progress on the round it was on, now read from its corner pair (ticket 0873)', () => {
       const [opened] = parseProjectsFile(projectFileV14Progress).projects
-      expect(currentPass(rowProgressOf(opened!))).toBe(2)
-      const order = frameRowOrder(opened!)
+      expect(currentPass(rowProgressOf(opened!, frameIdIn(opened)))).toBe(2)
+      const order = frameRowOrder(opened!, frameIdIn(opened))
       expect(order.stepOf?.(2)).toEqual({ kind: 'round', number: 3 })
       // Saved when round 3 read from its first side's first bead: the same 12 beads, the corner pair first.
       expect(order.positionsOf(2).map(({ column }) => column)).toEqual([11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -469,7 +470,7 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV11Turned).projects
       expect(frameSheetOf(opened)).toEqual({ row: 8, column: 6, rows: 5, columns: 4, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, quarterTurns: 3, beads: { 0: { 0: '#e63746' }, 4: { 3: '#e63746' } } })
       // Down its own rows, turned three quarters: left to right as it showed (ticket 1185).
-      expect(rowProgressOf(opened)).toEqual({ way: 'right', right: 2 })
+      expect(rowProgressOf(opened, frameIdIn(opened))).toEqual({ way: 'right', right: 2 })
       expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: FILE_VERSION, projects: [{ layers: [{}, { angle: 270 }] }] })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
@@ -531,7 +532,7 @@ describe('stored-data compatibility', () => {
       for (const beadShape of ['real', 'symmetric', undefined]) {
         const layers = asSaved.projects[0].layers.map(({ beadShape: _saved, ...layer }: Record<string, unknown>) => ({ ...layer, ...(beadShape ? { beadShape } : {}) }))
         const [opened] = parseProjectsFile(JSON.stringify({ ...asSaved, projects: [{ ...asSaved.projects[0], layers }] })).projects
-        expect([canvasWeave(opened!).cell, frameWeave(opened!).cell]).toEqual([beadCell(delica, canvasWeave(opened!).technique), beadCell(delica, frameWeave(opened!).technique)])
+        expect([canvasWeave(opened!).cell, frameWeave(opened!, frameIdIn(opened)).cell]).toEqual([beadCell(delica, canvasWeave(opened!).technique), beadCell(delica, frameWeave(opened!, frameIdIn(opened)).technique)])
         expect(opened!.layers.some((layer) => 'beadShape' in layer)).toBe(false)
         expect(serializeProject(opened!)).not.toContain('beadShape')
       }
@@ -541,7 +542,7 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV13Drops).projects
       expect(canvasOf(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3, peyoteDrop: 4 } })
       expect(frameOf(opened!)).toMatchObject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } })
-      expect(columnCycle(frameWeave(opened!))).toBe(4)
+      expect(columnCycle(frameWeave(opened!, frameIdIn(opened)))).toBe(4)
       expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13Drops))
     })
 
@@ -615,49 +616,49 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV12Backgrounds).projects
       // Stored as 3 in the list of five (Stone or Midnight), it shows as 2 (Stone or Ink); the Custom color is untouched.
       expect(backgroundOf(opened!, 'canvas')).toBe(2)
-      expect(backgroundOf(opened!, 'frame')).toBe('#336699')
+      expect(backgroundOf(opened!, frameIdIn(opened!))).toBe('#336699')
       expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Backgrounds.replace('"background":3', '"background":2'), FILE_VERSION))
     })
 
     it('opens a version 14 file that marks its Background positions as in the list of three as they are, and writes it back the same (ticket 1000)', () => {
       const [opened] = parseProjectsFile(projectFileV14ThreeBackgrounds).projects
       expect(backgroundOf(opened!, 'canvas')).toBe(3)
-      expect(backgroundOf(opened!, 'frame')).toBe('#336699')
+      expect(backgroundOf(opened!, frameIdIn(opened!))).toBe('#336699')
       expect(opened).not.toHaveProperty('backgroundPositions')
       expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV14ThreeBackgrounds))
     })
 
     it('opens a version 14 file that marks each layer\'s Letters as its own as they are, and writes it back the same (ticket 1092)', () => {
       const [opened] = parseProjectsFile(projectFileV14LettersByLayer).projects
-      expect([lettersOn(opened!, 'canvas'), lettersOn(opened!, 'frame')]).toEqual([true, false])
+      expect([lettersOn(opened!, 'canvas'), lettersOn(opened!, frameIdIn(opened!))]).toEqual([true, false])
       expect(opened).not.toHaveProperty('lettersByLayer')
       expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV14LettersByLayer))
     })
 
     it('opens a version 14 file from before each layer had its own Letters with the Canvas\'s off and the Frame\'s as it was (ticket 1092)', () => {
       const [opened] = parseProjectsFile(projectFileV14ThreeBackgrounds).projects
-      expect([lettersOn(opened!, 'canvas'), lettersOn(opened!, 'frame')]).toEqual([false, true])
+      expect([lettersOn(opened!, 'canvas'), lettersOn(opened!, frameIdIn(opened!))]).toEqual([false, true])
     })
 
     it('opens a version 12 file from before Backgrounds with none, so each layer shows the device\'s last pick (ticket 0666)', () => {
       const [opened] = parseProjectsFile(projectFileV12).projects
-      expect([backgroundOf(opened!, 'canvas'), backgroundOf(opened!, 'frame')]).toEqual([undefined, undefined])
+      expect([backgroundOf(opened!, 'canvas'), backgroundOf(opened!, frameIdIn(opened!))]).toEqual([undefined, undefined])
     })
 
     it('opens a version 14 peyote Frame turned on a turned Canvas looking as last saved: at the angle and the way it showed, the same beads finished (ticket 1185)', () => {
       const [opened] = parseProjectsFile(projectFileV14PeyoteTurned).projects
       // The Canvas's quarter turn plus the Frame's own on it, at the Canvas position it was saved at.
       expect(frameOf(opened!)).toMatchObject({ row: 2, column: 3, rows: 5, columns: 6, quarterTurns: 1, angle: 180 })
-      expect(lieAlike(opened!)).toBe(false)
+      expect(lieAlike(opened!, frameIdIn(opened))).toBe(false)
       // Its own columns from the far end, shown turned half round: left to right, each pointer on the way it showed.
-      expect(ownRowWayOf(opened!)).toEqual({ direction: 'columns', reversed: true })
-      expect(seenWayOf(opened!)).toBe('right')
-      expect(rowProgressOf(opened!)).toEqual({ way: 'right', right: 3, up: 2, left: 1 })
+      expect(ownRowWayOf(opened!, undefined, frameIdIn(opened))).toEqual({ direction: 'columns', reversed: true })
+      expect(seenWayOf(opened!, frameIdIn(opened))).toBe('right')
+      expect(rowProgressOf(opened!, frameIdIn(opened))).toEqual({ way: 'right', right: 3, up: 2, left: 1 })
       // The same passes, so the same beads finished: worked in its own columns from the far end, three passes done.
       const frame = frameOf(opened!)!
-      const saved = rowOrderOf({ ...frameWeave(opened!), rows: frame.rows, columns: frame.columns }, { direction: 'columns', reversed: true })
-      const order = frameRowOrder(opened!)
-      expect(currentPass(rowProgressOf(opened!))).toBe(3)
+      const saved = rowOrderOf({ ...frameWeave(opened!, frameIdIn(opened)), rows: frame.rows, columns: frame.columns }, { direction: 'columns', reversed: true })
+      const order = frameRowOrder(opened!, frameIdIn(opened))
+      expect(currentPass(rowProgressOf(opened!, frameIdIn(opened)))).toBe(3)
       for (let row = 0; row < frame.rows; row += 1) {
         for (let column = 0; column < frame.columns; column += 1) expect(order.passAt({ row, column })).toBe(saved.passAt({ row, column }))
       }
@@ -670,11 +671,11 @@ describe('stored-data compatibility', () => {
       expect(canvasOf(opened!)).toMatchObject({ name: 'Leaning cuff', technique: 'peyote', orientation: 37.5 })
       // Made as it was saved: moved, turned by Rotate Frame about its centre, the Canvas twisted to 37.5° carrying it.
       const made = createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', size: { width: 6, height: 5, unit: 'beads' } })
-      const moved = changeFrame(made, { move: { rows: 3, columns: -2 } })
-      const saved = withPictureTurned(rotateFrame(moved.kind === 'changed' ? moved.project : made)!, 37.5)
+      const moved = changeFrame(made, { move: { rows: 3, columns: -2 } }, frameIdIn(made))
+      const saved = withPictureTurned(rotateFrame(moved.kind === 'changed' ? moved.project : made, undefined, frameIdIn(moved.kind === 'changed' ? moved.project : made))!, 37.5)
       const { row, column } = frameOf(saved)!
       expect(frameOf(opened!)).toMatchObject({ row, column, rows: 5, columns: 6, quarterTurns: 1, angle: 127.5 })
-      expect(rowProgressOf(opened!)).toEqual({ way: 'left', left: 2 })
+      expect(rowProgressOf(opened!, frameIdIn(opened))).toEqual({ way: 'left', left: 2 })
       expect(serializeProject(opened!)).toBe(projectFileV15Placement)
     })
 
@@ -706,39 +707,39 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV14OldKite).projects
       // Its saved rectangle, the new layout laid in it, until a Rows change lays it out again.
       expect(frameSheetOf(opened)).toMatchObject({ rows: 40, columns: 11, shape: 'kite', settings: { rows: 21 } })
-      const geometry = frameGeometryOf(opened!)
+      const geometry = frameGeometryOf(opened!, frameIdIn(opened))
       expect(geometry.positions()).toHaveLength(242)
       const RED = '#e63746'
       const BLUE = '#2f6fed'
       const GOLD = '#d9b94f'
       // Row 4 holds two beads a wing now and row 5 three, so the old places past them are not shown or counted.
-      const kept = beadsOfLayer(opened, 'frame')!
+      const kept = beadsOfLayer(opened, frameIdIn(opened))!
       expect(kept).toEqual({ 0: { 0: RED, 1: RED }, 3: { 0: BLUE, 1: BLUE, 2: BLUE, 3: BLUE, 4: BLUE, 5: BLUE }, 4: { 6: RED, 7: RED }, 20: { 0: GOLD, 1: GOLD } })
       const shown = geometry.positions().filter(({ row, column }) => kept[row]?.[column] !== undefined)
       expect(shown.map(({ row, column }) => `${row}:${column}`)).toEqual(['0:0', '0:1', '3:0', '3:2', '3:1', '3:3', '20:0', '20:1'])
       // Row progress stays on row 4, now read back from the right wing.
-      expect(currentPass(rowProgressOf(opened!))).toBe(3)
-      expect(frameRowOrder(opened!).stepOf?.(3)).toEqual({ kind: 'row', number: 4 })
+      expect(currentPass(rowProgressOf(opened!, frameIdIn(opened)))).toBe(3)
+      expect(frameRowOrder(opened!, frameIdIn(opened)).stepOf?.(3)).toEqual({ kind: 'row', number: 4 })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
 
       // Back at the first row, a Rows change lays it out in its own rectangle and folds the beads with no place.
-      const regrown = changeFrame(moveToRow(opened!, 0), { settings: { rows: 22 } })
+      const regrown = changeFrame(moveToRow(opened!, 0, frameIdIn(opened)), { settings: { rows: 22 } }, frameIdIn(moveToRow(opened!, 0, frameIdIn(opened))))
       if (regrown.kind !== 'changed') throw new Error(regrown.kind)
-      expect(frameOf(regrown.project)).toMatchObject({ ...customFrameSize('kite', { rows: 22 }, undefined, {}, frameWeave(opened!).cell), folded: { 3: { 4: BLUE, 5: BLUE }, 4: { 6: RED, 7: RED } } })
+      expect(frameOf(regrown.project)).toMatchObject({ ...customFrameSize('kite', { rows: 22 }, undefined, {}, frameWeave(opened!, frameIdIn(opened)).cell), folded: { 3: { 4: BLUE, 5: BLUE }, 4: { 6: RED, 7: RED } } })
     })
 
     it('opens a Star saved on the old layout of whole-square arms on the new one at the same Part size, keeping what colours it can place (ticket 0875)', () => {
       const [opened] = parseProjectsFile(projectFileV14OldStar).projects
       expect(frameOf(opened!)).toMatchObject({ shape: 'star', settings: { partSize: 5 } })
-      expect(frameGeometryOf(opened!).positions()).toHaveLength(125)
+      expect(frameGeometryOf(opened!, frameIdIn(opened)).positions()).toHaveLength(125)
       // A bead keeps its name: a square's round keeps its colours where the new round has that name.
-      const beads = beadsOfLayer(opened!, 'frame')!
+      const beads = beadsOfLayer(opened!, frameIdIn(opened!))!
       expect([0, 9].map((column) => beads[0]![column])).toEqual(['#d9b94f', '#d9b94f'])
       expect(beads[3]![1]).toBe('#f2c94c')
       // The old names the new layout lacks are kept as Folded beads: not counted, and written back the same.
       expect(Object.keys(beads[0]!)).toHaveLength(20)
-      expect(computeColorQuantities(opened!, projectPalette(opened!)).reduce((sum, { count }) => sum + count, 0)).toBe(245)
-      expect(wordChartOf(opened!)!.rows).toHaveLength(5 * 5 + 5)
+      expect(computeColorQuantities(opened!, projectPalette(opened!), frameIdIn(opened)).reduce((sum, { count }) => sum + count, 0)).toBe(245)
+      expect(wordChartOf(opened!, frameIdIn(opened))!.rows).toHaveLength(5 * 5 + 5)
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
   })

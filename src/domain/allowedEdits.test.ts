@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
@@ -30,18 +31,18 @@ describe('what a drawing edit may leave', () => {
   it('takes back a bead painted where a Custom frame\'s layout has no position (ticket 0592), and reads no bead of a Frame without a shape (ticket 0677)', () => {
     const framed = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 12, height: 10, unit: 'beads' } })
     const custom = withLayers(framed, { frame: { ...frameOf(framed)!, shape: 'triangle', settings: { rounds: 4 } } })
-    const geometry = frameGeometryOf(custom)
+    const geometry = frameGeometryOf(custom, frameIdIn(custom))
     const { rows, columns } = frameOf(custom)!
     const inRect = Array.from({ length: rows * columns }, (_, i) => ({ row: Math.floor(i / columns), column: i % columns }))
     const missing = inRect.find((position) => !geometry.hasPosition(position))!
     const held = geometry.positions()[0]!
     expect(missing).toBeDefined()
-    const painted = withLayer(custom, 'frame', { beads: withColors(beadsOfLayer(custom, 'frame')!, [{ ...missing, color: R }, { ...held, color: R }]) })
-    expect(beadsOfLayer(keepAllowedEdits(custom, painted), 'frame')).toEqual(withColors({}, [{ ...held, color: R }]))
+    const painted = withLayer(custom, FRAME_ID, { beads: withColors(beadsOfLayer(custom, frameIdIn(custom))!, [{ ...missing, color: R }, { ...held, color: R }]) })
+    expect(beadsOfLayer(keepAllowedEdits(custom, painted), frameIdIn(keepAllowedEdits(custom, painted)))).toEqual(withColors({}, [{ ...held, color: R }]))
 
     const counting = countingBeads(withColors({}, block(0, 0, 3, 3)))
     const plain = withLayers(framed, { frame: { ...frameOf(framed)!, beads: counting.beads } })
-    const edited = withLayer(plain, 'frame', { beads: withColors(counting.beads, [{ row: 5, column: 5, color: R }]) })
+    const edited = withLayer(plain, FRAME_ID, { beads: withColors(counting.beads, [{ row: 5, column: 5, color: R }]) })
     counting.reset()
     expect(keepAllowedEdits(plain, edited)).toBe(edited)
     expect(counting.reads.beads).toBe(0)

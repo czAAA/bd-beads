@@ -1,3 +1,4 @@
+import { firstFrameId, frameToLay } from '../../domain/layerRecord'
 import { computed, type Ref } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import { framedAround } from '../../domain/changeFrame'
@@ -77,8 +78,8 @@ export function usePictureBarLayout(deps: PictureBarLayoutDeps) {
     const view = deps.view()
     const box = deps.framed()
     if (!deps.framePreviewOn.value || !project || !view || !box) return undefined
-    const made = framedAround(project, box)
-    const sheet = made.kind === 'changed' ? marginSheetPx(made.project) : undefined
+    const made = framedAround(project, box, frameToLay(project))
+    const sheet = made.kind === 'changed' ? marginSheetPx(made.project, firstFrameId(made.project)) : undefined
     if (!sheet) return undefined
     const tag = fillBlanks(deps.messages().referenceImage.frameAround.tag, { size: `${box.columns}×${box.rows}` })
     return { line: onScreen(view, sheet.footprint), sheet: onScreen(view, sheet.sheet), tag }

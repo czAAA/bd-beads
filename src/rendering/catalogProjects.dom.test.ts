@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadCopy, gramsPerBead } from '../domain/beads'
 import { createProject } from '../domain/createProject'
@@ -19,7 +20,7 @@ describe('every Bead in the catalog', () => {
 
       const { context, calls } = recordingContext()
       const region = { x: 0, y: 0, width: 200, height: 200 }
-      renderProject(context, { project: painted, space: spaceOf(painted, false), region, zoom: 1, showFinished: false, rowMarks: false })
+      renderProject(context, { project: painted, space: spaceOf(painted, false, frameIdIn(painted)), region, zoom: 1, showFinished: false, rowMarks: false })
       expect(calls.length).toBeGreaterThan(0)
 
       const [reopened] = parseProjectsFile(serializeProject(painted)).projects

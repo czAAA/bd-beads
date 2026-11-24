@@ -4,7 +4,7 @@ import type { ColorCatalog } from '../../domain/colorCatalog'
 import { beadColorTargets, nearestTarget, sourceTargets, type TargetColor } from '../../domain/convertColors'
 import type { PixelData } from '../../domain/imageConversion'
 import { beadColorAt } from '../../domain/layerBeads'
-import { beadIdOfLayer } from '../../domain/layerRecord'
+import { beadIdOfLayer, wovenLayerOf } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/layers'
 import { brandColors, defaultPalette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
@@ -96,7 +96,7 @@ export function usePickColor(deps: PickColorDeps) {
     const catalog = deps.beadColors?.catalog.value
     const bead = deps.beadColors?.bead.value
     const codes = catalog && bead ? beadColorTargets(catalog, bead.size, brandColors(bead.brand.id)) : []
-    return codes.length > 0 ? codes : sourceTargets('default', defaultPalette(beadIdOfLayer(project, 'frame')), [])!
+    return codes.length > 0 ? codes : sourceTargets('default', defaultPalette(beadIdOfLayer(project, wovenLayerOf(project))), [])!
   }
 
   // The picture and the catalog are fetched once the pick is armed over a shown picture, so the press has them at hand.

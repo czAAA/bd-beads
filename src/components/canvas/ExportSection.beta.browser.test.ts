@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FIT_LOCALES, FIT_WIDTHS, mountAt, unmountAll } from '../../testUtils/browserFit'
 import ExportSection from './ExportSection.vue'
@@ -13,7 +14,7 @@ const EDGE = 3
 
 const custom = () =>
   withLayers(
-    withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), undefined),
+    withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } })) }),
     { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom', shape: 'triangle', beads: {} } },
   )
 

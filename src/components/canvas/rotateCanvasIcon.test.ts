@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, type Bead } from '../../domain/beads'
 import { replaceBead } from '../../domain/projectBead'
@@ -18,7 +19,7 @@ describe('the Rotate canvas icon (ticket 1082)', () => {
     const [cube, delica] = [ofType('cube')[0]!, ofType('delica')[0]!]
     const framed = bareProject({ beadId: cube.id, bead: cube, frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })
     expect(rotateCanvasIcon(framed)).toBe('rotate-canvas-cube')
-    expect(rotateCanvasIcon(replaceBead(framed, delica, undefined, 'frame'))).toBe('rotate-canvas-delica')
+    expect(rotateCanvasIcon(replaceBead(framed, delica, undefined, FRAME_ID))).toBe('rotate-canvas-delica')
     expect(rotateCanvasIcon(replaceBead(framed, delica, undefined, 'canvas'))).toBe('rotate-canvas-cube')
   })
 

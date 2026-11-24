@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../src/testUtils/frameId'
 import { expect, test } from '@playwright/test'
 import { openApp, settle, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
@@ -35,12 +36,13 @@ for (const [mode, fold] of [['mirror', 4], ['repeat', 2]] as const) {
 /** A Star Frame of Part size 5 on a loom Canvas, as the Custom frame scenes place it, its first arm's rounds painted
  * a colour each, so the piece is not empty and the arm the lines run between shows. */
 function starFramed(): Project {
-  const open = withFrameSheet(fixtureProject({ technique: 'loom', blank: true }), undefined)
-  const placed = changeFrame(open, { custom: { shape: 'star', size: 5, centre: { row: 8, column: 10 } } })
+  const blank = fixtureProject({ technique: 'loom', blank: true })
+  const open = withFrameSheet(blank, undefined, { frame: frameIdIn(blank) })
+  const placed = changeFrame(open, { custom: { shape: 'star', size: 5, centre: { row: 8, column: 10 } } }, frameIdIn(open))
   if (placed.kind !== 'changed') throw new Error('expected a Star')
   const arm = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ panel }) => panel < 4)
   return ['#e63746', '#f2c94c', '#2f6fed', '#27ae60', '#9b51e0'].reduce(
-    (project, color, round) => onLayer(project, 'frame', (view) => paintCells(view, arm.filter(({ row }) => row === round), color)),
+    (project, color, round) => onLayer(project, frameIdIn(project), (view) => paintCells(view, arm.filter(({ row }) => row === round), color)),
     placed.project,
   )
 }

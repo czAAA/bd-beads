@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProgressBar from './ProgressBar.vue'
@@ -43,13 +44,13 @@ describe('ProgressBar', () => {
   })
 
   it('shows the current row and total, 1-based', () => {
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4, frameIdIn(makeProject())) } })
 
     expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b5\D+20\b/)
   })
 
   it('emits move-row(1) from Next and move-row(-1) from Previous', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4, frameIdIn(makeProject())) } })
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-previous"]').trigger('click')
@@ -64,13 +65,13 @@ describe('ProgressBar', () => {
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBe('true')
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBeUndefined()
 
-    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows) } })
+    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows, frameIdIn(project)) } })
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBeUndefined()
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('names Row not done and Row done in words (ticket 94); their keys are in the Tooltip, not a title', () => {
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4, frameIdIn(makeProject())) } })
 
     const previous = wrapper.find('[data-testid="progress-bar-previous"]')
     const next = wrapper.find('[data-testid="progress-bar-next"]')
@@ -81,7 +82,7 @@ describe('ProgressBar', () => {
   })
 
   it('fills the track with the finished share of the rows', () => {
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 2) } }) // 20 rows
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 2, frameIdIn(makeProject())) } }) // 20 rows
 
     const track = wrapper.find('[data-testid="progress-bar-track"]')
     expect(track.attributes('aria-valuenow')).toBe('2')
@@ -93,7 +94,7 @@ describe('ProgressBar', () => {
   })
 
   it('names the counter\'s step, with a short "current/total" for a narrow bar, and Back a row / Row done as the bar of steps\' quiet 32px pair (tickets 188, 411, 0788, 0972)', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4, frameIdIn(makeProject())) } })
 
     const counter = wrapper.get('[data-testid="progress-bar-compact-position"]')
     expect(counter.get('.row-progress__count-step').text()).toBe('Ряд 5 из 20')
@@ -110,25 +111,25 @@ describe('ProgressBar', () => {
   })
 
   it('names the buttons after a column, with their own arrows, once rows run down the columns (ticket 411)', () => {
-    const rows = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    const rows = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4, frameIdIn(makeProject())) } })
     expect(rows.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.previousButton)
     expect(rows.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
     expect(rows.find('.row-progress__steps--right').exists()).toBe(false)
 
-    const columns = mount(ProgressBar, { props: { project: toggleRowDirection(moveToRow(makeProject(), 4)) } })
+    const columns = mount(ProgressBar, { props: { project: toggleRowDirection(moveToRow(makeProject(), 4, frameIdIn(makeProject())), frameIdIn(moveToRow(makeProject(), 4, frameIdIn(makeProject())))) } })
     expect(columns.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.columnPreviousButton)
     expect(columns.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.columnNextButton)
     expect(columns.find('.row-progress__steps--right').exists()).toBe(true)
 
-    const up = toggleRowDirection(toggleRowDirection(moveToRow(makeProject(), 4)))
+    const up = toggleRowDirection(toggleRowDirection(moveToRow(makeProject(), 4, frameIdIn(makeProject())), frameIdIn(moveToRow(makeProject(), 4, frameIdIn(makeProject())))), frameIdIn(toggleRowDirection(moveToRow(makeProject(), 4, frameIdIn(makeProject())), frameIdIn(moveToRow(makeProject(), 4, frameIdIn(makeProject()))))))
     expect(mount(ProgressBar, { props: { project: up } }).find('.row-progress__steps--up').exists()).toBe(true)
-    const left = mount(ProgressBar, { props: { project: toggleRowDirection(up) } })
+    const left = mount(ProgressBar, { props: { project: toggleRowDirection(up, frameIdIn(up)) } })
     expect(left.find('.row-progress__steps--left').exists()).toBe(true)
     expect(left.text()).toContain(ru.rowProgress.rightToLeft)
   })
 
   it('shows the rows running as the Frame lies, turned with it once a pass is done, named as seen (tickets 0667, 1183)', () => {
-    const turned = rotateFrame(moveToRow(makeProject(), 4))!
+    const turned = rotateFrame(moveToRow(makeProject(), 4, frameIdIn(makeProject())), undefined, frameIdIn(moveToRow(makeProject(), 4, frameIdIn(makeProject()))))!
     const wrapper = mount(ProgressBar, { props: { project: turned } })
     expect(wrapper.find('.row-progress__steps--left').exists()).toBe(true)
     expect(wrapper.text()).toContain(ru.rowProgress.rightToLeft)
@@ -136,14 +137,14 @@ describe('ProgressBar', () => {
   })
 
   it('shows the rows running as seen on a turned Canvas, the Frame upright or turned on it (ticket 1101)', async () => {
-    const canvasTurned = turnedClockwise(moveToRow(makeProject(), 4))
+    const canvasTurned = turnedClockwise(moveToRow(makeProject(), 4, frameIdIn(makeProject())))
     const wrapper = mount(ProgressBar, { props: { project: canvasTurned } })
     expect(wrapper.find('.row-progress__steps--left').exists()).toBe(true)
     expect(wrapper.text()).toContain(ru.rowProgress.rightToLeft)
     expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.columnNextButton)
 
     // Rotate Frame with no pass done kept top to bottom as seen (ticket 1183); the Canvas's turn still carries it.
-    const both = mount(ProgressBar, { props: { project: turnedClockwise(rotateFrame(makeProject())!) } })
+    const both = mount(ProgressBar, { props: { project: turnedClockwise(rotateFrame(makeProject(), undefined, frameIdIn(makeProject()))!) } })
     expect(both.find('.row-progress__steps--left').exists()).toBe(true)
     await both.get('[data-testid="progress-bar-direction"]').trigger('click')
     expect(both.get('[data-testid="progress-bar-direction-left"]').attributes('aria-checked')).toBe('true')
@@ -151,10 +152,10 @@ describe('ProgressBar', () => {
 
   it('shows the last row as the current one on it, and Pattern done with a check once every pass is done (tickets 411, 0849)', () => {
     const project = makeProject()
-    const last = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows - 1) } })
+    const last = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows - 1, frameIdIn(project)) } })
     expect(last.find('[data-testid="progress-bar-compact-position"] .row-progress__count-short').text()).toBe('20/20')
 
-    const done = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows) } })
+    const done = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows, frameIdIn(project)) } })
     const counter = done.get('[data-testid="progress-bar-compact-position"]')
     expect(counter.text()).toBe(ru.rowProgress.patternDone)
     expect(counter.find('svg').exists()).toBe(true)
@@ -175,7 +176,7 @@ describe('ProgressBar', () => {
     const rows = mount(ProgressBar, { props: { project: makeProject() } })
     expect(rows.find('[data-testid="progress-bar-position"]').text()).toContain(ru.rowProgress.topToBottom)
 
-    const columns = mount(ProgressBar, { props: { project: toggleRowDirection(makeProject()) } })
+    const columns = mount(ProgressBar, { props: { project: toggleRowDirection(makeProject(), frameIdIn(makeProject())) } })
     expect(columns.find('[data-testid="progress-bar-position"]').text()).toContain(ru.rowProgress.leftToRight)
   })
 
@@ -188,7 +189,7 @@ describe('ProgressBar', () => {
   })
 
   it('gives every control its key in a Tooltip and no native title (ticket 339)', () => {
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4, frameIdIn(makeProject())) } })
     const text = wrapper.text()
     const keys = wrapper.findAll('.app-tooltip__key').map((chip) => chip.text())
     // Row done is Enter alone and Row not done Shift+Enter: Space only pans (ticket 0835).
@@ -200,7 +201,7 @@ describe('ProgressBar', () => {
   })
 
   it('asks to reset progress from its button (ticket 455)', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4, frameIdIn(makeProject())) } })
 
     await wrapper.find('[data-testid="progress-bar-reset"]').trigger('click')
 
@@ -212,7 +213,7 @@ describe('ProgressBar', () => {
     const ways = (wrapper: ReturnType<typeof mount>) => list(wrapper).findAll('[role="radio"]')
 
     it('opens on the first press with the four ways in words, the current one checked, and turns nothing', async () => {
-      const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) }, attachTo: document.body })
+      const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4, frameIdIn(makeProject())) }, attachTo: document.body })
       const button = wrapper.get('[data-testid="progress-bar-direction"]')
       expect(button.attributes('aria-haspopup')).toBe('dialog')
       expect(list(wrapper).exists()).toBe(false)
@@ -249,7 +250,7 @@ describe('ProgressBar', () => {
     })
 
     it('checks the way the rows run as the Frame lies', async () => {
-      const wrapper = mount(ProgressBar, { props: { project: toggleRowDirection(makeProject()) }, attachTo: document.body })
+      const wrapper = mount(ProgressBar, { props: { project: toggleRowDirection(makeProject(), frameIdIn(makeProject())) }, attachTo: document.body })
       await wrapper.get('[data-testid="progress-bar-direction"]').trigger('click')
       expect(ways(wrapper).map((way) => way.attributes('aria-checked'))).toEqual(['false', 'true', 'false', 'false'])
       wrapper.unmount()
@@ -294,7 +295,7 @@ describe('ProgressBar', () => {
 
 describe('ProgressBar with no Frame (ticket 233)', () => {
   it('shows no row buttons and no no-Frame line: the canvas footer is not drawn without a Frame', () => {
-    const wrapper = mount(ProgressBar, { props: { project: withFrameSheet(makeProject(), undefined) } })
+    const wrapper = mount(ProgressBar, { props: { project: withFrameSheet(makeProject(), undefined, { frame: frameIdIn(makeProject()) }) } })
 
     expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
@@ -323,9 +324,9 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
   const spoken = (wrapper: ReturnType<typeof mount>) => wrapper.get('[data-testid="progress-bar-position"]').text().replace(/\s+/g, ' ')
 
   it('counts a Triangle\'s rounds, with no Turn row direction', () => {
-    const placed = changeFrame(makeProject(), { custom: { shape: 'triangle', size: 4, centre: { row: 10, column: 10 } } })
+    const placed = changeFrame(makeProject(), { custom: { shape: 'triangle', size: 4, centre: { row: 10, column: 10 } } }, frameIdIn(makeProject()))
     if (placed.kind !== 'changed') throw new Error('expected a Triangle')
-    const project = moveToRow(placed.project, 2)
+    const project = moveToRow(placed.project, 2, frameIdIn(placed.project))
     const wrapper = mount(ProgressBar, { props: { project } })
 
     expect(spoken(wrapper)).toBe('Круг 3 из 4')
@@ -336,20 +337,20 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
   })
 
   it('names a Star\'s part and its joins', () => {
-    const placed = changeFrame(makeProject(), { custom: { shape: 'star', size: 3, centre: { row: 10, column: 10 } } })
+    const placed = changeFrame(makeProject(), { custom: { shape: 'star', size: 3, centre: { row: 10, column: 10 } } }, frameIdIn(makeProject()))
     if (placed.kind !== 'changed') throw new Error('expected a Star')
-    const inPart = mount(ProgressBar, { props: { project: moveToRow(placed.project, 4) } })
+    const inPart = mount(ProgressBar, { props: { project: moveToRow(placed.project, 4, frameIdIn(placed.project)) } })
     expect(spoken(inPart)).toBe('Часть 2, круг 2 · 5 из 20')
-    const joining = mount(ProgressBar, { props: { project: moveToRow(placed.project, 15) } })
+    const joining = mount(ProgressBar, { props: { project: moveToRow(placed.project, 15, frameIdIn(placed.project)) } })
     expect(spoken(joining)).toBe('Сшить 1–2 · 16 из 20')
   })
 
   it('goes through a Fringe earring\'s top and then its strands, each counted of all its passes (ticket 0597)', () => {
     const settings = { topWidth: 5, topRows: 4, fringeStyle: 'straight', fringeLength: 6 } as const
-    const placed = changeFrame(makeProject(), { custom: { shape: 'fringeEarring', settings, centre: { row: 10, column: 10 } } })
+    const placed = changeFrame(makeProject(), { custom: { shape: 'fringeEarring', settings, centre: { row: 10, column: 10 } } }, frameIdIn(makeProject()))
     if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
-    expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 1) } }))).toBe('Ряд 2 · 2 из 9')
-    expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 6) } }))).toBe('Нить 3 · 7 из 9')
+    expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 1, frameIdIn(placed.project)) } }))).toBe('Ряд 2 · 2 из 9')
+    expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 6, frameIdIn(placed.project)) } }))).toBe('Нить 3 · 7 из 9')
   })
 
 })
@@ -357,7 +358,7 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
 describe('ProgressBar counter (ticket 0849)', () => {
   it('names the pass and adds the rulers\' row on peyote (F-04-03, ticket 0972)', () => {
     const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 14, unit: 'beads' } })
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(peyote, 2) } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(peyote, 2, frameIdIn(peyote)) } })
 
     const counter = wrapper.get('[data-testid="progress-bar-compact-position"]')
     expect(counter.get('.row-progress__count-step').text()).toBe('Проход 3 из 27')
@@ -367,7 +368,7 @@ describe('ProgressBar counter (ticket 0849)', () => {
   })
 
   it('names the track after a column while rows run down the columns (F-04-05)', () => {
-    const wrapper = mount(ProgressBar, { props: { project: toggleRowDirection(makeProject()) } })
+    const wrapper = mount(ProgressBar, { props: { project: toggleRowDirection(makeProject(), frameIdIn(makeProject())) } })
     expect(wrapper.get('[data-testid="progress-bar-track"]').attributes('aria-label')).toBe(ru.rowProgress.columnFinishedLabel)
   })
 })

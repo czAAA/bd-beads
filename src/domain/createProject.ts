@@ -1,7 +1,7 @@
 import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, newLayerId, startingRowProgressOf, withCanvas, withFrameFields, withLayer, withStartingRowProgress, FIRST_FRAME, frameById, wovenLayerOf } from './layerRecord'
+import { beadIdOfLayer, newLayerId, startingRowProgressOf, withCanvas, withFrameFields, withLayer, withStartingRowProgress, firstFrameId, frameById, wovenLayerOf } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -56,12 +56,13 @@ export function createProject(input: CreateProjectInput): Project {
     beads: {},
   }
   // Both layers take the form's settings (ADR 0079).
-  const canvas = { id: newLayerId(), name, ...layer, orientation: startOrientation(created.technique) }
+  const ids = { canvas: newLayerId(), frame: newLayerId() }
+  const canvas = { id: ids.canvas, name, ...layer, orientation: startOrientation(created.technique) }
   return {
     id: crypto.randomUUID(),
     layers: [
       canvas,
-      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, angle: canvas.orientation, rowProgress: startingRowProgressOf(created) }] : []),
+      ...(dimensions ? [{ id: ids.frame, ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, angle: canvas.orientation, rowProgress: startingRowProgressOf(created) }] : []),
     ],
     palette,
     paletteLetters: lettersOfPalette(palette, bead.id, undefined),
@@ -88,16 +89,18 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
  * dimensions (missing cells empty, surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   // The Canvas upright and the new Frame lying as it does (ticket 1188), its progress started as it lies then (spec 1182).
-  const project = withStartingRowProgress(withFrameFields(withCanvas(createProject(input), { orientation: 0 }), { angle: 0 }))
+  const upright = withCanvas(createProject(input), { orientation: 0 })
   // A new Project's one Frame.
-  const frame = frameById(project, FIRST_FRAME)!
+  const ref = firstFrameId(upright)
+  const project = withStartingRowProgress(withFrameFields(upright, { angle: 0 }, ref), ref)
+  const frame = frameById(project, ref)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>
     Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),
   )
 
   return {
-    ...withLayer(project, FIRST_FRAME, { beads: beadsFromColors(cells) }),
+    ...withLayer(project, ref, { beads: beadsFromColors(cells) }),
     ...(palette
       ? {
           palette: [...palette.ids],

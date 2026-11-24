@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../src/testUtils/frameId'
 import type { Rotation } from '../../src/domain/grid'
 import type { Technique } from '../../src/domain/weave'
 import { BUILT_IN_COLORS, defaultPaletteIds } from '../../src/domain/palette'
@@ -70,8 +71,8 @@ export function fixtureProject({
   // The Canvas turned under an upright Frame, as Rotate canvas leaves them (ticket 1188): off the Canvas's grid, a little
   // off its positions (its row and column, which address its cells, still the first), so it lies only by its own rows.
   if (rotation === frameTurn || rotation === 0) return project
-  const { x, y } = framePlacement(project)!.at
-  return withFrameAt(project, { x: x + 0.3, y: y + 0.2 })
+  const { x, y } = framePlacement(project, frameIdIn(project))!.at
+  return withFrameAt(project, { x: x + 0.3, y: y + 0.2 }, frameIdIn(project))
 }
 
 /** The stored library for these Projects, exactly as the app would have written it, ready for localStorage. */
@@ -95,10 +96,10 @@ export function beadCentre(
   const shift = 'layers' in project ? frameShift(project, zoom) : undefined
   if (shift) {
     // The Frame's own bead, on its own surface: laid at its row and column, which only address its cells.
-    const laid = withLaidTurn(project as Project)
+    const laid = withLaidTurn(project as Project, undefined, frameIdIn(project as Project))
     const frame = frameOf(laid)!
-    const view = surfaceView({ space: OPEN_SPACE, technique, rotation: shift.rotation, zoom, scroll, frame: placedFrame(laid) })
-    const at = view.beadToPoint({ row: row + frame.row, column: column + frame.column }, 'frame')
+    const view = surfaceView({ space: OPEN_SPACE, technique, rotation: shift.rotation, zoom, scroll, frame: placedFrame(laid, frameIdIn(laid)) })
+    const at = view.beadToPoint({ row: row + frame.row, column: column + frame.column }, frameIdIn(laid))
     return { x: box.x + at.x + shift.x, y: box.y + at.y + shift.y }
   }
   const at = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll }).beadToPoint({ row, column })
@@ -110,12 +111,12 @@ export function beadCentre(
  * displayed px. None where the Frame lies as the Canvas is drawn. The Frame starts at the Canvas's first position. */
 export function frameShift(project: Layered, zoom: number): { rotation: Rotation; x: number; y: number } | undefined {
   if (!frameOf(project)) return undefined
-  const laid = withLaidTurn(project as Project)
-  const rotation = laidTurnOf(laid)
+  const laid = withLaidTurn(project as Project, undefined, frameIdIn(project as Project))
+  const rotation = laidTurnOf(laid, frameIdIn(laid))
   if (rotation === quarterTurnOf(project)) return undefined
   const { technique } = canvasOf(project)
   const at = (shown: Layered, turn: Rotation) => {
-    const centre = frameCentreOnCanvas(shown)!
+    const centre = frameCentreOnCanvas(shown, frameIdIn(shown))!
     return surfaceView({ space: OPEN_SPACE, technique, rotation: turn, zoom }).gridToPoint(centre.x * CELL_SIZE_PX, centre.y * CELL_SIZE_PX)
   }
   const [pinned, own] = [at(project, quarterTurnOf(project)), at(laid, rotation)]

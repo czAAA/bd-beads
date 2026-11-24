@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
@@ -91,7 +92,7 @@ describe('useCanvasPointer', () => {
 
     it('under the Eraser marks the hovered bead as one that would go, and shows nothing on an empty position (ticket 1014)', () => {
       const { row, column } = frameOf(base)!
-      const project = onLayer(base, 'frame', (view) => paintCells(view, [{ row: 1, column: 2 }], '#e63746'))
+      const project = onLayer(base, FRAME_ID, (view) => paintCells(view, [{ row: 1, column: 2 }], '#e63746'))
       const { previewCells, onCellHover } = setup({ project, tool: 'erase' })
       onCellHover(row + 1, column + 2)
       expect(previewCells.value).toEqual([{ row: row + 1, column: column + 2, erases: true }])
@@ -102,24 +103,24 @@ describe('useCanvasPointer', () => {
     it('under the Eraser and Mirror marks only the counterparts that hold a bead (ticket 1014)', () => {
       const { row, column } = frameOf(base)!
       const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
-      const project = onLayer(base, 'frame', (view) => paintCells(view, [{ row: 3, column: 0 }, { row: 0, column: 3 }], '#e63746'))
+      const project = onLayer(base, FRAME_ID, (view) => paintCells(view, [{ row: 3, column: 0 }, { row: 0, column: 3 }], '#e63746'))
       const { previewCells, onCellHover } = setup({ project, tool: 'erase', mirror })
-      onCellHover(row + 3, column, 'frame')
+      onCellHover(row + 3, column, FRAME_ID)
       expect(previewCells.value).toHaveLength(2)
       expect(previewCells.value).toEqual(expect.arrayContaining([
-        { row: row + 3, column, layer: 'frame', erases: true },
-        { row, column: column + 3, layer: 'frame', erases: true },
+        { row: row + 3, column, layer: FRAME_ID, erases: true },
+        { row, column: column + 3, layer: FRAME_ID, erases: true },
       ]))
     })
 
     it('shows every counterpart of the hovered Frame bead under Mirror, those in finished rows left out (ticket 0703)', () => {
       const { row, column } = frameOf(base)!
       const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
-      const { previewCells, onCellHover } = setup({ project: moveToRow(base, 1), mirror })
-      onCellHover(row + 3, column, 'frame')
+      const { previewCells, onCellHover } = setup({ project: moveToRow(base, 1, frameIdIn(base)), mirror })
+      onCellHover(row + 3, column, FRAME_ID)
       expect(previewCells.value).toEqual([
-        { row: row + 3, column, layer: 'frame' },
-        { row: row + 3, column: column + 3, layer: 'frame' },
+        { row: row + 3, column, layer: FRAME_ID },
+        { row: row + 3, column: column + 3, layer: FRAME_ID },
       ])
     })
 
@@ -133,9 +134,9 @@ describe('useCanvasPointer', () => {
     it('shows the region a Fill would flood under Fill, in the chosen color (ticket 1153)', () => {
       const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
       const { deps, previewCells, onCellHover } = setup({ tool: 'fill', mirror, color: '#00ff00' })
-      onCellHover(3, 0, 'frame')
+      onCellHover(3, 0, FRAME_ID)
       expect(previewCells.value).toEqual([{ row: 7, column: 7 }, { row: 7, column: 8 }])
-      expect(deps.fillPreviewCells).toHaveBeenCalledWith(base, { row: 3, column: 0, layer: 'frame' }, '#00ff00')
+      expect(deps.fillPreviewCells).toHaveBeenCalledWith(base, { row: 3, column: 0, layer: FRAME_ID }, '#00ff00')
     })
 
     it('shows the hovered bead alone under Fill with no color chosen, as a press there fills nothing', () => {
@@ -146,14 +147,14 @@ describe('useCanvasPointer', () => {
     })
 
     it('leaves out beads in rows already woven', () => {
-      const woven = moveToRow(base, 3)
+      const woven = moveToRow(base, 3, frameIdIn(base))
       const { previewCells, onCellHover } = setup({ project: woven })
       onCellHover(0, 0)
       expect(previewCells.value).toEqual([])
     })
 
     it('shows a block pasted on a grid as its stamp, leaving out the beads in rows already woven (ticket 0675)', () => {
-      const { previewStamp, onCellHover, onHoverEnd } = setup({ tool: 'select', project: moveToRow(base, 3) })
+      const { previewStamp, onCellHover, onHoverEnd } = setup({ tool: 'select', project: moveToRow(base, 3, frameIdIn(base)) })
       expect(previewStamp.value).toBeUndefined()
       onCellHover(0, 0)
       expect(stampCells(previewStamp.value!).map(({ row }) => row)).toEqual([3, 3, 3, 3])
@@ -252,8 +253,8 @@ describe('useCanvasPointer', () => {
   describe('layer of a press', () => {
     it('hands the layer the pointer hit to the tool, which a position alone cannot say (ADR 0066)', () => {
       const { deps, onCellPrimaryDown, onCellPrimaryMove } = setup({ strokeMode: 'paint' })
-      onCellPrimaryDown(4, 1, 'frame')
-      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('paint', '#ff0000', 4, 1, 'frame')
+      onCellPrimaryDown(4, 1, FRAME_ID)
+      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('paint', '#ff0000', 4, 1, FRAME_ID)
       onCellPrimaryMove(4, 2, 'canvas')
       expect(deps.paintStrokeCells).toHaveBeenCalledWith([{ row: 4, column: 2, layer: 'canvas' }], '#ff0000')
     })

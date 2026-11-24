@@ -5,7 +5,7 @@ import type { GridDimensions, GridPosition, FrameRef } from './grid'
 import { turnedGridSize } from './layerGeometry'
 import { frameWeave } from './layerWeave'
 import { columnCycle, rowCycle, type Weave } from './weave'
-import { type Layered, FIRST_FRAME, frameById } from './layerRecord'
+import { type Layered, frameById } from './layerRecord'
 
 // A Frame's orientation (ADR 0079, ticket 0667): Rotate Frame turns the Frame on the Canvas like a sheet of A4 on an A1.
 // Its beads keep their own rows and columns; what turns is the rectangle it covers on the Canvas, which this says.
@@ -31,7 +31,7 @@ export function laidRect(frame: Rect & Oriented): Rect {
 
 /** The rectangle the Project's Frame covers on the Canvas as it lies (see `laidRect`), in its Weave with the Bead
  * shape's cell; none without a Frame. */
-export function laidFrame(project: Layered, ref: FrameRef = FIRST_FRAME): Rect | undefined {
+export function laidFrame(project: Layered, ref: FrameRef): Rect | undefined {
   const frame = frameById(project, ref)
   if (!frame?.quarterTurns) return frame
   return laidRect({ ...frame, ...frameWeave(project, ref) })

@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { changeFrame } from '../domain/changeFrame'
 import { rotateFrame } from '../domain/rotate'
@@ -96,7 +97,7 @@ function pdfOf(project: Project, plan: ReturnType<typeof planPrint>, parts: Retu
 }
 
 function chartOf(project: Project, part = 0, look?: { rim: boolean; emptyGrid: boolean }) {
-  const plan = planPrint(project, { keyRows: 2 })
+  const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
   const parts = [plan.parts[part]!]
   return { plan, part: parts[0]!, ...pdfOf(project, plan, parts, LETTERS, plan.page.height, look) }
 }
@@ -130,7 +131,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(part.firstAcross).toBe(0)
     expect(letters).toHaveLength(painted)
     expect(new Set(letters.map((text) => text.value))).toEqual(new Set(['A', 'B', 'AA']))
-    expect(texts(pdfOf(withLayers(project, { letters: true }), planPrint(project, { keyRows: 2 }), [part], LETTERS, 1754).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value))).toHaveLength(painted)
+    expect(texts(pdfOf(withLayers(project, { letters: true }), planPrint(project, { frame: frameIdIn(project), keyRows: 2 }), [part], LETTERS, 1754).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value))).toHaveLength(painted)
   })
 
   it('scales the Swatch letter with the bead: 6.5 pt at 3 mm, about 4.3 pt at 1.8 mm, larger above 3 mm (ticket 0913)', () => {
@@ -142,7 +143,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
 
   it('keeps a two-letter Swatch letter inside its cell, setting a wide one smaller', () => {
     const wide = { [DARK]: 'WM', '#ffffff': 'A', '#f2c94c': 'AA' }
-    const plan = planPrint(schema(), { keyRows: 2 })
+    const plan = planPrint(schema(), { frame: frameIdIn(schema()), keyRows: 2 })
     const pdf = pdfOf(schema(), plan, plan.parts, wide).content.toString()
     const cell = plan.beadMm * (72 / 25.4)
     const marks = texts(pdf).filter((text) => text.value.length === 2 && /^[A-Z]+$/.test(text.value))
@@ -202,12 +203,12 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads: { 0: { 0: DARK } } }, paletteLetters: LETTERS, letters: false })
     const { plan, part, content } = chartOf(project, 0, EMPTY_GRID_ON)
     const arms = crossArms(content.toString())
-    const empty = placeBeads(project, plan, part).filter((bead) => bead.color === null)
+    const empty = placeBeads(project, plan, part, frameIdIn(project)).filter((bead) => bead.color === null)
 
     expect(empty.length).toBeGreaterThan(0)
     expect(arms).toHaveLength(empty.length * 2)
     const across = Math.abs(arms[0]![2] - arms[0]![0])
-    expect(across / (plan.zoom * displayedGrid(project).stepAcross * K)).toBeCloseTo(EMPTY_CROSS_SHARE, 2)
+    expect(across / (plan.zoom * displayedGrid(project, frameIdIn(project)).stepAcross * K)).toBeCloseTo(EMPTY_CROSS_SHARE, 2)
   })
 
   it('numbers every row and column, upright, on all four sides, in Helvetica regular (ticket 1129)', () => {
@@ -227,7 +228,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 30, height: 39, unit: 'beads' } })
     const beads = Object.fromEntries(Array.from({ length: 30 }, (_, row) => [row + 4, Object.fromEntries(Array.from({ length: 13 }, (_, column) => [column + 8, DARK]))]))
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation: turn, paletteLetters: LETTERS, letters: false })
-    const plan = planWithKey(project)
+    const plan = planWithKey(project, { frame: frameIdIn(project) })
     const numbers = rulerTexts(project, plan, plan.parts.filter((part) => part.page === plan.parts[0]!.page))
     const [across, down] = turn % 180 === 0 ? [13, 30] : [30, 13]
     const count = (length: number) => Array.from({ length }, (_, index) => String(index + 1))
@@ -260,9 +261,9 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
 
   it('keeps 6.5 pt where the widest number fits, and a three-digit row under its band\'s 4.6 pt', () => {
     const piece = full('loom', 'miyuki-delica-11-0', 13, 30, 0)
-    const roomy = planWithKey(piece)
+    const roomy = planWithKey(piece, { frame: frameIdIn(piece) })
     const long = full('loom', 'toho-cube-1.5mm', 20, 120, 0)
-    const tall = planWithKey(long)
+    const tall = planWithKey(long, { frame: frameIdIn(long) })
 
     expect(rulerNumberPt(piece, roomy, roomy.parts)).toBe(6.5)
     expect(rulerNumberPt(long, tall, tall.parts.filter((part) => part.page === tall.parts[0]!.page))).toBeLessThanOrEqual(4.6)
@@ -270,8 +271,8 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
 
   it('fits the widest column number in 80 % of its column and the widest row number\'s digits in 80 % of its row', () => {
     for (const project of [schema('loom', 150, 100), schema(), schema('peyote', 40, 140), schema('brick', 140, 40)]) {
-      const plan = planPrint(project, { keyRows: 2 })
-      const grid = displayedGrid(project)
+      const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
+      const grid = displayedGrid(project, frameIdIn(project))
       for (const page of new Set(plan.parts.map((part) => part.page))) {
         const parts = plan.parts.filter((part) => part.page === page)
         const size = rulerNumberPt(project, plan, parts)
@@ -285,7 +286,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
 
   it('draws the shared parts of one sheet in one size', () => {
     const project = full('loom', 'toho-cube-1.5mm', 35, 120, 0)
-    const plan = planWithKey(project)
+    const plan = planWithKey(project, { frame: frameIdIn(project) })
     const sheet = plan.parts.filter((part) => part.page === plan.parts[0]!.page)
     const sizes = new Set(rulerTexts(project, plan, sheet).map((text) => text.style.size))
 
@@ -336,8 +337,8 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
 
   it('places the beads of a turned Schema from the Project renderer', () => {
     const project = schema('loom', 40, 20, { orientation: 90 })
-    const plan = planPrint(project, { keyRows: 2 })
-    const placed = placeBeads(project, plan, plan.parts[0]!)
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
+    const placed = placeBeads(project, plan, plan.parts[0]!, frameIdIn(project))
 
     expect(placed.filter((bead) => bead.color !== null)).toHaveLength(10 * 16)
     expect(Math.max(...placed.map((bead) => bead.across))).toBe(19)
@@ -384,16 +385,16 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
   const cell = { width: mmPt(0.1), color: PRINT_COLORS.lineStrong }
 
   it.each<[string, () => { project: Project; plan: PrintPlan; parts: PrintPlan['parts']; area?: { x: number; y: number } }]>([
-    ['a chart page', () => ({ project: schema(), plan: planPrint(schema(), { keyRows: 2 }), parts: planPrint(schema(), { keyRows: 2 }).parts })],
-    ['part B, its overlap', () => ({ project: schema('loom', 150, 100), plan: planPrint(schema('loom', 150, 100), { keyRows: 2 }), parts: [planPrint(schema('loom', 150, 100), { keyRows: 2 }).parts[1]!] })],
+    ['a chart page', () => ({ project: schema(), plan: planPrint(schema(), { frame: frameIdIn(schema()), keyRows: 2 }), parts: planPrint(schema(), { frame: frameIdIn(schema()), keyRows: 2 }).parts })],
+    ['part B, its overlap', () => ({ project: schema('loom', 150, 100), plan: planPrint(schema('loom', 150, 100), { frame: frameIdIn(schema('loom', 150, 100)), keyRows: 2 }), parts: [planPrint(schema('loom', 150, 100), { frame: frameIdIn(schema('loom', 150, 100)), keyRows: 2 }).parts[1]!] })],
     ['page 1 and the PNG', () => {
       const project = full('loom', 'miyuki-delica-11-0', 13, 30, 0)
-      const layout = pageOneLayout(project, { name: 'Piece', maker: '', colors: [{ hex: DARK, name: 'Dark', beads: '1' }] })
+      const layout = pageOneLayout(project, { frame: frameIdIn(project), name: 'Piece', maker: '', colors: [{ hex: DARK, name: 'Dark', beads: '1' }] })
       return { project, plan: layout.plan, parts: layout.plan.parts, area: layout.area }
     }],
     ...STAGGERED.map(([name, turn, settings]) => [`${name} at ${turn}°`, () => {
       const project = staggered(name, turn, settings)
-      const plan = planPrint(project, { keyRows: 2 })
+      const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
       return { project, plan, parts: plan.parts }
     }] as [string, () => { project: Project; plan: PrintPlan; parts: PrintPlan['parts'] }]),
   ])('draws no line every 5th or 10th and no edge on %s: only the beads\' hairlines, the crosses and the overlap line', (_, make) => {
@@ -409,12 +410,12 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
     ['loom, part B with its overlap', () => full('loom', 'toho-cube-1.5mm', 150, 20, 0), 1],
   ])('borders every bead of a %s chart round its own cell, one hairline between neighbours and none astray', (_, make, index) => {
     const project = make()
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const part = plan.parts[index]!
     const { lines, pads } = drawn(project, plan, [part])
     const chart = chartBoxOf(pads[0]!, part)
     const segments = lines.filter(({ width, color }) => width === cell.width && color === cell.color).flatMap(({ segments }) => segments)
-    const edges = placeBeads(project, plan, part).flatMap(({ cell: box }) => {
+    const edges = placeBeads(project, plan, part, frameIdIn(project)).flatMap(({ cell: box }) => {
       const [left, top, right, bottom] = [chart.x + box.x * K, chart.y + box.y * K, chart.x + (box.x + box.width) * K, chart.y + (box.y + box.height) * K]
       return [[left, top, right, top], [left, bottom, right, bottom], [left, top, left, bottom], [right, top, right, bottom]] as const
     })
@@ -447,7 +448,7 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
     ['Custom frame', () => triangleOf(9)],
   ])('draws one rounded rim 1 mm clear of a %s chart\'s outermost beads, 0.2 mm faint with 2 mm corners, no bead touching it', (_, make) => {
     const project = make()
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     for (const part of plan.parts) {
       const { rims, pads } = drawn(project, plan, [part])
       const chart = chartBoxOf(pads[0]!, part)
@@ -461,8 +462,8 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
       expect(rim!.x + rim!.width).toBeCloseTo(chart.x + chart.width + mmPt(1), 3)
       expect(rim!.y + rim!.height).toBeCloseTo(chart.y + chart.height + mmPt(1), 3)
       // The beads stay inside the chart's box (ticket 1122's placement test), so the rim stands 1 mm clear of each.
-      if (!customChart(project, part.region, plan.zoom)) {
-        for (const { box } of placeBeads(project, plan, part)) {
+      if (!customChart(project, part.region, plan.zoom, frameIdIn(project))) {
+        for (const { box } of placeBeads(project, plan, part, frameIdIn(project))) {
           expect(chart.x + box.x * K - rim!.x).toBeGreaterThan(mmPt(1) - 0.5 * K - 1e-6)
           expect(rim!.x + rim!.width - chart.x - (box.x + box.width) * K).toBeGreaterThan(mmPt(1) - 0.5 * K - 1e-6)
         }
@@ -472,7 +473,7 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
 
   it('stands the ruler numbers outside the rim: columns 1.5 mm above and below it, rows 1.3 mm beside it', () => {
     const project = schema('loom', 150, 100)
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const { rims, numbers } = drawn(project, plan, [plan.parts[1]!])
     const rim = rims[0]!
     const cap = HELVETICA_CAP_HEIGHT * numbers[0]!.size
@@ -488,7 +489,7 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
 
   it('draws neither the rim nor the empty positions\' outline and cross with the look\'s switches off, the numbers in place', () => {
     const project = schema('loom', 30, 30)
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const on = drawn(project, plan, plan.parts)
     const off: string[] = []
     const numbers: string[] = []
@@ -510,7 +511,7 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
   it('keeps a round bead\'s circle and its hairline edge, with no line between the circles', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 12, height: 12, unit: 'beads' } })
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads: { 0: Object.fromEntries(Array.from({ length: 12 }, (_, column) => [column, DARK])) } }, paletteLetters: LETTERS, letters: false })
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const { rounds, lines } = drawn(project, plan, plan.parts)
     const circles = rounds.filter((round) => round.paint.fill !== undefined)
 
@@ -521,7 +522,7 @@ describe('the chart has no bold lines, each bead its own border and one rim (tic
 
   it('keeps an overlap bead\'s tint under its border', () => {
     const project = full('loom', 'toho-cube-1.5mm', 150, 100, 0)
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const pdf = pdfOf(project, plan, [plan.parts[1]!], LETTERS).content.toString()
 
     // #1f2a44 mixed 60 % toward white, and the beads' hairline in line-strong.
@@ -538,12 +539,12 @@ function plan842(): number {
 /** A peyote Triangle of `size` rounds on a loom Canvas, its inner rounds painted dark and its 4th round White. */
 function triangleOf(size: number): Project {
   const centre = Math.max(20, size * 2)
-  const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-  const placed = changeFrame(open, { custom: { shape: 'triangle', size, centre: { row: centre, column: centre } } })
+  const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
+  const placed = changeFrame(open, { custom: { shape: 'triangle', size, centre: { row: centre, column: centre } } }, frameIdIn(open))
   if (placed.kind !== 'changed') throw new Error('expected a Triangle')
   const positions = frameLayoutOf(frameOf(placed.project)!)!.positions
-  const dark = onLayer(placed.project, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row < 3), DARK))
-  const white = onLayer(dark, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row === 3), '#ffffff'))
+  const dark = onLayer(placed.project, FRAME_ID, (view) => paintCells(view, positions.filter(({ row }) => row < 3), DARK))
+  const white = onLayer(dark, FRAME_ID, (view) => paintCells(view, positions.filter(({ row }) => row === 3), '#ffffff'))
   return withLayers(white, { paletteLetters: LETTERS, letters: false })
 }
 
@@ -552,7 +553,7 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
 
   it('tiles the bounding rectangle and letters every painted bead once, across the parts', () => {
     const project = triangle()
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const lettered = plan.parts.flatMap((part) => texts(pdfOf(project, plan, [part], LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value)))
     // 3 + 6 + 9 dark and 12 White, the overlap's repeats aside: at least each once.
     expect(lettered.filter((text) => text.value === 'B').length).toBeGreaterThanOrEqual(18)
@@ -597,7 +598,7 @@ describe('Empty grid and Chart border (ticket 1127)', () => {
 
   it('with Chart border off draws everything but the rim, each in its place', () => {
     const project = schema('loom', 30, 30)
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const on = calls(project, plan, EMPTY_GRID_ON)
     const off = calls(project, plan, { rim: false, emptyGrid: true })
     const rims = on.filter((call) => call.startsWith('round') && !call.includes('"fill"'))
@@ -608,7 +609,7 @@ describe('Empty grid and Chart border (ticket 1127)', () => {
 
   it('with Empty grid off leaves every empty position bare paper and draws the colored beads as with it on', () => {
     const project = schema('loom', 30, 30)
-    const plan = planPrint(project, { keyRows: 2 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const part = plan.parts[0]!
     const on = calls(project, plan, EMPTY_GRID_ON)
     const off = calls(project, plan, { rim: true, emptyGrid: false })
@@ -620,7 +621,7 @@ describe('Empty grid and Chart border (ticket 1127)', () => {
     // Every hairline left is a side of a colored bead.
     const { pads } = drawn(project, plan, [part])
     const chart = chartBoxOf(pads[0]!, part)
-    const colored = placeBeads(project, plan, part).filter((bead) => bead.color !== null)
+    const colored = placeBeads(project, plan, part, frameIdIn(project)).filter((bead) => bead.color !== null)
     const segments = off.filter((call) => call.startsWith(`lines ${mmPt(0.1)} ${PRINT_COLORS.lineStrong}`)).flatMap((call) => JSON.parse(call.slice(call.indexOf('[['))) as number[][])
     const onSide = (x: number, y: number) => colored.some(({ cell }) => {
       const [left, top, right, bottom] = [chart.x + cell.x * K, chart.y + cell.y * K, chart.x + (cell.x + cell.width) * K, chart.y + (cell.y + cell.height) * K]
@@ -635,8 +636,8 @@ describe('Empty grid and Chart border (ticket 1127)', () => {
     // A Triangle whose painted beads take the first five positions: trimmed to them, its rim's empties reach past it.
     const triangle = triangleOf(9)
     const positions = frameLayoutOf(frameOf(triangle)!)!.positions
-    const project = onLayer(withLayers(triangle, { frame: { ...frameOf(triangle)!, beads: {} } }), 'frame', (view) => paintCells(view, positions.slice(0, 5), DARK))
-    const plan = planWithKey(project)
+    const project = onLayer(withLayers(triangle, { frame: { ...frameOf(triangle)!, beads: {} } }), FRAME_ID, (view) => paintCells(view, positions.slice(0, 5), DARK))
+    const plan = planWithKey(project, { frame: frameIdIn(project) })
     expect(plan.parts).toHaveLength(1)
     const part = plan.parts[0]!
     const empties = (look: { rim: boolean; emptyGrid: boolean }) => {
@@ -654,7 +655,7 @@ describe('Empty grid and Chart border (ticket 1127)', () => {
     const chart = chartBoxOf(pads[0]!, part)
     const inside = ([x, y]: readonly [number, number]) => x >= chart.x - 1e-3 && x <= chart.x + chart.width + 1e-3 && y >= chart.y - 1e-3 && y <= chart.y + chart.height + 1e-3
     // The empty positions whose centre is in the trimmed rectangle: those a part takes as its own.
-    const centred = customChart(project, part.region, plan.zoom)!.beads.filter((bead) => bead.color === null && bead.x >= 0 && bead.x < part.region.width && bead.y >= 0 && bead.y < part.region.height)
+    const centred = customChart(project, part.region, plan.zoom, frameIdIn(project))!.beads.filter((bead) => bead.color === null && bead.x >= 0 && bead.x < part.region.width && bead.y >= 0 && bead.y < part.region.height)
 
     expect(outlines.length).toBeGreaterThan(0)
     expect(outlines.every((points) => points.every(inside))).toBe(true)
@@ -683,7 +684,7 @@ describe('every bead shape at the smallest and the largest bead (ticket 0913)', 
     ['Custom frame', 1.8, () => triangleOf(50), () => schema('loom', 100, 100)],
   ])('draws a %s chart at %s mm a bead, every painted bead lettered inside its cell', (_, beadMm, make, planned = make) => {
     const project = make()
-    const plan = planPrint(planned(), { keyRows: 2 })
+    const plan = planPrint(planned(), { frame: frameIdIn(planned()), keyRows: 2 })
     const pdf = plan.parts.map((part) => pdfOf(project, plan, [part], LETTERS).content.toString()).join('\n')
     const letters = texts(pdf).filter((text) => /^[A-Z]+$/.test(text.value))
     const cell = plan.beadMm * (72 / 25.4)
@@ -700,15 +701,15 @@ describe('every bead shape at the smallest and the largest bead (ticket 0913)', 
 describe('a turned Schema prints every bead in its place (ticket 1122)', () => {
   /** Every part's beads, each where it stands in the whole displayed chart, the overlap's repeats left out. */
   function printed(project: Project) {
-    const plan = planPrint(project, { keyRows: 2 })
-    return plan.parts.flatMap((part) => placeBeads(project, plan, part).map((bead) => ({ ...bead, part, across: part.firstAcross - part.overlapAcross + bead.across, down: part.firstDown - part.overlapDown + bead.down })))
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
+    return plan.parts.flatMap((part) => placeBeads(project, plan, part, frameIdIn(project)).map((bead) => ({ ...bead, part, across: part.firstAcross - part.overlapAcross + bead.across, down: part.firstDown - part.overlapDown + bead.down })))
       .filter(({ part, across, down }) => across >= part.firstAcross && down >= part.firstDown)
   }
 
   const cases = TECHNIQUES.flatMap((technique) => ['toho-cube-1.5mm', 'miyuki-delica-11-0'].flatMap((beadId) => [0, 90, 180, 270].map((turn) => [technique, beadId, turn] as const)))
   it.each(cases)('places every bead of a full %s Schema in %s turned %s° once, in its own column and row, inside its part', (technique, beadId, turn) => {
     const project = full(technique, beadId, 13, 30, turn)
-    const grid = displayedGrid(project)
+    const grid = displayedGrid(project, frameIdIn(project))
     const beads = printed(project)
     const { columns, rows } = frameOf(project)!
 
@@ -731,7 +732,7 @@ describe('a turned Schema prints every bead in its place (ticket 1122)', () => {
       expect(box.y + box.height).toBeLessThanOrEqual(part.region.height + 0.5)
     }
     // Each bead stands under its own ruler number, within the half bead a staggered row or column is shifted by.
-    const { zoom } = planPrint(project, { keyRows: 2 })
+    const { zoom } = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     const step = { across: grid.stepAcross * zoom, down: grid.stepDown * zoom }
     for (const { cell, part, across, down } of beads) {
       expect(Math.abs(cell.x - (across - part.firstAcross + part.overlapAcross) * step.across)).toBeLessThanOrEqual(step.across / 2 + 0.5)
@@ -750,10 +751,10 @@ describe('a turned Schema prints every bead in its place (ticket 1122)', () => {
     const hexOf = (row: number) => `#0000${row.toString(16).padStart(2, '0')}`
     const beads = Object.fromEntries(Array.from({ length: rows }, (_, row) => [row, Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, hexOf(row)]))]))
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads }, paletteLetters: Object.fromEntries(Array.from({ length: rows }, (_, row) => [hexOf(row), partLetter(row)])) })
-    const { trim } = planPrint(project, { keyRows: 2 })
+    const { trim } = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
     // Each Schema row's beads stand under one ruler number, and Row by row gives that row the same number (ticket 1129).
     const rulerOf = new Map(printed(project).map((bead) => [project.paletteLetters![bead.color!], acrossNumber(trim, bead.across)]))
-    const words = wordChartOf(project)!.rows
+    const words = wordChartOf(project, frameIdIn(project))!.rows
 
     expect(rulerOf.size).toBe(rows)
     expect(words).toHaveLength(rows)
@@ -776,10 +777,10 @@ describe('a turned Schema prints every bead in its place (ticket 1122)', () => {
 describe('a Custom frame prints every bead (ticket 1132)', () => {
   /** A Custom frame of `shape` at `size` on a loom Canvas in `beadId`, every bead painted. */
   function customOf(shape: FrameShapeId, beadId: string, size: number): Project {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId, size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape, size, centre: { row: 100, column: 100 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId, size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId, size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape, size, centre: { row: 100, column: 100 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error(`expected a ${shape}`)
-    const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, [...frameLayoutOf(frameOf(placed.project)!)!.positions], DARK))
+    const painted = onLayer(placed.project, FRAME_ID, (view) => paintCells(view, [...frameLayoutOf(frameOf(placed.project)!)!.positions], DARK))
     return withLayers(painted, { paletteLetters: LETTERS, letters: false })
   }
 
@@ -843,7 +844,7 @@ describe('a Custom frame prints every bead (ticket 1132)', () => {
 
   /** The whole displayed chart's size at `zoom`, as the overview lays it. */
   function wholeChart(project: Project, zoom: number) {
-    const { technique, cell } = frameWeave(project)
+    const { technique, cell } = frameWeave(project, frameIdIn(project))
     const { columns, rows } = projectDimensions(project)
     return displayedExtentPx(technique, columns, rows, zoom, quarterTurnOf(project), cell)
   }
@@ -856,7 +857,7 @@ describe('a Custom frame prints every bead (ticket 1132)', () => {
 
   it.each(cases)('draws every bead of a %s in %s once, inside the chart, on page 1 and the PNG', (shape, beadId) => {
     const project = customOf(shape, beadId, 5)
-    const layout = pageOneLayout(project, words)
+    const layout = pageOneLayout(project, { ...words, frame: frameIdIn(project) })
 
     expect(chartOnPageOne(layout.plan)).toBe(true)
     // The PNG is page 1 as a picture: the same plan drawn into the same area (ticket 0915).
@@ -866,13 +867,13 @@ describe('a Custom frame prints every bead (ticket 1132)', () => {
   it.each(cases)('draws every bead of a %s in %s once across its chart pages, inside the chart, as the overview does', (shape, beadId) => {
     const project = customOf(shape, beadId, 9)
     // A bead this large cuts every shape into parts.
-    const plan = planPrint(project, { keyRows: 2, floorMm: 12 })
+    const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2, floorMm: 12 })
 
     expect(plan.parts.length).toBeGreaterThan(1)
     const places = expectEveryBeadOnce(project, plan)
     // The overview draws the whole chart, at its own zoom: the same beads in the same places.
     const whole = wholeChart(project, plan.zoom)
-    const overview = customChart(project, { x: 0, y: 0, ...whole }, plan.zoom)!.beads.map(placeOf)
+    const overview = customChart(project, { x: 0, y: 0, ...whole }, plan.zoom, frameIdIn(project))!.beads.map(placeOf)
     expect([...overview].sort()).toEqual([...places].sort())
   })
 })
@@ -880,28 +881,28 @@ describe('a Custom frame prints every bead (ticket 1132)', () => {
 describe('a Canvas turn never changes the chart: it follows the Frame alone (spec 1182, ticket 1186)', () => {
   /** A small painted Custom frame on a loom Canvas. */
   function triangle(): Project {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a triangle')
-    const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, [...frameLayoutOf(frameOf(placed.project)!)!.positions], DARK))
+    const painted = onLayer(placed.project, FRAME_ID, (view) => paintCells(view, [...frameLayoutOf(frameOf(placed.project)!)!.positions], DARK))
     return withLayers(painted, { paletteLetters: LETTERS, letters: false })
   }
 
   /** Every chart page's drawing and its plan, the page key's colors in it, as the export draws them. */
   function chartPages(shown: Project) {
-    const project = withLaidTurn(shown)
-    const plan = planWithKey(project)
+    const project = withLaidTurn(shown, undefined, frameIdIn(shown))
+    const plan = planWithKey(project, { frame: frameIdIn(project) })
     return { plan, pages: plan.parts.map((part) => pdfOf(project, plan, [part], LETTERS, plan.page.height, EMPTY_GRID_ON).content.toString()) }
   }
 
   const plain: [string, () => Project][] = [
     ['an upright peyote Frame', () => schema('peyote', 14, 9)],
-    ['a brick stitch Frame turned a quarter', () => rotateFrame(schema('brick', 14, 9))!],
-    ['a loom Frame turned twice', () => rotateFrame(rotateFrame(schema('loom', 14, 9))!)!],
+    ['a brick stitch Frame turned a quarter', () => rotateFrame(schema('brick', 14, 9), undefined, frameIdIn(schema('brick', 14, 9)))!],
+    ['a loom Frame turned twice', () => { const one = schema('loom', 14, 9); return rotateFrame(rotateFrame(one, undefined, frameIdIn(one))!, undefined, frameIdIn(one))! }],
   ]
   const custom: [string, () => Project][] = [
     ['a Custom frame', triangle],
-    ['a Custom frame turned a quarter', () => rotateFrame(triangle())!],
+    ['a Custom frame turned a quarter', () => rotateFrame(triangle(), undefined, frameIdIn(triangle()))!],
   ]
 
   it.each(plain)('prints %s the same over a Canvas turned under it alone, at any angle', (_, make) => {
@@ -914,7 +915,7 @@ describe('a Canvas turn never changes the chart: it follows the Frame alone (spe
     for (const turn of [90, 270]) {
       const project = withLayers(make(), { orientation: turn })
       // Before 1186 the chart was drawn straight from the Project, at the Canvas's quarter turn.
-      const before = planWithKey(project)
+      const before = planWithKey(project, { frame: frameIdIn(project) })
       const printed = chartPages(project)
       expect(printed).toEqual({ plan: before, pages: before.parts.map((part) => pdfOf(project, before, [part], LETTERS, before.page.height, EMPTY_GRID_ON).content.toString()) })
       expect(chartPages(withLayers(make(), { orientation: turn + 3 }))).toEqual(chartPages(project))
@@ -923,8 +924,8 @@ describe('a Canvas turn never changes the chart: it follows the Frame alone (spe
 
   it.each(['loom', 'peyote', 'brick'] as const)('prints a %s Frame turned by Rotate Frame (ticket 0667) as the same Frame carried round by the Canvas, rulers and all', (technique) => {
     const upright = schema(technique, 14, 9)
-    const turned = withLaidTurn(rotateFrame(upright)!)
+    const turned = withLaidTurn(rotateFrame(upright, undefined, frameIdIn(upright))!, undefined, frameIdIn(upright))
     expect(chartPages(turned)).toEqual(chartPages(withLayers(upright, { orientation: orientationOf(upright) + 90 })))
-    expect(rulerTexts(turned, planWithKey(turned), planWithKey(turned).parts)).not.toEqual([])
+    expect(rulerTexts(turned, planWithKey(turned, { frame: frameIdIn(turned) }), planWithKey(turned, { frame: frameIdIn(turned) }).parts)).not.toEqual([])
   })
 })

@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { toHex } from '../domain/color'
@@ -14,7 +15,7 @@ import { exportProjectPdf, exportProjectPng } from './projectExport'
 // The Cover page drawn for real (ticket 1096; PrintCover card): the piece in color on the board, the title block, the
 // tech line and the footer, as the PDF's first page.
 
-const wordsOf = (project: ReturnType<typeof fixtureProject>, cover = true) => ({ ...printText(project, en, 'en', new Date(), { cover }), name: 'Peacock cuff', maker: 'Ada Lind' })
+const wordsOf = (project: ReturnType<typeof fixtureProject>, cover = true) => ({ ...printText(project, en, 'en', new Date(), { cover }, frameIdIn(project)), name: 'Peacock cuff', maker: 'Ada Lind' })
 
 const pixel = (canvas: HTMLCanvasElement, x: number, y: number) => {
   const [r, g, b] = canvas.getContext('2d')!.getImageData(Math.round(x), Math.round(y), 1, 1).data
@@ -51,7 +52,7 @@ describe('the Cover page', () => {
     // A column empty inside the piece, which trimming keeps (ticket 1128): nothing above it casts a shadow there.
     const project = fixtureProject({ technique: 'loom', columns: 6, rows: 6, override: Array.from({ length: 6 }, (_, row) => ({ row, column: 2, color: null })) })
     const canvas = drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2)
-    const { board, piece } = coverPageLayout(project, A4_PORTRAIT, boardTopOf(canvas))
+    const { board, piece } = coverPageLayout(project, frameIdIn(project), A4_PORTRAIT, boardTopOf(canvas))
     const bead = piece.width / 6
 
     expect(pixel(canvas, board.x + board.width / 2, board.y + 4)).toBe(PRINT_COLORS.board)

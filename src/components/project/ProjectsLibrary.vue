@@ -8,7 +8,7 @@ import { namedPieces, namedPiecesFrom } from '../../domain/pieceNames'
 import { piecesOf } from '../../domain/pieces'
 import { beadsOver, SIZE_GATE_BEADS, tooManyToWalk } from '../../domain/openingLimits'
 import type { SealedProject } from '../../domain/sealedProject'
-import { heldWeave, layerOf, pieceNamesOf, projectNameOf } from '../../domain/layerRecord'
+import { heldWeave, layerOf, pieceNamesOf, projectNameOf, firstFrameId } from '../../domain/layerRecord'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import ProjectImport from '../import/ProjectImport.vue'
@@ -91,7 +91,7 @@ const pieceFacts = computed(() =>
 
 /** A row's second line: "24 × 14 beads · saved Nov 12", then the maker's name when set. */
 function projectLine(project: Project): string {
-  const size = shownFrameSize(project)
+  const size = shownFrameSize(project, firstFrameId(project))
   return [size && fillBlanks(t.value.projects.rowSize, size), savedOn(project), project.makerName].filter(Boolean).join(' · ')
 }
 

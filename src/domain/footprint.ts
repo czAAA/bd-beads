@@ -2,7 +2,7 @@ import type { FrameSheet, Rect } from './canvas'
 import { laidRect } from './frameOrientation'
 import { canvasWeave, placedFrame, sameWeave } from './layerWeave'
 import { describeWeave, positionStep, type Weave } from './weave'
-import { FIRST_FRAME, type Layered } from './layerRecord'
+import { type Layered } from './layerRecord'
 import type { FrameRef } from './grid'
 import { liesOnGrid } from './table'
 
@@ -30,7 +30,7 @@ export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick
 
 /** The Canvas positions a Frame of the Project hides (ADR 0066), or nothing without that Frame, or with it off the
  * Canvas's grid (ticket 1188): that one covers no position, only what is under it on screen. */
-export function footprintOf(project: Layered, ref: FrameRef = FIRST_FRAME): Rect | undefined {
+export function footprintOf(project: Layered, ref: FrameRef): Rect | undefined {
   const frame = placedFrame(project, ref)
   return frame && liesOnGrid(project, ref) ? frameFootprint(canvasWeave(project), frame) : undefined
 }

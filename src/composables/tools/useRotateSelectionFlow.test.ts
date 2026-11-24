@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { colorAt, withColors } from '../../domain/canvas'
@@ -95,18 +96,18 @@ describe('useRotateSelectionFlow', () => {
   })
 
   it('turns a Selection clear of finished passes once rows are marked done, on the Frame or the Canvas (ticket 0647)', () => {
-    const { harness, onRotate } = setup(moveToRow(framed, 1))
+    const { harness, onRotate } = setup(moveToRow(framed, 1, frameIdIn(framed)))
     onRotate()
     expect(colorAt(frameOf(harness.project)!.beads, 9, 11)).toBe(RED)
 
-    const sketch: Project = moveToRow(withLayers(framed, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) }), 4)
+    const sketch: Project = moveToRow(withLayers(framed, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) }), 4, frameIdIn(withLayers(framed, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) })))
     const onCanvas = setup(sketch)
     onCanvas.onRotate()
     expect(colorAt(beadsOfLayer(onCanvas.harness.project, 'canvas'), 9, 11)).toBe(RED)
   })
 
   it('does nothing with no Selection, no Project, or a Selection that reaches into finished rows (ticket 0647)', () => {
-    const reached = moveToRow(framed, 11)
+    const reached = moveToRow(framed, 11, frameIdIn(framed))
     for (const [project, selection] of [[framed, null], [null, strip], [reached, strip]] as const) {
       const { harness, onRotate } = setup(project, selection)
       onRotate()

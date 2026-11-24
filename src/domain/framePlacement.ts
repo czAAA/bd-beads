@@ -2,7 +2,7 @@ import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
 import { laidSize } from './frameOrientation'
 import { frameShapeOf } from './frameShape'
 import type { FrameRef, GridPosition, Rotation } from './grid'
-import { canvasOf, FIRST_FRAME, frameById, frameIdOf, framesOf, heldFrameById, quarterTurnOf, withCanvas, withFrameById, withFrameFields, type Layered } from './layerRecord'
+import { canvasOf, frameById, frameIdOf, framesOf, heldFrameById, quarterTurnOf, withCanvas, withFrameById, withFrameFields, type Layered } from './layerRecord'
 import { canvasWeave, frameScale, frameWeave } from './layerWeave'
 import type { FrameLayer, Project } from './project'
 import { canvasPlacement, frameAngleOf, frameQuarterTurnOf, type Placement, type TablePoint } from './table'
@@ -39,7 +39,7 @@ function laidExtent(project: Layered, ref: FrameRef): TablePoint {
 
 /** The Frame's placement on the table: its own angle, and its centre: carried through the Canvas's placement from the
  * Canvas position it lies at, or kept where it lies off the Canvas's grid (ticket 1188). None without a Frame. */
-export function framePlacement(project: Layered, ref: FrameRef = FIRST_FRAME): Placement | undefined {
+export function framePlacement(project: Layered, ref: FrameRef): Placement | undefined {
   const frame = frameById(project, ref)
   if (!frame) return undefined
   if (frame.centre) return { angle: frameAngleOf(project, ref), at: { ...frame.centre } }
@@ -53,7 +53,7 @@ export function framePlacement(project: Layered, ref: FrameRef = FIRST_FRAME): P
 /** The Canvas position whose corner puts the Frame's centre at `centre` on the table (`framePlacement` undone): the
  * nearest, so a placement read back from a file lands on the very position it was worked out from. The Frame's own row
  * and column are not read. `startOnly`: the nearest a Frame may start on (a whole cycle where rows or columns alternate). */
-export function frameCornerAt(project: Layered, centre: TablePoint, startOnly = false, ref: FrameRef = FIRST_FRAME): GridPosition {
+export function frameCornerAt(project: Layered, centre: TablePoint, startOnly = false, ref: FrameRef): GridPosition {
   const extent = laidExtent(project, ref)
   const canvas = canvasPlacement(project)
   const local = turned({ x: centre.x - canvas.at.x, y: centre.y - canvas.at.y }, -canvas.angle)
@@ -79,7 +79,7 @@ export function frameCornerAt(project: Layered, centre: TablePoint, startOnly = 
 /** The quarter turn the Frame's laid rectangle is seen at (spec 1182, ticket 1186): its nearest quarter turn, less the
  * quarters its rows lie turned in that rectangle (none once `withLaidTurn` laid it, but a Custom frame's), never a lean.
  * What exports, previews and sizes as seen go by; with no Frame, the Canvas's, the only layer there is to show. */
-export function laidTurnOf(project: Layered, ref: FrameRef = FIRST_FRAME): Rotation {
+export function laidTurnOf(project: Layered, ref: FrameRef): Rotation {
   const frame = frameById(project, ref)
   return frame ? nearestQuarterTurn(frameQuarterTurnOf(project, ref) - 90 * (frame.quarterTurns ?? 0)) : quarterTurnOf(project)
 }
@@ -87,7 +87,7 @@ export function laidTurnOf(project: Layered, ref: FrameRef = FIRST_FRAME): Rotat
 /** The Project as every export and preview draws it (ticket 1186): the Frame at its nearest quarter turn, no lean, on
  * a Canvas laid at `turn` under it: a Frame upright, by its own rows whatever the Canvas's turn, a Custom frame (its
  * layout built turned on the grid) as many quarters off as it lies. As it is when it already lies so, or has no Frame. */
-export function withLaidTurn(project: Project, turn?: Rotation, ref: FrameRef = FIRST_FRAME): Project {
+export function withLaidTurn(project: Project, turn: Rotation | undefined, ref: FrameRef): Project {
   const frame = frameById(project, ref)
   if (!frame) return project
   const lies = frameShapeOf(frame) ? 90 * (frame.quarterTurns ?? 0) : 0
@@ -112,7 +112,7 @@ function withHeld(project: Project, frame: FrameLayer, ref: FrameRef): Project {
 /** The Project with its Frame's centre at `centre` on the table, its angle as it is (ticket 1188): on the Canvas's grid
  * where it lies whole quarter turns off the Canvas and that centre is a whole position's, else off the grid, keeping
  * the centre, its row and column the nearest position's only to address its cells. As it is with no Frame. */
-export function withFrameAt(project: Project, centre: TablePoint, ref: FrameRef = FIRST_FRAME): Project {
+export function withFrameAt(project: Project, centre: TablePoint, ref: FrameRef): Project {
   const held = heldFrameById(project, ref)
   if (!held) return project
   const { centre: _was, ...onGrid } = held
@@ -133,7 +133,7 @@ export function withFrameAt(project: Project, centre: TablePoint, ref: FrameRef 
 /** The Project with its Frame turned to `angle` on the table about its own centre (a two-finger twist, ticket 1190):
  * at the Canvas's angle or whole quarters off it, slid onto the nearest whole Canvas position a Frame may start on, so it
  * lies on the Canvas's grid; at any other angle off the grid, where it is. Its Row progress untouched; not stamped. */
-export function withFrameTurnedTo(project: Project, angle: number, ref: FrameRef = FIRST_FRAME): Project {
+export function withFrameTurnedTo(project: Project, angle: number, ref: FrameRef): Project {
   const held = heldFrameById(project, ref)
   const placed = framePlacement(project, ref)
   if (!held || !placed) return project
@@ -160,7 +160,7 @@ export function withCanvasTurned(project: Project, orientation: number, moved: T
 /** Where a Frame off the Canvas's grid lies once its sheet is changed to `after`'s (ticket 1188): turned, about its own
  * centre; resized or moved, its centre goes as far as its own drawing's does, the Frame laid by its own quarter turns
  * on a Canvas at its own angle less them. */
-export function carriedOffGrid(before: Project, after: Project, ref: FrameRef = FIRST_FRAME): Project {
+export function carriedOffGrid(before: Project, after: Project, ref: FrameRef): Project {
   const was = heldFrameById(before, ref)
   const now = heldFrameById(after, ref)
   if (!was?.centre || !now) return after
@@ -176,7 +176,7 @@ export function carriedOffGrid(before: Project, after: Project, ref: FrameRef = 
 
 /** The Frame's centre on the Canvas (ticket 1188): from the Canvas's origin along its own axes, in its bead widths, its
  * place on the table turned back by the Canvas's. Where a view of the Canvas shows the Frame's middle. */
-export function frameCentreOnCanvas(project: Layered, ref: FrameRef = FIRST_FRAME): TablePoint | undefined {
+export function frameCentreOnCanvas(project: Layered, ref: FrameRef): TablePoint | undefined {
   const placed = framePlacement(project, ref)
   if (!placed) return undefined
   const canvas = canvasPlacement(project)
@@ -186,7 +186,7 @@ export function frameCentreOnCanvas(project: Layered, ref: FrameRef = FIRST_FRAM
 /** The Project as the Frame's own surface draws it (ticket 1188): its Canvas at `rotation`, the quarter turn that
  * surface is drawn at, and the Frame on its grid there, by its own quarter turns and no lean, wherever it lies; its
  * view lays the drawing where the Frame is. As it is with no Frame. */
-export function withFrameLaidAt(project: Project, rotation: Rotation, ref: FrameRef = FIRST_FRAME): Project {
+export function withFrameLaidAt(project: Project, rotation: Rotation, ref: FrameRef): Project {
   const held = heldFrameById(project, ref)
   if (!held) return project
   const turns = frameById(project, ref)!.quarterTurns ?? 0

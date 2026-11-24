@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { en } from '../i18n/en'
@@ -14,7 +15,7 @@ import { drawWordChartPages } from './wordChartPages'
 // Black and white drawn for real (ticket 1096; PrintBlackAndWhite card): every page after the cover in one ink, each bead
 // on paper, a 10, 20 or 30% tint or solid black; the cover in color.
 
-const wordsOf = (project: ReturnType<typeof fixtureProject>, choices: PrintChoices = { blackAndWhite: true }) => printText(project, en, 'en', new Date(), choices)
+const wordsOf = (project: ReturnType<typeof fixtureProject>, choices: PrintChoices = { blackAndWhite: true }) => printText(project, en, 'en', new Date(), choices, frameIdIn(project))
 
 /** The colors a page's drawing sets, as 0–1 channels: `rg` fills (beads, letters) and `RG` strokes (lines). */
 function drawingColors(drawing: string, operator: 'rg' | 'RG'): number[][] {

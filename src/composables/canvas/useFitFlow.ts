@@ -1,5 +1,5 @@
 import { nearestQuarterTurn } from '../../domain/canvasOrientation'
-import { frameOf, orientationOf } from '../../domain/layerRecord'
+import { frameOf, orientationOf, firstFrameId } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { frameAngleOf } from '../../domain/table'
 
@@ -23,7 +23,7 @@ export function useFitFlow(deps: FitFlowDeps) {
     const project = deps.currentProject()
     if (project && !deps.frameExpanded()) {
       if (orientationOf(project) !== 0) deps.turnCanvasBack()
-      const angle = frameOf(project) ? frameAngleOf(project) : undefined
+      const angle = frameOf(project) ? frameAngleOf(project, firstFrameId(project)) : undefined
       if (angle !== undefined && angle !== nearestQuarterTurn(angle)) deps.settleFrame(nearestQuarterTurn(angle))
     }
     deps.fitView()

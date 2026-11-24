@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { en } from '../i18n/en'
@@ -13,8 +14,8 @@ describe('chart pages of the PDF', () => {
   it('is a text picture at the page size with the drawing beside it', async () => {
     await loadPrintFonts()
     const project = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
-    const plan = planWithKey(project)
-    const page = drawChartPage(project, printText(project, en, 'en', new Date()), plan, [plan.parts[0]!], 2)
+    const plan = planWithKey(project, { frame: frameIdIn(project) })
+    const page = drawChartPage(project, printText(project, en, 'en', new Date(), undefined, frameIdIn(project)), plan, [plan.parts[0]!], 2)
 
     expect([page.canvas.width, page.canvas.height]).toEqual([plan.page.width * 2, plan.page.height * 2])
     expect(page.drawing).toContain('/F2 6.5 Tf')
@@ -23,8 +24,8 @@ describe('chart pages of the PDF', () => {
   it('draws its parts in the look Empty grid and Chart border give (ticket 1127): the rim, the crosses', async () => {
     await loadPrintFonts()
     const project = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
-    const plan = planWithKey(project)
-    const drawing = (choices: { emptyGrid?: boolean; chartBorder?: boolean }) => drawChartPage(project, printText(project, en, 'en', new Date(), choices), plan, [plan.parts[0]!]).drawing.split('\n')
+    const plan = planWithKey(project, { frame: frameIdIn(project) })
+    const drawing = (choices: { emptyGrid?: boolean; chartBorder?: boolean }) => drawChartPage(project, printText(project, en, 'en', new Date(), choices, frameIdIn(project)), plan, [plan.parts[0]!]).drawing.split('\n')
     const outlines = (lines: string[]) => lines.filter((line) => line.includes(' c ') && line.endsWith(' S')).length
 
     expect(outlines(drawing({ chartBorder: true })) - outlines(drawing({}))).toBe(1)
@@ -36,7 +37,7 @@ describe('chart pages of the PDF', () => {
 
   it('writes every chart page with one picture, its text, and the letters and lines as drawing, tens of kB each', async () => {
     const project = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
-    const words = printText(project, en, 'en', new Date())
+    const words = printText(project, en, 'en', new Date(), undefined, frameIdIn(project))
     const pdf = await exportProjectPdf(project, words, 150)
     const bytes = new TextDecoder('latin1').decode(await pdf.arrayBuffer())
     const { plan } = pageOneLayout(project, words)

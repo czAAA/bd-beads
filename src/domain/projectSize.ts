@@ -6,7 +6,7 @@ import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimen
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 import { laidTurnOf } from './framePlacement'
-import { type Layered, FIRST_FRAME, frameById } from './layerRecord'
+import { NO_FRAME, type Layered, frameById } from './layerRecord'
 import { frameWeave } from './layerWeave'
 
 /** A size as the New Project form states it: a number of beads across and down, or a real-world size in mm/cm. */
@@ -48,16 +48,16 @@ export interface EstimatedSizeMm {
 // A Project's Estimated size (CONTEXT.md, ADR 0026): the Bead laid on its Technique's thread times beads across and down
 // (ticket 0734), the exact inverse of gridFromSize's mm conversion. No stagger, tension or Drop, hence only an estimate.
 // Width and height follow the rotated view, as summarizeProject's do. A bare grid or Selection says its Technique.
-export function estimatedSizeMm(project: Layered, bead: Bead, technique?: undefined, ref?: FrameRef): EstimatedSizeMm
+export function estimatedSizeMm(project: Layered, bead: Bead, technique: undefined, ref: FrameRef): EstimatedSizeMm
 export function estimatedSizeMm(project: GridDimensions & Shaped, bead: Bead, technique: Technique): EstimatedSizeMm
-export function estimatedSizeMm(project: (GridDimensions & Shaped) | Layered, bead: Bead, technique?: Technique, ref: FrameRef = FIRST_FRAME): EstimatedSizeMm {
-  const { columns, rows } = sizeOf(project, ref)
+export function estimatedSizeMm(project: (GridDimensions & Shaped) | Layered, bead: Bead, technique: Technique | undefined, ref?: FrameRef): EstimatedSizeMm {
+  const { columns, rows } = sizeOf(project, ref ?? NO_FRAME)
   const whole = 'layers' in project
   // The Frame's own shape when there is one (ticket 0592): a Custom frame's shape is what is measured.
-  const woven: Shaped = whole ? (frameById(project, ref) ?? {}) : project
-  const sheet = { shape: woven.shape, settings: woven.settings, quarterTurns: woven.quarterTurns, columns, rows, technique: whole ? frameWeave(project, ref).technique : technique! }
+  const woven: Shaped = whole ? (frameById(project, ref!) ?? {}) : project
+  const sheet = { shape: woven.shape, settings: woven.settings, quarterTurns: woven.quarterTurns, columns, rows, technique: whole ? frameWeave(project, ref!).technique : technique! }
   const { widthMm, heightMm } = frameSizeMm(sheet, bead)
-  return whole && rotationSwapsAxes(laidTurnOf(project, ref)) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
+  return whole && rotationSwapsAxes(laidTurnOf(project, ref!)) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 
 export interface SizeUnitLabels {

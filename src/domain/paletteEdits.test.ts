@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../testUtils/frameId'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
@@ -210,7 +211,7 @@ describe('Swatch letters (ticket 0573)', () => {
     expect(shownLetters(project, 'canvas')).toBeUndefined()
     const on = withLetters(project, 'canvas', true)
     expect(shownLetters(on, 'canvas')).toBe(on.paletteLetters)
-    expect(shownLetters(on, 'frame')).toBeUndefined()
+    expect(shownLetters(on, FRAME_ID)).toBeUndefined()
     expect('letters' in canvasOf(withLetters(on, 'canvas', false))).toBe(false)
   })
 })

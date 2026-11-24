@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../testUtils/frameId'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, findBead } from './beads'
@@ -58,12 +59,12 @@ describe('estimatedSizeMm', () => {
   })
 
   it('swaps width and height for a Project rotated a quarter turn either way, like the grid summary does', () => {
-    expect(estimatedSizeMm(bareProject({ orientation: 90, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube)).toEqual({ widthMm: 30, heightMm: 15 })
-    expect(estimatedSizeMm(bareProject({ orientation: 270, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube)).toEqual({ widthMm: 30, heightMm: 15 })
+    expect(estimatedSizeMm(bareProject({ orientation: 90, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube, undefined, FRAME_ID)).toEqual({ widthMm: 30, heightMm: 15 })
+    expect(estimatedSizeMm(bareProject({ orientation: 270, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube, undefined, FRAME_ID)).toEqual({ widthMm: 30, heightMm: 15 })
   })
 
   it('leaves width and height as they are for a Project upside down (180°, ticket 171)', () => {
-    expect(estimatedSizeMm(bareProject({ orientation: 180, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube)).toEqual({ widthMm: 15, heightMm: 30 })
+    expect(estimatedSizeMm(bareProject({ orientation: 180, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube, undefined, FRAME_ID)).toEqual({ widthMm: 15, heightMm: 30 })
   })
 
   it('is the inverse of the mm conversion, so a stated size estimates back to about itself', () => {

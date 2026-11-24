@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import { colorsOnPage, planWithKey, trimmedArea } from './chartPageKey'
@@ -20,23 +21,23 @@ describe('colorsOnPage: the color key of a chart page (tickets 579, 0585)', () =
   it('lists every color of the one part', () => {
     const shape = project()
 
-    expect(colorsOnPage(shape, planPrint(shape).parts).sort()).toEqual(['#0000ff', '#00ff00', '#ff0000'])
+    expect(colorsOnPage(shape, planPrint(shape, { frame: frameIdIn(shape) }).parts, frameIdIn(shape)).sort()).toEqual(['#0000ff', '#00ff00', '#ff0000'])
   })
 
   it('takes in the overlap, which is drawn on the page', () => {
     const wideOf = (edge: number) => bareProject({ technique: 'loom' as const, orientation: 0 as Rotation, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns: 100, rows: 1, beads: { 0: Object.fromEntries(Array.from({ length: 100 }, (_, column) => [column, column < edge ? '#ff0000' : '#0000ff'])) } } })
-    const edge = planPrint(wideOf(0)).parts[1]!.firstAcross
+    const edge = planPrint(wideOf(0), { frame: frameIdIn(wideOf(0)) }).parts[1]!.firstAcross
     const wide = wideOf(edge)
-    const [, second] = planPrint(wide).parts
+    const [, second] = planPrint(wide, { frame: frameIdIn(wide) }).parts
 
     expect(second!.overlapAcross).toBe(2)
-    expect(colorsOnPage(wide, [second!]).sort()).toEqual(['#0000ff', '#ff0000'])
+    expect(colorsOnPage(wide, [second!], frameIdIn(wide)).sort()).toEqual(['#0000ff', '#ff0000'])
   })
 
   it('follows a turned Project: a quarter turn puts the rows across', () => {
     const shape = project(90)
 
-    expect(colorsOnPage(shape, planPrint(shape).parts)).toHaveLength(3)
+    expect(colorsOnPage(shape, planPrint(shape, { frame: frameIdIn(shape) }).parts, frameIdIn(shape))).toHaveLength(3)
   })
 })
 
@@ -51,15 +52,15 @@ describe('planWithKey: the key is as tall as the busiest chart page after page 1
   it('has no key for a chart whole on page 1, where Beads needed is (ticket 0914)', () => {
     const small = bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns: 20, rows: 10, beads: { 0: Object.fromEntries(palette(13).map((hex, column) => [column, hex])) } } })
 
-    expect(planWithKey(small).keyRows).toBe(1)
+    expect(planWithKey(small, { frame: frameIdIn(small) }).keyRows).toBe(1)
   })
 
   it('gives one row for up to 6 colors, two up to 12 and three up to 18', () => {
-    expect([1, 6, 7, 12, 13, 18].map((count) => planWithKey(shapeOf(count)).keyRows)).toEqual([1, 1, 2, 2, 3, 3])
+    expect([1, 6, 7, 12, 13, 18].map((count) => planWithKey(shapeOf(count), { frame: frameIdIn(shapeOf(count)) }).keyRows)).toEqual([1, 1, 2, 2, 3, 3])
   })
 
   it('is the same on every page of the PDF, so the pages line up', () => {
-    const plan = planWithKey(shapeOf(13))
+    const plan = planWithKey(shapeOf(13), { frame: frameIdIn(shapeOf(13)) })
 
     expect(plan.keyRows).toBe(3)
     expect(new Set(plan.parts.map((part) => part.region.height)).size).toBe(1)
@@ -74,14 +75,15 @@ describe('planWithKey: two-letter Swatch letters keep a bigger bead (ticket 0913
   })
 
   it('never plans a bead under 2.2 mm for a Schema of 27 colors or more', () => {
-    expect(planWithKey(square(26)).beadMm).toBeCloseTo(1.8, 1)
-    expect(planWithKey(square(27)).beadMm).toBeGreaterThanOrEqual(2.2)
-    expect(planWithKey(square(40)).beadMm).toBeGreaterThanOrEqual(2.2)
+    expect(planWithKey(square(26), { frame: frameIdIn(square(26)) }).beadMm).toBeCloseTo(1.8, 1)
+    expect(planWithKey(square(27), { frame: frameIdIn(square(27)) }).beadMm).toBeGreaterThanOrEqual(2.2)
+    expect(planWithKey(square(40), { frame: frameIdIn(square(40)) }).beadMm).toBeGreaterThanOrEqual(2.2)
   })
 
   it('keeps 2.2 mm when a color on the Schema carries a two-letter letter', () => {
     const [first, ...rest] = colors(3)
-    expect(planWithKey(square(3, { [first!]: 'AB', ...Object.fromEntries(rest.map((hex, index) => [hex, String.fromCharCode(66 + index)])) })).beadMm).toBeGreaterThanOrEqual(2.2)
+    const lettered = square(3, { [first!]: 'AB', ...Object.fromEntries(rest.map((hex, index) => [hex, String.fromCharCode(66 + index)])) })
+    expect(planWithKey(lettered, { frame: frameIdIn(lettered) }).beadMm).toBeGreaterThanOrEqual(2.2)
   })
 })
 
@@ -89,9 +91,9 @@ describe('planWithKey: Large beads raise the floor (ticket 0916)', () => {
   const square = (columns: number, rows: number) => bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns, rows, beads: {} } })
 
   it('plans no bead under the floor it is given, and keeps the higher of it and the two-letter floor', () => {
-    expect(planWithKey(square(100, 100)).beadMm).toBeCloseTo(1.8, 1)
-    expect(planWithKey(square(100, 100), { floorMm: 3 }).beadMm).toBeCloseTo(3, 1)
-    expect(planWithKey(square(150, 150), { floorMm: 1 }).beadMm).toBeGreaterThanOrEqual(1.8)
+    expect(planWithKey(square(100, 100), { frame: frameIdIn(square(100, 100)) }).beadMm).toBeCloseTo(1.8, 1)
+    expect(planWithKey(square(100, 100), { frame: frameIdIn(square(100, 100)), floorMm: 3 }).beadMm).toBeCloseTo(3, 1)
+    expect(planWithKey(square(150, 150), { frame: frameIdIn(square(150, 150)), floorMm: 1 }).beadMm).toBeGreaterThanOrEqual(1.8)
   })
 })
 
@@ -109,28 +111,28 @@ describe('trimmedArea and the plan: the chart is trimmed to the beads (ticket 11
   }
 
   it('holds the rows and columns from the first bead to the last, and the whole Schema when it has no beads', () => {
-    expect(trimmedArea(framed('loom', 30, 39, [4, 8, 33, 20]))).toEqual({ firstAcross: 8, lastAcross: 20, firstDown: 4, lastDown: 33 })
-    expect(trimmedArea(framed('loom', 30, 39))).toEqual({ firstAcross: 0, lastAcross: 29, firstDown: 0, lastDown: 38 })
+    expect(trimmedArea(framed('loom', 30, 39, [4, 8, 33, 20]), frameIdIn(framed('loom', 30, 39, [4, 8, 33, 20])))).toEqual({ firstAcross: 8, lastAcross: 20, firstDown: 4, lastDown: 33 })
+    expect(trimmedArea(framed('loom', 30, 39), frameIdIn(framed('loom', 30, 39)))).toEqual({ firstAcross: 0, lastAcross: 29, firstDown: 0, lastDown: 38 })
   })
 
   it('turns with the Project: a quarter turn puts its rows across, counted from the far end', () => {
-    expect(trimmedArea(framed('loom', 30, 39, [4, 8, 33, 20], 90))).toEqual({ firstAcross: 5, lastAcross: 34, firstDown: 8, lastDown: 20 })
-    expect(trimmedArea(framed('loom', 30, 39, [4, 8, 33, 20], 180))).toEqual({ firstAcross: 9, lastAcross: 21, firstDown: 5, lastDown: 34 })
+    expect(trimmedArea(framed('loom', 30, 39, [4, 8, 33, 20], 90), frameIdIn(framed('loom', 30, 39, [4, 8, 33, 20], 90)))).toEqual({ firstAcross: 5, lastAcross: 34, firstDown: 8, lastDown: 20 })
+    expect(trimmedArea(framed('loom', 30, 39, [4, 8, 33, 20], 180), frameIdIn(framed('loom', 30, 39, [4, 8, 33, 20], 180)))).toEqual({ firstAcross: 9, lastAcross: 21, firstDown: 5, lastDown: 34 })
   })
 
   it.each(['loom', 'brick', 'peyote'] as const)('prints a 13-wide %s piece on a 30 × 39 Frame at the bead a 13 × 30 Schema gets, larger than the whole Frame', (technique) => {
-    const piece = planWithKey(framed(technique, 30, 39, [4, 8, 33, 20]))
-    const alone = planWithKey(framed(technique, 13, 30, [0, 0, 29, 12]))
+    const piece = planWithKey(framed(technique, 30, 39, [4, 8, 33, 20]), { frame: frameIdIn(framed(technique, 30, 39, [4, 8, 33, 20])) })
+    const alone = planWithKey(framed(technique, 13, 30, [0, 0, 29, 12]), { frame: frameIdIn(framed(technique, 13, 30, [0, 0, 29, 12])) })
 
     expect(piece.trim).toEqual({ firstAcross: 8, lastAcross: 20, firstDown: 4, lastDown: 33 })
     expect(piece.beadMm).toBeCloseTo(alone.beadMm, 6)
-    expect(piece.beadMm).toBeGreaterThan(planWithKey(framed(technique, 30, 39)).beadMm)
+    expect(piece.beadMm).toBeGreaterThan(planWithKey(framed(technique, 30, 39), { frame: frameIdIn(framed(technique, 30, 39)) }).beadMm)
     expect(piece.parts.map(({ firstAcross, lastAcross, firstDown, lastDown }) => [firstAcross, lastAcross, firstDown, lastDown])).toEqual([[8, 20, 4, 33]])
     expect([piece.parts[0]!.region.width, piece.parts[0]!.region.height]).toEqual([alone.parts[0]!.region.width, alone.parts[0]!.region.height])
   })
 
   it('cuts only the trimmed chart into parts, with no overlap on the first part\'s outer edges', () => {
-    const plan = planWithKey(framed('loom', 300, 120, [10, 50, 109, 249]))
+    const plan = planWithKey(framed('loom', 300, 120, [10, 50, 109, 249]), { frame: frameIdIn(framed('loom', 300, 120, [10, 50, 109, 249])) })
 
     expect(plan.parts.length).toBeGreaterThan(1)
     expect(Math.min(...plan.parts.map((part) => part.firstAcross))).toBe(50)
@@ -143,20 +145,20 @@ describe('trimmedArea and the plan: the chart is trimmed to the beads (ticket 11
   })
 
   it('trims a Custom frame to the rectangle round its colored beads, each bead whole inside it', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'warpedSquare', size: 4, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape: 'warpedSquare', size: 4, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Warped Square')
     const frame = frameOf(placed.project)!
-    const [first] = frameGeometryOf(placed.project).positions()
-    const painted = paintAt(placed.project, [{ row: frame.row + first!.row, column: frame.column + first!.column, layer: 'frame' }], RED)
-    const whole = trimmedArea(placed.project)
-    const trimmed = trimmedArea(painted)
+    const [first] = frameGeometryOf(placed.project, frameIdIn(placed.project)).positions()
+    const painted = paintAt(placed.project, [{ row: frame.row + first!.row, column: frame.column + first!.column, layer: FRAME_ID }], RED)
+    const whole = trimmedArea(placed.project, frameIdIn(placed.project))
+    const trimmed = trimmedArea(painted, frameIdIn(painted))
 
     expect(whole).toEqual({ firstAcross: 0, lastAcross: projectDimensions(placed.project).columns - 1, firstDown: 0, lastDown: projectDimensions(placed.project).rows - 1 })
     expect(trimmed.lastAcross - trimmed.firstAcross).toBeLessThan(whole.lastAcross - whole.firstAcross)
     expect(trimmed.lastDown - trimmed.firstDown).toBeLessThan(whole.lastDown - whole.firstDown)
-    const { stepAcross, stepDown } = displayedGrid(painted)
-    const bead = customChart(painted, { x: 0, y: 0, width: 0, height: 0 }, 1)!.beads.find((each) => each.color === RED)!
+    const { stepAcross, stepDown } = displayedGrid(painted, frameIdIn(painted))
+    const bead = customChart(painted, { x: 0, y: 0, width: 0, height: 0 }, 1, frameIdIn(painted))!.beads.find((each) => each.color === RED)!
     expect(bead.x - bead.width / 2).toBeGreaterThanOrEqual(trimmed.firstAcross * stepAcross - 1e-6)
     expect(bead.x + bead.width / 2).toBeLessThanOrEqual((trimmed.lastAcross + 1) * stepAcross + 1e-6)
     expect(bead.y - bead.height / 2).toBeGreaterThanOrEqual(trimmed.firstDown * stepDown - 1e-6)

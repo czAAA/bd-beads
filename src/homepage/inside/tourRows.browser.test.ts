@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref, watch } from 'vue'
 import { page } from 'vitest/browser'
@@ -43,7 +44,7 @@ const PUPIL_BEADS = [0, 16, 32].flatMap((eye) => [6, 7, 8].map((along) => ({ lin
 function pupilCodes(project: Project): (string | undefined)[] {
   const { row, column } = placeOf(project)
   return PUPIL_BEADS.map(({ line, along }) => {
-    const color = beadColorAt(project, row + along, column + line, 'frame')
+    const color = beadColorAt(project, row + along, column + line, frameIdIn(project))
     return color ? project.paletteCodes?.[color.toLowerCase()] : undefined
   })
 }
@@ -116,7 +117,7 @@ describe("What's inside's Reference image row on the cuff (ticket 0831)", () => 
 describe("What's inside's last chapter on the cuff (ticket 0831)", () => {
   it('counts Row done on the traced cuff, its purple pupils still there', async () => {
     const project = await applyThrough(await demoEditor(), 'exports')
-    expect(currentPass(rowProgressOf(project)), 'Row done pressed for the first rows').toBe(ROW_DONE_PASSES)
+    expect(currentPass(rowProgressOf(project, frameIdIn(project))), 'Row done pressed for the first rows').toBe(ROW_DONE_PASSES)
     expect(pupilCodes(project)).toEqual(PUPIL_BEADS.map(() => 'DB799'))
   }, 120000)
 })

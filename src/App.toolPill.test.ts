@@ -1,7 +1,8 @@
+import { frameIdIn } from './testUtils/frameId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { beadColor, beadColors, drawnProject, hoverBead, pressBead } from './testUtils/beads'
-import { beadsOfLayer, frameOf } from './domain/layerRecord'
+import { beadsOfLayer, frameIdOf, frameOf } from './domain/layerRecord'
 import { withFrameSheet } from './domain/frameSheet'
 import { colorAt } from './domain/canvas'
 import { changeFrame } from './domain/changeFrame'
@@ -194,8 +195,8 @@ describe('the Tool pill', () => {
   })
 
   it('Mirror the whole Frame on a Star Frame (ticket 0706): the shape\'s own Radial, a stroke in one square landing in every square', async () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: DEFAULT_BEAD.id, size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: DEFAULT_BEAD.id, size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: DEFAULT_BEAD.id, size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Star')
     saveProjects([withMirrorPlace(placed.project, { layer: 'frame' })])
     const wrapper = mount(App, { attachTo: document.body })
@@ -205,10 +206,10 @@ describe('the Tool pill', () => {
 
     // The Star's first bead (round 0, place 0), named from the Frame's corner as a Frame press is aimed.
     const own = frameOf(drawnProject(wrapper))!
-    await pressBead(wrapper, { row: own.row, column: own.column, layer: 'frame' })
+    await pressBead(wrapper, { row: own.row, column: own.column, layer: frameIdOf(own) })
     await wrapper.find('.app-shell').trigger('mouseup')
     // The stroke reaches the other squares (which beads, and how many, is the domain's test).
-    const beads = beadsOfLayer(drawnProject(wrapper), 'frame')!
+    const beads = beadsOfLayer(drawnProject(wrapper), frameIdIn(drawnProject(wrapper)))!
     expect([0, 2, 4, 6, 8].map((column) => colorAt(beads, 0, column))).toEqual([defaultColorOf('red').hex, defaultColorOf('red').hex, defaultColorOf('red').hex, defaultColorOf('red').hex, defaultColorOf('red').hex])
     wrapper.unmount()
   })

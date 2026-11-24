@@ -29,7 +29,7 @@ import MarginTitleBlock from './MarginTitleBlock.vue'
 import { frameNameLine } from './marginFrameName'
 import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, firstFrameId } from '../../domain/layerRecord'
 import { useRotateCopy, type RotateCopyPlace } from '../../composables/ui/useRotateCopy'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 import type { SlimMeasures } from '../../composables/canvas/useFrameExpand'
@@ -110,10 +110,10 @@ const frame = computed(() => frameOf(props.project))
 const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
 /** The name the tab reads and is named by, or "Name this Frame". */
 const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
-const rotatable = computed(() => frameAllows(props.project, 'rotate'))
+const rotatable = computed(() => frameAllows(props.project, 'rotate', firstFrameId(props.project)))
 /** Edit Frame, on a turned Frame too (ticket 1016), so no tool shifts as it turns. A Frame with a row done holds still,
  * its Edit Frame kept in place, disabled, saying why (ticket 0975). */
-const editable = computed(() => frameAllows(props.project, 'resize'))
+const editable = computed(() => frameAllows(props.project, 'resize', firstFrameId(props.project)))
 
 const canvas = useCanvasBackground(() => props.project)
 /** A finger: its 44px hit areas stand the band's tools further apart (ticket 0976). */
@@ -254,8 +254,8 @@ const progressFitting = useFittingForm({
   observed: () => [progressEl.value?.firstElementChild],
   // What it reads: Row done or Column done, the counter, the language (ticket 0851).
   labels: () => {
-    const { current, total } = rowProgressPosition(props.project)
-    return JSON.stringify([locale.value, columnsAsSeen(props.project), current, total, touch.value, !!props.expanded])
+    const { current, total } = rowProgressPosition(props.project, firstFrameId(props.project))
+    return JSON.stringify([locale.value, columnsAsSeen(props.project, firstFrameId(props.project)), current, total, touch.value, !!props.expanded])
   },
 })
 /** Row progress shown: expanded, where the Progress bar is set aside, always, the strip at its least where none fits. */

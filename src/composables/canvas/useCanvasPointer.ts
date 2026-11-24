@@ -1,3 +1,4 @@
+import { firstFrameId } from '../../domain/layerRecord'
 import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Layer } from '../../domain/layers'
@@ -66,7 +67,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (tool === 'fill') {
       return [hovered]
     }
-    const cells = mirroredOnCanvas(project, deps.mirror(), [hovered])
+    const cells = mirroredOnCanvas(project, deps.mirror(), [hovered], firstFrameId(project))
     if (tool !== 'erase') {
       return cells
     }
@@ -87,7 +88,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (deps.activeTool() === 'fill' && color) {
       return deps.fillPreviewCells(project, hoveredCell.value, color)
     }
-    const finished = finishedRowsOf(project)
+    const finished = finishedRowsOf(project, firstFrameId(project))
     return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !finished(cell))
   })
 
@@ -102,7 +103,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (!stamp) {
       return undefined
     }
-    const finished = finishedRowsOf(project)
+    const finished = finishedRowsOf(project, firstFrameId(project))
     return { ...stamp, lands: (row, column) => stamp.lands(row, column) && !finished({ row, column }) }
   })
 

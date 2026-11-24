@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MIRROR_OFF } from '../../domain/mirror'
 import { mount, type VueWrapper } from '@vue/test-utils'
@@ -42,7 +43,7 @@ function projectOf(columns: number, rows: number, extra: LayersChange = {}, tech
   const { beads, ...rest } = extra
   // Left out the Frame is the usual one; `frame: undefined` is a Canvas with none, and its beads are the Canvas's.
   if ('frame' in extra && extra.frame === undefined) {
-    const open = withFrameSheet(project, undefined)
+    const open = withFrameSheet(project, undefined, { frame: frameIdIn(project) })
     return withLayers(open, { ...rest, beads: beads ?? {} })
   }
   return withLayers(project, { ...rest, frame: { ...frameOf(project)!, ...rest.frame, beads: beads ?? {} } })
@@ -452,15 +453,15 @@ describe('ProjectSurface', () => {
     ])('draws everything again when %s of a shaped Frame is painted', async (_name, row, column) => {
       viewport = { width: 400, height: 600 }
       // Woven alike, as a Project from a Starter is: brick stitch in both layers, so the surface draws bands at all.
-      const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined)
-      const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 15, column: 10 } } })
+      const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined, { frame: frameIdIn(projectOf(60, 60, {}, 'brick')) })
+      const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 15, column: 10 } } }, frameIdIn(open))
       if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
       const flat = placed.project
       const { wrapper } = await mountSurface(flat)
       context.calls.length = 0
 
       const beads = frameOf(flat)!.beads
-      await wrapper.setProps({ project: withLayer(flat, 'frame', { beads: { ...beads, [row]: { ...beads[row], [column]: '#e63746' } } }) })
+      await wrapper.setProps({ project: withLayer(flat, FRAME_ID, { beads: { ...beads, [row]: { ...beads[row], [column]: '#e63746' } } }) })
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
@@ -471,12 +472,12 @@ describe('ProjectSurface', () => {
     it.each([1, 2, 3])('draws everything again when a bead of a Frame turned %i quarters is painted', async (turns) => {
       viewport = { width: 400, height: 600 }
       let turned = projectOf(20, 30)
-      for (let turn = 0; turn < turns; turn += 1) turned = rotateFrame(turned)!
+      for (let turn = 0; turn < turns; turn += 1) turned = rotateFrame(turned, undefined, frameIdIn(turned))!
       const { wrapper } = await mountSurface(turned)
       context.calls.length = 0
 
       const beads = frameOf(turned)!.beads
-      await wrapper.setProps({ project: withLayer(turned, 'frame', { beads: { ...beads, 0: { 19: '#e63746' } } }) })
+      await wrapper.setProps({ project: withLayer(turned, FRAME_ID, { beads: { ...beads, 0: { 19: '#e63746' } } }) })
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
@@ -608,7 +609,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
-      await wrapper.setProps({ project: withLayers(project, { rowProgress: { ...rowProgressOf(project) } }) })
+      await wrapper.setProps({ project: withLayers(project, { rowProgress: { ...rowProgressOf(project, frameIdIn(project)) } }) })
 
       expect(context.named('rect')).toHaveLength(0)
     })
@@ -646,7 +647,7 @@ describe('ProjectSurface', () => {
      * progress steps it. */
     const upright = (technique: Technique) => withLayers(projectOf(20, 30, {}, technique), { orientation: 0, ownProgress: {} })
     const tall = { loom: upright('loom'), peyote: upright('peyote'), brick: upright('brick') }
-    const weaving = (pass: number, technique: 'loom' | 'peyote' | 'brick' = 'loom') => moveToRow(tall[technique], pass)
+    const weaving = (pass: number, technique: 'loom' | 'peyote' | 'brick' = 'loom') => moveToRow(tall[technique], pass, frameIdIn(tall[technique]))
 
     async function step(from: Project, to: Project): Promise<void> {
       viewport = { width: 400, height: 600 }
@@ -685,16 +686,16 @@ describe('ProjectSurface', () => {
 
     // Turned by Rotate Frame, its own rows lie across the Canvas's: a band of Canvas rows would miss the passes.
     it('draws everything again on a Frame Rotate Frame turned', async () => {
-      const turned = rotateFrame(tall.loom)!
-      await step(moveToRow(turned, 12), moveToRow(turned, 13))
+      const turned = rotateFrame(tall.loom, undefined, frameIdIn(tall.loom))!
+      await step(moveToRow(turned, 12, frameIdIn(turned)), moveToRow(turned, 13, frameIdIn(turned)))
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
     })
 
     it('draws again a strip down the view where the rows run down the Frame\'s columns', async () => {
-      const turned = toggleRowDirection(tall.loom)
-      const across = (pass: number) => moveToRow(turned, pass)
+      const turned = toggleRowDirection(tall.loom, frameIdIn(tall.loom))
+      const across = (pass: number) => moveToRow(turned, pass, frameIdIn(turned))
       await step(across(4), across(5))
 
       // Columns 4 and 5, x 80 to 120, the view's whole height.
@@ -708,23 +709,23 @@ describe('ProjectSurface', () => {
       }
 
       it('a Frame shape, whose passes are its layout\'s', async () => {
-        const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined)
-        const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 15, column: 10 } } })
+        const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined, { frame: frameIdIn(projectOf(60, 60, {}, 'brick')) })
+        const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 15, column: 10 } } }, frameIdIn(open))
         if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
-        await step(moveToRow(placed.project, 2), moveToRow(placed.project, 3))
+        await step(moveToRow(placed.project, 2, frameIdIn(placed.project)), moveToRow(placed.project, 3, frameIdIn(placed.project)))
         whole()
       })
 
       it('a Frame woven otherwise than the Canvas', async () => {
-        const peyote = withLayer(tall.loom, 'frame', { weave: { ...heldWeave(tall.loom, 'frame'), technique: 'peyote' } })
-        const otherwise = (pass: number) => moveToRow(peyote, pass)
+        const peyote = withLayer(tall.loom, FRAME_ID, { weave: { ...heldWeave(tall.loom, frameIdIn(tall.loom)), technique: 'peyote' } })
+        const otherwise = (pass: number) => moveToRow(peyote, pass, frameIdIn(peyote))
         await step(otherwise(12), otherwise(13))
         whole()
       })
 
       it('a Frame in a Bead of another size', async () => {
-        const twice = withLayer(tall.loom, 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 2) })
-        const larger = (pass: number) => moveToRow(twice, pass)
+        const twice = withLayer(tall.loom, FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 2) })
+        const larger = (pass: number) => moveToRow(twice, pass, frameIdIn(twice))
         await step(larger(12), larger(13))
         whole()
       })
@@ -738,12 +739,12 @@ describe('ProjectSurface', () => {
         const taller = projectOf(20, 60)
         const { wrapper } = await mountSurface(taller)
         context.calls.length = 0
-        await wrapper.setProps({ project: moveToRow(taller, 45) })
+        await wrapper.setProps({ project: moveToRow(taller, 45, frameIdIn(taller)) })
         whole()
       })
 
       it('the way the rows run turned', async () => {
-        await step(weaving(12), toggleRowDirection(weaving(12)))
+        await step(weaving(12), toggleRowDirection(weaving(12), frameIdIn(weaving(12))))
         whole()
       })
 
@@ -1391,7 +1392,7 @@ describe('ProjectSurface', () => {
 
         // Undo to before the first row was finished: the same spot is now the current row, in its own color as ever.
         context.calls.length = 0
-        await wrapper.setProps({ project: resetRowProgress(project) })
+        await wrapper.setProps({ project: resetRowProgress(project, frameIdIn(project)) })
         await nextTick()
         await nextTick()
         expect(redShown()).toBe(true)
@@ -1627,16 +1628,16 @@ describe('ProjectSurface', () => {
 
     it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0066)', async () => {
       // 48 rows of a Bead three quarters the Canvas's size cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share a position.
-      const project = withLayer(projectOf(11, 48, { frame: { technique: 'loom', row: 0, column: 0, rows: 48, columns: 11, beads: {} } }), 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+      const project = withLayer(projectOf(11, 48, { frame: { technique: 'loom', row: 0, column: 0, rows: 48, columns: 11, beads: {} } }), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
       const { wrapper } = await mountSurface(project)
       const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: { ...frameOf(project)!, scale: 0.75 }, rotation: 0, zoom: 1 })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
-      await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, 'frame').x, clientY: view.beadToPoint({ row: 38, column: 3 }, 'frame').y }, button: 0, buttons: 1 })
+      await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, FRAME_ID).x, clientY: view.beadToPoint({ row: 38, column: 3 }, FRAME_ID).y }, button: 0, buttons: 1 })
       await surface.trigger('pointerup', { button: 0 })
       await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, 'canvas').x, clientY: view.beadToPoint({ row: 38, column: 3 }, 'canvas').y }, button: 0, buttons: 1 })
 
-      expect(events(wrapper)['cell-primary-down']).toEqual([[38, 3, 'frame'], [38, 3]])
+      expect(events(wrapper)['cell-primary-down']).toEqual([[38, 3, FRAME_ID], [38, 3]])
     })
 
     it('does not hover again for a press on the bead the pointer was already over', async () => {
@@ -2499,7 +2500,7 @@ describe('ProjectSurface with a Frame', () => {
     function woven(row: number): Project {
       const project = projectOf(20, 10)
       const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
-      return moveToRow(painted, row)
+      return moveToRow(painted, row, frameIdIn(painted))
     }
     inHighContrast()
     const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
@@ -2546,7 +2547,7 @@ describe('ProjectSurface with a Frame', () => {
       await at(0)
       cells.calls.length = 0
 
-      await wrapper.setProps({ project: moveToRow(weaving, 10), rowPress: lastPass })
+      await wrapper.setProps({ project: moveToRow(weaving, 10, frameIdIn(weaving)), rowPress: lastPass })
       await at(1000)
       // Row 9, y 180 to 200, across the view.
       expect(cells.named('rect').map((call) => call.args)).toEqual([[0, 180, 1000, 20]])
@@ -2619,7 +2620,7 @@ describe('ProjectSurface with a Frame', () => {
       const at = frameClock()
       const { wrapper } = await mountPlaying(framed())
       await at(0)
-      await wrapper.setProps({ project: rotateFrame(framed())!, frameTurns: 1 })
+      await wrapper.setProps({ project: rotateFrame(framed(), undefined, frameIdIn(framed()))!, frameTurns: 1 })
       expect(turnShown(wrapper)).toBe(true)
       context.calls.length = 0
       await at(1000)
@@ -2634,7 +2635,7 @@ describe('ProjectSurface with a Frame', () => {
     it('jumps on a change that is not a press, such as an Undo', async () => {
       frameClock()
       const { wrapper } = await mountPlaying(framed(), 1, { x: 0, y: 0 }, { frameTurns: 1 })
-      await wrapper.setProps({ project: rotateFrame(framed())! })
+      await wrapper.setProps({ project: rotateFrame(framed(), undefined, frameIdIn(framed()))! })
       expect(turnShown(wrapper)).toBe(false)
     })
 
@@ -2642,14 +2643,14 @@ describe('ProjectSurface with a Frame', () => {
       vi.stubGlobal('matchMedia', fakeMatchMedia({ '(prefers-reduced-motion: reduce)': true }).matchMedia)
       frameClock()
       const { wrapper } = await mountPlaying(framed())
-      await wrapper.setProps({ project: rotateFrame(framed())!, frameTurns: 1 })
+      await wrapper.setProps({ project: rotateFrame(framed(), undefined, frameIdIn(framed()))!, frameTurns: 1 })
       expect(turnShown(wrapper)).toBe(false)
     })
 
     it('ends the turn when the view moves, as the copy lies only where the drawing was', async () => {
       frameClock()
       const { wrapper } = await mountPlaying(framed())
-      await wrapper.setProps({ project: rotateFrame(framed())!, frameTurns: 1 })
+      await wrapper.setProps({ project: rotateFrame(framed(), undefined, frameIdIn(framed()))!, frameTurns: 1 })
       await wrapper.setProps({ scroll: { x: 30, y: 0 } })
       expect(turnShown(wrapper)).toBe(false)
     })

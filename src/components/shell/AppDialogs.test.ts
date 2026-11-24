@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import AppDialogs from './AppDialogs.vue'
@@ -29,7 +30,7 @@ describe('AppDialogs', () => {
   })
 
   it('answers Turn the Frame? with its three buttons: start over, keep the rows, Cancel (ticket 1184)', async () => {
-    saveProjects([moveToRow(seedProject(15, 30), 2)])
+    saveProjects([moveToRow(seedProject(15, 30), 2, frameIdIn(seedProject(15, 30)))])
     const { wrapper, canvas, dialogs } = mountShellParts(AppDialogs)
     const before = dialogs.activeProject.value!
     const press = async (button: string) => {
@@ -41,19 +42,19 @@ describe('AppDialogs', () => {
     await press('cancel')
     expect(dialogs.activeProject.value).toBe(before)
     await press('extra')
-    expect(rowProgressOf(dialogs.activeProject.value!)).toEqual({ way: 'down' })
+    expect(rowProgressOf(dialogs.activeProject.value!, frameIdIn(dialogs.activeProject.value!))).toEqual({ way: 'down' })
     expect(frameOf(dialogs.activeProject.value!)?.quarterTurns).toBe(1)
   })
 
   it('answers Change to Brick stitch? by keeping the rows on its confirm (ticket 1184)', async () => {
-    saveProjects([moveToRow(seedProject(15, 30), 2)])
+    saveProjects([moveToRow(seedProject(15, 30), 2, frameIdIn(seedProject(15, 30)))])
     const { wrapper, canvas, dialogs } = mountShellParts(AppDialogs)
     canvas.onSetFrameTechnique('brick')
     await flushPromises()
     expect(wrapper.get('[data-testid="technique-change-modal"]').text()).toContain('Start over for Brick stitch')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(frameOf(dialogs.activeProject.value!)?.technique).toBe('brick')
-    expect(rowProgressOf(dialogs.activeProject.value!)).toEqual({ way: 'down', down: 2 })
+    expect(rowProgressOf(dialogs.activeProject.value!, frameIdIn(dialogs.activeProject.value!))).toEqual({ way: 'down', down: 2 })
   })
 
   it('holds the keyboard shortcuts from the moment any dialog is asked, before it has drawn', async () => {

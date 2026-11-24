@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
@@ -52,15 +53,15 @@ describe('useDeleteAllFlow', () => {
   })
 
   it('ignores the Row progress lock: progress resets along with the grid, and one Undo brings both back, as its question says (ticket 0979)', () => {
-    const inProgress = moveToRow(painted, 2)
+    const inProgress = moveToRow(painted, 2, frameIdIn(painted))
     const { harness, onConfirmDeleteAll } = setup(inProgress)
     onConfirmDeleteAll()
     expect(isEmpty(harness.project)).toBe(true)
-    expect(rowProgressOf(harness.project)).not.toEqual(rowProgressOf(inProgress))
+    expect(rowProgressOf(harness.project, frameIdIn(harness.project))).not.toEqual(rowProgressOf(inProgress, frameIdIn(inProgress)))
 
     harness.history.onUndo()
     expect(frameGrid(harness.project)).toEqual(frameGrid(inProgress))
-    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(inProgress))
+    expect(rowProgressOf(harness.project, frameIdIn(harness.project))).toEqual(rowProgressOf(inProgress, frameIdIn(inProgress)))
   })
 
   it('is not an undo step when there is nothing to clear', () => {

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { takeInOutside, mostRecentlyUpdated, summarizeProject } from './projectLibrary'
@@ -22,7 +23,7 @@ describe('summarizeProject', () => {
   })
 
   it('states no size for a canvas with no Frame: just the name', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' }), undefined)
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' })) })
     expect(summarizeProject(open as Project)).toBe('Sketch')
   })
 

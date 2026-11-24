@@ -1,3 +1,4 @@
+import { FRAME_ID, frameIdIn } from '../testUtils/frameId'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, forEachBead, type BeadMap } from './canvas'
@@ -98,7 +99,7 @@ describe('moveLayerSelection (ticket 1013)', () => {
 
     const inFrame = beadsFromColors([[RED]], { row: 3, column: 1 })
     const progressing = canvasWith({}, { frame: { technique: 'loom', row: 20, column: 20, rows: 5, columns: 5, beads: inFrame }, ownProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
-    const red = pieceSelectionOnLayer(progressing, { row: 23, column: 21, layer: 'frame' })!
+    const red = pieceSelectionOnLayer(progressing, { row: 23, column: 21, layer: FRAME_ID })!
     expect(moveLayerSelection(progressing, red, -3, 0, { cover: true })).toBeUndefined()
   })
 
@@ -138,19 +139,19 @@ describe('moveLayerSelection (ticket 1013)', () => {
   it('moves a Frame Piece inside the Frame and stops it at the Frame\'s edge', () => {
     const inFrame = beadsFromColors([[RED, BLUE]], { row: 1, column: 1 })
     const project = canvasWith({}, { frame: { technique: 'loom', row: 20, column: 20, rows: 5, columns: 5, beads: inFrame } })
-    const selection = pieceSelectionOnLayer(project, { row: 21, column: 21, layer: 'frame' })!
+    const selection = pieceSelectionOnLayer(project, { row: 21, column: 21, layer: FRAME_ID })!
 
     const moved = moveLayerSelection(project, selection, 2, 1)!
 
-    expect(positionsOf(beadsOfLayer(moved.project, 'frame'))).toEqual([`3,2:${RED}`, `3,3:${BLUE}`])
-    expect(moved.selection).toMatchObject({ top: 23, left: 22, layer: 'frame' })
+    expect(positionsOf(beadsOfLayer(moved.project, frameIdIn(moved.project)))).toEqual([`3,2:${RED}`, `3,3:${BLUE}`])
+    expect(moved.selection).toMatchObject({ top: 23, left: 22, layer: FRAME_ID })
     expect(moveLayerSelection(project, selection, 0, 3)).toBeUndefined()
   })
 
   it('makes no move out of or into a row marked done', () => {
     const inFrame = beadsFromColors([[RED]], { row: 3, column: 1 })
     const project = canvasWith({}, { frame: { technique: 'loom', row: 20, column: 20, rows: 5, columns: 5, beads: inFrame }, ownProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
-    const selection = pieceSelectionOnLayer(project, { row: 23, column: 21, layer: 'frame' })!
+    const selection = pieceSelectionOnLayer(project, { row: 23, column: 21, layer: FRAME_ID })!
 
     expect(moveLayerSelection(project, selection, 1, 0)).toBeDefined()
     expect(moveLayerSelection(project, selection, -3, 0)).toBeUndefined()

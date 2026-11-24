@@ -1,7 +1,7 @@
 import { anyChangedPosition, beadsFromColors, colorAt, frameContains, hasBeads, sameFrame, type BeadMap } from './canvas'
 import type { FrameRef, Layer } from './grid'
 import { sameWeave, weaveOf } from './layerWeave'
-import { beadsOfLayer, FIRST_FRAME, frameById, frameIdOf, framesOf, heldWeave, type Layered } from './layerRecord'
+import { beadsOfLayer, frameById, frameIdOf, framesOf, heldWeave, type Layered } from './layerRecord'
 import { DEFAULT_BEAD } from './beads'
 import type { Grid, LayerFields } from './project'
 import { DEFAULT_TECHNIQUE, type Weave } from './weave'
@@ -68,7 +68,7 @@ export function sameBeads(a: Layered, b: Layered): boolean {
 /** Whether two states of a Project hold the same Frame and beads: the Frame's place, size, Weave, name, shape, settings
  * and turn, its shown and Folded beads, and the Canvas's. How a held Frame change (ticket 0640) knows it came back to
  * where it began, and so is no Undo step. */
-export function sameLayers(a: Layered, b: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+export function sameLayers(a: Layered, b: Layered, ref: FrameRef): boolean {
   const [x, y] = [frameById(a, ref), frameById(b, ref)]
   if (!x || !y) return x === y && sameBeads(a, b)
   const names = new Set([...Object.keys(x.settings ?? {}), ...Object.keys(y.settings ?? {})]) as Set<keyof NonNullable<typeof x.settings>>

@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
@@ -10,7 +11,7 @@ const colorsOf = (count: number, letter?: string) => Array.from({ length: count 
 const words = (colors: number, name = 'Scarf', maker = '') => ({ name, maker, colors: colorsOf(colors) })
 /** Page 1's Beads needed: its heading and column heads, a row, and the Total with the grams note. */
 const TABLE: TableRows = { head: mm(10.5), row: mm(5), end: mm(14) }
-const overviewLayout = (project: Parameters<typeof layoutOf>[0], wordsOf: Parameters<typeof layoutOf>[1]) => layoutOf(project, wordsOf, TABLE)
+const overviewLayout = (project: Parameters<typeof layoutOf>[0], wordsOf: Omit<Parameters<typeof layoutOf>[1], 'frame'>) => layoutOf(project, { ...wordsOf, frame: frameIdIn(project) }, TABLE)
 
 const page = A4_PORTRAIT
 const inset = PRINT_RULER + PRINT_BOARD_PAD

@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
@@ -90,7 +91,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
   })
 
   it('with no Frame, passes on Drag a Frame from the unfolded rows (ticket 1058)', async () => {
-    const wrapper = mountPanel({ project: withFrameSheet(project, undefined) })
+    const wrapper = mountPanel({ project: withFrameSheet(project, undefined, { frame: frameIdIn(project) }) })
     await wrapper.get('[data-testid="project-export"]').trigger('click')
     const rows = wrapper.get('[data-testid="project-export-rows"]')
     await rows.get('[data-testid="export-select-frame"]').trigger('click')
@@ -140,7 +141,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
   it('heads the Canvas section Canvas, outside the Frame with a Frame on the Canvas, and Canvas with none (ticket 0935)', () => {
     const label = (wrapper: ReturnType<typeof mountPanel>) => wrapper.get('.panel-section__label').text()
     expect(label(mountPanel())).toBe(en.layerSettings.canvasOutsideFrame)
-    expect(label(mountPanel({ project: withFrame(project, undefined) }))).toBe(en.panels.project.canvas)
+    expect(label(mountPanel({ project: withFrame(project, undefined, frameIdIn(project)) }))).toBe(en.panels.project.canvas)
   })
 
   it('changes the Canvas\'s Technique while a Frame exists, every one offered, even once a Row progress pass is done', async () => {

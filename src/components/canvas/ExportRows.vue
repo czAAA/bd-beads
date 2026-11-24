@@ -6,7 +6,7 @@ import PanelItem from '../shell/PanelItem.vue'
 import { fitToDrawing } from '../../domain/frame'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, firstFrameId } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 
 // What the Export panel holds (ticket 0652; ExportPanel card), also unfolded under the Project panel's Export row (ticket
@@ -32,7 +32,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 /** Fit a Frame to the drawing needs something drawn. */
-const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
+const nothingToFit = computed(() => fitToDrawing(props.project, firstFrameId(props.project)) === undefined)
 </script>
 
 <template>

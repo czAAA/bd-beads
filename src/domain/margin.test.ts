@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
@@ -13,7 +14,7 @@ import { findBead } from './beads'
 
 const frame: Rect = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-const framed = withFrame(open, frame)
+const framed = withFrame(open, frame, frameIdIn(open))
 
 /** The Project with its Canvas beads painted as a drawing command would hand them over, before what may stay is kept. */
 const rawPaint = (project: Project, positions: GridPosition[], color: string | null): Project => (withLayers(project, { beads: withColors(beadsOfLayer(project, 'canvas'), positions.map((position) => ({ ...position, color }))) }))
@@ -88,7 +89,7 @@ describe('a Piece tap keeps out of the margin (tickets 428, 433)', () => {
 
 describe('mayPlace (ticket 501)', () => {
   it('refuses a position in the margin and allows the Frame, the Canvas beyond and erasing nowhere special', () => {
-    const framed = withFrame(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }), { row: 10, column: 10, rows: 4, columns: 6 })
+    const framed = withFrame(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }), { row: 10, column: 10, rows: 4, columns: 6 }, frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })))
     expect(mayPlace(framed, { row: 9, column: 10 })).toBe(false)
     expect(mayPlace(framed, { row: 10, column: 10 })).toBe(true)
     expect(mayPlace(framed, { row: 10 - MARGIN - 1, column: 10 })).toBe(true)
@@ -97,9 +98,9 @@ describe('mayPlace (ticket 501)', () => {
 
 describe('the margin of a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-  const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
+  const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 }, frameIdIn(base))
   // Its Bead is three quarters the Canvas's size, so its 48 rows cover 36 of the Canvas's.
-  const woven = withLayer(placed, 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+  const woven = withLayer(placed, FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
 
   it('hangs off what the Frame draws, so it is joined to it', () => {
     // The Frame covers 36 loom rows: the 4 below are the margin, the rows after those are free Canvas.
@@ -109,7 +110,7 @@ describe('the margin of a Frame that draws shorter than the rows it names (ADR 0
   })
 
   it('never calls a Frame bead margin, whatever its position says', () => {
-    expect(mayPlace(woven, { row: 40, column: 3, layer: 'frame' })).toBe(true)
+    expect(mayPlace(woven, { row: 40, column: 3, layer: FRAME_ID })).toBe(true)
   })
 })
 

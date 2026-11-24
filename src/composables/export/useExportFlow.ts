@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { withMakerName } from '../../domain/makerName'
 import type { Layer } from '../../domain/grid'
-import { lettersOn, withLetters } from '../../domain/layerRecord'
+import { lettersOn, withLetters, firstFrameId } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf } from '../../domain/projectFile'
 import type { SealedProject } from '../../domain/sealedProject'
@@ -228,7 +228,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /** The words a printed page carries (tickets 162, 164, 0583), in the app's language, with the Project's maker's name
    * (ADR 0060). */
-  const wordsOf = (code: PrintCode, project: Project) => code.printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value)
+  const wordsOf = (code: PrintCode, project: Project) => code.printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value, firstFrameId(project))
 
   /** `part` is a Selection's export (ticket 1210, `selectionPart`): the Project laid on just the Selection, which is
    * exported in place of the open one. */
@@ -237,7 +237,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     // It is the Cover page, one file (ticket 1096; PngExport card).
     const dpi = pngDpiFor(quality.value)
     return runExport(
-      (project) => projectExportFileName(project, 'png'),
+      (project) => projectExportFileName(project, 'png', undefined, firstFrameId(project)),
       async (project) => {
         const code = await loadPrintCode()
         return code.exportProjectPng(project, wordsOf(code, project), dpi)

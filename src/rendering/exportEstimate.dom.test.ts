@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { en } from '../i18n/en'
@@ -8,14 +9,14 @@ import { withLayers } from '../testUtils/layerFields'
 
 const factsOf = (technique: Technique, columns: number, rows: number, choices: PrintChoices = {}, letters = false): ExportFacts => {
   const project = withLayers(fixtureProject({ technique, columns, rows }), { letters })
-  return exportFacts(project, printText(project, en, 'en', new Date(), choices))!
+  return exportFacts(project, printText(project, en, 'en', new Date(), choices, frameIdIn(project)), frameIdIn(project))!
 }
 const ROW_BY_ROW = { rowByRow: true }
 
 describe('exportFacts', () => {
   it('has none for a Project with no Frame', () => {
     const project = withLayers(fixtureProject({ technique: 'loom' }), { frame: undefined })
-    expect(exportFacts(project, printText(project, en, 'en', new Date()))).toBeUndefined()
+    expect(exportFacts(project, printText(project, en, 'en', new Date(), undefined, frameIdIn(project)), frameIdIn(project))).toBeUndefined()
   })
 
   it('counts page 1 alone for a small Schema, its chart there (ticket 0914)', () => {

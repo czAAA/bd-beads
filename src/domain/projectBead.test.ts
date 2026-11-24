@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { moveToRow, rowProgressOf } from './rowProgress'
@@ -72,17 +73,17 @@ describe('replaceBead', () => {
 
       const replaced = replaceBead(before, to)
 
-      expect(beadsOfLayer(replaced, 'frame')).toBe(beadsOfLayer(before, 'frame'))
+      expect(beadsOfLayer(replaced, frameIdIn(replaced))).toBe(beadsOfLayer(before, frameIdIn(before)))
       expect(beadsOfLayer(replaced, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
     },
   )
 
   it('keeps Row progress exactly as it was', () => {
-    const before = moveToRow(distinctlyPainted(), 1)
+    const before = moveToRow(distinctlyPainted(), 1, frameIdIn(distinctlyPainted()))
 
     const replaced = replaceBead(before, cubeBead)
 
-    expect(rowProgressOf(replaced)).toBe(rowProgressOf(before))
+    expect(rowProgressOf(replaced, frameIdIn(replaced))).toBe(rowProgressOf(before, frameIdIn(before)))
   })
 
   it('keeps name, technique and rotation exactly as they were', () => {
@@ -170,7 +171,7 @@ describe('each layer has its own Bead (ticket 0665, ADR 0079)', () => {
 
   it("replaces the Canvas's Bead on a Project with no Frame, whichever layer is asked, and the Palette follows it", () => {
     const open = withLayers(made(), { frame: undefined })
-    const replaced = replaceBead(open, delica, undefined, 'frame')
+    const replaced = replaceBead(open, delica, undefined, FRAME_ID)
     expect(canvasOf(replaced).beadId).toBe(delica.id)
     expect(replaced.palette).toContain(defaultPalette(delica.id).find((color) => color.family === 'beige')!.id)
   })

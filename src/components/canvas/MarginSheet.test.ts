@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
@@ -114,7 +115,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
   })
 
   it('moves the row from its Row done and Back a row, as the Progress bar does', async () => {
-    const wrapper = mountSheet({ project: moveToRow(framed(), 2) })
+    const wrapper = mountSheet({ project: moveToRow(framed(), 2, frameIdIn(framed())) })
     expect(control(wrapper, 'margin-progress-compact-position').text()).toBe('Row 3 of 113/11')
     await control(wrapper, 'margin-progress-next').trigger('click')
     await control(wrapper, 'margin-progress-previous').trigger('click')
@@ -145,7 +146,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
 
   it('keeps Edit Frame in place once a row is done, disabled, a long press showing why (ticket 0975)', async () => {
     vi.useFakeTimers()
-    const wrapper = mountSheet({ project: moveToRow(framed(), 1) })
+    const wrapper = mountSheet({ project: moveToRow(framed(), 1, frameIdIn(framed())) })
     const pencil = control(wrapper, 'frame-edit-toggle')
     expect(pencil.attributes('aria-disabled')).toBe('true')
     await pencil.trigger('click')
@@ -161,7 +162,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
   })
 
   it('lets Edit Frame work again once progress is reset (ticket 0975)', async () => {
-    const wrapper = mountSheet({ project: moveToRow(framed(), 1) })
+    const wrapper = mountSheet({ project: moveToRow(framed(), 1, frameIdIn(framed())) })
     await wrapper.setProps({ project: framed() })
     const pencil = control(wrapper, 'frame-edit-toggle')
     expect(pencil.attributes('aria-disabled')).toBeUndefined()
@@ -264,7 +265,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
   })
 
   it('is compact under 80px: the tools in the band, the title block in one row with its legend and Row highlight, the counter, the track and Row done at its end', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.7), project: moveToRow(framed(), 2) })
+    const wrapper = mountSheet({ anchor: anchorAt(0.7), project: moveToRow(framed(), 2, frameIdIn(framed())) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
     // Two rows done: the Frame holds still, its Edit Frame kept in place, disabled (ticket 0975).
     expect(names(wrapper)).toEqual(['Expand the Frame', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
@@ -416,7 +417,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
   })
 
   it('keeps Edit Frame on the band once a row is done, disabled with its reason, and in the menu with the same reason where there is no room (ticket 0975)', async () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.45), project: moveToRow(framed(), 1) })
+    const wrapper = mountSheet({ anchor: anchorAt(0.45), project: moveToRow(framed(), 1, frameIdIn(framed())) })
     expect(control(wrapper, 'frame-edit-toggle').attributes('aria-disabled')).toBe('true')
     await wrapper.setProps({ anchor: foldedOfWidth(140) })
     await control(wrapper, 'margin-frame-tools').trigger('click')
@@ -465,7 +466,7 @@ describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
   })
 
   it('keeps Edit Frame on the band once a row is done, disabled', () => {
-    const wrapper = mountSheet({ project: moveToRow(framed(), 1) })
+    const wrapper = mountSheet({ project: moveToRow(framed(), 1, frameIdIn(framed())) })
     expect(control(wrapper, 'frame-edit-toggle').attributes('aria-disabled')).toBe('true')
   })
 })
@@ -683,7 +684,7 @@ describe('Edit Frame on a turned Frame (ticket 1016)', () => {
     const ids = (project: Project) => mountSheet({ project }).findAll('.margin-sheet__tools [data-testid]').map((each) => each.attributes('data-testid'))
     let turned = framed()
     for (let turn = 1; turn <= 3; turn++) {
-      turned = rotateFrame(turned)!
+      turned = rotateFrame(turned, undefined, frameIdIn(turned))!
       expect(ids(turned), `${turn}`).toEqual(ids(framed()))
       expect(control(mountSheet({ project: turned }), 'frame-edit-toggle').attributes('aria-disabled')).not.toBe('true')
     }

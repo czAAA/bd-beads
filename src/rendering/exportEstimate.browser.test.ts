@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { BUILT_IN_COLORS } from '../domain/palette'
@@ -74,8 +75,8 @@ describe('the File size estimate against real exports (QualitySlider card, ADR 0
     }
     for (const on of [false, true]) {
       const project = make()
-      const words = printText(project, en, 'en', new Date(), { cover: on, blackAndWhite: on, emptyGrid: on, chartBorder: on, largeBeads: on, rowByRow: on })
-      const facts = exportFacts(project, words)!
+      const words = printText(project, en, 'en', new Date(), { cover: on, blackAndWhite: on, emptyGrid: on, chartBorder: on, largeBeads: on, rowByRow: on }, frameIdIn(project))
+      const facts = exportFacts(project, words, frameIdIn(project))!
       for (const [quality, dpi] of Object.entries(PNG_DPI_BY_QUALITY)) {
         const estimate = estimatePng(facts, dpi)
         expect(estimate.count).toBe(1)

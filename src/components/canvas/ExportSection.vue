@@ -19,7 +19,7 @@ import { loadPrintCode, type PrintCode } from '../../rendering/loadPrintCode'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { frameOf, projectNameOf } from '../../domain/layerRecord'
+import { frameOf, projectNameOf, firstFrameId } from '../../domain/layerRecord'
 import { frameRowOrder, ROW_WAYS } from '../../domain/rowProgress'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 import { namedChoices, pdfFileName } from '../../composables/export/pdfFileName'
@@ -68,13 +68,13 @@ loadPrintCode().then(
 )
 /** What an export is made of, for its File size estimate (ticket 0588) and the PDF's page count: read once for the
  * buttons; none until the print code is here. */
-const wordsNow = computed(() => printCode.value?.printText(props.project, t.value, locale.value, new Date(), choices.value))
-const exportFactsNow = computed(() => wordsNow.value && printCode.value?.exportFacts(props.project, wordsNow.value))
+const wordsNow = computed(() => printCode.value?.printText(props.project, t.value, locale.value, new Date(), choices.value, firstFrameId(props.project)))
+const exportFactsNow = computed(() => wordsNow.value && printCode.value?.exportFacts(props.project, wordsNow.value, firstFrameId(props.project)))
 /** Large beads is offered only where it makes the chart's beads bigger (ticket 1125); hidden, it keeps its remembered state. */
 const largeBeadsShown = computed(() => !!exportFactsNow.value?.largeBeadsActs)
 /** Which way Row by row's rows run is asked only with Row by row on, for a Frame whose weaver may turn its rows (a Custom
  * frame's Row order runs one way); hidden, it keeps its remembered choice. */
-const rowWayShown = computed(() => rowByRow.value && !!frame.value && frameRowOrder(props.project).turns)
+const rowWayShown = computed(() => rowByRow.value && !!frame.value && frameRowOrder(props.project, firstFrameId(props.project)).turns)
 const WAY_WORDS = { down: 'topToBottom', right: 'leftToRight', up: 'bottomToTop', left: 'rightToLeft' } as const
 const rowWayLabelId = useId()
 const rowWayOptions = computed(() => [

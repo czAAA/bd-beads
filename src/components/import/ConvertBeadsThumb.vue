@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstFrameId } from '../../domain/layerRecord'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Grid } from '../../domain/project'
 import type { DrawnProject } from '../../rendering/projectRenderer'
@@ -20,7 +21,8 @@ function draw() {
   frame = 0
   const context = canvasEl.value?.getContext('2d')
   if (!canvasEl.value || !context || !props.beads?.length) return
-  const image = thumbnailPixels(props.drawn(props.beads), DRAWN_SIZE)
+  const drawn = props.drawn(props.beads)
+  const image = thumbnailPixels(drawn, DRAWN_SIZE, firstFrameId(drawn))
   canvasEl.value.width = image.width
   canvasEl.value.height = image.height
   emit('shape', image.width / image.height)

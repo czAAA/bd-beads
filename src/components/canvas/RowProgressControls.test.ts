@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RowProgressControls from './RowProgressControls.vue'
@@ -49,17 +50,17 @@ describe('the track’s spark (ProgressBar card, ticket 0730)', () => {
     const wrapper = mount(RowProgressControls, { props: { project, form: 'margin', testid: 'margin-progress' } })
     expect(spark(wrapper).attributes('hidden')).toBeDefined()
 
-    await wrapper.setProps({ project: moveToRow(project, 1) })
+    await wrapper.setProps({ project: moveToRow(project, 1, frameIdIn(project)) })
     expect(spark(wrapper).attributes('hidden')).toBeUndefined()
     expect(spark(wrapper).attributes('style')).toContain(`translateX(${(1 / 11 - 1) * 100}%)`)
 
-    await wrapper.setProps({ project: moveToRow(project, 11) })
+    await wrapper.setProps({ project: moveToRow(project, 11, frameIdIn(project)) })
     expect(spark(wrapper).attributes('hidden')).toBeUndefined()
     expect(spark(wrapper).attributes('style')).toContain('translateX(0%)')
   })
 
   it('flares on each Row done, restarting each time, and not on Row not done or on being shown', async () => {
-    const wrapper = mount(RowProgressControls, { props: { project: moveToRow(project, 1), form: 'margin', testid: 'margin-progress', rowPress: press(1, true) } })
+    const wrapper = mount(RowProgressControls, { props: { project: moveToRow(project, 1, frameIdIn(project)), form: 'margin', testid: 'margin-progress', rowPress: press(1, true) } })
     expect(spark(wrapper).classes().filter((name) => name.includes('flaring'))).toEqual([])
 
     await wrapper.setProps({ rowPress: press(2, true) })
@@ -76,7 +77,7 @@ describe('the track’s spark (ProgressBar card, ticket 0730)', () => {
 
 describe("the band of What's inside's demo Frame (ticket 0797, MarginSheet card)", () => {
   it('has no Row not done; Row done and the rest stay', () => {
-    const wrapper = mount(RowProgressControls, { props: { project: moveToRow(project, 1), form: 'margin', testid: 'margin-progress', withoutNotDone: true } })
+    const wrapper = mount(RowProgressControls, { props: { project: moveToRow(project, 1, frameIdIn(project)), form: 'margin', testid: 'margin-progress', withoutNotDone: true } })
     expect(wrapper.find('[data-testid="margin-progress-previous"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="margin-progress-next"]').exists()).toBe(true)
   })
@@ -105,7 +106,7 @@ describe('one lit Row done and one Row highlight Switch on screen (ticket 0981, 
   })
 
   it('leaves a Custom frame\'s Switch to the bar, as its rows run one way', () => {
-    const placed = changeFrame(project, { custom: { shape: 'triangle', size: 4, centre: { row: 5, column: 5 } } })
+    const placed = changeFrame(project, { custom: { shape: 'triangle', size: 4, centre: { row: 5, column: 5 } } }, frameIdIn(project))
     if (placed.kind !== 'changed') throw new Error('expected a Triangle')
     expect(highlight(mounted('bar', placed.project))).toBe(true)
     for (const form of ['margin', 'compact', 'folded'] as const) expect(highlight(mounted(form, placed.project))).toBe(false)

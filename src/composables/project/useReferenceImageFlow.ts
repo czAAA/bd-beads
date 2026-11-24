@@ -1,3 +1,4 @@
+import { firstFrameId } from '../../domain/layerRecord'
 import { computed, readonly, ref, shallowRef, watch } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import { ImageConversionError, type ImageRejection } from '../../domain/imageConversion'
@@ -86,7 +87,7 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
 
   /** The Canvas's box, or the part in view on an empty Canvas without a Frame. */
   function box(project: Project): ReferenceBox {
-    return referenceBoxPx(project, deps.inView())
+    return referenceBoxPx(project, deps.inView(), firstFrameId(project))
   }
 
   const limits = computed<WidthLimits | undefined>(() => {

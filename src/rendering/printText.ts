@@ -18,7 +18,7 @@ import { wordChartOf, type WordChart, type WordRun, type WordSide, type WordSpin
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
 import { laidTurnOf, withLaidTurn } from '../domain/framePlacement'
-import { projectNameOf, FIRST_FRAME, frameById } from '../domain/layerRecord'
+import { projectNameOf, frameById } from '../domain/layerRecord'
 import { withFrameSheet } from '../domain/frameSheet'
 import { pieceFaceOf } from '../domain/pieceFaces'
 import { largeBeadsActs } from './pageOneLayout'
@@ -81,6 +81,8 @@ export interface PrintChoices {
 // Everything the PDF and PNG print, worked out as words before drawing (tickets 162, 164); maker's name omitted when
 // empty. It carries the print choices too, so the page count, the File size estimate and the export read one plan.
 export interface PrintText {
+  /** The Frame it prints (ticket 1217). */
+  frame: FrameRef
   locale: Locale
   /** The title: the Frame's name, else the Project's (ticket 0720). */
   name: string
@@ -194,7 +196,7 @@ function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations
 
 /** The words an export prints; the maker's name is the Project's own, and empty prints none (ADR 0060). The Word chart
  * follows Row by row, never Letters (ticket 0916). */
-export function printText(shown: Project, t: Translations, locale: Locale, at: Date, choices: PrintChoices = {}, ref: FrameRef = FIRST_FRAME): PrintText {
+export function printText(shown: Project, t: Translations, locale: Locale, at: Date, choices: PrintChoices = {}, ref: FrameRef): PrintText {
   // Named by the Frame's own turn alone, as the export draws it (ticket 1186).
   const project = withLaidTurn(shown, undefined, ref)
   const bead = resolveProjectBead(project)
@@ -222,6 +224,7 @@ export function printText(shown: Project, t: Translations, locale: Locale, at: D
   const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at)
 
   const text: PrintText = {
+    frame: ref,
     locale,
     name: frameById(project, ref)?.name?.trim() || projectNameOf(project),
     techniqueWord: technique,

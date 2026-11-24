@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject, createProjectFromImage } from './createProject'
 import { BEAD_CATALOG } from './beads'
@@ -32,7 +33,7 @@ describe('createProject Canvas orientation', () => {
 describe('createProject from the form\'s Layer settings (ADR 0079, ticket 0670)', () => {
   it('gives both layers the form\'s Background, and none for a Background left to the device', () => {
     const project = createProject({ technique: 'loom', beadId: cubeBead.id, background: '#336699', size: { width: 4, height: 4, unit: 'beads' } })
-    expect([backgroundOf(project, 'canvas'), backgroundOf(project, 'frame')]).toEqual(['#336699', '#336699'])
+    expect([backgroundOf(project, 'canvas'), backgroundOf(project, FRAME_ID)]).toEqual(['#336699', '#336699'])
     expect(backgroundOf(createProject({ technique: 'loom', beadId: cubeBead.id }), 'canvas')).toBeUndefined()
   })
 })
@@ -229,7 +230,7 @@ describe('createProjectFromImage', () => {
       ['#00ff00', '#0000ff'],
     ])
     expect(canvasOf(project).name).toBe('Fox')
-    expect(rowProgressOf(project)).toEqual({ way: 'down' })
+    expect(rowProgressOf(project, frameIdIn(project))).toEqual({ way: 'down' })
   })
 
   it('fits a grid that does not match the stated size rather than contradicting its own dimensions', () => {
@@ -256,12 +257,12 @@ describe('createProject starting way of the rows', () => {
   const made = (technique: 'peyote' | 'loom' | 'brick') => createProject({ technique, beadId: cubeBead.id, size: { width: 4, height: 4, unit: 'beads' } })
 
   it('starts a loom Frame top to bottom, peyote left to right and brick stitch bottom to top as seen, at the first pass', () => {
-    expect((['loom', 'peyote', 'brick'] as const).map((technique) => seenWayOf(made(technique)))).toEqual(['down', 'right', 'up'])
+    expect((['loom', 'peyote', 'brick'] as const).map((technique) => seenWayOf(made(technique), frameIdIn(made(technique))))).toEqual(['down', 'right', 'up'])
   })
 
   it('keeps each Frame\'s starting way as seen, whatever the Technique\'s starting Canvas turn (ticket 1185)', () => {
-    expect(rowProgressOf(made('loom'))).toEqual({ way: 'down' })
-    expect(rowProgressOf(made('peyote'))).toEqual({ way: 'right' })
-    expect(rowProgressOf(made('brick'))).toEqual({ way: 'up' })
+    expect(rowProgressOf(made('loom'), frameIdIn(made('loom')))).toEqual({ way: 'down' })
+    expect(rowProgressOf(made('peyote'), frameIdIn(made('peyote')))).toEqual({ way: 'right' })
+    expect(rowProgressOf(made('brick'), frameIdIn(made('brick')))).toEqual({ way: 'up' })
   })
 })

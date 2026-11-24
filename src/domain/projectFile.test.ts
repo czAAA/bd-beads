@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { addedColorId, defaultPalette, defaultPaletteIds } from './palette'
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadCopy, findBead } from './beads'
@@ -45,14 +46,14 @@ function makeProject(name = 'Fox'): Project {
 
 /** A Project with a five-round Triangle holding two beads, one on its outer round. */
 function customFramed(): Project {
-  const result = changeFrame(makeProject('Kite'), { custom: { shape: 'triangle', size: 5, centre: { row: 10, column: 10 } } })
+  const result = changeFrame(makeProject('Kite'), { custom: { shape: 'triangle', size: 5, centre: { row: 10, column: 10 } } }, frameIdIn(makeProject('Kite')))
   if (result.kind !== 'changed') throw new Error('expected a Triangle')
-  return onLayer(result.project, 'frame', (view) => paintCells(view, [{ row: 0, column: 2 }, { row: 4, column: 14 }], '#e63746'))
+  return onLayer(result.project, FRAME_ID, (view) => paintCells(view, [{ row: 0, column: 2 }, { row: 4, column: 14 }], '#e63746'))
 }
 
 function decoratedProject(): Project {
   const painted = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746')
-  return moveToRow(painted, 4)
+  return moveToRow(painted, 4, frameIdIn(painted))
 }
 
 describe('single-Project roundtrip', () => {
@@ -72,12 +73,12 @@ describe('single-Project roundtrip', () => {
   })
 
   it('carries each layer\'s own background through the file, a position or a Custom color (ticket 0666)', () => {
-    const project = withBackground(withBackground(decoratedProject(), 'canvas', 3), 'frame', '#336699')
+    const project = withBackground(withBackground(decoratedProject(), 'canvas', 3), FRAME_ID, '#336699')
 
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
     expect(backgroundOf(restored, 'canvas')).toBe(3)
-    expect(backgroundOf(restored, 'frame')).toBe('#336699')
+    expect(backgroundOf(restored, FRAME_ID)).toBe('#336699')
     expect(restored).toEqual(withColorsInPalette(project))
   })
 
@@ -89,7 +90,7 @@ describe('single-Project roundtrip', () => {
     const [restored] = parseProjectsFile(JSON.stringify(saved)).projects
 
     expect(backgroundOf(restored, 'canvas')).toBeUndefined()
-    expect(backgroundOf(restored, 'frame')).toBeUndefined()
+    expect(backgroundOf(restored, FRAME_ID)).toBeUndefined()
   })
 
   it.each([
@@ -107,7 +108,7 @@ describe('single-Project roundtrip', () => {
     const [restored] = parseProjectsFile(JSON.stringify(saved)).projects
 
     expect(backgroundOf(restored, 'canvas')).toBe(moved)
-    expect(backgroundOf(restored, 'frame')).toBe('#336699')
+    expect(backgroundOf(restored, FRAME_ID)).toBe('#336699')
     expect(restored).not.toHaveProperty('backgroundPositions')
   })
 
@@ -121,7 +122,7 @@ describe('single-Project roundtrip', () => {
     const [reopened] = parseProjectsFile(serializeProject(opened!)).projects
 
     expect(backgroundOf(reopened, 'canvas')).toBe(3)
-    expect(backgroundOf(reopened, 'frame')).toBe(2)
+    expect(backgroundOf(reopened, FRAME_ID)).toBe(2)
   })
 
   it('carries brick stitch\'s Drop through the file, and reads a file without one as 1 (tickets 477, 0691)', () => {
@@ -151,7 +152,7 @@ describe('single-Project roundtrip', () => {
   })
 
   it('reads a version 12 file\'s Brick block in a layer\'s settings map as brick stitch\'s Drop (ticket 0691)', () => {
-    const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'frame', { technique: 'brick' })))
+    const file = JSON.parse(serializeProject(withWeave(decoratedProject(), FRAME_ID, { technique: 'brick' })))
     file.version = 12
     file.projects[0].layers[0].techniqueSettings = { brickBlock: 3 }
     file.projects[0].layers[1].techniqueSettings = { brickBlock: 4 }
@@ -165,7 +166,7 @@ describe('single-Project roundtrip', () => {
 
   it('stores each layer\'s settings as the map the app holds, the Drop in it, with no flat field (ticket 0636)', () => {
     const canvas = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickDrop: 3 } })
-    const project = withWeave(canvas, 'frame', { technique: 'brick', techniqueSettings: { brickDrop: 4 } })
+    const project = withWeave(canvas, FRAME_ID, { technique: 'brick', techniqueSettings: { brickDrop: 4 } })
     const [stored] = JSON.parse(serializeProject(project)).projects
     expect(stored.layers).toMatchObject([{ technique: 'brick', techniqueSettings: { brickDrop: 3 } }, { technique: 'brick', techniqueSettings: { brickDrop: 4 } }])
     expect(stored.layers[0]).not.toHaveProperty('brickBlock')
@@ -181,7 +182,7 @@ describe('single-Project roundtrip', () => {
   })
 
   it('reads an unreadable settings map, or an unreadable value in it, as the defaults (ticket 0636)', () => {
-    const brick = withWeave(withWeave(decoratedProject(), 'canvas', { technique: 'brick' }), 'frame', { technique: 'brick' })
+    const brick = withWeave(withWeave(decoratedProject(), 'canvas', { technique: 'brick' }), FRAME_ID, { technique: 'brick' })
     for (const bad of [{ brickDrop: 'two' }, { brickDrop: null }, 'three', null, [3]]) {
       const file = JSON.parse(serializeProject(brick))
       file.projects[0].layers[0].techniqueSettings = bad
@@ -209,7 +210,7 @@ describe('single-Project roundtrip', () => {
     expect(canvasOf(restored).beadId).toBe(cubeBead.id)
     expect(frameGrid(restored!)[2]![3]!.color).toBe('#e63746')
     // A new peyote Frame's rows run left to right as seen, kept so with that way's own pointer (ticket 1185).
-    expect(rowProgressOf(restored)).toEqual({ way: 'right', right: 4 })
+    expect(rowProgressOf(restored, frameIdIn(restored))).toEqual({ way: 'right', right: 4 })
   })
 
   it('writes Row progress without its flag, and reads an old file that has one with the Frame deciding (ticket 426)', () => {
@@ -220,7 +221,7 @@ describe('single-Project roundtrip', () => {
     file.projects[0].layers[1].rowProgress.enabled = false
     file.projects[0].layers[1].rowProgress.decided = true
     const [restored] = parseProjectsFile(JSON.stringify(file)).projects
-    expect(rowProgressOf(restored)).toEqual({ way: 'right', right: 4 })
+    expect(rowProgressOf(restored, frameIdIn(restored))).toEqual({ way: 'right', right: 4 })
   })
 
   it('writes version 15 with the layer list, the Background list it is in (ticket 1000), each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
@@ -240,7 +241,7 @@ describe('single-Project roundtrip', () => {
 
   it('keeps the Canvas beside the Frame through a file, and the Frame\'s name', () => {
     const painted = withLayers(decoratedProject(), { beads: { 40: { 40: '#123456' } } })
-    const both = withLayer(painted, 'frame', { name: 'Cherry' })
+    const both = withLayer(painted, FRAME_ID, { name: 'Cherry' })
 
     expect(parseProjectsFile(serializeProject(both)).projects).toEqual([withColorsInPalette(both)])
   })
@@ -301,11 +302,11 @@ describe('single-Project roundtrip', () => {
 })
 
 describe('the export file names (tickets 73, 74, 0708, 0720)', () => {
-  const rose = { ...withLayer(makeProject('Summer'), 'frame', { name: 'Rose' }), makerName: 'Ada Lovelace' }
+  const rose = { ...withLayer(makeProject('Summer'), FRAME_ID, { name: 'Rose' }), makerName: 'Ada Lovelace' }
 
   it('names the PNG and the PDF {project}-{frame}-{maker}', () => {
-    expect(projectExportFileName(rose, 'png')).toBe('summer-rose-ada-lovelace.png')
-    expect(projectExportFileName(rose, 'pdf')).toBe('summer-rose-ada-lovelace.pdf')
+    expect(projectExportFileName(rose, 'png', undefined, frameIdIn(rose))).toBe('summer-rose-ada-lovelace.png')
+    expect(projectExportFileName(rose, 'pdf', undefined, frameIdIn(rose))).toBe('summer-rose-ada-lovelace.pdf')
   })
 
   it('names the project file {project}-{maker}, without the Frame’s name', () => {
@@ -313,19 +314,19 @@ describe('the export file names (tickets 73, 74, 0708, 0720)', () => {
   })
 
   it('leaves out an unnamed Frame, a missing maker and a name that leaves nothing to write', () => {
-    expect(projectExportFileName(makeProject('Summer'), 'pdf')).toBe('summer.pdf')
-    expect(projectExportFileName(withLayer(makeProject('Summer'), 'frame', { name: '???' }), 'pdf')).toBe('summer.pdf')
-    expect(projectExportFileName({ ...withLayer(makeProject('???'), 'frame', { name: 'Rose' }), makerName: 'Ada' }, 'png')).toBe('rose-ada.png')
+    expect(projectExportFileName(makeProject('Summer'), 'pdf', undefined, frameIdIn(makeProject('Summer')))).toBe('summer.pdf')
+    expect(projectExportFileName(withLayer(makeProject('Summer'), FRAME_ID, { name: '???' }), 'pdf', undefined, frameIdIn(withLayer(makeProject('Summer'), FRAME_ID, { name: '???' })))).toBe('summer.pdf')
+    expect(projectExportFileName({ ...withLayer(makeProject('???'), FRAME_ID, { name: 'Rose' }), makerName: 'Ada' }, 'png', undefined, FRAME_ID)).toBe('rose-ada.png')
   })
 
   it('falls back to a generic name when no part has anything filename-safe in it', () => {
-    expect(projectExportFileName(makeProject('???'), 'png')).toBe('openbeads.png')
+    expect(projectExportFileName(makeProject('???'), 'png', undefined, frameIdIn(makeProject('???')))).toBe('openbeads.png')
   })
 
   it('adds an underscore and a word for each switch that is on, in the order given (ticket 1096)', () => {
-    expect(projectExportFileName(rose, 'pdf', ['large-beads', 'row-by-row'])).toBe('summer-rose-ada-lovelace_large-beads_row-by-row.pdf')
-    expect(projectExportFileName(rose, 'pdf', ['ряд-за-рядом'])).toBe('summer-rose-ada-lovelace_ряд-за-рядом.pdf')
-    expect(projectExportFileName(rose, 'pdf', [])).toBe('summer-rose-ada-lovelace.pdf')
+    expect(projectExportFileName(rose, 'pdf', ['large-beads', 'row-by-row'], frameIdIn(rose))).toBe('summer-rose-ada-lovelace_large-beads_row-by-row.pdf')
+    expect(projectExportFileName(rose, 'pdf', ['ряд-за-рядом'], frameIdIn(rose))).toBe('summer-rose-ada-lovelace_ряд-за-рядом.pdf')
+    expect(projectExportFileName(rose, 'pdf', [], frameIdIn(rose))).toBe('summer-rose-ada-lovelace.pdf')
   })
 })
 
@@ -465,7 +466,7 @@ describe('parseProjectsFile', () => {
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
-    expect(rowProgressOf(projects[0])).toEqual({ way: 'down' })
+    expect(rowProgressOf(projects[0], frameIdIn(projects[0]))).toEqual({ way: 'down' })
   })
 
   it('still imports a file exported before ADR 0026, ignoring the millimetre size it stored and keeping the grid', () => {

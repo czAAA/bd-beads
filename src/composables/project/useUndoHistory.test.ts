@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
@@ -62,7 +63,7 @@ describe('useUndoHistory', () => {
   it('clears the Selection when the Frame differs', () => {
     const ctx = editHarness(newProject())
     ctx.history.record({
-      ...snapshotOf(withFrameSheet(ctx.project, { technique: 'loom', row: 0, column: 0, columns: 5, rows: 5, beads: {} })),
+      ...snapshotOf(withFrameSheet(ctx.project, { technique: 'loom', row: 0, column: 0, columns: 5, rows: 5, beads: {} }, { frame: frameIdIn(ctx.project) })),
     })
     ctx.history.onUndo()
     expect(ctx.resetAfterFrameChange).toHaveBeenCalled()

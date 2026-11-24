@@ -7,7 +7,7 @@ import type { GridDimensions, GridPosition, FrameRef } from './grid'
 import { createProject, type CreateProjectInput } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
 import { sameWeave, weaveOf } from './layerWeave'
-import { orientationOf, withBackground, withCanvas, withLayer, FIRST_FRAME } from './layerRecord'
+import { frameToLay, orientationOf, withBackground, withCanvas, withLayer } from './layerRecord'
 import { quarterTurnsOff } from './canvasOrientation'
 import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
@@ -388,7 +388,7 @@ function chosenBeads(starter: Starter, choice: StarterChoice): BeadMap {
 /** Add Frame from Starter and Replace Frame (tickets 0596, 0633, 0671): the Starter's Frame round a Canvas position, in
  * place of any Frame, in the setup's Layer settings (ADR 0079), with its design or empty, colours as painted; the Canvas
  * as it is, the Frame turned by what it lacks, so a Ring or Band lies across (0832) and a shape stands as charted (0872). */
-export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition, ref: FrameRef = FIRST_FRAME): FrameChangeResult {
+export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition, ref: FrameRef): FrameChangeResult {
   const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
   const placement = starterPlacement(project, starter, choice, centre, bead ?? resolveProjectBead(project)!)
   const placed = changeFrame(project, placement, ref)
@@ -424,7 +424,7 @@ export function starterProject(starter: Starter, choice: StarterChoice & Pick<St
   const seen = seenTurn(starter, weaveIn(starter, choice))
   const project = seen === undefined ? made : withCanvas(made, { orientation: seen })
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
-  const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
+  const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) }, frameToLay(project))
   return placed.kind === 'changed' ? placed.project : project
 }
 

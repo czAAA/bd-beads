@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { findBead } from '../../domain/beads'
 import { mountAt } from '../../testUtils/browserFit'
@@ -5,7 +6,7 @@ import { expectTouchScreen, hitAreaProblems } from '../../testUtils/hitAreas'
 import { tokenPx } from '../../testUtils/tokenPx'
 import LayerSettings from './LayerSettings.vue'
 
-const props = { layer: 'frame', technique: 'brick', techniqueSettings: { brickDrop: 3 }, bead: findBead('miyuki/delica/11-0'), background: 1, testid: 'x' }
+const props = { layer: FRAME_ID, technique: 'brick', techniqueSettings: { brickDrop: 3 }, bead: findBead('miyuki/delica/11-0'), background: 1, testid: 'x' }
 
 // On touch the Drop stepper's number and the Background swatches take a finger (ticket 0962): −, the number and + each
 // answer across `touch-target`, none over another; each swatch is the Palette's chip size, its own hit area, apart from

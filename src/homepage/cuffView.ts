@@ -1,5 +1,5 @@
 import { laidTurnOf } from '../domain/framePlacement'
-import { frameOf, layerOf } from '../domain/layerRecord'
+import { frameOf, layerOf, firstFrameId } from '../domain/layerRecord'
 import { placedFrame } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { MARGIN_PX } from '../rendering/marginSizes'
@@ -32,10 +32,10 @@ export interface CuffView {
 /** The editor's view of the Project at a zoom and scroll, with its rulers laid out for it as the Drawing surface lays
  * them (ProjectSurface): the Frame's numbers on, a Piece's off, as the cuff has none. */
 function viewAt(project: Project, zoom: number, fontPx: number, scroll: Scroll, viewport: { width: number; height: number }) {
-  const space = spaceOf(project, true)
+  const space = spaceOf(project, true, firstFrameId(project))
   const { weave } = layerOf(project, 'canvas')
-  const surface = surfaceView({ space, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(project), rotation: laidTurnOf(project), zoom, scroll, viewport })
-  return { space, surface, rulers: rulerLayout(project, surface, { fontPx, numbers: false }) }
+  const surface = surfaceView({ space, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(project, firstFrameId(project)), frameLayer: firstFrameId(project), rotation: laidTurnOf(project, firstFrameId(project)), zoom, scroll, viewport })
+  return { space, surface, rulers: rulerLayout(project, surface, { fontPx, numbers: false }, firstFrameId(project)) }
 }
 
 /** What the Frame, its line and its numbers cover in a view, with room for the pill. */

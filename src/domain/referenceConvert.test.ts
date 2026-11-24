@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { beadsReplaced, convertSampled, pictureColorAt, sampledColorCount, sampledColors, withConvertedBeads } from './referenceConvert'
 import { NO_COLOR, type PixelData } from './imageConversion'
@@ -76,22 +77,22 @@ describe('laying the beads on the Canvas', () => {
 
   it('puts them on the Canvas, replacing what was there, and counts the beads replaced', () => {
     const project = bareProject({ technique: 'loom', beads: { 0: { 1: '#00ff00', 5: '#00ff00' } } })
-    expect(beadsReplaced(project, changes)).toBe(1)
-    expect(beadsOfLayer(withConvertedBeads(project, changes), 'canvas')).toEqual({ 0: { 0: '#ff0000', 1: '#0000ff', 5: '#00ff00' } })
+    expect(beadsReplaced(project, changes, frameIdIn(project))).toBe(1)
+    expect(beadsOfLayer(withConvertedBeads(project, changes, frameIdIn(project)), 'canvas')).toEqual({ 0: { 0: '#ff0000', 1: '#0000ff', 5: '#00ff00' } })
   })
 
   it('puts none under a Frame woven unlike the Canvas, which hides it there', () => {
     const project = bareProject({ technique: 'loom', frame: { row: 0, column: 1, rows: 2, columns: 2, technique: 'peyote', beads: {} } })
-    const converted = withConvertedBeads(project, changes)
+    const converted = withConvertedBeads(project, changes, frameIdIn(project))
     expect(beadsOfLayer(converted, 'canvas')).toEqual({ 0: { 0: '#ff0000' } })
-    expect(beadsOfLayer(converted, 'frame')).toEqual({})
+    expect(beadsOfLayer(converted, frameIdIn(converted))).toEqual({})
   })
 
   it('puts those under a Frame woven like the Canvas on the Frame, in its own positions', () => {
     const project = bareProject({ technique: 'loom', frame: { row: 0, column: 1, rows: 2, columns: 2, technique: 'loom', beads: { 0: { 0: '#00ff00' } } } })
-    expect(beadsReplaced(project, changes)).toBe(1)
-    const converted = withConvertedBeads(project, changes)
+    expect(beadsReplaced(project, changes, frameIdIn(project))).toBe(1)
+    const converted = withConvertedBeads(project, changes, frameIdIn(project))
     expect(beadsOfLayer(converted, 'canvas')).toEqual({ 0: { 0: '#ff0000' } })
-    expect(beadsOfLayer(converted, 'frame')).toEqual({ 0: { 0: '#0000ff' } })
+    expect(beadsOfLayer(converted, frameIdIn(converted))).toEqual({ 0: { 0: '#0000ff' } })
   })
 })

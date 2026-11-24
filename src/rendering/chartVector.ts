@@ -15,7 +15,7 @@ import { gridToRegion, inGridPx, regionInGridSpace } from './surfaceView'
 import { chartCellOf, customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { laidTurnOf } from '../domain/framePlacement'
-import { type Layered, FIRST_FRAME } from '../domain/layerRecord'
+import { type Layered } from '../domain/layerRecord'
 import type { PrintText } from './printText'
 
 // A chart as drawing (ticket 0585, ADR 0043; PrintChartPage card): PDF operators on a chart page and page 1, sharp at any
@@ -66,7 +66,7 @@ function tint(hex: string, amount: number): string {
 }
 
 /** Whether the Project's beads are drawn round (a circle in the cell) rather than as squares. */
-export function beadsAreRound(project: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+export function beadsAreRound(project: Layered, ref: FrameRef): boolean {
   const weave = frameWeave(project, ref)
   return beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX >= CELL_SIZE_PX * 0.4
 }
@@ -93,7 +93,7 @@ interface PlacedBead {
 /** The positions of a part, bead by bead, for any Technique, rotation or Bead: each bead in view where the Layer
  * geometry places it, through the page's transform.
  * @internal Its test checks where each bead lands on its own. */
-export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart, ref: FrameRef = FIRST_FRAME): PlacedBead[] {
+export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart, ref: FrameRef): PlacedBead[] {
   const first = { across: part.firstAcross - part.overlapAcross, down: part.firstDown - part.overlapDown }
   const last = { across: part.lastAcross - first.across, down: part.lastDown - first.down }
   const weave = frameWeave(project, ref)
@@ -248,7 +248,7 @@ function outset(box: Box, by: number): Box {
 /** One part: its rim, beads, their borders, letters, rulers (their numbers at the page's `rulerPt`, outside the rim) and the
  * overlap line, on the page at `pad`, in `ink`. */
 function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters, rulerPt: number, look: ChartLook, ink: PrintInk): void {
-  const grid = displayedGrid(project)
+  const grid = displayedGrid(project, plan.frame)
   const stepAcross = grid.stepAcross * plan.zoom
   const stepDown = grid.stepDown * plan.zoom
   const chart: Box = { x: pad.x + PRINT_RULER, y: pad.y + PRINT_RULER, width: part.region.width, height: part.region.height }
@@ -263,17 +263,17 @@ function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part:
   const { colors } = ink
   if (look.rim) content.roundRect(rim.x * K, rim.y * K, rim.width * K, rim.height * K, PAD_RADIUS, { stroke: colors.faint, lineWidth: PAD_LINE })
 
-  const custom = customChart(project, part.region, plan.zoom)
+  const custom = customChart(project, part.region, plan.zoom, plan.frame)
   if (custom) {
-    const trimmed = areaRegion(project, plan.trim)
+    const trimmed = areaRegion(project, plan.trim, plan.frame)
     const whole = { x: trimmed.x * plan.zoom - part.region.x, y: trimmed.y * plan.zoom - part.region.y, width: trimmed.width * plan.zoom, height: trimmed.height * plan.zoom }
-    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm), look.emptyGrid && whole, ink)
+    drawCustomPart(content, project, part, chart, custom, letters, { across: stepAcross, down: stepDown }, letterPt(plan.beadMm), look.emptyGrid && whole, ink, plan.frame)
     drawOverlapLine(content, part, pad, chart, stepAcross, stepDown, ink)
     return
   }
 
-  const beads = placeBeads(project, plan, part)
-  const round = beadsAreRound(project)
+  const beads = placeBeads(project, plan, part, plan.frame)
+  const round = beadsAreRound(project, plan.frame)
 
   // Fills, one colour after another. A solid black bead stands apart by paper, with no hairline round it.
   const solid = (bead: PlacedBead) => isSolid(bead.color, inOverlap(bead), ink)
@@ -357,7 +357,7 @@ interface RulerNumber {
  * column number fits `print-ruler-fit` of a column and its widest row number's digits of a row, and its band's width.
  * @internal Its test checks the card's sizes on their own. */
 export function rulerNumberPt(project: Layered, plan: PrintPlan, parts: readonly PrintPart[]): number {
-  const grid = displayedGrid(project)
+  const grid = displayedGrid(project, plan.frame)
   const widestColumn = String(Math.max(...parts.map((part) => acrossNumber(plan.trim, part.lastAcross))))
   const widestRow = String(Math.max(...parts.map((part) => downNumber(plan.trim, part.lastDown))))
   const columnPt = grid.stepAcross * plan.zoom * K
@@ -436,7 +436,7 @@ function beadWithin(bead: ChartBead, round: boolean, box: Box): boolean {
 /** A Custom frame's part (ticket 0594): each bead whose centre falls in the part's cells, turned, its letter upright; with
  * Empty grid on, each empty position wholly inside `emptyWithin` (the trimmed chart's box, ticket 1127) outlined with its
  * cross; its Seams as lines. No cell lines or rulers: its beads keep no rows and columns. */
-function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number, emptyWithin: Box | false, ink: PrintInk): void {
+function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, step: { across: number; down: number }, letterSize: number, emptyWithin: Box | false, ink: PrintInk, ref: FrameRef): void {
   // A part's region reaches past its last cell by a staggered Weave's half bead, onto the next part's: each bead belongs
   // to the part whose cells hold its centre, as the page's key counts it, so none is printed on two pages (ticket 1132).
   const cellOf = (bead: ChartBead) => chartCellOf({ x: part.region.x + bead.x, y: part.region.y + bead.y }, step.across, step.down)
@@ -448,7 +448,7 @@ function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart,
     const { across, down } = cellOf(bead)
     return across < part.firstAcross || down < part.firstDown
   }
-  const round = beadsAreRound(project)
+  const round = beadsAreRound(project, ref)
   const beads = custom.beads.filter((bead) => own(bead) && (bead.color !== null || (emptyWithin && beadWithin(bead, round, emptyWithin))))
   for (const bead of beads) {
     const fill = bead.color === null ? undefined : fillOf(bead.color, inOverlap(bead), ink)

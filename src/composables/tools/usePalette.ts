@@ -3,7 +3,7 @@ import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlo
 import { setPalette as withPalette, setSwatchLetter, withLettersBack } from '../../domain/paletteEdits'
 import { withLetter, type SwatchLetters } from '../../domain/swatchLetters'
 import { beadsInColors, withBeadsBackIn, withoutBeadsIn } from '../../domain/colorBeads'
-import { beadIdOfLayer } from '../../domain/layerRecord'
+import { beadIdOfLayer, wovenLayerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
@@ -26,7 +26,7 @@ function lettersOf(project: Project, colorIds: readonly string[]): SwatchLetters
 
 /** The Palette's built-in colors: the woven layer's Bead's, the Frame's when there is one (ADR 0079, ticket 0665). */
 function builtInsOf(project: Project): readonly PaletteColor[] {
-  return defaultPalette(beadIdOfLayer(project, 'frame'))
+  return defaultPalette(beadIdOfLayer(project, wovenLayerOf(project)))
 }
 
 const paletteKey: InjectionKey<ComputedRef<Palette>> = Symbol('palette')

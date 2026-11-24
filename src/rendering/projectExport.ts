@@ -37,7 +37,7 @@ function pngOf(canvas: HTMLCanvasElement, project: Project): Promise<Blob> {
 // drawn at `dpi` and always in color. It is saved whatever the Cover page switch says (that switch is the PDF's), so its
 // footer reads "1 / 1".
 export async function exportProjectPng(shown: Project, words: PrintText, dpi = PRINT_DPI): Promise<Blob> {
-  const project = withLaidTurn(shown)
+  const project = withLaidTurn(shown, undefined, words.frame)
   // Loaded when a PNG is asked for: the page drawing (and the mark it reads from the design system) isn't needed before.
   const { drawCoverPage } = await import('./coverPage')
   const { loadPrintFonts } = await import('./printPages')
@@ -62,7 +62,7 @@ function flateOf(canvas: HTMLCanvasElement, project: Project): Promise<PackedPag
 // overview of its parts) and its list pages, the chart pages when there are any, then the Word chart, drawn one at a time so memory stays bounded (ADR 0019). Pictures are
 // drawn at `dpi` (ADR 0076: the PDF has no Export quality); the sheet is the same size in points whatever it is.
 export async function exportProjectPdf(shown: Project, words: PrintText, dpi = PDF_PAGE_DPI): Promise<Blob> {
-  const project = withLaidTurn(shown)
+  const project = withLaidTurn(shown, undefined, words.frame)
   const layout = pageOneLayout(project, words)
   const scale = dpi / PRINT_DPI
   // Loaded when a PDF is asked for: the page drawing (and the mark it reads from the design system) isn't needed

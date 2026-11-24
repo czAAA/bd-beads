@@ -1,3 +1,4 @@
+import { frameIdIn } from './frameId'
 import { vi } from 'vitest'
 import { CANVAS_HOLD_MS } from '../domain/hold'
 import { beadColorAt } from '../domain/layerBeads'
@@ -5,7 +6,7 @@ import { projectDimensions } from '../domain/projectExtent'
 import { currentPass, ownRowWayOf, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import type { VueWrapper } from '@vue/test-utils'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
-import { type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
+import { isFrameLayer, type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
 import type { Technique, TechniqueSettings } from '../domain/weave'
 import { stampCells, type PasteStamp, type Selection } from '../domain/selection'
 import { OPEN_SPACE } from '../rendering/space'
@@ -17,7 +18,7 @@ import { canvasWeave, placedFrame } from '../domain/layerWeave'
 
 // Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109, 110). jsdom does no layout, so
 // a bead is found by its coordinates and hit-tested as for a real pointer (Surface view's pointToBead); results are
-// read from the props the surface is handed. A bead is named by row and column (`layer: 'frame'`: a Frame's), or index.
+// read from the props the surface is handed. A bead is named by row and column (a `layer` naming a Frame is a Frame's), or index.
 export type BeadAt = number | GridPosition
 
 type Anywhere = VueWrapper<never> | VueWrapper
@@ -61,10 +62,10 @@ export function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; cli
   const { row, column, layer } = positionOf(wrapper, at)
   // A Frame bead is aimed at where the Frame lays it: a Custom frame's round and place are no Canvas position.
   const project = drawnProject(wrapper)
-  const onFrame = layer === 'frame' && frameOf(project) ? { cell: canvasWeave(project).cell, frame: placedFrame(project) } : {}
+  const onFrame = isFrameLayer(layer) && frameOf(project) ? { cell: canvasWeave(project).cell, frame: placedFrame(project, frameIdIn(project)), frameLayer: frameIdIn(project) } : {}
 
   const view = surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, ...onFrame, rotation, zoom, scroll: { x: scrollX, y: scrollY } })
-  const point = view.beadToPoint({ row, column }, onFrame.frame ? 'frame' : undefined)
+  const point = view.beadToPoint({ row, column }, onFrame.frame ? frameIdIn(project) : undefined)
   return { clientX: point.x, clientY: point.y }
 }
 
@@ -174,9 +175,9 @@ export function outlinedBead(wrapper: Anywhere): GridPosition | undefined {
 // the one at it is outlined.
 export function rowProgressView(wrapper: Anywhere) {
   const project = drawnProject(wrapper)
-  const enabled = rowProgressOn(project)
-  const { direction } = ownRowWayOf(project)
-  const current = currentPass(rowProgressOf(project))
+  const enabled = rowProgressOn(project, frameIdIn(project))
+  const { direction } = ownRowWayOf(project, undefined, frameIdIn(project))
+  const current = currentPass(rowProgressOf(project, frameIdIn(project)))
   return { enabled, direction, current, finished: enabled ? current : 0, markerShown: enabled }
 }
 

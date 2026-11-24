@@ -3,7 +3,7 @@ import { forEachChangedPosition, frameContains, withColors, type BeadChange, typ
 import { isFrameLayer, type GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
 import { sameBeads } from './layerBeads'
-import { beadsOfLayer, type Layered, withLayer } from './layerRecord'
+import { beadsOfLayer, firstFrameId, type Layered, withLayer } from './layerRecord'
 import type { Project } from './project'
 import type { Selection } from './selection'
 
@@ -49,7 +49,7 @@ export function beadsShown(beads: BeadMap, footprint: Rect | undefined): BeadMap
  * Frame's margin (ticket 261). The one statement of the rule, which an Edit enforces and a press asks to show it is
  * refused. */
 export function mayPlace(project: Layered, position: GridPosition, margin: number = MARGIN): boolean {
-  return !isInFinishedRow(project, position) && !inMargin(footprintOf(project), position, margin)
+  return !isInFinishedRow(project, position, firstFrameId(project)) && !inMargin(footprintOf(project, firstFrameId(project)), position, margin)
 }
 
 /** Whether a position lies in the Frame's margin: within MARGIN of the Frame's footprint (ADR 0066), but not in it. A
@@ -112,7 +112,7 @@ export function trimToAllowed(frame: Rect | undefined, selection: Selection, anc
  * to change returns `before` itself, the drawing commands' "unchanged" signal. Only the positions the edit changed are
  * looked at (ticket 0674). */
 export function keepMarginClear(before: Project, after: Project): Project {
-  const frame = footprintOf(before)
+  const frame = footprintOf(before, firstFrameId(before))
   if (!frame) {
     return after
   }

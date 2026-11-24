@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -11,22 +12,7 @@ import { footprintOf } from './footprint'
 import { framePlacement, withFrameAt } from './framePlacement'
 import { withFrameSheet } from './frameSheet'
 import type { FrameId } from './grid'
-import {
-  backgroundOf,
-  beadsOfLayer,
-  FIRST_FRAME,
-  frameById,
-  frameIdOf,
-  frameOf,
-  framesOf,
-  layerOf,
-  lettersOn,
-  refOfFrame,
-  withBackground,
-  withLayer,
-  withLetters,
-  wovenLayerOf,
-} from './layerRecord'
+import { backgroundOf, beadsOfLayer, frameById, frameIdOf, frameOf, framesOf, layerOf, lettersOn, withBackground, withLayer, withLetters, wovenLayerOf } from './layerRecord'
 import { layerAt, onLayer, positionOnCanvas } from './layers'
 import { withColors } from './canvas'
 import { mirrorSettingOf, withMirrorPlace } from './mirror'
@@ -49,7 +35,7 @@ const RED = '#ff0000'
 /** A Project with two Frames: the first at the Canvas's top-left, the second, `SECOND`, further down and right. */
 function twoFrames(): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-  const first = withFrameSheet(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' })
+  const first = withFrameSheet(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdIn(base) })
   return withFrameSheet(first, { row: 20, column: 20, rows: 6, columns: 4, beads: {}, technique: 'loom' }, { frame: SECOND })
 }
 
@@ -73,10 +59,9 @@ describe('a Frame named by its id (ticket 1216)', () => {
     expect(framesOf(project).map((frame) => frame.id)[1]).toBe('second')
     expect(frameById(project, SECOND)).toMatchObject({ row: 20, column: 20 })
     expect(frameById(project, 'canvas')).toBeUndefined()
-    // The old name is the first Frame, as the UI still calls it.
-    expect(frameById(project, FIRST_FRAME)).toBe(frameOf(project))
-    expect(refOfFrame(project, frameById(project, SECOND)!)).toBe(SECOND)
-    expect(refOfFrame(project, frameOf(project)!)).toBe(FIRST_FRAME)
+    expect(frameById(project, frameIdIn(project))).toBe(frameOf(project))
+    expect(frameIdOf(frameById(project, SECOND)!)).toBe(SECOND)
+    expect(frameIdOf(frameOf(project)!)).toBe(frameIdIn(project))
 
     const painted = withLayer(project, SECOND, { beads: withColors({}, [{ row: 1, column: 1, color: RED }]), name: 'Earring' })
     firstUntouched(project, painted)
@@ -97,7 +82,7 @@ describe('a Frame named by its id (ticket 1216)', () => {
   it('places a press, paints and weaves anew on the Frame under it', () => {
     const project = twoFrames()
     expect(layerAt(project, { row: 21, column: 21 })).toBe(SECOND)
-    expect(layerAt(project, { row: 1, column: 1 })).toBe(FIRST_FRAME)
+    expect(layerAt(project, { row: 1, column: 1 })).toBe(frameIdIn(project))
     expect(positionOnCanvas(project, SECOND, { row: 1, column: 2 })).toEqual({ row: 21, column: 22 })
     expect(footprintOf(project, SECOND)).toEqual({ row: 20, column: 20, rows: 6, columns: 4 })
 
@@ -135,12 +120,12 @@ describe('a Frame named by its id (ticket 1216)', () => {
     firstUntouched(project, woven)
     expect(rowProgressOf(woven, SECOND).down).toBe(2)
     expect(isInFinishedRow(woven, { row: 20, column: 20, layer: SECOND }, SECOND)).toBe(true)
-    expect(isInFinishedRow(woven, { row: 0, column: 0 })).toBe(false)
+    expect(isInFinishedRow(woven, { row: 0, column: 0 }, frameIdIn(woven))).toBe(false)
     expect(selectionInFinishedRows(woven, { top: 20, left: 20, rows: 1, columns: 1, layer: SECOND })).toBe(true)
 
     const palette = createPalette([RED], defaultPalette('toho-cube-1.5mm'))
     expect(computeColorQuantities(project, palette, SECOND).map(({ count }) => count)).toEqual([1])
-    expect(computeColorQuantities(project, palette)).toEqual([])
+    expect(computeColorQuantities(project, palette, frameIdIn(project))).toEqual([])
   })
 
   it('puts back each Frame as it was, keeping its Letters as they are now', () => {
@@ -171,7 +156,7 @@ describe('a Frame named by its id (ticket 1216)', () => {
     firstUntouched(project, swapped)
     expect(layerOf(swapped, SECOND)!.beadId).toBe(delica.id)
     // The Palette still follows the woven layer, the first Frame, until it is the Project's own (ticket 1225).
-    expect(wovenLayerOf(swapped)).toBe(FIRST_FRAME)
+    expect(wovenLayerOf(swapped)).toBe(frameIdIn(project))
     expect(swapped.palette).toEqual(project.palette)
 
     const starter = starterById('triangle')

@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
@@ -732,7 +733,7 @@ describe('useCanvasView', () => {
           keepFrameTwist: (angle) => {
             keptFrame.push(angle)
             if (asking) return 'asked'
-            set.current.value = twistFrameTo(set.current.value!, angle)
+            set.current.value = twistFrameTo(set.current.value!, angle, undefined, frameIdIn(set.current.value!))
             return 'kept'
           },
         }),
@@ -744,13 +745,13 @@ describe('useCanvasView', () => {
     it('turns the Frame live, the Canvas and the view\'s scroll over the table staying, while pan and pinch still move both', () => {
       const { current, view } = frameSetup()
       const table = view.tableScroll.value
-      view.pinchStep({ turn: 0, anchor: { x: 500, y: 400 }, target: 'frame' })
-      view.pinchStep({ turn: 25, anchor: { x: 500, y: 400 }, target: 'frame' })
+      view.pinchStep({ turn: 0, anchor: { x: 500, y: 400 }, target: FRAME_ID })
+      view.pinchStep({ turn: 25, anchor: { x: 500, y: 400 }, target: FRAME_ID })
       expect(view.frameTwist.value).toBe(25)
       expect(view.orientation.value).toBe(0)
       expect(view.twistPhase.value).toBe('turning')
       expect(view.tableScroll.value).toEqual(table)
-      view.pinchStep({ zoom: 2, pan: { x: 30, y: 0 }, turn: 5, anchor: { x: 530, y: 400 }, target: 'frame' })
+      view.pinchStep({ zoom: 2, pan: { x: 30, y: 0 }, turn: 5, anchor: { x: 530, y: 400 }, target: FRAME_ID })
       expect(view.frameTwist.value).toBe(30)
       expect(view.zoom.value).toBe(2)
       expect(frameOf(current.value!)!.angle).toBe(0)
@@ -760,7 +761,7 @@ describe('useCanvasView', () => {
       vi.useFakeTimers()
       try {
         const { keptFrame, kept, view } = frameSetup()
-        view.pinchStep({ turn: 97, anchor: { x: 500, y: 400 }, target: 'frame' })
+        view.pinchStep({ turn: 97, anchor: { x: 500, y: 400 }, target: FRAME_ID })
         view.endTwist({ x: 500, y: 400 })
         expect(view.frameTwist.value).toBe(90)
         expect(view.twistPhase.value).toBe('settling')
@@ -777,19 +778,19 @@ describe('useCanvasView', () => {
 
     it('rests leaning at once further off, and keeps nothing where it came back to its angle', () => {
       const { current, keptFrame, view } = frameSetup()
-      view.pinchStep({ turn: 30, anchor: { x: 500, y: 400 }, target: 'frame' })
+      view.pinchStep({ turn: 30, anchor: { x: 500, y: 400 }, target: FRAME_ID })
       view.endTwist({ x: 500, y: 400 })
       expect(keptFrame).toEqual([30])
       expect(frameOf(current.value!)!.angle).toBe(30)
-      view.pinchStep({ turn: 4, anchor: { x: 500, y: 400 }, target: 'frame' })
-      view.pinchStep({ turn: -4, anchor: { x: 500, y: 400 }, target: 'frame' })
+      view.pinchStep({ turn: 4, anchor: { x: 500, y: 400 }, target: FRAME_ID })
+      view.pinchStep({ turn: -4, anchor: { x: 500, y: 400 }, target: FRAME_ID })
       view.endTwist({ x: 500, y: 400 })
       expect(keptFrame).toEqual([30])
     })
 
     it('shows the Frame where it settled while the question is asked, then as the Project holds it once answered', () => {
       const { keptFrame, view } = frameSetup(true)
-      view.pinchStep({ turn: 60, anchor: { x: 500, y: 400 }, target: 'frame' })
+      view.pinchStep({ turn: 60, anchor: { x: 500, y: 400 }, target: FRAME_ID })
       view.endTwist({ x: 500, y: 400 })
       expect(keptFrame).toEqual([60])
       expect(view.frameTwist.value).toBe(60)
@@ -802,7 +803,7 @@ describe('useCanvasView', () => {
       vi.useFakeTimers()
       try {
         const { view } = frameSetup(true)
-        view.pinchStep({ turn: 60, anchor: { x: 500, y: 400 }, target: 'frame' })
+        view.pinchStep({ turn: 60, anchor: { x: 500, y: 400 }, target: FRAME_ID })
         view.endTwist({ x: 500, y: 400 })
         view.easeFrameBack()
         // The surface holds what it shows (on the next frame where there are frames), then the Frame eases back.

@@ -3,7 +3,7 @@ import { beadLabel } from '../../domain/beads'
 import { rotationSwapsAxes } from '../../domain/grid'
 import { projectColors } from '../../domain/layerBeads'
 import { laidTurnOf } from '../../domain/framePlacement'
-import { frameOf, projectNameOf } from '../../domain/layerRecord'
+import { frameOf, projectNameOf, firstFrameId } from '../../domain/layerRecord'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { rowProgressOn, rowProgressPosition } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
@@ -41,8 +41,8 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
     }
     const t = deps.messages()
     const colors = projectColors(project).length
-    const dimensions = shownDimensions(project)
-    const [columns, rows] = rotationSwapsAxes(laidTurnOf(project)) ? [dimensions.rows, dimensions.columns] : [dimensions.columns, dimensions.rows]
+    const dimensions = shownDimensions(project, firstFrameId(project))
+    const [columns, rows] = rotationSwapsAxes(laidTurnOf(project, firstFrameId(project))) ? [dimensions.rows, dimensions.columns] : [dimensions.columns, dimensions.rows]
     const colorWords = plural(deps.locale(), colors, t.a11y.colorsCount)
     // With no Frame the canvas has no size to say: it is named as a Canvas.
     const parts = [
@@ -50,8 +50,8 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
         ? fillBlanks(t.a11y.projectLabel, { name: projectNameOf(project), columns, rows, colors: colorWords })
         : fillBlanks(t.a11y.canvasLabel, { name: projectNameOf(project), colors: colorWords }),
     ]
-    if (rowProgressOn(project)) {
-      const { current: position, total } = rowProgressPosition(project)
+    if (rowProgressOn(project, firstFrameId(project))) {
+      const { current: position, total } = rowProgressPosition(project, firstFrameId(project))
       parts.push(fillBlanks(t.a11y.progressDone, { row: position, total }))
     }
     return parts.join(', ')

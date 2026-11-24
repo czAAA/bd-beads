@@ -10,13 +10,13 @@ import {
   snappedFrame,
   type FrameEdge,
 } from '../../domain/frame'
-import type { GridPosition, Layer } from '../../domain/grid'
+import { isFrameLayer, type FrameRef, type GridPosition, type Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal, framedAround } from '../../domain/changeFrame'
 import { changedSetting, frameAllows, settingValuesOf, settingsOf, sizeSettingOf, turnedGrid, type FrameSettings } from '../../domain/frameShape'
 import { placedStarter, type Starter, type StarterChoice, type StarterLayerSettings } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
-import { frameOf, heldWeave, layerOf } from '../../domain/layerRecord'
+import { frameById, frameIdOf, frameOf, frameToLay, heldWeave, layerOf, firstFrameId } from '../../domain/layerRecord'
 import { copyLayerSelection, type CopiedBlock } from '../../domain/selection'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { laidFrame, ownEdge, ownSize, seenSize, turnedWithEdges } from '../../domain/frameOrientation'
@@ -106,20 +106,20 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!project || !draft.value) return project
     // Shown as the release will leave it: a resize that shrinks the Frame already folds what it gives up.
-    const outcome = changeFrame(project, draft.value.move ? { move: draft.value.move } : { set: draft.value?.frame })
+    const outcome = changeFrame(project, draft.value.move ? { move: draft.value.move } : { set: draft.value?.frame }, firstFrameId(project))
     return outcome.kind === 'changed' ? outcome.project : project
   })
 
   const locked = computed(() => {
     const project = deps.currentProject()
-    return !!project && rowProgressStarted(project)
+    return !!project && rowProgressStarted(project, firstFrameId(project))
   })
 
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
   const settingFrame = computed(() => {
     const frame = frameOf(deps.currentProject())
     // A Custom frame's handles step its size setting (ticket 0669).
-    return !!frame && frameAllows(deps.currentProject(), 'resize') && handlesOn.value && !locked.value
+    return !!frame && frameAllows(deps.currentProject(), 'resize', firstFrameId(deps.currentProject())) && handlesOn.value && !locked.value
   })
 
   /** Whether the Frame panel shows: a Project and the panel opened, with or without a Frame (ticket 555). Once a pass
@@ -198,7 +198,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function commit(frame: Rect | undefined, how: 'set' | 'make' | 'around' = 'set'): boolean {
     const before = deps.currentProject()
     const outcome = deps.edit('frame', (project) =>
-      frame && how === 'around' ? framedAround(project, frame) : changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }),
+      frame && how === 'around' ? framedAround(project, frame, frameToLay(project)) : changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }, frameToLay(project)),
     )
     if (outcome.kind === 'refused') return false
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
@@ -221,12 +221,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       return fitted.project
     }
     const outcome =
-      layer === 'frame' ? deps.edit('frame', (current) => changeFrame(current, woven ? { ...change, woven } : change)) : deps.edit('exempt', rewoven)
+      isFrameLayer(layer) ? deps.edit('frame', (current) => changeFrame(current, woven ? { ...change, woven } : change, layer)) : deps.edit('exempt', rewoven)
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
     if (growth) deps.showToast('mirror-grown', mirrorGrownMessage(t, deps.locale(), mirrorSettingOf(deps.currentProject()!), growth), 'info')
     // A Fringe earring's top switched to peyote keeps a middle column, so its Width may move (ticket 0814).
-    const kept = layer === 'frame' ? frameOf(deps.currentProject())?.settings?.topWidth : undefined
+    const kept = isFrameLayer(layer) ? frameOf(deps.currentProject())?.settings?.topWidth : undefined
     if (kept !== undefined && kept !== width) deps.showToast('frame-odd-width', fillBlanks(t.frame.oddWidthNote, { count: kept }), 'info')
     if (technique !== before.technique) {
       deps.announce(fillBlanks(t.frame.announceTechnique, { technique: techniqueName(t, technique) }))
@@ -238,14 +238,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** The question a change of the Frame's Technique asks once a pass is done (ticket 1184), and the change it waits on. */
   const techniqueQuestion = dialogs.question<TechniqueChangeQuestion>('technique-change')
-  let pendingTechnique: { technique: Technique; values: TechniqueSettings } | undefined
+  let pendingTechnique: { layer: FrameRef; technique: Technique; values: TechniqueSettings } | undefined
 
   /** An answer to the question: the Frame is woven in the new Technique, its rows started over or kept, one Undo step. */
   function answerTechniqueChange(woven: WovenChoice): void {
     const pending = pendingTechnique
     pendingTechnique = undefined
     techniqueQuestion.value = undefined
-    if (pending) applySwitch('frame', pending.technique, pending.values, woven)
+    if (pending) applySwitch(pending.layer, pending.technique, pending.values, woven)
   }
 
   /** The question answered Cancel: the Frame keeps its Technique and its rows. */
@@ -268,17 +268,17 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * row and column; the Frame's Technique asks first once a pass is done (ticket 1184). */
   function changeWeave(layer: Layer, change: { technique: Technique } | { setting: string; value: number }): void {
     const project = deps.currentProject()
-    if (!project || (layer === 'frame' && !frameOf(project))) return
+    if (!project || (isFrameLayer(layer) && !frameById(project, layer))) return
     const current = layerWeave(project, layer)
     const technique = 'technique' in change ? change.technique : current.technique
     // The layer's values for the Technique's settings, one kept from before it was woven in another (a Drop) too.
     const held = weaveSettings({ ...current, technique })
     const values = 'setting' in change ? weaveSettings({ technique, techniqueSettings: { ...held, [change.setting]: change.value } }) : held
     if (sameWeave(current, switchedWeave(current, technique, values))) return
-    if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
-    const asked = layer === 'frame' ? techniqueChangeQuestion(project, technique) : undefined
+    if (isFrameLayer(layer) && frameChangeRefusal(project, { technique }, layer)) return
+    const asked = isFrameLayer(layer) ? techniqueChangeQuestion(project, technique, layer) : undefined
     if (asked) {
-      pendingTechnique = { technique, values }
+      pendingTechnique = { layer: layer as FrameRef, technique, values }
       techniqueQuestion.value = asked
       return
     }
@@ -288,7 +288,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, asking first once a pass is
    * done (ticket 1184). */
   function setTechnique(technique: Technique): void {
-    changeWeave('frame', { technique })
+    changeWeave(firstFrameId(deps.currentProject()), { technique })
   }
 
   /** Weaves a layer in another Technique from its Layer settings (tickets 492, 507, 0670): the Canvas's any time, since
@@ -311,7 +311,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     // The Move handle always works; a resize handle only while the edit toggle is on.
     if (target.kind === 'move') gesture = { kind: 'move', origin: cell, start: frame }
     // A turned Frame's handles stand on the rectangle it lies in (ticket 1016), so the grip is measured there.
-    else if (target.kind === 'handle' && settingFrame.value) gesture = { kind: 'resize', edges: target.edges, start: frame, grip: gripOf(laidFrame(project!)!, target.edges, cell) }
+    else if (target.kind === 'handle' && settingFrame.value) gesture = { kind: 'resize', edges: target.edges, start: frame, grip: gripOf(laidFrame(project!, firstFrameId(project!))!, target.edges, cell) }
   }
 
   function drag(cell: GridPosition): void {
@@ -321,7 +321,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (gesture.kind === 'resize') {
       const { grip, start } = gesture
       const at = { row: cell.row - grip.row, column: cell.column - grip.column }
-      const weave = frameWeave(project)
+      const weave = frameWeave(project, firstFrameId(project))
       draft.value = { frame: turnedGrid(start) ? turnedWithEdges({ ...start, ...weave }, gesture.edges, at) : frameWithEdges(weave, start, gesture.edges, at) }
     } else {
       const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
@@ -352,7 +352,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** The Move handle's change (ticket 452): the Frame and its beads by whole rows and columns, one announced Undo
    * step. */
   function moveBy(rows: number, columns: number): void {
-    const outcome = deps.edit('frame', (project) => changeFrame(project, { move: { rows, columns } }))
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { move: { rows, columns } }, firstFrameId(project)))
     if (outcome.kind === 'applied') deps.announce(deps.messages().frame.announceMoved)
   }
 
@@ -361,7 +361,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function stepEdge(edge: FrameEdge, step: 1 | -1): void {
     const project = deps.currentProject()
     if (!project || !frameOf(project) || locked.value) return
-    const next = frameWithEdgeStep(frameWeave(project), frameOf(project)!, ownEdge(frameOf(project)!, edge), step)
+    const next = frameWithEdgeStep(frameWeave(project, firstFrameId(project)), frameOf(project)!, ownEdge(frameOf(project)!, edge), step)
     if (next !== frameOf(project)) commit(next)
   }
 
@@ -371,13 +371,13 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!project || !frameOf(project) || locked.value) return
     const own = ownSize(frameOf(project)!, { columns, rows })
-    const next = frameResizedAround(frameWeave(project), frameOf(project)!, own.columns, own.rows)
+    const next = frameResizedAround(frameWeave(project, firstFrameId(project)), frameOf(project)!, own.columns, own.rows)
     if (!sameFrame(next, frameOf(project))) commit(next)
   }
 
   /** The Frame's name, typed in the Frame panel (ticket 555): one Undo step; empty clears it. */
   function rename(name: string): void {
-    deps.edit('frame', (project) => changeFrame(project, { name }))
+    deps.edit('frame', (project) => changeFrame(project, { name }, firstFrameId(project)))
   }
 
   // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step. A named Piece's
@@ -404,7 +404,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function fit(): void {
     const project = deps.currentProject()
     if (!project) return
-    const frame = fitToDrawing(project)
+    const frame = fitToDrawing(project, firstFrameId(project))
     if (frame) commit(frame, 'make')
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
@@ -416,7 +416,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Remove Frame: asks first, a Custom frame as any Frame (ticket 0669). */
   function remove(): void {
     const project = deps.currentProject()
-    if (project && layerOf(project, 'frame')) removeConfirmOpen.value = true
+    if (project && layerOf(project, firstFrameId(project))) removeConfirmOpen.value = true
   }
 
   /** The Remove frame question answered No: nothing changes. */
@@ -429,7 +429,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const removeFramePrompt = computed(() => {
     const project = deps.currentProject()
     const words = deps.messages().frame
-    return { message: project && rowProgressStarted(project) ? words.removeConfirmMessageDone : words.removeConfirmMessage }
+    return { message: project && rowProgressStarted(project, firstFrameId(project)) ? words.removeConfirmMessageDone : words.removeConfirmMessage }
   })
 
   /** Remove frame after the question: the Frame goes with all its beads, Folded ones too, and its passes; one Undo step
@@ -446,7 +446,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     const frame = frameOf(project)
     if (!project || !frame) return
-    const block = copyLayerSelection(project, { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer: 'frame' })
+    const block = copyLayerSelection(project, { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer: frameIdOf(frame) })
     if (commit(undefined) && block) deps.copyToClipboard?.(block)
   }
 
@@ -458,7 +458,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function replaceAsking(place: () => void): void {
     const project = deps.currentProject()
     if (!project || locked.value) return
-    const frame = layerOf(project, 'frame')
+    const frame = layerOf(project, firstFrameId(project))
     if (frame && hasBeads(frame.beads)) {
       pendingPlace = place
       replaceConfirmOpen.value = true
@@ -473,7 +473,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function placeFromStarter(starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>): void {
     replaceAsking(() => {
       const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
-      const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
+      const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre, frameToLay(project)))
       const t = deps.messages()
       const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
       if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { shape: starterName(t, starter), size }))
@@ -488,7 +488,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const frame = frameOf(project)
     if (!frame || !settingsOf(frame) || locked.value) return
     const name = changedSetting(change)
-    const command = (current: Project) => changeFrame(current, { settings: change })
+    const command = (current: Project) => changeFrame(current, { settings: change }, firstFrameId(current))
     const outcome = name === 'fringeStyle' ? deps.edit('frame', command) : deps.hold(command)
     const settled = frameOf(deps.currentProject())
     if (outcome.kind !== 'applied' || !settled) return
