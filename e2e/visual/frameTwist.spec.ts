@@ -37,6 +37,35 @@ async function twoFingers(page: Page, path: (step: number) => [Point, Point], st
   await settle(page)
 }
 
+/** Two fingers held on the surface and moved one step per screen frame, as an iPad reports them, then held still for a few
+ * frames before they lift (ticket 1227): the glue twist catches up with them in that time. */
+async function pacedTwoFingers(page: Page, path: (step: number) => [Point, Point], steps = 24): Promise<void> {
+  await page.evaluate(
+    async ({ points }) => {
+      const surface = document.querySelector('[data-testid="project-surface"]')!
+      // A page the browser holds in the background pauses its frames: a short timer keeps the pacing going.
+      const frame = () => new Promise<void>((done) => (requestAnimationFrame(() => done()), setTimeout(done, 40)))
+      const fire = (type: string, id: number, { x, y }: Point) =>
+        surface.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === 1, clientX: x, clientY: y, bubbles: true, cancelable: true, buttons: type === 'pointerup' ? 0 : 1 }))
+      const [a, b] = points[0]!
+      fire('pointerdown', 1, a)
+      fire('pointerdown', 2, b)
+      for (const [p, q] of points.slice(1)) {
+        fire('pointermove', 1, p)
+        fire('pointermove', 2, q)
+        await frame()
+      }
+      const [p, q] = points.at(-1)!
+      for (let held = 0; held < 12; held++) await frame()
+      fire('pointerup', 1, p)
+      fire('pointerup', 2, q)
+    },
+    { points: Array.from({ length: steps + 1 }, (_, step) => path(step)) },
+  )
+  await page.waitForTimeout(400)
+  await settle(page)
+}
+
 /** Two fingers `spread` px either side of `at`, turned `degrees` clockwise by the last step, spread `scale` times as far. */
 const twist = (at: Point, degrees: number, spread = 60, scale = 1) => (step: number, steps = 24): [Point, Point] => {
   const turn = ((degrees * step) / steps) * (Math.PI / 180)
@@ -89,4 +118,26 @@ test('pan, pinch and a twist on the Frame and off it each turn and move what the
   await twoFingers(page, twist(sheetMiddle, 75, 30))
   await expect.poll(async () => frameOf(await savedProject(page))!.angle).toBe(90)
   expect(lieAlike(await savedProject(page))).toBe(true)
+})
+
+test('a twist paced like an iPad\'s catches up with the fingers once they stop, and Fit puts the turns back (ticket 1227)', async ({ page }) => {
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 16, rows: 10 })])
+  await settle(page)
+  const box = (await page.getByTestId('project-surface').boundingBox())!
+  const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+
+  // The Frame twisted 35° by fingers on its sheet: the fingers turn the 10° that engages it, the rest is the Frame's.
+  await pacedTwoFingers(page, twist(middle, 35, 30))
+  const leaning = frameOf(await savedProject(page))!.angle
+  expect(leaning).toBeGreaterThan(24)
+  expect(leaning).toBeLessThan(26)
+
+  // The Canvas twisted off the Frame, eased onto its quarter turn.
+  await pacedTwoFingers(page, twist({ x: box.x + 120, y: box.y + 120 }, 100, 50))
+  await expect.poll(async () => orientationOf(await savedProject(page))).toBe(90)
+
+  // Fit: the Canvas back to 0°, the leaning Frame onto its nearest quarter turn.
+  await page.getByTestId('zoom-reset').click()
+  await expect.poll(async () => orientationOf(await savedProject(page))).toBe(0)
+  expect(frameOf(await savedProject(page))!.angle).toBe(0)
 })

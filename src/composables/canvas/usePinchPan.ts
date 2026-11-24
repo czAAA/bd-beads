@@ -14,6 +14,9 @@ interface PinchPanDeps {
   endTwist: (anchor: Scroll) => void
   /** The layer a twist turns, from where the two fingers went down (ticket 1190); the Canvas when left out. */
   twistTarget?: (first: PointerPlace, second: PointerPlace) => TwistTarget
+  /** Asks for a call on the next screen frame, which the glue twist's catching up runs on (ticket 1227): the page's
+   * `requestAnimationFrame` when left out, and where there is none the twist follows the fingers one for one. */
+  nextFrame?: (run: () => void) => void
 }
 
 /** Where a finger went down, in client px. */
@@ -22,6 +25,13 @@ type PointerPlace = Pick<PointerEvent, 'clientX' | 'clientY'>
 /** How far the fingers turn since landing before the turn is a twist and not the wobble of a pinch or pan (ticket
  * 0709): about what the popular touch apps ask. */
 const TWIST_ENGAGE_DEGREES = 10
+
+/** How much of the way to the fingers' angle the shown angle covers on each frame (ticket 1227): the glue of a twist,
+ * so the jitter of the fingers doesn't show, and it catches up when they stop. Tuned on an iPad. */
+const TWIST_GLUE = 0.85
+
+/** A gap this small (degrees) is closed in one frame, which ends the catching up. */
+const GLUE_CLOSES_DEGREES = 0.05
 
 function midpoint(a: Scroll, b: Scroll): Scroll {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
@@ -54,7 +64,33 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
   let startSpread = 0
   let startZoom = 1
   let lastMid: Scroll = { x: 0, y: 0 }
+  /** The angle the fingers last were at. */
   let lastAngle = 0
+  /** How far the fingers have turned that the twist hasn't shown yet: it covers TWIST_GLUE of it each frame (ticket 1227). */
+  let owed = 0
+  let chasing = false
+  const nextFrame = deps.nextFrame ?? (typeof requestAnimationFrame === 'function' ? (run: () => void) => void requestAnimationFrame(run) : undefined)
+
+  function chase(): void {
+    chasing = false
+    if (!gesturing || !twisting || owed === 0) return
+    const turn = Math.abs(owed) < GLUE_CLOSES_DEGREES ? owed : owed * TWIST_GLUE
+    owed -= turn
+    deps.pinch({ turn, anchor: lastMid, target })
+    if (owed !== 0) schedule()
+  }
+
+  function schedule(): void {
+    if (chasing || !nextFrame) return
+    chasing = true
+    nextFrame(chase)
+  }
+
+  /** What is owed is shown at once, where the fingers land again or lift. */
+  function catchUp(): void {
+    if (twisting && owed !== 0) deps.pinch({ turn: owed, anchor: lastMid, target })
+    owed = 0
+  }
 
   function firstTwo(): [Scroll, Scroll] {
     const [a, b] = [...touches.values()]
@@ -72,6 +108,7 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
         target = deps.twistTarget?.(first, second) ?? 'canvas'
       }
       // A finger put down again mid-gesture starts the spread, the middle and the angle afresh, so nothing jumps.
+      catchUp()
       const [a, b] = firstTwo()
       gesturing = true
       startSpread = Math.max(distance(a, b), 1)
@@ -99,6 +136,10 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
       // from the angle they are at, so the Canvas does not jump by the threshold.
       twisting = Math.abs(turn) >= TWIST_ENGAGE_DEGREES
       turn = twisting ? 0 : undefined
+    } else if (nextFrame) {
+      owed += turn
+      turn = 0
+      schedule()
     }
     if (twisting) lastAngle = turned
     // The point between the fingers stays under them as the zoom changes; moving them together moves the canvas with
@@ -111,6 +152,7 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     downs.delete(event.pointerId)
     if (!touches.delete(event.pointerId)) return
     if (touches.size === 0 && gesturing) {
+      catchUp()
       gesturing = false
       twisting = false
       deps.endTwist(lastMid)
@@ -131,7 +173,10 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     el.removeEventListener('pointercancel', onEnd, true)
     touches.clear()
     downs.clear()
-    if (gesturing) deps.endTwist(lastMid)
+    if (gesturing) {
+      catchUp()
+      deps.endTwist(lastMid)
+    }
     gesturing = false
     twisting = false
   }
