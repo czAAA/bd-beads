@@ -14,7 +14,7 @@ Inside a 10 mm margin on all four sides (`print-margin`), top to bottom. The tit
 - **The tech line**, 5.8 mm under the title block: a 1.5 px `ink` rule across the page, then Page 1's tech line without the technique word (DM Mono 8, `muted`): "48×23 · Miyuki Delica 11/0 · ≈ 7.7 × 3.0 cm".
 - **The board**, 9.5 mm under the tech line: as wide as the page inside its margins and `print-cover-board` (196 mm) tall, filled `print-board`, its corners rounded as the overview's board is. Nothing else is on it but the piece.
 - **The piece**: the framed Schema trimmed to its beads (ticket 1128): the rows and columns from the first bead to the last, before it is scaled; a Schema with no beads whole. Drawn as the app draws it in the light theme, in color: no Swatch letters, no rulers, no lines every 5 and 10, no Row progress fade. Turned as its Canvas is turned, so a cuff lies across as it is woven. Scaled to fill the board inside `print-cover-pad` (8 mm) on every side, with no smallest and no largest bead, and centred. It casts one soft shadow on the board: 2.6 mm down, 3.7 mm of blur, `ink` at 16%. An empty position is bare board, with no cross: the cover is a picture, not a chart. The tech line gives the trimmed size.
-- **The footer**, Page 1's: the X1 mark, "openbeads" and the date and time on the left, the page number on the right ("1 / 2").
+- **The footer**, Page 1's: the X1 mark, "openbeads" and the date and time on the left, the page number on the right ("1 / 2"). **Changed on the Cover page only: see "The address" below** (approved 2026-11-24, not yet in the app, ticket 1233).
 
 An empty name leaves out the title, an empty maker the "by" line. An unknown Bead shows no grams. No watermark: nothing is drawn over the piece.
 
@@ -30,6 +30,30 @@ An empty name leaves out the title, an empty maker the "by" line. An unknown Bea
 ## As the Picture
 
 Picture saves (ticket 1096; PngExport card) this page as a PNG, at the Export quality's dpi (QualitySlider card), drawn by the same code as the PDF's. It is one file, whatever the piece's size and however many colors it has, and its footer reads "1 / 1". It is saved whether or not the Cover page switch is on: the switch is the PDF's. Its file name carries no option (ExportPanel card).
+
+## The address: approved 2026-11-24, not yet in the app (ticket 1233)
+
+Signed off by the owner on 2026-11-24 (ticket 1232, canvas "PDF cover page: where the openbeads.com URL goes", option F, "A + QR"). The Cover page, and only the Cover page, says where it was made, so anyone holding the file or a printout can find the app. Page 1, the chart pages and the list pages keep the footer above ("openbeads" and no address).
+
+- **The footer grows** from one line (6 mm) to a block about 14 mm tall, 4 mm under the board. The board gives up the difference: `print-cover-board` falls from 196 mm to about 190 mm (the build ticket sets the exact value so the page still closes with the margin, and keeps `printPages.test.ts` in step).
+- **Left, three lines**, 1.2 mm apart, left-aligned:
+  1. the X1 mark (5 mm) and "Made with **openbeads.com**": "Made with" Inter 400 9 pt `muted`, the address Inter 600 9 pt `ink`, 2.5 mm after the mark;
+  2. the tag: "Free bead pattern maker. No account." (Inter 400 7.5 pt `muted`);
+  3. the date and time, as before (DM Mono 7 pt `muted`).
+- **Right, a column** aligned to the page's right margin: the QR code with "scan to open" to its left (DM Mono 6.5 pt `muted`, right-aligned, 2 mm from the code), the page number under it (DM Mono 7 pt `muted`, as before), 1 mm apart.
+- **The QR code** is 13 mm square, `ink` modules on the paper, with a quiet zone of four modules (the board's pale ground is not used). It encodes exactly `https://openbeads.com`: no path, no language, no tracking parameter. Drawn as vector squares in the PDF, as a picture in the PNG; always black on white, in Black and white too.
+- **The address is a link in the PDF**: a link annotation over "openbeads.com" and over the QR code, both to `https://openbeads.com`. The PNG has no links.
+- **Strings** (copy/print.md): "Made with" / "Сделано в"; the tag / "Бесплатный редактор схем для бисера. Без аккаунта."; "scan to open" / "наведите камеру". The address is never translated. The language is the app's, as the date's is.
+- **Picture** (PNG) saves the same footer (PngExport card); its page number reads "1 / 1".
+- Long cases: the date and time at its longest ("24 Nov 2026, 14:35") and a page number of "12 / 12" fit on one line each; the three lines never wrap (the left block is far narrower than the page minus the QR column).
+- No watermark: the address is never on the board, the piece or the title block.
+
+### Acceptance (address)
+
+- [ ] The Cover page's footer reads "Made with openbeads.com", the tag, the date and time, a 13 mm QR code with "scan to open" and the page number.
+- [ ] Scanning the QR code from a printout opens `https://openbeads.com`; in the PDF both the address and the code are links.
+- [ ] Page 1, chart pages and list pages are unchanged; the Cover page still closes inside its margins with the shorter board.
+- [ ] Picture saves the same footer; Black and white leaves it as it is.
 
 ## Acceptance
 
