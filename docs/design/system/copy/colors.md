@@ -55,3 +55,21 @@ The Palette's Letters switch reuses the Frame's word, "Letters". A letter anothe
 | {name}, remove from the Palette (a row the Palette holds) | {name}, убрать из палитры | {name}, прибрати з палітри | {name}, прыбраць з палітры | {name}，从调色板移除 | {name}, quitar de la paleta | {name}, usuń z palety |
 | {name}, in the Palette (the same row where nothing removes it) | {name}, в палитре | {name}, у палітрі | {name}, у палітры | {name}，已在调色板 | {name}, en la paleta | {name}, w palecie |
 | A press on a code that is in the Palette takes it out again. (the Info button's third note) | Нажатие на код, который уже в палитре, убирает его из неё. | Натискання на код, який уже в палітрі, прибирає його з неї. | Націск на код, які ўжо ў палітры, прыбірае яго з яе. | 再按一次已在调色板中的色号，可将它移除。 | Al pulsar un código que ya está en la paleta, se quita de ella. | Naciśnięcie kodu, który jest już w palecie, usuwa go z niej. |
+
+## The Palette in sections (ticket 1224, approved 2026-11-24, not yet in the app)
+
+ADR 0103's sections and the one Add another color (PaletteSwatches card). A catalog code is always named with its catalog, so a newcomer reads "TOHO code 1", not a bare "1" (owner, 2026-11-24). Catalog names (TOHO, Miyuki Delica, Miyuki Round) are literals in every language. "Add {bead} colors" and "Default colors can't be removed" go. English and Russian are approved; the other languages are proposals for review with the build (1226).
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Custom colors (the section of wheel and canvas colors) | Свои цвета | Власні кольори | Свае колеры | 自定义颜色 | Colores personalizados | Własne kolory |
+| Add another color (the one button under the Palette, and its popover's name) | Добавить ещё цвет | Додати ще колір | Дадаць яшчэ колер | 添加其他颜色 | Añadir otro color | Dodaj kolejny kolor |
+| Bead colors (the popover's first tab) | Цвета бисера | Кольори бісеру | Колеры бісеру | 珠子颜色 | Colores de cuentas | Kolory koralików |
+| Custom color (the popover's second tab) | Свой цвет | Власний колір | Свой колер | 自定义颜色 | Color personalizado | Własny kolor |
+| {section} code {code} (a list row's first line; "TOHO code 1") | {section}, код {code} | {section}, код {code} | {section}, код {code} | {section} 色号 {code} | {section}, código {code} | {section}, kod {code} |
+| {family} · {section} code {code} (the head and a swatch's Tooltip; "Red · TOHO code 341") | {family} · {section}, код {code} | {family} · {section}, код {code} | {family} · {section}, код {code} | {family} · {section} 色号 {code} | {family} · {section}, código {code} | {family} · {section}, kod {code} |
+| Already in {section} as code {code}, so it's added a shade apart. (the nudge Note) | Такой цвет уже есть: {section}, код {code}. Поэтому он добавлен на тон иначе. | Такий колір уже є: {section}, код {code}. Тому його додано на тон інакше. | Такі колер ужо ёсць: {section}, код {code}. Таму ён дададзены на тон інакш. | {section} 色号 {code} 已是此颜色，因此添加时略作区分。 | Ya está en {section} como código {code}, así que se añade con un tono de diferencia. | Ten kolor już jest: {section}, kod {code}, więc dodano go o odcień inaczej. |
+| Already in Custom colors, so it's added a shade apart. | Такой цвет уже есть в своих цветах, поэтому он добавлен на тон иначе. | Такий колір уже є у власних кольорах, тому його додано на тон інакше. | Такі колер ужо ёсць у сваіх колерах, таму ён дададзены на тон інакш. | 自定义颜色中已有此颜色，因此添加时略作区分。 | Ya está en Colores personalizados, así que se añade con un tono de diferencia. | Ten kolor już jest we własnych kolorach, więc dodano go o odcień inaczej. |
+| Move section {section} (a section's label line in Edit palette) | Переставить раздел {section} | Перемістити розділ {section} | Перасунуць раздзел {section} | 移动 {section} 分组 | Mover la sección {section} | Przenieś sekcję {section} |
+| Remove section {section} | Убрать раздел {section} | Прибрати розділ {section} | Прыбраць раздзел {section} | 移除 {section} 分组 | Quitar la sección {section} | Usuń sekcję {section} |
+| Remove the {section} colors? (its confirmation's title; Custom colors keeps "Remove all custom colors?") | Убрать цвета {section}? | Прибрати кольори {section}? | Прыбраць колеры {section}? | 移除 {section} 的颜色？ | ¿Quitar los colores de {section}? | Usunąć kolory {section}? |
