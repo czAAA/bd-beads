@@ -39,6 +39,7 @@ const MIRROR: Record<string, { token: string } | { css: string } | { none: strin
   tool: { css: '--margin-tool' },
   tab: { css: '--margin-tab' },
   strip: { css: '--margin-strip' },
+  titleRow: { css: '--margin-title-row' },
   legendRow: { css: '--margin-legend-row' },
   moveWidth: { css: '--frame-handle-hit-width' },
   gap: { token: 'space-4' },

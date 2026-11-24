@@ -175,8 +175,10 @@ const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['line', '
 /** Expanded (ticket 1169): the two-row block, the one row with its pencils, the compact row, then the name with the
  * legend and Letters, then the tab; never roomy. */
 const EXPANDED_TITLE_FORMS: readonly TitleForm[] = ['full', 'line', 'compact', 'key', 'tab']
+/** Whether the band on screen reaches `designPx` of the drafting sheet at its least scale. */
+const bandReaches = (designPx: number) => props.anchor.band >= designPx * (least.value ?? MARGIN_PX.scale.min)
 /** Whether the compact row's two-line legend stands clear of the Frame's line (ticket 1213): under it, `brief`. */
-const legendFits = computed(() => props.anchor.band >= MARGIN_PX.band.legend * (least.value ?? MARGIN_PX.scale.min))
+const legendFits = computed(() => bandReaches(MARGIN_PX.band.legend))
 const titleForms = computed<readonly TitleForm[]>(() => {
   if (props.expanded) return EXPANDED_TITLE_FORMS
   const forms = TITLE_FORMS[form.value]
@@ -197,7 +199,7 @@ const PROGRESS_FITS: Record<MarginForm, readonly ProgressFit[]> = {
 }
 /** Under the title block, or beside it on one line. */
 const stacked = computed(
-  () => !!props.expanded || form.value === 'full' || (form.value === 'compact' && props.anchor.band >= MARGIN_PX.band.stacked * (least.value ?? MARGIN_PX.scale.min)),
+  () => !!props.expanded || form.value === 'full' || (form.value === 'compact' && bandReaches(MARGIN_PX.band.stacked)),
 )
 /** The places of the sheet's form, in screen px at its scale. */
 const place = computed(() => {

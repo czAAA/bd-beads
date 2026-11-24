@@ -39,6 +39,8 @@ export const MARGIN_PX = {
   sheetRadius: { full: 12, compact: 10 },
   /** The inner border's corners. */
   borderRadius: 6,
+  /** One row of the two-row title block (expanded), the one without the legend. */
+  titleRow: 23,
   /** The title block's row that holds the legend: the Bead's label and its 18px pencil over the 14px discs, 2px apart,
    * 1px in at top and bottom (ticket 1213). */
   legendRow: 36,

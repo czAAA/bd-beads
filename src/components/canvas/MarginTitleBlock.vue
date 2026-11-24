@@ -253,10 +253,9 @@ const keyLabel = computed(() =>
 </template>
 
 <style scoped>
-/* Two rows, 23px and the legend's 36px, with 1px rules between the cells, on `margin-title`, its bottom-left corner
- * rounded with the inner border (MarginSheet card). Row 1: the name, the Technique, "by" the maker over two cells; row
- * 2: the sizes, the legend, Letters; the fold button over both. Compact: one 24px row (ticket 0658), the legend's 36px
- * where it holds the legend (ticket 1213). */
+/* Two rows (23px, the legend's 36px; ticket 1213), 1px rules between cells, its bottom-left corner rounded (MarginSheet
+ * card). Row 1: name, Technique, "by" the maker; row 2: sizes, legend, Letters; the fold over both. Compact: one row,
+ * 24px, or the legend's 36px where it holds the legend. */
 .margin-title {
   display: grid;
   grid-template-rows: var(--margin-title-row) var(--margin-legend-row);

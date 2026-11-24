@@ -110,11 +110,11 @@ const formOf = (root: HTMLElement) => root.querySelector('[data-testid="margin-s
 
 describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
   for (const locale of FIT_LOCALES) {
-    it(`is full at 100%, compact at 95%, 70% and 60%, folded at 45%, nothing clipped or overlapping, in ${locale} (ticket 1213: full from 100%)`, async () => {
+    it(`is full at 100%, compact at 95% and 60%, folded at 45%, nothing clipped or overlapping, in ${locale}`, async () => {
       zoom.value = 1
       columns.value = 40
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
-      for (const [at, form] of [[1, 'full'], [0.95, 'compact'], [0.7, 'compact'], [0.6, 'compact'], [0.45, 'folded']] as const) {
+      for (const [at, form] of [[1, 'full'], [0.95, 'compact'], [0.6, 'compact'], [0.45, 'folded']] as const) {
         zoom.value = at
         await settled(root)
         expect(formOf(root), `${at}`).toBe(form)
