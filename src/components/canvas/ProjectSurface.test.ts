@@ -1264,7 +1264,7 @@ describe('ProjectSurface', () => {
 
     it("gives the code's color name too once it loads the Bead's catalog, as the Palette does", async () => {
       const project = projectOf(20, 10, { beads: { 3: { 4: '#123456' } } })
-      const named = { ...project, palette: [...project.palette, addedColorId('#123456')], paletteCodes: { '#123456': '49' } }
+      const named = { ...project, palette: [...project.palette, addedColorId('#123456')], paletteCodes: { '#123456': { catalog: 'toho', code: '49' } } }
       const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
       const beadColors = { catalog: ref(catalog), load: vi.fn() } as unknown as BeadColors
       const wrapper = mount(

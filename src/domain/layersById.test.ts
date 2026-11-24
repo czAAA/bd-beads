@@ -16,7 +16,7 @@ import { backgroundOf, beadsOfLayer, frameById, frameIdOf, frameOf, framesOf, la
 import { layerAt, onLayer, positionOnCanvas } from './layers'
 import { withColors } from './canvas'
 import { mirrorSettingOf, withMirrorPlace } from './mirror'
-import { createPalette, defaultPalette } from './palette'
+import { createPalette } from './palette'
 import type { Project } from './project'
 import { replaceBead } from './projectBead'
 import { rotateFrame } from './rotate'
@@ -123,7 +123,7 @@ describe('a Frame named by its id (ticket 1216)', () => {
     expect(isInFinishedRow(woven, { row: 0, column: 0 }, frameIdIn(woven))).toBe(false)
     expect(selectionInFinishedRows(woven, { top: 20, left: 20, rows: 1, columns: 1, layer: SECOND })).toBe(true)
 
-    const palette = createPalette([RED], defaultPalette('toho-cube-1.5mm'))
+    const palette = createPalette([RED])
     expect(computeColorQuantities(project, palette, SECOND).map(({ count }) => count)).toEqual([1])
     expect(computeColorQuantities(project, palette, frameIdIn(project))).toEqual([])
   })
@@ -152,10 +152,10 @@ describe('a Frame named by its id (ticket 1216)', () => {
     expect(mirrorSettingOf(mirrored).place).toEqual({ layer: 'frame', frame: SECOND })
 
     const delica = findBead('miyuki/delica/11-0')!
-    const swapped = replaceBead(project, delica, undefined, SECOND)
+    const swapped = replaceBead(project, delica, SECOND)
     firstUntouched(project, swapped)
     expect(layerOf(swapped, SECOND)!.beadId).toBe(delica.id)
-    // The Palette still follows the woven layer, the first Frame, until it is the Project's own (ticket 1225).
+    // Replace Bead leaves the Palette as it is (ADR 0103).
     expect(wovenLayerOf(swapped)).toBe(frameIdIn(project))
     expect(swapped.palette).toEqual(project.palette)
 

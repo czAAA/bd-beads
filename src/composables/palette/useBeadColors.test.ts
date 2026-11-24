@@ -133,12 +133,12 @@ describe('a swatch added from the catalog keeps its code (ticket 0538)', () => {
     await load()
     const entry = swatches.value.find((candidate) => !candidate.taken)!
     add(entry.hex, entry.code)
-    expect(harness.project.paletteCodes).toEqual({ [entry.hex]: entry.code })
+    expect(harness.project.paletteCodes).toMatchObject({ [entry.hex]: { catalog: 'miyuki-delica', code: entry.code } })
     expect(palette.value.byHex(entry.hex)?.code).toBe(entry.code)
     const painted = paintAt(harness.project, [{ row: 0, column: 0 }], entry.hex)
     expect(listedColorName(en, projectPalette(painted).byHex(entry.hex), entry.hex)).toContain(entry.code)
     harness.history.onUndo()
-    expect(harness.project.paletteCodes).toBeUndefined()
+    expect(harness.project.paletteCodes).toEqual(delica.paletteCodes)
   })
 
   it('prefills a color Report from the highlighted swatch, else the active Palette color with a code (ticket 0700)', async () => {

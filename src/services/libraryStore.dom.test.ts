@@ -129,7 +129,7 @@ describe('projectStorage', () => {
 
     saveProjects(library)
 
-    expect(localStorage.getItem(STORAGE_KEY)).toBe(JSON.stringify({ version: 7, patterns: library.map(encodeProject) }))
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(JSON.stringify({ version: 8, patterns: library.map(encodeProject) }))
   })
 
   it('replaces what was stored rather than merging with it', () => {
@@ -204,7 +204,7 @@ describe('projectStorage', () => {
       saveProjects([makeProject()])
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
-      expect(stored.version).toBe(7)
+      expect(stored.version).toBe(8)
       expect(stored.patterns[0].grid).toBeUndefined()
       expect(stored.patterns[0].layers[0].encodedBeads).toEqual({ colors: [], rows: {} })
       expect(stored.patterns[0].layers[1].encodedBeads).toEqual({ colors: [], rows: {} })
@@ -226,7 +226,7 @@ describe('projectStorage', () => {
       saveProjects(loaded)
 
       expect(loaded.map(layersView)).toEqual([layersView(withColorsInPalette(legacy))])
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(7)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(8)
       expect(storedBytes()).toBeLessThan(legacyBytes / 10)
     })
 
@@ -320,11 +320,11 @@ describe('projectStorage', () => {
 
       saveProjects([project])
 
-      // Measured: 72,149 bytes as plain JSON (a color string per bead) against about 3,200 stored — ADR 0009's saving, a little smaller now that a bead is a string and not an object. The bound is
-      // loose enough that an encoding tweak doesn't have to be chased here, and tight enough to fail if the compact
-      // form ever stops being written.
+      // Measured: 72,149 bytes as plain JSON (a color string per bead) against about 5,200 stored, the default colors' codes
+      // among them since the Palette is the Project's own (ADR 0103) — ADR 0009's saving. The bound is loose enough that an
+      // encoding tweak doesn't have to be chased here, and tight enough to fail if the compact form ever stops being written.
       expect(plainJsonBytes).toBeGreaterThan(60 * 1024)
-      expect(storedBytes()).toBeLessThan(5 * 1024)
+      expect(storedBytes()).toBeLessThan(6 * 1024)
     })
   })
 })

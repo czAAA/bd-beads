@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import type { BeadMap } from '../../domain/canvas'
-import { addedColorId } from '../../domain/palette'
+import { addedColorId, projectPalette } from '../../domain/palette'
 import { createProject } from '../../domain/createProject'
 import { lettersOfPalette } from '../../domain/paletteEdits'
 import { en } from '../../i18n/en'
@@ -18,7 +18,7 @@ const B = addedColorId('#abcdef')
 function setup(ids: string[] = [...[...base.palette], A, B], selected?: string, beads: BeadMap = {}) {
   // Every swatch has its Swatch letter, as a Palette the app made does.
   const layers: typeof base.layers = [{ ...base.layers[0], beads }]
-  const harness = editHarness({ ...base, layers, palette: ids, paletteLetters: lettersOfPalette(ids, 'toho-cube-1.5mm', base.paletteLetters) })
+  const harness = editHarness({ ...base, layers, palette: ids, paletteLetters: lettersOfPalette(ids, base.paletteLetters) })
   const { palette, removeAdded, removeAllAdded, paintedBeads } = useProjectPalette({ currentProject: harness.currentProject, edit: harness.edit })
   const selectedColorId = ref(selected)
   const deps = {
@@ -49,8 +49,8 @@ describe('removing an added swatch (tickets 228, 304)', () => {
   })
 
   it('confirming removes it as one Edit, steps back to the default color, and the toast\'s Undo puts it back in its slot, selected', () => {
-    const [first, ...rest] = [...base.palette]
-    const ids = [first!, A, ...rest, B]
+    // Each section's colors stand together (ADR 0103): the default colors', then the Custom colors.
+    const ids = [...base.palette, A, B]
     const { harness, palette, deps, selectedColorId, undoInToast, onRequestRemoveAddedColor, onConfirmRemoveAddedColor } = setup(ids, A)
     onRequestRemoveAddedColor(A)
     onConfirmRemoveAddedColor()
@@ -120,8 +120,7 @@ describe('removing every added color (ticket 0532)', () => {
   })
 
   it('confirming removes them all as one Edit, steps back to the default color, and one Undo in the toast puts each back in its slot, selected', () => {
-    const [first, ...rest] = [...base.palette]
-    const ids = [A, first!, B, ...rest]
+    const ids = [A, B, ...base.palette]
     const { harness, palette, deps, selectedColorId, undoInToast, onRequestRemoveAllAddedColors, onConfirmRemoveAllAddedColors, removeAllColorsConfirmOpen } = setup(ids, B)
     onRequestRemoveAllAddedColors()
     onConfirmRemoveAllAddedColors()
@@ -211,5 +210,26 @@ describe('removing a color beads are painted in (ticket 1124)', () => {
     expect(removeAllColorsMessage.value).toBe('2 colors will leave the Palette. The 4 beads painted in them go too.')
     onConfirmRemoveAllAddedColors()
     expect(harness.project.layers[0].beads).toEqual({})
+  })
+})
+
+describe('removing a whole section (ADR 0103)', () => {
+  it('takes its colors, default ones too, and the beads painted in them in one Edit, and Undo puts both back', () => {
+    const black = projectPalette(base).colors[0]!
+    const painted: BeadMap = { 0: { 0: black.hex, 1: '#123456' } }
+    const layers: typeof base.layers = [{ ...base.layers[0], beads: painted }]
+    const ids = [...base.palette, A]
+    const harness = editHarness({ ...base, layers, palette: ids, paletteLetters: lettersOfPalette(ids, base.paletteLetters) })
+    const { paintedBeads, removeSection } = useProjectPalette({ currentProject: harness.currentProject, edit: harness.edit })
+    expect(paintedBeads(base.palette)).toBe(1)
+
+    const undo = removeSection('toho')!
+    expect(harness.project.palette).toEqual([A])
+    expect(harness.project.paletteCodes).toBeUndefined()
+    expect(harness.project.layers[0].beads).toEqual({ 0: { 1: '#123456' } })
+    undo()
+    expect([harness.project.palette, harness.project.paletteCodes, harness.project.paletteLetters]).toEqual([ids, base.paletteCodes, lettersOfPalette(ids, base.paletteLetters)])
+    expect(harness.project.layers[0].beads).toEqual(painted)
+    expect(removeSection('miyuki-round')).toBeUndefined()
   })
 })

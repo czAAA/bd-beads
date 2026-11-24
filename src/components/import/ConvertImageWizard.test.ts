@@ -18,7 +18,7 @@ import { layersView } from '../../testUtils/layerFields'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { resetKeyHintsDevice } from '../../composables/ui/useKeyHints'
 import { NARROW_CONVERTER } from '../../composables/import/useConvertCompare'
-import { createPalette, defaultPalette } from '../../domain/palette'
+import { codesOfColors, createPalette, defaultPalette } from '../../domain/palette'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 afterEach(() => {
@@ -285,7 +285,7 @@ describe('ConvertImageWizard rejections', () => {
     await openColorByColor(wrapper)
     // The Default Palette is the Bead's default colors, real codes (ticket 1070): the row names the nearest one's code.
     const builtIns = defaultPalette(delica.beadId)
-    const nearest = createPalette(builtIns.map((color) => color.id), builtIns).nearest('#e63746')!
+    const nearest = createPalette(builtIns.map((color) => color.id), codesOfColors(builtIns)).nearest('#e63746')!
     expect(wrapper.get('[data-picture-hex~="#e63746"]').text()).toContain(nearest.code)
   })
 
@@ -459,7 +459,7 @@ describe('ConvertImageWizard Create Project', () => {
     // A 4 px wide picture goes from 8 beads up to 16 and starts at the least, on the ×2 mark: 8 × 4 beads.
     expect(frameOf(project)).toMatchObject({ columns: 8, rows: 4 })
     expect(frameGrid(project)[0]![0]!.color).toBe('#d02030')
-    expect(project.paletteCodes).toEqual({ '#d02030': 'DB723' })
+    expect(project.paletteCodes).toMatchObject({ '#d02030': { catalog: 'miyuki-delica', code: 'DB723' } })
   })
 
   it('shows the size and the colors over the button', async () => {

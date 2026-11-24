@@ -244,10 +244,10 @@ describe('createProjectFromImage', () => {
 
   it('takes the Palette the conversion made, with its codes and a Swatch letter for every swatch (spec 0645)', () => {
     const builtIns = defaultPalette(cubeBead.id).map((color) => color.id)
-    const project = fromImage({ palette: { ids: [...builtIns, addedColorId('#00ff00')], codes: { '#00ff00': '55' } } })
+    const project = fromImage({ palette: { ids: [...builtIns, addedColorId('#00ff00')], codes: { '#00ff00': { catalog: 'toho', code: '55' } } } })
 
     expect(project.palette).toEqual([...builtIns, addedColorId('#00ff00')])
-    expect(project.paletteCodes).toEqual({ '#00ff00': '55' })
+    expect(project.paletteCodes).toEqual({ '#00ff00': { catalog: 'toho', code: '55' } })
     expect(Object.keys(project.paletteLetters ?? {})).toHaveLength(builtIns.length + 1)
     expect(project).not.toHaveProperty('imageColors')
   })

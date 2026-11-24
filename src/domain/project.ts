@@ -84,14 +84,13 @@ export interface Project {
   id: string
   /** Its layers (ADR 0079, ticket 0664): the Canvas, then its Frame, if any. Read and written through layerRecord.ts. */
   layers: Layers
-  /** The Palette (ADR 0002, ticket 0525): the id of every swatch in slot order, the twelve built-in colors and the added
-   * ones, so the Project opens with the same Palette on every device. Shared by every layer. */
+  /** The Palette (ADR 0002, 0103, ticket 0525): the id of every swatch in slot order, its default colors and the added
+   * ones, each section's together, so the Project opens with the same Palette on every device. The Project's own: shared
+   * by every layer and following none of their Beads. */
   palette: PaletteIds
-  /** The default colors the maker removed after a change of Bead made them added colors (ticket 0528), as hexes, so a
-   * change back does not put them back. Absent when none. */
-  removedDefaults?: string[]
-  /** The catalog code of each swatch picked from the Color catalog, by the swatch's hex (ticket 0538, ADR 0072). Painted
-   * cells keep only their hex. Absent when no swatch has a code. */
+  /** The catalog code of each swatch picked from a Color catalog, with that catalog, by the swatch's hex (ticket 0538,
+   * ADR 0072, 0103): what puts it in that catalog's section. Painted cells keep only their hex. Absent when no swatch has
+   * a code. */
   paletteCodes?: PaletteCodes
   /** The Swatch letter of each Palette color, by the swatch's hex (ticket 0573). Every Project has one for every
    * color; it only goes missing in a file from before letters, which opening fills in Palette order. */

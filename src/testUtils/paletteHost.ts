@@ -16,7 +16,9 @@ const BEAD_ID = 'toho/round/10-0'
 export function mountWithPalette(component: Component, ids: string[], props: Record<string, unknown> = {}, options: { attachTo?: HTMLElement; codes?: Record<string, string>; beadColors?: BeadColors; letters?: Ref<boolean> } = {}) {
   const base = createProject({ technique: 'loom', beadId: BEAD_ID, size: { width: 3, height: 3, unit: 'beads' } })
   // Every swatch has its Swatch letter, as a Palette the app made does.
-  const harness = editHarness({ ...base, palette: ids, paletteLetters: lettersOfPalette(ids, BEAD_ID, base.paletteLetters), ...(options.codes ? { paletteCodes: options.codes } : {}) })
+  // `codes` are of the Bead's own catalog, TOHO's (ADR 0103).
+  const codes = options.codes && Object.fromEntries(Object.entries(options.codes).map(([hex, code]) => [hex, { catalog: 'toho', code }]))
+  const harness = editHarness({ ...base, palette: ids, paletteLetters: lettersOfPalette(ids, base.paletteLetters), ...(codes ? { paletteCodes: codes } : {}) })
   const requestRemove = vi.fn()
   const requestRemoveAll = vi.fn()
   let palette!: ReturnType<typeof useProjectPalette>

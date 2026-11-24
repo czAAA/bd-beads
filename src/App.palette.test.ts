@@ -83,7 +83,7 @@ describe('the Palette reaches its flows', () => {
 
   it('a swatch picked from the Bead\'s Color catalog is named by its code and name once the catalog loads (ticket 0760)', async () => {
     const project = loadProjects()[0]!
-    saveProjects([{ ...project, paletteCodes: { '#123456': '49' } }])
+    saveProjects([{ ...project, paletteCodes: { '#123456': { catalog: 'toho', code: '49' } } }])
     const wrapper = await openApp()
     await vi.waitFor(() => expect(wrapper.get(`[data-color-id="${A}"]`).attributes('aria-label')).toBe('49 Opaque Black, approximate color'))
     wrapper.unmount()

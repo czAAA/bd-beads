@@ -48,7 +48,7 @@ function setup(project: Project = framed) {
   const setBead = (layer: Layer, beadId: string) =>
     stays.afterChange('bead', async () => {
       await Promise.resolve()
-      harness.edit('exempt', (current) => replaceBead(current, findBead(beadId)!, undefined, layer))
+      harness.edit('exempt', (current) => replaceBead(current, findBead(beadId)!, layer))
     })
   /** The last toast's actions, first and second. */
   const actions = () => {

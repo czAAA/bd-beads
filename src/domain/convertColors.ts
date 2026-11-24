@@ -2,7 +2,7 @@ import { catalogSwatches, type CatalogSwatch } from './beadSwatch'
 import type { ColorCatalog } from './colorCatalog'
 import { channelsOf, colorDistance, toOklab, type Oklab } from './color'
 import { LEAST_COLOR_DISTANCE, nearestColor, pictureReducer, type ReducedColors } from './imageColors'
-import { addedColorId, type PaletteCodes, type PaletteColor } from './palette'
+import { addedColorId, codesOfColors, type PaletteCode, type PaletteCodes, type PaletteColor } from './palette'
 import type { Cell, Grid } from './project'
 
 // The Convert image wizard's colors (spec 0645, ADR 0010): the picture's reduced colors matched to a source, then the
@@ -253,14 +253,15 @@ export function convertFrame(raw: readonly (readonly (string | undefined)[])[], 
 }
 
 /** The new Project's Palette (spec 0645): its built-in colors, then every other color its beads use, most beads first,
- * each an ordinary added swatch; a Bead color brings its code, built-in hex or not. No Image colors are kept. */
-export function newProjectPalette(builtIns: readonly PaletteColor[], found: readonly FoundColor[]): { ids: string[]; codes: PaletteCodes } {
+ * each an ordinary added swatch; a Bead color brings its code, built-in hex or not, from the Bead's `catalog` (ADR 0103).
+ * No Image colors are kept. */
+export function newProjectPalette(builtIns: readonly PaletteColor[], found: readonly FoundColor[], catalog: string | undefined): { ids: string[]; codes: PaletteCodes } {
   const ids = builtIns.map((color) => color.id)
   const held = new Set(builtIns.map((color) => color.hex))
-  const codes: Record<string, string> = {}
+  const codes: Record<string, PaletteCode> = { ...codesOfColors(builtIns) }
   for (const { result } of found) {
     if (!result) continue
-    if (result.code && !codes[result.hex]) codes[result.hex] = result.code
+    if (result.code && catalog && !codes[result.hex]) codes[result.hex] = { catalog, code: result.code }
     if (held.has(result.hex)) continue
     held.add(result.hex)
     ids.push(addedColorId(result.hex))

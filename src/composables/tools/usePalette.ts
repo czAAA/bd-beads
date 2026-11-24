@@ -1,9 +1,8 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteCodes, type PaletteColor, type PaletteIds } from '../../domain/palette'
+import { addUsedColor, createPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, removeSection as removeSectionOf, restoreColor, type AddUsedColorOutcome, type Palette, type PaletteCode, type PaletteCodes, type PaletteIds } from '../../domain/palette'
 import { setPalette as withPalette, setSwatchLetter, withLettersBack } from '../../domain/paletteEdits'
 import { withLetter, type SwatchLetters } from '../../domain/swatchLetters'
 import { beadsInColors, withBeadsBackIn, withoutBeadsIn } from '../../domain/colorBeads'
-import { beadIdOfLayer, wovenLayerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
@@ -24,11 +23,6 @@ function lettersOf(project: Project, colorIds: readonly string[]): SwatchLetters
   return Object.fromEntries(hexes.flatMap((hex) => (project.paletteLetters?.[hex] ? [[hex, project.paletteLetters[hex]!]] : [])))
 }
 
-/** The Palette's built-in colors: the woven layer's Bead's, the Frame's when there is one (ADR 0079, ticket 0665). */
-function builtInsOf(project: Project): readonly PaletteColor[] {
-  return defaultPalette(beadIdOfLayer(project, wovenLayerOf(project)))
-}
-
 const paletteKey: InjectionKey<ComputedRef<Palette>> = Symbol('palette')
 
 /** What the Palette needs from the app shell: the open Project and Edit, the one way an undoable change reaches it
@@ -38,8 +32,8 @@ export interface ProjectPaletteDeps {
   edit: EditFn
 }
 
-/** The Palette (CONTEXT.md, ticket 0525, ADR 0002): the open Project's own colors, built-in and the Custom
- * ones that joined it, in slot order (see Palette). Every change is an Edit, so Undo covers it. Call once from the shell. */
+/** The Palette (CONTEXT.md, ticket 0525, ADR 0002, 0103): the open Project's own colors, its default ones and those
+ * that joined it, in their sections in slot order (see Palette). Every change is an Edit, so Undo covers it. Call once from the shell. */
 export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) {
   const palette = computed(() => {
     const project = currentProject()
@@ -52,13 +46,13 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     edit('exempt', (project) => (letters ? withLettersBack(withPalette(project, ids, codes), letters) : withPalette(project, ids, codes)))
   }
 
-  /** A Custom color has been chosen or painted: it joins the Palette on first use, in the last slot. Hands back whether
-   * it joined and the swatch it is. */
-  function addUsed(hex: string, code?: string): { outcome: AddUsedColorOutcome; colorId?: string } {
+  /** A Custom color has been chosen or painted, or a code picked from any Bead's catalog: it joins the Palette on first
+   * use, last in its section (ADR 0103). Hands back whether it joined and the swatch it is. */
+  function addUsed(hex: string, code?: PaletteCode): { outcome: AddUsedColorOutcome; colorId?: string } {
     const project = currentProject()
     if (!project) return { outcome: 'known' }
-    const { ids, outcome, colorId } = addUsedColor(project.palette, hex, builtInsOf(project))
-    if (outcome === 'added') setPalette(ids, code ? { [hex.toLowerCase()]: code } : undefined)
+    const { ids, outcome, colorId, codes } = addUsedColor(project.palette, hex, project.paletteCodes, code)
+    if (outcome === 'added') setPalette(ids, codes)
     return { outcome, colorId }
   }
 
@@ -66,19 +60,30 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
    * how to put it back, or undefined for a color that isn't an added one. */
   function removeAdded(colorId: string): (() => void) | undefined {
     const project = currentProject()
-    const removal = project && removeAddedColor(project.palette, colorId, builtInsOf(project))
+    const removal = project && removeAddedColor(project.palette, colorId)
     if (!removal) return undefined
-    return removeColors(project, removal.ids, [colorId], (now) => restoreAddedColor(now.palette, colorId, removal.slot, builtInsOf(now)))
+    return removeColors(project, removal.ids, [colorId], (now) => restoreColor(now.palette, colorId, removal.slot))
   }
 
   /** Every added swatch leaves the Palette in one Edit (ticket 0532), with the beads painted in them (ticket 1124).
    * Hands back how to put them all back in their slots, or undefined when none is added. */
   function removeAllAdded(): (() => void) | undefined {
     const project = currentProject()
-    const removal = project && removeAllAddedColors(project.palette, builtInsOf(project))
-    if (!removal || removal.removed.length === 0) return undefined
+    return project && removeAll(project, removeAllAddedColors(project.palette))
+  }
+
+  /** A whole section leaves the Palette in one Edit (ADR 0103), its default colors too, with the beads painted in them
+   * (ticket 1124). Hands back how to put it back as it stood, or undefined for a section the Palette doesn't show. */
+  function removeSection(section: string): (() => void) | undefined {
+    const project = currentProject()
+    return project && removeAll(project, removeSectionOf(project.palette, project.paletteCodes ?? {}, section))
+  }
+
+  /** The colors `removal` took out of `project`'s Palette, and their beads, in one Edit; Undo puts each back in its slot. */
+  function removeAll(project: Project, removal: { ids: PaletteIds; removed: { colorId: string; slot: number }[] }): (() => void) | undefined {
+    if (removal.removed.length === 0) return undefined
     const colorIds = removal.removed.map(({ colorId }) => colorId)
-    const restored = (now: Project) => removal.removed.reduce((ids, { colorId, slot }) => restoreAddedColor(ids, colorId, slot, builtInsOf(now)), now.palette)
+    const restored = (now: Project) => removal.removed.reduce((ids, { colorId, slot }) => restoreColor(ids, colorId, slot), now.palette)
     return removeColors(project, removal.ids, colorIds, restored)
   }
 
@@ -113,7 +118,7 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     return changed.swapped
   }
 
-  return { palette, addUsed, removeAdded, removeAllAdded, paintedBeads, moveColor, setLetter }
+  return { palette, addUsed, removeAdded, removeAllAdded, removeSection, paintedBeads, moveColor, setLetter }
 }
 
 /** The color a typed letter was taken from, and the letter it got in trade (ticket 1092). */

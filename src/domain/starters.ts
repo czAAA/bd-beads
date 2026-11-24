@@ -5,7 +5,7 @@ import { laidSize } from './frameOrientation'
 import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
 import type { GridDimensions, GridPosition, FrameRef } from './grid'
 import { createProject, type CreateProjectInput } from './createProject'
-import { resolveProjectBead, withWovenPalette } from './projectBead'
+import { resolveProjectBead } from './projectBead'
 import { sameWeave, weaveOf } from './layerWeave'
 import { frameToLay, orientationOf, withBackground, withCanvas, withLayer } from './layerRecord'
 import { quarterTurnsOff } from './canvasOrientation'
@@ -395,8 +395,7 @@ export function placedStarter(project: Project, starter: Starter, choice: Starte
   if (placed.kind !== 'changed' || (!bead && choice.background === undefined)) return placed
   // Laid again once it has its Bead, a replaced Frame keeping it, so it lies round the centre at that Bead's size.
   const dressed = withLayer(placed.project, ref, { bead })
-  const relaid = changeFrame(choice.background === undefined ? dressed : withBackground(dressed, ref, choice.background), placement, ref)
-  return relaid.kind === 'changed' ? { kind: 'changed', project: withWovenPalette(project, relaid.project) } : relaid
+  return changeFrame(choice.background === undefined ? dressed : withBackground(dressed, ref, choice.background), placement, ref)
 }
 
 /** The Frame change that puts a Starter's Frame in place round a Canvas position, a Ring's or Band's length in `bead`

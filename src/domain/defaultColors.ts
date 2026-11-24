@@ -32,3 +32,10 @@ export function namedDefaults(beadId: string): Readonly<Record<string, NamedDefa
   const catalog = bead?.formFactor.colorCatalog
   return catalog ? DEFAULT_COLOR_FILES[catalog]?.sizes[bead.size] : undefined
 }
+
+/** The color family a catalog's default code stands for in any of its sizes (ADR 0103), the one of this hex first, so
+ * a Palette knows its default colors whatever Bead its layers are in; undefined for a code that is no default of it. */
+export function defaultFamilyOf(catalog: string, code: string, hex: string): string | undefined {
+  const picks = Object.values(DEFAULT_COLOR_FILES[catalog]?.sizes ?? {}).flatMap((size) => Object.entries(size).filter(([, pick]) => pick.code === code))
+  return (picks.find(([, pick]) => pick.hex === hex) ?? picks[0])?.[0]
+}

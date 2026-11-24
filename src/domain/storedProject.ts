@@ -2,14 +2,13 @@ import { frameIdOf, heldFrameById } from './layerRecord'
 import { beadCopy, beadLabel, findBead, readBeadCopy, type Bead } from './beads'
 import { BACKGROUND_POSITIONS, readBackground } from './background'
 import { beadsFromColors, type FrameSheet } from './canvas'
-import { normalizeHex } from './color'
 import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
 import type { Rotation } from './grid'
 import { nearestQuarterTurn, normalizedOrientation, quarterTurnsOff } from './canvasOrientation'
 import { frameCornerAt, withFrameAt } from './framePlacement'
 import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import { weaveOf } from './layerWeave'
-import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
+import { readStoredPalette } from './palette'
 import { lettersOfPalette, withUsedColors } from './paletteEdits'
 import { readMirrorArea, readMirrorSetting, withFittedArea } from './mirror'
 import { readPieceNames } from './pieceNames'
@@ -49,8 +48,14 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
   }
 
 /** A Project as it is stored since it holds its layers (file version 12, library version 5, ticket 0664). */
-export interface LayeredProject extends Omit<Project, 'layers'> {
+export interface LayeredProject extends Omit<Project, 'layers' | 'palette' | 'paletteCodes'> {
   layers: StoredLayer[]
+  /** The Palette in its sections (file version 16, ADR 0103), or the flat list of ids an earlier one held. */
+  palette: unknown
+  /** Each swatch's code by hex, its catalog its section's; an earlier one's that of the Bead it was woven in. */
+  paletteCodes?: unknown
+  /** The default colors removed before the Palette was the Project's own (ticket 0528), which nothing reads now. */
+  removedDefaults?: unknown
   /** How many backgrounds the list its layers' Background positions are in held (ticket 1000): 3 since that ticket;
    * absent on one stored before it, whose positions are in the list of five and move to their nearest kept one. */
   backgroundPositions?: number
@@ -101,7 +106,7 @@ function legacyRotation(project: ProjectWithLegacyFields): Rotation {
  * wrote it, and never re-saves them. One saved before its layers opens looking as it did (`layeredOf`). */
 export function normalizeProject(stored: StoredProject): Project {
   const layered = isLayered(stored) ? stored : layeredOf(stored)
-  const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, mirror: storedMirror, referenceImage: storedReference, backgroundPositions, lettersByLayer, ...rest } = layered
+  const { layers: storedLayers, palette: storedPalette, removedDefaults: _removed, paletteCodes: storedCodes, paletteLetters: storedLetters, mirror: storedMirror, referenceImage: storedReference, backgroundPositions, lettersByLayer, ...rest } = layered
   const [storedCanvas, ...storedFrames] = storedLayers as [StoredLayer, ...StoredLayer[]]
   // Positions stored before ticket 1000 are in the list of five: read once, moved to their nearest kept one.
   const earlierBackgrounds = backgroundPositions !== BACKGROUND_POSITIONS
@@ -109,15 +114,12 @@ export function normalizeProject(stored: StoredProject): Project {
   // Every Frame the list holds is kept, though the app makes and shows one (ADR 0079).
   const frames = storedFrames.map((stored, index) => readFrame(stored, canvas, `${layered.id}:frame${index > 0 ? index + 1 : ''}`, earlierBackgrounds))
 
-  // The Palette's built-in colors are the woven layer's Bead's (ticket 0665), read with its id as stored, before an
-  // alias names it anew (ticket 534).
-  const wovenBeadId = (storedFrames[0] ?? storedCanvas).beadId
-  const builtIns = defaultPalette(wovenBeadId)
-  const removedDefaults = readRemovedDefaults(storedRemoved)
-  // A Project saved before the Palette belonged to it (or with an unreadable one) starts from its Bead's built-in colors.
-  // A color its beads show and the Palette lacks joins it, so it has a Swatch letter (ticket 1124: exports printed "?").
-  const palette = withUsedColors(normalizePaletteIds(storedPalette, builtIns), { layers: [canvas, ...frames] }, builtIns)
-  const paletteCodes = codesInPalette(normalizePaletteCodes(storedCodes), palette, builtIns)
+  // A Palette saved before its sections is sorted into them by the woven layer's Bead (ADR 0103), read with its id as
+  // stored, before an alias names it anew (ticket 534). A color its beads show and the Palette lacks joins it, so it has
+  // a Swatch letter (ticket 1124: exports printed "?").
+  const read = readStoredPalette(storedPalette, storedCodes, (storedFrames[0] ?? storedCanvas).beadId)
+  const palette = withUsedColors(read.ids, { layers: [canvas, ...frames] }, read.codes)
+  const paletteCodes = read.codes
 
   const mirror = readMirrorSetting(storedMirror, { canvasArea: readMirrorArea(storedCanvas.mirrorArea), framed: frames.length > 0 })
   const referenceImage = readReferenceImage(storedReference)
@@ -126,9 +128,8 @@ export function normalizeProject(stored: StoredProject): Project {
     ...rest,
     layers: [canvas, ...frames],
     palette,
-    ...(removedDefaults.length > 0 ? { removedDefaults } : {}),
     ...(Object.keys(paletteCodes).length > 0 ? { paletteCodes } : {}),
-    paletteLetters: lettersOfPalette(palette, wovenBeadId, storedLetters),
+    paletteLetters: lettersOfPalette(palette, storedLetters),
     // Mirror (tickets 0703, 0750): a file from before it, or an unreadable record, opens with Mirror off.
     ...(mirror ? { mirror } : {}),
     // The reference image (ticket 0790): an unreadable record opens with none.
@@ -296,13 +297,6 @@ function canvasTechnique(project: unknown): unknown {
 function catalogCopy(beadId: string): Bead | undefined {
   const bead = findBead(beadId)
   return bead && beadCopy(bead)
-}
-
-/** The removed default colors a stored Project holds: the valid hexes, each once; none for anything else. */
-function readRemovedDefaults(stored: unknown): string[] {
-  if (!Array.isArray(stored)) return []
-  const hexes = stored.flatMap((hex) => (typeof hex === 'string' ? (normalizeHex(hex) ?? []) : []))
-  return [...new Set(hexes)]
 }
 
 /** A layer's Weave from the settings map a file stores (ticket 0636), each its Technique holds; an earlier version's

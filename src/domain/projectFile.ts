@@ -13,10 +13,10 @@ import { normalizeProjectName, withProjectName } from './projectName'
 // `projectFileCodec`'s.
 const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
-/** Version 3 is the first gzipped one (ADR 0009); 4 (ADR 0066) the Frame's beads, 5 (0525) the Palette, 6 (0528) removed
- * defaults, 7 (534) the Bead's copy, 8 (0538) codes, 9 (0592) Custom frame, 10 (0638) Folded, 11 (0636) settings maps, 12
- * (0664) layers, 13 (0691) Drop id, 14 (0790) pictures, 15 (1185) the Frame's placement and way as seen; older builds refuse. */
-const FILE_VERSION = 15
+/** Version 3 is the first gzipped one (ADR 0009); 4 (0066) Frame's beads, 5 (0525) Palette, 6 (0528) removed defaults, 7
+ * (534) Bead's copy, 8 (0538) codes, 9 (0592) Custom frame, 10 (0638) Folded, 11 (0636) settings maps, 12 (0664) layers, 13
+ * (0691) Drop id, 14 (0790) pictures, 15 (1185) Frame's place, 16 (1225) Palette sections; older builds refuse. */
+const FILE_VERSION = 16
 /** The first version that holds reference images' pictures (ADR 0089). */
 const PICTURED_VERSION = 14
 
@@ -42,6 +42,7 @@ const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   12: (projects) => (projects as EncodedProject[]).map(decodeVersionTwelveProject),
   13: (projects) => (projects as EncodedProject[]).map(decodeProject),
   14: (projects) => (projects as EncodedProject[]).map(decodeProject),
+  15: (projects) => (projects as EncodedProject[]).map(decodeProject),
   [FILE_VERSION]: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 
@@ -52,8 +53,9 @@ export interface ProjectFileContents {
   pictures: FilePictures
 }
 
-/** A file's JSON from Projects and Projects already in their stored form (the library's version 7 encodes a Project as
- * file version 15 does, ticket 0716; one the library kept from version 6 reads as file version 13's, ticket 1185), joined as strings so a sealed Project is never decoded. */
+/** A file's JSON from Projects and Projects already in their stored form (the library's version 8 encodes a Project as
+ * file version 16 does, ticket 0716; one the library kept from version 6 or 7 reads as file version 13's or 15's, tickets
+ * 1185, 1225), joined as strings so a sealed Project is never decoded. */
 function serialize(kind: ProjectFile['kind'], projects: Project[], stored: readonly string[] = [], pictures: FilePictures = {}): string {
   const encoded = [...projects.map((project) => JSON.stringify(encodeProject(project))), ...stored]
   const pictured = Object.keys(pictures).length > 0 ? `,"pictures":${JSON.stringify(pictures)}` : ''

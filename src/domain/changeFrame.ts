@@ -36,7 +36,6 @@ import type { LayerGeometry } from './layerGeometry'
 import type { BeadCell, Weave } from './weave'
 import { carryNames } from './pieceNames'
 import { canvasDistance, canvasWeave, frameWeave, sameBeadSize, weaveOf } from './layerWeave'
-import { withWovenPalette } from './projectBead'
 import { clampPointer, progressWithoutLine, rowProgressStarted } from './rowProgress'
 import { frameQuarterTurnOf } from './table'
 import { sameBeads } from './layerBeads'
@@ -162,15 +161,9 @@ function asksForTechnique(frame: FrameSheet | undefined, change: FrameChange): b
   return !!frame && !frameShapeOf(frame) && 'technique' in change && change.technique !== frame.technique
 }
 
-/** The Project with a Frame changed (the one named, ticket 1216), or why not. The Palette follows the woven layer's Bead
- * where the change swaps it, as Remove Frame or Frame from Selection over a Frame in another Bead does (ticket 0665), in
- * the same step. */
+/** The Project with a Frame changed (the one named, ticket 1216), or why not. The Palette is the Project's own, so a
+ * Frame made, removed or put in another Bead changes no color (ADR 0103). */
 export function changeFrame(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
-  const result = frameChanged(project, change, ref)
-  return result.kind === 'changed' ? { kind: 'changed', project: withWovenPalette(project, result.project) } : result
-}
-
-function frameChanged(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
   const reason = frameChangeRefusal(project, change, ref)
   if (reason) {
     return { kind: 'refused', reason }

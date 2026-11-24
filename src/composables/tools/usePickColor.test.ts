@@ -96,7 +96,7 @@ describe('usePickColor', () => {
       expect(pickColorAt(0, 0)).toBe(true)
       await settled()
       expect(decodePixels).toHaveBeenCalledWith(everywhere.blob)
-      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith('#c01020', 'TR1')
+      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith('#c01020', { catalog: 'toho', code: 'TR1' })
       expect(deps.picking.value).toBe(false)
     })
 
@@ -127,7 +127,7 @@ describe('usePickColor', () => {
       pickColorAt(0, 0)
       await settled()
       const match = nearestTarget('#ee0000', sourceTargets('default', defaultPalette(cube.id), []))
-      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith(match.hex, match.code)
+      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith(match.hex, { catalog: 'toho', code: match.code })
     })
 
     it('keeps the pick armed when the picture fails to decode, and reads it again on the next press', async () => {
@@ -140,7 +140,7 @@ describe('usePickColor', () => {
       pickColorAt(0, 0)
       await settled()
       expect(decodePixels).toHaveBeenCalledTimes(2)
-      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith('#c01020', 'TR1')
+      expect(deps.onSelectCustomColor).toHaveBeenCalledExactlyOnceWith('#c01020', { catalog: 'toho', code: 'TR1' })
     })
 
     it('takes nothing once the pick was ended before the picture was read', async () => {

@@ -2,7 +2,7 @@ import type { Layer } from './grid'
 import type { BeadMap } from './canvas'
 import type { HistoryCap } from './history'
 import { framePlacement, withFrameAt } from './framePlacement'
-import { backgroundOf, beadIdOfLayer, canvasOf, lettersOn, withBackground, withCanvas, withLetters, frameIdOf, framesOf, wovenLayerOf } from './layerRecord'
+import { backgroundOf, canvasOf, lettersOn, withBackground, withCanvas, withLetters, frameIdOf, framesOf } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { MIRROR_OFF, mirrorBarOf, type MirrorBar, type MirrorPlace } from './mirror'
@@ -20,8 +20,6 @@ export interface UndoEntry {
   layers: Project['layers']
   /** The Palette as it was, so Undo and Redo of adding, removing or moving a swatch restore it (ticket 0525). */
   palette: PaletteIds
-  /** The removed default colors as they were (ticket 0528), restored with the Palette they belong to. */
-  removedDefaults?: string[]
   /** The swatch codes as they were (ticket 0538), restored with the Palette they belong to. */
   paletteCodes?: PaletteCodes
   /** The Swatch letters as they were (ticket 0573), restored with the Palette they belong to. */
@@ -36,11 +34,10 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry; with `mirrorBar`, the Mirror's bar settings too (a step that changed them). */
 export function snapshotOf(project: Project, options: { mirrorBar?: boolean } = {}): UndoEntry {
-  const { layers, palette, removedDefaults, paletteCodes, paletteLetters } = project
+  const { layers, palette, paletteCodes, paletteLetters } = project
   return {
     layers,
     palette,
-    removedDefaults,
     paletteCodes,
     paletteLetters,
     ...(project.mirror ? { mirrorPlace: project.mirror.place ?? null } : {}),
@@ -51,7 +48,7 @@ export function snapshotOf(project: Project, options: { mirrorBar?: boolean } = 
 /** The Project with everything an undo entry holds put back (see UndoEntry), keeping its name, the Canvas's
  * orientation, each layer's Letters switch and its Background (ticket 0666) as they are now. */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, ...rest } = project
+  const { paletteCodes: _codes, paletteLetters: _letters, ...rest } = project
   const { name, orientation, origin } = canvasOf(project)
   const restored = { ...rest, layers: entry.layers }
   const was = canvasOf(entry)
@@ -71,9 +68,8 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   return touch(layered, {
     ...placed,
     palette: entry.palette,
-    ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
     ...(entry.paletteCodes ? { paletteCodes: entry.paletteCodes } : {}),
-    paletteLetters: lettersOfPalette(entry.palette, beadIdOfLayer(entry, wovenLayerOf(entry)), entry.paletteLetters),
+    paletteLetters: lettersOfPalette(entry.palette, entry.paletteLetters),
   })
 }
 

@@ -88,8 +88,7 @@ const BRACELET = Array.from({ length: 24 }, (_, row) =>
 
 /** The Project with Ring's own colors in its Palette's last slots. */
 function withOwnColors(project: Project): Project {
-  const builtIns = defaultPalette(DEMO_BEAD)
-  const palette = DEMO_OWN_COLORS.reduce((ids, color) => addUsedColor(ids, DEMO_COLORS[color], builtIns).ids, project.palette)
+  const palette = DEMO_OWN_COLORS.reduce((ids, color) => addUsedColor(ids, DEMO_COLORS[color], project.paletteCodes).ids, project.palette)
   return setPalette(project, palette)
 }
 

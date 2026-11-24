@@ -1,9 +1,9 @@
 import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, newLayerId, startingRowProgressOf, withCanvas, withFrameFields, withLayer, withStartingRowProgress, firstFrameId, frameById, wovenLayerOf } from './layerRecord'
+import { newLayerId, startingRowProgressOf, withCanvas, withFrameFields, withLayer, withStartingRowProgress, firstFrameId, frameById } from './layerRecord'
 import { normalizeMakerName } from './makerName'
-import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
+import { codesOfColors, defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import type { Background, Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
@@ -47,7 +47,9 @@ export function createProject(input: CreateProjectInput): Project {
   const name = input.name?.trim() || beadLabel(bead)
   const makerName = normalizeMakerName(input.makerName ?? '')
 
+  // One section to start (ADR 0103): the Bead's default colors with their codes; from then on the Palette is its own.
   const palette = defaultPaletteIds(defaultPalette(bead.id))
+  const codes = codesOfColors(defaultPalette(bead.id))
   const layer = {
     ...created,
     beadId: bead.id,
@@ -65,7 +67,8 @@ export function createProject(input: CreateProjectInput): Project {
       ...(dimensions ? [{ id: ids.frame, ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, angle: canvas.orientation, rowProgress: startingRowProgressOf(created) }] : []),
     ],
     palette,
-    paletteLetters: lettersOfPalette(palette, bead.id, undefined),
+    ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}),
+    paletteLetters: lettersOfPalette(palette, undefined),
     ...(makerName ? { makerName } : {}),
     createdAt: now,
     updatedAt: now,
@@ -104,7 +107,7 @@ export function createProjectFromImage(input: CreateProjectFromImageInput): Proj
     ...(palette
       ? {
           palette: [...palette.ids],
-          paletteLetters: lettersOfPalette(palette.ids, beadIdOfLayer(project, wovenLayerOf(project)), undefined),
+          paletteLetters: lettersOfPalette(palette.ids, undefined),
           ...(Object.keys(palette.codes).length > 0 ? { paletteCodes: { ...palette.codes } } : {}),
         }
       : {}),

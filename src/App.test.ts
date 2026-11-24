@@ -13,7 +13,6 @@ import { chooseAppLanguage, pickColor } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
 import { layersView, withLayers } from './testUtils/layerFields'
 import { defaultColorOf } from './testUtils/defaultColors'
-import { addedColorId } from './domain/palette'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -47,8 +46,8 @@ describe('App', () => {
 
     expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(true)
 
-    // A Bead nobody knows has no default colors of its own: the Cube's red stays, as the added color of its hex.
-    await pickColor(wrapper, addedColorId(defaultColorOf('red').hex))
+    // The Palette is the Project's own (ADR 0103): a Bead nobody knows leaves the Cube's red its default color.
+    await pickColor(wrapper, defaultColorOf('red').id)
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe(defaultColorOf('red').hex)

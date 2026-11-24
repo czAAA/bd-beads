@@ -1,7 +1,7 @@
 import { frameIdIn } from '../../src/testUtils/frameId'
 import type { Rotation } from '../../src/domain/grid'
 import type { Technique } from '../../src/domain/weave'
-import { BUILT_IN_COLORS, defaultPaletteIds } from '../../src/domain/palette'
+import { BUILT_IN_COLORS, addedColorId } from '../../src/domain/palette'
 import { framedGrid } from '../../src/domain/layerBeads'
 import type { Cell, Project } from '../../src/domain/project'
 import { seenProgressOf, type OwnRowProgress } from '../../src/domain/rowProgress'
@@ -35,6 +35,10 @@ export interface FixtureOptions {
   override?: { row: number; column: number; color: string | null }[]
 }
 
+/** The twelve as the Custom colors a TOHO Cube Project holds them as (ADR 0103): what these Projects read as before
+ * the Palette was the Project's own, so the references stay. */
+const TWELVE_AS_ADDED = BUILT_IN_COLORS.map((color) => addedColorId(color.hex))
+
 /** A deterministic busy Project: most of the Palette in diagonal bands, some beads empty, fixed ids and dates (a
  * stable library). */
 export function fixtureProject({
@@ -64,7 +68,7 @@ export function fixtureProject({
       { ...canvas, id: 'fixture-canvas', name: `Fixture ${technique}`, orientation: rotation },
       { ...frame!, id: 'fixture-frame', angle: frameTurn, rowProgress: seenProgressOf({ direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress }, frameTurn / 90) },
     ],
-    palette: defaultPaletteIds(),
+    palette: TWELVE_AS_ADDED,
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
   }
@@ -132,7 +136,7 @@ export function pieceProject({ technique, beadId, picture, inFrame = false }: { 
   return {
     id: `piece-${technique}`,
     layers: inFrame ? [{ ...canvas!, id: 'piece-canvas', name: 'Piece' }, { ...frame!, id: 'piece-frame' }] : [{ ...canvas!, id: 'piece-canvas', name: 'Piece', beads: frame!.beads }],
-    palette: defaultPaletteIds(),
+    palette: TWELVE_AS_ADDED,
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
   }

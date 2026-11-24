@@ -23,7 +23,8 @@ describe('summarizeProject', () => {
   })
 
   it('states no size for a canvas with no Frame: just the name', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' })) })
+    const made = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' })
+    const open = withFrameSheet(made, undefined, { frame: frameIdIn(made) })
     expect(summarizeProject(open as Project)).toBe('Sketch')
   })
 

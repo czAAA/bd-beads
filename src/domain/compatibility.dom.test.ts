@@ -1,8 +1,8 @@
 import { frameIdIn } from '../testUtils/frameId'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { withColorsInPalette } from './paletteEdits'
-import { beadCopy, findBead } from './beads'
-import { BUILT_IN_COLORS, addedColorId, defaultPalette, defaultPaletteIds, paletteColors } from './palette'
+import { beadCopy, colorCatalogOf, findBead } from './beads'
+import { BUILT_IN_COLORS, addedColorId, codesInPalette, codesOfColors, defaultPalette, defaultPaletteIds, paletteColors } from './palette'
 import { lettersFor } from './swatchLetters'
 import { framedGrid } from './layerBeads'
 import { canvasWeave, frameWeave, weaveOf } from './layerWeave'
@@ -39,6 +39,7 @@ import projectFileV12Backgrounds from './fixtures/project-file-v12-backgrounds.j
 import projectFileV14ThreeBackgrounds from './fixtures/project-file-v14-three-backgrounds.json?raw'
 import projectFileV14PeyoteTurned from './fixtures/project-file-v14-peyote-turned-progress.json?raw'
 import projectFileV15Placement from './fixtures/project-file-v15-placement.json?raw'
+import projectFileV16Sections from './fixtures/project-file-v16-palette-sections.json?raw'
 import projectFileV14LettersByLayer from './fixtures/project-file-v14-letters-by-layer.json?raw'
 import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import projectFileV13Drops from './fixtures/project-file-v13-drops.json?raw'
@@ -113,12 +114,13 @@ function ownLetters(project: { layers: Record<string, unknown>[]; lettersByLayer
  * 1000) and each layer's own Letters, the Canvas's off where it was the Frame's copy (ticket 1092). */
 function writtenBack(stored: string): unknown {
   return JSON.parse(stored, (key, value) => {
-    // Written back as this build writes: file version 15 (ticket 1185).
+    // Written back as this build writes: file version 16 (ticket 1225).
     if (key === '' && typeof value?.version === 'number' && value.version >= 13) return { ...value, version: FILE_VERSION }
     if (key === 'beadShape') return undefined
     if (Array.isArray(value?.layers)) {
       const generic = { ...value, ...genericAsAdded(value) }
-      return { ...generic, backgroundPositions: 3, lettersByLayer: true, ...paintedAsAdded(generic), layers: placedFrames(ownLetters(value) as Record<string, unknown>[]) }
+      const { removedDefaults: _removed, ...painted } = { ...generic, ...paintedAsAdded(generic) }
+      return { ...painted, ...inSections(painted), backgroundPositions: 3, lettersByLayer: true, layers: placedFrames(ownLetters(value) as Record<string, unknown>[]) }
     }
     const oldDelica = value?.id === 'miyuki/delica/11-0' && value.widthMm === 1.6 && value.heightMm === 1.3
     return oldDelica ? { ...value, widthMm: 1.3, heightMm: 1.6 } : value
@@ -126,7 +128,7 @@ function writtenBack(stored: string): unknown {
 }
 
 /** The current file version, which every Project file is written back as. */
-const FILE_VERSION = 15
+const FILE_VERSION = 16
 
 /** A stored layer list's Frames as file version 15 writes them back (ticket 1185): the Frame's own angle on the table
  * (the Canvas's orientation plus its turn on it) and its centre there in place of its Canvas position and turn, and its
@@ -163,13 +165,32 @@ function genericAsAdded(project: { layers: { beadId: string }[]; palette?: unkno
  * Palette lacks joined last, layer by layer, with the next free Swatch letter, so every bead has a letter. */
 function paintedAsAdded(project: { layers: { beadId: string; encodedBeads?: { colors: string[] } }[]; palette?: string[]; paletteLetters?: Record<string, string> }) {
   if (!project.palette) return {}
-  const builtIns = defaultPalette(project.layers.at(-1)!.beadId)
   const ids = [...project.palette]
   for (const hex of project.layers.flatMap((layer) => layer.encodedBeads?.colors ?? [])) {
-    if (!paletteColors(ids, builtIns).some((color) => color.hex === hex)) ids.push(addedColorId(hex))
+    if (!paletteColors(ids).some((color) => color.hex === hex)) ids.push(addedColorId(hex))
   }
   if (ids.length === project.palette.length) return {}
-  return { palette: ids, paletteLetters: lettersFor(paletteColors(ids, builtIns).map((color) => color.hex), project.paletteLetters) }
+  return { palette: ids, paletteLetters: lettersFor(paletteColors(ids).map((color) => color.hex), project.paletteLetters) }
+}
+
+/** A stored Palette as this build writes it back (ADR 0103): in sections, each code, the default colors' too, in the
+ * catalog of the Bead it was woven in, every other color in Custom colors, and each code beside by hex. */
+function inSections(project: { layers: { beadId: string }[]; palette?: string[]; paletteCodes?: Record<string, string> }) {
+  if (!Array.isArray(project.palette)) return {}
+  const beadId = project.layers.at(-1)!.beadId
+  const catalog = colorCatalogOf(beadId)
+  const defaults = Object.fromEntries(defaultPalette(beadId).flatMap((color) => (color.code ? [[color.hex, color.code]] : [])))
+  const codes: Record<string, string> = catalog ? { ...defaults, ...project.paletteCodes } : {}
+  const sections = new Map<string | undefined, string[]>()
+  const held: Record<string, string> = {}
+  for (const id of project.palette) {
+    const hex = paletteColors([id])[0]!.hex
+    const code = codes[hex]
+    if (code) held[hex] = code
+    const section = code ? catalog : undefined
+    sections.set(section, [...(sections.get(section) ?? []), id])
+  }
+  return { palette: [...sections].map(([section, colors]) => ({ ...(section ? { catalog: section } : {}), colors })), paletteCodes: Object.keys(held).length > 0 ? held : undefined }
 }
 
 /** A stored value of file version 12 or library version 5 as this build writes it back (tickets 0691, 0724): the next
@@ -185,7 +206,10 @@ function layered(flat: Omit<FlatProject, 'frame'> & { frame?: FrameSheet }): Pro
   // Opening adds the colors its beads are painted in to its Palette, so each has a Swatch letter (ticket 1124).
   // Its Frame lies as the Canvas does, its Row progress the way it showed (ticket 1185).
   const seen = seenProgressOf(rowProgress, nearestQuarterTurn(rotation) / 90)
-  return withColorsInPalette({ ...rest, layers: frame ? [canvas, { id: `${flat.id}:frame`, ...shared, ...frame, angle: rotation, rowProgress: seen }] : [canvas] } as Project)
+  // Its default colors keep their codes, in its Bead's catalog's section (ADR 0103).
+  const codes = rest.paletteCodes ?? codesInPalette(codesOfColors(defaultPalette(beadId)), rest.palette)
+  const coded = Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}
+  return withColorsInPalette({ ...rest, ...coded, layers: frame ? [canvas, { id: `${flat.id}:frame`, ...shared, ...frame, angle: rotation, rowProgress: seen }] : [canvas] } as Project)
 }
 
 /** A Project the way it should read back: every field present, nothing a newer build dropped still hanging on. */
@@ -348,7 +372,8 @@ describe('stored-data compatibility', () => {
       expect(opened).toEqual([framedOverSketch, unframedSketch])
       saveProjects(opened)
 
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns.map((stored: { palette: string[] }) => stored.palette)).toEqual([framedOverSketch.palette, unframedSketch.palette])
+      const sections = (project: Project) => inSections({ layers: [{ beadId: BEAD }], palette: [...project.palette] }).palette
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns.map((stored: { palette: unknown }) => stored.palette)).toEqual([sections(framedOverSketch), sections(unframedSketch)])
       expect(loadProjects()).toEqual(opened)
     })
 
@@ -376,7 +401,7 @@ describe('stored-data compatibility', () => {
       expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, angle: 180, name: 'Fox', rowProgress: { way: 'up', up: 1 } })
       expect(open!.layers).toEqual([expect.objectContaining({ id: 'open-canvas', name: 'Open sketch', beads: { [-2]: { 4: '#1a1a1a' } }, orientation: 0 })])
       saveProjects(loadProjects())
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(withDrops(libraryV5, 7))
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(withDrops(libraryV5, 8))
     })
 
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
@@ -397,7 +422,7 @@ describe('stored-data compatibility', () => {
 
       saveProjects(loadProjects())
 
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 7 })
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 8 })
       expect(loadProjects()).toEqual(expected)
     })
 
@@ -484,7 +509,9 @@ describe('stored-data compatibility', () => {
 
     it('opens a version 6 file with a removed default and a flat Brick block on both layers, the Brick block in each layer\'s settings (ticket 0636)', () => {
       const [opened] = parseProjectsFile(projectFileV6BrickBlock).projects
-      expect(layersView(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 }, removedDefaults: ['#2fb6ae'], beads: { [-3]: { [-1]: '#e63746' } } })
+      expect(layersView(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 }, beads: { [-3]: { [-1]: '#e63746' } } })
+      // The removed defaults only kept a change of Bead from bringing them back, which it no longer does (ADR 0103).
+      expect(opened).not.toHaveProperty('removedDefaults')
       expect(frameSheetOf(opened)).toEqual({ row: 0, column: 0, columns: 3, rows: 2, technique: 'brick', techniqueSettings: { brickDrop: 3 }, beads: { 0: { 0: '#1a1a1a', 1: '#ffffff' }, 1: { 1: '#1a1a1a' } } })
       expect(canvasOf(opened!)).not.toHaveProperty('brickBlock')
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
@@ -500,7 +527,7 @@ describe('stored-data compatibility', () => {
 
     it('opens a version 8 file with a swatch code, the Canvas\'s flat Brick block kept off brick stitch and the Frame\'s in its settings (ticket 0636)', () => {
       const [opened] = parseProjectsFile(projectFileV8BrickBlock).projects
-      expect(layersView(opened!)).toMatchObject({ technique: 'loom', techniqueSettings: { brickDrop: 2 }, paletteCodes: { '#123456': 'DB1' } })
+      expect(layersView(opened!)).toMatchObject({ technique: 'loom', techniqueSettings: { brickDrop: 2 }, paletteCodes: { '#123456': { catalog: 'toho', code: 'DB1' } } })
       expect(frameSheetOf(opened)).toEqual({ row: 4, column: 2, columns: 2, rows: 2, technique: 'brick', techniqueSettings: { brickDrop: 4 }, beads: { 1: { 0: '#123456', 1: '#123456' } } })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
@@ -676,7 +703,18 @@ describe('stored-data compatibility', () => {
       const { row, column } = frameOf(saved)!
       expect(frameOf(opened!)).toMatchObject({ row, column, rows: 5, columns: 6, quarterTurns: 1, angle: 127.5 })
       expect(rowProgressOf(opened!, frameIdIn(opened))).toEqual({ way: 'left', left: 2 })
-      expect(serializeProject(opened!)).toBe(projectFileV15Placement)
+      // Written back as version 16, its Palette in sections (ADR 0103).
+      const [stored] = JSON.parse(projectFileV15Placement).projects
+      expect(JSON.parse(serializeProject(opened!))).toEqual({ ...JSON.parse(projectFileV15Placement), version: 16, projects: [{ ...stored, ...inSections(stored) }] })
+    })
+
+    it('opens a version 16 file with its Palette in sections, each code in its own catalog, and writes it back the same (ADR 0103)', () => {
+      const [opened] = parseProjectsFile(projectFileV16Sections).projects
+      const palette = projectPalette(opened!)
+      expect(palette.sections.map((section) => [section.id, section.colors.length])).toEqual([['miyuki-delica', 16], ['custom', 2], ['toho', 1]])
+      expect(palette.byHex('#f15b55')).toMatchObject({ code: '341', catalog: 'toho' })
+      expect(palette.byHex('#0d0d0d')).toMatchObject({ code: 'DB10', catalog: 'miyuki-delica', family: 'black' })
+      expect(serializeProject(opened!)).toBe(projectFileV16Sections)
     })
 
     it('opens a version 12 file whose Canvas a twist left at any angle, and writes it back the same (ticket 0672)', () => {
@@ -699,7 +737,7 @@ describe('stored-data compatibility', () => {
       const [project] = parseProjectsFile(projectFileV5Delica).projects
       // Delica's default colors are its codes since ticket 1070, so each of the twelve is the added color of its hex.
       expect(project!.palette).toEqual([...BUILT_IN_COLORS.map((color) => addedColorId(color.hex)), 'added-123456'])
-      expect(project!.removedDefaults).toBeUndefined()
+      expect(project).not.toHaveProperty('removedDefaults')
       expect(parseProjectsFile(serializeProject(project!)).projects).toEqual([project])
     })
 
@@ -749,7 +787,7 @@ describe('swatch codes in a file (ticket 0538)', () => {
   it('writes them in version 8, reads them back, and opens a version 7 file as it was', () => {
     const [seven] = parseProjectsFile(projectFileV7).projects
     expect(seven!.paletteCodes).toBeUndefined()
-    const coded = { ...seven!, palette: [...seven!.palette, 'added-123456'], paletteCodes: { '#123456': 'DB1' } }
-    expect(parseProjectsFile(serializeProject(coded)).projects[0]!.paletteCodes).toEqual({ '#123456': 'DB1' })
+    const coded = { ...seven!, palette: [...seven!.palette, 'added-123456'], paletteCodes: { '#123456': { catalog: 'miyuki-delica', code: 'DB1' } } }
+    expect(parseProjectsFile(serializeProject(coded)).projects[0]!.paletteCodes).toEqual({ '#123456': { catalog: 'miyuki-delica', code: 'DB1' } })
   })
 })
