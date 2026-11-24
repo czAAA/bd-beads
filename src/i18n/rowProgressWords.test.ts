@@ -4,9 +4,13 @@ import { createProject } from '../domain/createProject'
 import { moveToRow, toggleRowDirection } from '../domain/rowProgress'
 import { withLayers } from '../testUtils/layerFields'
 import { en } from './en'
-import { rowProgressAnnouncement, rowProgressCount } from './rowProgressWords'
+import { rowProgressAnnouncement as announcement, rowProgressCount as count } from './rowProgressWords'
+import type { Layered } from '../domain/layerRecord'
 
 const words = en.rowProgress
+/** The words of the Project's one Frame. */
+const rowProgressAnnouncement = (w: typeof words, project: Layered) => announcement(w, project, frameIdIn(project))
+const rowProgressCount = (w: typeof words, project: Layered) => count(w, project, frameIdIn(project))
 
 function framed(technique: 'loom' | 'peyote', columns: number, rows: number) {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })

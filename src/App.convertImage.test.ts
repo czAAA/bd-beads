@@ -336,8 +336,8 @@ describe('App empty canvas (tickets 158, 0748, 0840)', () => {
     expect(empty.text()).toContain(ru.shell.canvasPlaceholderHint)
     // The strip heads the canvas box, above the board (ticket 143).
     expect(wrapper.get('[data-testid="app-canvas"]').element.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
-    // The footer is there as with a Project open, with nothing in it (ticket 0748).
-    const footer = wrapper.get('[data-testid="progress-bar"]')
+    // The footer is there as with a Project open, with nothing in it (tickets 0748, 1223).
+    const footer = wrapper.get('[data-testid="canvas-footer"]')
     expect(wrapper.get('main').element.lastElementChild).toBe(footer.element)
     expect(wrapper.find('[data-testid="tool-pill"]').exists()).toBe(false)
   })

@@ -338,48 +338,50 @@ describe('Painting a Custom frame', () => {
 describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
   const savedProgress = () => rowProgressOf(loadProjects()[0], frameIdIn(loadProjects()[0]))
 
-  it('draws no Progress bar while the Project has no Frame', async () => {
+  it('draws no Row progress strip while the Project has no Frame (ticket 1223)', async () => {
     const wrapper = await mountOpen()
-
-    expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__footer--none')
+    expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(false)
   })
 
-  it('draws the Progress bar once the Project has a Frame', async () => {
+  it('draws the strip on the Frame\'s sheet once the Project has a Frame, and no Progress bar (ticket 1223)', async () => {
     const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
-
-    expect(wrapper.get('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__footer--none')
+    expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(false)
   })
 
   it('asks before Reset progress, then takes the rows back to the first, keeping the Frame (ticket 455)', async () => {
     const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
-    await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.get('[data-testid="margin-progress-next"]').trigger('click')
     expect((savedProgress().down ?? 0)).toBe(1)
 
-    await wrapper.get('[data-testid="progress-bar-reset"]').trigger('click')
+    await wrapper.get('[data-testid="margin-progress-compact-position"]').trigger('click')
+    await wrapper.get('[data-testid="margin-progress-reset"]').trigger('click')
     expect(wrapper.find('[data-testid="reset-progress-modal"]').exists()).toBe(true)
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
     expect((savedProgress().down ?? 0)).toBe(1)
 
-    await wrapper.get('[data-testid="progress-bar-reset"]').trigger('click')
+    await wrapper.get('[data-testid="margin-progress-compact-position"]').trigger('click')
+    await wrapper.get('[data-testid="margin-progress-reset"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     expect(pointersOf(savedProgress())).toEqual({})
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(wrapper.get('[data-testid="progress-bar-reset"]').attributes('aria-disabled')).toBe('true')
+    await wrapper.get('[data-testid="margin-progress-compact-position"]').trigger('click')
+    expect(wrapper.get('[data-testid="margin-progress-reset"]').attributes('aria-disabled')).toBe('true')
   })
 })
 
 describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
   const sheetProject = () => (withLayers(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
 
-  it('moves the one pointer from its Row done, which the Progress bar then shows', async () => {
+  it('moves the one pointer from its Row done, which its counter then shows', async () => {
     const wrapper = await mountOpen(sheetProject())
     await wrapper.get('[data-testid="margin-progress-next"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="progress-bar-compact-position"] .row-progress__count-short').text()).toBe('2/2')
+    expect(wrapper.get('[data-testid="margin-progress-compact-position"] .row-progress__count-short').text()).toBe('2/2')
   })
 
-  it('expands the Frame from its first button, the surface slim, the Tool pill kept and the Progress bar set aside, and Escape goes back, each announced (tickets 1169, 1176)', async () => {
+  it('expands the Frame from its first button, the surface slim, the Tool pill kept and the Row progress strip on the sheet, and Escape goes back, each announced (tickets 1169, 1176)', async () => {
     const wrapper = await mountOpen(sheetProject())
     const surface = () => wrapper.findComponent(ProjectSurface)
     await wrapper.get('[data-testid="margin-expand-frame"]').trigger('click')
@@ -387,13 +389,12 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Frame expanded')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="tool-pill-layer"]').attributes('inert')).toBeUndefined()
-    expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__footer--aside')
     // The sheet measured itself, and the surface lays the slim sheet by what it told: no foot height in jsdom.
     expect(surface().props('slim')).toMatchObject({ title: 0 })
     await key({ key: 'Escape' })
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Expand the Frame')
-    expect(wrapper.get('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__footer--aside')
+    expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(true)
     expect(surface().props('slim')).toBeUndefined()
   })
 

@@ -32,10 +32,10 @@ describe('App row progress', () => {
   it('turns the row direction from the Progress bar\'s list, and the canvas overlay follows the steps down the columns (ticket 0973)', async () => {
     const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
 
-    await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
-    await wrapper.find('[data-testid="progress-bar-direction-right"]').trigger('click')
-    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
-    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="margin-progress-compact-position"]').trigger('click')
+    await wrapper.find('[data-testid="margin-progress-direction-right"]').trigger('click')
+    await wrapper.find('[data-testid="margin-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="margin-progress-next"]').trigger('click')
 
     expect(rowProgressView(wrapper)).toMatchObject({ direction: 'columns', finished: 2, current: 2 })
   })
@@ -44,14 +44,14 @@ describe('App row progress', () => {
     localStorage.setItem('openbeads:row-highlight', 'off')
     const wrapper = await mountWithProject(15, 30)
     // Show row marks, in Turn row direction's list (ticket 0973).
-    await wrapper.get('[data-testid="progress-bar-direction"]').trigger('click')
-    const highlight = () => wrapper.get('[data-testid="progress-bar-row-marks"]').attributes('aria-checked')
+    await wrapper.get('[data-testid="margin-progress-compact-position"]').trigger('click')
+    const highlight = () => wrapper.get('[data-testid="margin-progress-row-marks"]').attributes('aria-checked')
     const rowMarks = () => wrapper.findComponent(ProjectSurface).props('rowMarks')
 
     expect(highlight()).toBe('false')
     expect(rowMarks()).toBe(false)
 
-    await wrapper.get('[data-testid="progress-bar-row-marks"]').trigger('click')
+    await wrapper.get('[data-testid="margin-progress-row-marks"]').trigger('click')
 
     expect(localStorage.getItem('openbeads:row-highlight')).toBe('on')
     expect(highlight()).toBe('true')
@@ -65,7 +65,7 @@ describe('App row progress', () => {
     await pickColor(wrapper, defaultColorOf('red').id)
     await click(wrapper, 0)
 
-    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="margin-progress-next"]').trigger('click')
     expect(rowPress()).toMatchObject({ done: true, from: 0, to: 1 })
 
     await wrapper.find('[data-testid="strip-undo"]').trigger('click')
@@ -74,7 +74,7 @@ describe('App row progress', () => {
 
   it('says each row move aloud through the announcer (ticket 0934)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="margin-progress-next"]').trigger('click')
     await nextTick()
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Ряд 2 из 20')
   })
@@ -84,7 +84,7 @@ describe('App rows marked done', () => {
   it('says why a press on a row marked done draws nothing (ticket 0848)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickColor(wrapper, defaultColorOf('red').id)
-    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="margin-progress-next"]').trigger('click')
     await click(wrapper, 0)
     expect(wrapper.get('[data-testid="marked-done"]').text()).toContain(ru.rowProgress.markedDoneToast)
   })

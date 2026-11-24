@@ -41,8 +41,14 @@ for (const technique of ['loom', 'peyote', 'brick'] as const) {
     // The beads near the margin are left out: a shifted row's reaches half a bead under it, and the Move bar stands over
     // the rows above it zoomed out (ticket 0682).
     const clear = ({ row, column }: { row: number; column: number }) => row < -MARGIN - NEAR || row > 29 + MARGIN + NEAR || column < -MARGIN - NEAR || column > 39 + MARGIN + NEAR
+    // Zoomed out this far the sheet is bare and Row progress's strip hangs under the Frame (ticket 1223), over the beads.
+    const strip = (await page.getByTestId('margin-bare-strip').boundingBox())!
+    // Its shadow reaches a few beads past its box.
+    const SHADOW = 48
+    const underStrip = (centre: { x: number; y: number }) => centre.x >= strip.x - SHADOW && centre.x <= strip.x + strip.width + SHADOW && centre.y >= strip.y - SHADOW && centre.y <= strip.y + strip.height + SHADOW
     const wrong = canvas.filter(clear).filter(({ row, column, color }) => {
       const centre = beadCentre(project, corner, ZOOM / 100, { row, column })
+      if (underStrip(centre)) return false
       const at = (Math.floor(centre.y) * png.width + Math.floor(centre.x)) * 4
       const want = [1, 3, 5].map((index) => Number.parseInt(color.slice(index, index + 2), 16))
       return want.some((channel, index) => Math.abs(channel - png.data[at + index]!) > 2)

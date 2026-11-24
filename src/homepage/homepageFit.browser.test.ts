@@ -210,7 +210,7 @@ describe("What's inside's tour on the real editor", () => {
     expect(lit()).toBe('inside-chapter-weaveKeep')
     expect(mounted.root.querySelector('[data-testid="inside-caption-shown"]')!.textContent).toContain('14 / 14')
     const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
-    await expect.poll(() => editor.querySelector('[data-testid="progress-bar-position"]')?.textContent ?? '', { timeout: 30000 }).toMatch(new RegExp(`\\b${ROW_DONE_PASSES + 1}\\D`))
+    await expect.poll(() => editor.querySelector('[data-testid="margin-progress-compact-position"]')?.textContent ?? '', { timeout: 30000 }).toMatch(new RegExp(`\\b${ROW_DONE_PASSES + 1}\\D`))
     expect(editor.querySelector('[data-testid="margin-sheet"]')).not.toBeNull()
     expect(warned).not.toHaveBeenCalled()
     warned.mockRestore()

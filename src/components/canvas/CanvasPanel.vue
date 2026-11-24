@@ -21,7 +21,6 @@ import ConvertToBeadsPopover from './ConvertToBeadsPopover.vue'
 import { usePictureBarLayout } from '../../composables/canvas/usePictureBarLayout'
 import { framesFull } from '../../domain/frameLimit'
 import { framesFullReason } from '../../i18n/framesFullReason'
-import ProgressBar from './ProgressBar.vue'
 import SchemaTags from './SchemaTags.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import SaveReminder from './SaveReminder.vue'
@@ -766,22 +765,14 @@ const drawingStyle = computed(() => {
         />
 
         <!--
-          Progress bar (ticket 144): along the canvas box's bottom edge, only while the open Project has a Frame, since Row
-          progress counts the Frame's rows (ticket 426); without one the footer isn't drawn, so the drawing area takes
-          its room.
+          Row progress has no bar along the canvas box's bottom now: each Frame's strip on its margin sheet holds it (ticket
+          1223). What is left is the home indicator's safe-area inset, kept clear under the drawing; Convert image runs over it.
         -->
-        <!-- Behind Convert image, which runs to the window's bottom (ticket 0896), it stays laid out, as the drawing area does. -->
-        <ProgressBar
+        <div
           class="app-shell__footer"
-          :class="{ 'app-shell__footer--none': !(activeProject && frameOf(activeProject)) && !(page === 'convert-image' && convertSession), 'app-shell__footer--behind': page === 'convert-image' && convertSession, 'app-shell__footer--aside': frameExpanded }"
+          :class="{ 'app-shell__footer--behind': page === 'convert-image' && convertSession }"
           data-bottom-bar
-          :project="activeProject"
-          :row-highlight="rowHighlight"
-          :row-press="rowPress"
-          @move-row="onMoveRow"
-          @reset-progress="onResetProgress"
-          @set-row-direction="onSetRowDirection"
-          @toggle-row-highlight="toggleRowHighlight"
+          data-testid="canvas-footer"
         />
 
         <!--
@@ -861,7 +852,6 @@ const drawingStyle = computed(() => {
             :export-open="openPanel === 'export' && exportOpener === 'margin-export' && exportFrame === id"
             :selection="selectionAnchor?.box"
             :mirror-on-frame="mirrorOnFrame(id)"
-            :without-not-done="demo"
             :placing="!viewPlaced"
             :expanded="expandedFrame === id"
             :popover-asked="framePopoverAsked === id"
@@ -973,33 +963,20 @@ const drawingStyle = computed(() => {
   grid-column: 1;
 }
 
+/* The footer holds only the home indicator's safe-area inset (`--bar-bottom-inset`, ticket 0788): the Frame's strip
+ * stands on its sheet, not along the box's bottom (ticket 1223). */
 .app-shell__footer {
   grid-row: 3;
+  min-height: var(--bar-bottom-inset, 0px);
 }
 
-/* Convert image has no Progress bar (ticket 0896): it takes the footer's row too, and the editor's waits beneath it. */
+/* Convert image takes the footer's row too (ticket 0896), and the editor's waits beneath it. */
 .app-shell__page--to-bottom {
   grid-row: 2 / 4;
 }
 
-.app-shell__footer--none {
-  display: none;
-}
-
 .app-shell__footer--behind {
   visibility: hidden;
-}
-
-/* While the Frame is expanded its sheet holds Row progress under the title block (MarginSheet card, ticket 1176), so the
- * bar gives its room to the Frame: nothing of it is drawn but the safe-area inset it keeps clear of a home indicator. */
-.app-shell__footer--aside {
-  min-height: var(--bar-bottom-inset, 0px);
-  padding: 0;
-  border: 0;
-}
-
-.app-shell__footer--aside > :deep(*) {
-  display: none;
 }
 
 /* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing

@@ -2,12 +2,10 @@ import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProgressMoves from './ProgressMoves.vue'
-import ProgressBar from './ProgressBar.vue'
+import RowProgressControls from './RowProgressControls.vue'
 import StepBar from './StepBar.vue'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
-
-const pair = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('.progress-moves .app-button').map((button) => button.classes())
 
 describe('ProgressMoves (ticket 0788)', () => {
   it('is a quiet 32px back and a primary 32px forward, each with its arrow and label', async () => {
@@ -41,10 +39,9 @@ describe('ProgressMoves (ticket 0788)', () => {
     expect(next).not.toContain('app-button--primary')
   })
 
-  it('is the one pair in the editor bar and in a bar of steps, so the two look the same', () => {
-    // A row in, so both of the editor's buttons are on, as both of the step bar's are on its middle step.
+  it('is the one pair in the Row progress strip and in a bar of steps: Back quiet, the forward button primary, both `sm`', () => {
     const project = moveToRow(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } }), 1, frameIdIn(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } })))
-    const editor = mount(ProgressBar, { props: { project } })
+    const editor = mount(RowProgressControls, { props: { project, frame: frameIdIn(project), testid: 'strip' } })
     const steps = mount(StepBar, {
       props: {
         step: 1,
@@ -57,7 +54,8 @@ describe('ProgressMoves (ticket 0788)', () => {
         testid: 'steps',
       },
     })
-    expect(pair(editor)).toEqual(pair(steps))
-    expect(pair(editor)).toHaveLength(2)
+    const looks = (wrapper: typeof editor | typeof steps) => [['previous', 'back'], ['next', 'next']].map(([strip, step]) => wrapper.get(`[data-testid$="-${wrapper === editor ? strip : step}"]`).classes().filter((name) => /^app-button--(text|primary|sm)$/.test(name)).sort())
+    expect(looks(editor)).toEqual(looks(steps))
+    expect(looks(editor)).toHaveLength(2)
   })
 })

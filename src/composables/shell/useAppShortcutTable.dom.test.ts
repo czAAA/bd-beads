@@ -355,10 +355,10 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('leaves Enter to a focused Progress bar button, so one press does not also move the row', () => {
+  it('leaves Enter to a focused Row progress strip button, so one press does not also move the row', () => {
     const { deps, wrapper } = mountTable({ activeProject: () => framedProject })
     const holder = document.createElement('div')
-    holder.dataset.testid = 'progress-bar'
+    holder.className = 'row-progress'
     const button = document.createElement('button')
     holder.appendChild(button)
     document.body.appendChild(holder)
@@ -370,10 +370,10 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('a held Enter on a focused Progress bar button presses it once: its repeats are claimed from the browser (ticket 0835)', () => {
+  it('a held Enter on a focused Row progress strip button presses it once: its repeats are claimed from the browser (ticket 0835)', () => {
     const { deps, wrapper } = mountTable({ activeProject: () => framedProject })
     const holder = document.createElement('div')
-    holder.dataset.testid = 'progress-bar'
+    holder.className = 'row-progress'
     const button = document.createElement('button')
     holder.appendChild(button)
     document.body.appendChild(holder)

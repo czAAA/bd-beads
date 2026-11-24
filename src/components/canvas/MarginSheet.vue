@@ -30,9 +30,10 @@ import MarginMoveBar from './MarginMoveBar.vue'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import { frameNameLine } from './marginFrameName'
 import RowProgressControls from './RowProgressControls.vue'
+import { STRIP_FITS, STRIP_FIT_PROPS, stripWidth, type StripFit } from './rowProgressFit'
 import type { RowPress } from '../../composables/project/useRowOps'
 import type { FrameId } from '../../domain/grid'
-import { frameById, firstFrameId } from '../../domain/layerRecord'
+import { frameById } from '../../domain/layerRecord'
 import { useRotateCopy, type RotateCopyPlace } from '../../composables/ui/useRotateCopy'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 import type { SlimMeasures } from '../../composables/canvas/useFrameExpand'
@@ -44,9 +45,8 @@ import { slimInset } from '../../rendering/slimSheet'
 // their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, the Move bar.
 const props = defineProps<{
   project: Project
-  /** The Frame whose sheet this is (ticket 1220): every control on it acts on this Frame alone; the first when none is
-   * named. */
-  frame?: FrameId
+  /** The Frame whose sheet this is (ticket 1220): every control on it acts on this Frame alone. */
+  frame: FrameId
   anchor: FrameAnchor
   /** Whether the Frame's handles are on (Edit Frame): the sheet's edge is outlined in the accent meanwhile. */
   editing: boolean
@@ -61,8 +61,6 @@ const props = defineProps<{
   selection?: BarBox
   /** Whether the whole Frame is the Mirror's Area (ADR 0082): its Mirror the whole Frame is pressed, in the accent. */
   mirrorOnFrame?: boolean
-  /** The band has no Row not done: the Homepage demo's sheet, its one exception (MarginSheet card, ticket 0797). */
-  withoutNotDone?: boolean
   /** The canvas view is not yet set for its area (ticket 0991): the sheet's place is a stand-in until it is. */
   placing?: boolean
   /** The Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): the sheet is slim, at scale 1, its forms
@@ -111,7 +109,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const own = computed(() => props.frame ?? firstFrameId(props.project))
+const own = computed(() => props.frame)
 const deps = computed(() => controlDeps({ activeProject: () => props.project, frame: () => own.value }))
 const actions = {
   expand: controlAction('expand-frame'),
@@ -203,18 +201,9 @@ const titleForms = computed<readonly TitleForm[]>(() => {
   return form.value === 'compact' && !legendFits.value ? forms.filter((shown) => shown !== 'compact') : forms
 })
 
-// Row progress under the title block (ticket 1176): full and expanded, the strip across the sheet, which first shortens
-// its counter (`:short`), then gives up its track (`:1`), then its counter (`:2`), Row done staying to the last. Compact
-// and folded, one line: Row progress at its end, beside the title block, giving up the same.
-type ProgressFit = `${'margin' | 'compact' | 'folded'}:${0 | 1 | 2}` | 'margin:0:short'
-const STRIP_FITS: readonly ProgressFit[] = ['margin:0', 'margin:0:short', 'margin:1', 'margin:2']
-const LINE_FITS: readonly ProgressFit[] = ['compact:0', 'compact:1', 'compact:2']
-const PROGRESS_FITS: Record<MarginForm, readonly ProgressFit[]> = {
-  full: STRIP_FITS,
-  compact: LINE_FITS,
-  folded: ['folded:0', 'folded:2'],
-  bare: [],
-}
+// Row progress under the title block (ticket 1176): the strip across the sheet in every form (ticket 1223), which first
+// shortens its counter, then gives up its track, then Back a row's words, Row done staying to the last. Where the title
+// block shares its line (compact under 76px, folded) the strip takes what the title block's tab leaves.
 /** Under the title block, or beside it on one line. */
 const stacked = computed(
   () => !!props.expanded || form.value === 'full' || (form.value === 'compact' && bandReaches(MARGIN_PX.band.stacked)),
@@ -243,32 +232,15 @@ const footEl = ref<HTMLElement>()
 const footSize = useElementSize(footEl)
 const progressEl = ref<HTMLElement>()
 const progressSize = useElementSize(progressEl)
-/** Row progress's width in drafting px as laid out, the strip's track counted at its least, as it fills the rest. */
-function progressWidth(): number {
-  const root = progressEl.value?.firstElementChild as HTMLElement | null | undefined
-  if (!root) return 0
-  const style = getComputedStyle(root)
-  const parts = [...root.children] as HTMLElement[]
-  const gap = (parseFloat(style.columnGap) || 0) * Math.max(0, parts.length - 1)
-  const own = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0) + (parseFloat(style.borderLeftWidth) || 0) + (parseFloat(style.borderRightWidth) || 0)
-  const widths = parts.map((part) => {
-    const at = getComputedStyle(part)
-    const margins = (parseFloat(at.marginLeft) || 0) + (parseFloat(at.marginRight) || 0)
-    const filling = part.classList.contains('row-progress__track--strip')
-    return margins + (filling ? parseFloat(at.flexBasis) || 0 : ownLength(part, part.getBoundingClientRect().width) / scale.value)
-  })
-  const sum = widths.reduce((total, width) => total + width, 0)
-  return sum > 0 ? sum + gap + own : 0
-}
 /** The name tab's width with its whole name, once it has shown: on one line Row progress leaves it that. */
 const tabWidth = ref(0)
 /** Whether the title block is shown in some form: Name and size on the margin is on (MarginSheet card). */
 const titleOn = computed(() => canvas.margin.titleBlock.value && !!frame.value)
 const progressFitting = useFittingForm({
-  forms: () => (frame.value ? (props.expanded || stacked.value ? STRIP_FITS : PROGRESS_FITS[form.value]) : []),
+  forms: () => (frame.value && form.value !== 'bare' ? STRIP_FITS : []),
   // The strip has the sheet's whole width; on one line it leaves the title block its tab, the name uncut.
   room: () => (stacked.value ? footRoomAt1.value : footRoomAt1.value - MARGIN_PX.gap - (titleOn.value ? tabWidth.value : 0)),
-  measure: progressWidth,
+  measure: () => stripWidth(progressEl.value?.firstElementChild as HTMLElement | null | undefined, scale.value),
   observed: () => [progressEl.value?.firstElementChild],
   // What it reads: Row done or Column done, the counter, the language (ticket 0851).
   labels: () => {
@@ -276,12 +248,13 @@ const progressFitting = useFittingForm({
     return JSON.stringify([locale.value, columnsAsSeen(props.project, own.value), current, total, touch.value, !!props.expanded])
   },
 })
-/** Row progress shown: expanded, where the Progress bar is set aside, always, the strip at its least where none fits. */
-const progressFit = computed(() => progressFitting.value ?? (props.expanded ? STRIP_FITS.at(-1) : undefined))
-const progressForm = computed(() => progressFit.value?.split(':')[0] as 'margin' | 'compact' | 'folded' | undefined)
-/** How much of Row progress it gives up: nothing, its track, or its track and counter. */
-const progressDrop = computed(() => Number(progressFit.value?.split(':')[1] ?? 0) as 0 | 1 | 2)
-const shortCount = computed(() => progressFit.value?.endsWith(':short') ?? false)
+/** The strip's form: the least of them where none fits (expanded, the sheet widens to it). */
+const progressFit = computed<StripFit>(() => progressFitting.value ?? STRIP_FITS.at(-1)!)
+/** Where not even the least form fits the sheet (a Frame of a few beads), the strip hangs under the sheet at its screen
+ * size, as it does bare, so Row done is never off the sheet (ticket 1223). */
+const hanging = computed(() => !!frame.value && !props.expanded && (form.value === 'bare' || progressFitting.value === undefined))
+const progressForm = computed(() => (frame.value && !hanging.value ? progressFit.value : undefined))
+const fitProps = computed(() => STRIP_FIT_PROPS[progressFit.value])
 
 const titleEl = ref<HTMLElement>()
 const titleBlock = ref<InstanceType<typeof MarginTitleBlock>>()
@@ -427,6 +400,28 @@ const colorHangsFrom = computed(() => (!row.value ? 'handle' : onBand('color') ?
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
 const sheetEl = ref<HTMLElement>()
+/** Bare, Row progress hangs under the Frame at its screen size (1223); it shortens to fit the canvas box's width. */
+const bareEl = ref<HTMLElement>()
+const bareRoving = useRovingFocus(bareEl, { axis: () => 'horizontal', managesTabIndex: true })
+const bareRoom = computed(() => (sheetEl.value?.parentElement?.clientWidth ?? Number.POSITIVE_INFINITY) - 2 * MARGIN_PX.gap)
+const bareFitting = useFittingForm({
+  forms: () => (hanging.value ? STRIP_FITS : []),
+  room: () => bareRoom.value,
+  measure: () => stripWidth(bareEl.value?.firstElementChild as HTMLElement | null | undefined),
+  observed: () => [bareEl.value?.firstElementChild],
+  labels: () => {
+    const { current, total } = rowProgressPosition(props.project, own.value)
+    return JSON.stringify([locale.value, columnsAsSeen(props.project, own.value), current, total])
+  },
+})
+const bareFitProps = computed(() => STRIP_FIT_PROPS[bareFitting.value ?? STRIP_FITS.at(-1)!])
+/** 4px under the Frame's bottom line (under the sheet's bottom edge where the sheet is drawn), on its middle, in the
+ * sheet's own px. */
+const hangingStyle = computed(() => ({
+  left: `${props.anchor.box.left - props.anchor.sheet.left + props.anchor.box.width / 2}px`,
+  top: `${(form.value === 'bare' ? props.anchor.box.top - props.anchor.sheet.top + props.anchor.box.height : props.anchor.sheet.height) + MARGIN_PX.gap}px`,
+}))
+
 /** The Rotate Frame copy that waits where it was pressed (ticket 1016, MarginSheet card). */
 const rotateCopy = useRotateCopy({ handOverMs: FRAME_TURN_MS })
 /** A screen point as a place in the sheet's parent, in its own px (ticket 1071), which the copy keeps however the sheet
@@ -664,11 +659,7 @@ const popoverHandlers = {
           :frame="own"
           :row-highlight="rowHighlight"
           :row-press="rowPress"
-          :form="progressForm"
-          :drop="progressDrop"
-          :short-count="shortCount"
-          :lead="expanded"
-          :without-not-done="withoutNotDone"
+          v-bind="fitProps"
           testid="margin-progress"
           @move-row="emit('move-row', $event)"
           @reset-progress="emit('reset-progress')"
@@ -676,6 +667,32 @@ const popoverHandlers = {
           @toggle-row-highlight="emit('toggle-row-highlight')"
         />
       </div>
+    </div>
+
+    <!-- Bare, nothing of the sheet is drawn, so the strip keeps its screen size and hangs 4px under the Frame's bottom line,
+         centred, as the Move bar hangs above it (MarginSheet card, Several Frames). -->
+    <div
+      v-if="hanging"
+      ref="bareEl"
+      class="margin-sheet__bare-strip"
+      :style="hangingStyle"
+      data-testid="margin-bare-strip"
+      @keydown="bareRoving.onKeydown"
+      @focusin="bareRoving.onFocusin"
+    >
+      <RowProgressControls
+        :project="project"
+        :frame="own"
+        :row-highlight="rowHighlight"
+        :row-press="rowPress"
+        bare
+        v-bind="bareFitProps"
+        testid="margin-progress"
+        @move-row="emit('move-row', $event)"
+        @reset-progress="emit('reset-progress')"
+        @set-row-direction="emit('set-row-direction', $event)"
+        @toggle-row-highlight="emit('toggle-row-highlight')"
+      />
     </div>
 
     <!-- Rotate Frame's copy, lifted off the paper where it was pressed (ticket 1016): no Tab stop and hidden from a
@@ -825,13 +842,10 @@ const popoverHandlers = {
   padding-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2);
 }
 
-/* So do Row progress's Turn row direction and Reset progress, and Back a row beside Row done, on the strip. */
-.margin-sheet__foot--touch :deep(.row-progress--margin > .icon-btn-wrap + .icon-btn-wrap) {
-  margin-inline-start: calc(var(--touch-target) - var(--margin-tool-compact) - var(--space-4));
-}
-
-.margin-sheet__foot--touch :deep(.row-progress__steps > .icon-btn-wrap + *) {
-  margin-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2 - var(--space-4));
+/* So do Row progress's Back a row, counter and Row done on the strip: 44px hit areas that never overlap. */
+.margin-sheet__foot--touch :deep(.row-progress > .app-button-wrap + *),
+.margin-sheet__foot--touch :deep(.row-progress > * + .app-button-wrap) {
+  margin-inline-start: calc((var(--touch-target) - var(--margin-done-compact)) / 2 - var(--space-4));
 }
 
 /* Mirror the whole Frame on is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
@@ -878,6 +892,14 @@ const popoverHandlers = {
   .margin-sheet__handle {
     transform: translate(-50%, calc(-100% - (var(--touch-target) - var(--margin-tab)) / 2 - var(--space-16)));
   }
+}
+
+/* Bare, Row progress hangs centred 4px under the Frame's bottom line at its own size, as the Move bar hangs above it. */
+.margin-sheet__bare-strip {
+  position: absolute;
+  display: flex;
+  transform: translateX(-50%);
+  pointer-events: auto;
 }
 
 /* Beside it, the Frame tools button (ticket 1164): 24px, as folded, out to the Move bar's right so the bar stays centred
@@ -1004,23 +1026,8 @@ const popoverHandlers = {
   border-radius: 0;
 }
 
-.margin-sheet__foot--stacked :deep(.row-progress--margin) {
-  flex: 1;
-  box-sizing: border-box;
-  height: var(--margin-strip);
-  padding-inline: var(--space-2);
-  background: var(--margin-title);
-  border: 1px solid var(--margin-line);
+.margin-sheet__foot--stacked :deep(.row-progress) {
   border-radius: 0 0 var(--margin-border-radius) var(--margin-border-radius);
-}
-
-.margin-sheet__foot--stacked :deep(.row-progress--margin .icon-btn) {
-  width: var(--margin-tool-compact);
-  height: var(--margin-tool-compact);
-}
-
-.margin-sheet__foot--stacked :deep(.row-progress--margin .app-button) {
-  height: var(--margin-done-compact);
 }
 
 /* The name tab: 24px, `margin-title` fill, the name (Inter 600 11) and `chevron-up` when it unfolds the block. */

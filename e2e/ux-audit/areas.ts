@@ -290,24 +290,25 @@ const beadIt: AreaWalk = {
     })
     await walk.step('progress-three-rows-on', async () => {
       for (let index = 0; index < 3; index += 1) {
-        await page.getByTestId('progress-bar-next').click()
+        await page.getByTestId('margin-progress-next').click()
       }
       await settle(page)
     })
     await walk.step('progress-highlight-toggled', async () => {
-      // Show row marks, in Turn row direction's list (ticket 0973).
-      await page.getByTestId('progress-bar-direction').click()
-      await page.getByTestId('progress-bar-row-marks').click()
+      // Show row marks, in the counter's list (tickets 0973, 1223).
+      await page.getByTestId('margin-progress-compact-position').click()
+      await page.getByTestId('margin-progress-row-marks').click()
       await escape(page)
       await settle(page)
     })
     await walk.step('progress-direction-switched', async () => {
-      await page.getByTestId('progress-bar-direction').click()
-      await page.getByTestId('progress-bar-direction-right').click()
+      await page.getByTestId('margin-progress-compact-position').click()
+      await page.getByTestId('margin-progress-direction-right').click()
       await settle(page)
     })
     await walk.step('progress-reset-asked', async () => {
-      await page.getByTestId('progress-bar-reset').click()
+      await page.getByTestId('margin-progress-compact-position').click()
+      await page.getByTestId('margin-progress-reset').click()
       await page.getByTestId('reset-progress-modal').waitFor()
     })
     await walk.step('frame-removed-no-progress', async () => {

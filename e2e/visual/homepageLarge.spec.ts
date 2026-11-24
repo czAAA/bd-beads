@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-// On a large screen the Homepage's box and its sections grow by a third (ticket 1059), the strip and the Progress bar
+// On a large screen the Homepage's box and its sections grow by a third (ticket 1059), the strip and the section bar
 // at the editor's size, the two marks by the box's edge: Welcome at 2560 × 1440 in light, dark and high contrast.
 for (const scheme of ['light', 'dark', 'contrast'] as const) {
   test(`Welcome at 2560 × 1440 in ${scheme} (ticket 1059)`, async ({ page }) => {

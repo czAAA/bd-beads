@@ -95,8 +95,8 @@ const OPENERS = PANEL_OPENERS
 /** Where the strip button it hangs from is looked for: its own shell's, not another on the page (ticket 0797). */
 const scope = useShellScope()
 const findInShell = (selector: string) => (scope.root() ?? document).querySelector<HTMLElement>(selector)
-/** The canvas box's bottom bar (the Progress bar, or Convert image's steps): a panel ends above it and a press on it
- * goes through, so the bar works while a panel is open (ticket 0850). */
+/** The canvas box's bottom bar (Convert image's steps; the editor's holds only the safe-area inset since ticket 1223):
+ * a panel ends above it and a press on it goes through, so the bar works while a panel is open (ticket 0850). */
 const BOTTOM_BAR = '[data-bottom-bar]'
 /** The bottom bar of the canvas box the panel's button is in; none where the button is in no canvas box. */
 const ownBar = () => anchorEl.value?.closest('[data-testid="app-canvas"]')?.querySelector(BOTTOM_BAR)

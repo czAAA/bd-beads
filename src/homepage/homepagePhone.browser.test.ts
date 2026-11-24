@@ -78,7 +78,7 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           expect(box('[data-testid="zoom-reset"]').width).toBe(0)
 
           // Welcome first (tickets 0830, 1157): the tile with no way in (the bar's main button is), the cuff inside it
-          // with the editor's phone bar under it, Back a row and Row done on a row of their own, and the four promises a
+          // with the editor's Row progress strip under it, Back a row and Row done on it, and the four promises a
           // grouped list under the tile.
           expect(mounted.root.querySelectorAll('[data-testid="phone-bar-segment"]')).toHaveLength(4)
           insideTheSection()
@@ -92,7 +92,8 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           const cuffCounter = box('[data-testid="welcome-cuff-compact-position"]')
           const done = box('[data-testid="welcome-cuff-next"]')
           expect(cuffCounter.top).toBeGreaterThanOrEqual(cuff.bottom)
-          expect(done.top, 'Row done on a row of its own').toBeGreaterThanOrEqual(cuffCounter.bottom)
+          expect(done.top, 'Row done on the strip under the cuff').toBeGreaterThanOrEqual(cuff.bottom)
+          expect(done.right, 'the strip stays inside the tile').toBeLessThanOrEqual(welcome.right)
           expect(done.bottom).toBeLessThanOrEqual(welcome.bottom)
           const kept = box('[data-testid="welcome-promises"]')
           expect(kept.top).toBeGreaterThanOrEqual(welcome.bottom)

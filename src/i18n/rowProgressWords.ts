@@ -1,4 +1,3 @@
-import { firstFrameId } from '../domain/layerRecord'
 import { fillBlanks } from '../domain/fillBlanks'
 import type { Layered } from '../domain/layerRecord'
 import type { FrameRef } from '../domain/grid'
@@ -20,8 +19,8 @@ export function seenWayWords(words: Translations['rowProgress'], way: SeenWay): 
 
 /** A Custom frame's pass in words in place of "Row 3 of 20" (ticket 0594): "Round 3" and "of 9", or where its passes
  * are of several sorts, parts, joins or a Fringe earring's strands, "Part 2, round 3" and "· 8 of 20". `shown` is the
- * pass from 1, on the Frame given (ticket 1218), else the first. None for a Frame without a Frame shape. */
-export function customPassWords(words: Translations['rowProgress'], project: Layered, shown: number, frame: FrameRef = firstFrameId(project)): { label: string; of: string } | undefined {
+ * pass from 1, on the Frame given (ticket 1218). None for a Frame without a Frame shape. */
+function customPassWords(words: Translations['rowProgress'], project: Layered, shown: number, frame: FrameRef): { label: string; of: string } | undefined {
   const order = frameRowOrder(project, frame)
   const step = order.stepOf?.(shown - 1)
   if (!step) return undefined
@@ -44,8 +43,8 @@ export interface RowProgressCount {
 }
 
 /** The one place the counter's words are put together, for the bar's counter and for every move the announcer says
- * (tickets 0934, 0972; ScreenReaders card): of the Frame given (ticket 1218), else the first. */
-export function rowProgressCount(words: Translations['rowProgress'], project: Layered, frame: FrameRef = firstFrameId(project)): RowProgressCount {
+ * (tickets 0934, 0972; ScreenReaders card): of the Frame given (ticket 1218). */
+export function rowProgressCount(words: Translations['rowProgress'], project: Layered, frame: FrameRef): RowProgressCount {
   const { current, total } = rowProgressPosition(project, frame)
   if (current >= total) return { step: words.patternDone, short: words.patternDone, spoken: words.patternDone }
   const shown = current + 1
@@ -70,6 +69,6 @@ export function rowProgressCount(words: Translations['rowProgress'], project: La
 
 /** What the announcer says after a move of the row pointer (ticket 0934; ScreenReaders card): the counter's words, of
  * the Frame given, else the first. */
-export function rowProgressAnnouncement(words: Translations['rowProgress'], project: Layered, frame: FrameRef = firstFrameId(project)): string {
+export function rowProgressAnnouncement(words: Translations['rowProgress'], project: Layered, frame: FrameRef): string {
   return rowProgressCount(words, project, frame).spoken
 }

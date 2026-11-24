@@ -2,7 +2,7 @@ import { frameIdIn } from '../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { effectScope, nextTick, shallowRef } from 'vue'
-import ProgressBar from '../components/canvas/ProgressBar.vue'
+import RowProgressControls from '../components/canvas/RowProgressControls.vue'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { useRowOps } from '../composables/project/useRowOps'
 import { frameOf } from '../domain/layerRecord'
@@ -53,11 +53,11 @@ function finishedBeads(): string[] {
   return finished
 }
 
-/** The Progress bar's counter as the person reads it in its words: its step and the rulers' row. */
+/** The Row progress strip's counter as the person reads it in its words: its step and the rulers' row. */
 const counterOf = (wrapper: ReturnType<typeof mount>, id: string) => {
   const counter = wrapper.get(`[data-testid="${id}-compact-position"]`)
-  const part = (name: string) => counter.get(`.row-progress__count-${name}, .row-progress__woven-${name}`).text()
-  const line = counter.get('.row-progress__line, .row-progress__woven-line').text()
+  const part = (name: string) => counter.get(`.row-progress__count-${name}`).text()
+  const line = counter.get('.row-progress__line').text()
   return `${part('step')} ${line}`.replace(/\s+/g, ' ')
 }
 
@@ -75,8 +75,8 @@ describe('WelcomeCuff (ticket 1157)', () => {
     const editing = shallowRef(wovenCuff())
     const rows = scope.run(() => useRowOps({ currentProject: () => editing.value, replaceProject: (next) => (editing.value = next), showToast: () => {}, messages: () => en }))!
     for (let press = 0; press < PRESSES; press++) rows.onMoveRow(1)
-    const bar = mount(ProgressBar, { props: { project: editing.value } })
-    expect(counterOf(cuff, 'welcome-cuff')).toBe(counterOf(bar, 'progress-bar'))
+    const bar = mount(RowProgressControls, { props: { project: editing.value, frame: frameIdIn(editing.value), testid: 'strip' } })
+    expect(counterOf(cuff, 'welcome-cuff')).toBe(counterOf(bar, 'strip'))
     expect(counterOf(cuff, 'welcome-cuff')).toBe('Pass 8 of 95 · column 5')
 
     // The editor's Canvas round the same Frame, at 100%, where its margin sheet is whole and holds the Frame's numbers.

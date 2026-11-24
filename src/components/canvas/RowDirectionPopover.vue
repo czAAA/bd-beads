@@ -6,17 +6,22 @@ import { useShellScope } from '../../composables/ui/shellScope'
 import { ROW_WAYS, type SeenWay } from '../../domain/rowProgress'
 import { seenWayWords } from '../../i18n/rowProgressWords'
 import { useI18n } from '../../i18n/useI18n'
+import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 
-// Turn row direction's list (ProgressBar card, ticket 0973, UX-060): the four ways in words, the current one checked,
-// so its press turns nothing; choosing one turns the rows and closes it. Under them Show row marks, Row highlight's
-// Switch named by its words. Escape or a press outside closes it and nothing changes.
+// The counter's list (MarginSheet card, tickets 0973, 1223): the four ways in words, the current one checked, so its
+// press turns nothing; choosing one turns the rows and closes it. A Custom frame has no ways. Under them Show row marks,
+// Row highlight's Switch named by its words, and Reset progress. Escape or a press outside closes it and nothing changes.
 const props = defineProps<{
   /** The button it hangs from: its own press toggles the list. */
   anchor: HTMLElement | undefined
   /** The way the rows run now, as the Frame lies. */
   current: SeenWay
+  /** Whether the rows can run another way; a Custom frame's run one way only, so its list holds no ways. */
+  turns: boolean
+  /** Whether a row is done, so there is progress to reset. */
+  canReset: boolean
   /** Whether the Canvas draws the Row progress marks. */
   rowHighlight: boolean
   /** The prefix of its test ids. */
@@ -27,6 +32,8 @@ const emit = defineEmits<{
   /** A way chosen other than the one the rows run now. */
   choose: [way: SeenWay]
   'toggle-row-highlight': []
+  /** Reset progress, which asks first (ticket 455). */
+  reset: []
 }>()
 
 const { t } = useI18n()
@@ -76,7 +83,8 @@ onMounted(async () => {
   anchorEl.value = props.anchor
   await nextTick()
   anchored.follow()
-  radios()[ROW_WAYS.indexOf(props.current)]?.focus({ preventScroll: true })
+  if (props.turns) radios()[ROW_WAYS.indexOf(props.current)]?.focus({ preventScroll: true })
+  else rootEl.value?.querySelector<HTMLElement>('[role="switch"]')?.focus({ preventScroll: true })
 })
 </script>
 
@@ -91,8 +99,8 @@ onMounted(async () => {
     :aria-label="t.rowProgress.directionButton"
     :data-testid="`${testid}-direction-list`"
   >
-    <span class="row-direction__title" aria-hidden="true">{{ t.rowProgress.directionButton }}</span>
-    <div class="row-direction__ways" role="radiogroup" :aria-label="t.rowProgress.directionButton" @keydown="onWaysKeydown">
+    <span v-if="turns" class="row-direction__title" aria-hidden="true">{{ t.rowProgress.directionButton }}</span>
+    <div v-if="turns" class="row-direction__ways" role="radiogroup" :aria-label="t.rowProgress.directionButton" @keydown="onWaysKeydown">
       <button
         v-for="way in ROW_WAYS"
         :key="way"
@@ -109,7 +117,7 @@ onMounted(async () => {
         {{ wayLabel(way) }}
       </button>
     </div>
-    <span class="row-direction__rule" aria-hidden="true" />
+    <span v-if="turns" class="row-direction__rule" aria-hidden="true" />
     <label class="row-direction__marks">
       <span>{{ t.rowProgress.showRowMarks }}</span>
       <AppSwitch
@@ -119,6 +127,20 @@ onMounted(async () => {
         @update:model-value="emit('toggle-row-highlight')"
       />
     </label>
+    <span class="row-direction__rule" aria-hidden="true" />
+    <!-- Reset progress asks first, so it only closes the list; it is off until a row is done. -->
+    <AppButton
+      variant="text"
+      class="row-direction__reset"
+      icon="reset"
+      :label="t.rowProgress.resetButton"
+      :disabled="!canReset"
+      :disabled-body="t.tooltips.noProgressToReset"
+      :data-testid="`${testid}-reset`"
+      @click="emit('reset'), close()"
+    >
+      {{ t.rowProgress.resetButton }}
+    </AppButton>
   </div>
   </Teleport>
 </template>
@@ -185,6 +207,13 @@ onMounted(async () => {
   .row-direction__way:hover {
     background: var(--overlay-hover);
   }
+}
+
+.row-direction__reset {
+  justify-content: flex-start;
+  height: var(--menu-item-height);
+  padding: 0 var(--space-10);
+  color: var(--ink);
 }
 
 .row-direction__gap {
