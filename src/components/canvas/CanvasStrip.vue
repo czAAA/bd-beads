@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useScrollCut } from '../../composables/ui/useScrollCut'
 import type { Project } from '../../domain/project'
@@ -25,23 +24,19 @@ import { rotateCanvasIcon } from './rotateCanvasIcon'
 import { imageInputAccept } from '../../domain/imageConversion'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
-// The canvas box's header strip on every App page (tickets 143, 540, 0756, ADRs 0046, 0073, 0085; CanvasStrip card): Menu ·
-// Project · Frame on the left (Menu · Close on Convert image), the Brand in the middle, on the right Undo · Redo | Reference
+// The canvas box's header strip on every App page (tickets 143, 540, 0756, ADRs 0046, 0073, 0085; CanvasStrip card):
+// Menu · Project on the left (Menu · Close on Convert image), the Brand in the middle, on the right Undo · Redo | Reference
 // image · Rotate · Rulers · zoom · Language | Export, the two ends never scrolled away (tickets 543, 0652, 0843); the Homepage's way in, its slogan as the wordmark.
 const props = defineProps<{
   /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page, and
    * Convert image's is plain, so leaving never happens by a link that asks nothing. */
   page?: 'editor' | 'homepage' | 'convert-image'
   project?: Project
-  /** The Project as summaries see it (useSettledProject), for Beads needed's total in the Frame button's Tooltip (0932). */
-  settledProject?: Project
   /** The open sheet, so Menu and Project show lit while theirs is open. */
   openPanel?: OpenPanel | null
   rulers?: boolean
   /** The reference image (ticket 0790): none yet, or shown or hidden; left out off the editor. */
   referenceImage?: 'none' | 'shown' | 'hidden'
-  /** Whether the Frame panel is open, so the Frame button shows lit. */
-  frameOpen?: boolean
   /** The save reminder waits in the Project panel (ticket 1192): an accent dot on the Project button. */
   saveNote?: boolean
   canUndo?: boolean
@@ -50,7 +45,7 @@ const props = defineProps<{
   /** The zoom range the buttons stop at, when it isn't the Project canvas's (the Homepage has its own). */
   zoomMinPercent?: number
   zoomMaxPercent?: number
-  /** The Homepage's demo editor (ticket 0797): Menu, Project and Frame; Reference image, Undo and Redo, and the Brand,
+  /** The Homepage's demo editor (ticket 0797): Menu and Project; Reference image, Undo and Redo, and the Brand,
    * which links nowhere. */
   demo?: boolean
   /** The Homepage's Welcome section has the way in itself (ticket 0830): the strip's is away, its place kept. */
@@ -60,7 +55,6 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   'select-panel': [sheet: 'menu' | 'project' | 'export']
-  'toggle-frame': []
   /** Expand or Collapse: the demo asks for the section's whole width, or gives it back. */
   'toggle-expand': []
   /** Close (×) on Convert image: the page's way out, which asks first once a picture is set. */
@@ -88,7 +82,6 @@ const actions = {
   close: controlAction('close'),
   coffee: controlAction('strip-coffee'),
   project: controlAction('strip-project'),
-  frame: controlAction('strip-frame'),
   export: controlAction('strip-export'),
   rotateCanvas: controlAction('rotate-canvas'),
   rulers: controlAction('rulers'),
@@ -102,9 +95,6 @@ const actions = {
 /** The Project button shows the open Project's name (ticket 0858), and is named and Tooltipped "Project: {name}" whole. */
 const projectName = computed(() => (props.project ? projectNameOf(props.project) : ''))
 const projectNamed = computed(() => fillBlanks(t.value.header.projectButtonNamed, { name: projectName.value }))
-/** The Frame button's Tooltip says Beads needed's total once there is one (ticket 0932). */
-const beadsTotal = useBeadsNeeded(() => props.settledProject ?? props.project).total
-const frameTooltip = computed(() => ({ body: beadsTotal.value ? fillBlanks(t.value.tooltips.framePanelBeads, { total: beadsTotal.value }) : t.value.tooltips.framePanel }))
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 /** Rulers is lit only while it can be pressed: on an empty Canvas it is held and plain, whatever the device keeps (ticket 0921). */
 const rulersLit = computed(() => !!props.rulers && !!actions.rulers.enabled?.(deps.value))
@@ -211,19 +201,6 @@ function onControlsKeydown(event: KeyboardEvent) {
         >
           <span class="canvas-strip__label canvas-strip__project-name" data-user-text>{{ projectName }}</span>
           <span v-if="saveNote && openPanel !== 'project'" class="canvas-strip__note-dot" aria-hidden="true" data-testid="strip-project-dot" />
-        </AppButton>
-        <AppButton
-          v-if="project"
-          variant="text"
-          :action="actions.frame"
-          :deps="deps"
-          :tooltip="frameTooltip"
-          aria-haspopup="dialog"
-          :expanded="!!frameOpen"
-          data-testid="strip-frame"
-          @click="emit('toggle-frame')"
-        >
-          <span class="canvas-strip__label">{{ actions.frame.name(t) }}</span>
         </AppButton>
       </div>
       <!-- The Homepage's way into the editor (ticket 0822): its own Tab stops, styled here so the editor's first paint
@@ -361,7 +338,7 @@ function onControlsKeydown(event: KeyboardEvent) {
 }
 
 /* The strip's widths are its shell's (ticket 0797): the screen for the editor, the Homepage's box for its strip, the
- * demo's own box in What's inside. Menu, Project and Frame all fit in a 320px window in the longest language (473). */
+ * demo's own box in What's inside. Menu and Project fit in a 320px window in the longest language (473). */
 @container shell (max-width: 340px) {
   .canvas-strip {
     gap: var(--space-4);

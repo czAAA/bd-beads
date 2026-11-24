@@ -6,7 +6,7 @@ import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { pressBar, copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
-import { beadsOfLayer, frameOf } from './domain/layerRecord'
+import { beadsOfLayer, frameOf, framesOf } from './domain/layerRecord'
 import { defaultColorOf } from './testUtils/defaultColors'
 
 beforeEach(() => {
@@ -191,7 +191,7 @@ describe('App select, copy and paste', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe(defaultColorOf('red').hex)
   })
 
-  it('Frame on the Selection bar moves the Frame to the Selection (ticket 407)', async () => {
+  it('Frame on the Selection bar adds a Frame, refused naming the Frame its margin would meet (tickets 407, 1222)', async () => {
     const wrapper = await mountWithProject(6, 6) // a 4x4 Frame
     await projectWithMotif(wrapper) // red (0,0) and blue (1,1): one Piece
     await pickTool(wrapper, 'piece')
@@ -200,7 +200,8 @@ describe('App select, copy and paste', () => {
     await pressBar(wrapper, 'frame')
     await flushPromises()
 
-    expect(frameOf(loadProjects()[0])).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
+    expect(framesOf(loadProjects()[0]!)).toHaveLength(1)
+    expect(wrapper.find('[data-testid="frame-meets"]').exists()).toBe(true)
   })
 
   it('Fill gives every position in the Selection the current colour (ticket 415)', async () => {

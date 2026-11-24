@@ -20,11 +20,11 @@ describe('CanvasStrip', () => {
 
   const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
 
-  it('holds Menu, Project, Frame (with or without one, ticket 555), Undo, Redo, Rotate canvas, Rulers, then the zoom (in, out, Fit) and Export, and passes each press on (tickets 425, 431, 0652)', async () => {
+  it('holds Menu, Project, Undo, Redo, Rotate canvas, Rulers, then the zoom (in, out, Fit) and Export, and passes each press on (tickets 425, 431, 0652)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
 
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-coffee', 'strip-undo', 'strip-redo', 'strip-divider-history', 'strip-rotate-canvas', 'strip-rulers', 'zoom-in', 'zoom-out', 'zoom-reset', 'strip-divider-export', 'strip-export'])
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-coffee', 'strip-undo', 'strip-redo', 'strip-divider-history', 'strip-rotate-canvas', 'strip-rulers', 'zoom-in', 'zoom-out', 'zoom-reset', 'strip-divider-export', 'strip-export'])
     expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="canvas-strip-zoom"]').attributes('data-zoom-percent')).toBe('125')
 
@@ -71,16 +71,12 @@ describe('CanvasStrip', () => {
   it('says each panel button opens a panel and whether it is open, not that it is pressed (ticket 0995)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
     const strip = (id: string) => wrapper.get(`[data-testid="strip-${id}"]`)
-    const panels = ['menu', 'project', 'frame', 'export']
+    const panels = ['menu', 'project', 'export']
     for (const id of panels) {
       expect(strip(id).attributes('aria-expanded'), id).toBe('false')
       expect(strip(id).attributes('aria-pressed'), id).toBeUndefined()
     }
-    expect(panels.map((id) => strip(id).attributes('aria-haspopup'))).toEqual([undefined, 'dialog', 'dialog', 'dialog'])
-
-    await wrapper.setProps({ frameOpen: true })
-    expect(strip('frame').attributes('aria-expanded')).toBe('true')
-    expect(strip('frame').attributes('aria-pressed')).toBeUndefined()
+    expect(panels.map((id) => strip(id).attributes('aria-haspopup'))).toEqual([undefined, 'dialog', 'dialog'])
   })
 
   it('asks for the Export panel from its last button, lit while that panel is open (ticket 0652)', async () => {
@@ -293,10 +289,7 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     await menu.trigger('keydown', { key: 'ArrowRight' })
     expect(document.activeElement).toBe(projectButton.element)
     await projectButton.trigger('keydown', { key: 'ArrowRight' })
-    const frameButton = wrapper.get('[data-testid="strip-frame"]')
-    expect(document.activeElement).toBe(frameButton.element)
-    await frameButton.trigger('keydown', { key: 'ArrowRight' })
-    expect(document.activeElement).toBe(frameButton.element)
+    expect(document.activeElement).toBe(projectButton.element)
     wrapper.unmount()
   })
 
@@ -422,11 +415,11 @@ describe('CanvasStrip Language', () => {
 })
 
 describe("CanvasStrip in What's inside's demo editor (ticket 0797)", () => {
-  it('holds Menu, Project and Frame, its Demo tag, then Reference image, Undo and Redo, and a Brand that links nowhere (ticket 0841)', () => {
+  it('holds Menu and Project, its Demo tag, then Reference image, Undo and Redo, and a Brand that links nowhere (ticket 0841)', () => {
     const project = bareProject({ beads: {}, technique: 'loom' })
     const wrapper = mount(CanvasStrip, { props: { project, demo: true, referenceImage: 'none', rulers: true, zoomPercent: 100 } })
     const ids = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(ids.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-demo', 'strip-undo', 'strip-redo', 'strip-divider-history', 'strip-reference-image', 'strip-reference-image-input'])
+    expect(ids.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-demo', 'strip-undo', 'strip-redo', 'strip-divider-history', 'strip-reference-image', 'strip-reference-image-input'])
     expect(wrapper.get('[data-testid="canvas-brand"]').element.tagName).toBe('SPAN')
     expect(wrapper.get('[data-testid="strip-demo"]').text()).toBe(en.homepage.inside.demoTag)
     expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="strip-demo"]').exists()).toBe(false)
@@ -450,18 +443,5 @@ describe("CanvasStrip in What's inside's demo editor (ticket 0797)", () => {
     expect(expanded.get('[data-testid="strip-expand"]').text()).toBe('Collapse')
     const narrow = mount(CanvasStrip, { props: { project, demo: true, referenceImage: 'none' } })
     expect(narrow.find('[data-testid="strip-expand"]').exists()).toBe(false)
-  })
-})
-
-describe('CanvasStrip Frame button (ticket 0932)', () => {
-  const framedWith = (beads: Record<number, Record<number, string>>) =>
-    bareProject({ technique: 'loom', frame: { row: 0, column: 0, rows: 4, columns: 4, technique: 'loom', beads } })
-
-  it('says Beads needed’s total in its Tooltip, counted on the settled Project, and the plain line while nothing is painted', async () => {
-    const wrapper = mount(CanvasStrip, { props: { project: framedWith({}) } })
-    expect(wrapper.text()).toContain(en.tooltips.framePanel)
-    await wrapper.setProps({ settledProject: framedWith({ 1: { 1: '#ff0000', 2: '#00ff00' }, 2: { 1: '#ff0000' } }) })
-    expect(wrapper.text()).not.toContain(en.tooltips.framePanel)
-    expect(wrapper.text()).toMatch(/The Frame marks the part you export and weave\. Open Export, Beads needed \(3( · ≈ [^)]+)?\), the Frame’s size, Rotate and Remove\./)
   })
 })

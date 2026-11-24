@@ -1,3 +1,4 @@
+import { MAX_FRAMES } from '../domain/frameLimit'
 import { isFrameLayer, type FrameRef, type GridPosition, type Rotation } from '../domain/grid'
 import { beadRoundness, describeWeave, type Weave } from '../domain/weave'
 import type { VisiblePositions } from '../domain/weaveGeometry'
@@ -512,8 +513,8 @@ function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, 
  * Undefined for one too big to keep. The most recently drawn first out of `KEPT_DRAFTS`. */
 const keptDrafts = new Map<KeptLayer, { from: readonly unknown[]; draft: DraftImageOf | undefined }>()
 
-/** How many draft images are kept: the Canvas's, and each of four Frames' with its empty beads apart. */
-const KEPT_DRAFTS = 9
+/** How many draft images are kept: the Canvas's, and each Frame's with its empty beads apart. */
+const KEPT_DRAFTS = 1 + MAX_FRAMES * 2
 
 /** What a kept draft image is of: the Canvas, a Frame, or a Frame's empty beads laid over a reference image (ticket
  * 0790), by the Frame's id. */

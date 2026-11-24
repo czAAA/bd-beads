@@ -5,8 +5,9 @@ import { cdp } from 'vitest/browser'
 import { createProject } from '../../domain/createProject'
 import { mountAt } from '../../testUtils/browserFit'
 import { expectTouchScreen } from '../../testUtils/hitAreas'
+import { frameIdIn } from '../../testUtils/frameId'
 import { withLayers } from '../../testUtils/layerFields'
-import FramePanel from './FramePanel.vue'
+import FrameSizeSection from './FrameSizeSection.vue'
 
 const project = withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), {
   frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom' as const, beads: {} },
@@ -16,11 +17,11 @@ const EDGES = ['top', 'bottom', 'left', 'right'] as const
 // On a touch screen each half of an edge's − | + takes the presses on its own drawing: `touch-target` wide, its hit area
 // its own box, as tall as the row (ticket 0933). The taps are the browser's own touches (CDP) on this file's touch page:
 // switching touch emulation on and off in the shared page left the files after it with no key chips on CI (ticket 1143).
-describe('FramePanel edge steppers on a coarse pointer (ticket 0933)', () => {
+describe('FrameSizeSection edge steppers on a coarse pointer (ticket 0933)', () => {
   it('takes a tap at the centre and both quarters of each half, and at the top and bottom of its row, as that half’s step, for all four edges', async () => {
     expectTouchScreen()
     const steps: [string, number][] = []
-    const wide = defineComponent({ setup: () => () => h('div', { style: { width: '360px', '--panel-item-height': 'var(--panel-row-touch)' } }, [h(FramePanel, { project, onStep: (edge: string, by: number) => steps.push([edge, by]) })]) })
+    const wide = defineComponent({ setup: () => () => h('div', { style: { width: '360px', '--panel-item-height': 'var(--panel-row-touch)' } }, [h(FrameSizeSection, { project, frame: frameIdIn(project), onStep: (edge: string, by: number) => steps.push([edge, by]) })]) })
     const { root } = await mountAt(wide, {}, { locale: 'en', width: 390 })
     const page = getComputedStyle(document.documentElement)
     const touchTarget = parseFloat(page.getPropertyValue('--touch-target')) * parseFloat(page.fontSize)
@@ -32,7 +33,7 @@ describe('FramePanel edge steppers on a coarse pointer (ticket 0933)', () => {
         button.scrollIntoView({ block: 'center' })
         const drawn = button.getBoundingClientRect()
         if (drawn.width < touchTarget) wrong.push(`${edge} ${half} is ${drawn.width}px wide`)
-        const row = root.querySelector<HTMLElement>(`[data-testid="frame-panel-cell-${edge}"]`)!.getBoundingClientRect()
+        const row = root.querySelector<HTMLElement>(`[data-testid="frame-size-cell-${edge}"]`)!.getBoundingClientRect()
         const middle = drawn.top + drawn.height / 2
         // Across the half at its middle, and down the row at its centre: the row's top and bottom are the half's too.
         const taps = [...[0.25, 0.5, 0.75].map((share) => [drawn.left + drawn.width * share, middle]), [drawn.left + drawn.width / 2, row.top + 1], [drawn.left + drawn.width / 2, row.bottom - 1]]

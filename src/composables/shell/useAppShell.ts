@@ -42,7 +42,7 @@ import { provideTitleBlockFold } from '../canvas/useTitleBlockFold'
 import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { canvasOf, frameById, frameOf, lettersOn, projectNameOf, withStartBackground, firstFrameId, frameIdOf } from '../../domain/layerRecord'
+import { canvasOf, frameById, frameOf, lettersOn, projectNameOf, withStartBackground, frameIdOf } from '../../domain/layerRecord'
 import { frameShapeOf } from '../../domain/frameShape'
 import { withFrameTurnedTo } from '../../domain/framePlacement'
 import { twistStop } from '../../domain/frameSpacing'
@@ -71,7 +71,6 @@ import { useRemoveColorFlow } from '../palette/useRemoveColorFlow'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
 import { useRowInView } from '../canvas/useRowInView'
-import { useFrameBesidePanel } from '../canvas/useFrameBesidePanel'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
 import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
@@ -232,7 +231,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, carryBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, expandedFrame, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
+  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, carryBy, scrollBy, centreOn, bringIntoView, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, expandedFrame, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned, moved) => rotateCanvasFlow.onTwistCanvas(turned, moved),
@@ -791,10 +790,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Edit Frame: moving and resizing the Frame and stepping its edges, Fit to drawing and Remove Frame (tickets 233,
    * 417). */
-  /** The one panel open over the canvas (ticket 510): Menu, Project or the Frame panel. */
+  /** The one panel open over the canvas (ticket 510): Menu, Project or Export. */
   const openPanel = ref<OpenPanel | null>(null)
   const frameFlow = useFrameFlow({
-    openPanel,
     currentProject,
     edit,
     hold: editing.hold,
@@ -812,8 +810,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     },
   })
 
-  /** The Frame kept clear of the Frame panel while it is open (ticket 0971). */
-  const frameBesidePanel = useFrameBesidePanel({ currentProject, bringIntoView, putBack, panelOpen: () => frameFlow.barShown.value, area: areaOnScreen, areaZoom, viewSize: () => canvasViewport.value })
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0054). */
   const editFrame = frameFlow.toggleHandles
 
@@ -929,9 +925,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
     currentProject,
     messages,
     showToast,
-    setFrameTechnique: (technique) => onSetTechnique(firstFrameId(currentProject()), technique),
-    requestFrameBead: (beadId) => replaceBead.onRequestReplaceBead(firstFrameId(currentProject()), beadId),
-    openFrameSettings: frameFlow.openOnSettings,
+    setFrameTechnique: (technique, frame) => onSetTechnique(frame, technique),
+    requestFrameBead: (beadId, frame) => replaceBead.onRequestReplaceBead(frame, beadId),
+    openFrameSettings: frameFlow.openSettings,
   })
   const onSetTechnique = (layer: Layer, technique: Technique) => frameStays.afterChange('technique', () => frameFlow.setLayerTechnique(layer, technique))
   const onConfirmReplaceBead = () => frameStays.afterChange('bead', replaceBead.onConfirmReplaceBead)
@@ -972,7 +968,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     libraryIds,
     onFileSaved: sinceFile.fileSaved,
     onFileReached: storageAsk.onFileReached,
-    exportFrame: () => overlays.exportFrame.value,
+    exportFrame: () => overlays.exportedFrame.value,
   })
   // The Palette's letters (ticket 1092): its Letters switch is the Canvas's, saved as the Frame's is.
   providePaletteLetters({
@@ -1055,10 +1051,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
   if (openingAddress.project && !safeStart.held) savedProjectConfirms.onRequestSwitch(openingAddress.project)
   // Make your first Project (tickets 0866, 0945): with none in the library it is made in peyote on Delica 11/0 and opens
   // on the Canvas, no panel open; with some, the editor opens as usual.
-  // Start from a ready design (ticket 0953) makes it the same way and opens the Frame panel on its Starter gallery.
+  // Start from a ready design (ticket 0953) makes it the same way and opens the Project panel on its Starter gallery.
   if (openingAddress.firstProject && projects.value.length === 0 && sealed.value.length === 0) {
     onCreateFirstProject()
-    if (openingAddress.starterGallery) frameFlow.openOnStarters()
+    if (openingAddress.starterGallery) overlays.openProjectOnStarters()
   }
   // The Homepage Menu's New Project and Convert image (ticket 1113): the editor opens on the form, or on the page.
   if (openingAddress.newProject) overlays.openMenuOnForm()
@@ -1137,7 +1133,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onToggleReferenceImage: referenceImage.toggleShown,
     onToggleRowHighlight: toggleRowHighlight,
     onEditFrame: editFrame,
-    onToggleFramePanel: frameFlow.toggleBar,
     onCopy,
     pasteAtPointer,
     onRotate: rotateFlow.onRotate,
@@ -1177,7 +1172,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     resetSelection()
     deleteAll.onCancelDeleteAll()
     frameFlow.cancelRemove()
-    frameFlow.cancelReplace()
     replaceBead.onCancelReplaceBead()
     pickingColor.value = false
   })
@@ -1369,7 +1363,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onFrameSchema: frameFlow.setTo,
       settingFrame: frameFlow.settingFrame,
       settingFrames: frameFlow.settingFrames,
-      framePanelOpen: frameFlow.barOpen,
       // What the canvas shows in place of the open Project: a Piece held by its move grip where the release will leave
       // it (ticket 1013), else the Frame's draft.
       // A Frame under a two-finger twist is shown at the twist's angle, short of another's margin (tickets 1190, 1218).
@@ -1380,7 +1373,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       }),
       // The Piece held by its move grip, moved as a bitmap over that Project with it lifted out (ticket 1151).
       carriedPiece,
-      onToggleFramePanel: frameFlow.toggleBar,
       onEditFrame: editFrame,
       expandedFrame,
       onFrameKey,
@@ -1395,6 +1387,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // The margin sheet's tools and title block (ticket 0657): the flows the Frame and Project panels ask too
       onRotateFrame: rotateFrameFlow.onRotateFrame,
       onRenameFrame: frameFlow.rename,
+      // The Frame settings popover and the Margin color popover's Background (ticket 1222)
+      framePopoverAsked: frameFlow.popoverAsked,
+      onFramePopoverOpened: () => (frameFlow.popoverAsked.value = undefined),
+      onStepFrameEdge: frameFlow.stepEdge,
+      onResizeFrame: frameFlow.resizeTo,
+      onSetFrameSettings: frameFlow.setSettings,
+      onSetFrameBackground: backgroundFlow.setBackground,
+      onSettleFrameSettings: editing.settle,
       onSetFrameTechnique: frameFlow.setTechnique,
       onSetFrameSetting: (id: string, value: number, frame: FrameId) => frameFlow.setWeaveSetting(frame, id, value),
       onRequestFrameBead: (beadId: string, frame: FrameId) => replaceBead.onRequestReplaceBead(frame, beadId),
@@ -1494,36 +1494,30 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // The Save row's value (ticket 0859): the Linked file, else the last file saved of the open Project, by any route.
       lastFileName: computed(() => exportFlow.linkedFileName.value ?? sinceFile.current.value.fileName),
       onSaveMakerName: exportFlow.onSaveMakerName,
-      // The Frame panel
-      settledProject,
-      framePanelShown: frameFlow.barShown,
-      frameOpensOnStarters: frameFlow.opensOnStarters,
-      /** The Frame panel opens on its settings (ticket 0935): the Frame stays toast's Open Frame. */
-      frameOpensOnSettings: frameFlow.opensOnSettings,
-      onCloseFramePanel: frameFlow.closeBar,
-      onFramePanelPlaced: frameBesidePanel.panelPlaced,
-      onStepFrameEdge: frameFlow.stepEdge,
-      onResizeFrame: frameFlow.resizeTo,
-      onRotateFrame: rotateFrameFlow.onRotateFrame,
+      // The Project panel's Frames section (ticket 1222)
+      projectOpensOnStarters: overlays.projectOpensOnStarters,
       onRemoveFrame: frameFlow.remove,
-      onRenameFrame: frameFlow.rename,
+      onBringFrameIntoView: frameFlow.bringIntoView,
       onFitFrame: frameFlow.fit,
       onSelectFrame,
       onSelectPieceFrame,
-      onResetProgress: rowOps.onResetProgress,
-      onSetFrameSettings: frameFlow.setSettings,
       onPlaceFrameFromStarter: frameFlow.placeFromStarter,
-      onFrameKey,
+      /** Export this Frame (ticket 1222): the Export panel from the strip's button, the Frame picked in its dropdown. */
+      onExportFrame: (frame: FrameId) => {
+        overlays.showExport('strip-export')
+        overlays.exportPick.value = frame
+      },
       exporting: exportFlow.exporting,
       onExportPng: exportFlow.onExportPng,
       onExportPdf: exportFlow.onExportPdf,
-      // The Frame panel's and the title block's switch is the Frame's own (ticket 1092).
-      onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, firstFrameId(currentProject())),
       // The row the Export panel opens on (ticket 0843)
       exportChoice: overlays.exportChoice,
       // What the Export panel exports (ticket 1210): the Frame, or the Selection the bar's Export button names.
       exportScope: overlays.exportScope,
       exportFrame: overlays.exportFrame,
+      /** The Frame the panel's rows are about: the one picked, else its sheet's, else the Last edited (ticket 1222). */
+      exportedFrame: overlays.exportedFrame,
+      onPickExportFrame: (frame: FrameId) => (overlays.exportPick.value = frame),
       exportSelection: selection,
     },
     /** The dialogs (AppDialogs): which one the registry shows, what each asks about, and its answers. */
@@ -1558,8 +1552,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onStartOverTechniqueChange: frameFlow.startOverTechniqueChange,
       onKeepRowsTechniqueChange: frameFlow.keepRowsTechniqueChange,
       onCancelTechniqueChange: frameFlow.cancelTechniqueChange,
-      onConfirmReplaceFrame: frameFlow.confirmReplace,
-      onCancelReplaceFrame: frameFlow.cancelReplace,
       pendingColorRemovalHex: removeColor.pendingColorRemovalHex,
       removeColorMessage: removeColor.removeColorMessage,
       onConfirmRemoveAddedColor: removeColor.onConfirmRemoveAddedColor,

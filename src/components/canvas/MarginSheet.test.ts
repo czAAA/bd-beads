@@ -781,3 +781,67 @@ describe('Expand the Frame (MarginSheet card, ticket 1169)', () => {
     expect(wrapper.emitted('slim')).toHaveLength(count)
   })
 })
+
+describe('the Frame settings popover and the Margin color popover\'s Background (MarginSheet card, ticket 1222)', () => {
+  const named = () => withLayer(twoFrames(), SECOND, { name: 'Earring' })
+  const open = async (wrapper: ReturnType<typeof mountSheet>) => {
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+  }
+
+  it('opens from the ··· button with its head, every tool, the size and Beads needed, of its own Frame', async () => {
+    const wrapper = mountSheet({ project: named(), frame: SECOND })
+    await open(wrapper)
+    const popover = control(wrapper, 'frame-popover')
+    expect(popover.attributes('data-frame')).toBe(SECOND)
+    expect(control(wrapper, 'frame-popover-name').text()).toBe('Earring')
+    expect(control(wrapper, 'frame-popover-meta').text()).toBe('Loom · 4 × 6')
+    expect(popover.findAll('[role^="menuitem"]').map((item) => item.text())).toEqual(ALL_TOOLS)
+    expect(control(wrapper, 'frame-size-width').element).toHaveProperty('value', '4')
+    expect(wrapper.find('[data-testid="bead-quantities"]').exists()).toBe(true)
+  })
+
+  it('hands a typed size and an edge step to its own Frame, and a stepper settles once it closes', async () => {
+    const wrapper = mountSheet({ project: named(), frame: SECOND })
+    await open(wrapper)
+    await control(wrapper, 'frame-size-width').setValue('8')
+    await control(wrapper, 'frame-size-width').trigger('keydown', { key: 'Enter' })
+    await control(wrapper, 'frame-edge-top-out').trigger('click')
+    expect(wrapper.emitted('resize')).toEqual([[8, 6]])
+    expect(wrapper.emitted('step')).toEqual([['top', 1]])
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+    expect(wrapper.emitted('settle-settings')).toHaveLength(1)
+  })
+
+  it('names its edges as the Frame lies on screen: a turned Frame\'s Top is the top as seen', async () => {
+    const turned = rotateFrame(named(), undefined, SECOND)!
+    const wrapper = mountSheet({ project: turned, frame: SECOND })
+    await open(wrapper)
+    expect((control(wrapper, 'frame-size-width').element as HTMLInputElement).value).toBe('6')
+    await control(wrapper, 'frame-edge-top-out').trigger('click')
+    expect(wrapper.emitted('step')).toEqual([['top', 1]])
+  })
+
+  it('opens where asked and says so once', async () => {
+    const wrapper = mountSheet({ project: named(), frame: SECOND })
+    await wrapper.setProps({ popoverAsked: true })
+    await nextTick()
+    await nextTick()
+    expect(wrapper.find('[data-testid="frame-popover"]').exists()).toBe(true)
+    expect(wrapper.emitted('popover-opened')).toHaveLength(1)
+  })
+
+  it('sets the Frame\'s Background as the second row of the Margin color popover, and shows or hides the title block', async () => {
+    const wrapper = mountSheet({ project: named(), frame: SECOND })
+    await control(wrapper, 'margin-color').trigger('click')
+    await nextTick()
+    const popover = document.querySelector('[data-testid="margin-color-popover"]')!
+    expect(popover.querySelector('[data-testid="frame-background-section"]')).not.toBeNull()
+    popover.querySelector<HTMLElement>('[data-testid="frame-background-section"] [data-testid="background-color-pebble"]')!.click()
+    expect(wrapper.emitted('set-background')).toEqual([[3]])
+    popover.querySelector<HTMLElement>('[data-testid="margin-title-block-switch"]')!.click()
+    await nextTick()
+    expect(wrapper.find('[data-testid="margin-title"]').exists()).toBe(false)
+  })
+})

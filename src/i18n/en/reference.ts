@@ -57,8 +57,7 @@ export const reference: ReferenceTranslations = {
     },
     frameAround: {
       name: 'Set Frame around the picture',
-      body: 'A {size} Frame where the picture lies. Replaces the Frame you have.',
-      bodyNew: 'A {size} Frame where the picture lies.',
+      body: 'A {size} Frame where the picture lies.',
       tag: 'new Frame · {size}',
     },
     convert: {

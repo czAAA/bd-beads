@@ -1,4 +1,4 @@
-import { firstFrameId } from '../../domain/layerRecord'
+import { lastEditedFrameId } from '../../domain/layerRecord'
 import { watch, type Ref } from 'vue'
 import type { Project } from '../../domain/project'
 import { currentPassRegion } from '../../rendering/passRegion'
@@ -19,7 +19,7 @@ export interface RowInViewDeps {
 export function useRowInView(deps: RowInViewDeps) {
   function showRow(how: { jump?: boolean } = {}): void {
     const project = deps.currentProject()
-    if (project) deps.bringIntoView((surface) => currentPassRegion(project, surface, firstFrameId(project)), how)
+    if (project) deps.bringIntoView((surface) => currentPassRegion(project, surface, lastEditedFrameId(project)), how)
   }
 
   watch(

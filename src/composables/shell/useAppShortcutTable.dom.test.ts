@@ -29,7 +29,6 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onToggleRulers: vi.fn(),
     onToggleReferenceImage: vi.fn(),
     onEditFrame: vi.fn(),
-    onToggleFramePanel: vi.fn(),
     onCopy: vi.fn(),
     onCut: vi.fn(),
     onPasteMode: vi.fn(),

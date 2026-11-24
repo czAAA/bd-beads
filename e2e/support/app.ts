@@ -67,9 +67,9 @@ export async function settle(page: Page): Promise<void> {
 }
 
 /** One of the Canvas strip's panels (CanvasStrip card): Menu or Project, a dropdown. */
-type StripPanelButton = 'strip-project' | 'strip-menu' | 'strip-frame'
+type StripPanelButton = 'strip-project' | 'strip-menu' | 'strip-export'
 
-/** Opens Menu, Project or Frame (CanvasStrip card), closing whatever is open first — the strip buttons toggle, so clicking one
+/** Opens Menu, Project or Export (CanvasStrip card), closing whatever is open first — the strip buttons toggle, so clicking one
  * while its panel is open would close it instead. */
 export async function openStripPanel(page: Page, dock: StripPanelButton): Promise<void> {
   await closePanel(page)
@@ -77,9 +77,9 @@ export async function openStripPanel(page: Page, dock: StripPanelButton): Promis
   await settle(page)
 }
 
-/** Closes whatever is open: Menu or Project with the strip button that lit it; does nothing with none open. */
+/** Closes whatever is open: Menu, Project or Export with the strip button that lit it; does nothing with none open. */
 export async function closePanel(page: Page): Promise<void> {
-  const lit = page.locator('[data-testid="strip-menu"][aria-expanded="true"], [data-testid="strip-project"][aria-expanded="true"], [data-testid="strip-frame"][aria-expanded="true"]')
+  const lit = page.locator('[data-testid="strip-menu"][aria-expanded="true"], [data-testid="strip-project"][aria-expanded="true"], [data-testid="strip-export"][aria-expanded="true"]')
   if ((await lit.count()) > 0) {
     await lit.first().click()
     await settle(page)

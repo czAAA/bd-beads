@@ -5,6 +5,7 @@ import type { ReferencePlace } from '../../domain/referenceImage'
 import { addedColorId } from '../../domain/palette'
 import { watch } from 'vue'
 import { TECHNIQUES } from '../../domain/weave'
+import { firstFrameId } from '../../domain/layerRecord'
 import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_TOOLBOX_BEADS, DEMO_STARTER, DEMO_TECHNIQUE, PEACOCK_COLORS, demoSwatchId, onCanvas, type DemoColor, type DemoFrame } from './demoProjects'
 import { balloonFile } from './balloon'
 import { PEACOCK_CUFF } from './peacock'
@@ -159,11 +160,18 @@ function toolboxColor(hand: Hand, color: DemoColor) {
   return () => [...hand.root.querySelectorAll('[data-radial-item^="recent-"]')].find((item) => item.getAttribute('aria-label')?.toLowerCase().includes(DEMO_COLORS[color]))
 }
 
-/** Opens the Frame panel, if it isn't open, and closes it after `work`. */
-async function inFramePanel(hand: Hand, work: () => Promise<void>): Promise<void> {
-  if (!hand.root.querySelector('[data-testid="frame-panel"]')) await hand.press('strip-frame')
+/** Opens the Frame's settings popover from its sheet's ··· button, if it isn't open, and closes it after `work`. */
+async function inFramePopover(hand: Hand, work: () => Promise<void>): Promise<void> {
+  if (!hand.root.querySelector('[data-testid="frame-popover"]')) await hand.press('margin-frame-tools')
   await work()
-  if (hand.root.querySelector('[data-testid="frame-panel"]')) await hand.press('strip-frame')
+  if (hand.root.querySelector('[data-testid="frame-popover"]')) await hand.press('margin-frame-tools')
+}
+
+/** Remove Frame from the Frame's settings popover, answered Remove: a Frame is removed, then another added (ticket 1222). */
+async function removeFrame(hand: Hand): Promise<void> {
+  await hand.press('margin-frame-tools')
+  await hand.press('margin-frame-tools-remove')
+  await hand.press('confirm-modal-confirm')
 }
 
 /** A picker's own button: the one that opens its list. */
@@ -190,14 +198,16 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await pickColor(hand, 'E')
     for (const press of ringGroundFills(DEMO_FIRST_STRIP)) await hand.stroke(beadsOn(DEMO_FRAME, [press]))
   },
-  /** The Frame's Technique, each of the others in turn and back to the ring's peyote, each held a moment with the panel
-   * shut so the beads show how they sit. */
+  /** The Frame's Technique from its title block's pencil, each of the others in turn and back to the ring's peyote, each
+   * held a moment so the beads show how they sit. */
   async techniques(hand) {
     for (const technique of [...TECHNIQUES.filter((each) => each !== DEMO_TECHNIQUE), DEMO_TECHNIQUE]) {
-      await inFramePanel(hand, async () => {
-        await hand.press(pickerButton(hand, 'frame-technique'))
+      // The pencil is only on the wider forms of the title block; where a longer Technique's name has stepped it down to
+      // the compact one, the change is made as the pencil would make it.
+      if (hand.root.querySelector('[data-testid="margin-technique-picker"]')) {
+        await hand.press(pickerButton(hand, 'margin-technique-picker'))
         await hand.press(techniqueOption(hand, technique))
-      })
+      } else hand.canvas.onSetFrameTechnique(technique, firstFrameId(hand.canvas.activeProject.value))
       await hand.wait(HOLD.technique)
     }
   },
@@ -257,23 +267,24 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.press('convert-close')
     if (await present(hand, 'leave-converter-modal')) await hand.press('confirm-modal-confirm')
   },
-  /** The Mirror closed, then Replace Frame from the Starter gallery: Rings, Chevrons, its setup looked through (the
-   * ring's size inside), Replace. A ring the same size as the band, it lands where the band was (after Convert image
-   * since 0949). */
+  /** The Mirror closed, the band's Frame removed (a Frame is removed, then added: ticket 1222), then Frame from starter
+   * in the Project panel: Rings, Chevrons, its setup looked through (the ring's size inside), Add Frame. A ring the same
+   * size as the band, it lands where the band was (after Convert image since 0949). */
   async starters(hand) {
     await closeMirror(hand)
-    await hand.press('strip-frame')
-    await hand.press('frame-replace-from-starter')
+    await removeFrame(hand)
+    await hand.press('strip-project')
+    await hand.press('frame-from-starter')
     await hand.press('starter-category-rings')
     await hand.press(`starter-card-${DEMO_STARTER}`)
     await hand.scroll(() => hand.root.querySelector('[data-testid="panel-body"]'), 240, HOLD.starterScroll)
     await hand.press('create-starter-project')
-    if (await present(hand, 'replace-frame-modal')) await hand.press('confirm-modal-confirm')
   },
-  /** A cuff's Selection round the Starter's ring: the ring deleted, the cuff's Frame set from it (nothing is asked: it
-   * holds nothing now), a picture of the feather landed smaller than the Frame and grown to fit it, then the start of an
-   * eye's green ring traced by hand and the rest of the feather at once (ticket 0949). */
+  /** The Starter's ring Frame removed, a cuff's Selection round where it was: its beads deleted, the cuff's Frame made
+   * from it (nothing is asked: it holds nothing now), a picture of the feather landed smaller than the Frame and grown to
+   * fit it, then the start of an eye's green ring traced by hand and the rest of the feather at once (ticket 0949). */
   async reference(hand) {
+    await removeFrame(hand)
     await hand.press('pill-tool-select')
     await hand.drag(...cornersOf(DEMO_CUFF))
     await pressSelectionBar(hand, 'clear', () => hand.canvas.onClearSelection())
@@ -299,10 +310,8 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   },
   /** Letters: each color's letter on its beads. */
   async letters(hand) {
-    await inFramePanel(hand, async () => {
-      await hand.press('frame-letters')
-      await hand.wait(HOLD.letters)
-    })
+    await hand.press('margin-letters')
+    await hand.wait(HOLD.letters)
   },
   /** Row done for the traced cuff's first rows, the first five slower, then a rest: too many to show them all. */
   async rowProgress(hand) {
@@ -314,17 +323,18 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     }
     await hand.wait(HOLD.rowProgressRest)
   },
-  /** The Frame panel opened on Beads needed. */
+  /** The Frame's settings popover opened on Beads needed. */
   async beadsNeeded(hand) {
-    await inFramePanel(hand, async () => {
+    await inFramePopover(hand, async () => {
       await hand.hover('bead-quantities', HOLD.beadsNeeded, 'start')
     })
   },
-  /** The Frame panel's Export: the printable chart, shown and not downloaded. */
+  /** The Project panel's Export row unfolded: the printable chart, shown and not downloaded. */
   async exports(hand) {
-    await inFramePanel(hand, async () => {
-      await hand.hover('export-pdf', HOLD.exports)
-    })
+    await hand.press('strip-project')
+    await hand.press('project-export')
+    await hand.hover('export-pdf', HOLD.exports)
+    await hand.press('strip-project')
   },
   /** Saved Projects in the Menu: the demo's own three. */
   async savedProjects(hand) {

@@ -57,8 +57,7 @@ export const reference: ReferenceTranslations = {
     },
     frameAround: {
       name: 'Marco alrededor de la imagen',
-      body: 'Un marco de {size} donde está la imagen. Sustituye tu marco actual.',
-      bodyNew: 'Un marco de {size} donde está la imagen.',
+      body: 'Un marco de {size} donde está la imagen.',
       tag: 'marco nuevo · {size}',
     },
     convert: {

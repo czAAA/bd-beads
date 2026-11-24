@@ -8,7 +8,6 @@ type DialogId =
   | 'remove-line'
   | 'rotate-frame'
   | 'technique-change'
-  | 'replace-frame'
   | 'remove-color'
   | 'remove-section'
   | 'replace-bead'

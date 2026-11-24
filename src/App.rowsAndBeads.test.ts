@@ -5,7 +5,8 @@ import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import { pressBead, rowProgressView } from './testUtils/beads'
 import { loadProjects } from './services/libraryStore'
 import { mountWithProject } from './testUtils/seedProject'
-import { deleteAll, pickColor, panelRead } from './testUtils/pill'
+import { flushPromises } from '@vue/test-utils'
+import { deleteAll, pickColor } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
 import { ru } from './i18n/ru'
 import { defaultColorOf } from './testUtils/defaultColors'
@@ -109,7 +110,7 @@ describe('App delete all', () => {
 })
 
 describe('App bead quantities', () => {
-  it('counts the painted beads of each color in the Frame panel', async () => {
+  it('counts the painted beads of each color in the Frame\'s settings popover (tickets 0932, 1222)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickColor(wrapper, defaultColorOf('red').id)
     // Each press is released: the counts wait for a stroke to end (ticket 0680).
@@ -118,7 +119,15 @@ describe('App bead quantities', () => {
     await pickColor(wrapper, defaultColorOf('blue').id)
     await click(wrapper, 2)
 
-    expect((await panelRead(wrapper, `quantity-count-${defaultColorOf('red').id}`, 'strip-frame')).text).toBe('2')
-    expect((await panelRead(wrapper, `quantity-count-${defaultColorOf('blue').id}`, 'strip-frame')).text).toBe('1')
+    const counts = async () => {
+      await wrapper.get('[data-testid="margin-frame-tools"]').trigger('click')
+      await flushPromises()
+      const read = (id: string) => wrapper.find(`[data-testid="quantity-count-${id}"]`).text()
+      const found = [read(defaultColorOf('red').id), read(defaultColorOf('blue').id)]
+      await wrapper.get('[data-testid="margin-frame-tools"]').trigger('click')
+      await flushPromises()
+      return found
+    }
+    expect(await counts()).toEqual(['2', '1'])
   })
 })

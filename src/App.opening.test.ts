@@ -177,7 +177,7 @@ describe('opening the editor (ticket 0716)', () => {
     expect(location.search).toBe('')
   })
 
-  it('makes the first Project at Start from a ready design\'s address, open on the Frame panel\'s Starter gallery; Escape leaves it on the Canvas (ticket 0953)', async () => {
+  it('makes the first Project at Start from a ready design\'s address, open on the Project panel\'s Starter gallery; Escape leaves it on the Canvas (ticket 0953)', async () => {
     storeLibrary([])
     history.replaceState(null, '', firstStarterAddress('/'))
 
@@ -185,7 +185,7 @@ describe('opening the editor (ticket 0716)', () => {
     await flushPromises()
 
     expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Project 1')
-    expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-expanded')).toBe('true')
     expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe('Starter')
     expect(wrapper.find('[data-testid="starter-category-shapes"]').exists()).toBe(true)
     expect(location.search).toBe('')

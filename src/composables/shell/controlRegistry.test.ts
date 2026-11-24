@@ -14,6 +14,11 @@ import { CROP_HANDLES } from '../../domain/convertSize'
 import { CONTROLS, chordMatches, controlAction } from './controlRegistry'
 import { bareProject } from '../../testUtils/layerFields'
 import { turnCanvasTo } from '../../domain/rotate'
+import type { Project } from '../../domain/project'
+import { withFrameSheet } from '../../domain/frameSheet'
+import { frameIdOf } from '../../domain/layerRecord'
+import { MAX_FRAMES } from '../../domain/frameLimit'
+import { framesFullReason } from '../../i18n/framesFullReason'
 
 const LANGUAGES: Record<Locale, Translations> = { en, ru, uk, be, zh, es, pl }
 
@@ -116,6 +121,22 @@ describe('the control registry', () => {
     expect(remove.disabledBody?.(en, deps(project(false, 0)))).toBe(en.tooltips.noFrameToRemove)
     // A bin, as every other remove (ticket 475).
     expect(remove.icon).toBe('delete')
+  })
+
+  it('disables every way of making a Frame at the most Frames, each with the reason in every language (spec 1214, ticket 1222)', () => {
+    let full: Project = bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })
+    for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { row: made * 30, column: 0, rows: 4, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdOf({ id: `more-${made}` }) })
+    const deps = (activeProject: unknown) => ({ activeProject: () => activeProject, hasBeads: () => true }) as never
+    for (const id of ['add-frame-from-starter', 'frame-from-selection', 'frame-schema', 'fit-to-drawing']) {
+      const control = CONTROLS.find((each) => each.id === id)!
+      expect(control.enabled?.(deps(full)), id).toBe(false)
+      // With no page to name the language it is the English words in whichever language's strings, as `en` here: each
+      // language's own forms are `framesFullReason`'s, with the language given.
+      expect(control.disabledBody?.(en, deps(full)), id).toBe('A Project holds up to 4 Frames.')
+      for (const [locale, t] of Object.entries(LANGUAGES)) expect(framesFullReason(t, locale as Locale), `${id} ${locale}`).toMatch(/4/)
+    }
+    const open = bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })
+    expect(CONTROLS.find((each) => each.id === 'add-frame-from-starter')!.enabled?.(deps(open))).toBe(true)
   })
 
   it('says Remove row/column waits for the layers to lie alike, while the Frame does not (ticket 1188)', () => {

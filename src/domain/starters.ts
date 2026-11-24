@@ -1,6 +1,7 @@
 import { findBead, type Bead } from './beads'
 import { forEachBead, type BeadMap } from './canvas'
-import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
+import { frameChanged, type FrameChange, type FrameChangeResult } from './changeFrame'
+import { landedClear } from './frameLanding'
 import { laidSize } from './frameOrientation'
 import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
 import type { GridDimensions, GridPosition, FrameRef } from './grid'
@@ -385,17 +386,19 @@ function chosenBeads(starter: Starter, choice: StarterChoice): BeadMap {
   return starter.measure === 'frame' || runsDown(weaveIn(starter, choice)) ? starterDesign(starter) : designAlongRows(starter)
 }
 
-/** Add Frame from Starter and Replace Frame (tickets 0596, 0633, 0671): the Starter's Frame round a Canvas position, in
- * place of any Frame, in the setup's Layer settings (ADR 0079), with its design or empty, colours as painted; the Canvas
- * as it is, the Frame turned by what it lacks, so a Ring or Band lies across (0832) and a shape stands as charted (0872). */
+/** Add Frame from Starter (tickets 0596, 0671, 1222): the Starter's Frame as a new Frame round a Canvas position, in the
+ * setup's Layer settings, with its design or empty, turned as it is seen (0832, 0872). Where that meets another Frame's
+ * margin it goes to the nearest place clear of them (spec 1214). */
 export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition, ref: FrameRef): FrameChangeResult {
   const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
   const placement = starterPlacement(project, starter, choice, centre, bead ?? resolveProjectBead(project)!)
-  const placed = changeFrame(project, placement, ref)
-  if (placed.kind !== 'changed' || (!bead && choice.background === undefined)) return placed
-  // Laid again once it has its Bead, a replaced Frame keeping it, so it lies round the centre at that Bead's size.
+  const placed = frameChanged(project, placement, ref)
+  if (placed.kind !== 'changed') return placed
+  if (!bead && choice.background === undefined) return { kind: 'changed', project: landedClear(placed.project, ref) }
+  // Laid again once it has its Bead, so it lies round the centre at that Bead's size.
   const dressed = withLayer(placed.project, ref, { bead })
-  return changeFrame(choice.background === undefined ? dressed : withBackground(dressed, ref, choice.background), placement, ref)
+  const again = frameChanged(choice.background === undefined ? dressed : withBackground(dressed, ref, choice.background), placement, ref)
+  return again.kind === 'changed' ? { kind: 'changed', project: landedClear(again.project, ref) } : again
 }
 
 /** The Frame change that puts a Starter's Frame in place round a Canvas position, a Ring's or Band's length in `bead`

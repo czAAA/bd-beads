@@ -33,6 +33,9 @@ const props = withDefaults(
     align?: 'start' | 'end'
     /** The popup is a small dialog, not a list of items. */
     popover?: boolean
+    /** A popover's own width, in place of the standard one (the Frame settings popover, ticket 1222): it then scrolls
+     * inside, at most the screen's height less 150px. */
+    popoverWidth?: string
     disabled?: boolean
     disabledBody?: string
   }>(),
@@ -45,6 +48,7 @@ const props = withDefaults(
     size: 'md',
     align: 'start',
     popover: false,
+    popoverWidth: undefined,
     disabled: undefined,
     disabledBody: undefined,
   },
@@ -60,7 +64,17 @@ const rootEl = ref<HTMLElement>()
 const listEl = ref<HTMLElement>()
 const buttonEl = ref<HTMLElement>()
 const listId = useId()
-const anchored = useAnchoredPosition(buttonEl, listEl, () => props.align)
+// A popover with a width of its own is held inside the window's bottom edge, scrolling inside past it.
+const anchored = useAnchoredPosition(buttonEl, listEl, () => props.align, () => 'below', () => (props.popoverWidth ? window.innerHeight : undefined))
+
+/** A popover with a width of its own is as tall as the room below it allows (a boxed shell's box too), at most the
+ * screen's height less 150px, and scrolls inside past that. */
+const listStyle = computed(() => {
+  if (!props.popoverWidth) return anchored.style.value
+  const screen = 'calc(100dvh - 150px)'
+  const room = anchored.roomBelow.value
+  return { ...anchored.style.value, width: props.popoverWidth, maxHeight: room === undefined ? screen : `min(${screen}, ${room}px)`, overflowY: 'auto' }
+})
 
 const iconVariant = computed(() => props.variant as IconVariant)
 const buttonVariant = computed(() => (props.variant ?? 'secondary') as ButtonVariant)
@@ -98,9 +112,17 @@ function close(returnFocus = true) {
 watch(showsSheet, () => close(false))
 
 provide(MENU_CLOSE, () => close())
-defineExpose({ close })
+defineExpose({ close, show })
 // A sheet is its own layer; its content may sit outside this button's element.
-useOverlayLayer({ isOpen: () => open.value && !showsSheet.value, root: () => rootEl.value, close: () => close(), onOutsidePress: () => close(false) })
+useOverlayLayer({ isOpen: () => open.value && !showsSheet.value, root: () => rootEl.value, close: onEscape, onOutsidePress: () => close(false) })
+
+/** Escape first ends an edit in progress, as in a panel: a field marked `data-handles-escape` hears `panel-escape`; with
+ * none, Escape closes the popup. */
+function onEscape() {
+  const editing = props.popover ? document.activeElement?.closest('[data-handles-escape]') : null
+  if (editing && listEl.value?.contains(editing)) editing.dispatchEvent(new CustomEvent('panel-escape'))
+  else close()
+}
 
 function onButtonClick(event: MouseEvent) {
   if (props.disabled) return
@@ -201,7 +223,7 @@ function onListKeydown(event: KeyboardEvent) {
         class="menu-button__list anchored-popup"
         :class="[`menu-button__list--${align}`, { 'menu-button__list--popover': popover }]"
         popover="manual"
-        :style="anchored.style.value"
+        :style="listStyle"
         :role="popup"
         :aria-label="label"
         @keydown="onListKeydown"

@@ -83,7 +83,7 @@ test('a Selection over a Custom frame', async ({ page }) => {
 
 test('the PNG export of a Custom frame draws the whole shape', async ({ page }) => {
   await openApp(page, [customFramed('kaleidocycle', SIZES.kaleidocycle)])
-  await openStripPanel(page, 'strip-frame')
+  await openStripPanel(page, 'strip-export')
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('export-png').click()])
   const png = PNG.sync.read(await readFile((await download.path())!))
   // The Cover page, title block and board (ticket 1141), a quarter of its size: the footer (the export time) left out.

@@ -3,7 +3,7 @@ import { convertPicture, openApp, openNewProjectForm, setConvertWidth, settle } 
 import { fixturePicture } from '../support/picture'
 
 /** Nothing sits under the Tool pill and the Progress bar (ticket 0850): after Create Project, and on every Fit, the
- * converted Frame's Margin sheet lies whole above both bars; the Frame panel ends above the Progress bar, and one press on
+ * converted Frame's Margin sheet lies whole above both bars; the Project panel ends above the Progress bar, and one press on
  * Row done marks the row while it is open. On the UX audit's devices: an iPad 13″ in landscape and a MacBook Air. */
 const DEVICES = [
   ['iPad', { width: 1366, height: 1024 }, true],
@@ -28,7 +28,7 @@ async function expectSheetClear(page: Page, when: string) {
 }
 
 for (const [name, viewport, hasTouch] of DEVICES) {
-  test(`a converted Frame is fitted clear of the bars, and the Frame panel ends above Row done, on the ${name}`, async ({ browser }) => {
+  test(`a converted Frame is fitted clear of the bars, and the Project panel ends above Row done, on the ${name}`, async ({ browser }) => {
     const context = await browser.newContext({ viewport, hasTouch, colorScheme: 'dark', reducedMotion: 'reduce' })
     const page = await context.newPage()
     await openApp(page, [])
@@ -46,7 +46,7 @@ for (const [name, viewport, hasTouch] of DEVICES) {
     await settle(page)
     await expectSheetClear(page, 'after Fit')
 
-    await page.getByTestId('strip-frame').click()
+    await page.getByTestId('strip-project').click()
     await settle(page)
     const panel = await box(page, 'panel-dropdown')
     const bar = await box(page, 'progress-bar')

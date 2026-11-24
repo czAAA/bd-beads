@@ -62,6 +62,32 @@ describe('MenuButton', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
   })
 
+  it('gives a popover its own width and scrolls it inside the screen (ticket 1222)', async () => {
+    const wrapper = mountMenu({ popover: true, popoverWidth: '21rem' })
+    await wrapper.find('[aria-haspopup="dialog"]').trigger('click')
+    const style = wrapper.get<HTMLElement>('[role="dialog"]').element.style
+    expect([style.width, style.maxHeight, style.overflowY]).toEqual(['21rem', 'calc(100dvh - 150px)', 'auto'])
+  })
+
+  it('hands a field being edited in a popover its Escape first, as a panel does, and closes on the next (ticket 1222)', async () => {
+    const wrapper = mountMenu({ popover: true })
+    await wrapper.find('[aria-haspopup="dialog"]').trigger('click')
+    const field = document.createElement('input')
+    field.dataset.handlesEscape = 'true'
+    let heard = 0
+    field.addEventListener('panel-escape', () => (heard += 1))
+    wrapper.get('[role="dialog"]').element.append(field)
+    field.focus()
+    key(field, 'Escape')
+    await wrapper.vm.$nextTick()
+    expect(heard).toBe(1)
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+    field.remove()
+    key(document.activeElement ?? document.body, 'Escape')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+  })
+
   it('closes on Escape and hands focus back to the button', async () => {
     const wrapper = mountMenu()
     await wrapper.find('[aria-haspopup]').trigger('keydown', { key: 'ArrowDown' })

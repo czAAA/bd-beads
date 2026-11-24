@@ -194,7 +194,6 @@ export interface ToolsTranslations {
     selectAll: string
     hand: string
     editFrame: string
-    framePanel: string
     /** The margin steppers' Tooltips (ticket 417), and why Shrink is off at one bead. */
     frameEdgeOut: string
     frameEdgeIn: string
@@ -202,8 +201,6 @@ export interface ToolsTranslations {
     removeFrame: string
     noFrameToRemove: string
     frameFromStarter: string
-    replaceFrame: string
-    rowProgressLockedFrameFromStarter: string
     resetProgress: string
     noProgressToReset: string
     moveFrame: string
@@ -272,6 +269,5 @@ export interface ToolsTranslations {
     /** Why the Rulers toggle is held while the Canvas is empty (ticket 0921). */
     noBeadsToNumber: string
     /** The Frame button's Tooltip with Beads needed's total, while there is one (ticket 0932). */
-    framePanelBeads: string
   }
 }

@@ -9,7 +9,10 @@ import SignInPanel from './shell/SignInPanel.vue'
 import { PANEL_CONTEXT } from './shell/panelContext'
 import CanvasStrip from './canvas/CanvasStrip.vue'
 import ExportPanel from './canvas/ExportPanel.vue'
-import FramePanel from './canvas/FramePanel.vue'
+import FramePopover from './canvas/FramePopover.vue'
+import type { FrameToolItem } from './canvas/framePopoverTools'
+import { controlAction, controlDeps } from '../composables/shell/controlRegistry'
+import { twoFrames } from '../testUtils/twoFrames'
 import { rotateFrame } from '../domain/rotate'
 import ProjectPanel from './project/ProjectPanel.vue'
 import { newReferenceImage, withReferenceImage } from '../domain/referenceImage'
@@ -42,17 +45,11 @@ const showAll = (root: HTMLElement): void => {
   if (!button) throw new Error('Beads needed has no Show all button')
   button.click()
 }
-/** The Frame panel's Export settings and margin unfolded, as each shows folded (tickets 0932, 1121). */
-const unfold = (root: HTMLElement): void => {
-  const headers = root.querySelectorAll<HTMLElement>('[data-testid="frame-export"] .panel-section__header, [data-testid="margin-section"] .panel-section__header')
-  if (headers.length !== 2) throw new Error('The Frame panel has no Export quality or margin header')
-  headers.forEach((header) => header.click())
-}
 /** A width and a height that each bring up their range line (ticket 0978). */
 const refuseSizes = async (root: HTMLElement): Promise<void> => {
   for (const side of ['width', 'height']) {
-    const field = root.querySelector<HTMLInputElement>(`[data-testid="frame-panel-${side}"]`)
-    if (!field) throw new Error(`The Frame panel has no ${side} field`)
+    const field = root.querySelector<HTMLInputElement>(`[data-testid="frame-size-${side}"]`)
+    if (!field) throw new Error(`The Frame popover has no ${side} field`)
     field.value = '12.5'
     field.dispatchEvent(new Event('input'))
   }
@@ -74,9 +71,29 @@ const inPanel = (component: Component, props: Record<string, unknown>, width?: s
   })
 
 const smallPanel = 'calc(var(--panel-width-small) - 2 * var(--space-8))'
-/** The Frame panel's content: `panel-width`, on a phone the screen less the dropdown's 8px gutters, less its padding and
- * hairline border (AppPanel), so a phone's width is the room its rows really have (ticket 0864). */
-const framePanel = 'calc(min(var(--panel-width), 100vw - 2 * var(--frame-panel-gap)) - 2 * var(--space-8) - 2px)'
+/** The Frame popover's content: `frame-popover-width`, on a phone the screen less the gutters, less its padding and
+ * hairline border, so a phone's width is the room its rows really have (tickets 0864, 1222). */
+const framePopover = 'calc(min(var(--frame-popover-width), 100vw - 2 * var(--frame-panel-gap)) - 2 * var(--space-14) - 2px)'
+
+/** The popover's tools as the margin sheet hands them over: every one a Menu item. */
+function popoverOf(shown: Project, extra: Record<string, unknown> = {}): [Component, Record<string, unknown>] {
+  const frame = frameIdIn(shown)
+  const items: FrameToolItem[] = [
+    { id: 'mirror', action: controlAction('mirror-frame'), run: () => {} },
+    { id: 'rotate', action: controlAction('rotate-frame'), run: () => {} },
+    { id: 'edit', action: controlAction('edit-frame'), run: () => {} },
+    { id: 'export', action: controlAction('strip-export'), run: () => {} },
+    { id: 'color', action: controlAction('margin-color'), run: () => {} },
+    { id: 'remove', action: controlAction('remove-frame'), run: () => {} },
+  ]
+  const deps = controlDeps({ activeProject: () => shown, frame: () => frame })
+  return [inPanel(FramePopover, { project: shown, frame, items, deps, ...extra }, framePopover), {}]
+}
+/** Two Frames in the Project panel, the second unfolded (they fold once there are two). */
+const twoFramed = twoFrames()
+const unfoldSecond = (root: HTMLElement): void => {
+  root.querySelectorAll<HTMLElement>('[data-testid="project-frame"] .panel-section__header')[1]?.click()
+}
 
 const CASES: FitCase[] = [
   ['CanvasStrip', CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }],
@@ -93,17 +110,17 @@ const CASES: FitCase[] = [
   ['ProjectPanel (Export unfolded, no Frame)', ProjectPanel, { project: withFrameSheet(painted, undefined, { frame: frameIdIn(painted) }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }, unfoldProjectExport],
   ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
   ['ProjectPanel (technique locked)', ProjectPanel, { project: moveToRow(project, 1, frameIdIn(project)), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
-  ['FramePanel', inPanel(FramePanel, { project: painted }), {}],
-  ['FramePanel (all colors shown)', inPanel(FramePanel, { project: painted }), {}, showAll],
-  ['FramePanel (Export and margin unfolded)', inPanel(FramePanel, { project: painted }), {}, unfold],
-  ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}, unfold],
-  ['FramePanel (size refused)', inPanel(FramePanel, { project: painted }), {}, refuseSizes],
-  ['FramePanel (rows done)', inPanel(FramePanel, { project: moveToRow(painted, 1, frameIdIn(painted)) }), {}],
-  ['FramePanel (turned)', inPanel(FramePanel, { project: rotateFrame(painted, undefined, frameIdIn(painted))! }), {}],
-  ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
-  ['FramePanel (Fringe earring)', inPanel(FramePanel, { project: earring }), {}],
+  ['FramePopover', ...popoverOf(painted)],
+  ['FramePopover (all colors shown)', ...popoverOf(painted), showAll],
+  ['FramePopover (no name)', ...popoverOf(framed)],
+  ['FramePopover (size refused)', ...popoverOf(painted), refuseSizes],
+  ['FramePopover (rows done)', ...popoverOf(moveToRow(painted, 1, frameIdIn(painted)))],
+  ['FramePopover (turned)', ...popoverOf(rotateFrame(painted, undefined, frameIdIn(painted))!)],
+  ['FramePopover (Fringe earring)', ...popoverOf(earring)],
+  ['ProjectPanel (two Frames)', ProjectPanel, { project: twoFramed, saveFailed: false, unsaved: false }, unfoldSecond],
   ['ExportPanel', inPanel(ExportPanel, { project: painted }, smallPanel), {}],
   ['ExportPanel (exporting)', inPanel(ExportPanel, { project: framed, exporting: 'pdf' }, smallPanel), {}],
+  ['ExportPanel (two Frames)', inPanel(ExportPanel, { project: twoFramed }, smallPanel), {}],
   ['ExportPanel (no Frame)', inPanel(ExportPanel, { project }, smallPanel), {}],
   ['ProjectPanel (brick)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (peyote, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
@@ -125,13 +142,15 @@ const CASES: FitCase[] = [
 
 describeFits(CASES)
 
-// The Frame panel on a phone in every real language too (ticket 0864): "longest" puts each edge's widest word in its cell,
-// but a word that has no room leaves its cell for the glyph's Tooltip, so each language's own words are tried as well.
-describe('FramePanel on a phone', () => {
+// The Frame popover on a phone in every real language too (tickets 0864, 1222): "longest" puts each edge's widest word in
+// its cell, but a word that has no room leaves its cell for the glyph's Tooltip, so each language's own words are tried as
+// well.
+describe('FramePopover on a phone', () => {
   for (const locale of LOCALES) {
     it(`fits its box at 390px in ${locale}`, async () => {
-      const { root } = await mountAt(inPanel(FramePanel, { project: painted }, framePanel), {}, { locale, width: 390 })
-      expect([...(await fitProblems('FramePanel', locale, 390)), ...(await tooltipProblems(root, ['hover']))]).toEqual([])
+      const [component] = popoverOf(painted)
+      const { root } = await mountAt(component, {}, { locale, width: 390 })
+      expect([...(await fitProblems('FramePopover', locale, 390)), ...(await tooltipProblems(root, ['hover']))]).toEqual([])
     })
   }
 })

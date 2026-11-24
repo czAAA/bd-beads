@@ -61,24 +61,11 @@ describe('LayerSettings (ADR 0079, ticket 0670)', () => {
     expect(wrapper.findAll('[data-testid="x-technique"] [role="menuitemradio"]').map((item) => item.attributes('data-value'))).toEqual(['peyote'])
   })
 
-  it('holds the Technique, its settings and a shape\'s settings while locked, with the reason, never the Bead or the Background', () => {
-    const wrapper = mountSettings({ locked: true, frame: { shape: 'triangle', settings: { rounds: 4 } } })
+  it('holds the Technique and its settings while locked, with the reason, never the Bead or the Background', () => {
+    const wrapper = mountSettings({ locked: true })
     expect(wrapper.get('[data-testid="x-technique"] button').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.get('[data-testid="frame-setting-rounds-more"]').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
     expect(wrapper.get('[data-testid="bead-size"] button').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-background-picker"] [aria-disabled="true"]').exists()).toBe(false)
-  })
-
-  it('offers Reset progress beside the line under the held shape settings, which only asks (ticket 0848)', async () => {
-    const wrapper = mountSettings({ locked: true, frame: { shape: 'triangle', settings: { rounds: 4 } } })
-    await wrapper.get('[data-testid="frame-size-locked-reset"]').trigger('click')
-    expect(wrapper.emitted('reset-progress')).toHaveLength(1)
-  })
-
-  it('shows no shape settings for a layer without a Frame shape', () => {
-    expect(mountSettings({ frame: { settings: {} } }).find('[data-testid^="frame-setting-"]').exists()).toBe(false)
-    expect(mountSettings().find('[data-testid="frame-size-locked"]').exists()).toBe(false)
   })
 
   it('shows a layer\'s out-of-date Bead "(as saved)" and offers the catalog\'s of its id (tickets 534, 0687)', () => {

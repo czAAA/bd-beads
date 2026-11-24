@@ -77,7 +77,6 @@ export interface ReferenceTranslations {
     frameAround: {
       name: string
       body: string
-      bodyNew: string
       tag: string
     }
     /** Convert to beads (ticket 0883): the button, the popover, the preview's pill, the toast and why it is off. */

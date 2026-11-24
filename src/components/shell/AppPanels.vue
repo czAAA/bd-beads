@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import ExportPanel from '../canvas/ExportPanel.vue'
-import FramePanel from '../canvas/FramePanel.vue'
 import MenuPanel from './MenuPanel.vue'
 import SignInPanel from './SignInPanel.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
@@ -14,7 +13,6 @@ import ProjectPanel from '../project/ProjectPanel.vue'
 import { computed, ref } from 'vue'
 import { starterById, type StarterCategoryId, type StarterId } from '../../domain/starters'
 import { usePanelsContext } from '../../composables/shell/useAppShell'
-import { frameOf, soloFrame } from '../../domain/layerRecord'
 
 // The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library and Sign in as others. Each panel only asks; the app shell does the work.
 const {
@@ -27,13 +25,11 @@ const {
   saveFailed,
   unsaved,
   openElsewhere,
-  settledProject,
   onNewProjectDraft,
   unnamedProjectName,
   onCreateProject,
   onCreateFromStarter,
   onPlaceFrameFromStarter,
-  onSetFrameSettings,
   onOpenConvertImage,
   page,
   onLeavePage,
@@ -48,7 +44,6 @@ const {
   onFitFrame,
   onSelectFrame,
   onSelectPieceFrame,
-  onResetProgress,
   onRequestReplaceBead,
   onImportProjects,
   exporting,
@@ -63,7 +58,6 @@ const {
   onExportLibraryFile,
   saveNow,
   onSaveMakerName,
-  onSetLetters,
   onRenameProject,
   onRequestDelete,
   inputMode,
@@ -72,17 +66,12 @@ const {
   handedness,
   setHandedness,
   openPanel,
-  framePanelShown,
-  frameOpensOnStarters,
-  frameOpensOnSettings,
-  onStepFrameEdge,
-  onResizeFrame,
-  onRenameFrame,
-  onRotateFrame,
   onRemoveFrame,
-  onFrameKey,
-  onCloseFramePanel,
-  onFramePanelPlaced,
+  onBringFrameIntoView,
+  onExportFrame,
+  onPickExportFrame,
+  exportedFrame,
+  projectOpensOnStarters,
   toolPillPosition,
   menuOpensOnForm,
   phoneSavedProjectsOpen,
@@ -114,8 +103,6 @@ const exportAnchor = computed(() => {
   // On a Frame's sheet the button is the one on that Frame's (ticket 1220).
   return exportFrame.value ? `${exportOpener.value}@${exportFrame.value}` : exportOpener.value
 })
-/** The Project the Export panel works on: the Frame whose sheet opened it alone, the open Project otherwise (ticket 1220). */
-const exportProject = computed(() => (activeProject.value && exportFrame.value ? soloFrame(activeProject.value, exportFrame.value) : activeProject.value))
 
 /** The reference image's state the Project panel shows (ticket 0790). */
 const referencePanel = computed(() => ({
@@ -131,72 +118,18 @@ const chosenStarter = ref<StarterId>()
 </script>
 
 <template>
-  <!-- The Frame panel (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. Start from
-    a ready design opens it already on the Starter gallery, titled Starter as that row's gallery is (ticket 0953). -->
-  <PanelHost
-    v-if="activeProject && framePanelShown"
-    open="frame"
-    :only="['frame']"
-    :sub-title="t.starters.title"
-    :start-in-sub="frameOpensOnStarters"
-    @close="onCloseFramePanel"
-    @placed="onFramePanelPlaced"
-  >
-    <FramePanel
-      :project="activeProject"
-      :settled-project="settledProject"
-      :exporting="exporting"
-      :opens-on-settings="frameOpensOnSettings"
-      @step="onStepFrameEdge"
-      @resize="onResizeFrame"
-      @rotate="onRotateFrame"
-      @remove="onRemoveFrame"
-      @rename="onRenameFrame"
-      @fit="onFitFrame"
-      @select-frame="onSelectFrame"
-      @select-piece-frame="onSelectPieceFrame()"
-      @export-png="onExportPng"
-      @export-pdf="onExportPdf"
-      @save-project-file="onSaveProjectFile"
-      @save-maker-name="onSaveMakerName"
-      @set-letters="onSetLetters"
-      @key="onFrameKey"
-      @set-settings="onSetFrameSettings"
-      @set-technique="onSetTechnique"
-      @set-weave-setting="onSetWeaveSetting"
-      @set-background="onSetBackground"
-      @replace-bead="onRequestReplaceBead"
-      @reset-progress="onResetProgress"
-    />
-    <!-- Frame from starter (tickets 495, 555, 0596): the categories, a category's options, then a Starter's setup, to put
-      its Frame on the open Project. -->
-    <template #sub="{ depth }">
-      <StarterGallery v-if="depth === 1" @choose-category="chosenCategory = $event" />
-      <StarterGallery v-else-if="depth === 2" :category="chosenCategory" @choose="chosenStarter = $event" />
-      <StarterSetup
-        v-else-if="chosenStarter"
-        :starter="starterById(chosenStarter)"
-        :project="activeProject"
-        @submit="(choice) => { onPlaceFrameFromStarter(starterById(chosenStarter!), choice); onCloseFramePanel() }"
-      />
-    </template>
-    <template #footer="{ depth }">
-      <AppButton v-if="depth === 3" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
-        {{ frameOf(activeProject) ? t.frame.replaceFrame : t.frame.addFrameButton }}
-      </AppButton>
-    </template>
-  </PanelHost>
-
   <!-- The Export panel (tickets 0652, 0657): the strip's Export button's or the margin sheet's, hung from the one pressed. -->
   <PanelHost v-if="activeProject && openPanel === 'export'" open="export" :only="['export']" :anchor="exportAnchor" :keeps-canvas="exportScope === 'selection'" @close="openPanel = null">
     <ExportPanel
-      :project="exportProject ?? activeProject"
+      :project="activeProject"
+      :frame="exportedFrame"
       :exporting="exporting"
       :opens-on="exportChoice"
       :selection="exportScope === 'selection' ? exportSelection : undefined"
       @fit="onFitFrame"
       @select-frame="onSelectFrame('export')"
       @select-piece-frame="onSelectPieceFrame('export')"
+      @pick-frame="onPickExportFrame"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @save-project-file="onSaveProjectFile"
@@ -213,12 +146,12 @@ const chosenStarter = ref<StarterId>()
     v-if="openPanel === 'menu' || (openPanel === 'project' && activeProject)"
     :open="openPanel"
     :only="['menu', 'project']"
-    :sub-title="shortcutsOpen ? t.shortcutsHelp.title : signInOpen ? t.account.signIn : phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
+    :sub-title="openPanel === 'project' ? t.starters.title : shortcutsOpen ? t.shortcutsHelp.title : signInOpen ? t.account.signIn : phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
     :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen && !signInOpen && !shortcutsOpen ? String(projects.length + sealed.length) : undefined"
     :sub-key="openPanel === 'menu' && shortcutsOpen ? '?' : undefined"
     :sub-width="openPanel === 'menu' && shortcutsOpen ? 'var(--panel-width-wide)' : undefined"
     :sub-opener="shortcutsOpen ? 'menu-item-shortcuts' : undefined"
-    :start-in-sub="shortcutsOpen || (page !== 'convert-image' && !menuOpensOnList && (menuOpensOnForm || projects.length + sealed.length === 0))"
+    :start-in-sub="openPanel === 'project' ? projectOpensOnStarters : shortcutsOpen || (page !== 'convert-image' && !menuOpensOnList && (menuOpensOnForm || projects.length + sealed.length === 0))"
     @close="openPanel = null"
   >
     <MenuPanel
@@ -256,6 +189,7 @@ const chosenStarter = ref<StarterId>()
       :save-reminder="saveReminderInPanel"
       :can-save-as="canSaveAs"
       :exporting="exporting"
+      :export-frame="exportedFrame"
       @rename="onRenameProject"
       @pick-reference-image="referenceImage.pick($event, 'panel')"
       @set-reference-opacity="referenceImage.setOpacity"
@@ -272,13 +206,30 @@ const chosenStarter = ref<StarterId>()
       @fit="onFitFrame"
       @select-frame="onSelectFrame('export')"
       @select-piece-frame="onSelectPieceFrame('export')"
+      @pick-export-frame="onPickExportFrame"
+      @draw-frame="onSelectFrame()"
+      @show-frame="onBringFrameIntoView"
+      @export-frame="onExportFrame"
+      @remove-frame="onRemoveFrame"
       @save-maker-name="onSaveMakerName"
       @clear="onRequestDeleteAll"
       @delete="onRequestDelete"
     />
     <template #sub="{ depth }">
+      <!-- Frame from starter (tickets 495, 555, 0596, 1222): the Project panel's subpanel, the categories, a category's
+        options, then a Starter's setup, to put its Frame on the open Project as a new Frame. -->
+      <template v-if="openPanel === 'project'">
+        <StarterGallery v-if="depth === 1" @choose-category="chosenCategory = $event" />
+        <StarterGallery v-else-if="depth === 2" :category="chosenCategory" @choose="chosenStarter = $event" />
+        <StarterSetup
+          v-else-if="chosenStarter && activeProject"
+          :starter="starterById(chosenStarter)"
+          :project="activeProject"
+          @submit="(choice) => { onPlaceFrameFromStarter(starterById(chosenStarter!), choice); openPanel = null }"
+        />
+      </template>
       <!-- Keyboard shortcuts (ticket 1159): Help's Subpanel, or what `?` opens Menu on. -->
-      <ShortcutsHelp v-if="shortcutsOpen && depth === 1" />
+      <ShortcutsHelp v-else-if="shortcutsOpen && depth === 1" />
       <!-- Sign in (ticket 0078): the Account section's subpanel, also what Menu opens on back from Google refused. -->
       <SignInPanel
         v-else-if="signInOpen && depth === 1"
@@ -320,7 +271,10 @@ const chosenStarter = ref<StarterId>()
       />
     </template>
     <template #footer="{ depth }">
-      <AppButton v-if="depth === 4" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
+      <AppButton v-if="openPanel === 'project' && depth === 3" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
+        {{ t.frame.addFrameButton }}
+      </AppButton>
+      <AppButton v-else-if="openPanel !== 'project' && depth === 4" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
         {{ t.form.submit }}
       </AppButton>
     </template>

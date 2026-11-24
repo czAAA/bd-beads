@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-24",
+  "kind": "new",
+  "line": {
+    "en": "A Project can now hold up to four Frames, added from the Project panel; each Frame's size and Beads needed are under its ··· button, and Export picks which Frame to save",
+    "ru": "В проекте теперь может быть до четырёх рамок, их добавляют на панели проекта; размер и «Нужно бисера» каждой рамки находятся под её кнопкой ···, а при экспорте выбирают, какую рамку сохранить",
+    "uk": "У проєкті тепер може бути до чотирьох рамок, їх додають на панелі проєкту; розмір і «Потрібно бісеру» кожної рамки знаходяться під її кнопкою ···, а під час експорту обирають, яку рамку зберегти",
+    "be": "У праекце цяпер можа быць да чатырох рамак, іх дадаюць на панэлі праекта; памер і «Патрэбна бісеру» кожнай рамкі знаходзяцца пад яе кнопкай ···, а пры экспарце выбіраюць, якую рамку захаваць",
+    "zh": "一个项目现在最多可以有四个边框，在项目面板中添加；每个边框的尺寸和所需珠子都在它的 ··· 按钮下，导出时可选择保存哪个边框",
+    "es": "Un proyecto ahora puede tener hasta cuatro marcos, que se añaden desde el panel del proyecto; el tamaño y las cuentas necesarias de cada marco están bajo su botón ···, y Exportar elige qué marco guardar",
+    "pl": "Projekt może teraz mieć do czterech ramek, dodawanych w panelu projektu; rozmiar i potrzebne koraliki każdej ramki są pod jej przyciskiem ···, a eksport pozwala wybrać, którą ramkę zapisać"
+  }
+}

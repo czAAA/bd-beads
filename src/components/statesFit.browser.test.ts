@@ -27,6 +27,7 @@ import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { paintAt } from '../testUtils/layers'
 import { marginSheetHost } from '../testUtils/marginSheetHost'
+import { frameIdIn } from '../testUtils/frameId'
 import { armSelectionBar } from '../testUtils/pill'
 import ConvertPageHost from '../testUtils/ConvertPageHost.vue'
 import ConvertSectionHost from '../testUtils/ConvertSectionHost.vue'
@@ -233,7 +234,7 @@ const MarginColorPopoverHost = defineComponent({
     return () =>
       h('div', { style: { position: 'fixed', right: '8px', top: '8px' } }, [
         h('button', { ref: button, type: 'button' }, 'Margin'),
-        shown.value ? h(MarginColorPopover, { anchor: button.value, project: framed }) : null,
+        shown.value ? h(MarginColorPopover, { anchor: button.value, project: framed, frame: frameIdIn(framed) }) : null,
       ])
   },
 })

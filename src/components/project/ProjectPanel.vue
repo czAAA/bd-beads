@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
-import type { Layer } from '../../domain/grid'
+import type { FrameId, Layer } from '../../domain/grid'
 import { frameOf } from '../../domain/layerRecord'
 import type { Background, Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
@@ -11,6 +11,7 @@ import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 import ExportRows from '../canvas/ExportRows.vue'
+import ProjectFrames from './ProjectFrames.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import LayerSettings from './LayerSettings.vue'
@@ -19,9 +20,9 @@ import type { SinceFile } from '../../domain/beadsSinceFile'
 import ReferenceImageSection from './ReferenceImageSection.vue'
 import { layerSettingsOf, layerSummary } from './layerSettingsOf'
 
-// The body of Project (spec 0440, tickets 443, 554, 0670; ProjectPanel card): what no tool already does about the open
-// Project. A head, two folding sections (the Canvas's Layer settings, the reference image, 0790), then the Project's own
-// rows, always showing under no title: the Project file, Export (its rows unfold in place, 1058), Clear and Delete.
+// The body of Project (spec 0440, tickets 443, 554, 0670, 1222; ProjectPanel card): what no tool already does about the
+// open Project. A head, the Frames, two folding sections (the Canvas's Layer settings, the reference image), then the
+// Project's own rows under no title: the Project file, Export (its rows unfold in place, 1058), Clear and Delete.
 const props = defineProps<{
   project: Project
   saveFailed: boolean
@@ -42,6 +43,8 @@ const props = defineProps<{
   canSaveAs?: boolean
   /** A PNG or PDF is being drawn (ticket 1058): the unfolded export rows wait, as in the Export panel. */
   exporting?: ExportChoice
+  /** The Frame the unfolded export rows are of (ticket 1222): the one picked, else the Last edited Frame. */
+  exportFrame?: FrameId
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -63,6 +66,12 @@ const emit = defineEmits<{
   fit: []
   'select-frame': []
   'select-piece-frame': []
+  /** The Frames section: Drag a Frame, and a Frame's own rows (ticket 1222). */
+  'draw-frame': []
+  'show-frame': [frame: FrameId]
+  'export-frame': [frame: FrameId]
+  'remove-frame': [frame: FrameId]
+  'pick-export-frame': [frame: FrameId]
   'save-maker-name': [name: string]
   clear: []
   delete: []
@@ -102,6 +111,8 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       @save-project-file="emit('save-project-file')"
     />
 
+    <ProjectFrames :project="project" @fit="emit('fit')" @select-frame="emit('draw-frame')" @show-frame="emit('show-frame', $event)" @export-frame="emit('export-frame', $event)" @remove-frame="emit('remove-frame', $event)" />
+
     <PanelSection id="project:canvas" :label="canvasLabel" :summary="canvasSummary">
       <LayerSettings
         v-bind="canvas"
@@ -129,7 +140,7 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
       <PanelItem :icon="exportAction.icon" :expanded="exportOpen" :aria-controls="exportRowsId" data-testid="project-export" @select="exportOpen = !exportOpen">{{ exportAction.name(t) }}</PanelItem>
       <div v-if="exportOpen" :id="exportRowsId" class="project-panel__export" role="group" :aria-label="exportAction.name(t)" data-testid="project-export-rows">
-        <ExportRows :project="project" :exporting="exporting" @fit="emit('fit')" @select-frame="emit('select-frame')" @select-piece-frame="emit('select-piece-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" @save-project-file="emit('save-project-file')" @save-maker-name="emit('save-maker-name', $event)" />
+        <ExportRows :project="project" :frame="exportFrame" :exporting="exporting" @pick-frame="emit('pick-export-frame', $event)" @fit="emit('fit')" @select-frame="emit('select-frame')" @select-piece-frame="emit('select-piece-frame')" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" @save-project-file="emit('save-project-file')" @save-maker-name="emit('save-maker-name', $event)" />
       </div>
       <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="project-delete" @select="emit('delete')">{{ remove.name(t) }}</PanelItem>

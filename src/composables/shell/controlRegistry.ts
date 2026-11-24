@@ -9,7 +9,10 @@ import { frameTechniqueWaits } from '../../domain/wovenLines'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
-import { frameOf, firstFrameId } from '../../domain/layerRecord'
+import { frameById, frameOf, lastEditedFrameId } from '../../domain/layerRecord'
+import { framesFull } from '../../domain/frameLimit'
+import { framesFullReason } from '../../i18n/framesFullReason'
+import { ownEdge } from '../../domain/frameOrientation'
 import type { FrameRef } from '../../domain/grid'
 import { lieAlike } from '../../domain/table'
 import { frameWeave } from '../../domain/layerWeave'
@@ -65,8 +68,6 @@ export interface ControlDeps {
   onToggleReferenceImage: () => void
   /** The edit pencil: shows or hides the Frame's handles (tickets 417, 510). */
   onEditFrame: () => void
-  /** The strip's Frame button: opens or closes the Frame panel (ticket 510). */
-  onToggleFramePanel: () => void
   /** 7 and Ctrl/⌘+A: selects the rectangle round every bead and switches to Select (ticket 414). */
   onSelectAll: () => void
   onCopy: () => void
@@ -167,8 +168,9 @@ const selectTool = (id: Tool, icon: IconName, name: (t: Translations) => string,
 })
 
 
-/** The Frame a control acts on: the sheet's own, else the first. */
-const frameOfDeps = (deps: ControlDeps, project: Project): FrameRef => deps.frame?.() ?? firstFrameId(project)
+/** The Frame a control acts on: its sheet's own, else the Last edited Frame (ticket 1222), as the Progress bar and the
+ * keys are of. */
+const frameOfDeps = (deps: ControlDeps, project: Project): FrameRef => deps.frame?.() ?? lastEditedFrameId(project)
 const frameLocked = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && rowProgressStarted(project, frameOfDeps(deps, project))
@@ -179,6 +181,12 @@ const rowProgressIsOn = (deps: ControlDeps) => {
   return project !== undefined && rowProgressOn(project, frameOfDeps(deps, project))
 }
 const hasFrame = (deps: ControlDeps) => frameOf(deps.activeProject()) !== undefined
+/** What makes a Frame adds one, so another Frame's rows marked done hold nothing; only the most Frames a Project holds
+ * disables it, saying so (spec 1214, ticket 1222). */
+const addsFrame: Disableable = {
+  enabled: (deps: ControlDeps) => !framesFull(deps.activeProject()),
+  disabledBody: (t: Translations) => framesFullReason(t),
+}
 const hasBeads = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && hasProjectBeads(project)
@@ -191,8 +199,8 @@ const hasRuled = (deps: ControlDeps) => {
 }
 /** When Fit to drawing can frame the beads, and why not: its own and the Progress bar's way to a picture (ticket 0847). */
 const fitsDrawing: Disableable = {
-  enabled: (deps: ControlDeps) => !frameLocked(deps) && hasBeads(deps),
-  disabledBody: (t: Translations, deps: ControlDeps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noBeadsToFit),
+  enabled: (deps: ControlDeps) => addsFrame.enabled!(deps) && hasBeads(deps),
+  disabledBody: (t: Translations, deps: ControlDeps) => (addsFrame.enabled!(deps) ? t.tooltips.noBeadsToFit : addsFrame.disabledBody!(t, deps)),
 }
 
 /** One of the Frame panel's steppers (tickets 417, 473): an edge a bead out or in, named for its edge. Moving in stops
@@ -203,8 +211,10 @@ const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlActio
   body: (t) => (direction === 'out' ? t.tooltips.frameEdgeOut : t.tooltips.frameEdgeIn),
   enabled: (deps) => {
     const project = deps.activeProject()
-    if (!project || !frameOf(project) || frameLocked(deps)) return false
-    return direction === 'out' || frameWithEdgeStep(frameWeave(project, firstFrameId(project)), frameOf(project)!, edge, -1) !== frameOf(project)
+    const ref = project && frameOfDeps(deps, project)
+    const held = ref ? frameById(project, ref) : undefined
+    if (!project || !ref || !held || frameLocked(deps)) return false
+    return direction === 'out' || frameWithEdgeStep(frameWeave(project, ref), held, ownEdge(held, edge), -1) !== held
   },
   disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.frameSizeLocked : t.tooltips.frameEdgeInDisabled),
   group: 'canvas',
@@ -288,17 +298,6 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [],
     needsProject: true,
     run: (deps) => deps.onEditFrame(),
-  },
-  {
-    id: 'strip-frame',
-    icon: 'frame',
-    name: (t) => t.frame.title,
-    body: (t) => t.tooltips.framePanel,
-    // Always there, with or without a Frame, and once a pass is done too (tickets 475, 555).
-    group: 'canvas',
-    chords: [],
-    needsProject: true,
-    run: (deps) => deps.onToggleFramePanel(),
   },
   ...FRAME_EDGES.flatMap((edge) => [frameEdgeAction(edge, 'out'), frameEdgeAction(edge, 'in')]),
   {
@@ -519,12 +518,7 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => deps.hasPaintColor(),
     disabledBody: (t: Translations) => t.tooltips.fillNeedsColor,
   }),
-  unkeyed('frame-from-selection', (t) => t.frame.title, 'canvas', {
-    icon: 'frame',
-    body: (t) => t.tooltips.frameFromSelection,
-    enabled: (deps: ControlDeps) => !frameLocked(deps),
-    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrame,
-  }),
+  unkeyed('frame-from-selection', (t) => t.frame.title, 'canvas', { icon: 'frame', body: (t) => t.tooltips.frameFromSelection, ...addsFrame }),
   // The Selection bar's Mirror (ADR 0082): the Selection's rectangle becomes the Mirror's Area; no key.
   unkeyed('mirror-selection', (t) => t.mirror.title, 'edit', {
     icon: 'mirror',
@@ -596,11 +590,7 @@ export const CONTROLS: readonly ControlAction[] = [
   // A Schema's paper tag (ticket 0721): Rename opens Name Piece's editor for it; Frame frames it as the Selection
   // bar's Frame does with the Piece selected.
   unkeyed('rename-schema', (t) => t.panels.project.renameAction, 'edit', { icon: 'pencil' }),
-  unkeyed('frame-schema', (t) => t.frame.title, 'canvas', {
-    icon: 'frame',
-    enabled: (deps: ControlDeps) => !frameLocked(deps),
-    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrame,
-  }),
+  unkeyed('frame-schema', (t) => t.frame.title, 'canvas', { icon: 'frame', ...addsFrame }),
   unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {
     icon: 'delete',
     body: (t) => t.tooltips.removeFrame,
@@ -608,19 +598,7 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: hasFrame,
     disabledBody: (t: Translations) => t.tooltips.noFrameToRemove,
   }),
-  // Both are held still once a pass is done: the passes belong to the Frame (ticket 495).
-  unkeyed('add-frame-from-starter', (t) => t.frame.addFromStarter, 'canvas', {
-    icon: 'plus',
-    body: (t) => t.tooltips.frameFromStarter,
-    enabled: (deps: ControlDeps) => !frameLocked(deps),
-    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrameFromStarter,
-  }),
-  unkeyed('replace-frame', (t) => t.frame.replaceFrame, 'canvas', {
-    icon: 'plus',
-    body: (t) => t.tooltips.replaceFrame,
-    enabled: (deps: ControlDeps) => !frameLocked(deps),
-    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrameFromStarter,
-  }),
+  unkeyed('add-frame-from-starter', (t) => t.frame.addFromStarter, 'canvas', { icon: 'plus', body: (t) => t.tooltips.frameFromStarter, ...addsFrame }),
   // The margin's Expand the Frame (ticket 1169, MarginSheet card); its name and Tooltip say Back to the Canvas while expanded.
   unkeyed('expand-frame', (t) => t.frame.expandFrame, 'canvas', { icon: 'expand-frame' }),
   // The margin's Mirror the whole Frame (ADR 0082, MarginSheet card); its Tooltip says Mirror off while it is on.

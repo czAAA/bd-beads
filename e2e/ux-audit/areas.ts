@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { LOCALES } from '../../src/domain/locale'
 import { fixturePicture } from '../support/picture'
-import { chooseNewProjectTechnique, openColorPopover, openConvertPopover, openStripPanel, selectTool, setConvertWidth, settle } from '../support/app'
+import { chooseNewProjectTechnique, closePanel, openColorPopover, openConvertPopover, openStripPanel, selectTool, setConvertWidth, settle } from '../support/app'
 import { clickIfVisible, escape, openForAudit, surfaceCentre, type State, type Walk } from './support'
 
 /** The audit's areas (docs/research/ux-audit/00-plan.md §4), each the walk stops of its golden path. A stop is a
@@ -119,12 +119,19 @@ async function newPatternStops(walk: Walk): Promise<void> {
   })
 }
 
-/** Opens Menu, Project, Frame and Export one after another, each its own stop. */
+/** Opens the Frame's settings popover from its sheet's ··· button (ticket 1222), closing a panel first. */
+async function openFramePopover(page: Page): Promise<void> {
+  await closePanel(page)
+  await page.getByTestId('margin-frame-tools').first().click()
+  await settle(page)
+}
+
+/** Opens Menu, Project, the Frame's popover and Export one after another, each its own stop. */
 async function chromeStops(walk: Walk): Promise<void> {
   const { page } = walk
   await walk.step('menu-open', async () => openStripPanel(page, 'strip-menu'))
   await walk.step('project-panel-open', async () => openStripPanel(page, 'strip-project'))
-  await walk.step('frame-panel-open', async () => openStripPanel(page, 'strip-frame'))
+  await walk.step('frame-popover-open', async () => openFramePopover(page))
   await walk.step('export-panel-open', async () => openExportPanel(page))
   await escape(page)
 }
@@ -277,7 +284,7 @@ const beadIt: AreaWalk = {
     })
     await walk.step('saved-projects-list', async () => openSavedProjectsList(page))
     await walk.step('cuff-with-progress-open', async () => openSavedProject(page, 'Loom cuff'))
-    await walk.step('frame-panel-open', async () => openStripPanel(page, 'strip-frame'))
+    await walk.step('frame-popover-open', async () => openFramePopover(page))
     await walk.step('beads-needed', async () => {
       await page.getByTestId('quantity-row').first().scrollIntoViewIfNeeded()
     })
@@ -305,8 +312,8 @@ const beadIt: AreaWalk = {
     })
     await walk.step('frame-removed-no-progress', async () => {
       await escape(page)
-      await openStripPanel(page, 'strip-frame')
-      await page.getByTestId('frame-panel').getByTestId('frame-chrome-remove').click()
+      await openFramePopover(page)
+      await page.getByTestId('margin-frame-tools-remove').click()
       await page.waitForTimeout(PANEL_MS)
       await escape(page)
     })
@@ -381,8 +388,8 @@ async function phonePath(walk: Walk): Promise<void> {
   const { page } = walk
   await walk.step('phone-editor-open', async () => openForAudit(walk))
   await walk.step('phone-project-panel', async () => openStripPanel(page, 'strip-project'))
-  await walk.step('phone-frame-panel-beads-needed', async () => {
-    await openStripPanel(page, 'strip-frame')
+  await walk.step('phone-frame-popover-beads-needed', async () => {
+    await openFramePopover(page)
     await page.getByTestId('quantity-row').first().scrollIntoViewIfNeeded()
   })
   await walk.step('phone-export-panel', async () => {
@@ -440,7 +447,7 @@ const crossCutting: AreaWalk = {
           await openForAudit(walk, { locale })
           await openStripPanel(page, 'strip-menu')
         })
-        await walk.step(`${locale}-frame-panel-open`, async () => openStripPanel(page, 'strip-frame'))
+        await walk.step(`${locale}-frame-popover-open`, async () => openFramePopover(page))
       }
     }
   },

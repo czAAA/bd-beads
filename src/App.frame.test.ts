@@ -63,9 +63,15 @@ async function toggleEdit(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
   await flushPromises()
 }
 
-/** The Frame button in the Canvas strip: opens the Frame panel, which is no part of the pencil (ticket 510). */
+/** The sheet's ··· button: opens the Frame's settings popover, which is no part of the pencil (tickets 510, 1222). */
 async function toggleBar(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
-  await wrapper.get('[data-testid="strip-frame"]').trigger('click')
+  await wrapper.get('[data-testid="margin-frame-tools"]').trigger('click')
+  await flushPromises()
+}
+
+/** The Project panel's button in the Canvas strip, which holds the ways to add a Frame (ticket 1222). */
+async function toggleProject(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
+  await wrapper.get('[data-testid="strip-project"]').trigger('click')
   await flushPromises()
 }
 
@@ -88,13 +94,13 @@ const framedAround = (rectangle: Rect): Project => {
 const framedProject = (): Project => framedAround({ row: 2, column: 3, rows: 2, columns: 3 })
 /** A Frame big enough to step every edge in and out (ticket 473). */
 const bigFramedProject = (): Project => framedAround({ row: 1, column: 2, rows: 5, columns: 5 })
-/** Whether the Frame panel is up (ticket 473). */
-const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="frame-panel"]').exists()
+/** Whether the Frame settings popover is up (tickets 473, 1222). */
+const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="frame-popover"]').exists()
 
 describe('Edit Frame', () => {
-  it('opens and closes from the Frame button in the Canvas strip, apart from the pencil; Escape or Menu closes it (tickets 473, 475, 510)', async () => {
+  it('opens and closes from the sheet\'s ··· button, apart from the pencil; Escape or Menu closes it (tickets 473, 475, 510, 1222)', async () => {
     const wrapper = await mountOpen(framedProject())
-    const button = () => wrapper.get('[data-testid="strip-frame"]')
+    const button = () => wrapper.get('[data-testid="margin-frame-tools"]')
     await toggleEdit(wrapper)
     expect(editing(wrapper)).toBe(false)
     await toggleBar(wrapper)
@@ -112,30 +118,24 @@ describe('Edit Frame', () => {
     expect(editing(wrapper)).toBe(false)
   })
 
-  it('carries each control of the panel to the Project as one Undo step: an edge, Rotate, a typed size and the name (tickets 471, 473, 555)', async () => {
+  it('carries each control of the popover to the Project as one Undo step: an edge, a typed size and Rotate (tickets 471, 473, 1222)', async () => {
     const wrapper = await mountOpen(bigFramedProject())
     await toggleBar(wrapper)
     await wrapper.get('[data-testid="frame-edge-right-out"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 6 })
-    await wrapper.get('[data-testid="frame-panel-width"]').setValue('9')
-    const field = wrapper.get('[data-testid="frame-panel-height"]')
+    await wrapper.get('[data-testid="frame-size-width"]').setValue('9')
+    const field = wrapper.get('[data-testid="frame-size-height"]')
     await field.setValue('7')
     await field.trigger('keydown', { key: 'Enter' })
     await flushPromises()
     expect(savedFrame()).toMatchObject({ rows: 7, columns: 9 })
-    await wrapper.get('[data-testid="frame-name-add"]').trigger('click')
-    await wrapper.get('[data-testid="frame-name-input"]').setValue('Moth wing')
-    await wrapper.get('[data-testid="frame-name-save"]').trigger('click')
-    await flushPromises()
-    expect(frameOf(loadProjects()[0])!.name).toBe('Moth wing')
-    await wrapper.get('[data-testid="frame-rotate"]').trigger('click')
+    await wrapper.get('[data-testid="margin-frame-tools-rotate"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toMatchObject({ rows: 7, columns: 9, quarterTurns: 1 })
 
-    for (let step = 0; step < 4; step++) await key({ key: 'z', ctrlKey: true })
+    for (let step = 0; step < 3; step++) await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 5 })
-    expect(frameOf(loadProjects()[0])!.name).toBeUndefined()
   })
 
   it('does not open the bar when a Frame is set from a Selection (ticket 473)', async () => {
@@ -206,22 +206,22 @@ describe('Edit Frame', () => {
   })
 })
 
-describe('A Frame from the panel with no Frame', () => {
-  it('fits one to the drawing from the panel, which then shows its size (ticket 555)', async () => {
+describe('A Frame from the Project panel (ticket 1222)', () => {
+  it('fits one to the drawing from the panel, which then lists it by name (tickets 555, 1222)', async () => {
     const wrapper = await mountOpen()
-    await toggleBar(wrapper)
+    await toggleProject(wrapper)
     await wrapper.get('[data-testid="frame-fit"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(wrapper.find('[data-testid="frame-panel-width"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="project-frame"] .panel-section__label').text()).toBe('Frame 1')
   })
 
   it('selects a frame from the panel: Select becomes the tool and the next drag becomes the Frame on release, Escape cancels (ticket 568)', async () => {
     const wrapper = await mountOpen()
-    await toggleBar(wrapper)
+    await toggleProject(wrapper)
     await wrapper.get('[data-testid="frame-select"]').trigger('click')
     await flushPromises()
-    expect(wrapper.find('[data-testid="frame-panel"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('true')
 
     await pressBead(wrapper, 0)
@@ -231,7 +231,9 @@ describe('A Frame from the panel with no Frame', () => {
     await flushPromises()
     expect(savedFrame()).toMatchObject({ rows: 1, columns: 2 })
 
-    await toggleBar(wrapper)
+    await toggleProject(wrapper)
+    // "add a frame" folds once there is a Frame.
+    await wrapper.get('[data-testid="project-frames-add"] .panel-section__header').trigger('click')
     await wrapper.get('[data-testid="frame-select"]').trigger('click')
     await key({ key: 'Escape' })
     await pressBead(wrapper, 0)
@@ -240,12 +242,13 @@ describe('A Frame from the panel with no Frame', () => {
     expect(savedFrame()).toMatchObject({ rows: 1, columns: 2 })
   })
 
-  it('selects a Piece to frame from the panel: Piece becomes the tool and the next tap frames that Piece at once', async () => {
+  it('selects a Piece to frame from the Export panel: Piece becomes the tool and the next tap frames that Piece at once', async () => {
     const wrapper = await mountOpen()
-    await toggleBar(wrapper)
-    await wrapper.get('[data-testid="frame-select-piece"]').trigger('click')
+    await wrapper.get('[data-testid="strip-export"]').trigger('click')
     await flushPromises()
-    expect(wrapper.find('[data-testid="frame-panel"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="export-select-piece-frame"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="pill-tool-piece"]').attributes('aria-pressed')).toBe('true')
     expect(savedFrame()).toBeUndefined()
 

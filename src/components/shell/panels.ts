@@ -1,7 +1,7 @@
 import type { Translations } from '../../i18n/translations'
 
-/** The panels that open in an AppPanel (spec 0440, tickets 443, 475, 510). */
-export type PanelId = 'menu' | 'project' | 'frame' | 'export'
+/** The panels that open in an AppPanel (spec 0440, tickets 443, 475, 510, 1222: the Frame panel is retired). */
+export type PanelId = 'menu' | 'project' | 'export'
 
 /** How a panel opens: what AppPanel is told, and which buttons open it. */
 export interface PanelDescriptor {
@@ -24,8 +24,6 @@ export interface PanelDescriptor {
 export const PANELS: Record<PanelId, PanelDescriptor> = {
   menu: { id: 'menu', title: (t) => t.header.menuButton, anchor: 'strip-menu', menu: true, skipsFields: false, openers: ['strip-menu'] },
   project: { id: 'project', title: (t) => t.header.projectPanelLabel, anchor: 'strip-project', menu: false, skipsFields: false, openers: ['strip-project'] },
-  // The Frame panel opens from the strip's Frame button alone; the edit pencil on the Frame shows its handles and is no opener.
-  frame: { id: 'frame', title: (t) => t.frame.title, anchor: 'strip-frame', menu: false, skipsFields: true, openers: ['strip-frame'] },
   // The Export panel (ticket 0652): small, and hung from the strip's last button, so it lines up with its right edge.
   // It opens on its first row, Picture (ticket 0939); its Quality slider raises no keyboard.
   export: {

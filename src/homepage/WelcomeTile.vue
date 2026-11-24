@@ -72,7 +72,7 @@ const wayInSize = computed(() => wayInFit.value ?? 'xl')
           <AppButton variant="primary" :size="wayInSize" data-testid="welcome-make-first" @click="emit('makeFirstProject')">
             {{ t.homepage.makeFirstProject }}
           </AppButton>
-          <!-- The first Project, made at once, open on the Frame panel's Starter gallery (ticket 0953). -->
+          <!-- The first Project, made at once, open on the Project panel's Starter gallery (ticket 0953). -->
           <AppButton :size="wayInSize" icon="frame" data-testid="welcome-start-from-starter" @click="emit('startFromStarter')">
             {{ t.homepage.welcome.startFromStarter }}
           </AppButton>
