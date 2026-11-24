@@ -99,6 +99,8 @@
   --bead-list-height-wide: 24rem; /* BeadColors card: the rows' tallest before they scroll while the list is wide. */
   --popover-width-wide: var(--panel-width); /* ToolPill card: the colour popover while the Bead's palette is open. */
   --palette-swatch-min: 27px; /* PaletteSwatches card: the narrowest swatch in the wide colour popover. */
+  --palette-popover-width: 23rem; /* PaletteSwatches card (ticket 1224, approved 2026-11-24, not yet in the app): the colour popover once a code is named in its head, "Red · TOHO code 341". */
+  --add-color-popover-width: 35.5rem; /* PaletteSwatches card (ticket 1224, approved 2026-11-24, not yet in the app): the Add another color popover beside the Palette. */
   --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
   --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
   --feedback-screenshot-preview: 3.5rem; /* FeedbackSheet card (ticket 1180): the attached screenshot's thumbnail, square. */
