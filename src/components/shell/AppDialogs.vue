@@ -44,9 +44,10 @@ const {
   onConfirmReplaceFrame,
   pendingColorRemovalHex,
   removeColorMessage,
-  removeAllColorsMessage,
-  onConfirmRemoveAllAddedColors,
-  onCancelRemoveAllAddedColors,
+  removeSectionTitle,
+  removeSectionMessage,
+  onConfirmRemoveSection,
+  onCancelRemoveSection,
   onCancelRemoveAddedColor,
   onConfirmRemoveAddedColor,
   replaceBeadPendingBead,
@@ -242,14 +243,14 @@ const importMessage = computed(() => {
   />
 
   <ConfirmModal
-    v-if="open === 'remove-all-colors'"
-    data-testid="remove-all-colors-modal"
-    :title="t.palette.removeAllConfirmTitle"
-    :message="removeAllColorsMessage"
+    v-if="open === 'remove-section'"
+    data-testid="remove-section-modal"
+    :title="removeSectionTitle"
+    :message="removeSectionMessage"
     :confirm-label="t.palette.removeAllConfirmButton"
     :cancel-label="t.palette.removeCancelButton"
-    @confirm="onConfirmRemoveAllAddedColors"
-    @cancel="onCancelRemoveAllAddedColors"
+    @confirm="onConfirmRemoveSection"
+    @cancel="onCancelRemoveSection"
   />
 
   <ConfirmModal

@@ -56,7 +56,7 @@ The Palette's Letters switch reuses the Frame's word, "Letters". A letter anothe
 | {name}, in the Palette (the same row where nothing removes it) | {name}, в палитре | {name}, у палітрі | {name}, у палітры | {name}，已在调色板 | {name}, en la paleta | {name}, w palecie |
 | A press on a code that is in the Palette takes it out again. (the Info button's third note) | Нажатие на код, который уже в палитре, убирает его из неё. | Натискання на код, який уже в палітрі, прибирає його з неї. | Націск на код, які ўжо ў палітры, прыбірае яго з яе. | 再按一次已在调色板中的色号，可将它移除。 | Al pulsar un código que ya está en la paleta, se quita de ella. | Naciśnięcie kodu, który jest już w palecie, usuwa go z niej. |
 
-## The Palette in sections (ticket 1224, approved 2026-11-24, not yet in the app)
+## The Palette in sections (ticket 1224, approved 2026-11-24, in the app since ticket 1226)
 
 ADR 0103's sections and the one Add another color (PaletteSwatches card). A catalog code is always named with its catalog, so a newcomer reads "TOHO code 1", not a bare "1" (owner, 2026-11-24). Catalog names (TOHO, Miyuki Delica, Miyuki Round) are literals in every language. "Add {bead} colors" and "Default colors can't be removed" go. English and Russian are approved; the other languages are proposals for review with the build (1226).
 

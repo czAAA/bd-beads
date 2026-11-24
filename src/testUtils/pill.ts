@@ -128,13 +128,16 @@ export async function panelRead(wrapper: Wrapper, testId: string, opener: Sheet 
   return read
 }
 
-/** Sets the colour popover's Custom color the way a person does: opens the picker, types the hex and presses Enter,
- * which takes it. */
+/** Sets the colour popover's Custom color the way a person does: opens Add another color on its Custom color tab (or the
+ * Custom color picker, where a host has that one), types the hex and presses Enter, which takes it. */
 export async function chooseCustomColor(wrapper: Wrapper, hex: string): Promise<void> {
-  if (!wrapper.find('[data-testid="custom-color-button"]').exists()) {
+  if (!wrapper.find('[data-testid="custom-color-button"]').exists() && !wrapper.find('[data-testid="add-color-button"]').exists()) {
     await openColorPopover(wrapper)
   }
-  await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+  if (wrapper.find('[data-testid="add-color-button"]').exists()) {
+    if (!wrapper.find('[data-testid="add-color-popover"]').exists()) await wrapper.get('[data-testid="add-color-button"]').trigger('click')
+    await wrapper.get('[data-testid="add-color-tabs"] [data-value="custom"]').trigger('click')
+  } else await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
   const field = wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
   await field.setValue(hex)
   await field.trigger('keydown', { key: 'Enter' })

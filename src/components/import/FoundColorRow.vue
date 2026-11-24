@@ -198,6 +198,7 @@ useRevealWhenOpen(rowEl, () => props.open)
         :custom-color="customColor"
         :palette-label="words.newPalette"
         :editable="false"
+        :add-another="false"
         @close="close"
         @select-color="pickSwatch"
         @select-custom-color="(hex) => choose({ hex })"

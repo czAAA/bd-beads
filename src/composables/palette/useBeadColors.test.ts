@@ -71,14 +71,14 @@ describe('useBeadColors', () => {
     expect(swatches.value.find((entry) => entry.code === 'DB1')).toMatchObject({ approximate: false })
   })
 
-  it('adds a code’s color as one Edit that Undo takes back, shows it as taken, and says a second add knew it', async () => {
+  it('adds a code as one Edit that Undo takes back, shows it as held, and says a second add knew it', async () => {
     const { harness, load, swatches, add } = setup()
     await load()
-    const entry = swatches.value.find((candidate) => !candidate.taken)!
-    expect(add(entry.hex)).toBe('added')
+    const entry = swatches.value.find((candidate) => !candidate.heldAs)!
+    expect(add(entry.hex, entry.code)).toBe('added')
     expect(harness.project.palette).toContain(`added-${entry.hex.slice(1)}`)
-    expect(swatches.value.find((candidate) => candidate.code === entry.code)!.taken).toBe(true)
-    expect(add(entry.hex)).toBe('known')
+    expect(swatches.value.find((candidate) => candidate.code === entry.code)!.heldAs).toBeDefined()
+    expect(add(entry.hex, entry.code)).toBe('known')
     harness.history.onUndo()
     expect(harness.project.palette).not.toContain(`added-${entry.hex.slice(1)}`)
   })
@@ -90,7 +90,7 @@ describe('useBeadColors', () => {
     const remove = vi.fn()
     const colors = useBeadColors({ currentProject: harness.currentProject, palette, addUsed, select, remove })
     await colors.load()
-    const entry = colors.swatches.value.find((candidate) => !candidate.taken)!
+    const entry = colors.swatches.value.find((candidate) => !candidate.heldAs)!
     const colorId = `added-${entry.hex.slice(1)}`
 
     colors.add(entry.hex, entry.code)
@@ -109,6 +109,30 @@ describe('useBeadColors', () => {
     expect('remove' in colors).toBe(false)
     const first = palette.value.colors[0]!
     expect(swatches.value.find((candidate) => candidate.code === first.code)!.heldAs).toBe(first.id)
+  })
+})
+
+describe('the Bead chooser (ticket 1226)', () => {
+  it('starts on the Palette\'s own Bead, lists any other Bead\'s codes, and adds one to its own catalog\'s section', async () => {
+    const { harness, chooser, chooseBead, resetChooser, bead } = setup(tohoRound)
+    expect(chooser.bead.value).toBe(bead.value)
+    chooseBead('miyuki/delica/11-0')
+    await chooser.load()
+    expect(chooser.catalog.value?.id).toBe('miyuki-delica')
+    const entry = chooser.swatches.value.find((candidate) => candidate.code === 'DB1')!
+    expect(chooser.add(entry.hex, entry.code)).toBe('added')
+    expect(harness.project.paletteCodes).toMatchObject({ [entry.hex]: { catalog: 'miyuki-delica', code: 'DB1' } })
+    expect(chooser.swatches.value.find((candidate) => candidate.code === 'DB1')!.heldAs).toBeDefined()
+    resetChooser()
+    expect(chooser.bead.value).toBe(bead.value)
+  })
+
+  it('leaves the Palette\'s own list on its own Bead while the chooser stands on another', async () => {
+    const { catalog, chooser, chooseBead, load } = setup(tohoRound)
+    await load()
+    chooseBead('miyuki/delica/11-0')
+    expect(catalog.value?.id).toBe('toho')
+    expect(chooser.catalog.value).toBeUndefined()
   })
 })
 
@@ -131,7 +155,7 @@ describe('a swatch added from the catalog keeps its code (ticket 0538)', () => {
   it('saves the code with the Project, shows it in Beads needed, and Undo takes it back', async () => {
     const { harness, palette, load, swatches, add } = setup()
     await load()
-    const entry = swatches.value.find((candidate) => !candidate.taken)!
+    const entry = swatches.value.find((candidate) => !candidate.heldAs)!
     add(entry.hex, entry.code)
     expect(harness.project.paletteCodes).toMatchObject({ [entry.hex]: { catalog: 'miyuki-delica', code: entry.code } })
     expect(palette.value.byHex(entry.hex)?.code).toBe(entry.code)

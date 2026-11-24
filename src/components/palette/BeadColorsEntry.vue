@@ -33,7 +33,7 @@ const chevron = computed(() => {
   const awayFromList = props.opensAbove ? 'chevron-down' : 'chevron-up'
   return props.open ? awayFromList : towardList
 })
-const note = computed(() => [beadColorsNote(t.value, props.measuredFrom), words.value.takenNote, ...(props.removable ? [words.value.removeNote] : [])].join(' '))
+const note = computed(() => [beadColorsNote(t.value, props.measuredFrom), ...(props.removable ? [words.value.removeNote] : [])].join(' '))
 </script>
 
 <template>

@@ -1,5 +1,5 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { addUsedColor, createPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, removeSection as removeSectionOf, restoreColor, type AddUsedColorOutcome, type Palette, type PaletteCode, type PaletteCodes, type PaletteIds } from '../../domain/palette'
+import { addUsedColor, createPalette, defaultPaletteIds, moveSection as moveSectionOf, moveSlot, projectPalette, removeColor, removeSection as removeSectionOf, restoreColor, CUSTOM_COLORS, type AddUsedColorOutcome, type Palette, type PaletteCode, type PaletteCodes, type PaletteIds } from '../../domain/palette'
 import { setPalette as withPalette, setSwatchLetter, withLettersBack } from '../../domain/paletteEdits'
 import { withLetter, type SwatchLetters } from '../../domain/swatchLetters'
 import { beadsInColors, withBeadsBackIn, withoutBeadsIn } from '../../domain/colorBeads'
@@ -46,33 +46,31 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     edit('exempt', (project) => (letters ? withLettersBack(withPalette(project, ids, codes), letters) : withPalette(project, ids, codes)))
   }
 
+  /** The swatch the last color added was a shade apart from (ticket 1226, ADR 0103): its section and, for a code, the code.
+   * The Add another color popover tells it once; the next add, or closing it, takes it away. */
+  const nudge = ref<ColorClash>()
+
   /** A Custom color has been chosen or painted, or a code picked from any Bead's catalog: it joins the Palette on first
    * use, last in its section (ADR 0103). Hands back whether it joined and the swatch it is. */
   function addUsed(hex: string, code?: PaletteCode): { outcome: AddUsedColorOutcome; colorId?: string } {
     const project = currentProject()
     if (!project) return { outcome: 'known' }
-    const { ids, outcome, colorId, codes } = addUsedColor(project.palette, hex, project.paletteCodes, code)
+    const { ids, outcome, colorId, codes, nudgedFrom } = addUsedColor(project.palette, hex, project.paletteCodes, code)
+    nudge.value = nudgedFrom ? { section: nudgedFrom.catalog ?? CUSTOM_COLORS, ...(nudgedFrom.code ? { code: nudgedFrom.code } : {}) } : undefined
     if (outcome === 'added') setPalette(ids, codes)
     return { outcome, colorId }
   }
 
-  /** An added swatch is taken out of the Palette (ticket 228), with every bead painted in it (ticket 1124). Hands back
-   * how to put it back, or undefined for a color that isn't an added one. */
+  /** A swatch is taken out of the Palette (ticket 228), a default one too (ticket 1226), with every bead painted in it
+   * (ticket 1124). Hands back how to put it back, or undefined for a color the Palette doesn't hold. */
   function removeAdded(colorId: string): (() => void) | undefined {
     const project = currentProject()
-    const removal = project && removeAddedColor(project.palette, colorId)
+    const removal = project && removeColor(project.palette, colorId)
     if (!removal) return undefined
     return removeColors(project, removal.ids, [colorId], (now) => restoreColor(now.palette, colorId, removal.slot))
   }
 
-  /** Every added swatch leaves the Palette in one Edit (ticket 0532), with the beads painted in them (ticket 1124).
-   * Hands back how to put them all back in their slots, or undefined when none is added. */
-  function removeAllAdded(): (() => void) | undefined {
-    const project = currentProject()
-    return project && removeAll(project, removeAllAddedColors(project.palette))
-  }
-
-  /** A whole section leaves the Palette in one Edit (ADR 0103), its default colors too, with the beads painted in them
+  /** A whole section leaves the Palette in one Edit (ADR 0103, tickets 0532, 1226), its default colors too, with the beads painted in them
    * (ticket 1124). Hands back how to put it back as it stood, or undefined for a section the Palette doesn't show. */
   function removeSection(section: string): (() => void) | undefined {
     const project = currentProject()
@@ -108,6 +106,13 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     setPalette(moveSlot(palette.value.colors.map((color) => color.id), from, to))
   }
 
+  /** A section moved up or down among the others (ticket 1226): its swatches go with it, and the slots, with their
+   * Shift+keys, count across sections in the new order. */
+  function moveSection(section: string, by: number) {
+    const project = currentProject()
+    if (project) setPalette(moveSectionOf(project.palette, project.paletteCodes ?? {}, section, by))
+  }
+
   /** A Palette color's Swatch letter typed by the maker (ticket 1092): one Edit. Hands back the color that had the
    * letter and the one it got instead, or nothing when no other color had it. */
   function setLetter(hex: string, letter: string): LetterSwap | undefined {
@@ -118,7 +123,13 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     return changed.swapped
   }
 
-  return { palette, addUsed, removeAdded, removeAllAdded, removeSection, paintedBeads, moveColor, setLetter }
+  return { palette, addUsed, nudge, clearNudge: () => (nudge.value = undefined), removeAdded, removeSection, paintedBeads, moveColor, moveSection, setLetter }
+}
+
+/** The swatch an added color clashed with (ticket 1226): the section it is in, and its code when it has one. */
+export interface ColorClash {
+  section: string
+  code?: string
 }
 
 /** The color a typed letter was taken from, and the letter it got in trade (ticket 1092). */
@@ -162,18 +173,6 @@ export function useRemoveAddedColor(): ((colorId: string) => void) | undefined {
   return inject(removeKey, undefined)
 }
 
-const removeAllKey: InjectionKey<() => void> = Symbol('removeAllAddedColors')
-
-/** The app shell hands out how the bin in Edit palette asks to remove every added color (ticket 0532). */
-export function provideRemoveAllAddedColors(request: () => void) {
-  provide(removeAllKey, request)
-}
-
-/** Absent (mounted alone) means the popover offers no bin. */
-export function useRemoveAllAddedColors() {
-  return inject(removeAllKey, undefined)
-}
-
 /** A Palette that is not the open Project's, for the swatch components under the caller: the Convert image wizard's
  * remap picker shows the Palette the new Project will get (spec 0645). */
 export function providePalette(palette: ComputedRef<Palette>) {
@@ -198,6 +197,18 @@ export function useRecentColors(): Readonly<Ref<readonly string[]>> {
   return inject(recentsKey, () => ref<readonly string[]>([]), true)
 }
 
+const nudgeKey: InjectionKey<{ nudge: Readonly<Ref<ColorClash | undefined>>; clear: () => void }> = Symbol('colorNudge')
+
+/** The app shell hands out what the last added color was a shade apart from, for the Add another color popover's note (ticket 1226). */
+export function provideColorNudge(nudge: Readonly<Ref<ColorClash | undefined>>, clear: () => void) {
+  provide(nudgeKey, { nudge, clear })
+}
+
+/** Absent (mounted alone) means no note is told. */
+export function useColorNudge() {
+  return inject(nudgeKey, () => ({ nudge: ref<ColorClash>(), clear: () => {} }), true)
+}
+
 const moveKey: InjectionKey<(from: number, to: number) => void> = Symbol('moveColor')
 
 /** The app shell hands out how a swatch moves to another slot (ticket 398). */
@@ -208,6 +219,30 @@ export function provideMoveColor(move: (from: number, to: number) => void) {
 /** How a swatch asks to move; absent (mounted alone) means the Palette can't be rearranged. */
 export function useMoveColor(): ((from: number, to: number) => void) | undefined {
   return inject(moveKey, undefined)
+}
+
+const moveSectionKey: InjectionKey<(section: string, by: number) => void> = Symbol('moveSection')
+
+/** The app shell hands out how a section moves among the others (ticket 1226). */
+export function provideMoveSection(move: (section: string, by: number) => void) {
+  provide(moveSectionKey, move)
+}
+
+/** How a section's label line asks to move; absent (mounted alone) means the sections can't be rearranged. */
+export function useMoveSection(): ((section: string, by: number) => void) | undefined {
+  return inject(moveSectionKey, undefined)
+}
+
+const removeSectionKey: InjectionKey<(section: string) => void> = Symbol('removeSection')
+
+/** The app shell hands out how a section asks to be removed, after a question (ticket 1226). */
+export function provideRemoveSection(remove: (section: string) => void) {
+  provide(removeSectionKey, remove)
+}
+
+/** How a section's Remove asks; absent (mounted alone) means no section offers removal. */
+export function useRemoveSection(): ((section: string) => void) | undefined {
+  return inject(removeSectionKey, undefined)
 }
 
 /** Pick color from canvas (ticket 398): whether the next press on the canvas takes a bead's color, and how the

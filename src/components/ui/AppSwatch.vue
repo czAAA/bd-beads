@@ -6,8 +6,8 @@ import AppTooltip from './AppTooltip.vue'
 import { markOn } from './swatchMark'
 
 // One color chip (ticket 333; PaletteSwatches card). Tooltip: name, hex body, key chip if any. `label` is the a11y
-// name. In Edit palette (ticket 531) an added swatch shows a centered × (a picture, the whole chip is the press) and a
-// built-in one fades and says why it cannot be removed.
+// name. In Edit palette (ticket 531) every swatch shows a centered × (a picture, the whole chip is the press), the
+// default ones too (ticket 1226).
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
@@ -19,10 +19,8 @@ const props = withDefaults(
     hotkey?: string
     /** How the swatch is exposed: a toggle button (the default) or a radio of a radiogroup. */
     role?: 'button' | 'radio'
-    /** Edit palette, an added swatch: a press removes it, so it shows the ×. */
+    /** Edit palette: a press removes it, so it shows the ×. */
     removable?: boolean
-    /** Edit palette, a built-in swatch: why it cannot be removed. It fades, is `aria-disabled` and says this. */
-    lockedBody?: string
     /** The Tooltip's name in place of "Color", e.g. the margin picker's Canvas color swatch (ticket 0684). */
     tooltipName?: string
     /** One of the Tool pill's recent colors (ticket 0865): a thin `field-line` ring, so a used color is found in its
@@ -33,7 +31,7 @@ const props = withDefaults(
     /** Its Swatch letter, drawn on the chip while the Palette's Letters is on (ticket 1092). */
     letter?: string
   }>(),
-  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined, tooltipName: undefined, recent: false, approximate: undefined, letter: undefined },
+  { selected: false, hotkey: undefined, role: 'button', removable: false, tooltipName: undefined, recent: false, approximate: undefined, letter: undefined },
 )
 const emit = defineEmits<{
   select: []
@@ -45,14 +43,12 @@ const { t } = useI18n()
 const mark = computed(() => markOn(props.color))
 const tooltip = computed(() => {
   const name = props.tooltipName ?? t.value.palette.colorLabel
-  return props.lockedBody === undefined
-    ? { name, body: props.color, hotkey: props.hotkey, announce: !props.label.toLowerCase().includes(props.color.toLowerCase()) }
-    : { name, disabled: true as const, disabledBody: props.lockedBody, announce: true }
+  return { name, body: props.color, hotkey: props.hotkey, announce: !props.label.toLowerCase().includes(props.color.toLowerCase()) }
 })
 </script>
 
 <template>
-  <span class="swatch" :class="{ 'swatch--locked': lockedBody !== undefined }">
+  <span class="swatch">
     <AppTooltip v-bind="tooltip">
       <template #default="{ describedby }">
         <button
@@ -65,7 +61,6 @@ const tooltip = computed(() => {
           :aria-label="label"
           :aria-pressed="role === 'button' && !removable ? selected : undefined"
           :aria-checked="role === 'radio' ? selected : undefined"
-          :aria-disabled="lockedBody === undefined ? undefined : 'true'"
           :aria-describedby="describedby"
           @click="emit('select')"
         >
@@ -179,11 +174,6 @@ const tooltip = computed(() => {
   from {
     opacity: 0;
   }
-}
-
-/* A built-in swatch in Edit palette: faded, but still focusable and draggable. */
-.swatch--locked .swatch__chip {
-  opacity: var(--swatch-faded-opacity);
 }
 
 .swatch__mark--dark {
