@@ -10,6 +10,8 @@ export interface LabelledColor {
   hex: string
   /** The maker's catalog code, when the color was picked from a Color catalog. */
   code?: string
+  /** The Color catalog the code is from (ADR 0103), when a Palette swatch knows it: another one names it by its code alone. */
+  catalog?: string
   /** Where the catalog puts the code, when the place already knows it; else the `catalog` passed to `colorLabel`. */
   family?: string
   finish?: Finish
@@ -27,7 +29,8 @@ export interface ColorLabel {
 export function colorLabel(t: Translations, color: LabelledColor, catalog?: ColorCatalog): ColorLabel {
   const hex = color.hex.toUpperCase()
   if (color.code) {
-    const entry = catalog && catalogEntry(catalog, color.code)
+    const own = catalog && (color.catalog === undefined || color.catalog === catalog.id) ? catalog : undefined
+    const entry = own && catalogEntry(own, color.code)
     const family = color.family ?? entry?.family[0]
     const finish = color.finish ?? entry?.finish
     if (!family || !finish) return { text: color.code, hex }

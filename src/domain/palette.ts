@@ -281,6 +281,7 @@ function nudgedHex(hex: string, taken: ReadonlySet<string>): string {
       }
     }
   }
+  // Unreached: a Palette would need every hex 255 steps round this one taken.
   return hex
 }
 

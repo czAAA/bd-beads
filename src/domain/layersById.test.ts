@@ -170,7 +170,7 @@ describe('a Frame named by its id (ticket 1216)', () => {
     const swapped = replaceBead(project, delica, SECOND)
     firstUntouched(project, swapped)
     expect(layerOf(swapped, SECOND)!.beadId).toBe(delica.id)
-    // The Palette still follows the woven layer, the first Frame, until it is the Project's own (ticket 1225).
+    // Replace Bead leaves the Palette as it is (ADR 0103).
     expect(wovenLayerOf(swapped)).toBe(FIRST_FRAME)
     expect(swapped.palette).toEqual(project.palette)
 
