@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { turnedWithFrame } from './rowWays'
 import { colorAt, withColors } from './canvas'
@@ -31,13 +32,13 @@ const BLUE = '#2f6fed'
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 /** A loom Frame of 4 rows and 6 columns at (20, 20), a red bead in its first, turned once: it lies 6 x 4 at (19, 21). */
 const upright: Project = withLayers(base, { beads: {}, frame: { technique: 'loom', row: 20, column: 20, rows: 4, columns: 6, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) } })
-const turned = rotateFrame(upright)!
+const turned = rotateFrame(upright, undefined, frameIdIn(upright))!
 
 describe('what a turned Frame covers', () => {
   it('lies in its own rows and columns turned, Width and Height swapped as seen', () => {
-    expect(laidFrame(turned)).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
+    expect(laidFrame(turned, frameIdIn(turned))).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
     expect(seenSize(frameOf(turned)!)).toEqual({ columns: 4, rows: 6 })
-    expect(laidFrame(upright)).toBe(frameOf(upright))
+    expect(laidFrame(upright, frameIdIn(upright))).toBe(frameOf(upright))
   })
 
   it('covers on brick stitch the rows its turned beads reach, which are not its own count', () => {
@@ -54,8 +55,8 @@ describe('what a turned Frame covers', () => {
   })
 
   it('hides the Canvas and keeps the margin round what it covers, not round its own rows and columns', () => {
-    expect(footprintOf(turned)).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
-    expect(layerAt(turned, { row: 24, column: 22 })).toBe('frame')
+    expect(footprintOf(turned, frameIdIn(turned))).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
+    expect(layerAt(turned, { row: 24, column: 22 })).toBe(FRAME_ID)
     expect(layerAt(turned, { row: 21, column: 25 })).toBe('canvas')
     expect(mayPlace(turned, { row: 21, column: 25 })).toBe(false)
     expect(mayPlace(turned, { row: 21, column: 29 })).toBe(true)
@@ -64,18 +65,18 @@ describe('what a turned Frame covers', () => {
 
 describe('what a turned Frame offers', () => {
   it('turns, is selected on, woven otherwise and resized (ticket 1016); it has a line removed and is made again only upright', () => {
-    for (const action of ['rotate', 'select', 'technique', 'resize'] as const) expect(frameAllows(turned, action)).toBe(true)
+    for (const action of ['rotate', 'select', 'technique', 'resize'] as const) expect(frameAllows(turned, action, frameIdIn(turned))).toBe(true)
     for (const action of ['remove-line', 'from-selection'] as const) {
-      expect(frameAllows(turned, action)).toBe(false)
-      expect(frameAllows(upright, action)).toBe(true)
+      expect(frameAllows(turned, action, frameIdIn(turned))).toBe(false)
+      expect(frameAllows(upright, action, frameIdIn(upright))).toBe(true)
     }
-    expect(changeFrame(turned, { make: { row: 19, column: 21, rows: 5, columns: 6 } })).toEqual({ kind: 'refused', reason: 'not-offered' })
-    expect(removeLineRefusal(turned, { top: 19, left: 21, rows: 1, columns: 6, layer: 'frame' })).toBe('no-line')
+    expect(changeFrame(turned, { make: { row: 19, column: 21, rows: 5, columns: 6 } }, frameIdIn(turned))).toEqual({ kind: 'refused', reason: 'not-offered' })
+    expect(removeLineRefusal(turned, { top: 19, left: 21, rows: 1, columns: 6, layer: FRAME_ID }, frameIdIn(turned))).toBe('no-line')
   })
 
   it('takes its beads with it on Remove Frame wherever they lie turned, its Folded beads too, dropping none onto the Canvas (tickets 0669, 1215)', () => {
     const folded = withLayers(turned, { frame: { ...frameOf(turned)!, folded: withColors({}, [{ row: 0, column: 6, color: GREEN }]) } })
-    const removed = changeFrame(folded, { remove: true })
+    const removed = changeFrame(folded, { remove: true }, frameIdIn(folded))
     expect(removed.kind === 'changed' && beadsOfLayer(removed.project, 'canvas')).toEqual({})
   })
 })
@@ -83,7 +84,7 @@ describe('what a turned Frame offers', () => {
 describe('a Selection and a Paste over a turned Frame', () => {
   it('fill the beads lying under the rectangle on screen', () => {
     // The laid rectangle's top row: on a quarter turn the Frame's first column, its rows from the last up.
-    const painted = paintLayerSelection(turned, { top: 19, left: 21, rows: 1, columns: 4, layer: 'frame' }, BLUE)
+    const painted = paintLayerSelection(turned, { top: 19, left: 21, rows: 1, columns: 4, layer: FRAME_ID }, BLUE)
     expect([3, 2, 1, 0].map((row) => colorAt(frameOf(painted)!.beads, row, 0))).toEqual([BLUE, BLUE, BLUE, BLUE])
     expect(colorAt(frameOf(painted)!.beads, 0, 1)).toBeNull()
   })
@@ -91,7 +92,7 @@ describe('a Selection and a Paste over a turned Frame', () => {
   it('lay a copy from the Canvas as it is seen', () => {
     const canvas = withLayers(turned, { beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 0, column: 1, color: GREEN }, { row: 0, column: 2, color: BLUE }]) })
     const block = copyLayerSelection(canvas, { top: 0, left: 0, rows: 1, columns: 3, layer: 'canvas' })!
-    const pasted = pasteOnLayer(canvas, block, { row: 19, column: 21, layer: 'frame' })
+    const pasted = pasteOnLayer(canvas, block, { row: 19, column: 21, layer: FRAME_ID })
     // Left to right across the top of the turned Frame: its first column, from its last row up.
     expect([3, 2, 1].map((row) => colorAt(frameOf(pasted)!.beads, row, 0))).toEqual([RED, GREEN, BLUE])
   })
@@ -100,7 +101,7 @@ describe('a Selection and a Paste over a turned Frame', () => {
 describe('a turned Frame resized (ticket 1016)', () => {
   /** The turned Frame resized to its own rectangle, as a resize handle, a stepper or a typed size asks. */
   const resized = (project: Project, set: { row: number; column: number; rows: number; columns: number }) => {
-    const result = changeFrame(project, { set })
+    const result = changeFrame(project, { set }, frameIdIn(project))
     if (result.kind !== 'changed') throw new Error(`not changed: ${result.kind}`)
     return result.project
   }
@@ -108,9 +109,9 @@ describe('a turned Frame resized (ticket 1016)', () => {
   it('grows the edge lying under the seen edge, the opposite edge staying where it is on the Canvas', () => {
     // A quarter turn puts its own top on the right as seen: two rows more there grow it two to the right.
     const grown = resized(turned, { row: 17, column: 21, rows: 6, columns: 6 })
-    expect(laidFrame(grown)).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
+    expect(laidFrame(grown, frameIdIn(grown))).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
     expect(frameOf(grown)!.quarterTurns).toBe(1)
-    expect(beadsOfLayer(grown, 'frame')).toEqual({ 2: { 0: RED } })
+    expect(beadsOfLayer(grown, frameIdIn(grown))).toEqual({ 2: { 0: RED } })
   })
 
   it('folds what a smaller Frame leaves out and shows it again when it grows, the Canvas untouched', () => {
@@ -120,15 +121,15 @@ describe('a turned Frame resized (ticket 1016)', () => {
     })
     // Its own bottom lies on the left as seen: two rows fewer there, and the right edge stays.
     const smaller = resized(held, { row: 19, column: 21, rows: 2, columns: 6 })
-    expect(laidFrame(smaller)).toEqual({ row: 19, column: 23, rows: 6, columns: 2 })
+    expect(laidFrame(smaller, frameIdIn(smaller))).toEqual({ row: 19, column: 23, rows: 6, columns: 2 })
     expect(frameOf(smaller)!.folded).toEqual({ 3: { 5: GREEN } })
     expect(beadsOfLayer(smaller, 'canvas')).toEqual(beadsOfLayer(held, 'canvas'))
     const again = resized(smaller, { row: 19, column: 23, rows: 4, columns: 6 })
-    expect(beadsOfLayer(again, 'frame')).toEqual({ 0: { 0: RED }, 3: { 5: GREEN } })
+    expect(beadsOfLayer(again, frameIdIn(again))).toEqual({ 0: { 0: RED }, 3: { 5: GREEN } })
     // Grown on the right over a Canvas bead woven alike, it takes nothing from the Canvas.
     const over = resized(held, { row: 16, column: 21, rows: 7, columns: 6 })
     expect(beadsOfLayer(over, 'canvas')).toEqual(beadsOfLayer(held, 'canvas'))
-    expect(beadsOfLayer(over, 'frame')).toEqual({ 3: { 0: RED }, 6: { 5: GREEN } })
+    expect(beadsOfLayer(over, frameIdIn(over))).toEqual({ 3: { 0: RED }, 6: { 5: GREEN } })
   })
 })
 
@@ -137,24 +138,24 @@ describe("a turned Frame's handles, steppers and typed size (ticket 1016)", () =
   const turnedIn = (technique: Technique, turns: number) => {
     const canvas = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
     let project = withLayers(canvas, { beads: {}, frame: { technique, row: 20, column: 20, rows: 8, columns: 10, beads: {} } })
-    for (let turn = 0; turn < turns; turn++) project = rotateFrame(project)!
+    for (let turn = 0; turn < turns; turn++) project = rotateFrame(project, undefined, frameIdIn(project))!
     return project
   }
   const dragged = (project: Project, edges: FrameEdge[], cell: GridPosition) => {
-    const result = changeFrame(project, { set: turnedWithEdges({ ...frameOf(project)!, ...frameWeave(project) }, edges, cell) })
-    return result.kind === 'changed' ? laidFrame(result.project)! : laidFrame(project)!
+    const result = changeFrame(project, { set: turnedWithEdges({ ...frameOf(project)!, ...frameWeave(project, frameIdIn(project)) }, edges, cell) }, frameIdIn(project))
+    return result.kind === 'changed' ? laidFrame(result.project, frameIdIn(result.project))! : laidFrame(project, frameIdIn(project))!
   }
 
   it('moves the edge a handle is dragged on as seen, the opposite one staying, on every Technique at each quarter turn', () => {
     for (const technique of ['loom', 'peyote', 'brick'] as const) {
       for (const turns of [1, 2, 3]) {
         const project = turnedIn(technique, turns)
-        const laid = laidFrame(project)!
+        const laid = laidFrame(project, frameIdIn(project))!
         const wider = dragged(project, ['right'], { row: laid.row, column: laid.column + laid.columns + 2 })
         expect([technique, turns, wider.column, wider.columns >= laid.columns + 2]).toEqual([technique, turns, laid.column, true])
         const taller = dragged(project, ['top'], { row: laid.row - 3, column: laid.column })
         expect([technique, turns, taller.row + taller.rows, taller.rows >= laid.rows + 2]).toEqual([technique, turns, laid.row + laid.rows, true])
-        const frame = { ...frameOf(project)!, ...frameWeave(project) }
+        const frame = { ...frameOf(project)!, ...frameWeave(project, frameIdIn(project)) }
         const own = { row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }
         const last = { row: laid.row + laid.rows - 1, column: laid.column + laid.columns - 1 }
         // A press on the beads an edge stands on, with no drag, changes nothing.
@@ -177,8 +178,8 @@ describe("a turned Frame's handles, steppers and typed size (ticket 1016)", () =
     const canvas = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
     // Three quarters round, as a resize may leave it: its middle stays, which would put its first column on 21.
     const left = withLayers(canvas, { beads: {}, frame: { technique: 'peyote', row: 20, column: 20, rows: 5, columns: 4, quarterTurns: 3, beads: {} } })
-    expect(frameOf(rotateFrame(left)!)).toMatchObject({ row: 20, column: 20, rows: 5, columns: 4 })
-    expect(frameOf(rotateFrame(left)!)!.quarterTurns).toBeUndefined()
+    expect(frameOf(rotateFrame(left, undefined, frameIdIn(left))!)).toMatchObject({ row: 20, column: 20, rows: 5, columns: 4 })
+    expect(frameOf(rotateFrame(left, undefined, frameIdIn(left))!)!.quarterTurns).toBeUndefined()
   })
 
   it('names the own edge a stepper on a seen edge moves, and the own size a typed size as seen asks', () => {
@@ -192,22 +193,22 @@ describe("a turned Frame's handles, steppers and typed size (ticket 1016)", () =
 
 describe('Row progress on a turned Frame', () => {
   it('keeps the way as seen with no pass done, and steps it as seen (spec 1182)', () => {
-    const thrice = rotateFrame(rotateFrame(turned)!)!
-    expect(seenWayOf(upright)).toBe('down')
-    expect(seenWayOf(turned)).toBe('down')
-    expect(seenWayOf(thrice)).toBe('down')
-    expect(seenWayOf(toggleRowDirection(turned))).toBe('right')
-    expect(seenWayOf(toggleRowDirection(toggleRowDirection(thrice)))).toBe('up')
+    const thrice = rotateFrame(rotateFrame(turned, undefined, frameIdIn(turned))!, undefined, frameIdIn(turned))!
+    expect(seenWayOf(upright, frameIdIn(upright))).toBe('down')
+    expect(seenWayOf(turned, frameIdIn(turned))).toBe('down')
+    expect(seenWayOf(thrice, frameIdIn(thrice))).toBe('down')
+    expect(seenWayOf(toggleRowDirection(turned, frameIdIn(turned)), frameIdIn(turned))).toBe('right')
+    expect(seenWayOf(toggleRowDirection(toggleRowDirection(thrice, frameIdIn(thrice)), frameIdIn(thrice)), frameIdIn(toggleRowDirection(toggleRowDirection(thrice, frameIdIn(thrice)), frameIdIn(thrice))))).toBe('up')
   })
 
   it('puts Row 1 of the Word chart on the edge its first row lies along', () => {
     // Its own rows, top to bottom on its upright grid, lie right to left once turned.
     const lettered = withLayers(turned, { letters: true, ownProgress: {} })
-    expect(wordChartOf(withLayers(upright, { letters: true }))!.firstEdge).toBe('top')
-    expect(wordChartOf(lettered)!.firstEdge).toBe('right')
+    expect(wordChartOf(withLayers(upright, { letters: true }), frameIdIn(upright))!.firstEdge).toBe('top')
+    expect(wordChartOf(lettered, frameIdIn(lettered))!.firstEdge).toBe('right')
     // Its own 4 rows, not the 6 it covers as it lies, with a bead at both ends of them (the chart is trimmed, ticket 1128).
     const cornered = withLayers(lettered, { frame: { ...frameOf(lettered)!, beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 3, column: 5, color: RED }]) } })
-    expect(wordChartOf(cornered)!.rows).toHaveLength(4)
+    expect(wordChartOf(cornered, frameIdIn(cornered))!.rows).toHaveLength(4)
   })
 })
 
@@ -218,20 +219,20 @@ describe('Row progress on a turned Canvas', () => {
   const bothTurned = turnedClockwise(turned)
 
   it('shows the way as seen: the Frame\'s turn plus the Canvas\'s', () => {
-    expect(seenWayOf(canvasTurned)).toBe('left')
+    expect(seenWayOf(canvasTurned, frameIdIn(canvasTurned))).toBe('left')
     // The turned Frame kept top to bottom as seen (spec 1182); the Canvas's turn still carries it, until ticket 1188.
-    expect(seenWayOf(bothTurned)).toBe('left')
+    expect(seenWayOf(bothTurned, frameIdIn(bothTurned))).toBe('left')
     // Row progress is kept as seen, so the carried Frame's way and pointers turned with it (ticket 1185).
-    expect(rowProgressOf(canvasTurned)).toEqual(turnedWithFrame(rowProgressOf(upright), 1))
+    expect(rowProgressOf(canvasTurned, frameIdIn(canvasTurned))).toEqual(turnedWithFrame(rowProgressOf(upright, frameIdIn(upright)), 1))
     // Off a quarter turn it goes by the nearest one, as the drawing does.
-    expect(seenWayOf(withLayers(upright, { orientation: 100 }))).toBe('left')
-    expect(seenWayOf(withLayers(upright, { orientation: 30 }))).toBe('down')
+    expect(seenWayOf(withLayers(upright, { orientation: 100 }), frameIdIn(upright))).toBe('left')
+    expect(seenWayOf(withLayers(upright, { orientation: 30 }), frameIdIn(upright))).toBe('down')
   })
 
   it('runs the rows the way chosen on screen, whatever both turns are', () => {
     for (const project of [upright, turned, canvasTurned, bothTurned, turnedClockwise(bothTurned)]) {
       for (const way of ['down', 'right', 'up', 'left'] as const) {
-        expect([way, seenWayOf(turnRowDirectionTo(project, way))]).toEqual([way, way])
+        expect([way, seenWayOf(turnRowDirectionTo(project, way, frameIdIn(project)), frameIdIn(project))]).toEqual([way, way])
       }
     }
   })
@@ -240,7 +241,7 @@ describe('Row progress on a turned Canvas', () => {
     const firstEdgeOf = { down: 'top', left: 'right', up: 'bottom', right: 'left' } as const
     for (const project of [upright, turned, canvasTurned, bothTurned]) {
       const lettered = withLayers(project, { letters: true })
-      expect(wordChartOf(lettered)!.firstEdge).toBe(firstEdgeOf[seenWayOf(lettered)])
+      expect(wordChartOf(lettered, frameIdIn(lettered))!.firstEdge).toBe(firstEdgeOf[seenWayOf(lettered, frameIdIn(lettered))])
     }
   })
 })

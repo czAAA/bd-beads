@@ -2,7 +2,7 @@ import { colorAt, forEachChangedPosition, frameContains, withColors, type BeadCh
 import { frameShapeOf, rowOrderOf, type ShapedSheet } from './frameShape'
 import { isFrameLayer, type FrameRef, type GridPosition, type Rotation } from './grid'
 import { sameBeads } from './layerBeads'
-import { beadsOfLayer, FIRST_FRAME, frameById, framesOf, refOfFrame, type Layered, withLayer } from './layerRecord'
+import { beadsOfLayer, frameById, framesOf, frameIdOf, type Layered, withLayer } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
 import { frameGeometryOf } from './layers'
 import type { LayerGeometry } from './layerGeometry'
@@ -22,7 +22,7 @@ import type { PassDirection } from './weaveGeometry'
 export const INITIAL_ROW_PROGRESS: RowProgress = { way: 'down' }
 
 /** The Frame's Row progress (ADR 0079): where its weaver is; a Canvas without a Frame is at the first row. */
-export function rowProgressOf(project: Layered, ref: FrameRef = FIRST_FRAME): RowProgress {
+export function rowProgressOf(project: Layered, ref: FrameRef): RowProgress {
   return frameById(project, ref)?.rowProgress ?? INITIAL_ROW_PROGRESS
 }
 
@@ -44,7 +44,7 @@ export function isInitialRowProgress(rowProgress: RowProgress, start: RowProgres
 /** Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055), of any kind (a
  * Custom frame's Row order, ticket 0594). Derived, never stored, so setting a Frame needn't remember it; an old file's
  * saved flag is ignored. */
-export const rowProgressOn = (project: Layered, ref: FrameRef = FIRST_FRAME): boolean => frameById(project, ref) !== undefined
+export const rowProgressOn = (project: Layered, ref: FrameRef): boolean => frameById(project, ref) !== undefined
 
 /** The pass the weaver is on, in the current way; every pass before it is finished. */
 export function currentPass(rowProgress: RowProgress): number {
@@ -118,7 +118,7 @@ export function readRowProgress(stored: Partial<Record<keyof RowProgress, unknow
 
 /** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it
  * (ticket 411). */
-export function rowProgressStarted(project: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+export function rowProgressStarted(project: Layered, ref: FrameRef): boolean {
   const rowProgress = rowProgressOf(project, ref)
   return rowProgressOn(project, ref) && SEEN_WAYS.some((way) => !!rowProgress[way])
 }
@@ -128,14 +128,14 @@ export const lineRunsAlong = (line: AreaLine, way: RowWay): boolean => (line.axi
 
 /** The Frame's own axis and end (spec 1182, see ownRowWay) that its rows run as seen `way` (the way they run now unless
  * given), on its nearest quarter turn; a Custom frame's Row order runs along its rows. */
-export function ownRowWayOf(project: Layered, way?: SeenWay, ref: FrameRef = FIRST_FRAME): RowWay {
+export function ownRowWayOf(project: Layered, way: SeenWay | undefined, ref: FrameRef): RowWay {
   const frame = frameById(project, ref)
   return frame && frameShapeOf(frame) ? { direction: 'rows' } : ownRowWay(way ?? rowProgressOf(project, ref).way, frameQuarterTurnOf(project, ref))
 }
 
 /** The beads of a Frame line in passes finished `way` as seen (the way the rows run now unless given): how many, and
  * how many passes they make up. */
-export function finishedOnLine(project: Layered, line: AreaLine, way?: SeenWay, ref: FrameRef = FIRST_FRAME): { beads: number; passes: number } {
+export function finishedOnLine(project: Layered, line: AreaLine, way: SeenWay | undefined, ref: FrameRef): { beads: number; passes: number } {
   way ??= rowProgressOf(project, ref).way
   const { rows = 0, columns = 0 } = frameById(project, ref) ?? {}
   const pointer = rowProgressOf(project, ref)[way] ?? 0
@@ -149,7 +149,7 @@ export function finishedOnLine(project: Layered, line: AreaLine, way?: SeenWay, 
 /** Row progress once a line of the Frame is taken out (Remove line, ticket 0647, ADR 0055): each way whose rows run
  * along it goes back by that row's finished passes, so the rows after it, moved up, stay finished; a line across the
  * rows leaves them finished, a bead short. */
-export function progressWithoutLine(project: Layered, line: AreaLine, ref: FrameRef = FIRST_FRAME): RowProgress {
+export function progressWithoutLine(project: Layered, line: AreaLine, ref: FrameRef): RowProgress {
   return SEEN_WAYS.reduce((rowProgress, way) => {
     const { passes } = lineRunsAlong(line, ownRowWayOf(project, way, ref)) ? finishedOnLine(project, line, way, ref) : { passes: 0 }
     return passes > 0 ? withPointer(rowProgress, way, (rowProgress[way] ?? 0) - passes) : rowProgress
@@ -158,7 +158,7 @@ export function progressWithoutLine(project: Layered, line: AreaLine, ref: Frame
 
 /** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is
  * untouched. */
-export function resetRowProgress(project: Project, ref: FrameRef = FIRST_FRAME): Project {
+export function resetRowProgress(project: Project, ref: FrameRef): Project {
   return withRowProgress(project, ref, firstPasses(rowProgressOf(project, ref)))
 }
 
@@ -167,7 +167,7 @@ export type { SeenWay }
 /** Which way the Frame's rows run as seen (spec 1182): the way Row progress keeps, on the Frame's nearest quarter turn,
  * so the Progress bar's words and arrows say what the maker sees. A Custom frame's run along its own rows, turned as it
  * lies. */
-export function seenWayOf(project: Layered, ref: FrameRef = FIRST_FRAME): SeenWay {
+export function seenWayOf(project: Layered, ref: FrameRef): SeenWay {
   const frame = frameById(project, ref)
   return frame && frameShapeOf(frame) ? seenWayOfOwn({ direction: 'rows' }, frameQuarterTurnOf(project, ref)) : rowProgressOf(project, ref).way
 }
@@ -175,7 +175,7 @@ export function seenWayOf(project: Layered, ref: FrameRef = FIRST_FRAME): SeenWa
 /** Whether the weaver's lines are columns as seen (spec 1182): left to right and right to left are columns, top to
  * bottom and bottom to top rows, whatever the Frame's own lines are. A Custom frame's run along its rows, so they are
  * rows. What every word naming them asks: the labels, the buttons, the toasts and the counter. */
-export function columnsAsSeen(project: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+export function columnsAsSeen(project: Layered, ref: FrameRef): boolean {
   if (!frameRowOrder(project, ref).turns) return false
   const way = seenWayOf(project, ref)
   return way === 'left' || way === 'right'
@@ -186,14 +186,14 @@ export const ROW_WAYS: readonly SeenWay[] = SEEN_WAYS
 
 /** The `D` key: the rows on to the next of the four ways as seen, in the list's order (ROW_WAYS), leaving the grid and
  * the turns alone. */
-export function toggleRowDirection(project: Project, ref: FrameRef = FIRST_FRAME): Project {
+export function toggleRowDirection(project: Project, ref: FrameRef): Project {
   return turnRowDirectionTo(project, ROW_WAYS[(ROW_WAYS.indexOf(seenWayOf(project, ref)) + 1) % ROW_WAYS.length]!, ref)
 }
 
 /** Points the weaver's rows the way they are to run as seen (ticket 0973, UX-060; spec 1182): each way keeps its own
  * pointer, so choosing the way left puts its count back. The same Project where the rows run that way already, or the
  * Row order is worked one way only. */
-export function turnRowDirectionTo(project: Project, way: SeenWay, ref: FrameRef = FIRST_FRAME): Project {
+export function turnRowDirectionTo(project: Project, way: SeenWay, ref: FrameRef): Project {
   const rowProgress = rowProgressOf(project, ref)
   if (!frameRowOrder(project, ref).turns || rowProgress.way === way) return project
   return withRowProgress(project, ref, { ...rowProgress, way })
@@ -201,7 +201,7 @@ export function turnRowDirectionTo(project: Project, way: SeenWay, ref: FrameRef
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
  * rows the Frame has. */
-export function rowProgressPosition(project: Layered, ref: FrameRef = FIRST_FRAME): { current: number; total: number } {
+export function rowProgressPosition(project: Layered, ref: FrameRef): { current: number; total: number } {
   return { current: currentPass(rowProgressOf(project, ref)), total: frameRowOrder(project, ref).count }
 }
 
@@ -209,7 +209,7 @@ export function rowProgressPosition(project: Layered, ref: FrameRef = FIRST_FRAM
 /** The Frame line (row or column, from 1 as the rulers number it: left to right and top to bottom as seen, ticket 1165)
  * the current pass works on, and how many lines there are, where a line takes more than one pass (peyote, ticket 0849): there
  * the counter counts passes. A Frame lying turned counts its own lines so. None where a pass is a line, for a Custom frame, and once all are done. */
-export function passLine(project: Layered, ref: FrameRef = FIRST_FRAME): { line: number; lines: number } | undefined {
+export function passLine(project: Layered, ref: FrameRef): { line: number; lines: number } | undefined {
   const frame = frameById(project, ref)
   const order = frameRowOrder(project, ref)
   const pass = currentPass(rowProgressOf(project, ref))
@@ -225,7 +225,7 @@ export function passLine(project: Layered, ref: FrameRef = FIRST_FRAME): { line:
 
 /** The Frame's Row order (spec 0590), worked the way the weaver's rows run now: the one thing Row progress asks how
  * passes go. A Canvas with no Frame has no passes, counted in its own Weave. */
-export function frameRowOrder(project: Layered, ref: FrameRef = FIRST_FRAME): RowOrder {
+export function frameRowOrder(project: Layered, ref: FrameRef): RowOrder {
   const { rows = 0, columns = 0 } = frameById(project, ref) ?? {}
   return rowOrderOf({ ...frameWeave(project, ref), ...laidOf(frameById(project, ref)), rows, columns }, ownRowWayOf(project, undefined, ref))
 }
@@ -251,14 +251,14 @@ function framePassAt(project: Layered, position: GridPosition, order: (() => Row
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
  * is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a
  * Frame is set. */
-export function isInFinishedRow(project: Layered, position: GridPosition, ref: FrameRef = FIRST_FRAME): boolean {
+export function isInFinishedRow(project: Layered, position: GridPosition, ref: FrameRef): boolean {
   const pass = framePassAt(project, position, undefined, ref)
   return pass !== undefined && pass < currentPass(rowProgressOf(project, ref))
 }
 
 /** `isInFinishedRow` for many positions at once (ticket 0675): the Frame's Row order worked out once, not for each, for
  * a paste preview that asks of every bead it shows. */
-export function finishedRowsOf(project: Layered, ref: FrameRef = FIRST_FRAME): (position: GridPosition) => boolean {
+export function finishedRowsOf(project: Layered, ref: FrameRef): (position: GridPosition) => boolean {
   const current = currentPass(rowProgressOf(project, ref))
   if (!frameById(project, ref) || current === 0) return () => false
   let order: RowOrder | undefined
@@ -271,7 +271,7 @@ export function finishedRowsOf(project: Layered, ref: FrameRef = FIRST_FRAME): (
 /** Whether each Frame bead of a draw, at its Canvas row and column, sits in a finished pass or the current one (ticket
  * 0676): `isInFinishedRow` and `isInCurrentRow` with the Frame's Row order worked out once, not for each of the
  * thousands of beads drawn, and what framePassAt reads of the Project read once (ticket 0677). */
-export function rowPassesOf(project: Layered, ref: FrameRef = FIRST_FRAME): (row: number, column: number) => 'finished' | 'current' | undefined {
+export function rowPassesOf(project: Layered, ref: FrameRef): (row: number, column: number) => 'finished' | 'current' | undefined {
   const current = currentPass(rowProgressOf(project, ref))
   const frame = frameById(project, ref)
   if (!frame) return () => undefined
@@ -289,7 +289,7 @@ export function rowPassesOf(project: Layered, ref: FrameRef = FIRST_FRAME): (row
 /** The Frame lines (rows or columns, from its first, the way the rows run) whose Row progress look differs from what
  * `before` showed of the same Frame (ticket 1038): the passes a step crossed, the one it left and the one it reached.
  * Undefined where that is no set of lines: the way turned (every pass changes), a pass off one line (a Custom frame). */
-export function stepLines(project: Layered, before: RowProgress, ref: FrameRef = FIRST_FRAME): { direction: PassDirection; lines: number[] } | undefined {
+export function stepLines(project: Layered, before: RowProgress, ref: FrameRef): { direction: PassDirection; lines: number[] } | undefined {
   const after = rowProgressOf(project, ref)
   if (!frameById(project, ref) || before.way !== after.way) return undefined
   const order = frameRowOrder(project, ref)
@@ -306,7 +306,7 @@ export function stepLines(project: Layered, before: RowProgress, ref: FrameRef =
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
  * current row is raised. Only while the overlay is on and a Frame is set.
  * @internal The renderer asks `rowPassesOf` (ticket 0676); tests and the visual check ask of one bead. */
-export function isInCurrentRow(project: Layered, position: GridPosition, ref: FrameRef = FIRST_FRAME): boolean {
+export function isInCurrentRow(project: Layered, position: GridPosition, ref: FrameRef): boolean {
   const pass = framePassAt(project, position, undefined, ref)
   return pass !== undefined && pass === currentPass(rowProgressOf(project, ref))
 }
@@ -315,7 +315,7 @@ export function isInCurrentRow(project: Layered, position: GridPosition, ref: Fr
  * Frame's, since the Canvas has no rows to finish (ADR 0066). Nothing left to change returns `before` itself, the
  * drawing commands' "unchanged" signal, so no undo step is recorded. */
 export function keepFinishedRows(before: Project, after: Project): Project {
-  const kept = framesOf(before).reduce((project, frame) => keptFinishedRows(before, project, refOfFrame(before, frame)), after)
+  const kept = framesOf(before).reduce((project, frame) => keptFinishedRows(before, project, frameIdOf(frame)), after)
   return sameBeads(before, kept) ? before : kept
 }
 
@@ -341,7 +341,7 @@ export function finishedRowsHold(before: Project, after: Project): boolean {
 
 /** Points row progress at the given row in its current direction, clamped to the Project — used to advance a
  * finished row and to go back to an earlier one. */
-export function moveToRow(project: Project, row: number, ref: FrameRef = FIRST_FRAME): Project {
+export function moveToRow(project: Project, row: number, ref: FrameRef): Project {
   const { total } = rowProgressPosition(project, ref)
   const rowProgress = rowProgressOf(project, ref)
   return withRowProgress(project, ref, withPointer(rowProgress, rowProgress.way, clampRow(row, total)))

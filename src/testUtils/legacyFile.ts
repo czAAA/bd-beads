@@ -1,3 +1,4 @@
+import { frameIdIn } from './frameId'
 import type { FlatProject } from '../domain/flatWeave'
 import { canvasOf, quarterTurnOf } from '../domain/layerRecord'
 import { encodeProject } from '../domain/projectEncoding'
@@ -26,8 +27,8 @@ const OWN_POINTERS: Record<SeenWay, keyof OwnRowProgress> = { down: 'currentRow'
 /** The Project's Row progress as such a file held it, in the Frame's own rows (ticket 1185): the way as seen and each
  * pointer turned back by the Frame's quarter turn on the table. */
 function ownProgressOf(project: Project): OwnRowProgress {
-  const turns = frameQuarterTurnOf(project) / 90
-  const rowProgress = rowProgressOf(project)
+  const turns = frameQuarterTurnOf(project, frameIdIn(project)) / 90
+  const rowProgress = rowProgressOf(project, frameIdIn(project))
   const own = turnedWay(rowProgress.way, -turns)
   const held: OwnRowProgress = { direction: own === 'down' || own === 'up' ? 'rows' : 'columns', ...(own === 'up' || own === 'left' ? { reversed: true } : {}), currentRow: 0, currentColumn: 0 }
   for (const way of ['down', 'right', 'up', 'left'] as const) {

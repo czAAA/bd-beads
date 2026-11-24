@@ -1,3 +1,4 @@
+import { firstFrameId } from '../../domain/layerRecord'
 import { computed } from 'vue'
 import type { Project } from '../../domain/project'
 import { removeLineQuestion, removeLineRefusal, removeSelectedLine, type RemoveLineQuestion } from '../../domain/removeLine'
@@ -38,7 +39,7 @@ export function useRemoveLineFlow(deps: RemoveLineFlowDeps) {
   /** Whether Remove line applies right now: the Tools group's own enabled state. */
   const canRemoveSelectedLine = computed(() => {
     const project = deps.currentProject()
-    return !!project && !removeLineRefusal(project, deps.selection())
+    return !!project && !removeLineRefusal(project, deps.selection(), firstFrameId(project))
   })
 
   /** The question the Remove line dialog shows; the line it asks about waits in `pending`. */
@@ -46,14 +47,14 @@ export function useRemoveLineFlow(deps: RemoveLineFlowDeps) {
   let pending: Selection | undefined
 
   function remove(selection: Selection | undefined) {
-    deps.edit('frame', (project) => removeSelectedLine(project, selection))
+    deps.edit('frame', (project) => removeSelectedLine(project, selection, firstFrameId(project)))
   }
 
   /** Remove line: at once, or after the question where the line touches finished rows (ticket 0647). */
   function onRemoveSelectedLine() {
     const selection = deps.selection()
     const project = deps.currentProject()
-    const asked = project && removeLineQuestion(project, selection)
+    const asked = project && removeLineQuestion(project, selection, firstFrameId(project))
     if (asked) {
       pending = selection
       question.value = asked

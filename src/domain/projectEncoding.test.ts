@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn } from '../testUtils/frameId'
 import { framePlacement } from './framePlacement'
 import type { CanvasLayer, FrameLayer } from './project'
 import { describe, expect, it } from 'vitest'
@@ -166,7 +167,7 @@ describe('encodeProject / decodeProject', () => {
     const [canvas, { row: _row, column: _column, ...frame }] = project.layers as [CanvasLayer, FrameLayer]
     const { palette: _palette, paletteCodes: _codes, ...rest } = project
     const codes = Object.fromEntries(Object.entries(project.paletteCodes!).map(([hex, { code }]) => [hex, code]))
-    expect(decoded).toEqual({ ...rest, palette: [{ catalog: 'toho', colors: project.palette }], paletteCodes: codes, layers: [canvas, { ...frame, centre: framePlacement(project)!.at }], backgroundPositions: 3, lettersByLayer: true })
+    expect(decoded).toEqual({ ...rest, palette: [{ catalog: 'toho', colors: project.palette }], paletteCodes: codes, layers: [canvas, { ...frame, centre: framePlacement(project, frameIdIn(project))!.at }], backgroundPositions: 3, lettersByLayer: true })
   })
 
   it('does not fold the grid colors into a field of their own on the Project', () => {

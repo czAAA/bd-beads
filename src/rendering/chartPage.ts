@@ -96,11 +96,11 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const bottom = Math.max(...pads.map((pad) => pad.y + pad.height))
   text(context, labels.keyOnPage, PRINT_MARGIN, bottom + mm(6.3), font('600', 7, SANS), colors.ink)
   const named = new Map(words.colors.map((color) => [color.hex, color.name]))
-  const hexes = colorsOnPage(project, parts).sort((a, b) => byLetter(letters[a] ?? '?', letters[b] ?? '?'))
+  const hexes = colorsOnPage(project, parts, plan.frame).sort((a, b) => byLetter(letters[a] ?? '?', letters[b] ?? '?'))
   const capacity = plan.keyRows * KEY_COLUMNS
   const shown = hexes.length > capacity ? hexes.slice(0, capacity - 1) : hexes
   const columnWidth = (page.width - PRINT_MARGIN * 2) / KEY_COLUMNS
-  const round = beadsAreRound(project)
+  const round = beadsAreRound(project, plan.frame)
   const slot = (index: number) => ({ x: PRINT_MARGIN + (index % KEY_COLUMNS) * columnWidth, y: bottom + mm(8) + Math.floor(index / KEY_COLUMNS) * mm(4.5) })
   shown.forEach((hex, index) => {
     const { x, y } = slot(index)

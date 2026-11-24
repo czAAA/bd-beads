@@ -9,7 +9,7 @@ import { frameTechniqueWaits } from '../../domain/wovenLines'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, firstFrameId } from '../../domain/layerRecord'
 import { lieAlike } from '../../domain/table'
 import { frameWeave } from '../../domain/layerWeave'
 import { pillTileKey, type PillTile } from '../../domain/toolPill'
@@ -165,12 +165,12 @@ const selectTool = (id: Tool, icon: IconName, name: (t: Translations) => string,
 
 const frameLocked = (deps: ControlDeps) => {
   const project = deps.activeProject()
-  return project !== undefined && rowProgressStarted(project)
+  return project !== undefined && rowProgressStarted(project, firstFrameId(project))
 }
 /** Whether the open Project has Row progress on (it has a Frame), so Enter moves the row (ticket 434). */
 const rowProgressIsOn = (deps: ControlDeps) => {
   const project = deps.activeProject()
-  return project !== undefined && rowProgressOn(project)
+  return project !== undefined && rowProgressOn(project, firstFrameId(project))
 }
 const hasFrame = (deps: ControlDeps) => frameOf(deps.activeProject()) !== undefined
 const hasBeads = (deps: ControlDeps) => {
@@ -198,7 +198,7 @@ const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlActio
   enabled: (deps) => {
     const project = deps.activeProject()
     if (!project || !frameOf(project) || frameLocked(deps)) return false
-    return direction === 'out' || frameWithEdgeStep(frameWeave(project), frameOf(project)!, edge, -1) !== frameOf(project)
+    return direction === 'out' || frameWithEdgeStep(frameWeave(project, firstFrameId(project)), frameOf(project)!, edge, -1) !== frameOf(project)
   },
   disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.frameSizeLocked : t.tooltips.frameEdgeInDisabled),
   group: 'canvas',
@@ -461,7 +461,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.removeLine,
     enabled: (deps) => deps.canRemoveSelectedLine(),
     // A Frame that does not lie alike with the Canvas waits, saying why (ticket 1188).
-    disabledBody: (t, deps) => (frameOf(deps.activeProject()) && !lieAlike(deps.activeProject()!) ? t.tooltips.removeLineNotAlike : t.tooltips.removeLineDisabled),
+    disabledBody: (t, deps) => (frameOf(deps.activeProject()) && !lieAlike(deps.activeProject()!, firstFrameId(deps.activeProject()!)) ? t.tooltips.removeLineNotAlike : t.tooltips.removeLineDisabled),
     group: 'edit',
     chords: [{ key: ['Delete', 'Backspace'], shift: true, label: 'Del' }],
     run: (deps) => {
@@ -650,7 +650,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.resetProgress,
     enabled: (deps: ControlDeps) => {
       const project = deps.activeProject()
-      return !!project && rowProgressStarted(project)
+      return !!project && rowProgressStarted(project, firstFrameId(project))
     },
     disabledBody: (t: Translations) => t.tooltips.noProgressToReset,
   }),
@@ -659,7 +659,7 @@ export const CONTROLS: readonly ControlAction[] = [
     // Once a pass is done it asks first (ticket 1184); only a Custom frame's waits.
     enabled: (deps: ControlDeps) => {
       const project = deps.activeProject()
-      return !project || !frameTechniqueWaits(project)
+      return !project || !frameTechniqueWaits(project, firstFrameId(project))
     },
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedTechnique,
   }),

@@ -1,3 +1,4 @@
+import { frameIdIn } from './frameId'
 import { beadColorAt } from '../domain/layerBeads'
 import { frameOf } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
@@ -21,7 +22,7 @@ export function placeOf(project: Project) {
 export function linesOf(project: Project): string[] {
   const { row, column, rows, columns } = placeOf(project)
   const part = (color: string | null) => (color ? (Object.keys(COLORS).find((key) => COLORS[key] === color.toLowerCase()) ?? '?') : ' ')
-  return Array.from({ length: columns }, (_, line) => Array.from({ length: rows }, (_, along) => part(beadColorAt(project, row + along, column + line, 'frame'))).join(''))
+  return Array.from({ length: columns }, (_, line) => Array.from({ length: rows }, (_, along) => part(beadColorAt(project, row + along, column + line, frameIdIn(project)))).join(''))
 }
 
 /** A drawing's lines with barbs read as the green they are painted in. */

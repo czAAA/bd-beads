@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { findBead } from '../../domain/beads'
 import { mountAt } from '../../testUtils/browserFit'
@@ -5,7 +6,7 @@ import LayerSettings from './LayerSettings.vue'
 
 // Technique, Drop, Bead and Background are the field labels of one section and read as one (ticket 0992): `control`
 // type in `ink`, none with an icon, so no field's name looks like the section header above it.
-const props = { layer: 'frame', technique: 'brick', techniqueSettings: { brickDrop: 3 }, bead: findBead('miyuki/delica/11-0'), background: 1, testid: 'x' }
+const props = { layer: FRAME_ID, technique: 'brick', techniqueSettings: { brickDrop: 3 }, bead: findBead('miyuki/delica/11-0'), background: 1, testid: 'x' }
 
 describe('LayerSettings field labels', () => {
   it('writes the four field labels in one type style, without icons', async () => {

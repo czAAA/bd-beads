@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProgressMoves from './ProgressMoves.vue'
@@ -42,7 +43,7 @@ describe('ProgressMoves (ticket 0788)', () => {
 
   it('is the one pair in the editor bar and in a bar of steps, so the two look the same', () => {
     // A row in, so both of the editor's buttons are on, as both of the step bar's are on its middle step.
-    const project = moveToRow(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } }), 1)
+    const project = moveToRow(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } }), 1, frameIdIn(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } })))
     const editor = mount(ProgressBar, { props: { project } })
     const steps = mount(StepBar, {
       props: {

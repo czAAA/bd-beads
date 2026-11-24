@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstFrameId } from '../../domain/layerRecord'
 import { computed, onMounted, ref, watch } from 'vue'
 import { laidTurnOf, withLaidTurn } from '../../domain/framePlacement'
 import { designSizes, STARTER_BEAD_ID, starterProject, type Starter, type StarterChoice } from '../../domain/starters'
@@ -44,10 +45,10 @@ function draw() {
   // A Ring's or Band's own grid is drawn unturned and shown turned whole, so no end is cut off: by its Frame's
   // quarters, and one more for a Band standing upright.
   const strip = props.starter.measure !== 'frame'
-  const laid = withLaidTurn(project.value)
-  const turns = strip ? (laidTurnOf(laid) / 90 + (props.upright && props.starter.measure === 'band' ? 1 : 0)) % 4 : 0
-  const drawn = strip ? withLaidTurn(laid, 0) : laid
-  const space = spaceOf(drawn, false)
+  const laid = withLaidTurn(project.value, undefined, firstFrameId(project.value))
+  const turns = strip ? (laidTurnOf(laid, firstFrameId(laid)) / 90 + (props.upright && props.starter.measure === 'band' ? 1 : 0)) % 4 : 0
+  const drawn = strip ? withLaidTurn(laid, 0, firstFrameId(laid)) : laid
+  const space = spaceOf(drawn, false, firstFrameId(drawn))
   const copies = props.pair ? 2 : 1
   // The drawing's sides as shown: turned, and side by side with a gap between a pair.
   const width = turns % 2 === 1 ? space.extent.height : space.extent.width

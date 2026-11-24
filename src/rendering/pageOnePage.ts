@@ -54,12 +54,13 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
  * lines where the chart parts meet with their page pills. */
 function drawOverview(context: CanvasRenderingContext2D, project: Project, overview: NonNullable<PageOneLayout['overview']>, trim: TrimmedArea, plan: PrintPlan, labels: PrintText['labels'], emptyGrid: boolean, ink: PrintInk): void {
   const board = { ...overview.board, ...overview.extent }
-  const piece = areaRegion(project, trim)
-  drawBoard(context, project, { x: piece.x * overview.zoom, y: piece.y * overview.zoom, width: piece.width * overview.zoom, height: piece.height * overview.zoom }, overview.zoom, board, emptyGrid, ink)
-  const grid = displayedGrid(project)
+  const ref = plan.frame
+  const piece = areaRegion(project, trim, ref)
+  drawBoard(context, project, { x: piece.x * overview.zoom, y: piece.y * overview.zoom, width: piece.width * overview.zoom, height: piece.height * overview.zoom }, overview.zoom, board, emptyGrid, ink, ref)
+  const grid = displayedGrid(project, ref)
   const every = grid.stepAcross * overview.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
   // A Custom frame's beads keep no rows and columns to number (ticket 0594).
-  if (geometryDrawnAlone(project).grid) drawRulers(context, project, overview.zoom, board, { first: trim.firstAcross, last: trim.lastAcross, ...(trim.numberFrom ? { from: trim.numberFrom.across } : {}) }, { first: trim.firstDown, last: trim.lastDown, ...(trim.numberFrom ? { from: trim.numberFrom.down } : {}) }, ink, every)
+  if (geometryDrawnAlone(project, ref).grid) drawRulers(context, project, overview.zoom, board, { first: trim.firstAcross, last: trim.lastAcross, ...(trim.numberFrom ? { from: trim.numberFrom.across } : {}) }, { first: trim.firstDown, last: trim.lastDown, ...(trim.numberFrom ? { from: trim.numberFrom.down } : {}) }, ink, ref, every)
   if (plan.parts.length > 1) drawParts(context, project, plan, labels, overview.zoom, board, ink)
 }
 

@@ -1,3 +1,4 @@
+import { frameIdIn } from './frameId'
 import type { FrameSheet } from '../domain/canvas'
 import { canvasOf, frameOf, withCanvas, withFrameFields, withLetters } from '../domain/layerRecord'
 import { withFrameSheet } from '../domain/frameSheet'
@@ -30,15 +31,15 @@ export function withLayers(project: Project, change: LayersChange): Project {
   }
   next = withCanvas(next, canvas)
   if ('frame' in change) {
-    next = withFrameSheet(next, frame)
+    next = withFrameSheet(next, frame, { frame: frameIdIn(next) })
   }
   // The Canvas's turn carries the Frame laid, its rows and all (`withPictureTurned`).
   if (orientation !== undefined) next = withPictureTurned(next, orientation)
   if (rowProgress && frameOf(next)) {
-    next = withFrameSheet(next, { ...frameOf(next)!, rowProgress })
+    next = withFrameSheet(next, { ...frameOf(next)!, rowProgress }, { frame: frameIdIn(next) })
   }
   if (ownProgress && frameOf(next)) {
-    next = withFrameSheet(next, { ...frameOf(next)!, rowProgress: ownProgressOf(next, ownProgress) })
+    next = withFrameSheet(next, { ...frameOf(next)!, rowProgress: ownProgressOf(next, ownProgress) }, { frame: frameIdIn(next) })
   }
   const shared: Partial<LayerFields> = {
     ...(beadId !== undefined ? { beadId } : {}),
@@ -47,7 +48,7 @@ export function withLayers(project: Project, change: LayersChange): Project {
   if (Object.keys(shared).length > 0) {
     next = { ...next, layers: next.layers.map((layer) => ({ ...layer, ...shared })) as Project['layers'] }
   }
-  return letters !== undefined ? withLetters(withLetters(next, 'canvas', letters), 'frame', letters) : next
+  return letters !== undefined ? withLetters(withLetters(next, 'canvas', letters), frameIdIn(next), letters) : next
 }
 
 /** The whole picture turned to `orientation`: the Canvas, and the Frame laid on it carried with it, its angle turned as
@@ -61,14 +62,14 @@ export function withPictureTurned(project: Project, orientation: number): Projec
   if (!frame) return turned
   const angle = normalizedOrientation(frame.angle + to - from)
   const turns = (nearestQuarterTurn(angle) - nearestQuarterTurn(frame.angle)) / 90
-  return withFrameFields(turned, { angle, ...(frame.shape ? {} : { rowProgress: turnedWithFrame(frame.rowProgress, turns) }) })
+  return withFrameFields(turned, { angle, ...(frame.shape ? {} : { rowProgress: turnedWithFrame(frame.rowProgress, turns) }) }, frameIdIn(turned))
 }
 
 /** Row progress given in the Frame's own rows (along them, top to bottom, unless given), as the Project's Frame lies:
  * kept as the way it shows (ticket 1185), as an older file's is read. For a test whose subject is the Frame's own rows
  * and passes rather than the way as seen: `withLayers(project, { ownProgress: { currentRow: 2 } })`. */
 export function ownProgressOf(project: Pick<Project, 'layers'>, own: Partial<OwnRowProgress>): RowProgress {
-  const turns = frameOf(project)?.shape ? 0 : frameQuarterTurnOf(project) / 90
+  const turns = frameOf(project)?.shape ? 0 : frameQuarterTurnOf(project, frameIdIn(project)) / 90
   return seenProgressOf({ direction: 'rows', currentRow: 0, ...own }, turns)
 }
 
@@ -100,5 +101,5 @@ export function bareProject(change: LayersChange): Project {
 export function layersView(project: Project): LayersChange {
   const { layers: _layers, ...own } = project
   const { id: _id, ...canvas } = canvasOf(project)
-  return { ...own, ...canvas, ...(frameOf(project) ? { frame: frameSheetOf(project) } : {}), rowProgress: rowProgressOf(project) }
+  return { ...own, ...canvas, ...(frameOf(project) ? { frame: frameSheetOf(project) } : {}), rowProgress: rowProgressOf(project, frameIdIn(project)) }
 }

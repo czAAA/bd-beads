@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstFrameId } from '../domain/layerRecord'
 import { computed, onMounted, ref, watch } from 'vue'
 import RowProgressControls from '../components/canvas/RowProgressControls.vue'
 import { sizeCanvas } from '../components/canvas/surface/useSurfaceDrawing'
@@ -49,7 +50,7 @@ const woven = useWovenCuff({
   messages: () => t.value,
 })
 /** The cuff as it is drawn: by its Frame's own turn (ticket 1186), as every preview is. */
-const project = computed(() => withLaidTurn(woven.project.value))
+const project = computed(() => withLaidTurn(woven.project.value, undefined, firstFrameId(woven.project.value)))
 
 /** Drawn at the least zoom at which the editor's rulers number their steps, then shown as wide as the tile gives, its
  * numbers drawn for that width. */

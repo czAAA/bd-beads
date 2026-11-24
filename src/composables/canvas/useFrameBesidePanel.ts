@@ -1,3 +1,4 @@
+import { firstFrameId } from '../../domain/layerRecord'
 import { watch } from 'vue'
 import { placedFrame } from '../../domain/layerWeave'
 import type { Project } from '../../domain/project'
@@ -64,7 +65,7 @@ export function useFrameBesidePanel(deps: FrameBesidePanelDeps) {
     const room = area.width / zoom - clear.left - clear.right
     const move = deps.bringIntoView((surface) => {
       const sheet = fitBox(project)
-      const frame = placedFrame(project)
+      const frame = placedFrame(project, firstFrameId(project))
       if (!sheet || !frame) return undefined
       // The Frame's sheet whole where the side holds it, else the Frame and its rulers, so its first columns show; as
       // much of them as the side holds, from the first, where they are wider still (a fit zoomed in, ticket 0964).

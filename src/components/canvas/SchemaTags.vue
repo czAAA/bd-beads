@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstFrameId } from '../../domain/layerRecord'
 import { computed, nextTick, onMounted, onUpdated, reactive, ref, watch } from 'vue'
 import { cardPlacement, tagPlacement, type SchemaAnchor, type SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -104,7 +105,7 @@ const card = computed(() => {
   }
 })
 /** Frame is the Selection bar's: not offered for a Custom frame, whose Frame shape sets its outline (ticket 0592). */
-const framable = computed(() => frameAllows(props.project, 'from-selection'))
+const framable = computed(() => frameAllows(props.project, 'from-selection', firstFrameId(props.project)))
 
 function open(tag: SchemaAnchor) {
   opened.value = { anchor: tag.anchor, name: tag.name }

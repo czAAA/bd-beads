@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { withColors, type Rect } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
@@ -18,7 +19,7 @@ import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../../domain/layerRe
 import { frameSheetOf, layersView, withLayers, pointersOf } from '../../testUtils/layerFields'
 
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
-const open = withFrame(sized, undefined)
+const open = withFrame(sized, undefined, frameIdIn(sized))
 /** The rectangle of the Frame `sized` has. */
 const sizedRect = { row: 0, column: 0, rows: 3, columns: 4 }
 
@@ -89,12 +90,12 @@ describe('useFrameFlow', () => {
   })
 
   it('moves the Frame after Row progress has started, the pointer staying with it (ticket 452)', () => {
-    const { deps, press, drag, release } = setup(moveToRow(sized, 1))
+    const { deps, press, drag, release } = setup(moveToRow(sized, 1, frameIdIn(sized)))
     press({ kind: 'move' }, { row: 0, column: 0 })
     drag({ row: 0, column: 2 })
     release()
     expect(lastFrame(deps)).toEqual({ ...sizedRect, column: 2 })
-    expect((rowProgressOf(deps.harness.project).down ?? 0)).toBe(1)
+    expect((rowProgressOf(deps.harness.project, frameIdIn(deps.harness.project)).down ?? 0)).toBe(1)
   })
 
   it('resizes the Frame by the edges of the handle it grabbed, only while the bar is open', () => {
@@ -152,7 +153,7 @@ describe('useFrameFlow', () => {
 
   it('folds what a shrinking handle drag gives up once, on release, as one Undo step, the Canvas untouched (tickets 513, 1215)', () => {
     const own = withColors({}, [{ row: 0, column: 0, color: '#e63746' }, { row: 2, column: 3, color: '#2a9d8f' }])
-    const start = withLayer(sized, 'frame', { beads: own })
+    const start = withLayer(sized, FRAME_ID, { beads: own })
     const { deps, draftProject, press, drag, release } = setupEditing(start)
     press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 3 })
     drag({ row: 2, column: 2 })
@@ -203,7 +204,7 @@ describe('useFrameFlow', () => {
   })
 
   it('resizing is refused once Row progress is on and a pass is done (ticket 411)', () => {
-    const locked = moveToRow(sized, 1)
+    const locked = moveToRow(sized, 1, frameIdIn(sized))
     const { deps, frameLocked, settingFrame, press, drag, release, stepEdge, toggleHandles, remove } = setup(locked)
     expect(frameLocked.value).toBe(true)
     press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 0, column: 0 })
@@ -219,7 +220,7 @@ describe('useFrameFlow', () => {
   })
 
   it('asks before removing the Frame once a pass is done, and removes it with the passes on confirm (ticket 426)', () => {
-    const { deps, remove, removeConfirmOpen, cancelRemove, confirmRemove } = setup(moveToRow(sized, 1))
+    const { deps, remove, removeConfirmOpen, cancelRemove, confirmRemove } = setup(moveToRow(sized, 1, frameIdIn(sized)))
     remove()
     expect(removeConfirmOpen.value).toBe(true)
     cancelRemove()
@@ -244,7 +245,7 @@ describe('useFrameFlow', () => {
 
   it('names Row progress in the Remove question once a pass is done, and not before', () => {
     expect(setup().removeFramePrompt.value?.message).toBe(en.frame.removeConfirmMessage)
-    expect(setup(moveToRow(sized, 1)).removeFramePrompt.value?.message).toBe(en.frame.removeConfirmMessageDone)
+    expect(setup(moveToRow(sized, 1, frameIdIn(sized))).removeFramePrompt.value?.message).toBe(en.frame.removeConfirmMessageDone)
   })
 
   it('removes the Frame with all its beads, Folded ones too, and drops nothing on the Canvas (ticket 1215)', () => {
@@ -318,7 +319,7 @@ describe('useFrameFlow', () => {
 
   describe('explains a snap that grew the Frame (ticket 570)', () => {
     const woven = (technique: 'brick') =>
-      withFrame(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), undefined)
+      withFrame(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), undefined, frameIdIn(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } })))
 
     it('says nothing on a Loom, which does not snap', () => {
       const { deps, setTo } = setup(open)
@@ -368,7 +369,7 @@ describe('useFrameFlow', () => {
     expect(closed.barShown.value).toBe(true)
     closed.closeBar()
     expect(closed.barShown.value).toBe(false)
-    const done = setup(moveToRow(sized, 1))
+    const done = setup(moveToRow(sized, 1, frameIdIn(sized)))
     expect(done.barShown.value).toBe(false)
     done.toggleBar()
     expect([done.barShown.value, done.settingFrame.value]).toEqual([true, false])
@@ -389,7 +390,7 @@ describe('useFrameFlow', () => {
   })
 
   it('names the Frame as one Undo step, and an empty name clears it, even once a pass is done (ticket 555)', () => {
-    const { deps, rename } = setup(moveToRow(sized, 1))
+    const { deps, rename } = setup(moveToRow(sized, 1, frameIdIn(sized)))
     rename('Moth wing')
     expect(frameOf(deps.harness.project)!.name).toBe('Moth wing')
     rename('')
@@ -409,13 +410,13 @@ describe('useFrameFlow', () => {
     const same = setup(big)
     same.resizeTo(6, 6)
     expect(same.deps.replaceProject).not.toHaveBeenCalled()
-    const locked = setup(moveToRow(big, 1))
+    const locked = setup(moveToRow(big, 1, frameIdIn(big)))
     locked.resizeTo(10, 10)
     expect(locked.deps.replaceProject).not.toHaveBeenCalled()
   })
 
   it('has no edit with no Project open, with no Frame, or once Row progress holds the Frame; it is on again when the passes are reset (tickets 411, 452)', () => {
-    for (const project of [null, open, moveToRow(sized, 1)]) {
+    for (const project of [null, open, moveToRow(sized, 1, frameIdIn(sized))]) {
       const { settingFrame, toggleHandles } = setup(project)
       toggleHandles()
       expect(settingFrame.value).toBe(false)
@@ -441,7 +442,7 @@ describe('useFrameFlow', () => {
     })
 
     it('still moves the Frame with the arrows once Row progress has started, but does not resize it', () => {
-      const { deps, onKey } = setup(moveToRow(sized, 1))
+      const { deps, onKey } = setup(moveToRow(sized, 1, frameIdIn(sized)))
       expect(onKey(key('ArrowDown', { shiftKey: true }))).toBe(true)
       expect(deps.replaceProject).not.toHaveBeenCalled()
       expect(onKey(key('ArrowRight'))).toBe(true)
@@ -482,7 +483,7 @@ describe('useFrameFlow', () => {
     })
 
     it('is allowed once Row progress has a pass done', () => {
-      const { deps, setLayerTechnique } = setup(moveToRow(sized, 1))
+      const { deps, setLayerTechnique } = setup(moveToRow(sized, 1, frameIdIn(sized)))
       setLayerTechnique('canvas', 'brick')
       expect(canvasOf(deps.harness.project).technique).toBe('brick')
     })
@@ -553,7 +554,7 @@ describe('useFrameFlow', () => {
   })
 
   describe('the Frame\'s Technique once a row is marked done (ticket 1184)', () => {
-    const woven = moveToRow(sized, 2)
+    const woven = moveToRow(sized, 2, frameIdIn(sized))
 
     it('asks first, and Cancel leaves the Project as it was', () => {
       const { deps, setTechnique, techniqueChangePrompt, cancelTechniqueChange } = setup(woven)
@@ -577,7 +578,7 @@ describe('useFrameFlow', () => {
       setTechnique('brick')
       startOverTechniqueChange()
       expect(frameOf(deps.harness.project)?.technique).toBe('brick')
-      expect(rowProgressOf(deps.harness.project)).toEqual({ way: 'up' })
+      expect(rowProgressOf(deps.harness.project, frameIdIn(deps.harness.project))).toEqual({ way: 'up' })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
       deps.harness.history.onUndo()
       expect(deps.harness.project).toMatchObject({ layers: woven.layers })
@@ -590,9 +591,9 @@ describe('useFrameFlow', () => {
       keepRowsTechniqueChange()
       expect(frameOf(deps.harness.project)?.technique).toBe('peyote')
       // Two whole rows: peyote's first row is one pass and the second two, so the pointer is at the fourth pass.
-      expect(rowProgressOf(deps.harness.project)).toEqual({ way: 'down', down: 3 })
+      expect(rowProgressOf(deps.harness.project, frameIdIn(deps.harness.project))).toEqual({ way: 'down', down: 3 })
       deps.harness.history.onUndo()
-      expect(rowProgressOf(deps.harness.project)).toEqual(rowProgressOf(woven))
+      expect(rowProgressOf(deps.harness.project, frameIdIn(deps.harness.project))).toEqual(rowProgressOf(woven, frameIdIn(woven)))
       expect(frameOf(deps.harness.project)?.technique).toBe('loom')
     })
   })
@@ -603,7 +604,7 @@ describe('useFrameFlow', () => {
     it('changes brick stitch\'s Drop as one announced undo step, keeping every bead and the Frame row', () => {
       const { deps, setWeaveSetting } = setup(brick)
       const before = deps.harness.project
-      setWeaveSetting('frame', 'brickDrop', 3)
+      setWeaveSetting(FRAME_ID, 'brickDrop', 3)
       expect(layersView(deps.harness.project)).toMatchObject({ frame: { ...frameSheetOf(before), techniqueSettings: { brickDrop: 3 } }, beads: beadsOfLayer(before, 'canvas') })
       expect(deps.announce).toHaveBeenCalledWith('Drop changed to 3')
       deps.harness.history.onUndo()
@@ -614,21 +615,21 @@ describe('useFrameFlow', () => {
 
     it('is no step for the number already used', () => {
       const { deps, setWeaveSetting } = setup(brick)
-      setWeaveSetting('frame', 'brickDrop', 1)
+      setWeaveSetting(FRAME_ID, 'brickDrop', 1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
 
     it('changes it over drawn beads, keeping every one (ticket 0626)', () => {
       const drawn = withLayers(brick, { frame: { ...frameOf(brick)!, beads: { 0: { 0: '#111111', 1: '#222222' } } } })
       const { deps, setWeaveSetting } = setup(drawn)
-      setWeaveSetting('frame', 'brickDrop', 2)
+      setWeaveSetting(FRAME_ID, 'brickDrop', 2)
       expect(frameOf(deps.harness.project)).toMatchObject({ techniqueSettings: { brickDrop: 2 }, beads: frameOf(drawn)!.beads })
     })
 
     it('changes peyote\'s Drop as one announced undo step, keeping every bead, and brick stitch\'s kept off it (ticket 0691)', () => {
       const drawn = withLayers(sized, { frame: { ...frameOf(sized)!, technique: 'peyote' as const, techniqueSettings: { brickDrop: 3 }, beads: { 0: { 0: '#111111', 1: '#222222' } } } })
       const { deps, setWeaveSetting, setTechnique } = setup(drawn)
-      setWeaveSetting('frame', 'peyoteDrop', 2)
+      setWeaveSetting(FRAME_ID, 'peyoteDrop', 2)
       expect(frameOf(deps.harness.project)).toMatchObject({ techniqueSettings: { brickDrop: 3, peyoteDrop: 2 }, beads: frameOf(drawn)!.beads })
       expect(deps.announce).toHaveBeenCalledWith('Drop changed to 2')
       setTechnique('brick')
@@ -642,8 +643,8 @@ describe('useFrameFlow', () => {
 
     it('leaves the Frame\'s Drop alone while Row progress is on', () => {
       const peyote = withLayers(sized, { frame: { ...frameOf(sized)!, technique: 'peyote' as const } })
-      const { deps, setWeaveSetting } = setup(moveToRow(peyote, 1))
-      setWeaveSetting('frame', 'peyoteDrop', 2)
+      const { deps, setWeaveSetting } = setup(moveToRow(peyote, 1, frameIdIn(peyote)))
+      setWeaveSetting(FRAME_ID, 'peyoteDrop', 2)
       expect(frameOf(deps.harness.project)?.techniqueSettings?.peyoteDrop ?? 1).toBe(1)
     })
   })
@@ -703,7 +704,7 @@ describe('useFrameFlow', () => {
     })
 
     it('does nothing with no Frame, or once Row progress holds it (ticket 411)', () => {
-      for (const project of [open, moveToRow(sized, 1)]) {
+      for (const project of [open, moveToRow(sized, 1, frameIdIn(sized))]) {
         const { deps, stepEdge } = setup(project)
         stepEdge('right', 1)
         expect(deps.replaceProject).not.toHaveBeenCalled()
@@ -763,7 +764,7 @@ describe('useFrameFlow', () => {
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(false)
       expect(frameOf(deps.harness.project)!.shape).toBe('star')
-      expect(pointersOf(rowProgressOf(deps.harness.project))).toEqual({})
+      expect(pointersOf(rowProgressOf(deps.harness.project, frameIdIn(deps.harness.project)))).toEqual({})
     })
 
     it('asks before replacing a Frame that holds beads, and replaces nothing on No', () => {
@@ -789,7 +790,7 @@ describe('useFrameFlow', () => {
     })
 
     it('does nothing once a pass is done', () => {
-      const { deps, placeFromStarter } = setup(moveToRow(sized, 1))
+      const { deps, placeFromStarter } = setup(moveToRow(sized, 1, frameIdIn(sized)))
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
@@ -799,15 +800,15 @@ describe('useFrameFlow', () => {
 describe('useFrameFlow on a turned Frame (ticket 1016)', () => {
   /** A loom Frame of 4 rows and 6 columns turned a quarter: it lies 4 wide and 6 tall at (19, 21), its own top on the
    * right as seen. */
-  const turned = rotateFrame(withLayers(sized, { beads: {}, frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: {} } }))!
-  const seen = (flow: ReturnType<typeof setup>) => laidFrame(flow.deps.harness.project)
+  const turned = rotateFrame(withLayers(sized, { beads: {}, frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: {} } }), undefined, frameIdIn(withLayers(sized, { beads: {}, frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: {} } })))!
+  const seen = (flow: ReturnType<typeof setup>) => laidFrame(flow.deps.harness.project, frameIdIn(flow.deps.harness.project))
 
   it('drags the seen edge a handle stands on, the opposite edge staying, as one announced Undo step', () => {
     const flow = setupEditing(turned)
     expect(flow.settingFrame.value).toBe(true)
     flow.press({ kind: 'handle', edges: ['right'] }, { row: 22, column: 24 })
     flow.drag({ row: 22, column: 26 })
-    expect(laidFrame(flow.draftProject.value!)).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
+    expect(laidFrame(flow.draftProject.value!, frameIdIn(flow.draftProject.value!))).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
     flow.release()
     expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
     expect(flow.deps.announce).toHaveBeenCalledWith('Frame set, width 6, height 6')
@@ -837,7 +838,7 @@ describe('useFrameFlow on a turned Frame (ticket 1016)', () => {
 describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   /** The open Project with an empty Custom frame of a Frame shape and size. */
   function custom(shape: FrameShapeId, size: number): Project {
-    const result = changeFrame(open, { custom: { shape, size, centre: { row: 20, column: 30 } } })
+    const result = changeFrame(open, { custom: { shape, size, centre: { row: 20, column: 30 } } }, frameIdIn(open))
     if (result.kind !== 'changed') throw new Error(result.kind)
     return result.project
   }
@@ -887,7 +888,7 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   })
 
   it('changes a Fringe earring one setting at a time; its Fringe style is a step of its own, folding without asking (tickets 0597, 0640)', () => {
-    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } })
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     const { deps, setSettings } = setup(placed.project)
     setSettings({ fringeLength: 14 })
@@ -919,7 +920,7 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   })
 
   it('says why a Fringe earring\'s Width moved when its top is switched to peyote (ticket 0814)', () => {
-    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 6, topRows: 4, fringeStyle: 'straight', fringeLength: 9 }, centre: { row: 20, column: 30 } } })
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 6, topRows: 4, fringeStyle: 'straight', fringeLength: 9 }, centre: { row: 20, column: 30 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     const { deps, setTechnique } = setup(placed.project)
     setTechnique('peyote')
@@ -927,7 +928,7 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   })
 
   it('announces the setting a Fringe earring\'s handle drove: its bottom handle Fringe length (ticket 0814)', () => {
-    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } })
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     const { deps, press, drag, release } = setupEditing(placed.project)
     const frame = frameOf(placed.project)!

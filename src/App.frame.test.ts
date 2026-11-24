@@ -1,3 +1,4 @@
+import { frameIdIn } from './testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { frameWeave } from './domain/layerWeave'
 import { weaveSettings } from './domain/weave'
@@ -12,7 +13,7 @@ import { designSizes, STARTER_BEAD_ID, starterById, starterProject } from './dom
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { hoverBead, pressBead } from './testUtils/beads'
 import { pickColor, pressBar, selectAll } from './testUtils/pill'
-import { frameOf } from './domain/layerRecord'
+import { frameIdOf, frameOf } from './domain/layerRecord'
 import { rowProgressOf } from './domain/rowProgress'
 import { frameSheetOf, pointersOf, withLayers } from './testUtils/layerFields'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
@@ -80,7 +81,7 @@ const savedFrame = () => {
 
 /** The sketch with a Frame made round the beads in `rectangle`: they are the Frame's own (Frame from Selection). */
 const framedAround = (rectangle: Rect): Project => {
-  const made = changeFrame(unframedProject(), { make: rectangle })
+  const made = changeFrame(unframedProject(), { make: rectangle }, frameIdIn(unframedProject()))
   if (made.kind !== 'changed') throw new Error('expected a Frame')
   return made.project
 }
@@ -323,7 +324,7 @@ describe('Painting a Custom frame', () => {
     // Round 7 of a 10-round Triangle runs one place past the Frame's last column.
     const own = { row: 7, column: columns }
 
-    await pressBead(wrapper, { row: row + own.row, column: column + own.column, layer: 'frame' })
+    await pressBead(wrapper, { row: row + own.row, column: column + own.column, layer: frameIdOf(frameOf(loadProjects()[0])!) })
     await wrapper.find('.app-shell').trigger('mouseup')
     await flushPromises()
 
@@ -332,7 +333,7 @@ describe('Painting a Custom frame', () => {
 })
 
 describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
-  const savedProgress = () => rowProgressOf(loadProjects()[0])
+  const savedProgress = () => rowProgressOf(loadProjects()[0], frameIdIn(loadProjects()[0]))
 
   it('draws no Progress bar while the Project has no Frame', async () => {
     const wrapper = await mountOpen()
@@ -414,6 +415,6 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     await flushPromises()
     await wrapper.get('[data-testid="margin-brick-drop-stepper-more"]').trigger('click')
     await flushPromises()
-    expect(weaveSettings(frameWeave(loadProjects()[0]!))).toEqual({ brickDrop: 2 })
+    expect(weaveSettings(frameWeave(loadProjects()[0]!, frameIdIn(loadProjects()[0])))).toEqual({ brickDrop: 2 })
   })
 })

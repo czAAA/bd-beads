@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 import { withColors } from '../../domain/canvas'
@@ -119,7 +120,7 @@ describe('useRadialToolboxFlow (ticket 1064)', () => {
 
   it('Pick color from Canvas does what its button in the Palette does and closes the ring, wherever the ring was opened: on a bead, an empty position, the Frame\'s margin or off the beads (ticket 1089)', () => {
     const { ring, deps } = setup()
-    const places = [{ row: 2, column: 2 }, { row: 20, column: 20, layer: 'frame' as const }, { row: 0, column: 0 }, { row: 18, column: 18 }, undefined]
+    const places = [{ row: 2, column: 2 }, { row: 20, column: 20, layer: FRAME_ID }, { row: 0, column: 0 }, { row: 18, column: 18 }, undefined]
     for (const position of places) {
       ring.openAt(AT, position)
       ring.pickColor()

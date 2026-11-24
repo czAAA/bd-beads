@@ -7,7 +7,7 @@ import { withMargin } from './margin'
 import { canvasDistance, frameWeave, laidOnCanvas } from './layerWeave'
 import { shapeSide, turnedGrid } from './frameShape'
 import { laidSize } from './frameOrientation'
-import { beadsOfLayer, heldWeave, type Layered, startingRowProgressOf, FIRST_FRAME, frameById } from './layerRecord'
+import { beadsOfLayer, heldWeave, type Layered, startingRowProgressOf, frameById } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
 import type { Project } from './project'
 import { clampPointer } from './rowProgress'
@@ -110,7 +110,7 @@ export function frameResizedAround(weave: Weave, frame: Rect, columns: number, r
 
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined when there is none: the Frame's own beads and
  * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
-export function fitToDrawing(project: Layered, ref: FrameRef = FIRST_FRAME): Rect | undefined {
+export function fitToDrawing(project: Layered, ref: FrameRef): Rect | undefined {
   const frame = frameById(project, ref)
   const covered = footprintOf(project, ref)
   const canvas = beadsOfLayer(project, 'canvas')
@@ -155,7 +155,7 @@ function turnedOrigin(project: Project, current: FrameSheet, rectangle: Rect, re
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
  * place, those outside a smaller Frame fold and show again when it grows back, the Canvas is never touched (ticket
  * 1215), a Frame set anew is empty, Row progress stays inside it; an unchanged Frame is the same Project. */
-export function withFrame(project: Project, rectangle: Rect | undefined, ref: FrameRef = FIRST_FRAME): Project {
+export function withFrame(project: Project, rectangle: Rect | undefined, ref: FrameRef): Project {
   if (sameFrame(frameById(project, ref), rectangle)) {
     return project
   }

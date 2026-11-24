@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { withPictureTurned } from '../../testUtils/layerFields'
 import { withColors } from '../../domain/canvas'
@@ -39,11 +40,11 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
     const { harness, onRotateCanvas } = setup()
     onRotateCanvas()
     expect(beadsOfLayer(harness.project, 'canvas')).toEqual(beadsOfLayer(framed, 'canvas'))
-    expect(beadsOfLayer(harness.project, 'frame')).toEqual(beadsOfLayer(framed, 'frame'))
+    expect(beadsOfLayer(harness.project, frameIdIn(harness.project))).toEqual(beadsOfLayer(framed, frameIdIn(framed)))
     expect(canvasOf(harness.project).pieceNames).toEqual(canvasOf(framed).pieceNames)
-    expect(framePlacement(harness.project)).toEqual(framePlacement(framed))
-    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(framed))
-    expect(seenWayOf(harness.project)).toBe(seenWayOf(framed))
+    expect(framePlacement(harness.project, frameIdIn(harness.project))).toEqual(framePlacement(framed, frameIdIn(framed)))
+    expect(rowProgressOf(harness.project, frameIdIn(harness.project))).toEqual(rowProgressOf(framed, frameIdIn(framed)))
+    expect(seenWayOf(harness.project, frameIdIn(harness.project))).toBe(seenWayOf(framed, frameIdIn(framed)))
     expect(harness.history.canUndo.value).toBe(false)
     expect(harness.resetAfterFrameChange).not.toHaveBeenCalled()
   })
@@ -54,11 +55,11 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
     onRotateCanvas()
     expect(turnView).toHaveBeenCalledWith(90)
     expect(canvasPlacement(harness.project)).toEqual({ angle: 90, at: { x: 4, y: -6 } })
-    expect(framePlacement(harness.project)).toEqual(framePlacement(framed))
+    expect(framePlacement(harness.project, frameIdIn(harness.project))).toEqual(framePlacement(framed, frameIdIn(framed)))
   })
 
   it('still turns once a Row progress pass is done', () => {
-    const done = moveToRow(framed, 1)
+    const done = moveToRow(framed, 1, frameIdIn(framed))
     const { harness, onRotateCanvas } = setup(done)
     onRotateCanvas()
     expect(orientationOf(harness.project)).toBe(90)
@@ -72,13 +73,13 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
   })
 
   it('keeps the angle a twist settled on, changing no bead, Frame or Row progress, as no Undo step and with no announcement (ticket 0672)', () => {
-    const { deps, harness, onTwistCanvas } = setup(moveToRow(framed, 1))
+    const { deps, harness, onTwistCanvas } = setup(moveToRow(framed, 1, frameIdIn(framed)))
     onTwistCanvas(212.5, { x: -1, y: 2 })
     expect(orientationOf(harness.project)).toBe(212.5)
     expect(canvasPlacement(harness.project).at).toEqual({ x: -1, y: 2 })
     expect(beadsOfLayer(harness.project, 'canvas')).toEqual(beadsOfLayer(framed, 'canvas'))
-    expect(framePlacement(harness.project)).toEqual(framePlacement(framed))
-    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(moveToRow(framed, 1)))
+    expect(framePlacement(harness.project, frameIdIn(harness.project))).toEqual(framePlacement(framed, frameIdIn(framed)))
+    expect(rowProgressOf(harness.project, frameIdIn(harness.project))).toEqual(rowProgressOf(moveToRow(framed, 1, frameIdIn(framed)), frameIdIn(framed)))
     expect(harness.history.canUndo.value).toBe(false)
     expect(deps.announce).not.toHaveBeenCalled()
   })

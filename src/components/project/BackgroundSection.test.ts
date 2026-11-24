@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../../testUtils/frameId'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
@@ -51,13 +52,13 @@ describe('BackgroundSection (ticket 0666)', () => {
   })
 
   it('shows the layer\'s own Background, each layer\'s apart, and keeps its position when the theme changes', async () => {
-    const project = withBackground(withBackground(framed(), 'canvas', 3), 'frame', 2)
+    const project = withBackground(withBackground(framed(), 'canvas', 3), FRAME_ID, 2)
     setTheme('dark')
     await flush()
     const canvas = render(project).findAll('[role="radio"]')
     expect(canvas[2].attributes('aria-label')).toBe('Slate, 3 of 3')
     expect(canvas[2].attributes('aria-checked')).toBe('true')
-    const frame = render(project, 'frame')
+    const frame = render(project, FRAME_ID)
     expect(frame.find('[role="radiogroup"][aria-label="Frame background"]').exists()).toBe(true)
     expect(frame.findAll('[role="radio"]')[1].attributes('aria-checked')).toBe('true')
   })
@@ -68,7 +69,7 @@ describe('BackgroundSection (ticket 0666)', () => {
   })
 
   it('asks for the position of the swatch picked', async () => {
-    const wrapper = render(framed(), 'frame')
+    const wrapper = render(framed(), FRAME_ID)
     await wrapper.get('[data-testid="background-color-pebble"]').trigger('click')
     expect(wrapper.emitted('pick')).toEqual([[3]])
   })

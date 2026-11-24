@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstFrameId } from '../../domain/layerRecord'
 import { computed, ref, watch } from 'vue'
 import { columnsAsSeen, frameRowOrder, rowProgressPosition, seenWayOf, type SeenWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
@@ -67,7 +68,7 @@ function keyedHere<Action extends { chords: readonly unknown[] }>(action: Action
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
-const position = computed(() => rowProgressPosition(props.project))
+const position = computed(() => rowProgressPosition(props.project, firstFrameId(props.project)))
 
 /** Rows before the current one are finished. */
 const finishedShare = computed(() => (position.value.total > 0 ? position.value.current / position.value.total : 0))
@@ -81,7 +82,7 @@ watch(
   },
 )
 
-const columnWise = computed(() => columnsAsSeen(props.project))
+const columnWise = computed(() => columnsAsSeen(props.project, firstFrameId(props.project)))
 
 /** Row done and Back a row name what is woven in the direction the rows run: a row, or a column (ticket 411). */
 const doneLabel = computed(() => (columnWise.value ? t.value.rowProgress.columnNextButton : t.value.rowProgress.nextButton))
@@ -104,7 +105,7 @@ const customPosition = computed(() => customPassWords(t.value.rowProgress, props
 
 /** The way the arrows point: drawn for top to bottom (ticket 0589), turned to the way the rows run as seen, which Row
  * progress keeps (spec 1182). */
-const arrowTurn = computed(() => seenWayOf(props.project))
+const arrowTurn = computed(() => seenWayOf(props.project, firstFrameId(props.project)))
 
 const directionLabel = computed(() => seenWayWords(t.value.rowProgress, arrowTurn.value).name)
 
@@ -115,7 +116,7 @@ function toggleDirection(event: MouseEvent) {
   directionButton.value = event.currentTarget as HTMLElement
   directionOpen.value = !directionOpen.value
 }
-const turns = computed(() => frameRowOrder(props.project).turns)
+const turns = computed(() => frameRowOrder(props.project, firstFrameId(props.project)).turns)
 /** Row highlight is Show row marks in that list, so the bar's stands alone only where the rows run one way (a Custom
  * frame). One lit Switch at most (ticket 0981, UX-092): the margin's smaller forms, with no list, keep theirs only while
  * the bar's is in its list. */

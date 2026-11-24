@@ -1,6 +1,6 @@
 import { computed, ref, shallowRef } from 'vue'
 import { frameGeometryOf, layerAt, type Layer } from '../../domain/layers'
-import type { GridPosition, PreviewCell } from '../../domain/grid'
+import { isFrameLayer, type GridPosition, type PreviewCell } from '../../domain/grid'
 import { beadColorAt } from '../../domain/layerBeads'
 import type { Project } from '../../domain/project'
 import {
@@ -24,7 +24,7 @@ import {
 import { moveLayerSelection, pieceCarry, selectionAfterMove, stepMove, wholeMove, type PieceCarry } from '../../domain/moveSelection'
 import { frameAllows } from '../../domain/frameShape'
 import { laidFrame } from '../../domain/frameOrientation'
-import { layerOf } from '../../domain/layerRecord'
+import { layerOf, firstFrameId } from '../../domain/layerRecord'
 import type { FrameEdge } from '../../domain/frame'
 import type { Rect } from '../../domain/canvas'
 import type { EditFn } from '../project/useEdit'
@@ -95,7 +95,7 @@ export function useSelectionGesture(
    * Frame for a Mirror-mode drag, the Frame mirroring whole (ADR 0082). The margin is the Canvas's, where a drag may
    * start (ticket 0659). */
   function refusesSelection(project: Project, at: GridPosition, marking = false): boolean {
-    return layerAt(project, at) === 'frame' && (marking || !frameAllows(project, 'select'))
+    return isFrameLayer(layerAt(project, at)) && (marking || !frameAllows(project, 'select', firstFrameId(project)))
   }
 
   /** The Selection a Piece tap replaced, until its press ends: a press that was never a tap gives it back (ticket 1065). */
@@ -203,7 +203,7 @@ export function useSelectionGesture(
     }
     const at = { row, column, ...(named ? { layer: named } : {}) }
     // A Custom frame's beads are named by round and place, not Pieces of a Grid (ticket 0594): the Piece tool refuses it.
-    const custom = layerAt(project, at) === 'frame' && !frameGeometryOf(project).grid
+    const custom = isFrameLayer(layerAt(project, at)) && !frameGeometryOf(project, firstFrameId(project)).grid
     const picked = custom ? undefined : pieceSelectionOnLayer(project, at)
     if (custom || refusesSelection(project, at) || (!picked && beadColorAt(project, row, column, named))) {
       refusals.value += 1
@@ -219,7 +219,7 @@ export function useSelectionGesture(
   function selectAll(): boolean {
     const project = currentProject()
     // A Frame that offers no Selection leaves Select all the Canvas's beads.
-    const all = project ? selectAllSelection(layerOf(project, 'canvas').beads, frameAllows(project, 'select') ? laidFrame(project) : undefined) : undefined
+    const all = project ? selectAllSelection(layerOf(project, 'canvas').beads, frameAllows(project, 'select', firstFrameId(project)) ? laidFrame(project, firstFrameId(project)) : undefined, firstFrameId(project)) : undefined
     if (!all) {
       return false
     }
@@ -487,14 +487,14 @@ export function useSelectionGesture(
   function pastePreviewCells(project: Project, hovered: GridPosition): PreviewCell[] {
     if (!pasteProjectionActive.value || pastePreviewStamp(project, hovered)) return []
     const cells = pastedCellsOnLayer(project, copiedBlock.value!, hovered)
-    return mirroredAt(project, hovered) ? mirroredOnCanvas(project, mirror(), cells) : cells
+    return mirroredAt(project, hovered) ? mirroredOnCanvas(project, mirror(), cells, firstFrameId(project)) : cells
   }
 
   /** Whether a Paste aimed at `hovered` is mirrored: on the layer the Mirror is on (ADR 0082); its preview then lists
    * every counterpart, as a stamp cannot. */
   function mirroredAt(project: Project, hovered: GridPosition): boolean {
     if (!isMirrorOn(mirror())) return false
-    const onFrame = layerAt(project, hovered) === 'frame'
+    const onFrame = isFrameLayer(layerAt(project, hovered))
     return canvasMirrors(mirror()) ? !onFrame : onFrame
   }
 

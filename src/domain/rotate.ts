@@ -7,7 +7,7 @@ import { snapColumn, snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, canvasWeave, frameWeave, layerWeave } from './layerWeave'
-import { beadsOfLayer, canvasOf, heldWeave, orientationOf, withFrameFields, withLayer, FIRST_FRAME, frameById } from './layerRecord'
+import { beadsOfLayer, canvasOf, heldWeave, orientationOf, withFrameFields, withLayer, frameById } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
 import { touch, type FrameLayer, type Project } from './project'
 import { rowProgressStarted } from './rowProgress'
@@ -182,7 +182,7 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
 /** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame a quarter clockwise about its centre, its beads in
  * their own rows and columns, the Canvas untouched, its Row direction as seen (spec 1182). With a pass done `woven`
  * answers rotateFrameQuestion (ticket 1184): keep the rows, or start over. No Frame: undefined. */
-export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: FrameRef = FIRST_FRAME): Project | undefined {
+export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: FrameRef): Project | undefined {
   const custom = turnedCustomFrame(project, ref)
   if (custom) return custom
   const frame = frameById(project, ref)
@@ -218,7 +218,7 @@ function turnedRowProgress(project: Project, turns: number, woven: WovenChoice, 
 /** A two-finger twist of the Frame come to rest at `angle` (ticket 1190, spec 1182): the Frame turned about its own
  * centre (`withFrameTurnedTo`), one Undo step. Settled on another quarter turn with a pass done, `woven` answers
  * `twistFrameQuestion` as it answers Rotate Frame's. No Frame: undefined. */
-export function twistFrameTo(project: Project, angle: number, woven: WovenChoice = 'keep', ref: FrameRef = FIRST_FRAME): Project | undefined {
+export function twistFrameTo(project: Project, angle: number, woven: WovenChoice = 'keep', ref: FrameRef): Project | undefined {
   if (!frameById(project, ref)) return undefined
   const turns = ((nearestQuarterTurn(angle) - frameQuarterTurnOf(project, ref) + 360) / 90) % 4
   return touch(withFrameFields(withFrameTurnedTo(project, angle, ref), { rowProgress: turnedRowProgress(project, turns, woven, ref) }, ref), {})

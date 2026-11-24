@@ -1,3 +1,4 @@
+import { firstFrameId } from '../../domain/layerRecord'
 import { computed, ref } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
@@ -61,7 +62,7 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
   /** A Custom frame's own Axes while the whole Frame is the Mirror (ADR 0082): fixed, the bar notes them. */
   const shape = computed(() => {
     const project = deps.currentProject()
-    return project && onFrame.value ? shapeAxesOf(project) : undefined
+    return project && onFrame.value ? shapeAxesOf(project, firstFrameId(project)) : undefined
   })
   /** The Canvas Area as a Selection, for the Select tool's handles in Mirror mode; none for the whole Frame. */
   const areaSelection = computed<Selection | undefined>(() => {

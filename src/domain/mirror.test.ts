@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { layerSheet } from './layers'
@@ -48,7 +49,7 @@ function framed(technique: Technique, columns: number, rows: number) {
 
 /** The same with no Frame: the open Canvas alone. */
 function open(technique: Technique): Project {
-  return (changeFrame(framed(technique, 4, 4), { remove: true }) as { project: Project }).project
+  return (changeFrame(framed(technique, 4, 4), { remove: true }, frameIdIn(framed(technique, 4, 4))) as { project: Project }).project
 }
 
 const WHOLE_FRAME: MirrorPlace = { layer: 'frame' }
@@ -73,11 +74,11 @@ const cells = (result: { positions: { row: number; column: number }[] }) => resu
 
 describe('counterparts on the whole Frame by index (tickets 0703, 0750, spec 0702)', () => {
   it('reflects the column about one Left–right axis: 0 and 3 are a pair on 4 beads across, and the middle bead of 5 is its own', () => {
-    const four = layerSheet(framed('loom', 4, 2), 'frame')
+    const four = layerSheet(framed('loom', 4, 2), FRAME_ID)
     expect(columnsOf(counterparts(four, on({ leftRight: true }), [{ row: 0, column: 0 }]))).toEqual([0, 3])
     expect(columnsOf(counterparts(four, on({ leftRight: true }), [{ row: 0, column: 2 }]))).toEqual([2, 1])
 
-    const five = layerSheet(framed('loom', 5, 2), 'frame')
+    const five = layerSheet(framed('loom', 5, 2), FRAME_ID)
     expect(columnsOf(counterparts(five, on({ leftRight: true }), [{ row: 1, column: 2 }]))).toEqual([2])
     expect(counterparts(five, on({ leftRight: true }), [{ row: 1, column: 4 }]).positions).toEqual([
       { row: 1, column: 4 },
@@ -86,7 +87,7 @@ describe('counterparts on the whole Frame by index (tickets 0703, 0750, spec 070
   })
 
   it('with two axes cuts 6 beads into three strips, Mirror alternating A | A′ | A and Repeat the same way round', () => {
-    const six = layerSheet(framed('loom', 6, 1), 'frame')
+    const six = layerSheet(framed('loom', 6, 1), FRAME_ID)
     expect(columnsOf(counterparts(six, on({ leftRight: true }, { leftRight: 2 }), [{ row: 0, column: 0 }]))).toEqual([0, 3, 4])
     expect(columnsOf(counterparts(six, on({ leftRight: true }, { leftRight: 2 }), [{ row: 0, column: 3 }]))).toEqual([3, 0, 4])
     expect(columnsOf(counterparts(six, on({ leftRight: true }, { leftRight: 2 }, 'repeat'), [{ row: 0, column: 0 }]))).toEqual([0, 2, 4])
@@ -94,13 +95,13 @@ describe('counterparts on the whole Frame by index (tickets 0703, 0750, spec 070
   })
 
   it('uses a count the Frame does not fit as the nearest fitting one below: 2 axes on 7 beads act as 1 (ADR 0095)', () => {
-    const seven = layerSheet(framed('loom', 7, 1), 'frame')
+    const seven = layerSheet(framed('loom', 7, 1), FRAME_ID)
     expect(columnsOf(counterparts(seven, on({ leftRight: true }, { leftRight: 2 }), [{ row: 0, column: 0 }]))).toEqual([0, 6])
     expect(mirrorLines(seven.weave, area(0, 0, 1, 7), on({ leftRight: true }, { leftRight: 2 })).leftRight).toEqual([3.5])
   })
 
   it('reflects the row about a Top–bottom axis, and both directions together give four images', () => {
-    const sheet = layerSheet(framed('loom', 4, 4), 'frame')
+    const sheet = layerSheet(framed('loom', 4, 4), FRAME_ID)
     expect(counterparts(sheet, on({ topBottom: true }), [{ row: 0, column: 1 }]).positions).toEqual([
       { row: 0, column: 1 },
       { row: 3, column: 1 },
@@ -114,7 +115,7 @@ describe('counterparts on the whole Frame by index (tickets 0703, 0750, spec 070
   })
 
   it('maps peyote by the bead\'s place: a shifted column\'s bead reflects to a row higher than its index would, and no Left–right on an even width (ticket 0775)', () => {
-    const sheet = layerSheet(framed('peyote', 6, 3), 'frame')
+    const sheet = layerSheet(framed('peyote', 6, 3), FRAME_ID)
     expect(counterparts(sheet, on({ leftRight: true, topBottom: true }), [{ row: 1, column: 1 }]).positions).toEqual([
       { row: 1, column: 1 },
       { row: 0, column: 1 },
@@ -122,7 +123,7 @@ describe('counterparts on the whole Frame by index (tickets 0703, 0750, spec 070
   })
 
   it('carries what rides on a position, a Paste\'s color, onto its counterparts, and a source bead keeps its own color over a counterpart', () => {
-    const sheet = layerSheet(framed('loom', 4, 1), 'frame')
+    const sheet = layerSheet(framed('loom', 4, 1), FRAME_ID)
     const pasted = counterparts(sheet, on({ leftRight: true }), [
       { row: 0, column: 0, color: '#ff0000' },
       { row: 0, column: 3, color: '#0000ff' },
@@ -134,19 +135,19 @@ describe('counterparts on the whole Frame by index (tickets 0703, 0750, spec 070
   })
 
   it('counts nothing as dropped on a Frame without a shape, and maps nothing off the Frame', () => {
-    const sheet = layerSheet(framed('loom', 4, 2), 'frame')
+    const sheet = layerSheet(framed('loom', 4, 2), FRAME_ID)
     expect(counterparts(sheet, on({ leftRight: true }), [{ row: 0, column: 0 }]).dropped).toBe(0)
     expect(counterparts(sheet, on({ leftRight: true }), [{ row: 5, column: 9 }]).positions).toEqual([{ row: 5, column: 9 }])
   })
 
   it('clamps a count the Frame has shrunk under: 9 axes on 4 beads act as 3', () => {
-    const sheet = layerSheet(framed('loom', 4, 1), 'frame')
+    const sheet = layerSheet(framed('loom', 4, 1), FRAME_ID)
     expect(columnsOf(counterparts(sheet, on({ leftRight: true }, { leftRight: 9 }), [{ row: 0, column: 0 }]))).toEqual([0, 1, 2, 3])
   })
 
   it('leaves a gesture alone while the Mirror is off, with no Axis on, and on the layer it is not on', () => {
     const project = framed('loom', 4, 4)
-    const frame = layerSheet(project, 'frame')
+    const frame = layerSheet(project, FRAME_ID)
     expect(counterparts(frame, MIRROR_OFF, [{ row: 0, column: 0 }]).positions).toEqual([{ row: 0, column: 0 }])
     expect(counterparts(frame, on({}), [{ row: 0, column: 0 }]).positions).toEqual([{ row: 0, column: 0 }])
     expect(counterparts(layerSheet(project, 'canvas'), on({ leftRight: true }), [{ row: 0, column: 0 }]).positions).toEqual([{ row: 0, column: 0 }])
@@ -199,23 +200,23 @@ describe('mirroredOnCanvas', () => {
   it('expands the Canvas\'s own positions inside a Canvas Area, leaving out a counterpart in the keep-out margin', () => {
     const framedAt = withLayers(framed('loom', 4, 2), { frame: { ...frameOf(framed('loom', 4, 2))!, row: 10, column: 10 } })
     const setting = on({ leftRight: true }, {}, 'mirror', onCanvas(area(0, 15, 12, 11)))
-    expect(mirroredOnCanvas(framedAt, setting, [{ row: 0, column: 25, layer: 'canvas' }])).toEqual([
+    expect(mirroredOnCanvas(framedAt, setting, [{ row: 0, column: 25, layer: 'canvas' }], frameIdIn(framedAt))).toEqual([
       { row: 0, column: 25, layer: 'canvas' },
       { row: 0, column: 15, layer: 'canvas' },
     ])
     // The margin is four positions round the Frame at rows 10 to 11, columns 10 to 13: (8, 15) lies in it.
-    expect(mirroredOnCanvas(framedAt, setting, [{ row: 8, column: 25, layer: 'canvas' }])).toEqual([{ row: 8, column: 25, layer: 'canvas' }])
+    expect(mirroredOnCanvas(framedAt, setting, [{ row: 8, column: 25, layer: 'canvas' }], frameIdIn(framedAt))).toEqual([{ row: 8, column: 25, layer: 'canvas' }])
   })
 
   it('expands Canvas positions that lie on the Frame through the Frame\'s own positions for the whole-Frame Mirror, and leaves the Canvas\'s alone', () => {
     const project = framed('loom', 4, 2)
     const { row, column } = project.layers[1]!
     const setting = on({ leftRight: true })
-    expect(mirroredOnCanvas(project, setting, [{ row, column, layer: 'frame' }])).toEqual([
-      { row, column, layer: 'frame' },
-      { row, column: column + 3, layer: 'frame' },
+    expect(mirroredOnCanvas(project, setting, [{ row, column, layer: FRAME_ID }], frameIdIn(project))).toEqual([
+      { row, column, layer: FRAME_ID },
+      { row, column: column + 3, layer: FRAME_ID },
     ])
-    expect(mirroredOnCanvas(project, setting, [{ row: row - 5, column: column - 5, layer: 'canvas' }])).toEqual([{ row: row - 5, column: column - 5, layer: 'canvas' }])
+    expect(mirroredOnCanvas(project, setting, [{ row: row - 5, column: column - 5, layer: 'canvas' }], frameIdIn(project))).toEqual([{ row: row - 5, column: column - 5, layer: 'canvas' }])
   })
 })
 
@@ -226,7 +227,7 @@ describe('the one Mirror of a Project (ADR 0082, ticket 0750)', () => {
     expect(isMirrorOn(mirrorSettingOf(project))).toBe(false)
     const mirrored = withMirrorPlace(project, WHOLE_FRAME)
     expect(isMirrorOn(mirrorSettingOf(mirrored))).toBe(true)
-    const unframed = (changeFrame(mirrored, { remove: true }) as { project: Project }).project
+    const unframed = (changeFrame(mirrored, { remove: true }, frameIdIn(mirrored)) as { project: Project }).project
     expect(isMirrorOn(mirrorSettingOf(unframed))).toBe(false)
   })
 
@@ -535,22 +536,22 @@ describe('the Mirror bar\'s settings (ContextBar card, Mirror bar)', () => {
 describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
 
   it('at Fold 4 turns the position a quarter at a time about the Frame\'s centre by index, as Rotate turns a fragment (ADR 0052), on a Frame of odd and of even size', () => {
-    const odd = layerSheet(framed('loom', 5, 5), 'frame')
+    const odd = layerSheet(framed('loom', 5, 5), FRAME_ID)
     expect(cells(counterparts(odd, radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 4], [4, 4], [4, 0]])
     expect(cells(counterparts(odd, radial(4), [at(0, 1)]))).toEqual([[0, 1], [1, 4], [4, 3], [3, 0]])
     expect(cells(counterparts(odd, radial(4), [at(2, 2)]))).toEqual([[2, 2]])
-    const even = layerSheet(framed('loom', 4, 4), 'frame')
+    const even = layerSheet(framed('loom', 4, 4), FRAME_ID)
     expect(cells(counterparts(even, radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
   })
 
   it('at Fold 2 turns the position a half about the centre, and in Mirror mode reflects it too: the two straight Axes\' four images', () => {
-    const sheet = layerSheet(framed('loom', 5, 5), 'frame')
+    const sheet = layerSheet(framed('loom', 5, 5), FRAME_ID)
     expect(cells(counterparts(sheet, radial(2), [at(0, 1)]))).toEqual([[0, 1], [4, 3]])
     expect(cells(counterparts(sheet, radial(2, 'mirror'), [at(0, 1)]))).toEqual([[0, 1], [4, 3], [0, 3], [4, 1]])
   })
 
   it('in Mirror mode at Fold 4 on a loom grid is the eightfold kaleidoscope, the diagonal reflections as index swaps: up to 2n − 1 counterparts, Repeat n − 1', () => {
-    const sheet = layerSheet(framed('loom', 5, 5), 'frame')
+    const sheet = layerSheet(framed('loom', 5, 5), FRAME_ID)
     expect(cells(counterparts(sheet, radial(4, 'mirror'), [at(0, 1)]))).toEqual([[0, 1], [1, 4], [4, 3], [3, 0], [0, 3], [3, 4], [4, 1], [1, 0]])
     // A bead on the diagonal is its own reflection across it: four images.
     expect(cells(counterparts(sheet, radial(4, 'mirror'), [at(0, 0)]))).toEqual([[0, 0], [0, 4], [4, 4], [4, 0]])
@@ -559,7 +560,7 @@ describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
   it('four quarter turns come back to the start on loom, and on peyote and brick, where Fold 4 reads as the half turn (ticket 0775): every image has the same images', () => {
     for (const technique of ['loom', 'peyote', 'brick'] as const) {
       for (const [columns, rows] of [[6, 6], [7, 7], [5, 4]]) {
-        const sheet = layerSheet(framed(technique, columns, rows), 'frame')
+        const sheet = layerSheet(framed(technique, columns, rows), FRAME_ID)
         const source = at(1, 0)
         const images = counterparts(sheet, radial(4, 'mirror'), [source]).positions
         for (const image of images) {
@@ -568,11 +569,11 @@ describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
         }
       }
     }
-    expect(cells(counterparts(layerSheet(framed('brick', 4, 4), 'frame'), radial(4), [at(0, 0)]))).toEqual([[0, 0], [3, 3]])
+    expect(cells(counterparts(layerSheet(framed('brick', 4, 4), FRAME_ID), radial(4), [at(0, 0)]))).toEqual([[0, 0], [3, 3]])
   })
 
   it('on a Frame that is not square a Fold 4 reads as the half turn, so nothing is dropped (ticket 0751)', () => {
-    const sheet = layerSheet(framed('loom', 4, 5), 'frame')
+    const sheet = layerSheet(framed('loom', 4, 5), FRAME_ID)
     expect(cells(counterparts(sheet, radial(4), [at(0, 0)]))).toEqual([[0, 0], [4, 3]])
     expect(counterparts(sheet, radial(4), [at(4, 0)])).toEqual({ positions: [at(4, 0), at(0, 3)], dropped: 0 })
     expect(cells(counterparts(sheet, radial(2), [at(0, 0)]))).toEqual([[0, 0], [4, 3]])
@@ -585,16 +586,16 @@ describe('Radial on a grid is always symmetric (ticket 0751, spec 0702)', () => 
   const key = ({ row, column }: { row: number; column: number }) => `${row}:${column}`
 
   it('reads any Fold but 2 as 4 on a square Area, and as 2 on one that is not', () => {
-    const sheet = layerSheet(framed('loom', 7, 7), 'frame')
+    const sheet = layerSheet(framed('loom', 7, 7), FRAME_ID)
     for (const fold of [3, 5, 6, 8]) expect(cells(counterparts(sheet, radial(fold), [at(3, 1)])), `Fold ${fold}`).toEqual(cells(counterparts(sheet, radial(4), [at(3, 1)])))
-    const wide = layerSheet(framed('loom', 7, 5), 'frame')
+    const wide = layerSheet(framed('loom', 7, 5), FRAME_ID)
     for (const fold of [3, 4, 8]) expect(cells(counterparts(wide, radial(fold), [at(2, 1)])), `Fold ${fold}`).toEqual(cells(counterparts(wide, radial(2), [at(2, 1)])))
   })
 
   it('has every bead\'s set equal to the set of each of its counterparts, so drawing A lands on B and B on A, and drops nothing in a square Area', () => {
     for (const technique of ['loom', 'peyote', 'brick'] as const) {
       for (const [columns, rows] of [[6, 6], [7, 7], [8, 5], [5, 8], [9, 4]]) {
-        const sheet = layerSheet(framed(technique, columns, rows), 'frame')
+        const sheet = layerSheet(framed(technique, columns, rows), FRAME_ID)
         for (const fold of [2, 4]) {
           for (const mode of ['repeat', 'mirror'] as const) {
             for (let row = 0; row < rows; row++) {
@@ -771,8 +772,8 @@ describe('what the Mirror\'s place offers the bar (tickets 0775, 1027)', () => {
     expect(mirrorFitOf(peyote, MIRROR_OFF)).toBeUndefined()
     // A Canvas Area offers what it grows to (ticket 1027): one bead across is no reason for a chip to be off.
     expect(mirrorFitOf(open('peyote'), on({ leftRight: true }, {}, 'mirror', onCanvas(area(0, 0, 1, 6))))?.off).toEqual({})
-    const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const star = changeFrame(blank, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 30 } } }) as { project: Project }
+    const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const star = changeFrame(blank, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 30 } } }, frameIdIn(blank)) as { project: Project }
     expect(mirrorFitOf(star.project, on({ radial: true }))).toBeUndefined()
   })
 })
@@ -790,11 +791,11 @@ describe('the Fold of the whole-Frame Mirror (ticket 0751)', () => {
 describe('the whole-Frame Mirror on a Custom frame, the shape\'s own Axes (tickets 0706, 0750, spec 0702)', () => {
   /** A Custom frame of the shape at a size, its layout, and its layer as a command works on it. */
   const custom = (shape: FrameShapeId, size: number, quarterTurns?: QuarterTurns) => {
-    const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(blank, { custom: { shape, size, centre: { row: 20, column: 30 } } })
+    const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(blank, { custom: { shape, size, centre: { row: 20, column: 30 } } }, frameIdIn(blank))
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     const project = quarterTurns ? withLayers(placed.project, { frame: { ...frameOf(placed.project)!, quarterTurns } }) : placed.project
-    return { project, sheet: layerSheet(project, 'frame'), layout: frameLayoutOf(frameOf(project)!)! }
+    return { project, sheet: layerSheet(project, FRAME_ID), layout: frameLayoutOf(frameOf(project)!)! }
   }
   /** The whole-Frame Mirror in a Mode, whatever Axes the setting holds: the shape's are the ones that act. */
   const inMode = (mode: MirrorSetting['mode']): MirrorSetting => on({ leftRight: true }, {}, mode)
@@ -828,16 +829,16 @@ describe('the whole-Frame Mirror on a Custom frame, the shape\'s own Axes (ticke
 
   it('on a Triangle is Radial with its three sides, and on a Warped Square or a Kaleidocycle Radial with theirs', () => {
     const { sheet, project } = custom('triangle', 4)
-    expect(shapeAxesOf(project)).toEqual({ axes: { leftRight: false, topBottom: false, radial: true }, sides: 3 })
+    expect(shapeAxesOf(project, frameIdIn(project))).toEqual({ axes: { leftRight: false, topBottom: false, radial: true }, sides: 3 })
     expect(counterparts(sheet, inMode('repeat'), [at(1, 0)]).positions).toHaveLength(3)
-    expect(shapeAxesOf(custom('warpedSquare', 4).project)).toEqual({ axes: { leftRight: false, topBottom: false, radial: true }, sides: 4 })
-    expect(shapeAxesOf(custom('kaleidocycle', 3).project)).toEqual({ axes: { leftRight: false, topBottom: false, radial: true }, sides: 6 })
-    expect(shapeAxesOf(withFrameSheet(custom('star', 3).project, undefined))).toBeUndefined()
+    expect(shapeAxesOf(custom('warpedSquare', 4).project, frameIdIn(custom('warpedSquare', 4).project))).toEqual({ axes: { leftRight: false, topBottom: false, radial: true }, sides: 4 })
+    expect(shapeAxesOf(custom('kaleidocycle', 3).project, frameIdIn(custom('kaleidocycle', 3).project))).toEqual({ axes: { leftRight: false, topBottom: false, radial: true }, sides: 6 })
+    expect(shapeAxesOf(withFrameSheet(custom('star', 3).project, undefined, { frame: frameIdIn(custom('star', 3).project) }), frameIdIn(withFrameSheet(custom('star', 3).project, undefined, { frame: frameIdIn(custom('star', 3).project) })))).toBeUndefined()
   })
 
   it('on a Kite is its one Left–right line, pairing the wings, every counterpart landing; Repeat on a line maps nothing (no strip on a shape)', () => {
     const { sheet, project, layout } = custom('kite', 15)
-    expect(shapeAxesOf(project)).toEqual({ axes: { leftRight: true, topBottom: false, radial: false } })
+    expect(shapeAxesOf(project, frameIdIn(project))).toEqual({ axes: { leftRight: true, topBottom: false, radial: false } })
     expect(cells(counterparts(sheet, on({ radial: true }), [at(3, 2)]))).toEqual([[3, 2], [3, 3]])
     expect(cells(counterparts(sheet, inMode('repeat'), [at(3, 2)]))).toEqual([[3, 2]])
     for (const position of layout.positions) expect(counterparts(sheet, inMode('mirror'), [at(position.row, position.column)]).dropped).toBe(0)
@@ -852,7 +853,7 @@ describe('the whole-Frame Mirror on a Custom frame, the shape\'s own Axes (ticke
 
   it('a turned Kite lies with its spine across, so its line is Top–bottom, still pairing the wings', () => {
     const turnedKite = custom('kite', 15, 1)
-    expect(shapeAxesOf(turnedKite.project)).toEqual({ axes: { leftRight: false, topBottom: true, radial: false } })
+    expect(shapeAxesOf(turnedKite.project, frameIdIn(turnedKite.project))).toEqual({ axes: { leftRight: false, topBottom: true, radial: false } })
     expect(cells(counterparts(turnedKite.sheet, inMode('mirror'), [at(3, 2)]))).toEqual([[3, 2], [3, 3]])
   })
 

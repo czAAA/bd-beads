@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
@@ -67,8 +68,8 @@ describe('deleteAll', () => {
       '#e63746',
     )
     const rotated = turnedClockwise(painted)
-    const turned = toggleRowDirection(rotated)
-    return moveToRow(turned, 3)
+    const turned = toggleRowDirection(rotated, frameIdIn(rotated))
+    return moveToRow(turned, 3, frameIdIn(turned))
   }
 
   it('empties every cell', () => {
@@ -81,16 +82,17 @@ describe('deleteAll', () => {
     const cleared = deleteAll(paintedAndWoven())
 
     // Top to bottom as the Frame lies, on the Canvas turned a quarter, kept as seen (spec 1182).
-    expect(seenWayOf(cleared)).toBe('down')
-    expect(rowProgressOf(cleared)).toEqual({ way: 'down' })
+    expect(seenWayOf(cleared, frameIdIn(cleared))).toBe('down')
+    expect(rowProgressOf(cleared, frameIdIn(cleared))).toEqual({ way: 'down' })
   })
 
   it.each([['loom', 'down'], ['peyote', 'right'], ['brick', 'up']] as const)('puts a %s Frame back at the first row, its rows running %s as seen as a new Project\'s do', (technique, way) => {
-    const woven = moveToRow(turnRowDirectionTo(createProject({ technique, beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }), 'left'), 3)
+    const made = createProject({ technique, beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
+    const woven = moveToRow(turnRowDirectionTo(made, 'left', frameIdIn(made)), 3, frameIdIn(made))
     const cleared = deleteAll(woven)
 
-    expect(seenWayOf(cleared)).toBe(way)
-    expect(pointersOf(rowProgressOf(cleared))).toEqual({})
+    expect(seenWayOf(cleared, frameIdIn(cleared))).toBe(way)
+    expect(pointersOf(rowProgressOf(cleared, frameIdIn(cleared)))).toEqual({})
   })
 
   it('keeps name, size, Technique and Bead exactly as they were', () => {
@@ -107,18 +109,18 @@ describe('deleteAll', () => {
 
   it('puts both turns back where a new Project starts them, the Frame alike on the Canvas under its centre (ticket 1188)', () => {
     const made = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } })
-    const leaning = turnCanvasTo(rotateFrame(paintAt(made, [{ row: 1, column: 1 }], '#e63746'))!, 37.5, { x: 2, y: 1 })
-    expect(lieAlike(leaning)).toBe(false)
+    const leaning = turnCanvasTo(rotateFrame(paintAt(made, [{ row: 1, column: 1 }], '#e63746'), undefined, frameIdIn(made))!, 37.5, { x: 2, y: 1 })
+    expect(lieAlike(leaning, frameIdIn(leaning))).toBe(false)
 
     const cleared = deleteAll(leaning)
 
     expect(orientationOf(cleared)).toBe(90)
-    expect(lieAlike(cleared)).toBe(true)
+    expect(lieAlike(cleared, frameIdIn(cleared))).toBe(true)
     expect(frameOf(cleared)).toMatchObject({ angle: 90, rows: 8, columns: 6 })
     expect(frameOf(cleared)!.quarterTurns).toBeUndefined()
-    const [was, now] = [framePlacement(leaning)!.at, framePlacement(cleared)!.at]
+    const [was, now] = [framePlacement(leaning, frameIdIn(leaning))!.at, framePlacement(cleared, frameIdIn(cleared))!.at]
     expect(Math.hypot(now.x - was.x, now.y - was.y)).toBeLessThan(1.5)
-    expect(rowProgressOf(cleared)).toEqual({ way: 'right' })
+    expect(rowProgressOf(cleared, frameIdIn(cleared))).toEqual({ way: 'right' })
     expect(deleteAll(cleared)).toBe(cleared)
   })
 

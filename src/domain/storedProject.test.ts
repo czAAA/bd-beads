@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn } from '../testUtils/frameId'
 import type { OwnRowProgress } from './rowProgress'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
@@ -42,12 +43,12 @@ describe('normalizeProject', () => {
   })
 
   it('keeps a reversed way and its pointers through a save, and opens an old file with neither (ticket 0589)', () => {
-    const framed = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } }), { row: 0, column: 0, rows: 4, columns: 3 })
-    const upward = moveToRow(toggleRowDirection(toggleRowDirection(framed)), 3)
+    const framed = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } }), { row: 0, column: 0, rows: 4, columns: 3 }, frameIdIn(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } })))
+    const upward = moveToRow(toggleRowDirection(toggleRowDirection(framed, frameIdIn(framed)), frameIdIn(framed)), 3, frameIdIn(toggleRowDirection(toggleRowDirection(framed, frameIdIn(framed)), frameIdIn(framed))))
     const reopened = normalizeProject(JSON.parse(JSON.stringify(upward)))
 
-    expect(rowProgressOf(reopened)).toEqual({ way: 'up', up: 3 })
-    expect(rowProgressOf(normalizeProject(JSON.parse(JSON.stringify(framed))))).toEqual({ way: 'down' })
+    expect(rowProgressOf(reopened, frameIdIn(reopened))).toEqual({ way: 'up', up: 3 })
+    expect(rowProgressOf(normalizeProject(JSON.parse(JSON.stringify(framed))), frameIdIn(normalizeProject(JSON.parse(JSON.stringify(framed)))))).toEqual({ way: 'down' })
   })
 
   it('gives a Project saved as a fixed grid beads by position and a Frame the size of that grid (ADR 0026)', () => {
@@ -114,7 +115,7 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject(legacy as never)
 
-    expect(rowProgressOf(normalized)).toEqual({ way: 'down' })
+    expect(rowProgressOf(normalized, frameIdIn(normalized))).toEqual({ way: 'down' })
     expect(orientationOf(normalized)).toBe(0)
   })
 
@@ -157,7 +158,7 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject({ ...legacyRecordOf(base), rowProgress: { currentRow: 5 } as OwnRowProgress })
 
-    expect(rowProgressOf(normalized)).toEqual({ way: 'down', down: 5 })
+    expect(rowProgressOf(normalized, frameIdIn(normalized))).toEqual({ way: 'down', down: 5 })
   })
 
   it('drops the stored real-world size a Project saved before ADR 0026 still carries, and keeps its grid', () => {
@@ -182,7 +183,7 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject(withLayers(base, { rowProgress: { way: 'right', down: 999, right: 999 } }))
 
-    expect(rowProgressOf(normalized)).toEqual({ way: 'right', down: 20, right: 10 })
+    expect(rowProgressOf(normalized, frameIdIn(normalized))).toEqual({ way: 'right', down: 20, right: 10 })
   })
 })
 

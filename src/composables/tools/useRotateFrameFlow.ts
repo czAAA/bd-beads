@@ -6,7 +6,7 @@ import type { Locale, Translations } from '../../i18n/translations'
 import type { EditFn } from '../project/useEdit'
 import { wovenAskPrompt } from '../project/wovenAskPrompt'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, firstFrameId } from '../../domain/layerRecord'
 
 /** What Rotate Frame needs from the app shell: the Edit path, the open Project, the announcer, the dialog registry and
  * the words its question is put in. */
@@ -37,7 +37,7 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
 
   function turn(woven: WovenChoice): void {
     frameTurns.value += 1
-    deps.edit('exempt', (project) => rotateFrame(project, woven) ?? project)
+    deps.edit('exempt', (project) => rotateFrame(project, woven, firstFrameId(project)) ?? project)
     deps.announce(deps.messages().frame.announceFrameRotated)
   }
 
@@ -46,7 +46,7 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     if (!project || !frameOf(project)) {
       return
     }
-    const asked = rotateFrameQuestion(project)
+    const asked = rotateFrameQuestion(project, firstFrameId(project))
     if (asked) {
       question.value = asked
       return
@@ -59,13 +59,13 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
    * went, so nothing is announced. */
   function onTwistFrame(angle: number): 'kept' | 'asked' {
     const project = deps.currentProject()
-    const asked = project && twistFrameQuestion(project, angle)
+    const asked = project && twistFrameQuestion(project, angle, firstFrameId(project))
     if (asked) {
       twistedTo = angle
       question.value = asked
       return 'asked'
     }
-    deps.edit('exempt', (project) => twistFrameTo(project, angle) ?? project)
+    deps.edit('exempt', (project) => twistFrameTo(project, angle, undefined, firstFrameId(project)) ?? project)
     return 'kept'
   }
 
@@ -75,7 +75,7 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     const angle = twistedTo
     twistedTo = undefined
     if (angle === undefined) return turn(woven)
-    deps.edit('exempt', (project) => twistFrameTo(project, angle, woven) ?? project)
+    deps.edit('exempt', (project) => twistFrameTo(project, angle, woven, firstFrameId(project)) ?? project)
     deps.frameTwistView?.().releaseFrameTwist()
   }
 

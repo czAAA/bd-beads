@@ -52,9 +52,8 @@ declare const frameIdBrand: unique symbol
  * `frameIdOf`, so no other string passes for one. */
 export type FrameId = string & { readonly [frameIdBrand]: true }
 
-/** A Frame as a command names it: by its id, or by `'frame'`, the old name of the first Frame, which only layerRecord.ts
- * reads and which goes once the UI names Frames by id (ticket 1217). */
-export type FrameRef = FrameId | 'frame'
+/** A Frame as a command names it: by its id (ticket 1217 removed `'frame'`, the old name of the first Frame). */
+export type FrameRef = FrameId
 
 /** A layer of a Project (ADR 0066, 0079): the Canvas, or one of the Frames laid over it, by reference. */
 export type Layer = 'canvas' | FrameRef

@@ -3,7 +3,7 @@ import { beadLabel, gramsPerBead, type Bead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams, type ColorQuantity } from '../../domain/beadQuantities'
 import { groupThousands } from '../../domain/formatNumber'
 import { createPalette, defaultPaletteIds, projectPalette, type Palette } from '../../domain/palette'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, firstFrameId } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { useI18n } from '../../i18n/useI18n'
@@ -29,7 +29,7 @@ export function useBeadsNeeded(project: () => Project | undefined): {
   })
   const quantities = computed(() => {
     const shown = project()
-    return shown ? computeColorQuantities(shown, palette.value) : []
+    return shown ? computeColorQuantities(shown, palette.value, firstFrameId(shown)) : []
   })
   /** Estimated weight (ticket 155, CONTEXT.md): count × average weight of the woven layer's Bead, the Frame's (ticket 0665). */
   const bead = computed<Bead | undefined>(() => {

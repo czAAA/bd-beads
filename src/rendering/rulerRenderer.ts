@@ -11,7 +11,7 @@ import type { Region, SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
 import { areaHandles, frameHandles, outsetBox, type Handle, type HandleId, type Outset } from './frameHandles'
-import { FIRST_FRAME, frameById } from '../domain/layerRecord'
+import { frameById } from '../domain/layerRecord'
 import { ROW_MOTION, easeIn, easeStandard } from './rowMotion'
 
 /** The mono stack every number and label on the canvas is set in. */
@@ -119,7 +119,7 @@ interface PassOnScreen {
   box: RuledBox
 }
 
-function passOnScreen({ project, surface, layout }: RulerDrawInput, at?: number, ref: FrameRef = FIRST_FRAME): PassOnScreen | undefined {
+function passOnScreen({ project, surface, layout }: RulerDrawInput, at: number | undefined, ref: FrameRef): PassOnScreen | undefined {
   const pass = at ?? currentPass(rowProgressOf(project, ref))
   const frame = frameById(project, ref)
   const box = layout.boxes.find((ruled) => ruled.kind === 'frame')
@@ -162,7 +162,7 @@ function drawPassTicks(context: DrawingContext, { surface }: RulerDrawInput, { a
 }
 
 /** Draws the lines and the Ruler layout's numbers and dots, in the viewport's own px over whatever is drawn. */
-export function drawRulers(context: DrawingContext, input: RulerDrawInput, ref: FrameRef = FIRST_FRAME): void {
+export function drawRulers(context: DrawingContext, input: RulerDrawInput, ref: FrameRef): void {
   const { project, surface, layout, pixelRatio, rowMarks = rowProgressOn(project, ref) } = input
   // The Frame's rulers sit on its margin sheet (ticket 0656), a Piece's on the Canvas (ticket 1012).
   const looks = looksOf(input, ref)

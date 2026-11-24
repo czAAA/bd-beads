@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { computed, onBeforeUnmount, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import type { GridPosition, PreviewCell } from '../../../domain/grid'
 import { shownLetters } from '../../../domain/paletteEdits'
@@ -13,7 +13,7 @@ import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceV
 import type { Size } from '../../../rendering/cellSize'
 import { AREA_SHEET_OUTSET, type HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas } from './useSurfaceDrawing'
-import { frameOf } from '../../../domain/layerRecord'
+import { firstFrameId, frameOf } from '../../../domain/layerRecord'
 import { isMirrorOn, type MirrorSetting } from '../../../domain/mirror'
 
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
@@ -80,7 +80,7 @@ export function useMarginCue(props: { project: Project; selectionRefusals?: numb
 /** What the overlay draws from: the surface's props, its layout, and what the pointer and the margin cue hold. */
 export interface SurfaceOverlayDeps {
   /** Which layer's items this overlay draws (ticket 1187): the Canvas's on its surface, the Frame's on its own. */
-  layer: ViewLayer
+  layer: MaybeRefOrGetter<ViewLayer>
   props: {
     project: Project
     zoom: number
@@ -176,7 +176,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         theme: theme.value,
         frameTheme: frameTheme.value,
         rowMarks: marksShown.value,
-        letters: shownLetters(props.project, 'frame'),
+        letters: shownLetters(props.project, firstFrameId(props.project)),
         pointer: markerAt.value && !tools.tool && !tools.moves && !tools.markerHidden && !tools.picking && !tools.selects ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
         // The bead the open Radial toolbox was pressed on keeps the outline, in place of any hover preview (ticket 1076).
         preview: props.outlinedCell ? { cells: [props.outlinedCell], color: null } : !tools.picking && (props.previewStamp || (props.previewCells?.length ?? 0) > 0) ? { cells: props.previewCells ?? [], stamp: props.previewStamp, color: props.previewColor ?? null } : undefined,
@@ -191,7 +191,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         mirrorArea: { surface: surface.value, touch: touchInput.value, ...hotArea(props.areaTooltip, !props.selection) },
         rowMotion: rowMotion.value,
         areaSheet: { surface: surface.value, outset: AREA_SHEET_OUTSET },
-        layer,
+        layer: toValue(layer),
       })
     }
   }

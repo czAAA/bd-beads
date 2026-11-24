@@ -1,11 +1,15 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { COVER_PAD, coverPageLayout } from './coverPageLayout'
+import { COVER_PAD, coverPageLayout as laidCover } from './coverPageLayout'
 import { A4_PORTRAIT, displayedGrid, mm, PRINT_MARGIN } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => bareProject({ technique, orientation: rotation, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
+
+/** The Cover page's layout for the Project's first Frame. */
+const coverPageLayout = (project: Parameters<typeof laidCover>[0], page?: Parameters<typeof laidCover>[2], top?: Parameters<typeof laidCover>[3]) => laidCover(project, frameIdIn(project), page, top)
 
 // The Cover page's board and piece (ticket 1096; PrintCover card).
 describe('coverPageLayout', () => {
@@ -40,7 +44,7 @@ describe('coverPageLayout', () => {
     const beads = { 4: { 8: '#ff0000', 20: '#ff0000' }, 33: { 8: '#ff0000', 20: '#ff0000' } }
     const piece = bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns: 30, rows: 39, beads } })
     const trimmed = coverPageLayout(piece)
-    const { stepAcross, stepDown } = displayedGrid(piece)
+    const { stepAcross, stepDown } = displayedGrid(piece, frameIdIn(piece))
 
     expect(trimmed.zoom).toBeCloseTo(coverPageLayout(shape('loom', 13, 30)).zoom, 9)
     expect(trimmed.piece).toEqual(coverPageLayout(shape('loom', 13, 30)).piece)

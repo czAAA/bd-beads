@@ -4,7 +4,7 @@ import type { Project } from './project'
 import { decodeFlatProject, decodeProject, decodeVersionElevenProject, decodeVersionTwelveProject, encodeProject, type EncodedFlatProject, type EncodedLayer, type EncodedProject } from './projectEncoding'
 import type { FlatProject } from './flatWeave'
 import { isTechnique } from './weave'
-import { projectNameOf, FIRST_FRAME, frameById } from './layerRecord'
+import { projectNameOf, frameById } from './layerRecord'
 import { looksLikePicture } from './imageConversion'
 import { normalizeProjectName, withProjectName } from './projectName'
 
@@ -114,7 +114,7 @@ export function projectFileNameOf(name: string, makerName?: string): string {
 /** The name a picture or document of the Project is saved under (tickets 73, 74, 0720), e.g. `summer-rose-ada.png`;
  * the PDF's takes an underscore and a word for each print switch that is on (ticket 1096), e.g.
  * `summer-rose-ada_large-beads.pdf`. */
-export function projectExportFileName(project: Project, extension: 'png' | 'pdf', words: readonly string[] = [], frame: FrameRef = FIRST_FRAME): string {
+export function projectExportFileName(project: Project, extension: 'png' | 'pdf', words: readonly string[] = [], frame: FrameRef): string {
   const stem = fileStem([projectNameOf(project), frameById(project, frame)?.name, project.makerName])
   return `${[stem, ...words.map(fileNameSlug).filter(Boolean)].join('_')}.${extension}`
 }

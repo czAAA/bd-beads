@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { findBead } from '../../domain/beads'
+import { NO_FRAME } from '../../domain/layerRecord'
 import { followsWeave, frameShapeOf, techniquesOf, type FrameSettingName } from '../../domain/frameShape'
 import type { Background, Project } from '../../domain/project'
 import { pieceFaceOf, wholePieceOf } from '../../domain/pieceFaces'
@@ -345,7 +346,7 @@ function onSubmit() {
         </FormField>
 
         <LayerSettings
-          layer="frame"
+          :layer="NO_FRAME"
           :technique="technique"
           :technique-settings="settings"
           :techniques="techniquesOf(starter)"

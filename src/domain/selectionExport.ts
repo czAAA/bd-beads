@@ -1,7 +1,7 @@
 import { frameContains, shiftedBeads, withColors, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import { snappedFrame } from './frame'
 import { isFrameLayer, type GridPosition } from './grid'
-import { beadsOfLayer, frameById, frameIdOf, framesOf, heldWeave, lettersOn, newLayerId, withLetters, withLayer } from './layerRecord'
+import { beadsOfLayer, frameById, frameIdOf, framesOf, heldWeave, lettersOn, withLetters, withLayer } from './layerRecord'
 import { withFrameSheet } from './frameSheet'
 import { pieceNameAt } from './pieceNames'
 import type { Project } from './project'
@@ -59,7 +59,7 @@ export function selectionExportProject(project: Project, selection: Selection, p
   const base = withLayer(unframed, 'canvas', { beads: {} })
   const sheet: FrameSheet = { row: area.row, column: area.column, rows: area.rows, columns: area.columns, beads: shiftedBeads(beads, asked.row - area.row, asked.column - area.column), ...heldWeave(project, 'canvas') }
   // The one Frame of the Project made, named by the id it is made with.
-  const made = frameIdOf({ id: newLayerId() })
+  const made = frameIdOf({ id: crypto.randomUUID() })
   const laid = withFrameSheet(base, { ...sheet, id: made }, { anew: true, frame: made })
   return withLayer(withLetters(laid, made, lettersOn(project, 'canvas')), made, { name: piece || partName })
 }

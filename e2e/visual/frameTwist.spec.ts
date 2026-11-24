@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../src/testUtils/frameId'
 import { expect, test, type Page } from '@playwright/test'
 import { frameOf, orientationOf } from '../../src/domain/layerRecord'
 import { lieAlike } from '../../src/domain/table'
@@ -107,7 +108,7 @@ test('pan, pinch and a twist on the Frame and off it each turn and move what the
   expect(leaning).toBeGreaterThan(15)
   expect(leaning).toBeLessThan(35)
   expect(orientationOf(saved)).toBe(0)
-  expect(lieAlike(saved)).toBe(false)
+  expect(lieAlike(saved, frameIdIn(saved))).toBe(false)
 
   // A twist that starts off the Frame turns the Canvas alone, easing onto the quarter turn.
   await twoFingers(page, twist({ x: box.x + 120, y: box.y + 120 }, 100, 50))
@@ -117,7 +118,8 @@ test('pan, pinch and a twist on the Frame and off it each turn and move what the
   // Twisted on the Frame to within 10° of the Canvas's angle, it eases onto it and lies alike again.
   await twoFingers(page, twist(sheetMiddle, 75, 30))
   await expect.poll(async () => frameOf(await savedProject(page))!.angle).toBe(90)
-  expect(lieAlike(await savedProject(page))).toBe(true)
+  const resaved = await savedProject(page)
+  expect(lieAlike(resaved, frameIdIn(resaved))).toBe(true)
 })
 
 test('a twist paced like an iPad\'s catches up with the fingers once they stop, and Fit puts the turns back (ticket 1227)', async ({ page }) => {

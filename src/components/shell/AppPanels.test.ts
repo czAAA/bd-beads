@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
@@ -226,7 +227,7 @@ describe('Project', () => {
     await click(mounted, 'canvas-brick-drop-more')
     const saved = () => loadProjects()[0]
     expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } } })
-    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'loom' } })
+    expect(layerOf(saved(), frameIdIn(saved()))).toMatchObject({ weave: { technique: 'loom' } })
 
     mounted.canvas.onUndo()
     mounted.canvas.onUndo()
@@ -241,7 +242,7 @@ describe('Project', () => {
     expect(toast()).toBeDefined()
     toast()!.action!.run()
     await flushPromises()
-    expect(layerOf(loadProjects()[0]!, 'frame')).toMatchObject({ weave: { technique: 'brick' } })
+    expect(layerOf(loadProjects()[0]!, frameIdIn(loadProjects()[0]!))).toMatchObject({ weave: { technique: 'brick' } })
 
     await choose(mounted, 'canvas-technique', 'peyote')
     toast()!.secondAction!.run()
@@ -348,24 +349,24 @@ describe('The Frame panel', () => {
     await choose(mounted, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
     await click(mounted, 'confirm-modal-confirm')
     const saved = () => loadProjects()[0]
-    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beadId: 'toho/round/11-0' })
+    expect(layerOf(saved(), frameIdIn(saved()))).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beadId: 'toho/round/11-0' })
     expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadId: 'toho/cube/1.5mm' })
 
     mounted.canvas.onUndo()
-    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick' }, beadId: 'toho/cube/1.5mm' })
+    expect(layerOf(saved(), frameIdIn(saved()))).toMatchObject({ weave: { technique: 'brick' }, beadId: 'toho/cube/1.5mm' })
   })
 
   it('resets progress from the line under the held size, after the Reset progress question (ticket 0848)', async () => {
-    saveProjects([moveToRow(moth(), 2)])
+    saveProjects([moveToRow(moth(), 2, frameIdIn(moth()))])
     const mounted = mountPanels()
     await mounted.openPanel('frame')
     await click(mounted, 'frame-size-locked-reset')
     await click(mounted, 'confirm-modal-confirm')
-    expect(rowProgressStarted(loadProjects()[0]!)).toBe(false)
+    expect(rowProgressStarted(loadProjects()[0]!, frameIdIn(loadProjects()[0]))).toBe(false)
   })
 
   it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {
-    const open = withFrameSheet(moth(), undefined)
+    const open = withFrameSheet(moth(), undefined, { frame: frameIdIn(moth()) })
     saveProjects([open])
     const mounted = mountPanels()
     await mounted.openPanel('frame')
@@ -379,7 +380,7 @@ describe('The Frame panel', () => {
   })
 
   it('saves each press of a Custom frame\'s stepper at once, and they are one Undo step once the panel closes (ticket 0640)', async () => {
-    const placed = changeFrame(moth(), { custom: { shape: 'triangle', size: 6, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(moth(), { custom: { shape: 'triangle', size: 6, centre: { row: 20, column: 20 } } }, frameIdIn(moth()))
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     saveProjects([placed.project])
     const mounted = mountPanels()
@@ -403,7 +404,7 @@ describe('Backgrounds (ticket 0666)', () => {
 
     await mounted.openPanel('frame')
     await click(mounted, 'background-color-pebble')
-    expect(backgroundOf(loadProjects()[0], 'frame')).toBe(3)
+    expect(backgroundOf(loadProjects()[0], FRAME_ID)).toBe(3)
     expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(2)
   })
 
@@ -419,7 +420,7 @@ describe('Backgrounds (ticket 0666)', () => {
     await click(mounted, 'create-starter-project')
 
     const star = loadProjects().find((project) => canvasOf(project).name === en.frame.shapes.star)!
-    expect([backgroundOf(star, 'canvas'), backgroundOf(star, 'frame')]).toEqual([2, 2])
+    expect([backgroundOf(star, 'canvas'), backgroundOf(star, frameIdIn(star))]).toEqual([2, 2])
   })
 })
 
@@ -435,7 +436,7 @@ describe('The Export panel', () => {
 
   it('saves the Project file from its File with no Frame too (ticket 1133)', async () => {
     vi.mocked(downloadFile).mockClear()
-    saveProjects([withFrameSheet(moth(), undefined)])
+    saveProjects([withFrameSheet(moth(), undefined, { frame: frameIdIn(moth()) })])
     const mounted = mountPanels()
     await mounted.openPanel('export')
     await click(mounted, 'export-project-file')
@@ -455,7 +456,7 @@ describe('The Export panel', () => {
   })
 
   it('fits a frame from the Project panel\'s unfolded rows, which then show the exports with Project still open (ticket 1058)', async () => {
-    const open = withFrameSheet(moth(), undefined)
+    const open = withFrameSheet(moth(), undefined, { frame: frameIdIn(moth()) })
     saveProjects([withLayers(open, { beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) })])
     const mounted = mountPanels()
     await mounted.openPanel('project')
@@ -476,7 +477,7 @@ describe('The Export panel', () => {
   })
 
   it('fits a frame to the drawing from the no-Frame view, then shows the exports (ticket 0652)', async () => {
-    const open = withFrameSheet(moth(), undefined)
+    const open = withFrameSheet(moth(), undefined, { frame: frameIdIn(moth()) })
     saveProjects([withLayers(open, { beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) })])
     const mounted = mountPanels()
     await mounted.openPanel('export')

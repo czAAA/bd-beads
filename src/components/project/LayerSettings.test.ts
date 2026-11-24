@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../../testUtils/frameId'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { findBead } from '../../domain/beads'
@@ -13,7 +14,7 @@ beforeEach(() => {
 })
 
 const delica = findBead('miyuki/delica/11-0')!
-const base = { layer: 'frame' as const, technique: 'brick' as const, techniqueSettings: { brickDrop: 3 }, bead: delica, background: 1, testid: 'x' }
+const base = { layer: FRAME_ID, technique: 'brick' as const, techniqueSettings: { brickDrop: 3 }, bead: delica, background: 1, testid: 'x' }
 const mountSettings = (props: Record<string, unknown> = {}) => mount(LayerSettings, { props: { ...base, ...props }, attachTo: document.body })
 
 describe('LayerSettings (ADR 0079, ticket 0670)', () => {

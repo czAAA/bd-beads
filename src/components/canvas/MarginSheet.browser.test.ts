@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
@@ -57,8 +58,8 @@ makerName: 'Ada',
     frame: { row: 0, column: 0, rows: rows.value, columns: across, technique: technique.value, techniqueSettings: { brickDrop: 2 }, beads: {}, name: frameName.value },
 })
   const painted = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).slice(0, Math.min(across, colorCount.value)).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
-  const turned = Array.from({ length: turns.value }).reduce<Project>((project) => toggleRowDirection(project), painted)
-  return moveToRow(turned, 0)
+  const turned = Array.from({ length: turns.value }).reduce<Project>((project) => toggleRowDirection(project, frameIdIn(project)), painted)
+  return moveToRow(turned, 0, frameIdIn(turned))
 }
 
 const Host = defineComponent({

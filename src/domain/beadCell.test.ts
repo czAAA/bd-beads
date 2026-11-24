@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { beadPitchMm, findBead } from './beads'
 import { canvasWeave, frameWeave } from './layerWeave'
@@ -69,7 +70,7 @@ describe('a Bead\'s cell in a Project', () => {
   it('turns a brick stitch layer\'s cell, and only that layer\'s (ticket 0734)', () => {
     const framed = withLayers(createProject({ technique: 'peyote', beadId: delica.id }), { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'brick' as const } })
     expect(canvasWeave(framed).cell).toEqual(beadCell(delica, 'peyote'))
-    expect(frameWeave(framed).cell).toEqual(beadCell(delica, 'brick'))
+    expect(frameWeave(framed, frameIdIn(framed)).cell).toEqual(beadCell(delica, 'brick'))
     expect(projectCell(framed)).toEqual(beadCell(delica, 'brick'))
   })
 
@@ -77,10 +78,10 @@ describe('a Bead\'s cell in a Project', () => {
 
   it('draws every layer in its own Bead\'s real cell from the start, saving no Bead shape', () => {
     const framed = withLayers(made(), { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'loom' as const } })
-    const cubed = withLayer(framed, 'frame', { bead: cube })
+    const cubed = withLayer(framed, FRAME_ID, { bead: cube })
     expect(canvasWeave(cubed).cell).toEqual(beadCell(delica, 'peyote'))
-    expect(frameWeave(cubed).cell).toEqual(beadCell(cube, 'loom'))
-    expect(frameWeave(cubed).technique).toBe('loom')
+    expect(frameWeave(cubed, frameIdIn(cubed)).cell).toEqual(beadCell(cube, 'loom'))
+    expect(frameWeave(cubed, frameIdIn(cubed)).technique).toBe('loom')
     expect(cubed.layers.some((layer) => 'beadShape' in layer)).toBe(false)
   })
 

@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../src/testUtils/frameId'
 import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
@@ -18,12 +19,13 @@ import { withFrameSheet } from '../../src/domain/frameSheet'
 const ROUND_COLORS = ['#e63746', '#f2c94c', '#2f6fed', '#27ae60', '#9b51e0']
 
 function customFramed(shape: FrameShapeId, size: number): Project {
-  const open = withFrameSheet(fixtureProject({ technique: 'loom', blank: true }), undefined)
-  const placed = changeFrame(open, { custom: { shape, size, centre: { row: 8, column: 10 } } })
+  const blank = fixtureProject({ technique: 'loom', blank: true })
+  const open = withFrameSheet(blank, undefined, { frame: frameIdIn(blank) })
+  const placed = changeFrame(open, { custom: { shape, size, centre: { row: 8, column: 10 } } }, frameIdIn(open))
   if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
   const positions = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row < size - 1)
   return ROUND_COLORS.reduce(
-    (project, color, index) => onLayer(project, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row % ROUND_COLORS.length === index), color)),
+    (project, color, index) => onLayer(project, frameIdIn(project), (view) => paintCells(view, positions.filter(({ row }) => row % ROUND_COLORS.length === index), color)),
     placed.project,
   )
 }
@@ -63,7 +65,8 @@ for (const shape of ['triangle', 'kite'] as const) {
 // Ticket 0594: Row progress on a Star (its second arm's first round current, the first arm faded), a Selection over a
 // Triangle, and the PNG export drawing the whole shape.
 test('Row progress on a Star Custom frame', async ({ page }) => {
-  await openApp(page, [moveToRow(customFramed('star', SIZES.star), SIZES.star)])
+  const star = customFramed('star', SIZES.star)
+  await openApp(page, [moveToRow(star, SIZES.star, frameIdIn(star))])
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
   await page.mouse.move(5, 5)
   await expect(page.getByTestId('app-canvas')).toHaveScreenshot('custom-frame-star-progress.png', { maxDiffPixelRatio: 0.01 })

@@ -21,7 +21,7 @@ import { OVERVIEW_CUT_LABEL } from './overviewLayout'
 import type { PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
 import { laidTurnOf } from '../domain/framePlacement'
-import { type Layered, FIRST_FRAME } from '../domain/layerRecord'
+import { type Layered } from '../domain/layerRecord'
 
 // Drawing the printed pages (ticket 162; printed-output.md, PrintChartPage card; page 1 is pageOnePage.ts). The chart first,
 // the rest is small in the margins. Nothing is drawn behind or over the chart: the sheets are open to share. Paper is
@@ -189,7 +189,7 @@ export function drawEmptySwatch(context: CanvasRenderingContext2D, x: number, y:
 /** The pale rounded board and the beads of `region` on it, without letters: page 1's overview (ticket 0914). An empty
  * position is the bare board, under a faint cross with `emptyGrid` (tickets 0587, 0719, 0818, 1127). In one ink the board
  * is paper in a hairline. */
-export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, emptyGrid: boolean, ink: PrintInk): void {
+export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, emptyGrid: boolean, ink: PrintInk, ref: FrameRef): void {
   context.beginPath()
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
   if (ink.oneInk) {
@@ -211,7 +211,7 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
   const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
   // The cross's line is `print-line-cell` and at least a device pixel, so it prints at 150 dpi too.
   const crossLine = Math.max(CROSS_LINE * scale, 1) / (zoom * scale)
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: ink.overviewTheme, rowMarks: false, drawBead: crossWhereEmpty(crossLine, emptyGrid, ink) })
+  renderProject(tileContext, { project, space: spaceOf(project, false, ref), region: scaled, zoom: zoom * scale, theme: ink.overviewTheme, rowMarks: false, drawBead: crossWhereEmpty(crossLine, emptyGrid, ink) })
   context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
@@ -238,7 +238,7 @@ export function downNumber(trim: TrimmedArea, index: number): number {
 /** Where a position stands in the displayed chart, across and down from 0: each quarter turn swaps columns and rows and
  * reverses one axis (composing gridToRegion's per-turn mapping), across at 90° and 180°, down at 180° and 270°, so a
  * bead and the ruler number over it agree at every turn (ticket 1122). */
-export function displayedCellOf(project: RulerShape, { row, column }: GridPosition, ref: FrameRef = FIRST_FRAME): { across: number; down: number } {
+export function displayedCellOf(project: RulerShape, { row, column }: GridPosition, ref: FrameRef): { across: number; down: number } {
   const rotation = laidTurnOf(project, ref)
   const { columns, rows } = projectDimensions(project)
   const [across, down, wide, tall] = rotationSwapsAxes(rotation) ? [row, column, rows, columns] : [column, row, columns, rows]
@@ -258,8 +258,8 @@ const OVERVIEW_NUMBER_PT = 6.5
 // Page 1's overview rulers (PrintPage1 card), counted as the chart's are from 1 at `across.first` and `down.first` (ticket
 // 1129): the first and every `every`th number (5, or 10 on small beads), regular `muted` in one size, 6.5 pt or less where
 // the widest misses `print-ruler-fit` of the room between two numbers, and a hairline every 10.
-export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, ink: PrintInk, every: 5 | 10 = 10): void {
-  const grid = displayedGrid(project)
+export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, ink: PrintInk, ref: FrameRef, every: 5 | 10 = 10): void {
+  const grid = displayedGrid(project, ref)
   const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
   const numberOf = (span: Span, index: number) => index - (span.from ?? span.first) + 1
   const shown = (value: number) => value === 1 || value % every === 0
@@ -333,7 +333,7 @@ function pill(context: CanvasRenderingContext2D, value: string, x: number, y: nu
 /** The chart parts on page 1 (PrintPage1 card): solid accent lines with a white keyline through the board and its
  * rulers, "101 →" and "101 ↓" where each cut is, and a pill on each part saying which page it prints on. */
 export function drawParts(context: CanvasRenderingContext2D, project: Project, plan: PrintPlan, labels: PrintText['labels'], zoom: number, board: Board, ink: PrintInk): void {
-  const grid = displayedGrid(project)
+  const grid = displayedGrid(project, plan.frame)
   // The board begins where the plan's trimmed chart does (ticket 1128).
   const { trim } = plan
   const across = [...new Set(plan.parts.map((part) => part.firstAcross).filter((first) => first !== trim.firstAcross))]

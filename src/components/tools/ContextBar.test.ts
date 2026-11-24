@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
@@ -21,7 +22,7 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import { AREA_BAR_GAP_PX } from '../../rendering/frameHandles'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
-const noFrame = withFrame(project, undefined)
+const noFrame = withFrame(project, undefined, frameIdIn(project))
 const drawn = paintAt(noFrame, [{ row: 0, column: 0 }], '#e63746')
 const selection = { top: 0, left: 0, rows: 2, columns: 2 }
 const arm = () => vi.advanceTimersByTimeAsync(350)
@@ -222,7 +223,7 @@ describe('ContextBar', () => {
     await button.trigger('click')
     expect(wrapper.emitted('mirror-selection')).toHaveLength(1)
 
-    const onFrame = mount(ContextBar, { props: { ...props, project, selection: { ...selection, layer: 'frame' as const } } })
+    const onFrame = mount(ContextBar, { props: { ...props, project, selection: { ...selection, layer: frameIdIn(project) } } })
     await arm()
     expect(onFrame.get('[data-testid="context-bar-mirror-selection"]').attributes('aria-disabled')).toBe('true')
     await onFrame.get('[data-testid="context-bar-mirror-selection"]').trigger('click')
@@ -239,14 +240,14 @@ describe('ContextBar', () => {
     await wrapper.get('[data-testid="context-bar-export"]').trigger('click')
     expect(wrapper.emitted('export-selection')).toHaveLength(1)
 
-    const custom = withFrameSheet(drawn, { row: 0, column: 0, rows: 6, columns: 6, technique: 'loom', shape: 'triangle', beads: {} })
-    const onCustom = mount(ContextBar, { props: { ...props, project: custom, selection: { ...selection, layer: 'frame' as const } } })
+    const custom = withFrameSheet(drawn, { row: 0, column: 0, rows: 6, columns: 6, technique: 'loom', shape: 'triangle', beads: {} }, { frame: frameIdIn(drawn) })
+    const onCustom = mount(ContextBar, { props: { ...props, project: custom, selection: { ...selection, layer: frameIdIn(custom) } } })
     await arm()
     expect(onCustom.get('[data-testid="context-bar-export"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('offers Rotate once a pass is done on the Canvas and clear of finished rows, and disables it saying why where the Selection reaches into them (ticket 0647)', async () => {
-    const woven = moveToRow(project, 1)
+    const woven = moveToRow(project, 1, frameIdIn(project))
     const rotateOver = async (over: Selection) => {
       const wrapper = mount(ContextBar, { props: { project: woven, selection: over, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false } })
       await arm()
@@ -265,7 +266,7 @@ describe('ContextBar', () => {
     try {
       // 200px of canvas: the bar's 28px buttons leave room beside the readout for two and "…".
       const anchor = { box: { left: 0, top: 100, width: 40, height: 40 }, viewport: { width: 200, height: 400 } }
-      const wrapper = mount(ContextBar, { props: { project: moveToRow(project, 1), selection, anchor, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false }, attachTo: document.body })
+      const wrapper = mount(ContextBar, { props: { project: moveToRow(project, 1, frameIdIn(project)), selection, anchor, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false }, attachTo: document.body })
       await nextTick()
       const [bar, readout] = FakeResizeObserver.instances
       bar!.trigger(240, 28)
@@ -375,7 +376,7 @@ describe('an area\'s bar (ContextBar card, Area sheet, tickets 0808, 0812)', () 
     await wrapper.get('[data-testid="mirror-bar-move"]').trigger('pointerdown', { button: 0 })
     expect(wrapper.emitted('move-press')?.[0]?.[1]).toBe('mirror')
 
-    await wrapper.setProps({ mirror: { ...mirror, setting: { ...mirror.setting, place: { layer: 'frame' as const } } } })
+    await wrapper.setProps({ mirror: { ...mirror, setting: { ...mirror.setting, place: { layer: 'frame' } } } })
     expect(wrapper.get('[data-testid="mirror-bar"]').classes()).not.toContain('context-bar--area')
     expect(wrapper.find('[data-testid="mirror-bar-move"]').exists()).toBe(false)
   })

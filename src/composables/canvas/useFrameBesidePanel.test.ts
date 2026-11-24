@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
@@ -33,7 +34,7 @@ describe('useFrameBesidePanel (ticket 0971)', () => {
     const { bringIntoView, panelPlaced } = setup(small)
     panelPlaced(panel)
     const [locate] = bringIntoView.mock.calls[0]!
-    const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1, scroll: { x: 0, y: 0 }, viewport: { width: 1366, height: 930 }, frame: placedFrame(small)! })
+    const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1, scroll: { x: 0, y: 0 }, viewport: { width: 1366, height: 930 }, frame: placedFrame(small, frameIdIn(small))! })
     expect(locate(surface)).toEqual(surface.beadBox(fitBox(small)!.box, 'canvas'))
   })
 
@@ -43,7 +44,7 @@ describe('useFrameBesidePanel (ticket 0971)', () => {
     expect(bringIntoView).toHaveBeenCalledTimes(1)
     const [locate, how] = bringIntoView.mock.calls[0]!
     expect(how).toEqual({ clear: roomBesidePanel(panel, area), slack: FRAME_PANEL_SLACK_PX })
-    const frame = placedFrame(framed)!
+    const frame = placedFrame(framed, frameIdIn(framed))!
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1, scroll: { x: 0, y: 0 }, viewport: { width: 1366, height: 930 }, frame })
     const line = surface.frameBox(frame)
     // The Frame and its rulers, 550px wide, are cut to the 497px the side holds, from the first column.

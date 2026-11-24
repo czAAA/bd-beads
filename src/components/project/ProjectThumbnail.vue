@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstFrameId } from '../../domain/layerRecord'
 import { onMounted, ref, watch } from 'vue'
 import { withLaidTurn } from '../../domain/framePlacement'
 import type { Project } from '../../domain/project'
@@ -19,7 +20,7 @@ function draw() {
   frame = 0
   const context = canvasEl.value?.getContext('2d')
   if (!canvasEl.value || !context) return
-  const image = thumbnailPixels(withLaidTurn(props.project), DRAWN_SIZE)
+  const image = thumbnailPixels(withLaidTurn(props.project, undefined, firstFrameId(props.project)), DRAWN_SIZE, firstFrameId(withLaidTurn(props.project, undefined, firstFrameId(props.project))))
   canvasEl.value.width = image.width
   canvasEl.value.height = image.height
   context.putImageData(new ImageData(image.data as Uint8ClampedArray<ArrayBuffer>, image.width, image.height), 0, 0)

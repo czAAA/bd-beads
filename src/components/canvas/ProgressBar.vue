@@ -6,7 +6,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
 import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, firstFrameId } from '../../domain/layerRecord'
 import { columnsAsSeen, rowProgressPosition } from '../../domain/rowProgress'
 import { rowItemsWidth, useFittingForm } from '../../composables/canvas/useFittingForm'
 import { useElementSize } from '../../composables/ui/useElementSize'
@@ -54,7 +54,7 @@ const countFit = useFittingForm({
     return rootEl.value ? rowItemsWidth(items, Number.parseFloat(getComputedStyle(rootEl.value).columnGap) || 0) : 0
   },
   observed: () => [rootEl.value?.querySelector('.row-progress__count')],
-  labels: () => (props.project ? JSON.stringify([locale.value, columnsAsSeen(props.project), rowProgressPosition(props.project)]) : locale.value),
+  labels: () => (props.project ? JSON.stringify([locale.value, columnsAsSeen(props.project, firstFrameId(props.project)), rowProgressPosition(props.project, firstFrameId(props.project))]) : locale.value),
 })
 </script>
 

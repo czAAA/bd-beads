@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { thumbnailPixels } from './projectThumbnail'
 import type { Rotation } from '../domain/grid'
@@ -30,7 +31,7 @@ const pixel = (image: ReturnType<typeof thumbnailPixels>, x: number, y: number) 
 
 describe('thumbnailPixels', () => {
   it('fits the whole Project into the size with square beads, the longer side filling it', () => {
-    const image = thumbnailPixels(project([['#ff0000', '#0000ff']]), 8)
+    const image = thumbnailPixels(project([['#ff0000', '#0000ff']]), 8, frameIdIn(project([['#ff0000', '#0000ff']])))
 
     expect([image.width, image.height]).toEqual([8, 4])
     expect(pixel(image, 0, 0)).toEqual(RED)
@@ -39,7 +40,7 @@ describe('thumbnailPixels', () => {
   })
 
   it('leaves empty beads clear, for the board behind to show', () => {
-    const image = thumbnailPixels(project([[null, '#ff0000']]), 2)
+    const image = thumbnailPixels(project([[null, '#ff0000']]), 2, frameIdIn(project([[null, '#ff0000']])))
 
     expect(pixel(image, 0, 0)).toEqual(NONE)
     expect(pixel(image, 1, 0)).toEqual(RED)
@@ -47,19 +48,19 @@ describe('thumbnailPixels', () => {
 
   it('samples a Project bigger than the size, never drawing more pixels than it', () => {
     const big = project(Array.from({ length: 300 }, () => Array.from({ length: 200 }, () => '#0000ff')))
-    const image = thumbnailPixels(big, 72)
+    const image = thumbnailPixels(big, 72, frameIdIn(big))
 
     expect([image.width, image.height]).toEqual([48, 72])
     expect(pixel(image, 47, 71)).toEqual(BLUE)
   })
 
   it('never draws a small Project bigger than one pixel per bead times the size', () => {
-    expect(thumbnailPixels(project([['#ff0000']]), 72).width).toBe(72)
+    expect(thumbnailPixels(project([['#ff0000']]), 72, frameIdIn(project([['#ff0000']]))).width).toBe(72)
   })
 
   it('turns a rotated Project the way it shows on screen, a quarter clockwise', () => {
     // Grid rows: [R, B]. Turned clockwise, it stands as R over B.
-    const image = thumbnailPixels(project([['#ff0000', '#0000ff']], 90), 2)
+    const image = thumbnailPixels(project([['#ff0000', '#0000ff']], 90), 2, frameIdIn(project([['#ff0000', '#0000ff']], 90)))
 
     expect([image.width, image.height]).toEqual([1, 2])
     expect(pixel(image, 0, 0)).toEqual(RED)
@@ -68,7 +69,7 @@ describe('thumbnailPixels', () => {
 
   it('turns a rotated Project upside down (180°, ticket 171)', () => {
     // Grid rows: [R, B]. Upside down, it reads B then R, still one row.
-    const image = thumbnailPixels(project([['#ff0000', '#0000ff']], 180), 2)
+    const image = thumbnailPixels(project([['#ff0000', '#0000ff']], 180), 2, frameIdIn(project([['#ff0000', '#0000ff']], 180)))
 
     expect([image.width, image.height]).toEqual([2, 1])
     expect(pixel(image, 0, 0)).toEqual(BLUE)
@@ -77,7 +78,7 @@ describe('thumbnailPixels', () => {
 
   it('turns a rotated Project a quarter counterclockwise (270°, ticket 171)', () => {
     // Grid rows: [R, B]. Turned the other way, it stands as B over R -- the mirror of the 90° case.
-    const image = thumbnailPixels(project([['#ff0000', '#0000ff']], 270), 2)
+    const image = thumbnailPixels(project([['#ff0000', '#0000ff']], 270), 2, frameIdIn(project([['#ff0000', '#0000ff']], 270)))
 
     expect([image.width, image.height]).toEqual([1, 2])
     expect(pixel(image, 0, 0)).toEqual(BLUE)
@@ -87,7 +88,7 @@ describe('thumbnailPixels', () => {
   // Peyote's and brick stitch's every other row lies half a bead to the right, as the editor draws it (ticket 0631).
   it("shifts peyote's every other column half a bead down, nothing nesting (ticket 0734)", () => {
     // Beads 4 px each way: the second column hangs 2 px lower, so two rows stand 10 px tall and two columns 8 wide.
-    const image = thumbnailPixels(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 0, 'peyote'), 10)
+    const image = thumbnailPixels(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 0, 'peyote'), 10, frameIdIn(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 0, 'peyote')))
 
     expect([image.width, image.height]).toEqual([8, 10])
     expect(pixel(image, 0, 8)).toEqual(NONE)
@@ -97,7 +98,7 @@ describe('thumbnailPixels', () => {
   })
 
   it("shifts brick stitch's every other row half a bead", () => {
-    const image = thumbnailPixels(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 0, 'brick'), 10)
+    const image = thumbnailPixels(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 0, 'brick'), 10, frameIdIn(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 0, 'brick')))
 
     expect([image.width, image.height]).toEqual([10, 8])
     expect(pixel(image, 0, 5)).toEqual(NONE)
@@ -108,7 +109,7 @@ describe('thumbnailPixels', () => {
 
   it('turns a shifted row with the Project', () => {
     // Upside down, the shifted row is on top and lies half a bead to the left.
-    const image = thumbnailPixels(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 180, 'brick'), 10)
+    const image = thumbnailPixels(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 180, 'brick'), 10, frameIdIn(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 180, 'brick')))
 
     expect(pixel(image, 0, 1)).toEqual(BLUE)
     expect(pixel(image, 9, 1)).toEqual(NONE)
@@ -117,7 +118,7 @@ describe('thumbnailPixels', () => {
 
   it('draws a Frame turned by Rotate Frame as it lies: its first row down the right side (ticket 0667)', () => {
     const upright = project([['#ff0000', '#ff0000', '#ff0000', '#ff0000'], ['#0000ff', '#0000ff', '#0000ff', '#0000ff']])
-    const image = thumbnailPixels(rotateFrame(upright)!, 8)
+    const image = thumbnailPixels(rotateFrame(upright, undefined, frameIdIn(upright))!, 8, frameIdIn(upright))
 
     expect([image.width, image.height]).toEqual([4, 8])
     expect(pixel(image, 3, 1)).toEqual(RED)
@@ -126,17 +127,17 @@ describe('thumbnailPixels', () => {
 
   /** A small Custom frame Triangle, every bead red, and its Layer geometry. */
   function redTriangle(rotation: Rotation = 0) {
-    const open = withFrameSheet(project([[null]], rotation), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 3, centre: { row: 8, column: 10 } } })
+    const open = withFrameSheet(project([[null]], rotation), undefined, { frame: frameIdIn(project([[null]], rotation)) })
+    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 3, centre: { row: 8, column: 10 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
-    const geometry = frameGeometryOf(placed.project)
-    return { geometry, triangle: onLayer(placed.project, 'frame', (view) => paintCells(view, [...geometry.positions()], '#ff0000')) }
+    const geometry = frameGeometryOf(placed.project, frameIdIn(placed.project))
+    return { geometry, triangle: onLayer(placed.project, FRAME_ID, (view) => paintCells(view, [...geometry.positions()], '#ff0000')) }
   }
 
   it('draws a Custom frame in its shape, each bead where the Frame lays it and the Off-shape clear', () => {
     const { geometry, triangle } = redTriangle()
     const size = 72
-    const image = thumbnailPixels(triangle, size)
+    const image = thumbnailPixels(triangle, size, frameIdIn(triangle))
     const extent = geometry.extent()!
     const scale = size / Math.max(extent.width, extent.height)
 
@@ -153,7 +154,7 @@ describe('thumbnailPixels', () => {
   it('turns a Custom frame with the Project', () => {
     const { geometry, triangle } = redTriangle(180)
     const size = 72
-    const image = thumbnailPixels(triangle, size)
+    const image = thumbnailPixels(triangle, size, frameIdIn(triangle))
     const extent = geometry.extent()!
     const scale = size / Math.max(extent.width, extent.height)
 
@@ -172,7 +173,7 @@ describe('thumbnailPixels', () => {
     [90, 'points right', (x: number, y: number, w: number, h: number) => [x < w / 2, Math.abs(y - h / 2) < 1]],
     [270, 'points left', (x: number, y: number, w: number, h: number) => [x > w / 2, Math.abs(y - h / 2) < 1]],
   ] as const)('turns a Custom frame a quarter (%i°): it %s', (rotation, _way, expected) => {
-    const image = thumbnailPixels(redTriangle(rotation).triangle, 72)
+    const image = thumbnailPixels(redTriangle(rotation).triangle, 72, frameIdIn(redTriangle(rotation).triangle))
     const red: [number, number][] = []
     for (let y = 0; y < image.height; y += 1) for (let x = 0; x < image.width; x += 1) if (pixel(image, x, y)[3]) red.push([x + 0.5, y + 0.5])
     const mean = (axis: 0 | 1) => red.reduce((sum, point) => sum + point[axis], 0) / red.length
@@ -185,10 +186,10 @@ describe('thumbnailPixels', () => {
 describe('a thumbnail follows the Frame alone, never the Canvas\'s turn (spec 1182, ticket 1186)', () => {
   it.each(['loom', 'peyote', 'brick'] as const)('draws a %s Frame the same over a Canvas turned under it alone', (technique) => {
     const grid = [['#ff0000', '#0000ff', null], [null, '#ff0000', '#0000ff']]
-    for (const framed of [project(grid, 0, technique), rotateFrame(project(grid, 0, technique))!]) {
+    for (const framed of [project(grid, 0, technique), rotateFrame(project(grid, 0, technique), undefined, frameIdIn(project(grid, 0, technique)))!]) {
       // As the library draws it, by the Frame's own turn (ProjectThumbnail).
-      const drawn = thumbnailPixels(withLaidTurn(framed), 24)
-      for (const turn of [90, 180, 270, 37.5]) expect(thumbnailPixels(withLaidTurn(withCanvas(framed, { orientation: turn })), 24)).toEqual(drawn)
+      const drawn = thumbnailPixels(withLaidTurn(framed, undefined, frameIdIn(framed)), 24, frameIdIn(framed))
+      for (const turn of [90, 180, 270, 37.5]) expect(thumbnailPixels(withLaidTurn(withCanvas(framed, { orientation: turn }), undefined, frameIdIn(framed)), 24, frameIdIn(withLaidTurn(withCanvas(framed, { orientation: turn }), undefined, frameIdIn(framed))))).toEqual(drawn)
     }
   })
 })

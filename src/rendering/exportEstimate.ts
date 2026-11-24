@@ -8,7 +8,7 @@ import { chartOnPageOne, mm, PRINT_DPI, wholeArea, type TrimmedArea } from './pr
 import type { PrintedWordRow, PrintText } from './printText'
 import { pdfPageCount } from './wordChartPages'
 import { withLaidTurn } from '../domain/framePlacement'
-import { beadsOfLayer, FIRST_FRAME, frameById } from '../domain/layerRecord'
+import { beadsOfLayer, frameById } from '../domain/layerRecord'
 
 // The File size estimate (tickets 0588, 0914, 0915, 1096, ADR 0076): each page by its kind and content, every figure lifted to sit at or
 // above 65 real Projects measured on 2026-10-27 (8 to 237 beads a side, 1 to 300 colors, three Techniques), so never below
@@ -84,7 +84,7 @@ function rowCharacters(row: PrintedWordRow): number {
 
 /** The facts of an export of this Project in these words, or nothing without a Frame; by the Frame's own turn alone, as
  * the export draws it (`withLaidTurn`, ticket 1186). */
-export function exportFacts(shown: Project, words: PrintText, ref: FrameRef = FIRST_FRAME): ExportFacts | undefined {
+export function exportFacts(shown: Project, words: PrintText, ref: FrameRef): ExportFacts | undefined {
   const project = withLaidTurn(shown, undefined, ref)
   const frame = frameById(project, ref)
   if (!frame) return undefined
@@ -92,7 +92,7 @@ export function exportFacts(shown: Project, words: PrintText, ref: FrameRef = FI
   const { plan } = pageOne
   const { filled, edges } = beadsOf(frame, beadsOfLayer(project, ref)!)
   const pdfPages = pdfPageCount(plan, words)
-  const cells = Math.max(filled, Math.round((frame.columns * frame.rows * cellsIn(plan.trim)) / cellsIn(wholeArea(project))))
+  const cells = Math.max(filled, Math.round((frame.columns * frame.rows * cellsIn(plan.trim)) / cellsIn(wholeArea(project, ref))))
   return {
     colors: words.colors.length,
     cells,
@@ -102,7 +102,7 @@ export function exportFacts(shown: Project, words: PrintText, ref: FrameRef = FI
     pageOneColors: pageOne.needed.count,
     ...(pageOne.overview ? { overviewZoom: pageOne.overview.zoom } : {}),
     lists: pageOne.lists.map((list) => list.count),
-    coverZoom: coverPageLayout(project).zoom,
+    coverZoom: coverPageLayout(project, ref).zoom,
     pdfCover: !!words.cover,
     sheets: chartOnPageOne(plan) ? 0 : new Set(plan.parts.map((part) => part.page)).size,
     partArea: plan.parts.reduce((sum, part) => sum + (part.lastAcross - part.firstAcross + 1) * (part.lastDown - part.firstDown + 1), 0),

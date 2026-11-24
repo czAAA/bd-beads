@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { beadCopy, findBead } from './beads'
 import { changeFrame } from './changeFrame'
@@ -21,7 +22,7 @@ const framed = (): Project => {
 }
 
 const open = (): Project => {
-  const project = withFrameSheet(framed(), undefined)
+  const project = withFrameSheet(framed(), undefined, { frame: frameIdIn(framed()) })
   return project
 }
 
@@ -37,7 +38,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
   })
 
   it('reads the Frame from its sheet, with its Bead and the cell that Bead draws', () => {
-    expect(layerOf(framed(), 'frame')).toEqual({
+    expect(layerOf(framed(), frameIdIn(framed()))).toEqual({
       weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell: beadCell(delica, 'peyote') },
       beadId: delica.id,
       bead: beadCopy(delica),
@@ -48,14 +49,15 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
 
   it('reads an unnamed Frame without a name, and no Frame on a Canvas without one', () => {
     const { name: _name, ...unnamed } = frameOf(framed())!
-    expect(layerOf(withLayers(framed(), { frame: unnamed }), 'frame')).not.toHaveProperty('name')
-    expect(layerOf(open(), 'frame')).toBeUndefined()
+    const withUnnamed = withLayers(framed(), { frame: unnamed })
+    expect(layerOf(withUnnamed, frameIdIn(withUnnamed))).not.toHaveProperty('name')
+    expect(layerOf(open(), frameIdIn(open()))).toBeUndefined()
     expect(layerOf(open(), 'canvas').beads).toEqual({ 9: { 9: RED } })
   })
 
   it('reads a Custom frame\'s own beads and Weave', () => {
     const project = triangle()
-    const layer = layerOf(project, 'frame')!
+    const layer = layerOf(project, frameIdIn(project))!
     expect(layer.weave.technique).toBe('peyote')
     expect(layer.beads).toBe(frameOf(project)!.beads)
     expect(layerOf(project, 'canvas').beads).toEqual({ 9: { 9: RED } })
@@ -64,7 +66,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
 
 /** The open Canvas with a Triangle Custom frame laid on it. */
 function triangle(): Project {
-  const result = changeFrame(open(), { custom: { shape: 'triangle', size: 3, centre: { row: 20, column: 30 } } })
+  const result = changeFrame(open(), { custom: { shape: 'triangle', size: 3, centre: { row: 20, column: 30 } } }, frameIdIn(open()))
   if (result.kind !== 'changed') throw new Error('expected a Custom frame')
   return result.project
 }
@@ -80,19 +82,19 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
 
   it('writes the Frame\'s Weave, beads and name into its layer, leaving the Canvas as it was', () => {
     const before = framed()
-    const after = withLayer(before, 'frame', { weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beads: { 0: { 0: RED } }, name: 'Lily' })
+    const after = withLayer(before, FRAME_ID, { weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beads: { 0: { 0: RED } }, name: 'Lily' })
     expect(frameOf(after)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 }, beads: { 0: { 0: RED } }, name: 'Lily', row: frameOf(before)!.row })
     expect(canvasOf(after)).toBe(canvasOf(before))
   })
 
   it('keeps a Weave\'s cell out of what it stores, and clears a Frame\'s name with an empty one', () => {
-    const after = withLayer(framed(), 'frame', { weave: { technique: 'loom', cell: beadCell(delica, 'loom') }, name: '' })
+    const after = withLayer(framed(), FRAME_ID, { weave: { technique: 'loom', cell: beadCell(delica, 'loom') }, name: '' })
     expect(frameOf(after)).not.toHaveProperty('cell')
     expect(frameOf(after)).not.toHaveProperty('name')
   })
 
   it('writes a layer\'s Bead into that layer alone (tickets 0665, 0670)', () => {
-    const after = withLayer(framed(), 'frame', { bead: cube })
+    const after = withLayer(framed(), FRAME_ID, { bead: cube })
     expect(frameOf(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube) })
     expect(canvasOf(after)).toMatchObject({ beadId: delica.id, bead: beadCopy(delica) })
     expect(canvasOf(withLayer(framed(), 'canvas', { bead: cube }))).toMatchObject({ beadId: cube.id, bead: beadCopy(cube) })
@@ -101,7 +103,7 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
 
   it('writes a Custom frame\'s beads and Weave, keeping its Frame shape, settings and place', () => {
     const before = triangle()
-    const after = withLayer(before, 'frame', { weave: { technique: 'loom' }, beads: { 0: { 0: RED } } })
+    const after = withLayer(before, FRAME_ID, { weave: { technique: 'loom' }, beads: { 0: { 0: RED } } })
     const { shape, settings, row, column } = frameOf(before)!
     expect(frameOf(after)).toMatchObject({ technique: 'loom', beads: { 0: { 0: RED } }, shape, settings, row, column })
   })
@@ -113,7 +115,7 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
 
   it('leaves a Project without a Frame as it is when the Frame is written', () => {
     const project = open()
-    expect(withLayer(project, 'frame', { beads: { 0: { 0: RED } } })).toBe(project)
+    expect(withLayer(project, FRAME_ID, { beads: { 0: { 0: RED } } })).toBe(project)
   })
 })
 
@@ -121,53 +123,53 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
   it('reads each layer\'s beads as its record holds them, and none for a Frame the Project lacks', () => {
     const project = framed()
     expect(beadsOfLayer(project, 'canvas')).toBe(layerOf(project, 'canvas').beads)
-    expect(beadsOfLayer(project, 'frame')).toBe(layerOf(project, 'frame')!.beads)
-    expect(beadsOfLayer(open(), 'frame')).toBeUndefined()
+    expect(beadsOfLayer(project, frameIdIn(project))).toBe(layerOf(project, frameIdIn(project))!.beads)
+    expect(beadsOfLayer(open(), frameIdIn(open()))).toBeUndefined()
   })
 
   it('reads each layer\'s own Bead and its id; a Frame the Project lacks reads the Canvas\'s', () => {
-    const project = withLayer(framed(), 'frame', { bead: cube })
-    expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(cube) })
+    const project = withLayer(framed(), FRAME_ID, { bead: cube })
+    expect(beadOfLayer(project, FRAME_ID)).toEqual({ bead: beadCopy(cube) })
     expect(beadIdOfLayer(project, 'canvas')).toBe(delica.id)
-    expect(beadIdOfLayer(project, 'frame')).toBe(cube.id)
+    expect(beadIdOfLayer(project, FRAME_ID)).toBe(cube.id)
     expect(beadOfLayer(open(), 'canvas')).toEqual({ bead: beadCopy(delica) })
-    expect(beadIdOfLayer(withLayer(open(), 'canvas', { bead: cube }), 'frame')).toBe(cube.id)
+    expect(beadIdOfLayer(withLayer(open(), 'canvas', { bead: cube }), FRAME_ID)).toBe(cube.id)
   })
 
   it('reads a layer\'s Weave as held, without the cell its Bead draws it in', () => {
     const project = framed()
     expect(heldWeave(project, 'canvas')).toEqual({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
-    expect(heldWeave(project, 'frame')).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
-    expect(heldWeave(open(), 'frame')).toBeUndefined()
+    expect(heldWeave(project, frameIdIn(project))).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
+    expect(heldWeave(open(), frameIdIn(open()))).toBeUndefined()
   })
 })
 
 describe('the layer list (ADR 0079, ticket 0664)', () => {
   it('lays a Frame anew as a copy of the Canvas\'s Bead and Letters, at the first row, under an id of its own', () => {
     const canvas = withLetters(withLayer(open(), 'canvas', { bead: cube }), 'canvas', true)
-    const laid = withFrameSheet(canvas, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} })
+    const laid = withFrameSheet(canvas, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} }, { frame: frameIdIn(canvas) })
     expect(frameOf(laid)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), letters: true, rowProgress: { way: 'down' } })
     expect(frameOf(laid)!.id).not.toBe(canvasOf(laid).id)
   })
 
   it('keeps a Frame\'s id, Bead, Letters and Row progress when its sheet is laid again, and removes it with none', () => {
     const before = withLayers(framed(), { ownProgress: { direction: 'columns', currentRow: 0, currentColumn: 2 } })
-    const moved = withFrameSheet(before, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} })
+    const moved = withFrameSheet(before, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }, { frame: frameIdIn(before) })
     const { id, beadId, rowProgress } = frameOf(before)!
     expect(frameOf(moved)).toMatchObject({ id, beadId, rowProgress, row: 5 })
     expect(frameOf(moved)).not.toHaveProperty('name')
-    expect(withFrameSheet(before, undefined).layers).toEqual([canvasOf(before)])
+    expect(withFrameSheet(before, undefined, { frame: frameIdIn(before) }).layers).toEqual([canvasOf(before)])
   })
 
   it('gives each layer a Letters switch of its own, and a Project without a Frame none for it (ticket 1092)', () => {
-    const frame = withLetters(framed(), 'frame', true)
-    expect([lettersOn(frame, 'frame'), lettersOn(frame, 'canvas')]).toEqual([true, false])
+    const frame = withLetters(framed(), FRAME_ID, true)
+    expect([lettersOn(frame, FRAME_ID), lettersOn(frame, 'canvas')]).toEqual([true, false])
     const both = withLetters(frame, 'canvas', true)
-    expect([lettersOn(both, 'frame'), lettersOn(both, 'canvas')]).toEqual([true, true])
+    expect([lettersOn(both, FRAME_ID), lettersOn(both, 'canvas')]).toEqual([true, true])
     expect('letters' in canvasOf(withLetters(both, 'canvas', false))).toBe(false)
     const bare = open()
-    expect(withLetters(bare, 'frame', true)).toBe(bare)
-    expect(lettersOn(bare, 'frame')).toBe(false)
+    expect(withLetters(bare, FRAME_ID, true)).toBe(bare)
+    expect(lettersOn(bare, FRAME_ID)).toBe(false)
   })
 
   it('leaves an empty list of Piece names unsaved', () => {
@@ -180,26 +182,26 @@ describe('the layer list (ADR 0079, ticket 0664)', () => {
 describe('a layer\'s Background (ADR 0079, ticket 0666)', () => {
   it('sets each layer\'s on its own, unstamped, and leaves a Project without a Frame as it is', () => {
     const project = framed()
-    const set = withBackground(withBackground(project, 'canvas', 4), 'frame', '#336699')
+    const set = withBackground(withBackground(project, 'canvas', 4), FRAME_ID, '#336699')
     expect(backgroundOf(set, 'canvas')).toBe(4)
-    expect(backgroundOf(set, 'frame')).toBe('#336699')
+    expect(backgroundOf(set, FRAME_ID)).toBe('#336699')
     expect(set.updatedAt).toBe(project.updatedAt)
     const canvasOnly = open()
-    expect(withBackground(canvasOnly, 'frame', 2)).toBe(canvasOnly)
-    expect(backgroundOf(canvasOnly, 'frame')).toBeUndefined()
+    expect(withBackground(canvasOnly, FRAME_ID, 2)).toBe(canvasOnly)
+    expect(backgroundOf(canvasOnly, FRAME_ID)).toBeUndefined()
   })
 
   it('lays a Frame anew on the Canvas\'s Background, and keeps a Frame\'s own when its sheet is laid again', () => {
-    const laid = withFrameSheet(withBackground(open(), 'canvas', 3), { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} })
-    expect(backgroundOf(laid, 'frame')).toBe(3)
-    const own = withBackground(laid, 'frame', '#112233')
-    expect(backgroundOf(withFrameSheet(own, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }), 'frame')).toBe('#112233')
+    const laid = withFrameSheet(withBackground(open(), 'canvas', 3), { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} }, { frame: frameIdIn(withBackground(open(), 'canvas', 3)) })
+    expect(backgroundOf(laid, FRAME_ID)).toBe(3)
+    const own = withBackground(laid, FRAME_ID, '#112233')
+    expect(backgroundOf(withFrameSheet(own, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }, { frame: frameIdIn(own) }), FRAME_ID)).toBe('#112233')
   })
 
   it('starts every layer without one on the device\'s last pick, keeping a layer\'s own', () => {
-    const started = withStartBackground(withBackground(framed(), 'frame', 2), '#abcdef')
+    const started = withStartBackground(withBackground(framed(), FRAME_ID, 2), '#abcdef')
     expect(backgroundOf(started, 'canvas')).toBe('#abcdef')
-    expect(backgroundOf(started, 'frame')).toBe(2)
+    expect(backgroundOf(started, FRAME_ID)).toBe(2)
     expect(withStartBackground(started, 4)).toBe(started)
   })
 })

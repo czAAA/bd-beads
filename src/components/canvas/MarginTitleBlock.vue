@@ -24,7 +24,7 @@ import IconButton from '../ui/IconButton.vue'
 import MarginBeadCell from './MarginBeadCell.vue'
 import MarginSettingCell from './MarginSettingCell.vue'
 import { frameNameLine } from './marginFrameName'
-import { frameOf, lettersOn } from '../../domain/layerRecord'
+import { frameOf, lettersOn, firstFrameId } from '../../domain/layerRecord'
 
 // The margin sheet's title block (MarginSheet card, tickets 0657, 0658, 0698, 1170), in its bottom-left corner as seen:
 // the name, Technique, its settings and maker edited in place, the sizes, the lettered legend, Letters and fold; compact,
@@ -53,7 +53,7 @@ const nameLine = computed(() => frameNameLine(t.value, frame.value.name))
 
 /** The Frame's Technique, the one its rows are woven in; once a pass is done a change asks first (ticket 1184), and only
  * a Custom frame's is locked, with its reason. */
-const technique = computed(() => frameWeave(props.project).technique)
+const technique = computed(() => frameWeave(props.project, firstFrameId(props.project)).technique)
 const options = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
 const techniqueLocked = computed(() => !techniqueAction.enabled?.(deps.value))
 /** The Technique's pencil, the Project's picker, in the full and the roomy block. */
@@ -81,11 +81,11 @@ const makerLine = computed(() => ({
 }))
 
 /** Whether the Technique's settings wait: once a pass is done, as a Drop moves the passes. */
-const settingsLocked = computed(() => rowProgressStarted(props.project))
+const settingsLocked = computed(() => rowProgressStarted(props.project, firstFrameId(props.project)))
 /** A cell per setting the Frame's Technique describes (ticket 0698), its value and, locked once a pass is done, its
  * reason: none named here, so a Technique given a setting shows it. */
 const settings = computed(() => {
-  const weave = frameWeave(props.project)
+  const weave = frameWeave(props.project, firstFrameId(props.project))
   const values = weaveSettings(weave)
   return describeWeave(weave).settings.map((setting) => ({
     setting,
@@ -130,7 +130,7 @@ const legend = computed(() => {
     const index = palette.colors.findIndex((color) => color.hex === hex)
     return index < 0 ? palette.colors.length : index
   }
-  const used = computeColorQuantities(props.project, palette).sort((a, b) => slot(a.hex) - slot(b.hex))
+  const used = computeColorQuantities(props.project, palette, firstFrameId(props.project)).sort((a, b) => slot(a.hex) - slot(b.hex))
   return used.map(({ colorId, hex, count }) => ({
     hex,
     count,
@@ -227,7 +227,7 @@ defineExpose({ leastWidth })
           <MarginBeadCell v-if="frameBead" :bead="frameBead" @pick="emit('replace-bead', $event)" />
           <span class="margin-title__letters">
             <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
-            <AppSwitch :model-value="lettersOn(project, 'frame')" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+            <AppSwitch :model-value="lettersOn(project, firstFrameId(project))" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
           </span>
           <span class="margin-title__fold">
             <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />
@@ -291,7 +291,7 @@ defineExpose({ leastWidth })
       </div>
       <div class="margin-title__cell margin-title__letters" :style="form === 'full' ? grid.letters : undefined">
         <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
-        <AppSwitch :model-value="lettersOn(project, 'frame')" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+        <AppSwitch :model-value="lettersOn(project, firstFrameId(project))" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
       </div>
       <div class="margin-title__cell margin-title__fold" :style="form === 'full' ? grid.fold : undefined">
         <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />

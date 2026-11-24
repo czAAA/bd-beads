@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from './canvas'
 import { createProject } from './createProject'
@@ -23,12 +24,12 @@ describe('fillPreview (ticket 1153)', () => {
   it('names every bead of the region a Fill would flood on the Frame, and no counterpart under the Mirror (ticket 1025)', () => {
     const project = twoBlue(fourWide())
     const { row, column } = frameOf(project)!
-    const { cells } = fillPreview(project, { row, column, layer: 'frame', color: '#00ff00' }, reach(leftRight))
+    const { cells } = fillPreview(project, { row, column, layer: FRAME_ID, color: '#00ff00' }, reach(leftRight))
     expect(cells).toEqual([
-      { row, column, layer: 'frame' },
-      { row, column: column + 1, layer: 'frame' },
+      { row, column, layer: FRAME_ID },
+      { row, column: column + 1, layer: FRAME_ID },
     ])
-    expect(fillPreview(project, { row: row + 1, column, layer: 'frame', color: '#00ff00' }, reach(leftRight)).cells).toHaveLength(10)
+    expect(fillPreview(project, { row: row + 1, column, layer: FRAME_ID, color: '#00ff00' }, reach(leftRight)).cells).toHaveLength(10)
   })
 
   it('stops at the edge of the Mirror\'s Canvas Area, as the Fill does', () => {
@@ -40,9 +41,9 @@ describe('fillPreview (ticket 1153)', () => {
   })
 
   it('leaves out what Edit keeps: the rows marked done', () => {
-    const project = moveToRow(fourWide(), 1)
+    const project = moveToRow(fourWide(), 1, frameIdIn(fourWide()))
     const { row, column } = frameOf(project)!
-    const { cells } = fillPreview(project, { row: row + 2, column, layer: 'frame', color: '#00ff00' }, reach())
+    const { cells } = fillPreview(project, { row: row + 2, column, layer: FRAME_ID, color: '#00ff00' }, reach())
     expect(cells).toHaveLength(8)
     expect(cells.some((cell) => cell.row === row)).toBe(false)
   })
@@ -50,7 +51,7 @@ describe('fillPreview (ticket 1153)', () => {
   it('names nothing for a Fill that changes nothing or that Fill reach refuses (ticket 0715)', () => {
     const project = twoBlue(fourWide())
     const { row, column } = frameOf(project)!
-    expect(fillPreview(project, { row, column, layer: 'frame', color: '#0000ff' }, reach()).cells).toEqual([])
+    expect(fillPreview(project, { row, column, layer: FRAME_ID, color: '#0000ff' }, reach()).cells).toEqual([])
     // Empty space on the open Canvas that the screen does not hold whole.
     const far = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 2000, column: 2000 }, beads: withColors({}, [] as BeadChange[]) })
     expect(fillPreview(far, { row: 5, column: 5, layer: 'canvas', color: '#00ff00' }, reach()).cells).toEqual([])
@@ -61,10 +62,10 @@ describe('inFilledRegion (ticket 1153)', () => {
   it('holds for every bead the previewed Fill floods, and for no other', () => {
     const project = twoBlue(fourWide())
     const { row, column } = frameOf(project)!
-    const { region } = fillPreview(project, { row, column, layer: 'frame', color: '#00ff00' }, reach())
-    expect(inFilledRegion(project, region, 'frame', { row, column: column + 1 })).toBe(true)
-    expect(inFilledRegion(project, region, 'frame', { row, column: column + 2 })).toBe(false)
-    expect(inFilledRegion(project, project, 'frame', { row, column })).toBe(false)
+    const { region } = fillPreview(project, { row, column, layer: FRAME_ID, color: '#00ff00' }, reach())
+    expect(inFilledRegion(project, region, FRAME_ID, { row, column: column + 1 })).toBe(true)
+    expect(inFilledRegion(project, region, FRAME_ID, { row, column: column + 2 })).toBe(false)
+    expect(inFilledRegion(project, project, FRAME_ID, { row, column })).toBe(false)
   })
 
   it('holds where a refused Fill\'s flood reached, refused there alike, so the hover floods no more (ticket 0715)', () => {

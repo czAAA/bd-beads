@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import { turnedClockwise } from '../../testUtils/rotated'
@@ -53,12 +54,12 @@ describe('useProjectLabels', () => {
     })
 
     it('adds the Row progress once it is on', () => {
-      const tracking = moveToRow(base, 2)
+      const tracking = moveToRow(base, 2, frameIdIn(base))
       expect(setup(tracking).projectLabel.value).toMatch(/, row 2 of 3 done$/)
     })
 
     it('names a canvas with no Frame as a Canvas, with no size to state', () => {
-      const open = withFrameSheet(base, undefined)
+      const open = withFrameSheet(base, undefined, { frame: frameIdIn(base) })
       expect(setup(withLayers(open, { beads: { 0: { 0: '#ff0000' } } }) as Project).projectLabel.value).toBe('Logo panel, Canvas with no Frame, 1 color')
     })
 

@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
@@ -34,7 +35,7 @@ function render(project: Project, extra: { open?: boolean; reference?: DrawnRefe
   const beads: BeadShape[] = []
   renderProject(context, {
     project,
-    space: spaceOf(project, extra.open ?? true),
+    space: spaceOf(project, extra.open ?? true, frameIdIn(project)),
     region: { x: 0, y: 0, width: 400, height: 400 },
     zoom: 1,
     opaque: true,
@@ -120,12 +121,12 @@ describe('the reference image over the beads (ticket 1009)', () => {
 describe('the Canvas\'s box a new picture is fitted inside', () => {
   it('takes in the Canvas\'s beads and the Frame', () => {
     // A cube bead is 20 grid px: the Canvas bead at row 0, column 0 and the Frame to row 3, column 4.
-    expect(referenceBoxPx(framedProject())).toEqual({ x: 0, y: 0, width: 100, height: 80 })
+    expect(referenceBoxPx(framedProject(), undefined, frameIdIn(framedProject()))).toEqual({ x: 0, y: 0, width: 100, height: 80 })
   })
 
   it('is the part in view on an empty Canvas without a Frame', () => {
     const empty = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-    expect(referenceBoxPx(empty, { row: 1, column: 2, rows: 3, columns: 4 })).toEqual({ x: 40, y: 20, width: 80, height: 60 })
+    expect(referenceBoxPx(empty, { row: 1, column: 2, rows: 3, columns: 4 }, frameIdIn(empty))).toEqual({ x: 40, y: 20, width: 80, height: 60 })
   })
 
   it('lets the picture be no narrower than 4 beads and no wider than ten times the box', () => {

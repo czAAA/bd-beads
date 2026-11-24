@@ -1,12 +1,12 @@
 import type { FrameRef } from '../domain/grid'
-import { type Layered, FIRST_FRAME, frameById } from '../domain/layerRecord'
+import { type Layered, frameById } from '../domain/layerRecord'
 import { frameRowOrder, ownRowWayOf, rowProgressPosition } from '../domain/rowProgress'
 import type { Region, SurfaceView } from './surfaceView'
 
 /** Where the current pass lies in the view, with a row of context either side in the way rows run (ticket 0934): what
  * a row move and Show row bring into view. Past the last pass it is the last, as the counter shows; read from the beads'
  * middles, so a Custom frame's round is found where its layout puts it. None without a Frame. */
-export function currentPassRegion(project: Layered, surface: SurfaceView, ref: FrameRef = FIRST_FRAME): Region | undefined {
+export function currentPassRegion(project: Layered, surface: SurfaceView, ref: FrameRef): Region | undefined {
   const frame = frameById(project, ref)
   if (!frame) return undefined
   const { current, total } = rowProgressPosition(project, ref)

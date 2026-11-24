@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { changeFrame } from '../../domain/changeFrame'
 import { colorAt } from '../../domain/canvas'
@@ -67,7 +68,7 @@ describe('useEdit', () => {
     })
 
     it('leaves finished rows alone and keeps the rest of the edit', () => {
-      const woven = moveToRow(base, 1)
+      const woven = moveToRow(base, 1, frameIdIn(base))
       const ctx = editHarness(woven)
       ctx.edit('drawing', (project) => paintAt(project, [inside(0, 0), inside(1, 0)], '#ff0000'))
 
@@ -76,14 +77,14 @@ describe('useEdit', () => {
     })
 
     it('is refused when it only touched finished rows, and says why (ticket 0848)', () => {
-      const ctx = editHarness(moveToRow(base, 1))
+      const ctx = editHarness(moveToRow(base, 1, frameIdIn(base)))
       expect(ctx.edit('drawing', (project) => paint(project, inside(0, 0)))).toEqual({ kind: 'unchanged' })
       expect(ctx.history.canUndo.value).toBe(false)
       expect(ctx.onRowsHeld).toHaveBeenCalledTimes(1)
     })
 
     it('says nothing of rows marked done when it keeps off them', () => {
-      const ctx = editHarness(moveToRow(base, 1))
+      const ctx = editHarness(moveToRow(base, 1, frameIdIn(base)))
       ctx.edit('drawing', (project) => paint(project, inside(1, 0)))
       ctx.edit('drawing', (project) => paint(project, marginCell))
       expect(ctx.onRowsHeld).not.toHaveBeenCalled()
@@ -103,7 +104,7 @@ describe('useEdit', () => {
   describe('a frame change', () => {
     it('applies it once, resets the session once, and Undo restores the Frame', () => {
       const ctx = editHarness(base)
-      const outcome = ctx.edit('frame', (project) => changeFrame(project, { set: { ...frame, rows: frame.rows + 1 } }))
+      const outcome = ctx.edit('frame', (project) => changeFrame(project, { set: { ...frame, rows: frame.rows + 1 } }, frameIdIn(project)))
 
       expect(outcome).toEqual({ kind: 'applied' })
       expect(frameOf(ctx.project)).toMatchObject({ rows: frame.rows + 1, columns: frame.columns })
@@ -114,35 +115,35 @@ describe('useEdit', () => {
     })
 
     it('hands back the refusal and records nothing', () => {
-      const ctx = editHarness(moveToRow(base, 1))
-      expect(ctx.edit('frame', (project) => changeFrame(project, { set: { row: 0, column: 0, rows: 2, columns: 2 } }))).toEqual({ kind: 'refused', reason: 'locked' })
+      const ctx = editHarness(moveToRow(base, 1, frameIdIn(base)))
+      expect(ctx.edit('frame', (project) => changeFrame(project, { set: { row: 0, column: 0, rows: 2, columns: 2 } }, frameIdIn(project)))).toEqual({ kind: 'refused', reason: 'locked' })
       expect(ctx.history.canUndo.value).toBe(false)
       expect(ctx.resetAfterFrameChange).not.toHaveBeenCalled()
     })
 
     it('Remove Frame with passes done is one Undo step that brings back the Frame and the passes (ticket 426)', () => {
-      const woven = moveToRow(base, 2)
+      const woven = moveToRow(base, 2, frameIdIn(base))
       const ctx = editHarness(woven)
-      expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }))).toEqual({ kind: 'applied' })
+      expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }, frameIdIn(project)))).toEqual({ kind: 'applied' })
       expect(frameOf(ctx.project)).toBeUndefined()
-      expect(rowProgressOn(ctx.project)).toBe(false)
-      expect(pointersOf(rowProgressOf(ctx.project))).toEqual({})
+      expect(rowProgressOn(ctx.project, frameIdIn(ctx.project))).toBe(false)
+      expect(pointersOf(rowProgressOf(ctx.project, frameIdIn(ctx.project)))).toEqual({})
 
       ctx.history.onUndo()
       expect(frameSheetOf(ctx.project)).toEqual(frameSheetOf(woven))
-      expect(rowProgressOf(ctx.project)).toEqual(rowProgressOf(woven))
+      expect(rowProgressOf(ctx.project, frameIdIn(ctx.project))).toEqual(rowProgressOf(woven, frameIdIn(woven)))
       expect(ctx.history.canUndo.value).toBe(false)
     })
 
     it('says unchanged when the Frame already is what was asked', () => {
       const ctx = editHarness(base)
-      expect(ctx.edit('frame', (project) => changeFrame(project, { set: frame }))).toEqual({ kind: 'unchanged' })
+      expect(ctx.edit('frame', (project) => changeFrame(project, { set: frame }, frameIdIn(project)))).toEqual({ kind: 'unchanged' })
       expect(ctx.resetAfterFrameChange).not.toHaveBeenCalled()
     })
   })
 
   describe('a held frame change (ticket 0640)', () => {
-    const grow = (by: number) => (project: Project) => changeFrame(project, { set: { ...frame, rows: frame.rows + by } })
+    const grow = (by: number) => (project: Project) => changeFrame(project, { set: { ...frame, rows: frame.rows + by } }, frameIdIn(project))
 
     it('lands at once each time, and is one Undo step once settled', () => {
       const ctx = editHarness(base)
@@ -195,7 +196,7 @@ describe('useEdit', () => {
     })
 
     it('hands back a refusal and holds nothing', () => {
-      const ctx = editHarness(moveToRow(base, 1))
+      const ctx = editHarness(moveToRow(base, 1, frameIdIn(base)))
       expect(ctx.editing.hold(grow(1))).toEqual({ kind: 'refused', reason: 'locked' })
       ctx.editing.settle()
       expect(ctx.history.canUndo.value).toBe(false)
@@ -204,16 +205,16 @@ describe('useEdit', () => {
 
   describe('an exempt edit', () => {
     it('Delete all clears finished rows too, as one Undo step', () => {
-      const painted = paint(moveToRow(base, 1), inside(1, 0))
+      const painted = paint(moveToRow(base, 1, frameIdIn(base)), inside(1, 0))
       const woven: Project = withLayers(painted, { frame: { ...frameOf(painted)!, beads: { ...frameOf(painted)!.beads, ...frameOf(paint(base, inside(0, 0)))!.beads } } })
       const ctx = editHarness(woven)
       expect(ctx.edit('exempt', deleteAll)).toEqual({ kind: 'applied' })
       expect(frameOf(ctx.project)!.beads).toEqual({})
-      expect(pointersOf(rowProgressOf(ctx.project))).toEqual({})
+      expect(pointersOf(rowProgressOf(ctx.project, frameIdIn(ctx.project)))).toEqual({})
 
       ctx.history.onUndo()
       expect(frameOf(ctx.project)!.beads).toEqual(frameOf(woven)!.beads)
-      expect(rowProgressOf(ctx.project)).toEqual(rowProgressOf(woven))
+      expect(rowProgressOf(ctx.project, frameIdIn(ctx.project))).toEqual(rowProgressOf(woven, frameIdIn(woven)))
     })
 
     it('Replace Bead swaps only the Bead, and Undo swaps it back', () => {
@@ -287,7 +288,7 @@ describe('useEdit', () => {
     })
 
     it('across finished rows leaves them alone', () => {
-      const ctx = editHarness(moveToRow(base, 1))
+      const ctx = editHarness(moveToRow(base, 1, frameIdIn(base)))
       ctx.editing.beginStroke()
       ctx.editing.strokeStep((project) => paint(project, inside(0, 0)))
       ctx.editing.strokeStep((project) => paint(project, inside(1, 0)))
@@ -298,7 +299,7 @@ describe('useEdit', () => {
     })
 
     it('says once a stroke that rows marked done held it, however many of their beads it crossed (ticket 0848)', () => {
-      const ctx = editHarness(moveToRow(base, 1))
+      const ctx = editHarness(moveToRow(base, 1, frameIdIn(base)))
       for (let stroke = 0; stroke < 2; stroke++) {
         ctx.editing.beginStroke()
         for (const column of [0, 1, 2]) ctx.editing.strokeStep((project) => paint(project, inside(0, column)))
@@ -337,7 +338,7 @@ describe('useEdit', () => {
   it('Undo replays history without the lock: it can restore a finished row', () => {
     const ctx = editHarness(base)
     ctx.edit('drawing', (project) => paint(project, inside(0, 0)))
-    ctx.replaceProject(moveToRow(ctx.project, 2))
+    ctx.replaceProject(moveToRow(ctx.project, 2, frameIdIn(ctx.project)))
 
     ctx.history.onUndo()
     expect(frameOf(ctx.project)!.beads).toEqual(frameOf(base)!.beads)

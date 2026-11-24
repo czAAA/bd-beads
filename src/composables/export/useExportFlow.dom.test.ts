@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
@@ -64,7 +65,7 @@ function setup(options: { open?: boolean; project?: Project } = {}) {
 
 describe('useExportFlow with no Frame (ticket 233)', () => {
   it('exports no PNG or PDF, since they hold the Frame\'s beads', async () => {
-    const open = withFrameSheet(project, undefined)
+    const open = withFrameSheet(project, undefined, { frame: frameIdIn(project) })
     const flow = useExportFlow({
       currentProject: () => open,
       projects: () => [open],
@@ -84,14 +85,14 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
 
 describe('useExportFlow of a Selection (ticket 1210)', () => {
   it('exports the part it is given in the open Project\'s place, named by it', async () => {
-    const part = withFrameSheet(project, { ...frameOf(project)!, name: 'part' })
+    const part = withFrameSheet(project, { ...frameOf(project)!, name: 'part' }, { frame: frameIdIn(project) })
     const flow = setup()
     await flow.onExportPng(part)
     await flow.onExportPdf(undefined, part)
 
     expect(vi.mocked(exportProjectPng).mock.calls[0]![0]).toBe(part)
     expect(vi.mocked(exportProjectPdf).mock.calls[0]![0]).toBe(part)
-    expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(part, 'png'), expect.stringContaining('part')])
+    expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(part, 'png', undefined, frameIdIn(part)), expect.stringContaining('part')])
   })
 })
 
@@ -105,7 +106,7 @@ describe('useExportFlow Letters (tickets 0573, 1092)', () => {
     expect(canvasOf(replaced.at(-1)!).letters).toBeUndefined()
     flow.onSetLetters(false, 'canvas')
     expect(replaced).toHaveLength(2)
-    flow.onSetLetters(true, 'frame')
+    flow.onSetLetters(true, FRAME_ID)
     expect([frameOf(replaced.at(-1)!)!.letters, canvasOf(replaced.at(-1)!).letters]).toEqual([true, undefined])
   })
 })
@@ -115,7 +116,7 @@ describe('useExportFlow Word chart (ticket 0586)', () => {
     usePrintChoices().rowByRow.value = true
     await setup().onExportPng()
 
-    expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png')])
+    expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png', undefined, frameIdIn(project))])
   })
 })
 
@@ -212,7 +213,7 @@ describe('useExportFlow', () => {
         expect.objectContaining({ name: 'My scarf', labels: en.print, maker: 'Ada' }),
         300,
       )
-      expect(downloadFile).toHaveBeenCalledWith(projectExportFileName({ ...project, makerName: 'Ada' }, 'png'), expect.any(Blob), 'image/png')
+      expect(downloadFile).toHaveBeenCalledWith(projectExportFileName({ ...project, makerName: 'Ada' }, 'png', undefined, frameIdIn(project)), expect.any(Blob), 'image/png')
     })
 
     it('draws the PNG page at the dpi of the Export quality on the device, like a PDF page (ticket 0583)', async () => {
@@ -228,7 +229,7 @@ describe('useExportFlow', () => {
       rowByRow.value = true
       await setup({ project: wide }).onExportPng()
 
-      expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(wide, 'png')])
+      expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(wide, 'png', undefined, frameIdIn(wide))])
       expect(exportProjectPng).toHaveBeenCalledTimes(1)
     })
 
@@ -248,7 +249,7 @@ describe('useExportFlow', () => {
       usePrintChoices().cover.value = false
       usePrintChoices().chartBorder.value = false
       await setup().onExportPdf()
-      expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'pdf'), expect.any(Blob), 'application/pdf')
+      expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'pdf', undefined, frameIdIn(project)), expect.any(Blob), 'application/pdf')
     })
 
     it('names the PDF with a word for each print switch that is on, in the panel’s order (ticket 1096)', async () => {
@@ -340,7 +341,7 @@ describe('useExportFlow toasts (ticket 523)', () => {
     const { flow, toasts } = setupToasts('downloaded')
     await flow.onExportPng()
 
-    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
+    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png', undefined, frameIdIn(project)), expect.any(Blob), 'image/png')
     expect(toasts).toEqual([{ id: 'saved-file', text: 'Saved to Downloads: my-scarf.png', action: undefined }])
   })
 
@@ -376,7 +377,7 @@ describe('useExportFlow toasts (ticket 523)', () => {
     downloadFile.mockClear()
     downloadFile.mockReturnValue('shared')
     toasts[0]!.action!.run()
-    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
+    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png', undefined, frameIdIn(project)), expect.any(Blob), 'image/png')
     await vi.waitFor(() => expect(toasts.at(-1)!.text).toBe('Saved where you chose: my-scarf.png'))
   })
 

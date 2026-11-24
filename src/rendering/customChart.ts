@@ -7,7 +7,7 @@ import { CELL_SIZE_PX } from './cellSize'
 import { geometryDrawnAlone } from './space'
 import { gridToRegion, projectExtentPx, type Region } from './surfaceView'
 import { laidTurnOf } from '../domain/framePlacement'
-import { beadsOfLayer, type Layered, FIRST_FRAME, frameById } from '../domain/layerRecord'
+import { beadsOfLayer, type Layered, frameById } from '../domain/layerRecord'
 
 // A Custom frame on a printed chart (ticket 0594): its beads lie at angles, not on rows and columns, so a chart page
 // places each one where its Layer geometry puts it, through the same transform as the rest of the page.
@@ -26,7 +26,7 @@ export interface ChartBead {
 /** A Custom frame's or a turned Frame's (ticket 0667) beads and Seams drawn into a region of the displayed chart at a
  * zoom; none for an upright Frame without a shape.
  * Every bead is given, wherever it lies: the caller keeps those of its own part. */
-export function customChart(project: Layered, region: Region, zoom: number, ref: FrameRef = FIRST_FRAME): { beads: ChartBead[]; seams: [LayoutPoint, LayoutPoint][] } | undefined {
+export function customChart(project: Layered, region: Region, zoom: number, ref: FrameRef): { beads: ChartBead[]; seams: [LayoutPoint, LayoutPoint][] } | undefined {
   const frame = frameById(project, ref)
   const geometry = geometryDrawnAlone(project, ref)
   if (!frame || geometry.grid) return undefined

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { pictureCover, pressOnPicture } from './referenceCover'
 import { findBead } from '../domain/beads'
@@ -63,7 +64,7 @@ describe('where a pressed bead lies on the picture (Pick color, ticket 1119)', (
   /** A loom Canvas of square 8/0 beads (centres at column × 20 + 10, row × 20 + 10), a 4 by 4 Frame at row 2, column 3. */
   function framed(frameBead = round8) {
     const made = withLayers(createProject({ technique: 'loom', beadId: round8.id, size: { width: 4, height: 4, unit: 'beads' } }), { bead: squareBead(round8) })
-    return withLayer(withLayers(made, { frame: { ...frameOf(made)!, row: 2, column: 3 } }), 'frame', { bead: squareBead(frameBead) })
+    return withLayer(withLayers(made, { frame: { ...frameOf(made)!, row: 2, column: 3 } }), FRAME_ID, { bead: squareBead(frameBead) })
   }
   // 200 × 200 grid px from the Canvas's corner: a point's u and v are its x and y over 200.
   const picture = { x: 100, y: 100, width: 200, angle: 0 }
@@ -71,13 +72,13 @@ describe('where a pressed bead lies on the picture (Pick color, ticket 1119)', (
 
   it("reads a Canvas bead's centre, and a Frame's alike with the Canvas at the same place", () => {
     expect(at(pressOnPicture(withLayers(framed(), { frame: undefined }), { row: 2, column: 3 }, undefined, picture, 200))).toEqual([0.35, 0.25])
-    expect(at(pressOnPicture(framed(), { row: 2, column: 3 }, 'frame', picture, 200))).toEqual([0.35, 0.25])
+    expect(at(pressOnPicture(framed(), { row: 2, column: 3 }, FRAME_ID, picture, 200))).toEqual([0.35, 0.25])
   })
 
   it("reads a Frame bead of a smaller Bead where the Frame draws it, through its Bead's size", () => {
     const smaller = framed(round15)
     expect(at(pressOnPicture(smaller, { row: 2, column: 3 }, undefined, picture, 200))).toEqual([0.325, 0.225])
-    expect(at(pressOnPicture(smaller, { row: 3, column: 4 }, 'frame', picture, 200))).toEqual([0.375, 0.275])
+    expect(at(pressOnPicture(smaller, { row: 3, column: 4 }, FRAME_ID, picture, 200))).toEqual([0.375, 0.275])
   })
 
   it('reads the Canvas under the Frame when the press names the Canvas', () => {
@@ -87,17 +88,17 @@ describe('where a pressed bead lies on the picture (Pick color, ticket 1119)', (
   it('reads a turned Frame bead where it lies turned (ticket 0667)', () => {
     // A 4 by 6 loom Frame at (0, 0), turned once: its first bead lies at the top right, its last at the bottom left.
     const turned = withLayers(framed(), { frame: { row: 0, column: 0, rows: 4, columns: 6, technique: 'loom', quarterTurns: 1, beads: {} } })
-    expect(at(pressOnPicture(turned, { row: 0, column: 0 }, 'frame', picture, 200))).toEqual([0.35, 0.05])
-    expect(at(pressOnPicture(turned, { row: 3, column: 5 }, 'frame', picture, 200))).toEqual([0.05, 0.55])
+    expect(at(pressOnPicture(turned, { row: 0, column: 0 }, FRAME_ID, picture, 200))).toEqual([0.35, 0.05])
+    expect(at(pressOnPicture(turned, { row: 3, column: 5 }, FRAME_ID, picture, 200))).toEqual([0.05, 0.55])
   })
 
   it("reads a Custom frame's bead where the Canvas draws it, named by round and place", () => {
     const sheet = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
     const custom = withLayers(createProject({ technique: 'peyote', beadId: round8.id, size: { width: 20, height: 20, unit: 'beads' } }), { bead: squareBead(round8), frame: { ...sheet, beads: {} } })
     const weave = canvasWeave(custom)
-    const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', cell: weave.cell, frame: { ...frameOf(custom)!, ...frameWeave(custom) }, rotation: 0, zoom: 1 })
-    const drawn = view.beadToPoint({ row: 3, column: 5 }, 'frame')
-    expect(at(pressOnPicture(custom, { row: 3, column: 5 }, 'frame', picture, 200))).toEqual(at({ u: drawn.x / 200, v: drawn.y / 200 }))
+    const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', cell: weave.cell, frame: { ...frameOf(custom)!, ...frameWeave(custom, frameIdIn(custom)) }, rotation: 0, zoom: 1 })
+    const drawn = view.beadToPoint({ row: 3, column: 5 }, FRAME_ID)
+    expect(at(pressOnPicture(custom, { row: 3, column: 5 }, FRAME_ID, picture, 200))).toEqual(at({ u: drawn.x / 200, v: drawn.y / 200 }))
   })
 
   it('is none off the picture', () => {

@@ -1,6 +1,6 @@
 import { nearestQuarterTurn, normalizedOrientation, settledOrientation } from './canvasOrientation'
 import type { FrameRef, Rotation } from './grid'
-import { canvasOf, FIRST_FRAME, frameById, type Layered } from './layerRecord'
+import { canvasOf, frameById, type Layered } from './layerRecord'
 
 // The table (spec 1182, ticket 1185): the one plane pan and zoom move. Each layer has a placement on it, an angle in
 // degrees and a position: the Canvas's orientation and origin, the Frame's own angle and centre (framePlacement.ts).
@@ -25,13 +25,13 @@ export function canvasPlacement(project: Layered): Placement {
 }
 
 /** The Frame's own angle on the table (spec 1182); with no Frame, the Canvas's, as a new Frame would lie. */
-export function frameAngleOf(project: Layered, frame: FrameRef = FIRST_FRAME): number {
+export function frameAngleOf(project: Layered, frame: FrameRef): number {
   return frameById(project, frame)?.angle ?? canvasOf(project).orientation
 }
 
 /** The quarter turn the Frame's angle is nearest: what it is read by (its Row direction as seen, and the Frame's own
  * axis and end worked from it, ticket 1185). Its lean is only the view's. */
-export function frameQuarterTurnOf(project: Layered, frame: FrameRef = FIRST_FRAME): Rotation {
+export function frameQuarterTurnOf(project: Layered, frame: FrameRef): Rotation {
   return nearestQuarterTurn(frameAngleOf(project, frame))
 }
 
@@ -44,7 +44,7 @@ export function settledFrameAngle(project: Layered, angle: number): number {
 /** Whether the Frame lies alike with the Canvas (spec 1182): at its angle and on whole positions, its cells on the
  * Canvas's (a Custom frame's turned layout is built on its grid, so whole quarters off still do). What every rule that
  * trades beads, steps by whole positions or needs plain rows asks; true with no Frame. */
-export function lieAlike(project: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+export function lieAlike(project: Layered, ref: FrameRef): boolean {
   const frame = frameById(project, ref)
   if (!frame) return true
   const off = normalizedOrientation(frame.angle - canvasOf(project).orientation)
@@ -55,7 +55,7 @@ export function lieAlike(project: Layered, ref: FrameRef = FIRST_FRAME): boolean
 /** Whether the Frame lies on the Canvas's grid (ticket 1188): whole quarter turns off its angle, on whole positions, so
  * it covers Canvas positions (its footprint) and its margin is theirs. Off it, it is only a sheet laid over the
  * Canvas, hiding what is under it on screen and covering no position. False with no Frame. */
-export function liesOnGrid(project: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+export function liesOnGrid(project: Layered, ref: FrameRef): boolean {
   const frame = frameById(project, ref)
   return !!frame && !frame.centre && normalizedOrientation(frame.angle - canvasOf(project).orientation) % 90 === 0
 }

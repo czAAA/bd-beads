@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { withFrame } from './frame'
@@ -24,13 +25,13 @@ describe('the Frame as its own sheet (ADR 0066)', () => {
 
   it('resizes with the beads staying where they are on the Canvas, dropping those outside, and leaves the Canvas alone', () => {
     const project = sheet()
-    const moved = withFrame(project, { row: 9, column: 9, rows: 3, columns: 4 })
+    const moved = withFrame(project, { row: 9, column: 9, rows: 3, columns: 4 }, frameIdIn(project))
     expect(frameOf(moved)!.beads).toEqual({ 1: { 1: '#111111' } })
     expect(beadsOfLayer(moved, 'canvas')).toBe(beadsOfLayer(project, 'canvas'))
   })
 
   it('removes the Frame\'s beads with it', () => {
-    const removed = withFrame(sheet(), undefined)
+    const removed = withFrame(sheet(), undefined, frameIdIn(sheet()))
     expect(frameOf(removed)).toBeUndefined()
     expect(beadsOfLayer(removed, 'canvas')).toEqual(beadsOfLayer(sheet(), 'canvas'))
   })

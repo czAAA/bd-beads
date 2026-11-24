@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { type Rotation } from '../domain/grid'
@@ -50,7 +51,7 @@ function render(project: Project, open: boolean, extra: { region?: Region; rows?
   const { context, calls, named } = recordingContext()
   renderProject(context, {
     project,
-    space: spaceOf(project, open),
+    space: spaceOf(project, open, frameIdIn(project)),
     region: extra.region ?? view,
     zoom: extra.zoom ?? 1,
     rows: extra.rows,
@@ -87,7 +88,7 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
       const project = framedProject(technique, 90)
       const { named } = render(project, open, { region: { x: 10, y: 20, width: 300, height: 300 }, zoom: 2 })
 
-      expect(named('setTransform').at(-1)!.args).toEqual(gridToRegion(spaceOf(project, open).extent, { x: 10, y: 20, width: 300, height: 300 }, 2, 90))
+      expect(named('setTransform').at(-1)!.args).toEqual(gridToRegion(spaceOf(project, open, frameIdIn(project)).extent, { x: 10, y: 20, width: 300, height: 300 }, 2, 90))
     })
   })
 
@@ -133,7 +134,7 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
     it('clears a band across the Frame on its own, and across the viewport when open', () => {
       const [x, , width] = topOf(false, 2)
       const [openX, , openWidth] = topOf(true, 8)
-      const extentWidth = spaceOf(framedProject(technique), false).extent.width
+      const extentWidth = spaceOf(framedProject(technique), false, frameIdIn(framedProject(technique))).extent.width
 
       expect([x, width]).toEqual([0, extentWidth])
       expect([openX, openWidth]).toEqual([0, view.width])
@@ -196,7 +197,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
   })
 
   it('fills the box a Frame in another Bead draws, at its own size (ticket 0665)', () => {
-    const project = withLayer(withLayers(framedProject('loom'), { beads: {} }), 'frame', { bead: findBead('miyuki-delica-11-0')! })
+    const project = withLayer(withLayers(framedProject('loom'), { beads: {} }), FRAME_ID, { bead: findBead('miyuki-delica-11-0')! })
     const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
 
     const fills = named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)
@@ -208,7 +209,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
 
   it('draws a Custom frame\'s Off-shape in the Frame\'s background', () => {
     const plain = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } })
-    const shaped = changeFrame(plain, { custom: { shape: 'triangle', size: 5, centre: { row: 10, column: 10 } } })
+    const shaped = changeFrame(plain, { custom: { shape: 'triangle', size: 5, centre: { row: 10, column: 10 } } }, frameIdIn(plain))
     if (shaped.kind !== 'changed') throw new Error('expected a Triangle')
     const { named } = render(shaped.project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
     expect(named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)).toHaveLength(1)
@@ -367,7 +368,7 @@ describe('Position marks tile', () => {
     // A Bead this device does not know draws the Technique's own cell, the one these marks are about.
     const project = withLayers(framedProject(technique), { frame: undefined, bead: undefined })
     const { context } = recordingContext()
-    renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.51, theme: look })
+    renderProject(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: view, zoom: 1.51, theme: look })
     return tile
   }
   // High contrast keeps the outlines (ticket 1001); light and dark draw tonal tiles.

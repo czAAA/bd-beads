@@ -1,3 +1,4 @@
+import { frameIdIn } from './frameId'
 import { beadsFromColors, colorsInFrame } from '../domain/canvas'
 import { projectFrame } from '../domain/projectExtent'
 import type { Grid, Project } from '../domain/project'
@@ -10,7 +11,7 @@ import { beadsOfLayer, frameOf, type Layered, withLayer } from '../domain/layerR
 export function frameGrid(project: Layered): Grid {
   const frame = frameOf(project)
   const beads = frame ? frame.beads : beadsOfLayer(project, 'canvas')
-  const area = frame ? { row: 0, column: 0, rows: frame.rows, columns: frame.columns } : projectFrame(project)
+  const area = frame ? { row: 0, column: 0, rows: frame.rows, columns: frame.columns } : projectFrame(project, frameIdIn(project))
   return colorsInFrame(beads, area).map((row) => row.map((color) => ({ color })))
 }
 
@@ -18,5 +19,5 @@ export function frameGrid(project: Layered): Grid {
  * Canvas from its origin, as the beads of a Canvas whose box round them is nothing. */
 export function withFrameGrid(project: Project, grid: Grid): Project {
   const beads = beadsFromColors(grid.map((row) => row.map((cell) => cell.color)))
-  return withLayer(project, frameOf(project) ? 'frame' : 'canvas', { beads })
+  return withLayer(project, frameOf(project) ? frameIdIn(project) : 'canvas', { beads })
 }

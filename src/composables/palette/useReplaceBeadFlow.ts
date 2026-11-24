@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { beadPitchMm, findBead, type Bead } from '../../domain/beads'
 import type { Layer } from '../../domain/grid'
 import { relaidInBead } from '../../domain/changeFrame'
-import { beadOfLayer, frameOf } from '../../domain/layerRecord'
+import { beadOfLayer, frameOf, firstFrameId } from '../../domain/layerRecord'
 import { replaceBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeInMm } from '../../domain/projectSize'
@@ -81,7 +81,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     const chosen = pending.value?.layer
     pending.value = undefined
     if (!bead || !chosen) return
-    deps.edit('exempt', (project) => relaidInBead(project, replaceBead(project, bead, chosen)))
+    deps.edit('exempt', (project) => relaidInBead(project, replaceBead(project, bead, chosen), firstFrameId(project)))
   }
 
   return {

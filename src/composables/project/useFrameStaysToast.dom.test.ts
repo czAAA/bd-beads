@@ -1,5 +1,7 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { findBead } from '../../domain/beads'
+import type { Layer } from '../../domain/grid'
 import { createProject } from '../../domain/createProject'
 import { withFrame } from '../../domain/frame'
 import { beadIdOfLayer, layerOf } from '../../domain/layerRecord'
@@ -14,7 +16,7 @@ import { useFrameStaysToast } from './useFrameStaysToast'
 
 /** A peyote bracelet with a Frame, both layers peyote in TOHO Cube. */
 const framed = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 8, height: 6, unit: 'beads' } })
-const unframed = withFrame(framed, undefined)
+const unframed = withFrame(framed, undefined, frameIdIn(framed))
 
 function setup(project: Project = framed) {
   const harness = editHarness(project)
@@ -37,13 +39,13 @@ function setup(project: Project = framed) {
     currentProject: harness.currentProject,
     messages: () => en,
     showToast,
-    setFrameTechnique: (technique) => stays.afterChange('technique', () => frameFlow.setLayerTechnique('frame', technique)),
+    setFrameTechnique: (technique) => stays.afterChange('technique', () => frameFlow.setLayerTechnique(FRAME_ID, technique)),
     requestFrameBead,
     openFrameSettings,
   })
-  const setTechnique = (layer: 'canvas' | 'frame', technique: 'loom' | 'peyote' | 'brick') => stays.afterChange('technique', () => frameFlow.setLayerTechnique(layer, technique))
+  const setTechnique = (layer: Layer, technique: 'loom' | 'peyote' | 'brick') => stays.afterChange('technique', () => frameFlow.setLayerTechnique(layer, technique))
   /** Replace Bead's confirmed change, which waits for its Color catalog first. */
-  const setBead = (layer: 'canvas' | 'frame', beadId: string) =>
+  const setBead = (layer: Layer, beadId: string) =>
     stays.afterChange('bead', async () => {
       await Promise.resolve()
       harness.edit('exempt', (current) => replaceBead(current, findBead(beadId)!, layer))
@@ -68,10 +70,10 @@ describe('useFrameStaysToast (ticket 0935)', () => {
     const { harness, showToast, setTechnique, actions } = setup()
     setTechnique('canvas', 'loom')
     actions()[0]!.run()
-    expect(layerOf(harness.project, 'frame')!.weave.technique).toBe('loom')
+    expect(layerOf(harness.project, frameIdIn(harness.project))!.weave.technique).toBe('loom')
     expect(showToast).toHaveBeenCalledTimes(1)
     harness.history.onUndo()
-    expect(layerOf(harness.project, 'frame')!.weave.technique).toBe('peyote')
+    expect(layerOf(harness.project, frameIdIn(harness.project))!.weave.technique).toBe('peyote')
     expect(layerOf(harness.project, 'canvas').weave.technique).toBe('loom')
   })
 
@@ -86,7 +88,7 @@ describe('useFrameStaysToast (ticket 0935)', () => {
     const none = setup(unframed)
     none.setTechnique('canvas', 'loom')
     const matching = setup(framed)
-    matching.setTechnique('frame', 'loom')
+    matching.setTechnique(frameIdIn(framed), 'loom')
     matching.setTechnique('canvas', 'loom')
     matching.setTechnique('canvas', 'loom')
     expect(none.showToast).not.toHaveBeenCalled()
@@ -94,13 +96,13 @@ describe('useFrameStaysToast (ticket 0935)', () => {
   })
 
   it('still offers Change the Frame too with a pass done, which asks first and changes nothing yet (ticket 1184)', () => {
-    const woven = moveToRow(framed, 1)
+    const woven = moveToRow(framed, 1, frameIdIn(framed))
     const { harness, showToast, setTechnique, actions } = setup(woven)
     setTechnique('canvas', 'loom')
     expect(showToast).toHaveBeenCalledOnce()
     expect(actions().map((action) => action?.label)).toEqual(['Change the Frame too', 'Open Frame'])
     actions()[0]!.run()
-    expect(layerOf(harness.project, 'frame')!.weave.technique).toBe('peyote')
+    expect(layerOf(harness.project, frameIdIn(harness.project))!.weave.technique).toBe('peyote')
   })
 
   it('says the Frame stays on its Bead after the Canvas takes another, and asks the Frame panel’s Replace Bead on Change the Frame too', async () => {
@@ -110,7 +112,7 @@ describe('useFrameStaysToast (ticket 0935)', () => {
     expect(showToast.mock.calls[0]?.[1]).toBe('The Canvas is Miyuki Delica 11/0 now. The Frame stays TOHO Cube 1.5mm.')
     actions()[0]!.run()
     expect(requestFrameBead).toHaveBeenCalledWith('miyuki/delica/11-0')
-    await setBead('frame', 'miyuki/delica/11-0')
+    await setBead(frameIdIn(harness.project), 'miyuki/delica/11-0')
     expect(showToast).toHaveBeenCalledOnce()
   })
 })

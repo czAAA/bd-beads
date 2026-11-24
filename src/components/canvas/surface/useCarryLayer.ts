@@ -2,7 +2,7 @@ import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import type { GridPosition } from '../../../domain/grid'
 import type { CarriedPieceMove } from '../../../composables/tools/useSelectionGesture'
-import { canvasOf } from '../../../domain/layerRecord'
+import { canvasOf, firstFrameId } from '../../../domain/layerRecord'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
@@ -54,7 +54,7 @@ export function useCarryLayer({ props, canvas: canvasEl, size, space, surface, t
       if (!context) return
       // The Piece's beads in the Project the layers show, so its orientation, Bead and look are theirs.
       const piece = { ...project, layers: [{ ...canvasOf(project), beads: canvasOf(held.project).beads }] } as Project
-      renderProject(context, { project: piece, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, rowMarks: false, letters: shownLetters(project, 'frame'), canvasLetters: shownLetters(project, 'canvas'), draftWhenSmall: true, positionMarks: false })
+      renderProject(context, { project: piece, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, rowMarks: false, letters: shownLetters(project, firstFrameId(project)), canvasLetters: shownLetters(project, 'canvas'), draftWhenSmall: true, positionMarks: false })
       drawn = current
     }
     canvas.style.display = ''

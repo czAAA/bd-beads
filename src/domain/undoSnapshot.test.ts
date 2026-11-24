@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
@@ -19,14 +20,14 @@ const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
 
 describe('snapshotOf and restoreSnapshot', () => {
   it('put back everything an Edit can change: the grid, Row progress, the Bead and the Frame', () => {
-    const before = moveToRow(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), 3)
+    const before = moveToRow(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), 3, frameIdIn(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } })))
     const snapshot = snapshotOf(before)
-    const changed = withFrame(replaceBead(deleteAll(before), cubeBead), { row: 0, column: 0, columns: 2, rows: 5 })
+    const changed = withFrame(replaceBead(deleteAll(before), cubeBead), { row: 0, column: 0, columns: 2, rows: 5 }, frameIdIn(replaceBead(deleteAll(before), cubeBead)))
 
     const restored = restoreSnapshot(changed, snapshot)
 
     expect(beadsOfLayer(restored, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
-    expect(rowProgressOf(restored)).toEqual(rowProgressOf(before))
+    expect(rowProgressOf(restored, frameIdIn(restored))).toEqual(rowProgressOf(before, frameIdIn(before)))
     expect(canvasOf(restored).beadId).toBe(canvasOf(before).beadId)
     expect(frameSheetOf(restored)).toEqual(frameSheetOf(before))
   })
@@ -34,7 +35,7 @@ describe('snapshotOf and restoreSnapshot', () => {
   it('put back whole layers but keep the views as they are now: the name, the Canvas\'s orientation and each layer\'s Letters (tickets 0664, 1092)', () => {
     const before = createProject({ name: 'Fox', technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 4, unit: 'beads' } })
     const snapshot = snapshotOf(before)
-    const viewed = withLetters(withLayers(deleteAll(withLayers(before, { beads: { 9: { 9: '#e63746' } } })), { name: 'Owl', orientation: 90 }), 'frame', true)
+    const viewed = withLetters(withLayers(deleteAll(withLayers(before, { beads: { 9: { 9: '#e63746' } } })), { name: 'Owl', orientation: 90 }), FRAME_ID, true)
 
     const restored = restoreSnapshot(viewed, snapshot)
 
@@ -45,24 +46,24 @@ describe('snapshotOf and restoreSnapshot', () => {
   })
 
   it('put the Frame back where it was on the table, under the Canvas as it lies now (ticket 1188)', () => {
-    const before = rotateFrame(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 3, unit: 'beads' } }))!
+    const before = rotateFrame(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined, frameIdIn(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 3, unit: 'beads' } })))!
     const turned = turnCanvasTo(withLayers(before, { beads: { 9: { 9: '#e63746' } } }), 90, { x: 3, y: -1.5 })
     const restored = restoreSnapshot(turned, snapshotOf(before))
     expect(canvasOf(restored)).toMatchObject({ orientation: 90, origin: { x: 3, y: -1.5 }, beads: {} })
-    expect(framePlacement(restored)).toEqual(framePlacement(before))
-    expect(rowProgressOf(restored)).toEqual(rowProgressOf(before))
-    expect(ownRowWayOf(restored)).toEqual(ownRowWayOf(before))
+    expect(framePlacement(restored, frameIdIn(restored))).toEqual(framePlacement(before, frameIdIn(before)))
+    expect(rowProgressOf(restored, frameIdIn(restored))).toEqual(rowProgressOf(before, frameIdIn(before)))
+    expect(ownRowWayOf(restored, undefined, frameIdIn(restored))).toEqual(ownRowWayOf(before, undefined, frameIdIn(before)))
   })
 
   it('keep each layer\'s Background as it is now, a view and no Undo step (ticket 0666)', () => {
-    const before = withBackground(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), 'frame', 2)
+    const before = withBackground(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), FRAME_ID, 2)
     const snapshot = snapshotOf(before)
-    const changed = withBackground(withBackground(deleteAll(before), 'canvas', 4), 'frame', '#336699')
+    const changed = withBackground(withBackground(deleteAll(before), 'canvas', 4), FRAME_ID, '#336699')
 
     const restored = restoreSnapshot(changed, snapshot)
 
     expect(beadsOfLayer(restored, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
-    expect([backgroundOf(restored, 'canvas'), backgroundOf(restored, 'frame')]).toEqual([4, '#336699'])
+    expect([backgroundOf(restored, 'canvas'), backgroundOf(restored, FRAME_ID)]).toEqual([4, '#336699'])
   })
 
   it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {
@@ -78,8 +79,8 @@ describe('snapshotOf and restoreSnapshot', () => {
   })
 
   it('restore a Project that had no Frame', () => {
-    const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined)
-    const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })
+    const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined, frameIdIn(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })))
+    const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 }, frameIdIn(before))
 
     expect(frameOf(restoreSnapshot(framed, snapshotOf(before)))).toBeUndefined()
   })
@@ -123,7 +124,7 @@ describe('UNDO_CAP', () => {
   const BLACK = '#111111'
   /** A 300 × 300 Frame with no Canvas beads, every Frame bead `color`. */
   function sheet(color: string) {
-    const project = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 300, height: 300, unit: 'beads' } }), { row: 0, column: 0, rows: 300, columns: 300 })
+    const project = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 300, height: 300, unit: 'beads' } }), { row: 0, column: 0, rows: 300, columns: 300 }, frameIdIn(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 300, height: 300, unit: 'beads' } })))
     const changes = Array.from({ length: 300 * 300 }, (_bead, at) => ({ row: Math.floor(at / 300), column: at % 300, color }))
     return withLayers(project, { frame: { ...frameSheetOf(project)!, beads: withColors({}, changes) } })
   }
@@ -137,7 +138,7 @@ describe('UNDO_CAP', () => {
 
   it('sizes a one-bead stroke at about the one row it replaced, and a whole-sheet repaint at every row, dozens of which fit the cap', () => {
     const grey = sheet(GREY)
-    const frameBeads = beadsOfLayer(grey, 'frame')!
+    const frameBeads = beadsOfLayer(grey, frameIdIn(grey))!
     const stroke = UNDO_CAP.sizeOf(snapshotOf(grey), snapshotOf(repainted(grey, withColors(frameBeads, [{ row: 7, column: 7, color: BLACK }]))))
     const repaint = UNDO_CAP.sizeOf(snapshotOf(grey), snapshotOf(sheet(BLACK)))
 

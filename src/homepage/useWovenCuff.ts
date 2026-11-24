@@ -1,3 +1,4 @@
+import { firstFrameId } from '../domain/layerRecord'
 import { onScopeDispose, shallowRef, watch, type ShallowRef } from 'vue'
 import { moveToRow, rowProgressPosition } from '../domain/rowProgress'
 import type { Project } from '../domain/project'
@@ -23,7 +24,7 @@ export interface WovenCuffDeps {
  * saved: nothing it does reaches the library or the device's settings. */
 export function useWovenCuff(deps: WovenCuffDeps): { project: ShallowRef<Project>; rowPress: ShallowRef<RowPress | undefined>; moveRow: (delta: number) => void } {
   const start = wovenCuff()
-  const project = shallowRef(deps.reducedMotion() ? moveToRow(start, STILL_PASSES) : start)
+  const project = shallowRef(deps.reducedMotion() ? moveToRow(start, STILL_PASSES, firstFrameId(start)) : start)
   /** Only a press is said aloud: the weaving by itself is not news (ScreenReaders card). */
   let pressing = false
   const rows = useRowOps({
@@ -39,7 +40,7 @@ export function useWovenCuff(deps: WovenCuffDeps): { project: ShallowRef<Project
   /** A press has taken over: the cuff no longer weaves by itself this visit. */
   let taken = false
   let timer: ReturnType<typeof setTimeout> | undefined
-  const done = () => rowProgressPosition(project.value).current
+  const done = () => rowProgressPosition(project.value, firstFrameId(project.value)).current
 
   function halt(): void {
     clearTimeout(timer)

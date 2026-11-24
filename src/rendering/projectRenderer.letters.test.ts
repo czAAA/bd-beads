@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withPictureTurned } from '../testUtils/layerFields'
 import { createProject } from '../domain/createProject'
@@ -37,7 +38,7 @@ describe('Letters on the Frame (ticket 0573)', () => {
   it('prints each painted bead\'s letter, white on a dark bead and ink on a light one, and none on an empty bead', () => {
     const project = framed()
     const { context, drawn } = recordingContext()
-    renderProject(context, { project, space: spaceOf(project, false), region, zoom: 1, rowMarks: false, letters: { '#1a1a1a': 'A', '#f2c94c': 'D' } })
+    renderProject(context, { project, space: spaceOf(project, false, frameIdIn(project)), region, zoom: 1, rowMarks: false, letters: { '#1a1a1a': 'A', '#f2c94c': 'D' } })
     expect(drawn).toEqual([
       { text: 'A', fill: LETTER_ON_DARK },
       { text: 'D', fill: LETTER_ON_LIGHT },
@@ -47,7 +48,7 @@ describe('Letters on the Frame (ticket 0573)', () => {
   it('prints nothing when Letters is off', () => {
     const project = framed()
     const { context, drawn } = recordingContext()
-    renderProject(context, { project, space: spaceOf(project, false), region, zoom: 1, rowMarks: false })
+    renderProject(context, { project, space: spaceOf(project, false, frameIdIn(project)), region, zoom: 1, rowMarks: false })
     expect(drawn).toEqual([])
   })
 
@@ -66,7 +67,7 @@ describe('Letters on the Canvas (ticket 1092)', () => {
   const drawnWith = (input: { letters?: typeof letters; canvasLetters?: typeof letters }) => {
     const project = both()
     const { context, drawn } = recordingContext()
-    renderProject(context, { project, space: spaceOf(project, true), region, zoom: 1, rowMarks: false, ...input })
+    renderProject(context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, rowMarks: false, ...input })
     return drawn.map(({ text }) => text).sort()
   }
 
@@ -116,7 +117,7 @@ describe('a letter reads upright however the Frame or the Canvas is turned (tick
   const lettered = (project: Project) => {
     const { context, letters } = turningContext()
     const swatches = { '#1a1a1a': 'A', '#f2c94c': 'D' }
-    renderProject(context, { project, space: spaceOf(project, true), region, zoom: 2, pixelRatio: 2, rowMarks: false, letters: swatches })
+    renderProject(context, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 2, pixelRatio: 2, rowMarks: false, letters: swatches })
     return letters
   }
   const upright = (letters: ReturnType<typeof lettered>) => letters.length > 0 && letters.every(({ degrees, mirrored }) => degrees === 0 && !mirrored)
@@ -127,7 +128,7 @@ describe('a letter reads upright however the Frame or the Canvas is turned (tick
 
   it.each([1, 2, 3])('after Rotate Frame %i times, on an upright and a turned Canvas', (turns) => {
     let project = framed()
-    for (let turn = 0; turn < turns; turn += 1) project = rotateFrame(project)!
+    for (let turn = 0; turn < turns; turn += 1) project = rotateFrame(project, undefined, frameIdIn(project))!
     expect(upright(lettered(project))).toBe(true)
     expect(upright(lettered(withPictureTurned(project, 90)))).toBe(true)
   })

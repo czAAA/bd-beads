@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { addedColorId, createPalette, defaultPaletteIds } from './palette'
 import { en } from '../i18n/en'
 import { listedColorName } from '../i18n/colorName'
@@ -36,18 +37,16 @@ function painted(cells: [row: number, column: number, color: string][]): Project
 
 describe('computeColorQuantities', () => {
   it('finds nothing to buy for an unpainted Project', () => {
-    expect(computeColorQuantities(blankProject(), palette)).toEqual([])
+    expect(computeColorQuantities(blankProject(), palette, frameIdIn(blankProject()))).toEqual([])
   })
 
   it('counts how many beads each painted color needs', () => {
-    const quantities = computeColorQuantities(
-      painted([
+    const drawn = painted([
         [0, 0, RED],
         [0, 1, RED],
         [1, 0, BLUE],
-      ]),
-      palette,
-    )
+      ])
+    const quantities = computeColorQuantities(drawn, palette, frameIdIn(drawn))
 
     expect(quantities).toEqual([
       { colorId: 'red', hex: RED, count: 2 },
@@ -59,24 +58,22 @@ describe('computeColorQuantities', () => {
     const project = painted([[0, 0, RED]])
     const folded = withLayers(project, { frame: { ...frameOf(project)!, folded: { 0: { [-1]: BLUE } } } })
 
-    expect(computeColorQuantities(folded, palette)).toEqual([{ colorId: 'red', hex: RED, count: 1 }])
+    expect(computeColorQuantities(folded, palette, frameIdIn(folded))).toEqual([{ colorId: 'red', hex: RED, count: 1 }])
   })
 
   it('lists the most-needed color first', () => {
-    const quantities = computeColorQuantities(
-      painted([
+    const drawn = painted([
         [0, 0, BLUE],
         [1, 0, RED],
         [1, 1, RED],
-      ]),
-      palette,
-    )
+      ])
+    const quantities = computeColorQuantities(drawn, palette, frameIdIn(drawn))
 
     expect(quantities.map((quantity) => quantity.colorId)).toEqual(['red', 'blue'])
   })
 
   it('still counts a color that is not in the Palette, flagging that it has no palette identity', () => {
-    const quantities = computeColorQuantities(painted([[0, 0, '#123456']]), palette)
+    const quantities = computeColorQuantities(painted([[0, 0, '#123456']]), palette, frameIdIn(painted([[0, 0, '#123456']])))
 
     expect(quantities).toEqual([{ colorId: null, hex: '#123456', count: 1 }])
   })
@@ -84,18 +81,18 @@ describe('computeColorQuantities', () => {
 
 describe('hasEmptyPositions (ticket 0963)', () => {
   it('finds an empty position in a Frame painted only in part', () => {
-    expect(hasEmptyPositions(blankProject())).toBe(true)
-    expect(hasEmptyPositions(painted([[0, 0, RED], [2, 2, BLUE]]))).toBe(true)
+    expect(hasEmptyPositions(blankProject(), frameIdIn(blankProject()))).toBe(true)
+    expect(hasEmptyPositions(painted([[0, 0, RED], [2, 2, BLUE]]), frameIdIn(painted([[0, 0, RED], [2, 2, BLUE]])))).toBe(true)
   })
 
   it('looks only between the beads, where the printed chart is trimmed to (ticket 1128)', () => {
-    expect(hasEmptyPositions(painted([[0, 0, RED]]))).toBe(false)
-    expect(hasEmptyPositions(painted([[3, 3, RED], [3, 4, BLUE]]))).toBe(false)
+    expect(hasEmptyPositions(painted([[0, 0, RED]]), frameIdIn(painted([[0, 0, RED]])))).toBe(false)
+    expect(hasEmptyPositions(painted([[3, 3, RED], [3, 4, BLUE]]), frameIdIn(painted([[3, 3, RED], [3, 4, BLUE]])))).toBe(false)
   })
 
   it('finds none once every position of the Frame holds a bead', () => {
     const project = blankProject()
-    expect(hasEmptyPositions(paintAt(project, [...frameGeometryOf(project).positions()], RED))).toBe(false)
+    expect(hasEmptyPositions(paintAt(project, [...frameGeometryOf(project, frameIdIn(project)).positions()], RED), frameIdIn(paintAt(project, [...frameGeometryOf(project, frameIdIn(project)).positions()], RED)))).toBe(false)
   })
 })
 

@@ -25,7 +25,7 @@ import { joinedTouching } from './touchingCells'
 import { lookSideOf } from './pieceGround'
 import { drawDraftBeads, drawsDraft } from './draftRenderer'
 import { markLookAt } from './tonalTiles'
-import { beadsOfLayer, quarterTurnOf, FIRST_FRAME, frameById } from '../domain/layerRecord'
+import { beadsOfLayer, firstFrameId, quarterTurnOf, frameById } from '../domain/layerRecord'
 import { isMirrorOn, mirrorLines, shapeOwnAxes, type MirrorSetting } from '../domain/mirror'
 import type { LayoutPoint, LayoutSymmetry } from '../domain/frameLayout'
 
@@ -234,7 +234,7 @@ function raisedBy(bead: PassBead, by: number): PassBead {
 
 /** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none
  * when the Frame has no such pass. */
-function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometry, at?: number, ref: FrameRef = FIRST_FRAME): PassBead[] {
+function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometry, at: number | undefined, ref: FrameRef): PassBead[] {
   const pass = at ?? currentPass(rowProgressOf(project, ref))
   if (!space.hasFrame) {
     return []
@@ -1031,7 +1031,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
   // The Frame drawn: the one this surface is, else the first (ticket 1216).
-  const ref: FrameRef = isFrameLayer(input.layer) ? input.layer : FIRST_FRAME
+  const ref: FrameRef = isFrameLayer(input.layer) ? input.layer : firstFrameId(input.project)
   const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, frameTheme = theme, space = spaceOf(input.project, false, ref), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, areaSheet, rowMotion, layer } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)

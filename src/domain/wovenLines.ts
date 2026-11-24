@@ -1,7 +1,7 @@
 import type { FrameRef } from './grid'
 import { nearestQuarterTurn } from './canvasOrientation'
 import { frameShapeOf, rowOrderOf } from './frameShape'
-import { type Layered, FIRST_FRAME, frameById } from './layerRecord'
+import { type Layered, frameById } from './layerRecord'
 import { frameWeave } from './layerWeave'
 import type { RowProgress } from './project'
 import type { RowOrder } from './rowOrder'
@@ -73,20 +73,20 @@ function wovenLinesOf(project: Layered, ref: FrameRef): WovenLines | undefined {
 
 /** What Rotate Frame asks first (ticket 1184), or nothing where it just turns: no pass done, or a Custom frame. The
  * one place the rule lives. */
-export function rotateFrameQuestion(project: Layered, ref: FrameRef = FIRST_FRAME): RotateFrameQuestion | undefined {
+export function rotateFrameQuestion(project: Layered, ref: FrameRef): RotateFrameQuestion | undefined {
   return wovenLinesOf(project, ref)
 }
 
 /** What a Frame twist come to rest at `angle` asks first (ticket 1190): Rotate Frame's question where it settles on
  * another quarter turn as seen, nothing where it leans about the one it was read by. */
-export function twistFrameQuestion(project: Layered, angle: number, ref: FrameRef = FIRST_FRAME): RotateFrameQuestion | undefined {
+export function twistFrameQuestion(project: Layered, angle: number, ref: FrameRef): RotateFrameQuestion | undefined {
   return nearestQuarterTurn(angle) === frameQuarterTurnOf(project, ref) ? undefined : rotateFrameQuestion(project, ref)
 }
 
 /** What a change of the Frame's Technique to `technique` asks first (ticket 1184), or nothing where it goes at once:
  * no pass done, the same Technique, or a Custom frame (whose Technique waits once a pass is done). The one place the
  * rule lives. */
-export function techniqueChangeQuestion(project: Layered, technique: Technique, ref: FrameRef = FIRST_FRAME): TechniqueChangeQuestion | undefined {
+export function techniqueChangeQuestion(project: Layered, technique: Technique, ref: FrameRef): TechniqueChangeQuestion | undefined {
   if (frameWeave(project, ref).technique === technique) return undefined
   const woven = wovenLinesOf(project, ref)
   return woven && { ...woven, technique }
@@ -101,7 +101,7 @@ function orderFor(project: Layered, way: SeenWay, ref: FrameRef): RowOrder {
 /** `before`'s Row progress kept in `after`'s Technique (ticket 1184): the way stays, and each pointer becomes the first
  * pass of the line after the whole lines it had done, counted in the new Technique's passes; a peyote line with only
  * one of its two passes done goes back to its start. */
-export function linesKeptIn(before: Layered, after: Layered, ref: FrameRef = FIRST_FRAME): RowProgress {
+export function linesKeptIn(before: Layered, after: Layered, ref: FrameRef): RowProgress {
   const rowProgress = rowProgressOf(before, ref)
   const kept: RowProgress = { way: rowProgress.way }
   for (const way of ROW_WAYS) {
@@ -115,7 +115,7 @@ export function linesKeptIn(before: Layered, after: Layered, ref: FrameRef = FIR
 
 /** Whether the Frame's Technique waits (its control off) once a pass is done: a Custom frame's only, which keeps its
  * own rules (ticket 1184); any other Frame's asks instead (techniqueChangeQuestion). */
-export function frameTechniqueWaits(project: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+export function frameTechniqueWaits(project: Layered, ref: FrameRef): boolean {
   const frame = frameById(project, ref)
   return !!frame && !!frameShapeOf(frame) && rowProgressStarted(project, ref)
 }

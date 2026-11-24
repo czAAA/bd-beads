@@ -5,7 +5,7 @@ import type { Locale } from './locale'
 import type { Palette } from './palette'
 import type { Project } from './project'
 import { frameGeometryOf } from './layers'
-import { beadsOfLayer, FIRST_FRAME, frameById } from './layerRecord'
+import { beadsOfLayer, frameById } from './layerRecord'
 import { backBeadsAt } from './pieceFaces'
 import { colorAt } from './canvas'
 import { inBox, paintedFrameBox } from './projectExtent'
@@ -21,7 +21,7 @@ export interface ColorQuantity {
 // How many beads of each color the Project needs, counted off its painted cells, most-needed first. Unpainted cells and
 // colors painted nowhere aren't listed. Only the Frame's beads count (ADR 0026): with no Frame there is nothing to
 // count.
-export function computeColorQuantities(project: Project, palette: Palette, ref: FrameRef = FIRST_FRAME): ColorQuantity[] {
+export function computeColorQuantities(project: Project, palette: Palette, ref: FrameRef): ColorQuantity[] {
   const counts = new Map<string, number>()
   const beads = beadsOfLayer(project, ref)
   if (!beads) {
@@ -52,7 +52,7 @@ export function computeColorQuantities(project: Project, palette: Palette, ref: 
 /** Whether the printed chart has a position no bead is painted in: what it draws under its small cross, and what its key
  * then names "empty" (ticket 0963). Only inside the box round the beads, which the chart is trimmed to (ticket 1128); a
  * Custom frame's whole shape. None without a Frame. */
-export function hasEmptyPositions(project: Project, ref: FrameRef = FIRST_FRAME): boolean {
+export function hasEmptyPositions(project: Project, ref: FrameRef): boolean {
   const beads = beadsOfLayer(project, ref)
   if (!beads) return false
   const box = paintedFrameBox(project, ref)

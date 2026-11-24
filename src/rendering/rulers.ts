@@ -10,7 +10,7 @@ import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
-import { type Layered, FIRST_FRAME, frameById } from '../domain/layerRecord'
+import { type Layered, frameById } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers along the left and the top of the Frame
 // and of each Piece as seen, whatever is turned (ticket 1170). Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -326,7 +326,8 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
-export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, expandedFontPx, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions, ref: FrameRef = FIRST_FRAME): RulerLayout {
+export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, expandedFontPx, pieces: given }: RulerLayoutOptions, ref: FrameRef): RulerLayout {
+  const pieces = given ?? ruledPieces(undefined, project, { numbers, stroking: false }, ref)
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
   const scale = rulerScale(surface.zoom, fontPx)
@@ -368,7 +369,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
 /** How thick the Frame's numbers stand on the left and on the top as seen, at `fontPx` (ticket 1169): the slim sheet of
  * an expanded Frame is as wide there as they are. `across` is a Canvas turned a quarter, whose left side then numbers
  * the Frame's columns and its top its rows. None for a Custom frame, which has no rulers. */
-export function frameNumberBands(project: RuledProject, across: boolean, fontPx: number, ref: FrameRef = FIRST_FRAME): { left: number; top: number } {
+export function frameNumberBands(project: RuledProject, across: boolean, fontPx: number, ref: FrameRef): { left: number; top: number } {
   const frame = frameById(project, ref)
   if (!frame || frameShapeOf(frame)) return { left: 0, top: 0 }
   const { rows, columns } = laidRect({ ...frame, cell: frameWeave(project, ref).cell })

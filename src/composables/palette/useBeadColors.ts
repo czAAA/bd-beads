@@ -2,7 +2,7 @@ import { computed, inject, provide, ref, shallowRef, watch, type InjectionKey, t
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, findBead } from '../../domain/beads'
 import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
-import { beadIdOfLayer, beadOfLayer } from '../../domain/layerRecord'
+import { beadIdOfLayer, beadOfLayer, wovenLayerOf } from '../../domain/layerRecord'
 import { brandColors, type AddUsedColorOutcome, type Palette, type PaletteCode } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { loadColorCatalog } from '../../services/colorCatalogs'
@@ -35,11 +35,11 @@ export function useBeadColors({ currentProject, palette, addUsed, select, remove
   // catalog is the registry's, not the copy's (ticket 0694).
   const beadId = computed(() => {
     const project = currentProject()
-    return project && beadIdOfLayer(project, 'frame')
+    return project && beadIdOfLayer(project, wovenLayerOf(project))
   })
   const bead = computed(() => {
     const project = currentProject()
-    return project && (beadOfLayer(project, 'frame').bead ?? findBead(beadIdOfLayer(project, 'frame')))
+    return project && (beadOfLayer(project, wovenLayerOf(project)).bead ?? findBead(beadIdOfLayer(project, wovenLayerOf(project))))
   })
   const catalogId = computed(() => colorCatalogOf(beadId.value))
   const size = computed(() => bead.value?.size)

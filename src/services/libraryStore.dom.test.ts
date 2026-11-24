@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../domain/createProject'
 import type { Grid, Project } from '../domain/project'
@@ -382,7 +383,7 @@ describe('a library opened with some Projects kept sealed (ticket 0716)', () => 
 describe('a layer Background a library stored before ticket 1000', () => {
   /** A Project as an earlier build stored it: its layers' positions in the list of five, with no mark of the list. */
   function storedEarlier(canvas: number | string, frame: number | string) {
-    const { backgroundPositions: _list, ...stored } = encodeProject(withBackground(withBackground(makeProject(), 'canvas', 1), 'frame', 1))
+    const { backgroundPositions: _list, ...stored } = encodeProject(withBackground(withBackground(makeProject(), 'canvas', 1), FRAME_ID, 1))
     return { ...stored, layers: [{ ...stored.layers[0]!, background: canvas }, { ...stored.layers[1]!, background: frame }] }
   }
 
@@ -398,7 +399,7 @@ describe('a layer Background a library stored before ticket 1000', () => {
     const [project] = loadProjects()
 
     expect(backgroundOf(project!, 'canvas')).toBe(moved)
-    expect(backgroundOf(project!, 'frame')).toBe('#336699')
+    expect(backgroundOf(project!, FRAME_ID)).toBe('#336699')
   })
 
   it('never moves it twice: opened, saved and opened again, it stays where the first open put it', () => {
@@ -408,7 +409,7 @@ describe('a layer Background a library stored before ticket 1000', () => {
     const [project] = loadProjects()
 
     expect(backgroundOf(project!, 'canvas')).toBe(3)
-    expect(backgroundOf(project!, 'frame')).toBe(2)
+    expect(backgroundOf(project!, FRAME_ID)).toBe(2)
   })
 
   it('moves one kept sealed when it opens, and writes it back as it was stored', () => {
@@ -419,7 +420,7 @@ describe('a layer Background a library stored before ticket 1000', () => {
     const project = browserLibraryStore.unseal(sealed[0]!)
     saveProjects([], sealed)
 
-    expect([backgroundOf(project, 'canvas'), backgroundOf(project, 'frame')]).toEqual([1, 3])
+    expect([backgroundOf(project, 'canvas'), backgroundOf(project, FRAME_ID)]).toEqual([1, 3])
     expect((JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: unknown[] }).patterns).toEqual([earlier])
   })
 })

@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
@@ -98,7 +99,7 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
   })
 
   it('keeps the Technique on once a row is done, as a change asks first (ticket 1184)', async () => {
-    const wrapper = mountBlock(moveToRow(framed(), 1))
+    const wrapper = mountBlock(moveToRow(framed(), 1, frameIdIn(framed())))
     const pencil = wrapper.get('[data-testid="margin-technique-picker"] button[aria-haspopup]')
     expect(pencil.attributes('aria-disabled')).toBeUndefined()
     await pencil.trigger('click')
@@ -137,7 +138,7 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     })
 
     it('is locked with the Technique once a row is done, saying why', async () => {
-      const wrapper = mountBlock(moveToRow(woven('peyote'), 1))
+      const wrapper = mountBlock(moveToRow(woven('peyote'), 1, frameIdIn(woven('peyote'))))
       const pencil = wrapper.get('[data-testid="margin-peyote-drop-edit"]')
       expect(pencil.attributes('aria-disabled')).toBe('true')
       await pencil.trigger('click')

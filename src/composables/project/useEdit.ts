@@ -4,7 +4,7 @@ import { finishedRowsHold } from '../../domain/rowProgress'
 import { sameFrame } from '../../domain/canvas'
 import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
 import { sameBeads, sameLayers } from '../../domain/layerBeads'
-import { frameOf, layerOf, type Layered } from '../../domain/layerRecord'
+import { frameOf, layerOf, type Layered, firstFrameId } from '../../domain/layerRecord'
 import { sameMirrorBar } from '../../domain/mirror'
 import { withColorsInPalette } from '../../domain/paletteEdits'
 import type { Layer } from '../../domain/grid'
@@ -150,7 +150,7 @@ export function useEdit(deps: EditDeps) {
     const was = held
     held = undefined
     const project = deps.currentProject()
-    if (was && project?.id === was.id && !sameLayers(project, was.baseline)) {
+    if (was && project?.id === was.id && !sameLayers(project, was.baseline, firstFrameId(project))) {
       step(was.baseline, project)
     }
   }
@@ -213,7 +213,7 @@ export function useEdit(deps: EditDeps) {
     }
     const restored = restoreSnapshot(project, snapshot)
     deps.replaceProject(restored)
-    if (!sameFrame(frameOf(restored), frameOf(project)) || techniqueOf(restored, 'canvas') !== techniqueOf(project, 'canvas') || techniqueOf(restored, 'frame') !== techniqueOf(project, 'frame')) {
+    if (!sameFrame(frameOf(restored), frameOf(project)) || techniqueOf(restored, 'canvas') !== techniqueOf(project, 'canvas') || techniqueOf(restored, firstFrameId(restored)) !== techniqueOf(project, firstFrameId(project))) {
       deps.resetAfterFrameChange()
     }
   }

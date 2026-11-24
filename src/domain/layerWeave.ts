@@ -1,6 +1,6 @@
 import { beadBounds, colorAt, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet } from './canvas'
 import { isFrameLayer, type FrameRef, type GridPosition, type Layer } from './grid'
-import { beadOfLayer, FIRST_FRAME, frameById, heldWeave, weaveOfLayer, weaveOf, type Layered } from './layerRecord'
+import { beadOfLayer, frameById, heldWeave, weaveOfLayer, weaveOf, type Layered } from './layerRecord'
 import { describeWeave, positionStep, weaveSettings, withCell, type Weave } from './weave'
 
 export { weaveOf }
@@ -15,7 +15,7 @@ export function canvasWeave(project: Layered): Weave {
 
 /** A Frame's Weave (ticket 492), which may differ from the Canvas's; a Canvas without that Frame counts its rows in its
  * own. The one place that says which Weave a Frame's rows, rulers, passes and exports are counted in. */
-export function frameWeave(project: Layered, frame: FrameRef = FIRST_FRAME): Weave {
+export function frameWeave(project: Layered, frame: FrameRef): Weave {
   return weaveOfLayer(project, frame) ?? canvasWeave(project)
 }
 
@@ -36,7 +36,7 @@ export function sameWeave(a: Weave, b: Weave): boolean {
 /** How many times wider the Frame's cell is than the Canvas's, each Bead laid as its layer's Technique lays it (ADR 0079,
  * tickets 0665, 0734): what a length of the Frame's is read on the Canvas by, through millimetres. 1 without a Frame, or
  * where a Bead has no copy. */
-export function frameScale(project: Layered, ref: FrameRef = FIRST_FRAME): number {
+export function frameScale(project: Layered, ref: FrameRef): number {
   const [canvas, frame] = [beadOfLayer(project, 'canvas').bead, beadOfLayer(project, ref).bead]
   if (!canvas || !frame) return 1
   return describeWeave(frameWeave(project, ref)).beadMm(frame).widthMm / describeWeave(canvasWeave(project)).beadMm(canvas).widthMm
@@ -44,13 +44,13 @@ export function frameScale(project: Layered, ref: FrameRef = FIRST_FRAME): numbe
 
 /** Whether the Frame's Bead draws its cells as the Canvas's does (ticket 0665): as wide, and as tall where the Bead
  * shape is Real. Without a Frame, the Canvas is alike itself. */
-export function sameBeadSize(project: Layered, frame: FrameRef = FIRST_FRAME): boolean {
+export function sameBeadSize(project: Layered, frame: FrameRef): boolean {
   return frameScale(project, frame) === 1 && frameWeave(project, frame).cell?.aspect === canvasWeave(project).cell?.aspect
 }
 
 /** Whether the Frame's positions are the Canvas's one to one (ADR 0066, 0079): woven alike, in a Bead of the same
  * size. Otherwise a Frame's position is read on the Canvas through millimetres. False without a Frame. */
-export function layersAlike(project: Layered, ref: FrameRef = FIRST_FRAME): boolean {
+export function layersAlike(project: Layered, ref: FrameRef): boolean {
   const frame = heldWeave(project, ref)
   return !!frame && sameWeave(canvasWeave(project), frame) && sameBeadSize(project, ref)
 }
@@ -60,7 +60,7 @@ export function layersAlike(project: Layered, ref: FrameRef = FIRST_FRAME): bool
 export type PlacedFrame = FrameSheet & Weave & { scale: number }
 
 /** A Frame of the Project as it lies on the Canvas (see `PlacedFrame`), or none. */
-export function placedFrame(project: Layered, ref: FrameRef = FIRST_FRAME): PlacedFrame | undefined {
+export function placedFrame(project: Layered, ref: FrameRef): PlacedFrame | undefined {
   const frame = frameById(project, ref)
   return frame && { ...frame, ...frameWeave(project, ref), scale: frameScale(project, ref) }
 }
@@ -68,7 +68,7 @@ export function placedFrame(project: Layered, ref: FrameRef = FIRST_FRAME): Plac
 /** A distance in the Frame's own rows and columns (in `frame`, a Weave of its, drawn in its Bead), as the nearest whole
  * Canvas positions through millimetres (tickets 492, 0665), the same where the layers are alike. A half rounds away
  * from zero both ways, so an edge moved out and back puts the Frame where it was (ticket 0638). */
-export function canvasDistance(project: Layered, frame: Weave, rows: number, columns: number, ref: FrameRef = FIRST_FRAME): GridPosition {
+export function canvasDistance(project: Layered, frame: Weave, rows: number, columns: number, ref: FrameRef): GridPosition {
   const canvas = canvasWeave(project)
   if (sameWeave(canvas, frame) && sameBeadSize(project, ref)) {
     return { row: rows, column: columns }
@@ -83,7 +83,7 @@ export function canvasDistance(project: Layered, frame: Weave, rows: number, col
 /** Beads in the Frame's own rows and columns laid on the Canvas, its first row and column at `corner` (ADR 0079, ticket
  * 0665): in a Bead of the same size each keeps its row and column; in another, each Canvas position takes the bead
  * whose cell holds its middle, read through millimetres, so what lands looks as the Frame drew it. */
-export function laidOnCanvas(project: Layered, beads: BeadMap, corner: GridPosition, ref: FrameRef = FIRST_FRAME): BeadMap {
+export function laidOnCanvas(project: Layered, beads: BeadMap, corner: GridPosition, ref: FrameRef): BeadMap {
   const bounds = beadBounds(beads)
   if (sameBeadSize(project, ref) || !bounds) {
     return shiftedBeads(beads, corner.row, corner.column)

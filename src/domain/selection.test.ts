@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { MIRROR_OFF, type MirrorSetting } from './mirror'
 import {
@@ -300,8 +301,8 @@ describe('Piece and Select all selections (ticket 414)', () => {
     expect(allBeadsSelection(frameOf(picture)!.beads)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
     expect(allBeadsSelection(frameOf(project(3, 3))!.beads)).toBeUndefined()
     // ticket 428: with a Frame, Select all is the Frame's inside, whatever the beads
-    expect(selectAllSelection(frameOf(picture)!.beads, { row: 2, column: 3, rows: 10, columns: 12 })).toEqual({ top: 2, left: 3, rows: 10, columns: 12, layer: 'frame' })
-    expect(selectAllSelection(frameOf(picture)!.beads, undefined)).toMatchObject({ top: 0, left: 0, rows: 4, columns: 5 })
+    expect(selectAllSelection(frameOf(picture)!.beads, { row: 2, column: 3, rows: 10, columns: 12 }, frameIdIn(picture))).toEqual({ top: 2, left: 3, rows: 10, columns: 12, layer: FRAME_ID })
+    expect(selectAllSelection(frameOf(picture)!.beads, undefined, frameIdIn(picture))).toMatchObject({ top: 0, left: 0, rows: 4, columns: 5 })
   })
 })
 
@@ -313,7 +314,7 @@ beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3
 }))
 
   it('belongs to the layer its top-left bead is on', () => {
-    expect(selectionLayer(layered(), { top: 2, left: 2, rows: 2, columns: 2 })).toBe('frame')
+    expect(selectionLayer(layered(), { top: 2, left: 2, rows: 2, columns: 2 })).toBe(FRAME_ID)
     expect(selectionLayer(layered(), { top: 0, left: 0, rows: 30, columns: 30 })).toBe('canvas')
   })
 
@@ -370,7 +371,7 @@ beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3
   it('copies, for a Canvas Selection across a Frame that draws shorter than the rows it names, only what lies clear of what it draws and its margin (ticket 0659)', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
     // A 48-row Frame in a Bead three quarters the Canvas's size covers 36 Canvas rows: rows 36 to 39 are its margin, row 40 is free Canvas.
-    const placed = withLayer(withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 }), 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+    const placed = withLayer(withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 }, frameIdIn(base)), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
     const woven: Project = withLayers(placed, { beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) })
     expect(copyLayerSelection(woven, { top: 0, left: 3, rows: 50, columns: 1, layer: 'canvas' })?.colors).toEqual([[BLUE]])
     expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 40, columns: 1, layer: 'canvas' })).toBe(false)
@@ -378,7 +379,7 @@ beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3
   })
 
   it('taps a Piece of the layer the tap is on', () => {
-    expect(pieceSelectionOnLayer(layered(), { row: 3, column: 3 })).toEqual({ top: 3, left: 3, rows: 1, columns: 1, layer: 'frame', cells: [{ row: 3, column: 3 }] })
+    expect(pieceSelectionOnLayer(layered(), { row: 3, column: 3 })).toEqual({ top: 3, left: 3, rows: 1, columns: 1, layer: FRAME_ID, cells: [{ row: 3, column: 3 }] })
     expect(pieceSelectionOnLayer(layered(), { row: 20, column: 20 })).toMatchObject({ top: 20, left: 20, rows: 1, columns: 1 })
   })
 })
@@ -404,7 +405,7 @@ describe('resizing and moving a Selection (ticket 414)', () => {
 describe('selectionHoldsAllBeads (ticket 415)', () => {
   const open = (beads: BeadMap): Project => (withLayers(project(4, 4), { frame: undefined, beads }))
   const framed = (beads: BeadMap, frameBeads: BeadMap): Project => {
-    const placed = withFrame(project(4, 4), { row: 10, column: 10, rows: 3, columns: 3 })
+    const placed = withFrame(project(4, 4), { row: 10, column: 10, rows: 3, columns: 3 }, frameIdIn(project(4, 4)))
     return withLayers(placed, { beads, frame: { ...frameOf(placed)!, beads: frameBeads } })
   }
 
@@ -420,7 +421,7 @@ describe('selectionHoldsAllBeads (ticket 415)', () => {
   })
 
   it('is false when its rectangle goes round a bead on the other layer, which Clear selection leaves (ticket 0659)', () => {
-    const frameSelection = { top: 0, left: 0, rows: 30, columns: 30, layer: 'frame' as const }
+    const frameSelection = { top: 0, left: 0, rows: 30, columns: 30, layer: FRAME_ID }
     expect(selectionHoldsAllBeads(framed({ 2: { 2: RED } }, { 0: { 0: BLUE } }), frameSelection)).toBe(false)
     expect(selectionHoldsAllBeads(framed({}, { 0: { 0: BLUE } }), frameSelection)).toBe(true)
     expect(selectionHoldsAllBeads(framed({ 2: { 2: RED } }, { 0: { 0: BLUE } }), { ...frameSelection, layer: 'canvas' })).toBe(false)

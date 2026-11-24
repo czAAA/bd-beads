@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
@@ -63,7 +64,7 @@ describe("the Welcome section's piece (tickets 0831, 1157)", () => {
   it('is the traced cuff finished: a peyote Frame 48 long and 23 wide on a turned Canvas, every bead woven', () => {
     const piece = wovenCuff()
     expect(frameOf(piece)).toMatchObject({ rows: 48, columns: 23 })
-    expect(weaveOfLayer(piece, 'frame')?.technique).toBe('peyote')
+    expect(weaveOfLayer(piece, frameIdIn(piece))?.technique).toBe('peyote')
     expect(orientationOf(piece)).toBe(90)
     const colors = frameGrid(piece).flat().map((cell) => cell.color)
     expect(colors).toHaveLength(48 * 23)

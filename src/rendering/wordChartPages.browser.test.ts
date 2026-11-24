@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { be } from '../i18n/be'
@@ -17,7 +18,7 @@ import { drawWordChartPages, placeRuns, wordChartPageCount } from './wordChartPa
 // The Word chart drawn for real (ticket 0574): how many sheets it takes, and that its picture is a PNG.
 function wordsOf(technique: 'loom' | 'peyote' | 'brick', columns: number, rows: number) {
   const project = fixtureProject({ technique, columns, rows })
-  return printText(project, en, 'en', new Date(), { rowByRow: true })
+  return printText(project, en, 'en', new Date(), { rowByRow: true }, frameIdIn(project))
 }
 
 /** What each drawn sheet says: its title with its own rows, and how many columns of rows it runs in (the row numbers'
@@ -122,7 +123,7 @@ describe('Word chart pages', () => {
     // The last bead in the far corner keeps all 120 rows (ticket 1128).
     const painted = [...['#e63746', '#2a9d8f', '#264653'].map((color, index) => ({ row: index, column: index, color })), { row: 119, column: 34, color: '#264653' }]
     const project = fixtureProject({ technique: 'loom', columns: 35, rows: 120, blank: true, override: painted })
-    const words = printText(project, en, 'en', new Date(), { rowByRow: true })
+    const words = printText(project, en, 'en', new Date(), { rowByRow: true }, frameIdIn(project))
     expect(drawnSheets(words)).toEqual([
       { title: 'Row by row 1–82', columns: 2 },
       { title: 'Row by row 83–120', columns: 1 },
@@ -145,7 +146,7 @@ describe('Word chart pages', () => {
   it.each<[Locale, Translations]>([['en', en], ['ru', ru], ['uk', uk], ['be', be], ['zh', zh], ['es', es], ['pl', pl]])('lays the page out in %s', async (locale, messages) => {
     await loadPrintFonts()
     const project = fixtureProject({ technique: 'brick', columns: 8, rows: 250 })
-    const words = printText(project, messages, locale, new Date(), { rowByRow: true })
+    const words = printText(project, messages, locale, new Date(), { rowByRow: true }, frameIdIn(project))
 
     expect(Math.max(...drawnSheets(words).map((sheet) => sheet.columns))).toBe(2)
   })

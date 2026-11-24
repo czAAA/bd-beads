@@ -1,7 +1,7 @@
 import { frameContains, type Rect } from './canvas'
 import { laidFrame } from './frameOrientation'
 import type { GridPosition } from './grid'
-import { beadOfLayer, beadsOfLayer, heldWeave, type Layered } from './layerRecord'
+import { beadOfLayer, beadsOfLayer, firstFrameId, heldWeave, type Layered } from './layerRecord'
 import { projectPalette } from './palette'
 import { namedPieces, type NamedPiece } from './pieceNames'
 import { pieceBeadsAt } from './pieces'
@@ -16,7 +16,7 @@ function hiddenBy(frame: Rect | undefined, piece: Rect): boolean {
 /** The unframed Schemas that carry a tag (tickets 0721, 0733): the named Pieces of the Canvas, less any the Frame wholly
  * hides. `named` is passed by a caller that holds its Pieces through a stroke (`ruledPieces`, ticket 0674). */
 export function unframedSchemas(project: Layered, named: readonly NamedPiece[] = namedPieces(project)): NamedPiece[] {
-  const frame = laidFrame(project)
+  const frame = laidFrame(project, firstFrameId(project))
   return named.filter((piece) => !hiddenBy(frame, piece))
 }
 

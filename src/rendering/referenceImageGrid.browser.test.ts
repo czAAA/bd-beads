@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
@@ -40,8 +41,8 @@ function rendered(project: Project, theme: ProjectTheme, reference?: DrawnRefere
   canvas.width = REGION.width
   canvas.height = REGION.height
   const context = canvas.getContext('2d')!
-  renderProject(context, { project, space: spaceOf(project, true), region: REGION, zoom: ZOOM, theme, frameTheme: theme, opaque: true, reference })
-  const [a, , , d, e, f] = gridToRegion(spaceOf(project, true).extent, REGION, ZOOM, 0)
+  renderProject(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: REGION, zoom: ZOOM, theme, frameTheme: theme, opaque: true, reference })
+  const [a, , , d, e, f] = gridToRegion(spaceOf(project, true, frameIdIn(project)).extent, REGION, ZOOM, 0)
   /** The pixels across a Canvas position's middle row, as `r/g/b` strings. */
   const across = (row: number, column: number) => {
     const box = positionBoxPx(canvasWeave(project), row, column)

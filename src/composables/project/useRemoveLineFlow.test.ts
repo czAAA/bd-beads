@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
@@ -29,17 +30,17 @@ describe('useRemoveLineFlow', () => {
   })
 
   it('removes a line clear of finished passes without asking once rows are marked done (ticket 0647)', () => {
-    const woven = moveToRow(base, 1)
+    const woven = moveToRow(base, 1, frameIdIn(base))
     const { harness, dialogs, canRemoveSelectedLine, onRemoveSelectedLine } = setup({ project: woven, selection: secondRow })
     expect(canRemoveSelectedLine.value).toBe(true)
     onRemoveSelectedLine()
     expect(dialogs.open.value).toBeUndefined()
     expect(frameOf(harness.project)).toMatchObject({ rows: 2 })
-    expect((rowProgressOf(harness.project).down ?? 0)).toBe(1)
+    expect((rowProgressOf(harness.project, frameIdIn(harness.project)).down ?? 0)).toBe(1)
   })
 
   it('asks before a finished row, then takes it and moves the pointer back, one Undo bringing both back (ticket 0647)', () => {
-    const woven = moveToRow(base, 2)
+    const woven = moveToRow(base, 2, frameIdIn(base))
     const { harness, dialogs, onRemoveSelectedLine, confirmRemoveLine } = setup({ project: woven, selection: secondRow })
     onRemoveSelectedLine()
     expect(dialogs.open.value).toBe('remove-line')
@@ -49,15 +50,15 @@ describe('useRemoveLineFlow', () => {
     confirmRemoveLine()
     expect(dialogs.open.value).toBeUndefined()
     expect(frameOf(harness.project)).toMatchObject({ rows: 2 })
-    expect((rowProgressOf(harness.project).down ?? 0)).toBe(1)
+    expect((rowProgressOf(harness.project, frameIdIn(harness.project)).down ?? 0)).toBe(1)
 
     harness.history.onUndo()
     expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(woven))
-    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
+    expect(rowProgressOf(harness.project, frameIdIn(harness.project))).toEqual(rowProgressOf(woven, frameIdIn(woven)))
   })
 
   it('words the question for the line it asks about, rows or columns as the rows run (ticket 0647)', () => {
-    const { removeLinePrompt, onRemoveSelectedLine } = setup({ project: moveToRow(base, 2), selection: secondRow })
+    const { removeLinePrompt, onRemoveSelectedLine } = setup({ project: moveToRow(base, 2, frameIdIn(base)), selection: secondRow })
     onRemoveSelectedLine()
     expect(removeLinePrompt.value).toEqual({ title: 'Remove row?', message: 'Row 2 is marked done. Removing it moves Row progress back to row 2.' })
 
@@ -67,13 +68,13 @@ describe('useRemoveLineFlow', () => {
     columns.onRemoveSelectedLine()
     expect(columns.removeLinePrompt.value).toEqual({ title: 'Remove column?', message: 'Column 2 is marked done. Removing it moves Row progress back to column 2. The columns after it shift.' })
 
-    const across = setup({ project: moveToRow(base, 2), selection: { top: 0, left: 1, rows: 3, columns: 1 } })
+    const across = setup({ project: moveToRow(base, 2, frameIdIn(base)), selection: { top: 0, left: 1, rows: 3, columns: 1 } })
     across.onRemoveSelectedLine()
     expect(across.removeLinePrompt.value).toEqual({ title: 'Remove column?', message: 'This takes a bead out of each of the 2 rows marked done.' })
   })
 
   it('leaves everything as it was when the question is answered No (ticket 0647)', () => {
-    const { harness, dialogs, onRemoveSelectedLine, cancelRemoveLine } = setup({ project: moveToRow(base, 2), selection: secondRow })
+    const { harness, dialogs, onRemoveSelectedLine, cancelRemoveLine } = setup({ project: moveToRow(base, 2, frameIdIn(base)), selection: secondRow })
     onRemoveSelectedLine()
     cancelRemoveLine()
     expect(dialogs.open.value).toBeUndefined()
