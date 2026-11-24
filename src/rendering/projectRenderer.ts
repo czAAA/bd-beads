@@ -39,10 +39,11 @@ import {
   layerExtentPx,
   regionInGridSpace,
   setGridTransform,
+  type Extent,
   type Region,
   type ViewLayer,
 } from './surfaceView'
-import { beadsOfLayer, firstFrameId, frameIdOf, framesOf, type Layered, quarterTurnOf, frameById } from '../domain/layerRecord'
+import { beadsOfLayer, canvasOf, firstFrameId, frameIdOf, framesOf, type Layered, quarterTurnOf, frameById } from '../domain/layerRecord'
 import { drawReference, EMPTY_BEAD_OPACITY, type DrawnReference } from './referenceImage'
 import { blockAround, drawDraftBlock, drawsDraft, keptDraft, layDraft, type DraftImageOf, type DraftPainter } from './draftRenderer'
 
@@ -142,6 +143,9 @@ export interface RenderInput {
    * (ticket 1008); where outlines are drawn instead (high contrast, the draft look) they lie over it and the Frame's
    * empty beads are see-through. Only the editor's surface hands one in, so no export, thumbnail or example prints it. */
   reference?: DrawnReference
+  /** Draw a Frame's part over what its surface already holds, clearing only round its sheet (ticket 1219): one of
+   * several Frames on one surface, drawn after the first or again on its own. Only with a Frame `layer`, no band. */
+  alone?: boolean
   /** Draw one layer of the open Canvas alone (ticket 1187), for the editor's two stacked surfaces: the Canvas's part
    * (its Background, marks and beads, the Frame left out), or the Frame's (its margin sheet, ground and beads, clear
    * round them). Absent, both, as an export draws them. */
@@ -176,11 +180,11 @@ function frameFootprintPx(project: DrawnProject, margin = 0, ref: FrameRef): Reg
 }
 
 // The Canvas's Position marks (CONTEXT.md): one pattern fill in up to four strips round the margin's box, so no
-// position is tested. The Frame's box has its own (drawFrameGround).
+// position is tested; round several Frames' boxes, cut out by a clip of plain rectangles (ticket 1219). Each Frame's
+// box has its own (drawFrameGround).
 function drawPositionMarks(
   context: DrawingContext,
   { project, area, zoom, pixelRatio, theme, margin, tiles }: { project: DrawnProject; space: Space; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme; tiles: boolean },
-  ref: FrameRef,
 ): void {
   const canvas = canvasWeave(project)
   const pattern = positionMarkPattern(context, { ...canvas, deviceScale: zoom * pixelRatio, pixelRatio, ...markLookOf(theme, tiles) })
@@ -188,18 +192,31 @@ function drawPositionMarks(
     return
   }
   const cell = cellSizePx(canvas.technique, canvas.cell)
-  const covered = footprintOf(project, ref)
-  const box = covered && withMargin(covered, margin)
-  // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
-  const held = frameFootprintPx(project, margin, ref)
-  const alike = layersAlike(project, ref)
-  const cut = box && held && (alike ? describeWeave(canvas).boundary(box, cell.width, cell.height) : held)
-  const hole = cut && { left: cut.x, right: cut.x + cut.width, top: cut.y, bottom: cut.y + cut.height }
+  const holes = framesOf(project).flatMap((frame) => {
+    const ref = frameIdOf(frame)
+    const covered = footprintOf(project, ref)
+    const box = covered && withMargin(covered, margin)
+    // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
+    const held = frameFootprintPx(project, margin, ref)
+    const cut = box && held && (layersAlike(project, ref) ? describeWeave(canvas).boundary(box, cell.width, cell.height) : held)
+    return cut ? [cut] : []
+  })
   context.fillStyle = pattern
   // The pattern is scaled to the tile's whole pixels, so it is smoothed here; the beads are blitted as they are.
   context.imageSmoothingEnabled = true
   const strip = stripIn(context, area)
-  if (!hole) {
+  const cut = holes.length === 1 ? holes[0] : undefined
+  const hole = cut && { left: cut.x, right: cut.x + cut.width, top: cut.y, bottom: cut.y + cut.height }
+  if (holes.length > 1) {
+    // Frames never meet (spec 1214), so the holes never overlap and the even-odd rule cuts each one out.
+    context.save()
+    context.beginPath()
+    boxPath(context, area.left, area.top, area.right - area.left, area.bottom - area.top)
+    for (const box of holes) boxPath(context, box.x, box.y, box.width, box.height)
+    context.clip('evenodd')
+    strip(area.left, area.top, area.right, area.bottom)
+    context.restore()
+  } else if (!hole) {
     strip(area.left, area.top, area.right, area.bottom)
   } else {
     strip(area.left, area.top, area.right, Math.min(hole.top, area.bottom))
@@ -236,20 +253,26 @@ function sheetBoxOf(project: DrawnProject, ref: FrameRef, margin: number, slim?:
   return [sheet.x, sheet.y, sheet.x + sheet.width, sheet.y + sheet.height]
 }
 
+/** The margin sheets a layer's surface lays the reference image round (ticket 1219): a Frame's own, or on the Canvas's
+ * every Frame's, the slim sheet the first's. None for a Frame off the Canvas's grid. */
+function sheetBoxesOf(project: DrawnProject, layer: ViewLayer, margin: number, slim?: SlimSheet): (readonly [number, number, number, number])[] {
+  const refs = isFrameLayer(layer) ? [layer] : framesOf(project).map(frameIdOf)
+  return refs.filter((ref) => frameById(project, ref) && footprintOf(project, ref)).map((ref) => sheetBoxOf(project, ref, margin, ref === firstFrameId(project) || isFrameLayer(layer) ? slim : undefined))
+}
+
 /** Far enough past any Canvas, in grid px, for the clip round the Frame's box to hold the whole picture. */
 const HUGE_PX = 1e7
 
-/** Draws the reference image cut to a box, `inside` it or `outside` it, so the Canvas and the Frame each lay it once. */
-function drawReferenceCut(context: DrawingContext, reference: DrawnReference, box: readonly [number, number, number, number] | undefined, where: 'inside' | 'outside'): void {
-  if (!box) {
+/** Draws the reference image cut to boxes, `inside` them or `outside` them, so the Canvas and each Frame lay it once. */
+function drawReferenceCut(context: DrawingContext, reference: DrawnReference, boxes: readonly (readonly [number, number, number, number])[], where: 'inside' | 'outside'): void {
+  if (boxes.length === 0) {
     if (where === 'outside') drawReference(context, reference)
     return
   }
-  const [left, top, right, bottom] = box
   context.save()
   context.beginPath()
   if (where === 'outside') context.rect(-HUGE_PX, -HUGE_PX, 2 * HUGE_PX, 2 * HUGE_PX)
-  context.rect(left, top, right - left, bottom - top)
+  for (const [left, top, right, bottom] of boxes) context.rect(left, top, right - left, bottom - top)
   context.clip('evenodd')
   drawReference(context, reference)
   context.restore()
@@ -270,7 +293,7 @@ function drawFrameGround(
   }
   // The reference image lies over the Frame's own Background too (ticket 0790), cut to its box; over its tonal tiles
   // when it has them, so the Frame draws it after them (ticket 1008).
-  if (reference && !markLookOf(frameLook, tiles).tiles) drawReferenceCut(context, reference, box, 'inside')
+  if (reference && !markLookOf(frameLook, tiles).tiles) drawReferenceCut(context, reference, [box], 'inside')
   // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
   const mark = markLookOf(frameLook, tiles)
   const pattern = !mark.tiles && geometryDrawnAlone(project, ref).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...mark })
@@ -457,7 +480,9 @@ function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, 
   }
 
   function drawDraftFramePart(only: 'painted' | 'empty' | undefined): void {
-    const whole = !band && keptLayerDraft(only === 'empty' ? 'frameEmpty' : 'frame', [project, look, rowMarks, showFinished, space.toAbsolute.row, space.toAbsolute.column, only], () => {
+    const kept: KeptLayer = only === 'empty' ? `frameEmpty:${ref}` : `frame:${ref}`
+    const from = [beadsOfLayer(project, ref), frameDraftKey(project, ref), look, rowMarks, showFinished, space.toAbsolute.row, space.toAbsolute.column, only]
+    const whole = !band && keptLayerDraft(kept, from, () => {
       // A Frame without a shape holds every position of its rectangle: painted row by row, with no position listed.
       const frame = frameById(project, ref)
       if (!frame?.shape) {
@@ -482,20 +507,34 @@ function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, 
   }
 }
 
-/** Each layer's last whole draft image and what it was drawn from (ticket 0676): while only the view moves, the same
- * Project at the same look, it is laid down again instead of every bead being read. Undefined for one too big to keep. */
-const keptDrafts: Partial<Record<KeptLayer, { from: readonly unknown[]; draft: DraftImageOf | undefined }>> = {}
+/** Each layer's last whole draft image and what it was drawn from (ticket 0676), each Frame's its own (ticket 1219):
+ * while only the view moves, or another layer is painted, it is laid down again instead of every bead being read.
+ * Undefined for one too big to keep. The most recently drawn first out of `KEPT_DRAFTS`. */
+const keptDrafts = new Map<KeptLayer, { from: readonly unknown[]; draft: DraftImageOf | undefined }>()
 
-/** What a kept draft image is of: a layer, or the Frame's empty beads laid over a reference image (ticket 0790). */
-type KeptLayer = 'canvas' | 'frame' | 'frameEmpty'
+/** How many draft images are kept: the Canvas's, and each of four Frames' with its empty beads apart. */
+const KEPT_DRAFTS = 9
+
+/** What a kept draft image is of: the Canvas, a Frame, or a Frame's empty beads laid over a reference image (ticket
+ * 0790), by the Frame's id. */
+type KeptLayer = 'canvas' | `frame:${string}` | `frameEmpty:${string}`
 
 /** The layer's kept draft image when it was drawn from the same `from`, else the one `make` paints, kept in its place. */
 function keptLayerDraft(layer: KeptLayer, from: readonly unknown[], make: () => DraftImageOf | undefined): DraftImageOf | undefined {
-  const last = keptDrafts[layer]
+  const last = keptDrafts.get(layer)
   if (last && last.from.length === from.length && last.from.every((value, at) => value === from[at])) return last.draft
   const draft = make()
-  keptDrafts[layer] = { from, draft }
+  keptDrafts.delete(layer)
+  keptDrafts.set(layer, { from, draft })
+  if (keptDrafts.size > KEPT_DRAFTS) keptDrafts.delete(keptDrafts.keys().next().value!)
   return draft
+}
+
+/** What a Frame's draft is drawn from besides its beads, as one value (ticket 1219): its layer record less its beads,
+ * and the Canvas's angle its Row direction is seen by. Painting another layer leaves it as it was. */
+function frameDraftKey(project: DrawnProject, ref: FrameRef): string {
+  const { beads: _beads, ...sheet } = frameById(project, ref) ?? {}
+  return JSON.stringify([sheet, canvasOf(project).orientation])
 }
 
 /** A bead of a Layer and where its geometry places it, in bead widths. */
@@ -659,7 +698,7 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
   }
   if (draw.draft && rowsInView.length > 0) {
     // A whole draw keeps the whole layer's image, which a pan or zoom then lays down again.
-    const whole = !band && keptLayerDraft('canvas', [project, margin], () => {
+    const whole = !band && keptLayerDraft('canvas', [beads, JSON.stringify([weave, keptOut])], () => {
       const bounds = beadBounds(beads)
       return bounds && keptDraft(weave, bounds, (put) => {
         for (const key in beads) eachInView(Number(key), -Infinity, Infinity, (column, color) => put(Number(key), column, color))
@@ -800,12 +839,17 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // or just the band being drawn again, which the rest of the drawing is then cut to, then draw in CSS px scaled up to
   // it.
   context.setTransform(1, 0, 0, 1, 0, 0)
-  const cleared = band
+  const cut = band
     ? bandOnSurface(space, region, zoom, rotation, pixelRatio, rowsCut(bandWeave, band))
     : strip
       ? bandOnSurface(space, region, zoom, rotation, pixelRatio, strip.cut)
-      : { x: 0, y: 0, width: region.width * pixelRatio, height: region.height * pixelRatio }
-  if (band || strip) {
+      : undefined
+  // A Frame's own surface holds every Frame (ticket 1219): a band of one, or one drawn alone, is cut to its sheet, so
+  // the others stay as they were drawn.
+  const sheetCut = isFrameLayer(layer) && space.open && frame && footprintOf(project, ref) ? onSurface(sheetBoxOf(project, ref, margin, input.slimSheet), extent, region, zoom, rotation, pixelRatio) : undefined
+  const cleared = input.alone ? (sheetCut ?? NOTHING) : cut ? (sheetCut ? overlapOf(cut, sheetCut) : cut) : { x: 0, y: 0, width: region.width * pixelRatio, height: region.height * pixelRatio }
+  const clipped = band || strip || input.alone
+  if (clipped) {
     context.save()
     context.beginPath()
     context.rect(cleared.x, cleared.y, cleared.width, cleared.height)
@@ -846,9 +890,11 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     const overTiles = positionMarks && markLookOf(theme, tiles).tiles
     // A Frame off the Canvas's grid covers none of it (ticket 1188): its own surface draws it, from a Project laid so.
     const frameBox = frame && footprintOf(project, ref) ? frameGroundBox(project, ref) : undefined
+    // Every Frame's box the Canvas's part leaves to that Frame (ticket 1219).
+    const frameBoxes = framesOf(project).flatMap((each) => (footprintOf(project, frameIdOf(each)) ? [frameGroundBox(project, frameIdOf(each))] : []))
     // The Canvas's own part: what its surface draws (ticket 1187), the Frame's laid over it on its own.
     if (!isFrameLayer(layer)) {
-      if (under && !overTiles) drawReferenceCut(context, under, frameBox, 'outside')
+      if (under && !overTiles) drawReferenceCut(context, under, frameBoxes, 'outside')
       if (positionMarks && tiles && theme.tonalTiles) {
         // The calm gap between tonal tiles, laid flat under them over the whole surface (ticket 1001).
         context.fillStyle = gapColorOf(theme.canvas)
@@ -857,8 +903,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       // Expanded, the slim sheet is the margin on screen (ticket 1176): the marks run up to it, under it, so no bare band of
       // the 4 keep-out positions shows round it. What the margin keeps out is unchanged.
       const marked = input.slimSheet ? 0 : margin
-      if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin: marked, tiles }, ref)
-      if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
+      if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin: marked, tiles })
+      if (under && overTiles) drawReferenceCut(context, under, frameBoxes, 'outside')
       drawCanvasLayer(context, draw, space)
     }
     if (frame && frameBox && layer !== 'canvas') {
@@ -885,7 +931,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       if (under && markLookOf(frameLook, tiles).tiles) {
         // Its tonal tiles, the reference image over them, then its painted beads (ticket 1008).
         frameDraw({ ...frameDrawn, drawBead: () => {}, letters: undefined })
-        drawReferenceCut(context, under, frameBox, 'inside')
+        drawReferenceCut(context, under, [frameBox], 'inside')
         frameDraw({ ...frameDrawn, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined })
       } else {
         frameDraw(frameDrawn)
@@ -896,9 +942,29 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
   // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
   // Drawn one layer at a time, each lays it on its own part: the Frame on its sheet's box, the Canvas round it.
-  if (drawn?.over) drawReferenceCut(context, drawn, layer && frame && footprintOf(project, ref) ? sheetBoxOf(project, ref, margin, input.slimSheet) : undefined, isFrameLayer(layer) ? 'inside' : 'outside')
+  if (drawn?.over) drawReferenceCut(context, drawn, layer ? sheetBoxesOf(project, layer, margin, input.slimSheet) : [], isFrameLayer(layer) ? 'inside' : 'outside')
 
-  if (band || strip) {
+  if (clipped) {
     context.restore()
   }
+}
+
+/** An empty box. */
+const NOTHING: Region = { x: 0, y: 0, width: 0, height: 0 }
+
+/** Where two boxes overlap; empty where they don't. */
+function overlapOf(a: Region, b: Region): Region {
+  const [left, top] = [Math.max(a.x, b.x), Math.max(a.y, b.y)]
+  const [right, bottom] = [Math.min(a.x + a.width, b.x + b.width), Math.min(a.y + a.height, b.y + b.height)]
+  return right > left && bottom > top ? { x: left, y: top, width: right - left, height: bottom - top } : NOTHING
+}
+
+/** A box in grid px as it lies on the surface, in its device px: whole pixels round it and one more each side, so a
+ * clear of it takes its anti-aliased edge too. */
+function onSurface([left, top, right, bottom]: readonly [number, number, number, number], extent: Extent, region: Region, zoom: number, rotation: Rotation, pixelRatio: number): Region {
+  const [a, b, c, d, e, f] = gridToRegion(extent, region, zoom, rotation)
+  const corners = [[left, top], [right, bottom]].map(([x, y]) => [(a * x! + c * y! + e) * pixelRatio, (b * x! + d * y! + f) * pixelRatio] as const)
+  const [x0, x1] = [Math.floor(Math.min(corners[0]![0], corners[1]![0])) - 1, Math.ceil(Math.max(corners[0]![0], corners[1]![0])) + 1]
+  const [y0, y1] = [Math.floor(Math.min(corners[0]![1], corners[1]![1])) - 1, Math.ceil(Math.max(corners[0]![1], corners[1]![1])) + 1]
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 }
 }

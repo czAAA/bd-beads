@@ -1,7 +1,7 @@
 import { FRAME_ID } from '../testUtils/frameId'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import type { Rotation } from '../domain/grid'
+import type { FrameRef, Rotation } from '../domain/grid'
 import { columnCycle, type Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
@@ -465,6 +465,33 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
         expect(off.pointToHit(corner)).toEqual({ row: 2, column: 3, layer: FRAME_ID })
       })
     })
+  })
+})
+
+describe('several Frames in one view (ticket 1219)', () => {
+  // The first 4 × 4 loom Frame at row 2, column 3; a second, peyote, at row 20, column 20, drawn leaning on its own.
+  const first = { technique: 'loom' as const, row: 2, column: 3, rows: 4, columns: 4 }
+  const second = { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 4 }
+  const SECOND = 'second' as FrameRef
+  const screen = { width: 400, height: 300 }
+  const base = { space: OPEN_SPACE, technique: 'loom' as const, frame: first, zoom: 1.5, scroll: { x: -40, y: 25 }, rotation: 0 as const }
+  const lean = tiltedView(screen, 20)
+  const drawing = { rotation: 0 as const, scroll: { x: 10, y: -30 }, seam: seamOf(lean, tiltedView(screen, 0)) }
+  const view = surfaceView({ ...base, others: [{ frame: second, frameLayer: SECOND, frameDrawing: drawing }] })
+  const alone = surfaceView({ ...base, frame: second, frameLayer: SECOND, frameDrawing: drawing })
+
+  it('hits each Frame\'s beads as that Frame, the second where its own drawing lays it', () => {
+    expect(view.pointToHit(view.beadToPoint({ row: 3, column: 4 }))).toEqual({ row: 3, column: 4, layer: FRAME_ID })
+    for (const bead of [{ row: 20, column: 20 }, { row: 22, column: 21 }]) {
+      const point = view.beadToPoint(bead, SECOND)
+      expect(point).toEqual(alone.beadToPoint(bead, SECOND))
+      expect(view.pointToHit(point)).toEqual({ ...bead, layer: SECOND })
+      expect(view.pointToCell(point, SECOND)).toEqual(bead)
+    }
+  })
+
+  it('keeps the Canvas between them the Canvas\'s', () => {
+    expect(view.pointToHit(view.beadToPoint({ row: 12, column: 12 }))).toEqual({ row: 12, column: 12, layer: 'canvas' })
   })
 })
 

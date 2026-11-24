@@ -159,6 +159,27 @@ export interface SurfaceViewInput {
    * lies in this view by its own transform, never through the Canvas's rotation. Left out, the Frame is drawn as the
    * Canvas is, as while the Canvas carries it. */
   frameDrawing?: FrameDrawing
+  /** The Project's other Frames (ticket 1219), each laid out and hit as `frame` is, with its own drawing where it has
+   * one. */
+  others?: readonly ViewFrame[]
+}
+
+/** One more Frame of a view (ticket 1219): as `frame`, `frameLayer` and `frameDrawing` give the first. */
+interface ViewFrame {
+  frame: NonNullable<SurfaceViewInput['frame']>
+  frameLayer: FrameRef
+  frameDrawing?: FrameDrawing
+}
+
+/** One Frame as a view holds it: its layer, the rectangle it lies in, the Canvas positions it hides (none off the
+ * Canvas's grid), and its own transform and margin sheet where its surface is drawn otherwise. */
+interface Sheet {
+  ref: FrameRef
+  layer: Layer
+  laid: Rect
+  footprint: Rect | undefined
+  own: ((at: number) => Affine) | undefined
+  margin: Region | undefined
 }
 
 /** The Frame's own drawing (ticket 1187): the quarter turn and scroll its surface is drawn at, and how a point of that
@@ -301,36 +322,47 @@ function layerOf(weave: Weave, geometry: LayerGeometry, origin: Scroll, offset: 
   return { weave, geometry, description: describeWeave(weave), cell: cellSizePx(weave.technique, weave.cell), origin, offset, scale }
 }
 
-export function surfaceView({ space, technique, techniqueSettings, cell: canvasCell, frame, frameLayer = NO_FRAME, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 }, frameDrawing }: SurfaceViewInput): SurfaceView {
+export function surfaceView({ space, technique, techniqueSettings, cell: canvasCell, frame, frameLayer = NO_FRAME, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 }, frameDrawing, others = [] }: SurfaceViewInput): SurfaceView {
   const canvasWeave: Weave = { technique, techniqueSettings, cell: canvasCell }
   // The Canvas has no edge; a Project drawn on its own is its rows and columns from its first.
   const edge = space.open ? undefined : { row: 0, column: 0, rows: space.rows, columns: space.columns }
   const canvas = layerOf(canvasWeave, gridGeometry(canvasWeave, edge), { x: 0, y: 0 }, { row: 0, column: 0 })
-  const held = frame && weaveOf(frame)
-  const sheetWeave: Weave | undefined = held && { ...held, cell: frame.cell ?? canvasCell }
-  const sheet = frame && sheetWeave && space.open ? layerOf(sheetWeave, frameGeometry({ ...unwoven(frame), ...sheetWeave }), frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }, frame.scale) : undefined
-  // The rectangle the Frame lies in, turned with it (ticket 0667).
-  const laid = frame && sheetWeave ? laidRect({ ...unwoven(frame), ...sheetWeave }) : undefined
-  const layerNamed = (name: ViewLayer | undefined): Layer => (isFrameLayer(name) && sheet ? sheet : canvas)
-  // A Custom frame's beads lie where its layout puts them (ADR 0077), not on rows and columns: a point between them is
-  // off its shape.
-  const laidOut = sheet && !sheet.geometry.grid ? sheet : undefined
-  // The Canvas positions the Frame hides (ADR 0066): what it draws, which is not always the rows it names.
-  // A Frame off the Canvas's grid covers no position (ticket 1188): only what it draws over is its.
-  const footprint = frame && sheet && !frame.centre ? frameFootprint(canvasWeave, frame) : undefined
-  const layerAtAddress = (position: GridPosition): Layer => (footprint && sheet && frameContains(footprint, position) ? sheet : canvas)
   /** Grid space to displayed space, at a zoom: the matrix gridToRegion gives for a region at the origin. */
   const matrix = (at: number) => gridToRegion(space.extent, { x: 0, y: 0, width: 0, height: 0 }, at, rotation)
   const displayed = (x: number, y: number, at: number): Scroll => {
     const [a, b, c, d, e, f] = matrix(at)
     return { x: a * x + c * y + e, y: b * x + d * y + f }
   }
-  /** The Frame's own transform where its surface is drawn otherwise (ticket 1187): its px from its first position's
-   * corner to this view's displayed space at a zoom, through its own drawing's quarter turn, scroll and seam. */
-  const frameOwn = sheet && frameDrawing ? frameTransform(sheet, frameDrawing, zoom, scroll) : undefined
+  /** One Frame of the view (ticket 1219): the first as `frame`, the rest from `others`, each with its own drawing. */
+  const sheetOf = (placed: ViewFrame['frame'], ref: FrameRef, drawing: FrameDrawing | undefined): Sheet | undefined => {
+    const held = weaveOf(placed)
+    const sheetWeave: Weave = { ...held, cell: placed.cell ?? canvasCell }
+    if (!space.open) return undefined
+    const layer = layerOf(sheetWeave, frameGeometry({ ...unwoven(placed), ...sheetWeave }), frameOriginPx(canvasWeave, placed), { row: placed.row, column: placed.column }, placed.scale)
+    return {
+      ref,
+      layer,
+      // The rectangle the Frame lies in, turned with it (ticket 0667).
+      laid: laidRect({ ...unwoven(placed), ...sheetWeave }),
+      // The Canvas positions the Frame hides (ADR 0066): what it draws, which is not always the rows it names.
+      // A Frame off the Canvas's grid covers no position (ticket 1188): only what it draws over is its.
+      footprint: placed.centre ? undefined : frameFootprint(canvasWeave, placed),
+      own: drawing ? frameTransform(layer, drawing, zoom, scroll) : undefined,
+      margin: drawing?.sheet,
+    }
+  }
+  const first = frame && sheetOf(frame, frameLayer, frameDrawing)
+  const sheets: Sheet[] = [...(first ? [first] : []), ...others.flatMap((other) => sheetOf(other.frame, other.frameLayer, other.frameDrawing) ?? [])]
+  const sheet = first?.layer
+  const sheetWeave = frame && { ...weaveOf(frame), cell: frame.cell ?? canvasCell }
+  const sheetNamed = (layer: Layer): Sheet | undefined => sheets.find((each) => each.layer === layer)
+  const layerNamed = (name: ViewLayer | undefined): Layer => (isFrameLayer(name) && sheet ? (sheets.find((each) => each.ref === name) ?? first!).layer : canvas)
+  const layerAtAddress = (position: GridPosition): Layer => sheets.find((each) => each.footprint && frameContains(each.footprint, position))?.layer ?? canvas
   /** A point of a layer's own px (from its first position, `scale` grid px each) in displayed space at a zoom. */
-  const placed = (layer: Layer, x: number, y: number, at: number): Scroll =>
-    layer === sheet && frameOwn ? applied(frameOwn(at), x, y) : displayed(layer.origin.x + x * layer.scale, layer.origin.y + y * layer.scale, at)
+  const placed = (layer: Layer, x: number, y: number, at: number): Scroll => {
+    const own = sheetNamed(layer)?.own
+    return own ? applied(own(at), x, y) : displayed(layer.origin.x + x * layer.scale, layer.origin.y + y * layer.scale, at)
+  }
   const displayedBox = (box: Rect, at: number, layer: Layer): Region => {
     const local = { ...box, row: box.row - layer.offset.row, column: box.column - layer.offset.column }
     const grid = gridBox(layer.weave, local)
@@ -363,39 +395,49 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
   /** A point of the viewport in a layer's own px, from its first position's corner: through the Frame's own transform
    * where it has one. */
   const ownPoint = (layer: Layer, point: Scroll): Scroll => {
-    if (layer === sheet && frameOwn) return applied(inverted(frameOwn(zoom)), point.x + scroll.x, point.y + scroll.y)
+    const own = sheetNamed(layer)?.own
+    if (own) return applied(inverted(own(zoom)), point.x + scroll.x, point.y + scroll.y)
     const [gridX, gridY] = toGrid(point)
     return { x: (gridX - layer.origin.x) / layer.scale, y: (gridY - layer.origin.y) / layer.scale }
   }
 
-  /** A point of the viewport on the Frame, in its own px from its first position's corner, or none off it. */
-  const onSheet = (point: Scroll): { x: number; y: number } | undefined => {
-    if (!sheet || !laid) return undefined
-    const extent = layerExtentPx(sheet.weave, laid.columns, laid.rows)
-    const { x, y } = ownPoint(sheet, point)
+  /** A point of the viewport on a Frame, in its own px from its first position's corner, or none off it. */
+  const onSheetOf = (each: Sheet, point: Scroll): { x: number; y: number } | undefined => {
+    const extent = layerExtentPx(each.layer.weave, each.laid.columns, each.laid.rows)
+    const { x, y } = ownPoint(each.layer, point)
     return x >= 0 && y >= 0 && x < extent.width && y < extent.height ? { x, y } : undefined
+  }
+  /** The Frame under a point of the viewport, and the point in its own px; none off every Frame. */
+  const sheetAt = (point: Scroll): { on: Sheet; at: Scroll } | undefined => {
+    for (const each of sheets) {
+      const at = onSheetOf(each, point)
+      if (at) return { on: each, at }
+    }
+    return undefined
   }
 
   /** Whether a point of the viewport is on the margin sheet round a Frame drawn on its own (ticket 1188), off the Frame. */
   const onMarginSheet = (point: Scroll): boolean => {
-    const margin = frameDrawing?.sheet
-    if (!sheet || !frameOwn || !margin || onSheet(point)) return false
-    const own = ownPoint(sheet, point)
-    const [x, y] = [sheet.origin.x + own.x * sheet.scale, sheet.origin.y + own.y * sheet.scale]
-    return x >= margin.x && y >= margin.y && x < margin.x + margin.width && y < margin.y + margin.height
+    if (sheetAt(point)) return false
+    return sheets.some(({ layer, own, margin }) => {
+      if (!own || !margin) return false
+      const at = ownPoint(layer, point)
+      const [x, y] = [layer.origin.x + at.x * layer.scale, layer.origin.y + at.y * layer.scale]
+      return x >= margin.x && y >= margin.y && x < margin.x + margin.width && y < margin.y + margin.height
+    })
   }
 
   const pointToHit = (point: Scroll): (GridPosition & { layer: ViewLayer }) | undefined => {
     const [gridX, gridY] = toGrid(point)
-    const at = onSheet(point)
+    const hit = sheetAt(point)
     // The Frame is opaque: a point on it is the Frame's bead or none, never the Canvas under it.
-    if (sheet && at) {
-      const found = beadIn(sheet, at.x, at.y)
-      return found && { ...addressOf(sheet, found), layer: frameLayer }
+    if (hit) {
+      const found = beadIn(hit.on.layer, hit.at.x, hit.at.y)
+      return found && { ...addressOf(hit.on.layer, found), layer: hit.on.ref }
     }
     if (onMarginSheet(point)) return undefined
     const found = beadIn(canvas, gridX, gridY)
-    return found && !(footprint && frameContains(footprint, found)) ? { ...found, layer: 'canvas' } : undefined
+    return found && !sheets.some(({ footprint }) => footprint && frameContains(footprint, found)) ? { ...found, layer: 'canvas' } : undefined
   }
 
   return {
@@ -405,7 +447,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       const layer = named ? layerNamed(named) : layerAtAddress(position)
       const local = { row: position.row - layer.offset.row, column: position.column - layer.offset.column }
       // A position the Layer has lies where its geometry places it; one past its edge, as its Weave would put it.
-      const place = layer === sheet ? sheet.geometry.place(local) : undefined
+      const place = layer !== canvas ? layer.geometry.place(local) : undefined
       const box = place ? inGridPx(place.box) : positionBoxPx(layer.weave, local.row, local.column)
       const at = placed(layer, box.x + box.width / 2, box.y + box.height / 2, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }
@@ -414,24 +456,29 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     pointToHit,
     onMarginSheet,
     offShapeAt: (point) => {
-      const at = sheet && onSheet(point)
-      if (!sheet || !at) return false
-      if (laidOut) return beadIn(laidOut, at.x, at.y) === undefined
+      const hit = sheetAt(point)
+      if (!hit) return false
+      const { layer: on } = hit.on
+      const { x: ownX, y: ownY } = hit.at
+      // A Custom frame's beads lie where its layout puts them (ADR 0077), not on rows and columns: a point between them
+      // is off its shape.
+      if (!on.geometry.grid) return beadIn(on, ownX, ownY) === undefined
       // A staggered Frame's empty half bead at the short end of a line holds no cell (ticket 1196); a gap between beads is in one.
-      if (sheet.description.shift === 0) return false
-      const [x, y] = [at.x / CELL_SIZE_PX, at.y / CELL_SIZE_PX]
-      const cells = sheet.geometry.positionsIn({ x: x - 1, y: y - 1, width: 2, height: 2 })
+      if (on.description.shift === 0) return false
+      const [x, y] = [ownX / CELL_SIZE_PX, ownY / CELL_SIZE_PX]
+      const cells = on.geometry.positionsIn({ x: x - 1, y: y - 1, width: 2, height: 2 })
       return !cells.some((position) => {
-        const box = sheet.geometry.place(position)!.box
+        const box = on.geometry.place(position)!.box
         return x >= box.x && x < box.x + box.width && y >= box.y && y < box.y + box.height
       })
     },
     frameCellAt: (point) => {
-      const at = laidOut && laid && onSheet(point)
-      if (!at) return undefined
-      const cell = cellIn(laidOut!, at.x, at.y)
-      const within = { row: Math.min(Math.max(cell.row, 0), laid!.rows - 1), column: Math.min(Math.max(cell.column, 0), laid!.columns - 1) }
-      return { ...addressOf(laidOut!, within), layer: frameLayer }
+      const hit = sheetAt(point)
+      if (!hit || hit.on.layer.geometry.grid) return undefined
+      const { layer: laidOut, laid: rect, ref } = hit.on
+      const cell = cellIn(laidOut, hit.at.x, hit.at.y)
+      const within = { row: Math.min(Math.max(cell.row, 0), rect.rows - 1), column: Math.min(Math.max(cell.column, 0), rect.columns - 1) }
+      return { ...addressOf(laidOut, within), layer: ref }
     },
     pointToBead: (point) => {
       const hit = pointToHit(point)
@@ -448,7 +495,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       const { across, down } = beadStepPx(weave)
       // How far the pointer went in the layer's own px: the Frame's through its own transform where it has one.
       const [gridX, gridY] = toGrid(point)
-      const went = on === sheet && frameOwn ? difference(ownPoint(on, point), ownPoint(on, gridPoint(pressed.x, pressed.y))) : { x: (gridX - pressed.x) / on.scale, y: (gridY - pressed.y) / on.scale }
+      const went = sheetNamed(on)?.own ? difference(ownPoint(on, point), ownPoint(on, gridPoint(pressed.x, pressed.y))) : { x: (gridX - pressed.x) / on.scale, y: (gridY - pressed.y) / on.scale }
       const rows = wholeCycles(went.y / down, byCycles ? rowCycle(weave) : 1)
       const columns = wholeCycles(went.x / across, byCycles ? columnCycle(weave) : 1)
       return { row: from.row + rows, column: from.column + columns }
@@ -474,7 +521,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       const layer = layerNamed(name)
       const { weave, scale } = layer
       const { across, down } = beadStepPx(weave)
-      const own = layer === sheet && frameOwn
+      const own = !!sheetNamed(layer)?.own
       const origin = own ? placed(layer, 0, 0, zoom) : displayed(0, 0, zoom)
       const column = own ? placed(layer, across, 0, zoom) : displayed(across * scale, 0, zoom)
       const row = own ? placed(layer, 0, down, zoom) : displayed(0, down * scale, zoom)

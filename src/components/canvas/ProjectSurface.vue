@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, useTemplateRef, watch } from 'vue'
-import { isFrameLayer, type GridPosition, type PreviewCell } from '../../domain/grid'
+import { isFrameLayer, type FrameRef, type GridPosition, type PreviewCell } from '../../domain/grid'
 import { layerAt } from '../../domain/layers'
 import type { Handedness, InputMode } from '../../domain/inputMode'
-import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas, firstFrameId, frameIdOf } from '../../domain/layerRecord'
+import { frameById, frameOf, framesOf, layerOf, orientationOf, quarterTurnOf, withCanvas, firstFrameId, frameIdOf } from '../../domain/layerRecord'
 import { frameAngleOf } from '../../domain/table'
 import { frameCentreOnCanvas, withCanvasTurned, withFrameLaidAt } from '../../domain/framePlacement'
 import type { TablePoint } from '../../domain/table'
@@ -36,7 +36,7 @@ import { canvasDrawing, frameDrawing, seamOf, type LayerDrawing } from '../../re
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { cssZoomOf, ownPoint } from '../../composables/ui/cssZoom'
-import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
+import { useBeadLayer, useFrameScheduler, type LaidFrame } from './surface/useSurfaceDrawing'
 import { useCarryLayer } from './surface/useCarryLayer'
 import type { CarriedPieceMove } from '../../composables/tools/useSelectionGesture'
 import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
@@ -228,26 +228,27 @@ const space = computed(() => spaceOf(props.project, true, firstFrameId(props.pro
 /** The Canvas's Weave (ADR 0079), with the cell its Bead draws it in. */
 const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 
-/** A view of the drawing at a quarter turn, from a scroll, over a drawing area. */
-function viewAt(rotation: Rotation, scroll: Scroll, viewport: Size, frameDrawn?: SurfaceViewInput['frameDrawing']): SurfaceView {
+/** A view of the drawing at a quarter turn, from a scroll, over a drawing area: the first Frame laid out in it, or
+ * `ref`, and the `others` with it (ticket 1219). */
+function viewAt(rotation: Rotation, scroll: Scroll, viewport: Size, frameDrawn?: SurfaceViewInput['frameDrawing'], ref: FrameRef = firstFrameId(props.project), others?: SurfaceViewInput['others']): SurfaceView {
   const weave = canvasWeave.value
-  return surfaceView({ space: space.value, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(props.project, firstFrameId(props.project)), frameLayer: firstFrameId(props.project), rotation, zoom: props.zoom, scroll, viewport, frameDrawing: frameDrawn })
+  return surfaceView({ space: space.value, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(props.project, ref), frameLayer: ref, rotation, zoom: props.zoom, scroll, viewport, frameDrawing: frameDrawn, others })
 }
 
 /** A Project's Frame centre in a view of its Canvas: where the view draws the Frame's middle (ticket 1188). */
-function frameCentreIn(project: Project, view: SurfaceView): Scroll {
-  const centre = frameCentreOnCanvas(project, firstFrameId(project))!
+function frameCentreIn(project: Project, view: SurfaceView, ref: FrameRef): Scroll {
+  const centre = frameCentreOnCanvas(project, ref)!
   return view.gridToPoint(centre.x * CELL_SIZE_PX, centre.y * CELL_SIZE_PX)
 }
 
-/** The Frame's drawing (ticket 1187): leaning by its own angle, its sheet drawn at its own nearest quarter turn, and
+/** A Frame's drawing (ticket 1187): leaning by its own angle, its sheet drawn at its own nearest quarter turn, and
  * pinned where it lies on the table, so a turn of the Canvas never moves it (ticket 1188). While it lies as the Canvas
  * is drawn, the Canvas's very drawing. */
-const frameDrawn = computed<LayerDrawing>(() => {
-  const frame = frameOf(props.project)
+function drawingOf(ref: FrameRef): LayerDrawing {
+  const frame = frameById(props.project, ref)
   const canvas = canvasDrawn.value
   if (!frame) return canvas
-  const angle = frameAngleOf(props.project, firstFrameId(props.project))
+  const angle = frameAngleOf(props.project, ref)
   const rotation = normalizedOrientation(nearestQuarterTurn(angle) - 90 * (frame.quarterTurns ?? 0)) as Rotation
   const moved = props.twistMoved && (props.twistMoved.x !== 0 || props.twistMoved.y !== 0)
   return frameDrawing({
@@ -258,11 +259,32 @@ const frameDrawn = computed<LayerDrawing>(() => {
     own: !!frame.centre || !!moved,
     // Its centre shows where it lies on the table, and its drawing is pinned there.
     pin: () => ({
-      displayed: frameCentreIn(withFrameLaidAt(props.project, rotation, firstFrameId(props.project)), viewAt(rotation, { x: 0, y: 0 }, size.value)),
-      onScreen: canvas.leaning.toScreen(frameCentreIn(shownProject.value, viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn))),
+      displayed: frameCentreIn(withFrameLaidAt(props.project, rotation, ref), viewAt(rotation, { x: 0, y: 0 }, size.value, undefined, ref), ref),
+      onScreen: canvas.leaning.toScreen(frameCentreIn(shownProject.value, viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn, undefined, ref), ref)),
     }),
   })
-})
+}
+/** The first Frame's drawing: the one the Frame surface is drawn as, the other Frames laid onto it (ticket 1219). */
+const frameDrawn = computed<LayerDrawing>(() => drawingOf(firstFrameId(props.project)))
+
+/** One of the Project's other Frames (ticket 1219): its own drawing, the Project as that drawing draws it, and the view
+ * it is laid out in there. */
+interface OtherFrame {
+  ref: FrameRef
+  drawing: LayerDrawing
+  project: Project
+  view: SurfaceView
+}
+/** Every Frame but the first, each drawn as the first is on its own drawing, then laid onto the Frame surface's. */
+const otherFrames = computed<OtherFrame[]>(() =>
+  framesOf(props.project).slice(1).map((frame) => {
+    const ref = frameIdOf(frame)
+    const drawing = drawingOf(ref)
+    const alike = drawing === canvasDrawn.value
+    const project = alike ? drawnProject.value : withFrameLaidAt(props.project, drawing.rotation, ref)
+    return { ref, drawing, project, view: viewAt(drawing.rotation, drawing.scroll, drawing.leaning.drawn, undefined, ref) }
+  }),
+)
 /** Whether the Frame is drawn as the Canvas is: one drawing, one view, as while the Canvas carries it. */
 const drawnAlike = computed(() => frameDrawn.value === canvasDrawn.value)
 
@@ -304,7 +326,13 @@ const surface = computed((): SurfaceView => {
   // Its margin sheet, as its own surface draws it, takes no press whatever lies under it (ticket 1188).
   // Expanded, that is the slim sheet drawn in its place, not the 4-position one (a Canvas turned apart from the Frame).
   const sheet = drawnAlike.value ? undefined : sheetGrid.value
-  return viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn, drawnAlike.value ? undefined : { rotation: frame.rotation, scroll: frame.scroll, seam: seamOf(frame.leaning, canvas.leaning), sheet })
+  // The other Frames are hit as the first is (ticket 1219), each through its own drawing where it has one.
+  const others = otherFrames.value.map(({ ref, drawing, project }) => ({
+    frame: placedFrame(props.project, ref)!,
+    frameLayer: ref,
+    frameDrawing: drawing === canvas ? undefined : { rotation: drawing.rotation, scroll: drawing.scroll, seam: seamOf(drawing.leaning, canvas.leaning), sheet: marginSheetPx(project, ref)?.sheet },
+  }))
+  return viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn, drawnAlike.value ? undefined : { rotation: frame.rotation, scroll: frame.scroll, seam: seamOf(frame.leaning, canvas.leaning), sheet }, undefined, others)
 })
 const frameLeaning = computed(() => frameDrawn.value.leaning)
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
@@ -318,19 +346,27 @@ function rulerFontPx(): number {
   return rulerFontAtFull(window.innerWidth <= 743)
 }
 
-/** The form and scale the Frame's margin sheet takes at this zoom (tickets 0658, 0698): the Frame's numbers hang on it. */
-const sheetLook = computed(() => {
-  const band = (marginSheetPx(frameProject.value, firstFrameId(frameProject.value))?.band ?? 0) * props.zoom
+/** The form and scale a Frame's margin sheet takes at this zoom (tickets 0658, 0698): the Frame's numbers hang on it. */
+function sheetLookOf(project: Project, ref: FrameRef) {
+  const band = (marginSheetPx(project, ref)?.band ?? 0) * props.zoom
   const least = theme.value.margin.leastScale
   return band ? { sheet: marginForm(band, least), sheetScale: marginScale(band, least) } : {}
-})
+}
+const sheetLook = computed(() => sheetLookOf(frameProject.value, firstFrameId(frameProject.value)))
 
 /** The rulers of a view, laid out once: the overlay draws them and a press asks them what it selects, so the two
- * cannot disagree. */
-const rulersIn = (view: SurfaceView, project: Project = props.project) => rulerLayout(project, view, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, expanded: !!props.slim, expandedFontPx: props.slim?.fontPx, pieces: pieces.value }, firstFrameId(project))
+ * cannot disagree. Another Frame's (ticket 1219) hang on its own sheet, never expanded until 1220. */
+const rulersIn = (view: SurfaceView, project: Project = props.project, ref: FrameRef = firstFrameId(project)) => {
+  const first = ref === firstFrameId(project)
+  const look = first ? sheetLook.value : sheetLookOf(project, ref)
+  return rulerLayout(project, view, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...look, expanded: first && !!props.slim, expandedFontPx: first ? props.slim?.fontPx : undefined, pieces: pieces.value }, ref)
+}
 const rulers = computed(() => rulersIn(surface.value))
 /** The Frame's rulers lie on its own surface (ticket 1187), laid out in its drawing's view. */
 const frameRulers = computed(() => (drawnAlike.value ? rulers.value : rulersIn(frameSurface.value, frameProject.value)))
+
+/** No other Frames: one list, so a surface without them never sees them change. */
+const NO_OTHERS: LaidFrame[] = []
 
 /** A drawing as one layer's surface made it: the view it was drawn for, and how it maps to the screen. */
 interface HeldDrawing {
@@ -341,6 +377,8 @@ interface HeldDrawing {
   leaning: TiltedView
   surface: SurfaceView
   rulers: RulerLayout
+  /** The other Frames the Frame surface lays onto its drawing (ticket 1219). */
+  others?: LaidFrame[]
 }
 /** What each surface was last drawn for while two fingers twist the Canvas. */
 interface HeldDrawings {
@@ -350,9 +388,26 @@ interface HeldDrawings {
 /** Each surface's live drawing: what it draws now, outside a twist. */
 const liveCanvas = (): HeldDrawing => ({ project: drawnProject.value, zoom: props.zoom, scroll: drawnScroll.value, size: drawnSize.value, leaning: leaning.value, surface: surface.value, rulers: rulers.value })
 const liveFrame = (): HeldDrawing => {
-  if (drawnAlike.value) return { ...liveCanvas(), rulers: frameRulers.value }
+  if (drawnAlike.value) return { ...liveCanvas(), rulers: frameRulers.value, others: laidOthers(leaning.value) }
   const frame = frameDrawn.value
-  return { project: frameProject.value, zoom: props.zoom, scroll: frame.scroll, size: frame.leaning.drawn, leaning: frame.leaning, surface: frameSurface.value, rulers: frameRulers.value }
+  return { project: frameProject.value, zoom: props.zoom, scroll: frame.scroll, size: frame.leaning.drawn, leaning: frame.leaning, surface: frameSurface.value, rulers: frameRulers.value, others: laidOthers(frame.leaning) }
+}
+/** The other Frames' rulers, each laid out in its own drawing's view. */
+const otherRulers = computed(() => otherFrames.value.map(({ ref, project, view }) => rulersIn(view, project, ref)))
+/** The other Frames as the Frame surface lays them (ticket 1219): each drawing's points carried onto that surface's. */
+function laidOthers(onto: TiltedView): LaidFrame[] {
+  if (otherFrames.value.length === 0) return NO_OTHERS
+  return otherFrames.value.map(({ ref, drawing, project, view }, at) => ({
+    ref,
+    project,
+    scroll: drawing.scroll,
+    size: drawing.leaning.drawn,
+    seam: seamOf(drawing.leaning, onto),
+    marks: !!props.rowMarks && rowProgressOn(project, ref),
+    theme: canvasBackground.frameThemeOf(ref),
+    surface: view,
+    rulers: otherRulers.value[at]!,
+  }))
 }
 // While two fingers twist the Canvas (ticket 0709) the layers keep the view they last drew, each surface laid where
 // the live view shows its beads by its own transform (ticket 1187). They draw afresh when the fingers lift (easing onto
@@ -382,6 +437,7 @@ function layerOfSurface(which: keyof HeldDrawings, live: () => HeldDrawing) {
     size: computed(() => drawing.value.size),
     surface: computed(() => drawing.value.surface),
     rulers: computed(() => drawing.value.rulers),
+    others: computed(() => drawing.value.others ?? NO_OTHERS),
   }
 }
 const canvasLayer = layerOfSurface('canvas', liveCanvas)
@@ -541,7 +597,7 @@ const showFinished = computed(() => pointer.showFinished.value || rowMotion.fini
 const reference = toRef(() => props.reference)
 useBeadLayer({ layer: 'canvas', props: canvasLayer.props, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, reference, slimSheet })
 // The Frame's surface is drawn after the Canvas's, in the same frame: once it is, every bead in view is.
-useBeadLayer({ layer: shownFrame, props: frameLayer.props, canvas: frameBaseEl, standIn: frameStandInEl, size: frameLayer.size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference, slimSheet })
+useBeadLayer({ layer: shownFrame, props: frameLayer.props, canvas: frameBaseEl, standIn: frameStandInEl, size: frameLayer.size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference, slimSheet, others: frameLayer.others })
 useCarryLayer({ props: canvasLayer.props, canvas: carryEl, size: layerSize, space, surface: layerSurface, theme, frameTheme, carried: () => props.carriedPiece, oncePerFrame })
 watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flush: 'post' })
 /** What both overlays follow from the pointer and the motions. */
@@ -551,7 +607,7 @@ const overlayDeps = {
   rowMotion: rowMotion.rowMotion,
 }
 useSurfaceOverlay({ ...overlayDeps, layer: 'canvas', props: canvasLayer.props, canvas: canvasOverlayEl, size: layerSize, surface: layerSurface, rulers: canvasLayer.rulers })
-useSurfaceOverlay({ ...overlayDeps, layer: shownFrame, props: frameLayer.props, canvas: overlayEl, size: frameLayer.size, surface: frameLayer.surface, rulers: frameLayer.rulers })
+useSurfaceOverlay({ ...overlayDeps, layer: shownFrame, props: frameLayer.props, canvas: overlayEl, size: frameLayer.size, surface: frameLayer.surface, rulers: frameLayer.rulers, others: frameLayer.others })
 
 /** Where Pattern done plays (ticket 0730): the margin sheet, the Frame in it and the beads its stars light, in the
  * drawing's px, as the layers draw it. */

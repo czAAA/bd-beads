@@ -16,6 +16,7 @@ import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Reg
 import { withFrameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, heldWeave, quarterTurnOf, withLayer } from '../domain/layerRecord'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
+import { firstOf, SECOND, twoFrames } from '../testUtils/twoFrames'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
 function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {
@@ -1001,7 +1002,7 @@ describe('the draft look zoomed out (ticket 0676)', () => {
     }
   })
 
-  it('lays each layer\'s kept image down again while only the view moves, and paints it afresh for an edited Project', () => {
+  it('lays each layer\'s kept image down again while only the view moves, and paints afresh only the layer an edit painted (ticket 1219)', () => {
     const images = withDraftCanvas()
     const project = framedPiece('peyote')
     const at = (region: Region, drawnProject = project) => {
@@ -1014,7 +1015,23 @@ describe('the draft look zoomed out (ticket 0676)', () => {
     expect(at({ ...SCREEN, x: 300, y: -200 })).toBe(2)
     expect(images()).toHaveLength(2)
     expect(at({ ...SCREEN, x: 300 }, withLayers(project, { beads: { 0: { 0: '#0000ff' } } }))).toBe(2)
-    expect(images()).toHaveLength(4)
+    expect(images()).toHaveLength(3)
+  })
+
+  it('keeps each Frame\'s image apart, so painting one Frame paints only its image afresh (ticket 1219)', () => {
+    const images = withDraftCanvas()
+    const drawFrames = (project: Project) => {
+      for (const layer of [firstOf(project), SECOND]) {
+        renderInSpace(recordingContext().context, { project, space: spaceOf(project, true, layer), region: SCREEN, zoom: 0.2, rowMarks: false, draftWhenSmall: true, layer })
+      }
+    }
+    const project = twoFrames()
+    drawFrames(project)
+    drawFrames(project)
+    expect(images()).toHaveLength(2)
+
+    drawFrames(withLayer(project, SECOND, { beads: { 0: { 0: '#ff0000' } } }))
+    expect(images()).toHaveLength(3)
   })
 
   it('leaves the Canvas clear under the Frame and its margin, and draws the Frame\'s empty beads and finished rows as their look does', () => {

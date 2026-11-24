@@ -2,7 +2,8 @@ import { onBeforeUnmount, toValue, watch, type MaybeRefOrGetter, type Ref } from
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import { changedRows, type FrameSheet } from '../../../domain/canvas'
 import { beadTotal } from '../../../domain/openingLimits'
-import { frameOf, framesOf, layerOf, firstFrameId } from '../../../domain/layerRecord'
+import { beadsOfLayer, frameIdOf, frameOf, framesOf, layerOf, firstFrameId } from '../../../domain/layerRecord'
+import type { FrameRef } from '../../../domain/grid'
 import { INITIAL_ROW_PROGRESS, rowProgressOf, stepLines } from '../../../domain/rowProgress'
 import { layersAlike } from '../../../domain/layerWeave'
 import { draftCost } from '../../../domain/weave'
@@ -11,10 +12,14 @@ import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, bitmapBox, coversArea, gestureTransform, mayRedrawMidGesture, SETTLE_MS, GESTURE_BEAD_LIMIT, type View } from '../../../rendering/gestureView'
 import { draftPixelRatio, drawsDraft } from '../../../rendering/draftRenderer'
-import { renderProject, type SlimSheet } from '../../../rendering/projectRenderer'
+import { renderProject, type RenderInput, type SlimSheet } from '../../../rendering/projectRenderer'
 import type { DrawnReference } from '../../../rendering/referenceImage'
 import type { Space } from '../../../rendering/space'
-import type { Region, Scroll, ViewLayer } from '../../../rendering/surfaceView'
+import type { Region, Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
+import type { RulerLayout } from '../../../rendering/rulers'
+import type { Affine } from '../../../rendering/gestureView'
+import { drawPlaced, placementOf } from '../../../rendering/placedDrawing'
+import { spaceOf } from '../../../rendering/space'
 import type { Size } from '../../../rendering/cellSize'
 
 /** How long a draw waits for its animation frame before it draws without one, in ms (ticket 1152): far longer than a
@@ -89,6 +94,25 @@ function placeCanvas(canvas: HTMLCanvasElement, box: Region): void {
   canvas.style.height = whole ? '' : `${box.height}px`
 }
 
+/** One more Frame a Frame surface draws (ticket 1219): on a drawing of its own, the Project as that drawing draws it,
+ * laid onto the surface's drawing by `seam`, from its points to the surface's. One surface holds every Frame, so the
+ * canvases and their memory do not grow with them. */
+export interface LaidFrame {
+  ref: FrameRef
+  project: Project
+  /** Its drawing's scroll and size, as the Frame surface's own are for the first Frame. */
+  scroll: Scroll
+  size: Size
+  seam: Affine
+  /** Whether its Row progress look is drawn (ticket 474). */
+  marks: boolean
+  /** Its look on its own Background (ticket 0666). */
+  theme: ProjectTheme
+  /** The view its own drawing lays it out in, and its rulers there: what its overlay draws by. */
+  surface: SurfaceView
+  rulers: RulerLayout
+}
+
 /** What the beads' layer draws from: the surface's props and the view state the component and its pointer hold. */
 export interface BeadLayerDeps {
   /** Which layer's surface this draws (ticket 1187): the Canvas's, or the Frame's stacked over it. */
@@ -113,6 +137,8 @@ export interface BeadLayerDeps {
   reference: Ref<DrawnReference | undefined>
   /** The expanded Frame's slim sheet (ticket 1169), drawn in place of the 4-position sheet; none unexpanded. */
   slimSheet?: Ref<SlimSheet | undefined>
+  /** The Frame surface's other Frames (ticket 1219), each drawn after the first, on its own placement. */
+  others?: Ref<readonly LaidFrame[]>
 }
 
 /** Whether two reference images draw the same: the same picture in the same place at the same opacity, over the beads
@@ -150,6 +176,18 @@ function sameFields(a: object, b: object): boolean {
     }
     return typeof x === 'object' && typeof y === 'object' && x !== null && y !== null && !Array.isArray(x) && !Array.isArray(y) && Object.keys({ ...x, ...y }).every((inner) => field(x, inner) === field(y, inner))
   })
+}
+
+/** Whether the other Frames lie as they did (ticket 1219): the same Frames, each at the same place on the surface and
+ * drawn alike but for its beads, which a draw then redraws that Frame alone for. */
+function sameOthers(before: readonly LaidFrame[], after: readonly LaidFrame[]): boolean {
+  return (
+    before.length === after.length &&
+    before.every((was, at) => {
+      const now = after[at]!
+      return was.ref === now.ref && was.marks === now.marks && was.theme === now.theme && sameFields(was.scroll, now.scroll) && sameFields(was.size, now.size) && sameFields(was.seam, now.seam) && sameDrawing(was.project, now.project)
+    })
+  )
 }
 
 type Band = { first: number; last: number }
@@ -234,23 +272,38 @@ function stepBands(before: Project, after: Project): Bands | undefined {
 /** How many beads a Project stores: counted once per set of beads, an edit's from the last by the rows it changed, and
  * known from decoding for a layer just opened (ticket 0716). */
 function storedBeads(project: Project): number {
-  const frame = layerOf(project, firstFrameId(project))
-  return beadTotal(layerOf(project, 'canvas').beads) + (frame ? beadTotal(frame.beads) : 0)
+  return framesOf(project).reduce((total, frame) => total + beadTotal(frame.beads), beadTotal(layerOf(project, 'canvas').beads))
 }
 
 /** What one bead of the Project costs to draw, in square beads: its costlier layer's (a rounded bead is three). */
 function beadCost(project: Project): number {
-  const frame = layerOf(project, firstFrameId(project))
-  return Math.max(draftCost(layerOf(project, 'canvas').weave.technique), frame ? draftCost(frame.weave.technique) : 0)
+  return Math.max(draftCost(layerOf(project, 'canvas').weave.technique), ...framesOf(project).map((frame) => draftCost(layerOf(project, frameIdOf(frame))!.weave.technique)))
+}
+
+/** How many positions the Project's Frames hold, every one drawn whether painted or not. */
+function framePositions(project: Project): number {
+  return framesOf(project).reduce((total, frame) => total + frame.columns * frame.rows, 0)
 }
 
 /** Keeps one layer's beads drawn on its surface (ADR 0018, 0026; ticket 1187): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
-export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn, reference, slimSheet }: BeadLayerDeps): void {
+export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn, reference, slimSheet, others }: BeadLayerDeps): void {
   /** The slim sheet as one value a draw can be compared by. */
   const slimKey = () => JSON.stringify(slimSheet?.value ?? null)
   /** What the cells were last drawn from, to draw only what an edit changed. */
-  let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean; reference: DrawnReference | undefined; slim: string } | undefined
+  let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean; reference: DrawnReference | undefined; slim: string; others: readonly LaidFrame[] } | undefined
+
+  /** Draws the other Frames over the first (ticket 1219), each alone on its own placement: all of them, or only those
+   * `redraw` names. Each clears only round its own sheet, so the rest stay as drawn. */
+  function drawOthers(context: CanvasRenderingContext2D, drawing: RenderInput, box: Region, draft: boolean, redraw?: (frame: LaidFrame) => boolean): void {
+    for (const frame of others?.value ?? []) {
+      if (redraw && !redraw(frame)) continue
+      const own = bitmapBox(frame.size, draft, drawing.pixelRatio!)
+      const region = { x: frame.scroll.x + own.x, y: frame.scroll.y + own.y, width: own.width, height: own.height }
+      const laid = { ...drawing, project: frame.project, space: spaceOf(frame.project, true, frame.ref), region, frameTheme: frame.theme, rowMarks: frame.marks, letters: shownLetters(frame.project, frame.ref), canvasLetters: undefined, slimSheet: undefined, layer: frame.ref, alone: true, rows: undefined, columns: undefined }
+      drawPlaced(context, placementOf(frame.seam, drawing.pixelRatio!, own, box), () => renderProject(context, laid))
+    }
+  }
 
   /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just
    * those. */
@@ -275,7 +328,7 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
     }
 
     const before = drawn
-    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, box, width: size.value.width, height: size.value.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, reference: reference.value, slim: slimKey() }
+    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, box, width: size.value.width, height: size.value.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, reference: reference.value, slim: slimKey(), others: others?.value ?? [] }
     const bands =
       !resized &&
       before &&
@@ -290,7 +343,8 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
       before.showFinished === showFinished.value &&
       before.rowMarks === marksShown.value &&
       before.slim === drawn.slim &&
-      sameReference(before.reference, reference.value)
+      sameReference(before.reference, reference.value) &&
+      sameOthers(before.others, drawn.others)
         ? sameDrawing(before.project, project)
           ? changedBands(before.project, project)
           : stepBands(before.project, project)
@@ -299,6 +353,7 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
 
     if (bands === undefined) {
       renderProject(context, drawing)
+      drawOthers(context, drawing, box, drawsDraft(props.zoom * pixelRatio))
       onDrawn?.()
       return
     }
@@ -307,6 +362,9 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
     } else {
       for (const columns of bands.columns) renderProject(context, { ...drawing, columns })
     }
+    // Painting another Frame draws that Frame alone again (ticket 1219), its draft image the only one made anew.
+    const was = new Map(before!.others.map((frame) => [frame.ref, frame]))
+    drawOthers(context, drawing, box, drawsDraft(props.zoom * pixelRatio), (frame) => beadsOfLayer(frame.project, frame.ref) !== beadsOfLayer(was.get(frame.ref)!.project, frame.ref))
   }
 
   let settleTimer: ReturnType<typeof setTimeout> | undefined
@@ -336,7 +394,9 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
     placeCanvas(canvas, box)
     const region = { x: props.scroll.x + box.x, y: props.scroll.y + box.y, width: box.width, height: box.height }
     sizeCanvas(canvas, region.width, region.height, pixelRatio)
-    renderProject(context, { project: props.project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, draftWhenSmall: true, positionMarks: !!reference.value, reference: reference.value, slimSheet: slimSheet?.value, layer: toValue(layer) })
+    const drawing = { project: props.project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, draftWhenSmall: true, positionMarks: !!reference.value, reference: reference.value, slimSheet: slimSheet?.value, layer: toValue(layer) }
+    renderProject(context, drawing)
+    drawOthers(context, drawing, box, true)
     canvas.style.transform = ''
     canvas.style.visibility = 'visible'
     standInView = { zoom: props.zoom, scroll: { ...props.scroll }, box }
@@ -388,7 +448,7 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
     // The draft look moves its image too (ticket 0689): a live redraw is sharp but held about 40 fps, a move keeps 60.
     const heavy =
       onlyViewMoved &&
-      beadsToDraw(storedBeads(project), (frameOf(project)?.columns ?? 0) * (frameOf(project)?.rows ?? 0), size.value, props.zoom, beadCost(project)) > GESTURE_BEAD_LIMIT
+      beadsToDraw(storedBeads(project), framePositions(project), size.value, props.zoom, beadCost(project)) > GESTURE_BEAD_LIMIT
     if (!heavy || !before) {
       clearMove()
       timed('cells', drawCells)
@@ -416,6 +476,6 @@ export function useBeadLayer({ layer, props, canvas: canvasEl, standIn: standInE
 
   // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make
   // the draw depend on every bead's property.
-  watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, frameTheme, showFinished, marksShown, reference, slimKey], oncePerFrame(drawCellsOrMove), { flush: 'post' })
+  watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, frameTheme, showFinished, marksShown, reference, slimKey, () => others?.value], oncePerFrame(drawCellsOrMove), { flush: 'post' })
   onBeforeUnmount(() => clearTimeout(settleTimer))
 }

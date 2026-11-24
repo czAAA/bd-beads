@@ -12,7 +12,9 @@ import type { Space } from '../../../rendering/space'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
 import { AREA_SHEET_OUTSET, type HandleId } from '../../../rendering/frameHandles'
-import { sizeCanvas } from './useSurfaceDrawing'
+import { sizeCanvas, type LaidFrame } from './useSurfaceDrawing'
+import { drawPlaced, placementOf } from '../../../rendering/placedDrawing'
+import { spaceOf } from '../../../rendering/space'
 import { firstFrameId, frameOf } from '../../../domain/layerRecord'
 import { isMirrorOn, type MirrorSetting } from '../../../domain/mirror'
 
@@ -122,12 +124,15 @@ export interface SurfaceOverlayDeps {
   /** Row done's glints and the marker's glide (ticket 0730), while they play. */
   rowMotion: Ref<RowMotion | undefined>
   oncePerFrame: (draw: () => void) => () => void
+  /** The Frame surface's other Frames (ticket 1219): each one's rulers, Row progress, Selection and previews, on its own
+   * placement. Its handles, margin outline and the marker stay the first Frame's until 1220. */
+  others?: Ref<readonly LaidFrame[]>
 }
 
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { layer, props, canvas: canvasEl, size, space, surface, rulers, theme, frameTheme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion } = deps
+  const { layer, props, canvas: canvasEl, size, space, surface, rulers, theme, frameTheme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion, others } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -167,7 +172,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
     const context = canvas.getContext('2d')
     const { tools } = props
     if (context) {
-      renderOverlay(context, {
+      const drawing: Parameters<typeof renderOverlay>[1] = {
         project: props.project,
         space: space.value,
         region,
@@ -192,7 +197,30 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         rowMotion: rowMotion.value,
         areaSheet: { surface: surface.value, outset: AREA_SHEET_OUTSET },
         layer: toValue(layer),
-      })
+      }
+      renderOverlay(context, drawing)
+      for (const frame of others?.value ?? []) {
+        const laid = {
+          ...drawing,
+          project: frame.project,
+          space: spaceOf(frame.project, true, frame.ref),
+          region: { x: frame.scroll.x, y: frame.scroll.y, width: frame.size.width, height: frame.size.height },
+          frameTheme: frame.theme,
+          rowMarks: frame.marks,
+          letters: shownLetters(frame.project, frame.ref),
+          pointer: undefined,
+          marginOutline: 0,
+          frameEditing: undefined,
+          selectionHandles: drawing.selectionHandles && { ...drawing.selectionHandles, surface: frame.surface },
+          rulers: { layout: frame.rulers, surface: frame.surface },
+          mirrorArea: drawing.mirrorArea && { ...drawing.mirrorArea, surface: frame.surface },
+          rowMotion: undefined,
+          areaSheet: drawing.areaSheet && { ...drawing.areaSheet, surface: frame.surface },
+          layer: frame.ref,
+          over: true,
+        }
+        drawPlaced(context, placementOf(frame.seam, pixelRatio, { x: 0, y: 0 }, { x: 0, y: 0 }), () => renderOverlay(context, laid))
+      }
     }
   }
 
@@ -228,6 +256,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       hotAreaHandle,
       theme,
       frameTheme,
+      () => others?.value,
     ],
     deps.oncePerFrame(drawOverlay),
     { flush: 'post' },
