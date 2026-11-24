@@ -64,7 +64,8 @@ const rootEl = ref<HTMLElement>()
 const listEl = ref<HTMLElement>()
 const buttonEl = ref<HTMLElement>()
 const listId = useId()
-const anchored = useAnchoredPosition(buttonEl, listEl, () => props.align)
+// A popover with a width of its own is held inside the window's bottom edge, scrolling inside past it.
+const anchored = useAnchoredPosition(buttonEl, listEl, () => props.align, () => 'below', () => (props.popoverWidth ? window.innerHeight : undefined))
 
 /** A popover with a width of its own is as tall as the room below it allows (a boxed shell's box too), at most the
  * screen's height less 150px, and scrolls inside past that. */
