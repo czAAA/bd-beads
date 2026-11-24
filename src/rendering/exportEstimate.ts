@@ -130,13 +130,13 @@ const OVERVIEW_BYTES = {
   450: [155_841, 23_447, 45.09, 140.36, 143.94, 540],
 } as const
 
-/** The Cover page's bytes, PDF and picture (tickets 1096, 1141; 15 pieces measured 2026-11-20 at each dpi, 5 × 5 to 250 × 250,
+/** The Cover page's bytes, PDF and picture (tickets 1096, 1141; constants raised in 1233 for the footer's QR code and text; 15 pieces measured 2026-11-20 at each dpi, 5 × 5 to 250 × 250,
  * 1 to 90 colors): a constant, then by the bead's size in device px: the beads, their area, the color edges, the edges again
  * by the bead's size up to `COVER_SHORT_EDGE_MM`, and the area by the colors (up to 100). */
 const COVER_PAGE_BYTES = {
-  150: [87_900, 0, 0.0794, 0, 0.292, 2.02],
-  300: [261_000, 0.63, 0, 0.898, 0.225, 0.462],
-  450: [512_000, 0.146, 0, 1.36, 0.129, 0.373],
+  150: [124_000, 0, 0.0794, 0, 0.292, 2.02],
+  300: [284_000, 0.63, 0, 0.898, 0.225, 0.462],
+  450: [535_000, 0.146, 0, 1.36, 0.129, 0.373],
 } as const
 const COVER_COLORS = 100
 const COVER_SHORT_EDGE_MM = 2.5

@@ -13,8 +13,8 @@ const coverPageLayout = (project: Parameters<typeof laidCover>[0], page?: Parame
 
 // The Cover page's board and piece (ticket 1096; PrintCover card).
 describe('coverPageLayout', () => {
-  it('puts the board at its top, under the title block, as wide as the page allows inside the margins and 196 mm tall', () => {
-    expect(coverPageLayout(shape('loom', 20, 20), A4_PORTRAIT, mm(70)).board).toEqual({ x: PRINT_MARGIN, y: mm(70), width: A4_PORTRAIT.width - PRINT_MARGIN * 2, height: mm(196) })
+  it('puts the board at its top, under the title block, as wide as the page allows inside the margins and 186 mm tall', () => {
+    expect(coverPageLayout(shape('loom', 20, 20), A4_PORTRAIT, mm(70)).board).toEqual({ x: PRINT_MARGIN, y: mm(70), width: A4_PORTRAIT.width - PRINT_MARGIN * 2, height: mm(186) })
   })
 
   it.each([

@@ -12,9 +12,9 @@ Inside a 10 mm margin on all four sides (`print-margin`), top to bottom. The tit
   - Left: the technique word (Instrument Serif italic 18, `accent-strong`), the title (the Frame's name, else the Project's; Inter 700 39, `ink`, tracked −0.02 em, at most two lines, then an ellipsis) and "by {Maker's name}" (Instrument Serif italic 17, `muted`), 1.6 mm apart.
   - Right: the piece's colors as a row of plain squares (5 mm, rounded as a letter swatch is, 1.6 mm apart), the most used first, twelve at most; under it one line in DM Mono 8 `muted`, the Total's words: "6 colors · 1 104 beads · ≈ 5.6 g".
 - **The tech line**, 5.8 mm under the title block: a 1.5 px `ink` rule across the page, then Page 1's tech line without the technique word (DM Mono 8, `muted`): "48×23 · Miyuki Delica 11/0 · ≈ 7.7 × 3.0 cm".
-- **The board**, 9.5 mm under the tech line: as wide as the page inside its margins and `print-cover-board` (196 mm) tall, filled `print-board`, its corners rounded as the overview's board is. Nothing else is on it but the piece.
+- **The board**, 9.5 mm under the tech line: as wide as the page inside its margins and `print-cover-board` (186 mm) tall, filled `print-board`, its corners rounded as the overview's board is. Nothing else is on it but the piece.
 - **The piece**: the framed Schema trimmed to its beads (ticket 1128): the rows and columns from the first bead to the last, before it is scaled; a Schema with no beads whole. Drawn as the app draws it in the light theme, in color: no Swatch letters, no rulers, no lines every 5 and 10, no Row progress fade. Turned as its Canvas is turned, so a cuff lies across as it is woven. Scaled to fill the board inside `print-cover-pad` (8 mm) on every side, with no smallest and no largest bead, and centred. It casts one soft shadow on the board: 2.6 mm down, 3.7 mm of blur, `ink` at 16%. An empty position is bare board, with no cross: the cover is a picture, not a chart. The tech line gives the trimmed size.
-- **The footer**, Page 1's: the X1 mark, "openbeads" and the date and time on the left, the page number on the right ("1 / 2"). **Changed on the Cover page only: see "The address" below** (approved 2026-11-24, not yet in the app, ticket 1233).
+- **The footer**, Page 1's: the X1 mark, "openbeads" and the date and time on the left, the page number on the right ("1 / 2"). **Changed on the Cover page only: see "The address" below** (ticket 1233).
 
 An empty name leaves out the title, an empty maker the "by" line. An unknown Bead shows no grams. No watermark: nothing is drawn over the piece.
 
@@ -31,11 +31,11 @@ An empty name leaves out the title, an empty maker the "by" line. An unknown Bea
 
 Picture saves (ticket 1096; PngExport card) this page as a PNG, at the Export quality's dpi (QualitySlider card), drawn by the same code as the PDF's. It is one file, whatever the piece's size and however many colors it has, and its footer reads "1 / 1". It is saved whether or not the Cover page switch is on: the switch is the PDF's. Its file name carries no option (ExportPanel card).
 
-## The address: approved 2026-11-24, not yet in the app (ticket 1233)
+## The address: approved 2026-11-24, built in ticket 1233
 
 Signed off by the owner on 2026-11-24 (ticket 1232, canvas "PDF cover page: where the openbeads.com URL goes", option F, "A + QR"). The Cover page, and only the Cover page, says where it was made, so anyone holding the file or a printout can find the app. Page 1, the chart pages and the list pages keep the footer above ("openbeads" and no address).
 
-- **The footer grows** from one line (6 mm) to a block about 14 mm tall, 4 mm under the board. The board gives up the difference: `print-cover-board` falls from 196 mm to about 190 mm (the build ticket sets the exact value so the page still closes with the margin, and keeps `printPages.test.ts` in step).
+- **The footer grows** from one line (6 mm) to a block about 18 mm tall (the QR column: code, 2.1 mm for its quiet zone, the page number). The board gives up the difference: `print-cover-board` falls from 196 mm to 186 mm, so the page still closes with its margin at its worst (a two-line title, a maker).
 - **Left, three lines**, 1.2 mm apart, left-aligned:
   1. the X1 mark (5 mm) and "Made with **openbeads.com**": "Made with" Inter 400 9 pt `muted`, the address Inter 600 9 pt `ink`, 2.5 mm after the mark;
   2. the tag: "Free bead pattern maker. No account." (Inter 400 7.5 pt `muted`);

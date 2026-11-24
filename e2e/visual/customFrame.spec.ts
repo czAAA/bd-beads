@@ -89,7 +89,7 @@ test('the PNG export of a Custom frame draws the whole shape', async ({ page }) 
   // The Cover page, title block and board (ticket 1141), a quarter of its size: the footer (the export time) left out.
   const scale = 4
   const top = Math.floor(png.height * 0.02)
-  const picture = new PNG({ width: Math.floor(png.width / scale), height: Math.floor((png.height * 0.9) / scale) })
+  const picture = new PNG({ width: Math.floor(png.width / scale), height: Math.floor((png.height * 0.88) / scale) })
   for (let y = 0; y < picture.height; y += 1) {
     for (let x = 0; x < picture.width; x += 1) {
       const from = ((top + y * scale) * png.width + x * scale) * 4

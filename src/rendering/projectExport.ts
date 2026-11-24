@@ -5,6 +5,8 @@ import { exactColors, packPage, type PackedPage } from '../domain/pagePacking'
 import { withLaidTurn } from '../domain/framePlacement'
 import { projectColors } from '../domain/layerBeads'
 import { deflateText, encodePng } from '../domain/pngEncoder'
+import { K } from './chartVector'
+import type { PageLink } from './coverFooter'
 import { pageOneLayout } from './pageOneLayout'
 import { A4_PORTRAIT, PRINT_DPI, type PrintPart } from './printPlan'
 import type { PrintText } from './printText'
@@ -42,7 +44,7 @@ export async function exportProjectPng(shown: Project, words: PrintText, dpi = P
   const { drawCoverPage } = await import('./coverPage')
   const { loadPrintFonts } = await import('./printPages')
   await loadPrintFonts()
-  const canvas = drawCoverPage(project, words, A4_PORTRAIT, 1, 1, dpi / PRINT_DPI)
+  const { canvas } = drawCoverPage(project, words, A4_PORTRAIT, 1, 1, dpi / PRINT_DPI)
   const blob = await pngOf(canvas, project)
   canvas.width = 0
   canvas.height = 0
@@ -76,17 +78,20 @@ export async function exportProjectPdf(shown: Project, words: PrintText, dpi = P
   const plan = { ...layout.plan, pageCount: pdfPageCount(layout.plan, words) }
 
   const pages: PdfPage[] = []
-  const add = async (canvas: HTMLCanvasElement, drawing?: string) => {
+  const add = async (canvas: HTMLCanvasElement, drawing?: string, links?: PageLink[]) => {
     const size = { pixelWidth: canvas.width, pixelHeight: canvas.height }
     const { flate, palette } = await flateOf(canvas, project)
-    pages.push({ ...size, flate, ...(palette ? { palette } : {}), ...(drawing ? { drawing: await deflateText(drawing) } : {}) })
+    pages.push({ ...size, flate, ...(palette ? { palette } : {}), ...(drawing ? { drawing: await deflateText(drawing) } : {}), ...(links?.length ? { links: links.map((link) => ({ x: link.x * K, y: link.y * K, width: link.width * K, height: link.height * K, uri: link.uri })) } : {}) })
     // Let the canvas go before the next page is drawn.
     canvas.width = 0
     canvas.height = 0
   }
 
   // The Cover page is a picture, always in color (PrintCover card).
-  if (words.cover) await add(drawCoverPage(project, words, plan.page, 1, plan.pageCount, scale))
+  if (words.cover) {
+    const cover = drawCoverPage(project, words, plan.page, 1, plan.pageCount, scale, true)
+    await add(cover.canvas, cover.drawing, cover.links)
+  }
   // Page 1 is the lines and letters of a whole chart as PDF drawing (ADR 0043) over a picture of its text, as a chart page is.
   const first = drawPageOne(project, words, layout, plan, scale)
   await add(first.canvas, first.drawing)

@@ -94,6 +94,6 @@ describe('Black and white', () => {
   it('keeps the Cover page in color', () => {
     const project = fixtureProject({ technique: 'loom', columns: 20, rows: 20 })
 
-    expect(coloredPixels(drawCoverPage(project, wordsOf(project, { cover: true, blackAndWhite: true }), A4_PORTRAIT, 1, 2))).toBeGreaterThan(1000)
+    expect(coloredPixels(drawCoverPage(project, wordsOf(project, { cover: true, blackAndWhite: true }), A4_PORTRAIT, 1, 2).canvas)).toBeGreaterThan(1000)
   })
 })

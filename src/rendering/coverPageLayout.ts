@@ -9,7 +9,7 @@ import { A4_PORTRAIT, areaRegion, mm, PRINT_MARGIN, type PageSize } from './prin
 
 /** The board's height (`print-cover-board`).
  * @internal The token test holds it to the token. */
-export const COVER_BOARD = mm(196)
+export const COVER_BOARD = mm(186)
 /** The board's pad round the piece on every side (`print-cover-pad`).
  * @internal The token test holds it to the token. */
 export const COVER_PAD = mm(8)
