@@ -1,8 +1,8 @@
 import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
-import { clampZoom, MAX_ZOOM, MIN_ZOOM, stepZoom, isFrameLayer, type FrameRef, type GridPosition, type Layer } from '../../domain/grid'
+import { clampZoom, MAX_ZOOM, MIN_ZOOM, stepZoom, isFrameLayer, type FrameId, type FrameRef, type GridPosition, type Layer } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
-import { frameOf, layerOf, orientationOf, firstFrameId } from '../../domain/layerRecord'
+import { frameIdOf, frameOf, framesOf, layerOf, orientationOf, firstFrameId } from '../../domain/layerRecord'
 import { footprintOf, frameFootprint } from '../../domain/footprint'
 import { withMargin } from '../../domain/margin'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
@@ -87,9 +87,18 @@ interface FitTarget {
 export function fitBox(project: Project): FitTarget | undefined {
   // The sheet is laid on the Canvas round the Frame's footprint, which takes a turned Frame as it lies (ticket 0667).
   // A Frame off the Canvas's grid covers no position (ticket 1188): the rectangle its address names is centred on it.
-  const placed = placedFrame(project, firstFrameId(project))
-  const footprint = footprintOf(project, firstFrameId(project)) ?? (placed && frameFootprint(layerOf(project, 'canvas').weave, placed))
-  if (footprint) return { box: withMargin(footprint), margin: SHEET_FIT_MARGIN_PX }
+  // With several Frames, every sheet is in view (ticket 1220).
+  const boxes = framesOf(project).flatMap((frame) => {
+    const ref = frameIdOf(frame)
+    const placed = placedFrame(project, ref)
+    const footprint = footprintOf(project, ref) ?? (placed && frameFootprint(layerOf(project, 'canvas').weave, placed))
+    return footprint ? [withMargin(footprint)] : []
+  })
+  if (boxes.length > 0) {
+    const row = Math.min(...boxes.map((box) => box.row))
+    const column = Math.min(...boxes.map((box) => box.column))
+    return { box: { row, column, rows: Math.max(...boxes.map((box) => box.row + box.rows)) - row, columns: Math.max(...boxes.map((box) => box.column + box.columns)) - column }, margin: SHEET_FIT_MARGIN_PX }
+  }
   const drawn = beadBounds(layerOf(project, 'canvas').beads)
   return drawn && { box: drawn, margin: FIT_MARGIN_PX }
 }
@@ -116,7 +125,7 @@ export interface CanvasViewOptions {
   keepTwist?: (orientation: number, moved: Scroll) => void
   /** Keeps the angle a twist of the Frame came to rest at (ticket 1190), one Undo step; 'asked' where the Rotate Frame
    * question comes first: the view then shows it there until `releaseFrameTwist` or `easeFrameBack`. */
-  keepFrameTwist?: (angle: number) => 'kept' | 'asked'
+  keepFrameTwist?: (angle: number, frame: FrameId) => 'kept' | 'asked'
   /** What lies over the drawing area's edges (the Tool pill, ticket 0850): a fit leaves it clear. */
   covered?: () => Insets
   /** The view a Project opens at in place of its fit, this once: the address's (What's inside's Open editor from here,
@@ -127,6 +136,8 @@ export interface CanvasViewOptions {
    * each side of the drawing area, past the Frame's beads, at a zoom and the bead pitch it makes. A fit then fits the
    * Frame's beads into the rest, clear of the Tool pill too (ticket 1176). */
   expanded?: () => ((zoom: number, pitch: number) => Insets) | undefined
+  /** The Frame that is expanded (ticket 1220): the one the expanded fit fits; the first when none is named. */
+  expandedFrame?: () => FrameId | undefined
   /** The expanded fit's bead pitch on screen, in px, once worked out (ticket 1194): the sheet's numbers grow with it. */
   fitted?: (pitch: number) => void
   /** A zoom out that rests under the expanded fit (ticket 1194), or a move of the view by hand: Back to the Canvas,
@@ -169,9 +180,10 @@ export function useCanvasView(
   const twistPhase = ref<TwistPhase>()
   /** The layer the twist under way turns, from the step it engages on (ticket 1190). */
   let twistTarget: TwistTarget | undefined
-  /** The Frame's angle while two fingers twist it, it eases onto where it settles, or the Rotate Frame question waits
-   * (ticket 1190): what the surface shows it at, before the Project keeps it. */
-  const frameTwisting = ref<number>()
+  /** The angle of the Frame two fingers twist, while they do, it eases onto where it settles, or the Rotate Frame question
+   * waits (ticket 1190): what the surface shows it at, before the Project keeps it. The Frame it names turns alone
+   * (ticket 1220). */
+  const frameTwisting = ref<{ frame: FrameId; angle: number }>()
   let snapTimer: ReturnType<typeof setTimeout> | undefined
   /** The orientation this view just handed the Project, which it already shows: no refit for it. */
   let settledAt: number | undefined
@@ -210,9 +222,9 @@ export function useCanvasView(
 
   /** The Canvas as the view stands, or from another scroll or in a part of the viewport; with no Project, an empty one
    * in the default Technique. */
-  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value, area: Size = viewport.value, atZoom: number = zoom.value): SurfaceView {
+  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value, area: Size = viewport.value, atZoom: number = zoom.value, ref: FrameRef = firstFrameId(project)): SurfaceView {
     const { technique, techniqueSettings, cell } = project ? layerOf(project, 'canvas').weave : { technique: DEFAULT_TECHNIQUE }
-    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project, firstFrameId(project)), frameLayer: firstFrameId(project), rotation: nearestQuarterTurn(orientation.value), zoom: atZoom, scroll: at, viewport: area })
+    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project, ref), frameLayer: ref, rotation: nearestQuarterTurn(orientation.value), zoom: atZoom, scroll: at, viewport: area })
   }
 
   /** The part of the viewport a fit uses (ticket 0850): all of it less what lies over its edges (and `also`, what else
@@ -273,21 +285,22 @@ export function useCanvasView(
    * with no zoom limit (ticket 1194), centred there. Worked out until it settles, as the sheet's numbers grow with the
    * bead and the Frame's line, which the sheet stands off, moves with the zoom. */
   function expandedFit(project: Project, sheetRoom: (zoom: number, pitch: number) => Insets): ShownView | undefined {
-    const footprint = footprintOf(project, firstFrameId(project))
+    const frame = options.expandedFrame?.() ?? firstFrameId(project)
+    const footprint = footprintOf(project, frame)
     if (!footprint) return undefined
     const pill = options.covered?.() ?? NO_INSETS
     const room = (at: number, full: number): Insets => {
       const sheet = sheetRoom(at, full * at)
       return { top: sheet.top + pill.top, right: sheet.right + pill.right, bottom: sheet.bottom + pill.bottom, left: sheet.left + pill.left }
     }
-    const full = pitchAtFull(surfaceOf(project), firstFrameId(project))
+    const full = pitchAtFull(surfaceOf(project, scroll.value, viewport.value, zoom.value, frame), frame)
     let at = 1
     let before = at
     let insets = room(at, full)
     let area = viewport.value
     for (let pass = 0; pass < EXPANDED_FIT_PASSES; pass += 1) {
       area = { width: Math.max(1, viewport.value.width - insets.left - insets.right), height: Math.max(1, viewport.value.height - insets.top - insets.bottom) }
-      const surface = surfaceOf(project, scroll.value, area)
+      const surface = surfaceOf(project, scroll.value, area, zoom.value, frame)
       before = at
       const wanted = surface.zoomToFit(footprint, { width: 0, height: 0 }, 'canvas', Infinity)
       at = Number.isFinite(wanted) ? Math.max(MIN_ZOOM, wanted) : 1
@@ -567,7 +580,8 @@ export function useCanvasView(
     }
     if (turn !== undefined && isFrameLayer(twistTarget)) {
       // The Frame turns about its own centre, which stays on the table: only its angle changes.
-      frameTwisting.value = turnedOrientation(frameTwisting.value ?? frameAngleOf(currentProject()!, firstFrameId(currentProject()!)), turn)
+      const frame = twistTarget as FrameId
+      frameTwisting.value = { frame, angle: turnedOrientation(frameTwisting.value?.angle ?? frameAngleOf(currentProject()!, frame), turn) }
       clearTimeout(snapTimer)
       twistPhase.value = 'turning'
     } else if (turn !== undefined) {
@@ -634,21 +648,22 @@ export function useCanvasView(
   /** The fingers lifted off a twist of the Frame (ticket 1190): it eases onto where `settledFrameAngle` puts it (the
    * surface slides it onto whole Canvas positions there) and the Project keeps it once it has. */
   function endFrameTwist(): void {
-    const from = frameTwisting.value
+    const twisted = frameTwisting.value
     const project = currentProject()
     twistTarget = undefined
-    if (from === undefined || !project) return
-    const to = settledFrameAngle(project, from)
-    if (to === from) return settleFrameTwist(to)
-    frameTwisting.value = to
+    if (twisted === undefined || !project) return
+    const { frame } = twisted
+    const to = settledFrameAngle(project, twisted.angle)
+    if (to === twisted.angle) return settleFrameTwist(to, frame)
+    frameTwisting.value = { frame, angle: to }
     twistPhase.value = 'settling'
-    snapTimer = setTimeout(() => settleFrameTwist(to), SNAP_MS)
+    snapTimer = setTimeout(() => settleFrameTwist(to, frame), SNAP_MS)
   }
 
-  function settleFrameTwist(to: number): void {
+  function settleFrameTwist(to: number, frame: FrameId): void {
     twistPhase.value = undefined
     const project = currentProject()
-    if (!project || to === frameAngleOf(project, firstFrameId(project)) || options.keepFrameTwist?.(to) !== 'asked') frameTwisting.value = undefined
+    if (!project || to === frameAngleOf(project, frame) || options.keepFrameTwist?.(to, frame) !== 'asked') frameTwisting.value = undefined
   }
 
   /** The Rotate Frame question a Frame twist waited on was answered and the Project keeps the angle: the Frame is shown
@@ -662,11 +677,12 @@ export function useCanvasView(
   /** The question a Frame twist waited on was answered Cancel (ticket 1190): the Frame eases back to the angle the
    * Project holds. The surface holds its drawing first, so the ease plays from where the Frame was shown. */
   function easeFrameBack(): void {
-    if (frameTwisting.value === undefined) return
+    const twisted = frameTwisting.value
+    if (twisted === undefined) return
     clearTimeout(snapTimer)
     twistPhase.value = 'turning'
     const ease = () => {
-      frameTwisting.value = frameAngleOf(currentProject()!, firstFrameId(currentProject()!))
+      frameTwisting.value = { frame: twisted.frame, angle: frameAngleOf(currentProject()!, twisted.frame) }
       twistPhase.value = 'settling'
       snapTimer = setTimeout(releaseFrameTwist, SNAP_MS)
     }

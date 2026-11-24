@@ -79,6 +79,7 @@ const motion = useRowMotion({
   beads: beadsEl,
   fade: ref(),
   view: () => view.value,
+  frame: () => firstFrameId(project.value),
 })
 
 function drawBeads(): void {

@@ -994,3 +994,67 @@ describe('every Frame change names its Frame (ticket 1218)', () => {
     })
   })
 })
+
+describe('each Frame has its own state (ticket 1220)', () => {
+  const project = twoFrames()
+  const first = firstOf(project)
+
+  it('keeps the edit pencil of each Frame its own: turning one on or off leaves the other as it was', () => {
+    const { toggleHandles, settingFrames, settingFrame } = setup(project)
+    expect(settingFrame.value).toBe(false)
+    toggleHandles(SECOND)
+    expect(settingFrames.value).toEqual([SECOND])
+    toggleHandles(first)
+    expect(settingFrames.value).toEqual([first, SECOND])
+    toggleHandles(SECOND)
+    expect(settingFrames.value).toEqual([first])
+    expect(settingFrame.value).toBe(true)
+  })
+
+  it('holds the handles of a Frame with a pass done off, and the other Frame\'s on', () => {
+    const { toggleHandles, settingFrames } = setup(moveToRow(project, 1, SECOND))
+    toggleHandles(SECOND)
+    toggleHandles(first)
+    expect(settingFrames.value).toEqual([first])
+  })
+
+  it('resizes the Frame whose handle was pressed, the drag shown on it alone, the other as it was', () => {
+    const { deps, toggleHandles, press, drag, release, draftProject } = setup(project)
+    toggleHandles(SECOND)
+    press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 25, column: 23 }, SECOND)
+    drag({ row: 27, column: 24 })
+    expect(frameById(draftProject.value!, SECOND)).toMatchObject({ rows: 8, columns: 5 })
+    expect(frameById(draftProject.value!, first)).toEqual(frameById(project, first))
+    release()
+    expect(frameById(deps.harness.project, SECOND)).toMatchObject({ rows: 8, columns: 5 })
+    expect(frameById(deps.harness.project, first)).toBe(frameById(project, first))
+  })
+
+  it('moves the Frame whose Move bar was pressed, by the keys of its own sheet too, and no other', () => {
+    const { deps, press, drag, release, onKey } = setup(project)
+    press({ kind: 'move' }, { row: 21, column: 21 }, SECOND)
+    drag({ row: 22, column: 21 })
+    release()
+    expect(frameById(deps.harness.project, SECOND)).toMatchObject({ row: 21, column: 20 })
+    expect(onKey(new KeyboardEvent('keydown', { key: 'ArrowRight' }), first)).toBe(true)
+    expect(frameById(deps.harness.project, first)).toMatchObject({ row: 0, column: 1 })
+    expect(frameById(deps.harness.project, SECOND)).toMatchObject({ row: 21, column: 20 })
+  })
+
+  it('asks to remove the Frame whose sheet asked, and removes that Frame alone', () => {
+    const { deps, remove, confirmRemove, removeConfirmOpen } = setup(project)
+    remove(SECOND)
+    expect(removeConfirmOpen.value).toBe(true)
+    confirmRemove()
+    expect(frameById(deps.harness.project, SECOND)).toBeUndefined()
+    expect(frameById(deps.harness.project, first)).toBe(frameById(project, first))
+  })
+
+  it('makes the Frame it changed the Last edited Frame', () => {
+    const { deps, rename } = setup(project)
+    rename('Earring', SECOND)
+    expect(deps.harness.project.lastEditedFrame).toBe(SECOND)
+    rename('Gerdan', first)
+    expect(deps.harness.project.lastEditedFrame).toBe(first)
+  })
+})

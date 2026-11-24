@@ -129,7 +129,7 @@ describe('projectStorage', () => {
 
     saveProjects(library)
 
-    expect(localStorage.getItem(STORAGE_KEY)).toBe(JSON.stringify({ version: 8, patterns: library.map(encodeProject) }))
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(JSON.stringify({ version: 9, patterns: library.map(encodeProject) }))
   })
 
   it('replaces what was stored rather than merging with it', () => {
@@ -204,7 +204,7 @@ describe('projectStorage', () => {
       saveProjects([makeProject()])
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
-      expect(stored.version).toBe(8)
+      expect(stored.version).toBe(9)
       expect(stored.patterns[0].grid).toBeUndefined()
       expect(stored.patterns[0].layers[0].encodedBeads).toEqual({ colors: [], rows: {} })
       expect(stored.patterns[0].layers[1].encodedBeads).toEqual({ colors: [], rows: {} })
@@ -226,7 +226,7 @@ describe('projectStorage', () => {
       saveProjects(loaded)
 
       expect(loaded.map(layersView)).toEqual([layersView(withColorsInPalette(legacy))])
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(8)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(9)
       expect(storedBytes()).toBeLessThan(legacyBytes / 10)
     })
 

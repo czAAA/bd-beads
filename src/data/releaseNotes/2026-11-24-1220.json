@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-24",
+  "kind": "changed",
+  "line": {
+    "en": "The Frame tools button is now always at the end of a Frame's top band, and holds every tool of the Frame",
+    "ru": "Кнопка «Инструменты рамки» теперь всегда стоит в конце верхней полосы рамки и собирает все её инструменты",
+    "uk": "Кнопка «Інструменти рамки» тепер завжди стоїть наприкінці верхньої смуги рамки й збирає всі її інструменти",
+    "be": "Кнопка «Інструменты рамкі» цяпер заўсёды стаіць у канцы верхняй паласы рамкі і збірае ўсе яе інструменты",
+    "zh": "“边框工具”按钮现在始终位于边框顶栏的末尾，并收纳该边框的所有工具",
+    "es": "El botón Herramientas del marco está ahora siempre al final de la banda superior del marco y reúne todas sus herramientas",
+    "pl": "Przycisk Narzędzia ramki jest teraz zawsze na końcu górnego paska ramki i zbiera wszystkie jej narzędzia"
+  }
+}

@@ -1,4 +1,3 @@
-import { firstFrameId } from '../../domain/layerRecord'
 import { computed, ref } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
@@ -47,6 +46,12 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
   const on = computed(() => isMirrorOn(setting.value))
   /** Whether the whole Frame is the Mirror's Area: the margin's Mirror the whole Frame is pressed (MarginSheet card). */
   const onFrame = computed(() => setting.value.place?.layer === 'frame')
+  /** Whether the whole of one Frame is the Area (ticket 1220): the Frame whose sheet's button is pressed. */
+  function onFrameOf(frame: FrameId): boolean {
+    const project = deps.currentProject()
+    const place = setting.value.place
+    return !!project && place?.layer === 'frame' && placeFrame(project, place) === frame
+  }
   /** The Area in its layer's own positions (the Frame's rectangle for the whole Frame), for the bar's size and counts. */
   const rect = computed(() => {
     const project = deps.currentProject()
@@ -102,12 +107,10 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     if (outcome.kind === 'applied' && Object.keys(growth.grewFor).length > 0) deps.showToast('mirror-grown', mirrorGrownMessage(deps.messages(), deps.locale(), saved.value, growth), 'info')
   }
 
-  /** Mirror the whole Frame (MarginSheet card): the one whose sheet holds the button (ticket 1218), the first until each
-   * Frame has its own sheet (ticket 1220). */
-  function placeWholeFrame(frame?: FrameId) {
-    const project = deps.currentProject()
-    if (!project) return
-    place({ layer: 'frame', frame: frame ?? firstFrameId(project) })
+  /** Mirror the whole Frame (MarginSheet card): the one whose sheet holds the button (tickets 1218, 1220). */
+  function placeWholeFrame(frame: FrameId) {
+    if (!deps.currentProject()) return
+    place({ layer: 'frame', frame })
   }
 
   /** Close mirror: the Mirror off and its Area dropped, its Mode, Axes and counts kept for the next one; one Undo step. */
@@ -164,6 +167,7 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     setting,
     on,
     onFrame,
+    onFrameOf,
     rect,
     fit,
     shape,

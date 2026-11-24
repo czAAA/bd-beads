@@ -43,7 +43,7 @@ describe('Row progress on the margin as its row runs out of room (MarginSheet ca
 })
 
 describe('the track’s spark (ProgressBar card, ticket 0730)', () => {
-  const press = (id: number, done: boolean): RowPress => ({ id, done, from: 0, to: 1, patternDone: false })
+  const press = (id: number, done: boolean): RowPress => ({ id, frame: frameIdIn(project), done, from: 0, to: 1, patternDone: false })
   const spark = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="margin-progress-spark"]')
 
   it('is hidden before the first pass, rides the fill’s edge after it and stays at the end once every pass is done', async () => {

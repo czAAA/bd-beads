@@ -1,6 +1,7 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { nearestQuarterTurn } from '../../domain/canvasOrientation'
-import { frameOf, firstFrameId } from '../../domain/layerRecord'
+import type { FrameId } from '../../domain/grid'
+import { firstFrameId, frameById } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { Insets } from '../../domain/toolPill'
 import type { Size } from '../../rendering/cellSize'
@@ -43,18 +44,22 @@ export interface FrameExpandDeps {
  * slimmed to what it holds, the view before it kept to go back to. Not saved: another Project, a reload or the Frame
  * removed leaves it, the last putting the view back as it was. */
 export function useFrameExpand(deps: FrameExpandDeps) {
-  /** The Project expanded, by id: another one open is not. */
-  const expandedFor = ref<string>()
+  /** The Frame expanded, with the Project it is in (ticket 1220): another Project open is not, and the Frames beside it
+   * stay as they were. */
+  const expandedFor = ref<{ project: string; frame: FrameId }>()
   const measures = ref<SlimMeasures>(UNMEASURED)
   /** The bead pitch on screen of the last expanded fit, in px: the numbers' size follows it and stays while zooming
    * (ticket 1194). */
   const fitPitch = ref(0)
   let before: (ShownView & { atFit: boolean }) | undefined
 
-  const expanded = computed(() => {
+  /** The Frame expanded, none while none is. */
+  const expandedFrame = computed<FrameId | undefined>(() => {
     const project = deps.currentProject()
-    return !!project && expandedFor.value === project.id && !!frameOf(project)
+    const held = expandedFor.value
+    return project && held?.project === project.id && frameById(project, held.frame) ? held.frame : undefined
   })
+  const expanded = computed(() => expandedFrame.value !== undefined)
 
   /** What the slim sheet holds, while the Frame is expanded: the sheet is laid round the Frame's line from it. */
   const content = computed<SlimContent | undefined>(() => {
@@ -70,7 +75,7 @@ export function useFrameExpand(deps: FrameExpandDeps) {
   function contentAt(project: Project, fontPx: number): SlimContent {
     const across = nearestQuarterTurn(deps.orientation.value) % 180 !== 0
     const { row, title, rowWidth } = measures.value
-    return { compact: deps.compact.value, row, title, rowWidth, fontPx, numbers: frameNumberBands(project, across, fontPx, firstFrameId(project)) }
+    return { compact: deps.compact.value, row, title, rowWidth, fontPx, numbers: frameNumberBands(project, across, fontPx, expandedFrame.value ?? firstFrameId(project)) }
   }
 
   /** The room the slim sheet takes from each side of the drawing area, past the Frame's beads, at a zoom and the bead
@@ -83,16 +88,18 @@ export function useFrameExpand(deps: FrameExpandDeps) {
     return { top: sides.top + past, right: sides.right + past, bottom: sides.bottom + past, left: sides.left + past }
   }
 
-  /** Expand the Frame, or Back to the Canvas: whether it is now expanded. */
-  function toggle(): boolean {
+  /** Expand the Frame whose sheet asked, or Back to the Canvas: whether it is now expanded. Pressed on another Frame's
+   * sheet while one is expanded, it goes back first and that Frame is the one expanded. */
+  function toggle(frame: FrameId = firstFrameId(deps.currentProject())): boolean {
     const project = deps.currentProject()
-    if (expanded.value) {
+    if (expandedFrame.value === frame) {
       collapse()
       return false
     }
-    if (!project || !frameOf(project)) return false
-    before = { zoom: deps.zoom.value, scroll: { ...deps.scroll.value }, atFit: deps.isAtFit.value }
-    expandedFor.value = project.id
+    if (!project || !frameById(project, frame)) return false
+    // Another Frame's expand takes the view over from the one before it, which kept the Canvas's own to go back to.
+    before ??= { zoom: deps.zoom.value, scroll: { ...deps.scroll.value }, atFit: deps.isAtFit.value }
+    expandedFor.value = { project: project.id, frame }
     deps.fit({ glide: true })
     return true
   }
@@ -130,9 +137,9 @@ export function useFrameExpand(deps: FrameExpandDeps) {
     },
   )
   watch(
-    () => !!frameOf(deps.currentProject()),
-    (framed) => {
-      if (framed || expandedFor.value === undefined) return
+    () => !expandedFor.value || !!frameById(deps.currentProject(), expandedFor.value.frame),
+    (present) => {
+      if (present || expandedFor.value === undefined) return
       expandedFor.value = undefined
       if (before) deps.showView(before)
       before = undefined
@@ -144,5 +151,5 @@ export function useFrameExpand(deps: FrameExpandDeps) {
     fitPitch.value = pitch
   }
 
-  return { expanded, content, room, toggle, collapse, measured, fitted }
+  return { expanded, expandedFrame, content, room, toggle, collapse, measured, fitted }
 }

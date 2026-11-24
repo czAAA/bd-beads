@@ -38,7 +38,10 @@ import { useShellScope } from '../../composables/ui/shellScope'
 import { selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
-import { beadOfLayer, frameOf, layerOf, firstFrameId } from '../../domain/layerRecord'
+import { beadOfLayer, frameById, frameIdOf, frameOf, framesOf, layerOf, firstFrameId } from '../../domain/layerRecord'
+import type { FrameId } from '../../domain/grid'
+import { placeFrame } from '../../domain/mirror'
+import type { Project } from '../../domain/project'
 import { canvasWeave, layerWeave } from '../../domain/layerWeave'
 import { cellSizePx } from '../../rendering/cellSize'
 import type { SurfaceView } from '../../rendering/surfaceView'
@@ -163,6 +166,10 @@ const {
   onRemoveSelectedLine,
   locale,
   settingFrame,
+  settingFrames,
+  frameTurned,
+  expandedFrame,
+  exportFrame,
   framePanelOpen,
   onToggleFramePanel,
   surfaceInputMode,
@@ -322,14 +329,18 @@ const barTooltips = computed(() => {
   }
 })
 
-/** The Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
-const frameTooltip = computed(() => {
-  const project = shownProject.value
-  const frame = frameOf(project)
-  if (!project || !frame) return ''
-  const bead = layerOf(project, firstFrameId(project))?.bead
+/** A Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
+function frameTooltipOf(project: Project, ref: FrameId): string {
+  const frame = frameById(project, ref)
+  if (!frame) return ''
+  const bead = layerOf(project, ref)?.bead
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead, frame.technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { ...seenSize(frame), estimate })
+}
+/** Every Frame's, by its id (ticket 1220): the corner being dragged shows its own Frame's. */
+const frameTooltips = computed(() => {
+  const project = shownProject.value
+  return project ? Object.fromEntries(framesOf(project).map((frame) => [frame.id, frameTooltipOf(project, frameIdOf(frame))])) : {}
 })
 
 /** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Bead of the layer it
@@ -352,8 +363,10 @@ const mirrorBar = computed<MirrorBarState | undefined>(() => {
   const rect = mirrorRect.value
   if (!project || !mirrorOn.value || !rect) return undefined
   if (setting.place?.layer === 'frame') {
-    const shape = frameOf(project)?.shape
-    return { setting, rect, fit: mirrorFit.value, shape: mirrorShape.value, summary: shape ? `${t.value.frame.shapes[shape]} · ${frameTooltip.value}` : frameTooltip.value }
+    const mirrored = placeFrame(project, setting.place)
+    const shape = frameById(project, mirrored)?.shape
+    const size = frameTooltipOf(shownProject.value ?? project, mirrored as FrameId)
+    return { setting, rect, fit: mirrorFit.value, shape: mirrorShape.value, summary: shape ? `${t.value.frame.shapes[shape]} · ${size}` : size }
   }
   const { bead } = beadOfLayer(project, 'canvas')
   const estimate = bead ? formatSizeMm(estimatedSizeMm(rect, bead, layerWeave(project, 'canvas').technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
@@ -367,6 +380,10 @@ const selectionAnchor = ref<SelectionAnchor>()
 const mirrorAnchor = ref<SelectionAnchor>()
 /** Where the Frame and its margin sheet are on the canvas box: the sheet's tools follow them (tickets 473, 0657). */
 const frameAnchor = ref<FrameAnchor>()
+/** Where every Frame and its margin sheet are (ticket 1220): each Frame's sheet follows its own. */
+const frameAnchors = ref<Readonly<Record<string, FrameAnchor>>>({})
+/** The Frames' anchors in the Project's order, each with a sheet of its own (ticket 1220). */
+const sheetAnchors = computed(() => (activeProject.value ? Object.fromEntries(framesOf(activeProject.value).flatMap((frame) => (frameAnchors.value[frame.id] ? [[frame.id, frameAnchors.value[frame.id]]] : []))) : {}) as Record<FrameId, FrameAnchor>)
 /** Where the unframed Schemas are on the canvas box: their tags follow them (tickets 0721, 0733). */
 const schemaAnchors = ref<SchemaAnchors>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
@@ -518,7 +535,9 @@ const drawingStyle = computed(() => {
                 ref="surfaceRef"
                 :project="shownProject!"
                 :tools="surfaceTools"
-                :frame-tooltip="frameTooltip"
+                :frame-tooltips="frameTooltips"
+                :setting-frames="settingFrames"
+                :expanded-frame="expandedFrame"
                 :selection-tooltip="selectionSummary"
                 :area-tooltip="mirrorBar?.summary"
                 :zoom="zoom"
@@ -531,6 +550,7 @@ const drawingStyle = computed(() => {
                 :row-marks="rowHighlight"
                 :row-press="rowPress"
                 :frame-turns="frameTurns"
+                :frame-turned="frameTurned"
                 :input-mode="surfaceInputMode"
                 :handedness="handedness"
                 :preview-cells="previewCells"
@@ -566,6 +586,7 @@ const drawingStyle = computed(() => {
                 @selection-anchor="selectionAnchor = $event"
                 @mirror-anchor="mirrorAnchor = $event"
                 @frame-anchor="frameAnchor = $event"
+                @frame-anchors="frameAnchors = $event"
                 @schema-anchors="schemaAnchors = $event"
                 @pressing="surfacePressing = $event"
                 :hold-opens="radialToolbox.canOpen.value"
@@ -826,38 +847,40 @@ const drawingStyle = computed(() => {
             tools in its top band, the title block in its bottom-left corner as seen with Row progress under it (ticket
             1176), following the Frame. -->
           <MarginSheet
-            v-if="frameOf(activeProject) && frameAnchor"
+            v-for="(anchor, id) in sheetAnchors"
+            :key="id"
             :project="activeProject"
-            :anchor="frameAnchor"
-            :editing="settingFrame"
+            :frame="id"
+            :anchor="anchor"
+            :editing="settingFrames.includes(id)"
             :pressing="surfacePressing"
             :row-highlight="rowHighlight"
             :row-press="rowPress"
-            :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
+            :export-open="openPanel === 'export' && exportOpener === 'margin-export' && exportFrame === id"
             :selection="selectionAnchor?.box"
-            :mirror-on-frame="mirrorOnFrame"
+            :mirror-on-frame="mirrorOnFrame(id)"
             :without-not-done="demo"
             :placing="!viewPlaced"
-            :expanded="frameExpanded"
-            @toggle-expand="onToggleFrameExpand"
+            :expanded="expandedFrame === id"
+            @toggle-expand="onToggleFrameExpand(id)"
             @slim="onSlimMeasured"
-            @mirror="onMirrorWholeFrame"
-            @rotate="onRotateFrame"
-            @toggle-edit="onEditFrame"
-            @export="onOpenExport"
-            @remove="onRemoveFrame"
-            @move-press="surfaceRef?.pressMoveHandle($event)"
-            @key="onFrameKey"
-            @move-row="onMoveRow"
-            @reset-progress="onResetProgress"
-            @set-row-direction="onSetRowDirection"
+            @mirror="onMirrorWholeFrame(id)"
+            @rotate="onRotateFrame(id)"
+            @toggle-edit="onEditFrame(id)"
+            @export="onOpenExport($event, id)"
+            @remove="onRemoveFrame(id)"
+            @move-press="surfaceRef?.pressMoveHandle($event, id)"
+            @key="onFrameKey($event, id)"
+            @move-row="onMoveRow($event, id)"
+            @reset-progress="onResetProgress(id)"
+            @set-row-direction="onSetRowDirection($event, id)"
             @toggle-row-highlight="toggleRowHighlight"
-            @rename="onRenameFrame"
-            @set-technique="onSetFrameTechnique"
-            @set-setting="onSetFrameSetting"
+            @rename="onRenameFrame($event, id)"
+            @set-technique="onSetFrameTechnique($event, id)"
+            @set-setting="(setting, value) => onSetFrameSetting(setting, value, id)"
             @save-maker-name="onSaveMakerName"
-            @replace-bead="onRequestFrameBead"
-            @set-letters="onSetLetters"
+            @replace-bead="onRequestFrameBead($event, id)"
+            @set-letters="onSetLetters($event, id)"
           />
         </div>
       </component>

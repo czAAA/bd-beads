@@ -14,7 +14,7 @@ import ProjectPanel from '../project/ProjectPanel.vue'
 import { computed, ref } from 'vue'
 import { starterById, type StarterCategoryId, type StarterId } from '../../domain/starters'
 import { usePanelsContext } from '../../composables/shell/useAppShell'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, soloFrame } from '../../domain/layerRecord'
 
 // The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library and Sign in as others. Each panel only asks; the app shell does the work.
 const {
@@ -92,6 +92,7 @@ const {
   exportChoice,
   exportOpener,
   exportScope,
+  exportFrame,
   exportSelection,
   signInOpen,
   menuOpensOnList,
@@ -108,7 +109,13 @@ const {
 
 /** The button the Export panel hangs from: the Selection bar's Export, or its "..." where the bar folded the button away
  * (ticket 1210). */
-const exportAnchor = computed(() => (exportOpener.value === 'context-bar-export' && !document.querySelector('[data-testid="context-bar-export"]') ? 'context-bar-more' : exportOpener.value))
+const exportAnchor = computed(() => {
+  if (exportOpener.value === 'context-bar-export' && !document.querySelector('[data-testid="context-bar-export"]')) return 'context-bar-more'
+  // On a Frame's sheet the button is the one on that Frame's (ticket 1220).
+  return exportFrame.value ? `${exportOpener.value}@${exportFrame.value}` : exportOpener.value
+})
+/** The Project the Export panel works on: the Frame whose sheet opened it alone, the open Project otherwise (ticket 1220). */
+const exportProject = computed(() => (activeProject.value && exportFrame.value ? soloFrame(activeProject.value, exportFrame.value) : activeProject.value))
 
 /** The reference image's state the Project panel shows (ticket 0790). */
 const referencePanel = computed(() => ({
@@ -183,7 +190,7 @@ const chosenStarter = ref<StarterId>()
   <!-- The Export panel (tickets 0652, 0657): the strip's Export button's or the margin sheet's, hung from the one pressed. -->
   <PanelHost v-if="activeProject && openPanel === 'export'" open="export" :only="['export']" :anchor="exportAnchor" :keeps-canvas="exportScope === 'selection'" @close="openPanel = null">
     <ExportPanel
-      :project="activeProject"
+      :project="exportProject ?? activeProject"
       :exporting="exporting"
       :opens-on="exportChoice"
       :selection="exportScope === 'selection' ? exportSelection : undefined"

@@ -228,7 +228,7 @@ describe('single-Project roundtrip', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(16)
+    expect(file.version).toBe(17)
     expect(file.patterns).toBeUndefined()
     expect(Object.keys(file.projects[0]).sort()).toEqual(['backgroundPositions', 'createdAt', 'id', 'layers', 'lettersByLayer', 'palette', 'paletteCodes', 'paletteLetters', 'updatedAt'])
     expect(file.projects[0].backgroundPositions).toBe(3)
@@ -248,8 +248,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 17
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 17')
+    file.version = 18
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 18')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads one whose Palette is missing as its Bead\'s built-in colors', () => {

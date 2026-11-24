@@ -123,9 +123,12 @@ export function normalizeProject(stored: StoredProject): Project {
 
   const mirror = readMirrorSetting(storedMirror, { canvasArea: readMirrorArea(storedCanvas.mirrorArea), framed: frames.length > 0 })
   const referenceImage = readReferenceImage(storedReference)
+  const lastEditedFrame = frames.find((frame) => frame.id === rest.lastEditedFrame)?.id
   // An older file's Canvas Area its Mirror does not fit opens grown to a Fitting size (ticket 1029): no Message, no Undo.
+  const { lastEditedFrame: _stored, ...kept } = rest
   return withFittedArea({
-    ...rest,
+    ...kept,
+    ...(lastEditedFrame ? { lastEditedFrame } : {}),
     layers: [canvas, ...frames],
     palette,
     ...(Object.keys(paletteCodes).length > 0 ? { paletteCodes } : {}),

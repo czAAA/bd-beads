@@ -104,6 +104,10 @@ export interface Project {
   /** The reference image (ticket 0790, ADR 0089): the settings of the one picture laid on the Canvas, a view saved with
    * the Project; its bytes are kept beside the library. Absent when it has none (domain/referenceImage.ts). */
   referenceImage?: ReferenceImage
+  /** The Last edited Frame's id (spec 1214, ticket 1220): the Frame most recently painted on or changed, kept with the
+   * Project (file version 17). Absent until a Frame is edited, or once that Frame is gone: read it through
+   * `lastEditedFrameId`. */
+  lastEditedFrame?: string
   createdAt: number
   updatedAt: number
   /** When the Project last reached this device's storage (ticket 145): orders the library, newest first. Absent on

@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { withMakerName } from '../../domain/makerName'
-import type { Layer } from '../../domain/grid'
-import { lettersOn, withLetters, firstFrameId, soloFrame } from '../../domain/layerRecord'
+import type { FrameId, Layer } from '../../domain/grid'
+import { lastEditedFrameId, lettersOn, withLetters, firstFrameId, soloFrame } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf } from '../../domain/projectFile'
 import type { SealedProject } from '../../domain/sealedProject'
@@ -47,6 +47,8 @@ export interface ExportFlowDeps {
   /** Any file reached the device by the person's press, a Project file or an export (ticket 0839: the first asks the
    * browser to keep Projects). */
   onFileReached?: () => void
+  /** The Frame the Export panel exports (ticket 1220): the one whose sheet opened it; the Last edited Frame without one. */
+  exportFrame?: () => FrameId | undefined
 }
 
 /** Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020) as a Project file, PNG or PDF, printing the
@@ -122,8 +124,9 @@ export function useExportFlow(deps: ExportFlowDeps) {
     if (!given || !frameOf(given) || exporting.value) {
       return
     }
-    // Always of one Frame (spec 1214): the first until Export picks one (ticket 1222).
-    const project = soloFrame(given, firstFrameId(given))
+    // Always of one Frame (spec 1214): the one whose sheet's Export opened the panel, else the Last edited Frame; Export
+    // picks one itself in ticket 1222.
+    const project = soloFrame(given, deps.exportFrame?.() ?? lastEditedFrameId(given))
     exporting.value = extension
     try {
       await makeAndHandOver(await nameOf(project), () => make(project), type)

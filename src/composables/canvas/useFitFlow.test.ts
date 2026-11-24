@@ -11,6 +11,8 @@ import { useDialogs } from '../shell/useDialogs'
 import { useRotateCanvasFlow } from './useRotateCanvasFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useFitFlow } from './useFitFlow'
+import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
+import { frameById } from '../../domain/layerRecord'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 const framed: Project = withLayers(base, { frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: {} }, beads: {} })
@@ -24,7 +26,7 @@ function setup(project: Project, expanded = false) {
   const flow = useFitFlow({
     currentProject: harness.currentProject,
     turnCanvasBack: () => rotateCanvas.onTwistCanvas(0),
-    settleFrame: (angle) => rotateFrame.onTwistFrame(angle),
+    settleFrame: (angle, frame) => rotateFrame.onTwistFrame(angle, frame),
     fitView,
     frameExpanded: () => expanded,
   })
@@ -82,7 +84,7 @@ describe('useFitFlow (ticket 1227)', () => {
     const settleFrame = vi.fn()
     const flow = useFitFlow({ currentProject: () => withFrameFields(framed, { angle: 140 }, frameIdIn(framed)), turnCanvasBack: vi.fn(), settleFrame, fitView: vi.fn(), frameExpanded: () => false })
     flow.onFit()
-    expect(settleFrame).toHaveBeenCalledExactlyOnceWith(180)
+    expect(settleFrame).toHaveBeenCalledExactlyOnceWith(180, frameIdIn(framed))
   })
 
   it('only fits the expanded Frame, whose turns are its own', () => {
@@ -91,5 +93,12 @@ describe('useFitFlow (ticket 1227)', () => {
     onFit()
     expect(harness.project).toBe(leaning)
     expect(fitView).toHaveBeenCalledOnce()
+  })
+
+  it('settles every leaning Frame, not only the first (ticket 1220)', () => {
+    const pair = twoFrames()
+    const { harness, onFit } = setup(withFrameFields(withFrameFields(pair, { angle: 140 }, firstOf(pair)), { angle: 20 }, SECOND))
+    onFit()
+    expect([frameById(harness.project, firstOf(pair))!.angle, frameById(harness.project, SECOND)!.angle]).toEqual([180, 0])
   })
 })

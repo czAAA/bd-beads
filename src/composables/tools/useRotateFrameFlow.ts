@@ -31,6 +31,8 @@ export interface RotateFrameFlowDeps {
 export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   /** How many times Rotate Frame has turned the Frame: what the Frame is seen turning by, never an Undo. */
   const frameTurns = ref(0)
+  /** The Frame the last press turned (ticket 1220): only that Frame is seen turning. */
+  const frameTurned = ref<FrameRef>()
   /** The question the Rotate Frame dialog shows while it is asked. */
   const question = (deps.dialogs ?? useDialogs()).question<RotateFrameQuestion>('rotate-frame')
 
@@ -40,12 +42,13 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   let asking: FrameRef = NO_FRAME
 
   function turn(woven: WovenChoice, frame: FrameRef): void {
+    frameTurned.value = frame
     frameTurns.value += 1
     deps.edit('exempt', (project) => rotateFrame(project, woven, frame) ?? project)
     deps.announce(deps.messages().frame.announceFrameRotated)
   }
 
-  /** Rotate Frame on the Frame named (ticket 1218), the first until each Frame has its own sheet (ticket 1220). Nothing
+  /** Rotate Frame on the Frame named (ticket 1218), the first where none is named (the Frame panel's). Nothing
    * turns where the turn would bring it into another Frame's margin. */
   function onRotateFrame(given?: FrameRef): void {
     const project = deps.currentProject()
@@ -62,12 +65,11 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     turn('keep', frame)
   }
 
-  /** A two-finger twist of the Frame both fingers started on (ticket 1218; the first until 1220) came to rest at `angle`
+  /** A two-finger twist of the Frame both fingers started on (tickets 1218, 1220) came to rest at `angle`
    * (ticket 1190): kept as one Undo step, or 'asked' where it settled on another quarter turn with a pass done, the
    * question coming first as for the button. Watched as it went, so nothing is announced. */
-  function onTwistFrame(angle: number, given?: FrameRef): 'kept' | 'asked' {
+  function onTwistFrame(angle: number, frame: FrameRef): 'kept' | 'asked' {
     const project = deps.currentProject()
-    const frame = given ?? firstFrameId(project)
     // Asked of where the twist stops, short of another Frame's margin (ticket 1218).
     const asked = project && twistFrameQuestion(project, twistStop(project, angle, frame), frame)
     if (asked) {
@@ -110,6 +112,7 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     onRotateFrame,
     onTwistFrame,
     frameTurns,
+    frameTurned,
     rotateFramePrompt,
     startOverRotateFrame: () => answer('start-over'),
     keepRowsRotateFrame: () => answer('keep'),

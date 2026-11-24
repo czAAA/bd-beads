@@ -6,7 +6,7 @@ const ROWS: readonly BandRow[] = ['full', 'compact', 'folded']
 const deps = (room: number, over: Partial<Parameters<typeof bandTools>[0]> = {}) => ({ tools: ALL, rows: ROWS, room, touch: false, expanded: false, ...over })
 
 describe('which Frame tools stand on the band (MarginSheet card, ticket 1195)', () => {
-  it('puts every tool on the band in its order, with no menu, where the first row has the room', () => {
+  it('puts every tool on the band in its order, the Frame tools button always beside them (ticket 1220), where the first row has the room', () => {
     expect(bandTools(deps(1000))).toEqual({ row: 'full', onBand: ALL, overflow: [] })
   })
 
@@ -15,14 +15,14 @@ describe('which Frame tools stand on the band (MarginSheet card, ticket 1195)', 
   })
 
   it('steps the row down before it takes a tool off', () => {
-    const full = bandRowWidth('full', ALL, false, false, false)
+    const full = bandRowWidth('full', ALL, true, false, false)
     expect(bandTools(deps(full - 1))?.row).toBe('compact')
     expect(bandTools(deps(full - 1))?.overflow).toEqual([])
   })
 
   it('takes tools off the last row, the least used first and Edit Frame last, as the room shrinks', () => {
     const left = (room: number, touch = false) => bandTools(deps(room, { rows: ['folded'], touch }))?.overflow
-    const whole = bandRowWidth('folded', ALL, false, false, false)
+    const whole = bandRowWidth('folded', ALL, true, false, false)
     const seen: (readonly BandToolId[] | undefined)[] = []
     for (let room = whole; room >= 0; room--) if (!seen.length || seen.at(-1)?.join() !== left(room)?.join()) seen.push(left(room))
     expect(seen.slice(0, -1).map((gone) => gone!.length)).toEqual([0, 1, 2, 3, 4, 5, 6])
@@ -40,7 +40,7 @@ describe('which Frame tools stand on the band (MarginSheet card, ticket 1195)', 
   })
 
   it('stands the tools further apart on a coarse pointer, so fewer fit', () => {
-    const room = bandRowWidth('folded', ALL, false, false, false)
+    const room = bandRowWidth('folded', ALL, true, false, false)
     expect(bandTools(deps(room, { rows: ['folded'] }))?.overflow).toEqual([])
     expect(bandTools(deps(room, { rows: ['folded'], touch: true }))?.overflow.length).toBeGreaterThan(0)
   })

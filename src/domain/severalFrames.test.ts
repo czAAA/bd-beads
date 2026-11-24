@@ -10,10 +10,13 @@ import { footprintsOf } from './footprint'
 import { withFrameSheet } from './frameSheet'
 import { frameMet, twistStop } from './frameSpacing'
 import type { FrameId, GridPosition } from './grid'
-import { beadsOfLayer, frameById, frameIdOf, framesOf, newLayerId, soloFrame } from './layerRecord'
+import { backgroundOf, beadsOfLayer, canvasOf, frameById, frameIdOf, framesOf, lastEditedFrameId, lettersOn, newLayerId, NO_FRAME, soloFrame, withBackground, withLastEdited, withLayer, withLetters } from './layerRecord'
+import { framePlacement } from './framePlacement'
+import { projectFileName } from './projectFile'
+import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import { beadsShown, inMargin, mayPlace, selectionAllowed, trimToAllowed } from './margin'
 import type { Project } from './project'
-import { rotateFrame, rotateSelection, twistFrameTo } from './rotate'
+import { rotateFrame, rotateSelection, turnCanvasTo, twistFrameTo } from './rotate'
 import { pasteOnLayer, pieceSelectionOnLayer, type CopiedBlock } from './selection'
 import { placedStarter, starterById, designSizes } from './starters'
 import { frameAngleOf } from './table'
@@ -147,5 +150,61 @@ describe('a Starter on an open Project (ticket 1218)', () => {
     expect(framesOf(placed).map(frameIdOf)).toEqual([firstOf(project), added])
     expect(frameById(placed, firstOf(project))).toEqual(frameById(project, firstOf(project)))
     expect(frameById(placed, added)!.shape).toBe('triangle')
+  })
+})
+
+describe('the Last edited Frame (ticket 1220)', () => {
+  const project = twoFrames()
+
+  it('is the first Frame until one is edited, and none without a Frame', () => {
+    expect(lastEditedFrameId(project)).toBe(firstOf(project))
+    expect(lastEditedFrameId(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }))).toBe(NO_FRAME)
+  })
+
+  it('follows the Frame an edit changed, and stays where nothing of a Frame changed', () => {
+    const second = withLastEdited(project, withLayer(project, SECOND, { name: 'Pair' }))
+    expect(second.lastEditedFrame).toBe(SECOND)
+    expect(lastEditedFrameId(second)).toBe(SECOND)
+    const first = withLastEdited(second, withLayer(second, firstOf(second), { name: 'One' }))
+    expect(lastEditedFrameId(first)).toBe(firstOf(first))
+    const canvasOnly = withLayers(first, { name: 'Renamed' })
+    expect(withLastEdited(first, canvasOnly)).toBe(canvasOnly)
+    expect(lastEditedFrameId(canvasOnly)).toBe(firstOf(first))
+  })
+
+  it('keeps the one it is where several Frames changed at once, and reads the first once its Frame is gone', () => {
+    const second = withLastEdited(project, withLayer(project, SECOND, { name: 'Pair' }))
+    const both = withLayer(withLayer(second, firstOf(second), { name: 'A' }), SECOND, { name: 'B' })
+    expect(withLastEdited(second, both).lastEditedFrame).toBe(SECOND)
+    const removed = changed(changeFrame(second, { remove: true }, SECOND))
+    expect(lastEditedFrameId(removed)).toBe(firstOf(removed))
+  })
+})
+
+describe('Undo with several Frames (ticket 1220)', () => {
+  it('puts every Frame\'s beads back and keeps each one\'s Letters and Background as they are now', () => {
+    const before = twoFrames()
+    const snapshot = snapshotOf(before)
+    const viewed = withBackground(withLetters(withLetters(withLayer(before, SECOND, { name: 'Pair' }), firstOf(before), true), SECOND, true), SECOND, 2)
+    const restored = restoreSnapshot(viewed, snapshot)
+    expect([lettersOn(restored, firstOf(restored)), lettersOn(restored, SECOND)]).toEqual([true, true])
+    expect(backgroundOf(restored, SECOND)).toBe(2)
+    expect(frameById(restored, SECOND)!.name).toBeUndefined()
+  })
+
+  it('puts each Frame back where it lay on the table, under the Canvas as it lies now', () => {
+    const before = twoFrames()
+    const turned = turnCanvasTo(before, 90, { x: 3, y: -1.5 })
+    const restored = restoreSnapshot(turned, snapshotOf(before))
+    expect(canvasOf(restored)).toMatchObject({ orientation: 90, origin: { x: 3, y: -1.5 } })
+    for (const frame of [firstOf(before), SECOND]) expect(framePlacement(restored, frame)).toEqual(framePlacement(before, frame))
+  })
+})
+
+describe('the file of a Project with several Frames (ticket 1220)', () => {
+  it('is named after the Project, never after a Frame', () => {
+    const named = withLayer(withLayer(twoFrames(), SECOND, { name: 'Earring' }), firstOf(twoFrames()), { name: 'Gerdan' })
+    const project = withLayers(named, { name: 'Matching set' })
+    expect(projectFileName({ ...project, makerName: 'Ada' })).toBe('matching-set-ada.openbeads')
   })
 })

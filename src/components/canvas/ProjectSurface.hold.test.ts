@@ -385,7 +385,7 @@ describe('ProjectSurface: a press with the ring open moves it there (ticket 1147
   /** The surface under an open ring, and what it reported upward about the ring, in order. */
   const underRing = (extra: Record<string, unknown> = {}) => mountSurface({ toolboxOpen: true, ...extra })
   const drawn = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
-    Object.keys(wrapper.emitted()).filter((name) => /^(cell|cells|selection|frame)-/.test(name) && !name.endsWith('-anchor'))
+    Object.keys(wrapper.emitted()).filter((name) => /^(cell|cells|selection|frame)-/.test(name) && !/-anchors?$/.test(name))
   const OTHER = bead(8, 12)
   const OTHER_POINT = { x: OTHER.clientX, y: OTHER.clientY }
 

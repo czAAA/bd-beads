@@ -10,6 +10,7 @@ import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 import { frameOf, firstFrameId } from '../../domain/layerRecord'
+import type { FrameRef } from '../../domain/grid'
 import { lieAlike } from '../../domain/table'
 import { frameWeave } from '../../domain/layerWeave'
 import { pillTileKey, type PillTile } from '../../domain/toolPill'
@@ -17,6 +18,9 @@ import { pillTileKey, type PillTile } from '../../domain/toolPill'
 /** What a control's action needs from the app shell: state read lazily, and the handlers the actions call. */
 export interface ControlDeps {
   activeProject: () => Project | undefined
+  /** The Frame whose sheet the control stands on (ticket 1220): its reasons are that Frame's. The first where none is
+   * named. */
+  frame?: () => FrameRef
   activeTool: () => Tool
   hasSelection: () => boolean
   /** The Selection holds at least one drawn bead: what Copy and Cut need. */
@@ -163,14 +167,16 @@ const selectTool = (id: Tool, icon: IconName, name: (t: Translations) => string,
 })
 
 
+/** The Frame a control acts on: the sheet's own, else the first. */
+const frameOfDeps = (deps: ControlDeps, project: Project): FrameRef => deps.frame?.() ?? firstFrameId(project)
 const frameLocked = (deps: ControlDeps) => {
   const project = deps.activeProject()
-  return project !== undefined && rowProgressStarted(project, firstFrameId(project))
+  return project !== undefined && rowProgressStarted(project, frameOfDeps(deps, project))
 }
 /** Whether the open Project has Row progress on (it has a Frame), so Enter moves the row (ticket 434). */
 const rowProgressIsOn = (deps: ControlDeps) => {
   const project = deps.activeProject()
-  return project !== undefined && rowProgressOn(project, firstFrameId(project))
+  return project !== undefined && rowProgressOn(project, frameOfDeps(deps, project))
 }
 const hasFrame = (deps: ControlDeps) => frameOf(deps.activeProject()) !== undefined
 const hasBeads = (deps: ControlDeps) => {
@@ -461,7 +467,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.removeLine,
     enabled: (deps) => deps.canRemoveSelectedLine(),
     // A Frame that does not lie alike with the Canvas waits, saying why (ticket 1188).
-    disabledBody: (t, deps) => (frameOf(deps.activeProject()) && !lieAlike(deps.activeProject()!, firstFrameId(deps.activeProject()!)) ? t.tooltips.removeLineNotAlike : t.tooltips.removeLineDisabled),
+    disabledBody: (t, deps) => (frameOf(deps.activeProject()) && !lieAlike(deps.activeProject()!, frameOfDeps(deps, deps.activeProject()!)) ? t.tooltips.removeLineNotAlike : t.tooltips.removeLineDisabled),
     group: 'edit',
     chords: [{ key: ['Delete', 'Backspace'], shift: true, label: 'Del' }],
     run: (deps) => {
@@ -650,7 +656,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.resetProgress,
     enabled: (deps: ControlDeps) => {
       const project = deps.activeProject()
-      return !!project && rowProgressStarted(project, firstFrameId(project))
+      return !!project && rowProgressStarted(project, frameOfDeps(deps, project))
     },
     disabledBody: (t: Translations) => t.tooltips.noProgressToReset,
   }),
@@ -659,7 +665,7 @@ export const CONTROLS: readonly ControlAction[] = [
     // Once a pass is done it asks first (ticket 1184); only a Custom frame's waits.
     enabled: (deps: ControlDeps) => {
       const project = deps.activeProject()
-      return !project || !frameTechniqueWaits(project, firstFrameId(project))
+      return !project || !frameTechniqueWaits(project, frameOfDeps(deps, project))
     },
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedTechnique,
   }),
@@ -752,7 +758,7 @@ export function chordMatches(chord: Chord, event: KeyboardEvent): boolean {
 
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls
  * passes this, not the handlers. */
-export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'selectionInFinishedRows' | 'selectionOnFrame' | 'selectionExportable' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
+export type ControlState = Partial<Pick<ControlDeps, 'frame' | 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'selectionInFinishedRows' | 'selectionOnFrame' | 'selectionExportable' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
 export function controlDeps(state: ControlState): ControlDeps {

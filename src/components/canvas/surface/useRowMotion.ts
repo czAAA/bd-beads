@@ -1,4 +1,4 @@
-import { firstFrameId } from '../../../domain/layerRecord'
+import type { FrameRef } from '../../../domain/grid'
 import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import type { Project } from '../../../domain/project'
 import { rowProgressPosition } from '../../../domain/rowProgress'
@@ -36,6 +36,8 @@ export function useRowMotion(deps: {
   fade: Ref<HTMLCanvasElement | undefined>
   /** What moves the drawing under a copy of it: the view and its size. */
   view: () => unknown
+  /** The Frame the surface's own Frame canvas draws, whose motion and Pattern done this follows (ticket 1220). */
+  frame: () => FrameRef
 }) {
   const { props } = deps
   const playing = shallowRef<readonly Playing[]>([])
@@ -77,20 +79,22 @@ export function useRowMotion(deps: {
     const time = now.value
     return item.start === undefined ? undefined : time - item.start
   }
-  const latest = computed(() => playing.value.at(-1))
+  const latest = computed(() => playing.value.filter((item) => item.press.frame === deps.frame()).at(-1))
 
-  /** The glints and the marker's glide, for the overlay. */
-  const rowMotion = computed<RowMotion | undefined>(() => {
-    const glints = playing.value.flatMap((item) => {
+  /** The glints and the marker's glide of one Frame, for the overlay (ticket 1220: each Frame plays its own). */
+  function rowMotionOf(frame: FrameRef): RowMotion | undefined {
+    const items = playing.value.filter((item) => item.press.frame === frame)
+    const glints = items.flatMap((item) => {
       const elapsed = since(item)
       return item.press.done && elapsed !== undefined && elapsed < GLINT_MS ? [{ pass: item.press.from, elapsed }] : []
     })
-    const last = latest.value
+    const last = items.at(-1)
     const elapsed = last && since(last)
     const glide = elapsed !== undefined && elapsed < ROW_MOTION.glide ? { from: last!.press.from, elapsed } : undefined
     // Nothing to draw leaves it unchanged, so Pattern done's long tail doesn't redraw the overlay each frame.
     return glints.length > 0 || glide ? { glints, glide } : undefined
-  })
+  }
+  const rowMotion = computed(() => rowMotionOf(deps.frame()))
 
   /** Which press Pattern done is playing for, from its start to its end, so a second one starts afresh; none else. */
   const patternDone = computed(() => {
@@ -111,7 +115,7 @@ export function useRowMotion(deps: {
 
   /** Whether every pass is done: the finished passes are then at full color (Motion section), Pattern done or not. */
   const allDone = computed(() => {
-    const { current, total } = rowProgressPosition(props.project, firstFrameId(props.project))
+    const { current, total } = rowProgressPosition(props.project, deps.frame())
     return total > 0 && current >= total
   })
 
@@ -144,5 +148,5 @@ export function useRowMotion(deps: {
     return 1 - easeOut(Math.min(1, (elapsed - RESTORE_AT) / ROW_MOTION.restore))
   })
 
-  return { rowMotion, patternDone, finishedRestored: computed(() => allDone.value && !holdingDim.value), fadeOpacity }
+  return { rowMotion, rowMotionOf, patternDone, finishedRestored: computed(() => allDone.value && !holdingDim.value), fadeOpacity }
 }

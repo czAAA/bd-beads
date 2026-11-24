@@ -102,6 +102,26 @@ export function firstFrameId(project: Layered | undefined): FrameId {
   return first ? frameIdOf(first) : NO_FRAME
 }
 
+/** The Last edited Frame (spec 1214, ticket 1220): the Frame most recently painted on or changed, the first while none
+ * was, or `NO_FRAME` in a Project with none. What Export's Frame choice and the library thumbnail start on (ticket 1222). */
+export function lastEditedFrameId(project: Layered & { lastEditedFrame?: string }): FrameId {
+  const named = project.lastEditedFrame && framesOf(project).find((frame) => frame.id === project.lastEditedFrame)
+  return named ? frameIdOf(named) : firstFrameId(project)
+}
+
+/** The Project after an edit, with the Frame the edit changed as its Last edited Frame: the last Frame whose layer is not
+ * the very object it was before (a new Frame counts). The same Project where no Frame changed. */
+export function withLastEdited<T extends Project>(before: Layered, after: T): T {
+  const was = new Map(framesOf(before).map((frame) => [frame.id, frame]))
+  const changed = framesOf(after).filter((frame) => was.get(frame.id) !== frame)
+  const last = changed.at(-1)
+  if (!last) return after
+  // Several changed at once (a Palette-wide change): the one already last edited stays, as the Frame it still is.
+  const kept = changed.find((frame) => frame.id === after.lastEditedFrame)
+  const id = (kept ?? last).id
+  return id === after.lastEditedFrame ? after : { ...after, lastEditedFrame: id }
+}
+
 /** The reference a Frame about to be laid goes under (ticket 1217): the first Frame's, where one is laid in place, else
  * a new one's. */
 export function frameToLay(project: Layered): FrameId {

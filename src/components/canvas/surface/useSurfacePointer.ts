@@ -5,7 +5,7 @@ import { layerAt } from '../../../domain/layers'
 import { footprintsOf } from '../../../domain/footprint'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
-import { isFrameLayer, type GridPosition, type Layer, type PreviewCell, type Rotation } from '../../../domain/grid'
+import { isFrameLayer, type FrameId, type GridPosition, type Layer, type PreviewCell, type Rotation } from '../../../domain/grid'
 import { CANVAS_HOLD_MS } from '../../../domain/hold'
 import { pointerDraws, type Handedness, type InputMode } from '../../../domain/inputMode'
 import { beadColorAt } from '../../../domain/layerBeads'
@@ -22,7 +22,7 @@ import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
 import { REFUSED_PRESS_MS } from './useSurfaceOverlay'
-import { frameIdOf, frameOf, quarterTurnOf, firstFrameId } from '../../../domain/layerRecord'
+import { frameById, framesOf, quarterTurnOf, firstFrameId } from '../../../domain/layerRecord'
 import type { MirrorSetting } from '../../../domain/mirror'
 import type { FrameEdge } from '../../../domain/frame'
 import type { SelectionDragKind } from '../../../composables/tools/useSelectionGesture'
@@ -51,7 +51,7 @@ export interface SurfacePointerEvents {
   /** Ctrl/⌘ + wheel (or a trackpad pinch) asked to change the zoom by this factor about a point of the viewport. */
   'zoom-by': [factor: number, anchor: Scroll]
   /** Edit Frame: a press grabbed a handle, the inside of the Frame or the Canvas, at this bead position. */
-  'frame-press': [target: FramePress, cell: GridPosition]
+  'frame-press': [target: FramePress, cell: GridPosition, frame: FrameId]
   /** Edit Frame: the pointer moved with the press held, over this bead position. */
   'frame-drag': [cell: GridPosition]
   /** Edit Frame: the press ended. */
@@ -112,6 +112,8 @@ export interface SurfacePointerDeps {
     holdEnds?: number
     /** Whether the Radial toolbox is open: a press that opens it then moves it here and is no tool's (ticket 1147). */
     toolboxOpen?: boolean
+    /** The Frames whose handles are on (Edit Frame, ticket 1220): each takes presses on its own handles. */
+    settingFrames?: readonly FrameId[]
   }
   emit: EmitFn<ShortEmitsToObject<SurfacePointerEvents>>
   root: Ref<HTMLElement | undefined>
@@ -124,9 +126,9 @@ export interface SurfacePointerDeps {
   surface: Ref<SurfaceView>
   /** How the drawing leans off its quarter turn on screen (ticket 0672). */
   leaning: Ref<TiltedView>
-  /** The Frame's own surface where it is drawn otherwise than the Canvas (ticket 1188): its view, lean and quarter
+  /** A Frame's own surface where it is drawn otherwise than the Canvas (tickets 1188, 1220): its view, lean and quarter
    * turn, which its handles are pressed on. None while it is drawn as the Canvas is. */
-  frameView?: Ref<{ surface: SurfaceView; leaning: TiltedView; rotation: Rotation } | undefined>
+  frameViewOf?: (frame: FrameId) => { surface: SurfaceView; leaning: TiltedView; rotation: Rotation } | undefined
   /** Whether the Row progress look is drawn: a press on a finished row then toggles its dimming (ticket 352). */
   marksShown: Ref<boolean>
   /** Shows the margin's outline for a moment: a press there was refused. */
@@ -164,7 +166,7 @@ function hoversFor(event: PointerEvent): boolean {
 /** The Drawing surface's pointer and cursor (ticket 0619): it reads presses, drags, hover and the wheel (ticket 60:
  * pointer events, so mouse, touch and pen work alike) into bead positions and gestures, and picks the cursor, the bead
  * marker, the hovering Pencil's pointer and the pick chip that show for them. */
-export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, leaning, frameView, marksShown, refuse: refusePress }: SurfacePointerDeps) {
+export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, leaning, frameViewOf, marksShown, refuse: refusePress }: SurfacePointerDeps) {
   /** Whether the chosen Tool moves the canvas right now: the Hand tool. */
   const handMoves = computed(() => props.tools.moves)
   /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
@@ -184,6 +186,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   const handleCursor = ref<string>()
   /** The Frame's handle under the pointer, or the one a drag holds: Edit Frame grows it (MarginSheet card, ticket 0657). */
   const hotHandle = ref<HandleId>()
+  /** The Frame that handle belongs to (ticket 1220): only that Frame draws it grown. */
+  const hotFrame = ref<FrameId>()
   /** The handle of a rectangle Selection or a Canvas Area under the pointer, or the one a drag holds: grown as the
    * Frame's is (ContextBar card, Area sheet, ticket 0807). */
   const hotAreaHandle = ref<HandleId>()
@@ -316,7 +320,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   // Where the bead-shaped marker stands for the pointer (ticket 353), in px from the surface's top-left: over beads,
   // for a mouse or hovering pen (OS pointer hidden). None with a canvas-moving tool, while the Frame is set, or for a
   // finger (no hover).
-  const markerAt = ref<{ x: number; y: number; layer: ViewLayer }>()
+  const markerAt = ref<{ x: number; y: number; layer: ViewLayer; screen: { x: number; y: number } }>()
   /** Whether the pointer last seen over the surface is one that draws and hovers: not a finger, not the one the input
    * mode keeps for moving the canvas. */
   let hoverDraws = false
@@ -334,7 +338,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     const { x, y } = pointInDrawing(hoverPoint)
     const offset = hoverPen ? PEN_MARKER_OFFSET_PX : 0
     const side = props.handedness === 'left' ? 1 : -1
-    markerAt.value = { x: x + side * offset, y: y - offset, layer: layerAt(props.project, bead) }
+    const on = pointOnScreen(hoverPoint)
+    // `screen` is where it stands on screen, for a Frame drawn on a drawing of its own to lay it there (ticket 1220).
+    markerAt.value = { x: x + side * offset, y: y - offset, layer: layerAt(props.project, bead), screen: { x: on.x + side * offset, y: on.y - offset } }
   }
 
   /** Takes the marker away, and keeps it away until the pointer moves again. */
@@ -540,6 +546,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     return leaning.value.toDrawn(pointOnScreen(event))
   }
 
+  /** Whether the Project has a Frame to press on. */
+  const hasFrame = () => framesOf(props.project).length > 0
+
   /** The layer whose geometry a held press is measured in (ticket 492): the Frame's for its resize handles and a
    * Selection on it, the Canvas's for the Move handle and anything else. */
   let gestureLayer: ViewLayer = 'canvas'
@@ -588,32 +597,35 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
 
   /** What a press grabs of the Frame's chrome (ticket 452): a resize handle, only while edit is on; nothing otherwise,
    * so the tool gets the press. The Move handle's own press comes through `pressMoveHandle`. */
-  function framePress(event: PointerEvent, touch = touchInput.value): FramePress | undefined {
+  function framePress(event: PointerEvent, touch = touchInput.value): { target: FramePress; frame: FrameId } | undefined {
     if (!props.tools.settingFrame) return undefined
-    const { view, point, rotation } = frameHandlesAt(event)
-    const target = framePressAt(frameOf(props.project), view, rotation, point, touch)
-    return target.kind === 'handle' ? target : undefined
+    // Each Frame being set takes a press on its own handles (ticket 1220).
+    for (const frame of props.settingFrames ?? [firstFrameId(props.project)]) {
+      const { view, point, rotation } = frameHandlesAt(event, frame)
+      const target = framePressAt(frameById(props.project, frame), view, rotation, point, touch)
+      if (target.kind === 'handle') return { target, frame }
+    }
+    return undefined
   }
 
   /** Where the Frame's handles stand and a pointer is among them: on the Frame's own surface where it is drawn otherwise
    * than the Canvas (ticket 1188), the point turned onto that drawing by its own lean; else on the Canvas's. */
-  function frameHandlesAt(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { view: SurfaceView; point: { x: number; y: number }; rotation: Rotation } {
-    const own = frameView?.value
+  function frameHandlesAt(event: Pick<PointerEvent, 'clientX' | 'clientY'>, frame: FrameId): { view: SurfaceView; point: { x: number; y: number }; rotation: Rotation } {
+    const own = frameViewOf?.(frame)
     if (own) return { view: own.surface, point: own.leaning.toDrawn(pointOnScreen(event)), rotation: own.rotation }
     return { view: surface.value, point: pointInDrawing(event), rotation: quarterTurnOf(props.project) }
   }
 
   /** The Frame's handle under a pointer, as `frameHandlesAt` finds the handles. */
-  function frameHandleUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>, touch: boolean): HandleId | undefined {
-    const { view, point } = frameHandlesAt(event)
-    return frameHandleIdAt(frameOf(props.project), view, point, touch)
+  function frameHandleUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>, touch: boolean, frame: FrameId): HandleId | undefined {
+    const { view, point } = frameHandlesAt(event, frame)
+    return frameHandleIdAt(frameById(props.project, frame), view, point, touch)
   }
 
   /** The layer the Move handle carries the Frame by (ticket 1188): the Canvas's positions while it lies on their grid,
    * else its own rows and columns, which lie along it on screen. */
-  function moveLayer(): ViewLayer {
-    const frame = frameOf(props.project)
-    return frame?.centre ? frameIdOf(frame) : 'canvas'
+  function moveLayer(ref: FrameId): ViewLayer {
+    return frameById(props.project, ref)?.centre ? ref : 'canvas'
   }
 
   /** Whether a point of the drawing is on a margin sheet that refuses the tool there (ticket 1188): the sheet of a Frame
@@ -752,16 +764,16 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   }
 
   /** A press on the Move handle's button over the canvas (ticket 455): the same grab as a press on the handle itself. */
-  function pressMoveHandle(event: PointerEvent): void {
-    if (!frameOf(props.project) || event.button !== 0) return
+  function pressMoveHandle(event: PointerEvent, frame: FrameId): void {
+    if (!frameById(props.project, frame) || event.button !== 0) return
     touchInput.value = event.pointerType === 'touch'
     onPress(event)
     framing.value = true
     hideMarker()
     rootEl.value?.setPointerCapture?.(event.pointerId)
-    gestureLayer = moveLayer()
+    gestureLayer = moveLayer(frame)
     frameGrip = { x: 0, y: 0 }
-    emit('frame-press', { kind: 'move' }, beginCarry(event))
+    emit('frame-press', { kind: 'move' }, beginCarry(event), frame)
     event.preventDefault()
   }
 
@@ -794,7 +806,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
       heldPointer = undefined
       stepHold({ type: 'finger' })
     }
-    if (frameOf(props.project) && event.pointerType === 'touch' && !event.isPrimary) {
+    if (hasFrame() && event.pointerType === 'touch' && !event.isPrimary) {
       // A second finger is a pinch (usePinchPan): whatever the first was dragging is let go, uncommitted.
       if (framing.value) {
         framing.value = false
@@ -823,20 +835,22 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     }
     if (resumeOffTheGlass(event)) return
     selectionAtPress = props.selection
-    if (frameOf(props.project) && !startsDrag(event) && event.button === 0) {
-      const target = framePress(event)
-      if (target) {
+    if (hasFrame() && !startsDrag(event) && event.button === 0) {
+      const grabbed = framePress(event)
+      if (grabbed) {
+        const { target, frame } = grabbed
         framing.value = true
-        hotHandle.value = frameHandleUnder(event, touchInput.value)
+        hotHandle.value = frameHandleUnder(event, touchInput.value, frame)
+        hotFrame.value = frame
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
-        gestureLayer = target.kind === 'handle' ? firstFrameId(props.project) : moveLayer()
+        gestureLayer = target.kind === 'handle' ? frame : moveLayer(frame)
         carryGrip = undefined
         const pressed = cellUnder(event)
         const point = pointInDrawing(event)
         const middle = surface.value.beadToPoint(pressed, gestureLayer)
         frameGrip = { x: middle.x - point.x, y: middle.y - point.y }
-        emit('frame-press', target, pressed)
+        emit('frame-press', target, pressed, frame)
         event.preventDefault()
         return
       }
@@ -974,11 +988,12 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
       // A mouse only: a hovering Pencil keeps the Piece tool's drawn pointer, which a CSS cursor would hide.
       hotAreaHandle.value = undefined
       handleCursor.value = 'grab'
-    } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
+    } else if (hasFrame() && event.pointerType !== 'touch' && !framing.value) {
       hotAreaHandle.value = undefined
-      const target = framePress(event)
-      hotHandle.value = target?.kind === 'handle' ? frameHandleUnder(event, false) : undefined
-      handleCursor.value = target?.kind === 'move' ? 'grab' : hotHandle.value ? HANDLE_CURSORS[hotHandle.value] : undefined
+      const grabbed = framePress(event)
+      hotHandle.value = grabbed && frameHandleUnder(event, false, grabbed.frame)
+      hotFrame.value = hotHandle.value ? grabbed?.frame : undefined
+      handleCursor.value = hotHandle.value ? HANDLE_CURSORS[hotHandle.value] : undefined
     } else {
       hotAreaHandle.value = undefined
       handleCursor.value = undefined
@@ -1164,6 +1179,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     framing,
     touchInput,
     hotHandle,
+    hotFrame,
     hotAreaHandle,
     showFinished,
     pressMoveHandle,
