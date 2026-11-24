@@ -145,7 +145,7 @@ describe('a coded swatch in the shopping list (ticket 0538)', () => {
   it('lists the maker code beside the color', () => {
     const hex = '#123456'
     const ids = [...defaultPaletteIds(), addedColorId(hex)]
-    const coded = createPalette(ids, undefined, { [hex]: 'DB1' })
+    const coded = createPalette(ids, { [hex]: { catalog: 'miyuki-delica', code: 'DB1' } })
     expect(listedColorName(en, coded.byHex(hex), hex)).toBe('#123456 · DB1')
     expect(listedColorName(en, createPalette(ids).byHex(hex), hex)).toBe('#123456')
   })

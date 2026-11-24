@@ -3,7 +3,7 @@ import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, findBead } from '../../domain/beads'
 import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
 import { beadIdOfLayer, beadOfLayer } from '../../domain/layerRecord'
-import { brandColors, type AddUsedColorOutcome, type Palette } from '../../domain/palette'
+import { brandColors, type AddUsedColorOutcome, type Palette, type PaletteCode } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { loadColorCatalog } from '../../services/colorCatalogs'
 import type { FeedbackPrefill } from '../shell/useFeedbackFlow'
@@ -13,7 +13,7 @@ import type { FeedbackPrefill } from '../shell/useFeedbackFlow'
 export interface BeadColorsDeps {
   currentProject: () => Project | undefined
   palette: Readonly<Ref<Palette>>
-  addUsed: (hex: string, code?: string) => { outcome: AddUsedColorOutcome; colorId?: string }
+  addUsed: (hex: string, code?: PaletteCode) => { outcome: AddUsedColorOutcome; colorId?: string }
   /** Makes a swatch the current color: a code just added is painted with at once (ticket 1092). */
   select?: (colorId: string) => void
   /** Takes an added swatch out of the Palette with no question (ticket 1092): a row in the Palette is a toggle. Without
@@ -81,9 +81,11 @@ export function useBeadColors({ currentProject, palette, addUsed, select, remove
     })
   }
 
-  /** A code joins the Palette and is the current color at once (ticket 1092); the popover it was pressed in stays open. */
+  /** A code joins the Palette, in its catalog's section (ADR 0103), and is the current color at once (ticket 1092); the
+   * popover it was pressed in stays open. */
   function add(hex: string, code?: string): AddUsedColorOutcome {
-    const { outcome, colorId } = addUsed(hex, code)
+    const catalog = catalogId.value
+    const { outcome, colorId } = addUsed(hex, code && catalog ? { catalog, code } : undefined)
     if (outcome === 'added' && colorId) select?.(colorId)
     return outcome
   }

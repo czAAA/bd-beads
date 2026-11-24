@@ -1,10 +1,6 @@
-import { beadsDiffer, colorCatalogOf, type Bead } from './beads'
-import type { ColorCatalog } from './colorCatalog'
+import { beadsDiffer, type Bead } from './beads'
 import type { Layer } from './grid'
-import { beadIdOfLayer, beadOfLayer, frameById, type Layered, weaveOfLayer, withLayer, wovenLayerOf } from './layerRecord'
-import { projectColors } from './layerBeads'
-import { codesForBead, codesInPalette, defaultPalette, paletteForBead, type PaletteColor, type PaletteCodes } from './palette'
-import { lettersOfPalette } from './paletteEdits'
+import { beadOfLayer, frameById, type Layered, weaveOfLayer, withLayer, wovenLayerOf } from './layerRecord'
 import { touch, type Project } from './project'
 import { beadCell, type BeadCell } from './weave'
 
@@ -24,39 +20,13 @@ export function resolveProjectBead(project: Layered): Bead | undefined {
 }
 
 /** Swaps a layer's Bead (tickets 48, 0665, ADR 0007, 0079): the Frame's or the Canvas's, the Canvas's on a Project with
- * no Frame. Painted cells keep their hex and position; the Palette follows when the woven layer's Bead changes, in the
- * same change (see `withWovenPalette`). The same Project for the Bead that layer already has. */
-export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog, layer?: Layer): Project {
+ * no Frame. Painted cells keep their hex and position, and the Palette is the Project's own, so no color comes or goes
+ * (ADR 0103). The same Project for the Bead that layer already has. */
+export function replaceBead(project: Project, bead: Bead, layer?: Layer): Project {
   const target = layer === 'canvas' ? 'canvas' : layer && frameById(project, layer) ? layer : wovenLayerOf(project)
   const own = beadOfLayer(project, target).bead
   if (own?.id === bead.id && !beadsDiffer(own, bead)) {
     return project
   }
-  const replaced = withLayer(project, target, { bead })
-  return touch(withWovenPalette(project, replaced, catalog), {})
-}
-
-/** `after` with its Palette moved to its woven layer's Bead where that differs from `before`'s (tickets 0528, 0665, 1070,
- * see paletteForBead); a swatch keeps its code if `catalog` (the new Bead's) lists it in its size (ticket 0538), or with
- * none while Color catalog and size stay. The same `after` when the woven Bead is as it was. */
-export function withWovenPalette(before: Project, after: Project, catalog?: ColorCatalog): Project {
-  const [from, to] = [beadOfLayer(before, wovenLayerOf(before)).bead, beadOfLayer(after, wovenLayerOf(after)).bead]
-  const [fromId, toId] = [beadIdOfLayer(before, wovenLayerOf(before)), beadIdOfLayer(after, wovenLayerOf(after))]
-  if (fromId === toId && (!from || !to || !beadsDiffer(from, to))) {
-    return after
-  }
-  const [fromColors, toColors] = [defaultPalette(fromId), defaultPalette(toId)]
-  const palette = paletteForBead(after.palette, after.removedDefaults ?? [], fromColors, toColors, new Set(projectColors(after)))
-  // An old default color that stays is an added one now, so its code joins the others under 0538's rule.
-  const held = { ...codesOf(fromColors), ...after.paletteCodes }
-  const kept = !catalog && colorCatalogOf(fromId) === colorCatalogOf(toId) && from?.size === to?.size
-  const codes = codesInPalette(kept ? held : codesForBead(held, catalog, to?.size), palette, toColors)
-  const { paletteCodes: _codes, ...rest } = after
-  const paletteLetters = lettersOfPalette(palette, toId, after.paletteLetters)
-  return { ...rest, palette, paletteLetters, ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}) }
-}
-
-/** The codes of a Bead's default colors, by hex. */
-function codesOf(colors: readonly PaletteColor[]): PaletteCodes {
-  return Object.fromEntries(colors.flatMap((color) => (color.code ? [[color.hex, color.code]] : [])))
+  return touch(withLayer(project, target, { bead }), {})
 }

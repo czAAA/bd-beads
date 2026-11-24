@@ -7,7 +7,7 @@ import { createProject } from './createProject'
 import { DEFAULT_COLOR_FILES } from './defaultColors'
 import { canvasTheme } from '../rendering/canvasBackgrounds'
 import type { ResolvedTheme } from '../theme/theme'
-import { BUILT_IN_COLORS, addUsedColor, brandColors, familyOf, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, removeAddedColor, removeAllAddedColors, restoreAddedColor, startColorId, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
+import { BUILT_IN_COLORS, CUSTOM_COLORS, addUsedColor, brandColors, codesOfColors, familyOf, defaultPalette, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, paletteColors, readStoredPalette, removeAddedColor, removeAllAddedColors, removeSection, restoreColor, startColorId, storedPalette, PALETTE_SHORTCUTS } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
@@ -32,7 +32,7 @@ describe('addUsedColor (ticket 227, 0525)', () => {
     expect(first.outcome).toBe('added')
     expect(first.ids.at(-1)).toBe(addedColorId('#123456'))
     expect(addUsedColor(first.ids, '#123456')).toMatchObject({ ids: first.ids, outcome: 'known' })
-    expect(addUsedColor(first.ids, BUILT_IN_COLORS[0]!.hex.toUpperCase())).toEqual({ ids: first.ids, outcome: 'known', colorId: 'black' })
+    expect(addUsedColor(first.ids, BUILT_IN_COLORS[0]!.hex.toUpperCase())).toEqual({ ids: first.ids, outcome: 'known', colorId: 'black', codes: {} })
   })
 
   it('keeps the order of first use', () => {
@@ -65,8 +65,8 @@ describe('removing an added color (ticket 228)', () => {
 
   it('restores it in its slot, or not at all when it is back', () => {
     const without = removeAddedColor(three, addedColorId('#222222'))!
-    expect(restoreAddedColor(without.ids, addedColorId('#222222'), without.slot)).toEqual(three)
-    expect(restoreAddedColor(three, addedColorId('#222222'), 0)).toEqual(three)
+    expect(restoreColor(without.ids, addedColorId('#222222'), without.slot)).toEqual(three)
+    expect(restoreColor(three, addedColorId('#222222'), 0)).toEqual(three)
   })
 })
 
@@ -86,68 +86,168 @@ describe('removing every added color (ticket 0532)', () => {
 
   it('restoring each in slot order brings back the exact Palette', () => {
     const { ids, removed } = removeAllAddedColors(mixed)
-    expect(removed.reduce((acc, { colorId, slot }) => restoreAddedColor(acc, colorId, slot), ids)).toEqual(mixed)
-  })
-})
-
-describe('a stored Palette (ticket 0525)', () => {
-  it('is the built-in colors when there is none, or it is unreadable', () => {
-    expect(normalizePaletteIds(undefined)).toEqual(defaultPaletteIds())
-    expect(normalizePaletteIds('red')).toEqual(defaultPaletteIds())
-  })
-
-  it('follows the stored order, an added color standing between built-in ones', () => {
-    const order = ['red', addedColorId('#111111'), 'black']
-    const result = normalizePaletteIds(order)
-    expect(result).toEqual(order)
-  })
-
-  it('drops what it cannot read and what repeats, and does not re-add a built-in color it leaves out', () => {
-    expect(normalizePaletteIds(['red', 'red', 'added-zzzzzz', 7, 'nonsense', addedColorId('#111111')])).toEqual(['red', addedColorId('#111111')])
-  })
-
-  it('opens an older build\'s twelve unchanged', () => {
-    expect(normalizePaletteIds(defaultPaletteIds())).toEqual(defaultPaletteIds())
+    expect(removed.reduce((acc, { colorId, slot }) => restoreColor(acc, colorId, slot), ids)).toEqual(mixed)
   })
 })
 
 describe('createPalette (ticket 0530)', () => {
-  const brand: readonly PaletteColor[] = [
-    { id: 'brand-a', hex: '#102030', literalName: 'Ocean 7' },
-    { id: 'brand-b', hex: '#ffeedd' },
-    { id: 'brand-c', hex: '#405060' },
-  ]
-  const ids = ['brand-a', addedColorId('#00ff00'), 'brand-b', 'brand-c']
+  const ids = ['brown', addedColorId('#00ff00'), 'white', 'grey']
 
-  it('holds the built-in and added colors in slot order, from a set that is not today\'s twelve', () => {
-    expect(createPalette(ids, brand).colors.map((color) => color.id)).toEqual(ids)
-    expect(createPalette([], brand).colors).toEqual([])
+  it('holds the built-in and added colors in slot order', () => {
+    expect(createPalette(ids).colors.map((color) => color.id)).toEqual(ids)
+    expect(createPalette([]).colors).toEqual([])
   })
 
   it('finds a color by id or by hex, whatever the hex\'s case', () => {
-    const palette = createPalette(ids, brand)
-    expect(palette.byId('brand-b')?.hex).toBe('#ffeedd')
+    const palette = createPalette(ids)
+    expect(palette.byId('white')?.hex).toBe('#ffffff')
     expect(palette.byId(null)).toBeUndefined()
-    expect(palette.byHex('#FFEEDD')?.id).toBe('brand-b')
+    expect(palette.byHex('#FFFFFF')?.id).toBe('white')
     expect(palette.byHex('#000000')).toBeUndefined()
   })
 
   it('finds the color nearest a hex, added ones included', () => {
-    const palette = createPalette(ids, brand)
-    expect(palette.nearest('#101010')?.id).toBe('brand-a')
+    const palette = createPalette(ids)
+    expect(palette.nearest('#8a5a3a')?.id).toBe('brown')
     expect(palette.nearest('#10f010')?.id).toBe(addedColorId('#00ff00'))
-    expect(createPalette([], brand).nearest('#101010')).toBeUndefined()
+    expect(createPalette([]).nearest('#101010')).toBeUndefined()
   })
 
   it('defaults to the first built-in color, with no red needed', () => {
-    expect(createPalette(ids, brand).defaultColorId).toBe('brand-a')
-    expect(createPalette([addedColorId('#00ff00'), 'brand-c'], brand).defaultColorId).toBe('brand-c')
+    expect(createPalette(ids).defaultColorId).toBe('brown')
+    expect(createPalette([addedColorId('#00ff00'), 'grey']).defaultColorId).toBe('grey')
   })
 
   it('holds a Palette of any size, 16 swatches for 16 colors', () => {
-    const many: PaletteColor[] = Array.from({ length: 16 }, (_, i) => ({ id: `c${i}`, hex: `#0000${i.toString(16).padStart(2, '0')}` }))
-    const palette = createPalette(many.map((color) => color.id), many)
-    expect(palette.colors).toHaveLength(16)
+    const many = Array.from({ length: 16 }, (_, i) => addedColorId(`#0000${i.toString(16).padStart(2, '0')}`))
+    expect(createPalette(many).colors).toHaveLength(16)
+  })
+
+  it('drops what names no color and a hex that repeats, as a hex is one swatch', () => {
+    expect(createPalette(['red', 'red', 'added-zzzzzz', 'nonsense', addedColorId('#e63746'), addedColorId('#111111')]).colors.map((color) => color.id)).toEqual(['red', addedColorId('#111111')])
+  })
+})
+
+describe('the Palette in sections (ADR 0103)', () => {
+  const delica = defaultPalette('miyuki/delica/11-0')
+  const toho = { catalog: 'toho', code: '341' }
+
+  it('knows its colors whatever Bead it is in: a default color by its code, named by its family', () => {
+    const palette = createPalette(delica.map((color) => color.id), codesOfColors(delica))
+    expect(palette.colors).toEqual(delica)
+    expect(palette.sections).toEqual([{ id: 'miyuki-delica', colors: delica }])
+  })
+
+  it('puts each color in its code\'s catalog\'s section, the rest in Custom colors, each section\'s together in the order they first show', () => {
+    const ids = [addedColorId('#111111'), delica[0]!.id, addedColorId('#222222'), addedColorId('#333333'), delica[1]!.id]
+    const codes = { ...codesOfColors(delica), '#222222': toho }
+    const palette = createPalette(ids, codes)
+    expect(palette.sections.map((section) => [section.id, section.colors.map((color) => color.id)])).toEqual([
+      [CUSTOM_COLORS, [addedColorId('#111111'), addedColorId('#333333')]],
+      ['miyuki-delica', [delica[0]!.id, delica[1]!.id]],
+      ['toho', [addedColorId('#222222')]],
+    ])
+    expect(palette.colors.map((color) => color.id)).toEqual(palette.sections.flatMap((section) => section.colors.map((color) => color.id)))
+    expect(palette.byId(addedColorId('#222222'))).toMatchObject({ code: '341', catalog: 'toho' })
+  })
+
+  it('shows a section only while it holds a color', () => {
+    expect(createPalette([]).sections).toEqual([])
+    expect(createPalette(defaultPaletteIds()).sections.map((section) => section.id)).toEqual([CUSTOM_COLORS])
+  })
+
+  it('keeps a default color its catalog no longer names as an added color of its hex', () => {
+    expect(createPalette(['default-123456'], { '#123456': { catalog: 'miyuki-delica', code: 'DB-none' } }).colors).toEqual([{ id: addedColorId('#123456'), hex: '#123456', code: 'DB-none', catalog: 'miyuki-delica' }])
+    expect(createPalette(['default-123456']).colors.map((color) => color.id)).toEqual([addedColorId('#123456')])
+  })
+
+  it('adds a code from any catalog last in its section, and knows it once there', () => {
+    const start = delica.map((color) => color.id)
+    const added = addUsedColor([...start, addedColorId('#111111')], '#abcdef', codesOfColors(delica), toho)
+    expect(added).toMatchObject({ outcome: 'added', colorId: addedColorId('#abcdef'), codes: { '#abcdef': toho } })
+    const codes = { ...codesOfColors(delica), ...added.codes }
+    expect(createPalette(added.ids, codes).sections.map((section) => section.id)).toEqual(['miyuki-delica', CUSTOM_COLORS, 'toho'])
+    expect(addUsedColor(added.ids, '#abcdef', codes, toho)).toMatchObject({ ids: added.ids, outcome: 'known', colorId: addedColorId('#abcdef') })
+  })
+
+  it('nudges a code whose hex another section holds one step, so a hex names one swatch and one code', () => {
+    const ids = delica.map((color) => color.id)
+    const taken = delica[0]!.hex
+    const added = addUsedColor(ids, taken, codesOfColors(delica), toho)
+    const nudged = added.colorId!.replace('added-', '#')
+    expect(nudged).not.toBe(taken)
+    const [was, now] = [channelsOf(taken), channelsOf(nudged)]
+    expect(Math.abs(was.r - now.r) + Math.abs(was.g - now.g) + Math.abs(was.b - now.b)).toBe(1)
+    expect(added.codes).toEqual({ [nudged]: toho })
+    expect(createPalette(added.ids, { ...codesOfColors(delica), ...added.codes }).byHex(taken)).toEqual(delica[0])
+  })
+
+  it('takes a plain color whose hex is a swatch for that swatch, whatever its section', () => {
+    expect(addUsedColor(delica.map((color) => color.id), delica[2]!.hex, codesOfColors(delica))).toMatchObject({ outcome: 'known', colorId: delica[2]!.id })
+  })
+
+  it('removes a whole section, its default colors too, and each comes back in its slot', () => {
+    const ids = [...delica.slice(0, 2).map((color) => color.id), addedColorId('#111111'), addedColorId('#222222')]
+    const codes = { ...codesOfColors(delica), '#222222': toho }
+    const { ids: left, removed } = removeSection(ids, codes, 'miyuki-delica')
+    expect(left).toEqual([addedColorId('#111111'), addedColorId('#222222')])
+    expect(removed).toEqual([{ colorId: delica[0]!.id, slot: 0 }, { colorId: delica[1]!.id, slot: 1 }])
+    expect(removed.reduce((acc, { colorId, slot }) => restoreColor(acc, colorId, slot), left)).toEqual(ids)
+    expect(removeSection(ids, codes, 'miyuki-round').removed).toEqual([])
+  })
+})
+
+describe('a stored Palette (ticket 0525, ADR 0103)', () => {
+  const delica = defaultPalette('miyuki/delica/11-0')
+  const toho = { catalog: 'toho', code: '341' }
+
+  it('is stored in its sections, each code beside by hex, and read back as it was', () => {
+    const ids = [...delica.map((color) => color.id), addedColorId('#111111'), addedColorId('#222222')]
+    const codes = { ...codesOfColors(delica), '#222222': toho }
+    const stored = storedPalette(ids, codes)
+    expect(stored.palette).toEqual([{ catalog: 'miyuki-delica', colors: delica.map((color) => color.id) }, { colors: [addedColorId('#111111')] }, { catalog: 'toho', colors: [addedColorId('#222222')] }])
+    expect(stored.paletteCodes).toMatchObject({ '#222222': '341', [delica[0]!.hex]: delica[0]!.code })
+    expect(readStoredPalette(stored.palette, stored.paletteCodes, 'toho/cube/1.5mm')).toEqual({ ids, codes })
+  })
+
+  it('drops what it cannot read from a section, and a code of Custom colors', () => {
+    const stored = [{ colors: ['red', 7, 'nonsense', addedColorId('#111111')] }, 'black', { catalog: 'toho' }]
+    expect(readStoredPalette(stored, { '#111111': '5', '#e63746': 7 }, 'toho/cube/1.5mm')).toEqual({ ids: ['red', addedColorId('#111111')], codes: {} })
+  })
+
+  describe('saved before its sections, sorted by the Bead it was woven in', () => {
+    it('is the Bead\'s default colors when there is none, or it is unreadable', () => {
+      for (const stored of [undefined, 'red']) {
+        expect(readStoredPalette(stored, undefined, 'miyuki-delica-11-0')).toEqual({ ids: delica.map((color) => color.id), codes: codesOfColors(delica) })
+      }
+    })
+
+    it('follows the stored order within each section, and drops what it cannot read and what repeats', () => {
+      const generic = defaultPalette('toho/round/10-0')
+      expect(readStoredPalette(['red', addedColorId('#111111'), 'red', 'added-zzzzzz', 7, 'black'], undefined, 'toho/round/10-0').ids).toEqual(['red', addedColorId('#111111'), 'black'])
+      expect(readStoredPalette(defaultPaletteIds(generic), undefined, 'toho/round/10-0').ids).toEqual(defaultPaletteIds(generic))
+    })
+
+    it('puts every code, the default colors\' included, in that Bead\'s catalog, and the rest in Custom colors', () => {
+      const read = readStoredPalette([addedColorId('#111111'), ...delica.map((color) => color.id), addedColorId('#222222')], { '#222222': 'DB1' }, 'miyuki-delica-11-0')
+      expect(read.codes).toEqual({ ...codesOfColors(delica), '#222222': { catalog: 'miyuki-delica', code: 'DB1' } })
+      expect(createPalette(read.ids, read.codes).sections.map((section) => [section.id, section.colors.length])).toEqual([[CUSTOM_COLORS, 1], ['miyuki-delica', delica.length + 1]])
+    })
+
+    it('keeps a color of the twelve that the set lacks, as an added color', () => {
+      const read = readStoredPalette(BUILT_IN_COLORS.map((color) => color.id), undefined, 'miyuki-delica-11-0').ids
+      expect(read).toContain(addedColorId('#2fb6ae'))
+      expect(read).toHaveLength(12)
+    })
+
+    it('keeps every generic color of a Project saved before default colors were codes, as an added color of its hex (ticket 1070)', () => {
+      const stored = [...brandColors('toho').map((color) => color.id), addedColorId('#123456')]
+      expect(readStoredPalette(stored, undefined, 'toho/cube/1.5mm').ids).toEqual([...brandColors('toho').map((color) => addedColorId(color.hex)), addedColorId('#123456')])
+    })
+
+    it('keeps a default color the Bead no longer names as an added color of its hex (ticket 1070)', () => {
+      expect(readStoredPalette(['default-123456'], undefined, 'miyuki-delica-11-0').ids).toEqual([addedColorId('#123456')])
+    })
   })
 })
 
@@ -211,103 +311,12 @@ describe('defaultPalette (tickets 0528, 1070)', () => {
   })
 })
 
-describe('paletteForBead (ticket 0528)', () => {
-  const twelve = BUILT_IN_COLORS
-  const miyuki = brandColors('miyuki')
-  const ids = (colors: readonly PaletteColor[]) => colors.map((color) => color.id)
-  // Every old default color painted, so each stays (ticket 1070 takes out an unused one).
-  const used = new Set([...twelve, ...miyuki].map((color) => color.hex))
-  const redHex = findBuiltInColor('red')!.hex
-  const custom = addedColorId('#123456')
-
-  it('makes the new Bead\'s colors the built-in ones and the old ones added colors after the added ones', () => {
-    const moved = paletteForBead([...ids(twelve), custom], [], twelve, miyuki, used)
-    expect(moved.slice(0, 16)).toEqual(ids(miyuki))
-    expect(moved[16]).toBe(custom)
-    expect(moved.slice(17)).toEqual([addedColorId(findBuiltInColor('teal')!.hex)])
-  })
-
-  it('keeps a hex that is in both once, as a built-in color', () => {
-    const moved = paletteForBead(ids(twelve), [], twelve, miyuki, used)
-    expect(moved.filter((id) => id === 'red' || id === addedColorId(redHex))).toEqual(['red'])
-  })
-
-  it('promotes the old colors back and demotes the others without duplicates (A to B to A)', () => {
-    const away = paletteForBead([...ids(twelve), custom], [], twelve, miyuki, used)
-    const back = paletteForBead(away, [], miyuki, twelve, used)
-    expect(back.slice(0, 12)).toEqual(ids(twelve))
-    expect(new Set(back).size).toBe(back.length)
-    expect(back).toContain(custom)
-    expect(back.filter((id) => id.startsWith('added-'))).toEqual([custom, ...ids(miyuki).filter((id) => !ids(twelve).includes(id)).map((id) => addedColorId(miyuki.find((c) => c.id === id)!.hex))])
-  })
-
-  it('does not put back a default the maker removed', () => {
-    const away = paletteForBead(ids(twelve), [], twelve, miyuki, used)
-    const beige = addedColorId('#e6d5b8')
-    const trimmed = away.filter((id) => id !== addedColorId(findBuiltInColor('teal')!.hex))
-    const back = paletteForBead(trimmed, ['#2fb6ae'], miyuki, twelve, used)
-    expect(back).not.toContain('teal')
-    expect(back).not.toContain(addedColorId('#2fb6ae'))
-    expect(back).toContain(beige)
-  })
-
-  it('takes out an old default color no bead uses, and keeps a used one as an added color (ticket 1070)', () => {
-    const moved = paletteForBead([...ids(twelve), custom], [], twelve, miyuki, new Set(['#2fb6ae']))
-    expect(moved).toEqual([...ids(miyuki), custom, addedColorId('#2fb6ae')])
-    expect(paletteForBead(ids(twelve), [], twelve, miyuki, new Set())).toEqual(ids(miyuki))
-  })
-
-  it('leaves the Palette as it is between two Beads with the same set', () => {
-    const arranged = [...ids(twelve).reverse(), custom]
-    expect(paletteForBead(arranged, [], twelve, twelve, used)).toEqual(arranged)
-  })
-})
-
-describe('removedDefaultsAfter (ticket 0528)', () => {
-  const teal = addedColorId('#2fb6ae')
-
-  it('remembers a default color that left the Palette as an added color', () => {
-    expect(removedDefaultsAfter(['red', teal], ['red'], [])).toEqual(['#2fb6ae'])
-  })
-
-  it('does not remember a Custom color that is no Bead\'s default', () => {
-    expect(removedDefaultsAfter([addedColorId('#123456')], [], [])).toEqual([])
-  })
-
-  it('forgets a color once it is back in the Palette', () => {
-    expect(removedDefaultsAfter(['red'], ['red', teal], ['#2fb6ae'])).toEqual([])
-  })
-})
-
-describe('a stored Palette against a Bead\'s set (ticket 0528)', () => {
-  it('keeps a color of the twelve that the set lacks, as an added color', () => {
-    const stored = BUILT_IN_COLORS.map((color) => color.id)
-    const read = normalizePaletteIds(stored, brandColors('miyuki'))
-    expect(read).toContain(addedColorId('#2fb6ae'))
-    expect(read).toHaveLength(12)
-  })
-
-  it('keeps every generic color of a Project saved before default colors were codes, as an added color of its hex (ticket 1070)', () => {
-    const stored = [...brandColors('toho').map((color) => color.id), addedColorId('#123456')]
-    const read = normalizePaletteIds(stored, defaultPalette('toho/cube/1.5mm'))
-    expect(read).toEqual([...brandColors('toho').map((color) => addedColorId(color.hex)), addedColorId('#123456')])
-  })
-
-  it('keeps a default color the Bead no longer names as an added color of its hex (ticket 1070)', () => {
-    expect(normalizePaletteIds(['default-123456'], defaultPalette('miyuki-delica-11-0'))).toEqual([addedColorId('#123456')])
-  })
-
-  it('starts a missing Palette from the set', () => {
-    expect(normalizePaletteIds(undefined, defaultPalette('miyuki-delica-11-0'))).toEqual(defaultPalette('miyuki-delica-11-0').map((color) => color.id))
-  })
-})
-
 describe('the first color on a new Project\'s Background (ticket 0838)', () => {
   const contrast = (a: string, b: string) => contrastRatio(channelsOf(a), channelsOf(b))
   /** A new Project on this Bead and a theme's numbered Background, as the app makes it, and the color it starts painting with there. */
   const startOn = (beadId: string, theme: ResolvedTheme, background: number) => {
     const project = createProject({ technique: 'loom', beadId, background })
-    const palette = createPalette(project.palette, defaultPalette(beadId))
+    const palette = createPalette(project.palette, project.paletteCodes)
     const canvas = canvasTheme(theme, background).canvas
     return { canvas, color: palette.byId(startColorId(palette, canvas)) }
   }
@@ -342,8 +351,7 @@ describe('the first color on a new Project\'s Background (ticket 0838)', () => {
   })
 
   it('takes the swatch that stands off a Custom color best where neither reaches 3:1', () => {
-    const generic = defaultPalette('toho/round/10-0')
-    const toho = createPalette(defaultPaletteIds(generic), generic)
+    const toho = createPalette(defaultPaletteIds(defaultPalette('toho/round/10-0')))
     // Red on a red Custom color, gold on a gold one: neither shows, so the swatch that shows most.
     expect(startColorId(toho, '#e63746')).toBe('white')
     expect(startColorId(toho, '#d4af37')).toBe('black')

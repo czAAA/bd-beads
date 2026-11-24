@@ -223,13 +223,13 @@ describe('single-Project roundtrip', () => {
     expect(rowProgressOf(restored)).toEqual({ way: 'right', right: 4 })
   })
 
-  it('writes version 15 with the layer list, the Background list it is in (ticket 1000), each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
+  it('writes version 16 with the layer list, the Background list it is in (ticket 1000), each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(15)
+    expect(file.version).toBe(16)
     expect(file.patterns).toBeUndefined()
-    expect(Object.keys(file.projects[0]).sort()).toEqual(['backgroundPositions', 'createdAt', 'id', 'layers', 'lettersByLayer', 'palette', 'paletteLetters', 'updatedAt'])
+    expect(Object.keys(file.projects[0]).sort()).toEqual(['backgroundPositions', 'createdAt', 'id', 'layers', 'lettersByLayer', 'palette', 'paletteCodes', 'paletteLetters', 'updatedAt'])
     expect(file.projects[0].backgroundPositions).toBe(3)
     expect(file.projects[0].layers[0].beads).toBeUndefined()
     expect(file.projects[0].layers[0]).toMatchObject({ name: 'Fox', technique: 'peyote', orientation: 90, encodedBeads: { colors: [], rows: {} } })
@@ -247,15 +247,16 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 16
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 16')
+    file.version = 17
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 17')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads one whose Palette is missing as its Bead\'s built-in colors', () => {
     const [first, ...rest] = defaultPaletteIds(defaultPalette(cubeBead.id))
     const custom = setPalette(decoratedProject(), [first!, addedColorId('#123456'), ...rest])
     const file = JSON.parse(serializeProject(custom))
-    expect(file.projects[0].palette).toEqual(custom.palette)
+    // In its sections (ADR 0103): the Bead's default colors in its catalog's, the Custom color in Custom colors.
+    expect(file.projects[0].palette).toEqual([{ catalog: 'toho', colors: [first, ...rest] }, { colors: [addedColorId('#123456')] }])
     expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([withColorsInPalette(custom)])
 
     const five = legacyFile([custom], 5)

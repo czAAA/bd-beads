@@ -1,9 +1,7 @@
-import { BEAD_CATALOG, findBead, findBrand } from './beads'
-import type { ColorCatalog } from './colorCatalog'
+import { BEAD_CATALOG, colorCatalogOf, findBead, findBrand } from './beads'
 import { BLACK_WHITE_BALANCE, channelsOf, contrastRatio, normalizeHex, relativeLuminance } from './color'
-import { namedDefaults } from './defaultColors'
+import { defaultFamilyOf, namedDefaults } from './defaultColors'
 import { nearestColor } from './imageColors'
-import { beadIdOfLayer, type Layered, wovenLayerOf } from './layerRecord'
 
 export interface PaletteColor {
   id: string
@@ -12,6 +10,8 @@ export interface PaletteColor {
   literalName?: string
   /** The maker's catalog code of a swatch picked from the Color catalog (ticket 0538, ADR 0072); absent for a plain color. */
   code?: string
+  /** The Color catalog its code is from (ADR 0103): the section the swatch is in. Absent with no code: Custom colors. */
+  catalog?: string
   /** The color family a catalog's default color stands for (ticket 1070), which names it ("Red · 45"); absent for the
    * generic family colors, whose id is their family. */
   family?: string
@@ -73,12 +73,13 @@ const catalogDefaults = new Map<string, readonly PaletteColor[]>()
 export function defaultPalette(beadId: string): readonly PaletteColor[] {
   const bead = findBead(beadId)
   const named = namedDefaults(beadId)
-  if (!bead || !named) return brandColors(bead?.brand.id)
+  const catalog = colorCatalogOf(beadId)
+  if (!bead || !named || !catalog) return brandColors(bead?.brand.id)
   let colors = catalogDefaults.get(bead.id)
   if (!colors) {
     colors = brandColors(bead.brand.id).flatMap((family) => {
       const pick = named[family.id]
-      return pick ? [{ id: catalogDefaultId(pick.hex), hex: pick.hex, code: pick.code, family: family.id }] : []
+      return pick ? [{ id: catalogDefaultId(pick.hex), hex: pick.hex, code: pick.code, catalog, family: family.id }] : []
     })
     catalogDefaults.set(bead.id, colors)
   }
@@ -128,8 +129,8 @@ export function isAddedColorId(colorId: string): boolean {
   return colorId.startsWith(ADDED_PREFIX)
 }
 
-/** A Project's Palette as it is stored (ticket 0525, ADR 0002): the id of every swatch in slot order, the twelve
- * built-in ones and the added ones alike. */
+/** A Project's Palette as it is held (ticket 0525, ADR 0002, 0103): the id of every swatch in slot order, its default
+ * colors and the added ones alike, each section's swatches together. */
 export type PaletteIds = readonly string[]
 
 /** What a new Project's Palette is: the built-in colors, in their order (the twelve unless `builtIns` is its Bead's
@@ -138,59 +139,85 @@ export function defaultPaletteIds(builtIns: readonly PaletteColor[] = BUILT_IN_C
   return builtIns.map((color) => color.id)
 }
 
-/** The hex an added swatch's id stands for; undefined for anything that isn't one. */
-function addedColorHex(colorId: string): string | undefined {
-  return isAddedColorId(colorId) ? normalizeHex(`#${colorId.slice(ADDED_PREFIX.length)}`) : undefined
+/** A swatch's catalog code with the Color catalog it is from (ADR 0103): the section it puts the swatch in. */
+export interface PaletteCode {
+  catalog: string
+  code: string
 }
 
-/** The swatches a stored Palette names, in its order: an id that is neither built-in nor an added color's is dropped and
- * a repeated one counts once. What is stored is what is shown: a built-in color it leaves out stays out. */
-export function paletteColors(ids: PaletteIds, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): PaletteColor[] {
-  const placed = new Set<string>()
-  const colors: PaletteColor[] = []
-  for (const id of ids) {
-    const color = builtIns.find((builtIn) => builtIn.id === id) ?? paletteColorForAdded(id)
-    if (color && !placed.has(color.id)) {
-      placed.add(color.id)
-      colors.push(color)
-    }
-  }
-  return colors
+/** The catalog code of each swatch that has one, by the swatch's hex (ticket 0538, ADR 0103): a hex names one swatch,
+ * one code and one section, as beads store only their hex. */
+export type PaletteCodes = Readonly<Record<string, PaletteCode>>
+
+/** The codes the coded `colors` carry, by hex: a Bead's default colors' as a new Project's Palette holds them. */
+export function codesOfColors(colors: readonly PaletteColor[]): PaletteCodes {
+  return Object.fromEntries(colors.flatMap((color) => (color.code && color.catalog ? [[color.hex, { catalog: color.catalog, code: color.code }]] : [])))
 }
 
-function paletteColorForAdded(id: string): PaletteColor | undefined {
-  const hex = addedColorHex(id)
-  return hex ? { id: addedColorId(hex), hex } : undefined
+/** The section a Custom color is in (ADR 0103): every swatch without a catalog code.
+ * @internal Tests name the section by it; the Palette's look shows it from ticket 1226. */
+export const CUSTOM_COLORS = 'custom'
+
+/** The section a swatch is in (ADR 0103): its code's Color catalog, or Custom colors. */
+function sectionOf(color: Pick<PaletteColor, 'catalog'>): string {
+  return color.catalog ?? CUSTOM_COLORS
+}
+
+/** One section of the Palette (ADR 0103): a Color catalog's swatches, or the Custom colors, in slot order. */
+interface PaletteSection {
+  id: string
+  colors: readonly PaletteColor[]
 }
 
 /** Every generic color by id: the twelve and each Brand's color families, a shared id having one hex (a test checks). */
 const GENERIC_COLORS: readonly PaletteColor[] = [...BUILT_IN_COLORS, ...BEAD_CATALOG.flatMap((bead) => bead.brand.colorFamilies ?? [])]
 
-/** The hex a built-in id the Bead's set lacks stood for: a generic color's (a Project saved before ticket 0528 or 1070),
- * or a catalog default color's, by its id; undefined for any other id. */
-function earlierBuiltInHex(id: string): string | undefined {
-  if (id.startsWith(DEFAULT_PREFIX)) return normalizeHex(`#${id.slice(DEFAULT_PREFIX.length)}`)
+/** The hex a swatch id stands for, whatever Bead the Project is in: an added or default color's own, or a generic
+ * color's; undefined for an id that is none of these. */
+function hexOfId(id: string): string | undefined {
+  const prefix = [ADDED_PREFIX, DEFAULT_PREFIX].find((each) => id.startsWith(each))
+  if (prefix) return normalizeHex(`#${id.slice(prefix.length)}`)
   return GENERIC_COLORS.find((color) => color.id === id)?.hex
 }
 
-/** A stored Palette read back whatever it holds (see paletteColors), as the ids to keep. A missing or unreadable one
- * is a new Project's Palette. A built-in color the Bead's set lacks (a generic one of a Project saved before tickets
- * 0528 or 1070) stays in the Palette as an added color, so what was stored is what is shown. */
-export function normalizePaletteIds(stored: unknown, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): string[] {
-  if (!Array.isArray(stored)) return defaultPaletteIds(builtIns)
-  const ids = stored
-    .filter((id): id is string => typeof id === 'string')
-    .map((id) => {
-      const earlier = builtIns.some((color) => color.id === id) ? undefined : earlierBuiltInHex(id)
-      return earlier ? addedColorId(earlier) : id
-    })
-  return paletteColors(ids, builtIns).map((color) => color.id)
+/** The swatch an id names with its code (ADR 0103): a default color is known by its catalog's code, which names its
+ * family; one whose family its catalog no longer has is an added color of its hex. */
+function swatchOf(id: string, codes: PaletteCodes): PaletteColor | undefined {
+  const hex = hexOfId(id)
+  if (!hex) return undefined
+  const coded = codes[hex]
+  const code = coded ? { code: coded.code, catalog: coded.catalog } : {}
+  if (!id.startsWith(DEFAULT_PREFIX)) return { id, hex, ...code }
+  const family = coded && defaultFamilyOf(coded.catalog, coded.code, hex)
+  return family ? { id, hex, ...code, family } : { id: addedColorId(hex), hex, ...code }
+}
+
+/** `colors` with each section's together (ADR 0103), the sections in the order their first swatch stands in. */
+function inSections(colors: readonly PaletteColor[]): PaletteSection[] {
+  const sections = new Map<string, PaletteColor[]>()
+  for (const color of colors) sections.set(sectionOf(color), [...(sections.get(sectionOf(color)) ?? []), color])
+  return [...sections].map(([id, held]) => ({ id, colors: held }))
+}
+
+/** The swatches a Palette's ids name, in its order, each section's together (ADR 0103): an id that names no color is
+ * dropped, and a hex that repeats counts once, as it names one swatch. */
+export function paletteColors(ids: PaletteIds, codes: PaletteCodes = {}): PaletteColor[] {
+  const placed = new Set<string>()
+  const colors = ids.flatMap((id) => {
+    const color = swatchOf(id, codes)
+    if (!color || placed.has(color.hex)) return []
+    placed.add(color.hex)
+    return [color]
+  })
+  return inSections(colors).flatMap((section) => section.colors)
 }
 
 /** A Project's Palette as every reader asks it (ticket 0530): the swatches in slot order and the questions about them.
- * Built from the stored ids, so nothing reads the built-in set directly. */
+ * Built from the held ids and codes alone (ADR 0103), so no layer's Bead changes it. */
 export interface Palette {
   colors: readonly PaletteColor[]
+  /** The swatches in their sections (ADR 0103), in order: only those holding a color. */
+  sections: readonly PaletteSection[]
   /** The swatch with this id; undefined for none (or no id). */
   byId: (id: string | null | undefined) => PaletteColor | undefined
   /** The swatch a painted cell holds, by the hex the grid stores; undefined for a hex from outside the Palette. */
@@ -202,15 +229,12 @@ export interface Palette {
   defaultColorId: string | undefined
 }
 
-/** The catalog code of each swatch that has one, by the swatch's hex (ticket 0538): a hex is a swatch's identity whether
- * it is an added color or a built-in one, so a code follows its color when a Bead change moves it between the two. */
-export type PaletteCodes = Readonly<Record<string, string>>
-
-/** The Palette the stored ids name. `builtIns` is the set the ids are resolved against: the Bead's (see defaultPalette). */
-export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS, codes: PaletteCodes = {}): Palette {
-  const colors = paletteColors(ids, builtIns).map((color) => (codes[color.hex] ? { ...color, code: codes[color.hex] } : color))
+/** The Palette the held ids and codes name (ADR 0103). */
+export function createPalette(ids: PaletteIds, codes: PaletteCodes = {}): Palette {
+  const colors = paletteColors(ids, codes)
   return {
     colors,
+    sections: inSections(colors),
     byId: (id) => colors.find((color) => color.id === id),
     byHex: (hex) => colors.find((color) => color.hex === hex.toLowerCase()),
     nearest: (hex) => {
@@ -243,40 +267,71 @@ export function startColorId(palette: Palette, background: string): string | und
   return palette.colors.reduce<PaletteColor | undefined>((best, color) => (!best || contrast(color) > contrast(best) ? color : best), undefined)?.id
 }
 
+/** The nearest hex `taken` lacks (ADR 0103): one step off in one channel, blue first, so the swatch looks the same. */
+function nudgedHex(hex: string, taken: ReadonlySet<string>): string {
+  const { r, g, b } = channelsOf(hex)
+  const toHex = (channels: number[]) => `#${channels.map((value) => value.toString(16).padStart(2, '0')).join('')}`
+  for (let step = 1; step <= 255; step++) {
+    for (const channel of [2, 1, 0]) {
+      for (const by of [step, -step]) {
+        const channels = [r, g, b]
+        channels[channel]! += by
+        const candidate = toHex(channels)
+        if (channels[channel]! >= 0 && channels[channel]! <= 255 && !taken.has(candidate)) return candidate
+      }
+    }
+  }
+  // Unreached: a Palette would need every hex 255 steps round this one taken.
+  return hex
+}
+
 export type AddUsedColorOutcome = 'added' | 'known'
 
-/** A Custom color just chosen or painted: the Palette with it in the last slot on first use. 'known' if the hex is
- * already a swatch, or isn't a color; either way `ids` is unchanged. There is no cap. */
-export function addUsedColor(ids: PaletteIds, hex: string, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): { ids: PaletteIds; outcome: AddUsedColorOutcome; colorId?: string } {
+/** A color chosen or painted, or a code from any Bead's catalog (ADR 0103): the Palette with it last in its section, and
+ * the code it joins with; 'known', `ids` unchanged, when the Palette holds the hex (for a code, that code) or it's no
+ * color. A code whose hex another swatch holds is nudged one step, as a hex names one swatch. There is no cap. */
+export function addUsedColor(ids: PaletteIds, hex: string, codes: PaletteCodes = {}, code?: PaletteCode): { ids: PaletteIds; outcome: AddUsedColorOutcome; colorId?: string; codes: PaletteCodes } {
   const normalized = normalizeHex(hex)
-  if (!normalized) return { ids, outcome: 'known' }
-  const colors = paletteColors(ids, builtIns)
-  const known = colors.find((color) => color.hex === normalized)
-  if (known) return { ids, outcome: 'known', colorId: known.id }
-  const colorId = addedColorId(normalized)
-  return { ids: [...colors.map((color) => color.id), colorId], outcome: 'added', colorId }
+  if (!normalized) return { ids, outcome: 'known', codes: {} }
+  const colors = paletteColors(ids, codes)
+  const known = colors.find((color) => (code ? color.code === code.code && color.catalog === code.catalog : color.hex === normalized))
+  if (known) return { ids, outcome: 'known', colorId: known.id, codes: {} }
+  const held = new Set(colors.map((color) => color.hex))
+  const swatchHex = held.has(normalized) ? nudgedHex(normalized, held) : normalized
+  const colorId = addedColorId(swatchHex)
+  const joined = code ? { [swatchHex]: code } : {}
+  return { ids: paletteColors([...colors.map((color) => color.id), colorId], { ...codes, ...joined }).map((color) => color.id), outcome: 'added', colorId, codes: joined }
 }
 
 /** An added color taken out of the Palette (ticket 228): the ids without it, and the slot it stood in, so Undo can put
  * it back. Undefined for a built-in color or one that isn't there. */
-export function removeAddedColor(ids: PaletteIds, colorId: string, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): { ids: PaletteIds; slot: number } | undefined {
-  const all = paletteColors(ids, builtIns).map((color) => color.id)
-  const slot = all.indexOf(colorId)
-  return slot < 0 || !isAddedColorId(colorId) ? undefined : { ids: all.filter((id) => id !== colorId), slot }
+export function removeAddedColor(ids: PaletteIds, colorId: string): { ids: PaletteIds; slot: number } | undefined {
+  const slot = ids.indexOf(colorId)
+  return slot < 0 || !isAddedColorId(colorId) ? undefined : { ids: ids.filter((id) => id !== colorId), slot }
 }
 
-/** Every added color taken out of the Palette at once (ticket 0532): the ids left, and each removed color with the slot
- * it stood in, in slot order, so Undo can put each back. No removals when none is added. */
-export function removeAllAddedColors(ids: PaletteIds, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): { ids: PaletteIds; removed: { colorId: string; slot: number }[] } {
-  const all = paletteColors(ids, builtIns).map((color) => color.id)
-  const removed = all.flatMap((colorId, slot) => (isAddedColorId(colorId) ? [{ colorId, slot }] : []))
-  return { ids: all.filter((id) => !isAddedColorId(id)), removed }
+/** The colors `leaves` picks taken out of the Palette at once: the ids left, and each removed color with the slot it
+ * stood in, in slot order, so Undo can put each back. */
+function removeColorsWhere(ids: PaletteIds, leaves: (colorId: string) => boolean): { ids: PaletteIds; removed: { colorId: string; slot: number }[] } {
+  const removed = ids.flatMap((colorId, slot) => (leaves(colorId) ? [{ colorId, slot }] : []))
+  return { ids: ids.filter((id) => !leaves(id)), removed }
+}
+
+/** Every added color taken out of the Palette at once (ticket 0532). No removals when none is added. */
+export function removeAllAddedColors(ids: PaletteIds): { ids: PaletteIds; removed: { colorId: string; slot: number }[] } {
+  return removeColorsWhere(ids, isAddedColorId)
+}
+
+/** A whole section taken out of the Palette (ADR 0103): its default colors and added ones alike. No removals for a
+ * section the Palette doesn't show. */
+export function removeSection(ids: PaletteIds, codes: PaletteCodes, section: string): { ids: PaletteIds; removed: { colorId: string; slot: number }[] } {
+  const leaving = new Set(paletteColors(ids, codes).filter((color) => sectionOf(color) === section).map((color) => color.id))
+  return removeColorsWhere(ids, (colorId) => leaving.has(colorId))
 }
 
 /** Undo of a removal: the color back in the slot it stood in (or last, when the Palette has since got shorter). */
-export function restoreAddedColor(ids: PaletteIds, colorId: string, slot: number, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): PaletteIds {
-  const all = paletteColors(ids, builtIns).map((color) => color.id)
-  return all.includes(colorId) ? ids : [...all.slice(0, slot), colorId, ...all.slice(slot)]
+export function restoreColor(ids: PaletteIds, colorId: string, slot: number): PaletteIds {
+  return ids.includes(colorId) ? ids : [...ids.slice(0, slot), colorId, ...ids.slice(slot)]
 }
 
 /** A slot's color dragged to another slot: the ids with it taken out and put at `to`, the ones between shifting by
@@ -289,70 +344,81 @@ export function moveSlot(ids: readonly string[], from: number, to: number): stri
   return next
 }
 
-/** The Palette of a Project as every reader asks it: its stored ids against the built-in colors of its woven layer's
- * Bead, the Frame's when there is one (tickets 0528, 0665). */
-export function projectPalette(project: Layered & { palette: PaletteIds; paletteCodes?: PaletteCodes }): Palette {
-  return createPalette(project.palette, defaultPalette(beadIdOfLayer(project, wovenLayerOf(project))), project.paletteCodes)
-}
-
-/** A stored code map read back whatever it holds: only a lowercase-hex key with a non-empty string code is kept (ticket 0538). */
-export function normalizePaletteCodes(stored: unknown): PaletteCodes {
-  if (typeof stored !== 'object' || stored === null || Array.isArray(stored)) return {}
-  const codes: Record<string, string> = {}
-  for (const [key, code] of Object.entries(stored)) {
-    const hex = normalizeHex(key)
-    if (hex && typeof code === 'string' && code !== '') codes[hex] = code
-  }
-  return codes
+/** The Palette of a Project as every reader asks it: its own ids and codes, whatever its layers' Beads (ADR 0103). */
+export function projectPalette(project: { palette: PaletteIds; paletteCodes?: PaletteCodes }): Palette {
+  return createPalette(project.palette, project.paletteCodes)
 }
 
 /** `codes` less the swatches that are no longer in the Palette `ids`, so a code never outlives its color (ticket 0538). */
-export function codesInPalette(codes: PaletteCodes, ids: PaletteIds, builtIns: readonly PaletteColor[]): PaletteCodes {
-  const held = new Set(paletteColors(ids, builtIns).map((color) => color.hex))
+export function codesInPalette(codes: PaletteCodes, ids: PaletteIds): PaletteCodes {
+  const held = new Set(paletteColors(ids, codes).map((color) => color.hex))
   return Object.fromEntries(Object.entries(codes).filter(([hex]) => held.has(hex)))
 }
 
-/** The codes that stay after the Bead changes (ticket 0538, ADR 0072): a swatch keeps its code only when the new Bead's
- * catalog lists it in the new Bead's size. No catalog (or one that failed to load) keeps none. */
-export function codesForBead(codes: PaletteCodes, catalog: ColorCatalog | undefined, size: string | undefined): PaletteCodes {
-  if (!catalog || !size) return {}
-  const listed = new Set(catalog.codes.filter((entry) => entry.sizes.includes(size)).map((entry) => entry.code))
-  return Object.fromEntries(Object.entries(codes).filter(([, code]) => listed.has(code)))
+/** One section as file version 16 stores it (ADR 0103): its Color catalog, absent for Custom colors, and its swatches'
+ * ids in slot order; their codes are kept beside, by hex. */
+export interface StoredPaletteSection {
+  catalog?: string
+  colors: string[]
 }
 
-/** Whether some Bead's set has a color with this hex. */
-function isDefaultHex(hex: string): boolean {
-  return BEAD_CATALOG.some((bead) => defaultPalette(bead.id).some((color) => color.hex === hex))
+/** A Palette as a file stores it (ADR 0103): its sections in order and each swatch's code by hex. */
+export function storedPalette(ids: PaletteIds, codes: PaletteCodes = {}): { palette: StoredPaletteSection[]; paletteCodes?: Record<string, string> } {
+  const sections = createPalette(ids, codes).sections
+  const palette = sections.map(({ id, colors }) => ({ ...(id === CUSTOM_COLORS ? {} : { catalog: id }), colors: colors.map((color) => color.id) }))
+  const stored = Object.fromEntries(sections.flatMap((section) => section.colors.flatMap((color) => (color.code ? [[color.hex, color.code]] : []))))
+  return { palette, ...(Object.keys(stored).length > 0 ? { paletteCodes: stored } : {}) }
 }
 
-/** The default colors the maker took out of the Palette once they were added colors (ticket 0528), as hexes: the
- * previous list less those now back in the Palette, plus the added colors of any Bead's set that `before` had and
- * `after` lacks. A Bead change never promotes these again. */
-export function removedDefaultsAfter(before: PaletteIds, after: PaletteIds, removed: readonly string[]): string[] {
-  const kept = new Set(paletteColors(after, []).map((color) => color.hex))
-  const taken = paletteColors(before, [])
-    .filter((color) => !kept.has(color.hex) && isDefaultHex(color.hex))
-    .map((color) => color.hex)
-  return [...new Set([...removed.filter((hex) => !kept.has(hex)), ...taken])]
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/** A stored Palette read back whatever it holds (ADR 0103), as the ids and codes to keep: file version 16's sections, or
+ * an older flat list, which the Bead of the layer it was woven in (`earlierBeadId`) sorts into sections. */
+export function readStoredPalette(stored: unknown, storedCodes: unknown, earlierBeadId: string): { ids: string[]; codes: PaletteCodes } {
+  const read = Array.isArray(stored) && stored.some(isRecord) ? readSections(stored, storedCodes) : readEarlierPalette(stored, storedCodes, earlierBeadId)
+  return { ids: paletteColors(read.ids, read.codes).map((color) => color.id), codes: codesInPalette(read.codes, read.ids) }
 }
 
-/** The Palette after the Bead changes from the built-in colors `from` to `to` (tickets 0528, 1070): `to` come in, every
- * added color stays, a `from` color a bead uses (`used`, hexes) stays as an added one at the end and an unused one
- * leaves. A hex in both is kept once, as a built-in; a `to` color the maker removed (`removed`) is not put back. */
-export function paletteForBead(
-  ids: PaletteIds,
-  removed: readonly string[],
-  from: readonly PaletteColor[],
-  to: readonly PaletteColor[],
-  used: ReadonlySet<string>,
-): string[] {
-  if (from === to) return [...ids]
-  const promoted = to.filter((color) => !removed.includes(color.hex))
-  const promotedHexes = new Set(promoted.map((color) => color.hex))
-  const current = paletteColors(ids, from).filter((color) => !promotedHexes.has(color.hex))
-  const added = current.filter((color) => isAddedColorId(color.id))
-  const demoted = current
-    .filter((color) => !isAddedColorId(color.id) && used.has(color.hex))
-    .map((color) => ({ id: addedColorId(color.hex) }))
-  return [...promoted, ...added, ...demoted].map((color) => color.id)
+/** Version 16's sections: each swatch's code is its section's catalog's; what is not a section or an id is dropped. */
+function readSections(stored: readonly unknown[], storedCodes: unknown): { ids: string[]; codes: PaletteCodes } {
+  const named = isRecord(storedCodes) ? storedCodes : {}
+  const codes: Record<string, PaletteCode> = {}
+  const ids = stored.filter(isRecord).flatMap(({ catalog, colors }) => {
+    const held = Array.isArray(colors) ? colors.filter((id): id is string => typeof id === 'string') : []
+    for (const hex of held.map(hexOfId)) {
+      const code = hex && named[hex]
+      if (hex && typeof catalog === 'string' && catalog && typeof code === 'string' && code) codes[hex] = { catalog, code }
+    }
+    return held
+  })
+  return { ids, codes }
+}
+
+/** The hex a built-in id the Bead's set lacks stood for: a generic color's (a Project saved before ticket 0528 or 1070),
+ * or a catalog default color's, by its id; undefined for any other id. */
+function earlierBuiltInHex(id: string): string | undefined {
+  if (id.startsWith(DEFAULT_PREFIX)) return normalizeHex(`#${id.slice(DEFAULT_PREFIX.length)}`)
+  return GENERIC_COLORS.find((color) => color.id === id)?.hex
+}
+
+/** A Palette saved before its sections (ADR 0103), resolved against the Bead it was woven in: a built-in color its set
+ * lacks stays as an added color (tickets 0528, 1070), every code, the defaults' too, joins that Bead's catalog (with none,
+ * a Custom color), and a missing or unreadable Palette is that Bead's default colors. */
+function readEarlierPalette(stored: unknown, storedCodes: unknown, beadId: string): { ids: string[]; codes: PaletteCodes } {
+  const builtIns = defaultPalette(beadId)
+  const ids = !Array.isArray(stored)
+    ? defaultPaletteIds(builtIns)
+    : stored.flatMap((id) => {
+        if (typeof id !== 'string') return []
+        const earlier = builtIns.some((color) => color.id === id) ? undefined : earlierBuiltInHex(id)
+        return [earlier ? addedColorId(earlier) : id]
+      })
+  const catalog = colorCatalogOf(beadId)
+  // A Project held in memory (not a file) is read here too, so a code that already names its catalog keeps it.
+  const named = Object.entries(isRecord(storedCodes) ? storedCodes : {}).flatMap(([key, held]) => {
+    const hex = normalizeHex(key)
+    const code = typeof held === 'string' ? catalog && { catalog, code: held } : isRecord(held) && held
+    return hex && code && typeof code.catalog === 'string' && typeof code.code === 'string' && code.code !== '' ? [[hex, { catalog: code.catalog, code: code.code }] as const] : []
+  })
+  return { ids, codes: { ...codesOfColors(builtIns), ...Object.fromEntries(named) } }
 }

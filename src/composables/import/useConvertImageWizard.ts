@@ -481,7 +481,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   const rows = computed(() => beadColorRows(found.value))
   const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(cleanUp.raw.value, reduced.value, found.value) : []))
   const held = computed(() => heldColorLookup(found.value))
-  const palette = computed(() => newProjectPalette(builtIns.value, found.value))
+  const palette = computed(() => newProjectPalette(builtIns.value, found.value, catalogId.value))
 
   /** Whether the part is away from where the exact conversion was made: the only time beads are approximate. */
   const approximate = computed(() => moving.value && part.value !== restPart.value)
@@ -671,7 +671,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   const projectName = computed(() => name.value.trim() || fileStem.value)
 
   /** The Palette the remap picker shows (FoundColorRow card): the new Project's, as a Palette. */
-  const remapPalette = computed(() => createPalette(palette.value.ids, builtIns.value, palette.value.codes))
+  const remapPalette = computed(() => createPalette(palette.value.ids, palette.value.codes))
   /** The Bead colors the remap picker lists: every one of the catalog in the Bead's size, those the new Palette holds
    * marked taken. */
   const remapSwatches = computed(() => {

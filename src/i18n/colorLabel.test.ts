@@ -31,6 +31,11 @@ describe('colorLabel (ticket 0760)', () => {
     expect(colorLabel(en, { hex: '#1a1a1a', code: '999' }, catalog).text).toBe('999')
   })
 
+  it('reads a code only in its own section\'s catalog: one of another is its code alone (ADR 0103)', () => {
+    expect(colorLabel(en, { hex: '#1a1a1a', code: '49', catalog: 'toho' }, catalog).text).toBe('49 Opaque Black')
+    expect(colorLabel(en, { hex: '#1a1a1a', code: '49', catalog: 'miyuki-round' }, catalog).text).toBe('49')
+  })
+
   it('puts the name in the language\'s own order and words', () => {
     expect(colorLabel(ru, { hex: '#1a1a1a', code: '49' }, catalog).text).toBe(`49 ${ru.colorNames.black} · ${ru.palette.beadColors.finishes.opaque}`)
   })

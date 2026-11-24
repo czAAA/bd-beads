@@ -90,7 +90,7 @@ describe('the toho catalog', () => {
     expect(code.hex).not.toBe(before)
 
     const made = createProject({ technique: 'loom', beadId: findBead('toho/cube/1.5mm')!.id, name: '', makerName: '' })
-    const old = setPalette(made, [...defaultPaletteIds(), addedColorId(before)], { [before]: code.code })
+    const old = setPalette(made, [...defaultPaletteIds(), addedColorId(before)], { [before]: { catalog: 'toho', code: code.code } })
     const opened = parseProjectsFile(serializeProject(old)).projects[0]!
 
     expect(projectPalette(opened).colors.find((color) => color.hex === before)).toMatchObject({ hex: before, code: code.code })

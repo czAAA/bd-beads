@@ -1,42 +1,41 @@
-import { addUsedColor, codesInPalette, defaultPalette, paletteColors, removedDefaultsAfter, type PaletteCodes, type PaletteColor, type PaletteIds } from './palette'
+import { addUsedColor, codesInPalette, paletteColors, type PaletteCodes, type PaletteIds } from './palette'
 import { touch, type Project } from './project'
 import type { Layer } from './grid'
 import { projectColors } from './layerBeads'
 import { lettersFor, withLetter, type SwatchLetters } from './swatchLetters'
-import { beadIdOfLayer, lettersOn, type Layered, wovenLayerOf } from './layerRecord'
+import { lettersOn, type Layered } from './layerRecord'
 
-// The Project's Palette (ADR 0002, ticket 0525): its swatches, the defaults removed, catalog codes and Swatch letters,
+// The Project's Palette (ADR 0002, 0103, ticket 0525): its swatches in their sections, catalog codes and Swatch letters,
 // which change together.
 
 /** The Swatch letters of a Palette (ticket 0573): each color keeps the letter it had and a new one takes the lowest unused. */
-export function lettersOfPalette(palette: PaletteIds, beadId: string, kept: unknown): SwatchLetters {
-  return lettersFor(paletteColors(palette, defaultPalette(beadId)).map((color) => color.hex), kept)
+export function lettersOfPalette(palette: PaletteIds, kept: unknown): SwatchLetters {
+  return lettersFor(paletteColors(palette).map((color) => color.hex), kept)
 }
 
-/** The Project with a new Palette (adding, removing or moving a swatch); the default colors that left it are
- * remembered as removed (ticket 0528). `codes` join it by hex and a swatch's code leaves with it (ticket 0538). */
+/** The Project with a new Palette (adding, removing or moving a swatch), each section's swatches together (ADR 0103).
+ * `codes` join it by hex and a swatch's code leaves with it (ticket 0538). */
 export function setPalette(project: Project, palette: PaletteIds, codes: PaletteCodes = {}): Project {
-  const removed = removedDefaultsAfter(project.palette, palette, project.removedDefaults ?? [])
-  const beadId = beadIdOfLayer(project, wovenLayerOf(project))
-  const kept = codesInPalette({ ...project.paletteCodes, ...codes }, palette, defaultPalette(beadId))
-  const { removedDefaults: _removed, paletteCodes: _codes, ...rest } = project
-  const paletteLetters = lettersOfPalette(palette, beadId, project.paletteLetters)
-  return touch(rest, { palette, paletteLetters, ...(removed.length > 0 ? { removedDefaults: removed } : {}), ...(Object.keys(kept).length > 0 ? { paletteCodes: kept } : {}) })
+  const held = { ...project.paletteCodes, ...codes }
+  const ids = paletteColors(palette, held).map((color) => color.id)
+  const kept = codesInPalette(held, ids)
+  const { paletteCodes: _codes, ...rest } = project
+  return touch(rest, { palette: ids, paletteLetters: lettersOfPalette(ids, project.paletteLetters), ...(Object.keys(kept).length > 0 ? { paletteCodes: kept } : {}) })
 }
 
-/** The Palette with every color the layers show and it lacks added last, in the order the layers hold them (ticket
- * 1124): every bead's color has a Swatch letter, so no export prints "?". The same ids when none is missing. */
-export function withUsedColors(palette: PaletteIds, project: Layered, builtIns: readonly PaletteColor[]): PaletteIds {
-  return projectColors(project).reduce((ids, hex) => addUsedColor(ids, hex, builtIns).ids, palette)
+/** The Palette with every color the layers show and it lacks added last, among the Custom colors, in the order the
+ * layers hold them (ticket 1124): every bead's color has a Swatch letter, so no export prints "?". The same ids when
+ * none is missing. */
+export function withUsedColors(palette: PaletteIds, project: Layered, codes: PaletteCodes = {}): PaletteIds {
+  return projectColors(project).reduce((ids, hex) => addUsedColor(ids, hex, codes).ids, palette)
 }
 
 /** The Project with every color its beads show in its Palette (ticket 1124), as every Edit leaves it (a Paste from
- * another Project, a Frame grown back over its Folded beads) and opening does. Not stamped: adding takes no code and
- * removes no default. The same Project when none is missing. */
+ * another Project, a Frame grown back over its Folded beads) and opening does. Not stamped: adding takes no code. The
+ * same Project when none is missing. */
 export function withColorsInPalette(project: Project): Project {
-  const beadId = beadIdOfLayer(project, wovenLayerOf(project))
-  const palette = withUsedColors(project.palette, project, defaultPalette(beadId))
-  return palette === project.palette ? project : { ...project, palette, paletteLetters: lettersOfPalette(palette, beadId, project.paletteLetters) }
+  const palette = withUsedColors(project.palette, project, project.paletteCodes)
+  return palette === project.palette ? project : { ...project, palette, paletteLetters: lettersOfPalette(palette, project.paletteLetters) }
 }
 
 /** The Project with a Palette color's Swatch letter changed to one the maker typed (ticket 1092), a color that had it

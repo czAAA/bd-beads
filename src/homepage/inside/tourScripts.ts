@@ -46,7 +46,7 @@ async function catalogSwatch(hand: Hand, { code, family }: CatalogPick): Promise
   }
   if (!row()?.hasAttribute('data-taken')) await hand.press(row)
   return () => {
-    const hex = Object.entries(hand.canvas.activeProject.value?.paletteCodes ?? {}).find(([, each]) => each === code)?.[0]
+    const hex = Object.entries(hand.canvas.activeProject.value?.paletteCodes ?? {}).find(([, each]) => each.code === code)?.[0]
     return hex ? (hand.root.querySelector(`[data-testid="palette-swatch"][data-color-id="${addedColorId(hex)}"]`) ?? undefined) : undefined
   }
 }

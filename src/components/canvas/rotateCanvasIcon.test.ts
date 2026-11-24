@@ -18,8 +18,8 @@ describe('the Rotate canvas icon (ticket 1082)', () => {
     const [cube, delica] = [ofType('cube')[0]!, ofType('delica')[0]!]
     const framed = bareProject({ beadId: cube.id, bead: cube, frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })
     expect(rotateCanvasIcon(framed)).toBe('rotate-canvas-cube')
-    expect(rotateCanvasIcon(replaceBead(framed, delica, undefined, 'frame'))).toBe('rotate-canvas-delica')
-    expect(rotateCanvasIcon(replaceBead(framed, delica, undefined, 'canvas'))).toBe('rotate-canvas-cube')
+    expect(rotateCanvasIcon(replaceBead(framed, delica, 'frame'))).toBe('rotate-canvas-delica')
+    expect(rotateCanvasIcon(replaceBead(framed, delica, 'canvas'))).toBe('rotate-canvas-cube')
   })
 
   it('keeps the plain rotate-canvas icon for a Bead whose Form factor has no drawing', () => {

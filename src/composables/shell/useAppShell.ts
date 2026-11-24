@@ -50,6 +50,7 @@ import { useExportFlow } from '../export/useExportFlow'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import type { OpenPanel } from './openPanel'
+import type { PaletteCode } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
 import { useOverlayVisibility } from './useOverlayVisibility'
@@ -627,7 +628,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   provideMoveColor(moveColor)
 
   /** A Custom color that is about to paint a cell joins the Palette on its first use (ticket 227). */
-  function onPaintColorUsed(hex: string, code?: string) {
+  function onPaintColorUsed(hex: string, code?: PaletteCode) {
     if (selectedColorId.value) return
     const { outcome, colorId } = addUsed(hex, code)
     if (outcome === 'added' && colorId) onCustomColorAdded(colorId)
@@ -635,7 +636,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** A Custom color was picked (ticket 398): it becomes the paint color and, with a slot free, joins the Palette at
    * once, with its catalog code when it is a bead color matched to the reference image (ticket 1119). */
-  function onSelectCustomColor(hex: string, code?: string) {
+  function onSelectCustomColor(hex: string, code?: PaletteCode) {
     selectCustomColor(hex)
     onPaintColorUsed(hex, code)
   }

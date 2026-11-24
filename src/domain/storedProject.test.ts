@@ -3,6 +3,7 @@ import type { OwnRowProgress } from './rowProgress'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { moveToRow, rowProgressOf, toggleRowDirection } from './rowProgress'
+import { decodeProject, encodeProject } from './projectEncoding'
 import { normalizeProject } from './storedProject'
 import { rotateCanvas, turnCanvasTo } from './rotate'
 import { withFrame } from './frame'
@@ -16,10 +17,10 @@ import { MIRROR_OFF, mirrorSettingOf, withMirrorPlace, type MirrorSetting } from
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 describe('normalizeProject', () => {
-  it("reads each layer's own Bead back, and the Palette's built-in colors from the Frame's (ticket 0665)", () => {
+  it("reads each layer's own Bead back, and the Palette as it was, though the Frame's Bead is another (ticket 0665, ADR 0103)", () => {
     const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki/delica/11-0')!
     const framed = replaceBead(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } }), delica)
-    const reopened = normalizeProject(JSON.parse(JSON.stringify(framed)))
+    const reopened = normalizeProject(decodeProject(JSON.parse(JSON.stringify(encodeProject(framed)))))
 
     expect([canvasOf(reopened).beadId, frameOf(reopened)!.beadId]).toEqual([cubeBead.id, delica.id])
     expect(reopened.palette).toEqual(framed.palette)

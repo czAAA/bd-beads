@@ -126,18 +126,18 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
   })
 })
 
-describe('Replace Bead with coded swatches (ticket 0538)', () => {
-  it('loads the new Bead\'s catalog and keeps the codes it lists, in one Undo step', async () => {
+describe('Replace Bead with coded swatches (ticket 0538, ADR 0103)', () => {
+  it('keeps the Palette and every code, whatever the new Bead\'s catalog, in one Undo step', () => {
     const delica = findBead('miyuki/delica/11-0')!
     const start = createProject({ technique: 'loom', beadId: delica.id, size: { width: 3, height: 3, unit: 'beads' } })
-    const coded = setPalette(start, [...start.palette, 'added-123456'], { '#123456': 'DB1' })
+    const coded = setPalette(start, [...start.palette, 'added-123456'], { '#123456': { catalog: 'miyuki-delica', code: 'DB1' } })
     const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(coded)
     onRequestReplaceBead('frame', 'toho/round/11-0')
-    await onConfirmReplaceBead()
-    expect(harness.project.paletteCodes).toBeUndefined()
+    onConfirmReplaceBead()
+    expect([harness.project.palette, harness.project.paletteCodes]).toEqual([coded.palette, coded.paletteCodes])
+    expect(frameOf(harness.project)!.beadId).toBe('toho/round/11-0')
     harness.history.onUndo()
-    expect(harness.project.paletteCodes).toEqual({ '#123456': 'DB1' })
-    expect(canvasOf(harness.project).beadId).toBe(delica.id)
+    expect(frameOf(harness.project)!.beadId).toBe(delica.id)
   })
 })
 

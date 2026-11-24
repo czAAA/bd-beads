@@ -162,9 +162,11 @@ describe('encodeProject / decodeProject', () => {
 
     // Beside it, the marks normalizeProject reads: the list its Background positions are in (ticket 1000), and that
     // each layer's Letters switch is its own (ticket 1092). The Frame keeps its centre on the table in place of its
-    // Canvas position (ticket 1185).
+    // Canvas position (ticket 1185), and the Palette is in its sections, each code beside it by hex (ADR 0103).
     const [canvas, { row: _row, column: _column, ...frame }] = project.layers as [CanvasLayer, FrameLayer]
-    expect(decoded).toEqual({ ...project, layers: [canvas, { ...frame, centre: framePlacement(project)!.at }], backgroundPositions: 3, lettersByLayer: true })
+    const { palette: _palette, paletteCodes: _codes, ...rest } = project
+    const codes = Object.fromEntries(Object.entries(project.paletteCodes!).map(([hex, { code }]) => [hex, code]))
+    expect(decoded).toEqual({ ...rest, palette: [{ catalog: 'toho', colors: project.palette }], paletteCodes: codes, layers: [canvas, { ...frame, centre: framePlacement(project)!.at }], backgroundPositions: 3, lettersByLayer: true })
   })
 
   it('does not fold the grid colors into a field of their own on the Project', () => {
