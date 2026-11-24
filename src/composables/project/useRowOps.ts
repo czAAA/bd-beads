@@ -1,6 +1,6 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, firstFrameId } from '../../domain/layerRecord'
 import { columnsAsSeen, moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, seenWayOf, toggleRowDirection, turnRowDirectionTo, type SeenWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { rowProgressAnnouncement, seenWayWords } from '../../i18n/rowProgressWords'
@@ -63,21 +63,21 @@ export function useRowOps(deps: RowOpsDeps) {
       // Said once per change, whether the list or the key turned it (ticket 411).
       const t = deps.messages().rowProgress
       // The way as seen names its noun too (spec 1182): top to bottom and bottom to top are rows, the others columns.
-      const { toast } = seenWayWords(t, seenWayOf(turned))
+      const { toast } = seenWayWords(t, seenWayOf(turned, firstFrameId(turned)))
       // The way left keeps its own pointer: said, so its rows marked done don't look lost (ticket 0849, F-04-04).
-      const kept = rowProgressPosition(project).current > 0 ? (columnsAsSeen(project) ? t.columnsKeptToast : t.rowsKeptToast) : undefined
+      const kept = rowProgressPosition(project, firstFrameId(project)).current > 0 ? (columnsAsSeen(project, firstFrameId(project)) ? t.columnsKeptToast : t.rowsKeptToast) : undefined
       deps.showToast('row-direction', kept ? fillBlanks(t.directionKeptToast, { toast, kept }) : toast, 'success')
     }
   }
 
   /** The `D` key: the rows on to the next of the four ways (ticket 0589). */
   function onToggleRowDirection() {
-    turnTo(toggleRowDirection)
+    turnTo((project) => toggleRowDirection(project, firstFrameId(project)))
   }
 
   /** A way chosen from Turn row direction's list (ticket 0973, UX-060): the rows run that way, its own count back. */
   function onSetRowDirection(way: SeenWay) {
-    turnTo((project) => turnRowDirectionTo(project, way))
+    turnTo((project) => turnRowDirectionTo(project, way, firstFrameId(project)))
   }
 
   /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or the Homepage cuff's jump. The row it
@@ -85,9 +85,9 @@ export function useRowOps(deps: RowOpsDeps) {
   function moveTo(pass: (from: number) => number, pressed: boolean) {
     const project = deps.currentProject()
     if (!project) return
-    const { current: from, total } = rowProgressPosition(project)
-    const moved = moveToRow(project, pass(from))
-    const to = rowProgressPosition(moved).current
+    const { current: from, total } = rowProgressPosition(project, firstFrameId(project))
+    const moved = moveToRow(project, pass(from), firstFrameId(project))
+    const to = rowProgressPosition(moved, firstFrameId(moved)).current
     if (to === from) return
     // Said before the write, so the surface that redraws for it already knows the press. A jump plays nothing.
     if (pressed) rowPress.value = { id: ++presses, done: to > from, from, to, patternDone: to === total }
@@ -115,7 +115,7 @@ export function useRowOps(deps: RowOpsDeps) {
   /** Asks whether to reset; nothing to ask about until a row is done. */
   function onResetProgress() {
     const project = deps.currentProject()
-    if (project && rowProgressStarted(project)) resetProgressConfirmOpen.value = true
+    if (project && rowProgressStarted(project, firstFrameId(project))) resetProgressConfirmOpen.value = true
   }
 
   /** The Reset progress question answered No: nothing changes. */
@@ -128,13 +128,13 @@ export function useRowOps(deps: RowOpsDeps) {
     resetProgressConfirmOpen.value = false
     const project = deps.currentProject()
     stopRowMotion()
-    if (project) deps.replaceProject(resetRowProgress(project))
+    if (project) deps.replaceProject(resetRowProgress(project, firstFrameId(project)))
   }
 
   /** Says why a drawing did not land: rows marked done took it back (ticket 0848). One toast, replaced, not stacked. */
   function tellMarkedDone(project: Project) {
     const t = deps.messages().rowProgress
-    deps.showToast('marked-done', columnsAsSeen(project) ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
+    deps.showToast('marked-done', columnsAsSeen(project, firstFrameId(project)) ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
   }
 
   return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onSetRowDirection, onMoveRow, jumpToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }

@@ -3,7 +3,7 @@
 import file from '../../docs/design/system/components/Homepage/winter-charms.json'
 import { beadsFromColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
-import { withLayer } from '../domain/layerRecord'
+import { withLayer, firstFrameId } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
 import { CELL_SIZE_PX } from '../rendering/cellSize'
@@ -178,7 +178,7 @@ export function charmProject(id: string): Project | undefined {
     const technique = charm.technique as Technique
     const size = { unit: 'beads' as const, width: charm.width, height: rows.length }
     const made = createProject({ name: charm.name, technique, beadId: file.bead, size, background: 1 })
-    project = withLayer(made, 'frame', { beads: beadsFromColors(rows) })
+    project = withLayer(made, firstFrameId(made), { beads: beadsFromColors(rows) })
     projects.set(id, project)
   }
   return project
@@ -191,7 +191,7 @@ let sizes: CharmSizes | undefined
 function charmSizes(): CharmSizes {
   sizes ??= Object.fromEntries(
     Object.keys(charms).map((id) => {
-      const { extent } = spaceOf(charmProject(id)!, false)
+      const { extent } = spaceOf(charmProject(id)!, false, firstFrameId(charmProject(id)!))
       return [id, { width: extent.width / CELL_SIZE_PX, height: extent.height / CELL_SIZE_PX }]
     }),
   )

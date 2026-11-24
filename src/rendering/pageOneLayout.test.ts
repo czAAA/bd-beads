@@ -1,12 +1,16 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import type { Technique } from '../domain/weave'
 import { OVERVIEW_CUT_LABEL, PAGE_FOOTER } from './overviewLayout'
-import { largeBeadsActs, pageOneLayout } from './pageOneLayout'
+import { largeBeadsActs as laidLargeBeadsActs, pageOneLayout as laidPageOne } from './pageOneLayout'
 import { A4_PORTRAIT, chartOnPageOne, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
 
 const shape = (technique: Technique, columns: number, rows: number) => bareProject({ technique, orientation: 0, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
 const words = (colors: number, name = 'Mandala', maker = 'Anna K.') => ({ name, maker, colors: Array.from({ length: colors }, (_, index) => ({ hex: '#000000', name: `Color ${index}`, beads: '10' })) })
+/** Page 1 for the Project's first Frame, in these words. */
+const pageOneLayout = (project: Parameters<typeof laidPageOne>[0], words: Omit<Parameters<typeof laidPageOne>[1], 'frame'>, page?: Parameters<typeof laidPageOne>[2]) => laidPageOne(project, { ...words, frame: frameIdIn(project) }, page)
+const largeBeadsActs = (project: Parameters<typeof laidLargeBeadsActs>[0], words: Omit<Parameters<typeof laidLargeBeadsActs>[1], 'frame'>) => laidLargeBeadsActs(project, { ...words, frame: frameIdIn(project) })
 const FOOTER_TOP = A4_PORTRAIT.height - PRINT_MARGIN - PAGE_FOOTER
 const bottomOf = (layout: ReturnType<typeof pageOneLayout>) => layout.needed.y + mm(10.5) + layout.needed.rows * layout.needed.rowHeight + (layout.needed.total ? mm(14) : 0)
 

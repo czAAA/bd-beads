@@ -1,3 +1,4 @@
+import { FRAME_ID } from './testUtils/frameId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
@@ -156,7 +157,7 @@ describe('the Palette reaches its flows', () => {
   it('the Palette\'s Letters switch is the Canvas\'s own, saved with the Project, and a letter typed in Edit palette is saved too (ticket 1092)', async () => {
     const wrapper = await openApp()
     await wrapper.get('[data-testid="palette-letters"]').trigger('click')
-    expect([lettersOn(loadProjects()[0]!, 'canvas'), lettersOn(loadProjects()[0]!, 'frame')]).toEqual([true, false])
+    expect([lettersOn(loadProjects()[0]!, 'canvas'), lettersOn(loadProjects()[0]!, FRAME_ID)]).toEqual([true, false])
     expect(wrapper.findAll('[data-testid="palette-swatch-letter"]').length).toBeGreaterThan(0)
 
     await editPalette(wrapper)

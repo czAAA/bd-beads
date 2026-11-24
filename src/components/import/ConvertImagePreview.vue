@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstFrameId } from '../../domain/layerRecord'
 import { computed, nextTick, onBeforeUnmount, ref, watch, watchPostEffect } from 'vue'
 import { NARROW_CONVERTER, useConvertCompare, type CompareView } from '../../composables/import/useConvertCompare'
 import { useConvertImageWizardState, type ConvertTool } from '../../composables/import/useConvertImageWizard'
@@ -149,7 +150,7 @@ const project = computed(() => wizard.drawnProject.value)
 const lattice = computed(() => wizard.lattice.value)
 const grid = computed(() => wizard.previewGrid.value)
 const cell = computed(() => beadCell(wizard.bead.value, wizard.technique.value))
-const space = computed(() => project.value && spaceOf(project.value, false))
+const space = computed(() => project.value && spaceOf(project.value, false, firstFrameId(project.value)))
 
 /** The scale at which the whole lattice fits the pane: only the drawing scales. */
 const fitScale = computed(() => {

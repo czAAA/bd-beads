@@ -1,13 +1,17 @@
+import { FRAME_ID } from '../testUtils/frameId'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import { columnCycle, type Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
-import { projectExtentPx, surfaceView } from './surfaceView'
+import { projectExtentPx, surfaceView as viewOf } from './surfaceView'
 import { seamOf } from './layerDrawings'
 import { tiltedView } from './tiltedView'
 import { customFrameSize, frameGeometry } from '../domain/frameShape'
+
+/** The view, its Frame (when it has one) named `FRAME_ID`. */
+const surfaceView = (input: Parameters<typeof viewOf>[0]) => viewOf({ ...(input.frame ? { frameLayer: FRAME_ID } : {}), ...input })
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
 /** After how many columns a Technique's stagger repeats: a move by that many keeps a bead's row on the screen. */
@@ -242,22 +246,22 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
   })
 
   it('says which layer a point is on', () => {
-    expect(view().pointToHit({ x: 70, y: 40 + 55 })).toEqual({ row: 4, column: 3, layer: 'frame' })
+    expect(view().pointToHit({ x: 70, y: 40 + 55 })).toEqual({ row: 4, column: 3, layer: FRAME_ID })
     expect(view().pointToHit({ x: 10, y: 10 })).toEqual({ row: 0, column: 0, layer: 'canvas' })
   })
 
   it('measures a block of the Frame in the Frame\'s Weave and a block of the Canvas in the Canvas\'s', () => {
-    expect(view().beadBox(frame, 'frame')).toMatchObject({ x: 60, y: 40, width: 90, height: 80 })
+    expect(view().beadBox(frame, FRAME_ID)).toMatchObject({ x: 60, y: 40, width: 90, height: 80 })
     expect(view().beadBox({ row: 0, column: 0, rows: 2, columns: 2 })).toMatchObject({ x: 0, y: 0, width: 40, height: 40 })
   })
 
   it('finds the cell nearest a point in the geometry asked for', () => {
-    expect(view().pointToCell({ x: 80, y: 70 }, 'frame')).toEqual({ row: 3, column: 3 })
+    expect(view().pointToCell({ x: 80, y: 70 }, FRAME_ID)).toEqual({ row: 3, column: 3 })
     expect(view().pointToCell({ x: 80, y: 65 }, 'canvas')).toEqual({ row: 3, column: 4 })
   })
 
   it('steps a layer by its own Weave', () => {
-    expect(view().beadStep('frame').row.y).toBe(20)
+    expect(view().beadStep(FRAME_ID).row.y).toBe(20)
     expect(view().beadStep('canvas').row.y).toBe(20)
   })
 })
@@ -269,21 +273,21 @@ describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s 
 
   it('draws the Frame\'s beads at half the size from its corner, and finds each under its centre', () => {
     expect(view.beadToPoint({ row: 2, column: 3 })).toEqual({ x: 65, y: 45 })
-    expect(view.beadToPoint({ row: 5, column: 6 }, 'frame')).toEqual({ x: 95, y: 75 })
-    expect(view.pointToHit({ x: 95, y: 75 })).toEqual({ row: 5, column: 6, layer: 'frame' })
+    expect(view.beadToPoint({ row: 5, column: 6 }, FRAME_ID)).toEqual({ x: 95, y: 75 })
+    expect(view.pointToHit({ x: 95, y: 75 })).toEqual({ row: 5, column: 6, layer: FRAME_ID })
   })
 
   it('leaves the Canvas positions it does not reach to the Canvas, and covers only those it draws over', () => {
     expect(view.pointToHit({ x: 110, y: 50 })).toEqual({ row: 2, column: 5, layer: 'canvas' })
-    expect(view.beadBox(frame, 'frame')).toMatchObject({ x: 60, y: 40, width: 40, height: 40 })
+    expect(view.beadBox(frame, FRAME_ID)).toMatchObject({ x: 60, y: 40, width: 40, height: 40 })
     const line = view.frameBox(frame)
     expect([line.x + line.width / 2, line.y + line.height / 2]).toEqual([80, 60])
   })
 
   it('steps the Frame by its own beads, and finds the cell nearest a point in them', () => {
-    expect(view.beadStep('frame').column.x).toBe(10)
+    expect(view.beadStep(FRAME_ID).column.x).toBe(10)
     expect(view.beadStep('canvas').column.x).toBe(20)
-    expect(view.pointToCell({ x: 96, y: 76 }, 'frame')).toEqual({ row: 5, column: 6 })
+    expect(view.pointToCell({ x: 96, y: 76 }, FRAME_ID)).toEqual({ row: 5, column: 6 })
   })
 })
 
@@ -317,8 +321,8 @@ describe('a Custom frame on the Canvas (ticket 0592)', () => {
   const bead = { x: box.x * CELL_SIZE_PX + (box.width * CELL_SIZE_PX) / 2, y: box.y * CELL_SIZE_PX + (box.height * CELL_SIZE_PX) / 2 }
 
   it('hits the bead its layout puts under the point, named by round and place, and puts it back there', () => {
-    expect(view.pointToHit(bead)).toEqual({ row: 3, column: 5, layer: 'frame' })
-    expect(view.beadToPoint({ row: 3, column: 5 }, 'frame')).toEqual({ x: bead.x, y: bead.y })
+    expect(view.pointToHit(bead)).toEqual({ row: 3, column: 5, layer: FRAME_ID })
+    expect(view.beadToPoint({ row: 3, column: 5 }, FRAME_ID)).toEqual({ x: bead.x, y: bead.y })
     expect(view.offShapeAt(bead)).toBe(false)
   })
 
@@ -329,8 +333,8 @@ describe('a Custom frame on the Canvas (ticket 0592)', () => {
   })
 
   it('gives the Select tool the Frame\'s cell under any point of it, on a bead or Off-shape, and none off it (ticket 0594)', () => {
-    expect(view.frameCellAt({ x: 2, y: 2 })).toEqual({ row: 0, column: 0, layer: 'frame' })
-    expect(view.frameCellAt(bead)).toEqual({ ...view.pointToCell(bead, 'frame'), layer: 'frame' })
+    expect(view.frameCellAt({ x: 2, y: 2 })).toEqual({ row: 0, column: 0, layer: FRAME_ID })
+    expect(view.frameCellAt(bead)).toEqual({ ...view.pointToCell(bead, FRAME_ID), layer: FRAME_ID })
     expect(view.frameCellAt({ x: -40, y: -40 })).toBeUndefined()
   })
 })
@@ -343,20 +347,20 @@ describe('a Frame lying turned on the Canvas (ticket 0667)', () => {
 
   it('hits each bead where it lies turned, by its own row and column', () => {
     // Its first bead lies at the top right, its last at the bottom left.
-    expect(view.pointToHit(at(3.5, 0.5))).toEqual({ row: 0, column: 0, layer: 'frame' })
-    expect(view.pointToHit(at(0.5, 5.5))).toEqual({ row: 3, column: 5, layer: 'frame' })
-    expect(view.beadToPoint({ row: 0, column: 0 }, 'frame')).toEqual(at(3.5, 0.5))
+    expect(view.pointToHit(at(3.5, 0.5))).toEqual({ row: 0, column: 0, layer: FRAME_ID })
+    expect(view.pointToHit(at(0.5, 5.5))).toEqual({ row: 3, column: 5, layer: FRAME_ID })
+    expect(view.beadToPoint({ row: 0, column: 0 }, FRAME_ID)).toEqual(at(3.5, 0.5))
   })
 
   it('hides the Canvas under what it covers, and only there', () => {
-    expect(view.pointToHit(at(3.5, 5.5))!.layer).toBe('frame')
+    expect(view.pointToHit(at(3.5, 5.5))!.layer).toBe(FRAME_ID)
     expect(view.pointToHit(at(4.5, 0.5))).toEqual({ row: 0, column: 4, layer: 'canvas' })
   })
 
   it('draws its line round what it covers, and gives the Select tool the cells under a point', () => {
     const line = view.frameBox(frame)
     expect(line.width).toBeLessThan(line.height)
-    expect(view.frameCellAt(at(3.5, 5.5))).toEqual({ row: 5, column: 3, layer: 'frame' })
+    expect(view.frameCellAt(at(3.5, 5.5))).toEqual({ row: 5, column: 3, layer: FRAME_ID })
   })
 })
 
@@ -375,7 +379,7 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
         const [a, b] = [carried.beadToPoint(bead), own.beadToPoint(bead)]
         expect(b.x).toBeCloseTo(a.x, 9)
         expect(b.y).toBeCloseTo(a.y, 9)
-        expect(own.pointToHit(a)).toEqual({ ...bead, layer: 'frame' })
+        expect(own.pointToHit(a)).toEqual({ ...bead, layer: FRAME_ID })
       }
       expect(own.frameBox(frame)).toEqual(carried.frameBox(frame))
     }
@@ -394,12 +398,12 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
 
     it('finds each Frame bead where its own drawing puts it, and back', () => {
       for (const bead of [{ row: 2, column: 3 }, { row: 5, column: 6 }, { row: 3, column: 5 }]) {
-        const at = fromFrameDrawing(frameOnly.beadToPoint(bead, 'frame'))
-        const point = view.beadToPoint(bead, 'frame')
+        const at = fromFrameDrawing(frameOnly.beadToPoint(bead, FRAME_ID))
+        const point = view.beadToPoint(bead, FRAME_ID)
         expect(point.x).toBeCloseTo(at.x, 9)
         expect(point.y).toBeCloseTo(at.y, 9)
-        expect(view.pointToHit(point)).toEqual({ ...bead, layer: 'frame' })
-        expect(view.pointToCell(point, 'frame')).toEqual(bead)
+        expect(view.pointToHit(point)).toEqual({ ...bead, layer: FRAME_ID })
+        expect(view.pointToCell(point, FRAME_ID)).toEqual(bead)
       }
     })
 
@@ -410,30 +414,30 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
     })
 
     it('is opaque: a point on the Frame is never the Canvas bead under it', () => {
-      const middle = view.beadToPoint({ row: 3, column: 4 }, 'frame')
-      expect(view.pointToHit(middle)?.layer).toBe('frame')
+      const middle = view.beadToPoint({ row: 3, column: 4 }, FRAME_ID)
+      expect(view.pointToHit(middle)?.layer).toBe(FRAME_ID)
     })
 
     it('boxes the Frame round its turned corners and steps it along its own rows', () => {
       const box = view.frameBox(frame)
       for (const corner of [{ row: 2, column: 3 }, { row: 5, column: 6 }]) {
-        const at = view.beadToPoint(corner, 'frame')
+        const at = view.beadToPoint(corner, FRAME_ID)
         expect(at.x).toBeGreaterThan(box.x)
         expect(at.x).toBeLessThan(box.x + box.width)
         expect(at.y).toBeGreaterThan(box.y)
         expect(at.y).toBeLessThan(box.y + box.height)
       }
-      const step = view.beadStep('frame').column
+      const step = view.beadStep(FRAME_ID).column
       expect(Math.hypot(step.x, step.y)).toBeCloseTo(CELL_SIZE_PX * base.zoom, 9)
       expect(Math.atan2(step.y, step.x) * (180 / Math.PI)).toBeCloseTo(frameAngle - canvas, 6)
     })
 
     it('carries a Frame drag by how far the pointer went along its own rows', () => {
       const from = { row: 2, column: 3 }
-      const pressed = view.beadToPoint(from, 'frame')
-      const step = view.beadStep('frame')
+      const pressed = view.beadToPoint(from, FRAME_ID)
+      const step = view.beadStep(FRAME_ID)
       const point = { x: pressed.x + 2 * step.column.x + step.row.x, y: pressed.y + 2 * step.column.y + step.row.y }
-      expect(view.carriedCell(from, view.pointToGrid(pressed), point, 'frame')).toEqual({ row: 3, column: 5 })
+      expect(view.carriedCell(from, view.pointToGrid(pressed), point, FRAME_ID)).toEqual({ row: 3, column: 5 })
     })
 
     describe('off the Canvas\'s grid (ticket 1188)', () => {
@@ -452,13 +456,13 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
       })
 
       it('takes no press on its margin sheet, at any angle, and the Frame\'s beads inside it', () => {
-        const corner = off.beadToPoint({ row: 2, column: 3 }, 'frame')
-        const step = off.beadStep('frame')
+        const corner = off.beadToPoint({ row: 2, column: 3 }, FRAME_ID)
+        const step = off.beadStep(FRAME_ID)
         const beside = { x: corner.x - step.column.x - 0.2 * step.row.x, y: corner.y - step.column.y - 0.2 * step.row.y }
         expect(off.onMarginSheet(beside)).toBe(true)
         expect(off.pointToHit(beside)).toBeUndefined()
         expect(off.onMarginSheet(corner)).toBe(false)
-        expect(off.pointToHit(corner)).toEqual({ row: 2, column: 3, layer: 'frame' })
+        expect(off.pointToHit(corner)).toEqual({ row: 2, column: 3, layer: FRAME_ID })
       })
     })
   })

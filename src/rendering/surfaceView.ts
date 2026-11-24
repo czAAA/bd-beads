@@ -10,7 +10,7 @@ import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 import { CELL_SIZE_PX, cellSizePx, type Size } from './cellSize'
-import { FIRST_FRAME, unwoven, weaveOf } from '../domain/layerRecord'
+import { NO_FRAME, unwoven, weaveOf } from '../domain/layerRecord'
 import type { Affine } from './gestureView'
 
 // The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation is private;
@@ -147,7 +147,7 @@ export interface SurfaceViewInput {
    * its top-left position's corner, `scale` times as wide as the Canvas's beads where its Bead is (ticket 0665; see
    * `placedFrame`). Left out, the view is one layer: the Canvas, or the Frame alone in an own space. */
   frame?: Rect & Weave & Partial<Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'>> & { scale?: number; centre?: { x: number; y: number } }
-  /** Which Frame `frame` is (ticket 1216): what a hit on it names; the first Frame unless given. */
+  /** Which Frame `frame` is (ticket 1216): what a hit on it names. */
   frameLayer?: FrameRef
   rotation: Rotation
   zoom: number
@@ -301,7 +301,7 @@ function layerOf(weave: Weave, geometry: LayerGeometry, origin: Scroll, offset: 
   return { weave, geometry, description: describeWeave(weave), cell: cellSizePx(weave.technique, weave.cell), origin, offset, scale }
 }
 
-export function surfaceView({ space, technique, techniqueSettings, cell: canvasCell, frame, frameLayer = FIRST_FRAME, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 }, frameDrawing }: SurfaceViewInput): SurfaceView {
+export function surfaceView({ space, technique, techniqueSettings, cell: canvasCell, frame, frameLayer = NO_FRAME, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 }, frameDrawing }: SurfaceViewInput): SurfaceView {
   const canvasWeave: Weave = { technique, techniqueSettings, cell: canvasCell }
   // The Canvas has no edge; a Project drawn on its own is its rows and columns from its first.
   const edge = space.open ? undefined : { row: 0, column: 0, rows: space.rows, columns: space.columns }

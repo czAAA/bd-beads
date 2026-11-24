@@ -6,7 +6,7 @@ import { footprintOf } from './footprint'
 import type { GridPosition, FrameRef } from './grid'
 import { MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, NO_COLOR, packedToHex, pixelPackedAt, type PixelData } from './imageConversion'
 import { frameGeometryOf, positionInLayer } from './layers'
-import { beadsOfLayer, withLayer, FIRST_FRAME, frameById } from './layerRecord'
+import { beadsOfLayer, withLayer, frameById } from './layerRecord'
 import { layersAlike } from './layerWeave'
 import { touch, type Grid, type Project } from './project'
 
@@ -123,7 +123,7 @@ function byLayer(project: Project, changes: readonly BeadChange[], ref: FrameRef
 }
 
 /** The Project with the conversion's beads laid where the picture lies, replacing what was on those positions. */
-export function withConvertedBeads(project: Project, changes: readonly BeadChange[], ref: FrameRef = FIRST_FRAME): Project {
+export function withConvertedBeads(project: Project, changes: readonly BeadChange[], ref: FrameRef): Project {
   const { canvas, frame } = byLayer(project, changes, ref)
   let next = project
   if (canvas.length > 0) next = withLayer(next, 'canvas', { beads: withColors(beadsOfLayer(next, 'canvas'), canvas) })
@@ -132,7 +132,7 @@ export function withConvertedBeads(project: Project, changes: readonly BeadChang
 }
 
 /** How many beads already on the positions the conversion paints it replaces: "Replaces {n} beads already there." */
-export function beadsReplaced(project: Project, changes: readonly BeadChange[], ref: FrameRef = FIRST_FRAME): number {
+export function beadsReplaced(project: Project, changes: readonly BeadChange[], ref: FrameRef): number {
   const { canvas, frame } = byLayer(project, changes, ref)
   const held = (beads: BeadMap | undefined, list: BeadChange[]) => (beads ? list.filter(({ row, column }) => colorAt(beads, row, column) !== null).length : 0)
   return held(beadsOfLayer(project, 'canvas'), canvas) + held(beadsOfLayer(project, ref), frame)

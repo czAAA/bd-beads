@@ -20,7 +20,7 @@ const NEEDED_GAP = mm(4)
 const FIT_SLOP = 1
 
 type Counted = Layered & Pick<Project, 'paletteLetters'>
-type PageOneWords = Pick<PrintText, 'name' | 'maker' | 'colors' | 'largeBeads' | 'cover'>
+type PageOneWords = Pick<PrintText, 'frame' | 'name' | 'maker' | 'colors' | 'largeBeads' | 'cover'>
 
 export interface PageOneLayout {
   /** The PDF's plan: the chart whole on page 1 (`chartOnPageOne`), or its parts on the chart pages after it. */
@@ -63,7 +63,8 @@ export function pageOneLayout(project: Counted, words: PageOneWords, page: PageS
  * rest on list pages; one color to a row when all of it fits that way (ticket 1096). Otherwise page 1 is the overview, and the chart parts follow. */
 function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize): PageOneLayout {
   const floorMm = words.largeBeads ? PRINT_BEAD_LARGE_MM : undefined
-  const trim = trimmedArea(project)
+  const { frame } = words
+  const trim = trimmedArea(project, frame)
   const titleHeight = titleHeightOf(words)
   const area = { x: PRINT_MARGIN, y: PRINT_MARGIN + titleHeight }
   const bottom = page.height - PRINT_MARGIN - PAGE_FOOTER
@@ -73,7 +74,7 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
   const settled = (slice: ColorsSlice & { y: number }) => atTheFoot(oneToARow(slice, NEEDED_TABLE, bottom, FIT_SLOP), NEEDED_TABLE, bottom)
   const under = (table: number): PageSize => ({ width: page.width - PRINT_MARGIN * 2, height: room - NEEDED_GAP - table })
   const chartOver = (table: number) => {
-    const plan = planWithKey(project, { page, floorMm, trim, pageOne: under(table) })
+    const plan = planWithKey(project, { frame, page, floorMm, trim, pageOne: under(table) })
     return chartOnPageOne(plan) ? { plan, pageOne: under(table) } : undefined
   }
 
@@ -88,13 +89,13 @@ function chartFirstLayout(project: Counted, words: PageOneWords, page: PageSize)
     const fitting = Math.max(1, Math.floor((bottom - top - NEEDED_TABLE.head) / NEEDED_TABLE.row)) * 2
     const count = whole ? colors : Math.min(colors, fitting)
     const lists = whole ? [] : listSlices(words, NEEDED_TABLE, count, page)
-    const plan = lists.length > 0 ? planWithKey(project, { page, floorMm, trim, pageOne: chart.pageOne, listPages: lists.length }) : chart.plan
+    const plan = lists.length > 0 ? planWithKey(project, { frame, page, floorMm, trim, pageOne: chart.pageOne, listPages: lists.length }) : chart.plan
     const { needed, drop } = settled({ from: 0, count, rowHeight: NEEDED_TABLE.row, columns: 2, rows: Math.ceil(count / 2), total: whole, y: top })
     return { plan, titleHeight, area: { x: area.x, y: area.y + drop }, needed, lists }
   }
 
   const overview = overviewLayout(project, words, NEEDED_TABLE, page, trim)
-  const plan = planWithKey(project, { page, floorMm, trim, pageOne: under(least), listPages: overview.lists.length })
+  const plan = planWithKey(project, { frame, page, floorMm, trim, pageOne: under(least), listPages: overview.lists.length })
   const { needed, drop } = settled(overview.needed)
   const board = { x: overview.board.x, y: overview.board.y + drop }
   return { plan, titleHeight, area, overview: { zoom: overview.zoom, extent: overview.extent, board }, needed, lists: overview.lists }

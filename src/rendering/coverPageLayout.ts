@@ -1,3 +1,4 @@
+import type { FrameRef } from '../domain/grid'
 import type { Layered } from '../domain/layerRecord'
 import { trimmedArea } from './chartPageKey'
 import { A4_PORTRAIT, areaRegion, mm, PRINT_MARGIN, type PageSize } from './printPlan'
@@ -32,9 +33,9 @@ export interface CoverPageLayout {
 
 /** The Cover page's board from `top` down (under the title block and the tech line, ticket 1141) and the piece on it:
  * trimmed to its beads, turned as its Canvas is, as large as the board allows inside its pad, centred. */
-export function coverPageLayout(project: Layered, page: PageSize = A4_PORTRAIT, top = PRINT_MARGIN): CoverPageLayout {
+export function coverPageLayout(project: Layered, ref: FrameRef, page: PageSize = A4_PORTRAIT, top = PRINT_MARGIN): CoverPageLayout {
   const board = { x: PRINT_MARGIN, y: top, width: page.width - PRINT_MARGIN * 2, height: COVER_BOARD }
-  const trimmed = areaRegion(project, trimmedArea(project))
+  const trimmed = areaRegion(project, trimmedArea(project, ref), ref)
   const zoom = Math.min((board.width - COVER_PAD * 2) / trimmed.width, (board.height - COVER_PAD * 2) / trimmed.height)
   const width = trimmed.width * zoom
   const height = trimmed.height * zoom

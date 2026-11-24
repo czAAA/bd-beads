@@ -42,7 +42,7 @@ import {
   type Region,
   type ViewLayer,
 } from './surfaceView'
-import { beadsOfLayer, type Layered, quarterTurnOf, FIRST_FRAME, frameById } from '../domain/layerRecord'
+import { beadsOfLayer, firstFrameId, type Layered, quarterTurnOf, frameById } from '../domain/layerRecord'
 import { drawReference, EMPTY_BEAD_OPACITY, type DrawnReference } from './referenceImage'
 import { blockAround, drawDraftBlock, drawsDraft, keptDraft, layDraft, type DraftImageOf, type DraftPainter } from './draftRenderer'
 
@@ -151,7 +151,7 @@ export interface RenderInput {
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
  * take in its drawn extent where it is woven otherwise or in a Bead of another size (ticket 0665) and so draws larger
  * or smaller than that. */
-function frameFootprintPx(project: DrawnProject, margin = 0, ref: FrameRef = FIRST_FRAME): Region | undefined {
+function frameFootprintPx(project: DrawnProject, margin = 0, ref: FrameRef): Region | undefined {
   const frame = frameById(project, ref)
   const covered = footprintOf(project, ref)
   // A Frame off the Canvas's grid hides no part of it (ticket 1188): its own surface lies over it.
@@ -180,7 +180,7 @@ function frameFootprintPx(project: DrawnProject, margin = 0, ref: FrameRef = FIR
 function drawPositionMarks(
   context: DrawingContext,
   { project, area, zoom, pixelRatio, theme, margin, tiles }: { project: DrawnProject; space: Space; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme; tiles: boolean },
-  ref: FrameRef = FIRST_FRAME,
+  ref: FrameRef,
 ): void {
   const canvas = canvasWeave(project)
   const pattern = positionMarkPattern(context, { ...canvas, deviceScale: zoom * pixelRatio, pixelRatio, ...markLookOf(theme, tiles) })
@@ -231,8 +231,8 @@ function frameGroundBox(project: DrawnProject, ref: FrameRef): readonly [number,
 
 /** The box of the Frame's margin sheet in grid px: left, top, right, bottom. What the Frame's own surface covers
  * (ticket 1187). */
-function sheetBoxOf(project: DrawnProject, margin: number, slim?: SlimSheet): readonly [number, number, number, number] {
-  const sheet = slim?.sheet ?? marginSheetPx(project, margin)!.sheet
+function sheetBoxOf(project: DrawnProject, ref: FrameRef, margin: number, slim?: SlimSheet): readonly [number, number, number, number] {
+  const sheet = slim?.sheet ?? marginSheetPx(project, ref, margin)!.sheet
   return [sheet.x, sheet.y, sheet.x + sheet.width, sheet.y + sheet.height]
 }
 
@@ -707,9 +707,9 @@ function draftBlock(beads: BeadMap, visible: VisiblePositions, rowsInView: reado
 
 /** The margin's sheet in grid px (MarginSheet card, tickets 0656, 0657): its box, the Frame's footprint it holds, and
  * its band, the narrowest of its four sides. What the sheet is drawn from and what its tools on the page are placed by. */
-export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
-  const sheet = frameFootprintPx(project, margin)
-  const footprint = frameFootprintPx(project)
+export function marginSheetPx(project: DrawnProject, ref: FrameRef, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
+  const sheet = frameFootprintPx(project, margin, ref)
+  const footprint = frameFootprintPx(project, 0, ref)
   if (!sheet || !footprint) return undefined
   const band = Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height)
   return { sheet, footprint, band }
@@ -724,8 +724,8 @@ export interface SlimSheet {
 /** The keep-out margin as drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the Frame's
  * footprint left out, a hairline edge and an inner border; folded, no border; none bare, which keeps only the Move bar and
  * the Frame tools button (tickets 0682, 1164). In grid space: its `MARGIN_PX` at the sheet's scale (ticket 0698), over the zoom. */
-function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook, slim?: SlimSheet): void {
-  const kept = marginSheetPx(project, margin)!
+function drawMarginSheet(context: DrawingContext, project: DrawnProject, ref: FrameRef, margin: number, zoom: number, look: MarginLook, slim?: SlimSheet): void {
+  const kept = marginSheetPx(project, ref, margin)!
   const { footprint } = kept
   const sheet = slim?.sheet ?? kept.sheet
   const gridBand = slim ? Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height) : kept.band
@@ -778,8 +778,8 @@ function canvasLook(theme: ProjectTheme): ProjectTheme {
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  // The Frame drawn: the one this surface is, else the first (ticket 1216).
-  const ref: FrameRef = isFrameLayer(input.layer) ? input.layer : FIRST_FRAME
+  // The Frame drawn: the one this surface is, else the Project's first (ticket 1216).
+  const ref: FrameRef = isFrameLayer(input.layer) ? input.layer : firstFrameId(input.project)
   const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, columns, showFinished = false, rowMarks = rowProgressOn(input.project, ref), margin = MARGIN, letters, canvasLetters, draftWhenSmall = false, opaque = false, positionMarks = true, reference, layer } = input
   const frameTheme = input.frameTheme ?? theme
   const frame = frameById(project, ref)
@@ -861,7 +861,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       drawCanvasLayer(context, draw, space, ref)
     }
     if (frame && frameBox && layer !== 'canvas') {
-      drawMarginSheet(context, project, margin, zoom, theme.margin, input.slimSheet)
+      drawMarginSheet(context, project, ref, margin, zoom, theme.margin, input.slimSheet)
       drawFrameGround(context, { project, box: frameBox, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: under, tiles }, ref)
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false, ref)
@@ -895,7 +895,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
   // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
   // Drawn one layer at a time, each lays it on its own part: the Frame on its sheet's box, the Canvas round it.
-  if (drawn?.over) drawReferenceCut(context, drawn, layer && frame && footprintOf(project, ref) ? sheetBoxOf(project, margin, input.slimSheet) : undefined, isFrameLayer(layer) ? 'inside' : 'outside')
+  if (drawn?.over) drawReferenceCut(context, drawn, layer && frame && footprintOf(project, ref) ? sheetBoxOf(project, ref, margin, input.slimSheet) : undefined, isFrameLayer(layer) ? 'inside' : 'outside')
 
   if (band || strip) {
     context.restore()

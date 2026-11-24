@@ -5,7 +5,7 @@ import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
-import type { GridPosition, Layer, PreviewCell, Rotation } from '../../../domain/grid'
+import { isFrameLayer, type GridPosition, type Layer, type PreviewCell, type Rotation } from '../../../domain/grid'
 import { CANVAS_HOLD_MS } from '../../../domain/hold'
 import { pointerDraws, type Handedness, type InputMode } from '../../../domain/inputMode'
 import { beadColorAt } from '../../../domain/layerBeads'
@@ -22,7 +22,7 @@ import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
 import { REFUSED_PRESS_MS } from './useSurfaceOverlay'
-import { frameOf, quarterTurnOf } from '../../../domain/layerRecord'
+import { frameIdOf, frameOf, quarterTurnOf, firstFrameId } from '../../../domain/layerRecord'
 import type { MirrorSetting } from '../../../domain/mirror'
 import type { FrameEdge } from '../../../domain/frame'
 import type { SelectionDragKind } from '../../../composables/tools/useSelectionGesture'
@@ -310,7 +310,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   let hoverPoint: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
 
   function hoversFinishedRow(bead: GridPosition | undefined): boolean {
-    return bead !== undefined && isInFinishedRow(props.project, bead)
+    return bead !== undefined && isInFinishedRow(props.project, bead, firstFrameId(props.project))
   }
 
   // Where the bead-shaped marker stands for the pointer (ticket 353), in px from the surface's top-left: over beads,
@@ -405,7 +405,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     if (!props.tools.selects) return false
     // A Frame whose kind offers no Selection refuses one as the margin does (a Custom frame, ticket 0592), and so does
     // any Frame in Mirror mode: it mirrors whole (ADR 0082).
-    return inMargin(footprintOf(props.project), bead) || (layerAt(props.project, bead) === 'frame' && (props.tools.marksArea || !frameAllows(props.project, 'select')))
+    return inMargin(footprintOf(props.project, firstFrameId(props.project)), bead) || (isFrameLayer(layerAt(props.project, bead)) && (props.tools.marksArea || !frameAllows(props.project, 'select', firstFrameId(props.project))))
   }
 
   function refusesMargin(bead: GridPosition | undefined): boolean {
@@ -611,7 +611,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   /** The layer the Move handle carries the Frame by (ticket 1188): the Canvas's positions while it lies on their grid,
    * else its own rows and columns, which lie along it on screen. */
   function moveLayer(): ViewLayer {
-    return frameOf(props.project)?.centre ? 'frame' : 'canvas'
+    const frame = frameOf(props.project)
+    return frame?.centre ? frameIdOf(frame) : 'canvas'
   }
 
   /** Whether a point of the drawing is on a margin sheet that refuses the tool there (ticket 1188): the sheet of a Frame
@@ -828,7 +829,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
         hotHandle.value = frameHandleUnder(event, touchInput.value)
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
-        gestureLayer = target.kind === 'handle' ? 'frame' : moveLayer()
+        gestureLayer = target.kind === 'handle' ? firstFrameId(props.project) : moveLayer()
         carryGrip = undefined
         const pressed = cellUnder(event)
         const point = pointInDrawing(event)
@@ -929,10 +930,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
       // A press that starts a Selection is captured, so its release is delivered even off the canvas (ticket 503).
       if (props.tools.selects) rootEl.value?.setPointerCapture?.(event.pointerId)
       selectDrag = props.tools.selectsAnywhere
-      selectLayer = bead.layer === 'frame' ? 'frame' : 'canvas'
+      selectLayer = bead.layer ?? 'canvas'
       // A press on a finished row never draws (the lock), and, while its dimming shows, toggles the finished rows
       // between dimmed and normal.
-      if (marksShown.value && isInFinishedRow(props.project, bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
+      if (marksShown.value && isInFinishedRow(props.project, bead, firstFrameId(props.project)) && !(event.pointerType === 'touch' && !event.isPrimary)) {
         finishedRestored.value = !finishedRestored.value
       }
       emit('cell-primary-down', ...cellArguments(bead))

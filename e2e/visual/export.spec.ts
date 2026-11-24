@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../src/testUtils/frameId'
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
@@ -29,7 +30,7 @@ function hex(png: PNG, x: number, y: number): string {
 /** The PDF's plan as the export makes it: page 1 under the title block and Beads needed (ticket 0914). */
 /** The plan of the PDF the app exports with its switches as they are at first: the Cover page on (ticket 1096). */
 function pdfPlan(project: Project) {
-  return pageOneLayout(project, printText(project, en, 'en', new Date(), { cover: true })).plan
+  return pageOneLayout(project, printText(project, en, 'en', new Date(), { cover: true }, frameIdIn(project))).plan
 }
 
 /** The pages the PDF says it has. */

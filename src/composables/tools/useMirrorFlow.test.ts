@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import { changeFrame } from '../../domain/changeFrame'
@@ -11,7 +12,7 @@ import { useMirrorFlow } from './useMirrorFlow'
 /** The flow over a real Edit and Undo history, on a 5 × 3 loom Frame or, `open`, the Canvas with the Frame removed. */
 function setup(open = false) {
   let project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } })
-  if (open) project = (changeFrame(project, { remove: true }) as { project: Project }).project
+  if (open) project = (changeFrame(project, { remove: true }, frameIdIn(project)) as { project: Project }).project
   const harness = editHarness(project)
   const showToast = vi.fn()
   const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, showToast, messages: () => en, locale: () => 'en' })
@@ -246,7 +247,7 @@ describe('the Area sticks to Fitting sizes as it is dragged, made or moved (tick
   })
 
   it('grows a moved Area on peyote with a Drop above 1 where its new place does not fit, one Undo step with the Message', () => {
-    const peyote = (changeFrame(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }), { remove: true }) as { project: Project }).project
+    const peyote = (changeFrame(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }), { remove: true }, frameIdIn(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }))) as { project: Project }).project
     const harness = editHarness(withLayers(peyote, { techniqueSettings: { peyoteDrop: 2 } }))
     const showToast = vi.fn()
     const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, showToast, messages: () => en, locale: () => 'en' })

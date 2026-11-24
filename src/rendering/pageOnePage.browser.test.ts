@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { findBead } from '../domain/beads'
@@ -23,7 +24,7 @@ import { fillBlanks } from '../domain/fillBlanks'
 // Page 1 of the PDF drawn for real (ticket 0914; PrintPage1 card): the whole piece and Beads needed, and for most pieces
 // the whole PDF.
 
-const wordsOf = (project: ReturnType<typeof fixtureProject>, emptyGrid = true) => printText(project, en, 'en', new Date(), { emptyGrid })
+const wordsOf = (project: ReturnType<typeof fixtureProject>, emptyGrid = true) => printText(project, en, 'en', new Date(), { emptyGrid }, frameIdIn(project))
 
 /** The pages the PDF says it has. */
 async function pdfPages(blob: Blob): Promise<number> {
@@ -56,14 +57,14 @@ describe('page 1 of the PDF', () => {
   it('draws its chart with the rim only with Chart border on, and its overview\'s crosses only with Empty grid on (ticket 1127)', () => {
     const small = fixtureProject({ technique: 'loom', columns: 20, rows: 20 })
     const chart = (chartBorder: boolean) => {
-      const words = printText(small, en, 'en', new Date(), { chartBorder })
+      const words = printText(small, en, 'en', new Date(), { chartBorder }, frameIdIn(small))
       return drawPageOne(small, words, pageOneLayout(small, words), pageOneLayout(small, words).plan).drawing!.split('\n').filter((line) => line.includes(' c ') && line.endsWith(' S')).length
     }
     expect(chart(true) - chart(false)).toBe(1)
 
     const big = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
     const crosses = (emptyGrid: boolean) => {
-      const words = printText(big, en, 'en', new Date(), { emptyGrid })
+      const words = printText(big, en, 'en', new Date(), { emptyGrid }, frameIdIn(big))
       const layout = pageOneLayout(big, words)
       const stroke = vi.spyOn(CanvasRenderingContext2D.prototype, 'stroke')
       const faint: number[] = []
@@ -151,7 +152,7 @@ describe('page 1 of the PDF', () => {
 
   it.each<[Locale, Translations]>([['en', en], ['ru', ru], ['uk', uk], ['be', be], ['zh', zh], ['es', es], ['pl', pl]])('fits the tech line and the maker across the page in %s', (locale, messages) => {
     const project = { ...fixtureProject({ technique: 'loom', columns: 130, rows: 60 }), makerName: 'Anna Kowalska' }
-    const words = printText(project, messages, locale, new Date())
+    const words = printText(project, messages, locale, new Date(), undefined, frameIdIn(project))
     const context = document.createElement('canvas').getContext('2d')!
     const room = A4_PORTRAIT.width - PRINT_MARGIN * 2
     context.font = font('400', 7.5, MONO)
@@ -174,7 +175,7 @@ describe('page 1 of the PDF', () => {
 
 describe('the PDF of a piece cut into parts (ticket 0914)', () => {
   it('is the overview, then a page for each sheet, each counted in "1 / N"', async () => {
-    const project = withLetters(fixtureProject({ technique: 'loom', columns: 150, rows: 100 }), 'frame', false)
+    const project = withLetters(fixtureProject({ technique: 'loom', columns: 150, rows: 100 }), FRAME_ID, false)
     const words = wordsOf(project)
     const { plan } = pageOneLayout(project, words)
 

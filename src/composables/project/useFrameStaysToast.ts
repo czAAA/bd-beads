@@ -1,7 +1,8 @@
 import { beadLabel } from '../../domain/beads'
 import { frameChangeRefusal } from '../../domain/changeFrame'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { beadIdOfLayer, frameOf, layerOf } from '../../domain/layerRecord'
+import type { Layer } from '../../domain/grid'
+import { beadIdOfLayer, frameOf, layerOf, firstFrameId } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -33,11 +34,11 @@ export function useFrameStaysToast(deps: FrameStaysToastDeps) {
 
   function frameValue(project: Project, part: CanvasPart): string | undefined {
     if (!frameOf(project)) return undefined
-    return part === 'technique' ? layerOf(project, 'frame')?.weave.technique : beadIdOfLayer(project, 'frame')
+    return part === 'technique' ? layerOf(project, firstFrameId(project))?.weave.technique : beadIdOfLayer(project, firstFrameId(project))
   }
 
   /** A Technique or a Bead by name, as the Layer settings show it. */
-  function nameOf(project: Project, layer: 'canvas' | 'frame', part: CanvasPart): string {
+  function nameOf(project: Project, layer: Layer, part: CanvasPart): string {
     const t = deps.messages()
     const record = layerOf(project, layer)!
     if (part === 'technique') return techniqueName(t, record.weave.technique)
@@ -51,10 +52,10 @@ export function useFrameStaysToast(deps: FrameStaysToastDeps) {
     const frame = frameValue(project, part)
     if (frame === undefined || frame === now) return
     const t = deps.messages()
-    const text = fillBlanks(t.layerSettings.frameStays, { canvas: nameOf(project, 'canvas', part), frame: nameOf(project, 'frame', part) })
+    const text = fillBlanks(t.layerSettings.frameStays, { canvas: nameOf(project, 'canvas', part), frame: nameOf(project, firstFrameId(project), part) })
     const open: ToastAction = { label: t.layerSettings.openFrame, run: deps.openFrameSettings }
     // A Frame that can't take the Technique (a pass done, a Custom frame's shape) is offered only its panel.
-    const takes = part === 'bead' || !frameChangeRefusal(project, { technique: now as Technique })
+    const takes = part === 'bead' || !frameChangeRefusal(project, { technique: now as Technique }, firstFrameId(project))
     if (!takes) return deps.showToast('frame-stays', text, 'info', open)
     const change = () => (part === 'technique' ? deps.setFrameTechnique(now as Technique) : deps.requestFrameBead(now))
     deps.showToast('frame-stays', text, 'info', { label: t.layerSettings.changeFrameToo, run: change }, { secondAction: open })

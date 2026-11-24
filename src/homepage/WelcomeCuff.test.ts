@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { effectScope, nextTick, shallowRef } from 'vue'
@@ -46,7 +47,7 @@ function pillNumbers(from: number): string[] {
 function finishedBeads(): string[] {
   const project = drawn.projects.at(-1) as Project
   const { rows, columns } = frameOf(project)!
-  const passes = rowPassesOf(project)
+  const passes = rowPassesOf(project, frameIdIn(project))
   const finished: string[] = []
   for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) if (passes(row, column) === 'finished') finished.push(`${row},${column}`)
   return finished

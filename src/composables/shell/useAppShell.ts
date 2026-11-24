@@ -4,7 +4,7 @@ import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
-import type { GridPosition } from '../../domain/grid'
+import { isFrameLayer, type GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
 import { UNDER_TABLET_QUERY } from '../../rendering/rulerScale'
 import type { Layer } from '../../domain/layers'
@@ -42,7 +42,7 @@ import { provideTitleBlockFold } from '../canvas/useTitleBlockFold'
 import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { canvasOf, frameOf, lettersOn, projectNameOf, withStartBackground } from '../../domain/layerRecord'
+import { canvasOf, frameOf, lettersOn, projectNameOf, withStartBackground, firstFrameId, frameIdOf } from '../../domain/layerRecord'
 import { frameShapeOf } from '../../domain/frameShape'
 import { withFrameTurnedTo } from '../../domain/framePlacement'
 import { canvasWeave } from '../../domain/layerWeave'
@@ -728,7 +728,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     twistTarget: (first, second) => {
       const frame = frameOf(currentProject())
       const probe = surfaceProbe.value
-      return frame && !frameShapeOf(frame) && probe?.onFrameSheet(first) && probe.onFrameSheet(second) ? 'frame' : 'canvas'
+      return frame && !frameShapeOf(frame) && probe?.onFrameSheet(first) && probe.onFrameSheet(second) ? frameIdOf(frame) : 'canvas'
     },
   })
 
@@ -926,8 +926,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     currentProject,
     messages,
     showToast,
-    setFrameTechnique: (technique) => onSetTechnique('frame', technique),
-    requestFrameBead: (beadId) => replaceBead.onRequestReplaceBead('frame', beadId),
+    setFrameTechnique: (technique) => onSetTechnique(firstFrameId(currentProject()), technique),
+    requestFrameBead: (beadId) => replaceBead.onRequestReplaceBead(firstFrameId(currentProject()), beadId),
     openFrameSettings: frameFlow.openOnSettings,
   })
   const onSetTechnique = (layer: Layer, technique: Technique) => frameStays.afterChange('technique', () => frameFlow.setLayerTechnique(layer, technique))
@@ -1138,7 +1138,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     pasteAtPointer,
     onRotate: rotateFlow.onRotate,
     selectionInFinishedRows: () => rotateFlow.heldBack.value,
-    selectionOnFrame: () => !!selection.value && !!currentProject() && selectionLayer(currentProject()!, selection.value) === 'frame',
+    selectionOnFrame: () => !!selection.value && !!currentProject() && isFrameLayer(selectionLayer(currentProject()!, selection.value)),
     selectionExportable: () => !!selection.value && !!currentProject() && selectionExportable(currentProject()!, selection.value),
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
@@ -1369,7 +1369,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // A Frame under a two-finger twist is shown at the twist's angle until the Project keeps it (ticket 1190).
       frameDraftProject: computed(() => {
         const shown = carriedProject.value ?? frameFlow.draftProject.value
-        return shown && frameTwist.value !== undefined ? withFrameTurnedTo(shown, frameTwist.value) : shown
+        return shown && frameTwist.value !== undefined ? withFrameTurnedTo(shown, frameTwist.value, firstFrameId(shown)) : shown
       }),
       // The Piece held by its move grip, moved as a bitmap over that Project with it lifted out (ticket 1151).
       carriedPiece,
@@ -1388,11 +1388,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onRotateFrame: rotateFrameFlow.onRotateFrame,
       onRenameFrame: frameFlow.rename,
       onSetFrameTechnique: frameFlow.setTechnique,
-      onSetFrameSetting: (id: string, value: number) => frameFlow.setWeaveSetting('frame', id, value),
-      onRequestFrameBead: (beadId: string) => replaceBead.onRequestReplaceBead('frame', beadId),
+      onSetFrameSetting: (id: string, value: number) => frameFlow.setWeaveSetting(firstFrameId(currentProject()), id, value),
+      onRequestFrameBead: (beadId: string) => replaceBead.onRequestReplaceBead(firstFrameId(currentProject()), beadId),
       onSaveMakerName: exportFlow.onSaveMakerName,
       // The Frame panel's and the title block's switch is the Frame's own (ticket 1092).
-      onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, 'frame'),
+      onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, firstFrameId(currentProject())),
       exportOpener: overlays.exportOpener,
       onOpenExport: overlays.onOpenExport,
       /** The Homepage's demo (ticket 0797): its margin sheet's band has no Row not done. */
@@ -1509,7 +1509,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onExportPng: exportFlow.onExportPng,
       onExportPdf: exportFlow.onExportPdf,
       // The Frame panel's and the title block's switch is the Frame's own (ticket 1092).
-      onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, 'frame'),
+      onSetLetters: (on: boolean) => exportFlow.onSetLetters(on, firstFrameId(currentProject())),
       // The row the Export panel opens on (ticket 0843)
       exportChoice: overlays.exportChoice,
       // What the Export panel exports (ticket 1210): the Frame, or the Selection the bar's Export button names.

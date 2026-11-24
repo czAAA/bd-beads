@@ -7,7 +7,7 @@ import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, typ
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import type { SettingSpec } from './settingSpec'
 import { beadCell, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, withCell, type Technique, type Weave } from './weave'
-import { type Layered, FIRST_FRAME, frameById } from './layerRecord'
+import { type Layered, frameById } from './layerRecord'
 import { lieAlike } from './table'
 
 /** The Frame shapes (spec 0590, ADR 0077, ADR 0079): what specialises a Frame into a Custom frame. A Triangle and a
@@ -254,7 +254,7 @@ export function turnedGrid(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>): b
 }
 
 /** Whether the Project's Frame lets the weaver do this to it; with no Frame, what a Frame without a shape would. */
-export function frameAllows(project: Layered | undefined, action: FrameAction, ref: FrameRef = FIRST_FRAME): boolean {
+export function frameAllows(project: Layered | undefined, action: FrameAction, ref: FrameRef): boolean {
   const frame = frameById(project, ref)
   return rulesOf(frame ?? {}).allows.has(action) && !(frame && !lieAlike(project!, ref) && ALIKE_ONLY.has(action))
 }

@@ -28,7 +28,7 @@ import { ownEdge, seenSize } from '../../domain/frameOrientation'
 import { frameAllows, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
 import type { Layer } from '../../domain/grid'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
-import { frameOf, layerOf, lettersOn, projectNameOf } from '../../domain/layerRecord'
+import { frameOf, layerOf, lettersOn, projectNameOf, firstFrameId } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Background, Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
@@ -82,13 +82,15 @@ const context = inject(PANEL_CONTEXT, undefined)
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
-const locked = computed(() => rowProgressStarted(props.project))
+/** The Frame this panel is for (ticket 1217): the Project's first, until the app shows several. */
+const frameRef = computed(() => firstFrameId(props.project))
+const locked = computed(() => rowProgressStarted(props.project, frameRef.value))
 const frame = computed(() => frameOf(props.project))
 /** Beads needed's total on the title line (ticket 0932), counted as the section counts it. */
 const beadsTotal = useBeadsNeeded(() => props.settledProject ?? props.project).total
 const backgrounds = useCanvasBackground(() => props.project)
 /** The Frame's Layer settings (ticket 0670) and its folded summary: its Technique and Bead. */
-const frameSettings = computed(() => (frame.value ? layerSettingsOf(props.project, 'frame') : undefined))
+const frameSettings = computed(() => (frame.value ? layerSettingsOf(props.project, frameRef.value) : undefined))
 const settingsSummary = computed(() => (frameSettings.value ? layerSummary(t.value, frameSettings.value) : ''))
 const SETTINGS_SECTION = 'frame:settings'
 const settingsSection = usePanelSection(() => SETTINGS_SECTION)
@@ -100,7 +102,7 @@ const sizeHeld = computed(() => locked.value)
  * size section's summary, which then holds the Estimated size alone; none for a Frame without a Frame shape. */
 const sizeSettings = computed(() => (frame.value ? settingValuesOf(frame.value).map((setting) => ({ ...setting, words: t.value.frame.sizeSettings[setting.name] })) : []))
 /** Whether the Frame can be turned a quarter: it allows it (a Custom frame too, ticket 0594). */
-const rotatable = computed(() => frameAllows(props.project, 'rotate'))
+const rotatable = computed(() => frameAllows(props.project, 'rotate', frameRef.value))
 
 /** The edge the last press stepped, lit in its cell. */
 const lastEdge = ref<FrameEdge>()
@@ -108,7 +110,7 @@ const lastEdge = ref<FrameEdge>()
 const cells = FRAME_EDGES.map((edge) => {
   const hold = useHoldRepeat((direction) => {
     const current = frame.value
-    if (!current || sizeHeld.value || frameWithEdgeStep(frameWeave(props.project), current, ownEdge(current, edge), direction) === current) return false
+    if (!current || sizeHeld.value || frameWithEdgeStep(frameWeave(props.project, frameRef.value), current, ownEdge(current, edge), direction) === current) return false
     lastEdge.value = edge
     emit('step', edge, direction)
     return true
@@ -208,7 +210,7 @@ function onSizeFocusOut(event: FocusEvent): void {
 /** The Estimated size as "≈ 3.8 × 3.9 cm" (the Bead's size × beads across and down), in the unit the margin's title
  * block gives the same size (cm from 10 mm up, ticket 0992), or nothing for an unknown Bead. */
 const estimate = computed(() => {
-  const bead = layerOf(props.project, 'frame')?.bead
+  const bead = layerOf(props.project, frameRef.value)?.bead
   const units = { mm: t.value.form.unitMm, cm: t.value.form.unitCm }
   return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead, frame.value.technique), units, locale.value)}` : ''
 })
@@ -216,7 +218,7 @@ const sizeSummary = computed(() =>
   [sizeSettings.value[0] ? plural(locale.value, sizeSettings.value[0].value, sizeSettings.value[0].words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
 )
 /** Fit a Frame to the drawing needs something drawn. */
-const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
+const nothingToFit = computed(() => fitToDrawing(props.project, frameRef.value) === undefined)
 /** The Tooltip over the off size fields. */
 const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: t.value.tooltips.frameSizeLocked, announce: false }))
 
@@ -290,7 +292,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
         <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf', $event)" @save-project-file="emit('save-project-file')" @save-maker-name="emit('save-maker-name', $event)">
           <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads; saved with the Project. Printed charts are always lettered (ticket 0914). -->
           <PanelSwitchRow
-            :model-value="lettersOn(project, 'frame')"
+            :model-value="lettersOn(project, frameRef)"
             :label="t.frame.lettersLabel"
             :info-label="t.frame.lettersInfoLabel"
             :body="t.frame.lettersLine"
@@ -443,13 +445,13 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
     >
       <LayerSettings
         v-bind="frameSettings"
-        :background="backgrounds.shownOf('frame').background"
+        :background="backgrounds.shownOf(frameRef).background"
         testid="frame"
-        @set-technique="emit('set-technique', 'frame', $event)"
-        @set-setting="(id, value) => emit('set-weave-setting', 'frame', id, value)"
+        @set-technique="emit('set-technique', frameRef, $event)"
+        @set-setting="(id, value) => emit('set-weave-setting', frameRef, id, value)"
         @set-shape-settings="emit('set-settings', $event)"
-        @pick-bead="emit('replace-bead', 'frame', $event)"
-        @set-background="emit('set-background', 'frame', $event)"
+        @pick-bead="emit('replace-bead', frameRef, $event)"
+        @set-background="emit('set-background', frameRef, $event)"
         @reset-progress="emit('reset-progress')"
       />
     </PanelSection>

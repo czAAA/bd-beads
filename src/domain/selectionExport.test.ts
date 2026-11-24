@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { withColors } from './canvas'
@@ -26,7 +27,7 @@ describe('selectionExportProject', () => {
     const part = selectionExportProject(project, selection, 'part')!
     const frame = frameOf(part)!
     expect([frame.row, frame.column, frame.rows, frame.columns]).toEqual([2, 3, 3, 3])
-    expect(beadsOfLayer(part, 'frame')).toEqual({ 0: { 0: RED }, 1: { 1: BLUE } })
+    expect(beadsOfLayer(part, frameIdIn(part))).toEqual({ 0: { 0: RED }, 1: { 1: BLUE } })
     expect(frame.name).toBe('part')
   })
 
@@ -34,15 +35,15 @@ describe('selectionExportProject', () => {
     const project = painted(canvas('loom'), [[2, 2, RED], [2, 3, RED], [3, 2, BLUE]])
     const selection: Selection = { top: 2, left: 2, rows: 2, columns: 2, layer: 'canvas', cells: [{ row: 2, column: 2 }, { row: 2, column: 3 }] }
     const part = selectionExportProject(project, selection, 'part')!
-    expect(beadsOfLayer(part, 'frame')).toEqual({ 0: { 0: RED, 1: RED } })
+    expect(beadsOfLayer(part, frameIdIn(part))).toEqual({ 0: { 0: RED, 1: RED } })
   })
 
   it('cuts the Frame of a Selection on the Frame, never the Canvas under it', () => {
-    const base = withFrame(painted(canvas('loom'), [[0, 0, BLUE]]), { row: 4, column: 4, rows: 6, columns: 6 })
-    const project = withLayer(base, 'frame', { beads: withColors({}, [{ row: 1, column: 1, color: RED }, { row: 5, column: 5, color: RED }]) })
-    const selection: Selection = { top: 5, left: 5, rows: 2, columns: 2, layer: 'frame' }
+    const base = withFrame(painted(canvas('loom'), [[0, 0, BLUE]]), { row: 4, column: 4, rows: 6, columns: 6 }, frameIdIn(painted(canvas('loom'), [[0, 0, BLUE]])))
+    const project = withLayer(base, FRAME_ID, { beads: withColors({}, [{ row: 1, column: 1, color: RED }, { row: 5, column: 5, color: RED }]) })
+    const selection: Selection = { top: 5, left: 5, rows: 2, columns: 2, layer: FRAME_ID }
     const part = selectionExportProject(project, selection, 'part')!
-    expect(beadsOfLayer(part, 'frame')).toEqual({ 0: { 0: RED } })
+    expect(beadsOfLayer(part, frameIdIn(part))).toEqual({ 0: { 0: RED } })
     expect(beadsOfLayer(part, 'canvas')).toEqual({})
   })
 
@@ -54,21 +55,21 @@ describe('selectionExportProject', () => {
     expect([frame.row, frame.column]).toEqual([snapRow(weave, 5), snapColumn(weave, 2)])
     expect(frame.row + frame.rows).toBe(7)
     expect(frame.column + frame.columns).toBe(4)
-    expect(beadsOfLayer(part, 'frame')![5 - frame.row]?.[2 - frame.column]).toBe(RED)
+    expect(beadsOfLayer(part, frameIdIn(part))![5 - frame.row]?.[2 - frame.column]).toBe(RED)
   })
 
   it('is not offered on a Custom frame, and a Frame Selection outside the Frame has nothing to export', () => {
-    const custom = withLayer(withFrame(canvas('loom'), { row: 2, column: 2, rows: 6, columns: 6 }), 'frame', { beads: {} })
+    const custom = withLayer(withFrame(canvas('loom'), { row: 2, column: 2, rows: 6, columns: 6 }, frameIdIn(canvas('loom'))), FRAME_ID, { beads: {} })
     const shaped = { ...custom, layers: [custom.layers[0], { ...custom.layers[1]!, shape: 'triangle' }] } as unknown as Project
-    expect(selectionExportable(shaped, { top: 3, left: 3, rows: 2, columns: 2, layer: 'frame' })).toBe(false)
-    expect(selectionExportProject(custom, { top: 9, left: 9, rows: 2, columns: 2, layer: 'frame' }, 'part')).toBeUndefined()
+    expect(selectionExportable(shaped, { top: 3, left: 3, rows: 2, columns: 2, layer: FRAME_ID })).toBe(false)
+    expect(selectionExportProject(custom, { top: 9, left: 9, rows: 2, columns: 2, layer: FRAME_ID }, 'part')).toBeUndefined()
   })
 
   it('snaps a Frame Selection on peyote through the Frame\'s own Weave', () => {
-    const project = withLayer(withFrame(canvas('peyote', 16, 16), { row: 2, column: 2, rows: 10, columns: 10 }), 'frame', { beads: withColors({}, [{ row: 5, column: 5, color: RED }]) })
-    const part = selectionExportProject(project, { top: 7, left: 7, rows: 3, columns: 3, layer: 'frame' }, 'part')!
+    const project = withLayer(withFrame(canvas('peyote', 16, 16), { row: 2, column: 2, rows: 10, columns: 10 }, frameIdIn(canvas('peyote', 16, 16))), FRAME_ID, { beads: withColors({}, [{ row: 5, column: 5, color: RED }]) })
+    const part = selectionExportProject(project, { top: 7, left: 7, rows: 3, columns: 3, layer: FRAME_ID }, 'part')!
     const frame = frameOf(part)!
-    const weave = heldWeave(project, 'frame')!
+    const weave = heldWeave(project, frameIdIn(project))!
     expect([frame.row - 2, frame.column - 2]).toEqual([snapRow(weave, 5), snapColumn(weave, 5)])
   })
 

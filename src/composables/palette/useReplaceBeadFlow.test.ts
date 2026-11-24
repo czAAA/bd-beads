@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadCopy, findBead } from '../../domain/beads'
 import { changeFrame } from '../../domain/changeFrame'
@@ -29,14 +30,14 @@ describe('useReplaceBeadFlow', () => {
   it('opens the confirmation for a picked Bead', () => {
     const { replaceBeadPendingBead, onRequestReplaceBead } = setup()
 
-    onRequestReplaceBead('frame', other.id)
+    onRequestReplaceBead(FRAME_ID, other.id)
 
     expect(replaceBeadPendingBead.value?.id).toBe(other.id)
   })
 
   it('ignores a pick with no Project open', () => {
     const none = setup(null)
-    none.onRequestReplaceBead('frame', other.id)
+    none.onRequestReplaceBead(FRAME_ID, other.id)
     expect(none.replaceBeadPendingBead.value).toBeUndefined()
   })
 
@@ -45,7 +46,7 @@ describe('useReplaceBeadFlow', () => {
     const { replaceBeadConfirmMessage, onRequestReplaceBead } = setup(tall)
     expect(replaceBeadConfirmMessage.value).toBe('')
 
-    onRequestReplaceBead('frame', 'toho/round/11-0')
+    onRequestReplaceBead(FRAME_ID, 'toho/round/11-0')
 
     // The same 10x20 Frame at Round (1.65 x 2.2mm): 16.5 x 44mm.
     expect(replaceBeadConfirmMessage.value).toBe(
@@ -65,7 +66,7 @@ describe('useReplaceBeadFlow', () => {
 
   it('cancelling closes the modal and changes nothing', () => {
     const { harness, replaceBeadPendingBead, onRequestReplaceBead, onCancelReplaceBead } = setup()
-    onRequestReplaceBead('frame', other.id)
+    onRequestReplaceBead(FRAME_ID, other.id)
     onCancelReplaceBead()
     expect(replaceBeadPendingBead.value).toBeUndefined()
     expect(harness.replaceProject).not.toHaveBeenCalled()
@@ -74,7 +75,7 @@ describe('useReplaceBeadFlow', () => {
 
   it('confirming swaps the Bead as one undo step that brings the old Bead back', () => {
     const { harness, replaceBeadPendingBead, onRequestReplaceBead, onConfirmReplaceBead } = setup()
-    onRequestReplaceBead('frame', other.id)
+    onRequestReplaceBead(FRAME_ID, other.id)
     onConfirmReplaceBead()
 
     expect(replaceBeadPendingBead.value).toBeUndefined()
@@ -86,10 +87,10 @@ describe('useReplaceBeadFlow', () => {
   })
 
   it('confirming on a Custom frame lays its round shape out again in the new Bead, in the same undo step (ticket 0723)', async () => {
-    const placed = changeFrame(withLayers(base, { frame: undefined }), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(withLayers(base, { frame: undefined }), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 20 } } }, frameIdIn(base))
     const square = (placed as { project: Project }).project
     const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(square)
-    onRequestReplaceBead('frame', 'toho/round/11-0')
+    onRequestReplaceBead(FRAME_ID, 'toho/round/11-0')
     await onConfirmReplaceBead()
 
     expect(frameOf(harness.project)!.beadId).toBe('toho/round/11-0')
@@ -113,7 +114,7 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
 
   it('replaces to the catalog’s current Bead as an ordinary Replace Bead: sizes before and after, one Undo step', () => {
     const { harness, replaceBeadConfirmMessage, onRequestReplaceBead, onConfirmReplaceBead } = setup(older)
-    onRequestReplaceBead('frame', current.id)
+    onRequestReplaceBead(FRAME_ID, current.id)
     expect(replaceBeadConfirmMessage.value).not.toBe('')
 
     onConfirmReplaceBead()
@@ -132,7 +133,7 @@ describe('Replace Bead with coded swatches (ticket 0538, ADR 0103)', () => {
     const start = createProject({ technique: 'loom', beadId: delica.id, size: { width: 3, height: 3, unit: 'beads' } })
     const coded = setPalette(start, [...start.palette, 'added-123456'], { '#123456': { catalog: 'miyuki-delica', code: 'DB1' } })
     const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(coded)
-    onRequestReplaceBead('frame', 'toho/round/11-0')
+    onRequestReplaceBead(FRAME_ID, 'toho/round/11-0')
     onConfirmReplaceBead()
     expect([harness.project.palette, harness.project.paletteCodes]).toEqual([coded.palette, coded.paletteCodes])
     expect(frameOf(harness.project)!.beadId).toBe('toho/round/11-0')

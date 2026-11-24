@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
@@ -22,9 +23,9 @@ describe('the Frame shape (spec 0590, ticket 0591, ADR 0079)', () => {
     expect(techniquesOf({ shape: 'triangle' })).toEqual(['peyote'])
     expect(techniquesOf({ shape: 'fringeEarring' })).toEqual(['brick', 'peyote', 'loom'])
     const star = bareProject({ technique: 'peyote', frame: { row: 0, column: 0, rows: 9, columns: 9, technique: 'peyote', beads: {}, shape: 'star' } })
-    for (const action of ['resize', 'from-selection', 'rotate', 'technique', 'select'] as const) expect(frameAllows(star, action)).toBe(true)
-    expect(frameAllows(star, 'remove-line')).toBe(false)
-    expect(frameAllows(undefined, 'remove-line')).toBe(true)
+    for (const action of ['resize', 'from-selection', 'rotate', 'technique', 'select'] as const) expect(frameAllows(star, action, frameIdIn(star))).toBe(true)
+    expect(frameAllows(star, 'remove-line', frameIdIn(star))).toBe(false)
+    expect(frameAllows(undefined, 'remove-line', FRAME_ID)).toBe(true)
   })
 
   it('knows no "rectangular" shape: a Frame without one is just a Frame (ticket 0668)', () => {

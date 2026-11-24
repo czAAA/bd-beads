@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
@@ -248,7 +249,7 @@ describe('BeadQuantities and the Frame (ticket 233)', () => {
   })
 
   it('keeps its header and says "Set Frame to count beads." with no Frame', () => {
-    const open = withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], RED.hex), undefined)
+    const open = withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], RED.hex), undefined, { frame: frameIdIn(paintAt(project(), [{ row: 0, column: 0 }], RED.hex)) })
     const wrapper = mountQuantities(open)
 
     expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe('Set Frame to count beads.')
@@ -260,7 +261,7 @@ describe('BeadQuantities and the Frame (ticket 233)', () => {
 describe('BeadQuantities on a Kaleidocycle (ticket 0876)', () => {
   const kaleidocycle = () => {
     const open = createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', size: { width: 60, height: 60, unit: 'beads' } })
-    const placed = placedStarter(open, starterById('kaleidocycle'), { sizes: { partSize: 9 }, useDesign: true }, { row: 30, column: 30 })
+    const placed = placedStarter(open, starterById('kaleidocycle'), { sizes: { partSize: 9 }, useDesign: true }, { row: 30, column: 30 }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
     return placed.project
   }
@@ -287,7 +288,7 @@ describe('BeadQuantities on a Kaleidocycle (ticket 0876)', () => {
 describe('BeadQuantities on a Star (ticket 0875)', () => {
   it('counts the whole star, front and back, and says so under the rows', () => {
     const open = createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', size: { width: 60, height: 60, unit: 'beads' } })
-    const placed = placedStarter(open, starterById('star'), { sizes: { partSize: 5 }, useDesign: true }, { row: 30, column: 30 })
+    const placed = placedStarter(open, starterById('star'), { sizes: { partSize: 5 }, useDesign: true }, { row: 30, column: 30 }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Star')
     const wrapper = mountQuantities(placed.project)
     expect(wrapper.get('[data-testid="quantity-total"]').text()).toMatch(/^245 · /)
@@ -311,7 +312,7 @@ describe('BeadQuantities names what to buy (ticket 0974)', () => {
   })
 
   it('names no Bead with no Frame', () => {
-    const wrapper = mountQuantities(withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], RED.hex), undefined))
+    const wrapper = mountQuantities(withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], RED.hex), undefined, { frame: frameIdIn(paintAt(project(), [{ row: 0, column: 0 }], RED.hex)) }))
 
     expect(wrapper.find('[data-testid="quantities-bead"]').exists()).toBe(false)
   })

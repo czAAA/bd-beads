@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import type { BeadMap } from './canvas'
 import { changeFrame } from './changeFrame'
@@ -12,7 +13,7 @@ const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size:
 
 /** The base Project with a Frame on its top-left corner, the Canvas, the Frame and its Folded beads holding these. */
 function framed(canvas: BeadMap, frame: BeadMap, folded?: BeadMap): Project {
-  const made = changeFrame(base, { make: { row: 0, column: 0, rows: 2, columns: 2 } })
+  const made = changeFrame(base, { make: { row: 0, column: 0, rows: 2, columns: 2 } }, frameIdIn(base))
   if (made.kind !== 'changed') throw new Error('no Frame')
   const [, sheet] = made.project.layers as [unknown, FrameLayer]
   return { ...made.project, layers: [{ ...made.project.layers[0], beads: canvas }, { ...sheet, beads: frame, ...(folded ? { folded } : {}) }] }
@@ -49,7 +50,7 @@ describe('the beads painted in some colors (ticket 1124)', () => {
   })
 
   it('puts none back on a layer gone since', () => {
-    const removed = changeFrame(withoutBeadsIn(project, new Set([RED])), { remove: true })
+    const removed = changeFrame(withoutBeadsIn(project, new Set([RED])), { remove: true }, frameIdIn(project))
     if (removed.kind !== 'changed') throw new Error('Frame not removed')
     const back = withBeadsBackIn(removed.project, project, new Set([RED]))
     expect(back.layers).toHaveLength(1)

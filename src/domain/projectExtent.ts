@@ -2,14 +2,14 @@ import { beadBounds, frameDimensions, type Rect } from './canvas'
 import { laidRect, seenSize } from './frameOrientation'
 import { frameShapeOf } from './frameShape'
 import type { GridDimensions, GridPosition, FrameRef } from './grid'
-import { beadsOfLayer, type Layered, FIRST_FRAME, frameById } from './layerRecord'
+import { beadsOfLayer, firstFrameId, type Layered, frameById } from './layerRecord'
 import { projectCell } from './projectBead'
 
 // How far a Project reaches: its Frame, or the box round its beads when it has none, and that size in beads.
 
 /** The Project's Frame as it lies on the Canvas (turned, ticket 0667), or for a Canvas without one the smallest box
  * round its beads (nothing for an empty one). For the parts of the app that still think in a Project's extent. */
-export function projectFrame(project: Layered, ref: FrameRef = FIRST_FRAME): Rect {
+export function projectFrame(project: Layered, ref: FrameRef): Rect {
   const frame = frameById(project, ref)
   if (frame) return laidRect({ ...frame, ...(frame.quarterTurns ? { cell: projectCell(project) } : {}) })
   return beadBounds(beadsOfLayer(project, 'canvas')) ?? { row: 0, column: 0, columns: 0, rows: 0 }
@@ -18,19 +18,19 @@ export function projectFrame(project: Layered, ref: FrameRef = FIRST_FRAME): Rec
 /** What the open Project's Frame measures in beads as it lies: what the person is told the size is, and what the
  * rulers and the printed pages number. */
 export function projectDimensions(project: Layered): GridDimensions {
-  return frameDimensions(projectFrame(project))
+  return frameDimensions(projectFrame(project, firstFrameId(project)))
 }
 
 /** What the Project measures in beads as the person is told it: its Frame's Width and Height as seen (a turned plain
  * Frame's own swapped, ticket 0667), or the box round its beads. */
-export function shownDimensions(project: Layered, ref: FrameRef = FIRST_FRAME): GridDimensions {
+export function shownDimensions(project: Layered, ref: FrameRef): GridDimensions {
   const frame = frameById(project, ref)
   return frame ? seenSize(frame) : projectDimensions(project)
 }
 
 /** The box round the Frame's beads in its own rows and columns: what the printed chart, Row by row and the tech line are
  * trimmed to (ticket 1128). None for a Frame with no beads, or with a Frame shape, whose beads keep no rows and columns. */
-export function paintedFrameBox(project: Layered, ref: FrameRef = FIRST_FRAME): Rect | undefined {
+export function paintedFrameBox(project: Layered, ref: FrameRef): Rect | undefined {
   const frame = frameById(project, ref)
   if (!frame || frameShapeOf(frame)) return undefined
   return beadBounds(beadsOfLayer(project, ref)!)

@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
@@ -241,7 +242,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('turns the fields off, hides the edges and says why once a pass is done, and keeps Rotate Frame (ticket 0647)', () => {
-    const wrapper = mountBar(moveToRow(framed(), 1))
+    const wrapper = mountBar(moveToRow(framed(), 1, frameIdIn(framed())))
     expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
@@ -250,7 +251,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('offers Reset progress beside the line saying rows are marked done, which asks the shell (ticket 0848)', async () => {
-    const wrapper = mountBar(moveToRow(framed(), 1))
+    const wrapper = mountBar(moveToRow(framed(), 1, frameIdIn(framed())))
     const reset = wrapper.get('[data-testid="frame-size-locked-reset"]')
     expect(reset.text()).toBe(en.rowProgress.resetButton)
     await reset.trigger('click')
@@ -258,7 +259,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('shows a turned Frame\'s size as seen and resizes it as seen, with Rotate Frame kept (tickets 0667, 1016)', async () => {
-    const wrapper = mountBar(rotateFrame(framed())!)
+    const wrapper = mountBar(rotateFrame(framed(), undefined, frameIdIn(framed()))!)
     const width = wrapper.get('[data-testid="frame-panel-width"]')
     expect((width.element as HTMLInputElement).value).toBe('6')
     expect((wrapper.get('[data-testid="frame-panel-height"]').element as HTMLInputElement).value).toBe('5')
@@ -430,7 +431,7 @@ describe('FramePanel (ticket 473)', () => {
   it("names the open Project on the title line, as typed, for where the strip shows no name (ticket 0986)", () => {
     const named = mountBar(withProjectName(framed(), 'Loom cuff'))
     expect(named.get('.frame-panel__title [data-testid="frame-panel-project"]').text()).toBe('· Loom cuff')
-    expect(mountBar(withProjectName(withFrameSheet(framed(), undefined), 'Loom cuff')).get('[data-testid="frame-panel-project"]').text()).toBe('· Loom cuff')
+    expect(mountBar(withProjectName(withFrameSheet(framed(), undefined, { frame: frameIdIn(framed()) }), 'Loom cuff')).get('[data-testid="frame-panel-project"]').text()).toBe('· Loom cuff')
   })
 
   it('sets the Frame in its Layer settings: each ask names the Frame, and its summary is its Technique and Bead (ticket 0670)', async () => {
@@ -441,16 +442,16 @@ describe('FramePanel (ticket 473)', () => {
     await settings.get('[data-testid="bead-brand"] button').trigger('click')
     await settings.get('[data-testid="bead-brand"] [data-value="miyuki"]').trigger('click')
     await settings.get('[data-testid="frame-background-section"] [data-testid="background-color-stone"]').trigger('click')
-    expect(wrapper.emitted('set-technique')).toEqual([['frame', 'peyote']])
-    expect(wrapper.emitted('replace-bead')?.[0]?.[0]).toBe('frame')
-    expect(wrapper.emitted('set-background')).toEqual([['frame', 2]])
+    expect(wrapper.emitted('set-technique')).toEqual([[FRAME_ID, 'peyote']])
+    expect(wrapper.emitted('replace-bead')?.[0]?.[0]).toBe(FRAME_ID)
+    expect(wrapper.emitted('set-background')).toEqual([[FRAME_ID, 2]])
     const header = wrapper.findAll('.panel-section__header').find((each) => each.text().includes(en.layerSettings.frameHeading))!
     await header.trigger('click')
     expect(header.text()).toContain('Loom · TOHO Cube 1.5mm')
   })
 
   it('keeps the Frame\'s Technique on once a pass is done, as it asks first (ticket 1184), and never holds its Bead or Background (ticket 0670)', () => {
-    const wrapper = mountBar(moveToRow(framed(), 1))
+    const wrapper = mountBar(moveToRow(framed(), 1, frameIdIn(framed())))
     expect(wrapper.get('[data-testid="frame-technique"] button').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.get('[data-testid="bead-size"] button').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-background-section"] [aria-disabled="true"]').exists()).toBe(false)
@@ -469,7 +470,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('holds Replace Frame and Select a frame still once a pass is done, each Tooltip saying why (tickets 0596, 0848)', () => {
-    const wrapper = mountBar(moveToRow(framed(), 1))
+    const wrapper = mountBar(moveToRow(framed(), 1, frameIdIn(framed())))
     expect(wrapper.get('[data-testid="frame-replace-from-starter"]').attributes('aria-disabled')).toBe('true')
     const tips = wrapper.findAllComponents(AppTooltip).map((tip) => tip.props())
     expect(tips).toContainEqual(expect.objectContaining({ name: en.frame.replaceFrame, disabled: true, disabledBody: en.tooltips.rowProgressLockedFrameFromStarter }))
@@ -477,7 +478,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('with no Frame offers Frame from starter, Select a Frame and Fit, and no export rows or slider (tickets 555, 568, 0847)', () => {
-    const bare = withFrameSheet(framed(), undefined)
+    const bare = withFrameSheet(framed(), undefined, { frame: frameIdIn(framed()) })
     const wrapper = mountBar(bare)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
@@ -492,7 +493,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('with no Frame puts the ways to get one in order, headed by the line saying why (ticket 0650)', () => {
-    const bare = withFrameSheet(framed(), undefined)
+    const bare = withFrameSheet(framed(), undefined, { frame: frameIdIn(framed()) })
     const wrapper = mountBar(bare)
     const order = ['export-needs-frame', 'frame-from-starter', 'frame-select', 'frame-fit', 'frame-none-line']
     const inDomOrder = wrapper.findAll('[data-testid]').map((node) => node.attributes('data-testid')).filter((id) => order.includes(id!))
@@ -500,14 +501,14 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('with no Frame, Fit is on once something is drawn and asks the shell to fit (ticket 555)', async () => {
-    const bare = withFrameSheet(framed(), undefined)
+    const bare = withFrameSheet(framed(), undefined, { frame: frameIdIn(framed()) })
     const wrapper = mountBar(withLayers(bare, { beads: { 1: { 1: '#ff0000' } } }))
     await wrapper.get('[data-testid="frame-fit"]').trigger('click')
     expect(wrapper.emitted('fit')).toHaveLength(1)
   })
 
   it('asks the shell to select a frame, with or without a Frame, and not once a pass is done (ticket 568)', async () => {
-    const bare = withFrameSheet(framed(), undefined)
+    const bare = withFrameSheet(framed(), undefined, { frame: frameIdIn(framed()) })
     const without = mountBar(bare)
     await without.get('[data-testid="frame-select"]').trigger('click')
     expect(without.emitted('select-frame')).toHaveLength(1)
@@ -516,7 +517,7 @@ describe('FramePanel (ticket 473)', () => {
     await wrapper.get('[data-testid="frame-select"]').trigger('click')
     expect(wrapper.emitted('select-frame')).toHaveLength(1)
 
-    const started = mountBar({ ...moveToRow(framed(), 1) })
+    const started = mountBar({ ...moveToRow(framed(), 1, frameIdIn(framed())) })
     expect(started.get('[data-testid="frame-select"]').attributes('aria-disabled')).toBe('true')
   })
 })
@@ -534,7 +535,7 @@ describe('FramePanel Letters (ticket 0573)', () => {
 
   it('shows it on when the Project has Letters on, and has no switch without a Frame', async () => {
     expect((await mountWithExport(withLayers(framed(), { letters: true }))).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
-    const bare = withFrameSheet(framed(), undefined)
+    const bare = withFrameSheet(framed(), undefined, { frame: frameIdIn(framed()) })
     expect(mountBar(bare).find('[data-testid="frame-letters"]').exists()).toBe(false)
   })
 })
@@ -542,7 +543,7 @@ describe('FramePanel Letters (ticket 0573)', () => {
 describe('FramePanel with a Custom frame (ticket 0592)', () => {
   /** A Project with a Custom frame of a Frame shape and size in place of its Frame. */
   function custom(shape: FrameShapeId, size: number, project = framed()): Project {
-    const result = changeFrame(project, { custom: { shape, size, centre: { row: 10, column: 10 } } })
+    const result = changeFrame(project, { custom: { shape, size, centre: { row: 10, column: 10 } } }, frameIdIn(project))
     if (result.kind !== 'changed') throw new Error(`expected a ${shape}`)
     return result.project
   }
@@ -563,7 +564,7 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
   })
 
   it('offers a Fringe earring\'s Width, Top rows and Fringe length, and its Fringe style (tickets 0597, 0814)', async () => {
-    const result = changeFrame(framed(), { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 10, column: 10 } } })
+    const result = changeFrame(framed(), { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 10, column: 10 } } }, frameIdIn(framed()))
     if (result.kind !== 'changed') throw new Error('expected an earring')
     const wrapper = mountBar(result.project)
     expect(['topWidth', 'topRows', 'fringeLength'].map((name) => wrapper.get(`[data-testid="frame-setting-${name}-value"]`).text())).toEqual(['7', '6', '12'])

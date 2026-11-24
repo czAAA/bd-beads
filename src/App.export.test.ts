@@ -1,3 +1,4 @@
+import { frameIdIn } from './testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
@@ -56,15 +57,15 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
 
     await wrapper.find('[data-testid="export-png"]').trigger('click')
     // The print code arrives by a dynamic import, which a flush of promises doesn't wait for.
-    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png'))
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png', undefined, frameIdIn(project)), expect.any(Blob), 'image/png'))
 
     expect(exportProjectPng).toHaveBeenCalledWith(
       expect.objectContaining({ id: project.id }),
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
       expect.any(Number),
     )
-    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
-    expect(projectExportFileName(project, 'png')).toBe('my-scarf.png')
+    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png', undefined, frameIdIn(project)), expect.any(Blob), 'image/png')
+    expect(projectExportFileName(project, 'png', undefined, frameIdIn(project))).toBe('my-scarf.png')
   })
 
   it("hands over the open Project as a PDF, with the labels in the app's language", async () => {

@@ -5,7 +5,7 @@ import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type 
 import { carryNames } from './pieceNames'
 import { finishedOnLine, lineRunsAlong, ownRowWayOf, rowProgressPosition } from './rowProgress'
 import { frameWeave } from './layerWeave'
-import { beadsOfLayer, heldWeave, withLayer, FIRST_FRAME, frameById } from './layerRecord'
+import { beadsOfLayer, heldWeave, withLayer, frameById } from './layerRecord'
 import { describeWeave } from './weave'
 import type { Project } from './project'
 import type { PassDirection } from './weaveGeometry'
@@ -68,7 +68,7 @@ export type RemoveLineRefusal =
   | 'only-line'
 
 /** With a Frame the refusals are changeFrame's, so Remove line and the Frame's other changes agree on them. */
-export function removeLineRefusal(project: Project, selection: Selection | undefined, ref: FrameRef = FIRST_FRAME): RemoveLineRefusal | undefined {
+export function removeLineRefusal(project: Project, selection: Selection | undefined, ref: FrameRef): RemoveLineRefusal | undefined {
   const line = selectedProjectLine(project, selection, ref)
   if (!line) {
     return 'no-line'
@@ -93,7 +93,7 @@ export type RemoveLineQuestion =
 
 /** The question Remove line asks first, or undefined where it goes without asking: a Piece area's line, or a Frame
  * line that touches no finished pass. The one place the rule lives; the flow knows only the prompt. */
-export function removeLineQuestion(project: Project, selection: Selection | undefined, ref: FrameRef = FIRST_FRAME): RemoveLineQuestion | undefined {
+export function removeLineQuestion(project: Project, selection: Selection | undefined, ref: FrameRef): RemoveLineQuestion | undefined {
   const line = selectedProjectLine(project, selection, ref)
   if (!line || !frameById(project, ref) || removeLineRefusal(project, selection, ref)) {
     return undefined
@@ -118,7 +118,7 @@ export function removeLineQuestion(project: Project, selection: Selection | unde
 }
 
 /** Taking out the Selection's line: changeFrame's result with a Frame, else an edit of a Piece area's beads only. */
-export function removeSelectedLine(project: Project, selection: Selection | undefined, ref: FrameRef = FIRST_FRAME): FrameChangeResult {
+export function removeSelectedLine(project: Project, selection: Selection | undefined, ref: FrameRef): FrameChangeResult {
   const line = selectedProjectLine(project, selection, ref)
   if (!line) {
     return { kind: 'refused', reason: 'no-line' }

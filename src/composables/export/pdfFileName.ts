@@ -1,3 +1,4 @@
+import { firstFrameId } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { projectExportFileName } from '../../domain/projectFile'
 import type { Translations } from '../../i18n/translations'
@@ -14,5 +15,5 @@ export function namedChoices(choices: PrintChoices, words: Pick<PrintText, 'larg
  * saved-file toast name the same file. */
 export function pdfFileName(project: Project, choices: PrintChoices, t: Translations): string {
   const words = [choices.cover && t.frame.fileWordCover, choices.blackAndWhite && t.frame.fileWordBlackAndWhite, choices.emptyGrid && t.frame.fileWordEmptyGrid, choices.chartBorder && t.frame.fileWordChartBorder, choices.largeBeads && t.frame.fileWordLargeBeads, choices.rowByRow && t.frame.fileWordRowByRow]
-  return projectExportFileName(project, 'pdf', words.filter((word): word is string => !!word))
+  return projectExportFileName(project, 'pdf', words.filter((word): word is string => !!word), firstFrameId(project))
 }

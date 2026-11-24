@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 import { createProject } from '../../domain/createProject'
@@ -38,7 +39,7 @@ describe('useRowOps', () => {
   it('commits the turned Row direction', () => {
     const { deps, onToggleRowDirection } = setup(tracking)
     onToggleRowDirection()
-    expect(replaced(deps)).toEqual(toggleRowDirection(tracking))
+    expect(replaced(deps)).toEqual(toggleRowDirection(tracking, frameIdIn(tracking)))
   })
 
   it('says the new direction in a success toast, once per change, whoever turned it (ticket 411)', () => {
@@ -49,16 +50,16 @@ describe('useRowOps', () => {
     expect(showToast).toHaveBeenCalledTimes(1)
     expect(showToast).toHaveBeenCalledWith('row-direction', en.rowProgress.directionToastColumns, 'success')
 
-    const columns = toggleRowDirection(tracking)
+    const columns = toggleRowDirection(tracking, frameIdIn(tracking))
     const back = { ...deps, currentProject: () => columns }
     useRowOps(back).onToggleRowDirection()
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRowsReversed, 'success')
 
-    const upward = toggleRowDirection(columns)
+    const upward = toggleRowDirection(columns, frameIdIn(columns))
     useRowOps({ ...deps, currentProject: () => upward }).onToggleRowDirection()
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumnsReversed, 'success')
 
-    const leftward = toggleRowDirection(upward)
+    const leftward = toggleRowDirection(upward, frameIdIn(upward))
     useRowOps({ ...deps, currentProject: () => leftward }).onToggleRowDirection()
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
   })
@@ -70,14 +71,14 @@ describe('useRowOps', () => {
     const deps = { currentProject: () => turned, replaceProject, showToast, messages: () => en }
     useRowOps(deps).onSetRowDirection('down')
     // Kept as seen; on the Canvas turned a quarter, down the Frame's own columns (ticket 1185).
-    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toEqual({ way: 'down' })
-    expect(ownRowWayOf(replaceProject.mock.calls[0]![0] as Project)).toEqual({ direction: 'columns' })
+    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project, frameIdIn(replaceProject.mock.calls[0]![0] as Project))).toEqual({ way: 'down' })
+    expect(ownRowWayOf(replaceProject.mock.calls[0]![0] as Project, undefined, frameIdIn(replaceProject.mock.calls[0]![0] as Project))).toEqual({ direction: 'columns' })
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
     useRowOps(deps).onSetRowDirection('right')
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumns, 'success')
     useRowOps(deps).onSetRowDirection('up')
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRowsReversed, 'success')
-    useRowOps({ ...deps, currentProject: () => toggleRowDirection(turned) }).onSetRowDirection('left')
+    useRowOps({ ...deps, currentProject: () => toggleRowDirection(turned, frameIdIn(turned)) }).onSetRowDirection('left')
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumnsReversed, 'success')
   })
 
@@ -86,7 +87,7 @@ describe('useRowOps', () => {
     const replaceProject = vi.fn()
     const deps = { currentProject: () => tracking, replaceProject, showToast, messages: () => en }
     useRowOps(deps).onSetRowDirection('up')
-    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toMatchObject({ way: 'up' })
+    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project, frameIdIn(replaceProject.mock.calls[0]![0] as Project))).toMatchObject({ way: 'up' })
     expect(showToast).toHaveBeenCalledWith('row-direction', en.rowProgress.directionToastRowsReversed, 'success')
 
     useRowOps(deps).onSetRowDirection('down')
@@ -97,10 +98,10 @@ describe('useRowOps', () => {
   it('says the rows marked done the way it left are kept, so they do not look lost (ticket 0849, F-04-04)', () => {
     const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 3, beads: {} } })
     const showToast = vi.fn()
-    useRowOps({ currentProject: () => moveToRow(framed, 2), replaceProject: vi.fn(), showToast, messages: () => en }).onToggleRowDirection()
+    useRowOps({ currentProject: () => moveToRow(framed, 2, frameIdIn(framed)), replaceProject: vi.fn(), showToast, messages: () => en }).onToggleRowDirection()
     expect(showToast).toHaveBeenLastCalledWith('row-direction', `${en.rowProgress.directionToastColumns} ${en.rowProgress.rowsKeptToast}`, 'success')
 
-    useRowOps({ currentProject: () => moveToRow(toggleRowDirection(framed), 1), replaceProject: vi.fn(), showToast, messages: () => en }).onToggleRowDirection()
+    useRowOps({ currentProject: () => moveToRow(toggleRowDirection(framed, frameIdIn(framed)), 1, frameIdIn(framed)), replaceProject: vi.fn(), showToast, messages: () => en }).onToggleRowDirection()
     expect(showToast).toHaveBeenLastCalledWith('row-direction', `${en.rowProgress.directionToastRowsReversed} ${en.rowProgress.columnsKeptToast}`, 'success')
   })
 
@@ -108,7 +109,7 @@ describe('useRowOps', () => {
     const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 10, columns: 3, beads: {} } })
     const announce = vi.fn()
     const showRow = vi.fn()
-    const at = (row: number) => useRowOps({ currentProject: () => moveToRow(framed, row), replaceProject: vi.fn(), showToast: vi.fn(), messages: () => en, announce, showRow })
+    const at = (row: number) => useRowOps({ currentProject: () => moveToRow(framed, row, frameIdIn(framed)), replaceProject: vi.fn(), showToast: vi.fn(), messages: () => en, announce, showRow })
 
     at(5).onMoveRow(1)
     expect(announce).toHaveBeenLastCalledWith('Row 7 of 10')
@@ -128,7 +129,7 @@ describe('useRowOps', () => {
   it('moves the Row progress pointer by the given step', () => {
     const { deps, onMoveRow } = setup(tracking)
     onMoveRow(1)
-    expect((rowProgressOf(replaced(deps)).down ?? 0)).toBe((rowProgressOf(tracking).down ?? 0) + 1)
+    expect((rowProgressOf(replaced(deps), frameIdIn(replaced(deps))).down ?? 0)).toBe((rowProgressOf(tracking, frameIdIn(tracking)).down ?? 0) + 1)
   })
 
   it('does nothing with no Project open', () => {
@@ -144,7 +145,7 @@ describe('useRowOps', () => {
     fresh.onResetProgress()
     expect(fresh.resetProgressConfirmOpen.value).toBe(false)
 
-    const started = setup(moveToRow(framed, 2))
+    const started = setup(moveToRow(framed, 2, frameIdIn(framed)))
     started.onResetProgress()
     expect(started.resetProgressConfirmOpen.value).toBe(true)
     expect(started.deps.replaceProject).not.toHaveBeenCalled()
@@ -153,12 +154,12 @@ describe('useRowOps', () => {
   })
 
   it('commits Reset progress on confirm and closes the question (ticket 455)', () => {
-    const started = moveToRow(tracking, 2)
+    const started = moveToRow(tracking, 2, frameIdIn(tracking))
     const { deps, onResetProgress, onConfirmResetProgress, resetProgressConfirmOpen } = setup(started)
     onResetProgress()
     onConfirmResetProgress()
     expect(resetProgressConfirmOpen.value).toBe(false)
-    expect(replaced(deps)).toEqual(resetRowProgress(started))
+    expect(replaced(deps)).toEqual(resetRowProgress(started, frameIdIn(started)))
   })
 
   it('Reset progress is not undone by Undo (ticket 0979)', () => {
@@ -175,7 +176,7 @@ describe('useRowOps', () => {
 
     // Undo takes back the last Edit, the beads drawn before the rows were marked; it brings no marks back.
     harness.history.onUndo()
-    expect((rowProgressOf(harness.project).down ?? 0)).toBe(0)
+    expect((rowProgressOf(harness.project, frameIdIn(harness.project)).down ?? 0)).toBe(0)
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -183,7 +184,7 @@ describe('useRowOps', () => {
     /** A Frame of three rows, worked from the row given, open in a flow whose writes become the open Project. */
     function working(row = 0) {
       const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
-      const open = shallowRef<Project | undefined>(moveToRow(framed, row))
+      const open = shallowRef<Project | undefined>(moveToRow(framed, row, frameIdIn(framed)))
       const ops = useRowOps({ currentProject: () => open.value, replaceProject: (next) => (open.value = next), showToast: vi.fn(), messages: () => en })
       return { open, ...ops }
     }
@@ -213,7 +214,7 @@ describe('useRowOps', () => {
 
     it('records nothing when the pointer changes without a press: a Project opened finished, or Undo', async () => {
       const { open, rowPress } = working()
-      open.value = moveToRow(open.value!, 3)
+      open.value = moveToRow(open.value!, 3, frameIdIn(open.value!))
       await nextTick()
       expect(rowPress.value).toBeUndefined()
     })
@@ -262,7 +263,7 @@ describe('useRowOps', () => {
     const { deps, tellMarkedDone } = setup()
     tellMarkedDone(base)
     expect(deps.showToast).toHaveBeenLastCalledWith('marked-done', en.rowProgress.markedDoneToast, 'info')
-    tellMarkedDone(toggleRowDirection(base))
+    tellMarkedDone(toggleRowDirection(base, frameIdIn(base)))
     expect(deps.showToast).toHaveBeenLastCalledWith('marked-done', en.rowProgress.columnMarkedDoneToast, 'info')
   })
 })

@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { isProxy } from 'vue'
 import { editHarness } from '../../testUtils/editHarness'
@@ -679,20 +680,20 @@ describe('useSelectionGesture', () => {
       expect(gesture.selectAll()).toBe(true)
       expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 4, columns: 4 })
 
-      const empty = setup(withFrame(makeProject(), undefined))
+      const empty = setup(withFrame(makeProject(), undefined, frameIdIn(makeProject())))
       expect(empty.gesture.selectAll()).toBe(false)
       expect(empty.gesture.selection.value).toBeUndefined()
     })
 
     it('Select all selects the Frame\'s inside when there is a Frame (ticket 428)', () => {
-      const framed = withFrame(makeProject(), { row: 5, column: 6, rows: 7, columns: 8 })
+      const framed = withFrame(makeProject(), { row: 5, column: 6, rows: 7, columns: 8 }, frameIdIn(makeProject()))
       const { gesture } = setup(framed)
       expect(gesture.selectAll()).toBe(true)
-      expect(gesture.selection.value).toMatchObject({ top: 5, left: 6, rows: 7, columns: 8, layer: 'frame' })
+      expect(gesture.selection.value).toMatchObject({ top: 5, left: 6, rows: 7, columns: 8, layer: FRAME_ID })
     })
 
     it('Select all on the Canvas with no Frame is on the Canvas layer (ticket 491)', () => {
-      const { gesture } = setup(paintAt(withFrame(makeProject(), undefined), [{ row: 0, column: 0 }], RED))
+      const { gesture } = setup(paintAt(withFrame(makeProject(), undefined, frameIdIn(makeProject())), [{ row: 0, column: 0 }], RED))
       gesture.selectAll()
       expect(gesture.selection.value).toMatchObject({ layer: 'canvas' })
     })
@@ -701,7 +702,7 @@ describe('useSelectionGesture', () => {
   describe('Copy and Paste between the layers (ticket 491)', () => {
     const frame = { row: 10, column: 10, rows: 3, columns: 3 }
     const sketch = () => {
-      const project = withFrame(makeProject(), frame)
+      const project = withFrame(makeProject(), frame, frameIdIn(makeProject()))
       return setup(withLayers(project, { beads: { 0: { 0: RED, 1: RED, 2: RED, 3: RED } }, frame: { ...frameOf(project)!, beads: { 0: { 0: RED } } } }))
     }
 
@@ -742,10 +743,10 @@ describe('useSelectionGesture', () => {
 
   describe('a drag draws any rectangle and selects only the layer it began on (ticket 0659)', () => {
     const frame = { row: 10, column: 10, rows: 4, columns: 6 }
-    const framed = () => setup(withFrame(makeProject(), frame))
+    const framed = () => setup(withFrame(makeProject(), frame, frameIdIn(makeProject())))
     /** A Canvas bead clear of the Frame, one in its margin, one hidden under it, and one Frame bead. */
     const layered = () => {
-      const project = withFrame(makeProject(), frame)
+      const project = withFrame(makeProject(), frame, frameIdIn(makeProject()))
       return setup(withLayers(project, { beads: { 2: { 11: RED }, 8: { 11: RED }, 11: { 11: BLUE } }, frame: { ...frameOf(project)!, beads: { 1: { 1: RED } } } }))
     }
 
@@ -753,7 +754,7 @@ describe('useSelectionGesture', () => {
       const { gesture } = framed()
       gesture.beginPress(11, 11)
       expect(gesture.extendPress(8, 30)).toBe(true)
-      expect(gesture.selection.value).toMatchObject({ top: 8, left: 11, rows: 4, columns: 20, layer: 'frame' })
+      expect(gesture.selection.value).toMatchObject({ top: 8, left: 11, rows: 4, columns: 20, layer: FRAME_ID })
     })
 
     it('a drag that begins on the Canvas crosses the margin and the Frame and stays the Canvas\'s', () => {
@@ -813,7 +814,7 @@ describe('useSelectionGesture', () => {
       gesture.beginAdjust({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 12, column: 12 }, 'select')
       gesture.dragAdjust({ row: 40, column: 40 })
       gesture.endAdjust()
-      expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 30, columns: 30, layer: 'frame' })
+      expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 30, columns: 30, layer: FRAME_ID })
     })
 
     it('a press inside dropped for the Radial toolbox leaves the Selection where it was, with no tap and no move (ticket 1084)', () => {
@@ -837,13 +838,13 @@ describe('useSelectionGesture', () => {
       gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
       gesture.dragAdjust({ row: 1, column: 2 })
       gesture.endAdjust()
-      expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 2, columns: 2, layer: 'frame' })
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 2, columns: 2, layer: FRAME_ID })
     })
 
     it('a Piece tap selects the tapped bead\'s side only, and a tap in the margin is refused with the cue (ticket 433)', () => {
       const inFrame = [{ row: 11, column: 11 }, { row: 11, column: 12 }]
       const onCanvas = [{ row: 2, column: 2 }, { row: 2, column: 3 }, { row: 8, column: 11 }]
-      const { gesture } = setup(paintAt(paintAt(withFrame(makeProject(), frame), inFrame, RED), onCanvas, RED))
+      const { gesture } = setup(paintAt(paintAt(withFrame(makeProject(), frame, frameIdIn(makeProject())), inFrame, RED), onCanvas, RED))
       gesture.tapPiece(11, 11)
       expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 1, columns: 2 })
       gesture.tapPiece(2, 2)
@@ -1008,7 +1009,7 @@ describe('useSelectionGesture', () => {
 
     it('waits at the last place it could lie while the pointer is in one it can\'t, and goes on from there (ticket 1151)', () => {
       const bare = createProject({ technique: 'loom', beadId: cubeBeadId })
-      const framed = withFrame(paintAt(bare, [{ row: 5, column: 5 }, { row: 5, column: 6 }], RED), { row: 4, column: 30, rows: 10, columns: 10 })
+      const framed = withFrame(paintAt(bare, [{ row: 5, column: 5 }, { row: 5, column: 6 }], RED), { row: 4, column: 30, rows: 10, columns: 10 }, frameIdIn(bare))
       const { gesture } = setup(framed)
       gesture.tapPiece(5, 5)
 
@@ -1142,17 +1143,17 @@ describe('useSelectionGesture', () => {
 describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
   /** A peyote Star on a loom Canvas, its first two squares' round 3 painted. */
   function star(): Project {
-    const open = withFrameSheet(makeProject(), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'star', size: 4, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(makeProject(), undefined, { frame: frameIdIn(makeProject()) })
+    const placed = changeFrame(open, { custom: { shape: 'star', size: 4, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Star')
     const arm = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row, column }) => row === 2 && column < 12)
-    return onLayer(placed.project, 'frame', (view) => paintCells(view, arm, RED))
+    return onLayer(placed.project, FRAME_ID, (view) => paintCells(view, arm, RED))
   }
 
   it('selects all of it, clears it in one Undo step, and Undo brings every bead back', () => {
     const { gesture, harness } = setup(star())
     expect(gesture.selectAll()).toBe(true)
-    expect(gesture.selection.value).toMatchObject({ layer: 'frame' })
+    expect(gesture.selection.value).toMatchObject({ layer: FRAME_ID })
     gesture.deleteSelection()
     expect(beadCount(frameOf(harness.project)!.beads)).toBe(0)
     harness.history.onUndo()
@@ -1165,7 +1166,7 @@ describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
     expect(gesture.copy()).toBe(true)
     const { row, column } = frameOf(harness.project)!
     // Aimed at the Frame's top left corner, Off-shape: some of the arm lands past the shape.
-    expect(gesture.pasteAt({ row, column, layer: 'frame' })).toBe(true)
+    expect(gesture.pasteAt({ row, column, layer: FRAME_ID })).toBe(true)
     expect(losses).toEqual(['shape'])
     expect(clipped[0]).toBeGreaterThan(0)
     harness.history.onUndo()
@@ -1175,7 +1176,7 @@ describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
   it('refuses the Piece tool on it: its beads make no Pieces of a Grid', () => {
     const { gesture, harness } = setup(star())
     const { row, column } = frameOf(harness.project)!
-    gesture.tapPiece(row + 5, column + 5, 'frame')
+    gesture.tapPiece(row + 5, column + 5, FRAME_ID)
     expect(gesture.selection.value).toBeUndefined()
     expect(gesture.refusals.value).toBe(1)
   })

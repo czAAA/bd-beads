@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../src/testUtils/frameId'
 import { expect, test, type CDPSession, type Page } from '@playwright/test'
 import type { GridPosition } from '../../src/domain/grid'
 import type { BeadMap } from '../../src/domain/canvas'
@@ -39,7 +40,8 @@ function cappedPiece(technique: Technique): Project {
     beads[row] = {}
     for (let column = 0; column < side; column += 1) beads[row]![column] = isGround(row, column) ? ground : accent
   }
-  const base = withFrameSheet(fixtureProject({ technique, columns: 1, rows: 1, blank: true }), undefined)
+  const blank = fixtureProject({ technique, columns: 1, rows: 1, blank: true })
+  const base = withFrameSheet(blank, undefined, { frame: frameIdIn(blank) })
   return withLayers(base, { id: 'capped', name: 'Perf capped', beads, updatedAt: 1_700_000_000_000, createdAt: 1_700_000_000_000 })
 }
 

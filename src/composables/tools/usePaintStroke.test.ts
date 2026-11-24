@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { beadColorAt } from '../../domain/layerBeads'
 import { changeFrame } from '../../domain/changeFrame'
@@ -93,7 +94,7 @@ describe('usePaintStroke', () => {
   })
 
   it('paints every bead one pointer move crossed as one stroke step, skipping none, and Undo takes the whole stroke (ticket 0674)', () => {
-    const { stroke, harness, frame, at } = setup('paint', moveToRow(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), 1))
+    const { stroke, harness, frame, at } = setup('paint', moveToRow(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), 1, frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }))))
     const { row, column } = frame
 
     stroke.beginOrCommitPress('paint', '#ff0000', row + 1, column)
@@ -109,7 +110,7 @@ describe('usePaintStroke', () => {
   })
 
   it('leaves finished rows alone', () => {
-    const { stroke, at, frame } = setup('paint', moveToRow(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), 1))
+    const { stroke, at, frame } = setup('paint', moveToRow(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), 1, frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }))))
     stroke.beginOrCommitPress('paint', '#ff0000', frame.row, frame.column)
     stroke.paintStrokeCell(frame.row + 1, frame.column, '#ff0000')
     stroke.endStroke()
@@ -139,7 +140,7 @@ describe('usePaintStroke', () => {
     })
 
     it('drops a counterpart in a finished row silently', () => {
-      const { stroke, at, frame } = setup('paint', moveToRow(fourWide(), 1), topBottom)
+      const { stroke, at, frame } = setup('paint', moveToRow(fourWide(), 1, frameIdIn(fourWide())), topBottom)
       stroke.beginOrCommitPress('paint', '#ff0000', frame.row + 2, frame.column)
       stroke.endStroke()
 
@@ -176,14 +177,14 @@ describe('usePaintStroke', () => {
 
     it('fills only the flooded region on a Custom frame\'s Mirror (ticket 1025)', () => {
       const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
-      const placed = changeFrame(withFrameSheet(base, undefined), { custom: { shape: 'triangle', size: 5, centre: { row: 20, column: 30 } } })
+      const placed = changeFrame(withFrameSheet(base, undefined, { frame: frameIdIn(base) }), { custom: { shape: 'triangle', size: 5, centre: { row: 20, column: 30 } } }, frameIdIn(base))
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
       const turns: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, radial: true }, fold: 3, place: { layer: 'frame' } }
       const { row, column } = frameOf(placed.project)!
       const painted = paintAt(placed.project, [{ row: row + 4, column }], '#0000ff')
       const { stroke, harness } = setup('fill', painted, turns)
 
-      stroke.beginOrCommitPress('paint', '#00ff00', row + 4, column, 'frame')
+      stroke.beginOrCommitPress('paint', '#00ff00', row + 4, column, FRAME_ID)
       stroke.endStroke()
 
       expect(frameOf(harness.project)!.beads).toEqual({ 4: { 0: '#00ff00' } })
@@ -392,15 +393,15 @@ describe('usePaintStroke', () => {
     })
 
     it('paints a Custom frame\'s bead named past its rectangle, as its layout has one there (ticket 0629)', () => {
-      const open = withFrameSheet(over(), undefined)
-      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 30 } } })
+      const open = withFrameSheet(over(), undefined, { frame: frameIdIn(over()) })
+      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 30 } } }, frameIdIn(open))
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
       const { stroke, harness } = setup('paint', placed.project)
       const { row, column, columns } = frameOf(harness.project)!
       // The outer round of a Triangle of 9 rounds has 27 places, more than its rectangle has columns.
       expect(columns).toBeLessThan(27)
 
-      stroke.beginOrCommitPress('paint', '#ff0000', row + 8, column + 26, 'frame')
+      stroke.beginOrCommitPress('paint', '#ff0000', row + 8, column + 26, FRAME_ID)
       stroke.endStroke()
 
       expect(frameOf(harness.project)!.beads).toEqual({ 8: { 26: '#ff0000' } })
@@ -422,9 +423,9 @@ describe('usePaintStroke', () => {
     const { stroke, harness, frame } = setup()
     const { row, column } = frame
 
-    stroke.beginOrCommitPress('paint', '#ff0000', row, column, 'frame')
+    stroke.beginOrCommitPress('paint', '#ff0000', row, column, FRAME_ID)
     stroke.paintStrokeCell(row, column + 1, '#ff0000', 'canvas')
-    stroke.paintStrokeCell(row, column + 2, '#ff0000', 'frame')
+    stroke.paintStrokeCell(row, column + 2, '#ff0000', FRAME_ID)
     stroke.endStroke()
 
     expect(frameOf(harness.project)!.beads[0]).toEqual({ 0: '#ff0000', 2: '#ff0000' })

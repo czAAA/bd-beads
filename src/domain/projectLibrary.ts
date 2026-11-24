@@ -2,7 +2,7 @@ import { rotationSwapsAxes, type FrameRef } from './grid'
 import type { Project } from './project'
 import { shownDimensions } from './projectExtent'
 import { laidTurnOf } from './framePlacement'
-import { projectNameOf, FIRST_FRAME, frameById } from './layerRecord'
+import { projectNameOf, firstFrameId, frameById } from './layerRecord'
 
 // The Project library's lists (ticket 145): a Project's line in them and their order.
 
@@ -16,12 +16,12 @@ export function summarizeProject(project: Project): string {
 
 /** The Frame's size as the Project looks, "24×14"; none without a Frame: a canvas with none has no size to state (ADR 0026). */
 function projectFrameSize(project: Project): string | undefined {
-  const size = shownFrameSize(project)
+  const size = shownFrameSize(project, firstFrameId(project))
   return size && `${size.width}×${size.height}`
 }
 
 /** The Frame's width and height in beads as the Project looks (the rotated view's swapped); none without a Frame. */
-export function shownFrameSize(project: Project, ref: FrameRef = FIRST_FRAME): { width: number; height: number } | undefined {
+export function shownFrameSize(project: Project, ref: FrameRef): { width: number; height: number } | undefined {
   if (!frameById(project, ref)) return undefined
   const { columns, rows } = shownDimensions(project, ref)
   const [width, height] = rotationSwapsAxes(laidTurnOf(project, ref)) ? [rows, columns] : [columns, rows]

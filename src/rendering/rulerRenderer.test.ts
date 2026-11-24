@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
@@ -77,16 +78,16 @@ const surfaceAt = (zoom: number) => surfaceView({ space: OPEN_SPACE, technique: 
 /** What the overlay hands drawRulers: the view's surface and the Ruler layout made for it. */
 function drawn(project: RulerDrawInput['project'], { zoom, numbers, theme = LIGHT_THEME }: { zoom: number; numbers: boolean; theme?: ProjectTheme }): Pick<RulerDrawInput, 'project' | 'surface' | 'layout' | 'pixelRatio' | 'theme' | 'rowMarks'> {
   const surface = surfaceAt(zoom)
-  return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers }), pixelRatio: 1, theme, rowMarks: false }
+  return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers }, frameIdIn(project)), pixelRatio: 1, theme, rowMarks: false }
 }
 
 describe('drawRulers', () => {
-  const open = withFrameSheet(base, undefined)
+  const open = withFrameSheet(base, undefined, { frame: frameIdIn(base) })
   const twoPieces = withLayers(open, { beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].flatMap((column) => [{ row, column, color: '#ff0000' }, { row: row + 10, column: column + 10, color: '#00ff00' }]))) })
 
   it('draws every Piece rectangle `line-strong`, whichever Piece is being drawn', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
+    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }), frameIdIn(twoPieces))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLine, LIGHT_THEME.pieceLine])
   })
@@ -94,10 +95,10 @@ describe('drawRulers', () => {
   it('numbers the box round every bead of a layer whose Pieces are not counted yet, without its line (ticket 0716)', () => {
     const surface = surfaceAt(1)
     const pieces = { beads: beadsOfLayer(twoPieces, 'canvas'), touch: 1, areas: [{ row: 0, column: 0, rows: 13, columns: 13 }], named: [], uncounted: true as const }
-    const layout = rulerLayout(twoPieces, surface, { fontPx: 11, numbers: true, pieces })
+    const layout = rulerLayout(twoPieces, surface, { fontPx: 11, numbers: true, pieces }, frameIdIn(twoPieces))
     const { context, strokes, texts } = fakeContext()
 
-    drawRulers(context, { project: twoPieces, surface, layout, pixelRatio: 1, theme: LIGHT_THEME, rowMarks: false })
+    drawRulers(context, { project: twoPieces, surface, layout, pixelRatio: 1, theme: LIGHT_THEME, rowMarks: false }, frameIdIn(twoPieces))
 
     expect(layout.boxes).toMatchObject([{ row: 0, column: 0, rows: 13, columns: 13, outlined: false }])
     expect(strokes).toHaveLength(0)
@@ -106,19 +107,19 @@ describe('drawRulers', () => {
 
   it('draws no Piece rectangle with Rulers off, and both rectangles and numbers with Rulers on', () => {
     const off = fakeContext()
-    drawRulers(off.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: false }))
+    drawRulers(off.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: false }), frameIdIn(twoPieces))
     expect(off.strokes).toHaveLength(0)
     expect(off.texts).toHaveLength(0)
 
     const on = fakeContext()
-    drawRulers(on.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
+    drawRulers(on.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }), frameIdIn(twoPieces))
     expect(on.strokes).toHaveLength(2)
     expect(on.texts.length).toBeGreaterThan(0)
   })
 
   it('still draws the Frame\'s line and numbers with Rulers off (ticket 1012)', () => {
     const { context, strokes, texts } = fakeContext()
-    drawRulers(context, drawn(base, { zoom: 1, numbers: false }))
+    drawRulers(context, drawn(base, { zoom: 1, numbers: false }), frameIdIn(base))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
     expect(texts.length).toBeGreaterThan(0)
@@ -128,13 +129,13 @@ describe('drawRulers', () => {
     const theme = { ...LIGHT_THEME, margin: { ...LIGHT_THEME.margin, ruler: '#111111', rulerStrong: '#222222' } }
     const beside = withLayers(twoPieces, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 3, columns: 3, beads: {} } })
     const on = fakeContext()
-    drawRulers(on.context, { ...drawn(beside as typeof base, { zoom: 1, numbers: true }), theme })
+    drawRulers(on.context, { ...drawn(beside as typeof base, { zoom: 1, numbers: true }), theme }, frameIdIn(beside))
     expect(on.strokes.map((stroke) => stroke.style)).toEqual([theme.frameLine, theme.pieceLine, theme.pieceLine])
     expect(on.textStyles).toContain('#111111')
     expect(on.textStyles).toContain(theme.ruler)
 
     const off = fakeContext()
-    drawRulers(off.context, { ...drawn(beside as typeof base, { zoom: 1, numbers: false }), theme })
+    drawRulers(off.context, { ...drawn(beside as typeof base, { zoom: 1, numbers: false }), theme }, frameIdIn(beside))
     expect(off.strokes.map((stroke) => stroke.style)).toEqual([theme.frameLine])
     expect(new Set(off.textStyles)).toEqual(new Set(['#111111']))
   })
@@ -142,17 +143,17 @@ describe('drawRulers', () => {
   it('sets the Frame\'s numbers in the greys that read on its margin, and a Piece\'s in the Canvas\'s (ticket 0656)', () => {
     const theme = { ...LIGHT_THEME, margin: { ...LIGHT_THEME.margin, ruler: '#111111', rulerStrong: '#222222' } }
     const framed = fakeContext()
-    drawRulers(framed.context, { ...drawn(withLayers(base, { frame: { ...frameOf(base)!, rows: 12, columns: 12 } }), { zoom: 1, numbers: true }), theme })
+    drawRulers(framed.context, { ...drawn(withLayers(base, { frame: { ...frameOf(base)!, rows: 12, columns: 12 } }), { zoom: 1, numbers: true }), theme }, frameIdIn(base))
     expect(new Set(framed.textStyles)).toEqual(new Set(['#111111', '#222222']))
 
     const pieces = fakeContext()
-    drawRulers(pieces.context, { ...drawn(twoPieces as typeof base, { zoom: 1, numbers: true }), theme })
+    drawRulers(pieces.context, { ...drawn(twoPieces as typeof base, { zoom: 1, numbers: true }), theme }, frameIdIn(twoPieces))
     expect(pieces.textStyles.every((style) => style === LIGHT_THEME.ruler || style === LIGHT_THEME.rulerStrong)).toBe(true)
   })
 
   it('draws the Frame\'s line in `ink` and no Piece rectangles once there is a Frame', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, drawn(base, { zoom: 1, numbers: false }))
+    drawRulers(context, drawn(base, { zoom: 1, numbers: false }), frameIdIn(base))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
   })
@@ -165,7 +166,7 @@ describe('the names of the Schemas', () => {
       pieceNames: [{ name: 'Sketch', row: 10, column: 10 }],
     })
     const { context, texts } = fakeContext()
-    drawRulers(context, drawn(named, { zoom: 1, numbers: false }))
+    drawRulers(context, drawn(named, { zoom: 1, numbers: false }), frameIdIn(named))
 
     expect(texts).not.toContain('Sketch')
   })
@@ -177,7 +178,7 @@ describe('the Ruler dots', () => {
 
   it('draw a small dot for every bead without a number, in the number colours', () => {
     const { context, fills } = fakeContext()
-    drawRulers(context, drawn(framed, { zoom: 0.7, numbers: true }))
+    drawRulers(context, drawn(framed, { zoom: 0.7, numbers: true }), frameIdIn(framed))
 
     expect(new Set(radii(fills))).toEqual(new Set([1]))
     expect(fills.filter((fill) => fill.rect.length === 5).every((fill) => fill.style === LIGHT_THEME.ruler)).toBe(true)
@@ -185,7 +186,7 @@ describe('the Ruler dots', () => {
 
   it('draw only bolder 5th-bead dots under 6px of bead pitch', () => {
     const { context, fills } = fakeContext()
-    drawRulers(context, drawn(framed, { zoom: 0.1, numbers: true }))
+    drawRulers(context, drawn(framed, { zoom: 0.1, numbers: true }), frameIdIn(framed))
 
     expect(radii(fills).length).toBeGreaterThan(0)
     expect(new Set(radii(fills))).toEqual(new Set([1.75]))
@@ -193,7 +194,7 @@ describe('the Ruler dots', () => {
 
   it('draw on a Frame with Rulers off (ticket 1012)', () => {
     const { context, fills } = fakeContext()
-    drawRulers(context, drawn(framed, { zoom: 0.7, numbers: false }))
+    drawRulers(context, drawn(framed, { zoom: 0.7, numbers: false }), frameIdIn(framed))
 
     expect(radii(fills).length).toBeGreaterThan(0)
   })
@@ -204,19 +205,19 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
   const holds = (rect: number[], point: { x: number; y: number }) => point.x > rect[0]! && point.x < rect[0]! + rect[2]! && point.y > rect[1]! && point.y < rect[1]! + rect[3]!
   const at = (project: RulerDrawInput['project'], sheet: 'full' | 'compact' | 'folded' | 'bare', { zoom = 1, numbers = true, rowMarks = true } = {}) => {
     const surface = surfaceAt(zoom)
-    return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers, sheet }), pixelRatio: 1, theme: LIGHT_THEME, rowMarks }
+    return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers, sheet }, frameIdIn(project)), pixelRatio: 1, theme: LIGHT_THEME, rowMarks }
   }
   /** Where the Frame's line is on screen. */
   const lineOf = (input: ReturnType<typeof at>) => {
     const box = input.layout.boxes[0]!
-    const shown = input.surface.beadBox(box, 'frame')
+    const shown = input.surface.beadBox(box, FRAME_ID)
     return { left: shown.x - box.outset, top: shown.y - box.outset, right: shown.x + shown.width + box.outset }
   }
 
   it('sets the current row\'s number, on the left (ticket 1170), on a `marker` pill in the canvas\'s ink, and draws no triangle', () => {
-    const input = at(moveToRow(base, 1), 'full')
+    const input = at(moveToRow(base, 1, frameIdIn(base)), 'full')
     const { context, fills, texts, textStyles } = fakeContext()
-    drawRulers(context, input)
+    drawRulers(context, input, frameIdIn(input.project))
 
     const numbers = input.layout.labels.filter((label) => label.axis === 'row' && label.index === 1)
     expect(numbers).toHaveLength(1)
@@ -231,9 +232,9 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
       frame: { ...frameOf(base)!, row: 10, column: 0 },
       beads: withColors({}, [8, 9, 10, 11, 12, 13].map((row) => ({ row, column: 20, color: '#ff0000' }))),
     })
-    const input = at(moveToRow(beside, 1), 'full')
+    const input = at(moveToRow(beside, 1, frameIdIn(beside)), 'full')
     const { context, fills } = fakeContext()
-    drawRulers(context, input)
+    drawRulers(context, input, frameIdIn(input.project))
 
     const pieceNumbers = input.layout.labels.filter((label) => label.kind === 'piece' && label.axis === 'row')
     expect(pieceNumbers.length).toBeGreaterThan(0)
@@ -242,9 +243,9 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
   })
 
   it('sets the current column\'s number in the top band on its pill once the rows run down the columns', () => {
-    const input = at(moveToRow(toggleRowDirection(base), 1), 'full')
+    const input = at(moveToRow(toggleRowDirection(base, frameIdIn(base)), 1, frameIdIn(base)), 'full')
     const { context, fills } = fakeContext()
-    drawRulers(context, input)
+    drawRulers(context, input, frameIdIn(input.project))
 
     const [number] = input.layout.labels.filter((label) => label.axis === 'column' && label.index === 1)
     expect(marks(fills)).toHaveLength(1)
@@ -253,12 +254,12 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
 
   it('marks nothing with the Row progress look off, nor once every pass is done', () => {
     const off = fakeContext()
-    drawRulers(off.context, at(moveToRow(base, 1), 'full', { rowMarks: false }))
+    drawRulers(off.context, at(moveToRow(base, 1, frameIdIn(base)), 'full', { rowMarks: false }), frameIdIn(base))
     expect(marks(off.fills)).toEqual([])
     expect(off.textStyles).not.toContain(LIGHT_THEME.canvas)
 
     const done = fakeContext()
-    drawRulers(done.context, at(moveToRow(base, 3), 'compact'))
+    drawRulers(done.context, at(moveToRow(base, 3, frameIdIn(base)), 'compact'), frameIdIn(base))
     expect(marks(done.fills)).toEqual([])
   })
 
@@ -267,9 +268,9 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
       frame: { ...frameOf(base)!, row: 10, column: 0 },
       beads: withColors({}, [8, 9, 10, 11, 12, 13].map((row) => ({ row, column: 20, color: '#ff0000' }))),
     })
-    const input = at(moveToRow(beside, 1), 'compact')
+    const input = at(moveToRow(beside, 1, frameIdIn(beside)), 'compact')
     const { context, fills } = fakeContext()
-    drawRulers(context, input)
+    drawRulers(context, input, frameIdIn(input.project))
 
     expect(input.layout.labels.some((label) => label.kind === 'piece' && label.axis === 'row' && label.position === 11)).toBe(true)
     expect(marks(fills)).toHaveLength(2)
@@ -277,11 +278,11 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
   })
 
   it.each(['compact', 'folded'] as const)('ticks the Frame\'s line at the current row on both sides in the %s form, inside the line', (sheet) => {
-    const input = at(moveToRow(base, 1), sheet, { zoom: 0.5 })
+    const input = at(moveToRow(base, 1, frameIdIn(base)), sheet, { zoom: 0.5 })
     const { context, fills } = fakeContext()
-    drawRulers(context, input)
+    drawRulers(context, input, frameIdIn(input.project))
 
-    const row = input.surface.beadToPoint({ row: frameOf(base)!.row + 1, column: frameOf(base)!.column }, 'frame')
+    const row = input.surface.beadToPoint({ row: frameOf(base)!.row + 1, column: frameOf(base)!.column }, FRAME_ID)
     const line = lineOf(input)
     const ticks = marks(fills)
     expect(ticks).toHaveLength(2)
@@ -296,12 +297,12 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
   })
 
   it('ticks the top of the Frame\'s line at the current column, inside the line, once the rows run down the columns', () => {
-    const project = moveToRow(toggleRowDirection(base), 2)
+    const project = moveToRow(toggleRowDirection(base, frameIdIn(base)), 2, frameIdIn(base))
     const input = at(project, 'compact', { zoom: 0.5 })
     const { context, fills } = fakeContext()
-    drawRulers(context, input)
+    drawRulers(context, input, frameIdIn(input.project))
 
-    const column = input.surface.beadToPoint({ row: frameOf(base)!.row, column: frameOf(base)!.column + 2 }, 'frame')
+    const column = input.surface.beadToPoint({ row: frameOf(base)!.row, column: frameOf(base)!.column + 2 }, FRAME_ID)
     const [tick, ...more] = marks(fills)
     expect(more).toEqual([])
     expect(tick!.rect[0]! + tick!.rect[2]! / 2).toBeCloseTo(column.x)
@@ -310,27 +311,27 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
 
   it('keeps the pass on its numbers with Rulers off, as the Frame\'s rulers stay (ticket 1012)', () => {
     const off = fakeContext()
-    drawRulers(off.context, at(moveToRow(base, 1), 'full', { numbers: false }))
+    drawRulers(off.context, at(moveToRow(base, 1, frameIdIn(base)), 'full', { numbers: false }), frameIdIn(base))
     expect(off.texts).toContain('2')
     expect(marks(off.fills)).toHaveLength(1)
   })
 
   it('ticks the line where the full form shows no number of the pass: a Frame turned a quarter (ticket 0667), a Ruler step past it', () => {
     const turned = fakeContext()
-    drawRulers(turned.context, at(rotateFrame(moveToRow(base, 1))!, 'full'))
+    drawRulers(turned.context, at(rotateFrame(moveToRow(base, 1, frameIdIn(base)), undefined, frameIdIn(base))!, 'full'), frameIdIn(base))
     expect(marks(turned.fills).map((fill) => fill.rect[2])).toEqual([MARGIN_PX.pass.tick])
     expect(turned.textStyles).not.toContain(LIGHT_THEME.canvas)
 
     // Under 50% only the last number is drawn: the second row has none of its own.
     const skipped = fakeContext()
-    drawRulers(skipped.context, at(moveToRow(base, 1), 'full', { zoom: 0.3 }))
+    drawRulers(skipped.context, at(moveToRow(base, 1, frameIdIn(base)), 'full', { zoom: 0.3 }), frameIdIn(base))
     expect(skipped.texts).not.toContain('2')
     expect(marks(skipped.fills)).toHaveLength(2)
   })
 
   it('marks nothing where the margin sheet is not, under a 31px band (ticket 0682)', () => {
     const { context, fills } = fakeContext()
-    drawRulers(context, at(moveToRow(base, 1), 'bare', { zoom: 0.25 }))
+    drawRulers(context, at(moveToRow(base, 1, frameIdIn(base)), 'bare', { zoom: 0.25 }), frameIdIn(base))
     expect(marks(fills)).toEqual([])
   })
 })
@@ -339,15 +340,15 @@ describe('the marker gliding on after Row done (Rulers card, ticket 0730)', () =
   const marks = (fills: { style: unknown; rect: number[] }[]) => fills.filter((fill) => fill.style === LIGHT_THEME.marker)
   const at = (project: RulerDrawInput['project'], sheet: 'full' | 'compact', glide: RulerDrawInput['glide'], zoom = 1) => {
     const surface = surfaceAt(zoom)
-    return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers: true, sheet }), pixelRatio: 1, theme: LIGHT_THEME, rowMarks: true, glide }
+    return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers: true, sheet }, frameIdIn(project)), pixelRatio: 1, theme: LIGHT_THEME, rowMarks: true, glide }
   }
   const centreY = (rect: number[]) => rect[1]! + rect[3]! / 2
 
   it('glides the pill from the number of the pass left toward the next one\'s, and rests on it once the glide is over', () => {
-    const project = moveToRow(base, 2)
+    const project = moveToRow(base, 2, frameIdIn(base))
     const numberY = (index: number) => at(project, 'full', undefined).layout.labels.find((label) => label.axis === 'row' && label.index === index)!.y
     const midway = fakeContext()
-    drawRulers(midway.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide / 2 }))
+    drawRulers(midway.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide / 2 }), frameIdIn(base))
     expect(marks(midway.fills)).toHaveLength(1)
     for (const pill of marks(midway.fills)) {
       expect(centreY(pill.rect)).toBeGreaterThan(numberY(1))
@@ -355,16 +356,16 @@ describe('the marker gliding on after Row done (Rulers card, ticket 0730)', () =
     }
 
     const over = fakeContext()
-    drawRulers(over.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide }))
+    drawRulers(over.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide }), frameIdIn(base))
     for (const pill of marks(over.fills)) expect(centreY(pill.rect)).toBeCloseTo(numberY(2))
   })
 
   it('glides the tick along the Frame\'s line in the compact form', () => {
-    const project = moveToRow(base, 2)
+    const project = moveToRow(base, 2, frameIdIn(base))
     const input = at(project, 'compact', { from: 1, elapsed: ROW_MOTION.glide / 2 }, 0.5)
     const { context, fills } = fakeContext()
-    drawRulers(context, input)
-    const rowY = (row: number) => input.surface.beadToPoint({ row: frameOf(base)!.row + row, column: frameOf(base)!.column }, 'frame').y
+    drawRulers(context, input, frameIdIn(input.project))
+    const rowY = (row: number) => input.surface.beadToPoint({ row: frameOf(base)!.row + row, column: frameOf(base)!.column }, FRAME_ID).y
     expect(marks(fills)).toHaveLength(2)
     for (const tick of marks(fills)) {
       expect(centreY(tick.rect)).toBeGreaterThan(rowY(1))
@@ -374,10 +375,10 @@ describe('the marker gliding on after Row done (Rulers card, ticket 0730)', () =
 
   it('fades the pill out where it was once every pass is done', () => {
     const { context, fills } = fakeContext()
-    drawRulers(context, at(moveToRow(base, 3), 'full', { from: 2, elapsed: ROW_MOTION.markFade / 2 }))
+    drawRulers(context, at(moveToRow(base, 3, frameIdIn(base)), 'full', { from: 2, elapsed: ROW_MOTION.markFade / 2 }), frameIdIn(base))
     expect(marks(fills)).toHaveLength(1)
     const gone = fakeContext()
-    drawRulers(gone.context, at(moveToRow(base, 3), 'full', { from: 2, elapsed: ROW_MOTION.markFade }))
+    drawRulers(gone.context, at(moveToRow(base, 3, frameIdIn(base)), 'full', { from: 2, elapsed: ROW_MOTION.markFade }), frameIdIn(base))
     expect(marks(gone.fills)).toEqual([])
   })
 })

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { turnedWithFrame } from './rowWays'
 import { beadsFromColors, forEachBead, withColors, type BeadMap } from './canvas'
@@ -42,7 +43,7 @@ describe('rotateSelection', () => {
     // 2 rows x 3 columns becomes 3 rows x 2 columns about the same middle.
     expect(result.selection).toMatchObject({ top: 10, left: 11, rows: 3, columns: 2 })
     expect(frameSheetOf(result.project)).toEqual(frameSheetOf(project))
-    expect(rowProgressOf(result.project)).toEqual(rowProgressOf(project))
+    expect(rowProgressOf(result.project, frameIdIn(result.project))).toEqual(rowProgressOf(project, frameIdIn(project)))
     // Clockwise: the old left column (A, D) is now the top row, read right to left... D A / . B / F C
     expect(positionsOf(beadsOfLayer(result.project, 'canvas'))).toEqual(
       positionsOf(
@@ -179,18 +180,18 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
 
   it('steps the Frame\'s orientation about its centre: its beads keep their own rows and columns, what it covers turns', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 3, column: 5, color: '#bb0000' }]))
-    const turned = rotateFrame(project)!
+    const turned = rotateFrame(project, undefined, frameIdIn(project))!
 
     // The 4 x 6 Frame at (20, 20) lies 6 x 4 at (19, 21); its own size and beads are as they were.
     expect(frameOf(turned)).toMatchObject({ row: 19, column: 21, rows: 4, columns: 6, quarterTurns: 1 })
     expect(frameOf(turned)!.beads).toBe(frameOf(project)!.beads)
-    expect(laidFrame(turned)).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
+    expect(laidFrame(turned, frameIdIn(turned))).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
   })
 
   it('comes back after four turns, upright again', () => {
     const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]))
     let turned = project
-    for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!
+    for (let i = 0; i < 4; i++) turned = rotateFrame(turned, undefined, frameIdIn(turned))!
     expect(frameSheetOf(turned)).toEqual(frameSheetOf(project))
   })
 
@@ -198,7 +199,7 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
     const canvas = withColors({}, [{ row: 21, column: 22, color: '#999999' }])
     const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]), { beads: canvas })
     const named = withLayers(project, { frame: { ...frameOf(project)!, name: 'Leaf' } })
-    const turned = rotateFrame(named)!
+    const turned = rotateFrame(named, undefined, frameIdIn(named))!
     expect(beadsOfLayer(turned, 'canvas')).toBe(canvas)
     expect(frameOf(turned)!.name).toBe('Leaf')
   })
@@ -209,7 +210,7 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
       const project = withLayers(base, { technique, beads: {}, frame: { technique, ...(techniqueSettings ? { techniqueSettings } : {}), row: 20, column: 20, rows: 5, columns: 4, beads } })
       let turned: Project = project
       for (let turn = 1; turn <= 4; turn++) {
-        turned = rotateFrame(turned)!
+        turned = rotateFrame(turned, undefined, frameIdIn(turned))!
         expect(frameOf(turned)!.beads, `${technique} turn ${turn}`).toBe(beads)
         expect(frameOf(turned)).toMatchObject({ rows: 5, columns: 4 })
       }
@@ -218,13 +219,13 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
   })
 
   it('does nothing without a Frame', () => {
-    expect(rotateFrame(withLayers(base, { beads: {}, frame: undefined }))).toBeUndefined()
+    expect(rotateFrame(withLayers(base, { beads: {}, frame: undefined }), undefined, frameIdIn(base))).toBeUndefined()
   })
 
   it('keeps its Folded beads as they are, in its own rows and columns (ticket 0638)', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]))
     const folded = withLayers(project, { frame: { ...frameOf(project)!, folded: withColors({}, [{ row: 0, column: 7, color: '#cc0000' }]) } })
-    expect(frameOf(rotateFrame(folded))!.folded).toBe(frameOf(folded)!.folded)
+    expect(frameOf(rotateFrame(folded, undefined, frameIdIn(folded)))!.folded).toBe(frameOf(folded)!.folded)
   })
 })
 
@@ -270,10 +271,10 @@ describe('rotateFrame with Row progress (tickets 0647, 0667, ADR 0052)', () => {
     for (const technique of ['loom', 'peyote', 'brick'] as const) {
       for (const way of [{ direction: 'rows' as const }, { direction: 'columns' as const, reversed: true }]) {
         const project = woven(technique, way)
-        const turned = rotateFrame(project)!
+        const turned = rotateFrame(project, undefined, frameIdIn(project))!
         // Its rows turn with it, until Rotate Frame asks (ticket 1184): the way and each pointer's slot a quarter on.
-        expect(rowProgressOf(turned), `${technique} ${JSON.stringify(way)}`).toEqual(turnedWithFrame(rowProgressOf(project), 1))
-        expect(isInFinishedRow(turned, { row: frameOf(turned)!.row + 1, column: frameOf(turned)!.column, layer: 'frame' })).toBe(isInFinishedRow(project, { row: 21, column: 20, layer: 'frame' }))
+        expect(rowProgressOf(turned, frameIdIn(turned)), `${technique} ${JSON.stringify(way)}`).toEqual(turnedWithFrame(rowProgressOf(project, frameIdIn(project)), 1))
+        expect(isInFinishedRow(turned, { row: frameOf(turned)!.row + 1, column: frameOf(turned)!.column, layer: FRAME_ID }, frameIdIn(turned))).toBe(isInFinishedRow(project, { row: 21, column: 20, layer: FRAME_ID }, frameIdIn(project)))
       }
     }
   })

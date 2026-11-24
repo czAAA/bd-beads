@@ -1,3 +1,4 @@
+import { frameIdIn } from '../testUtils/frameId'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -46,7 +47,7 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
 describe('partLabel: the label above each pad (ticket 578)', () => {
   const label = (columns: number, rows: number, rotation: Rotation, letter: number) => {
     const project = shape('loom', columns, rows, rotation)
-    const plan = planPrint(project)
+    const plan = planPrint(project, { frame: frameIdIn(project) })
     return partLabel(plan.trim, en.print, plan.parts[letter]!)
   }
 
@@ -61,8 +62,8 @@ describe('partLabel: the label above each pad (ticket 578)', () => {
 
   it('counts a trimmed chart from its first column and row (ticket 1129)', () => {
     const project = shape('loom', 150, 40)
-    const plan = planPrint(project, { trim: { firstAcross: 0, lastAcross: 149, firstDown: 0, lastDown: 39 } })
-    const trimmed = planPrint(project, { trim: { firstAcross: 20, lastAcross: 149, firstDown: 5, lastDown: 34 } })
+    const plan = planPrint(project, { frame: frameIdIn(project), trim: { firstAcross: 0, lastAcross: 149, firstDown: 0, lastDown: 39 } })
+    const trimmed = planPrint(project, { frame: frameIdIn(project), trim: { firstAcross: 20, lastAcross: 149, firstDown: 5, lastDown: 34 } })
     expect(partLabel(plan.trim, en.print, plan.parts[0]!)).toBe('Part A · columns 1–75 · rows 1–40')
     expect(partLabel(trimmed.trim, en.print, trimmed.parts[1]!)).toMatch(/^Part B · columns \d+–130 · rows 1–30$/)
   })

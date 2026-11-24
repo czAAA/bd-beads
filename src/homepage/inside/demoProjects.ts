@@ -3,7 +3,7 @@ import { createProject } from '../../domain/createProject'
 import { addUsedColor, addedColorId, defaultPalette, type PaletteColor } from '../../domain/palette'
 import { setPalette } from '../../domain/paletteEdits'
 import type { GridPosition } from '../../domain/grid'
-import { withLayer } from '../../domain/layerRecord'
+import { withLayer, firstFrameId } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { turnRowDirectionTo } from '../../domain/rowProgress'
 import { starterById } from '../../domain/starters'
@@ -66,7 +66,7 @@ export const DEMO_TECHNIQUE: Technique = starterById(DEMO_STARTER).weave.techniq
 function demoProject(name: string, frameRows?: readonly string[], technique: Technique = DEFAULT_TECHNIQUE): Project {
   const size = frameRows ? { unit: 'beads' as const, width: frameRows[0].length, height: frameRows.length } : undefined
   const project = createProject({ name, technique, beadId: DEMO_BEAD, size, background: 1 })
-  return frameRows ? withLayer(project, 'frame', { beads: beadsFromColors(colorsOf(frameRows)) }) : project
+  return frameRows ? withLayer(project, firstFrameId(project), { beads: beadsFromColors(colorsOf(frameRows)) }) : project
 }
 
 const HEART = [
@@ -158,13 +158,13 @@ function frameColors(drawing: PeacockDrawing): string[][] {
 function finishedCuff(): Project {
   const size = { unit: 'beads' as const, width: PEACOCK_CUFF.lines, height: PEACOCK_CUFF.length }
   const project = createProject({ name: '', technique: DEMO_TECHNIQUE, beadId: DEMO_BEAD, size, background: 1 })
-  return withLayer(project, 'frame', { beads: beadsFromColors(frameColors(PEACOCK_CUFF)) })
+  return withLayer(project, firstFrameId(project), { beads: beadsFromColors(frameColors(PEACOCK_CUFF)) })
 }
 
 /** The cuff the Welcome tile weaves (ticket 1157; Homepage card): the finished cuff with its rows running left to right,
  * as a beader would set it, so its passes run from the left, where the rulers' 1 always is (ticket 1165). Row progress is its own data. */
 export function wovenCuff(): Project {
-  return turnRowDirectionTo(finishedCuff(), 'right')
+  return turnRowDirectionTo(finishedCuff(), 'right', firstFrameId(finishedCuff()))
 }
 
 /** How many beads of the Canvas the tour's view shows either side of the cuff's Frame (Homepage card, Its view). */

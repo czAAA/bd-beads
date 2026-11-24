@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withPictureTurned } from '../testUtils/layerFields'
 import { withColors } from '../domain/canvas'
@@ -20,7 +21,7 @@ const PAINTED: readonly Cell[] = [[2, 2], [5, 4], [6, 4], [3, 7], [8, 8], [8, 9]
 
 function projectOf(technique: Technique, bead: string, cells: readonly Cell[]): Project {
   const made = withPictureTurned(createProject({ technique, beadId: bead, size: { width: 12, height: 12, unit: 'beads' } }), 0)
-  const project = withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') })
+  const project = withLayer(made, FRAME_ID, { weave: heldWeave(made, 'canvas') })
   return withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, cells.map(([column, row]) => ({ row, column, color: '#222222' }))) } })
 }
 
@@ -28,7 +29,7 @@ type Lines = { first: number; last: number }
 
 function draw(project: Project, canvas: HTMLCanvasElement, rows?: Lines, more: { columns?: Lines; rowMarks?: boolean } = {}): void {
   const region = { x: -40, y: -40, width: SIDE / 2, height: SIDE / 2 }
-  renderProject(canvas.getContext('2d') as unknown as DrawingContext, { project, space: spaceOf(project, true), region, zoom: 1, pixelRatio: 2, rowMarks: false, theme: DARK_THEME, rows, opaque: true, draftWhenSmall: true, ...more })
+  renderProject(canvas.getContext('2d') as unknown as DrawingContext, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, pixelRatio: 2, rowMarks: false, theme: DARK_THEME, rows, opaque: true, draftWhenSmall: true, ...more })
 }
 
 function surface(): HTMLCanvasElement {
@@ -92,9 +93,9 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again the passes 
       ['Row done down the columns', 'columns', 5, 6],
     ] as const)('after %s, leaves the Canvas as a whole draw makes it', (_step, direction, from, to) => {
       const painted = withLayers(projectOf(technique, bead, CHECKERED), { ownProgress: {} })
-      const turned = direction === 'columns' ? toggleRowDirection(painted) : painted
-      const [before, after] = [moveToRow(turned, from), moveToRow(turned, to)]
-      const step = stepLines(after, rowProgressOf(before))!
+      const turned = direction === 'columns' ? toggleRowDirection(painted, frameIdIn(painted)) : painted
+      const [before, after] = [moveToRow(turned, from, frameIdIn(turned)), moveToRow(turned, to, frameIdIn(turned))]
+      const step = stepLines(after, rowProgressOf(before, frameIdIn(before)), frameIdIn(after))!
       const offset = step.direction === 'rows' ? frameOf(after)!.row : frameOf(after)!.column
       const lines = { first: step.lines[0]! + offset, last: step.lines.at(-1)! + offset }
       const whole = surface()
@@ -122,7 +123,7 @@ describe('the Frame\'s Off-shape (ticket 1196)', () => {
     const canvas = surface()
     const project = projectOf(technique, 'toho-cube-1.5mm', [])
     const region = { x: -40, y: -40, width: SIDE / 2, height: SIDE / 2 }
-    renderProject(canvas.getContext('2d') as unknown as DrawingContext, { project, space: spaceOf(project, true), region, zoom: 1, pixelRatio: 2, rowMarks: false, theme, opaque: true, draftWhenSmall: false })
+    renderProject(canvas.getContext('2d') as unknown as DrawingContext, { project, space: spaceOf(project, true, frameIdIn(project)), region, zoom: 1, pixelRatio: 2, rowMarks: false, theme, opaque: true, draftWhenSmall: false })
     return canvas
   }
   const black = [5, 5, 5] as const

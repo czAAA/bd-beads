@@ -2,7 +2,7 @@ import { computed, inject, provide, ref, shallowRef, watch, type InjectionKey, t
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, findBead, type Bead } from '../../domain/beads'
 import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
-import { beadIdOfLayer, beadOfLayer } from '../../domain/layerRecord'
+import { beadIdOfLayer, beadOfLayer, wovenLayerOf } from '../../domain/layerRecord'
 import { brandColors, type AddUsedColorOutcome, type Palette, type PaletteCode } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { loadColorCatalog } from '../../services/colorCatalogs'
@@ -75,7 +75,7 @@ export function useBeadColors({ currentProject, palette, addUsed, select, remove
   // The woven layer's Bead, the Frame's when there is one (ADR 0079, ticket 0665), whose colors the Palette holds.
   const bead = computed(() => {
     const project = currentProject()
-    return project && (beadOfLayer(project, 'frame').bead ?? findBead(beadIdOfLayer(project, 'frame')))
+    return project && (beadOfLayer(project, wovenLayerOf(project)).bead ?? findBead(beadIdOfLayer(project, wovenLayerOf(project))))
   })
   const own = catalogList(bead, { palette, addUsed, select })
 

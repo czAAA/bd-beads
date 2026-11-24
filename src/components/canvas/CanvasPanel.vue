@@ -38,7 +38,7 @@ import { useShellScope } from '../../composables/ui/shellScope'
 import { selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
-import { beadOfLayer, frameOf, layerOf } from '../../domain/layerRecord'
+import { beadOfLayer, frameOf, layerOf, firstFrameId } from '../../domain/layerRecord'
 import { canvasWeave, layerWeave } from '../../domain/layerWeave'
 import { cellSizePx } from '../../rendering/cellSize'
 import type { SurfaceView } from '../../rendering/surfaceView'
@@ -316,7 +316,7 @@ const barTooltips = computed(() => {
   const framed = pictureBar.frameBox.value
   return {
     frame: fillBlanks(frameOf(project) ? words.frameAround.body : words.frameAround.bodyNew, { size: framed ? `${framed.columns}×${framed.rows}` : size }),
-    frameOff: project && rowProgressStarted(project) ? t.value.tooltips.rowProgressLockedFrame : !pictureBar.box.value ? words.convert.tooSmall : undefined,
+    frameOff: project && rowProgressStarted(project, firstFrameId(project)) ? t.value.tooltips.rowProgressLockedFrame : !pictureBar.box.value ? words.convert.tooSmall : undefined,
     convert: fillBlanks(words.convert.body, { size }),
     convertOff: off === 'too-small' ? words.convert.tooSmall : off === 'too-big' ? words.convert.tooBig : undefined,
   }
@@ -327,7 +327,7 @@ const frameTooltip = computed(() => {
   const project = shownProject.value
   const frame = frameOf(project)
   if (!project || !frame) return ''
-  const bead = layerOf(project, 'frame')?.bead
+  const bead = layerOf(project, firstFrameId(project))?.bead
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead, frame.technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { ...seenSize(frame), estimate })
 })

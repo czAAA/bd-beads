@@ -3,7 +3,7 @@ import { rotationSwapsAxes, type GridPosition, type Rotation, type FrameRef } fr
 import { frameRowOrder, ownRowWayOf } from './rowProgress'
 import { frameQuarterTurnOf } from './table'
 import { frameWeave } from './layerWeave'
-import { beadsOfLayer, FIRST_FRAME, frameById } from './layerRecord'
+import { beadsOfLayer, frameById } from './layerRecord'
 import { inBox, paintedFrameBox } from './projectExtent'
 import type { Project } from './project'
 import { describeWeave } from './weave'
@@ -89,7 +89,7 @@ const ASCENDS: Record<PassDirection, Record<Rotation, boolean>> = {
 }
 
 /** The Word chart of a Project's Frame, or undefined with no Frame. Row by row asks for it, whatever Letters says (ticket 0916). */
-export function wordChartOf(project: Project, ref: FrameRef = FIRST_FRAME): WordChart | undefined {
+export function wordChartOf(project: Project, ref: FrameRef): WordChart | undefined {
   const frame = frameById(project, ref)
   const weave = frameWeave(project, ref)
   const { wordChart, twoPasses } = describeWeave(weave)

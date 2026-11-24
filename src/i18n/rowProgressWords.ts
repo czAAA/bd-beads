@@ -1,3 +1,4 @@
+import { firstFrameId } from '../domain/layerRecord'
 import { fillBlanks } from '../domain/fillBlanks'
 import type { Layered } from '../domain/layerRecord'
 import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition, type SeenWay } from '../domain/rowProgress'
@@ -20,7 +21,7 @@ export function seenWayWords(words: Translations['rowProgress'], way: SeenWay): 
  * are of several sorts, parts, joins or a Fringe earring's strands, "Part 2, round 3" and "· 8 of 20". `shown` is the
  * pass from 1. None for a Frame without a Frame shape. */
 export function customPassWords(words: Translations['rowProgress'], project: Layered, shown: number): { label: string; of: string } | undefined {
-  const order = frameRowOrder(project)
+  const order = frameRowOrder(project, firstFrameId(project))
   const step = order.stepOf?.(shown - 1)
   if (!step) return undefined
   // The last pass is a join or a strand wherever the passes are not all rounds or rows of one part.
@@ -44,7 +45,7 @@ export interface RowProgressCount {
 /** The one place the counter's words are put together, for the bar's counter and for every move the announcer says
  * (tickets 0934, 0972; ScreenReaders card). */
 export function rowProgressCount(words: Translations['rowProgress'], project: Layered): RowProgressCount {
-  const { current, total } = rowProgressPosition(project)
+  const { current, total } = rowProgressPosition(project, firstFrameId(project))
   if (current >= total) return { step: words.patternDone, short: words.patternDone, spoken: words.patternDone }
   const shown = current + 1
   const short = `${shown}/${total}`
@@ -53,8 +54,8 @@ export function rowProgressCount(words: Translations['rowProgress'], project: La
     const step = `${custom.label} ${custom.of}`
     return { step, short, spoken: step }
   }
-  const columns = columnsAsSeen(project)
-  const line = passLine(project)
+  const columns = columnsAsSeen(project, firstFrameId(project))
+  const line = passLine(project, firstFrameId(project))
   const unit = line ? words.passLabel : columns ? words.columnLabel : words.positionLabel
   const step = fillBlanks(words.announcePosition, { unit, current: shown, total })
   if (!line) return { step, short, spoken: step }

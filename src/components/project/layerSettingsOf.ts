@@ -1,7 +1,7 @@
 import { beadLabel } from '../../domain/beads'
 import { techniquesOf } from '../../domain/frameShape'
-import type { Layer } from '../../domain/grid'
-import { frameOf, layerOf } from '../../domain/layerRecord'
+import type { FrameRef, Layer } from '../../domain/grid'
+import { frameById, layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { frameTechniqueWaits } from '../../domain/wovenLines'
@@ -13,7 +13,7 @@ import type { Translations } from '../../i18n/translations'
  * Background comes from the theme (`useCanvasBackground`). The Project must have the layer. */
 export function layerSettingsOf(project: Project, layer: Layer) {
   const { weave, bead } = layerOf(project, layer)!
-  const frame = layer === 'frame' ? frameOf(project) : undefined
+  const frame = layer === 'canvas' ? undefined : frameById(project, layer)
   return {
     layer,
     technique: weave.technique,
@@ -21,8 +21,8 @@ export function layerSettingsOf(project: Project, layer: Layer) {
     ...(frame ? { techniques: techniquesOf(frame) } : {}),
     bead,
     ...(frame?.shape ? { frame } : {}),
-    locked: !!frame && rowProgressStarted(project),
-    techniqueOpen: !!frame && !frameTechniqueWaits(project),
+    locked: !!frame && rowProgressStarted(project, layer as FrameRef),
+    techniqueOpen: !!frame && !frameTechniqueWaits(project, layer as FrameRef),
   }
 }
 

@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { FIT_LOCALES, FIT_WIDTHS, fitProblems, mountAt, problemsAcrossWidths } from '../../testUtils/browserFit'
@@ -31,7 +32,7 @@ const WITH_PROJECT: [DialogId, unknown][] = [
   ['import-switch', { projects: [fox], takenNames: new Map([['fox', 'A sunflower bracelet for my grandmother']]) }],
   // Each layer's own message (ticket 0687): the Frame's, the longer, adds its Estimated size before and after.
   ['replace-bead', { layer: 'canvas', beadId: 'toho/round/11-0' }],
-  ['replace-bead', { layer: 'frame', beadId: 'toho/round/11-0' }],
+  ['replace-bead', { layer: FRAME_ID, beadId: 'toho/round/11-0' }],
   // Its longest question: a finished row on peyote or brick stitch, whose rows after it shift.
   ['remove-line', { kind: 'finished-row', row: 12, backTo: 24, shifts: true, direction: 'columns' }],
   // The Feedback sheet in each Report kind (ticket 0700), the color one with every prefill.

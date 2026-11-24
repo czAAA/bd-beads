@@ -1,6 +1,6 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { nearestQuarterTurn } from '../../domain/canvasOrientation'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, firstFrameId } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { Insets } from '../../domain/toolPill'
 import type { Size } from '../../rendering/cellSize'
@@ -70,7 +70,7 @@ export function useFrameExpand(deps: FrameExpandDeps) {
   function contentAt(project: Project, fontPx: number): SlimContent {
     const across = nearestQuarterTurn(deps.orientation.value) % 180 !== 0
     const { row, title, rowWidth } = measures.value
-    return { compact: deps.compact.value, row, title, rowWidth, fontPx, numbers: frameNumberBands(project, across, fontPx) }
+    return { compact: deps.compact.value, row, title, rowWidth, fontPx, numbers: frameNumberBands(project, across, fontPx, firstFrameId(project)) }
   }
 
   /** The room the slim sheet takes from each side of the drawing area, past the Frame's beads, at a zoom and the bead

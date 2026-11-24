@@ -1,5 +1,5 @@
 import { computed, hasInjectionContext, inject, provide, readonly, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { backgroundOf, frameOf, type Layered } from '../domain/layerRecord'
+import { backgroundOf, firstFrameId, frameById, type Layered } from '../domain/layerRecord'
 import type { Layer } from '../domain/grid'
 import type { Background } from '../domain/project'
 import {
@@ -85,7 +85,7 @@ export function useCanvasBackground(
   const marginPick = () => ({ choice: marginChoice.value, customColor: marginCustomColor.value })
   const backgroundOfLayer = (layer: Layer): Background => {
     const open = project()
-    const own = open && backgroundOf(open, layer === 'frame' && !frameOf(open) ? 'canvas' : layer)
+    const own = open && backgroundOf(open, layer !== 'canvas' && !frameById(open, layer) ? 'canvas' : layer)
     return own ?? start.value
   }
   const shownOf = (layer: Layer): ShownBackground => {
@@ -96,7 +96,7 @@ export function useCanvasBackground(
   // Each layer's Background is a number or a string, so a Project replaced by an edit that leaves it alone changes no
   // look below, and the surface still draws only the rows the edit changed.
   const canvasBackground = computed(() => backgroundOfLayer('canvas'))
-  const frameBackground = computed(() => backgroundOfLayer('frame'))
+  const frameBackground = computed(() => backgroundOfLayer(firstFrameId(project())))
   const canvasPick = computed(() => pickOf(canvasBackground.value))
   return {
     start,

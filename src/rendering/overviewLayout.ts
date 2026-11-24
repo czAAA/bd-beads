@@ -18,7 +18,7 @@ export const TABLE_SHARE = 0.4
 const TABLE_EMPTY = mm(6)
 export const TABLE_COLUMN_GAP = mm(8)
 
-type OverviewWords = Pick<PrintText, 'name' | 'maker' | 'colors'>
+type OverviewWords = Pick<PrintText, 'frame' | 'name' | 'maker' | 'colors'>
 
 /** The heights of a Beads needed table: its head (over the first row), a row of colors, and the Total and grams note that
  * end it. */
@@ -112,7 +112,7 @@ export function listSlices(words: OverviewWords, table: TableRows, from: number,
 /** Page 1 as the overview (and its list pages) for a Project's words, with Beads needed as `table`: the whole piece, trimmed
  * to `trim` (ticket 1128), as large as the room the title block and Beads needed (at most its share) leave, at its top and
  * centred across, Beads needed straight under it. */
-export function overviewLayout(project: Layered, words: OverviewWords, table: TableRows, page: PageSize = A4_PORTRAIT, trim: TrimmedArea = wholeArea(project)): OverviewLayout {
+export function overviewLayout(project: Layered, words: OverviewWords, table: TableRows, page: PageSize = A4_PORTRAIT, trim: TrimmedArea = wholeArea(project, words.frame)): OverviewLayout {
   const rowHeight = table.row
   const titleHeight = titleHeightOf(words)
   const top = PRINT_MARGIN + titleHeight
@@ -128,7 +128,7 @@ export function overviewLayout(project: Layered, words: OverviewWords, table: Ta
   const needed: ColorsSlice = { from: 0, count: onPageOne, rowHeight, columns: 2, rows: Math.ceil(onPageOne / 2), total: whole }
   const tableHeight = colorsHeight(onPageOne, table, whole)
 
-  const wide = areaRegion(project, trim)
+  const wide = areaRegion(project, trim, words.frame)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const room = available - tableHeight - OVERVIEW_GAP
   const widthRoom = page.width - PRINT_MARGIN * 2 - inset * 2

@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../src/testUtils/frameId'
 import { findBuiltInColor } from '../../src/domain/palette'
 import { MARGIN } from '../../src/domain/margin'
 import { framedGrid } from '../../src/domain/layerBeads'
@@ -41,7 +42,8 @@ function paint(beads: BeadMap, { row: top, column: left, rows, columns }: Rect, 
 
 /** A Project with these beads and nothing else: no Frame unless `frame` gives one. */
 function projectWith(technique: Technique, id: string, changes: LayersChange, updatedAt: number): Project {
-  const base = withFrameSheet(fixtureProject({ technique, columns: 1, rows: 1, blank: true }), undefined)
+  const blank = fixtureProject({ technique, columns: 1, rows: 1, blank: true })
+  const base = withFrameSheet(blank, undefined, { frame: frameIdIn(blank) })
   return withLayers(base, { id, name: `Perf ${id}`, beads: {}, ...changes, updatedAt, createdAt: updatedAt })
 }
 

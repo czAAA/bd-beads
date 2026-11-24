@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { isInCurrentRow, isInFinishedRow, rowProgressPosition } from './rowProgress'
@@ -26,7 +27,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   it('is made in the Technique the Project was made in, and its Weave is the Frame\'s own', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
     expect(frameOf(brick)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
-    expect(frameWeave(peyoteOnLoom())).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell })
+    expect(frameWeave(peyoteOnLoom(), frameIdIn(peyoteOnLoom()))).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell })
     expect(canvasWeave(peyoteOnLoom())).toEqual({ technique: 'loom', cell })
   })
 
@@ -34,7 +35,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
     const brickFrame = withLayers(brick, { technique: 'peyote' as const, techniqueSettings: {}, frame: { ...frameOf(brick)!, techniqueSettings: { brickDrop: 5 } } })
     expect(canvasWeave(brickFrame)).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell })
-    expect(frameWeave(brickFrame)).toEqual({ technique: 'brick', techniqueSettings: { brickDrop: 5 }, cell })
+    expect(frameWeave(brickFrame, frameIdIn(brickFrame))).toEqual({ technique: 'brick', techniqueSettings: { brickDrop: 5 }, cell })
     // Brick stitch's Drop kept off it, for a switch back, lays nothing out in loom.
     const loom = withWeave(brick, 'canvas', { technique: 'loom' })
     expect(canvasWeave(loom).techniqueSettings).toEqual({ brickDrop: 3 })
@@ -52,41 +53,41 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   })
 
   it('counts a Canvas with no Frame in the Canvas\'s own Weave', () => {
-    const open = withFrameSheet(peyoteOnLoom(), undefined)
-    expect(frameWeave(open)).toEqual({ technique: 'loom', cell })
+    const open = withFrameSheet(peyoteOnLoom(), undefined, { frame: frameIdIn(peyoteOnLoom()) })
+    expect(frameWeave(open, frameIdIn(open))).toEqual({ technique: 'loom', cell })
   })
 
   it('counts its rows, passes and size in its own Weave: peyote\'s first line takes one pass and every later one two', () => {
     const project = withLayers(peyoteOnLoom(), { ownProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
-    expect(rowProgressPosition(project).total).toBe(11)
+    expect(rowProgressPosition(project, frameIdIn(project)).total).toBe(11)
     // Row 0 is pass 0, done; row 1 is pass 1 on its even positions and pass 2 on its odd.
-    expect(isInFinishedRow(project, { row: 10, column: 10 })).toBe(true)
-    expect(isInFinishedRow(project, { row: 11, column: 10 })).toBe(false)
-    expect(isInCurrentRow(project, { row: 11, column: 10 })).toBe(true)
+    expect(isInFinishedRow(project, { row: 10, column: 10 }, frameIdIn(project))).toBe(true)
+    expect(isInFinishedRow(project, { row: 11, column: 10 }, frameIdIn(project))).toBe(false)
+    expect(isInCurrentRow(project, { row: 11, column: 10 }, frameIdIn(project))).toBe(true)
   })
 
   it('switches the Canvas without touching the Frame, and the Frame without touching the Canvas', () => {
     const peyote = withWeave(canvasLoom(), 'canvas', { technique: 'peyote' })
     expect(canvasOf(peyote).technique).toBe('peyote')
     expect(frameOf(peyote)?.technique).toBe('loom')
-    const framePeyote = withWeave(canvasLoom(), 'frame', { technique: 'peyote' })
+    const framePeyote = withWeave(canvasLoom(), FRAME_ID, { technique: 'peyote' })
     expect(canvasOf(framePeyote).technique).toBe('loom')
     expect(frameOf(framePeyote)?.technique).toBe('peyote')
   })
 
   it('keeps the Frame\'s Weave when it is resized, and gives a new one the Canvas\'s', () => {
-    const resized = withFrame(peyoteOnLoom(), { row: 10, column: 10, rows: 8, columns: 4 })
+    const resized = withFrame(peyoteOnLoom(), { row: 10, column: 10, rows: 8, columns: 4 }, frameIdIn(peyoteOnLoom()))
     expect(frameOf(resized)?.technique).toBe('peyote')
-    const open = withFrameSheet(withWeave(peyoteOnLoom(), 'canvas', { technique: 'brick' }), undefined)
-    expect(frameOf(withFrame(open, { row: 0, column: 0, rows: 4, columns: 4 }))?.technique).toBe('brick')
+    const open = withFrameSheet(withWeave(peyoteOnLoom(), 'canvas', { technique: 'brick' }), undefined, { frame: frameIdIn(withWeave(peyoteOnLoom(), 'canvas', { technique: 'brick' })) })
+    expect(frameOf(withFrame(open, { row: 0, column: 0, rows: 4, columns: 4 }, frameIdIn(open)))?.technique).toBe('brick')
   })
 
   it('moves its corner on the Canvas by as far as its own rows went, to the nearest position', () => {
     // Peyote's rows are a full bead each, as loom's: dragging the top edge up by 4 moves the corner up 4 (ticket 0734).
-    const grown = withFrame(peyoteOnLoom(), { row: 6, column: 10, rows: 10, columns: 4 })
+    const grown = withFrame(peyoteOnLoom(), { row: 6, column: 10, rows: 10, columns: 4 }, frameIdIn(peyoteOnLoom()))
     expect(frameOf(grown)).toMatchObject({ row: 6, rows: 10 })
     // Alike, it is exactly the rectangle asked for.
-    const alike = withFrame(withWeave(peyoteOnLoom(), 'canvas', { technique: 'peyote' }), { row: 6, column: 10, rows: 10, columns: 4 })
+    const alike = withFrame(withWeave(peyoteOnLoom(), 'canvas', { technique: 'peyote' }), { row: 6, column: 10, rows: 10, columns: 4 }, frameIdIn(withWeave(peyoteOnLoom(), 'canvas', { technique: 'peyote' })))
     expect(frameOf(alike)).toMatchObject({ row: 6, rows: 10 })
   })
 

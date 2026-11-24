@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../src/testUtils/frameId'
 import { beadColorAt } from '../../src/domain/layerBeads'
 import { writeFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
@@ -45,7 +46,7 @@ const FINISHED_SHARE = 0.5
  * Out of the draft look an empty one is a tonal tile, which Row progress leaves as it is (ticket 1001). */
 function expectedCentre(shown: Project, ownRow: number, ownColumn: number, satin: boolean): [number, number, number] {
   // The Frame as it is drawn, at its own quarter turn on a Canvas laid under it (ticket 1188): its beads by position.
-  const project = withLaidTurn(shown)
+  const project = withLaidTurn(shown, undefined, frameIdIn(shown))
   const frame = frameOf(project)
   const [row, column] = [ownRow + (frame?.row ?? 0), ownColumn + (frame?.column ?? 0)]
   const color = beadColorAt(project, row, column)
@@ -57,7 +58,7 @@ function expectedCentre(shown: Project, ownRow: number, ownColumn: number, satin
 }
 
 function flatCentre(project: Project, row: number, column: number, own: [number, number, number]): [number, number, number] {
-  if (!isInFinishedRow(project, { row, column })) {
+  if (!isInFinishedRow(project, { row, column }, frameIdIn(project))) {
     return own
   }
   const board = rgb(LIGHT_THEME.canvas)
@@ -130,9 +131,9 @@ export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 export function shownRegion(corner: { x: number; y: number }, project: Project, zoom: number): Region {
   // A Frame drawn otherwise than its Canvas (ticket 1188) shows as at its own quarter turn, where its surface is pinned.
   const shift = frameShift(project, zoom)
-  const laid = shift ? withLaidTurn(project) : project
-  const view = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: shift?.rotation ?? quarterTurnOf(project), zoom, ...(shift ? { frame: placedFrame(laid) } : {}) })
-  const shown = view.beadBox(projectFrame(laid), shift ? 'frame' : undefined)
+  const laid = shift ? withLaidTurn(project, undefined, frameIdIn(project)) : project
+  const view = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: shift?.rotation ?? quarterTurnOf(project), zoom, ...(shift ? { frame: placedFrame(laid, frameIdIn(laid)) } : {}) })
+  const shown = view.beadBox(projectFrame(laid, frameIdIn(laid)), shift ? frameIdIn(laid) : undefined)
   const [x, y] = [corner.x + shown.x + (shift?.x ?? 0), corner.y + shown.y + (shift?.y ?? 0)]
   return { x: Math.floor(x), y: Math.floor(y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
 }

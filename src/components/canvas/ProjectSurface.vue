@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, useTemplateRef, watch } from 'vue'
-import type { GridPosition, PreviewCell } from '../../domain/grid'
+import { isFrameLayer, type GridPosition, type PreviewCell } from '../../domain/grid'
 import { layerAt } from '../../domain/layers'
 import type { Handedness, InputMode } from '../../domain/inputMode'
-import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
+import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas, firstFrameId, frameIdOf } from '../../domain/layerRecord'
 import { frameAngleOf } from '../../domain/table'
 import { frameCentreOnCanvas, withCanvasTurned, withFrameLaidAt } from '../../domain/framePlacement'
 import type { TablePoint } from '../../domain/table'
@@ -223,7 +223,7 @@ const drawnProps = viewProps({ get project() { return drawnProject.value }, get 
 
 /** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a
  * position is. */
-const space = computed(() => spaceOf(props.project, true))
+const space = computed(() => spaceOf(props.project, true, firstFrameId(props.project)))
 
 /** The Canvas's Weave (ADR 0079), with the cell its Bead draws it in. */
 const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
@@ -231,12 +231,12 @@ const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 /** A view of the drawing at a quarter turn, from a scroll, over a drawing area. */
 function viewAt(rotation: Rotation, scroll: Scroll, viewport: Size, frameDrawn?: SurfaceViewInput['frameDrawing']): SurfaceView {
   const weave = canvasWeave.value
-  return surfaceView({ space: space.value, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(props.project), rotation, zoom: props.zoom, scroll, viewport, frameDrawing: frameDrawn })
+  return surfaceView({ space: space.value, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(props.project, firstFrameId(props.project)), frameLayer: firstFrameId(props.project), rotation, zoom: props.zoom, scroll, viewport, frameDrawing: frameDrawn })
 }
 
 /** A Project's Frame centre in a view of its Canvas: where the view draws the Frame's middle (ticket 1188). */
 function frameCentreIn(project: Project, view: SurfaceView): Scroll {
-  const centre = frameCentreOnCanvas(project)!
+  const centre = frameCentreOnCanvas(project, firstFrameId(project))!
   return view.gridToPoint(centre.x * CELL_SIZE_PX, centre.y * CELL_SIZE_PX)
 }
 
@@ -247,7 +247,7 @@ const frameDrawn = computed<LayerDrawing>(() => {
   const frame = frameOf(props.project)
   const canvas = canvasDrawn.value
   if (!frame) return canvas
-  const angle = frameAngleOf(props.project)
+  const angle = frameAngleOf(props.project, firstFrameId(props.project))
   const rotation = normalizedOrientation(nearestQuarterTurn(angle) - 90 * (frame.quarterTurns ?? 0)) as Rotation
   const moved = props.twistMoved && (props.twistMoved.x !== 0 || props.twistMoved.y !== 0)
   return frameDrawing({
@@ -258,7 +258,7 @@ const frameDrawn = computed<LayerDrawing>(() => {
     own: !!frame.centre || !!moved,
     // Its centre shows where it lies on the table, and its drawing is pinned there.
     pin: () => ({
-      displayed: frameCentreIn(withFrameLaidAt(props.project, rotation), viewAt(rotation, { x: 0, y: 0 }, size.value)),
+      displayed: frameCentreIn(withFrameLaidAt(props.project, rotation, firstFrameId(props.project)), viewAt(rotation, { x: 0, y: 0 }, size.value)),
       onScreen: canvas.leaning.toScreen(frameCentreIn(shownProject.value, viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn))),
     }),
   })
@@ -270,7 +270,7 @@ const drawnAlike = computed(() => frameDrawn.value === canvasDrawn.value)
 const frameSurface = computed((): SurfaceView => viewAt(frameDrawn.value.rotation, frameDrawn.value.scroll, frameDrawn.value.leaning.drawn))
 /** The Project as the Frame's own surface draws it: its Frame on the grid of a Canvas at that surface's quarter turn,
  * which its margin sheet, rulers and title block are laid out on (ticket 1188). */
-const frameProject = computed(() => withFrameLaidAt(props.project, frameDrawn.value.rotation))
+const frameProject = computed(() => withFrameLaidAt(props.project, frameDrawn.value.rotation, firstFrameId(props.project)))
 
 /** The expanded Frame's slim sheet in the view's px (ticket 1169): round the Frame's line by what it holds. */
 const slimBox = computed(() => {
@@ -294,7 +294,7 @@ const slimSheet = computed<SlimSheet | undefined>(() => {
 /** The Frame's margin sheet in the Frame drawing's grid px, none without a Frame: the one box the sheet is drawn from,
  * placed by and takes no press on. Expanded, the slim sheet. Read by `surface` only while the Frame is drawn apart, as
  * `frameSurface` falls back to `surface` otherwise: read it from there and the two cycle. */
-const sheetGrid = computed((): Region | undefined => slimSheet.value?.sheet ?? marginSheetPx(frameProject.value)?.sheet)
+const sheetGrid = computed((): Region | undefined => slimSheet.value?.sheet ?? marginSheetPx(frameProject.value, firstFrameId(frameProject.value))?.sheet)
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. Its points are the Canvas drawing's; the Frame layer lies in it by its own transform. */
@@ -310,7 +310,7 @@ const frameLeaning = computed(() => frameDrawn.value.leaning)
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
  * until it ends (ticket 0674). */
 const pieces = computed<RuledPieces>((previous) =>
-  ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false, idleWalk: (beads, weave, anchors) => piecesWhenIdle('rulers', beads, weave, anchors) }),
+  ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false, idleWalk: (beads, weave, anchors) => piecesWhenIdle('rulers', beads, weave, anchors) }, firstFrameId(props.project)),
 )
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
@@ -320,14 +320,14 @@ function rulerFontPx(): number {
 
 /** The form and scale the Frame's margin sheet takes at this zoom (tickets 0658, 0698): the Frame's numbers hang on it. */
 const sheetLook = computed(() => {
-  const band = (marginSheetPx(frameProject.value)?.band ?? 0) * props.zoom
+  const band = (marginSheetPx(frameProject.value, firstFrameId(frameProject.value))?.band ?? 0) * props.zoom
   const least = theme.value.margin.leastScale
   return band ? { sheet: marginForm(band, least), sheetScale: marginScale(band, least) } : {}
 })
 
 /** The rulers of a view, laid out once: the overlay draws them and a press asks them what it selects, so the two
  * cannot disagree. */
-const rulersIn = (view: SurfaceView, project: Project = props.project) => rulerLayout(project, view, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, expanded: !!props.slim, expandedFontPx: props.slim?.fontPx, pieces: pieces.value })
+const rulersIn = (view: SurfaceView, project: Project = props.project) => rulerLayout(project, view, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, expanded: !!props.slim, expandedFontPx: props.slim?.fontPx, pieces: pieces.value }, firstFrameId(project))
 const rulers = computed(() => rulersIn(surface.value))
 /** The Frame's rulers lie on its own surface (ticket 1187), laid out in its drawing's view. */
 const frameRulers = computed(() => (drawnAlike.value ? rulers.value : rulersIn(frameSurface.value, frameProject.value)))
@@ -367,7 +367,7 @@ watch(() => props.twist, (phase) => {
   if (!phase) held.value = undefined
   else if (!held.value) hold()
 })
-watch([() => props.orientation, () => frameAngleOf(props.project), () => props.zoom, () => props.scroll], () => {
+watch([() => props.orientation, () => frameAngleOf(props.project, firstFrameId(props.project)), () => props.zoom, () => props.scroll], () => {
   if (props.twist !== 'turning') return
   clearTimeout(holdTimer)
   holdTimer = setTimeout(hold, SETTLE_MS)
@@ -386,6 +386,8 @@ function layerOfSurface(which: keyof HeldDrawings, live: () => HeldDrawing) {
 }
 const canvasLayer = layerOfSurface('canvas', liveCanvas)
 const frameLayer = layerOfSurface('frame', liveFrame)
+/** The Frame the Frame surface draws (ticket 1217): the Project's first, until the app shows several. */
+const shownFrame = computed(() => firstFrameId(props.project))
 const layerSize = canvasLayer.size
 const layerSurface = canvasLayer.surface
 
@@ -459,7 +461,7 @@ function sheetIn(view: SurfaceView): { x: number; y: number; width: number; heig
  * told to the sheet's tools and title block. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = frameOf(props.project)
-  const grid = marginSheetPx(frameProject.value)
+  const grid = marginSheetPx(frameProject.value, firstFrameId(frameProject.value))
   if (!frame || !grid || size.value.width === 0) return undefined
   const drawnSheet = sheetIn(frameSurface.value)!
   // Scrolled wholly out of view, the sheet has no tools to keep on screen.
@@ -501,7 +503,7 @@ const schemaAnchors = computed<SchemaAnchors | undefined>(() => {
 watch(schemaAnchors, (anchors) => emit('schema-anchors', anchors), { immediate: true, flush: 'post' })
 
 /** Row marks are drawn unless the Row highlight toggle is off; the project's own Row progress decides the rest. */
-const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
+const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project, firstFrameId(props.project)))
 
 const marginCue = useMarginCue(props)
 const pickChipEl = useTemplateRef<HTMLElement>('pickChipBox')
@@ -539,7 +541,7 @@ const showFinished = computed(() => pointer.showFinished.value || rowMotion.fini
 const reference = toRef(() => props.reference)
 useBeadLayer({ layer: 'canvas', props: canvasLayer.props, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, reference, slimSheet })
 // The Frame's surface is drawn after the Canvas's, in the same frame: once it is, every bead in view is.
-useBeadLayer({ layer: 'frame', props: frameLayer.props, canvas: frameBaseEl, standIn: frameStandInEl, size: frameLayer.size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference, slimSheet })
+useBeadLayer({ layer: shownFrame, props: frameLayer.props, canvas: frameBaseEl, standIn: frameStandInEl, size: frameLayer.size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference, slimSheet })
 useCarryLayer({ props: canvasLayer.props, canvas: carryEl, size: layerSize, space, surface: layerSurface, theme, frameTheme, carried: () => props.carriedPiece, oncePerFrame })
 watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flush: 'post' })
 /** What both overlays follow from the pointer and the motions. */
@@ -549,7 +551,7 @@ const overlayDeps = {
   rowMotion: rowMotion.rowMotion,
 }
 useSurfaceOverlay({ ...overlayDeps, layer: 'canvas', props: canvasLayer.props, canvas: canvasOverlayEl, size: layerSize, surface: layerSurface, rulers: canvasLayer.rulers })
-useSurfaceOverlay({ ...overlayDeps, layer: 'frame', props: frameLayer.props, canvas: overlayEl, size: frameLayer.size, surface: frameLayer.surface, rulers: frameLayer.rulers })
+useSurfaceOverlay({ ...overlayDeps, layer: shownFrame, props: frameLayer.props, canvas: overlayEl, size: frameLayer.size, surface: frameLayer.surface, rulers: frameLayer.rulers })
 
 /** Where Pattern done plays (ticket 0730): the margin sheet, the Frame in it and the beads its stars light, in the
  * drawing's px, as the layers draw it. */
@@ -560,7 +562,7 @@ const patternDoneAt = computed(() => {
   if (!frame || !sheet || rowMotion.patternDone.value === undefined) return undefined
   const box = view.frameBox(frame)
   const stars = PATTERN_DONE_STARS.map(({ across, down }) => {
-    const at = view.beadToPoint({ row: frame.row + Math.round(down * (frame.rows - 1)), column: frame.column + Math.round(across * (frame.columns - 1)) }, 'frame')
+    const at = view.beadToPoint({ row: frame.row + Math.round(down * (frame.rows - 1)), column: frame.column + Math.round(across * (frame.columns - 1)) }, frameIdOf(frame))
     return { x: at.x - sheet.x, y: at.y - sheet.y }
   })
   return { id: rowMotion.patternDone.value, sheet, frame: { ...box, x: box.x - sheet.x, y: box.y - sheet.y }, stars }
@@ -575,7 +577,7 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   const box = rootEl.value?.getBoundingClientRect()
   if (!box) return undefined
   const layer = layerAt(props.project, position)
-  const [view, lean] = layer === 'frame' ? [frameSurface.value, frameLeaning.value] : [surface.value, leaning.value]
+  const [view, lean] = isFrameLayer(layer) ? [frameSurface.value, frameLeaning.value] : [surface.value, leaning.value]
   const bead = view.beadBox({ row: position.row, column: position.column, rows: 1, columns: 1 }, layer)
   const shown = lean.toScreen({ x: bead.x + bead.width / 2, y: bead.y + bead.height / 2 })
   const zoom = cssZoomOf(rootEl.value)

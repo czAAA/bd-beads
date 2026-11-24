@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { findBead } from '../domain/beads'
 import { withPictureTurned } from '../testUtils/layerFields'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -18,7 +19,7 @@ import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
 function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {
-  renderInSpace(context, { space: spaceOf(input.project, false), rowMarks: false, ...input })
+  renderInSpace(context, { space: spaceOf(input.project, false, frameIdIn(input.project)), rowMarks: false, ...input })
 }
 
 /** A bead drawer that draws nothing, to leave only what the renderer itself draws. */
@@ -38,7 +39,7 @@ function projectOf(technique: Technique, columns: number, rows: number, extra: L
   // Upright, whatever the Technique's own starting turn is (a new peyote Canvas starts turned).
   const made = withLayers(withPictureTurned(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), 0), rest)
   // The Frame is woven as the Project is made, whatever the test overrides (ticket 492).
-  const project = frameOf(made) && !rest.frame ? withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') }) : made
+  const project = frameOf(made) && !rest.frame ? withLayer(made, FRAME_ID, { weave: heldWeave(made, 'canvas') }) : made
   return grid ? withFrameGrid(project, grid) : project
 }
 
@@ -853,7 +854,7 @@ describe('the keep-out margin on the Canvas', () => {
       const corners = clip ? calls.slice(0, clipAt).filter(({ name }) => name === 'moveTo').map(({ args }) => args) : []
       cutOut.set(`${bead.x},${bead.y}`, clip?.args[0] === 'evenodd' && corners.some(([x, y]) => x === box[0] && y === box[1]))
     }
-    renderProject(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead })
+    renderProject(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead })
     return cutOut
   }
 
@@ -881,7 +882,7 @@ frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, b
     const beads: BeadShape[] = []
     const drawBead: BeadDrawer = (_context, bead) => beads.push(bead)
     // In the outlined look, where an empty Frame position is a bead: light and dark draw it a tonal tile (ticket 1001).
-    renderProject(recordingContext().context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead, theme: PROJECT_THEMES.contrast })
+    renderProject(recordingContext().context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead, theme: PROJECT_THEMES.contrast })
     return beads
   }
   const colorsAt = (beads: BeadShape[], row: number, column: number) => beads.filter((bead) => bead.x === column * 20 && bead.y === row * 20).map((bead) => bead.color)
@@ -960,7 +961,7 @@ describe('the draft look zoomed out (ticket 0676)', () => {
   function drawn(project: Project, zoom: number, pixelRatio = 1, draftWhenSmall = true) {
     const { context, named } = recordingContext()
     let beads = 0
-    renderInSpace(context, { project, space: spaceOf(project, true), region: SCREEN, zoom, pixelRatio, rowMarks: false, draftWhenSmall, drawBead: () => (beads += 1) })
+    renderInSpace(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: SCREEN, zoom, pixelRatio, rowMarks: false, draftWhenSmall, drawBead: () => (beads += 1) })
     return { beads, images: named('drawImage') }
   }
 
@@ -1005,7 +1006,7 @@ describe('the draft look zoomed out (ticket 0676)', () => {
     const project = framedPiece('peyote')
     const at = (region: Region, drawnProject = project) => {
       const { context, named } = recordingContext()
-      renderInSpace(context, { project: drawnProject, space: spaceOf(drawnProject, true), region, zoom: 0.2, rowMarks: false, draftWhenSmall: true })
+      renderInSpace(context, { project: drawnProject, space: spaceOf(drawnProject, true, frameIdIn(drawnProject)), region, zoom: 0.2, rowMarks: false, draftWhenSmall: true })
       return named('drawImage').length
     }
 
@@ -1021,7 +1022,7 @@ describe('the draft look zoomed out (ticket 0676)', () => {
     const project = withLayers(framedPiece('loom'), { ownProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
     const { context } = recordingContext()
 
-    renderInSpace(context, { project, space: spaceOf(project, true), region: SCREEN, zoom: 0.2, rowMarks: true, draftWhenSmall: true })
+    renderInSpace(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: SCREEN, zoom: 0.2, rowMarks: true, draftWhenSmall: true })
 
     const [canvasImage, frameImage] = images()
     const at = (image: typeof canvasImage, row: number, column: number) => [...image!.data.slice((row * image!.width + column) * 4, (row * image!.width + column) * 4 + 4)]

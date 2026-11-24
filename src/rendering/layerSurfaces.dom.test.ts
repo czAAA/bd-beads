@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../domain/createProject'
 import type { BeadMap } from '../domain/canvas'
@@ -27,7 +28,7 @@ function framed(): Project {
 }
 
 const project = framed()
-const space = spaceOf(project, true)
+const space = spaceOf(project, true, frameIdIn(project))
 const frame = frameOf(project)!
 const view = surfaceView({ space, technique: 'loom', frame, rotation: 0, zoom: 1, scroll: { x: frame.column * 20 - 200, y: frame.row * 20 - 200 }, viewport: { width: 600, height: 600 } })
 const region = { x: frame.column * 20 - 200, y: frame.row * 20 - 200, width: 600, height: 600 }
@@ -43,7 +44,7 @@ function drawn(layer?: ViewLayer) {
 
 describe("each layer's part of the beads (ticket 1187)", () => {
   it("leaves the Frame's surface clear round its sheet: no Background, no Position marks", () => {
-    const calls = drawn('frame')
+    const calls = drawn(FRAME_ID)
     expect(calls.filter((call) => call.name === 'fillRect' && call.fillStyle === DEFAULT_THEME.canvas)).toHaveLength(0)
     expect(calls.some(sheetFill)).toBe(true)
   })
@@ -57,13 +58,13 @@ describe("each layer's part of the beads (ticket 1187)", () => {
   it('draws as much between them as both together draw', () => {
     const count = (calls: ReturnType<typeof drawn>, name: string) => calls.filter((call) => call.name === name).length
     for (const name of ['roundRect', 'drawImage', 'fill']) {
-      expect(count(drawn('canvas'), name) + count(drawn('frame'), name)).toBe(count(drawn(), name))
+      expect(count(drawn('canvas'), name) + count(drawn(FRAME_ID), name)).toBe(count(drawn(), name))
     }
   })
 })
 
 describe("each layer's part of the overlay (ticket 1187)", () => {
-  const layout = rulerLayout(project, view, { fontPx: 11, numbers: true })
+  const layout = rulerLayout(project, view, { fontPx: 11, numbers: true }, frameIdIn(project))
   function overlay(layer?: ViewLayer) {
     const { context, calls } = recordingContext()
     renderOverlay(context, { project, space, region, zoom: 1, rowMarks: true, rulers: { layout, surface: view }, layer })
@@ -72,7 +73,7 @@ describe("each layer's part of the overlay (ticket 1187)", () => {
 
   it("draws the Frame's Row progress and rulers on its own surface, none on the Canvas's", () => {
     const text = (calls: ReturnType<typeof overlay>) => calls.filter((call) => call.name === 'fillText').length
-    expect(text(overlay('frame'))).toBe(text(overlay()))
+    expect(text(overlay(FRAME_ID))).toBe(text(overlay()))
     expect(text(overlay('canvas'))).toBe(0)
     expect(overlay('canvas').filter((call) => call.name === 'stroke')).toHaveLength(0)
   })

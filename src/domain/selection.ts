@@ -5,7 +5,7 @@ import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
 import { layerAt, layerSheet, onLayer, shownBeads, positionInLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
 import { footprintOf } from './footprint'
-import { beadsOfLayer, FIRST_FRAME, frameIdOf, framesOf, heldWeave, type Layered } from './layerRecord'
+import { beadsOfLayer, firstFrameId, frameIdOf, framesOf, heldWeave, type Layered } from './layerRecord'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells } from './drawing'
@@ -125,7 +125,7 @@ export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition,
 
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle
  * round every placed bead, or none on an empty canvas. */
-export function selectAllSelection(beads: BeadMap, frame: Rect | undefined, layer: Layer = FIRST_FRAME): Selection | undefined {
+export function selectAllSelection(beads: BeadMap, frame: Rect | undefined, layer: Layer): Selection | undefined {
   if (frame) return { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer }
   const all = allBeadsSelection(beads)
   return all && { ...all, layer: 'canvas' }
@@ -358,7 +358,7 @@ export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosit
 export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selection | undefined {
   const layer = layerAt(project, at)
   if (layer === 'canvas') {
-    const picked = pieceSelectionAt(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'), at, footprintOf(project))
+    const picked = pieceSelectionAt(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'), at, footprintOf(project, firstFrameId(project)))
     return picked && { ...picked, layer }
   }
   const sheet = layerSheet(project, layer)

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColorsInPalette } from './paletteEdits'
 import { computeColorQuantities } from './beadQuantities'
@@ -26,19 +27,19 @@ const RED = '#ff0000'
 const BLUE = '#0000ff'
 
 const open = (): Project => {
-  const project = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+  const project = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
   return project
 }
 
 /** An open Canvas woven in peyote, as the Triangle is: its rows and columns are the Frame's. */
 const openPeyote = (): Project => {
-  const project = withFrameSheet(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+  const project = withFrameSheet(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
   return project
 }
 
 /** The Project after a change that must happen. */
 function changed(project: Project, change: FrameChange): Project {
-  const result = changeFrame(project, change)
+  const result = changeFrame(project, change, frameIdIn(project))
   if (result.kind !== 'changed') throw new Error(`expected a change, got ${JSON.stringify(result)}`)
   return result.project
 }
@@ -47,7 +48,7 @@ const triangle = (rounds = 4, project = open(), centre = { row: 20, column: 30 }
 
 /** Paints Frame positions (round, place in round) as a press on the Frame does. */
 const paintFrame = (project: Project, positions: { row: number; column: number }[], color: string | null) =>
-  onLayer(project, 'frame', (view) => paintCells(view, positions, color))
+  onLayer(project, FRAME_ID, (view) => paintCells(view, positions, color))
 
 describe('a Custom frame put in place holding beads (ticket 0596)', () => {
   it('keeps the beads its layout has a position for, and drops the rest', () => {
@@ -69,7 +70,7 @@ describe('a Custom frame put on the open Canvas (ticket 0592)', () => {
   it('replaces the Frame there with its beads, and turns Row progress on like any first Frame (ticket 0594)', () => {
     const square = changed(triangle(), { custom: { shape: 'warpedSquare', size: 3, centre: { row: 0, column: 0 } } })
     expect(frameOf(square)).toMatchObject({ shape: 'warpedSquare', settings: { rounds: 3 } })
-    expect(rowProgressOn(square)).toBe(true)
+    expect(rowProgressOn(square, frameIdIn(square))).toBe(true)
   })
 })
 
@@ -84,12 +85,12 @@ describe('painting a Custom frame', () => {
 
   it('fills across panels where beads touch, and stops at another colour', () => {
     const project = triangle(4)
-    const filled = onLayer(project, 'frame', (view) => fillArea(view, 0, 0, RED))
+    const filled = onLayer(project, FRAME_ID, (view) => fillArea(view, 0, 0, RED))
     expect(beadCount(frameOf(filled)!.beads)).toBe(frameLayoutOf(frameOf(project)!)!.positions.length)
     // A peyote column's beads touch two rounds apart, so the wall is two rounds deep.
     const wall = [1, 2].flatMap((row) => Array.from({ length: 3 * (row + 1) }, (_unused, column) => ({ row, column })))
     const walled = paintFrame(project, wall, BLUE)
-    const inner = onLayer(walled, 'frame', (view) => fillArea(view, 0, 0, RED))
+    const inner = onLayer(walled, FRAME_ID, (view) => fillArea(view, 0, 0, RED))
     expect(beadCount(frameOf(inner)!.beads)).toBe(15 + 3)
   })
 })
@@ -110,7 +111,7 @@ describe('changing a Custom frame\'s Rounds', () => {
     const shrunk = changed(project, { settings: { rounds: 2 } })
     expect(frameOf(shrunk)!.beads).toEqual({ 0: { 0: RED } })
     expect(frameOf(shrunk)!.folded).toEqual({ 3: { 0: RED, 1: RED } })
-    expect(computeColorQuantities(shrunk, projectPalette(shrunk))).toMatchObject([{ hex: RED, count: 1 }])
+    expect(computeColorQuantities(shrunk, projectPalette(shrunk), frameIdIn(shrunk))).toMatchObject([{ hex: RED, count: 1 }])
     const grown = changed(changed(shrunk, { settings: { rounds: 3 } }), { settings: { rounds: 4 } })
     expect(frameOf(grown)!.beads).toEqual(frameOf(project)!.beads)
     expect(frameOf(grown)!.folded).toBeUndefined()
@@ -118,23 +119,23 @@ describe('changing a Custom frame\'s Rounds', () => {
 
   it('turns its Folded beads with it (ticket 0640)', () => {
     const shrunk = changed(paintFrame(triangle(4), [{ row: 3, column: 0 }], RED), { settings: { rounds: 3 } })
-    const turned = rotateFrame(shrunk)!
+    const turned = rotateFrame(shrunk, undefined, frameIdIn(shrunk))!
     expect(frameOf(turned)!.folded).toEqual(frameOf(shrunk)!.folded)
     expect(frameOf(changed(turned, { settings: { rounds: 4 } }))!.beads).toEqual({ 3: { 0: RED } })
   })
 
   it('keeps its pointer and the same beads finished on Rotate Frame, as its order turns with its layout (ticket 0647)', () => {
     const project = withLayers(triangle(4), { ownProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
-    const turned = rotateFrame(project)!
+    const turned = rotateFrame(project, undefined, frameIdIn(project))!
     const finished = (woven: Project) =>
-      frameLayoutOf(frameOf(woven)!)!.positions.filter(({ row, column }) => isInFinishedRow(woven, { row: row + frameOf(woven)!.row, column: column + frameOf(woven)!.column, layer: 'frame' })).map(({ row, column }) => `${row},${column}`)
-    expect(rowProgressOf(turned)).toEqual(rowProgressOf(project))
+      frameLayoutOf(frameOf(woven)!)!.positions.filter(({ row, column }) => isInFinishedRow(woven, { row: row + frameOf(woven)!.row, column: column + frameOf(woven)!.column, layer: FRAME_ID }, frameIdIn(woven))).map(({ row, column }) => `${row},${column}`)
+    expect(rowProgressOf(turned, frameIdIn(turned))).toEqual(rowProgressOf(project, frameIdIn(project)))
     expect(finished(turned)).toEqual(finished(project))
     expect(finished(project)).toHaveLength(3 + 6)
   })
 
   it('is no change at the Rounds it has, and keeps within the shape\'s range', () => {
-    expect(changeFrame(triangle(4), { settings: { rounds: 4 } }).kind).toBe('unchanged')
+    expect(changeFrame(triangle(4), { settings: { rounds: 4 } }, frameIdIn(triangle(4))).kind).toBe('unchanged')
     expect(frameOf(changed(triangle(4), { settings: { rounds: 999 } }))!.settings).toEqual({ rounds: 40 })
   })
 })
@@ -143,18 +144,18 @@ describe('a Custom frame in another Bead (ticket 0723)', () => {
   /** Where the Frame's middle lies on the Canvas, in Canvas positions. */
   const middle = (project: Project) => {
     const frame = frameOf(project)!
-    const half = canvasDistance(project, frameWeave(project), Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
+    const half = canvasDistance(project, frameWeave(project, frameIdIn(project)), Math.floor(frame.rows / 2), Math.floor(frame.columns / 2), frameIdIn(project))
     return { row: frame.row + half.row, column: frame.column + half.column }
   }
 
   it('is laid out again in the Frame\'s new Bead round its own middle, every bead keeping its name and colour', () => {
     const project = paintFrame(changed(openPeyote(), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 30 } } }), [{ row: 5, column: 0 }, { row: 2, column: 4 }], RED)
     const round = findBead('toho/round/11-0')!
-    const relaid = relaidInBead(project, replaceBead(project, round))
+    const relaid = relaidInBead(project, replaceBead(project, round), frameIdIn(project))
     expect(frameOf(relaid)).toMatchObject(customFrameSize('warpedSquare', { rounds: 6 }, undefined, { technique: 'peyote' }, beadCell(round, 'peyote')))
     expect(frameOf(relaid)!.rows).not.toBe(frameOf(project)!.rows)
     expect(frameOf(relaid)!.beads).toEqual(frameOf(project)!.beads)
-    expect(frameLayoutOf({ ...frameOf(relaid)!, cell: frameWeave(relaid).cell })!.beadDepth).toBeCloseTo(2.2 / 1.65, 9)
+    expect(frameLayoutOf({ ...frameOf(relaid)!, cell: frameWeave(relaid, frameIdIn(relaid)).cell })!.beadDepth).toBeCloseTo(2.2 / 1.65, 9)
     const [before, after] = [middle(project), middle(relaid)]
     expect(Math.abs(after.row - before.row)).toBeLessThanOrEqual(1)
     expect(Math.abs(after.column - before.column)).toBeLessThanOrEqual(1)
@@ -164,11 +165,11 @@ describe('a Custom frame in another Bead (ticket 0723)', () => {
     const round = findBead('toho/round/11-0')!
     const plain = changed(openPeyote(), { place: { frame: { row: 0, column: 0, rows: 6, columns: 6 }, weave: { technique: 'peyote' } } })
     const rebeaded = replaceBead(plain, round)
-    expect(relaidInBead(plain, rebeaded)).toBe(rebeaded)
+    expect(relaidInBead(plain, rebeaded, frameIdIn(plain))).toBe(rebeaded)
     const square = changed(openPeyote(), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 30 } } })
     // A Toho Cube 1.5mm, as the Frame has: its layout and rectangle are as they were.
     const same = replaceBead(square, findBead('toho/cube/1.5mm')!)
-    expect(relaidInBead(square, same)).toBe(same)
+    expect(relaidInBead(square, same, frameIdIn(square))).toBe(same)
   })
 })
 
@@ -194,12 +195,12 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
     expect(frameOf(changed(project, { set: { ...frameOf(project)!, rows, columns } }))!.settings).toEqual({ rounds: 6 })
     const smaller = changed(project, { set: { ...frameOf(project)!, columns: frameOf(triangle(3))!.columns } })
     expect(frameOf(smaller)).toMatchObject({ settings: { rounds: 3 }, beads: {}, folded: { 3: { 0: RED } } })
-    expect(changeFrame(project, { set: { ...frameOf(project)!, columns: frameOf(project)!.columns } }).kind).toBe('unchanged')
+    expect(changeFrame(project, { set: { ...frameOf(project)!, columns: frameOf(project)!.columns } }, frameIdIn(project)).kind).toBe('unchanged')
   })
 
   it('holds its size still once a Row progress pass is done', () => {
     const project = withLayers(triangle(4), { ownProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
-    expect(changeFrame(project, { set: { ...frameOf(project)!, columns: frameOf(project)!.columns + 6 } })).toEqual({ kind: 'refused', reason: 'locked' })
+    expect(changeFrame(project, { set: { ...frameOf(project)!, columns: frameOf(project)!.columns + 6 } }, frameIdIn(project))).toEqual({ kind: 'refused', reason: 'locked' })
   })
 
   it('becomes its shape round a Selection on Frame from Selection, the smallest that covers it, copying the Canvas beads in', () => {
@@ -210,7 +211,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
     const made = changed(drawn, { make: selection })
     expect(frameOf(made)).toMatchObject({ ...selection, shape: 'triangle', settings: { rounds: 4 } })
     expect(beadsOfLayer(made, 'canvas')).toEqual(beadsOfLayer(drawn, 'canvas'))
-    expect(computeColorQuantities(made, projectPalette(made))).toEqual(expect.arrayContaining([expect.objectContaining({ hex: RED, count: 2 }), expect.objectContaining({ hex: BLUE, count: 2 })]))
+    expect(computeColorQuantities(made, projectPalette(made), frameIdIn(made))).toEqual(expect.arrayContaining([expect.objectContaining({ hex: RED, count: 2 }), expect.objectContaining({ hex: BLUE, count: 2 })]))
   })
 
   it('leaves a Canvas bead it cannot copy, on a Seam or Off-shape, only on the Canvas under it', () => {
@@ -228,9 +229,9 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
 
   it('is woven in the Techniques its shape supports and refuses another; Remove row/column alone is not offered', () => {
     const project = triangle()
-    expect(changeFrame(project, { technique: 'peyote' }).kind).toBe('unchanged')
+    expect(changeFrame(project, { technique: 'peyote' }, frameIdIn(project)).kind).toBe('unchanged')
     for (const change of [{ technique: 'loom' }, { removeLine: { axis: 'row', index: 0 } }] as FrameChange[]) {
-      expect(changeFrame(project, change)).toEqual({ kind: 'refused', reason: 'not-offered' })
+      expect(changeFrame(project, change, frameIdIn(project))).toEqual({ kind: 'refused', reason: 'not-offered' })
     }
   })
 
@@ -244,7 +245,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
 describe('Beads needed for a Custom frame', () => {
   it('counts every painted bead of it, on whichever panel', () => {
     const project = paintFrame(triangle(4), [{ row: 3, column: 0 }, { row: 3, column: 5 }, { row: 3, column: 11 }, { row: 0, column: 1 }], RED)
-    expect(computeColorQuantities(project, projectPalette(project))).toMatchObject([{ hex: RED, count: 4 }])
+    expect(computeColorQuantities(project, projectPalette(project), frameIdIn(project))).toMatchObject([{ hex: RED, count: 4 }])
   })
 })
 
@@ -264,7 +265,7 @@ describe.each([
   it('is an empty peyote Frame of its Frame shape, sized by its own setting, with Row progress on', () => {
     const project = placed()
     expect(frameOf(project)).toMatchObject({ shape, settings: { [setting]: size }, technique: 'peyote', beads: {} })
-    expect(rowProgressOn(project)).toBe(true)
+    expect(rowProgressOn(project, frameIdIn(project))).toBe(true)
   })
 
   it('paints and erases its positions, and nothing where it has none', () => {
@@ -274,7 +275,7 @@ describe.each([
   })
 
   it('fills every bead that touches, across its panels', () => {
-    const filled = onLayer(placed(), 'frame', (view) => fillArea(view, inner().row, inner().column, RED))
+    const filled = onLayer(placed(), FRAME_ID, (view) => fillArea(view, inner().row, inner().column, RED))
     expect(beadCount(frameOf(filled)!.beads)).toBe(layout().positions.length * filledShare)
   })
 
@@ -303,14 +304,14 @@ describe.each([
     const bigger = frameOf(changed(open(), { custom: { shape, size: size + 2, centre: { row: 20, column: 30 } } }))!
     expect(frameOf(changed(placed(), { set: { ...frameOf(placed())!, rows: bigger.rows, columns: bigger.columns } }))!.settings).toEqual({ [setting]: size + 2 })
     for (const change of [{ removeLine: { axis: 'row', index: 0 } }, { technique: 'loom' }] as FrameChange[]) {
-      expect(changeFrame(placed(), change)).toEqual({ kind: 'refused', reason: 'not-offered' })
+      expect(changeFrame(placed(), change, frameIdIn(placed()))).toEqual({ kind: 'refused', reason: 'not-offered' })
     }
   })
 
   it('counts its painted beads in Beads needed, and comes back from the Project file as it was', () => {
     const project = paintFrame(placed(), [name(inner()), name(outer())], RED)
     // A Star counts each bead front and back (ticket 0875); neither of these is a tip.
-    expect(computeColorQuantities(project, projectPalette(project))).toMatchObject([{ hex: RED, count: shape === 'star' ? 4 : 2 }])
+    expect(computeColorQuantities(project, projectPalette(project), frameIdIn(project))).toMatchObject([{ hex: RED, count: shape === 'star' ? 4 : 2 }])
     expect(parseProjectsFile(serializeProject(project)).projects).toEqual([withColorsInPalette(project)])
   })
 })
@@ -326,7 +327,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     const project = earring()
     expect(frameOf(project)).toMatchObject({ shape: 'fringeEarring', settings, technique: 'brick', beads: {} })
     expect(frameLayoutOf(frameOf(project)!)!.positions).toHaveLength(6 + 5 + 4 + 3 + 6 * 9)
-    expect(rowProgressOn(project)).toBe(true)
+    expect(rowProgressOn(project, frameIdIn(project))).toBe(true)
   })
 
   it('reads settings it was not given as the shape\'s defaults, and Top rows no taller than its point, never a body under it', () => {
@@ -350,11 +351,11 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     it('stops Top rows at the point in peyote, loom and 2-drop brick: there is never a body under it', () => {
       // A peyote Width of 5 tapers in 3 lines, a loom one in 3 rows; a 2-drop brick Width of 6 in 10 rows.
       const peyote = woven('peyote', undefined, { ...settings, topWidth: 5, topRows: 3 })
-      expect(changeFrame(peyote, { settings: { topRows: 4 } }).kind).toBe('unchanged')
+      expect(changeFrame(peyote, { settings: { topRows: 4 } }, frameIdIn(peyote)).kind).toBe('unchanged')
       expect(frameOf(changed(peyote, { settings: { topRows: 2 } }))!.settings!.topRows).toBe(2)
-      expect(changeFrame(woven('loom', undefined, { ...settings, topWidth: 5, topRows: 3 }), { settings: { topRows: 4 } }).kind).toBe('unchanged')
+      expect(changeFrame(woven('loom', undefined, { ...settings, topWidth: 5, topRows: 3 }), { settings: { topRows: 4 } }, frameIdIn(woven('loom', undefined, { ...settings, topWidth: 5, topRows: 3 }))).kind).toBe('unchanged')
       const brick = woven('brick', { brickDrop: 2 }, { ...settings, topRows: 10 })
-      expect(changeFrame(brick, { settings: { topRows: 11 } }).kind).toBe('unchanged')
+      expect(changeFrame(brick, { settings: { topRows: 11 } }, frameIdIn(brick)).kind).toBe('unchanged')
     })
 
     it('switches its top\'s Technique keeping each bead\'s row and column, folding what has no place, the strands untouched, as one change', () => {
@@ -380,7 +381,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     /** Where the Frame's four edges lie on the Canvas. */
     const edges = (project: Project) => {
       const frame = frameOf(project)!
-      const extent = canvasDistance(project, frameWeave(project), frame.rows, frame.columns)
+      const extent = canvasDistance(project, frameWeave(project, frameIdIn(project)), frame.rows, frame.columns, frameIdIn(project))
       return { top: frame.row, bottom: frame.row + extent.row, left: frame.column, right: frame.column + extent.column }
     }
     /** The Frame's rectangle with one edge dragged out by some rows or columns. */
@@ -405,7 +406,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
 
     /** Every painted bead's place, measured from the Frame's edge across from `edge`, which a drag of `edge` leaves put. */
     const fromKeptEdge = (project: Project, edge: 'top' | 'bottom' | 'left' | 'right') => {
-      const geometry = frameGeometryOf(project)
+      const geometry = frameGeometryOf(project, frameIdIn(project))
       const extent = geometry.extent()!
       const seam = geometry.place({ row: 1000, column: 0 })!
       const places: string[] = []
@@ -418,7 +419,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       })
       return places.sort()
     }
-    const paintedAll = (project: Project) => paintFrame(project, [...frameGeometryOf(project).positions()], RED)
+    const paintedAll = (project: Project) => paintFrame(project, [...frameGeometryOf(project, frameIdIn(project)).positions()], RED)
 
     /** The Starter's own sizes: a whole point and no body. */
     const starter = { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 10 } as const
@@ -429,7 +430,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       ['a 2-drop top', () => changed(earring(starter), { techniqueSettings: { brickDrop: 2 } }), 'top'],
       ['a loom top', () => changed(earring(starter), { technique: 'loom' }), 'top'],
       ['a V fringe', () => earring({ ...starter, fringeStyle: 'v' }), 'top'],
-      ['Rotate Frame', () => rotateFrame(earring(starter))!, 'right'],
+      ['Rotate Frame', () => rotateFrame(earring(starter), undefined, frameIdIn(earring(starter)))!, 'right'],
     ]
 
     it.each(['left', 'right', 'top', 'bottom'] as const)('grows on the side its %s handle drags, every bead staying where it lay on the Canvas', (edge) => {
@@ -462,7 +463,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
         const grown = changed(project, { set: { ...frame, row: frame.row - 2, rows: frame.rows + 2, column: frame.column - 2, columns: frame.columns + 2 } })
         // From the right edge, which the drag leaves put, and the Seam, which a V's tip moving with Width leaves put.
         const fromCorner = (each: Project) => {
-          const geometry = frameGeometryOf(each)
+          const geometry = frameGeometryOf(each, frameIdIn(each))
           const extent = geometry.extent()!
           const seam = geometry.place({ row: 1000, column: 0 })!
           const places: string[] = []
@@ -480,7 +481,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       const project = paintedAll(changed(earring(starter), { technique: 'peyote' }))
       /** Each bead's place from the earring's middle and from its strands' ends. */
       const fromMiddle = (each: Project) => {
-        const geometry = frameGeometryOf(each)
+        const geometry = frameGeometryOf(each, frameIdIn(each))
         const extent = geometry.extent()!
         const places: string[] = []
         forEachBead(frameOf(each)!.beads, (row, column) => {
@@ -503,7 +504,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       expect(edges(taller).bottom).toBe(edges(project).bottom)
       expect(edges(taller).top).toBeLessThan(edges(project).top)
       // A whole point is as tall as it goes: dragging further out changes nothing, never a body under it.
-      expect(changeFrame(taller, { set: dragged(taller, 'top', 3) }).kind).toBe('unchanged')
+      expect(changeFrame(taller, { set: dragged(taller, 'top', 3) }, frameIdIn(taller)).kind).toBe('unchanged')
     })
 
     it('changes Fringe length by its bottom handle, the top staying put', () => {
@@ -540,7 +541,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
 
     it('drives the setting of the shape\'s side a handle sits on once Rotate Frame has turned it', () => {
       // A quarter turn clockwise lays the top on the right and the strands on the left.
-      const turned = rotateFrame(earring())!
+      const turned = rotateFrame(earring(), undefined, frameIdIn(earring()))!
       expect(frameOf(changed(turned, { set: dragged(turned, 'right', 1) }))!.settings!.topRows).toBe(5)
       expect(frameOf(changed(turned, { set: dragged(turned, 'left', 3) }))!.settings).toEqual({ ...settings, fringeLength: 12 })
       expect(frameOf(changed(turned, { set: dragged(turned, 'bottom', 2) }))!.settings).toEqual({ ...settings, topWidth: 8 })
@@ -549,7 +550,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     it('stops Top rows at its point, and keeps a whole point whole when Width changes', () => {
       // A Width of 6 tapers to a pair in 5 rows.
       const point = changed(earring(), { settings: { topRows: 5 } })
-      expect(changeFrame(point, { settings: { topRows: 6 } }).kind).toBe('unchanged')
+      expect(changeFrame(point, { settings: { topRows: 6 } }, frameIdIn(point)).kind).toBe('unchanged')
       expect(frameOf(changed(point, { settings: { topRows: 4 } }))!.settings!.topRows).toBe(4)
       // A whole point stays whole, and a cut-off one keeps its rows where the point has them.
       expect(frameOf(changed(point, { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 3 })
@@ -587,7 +588,7 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     expect(colorAt(frameOf(v)!.beads, 0, 0)).toBe(RED)
     expect(colorAt(frameOf(v)!.folded!, strandEnd.row, strandEnd.column)).toBe(RED)
     expect(frameOf(changed(v, { settings: { fringeStyle: 'straight' } }))!.beads).toEqual(frameOf(project)!.beads)
-    expect(changeFrame(project, { settings: { fringeStyle: 'straight' } }).kind).toBe('unchanged')
+    expect(changeFrame(project, { settings: { fringeStyle: 'straight' } }, frameIdIn(project)).kind).toBe('unchanged')
   })
 
   it('moves with its beads, takes them with it on Remove Frame, and comes back from the Project file', () => {

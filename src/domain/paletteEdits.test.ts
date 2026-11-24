@@ -1,3 +1,4 @@
+import { FRAME_ID, frameIdIn } from '../testUtils/frameId'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
@@ -30,10 +31,10 @@ describe('a Project\'s Palette is its own (ADR 0103)', () => {
 
   it('keeps every color and code when a layer\'s Bead changes, and every painted cell as it was', () => {
     const before = paintAt(createProject({ ...input, beadId: roundBead.id }), [{ row: 0, column: 0 }], '#123456')
-    for (const layer of ['canvas', 'frame'] as const) {
+    for (const layer of ['canvas', frameIdIn(before)] as const) {
       const after = replaceBead(before, delica, layer)
       expect([after.palette, after.paletteCodes, after.paletteLetters]).toEqual([before.palette, before.paletteCodes, before.paletteLetters])
-      expect(beadsOfLayer(after, 'frame')).toBe(beadsOfLayer(before, 'frame'))
+      expect(beadsOfLayer(after, frameIdIn(before))).toBe(beadsOfLayer(before, frameIdIn(before)))
     }
   })
 
@@ -149,7 +150,7 @@ describe('Swatch letters (ticket 0573)', () => {
     expect(shownLetters(project, 'canvas')).toBeUndefined()
     const on = withLetters(project, 'canvas', true)
     expect(shownLetters(on, 'canvas')).toBe(on.paletteLetters)
-    expect(shownLetters(on, 'frame')).toBeUndefined()
+    expect(shownLetters(on, FRAME_ID)).toBeUndefined()
     expect('letters' in canvasOf(withLetters(on, 'canvas', false))).toBe(false)
   })
 })

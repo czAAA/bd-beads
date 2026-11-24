@@ -41,7 +41,7 @@ import { frameQuarterTurnOf } from './table'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
 import { linesKeptIn, type WovenChoice } from './wovenLines'
-import { frameIdentity, heldWeave, pieceNamesOf, startingRowProgressOf, withFrameFields, withLayer, withStartingRowProgress, FIRST_FRAME, frameById } from './layerRecord'
+import { frameIdentity, heldWeave, pieceNamesOf, startingRowProgressOf, withFrameFields, withLayer, withStartingRowProgress, frameById } from './layerRecord'
 import { touchFrameSheet, withFrameSheet } from './frameSheet'
 import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
@@ -118,12 +118,12 @@ export type FrameChangeResult =
 /** Whether the change throws away finished passes: only Remove Frame once a pass is done, as the passes go with the
  * Frame (ticket 434, ADR 0055). The one place that rule lives; the Remove frame flow asks it before confirming.
  * @internal Its test checks the rule on its own. */
-export function frameChangeDiscardsProgress(project: Project, change: FrameChange, ref: FrameRef = FIRST_FRAME): boolean {
+export function frameChangeDiscardsProgress(project: Project, change: FrameChange, ref: FrameRef): boolean {
   return 'remove' in change && rowProgressStarted(project, ref)
 }
 
 /** Why the change would be refused on this Project, or undefined when it would be allowed. Cheap: it builds nothing. */
-export function frameChangeRefusal(project: Project, change: FrameChange, ref: FrameRef = FIRST_FRAME): FrameChangeRefusal | undefined {
+export function frameChangeRefusal(project: Project, change: FrameChange, ref: FrameRef): FrameChangeRefusal | undefined {
   // Remove Frame is how the weaver lets go of finished passes: it clears them with the Frame (ticket 426, ADR 0055).
   const frame = frameById(project, ref)
   if (rowProgressStarted(project, ref) && !frameChangeDiscardsProgress(project, change, ref) && !('move' in change) && !('name' in change) && !('removeLine' in change) && !asksForTechnique(frame, change)) {
@@ -163,7 +163,7 @@ function asksForTechnique(frame: FrameSheet | undefined, change: FrameChange): b
 
 /** The Project with a Frame changed (the one named, ticket 1216), or why not. The Palette is the Project's own, so a
  * Frame made, removed or put in another Bead changes no color (ADR 0103). */
-export function changeFrame(project: Project, change: FrameChange, ref: FrameRef = FIRST_FRAME): FrameChangeResult {
+export function changeFrame(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
   const reason = frameChangeRefusal(project, change, ref)
   if (reason) {
     return { kind: 'refused', reason }
@@ -277,7 +277,7 @@ function frameRefuses(project: Project, frame: FrameSheet, change: FrameChange, 
 /** A Custom frame built from its Frame shape and settings round a Canvas position: its bounding rectangle in its own
  * Technique and its layer's Bead (by default the Bead a Frame of the Project is made in, ticket 0723), its first row
  * and column the Canvas positions half that rectangle up and left, snapped as a Frame starts. */
-function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: GridPosition, quarterTurns?: QuarterTurns, woven?: Weave, ref: FrameRef = FIRST_FRAME, cell: BeadCell | undefined = frameWeave(project, ref).cell): FrameSheet {
+function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: GridPosition, quarterTurns: QuarterTurns | undefined, woven: Weave | undefined, ref: FrameRef, cell: BeadCell | undefined = frameWeave(project, ref).cell): FrameSheet {
   const weave = weaveOf(woven ?? { technique: frameShapeOf({ shape })!.techniques[0] })
   const read = settingsOf({ shape, settings, ...weave })!
   const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave, cell)
@@ -303,8 +303,8 @@ function placedCustomFrame(project: Project, placement: CustomPlacement, ref: Fr
 /** A Custom frame laid out again from new settings round its own centre, as it lay in `before` (the Project itself, or
  * the one before its Bead changed): each bead whose position is still in the layout shows, the rest fold, kept by their
  * position's name, until a layout has it again (ticket 0640). */
-function resettled<T extends FrameSheet>(project: Project, frame: T, settings: FrameSettings, quarterTurns: QuarterTurns | undefined, before: Project = project, ref: FrameRef): Omit<T, 'quarterTurns' | 'folded'> & FrameSheet {
-  const centre = canvasDistance(before, heldWeave(before, ref)!, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
+function resettled<T extends FrameSheet>(project: Project, frame: T, settings: FrameSettings, quarterTurns: QuarterTurns | undefined, before: Project, ref: FrameRef): Omit<T, 'quarterTurns' | 'folded'> & FrameSheet {
+  const centre = canvasDistance(before, heldWeave(before, ref)!, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2), ref)
   const sheet = customSheet(project, frame.shape!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns, heldWeave(project, ref), ref)
   const { quarterTurns: _turned, folded: _folded, ...rest } = frame
   const geometry = frameGeometry(sheet)
@@ -335,7 +335,7 @@ function keptEdges<T extends FrameSheet>(project: Project, before: FrameSheet, s
 /** A Custom frame laid out again in the Bead its layer now has in `after`, `before` with a Bead replaced (ticket 0723):
  * a round shape packs by its Bead, so its rectangle follows round its own centre, as a size change's does, every bead
  * keeping its name and colour. `after` itself without a Frame shape, or where its rectangle is as it was. */
-export function relaidInBead(before: Project, after: Project, ref: FrameRef = FIRST_FRAME): Project {
+export function relaidInBead(before: Project, after: Project, ref: FrameRef): Project {
   const frame = frameById(after, ref)
   if (!frame || !frameShapeOf(frame)) return after
   const sheet = resettled(after, frame, frame.settings ?? {}, frame.quarterTurns, before, ref)
@@ -344,7 +344,7 @@ export function relaidInBead(before: Project, after: Project, ref: FrameRef = FI
 
 /** Rotate Frame on a Custom frame (ticket 0594): its layout a quarter turn further clockwise round its own centre, its
  * rectangle's sides swapped; every bead keeps its name, so it turns with its panel. None for a Frame without a Frame shape. */
-export function turnedCustomFrame(project: Project, ref: FrameRef = FIRST_FRAME): Project | undefined {
+export function turnedCustomFrame(project: Project, ref: FrameRef): Project | undefined {
   const frame = frameById(project, ref)
   if (!frame || !frameShapeOf(frame)) return undefined
   const turns = ((frame.quarterTurns ?? 0) + 1) % 4
@@ -470,7 +470,7 @@ export function changeCanvasWeave(project: Project, change: WeaveChange): Projec
 
 /** Set Frame around the picture (ticket 0883): the Frame made round `frame` as Frame from Selection makes it; a Custom
  * frame is first taken off as Remove Frame takes it, its beads with it (ticket 1215), so the new one is rectangular. */
-export function framedAround(project: Project, frame: Rect, ref: FrameRef = FIRST_FRAME): FrameChangeResult {
+export function framedAround(project: Project, frame: Rect, ref: FrameRef): FrameChangeResult {
   if (!frameById(project, ref)?.shape) return changeFrame(project, { make: frame }, ref)
   const refused = frameChangeRefusal(project, { make: frame }, ref)
   if (refused) return { kind: 'refused', reason: refused }

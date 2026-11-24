@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColorsInPalette } from '../domain/paletteEdits'
 import { BEAD_CATALOG } from '../domain/beads'
@@ -74,10 +75,11 @@ describe('a .openbeads file', () => {
           ],
         }),
         2,
+        FRAME_ID,
       ),
       futureField: { a: 1 },
     } as Project
-    const restored = await roundTrip(withFrame(project, frameOf(project)))
+    const restored = await roundTrip(withFrame(project, frameOf(project), frameIdIn(project)))
     expect(restored).toEqual(withColorsInPalette(project))
     expect(canvasOf(restored).name).toBe('Лиса')
   })

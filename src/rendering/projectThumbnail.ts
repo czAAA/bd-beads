@@ -7,7 +7,7 @@ import type { DrawnProject } from './projectRenderer'
 import { geometryDrawnAlone } from './space'
 import { gridToRegion } from './surfaceView'
 import { laidTurnOf } from '../domain/framePlacement'
-import { beadsOfLayer, FIRST_FRAME } from '../domain/layerRecord'
+import { beadsOfLayer } from '../domain/layerRecord'
 
 export interface ThumbnailImage {
   width: number
@@ -31,7 +31,7 @@ function rgb(hex: string): [number, number, number] | undefined {
 /** A Saved Project's thumbnail (tickets 147, 0631): the Project drawn on its own, fitted to `size` px, its beads where
  * its Layer geometry lays them (shifted rows, a Custom frame's shape), turned as the editor turns it. A grid is sampled
  * a pixel at a time, so cost is at most size × size (ADR 0019); a Custom frame, which is small, bead by bead. */
-export function thumbnailPixels(project: Thumbnailed, size: number, ref: FrameRef = FIRST_FRAME): ThumbnailImage {
+export function thumbnailPixels(project: Thumbnailed, size: number, ref: FrameRef): ThumbnailImage {
   const geometry = geometryDrawnAlone(project, ref)
   const extent = geometry.extent()
   if (!extent || extent.width <= 0 || extent.height <= 0) {

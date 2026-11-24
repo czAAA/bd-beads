@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ExportPanel from './ExportPanel.vue'
@@ -25,7 +26,7 @@ afterEach(() => {
 
 /** A Project made with a size has a Frame; these start with none. */
 function empty(): Project {
-  const unframed = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), undefined)
+  const unframed = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } })) })
   return unframed
 }
 const drawn = (): Project => (withLayers(empty(), { beads: withColors({}, [{ row: 1, column: 1, color: '#ff0000' }]) }))

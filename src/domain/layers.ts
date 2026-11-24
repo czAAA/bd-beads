@@ -5,7 +5,7 @@ export type { Layer }
 import { footprintOf } from './footprint'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
-import { beadsOfLayer, FIRST_FRAME, frameById, frameIdOf, framesOf, refOfFrame, type Layered, layerOf, withLayer } from './layerRecord'
+import { beadsOfLayer, frameById, frameIdOf, framesOf, type Layered, layerOf, withLayer } from './layerRecord'
 import { frameWeave, laidOnCanvas } from './layerWeave'
 import { touch, type Project } from './project'
 import type { Weave } from './weave'
@@ -39,7 +39,7 @@ export function layerAt(project: Layered, position: GridPosition): Layer {
     const covered = footprintOf(project, frameIdOf(frame))
     return covered && frameContains(covered, position)
   })
-  return under ? refOfFrame(project, under) : 'canvas'
+  return under ? frameIdOf(under) : 'canvas'
 }
 
 /** A Canvas position in a layer's own coordinates: the Frame's are counted from its first row and column. */
@@ -82,7 +82,7 @@ function shapedFrame(project: Layered, frame: FrameRef): ShapedSheet {
 const geometries = new WeakMap<FrameSheet, Map<string, LayerGeometry>>()
 
 /** A Frame's Layer geometry (ADR 0078), counted from its own first row and column. The Project must have that Frame. */
-export function frameGeometryOf(project: Layered, ref: FrameRef = FIRST_FRAME): LayerGeometry {
+export function frameGeometryOf(project: Layered, ref: FrameRef): LayerGeometry {
   const frame = frameById(project, ref)!
   const cell = frameWeave(project, ref).cell
   const key = cell ? `${cell.aspect}:${cell.roundness}` : ''

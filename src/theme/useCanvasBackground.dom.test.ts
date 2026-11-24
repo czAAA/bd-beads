@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp, defineComponent, h } from 'vue'
 import { createProject } from '../domain/createProject'
@@ -16,7 +17,7 @@ beforeEach(() => {
 
 describe('useCanvasBackground (ticket 0666)', () => {
   it('draws the Canvas and the Frame each on its own Background, the margin\'s Auto off the Canvas\'s', () => {
-    const project = withBackground(withBackground(framed(), 'canvas', 2), 'frame', '#336699')
+    const project = withBackground(withBackground(framed(), 'canvas', 2), FRAME_ID, '#336699')
     const looks = useCanvasBackground(() => project)
     expect(looks.projectTheme.value.canvas).toBe('#e6e3de')
     expect(looks.frameTheme.value.canvas).toBe('#336699')
@@ -25,9 +26,9 @@ describe('useCanvasBackground (ticket 0666)', () => {
 
   it('shows the device\'s last pick on a layer without one, and the Canvas\'s for a Frame the Project lacks', () => {
     useCanvasBackground().remember(3)
-    expect(useCanvasBackground(() => framed()).shownOf('frame').choice).toBe(3)
-    const open = withBackground(withFrameSheet(framed(), undefined), 'canvas', 2)
-    expect(useCanvasBackground(() => open).shownOf('frame').choice).toBe(2)
+    expect(useCanvasBackground(() => framed()).shownOf(FRAME_ID).choice).toBe(3)
+    const open = withBackground(withFrameSheet(framed(), undefined, { frame: frameIdIn(framed()) }), 'canvas', 2)
+    expect(useCanvasBackground(() => open).shownOf(FRAME_ID).choice).toBe(2)
   })
 
   it('remembers a Custom color picked as the device\'s last pick and its last Custom color', () => {

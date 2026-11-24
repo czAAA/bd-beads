@@ -1,3 +1,4 @@
+import { FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import { usePinchPan } from './usePinchPan'
@@ -37,14 +38,14 @@ function setup(zoom = 1, drawnAt?: number, twistTarget?: (a: { clientX: number; 
 describe('usePinchPan', () => {
   it('turns the layer both fingers went down on, chosen as the second lands and kept through the gesture (ticket 1190)', () => {
     // The Frame's sheet is left of x = 100 on screen.
-    const onFrame = (a: { clientX: number }, b: { clientX: number }): TwistTarget => (a.clientX < 100 && b.clientX < 100 ? 'frame' : 'canvas')
+    const onFrame = (a: { clientX: number }, b: { clientX: number }): TwistTarget => (a.clientX < 100 && b.clientX < 100 ? FRAME_ID : 'canvas')
     const t = setup(1, undefined, onFrame)
     t.fire('pointerdown', 1, 10, 10)
     // The first finger moved off the sheet before the second landed: where it went down counts.
     t.fire('pointermove', 1, 150, 10)
     t.fire('pointerdown', 2, 60, 60)
     t.fire('pointermove', 2, 400, 400)
-    expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ target: 'frame' }))
+    expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ target: FRAME_ID }))
     t.fire('pointerup', 1, 150, 10)
     t.fire('pointerup', 2, 400, 400)
     t.fire('pointerdown', 1, 10, 10)
@@ -165,10 +166,10 @@ describe('usePinchPan', () => {
     })
 
     it('glues a twist of the Frame the same, the target kept', () => {
-      const t = glued(() => 'frame')
+      const t = glued(() => FRAME_ID)
       t.fire('pointermove', 1, 100, 0)
       t.frame()
-      expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ turn: expect.closeTo(45 * 0.85, 6), target: 'frame' }))
+      expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ turn: expect.closeTo(45 * 0.85, 6), target: FRAME_ID }))
     })
   })
 

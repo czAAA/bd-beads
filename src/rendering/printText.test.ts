@@ -1,3 +1,4 @@
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../domain/createProject'
 import { defaultPalette } from '../domain/palette'
@@ -32,7 +33,7 @@ function delicaProject(painted: number) {
 
 describe('printText (tickets 162, 164)', () => {
   it('says what the pages print about the Project: technique word, size, bead, estimate, date and time', () => {
-    const text = printText(delicaProject(10), en, 'en', at)
+    const text = printText(delicaProject(10), en, 'en', at, undefined, frameIdIn(delicaProject(10)))
 
     expect(text.techniqueWord).toBe('Loom')
     expect(text.metaLine).toMatch(/^10×1 · Miyuki Delica 11\/0 · ≈ .+ mm$/)
@@ -46,14 +47,14 @@ describe('printText (tickets 162, 164)', () => {
     const piece = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 13, height: 30, unit: 'beads' } })
     const whole = paintAt(piece, Array.from({ length: 30 }, (_, row) => [{ row, column: 0 }, { row, column: 12 }]).flat(), red.hex)
 
-    expect(printText(paintAt(frame, cells, red.hex), en, 'en', at).metaLine).toBe(printText(whole, en, 'en', at).metaLine)
-    expect(printText(whole, en, 'en', at).metaLine).toMatch(/^13×30 · /)
-    expect(printText(paintAt(withLayers(frame, { orientation: 90 }), cells, red.hex), en, 'en', at).metaLine).toMatch(/^30×13 · /)
-    expect(printText(frame, en, 'en', at).metaLine).toMatch(/^30×39 · /)
+    expect(printText(paintAt(frame, cells, red.hex), en, 'en', at, undefined, frameIdIn(frame)).metaLine).toBe(printText(whole, en, 'en', at, undefined, frameIdIn(whole)).metaLine)
+    expect(printText(whole, en, 'en', at, undefined, frameIdIn(whole)).metaLine).toMatch(/^13×30 · /)
+    expect(printText(paintAt(withLayers(frame, { orientation: 90 }), cells, red.hex), en, 'en', at, undefined, frameIdIn(paintAt(withLayers(frame, { orientation: 90 }), cells, red.hex))).metaLine).toMatch(/^30×13 · /)
+    expect(printText(frame, en, 'en', at, undefined, frameIdIn(frame)).metaLine).toMatch(/^30×39 · /)
   })
 
   it('writes Beads needed in beads and grams, the Total from the total count, with the note', () => {
-    const text = printText(delicaProject(4800), en, 'en', at)
+    const text = printText(delicaProject(4800), en, 'en', at, undefined, frameIdIn(delicaProject(4800)))
 
     expect(text.colors).toEqual([{ hex: red.hex, name: `Red · ${red.code}`, code: red.code, beads: '4 800', grams: '24 g', letter: 'C' }])
     expect(text.totalBeads).toBe('4 800 beads')
@@ -62,26 +63,26 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('names the chart cross "empty" for the key of page 1 only when the Schema has empty positions and Empty grid is on (tickets 0963, 1140)', () => {
-    expect(printText(delicaProject(4799), en, 'en', at, { emptyGrid: true }).empty).toBe('empty')
-    expect(printText(delicaProject(4800), en, 'en', at, { emptyGrid: true }).empty).toBeUndefined()
-    expect(printText(delicaProject(4799), en, 'en', at).empty).toBeUndefined()
-    expect(printText(delicaProject(4799), en, 'en', at, { emptyGrid: false }).empty).toBeUndefined()
+    expect(printText(delicaProject(4799), en, 'en', at, { emptyGrid: true }, frameIdIn(delicaProject(4799))).empty).toBe('empty')
+    expect(printText(delicaProject(4800), en, 'en', at, { emptyGrid: true }, frameIdIn(delicaProject(4800))).empty).toBeUndefined()
+    expect(printText(delicaProject(4799), en, 'en', at, undefined, frameIdIn(delicaProject(4799))).empty).toBeUndefined()
+    expect(printText(delicaProject(4799), en, 'en', at, { emptyGrid: false }, frameIdIn(delicaProject(4799))).empty).toBeUndefined()
   })
 
   it('names the Bead for Beads needed\'s heading, and none for an unknown Bead (ticket 1096)', () => {
-    expect(printText(delicaProject(10), en, 'en', at).beadName).toBe('Miyuki Delica 11/0')
-    expect(printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at).beadName).toBeUndefined()
+    expect(printText(delicaProject(10), en, 'en', at, undefined, frameIdIn(delicaProject(10))).beadName).toBe('Miyuki Delica 11/0')
+    expect(printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at, undefined, frameIdIn(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }))).beadName).toBeUndefined()
   })
 
   it('words the facts and the color count page 1 prints (ticket 580)', () => {
-    const text = printText(delicaProject(10), en, 'en', at)
+    const text = printText(delicaProject(10), en, 'en', at, undefined, frameIdIn(delicaProject(10)))
 
     expect(text).not.toHaveProperty('shape')
     expect(text.colorsCount).toBe('1 color')
   })
 
   it('shows no grams and no note for a Bead with no weight', () => {
-    const text = printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at)
+    const text = printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at, undefined, frameIdIn(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined })))
 
     expect(text.colors[0]!.grams).toBeUndefined()
     expect(text.totalGrams).toBeUndefined()
@@ -90,7 +91,7 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('speaks Russian: the date, the plural, the decimal comma', () => {
-    const text = printText(delicaProject(761), ru, 'ru', at)
+    const text = printText(delicaProject(761), ru, 'ru', at, undefined, frameIdIn(delicaProject(761)))
 
     expect(text.exportedAt).toBe('26 сент. 2026 г. · 14:32')
     expect(text.totalBeads).toBe('761 бисеринка')
@@ -106,21 +107,21 @@ describe('printText (tickets 162, 164)', () => {
 
   it("prints the Project's own maker's name (ADR 0060)", () => {
     const project = { ...delicaProject(10), makerName: 'Bead Master' }
-    const text = printText(project, en, 'en', at)
+    const text = printText(project, en, 'en', at, undefined, frameIdIn(project))
 
     expect(text.maker).toBe('Bead Master')
   })
 
   it("titles the export with the Frame's name, else the Project's (ticket 0720)", () => {
-    const framed = withLayer(delicaProject(10), 'frame', { name: 'Rose' })
+    const framed = withLayer(delicaProject(10), FRAME_ID, { name: 'Rose' })
 
-    expect(printText(framed, en, 'en', at).name).toBe('Rose')
-    expect(printText(delicaProject(10), en, 'en', at).name).toBe('Logo panel')
-    expect(printText(withLayer(delicaProject(10), 'frame', { name: '  ' }), en, 'en', at).name).toBe('Logo panel')
+    expect(printText(framed, en, 'en', at, undefined, frameIdIn(framed)).name).toBe('Rose')
+    expect(printText(delicaProject(10), en, 'en', at, undefined, frameIdIn(delicaProject(10))).name).toBe('Logo panel')
+    expect(printText(withLayer(delicaProject(10), FRAME_ID, { name: '  ' }), en, 'en', at, undefined, frameIdIn(withLayer(delicaProject(10), FRAME_ID, { name: '  ' }))).name).toBe('Logo panel')
   })
 
   it('prints no name when the Project has none (ADR 0060)', () => {
-    const text = printText(delicaProject(10), en, 'en', at)
+    const text = printText(delicaProject(10), en, 'en', at, undefined, frameIdIn(delicaProject(10)))
 
     expect(text.maker).toBe('')
   })
@@ -130,8 +131,8 @@ describe('printText with Letters (ticket 0573)', () => {
   it('gives each color of Beads needed its Swatch letter, Letters on or off: every printed chart is lettered (ticket 0916)', () => {
     const project = delicaProject(10)
     const letter = [project.paletteLetters![red.hex]]
-    expect(printText(withLetters(project, 'frame', false), en, 'en', at).colors.map((color) => color.letter)).toEqual(letter)
-    expect(printText(withLetters(project, 'frame', true), en, 'en', at).colors.map((color) => color.letter)).toEqual(letter)
+    expect(printText(withLetters(project, FRAME_ID, false), en, 'en', at, undefined, frameIdIn(project)).colors.map((color) => color.letter)).toEqual(letter)
+    expect(printText(withLetters(project, FRAME_ID, true), en, 'en', at, undefined, frameIdIn(project)).colors.map((color) => color.letter)).toEqual(letter)
   })
 })
 
@@ -139,12 +140,12 @@ describe('printText with Letters (ticket 0573)', () => {
 const ROW_BY_ROW = { rowByRow: true }
 
 describe('printText Word chart (ticket 0574)', () => {
-  const letters = (project: ReturnType<typeof delicaProject>) => withLetters({ ...project, paletteLetters: { [red.hex]: 'C' } }, 'frame', true)
+  const letters = (project: ReturnType<typeof delicaProject>) => withLetters({ ...project, paletteLetters: { [red.hex]: 'C' } }, FRAME_ID, true)
 
   it('writes the rows as words with the range, the notes and the runs', () => {
     const base = createProject({ technique: 'brick', beadId: 'miyuki-delica-11-0', size: { width: 3, height: 2, unit: 'beads' } })
     const painted = paintAt(withLayers(base, { ownProgress: {} }), [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 2 }], red.hex)
-    const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW, frameIdIn(painted)).wordChart!
 
     expect(chart.title).toBe('Row by row')
     expect(chart.notes).toEqual(['Row 1 is at the top of the picture.', en.print.wordChart.sides, runNote])
@@ -157,7 +158,7 @@ describe('printText Word chart (ticket 0574)', () => {
   it('writes the rows the way asked as seen, not the way Row progress runs them (Export panel)', () => {
     const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 2, height: 2, unit: 'beads' } })
     const project = letters(paintAt(base, [{ row: 0, column: 0 }, { row: 1, column: 1 }], red.hex))
-    const first = (choices: { rowByRowWay?: 'down' | 'right' | 'up' | 'left' }) => printText(project, en, 'en', at, { ...ROW_BY_ROW, ...choices }).wordChart!.notes[0]
+    const first = (choices: { rowByRowWay?: 'down' | 'right' | 'up' | 'left' }) => printText(project, en, 'en', at, { ...ROW_BY_ROW, ...choices }, frameIdIn(project)).wordChart!.notes[0]
 
     expect(first({})).toBe('Row 1 is at the top of the picture.')
     expect(first({ rowByRowWay: 'up' })).toBe('Row 2 is at the bottom of the picture.')
@@ -167,7 +168,7 @@ describe('printText Word chart (ticket 0574)', () => {
   it('says where the first row is by the number it carries: the ruler\'s, 2 at the bottom of a 2-row loom worked upward (ticket 1129)', () => {
     const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 2, height: 2, unit: 'beads' } })
     const upward = withLayers(paintAt(base, [{ row: 0, column: 0 }, { row: 1, column: 1 }], red.hex), { ownProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
-    const chart = printText(letters(upward), en, 'en', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(upward), en, 'en', at, ROW_BY_ROW, frameIdIn(upward)).wordChart!
 
     expect(chart.notes[0]).toBe('Row 2 is at the bottom of the picture.')
     expect(chart.rows.map((row) => row.label)).toEqual(['2', '1'])
@@ -175,7 +176,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('says Rows 1&2 and the count for peyote, and translates the words but not the letters', () => {
     const base = createProject({ technique: 'peyote', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 2, unit: 'beads' } })
-    const chart = printText(letters(paintAt(withLayers(base, { ownProgress: {} }), [{ row: 0, column: 0 }, { row: 0, column: 3 }], red.hex)), ru, 'ru', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(paintAt(withLayers(base, { ownProgress: {} }), [{ row: 0, column: 0 }, { row: 0, column: 3 }], red.hex)), ru, 'ru', at, ROW_BY_ROW, frameIdIn(letters(paintAt(withLayers(base, { ownProgress: {} }), [{ row: 0, column: 0 }, { row: 0, column: 3 }], red.hex)))).wordChart!
 
     expect({ ...chart.rows[0], runs: asLine(chart.rows[0]!.runs) }).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C 2× 1C' })
     expect(chart.notes).toContain(ru.print.wordChart.evenCount)
@@ -183,12 +184,12 @@ describe('printText Word chart (ticket 0574)', () => {
   })
 
   it('names a Custom frame\'s round or join before its runs, and says where it starts (ticket 0594)', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'star', size: 2, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape: 'star', size: 2, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Star')
     const { row, column } = frameOf(placed.project)!
-    const painted = paintAt(placed.project, [{ row, column, layer: 'frame' }], red.hex)
-    const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
+    const painted = paintAt(placed.project, [{ row, column, layer: FRAME_ID }], red.hex)
+    const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW, frameIdIn(painted)).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, runNote, en.print.wordChart.pairNote])
     expect(asLine(chart.rows[0]!.runs)).toBe('Part 1, round 1: 1× 2C 1×')
@@ -196,15 +197,15 @@ describe('printText Word chart (ticket 0574)', () => {
   })
 
   it('writes a round side by side, each from its corner pair in brackets, a pair of two colors with both (ticket 0873)', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'warpedSquare', size: 3, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape: 'warpedSquare', size: 3, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Warped Square')
     const layout = frameLayoutOf(frameOf(placed.project)!)!
     const { row, column } = frameOf(placed.project)!
     // Round 3's first side's beads, its first pair's second bead among them.
-    const cells = layout.positions.filter((position) => position.row === 2 && position.panel === 0).map((position) => ({ row: row + position.row, column: column + position.column, layer: 'frame' as const }))
+    const cells = layout.positions.filter((position) => position.row === 2 && position.panel === 0).map((position) => ({ row: row + position.row, column: column + position.column, layer: FRAME_ID }))
     expect(cells.length).toBe(3)
-    const chart = printText(letters(paintAt(placed.project, cells, red.hex)), en, 'en', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(paintAt(placed.project, cells, red.hex)), en, 'en', at, ROW_BY_ROW, frameIdIn(letters(paintAt(placed.project, cells, red.hex)))).wordChart!
     expect(chart.notes).toEqual([en.print.wordChart.firstCentre, runNote, en.print.wordChart.pairNote])
     expect(asLine(chart.rows[0]!.runs)).toBe('Round 1: 4×')
     expect(asLine(chart.rows[1]!.runs)).toBe('Round 2: (2×) | (2×) | (2×) | (2×)')
@@ -215,24 +216,24 @@ describe('printText Word chart (ticket 0574)', () => {
   })
 
   it('starts a Fringe earring\'s Word chart at its top\'s base row and names each strand (ticket 0597)', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
     const settings = { topWidth: 3, topRows: 2, fringeStyle: 'straight', fringeLength: 2 } as const
-    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
-    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW, frameIdIn(letters(placed.project))).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.firstBase, runNote])
     expect(asLine(chart.rows[2]!.runs)).toBe('Strand 1: 2×')
   })
 
   it('writes a Kite\'s rows back and forth, each marked with its end, its middle pair in brackets (ticket 0874)', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'kite', size: 5, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape: 'kite', size: 5, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Kite')
     const { row, column } = frameOf(placed.project)!
     // The right wing's beads of row 3.
-    const cells = frameLayoutOf(frameOf(placed.project)!)!.positions.filter((position) => position.row === 2 && position.panel === 1).map((position) => ({ row: row + position.row, column: column + position.column, layer: 'frame' as const }))
-    const chart = printText(letters(paintAt(placed.project, cells, red.hex)), en, 'en', at, ROW_BY_ROW).wordChart!
+    const cells = frameLayoutOf(frameOf(placed.project)!)!.positions.filter((position) => position.row === 2 && position.panel === 1).map((position) => ({ row: row + position.row, column: column + position.column, layer: FRAME_ID }))
+    const chart = printText(letters(paintAt(placed.project, cells, red.hex)), en, 'en', at, ROW_BY_ROW, frameIdIn(letters(paintAt(placed.project, cells, red.hex)))).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.firstPoint, en.print.wordChart.sides, runNote, en.print.wordChart.middlePairNote])
     expect(chart.rows.map(({ marker, runs }) => `(${marker}) ${asLine(runs)}`)).toEqual([
@@ -245,20 +246,20 @@ describe('printText Word chart (ticket 0574)', () => {
   })
 
   it('says a Kaleidocycle\'s Word chart is one face of its 24 triangles, each other face a Frame of its own (ticket 0876)', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
-    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW, frameIdIn(letters(placed.project))).wordChart!
 
     const face = "This chart is one face: 6 of the Kaleidocycle's 24 triangles. Make a Frame for each other face to chart its design."
     expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, face, runNote, en.print.wordChart.pairNote])
   })
 
   it('names a Kaleidocycle\'s joins as the Kali Primer does, the PDF\'s words too: Strip and Tetra, Mirror pair, the ring (ticket 0877)', () => {
-    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-    const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
+    const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
-    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW).wordChart!
+    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW, frameIdIn(letters(placed.project))).wordChart!
 
     expect(chart.rows.slice(18).map(({ runs }) => asLine(runs))).toEqual([
       ...[1, 2, 3, 4, 5, 6].map((part) => `Strip and Tetra ${part}`),
@@ -273,33 +274,33 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('follows Row by row, whatever Letters says (ticket 0916)', () => {
     for (const on of [false, true]) {
-      const project = withLetters(delicaProject(3), 'frame', on)
-      expect(printText(project, en, 'en', at).wordChart).toBeUndefined()
-      expect(printText(project, en, 'en', at, ROW_BY_ROW).wordChart).toBeDefined()
+      const project = withLetters(delicaProject(3), FRAME_ID, on)
+      expect(printText(project, en, 'en', at, undefined, frameIdIn(project)).wordChart).toBeUndefined()
+      expect(printText(project, en, 'en', at, ROW_BY_ROW, frameIdIn(project)).wordChart).toBeDefined()
     }
   })
 
   it('carries the Cover page for the PDF to open on (ticket 1096)', () => {
-    expect(printText(delicaProject(3), en, 'en', at).cover).toBeUndefined()
-    expect(printText(delicaProject(3), en, 'en', at, { cover: true }).cover).toBe(true)
+    expect(printText(delicaProject(3), en, 'en', at, undefined, frameIdIn(delicaProject(3))).cover).toBeUndefined()
+    expect(printText(delicaProject(3), en, 'en', at, { cover: true }, frameIdIn(delicaProject(3))).cover).toBe(true)
   })
 
   it('carries Large beads for the layout to plan with, only where it makes the beads bigger (ticket 1125)', () => {
     const big = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', name: 'Wall hanging', size: { width: 120, height: 120, unit: 'beads' } })
-    expect(printText(big, en, 'en', at).largeBeads).toBeUndefined()
-    expect(printText(big, en, 'en', at, { largeBeads: true }).largeBeads).toBe(true)
+    expect(printText(big, en, 'en', at, undefined, frameIdIn(big)).largeBeads).toBeUndefined()
+    expect(printText(big, en, 'en', at, { largeBeads: true }, frameIdIn(big)).largeBeads).toBe(true)
     const small = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', name: 'Charm', size: { width: 20, height: 20, unit: 'beads' } })
-    expect(printText(small, en, 'en', at, { largeBeads: true }).largeBeads).toBeUndefined()
+    expect(printText(small, en, 'en', at, { largeBeads: true }, frameIdIn(small)).largeBeads).toBeUndefined()
   })
 })
 
 describe('the words follow the Frame alone, never the Canvas\'s turn (spec 1182, ticket 1186)', () => {
   it('names the size, estimate and Rows run of a Frame the same over a Canvas turned under it alone', () => {
     const painted = paintAt(delicaProject(0), Array.from({ length: 12 }, (_, row) => ({ row, column: row % 5 })), red.hex)
-    for (const project of [painted, rotateFrame(painted)!]) {
-      const words = printText(project, en, 'en', at, { rowByRow: true })
-      for (const turn of [90, 180, 270, 37.5]) expect(printText(withCanvas(project, { orientation: turn }), en, 'en', at, { rowByRow: true })).toEqual(words)
+    for (const project of [painted, rotateFrame(painted, undefined, frameIdIn(painted))!]) {
+      const words = printText(project, en, 'en', at, { rowByRow: true }, frameIdIn(project))
+      for (const turn of [90, 180, 270, 37.5]) expect(printText(withCanvas(project, { orientation: turn }), en, 'en', at, { rowByRow: true }, frameIdIn(project))).toEqual(words)
     }
-    expect(printText(rotateFrame(painted)!, en, 'en', at).metaLine).toMatch(/^12×5 · /)
+    expect(printText(rotateFrame(painted, undefined, frameIdIn(painted))!, en, 'en', at, undefined, frameIdIn(painted)).metaLine).toMatch(/^12×5 · /)
   })
 })

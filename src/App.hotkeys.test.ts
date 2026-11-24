@@ -1,3 +1,4 @@
+import { frameIdIn } from './testUtils/frameId'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { pickColor, pickTool } from './testUtils/pill'
@@ -133,10 +134,10 @@ describe('App keyboard shortcuts', () => {
     await mountApp(15, 30)
 
     await pressKey({ key: 'Enter' })
-    expect((rowProgressOf(loadProjects()[0]).down ?? 0)).toBe(1)
+    expect((rowProgressOf(loadProjects()[0], frameIdIn(loadProjects()[0])).down ?? 0)).toBe(1)
 
     await pressKey({ key: 'd' })
-    expect(rowProgressOf(loadProjects()[0]).way).toBe('right')
+    expect(rowProgressOf(loadProjects()[0], frameIdIn(loadProjects()[0])).way).toBe('right')
   })
 
   it('Space held over a Frame with Row progress pans and leaves the counter where it was (ticket 0835)', async () => {

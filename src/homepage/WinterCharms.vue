@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstFrameId } from '../domain/layerRecord'
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import AppLogo from '../components/ui/AppLogo.vue'
 import { PROJECT_THEMES, drawFlatBead, paintedOnly } from '../rendering/beadLook'
@@ -61,7 +62,7 @@ function place() {
 /** A charm's drawn size in CSS px, unturned: its renderer extent at its bead. */
 function drawnSize(charm: PlacedCharm): { width: number; height: number; zoom: number } {
   const zoom = charm.bead / CELL_SIZE_PX
-  const { extent } = spaceOf(charmProject(charm.id)!, false)
+  const { extent } = spaceOf(charmProject(charm.id)!, false, firstFrameId(charmProject(charm.id)!))
   return { width: extent.width * zoom, height: extent.height * zoom, zoom }
 }
 
@@ -80,7 +81,7 @@ function draw() {
     const region = { x: 0, y: 0, width, height }
     renderProject(context, {
       project,
-      space: spaceOf(project, false),
+      space: spaceOf(project, false, firstFrameId(project)),
       region,
       zoom,
       pixelRatio,

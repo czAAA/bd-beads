@@ -5,7 +5,7 @@ import type { Weave } from '../domain/weave'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
 import { laidTurnOf } from '../domain/framePlacement'
-import { type Layered, FIRST_FRAME } from '../domain/layerRecord'
+import { type Layered } from '../domain/layerRecord'
 
 // PDF page layout (tickets 162, 185, 578, 0584, 0913, 0914): the chart whole on page 1 when it fits there, else page 1 is the
 // overview and equal parts follow, at the largest bead the sheets allow and the same on every chart page; page px at 150 dpi.
@@ -103,6 +103,8 @@ export interface TrimmedArea {
 }
 
 export interface PrintPlan {
+  /** The Frame it prints (ticket 1217). */
+  frame: FrameRef
   /** Always A4 portrait (printed-output.md, Wide and long Schemas). */
   page: PageSize
   /** The rows and columns it prints (ticket 1128): its parts cut these, and nothing outside them. */
@@ -126,7 +128,7 @@ type Shape = Layered
 
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.
-export function displayedGrid(project: Shape, ref: FrameRef = FIRST_FRAME) {
+export function displayedGrid(project: Shape, ref: FrameRef) {
   const rotation = laidTurnOf(project, ref)
   const weave = frameWeave(project, ref)
   const { columns, rows } = projectDimensions(project)
@@ -144,14 +146,14 @@ function blockExtent(weave: Weave, rotation: Rotation, across: number, down: num
 }
 
 /** The whole displayed chart: what a Schema with no beads prints (ticket 1128). */
-export function wholeArea(project: Shape): TrimmedArea {
-  const grid = displayedGrid(project)
+export function wholeArea(project: Shape, ref: FrameRef): TrimmedArea {
+  const grid = displayedGrid(project, ref)
   return { firstAcross: 0, lastAcross: grid.across - 1, firstDown: 0, lastDown: grid.down - 1 }
 }
 
 /** Where an area lies in the whole displayed chart at zoom 1, as the Project renderer lays its beads: what the overview,
  * the Cover page and the PNG draw of a trimmed Schema (ticket 1128). */
-export function areaRegion(project: Shape, area: TrimmedArea, ref: FrameRef = FIRST_FRAME): Region {
+export function areaRegion(project: Shape, area: TrimmedArea, ref: FrameRef): Region {
   const grid = displayedGrid(project, ref)
   const extent = blockExtent(frameWeave(project, ref), laidTurnOf(project, ref), area.lastAcross - area.firstAcross + 1, area.lastDown - area.firstDown + 1)
   return { x: area.firstAcross * grid.stepAcross, y: area.firstDown * grid.stepDown, ...extent }
@@ -241,7 +243,7 @@ function snappedSide(sides: Span[]): Span[] | undefined {
 /** A part as cut, with where it sits in the whole chart at zoom 1, its overlap included. */
 type Block = Omit<PrintPart, 'page' | 'place'>
 
-function blocksOf(project: Shape, cut: Cut, ref: FrameRef = FIRST_FRAME): Block[] {
+function blocksOf(project: Shape, cut: Cut, ref: FrameRef): Block[] {
   const grid = displayedGrid(project, ref)
   // Measured in the Weave the chart is drawn in, with its Bead's cell, as the Project renderer lays the beads (ticket 1122).
   const drawn = frameWeave(project, ref)
@@ -318,6 +320,8 @@ interface Choice {
  * key, the smallest bead, the room page 1 leaves its chart (ticket 0914; none: a chart page's), and the rows and columns
  * it prints (ticket 1128; none: the whole Schema). */
 export interface PlanOptions {
+  /** The Frame it prints (ticket 1217). */
+  frame: FrameRef
   page?: PageSize
   listPages?: number
   keyRows?: number
@@ -346,8 +350,8 @@ const BEAD_GAIN_MM = 0.05
 /** How the chart, trimmed to `trim` (ticket 1128), is printed (tickets 0913, 0914; printed-output.md, Chart pages): whole on
  * page 1 at `print-bead-stretch` or more, or in strips there, else page 1 is the overview and equal parts follow on the fewest
  * sheets that keep the bead at `floorMm` or more, at the largest bead they allow; cuts on a 10 where the parts still fit. */
-export function planPrint(project: Shape, options: PlanOptions = {}): PrintPlan {
-  const { page = A4_PORTRAIT, listPages = 0, keyRows = 1, floorMm = PRINT_BEAD_MIN_MM, trim = wholeArea(project) } = options
+export function planPrint(project: Shape, options: PlanOptions): PrintPlan {
+  const { frame, page = A4_PORTRAIT, listPages = 0, keyRows = 1, floorMm = PRINT_BEAD_MIN_MM, trim = wholeArea(project, frame) } = options
   const printed = { across: trim.lastAcross - trim.firstAcross + 1, down: trim.lastDown - trim.firstDown + 1 }
   const area = chartArea(page, keyRows)
   const first = options.pageOne ?? area
@@ -361,7 +365,7 @@ export function planPrint(project: Shape, options: PlanOptions = {}): PrintPlan 
 
   // The whole Schema on page 1, down to the stretch.
   const whole = cutInto(1, 1)
-  const wholeZoom = Math.min(zoomOf(PRINT_BEAD_MAX_MM), largestZoom(blocksOf(project, whole), first))
+  const wholeZoom = Math.min(zoomOf(PRINT_BEAD_MAX_MM), largestZoom(blocksOf(project, whole, frame), first))
   if (wholeZoom >= zoomOf(stretch)) choices.push({ cut: whole, zoom: wholeZoom, onPageOne: true, sheets: 1 })
 
   // A Schema under a part page's bead whole may fold into strips side by side, or stacked, on page 1.
@@ -370,7 +374,7 @@ export function planPrint(project: Shape, options: PlanOptions = {}): PrintPlan 
     for (let count = 2; count <= MOST_STRIPS; count += 1) {
       for (const cut of [count <= printed.down ? cutInto(1, count) : undefined, count <= printed.across ? cutInto(count, 1) : undefined]) {
         if (!cut) continue
-        const zoom = largestWhere(onOneSheet(blocksOf(project, cut)), floor, zoomOf(PRINT_BEAD_MAX_MM))
+        const zoom = largestWhere(onOneSheet(blocksOf(project, cut, frame)), floor, zoomOf(PRINT_BEAD_MAX_MM))
         if (zoom !== undefined) choices.push({ cut, zoom, onPageOne: true, sheets: 1 })
       }
     }
@@ -383,13 +387,13 @@ export function planPrint(project: Shape, options: PlanOptions = {}): PrintPlan 
     while (count < total && !fits(count)) count += 1
     return count
   }
-  const fewestAcross = fewest(printed.across, (count) => largestZoom(blocksOf(project, cutInto(count, 1)), { width: area.width, height: Infinity }) >= floor)
-  const fewestDown = fewest(printed.down, (count) => largestZoom(blocksOf(project, cutInto(1, count)), { width: Infinity, height: area.height }) >= floor)
+  const fewestAcross = fewest(printed.across, (count) => largestZoom(blocksOf(project, cutInto(count, 1), frame), { width: area.width, height: Infinity }) >= floor)
+  const fewestDown = fewest(printed.down, (count) => largestZoom(blocksOf(project, cutInto(1, count), frame), { width: Infinity, height: area.height }) >= floor)
   for (let across = fewestAcross; across <= Math.min(printed.across, fewestAcross + MORE_PARTS); across += 1) {
     for (let down = fewestDown; down <= Math.min(printed.down, fewestDown + MORE_PARTS); down += 1) {
       if (across * down === 1) continue
       const cut = cutInto(across, down)
-      const blocks = blocksOf(project, cut)
+      const blocks = blocksOf(project, cut, frame)
       const zoom = Math.min(partCap, largestZoom(blocks, area))
       if (zoom >= floor) choices.push({ cut, zoom, onPageOne: false, sheets: 1 + sheetsAt(blocks, zoom, area) })
     }
@@ -405,7 +409,7 @@ export function planPrint(project: Shape, options: PlanOptions = {}): PrintPlan 
   // Cuts on a multiple of 10 where the parts still fit at that bead on as many sheets.
   let { cut } = best
   const keeps = (tried: Cut) => {
-    const blocks = blocksOf(project, tried)
+    const blocks = blocksOf(project, tried, frame)
     return best.zoom <= largestZoom(blocks, room) && sheetsAt(blocks, best.zoom, room) === best.sheets - (best.onPageOne ? 0 : 1)
   }
   const across = snappedSide(cut.across)
@@ -414,7 +418,7 @@ export function planPrint(project: Shape, options: PlanOptions = {}): PrintPlan 
   if (down && keeps({ ...cut, down })) cut = { ...cut, down }
 
   const { zoom } = best
-  const blocks = blocksOf(project, cut)
+  const blocks = blocksOf(project, cut, frame)
   const sizes = boxesAt(blocks, zoom, room)
   const placed = packSheets(sizes, room)
   const sheets = sheetCount(placed)
@@ -427,7 +431,7 @@ export function planPrint(project: Shape, options: PlanOptions = {}): PrintPlan 
     return { ...block, region: regionAt(block, zoom), page: onPage, place: { x: centred ? Math.max(0, (room.width - size.width) / 2) : x, y, ...size } }
   })
   const pageCount = 1 + listPages + (best.onPageOne ? 0 : sheets)
-  return { page, trim, zoom, beadMm: (zoom * CELL_SIZE_PX) / mm(1), partsAcross: cut.across.length, partsDown: cut.down.length, parts, pageCount, pageOneNumber: 1, keyRows }
+  return { frame, page, trim, zoom, beadMm: (zoom * CELL_SIZE_PX) / mm(1), partsAcross: cut.across.length, partsDown: cut.down.length, parts, pageCount, pageOneNumber: 1, keyRows }
 }
 
 /** Where the chart goes on from a part: the page to its right and the page below, if there are any. */

@@ -1,3 +1,4 @@
+import { firstFrameId } from '../../../domain/layerRecord'
 import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import type { Project } from '../../../domain/project'
 import { rowProgressPosition } from '../../../domain/rowProgress'
@@ -110,7 +111,7 @@ export function useRowMotion(deps: {
 
   /** Whether every pass is done: the finished passes are then at full color (Motion section), Pattern done or not. */
   const allDone = computed(() => {
-    const { current, total } = rowProgressPosition(props.project)
+    const { current, total } = rowProgressPosition(props.project, firstFrameId(props.project))
     return total > 0 && current >= total
   })
 

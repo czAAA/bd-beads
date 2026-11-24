@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors } from './canvas'
 import { layerAt, onLayer, positionInLayer, positionOnCanvas, shownBeads, type LayerSheet } from './layers'
@@ -28,8 +29,8 @@ beads: withColors({}, [{ row: 11, column: 21, color: BLUE }, { row: 50, column: 
 describe('layerAt', () => {
   it('is the Frame inside its rectangle and the Canvas anywhere else', () => {
     const project = layered()
-    expect(layerAt(project, { row: 10, column: 20 })).toBe('frame')
-    expect(layerAt(project, { row: 12, column: 23 })).toBe('frame')
+    expect(layerAt(project, { row: 10, column: 20 })).toBe(FRAME_ID)
+    expect(layerAt(project, { row: 12, column: 23 })).toBe(FRAME_ID)
     expect(layerAt(project, { row: 13, column: 20 })).toBe('canvas')
     expect(layerAt(project, { row: 10, column: 24 })).toBe('canvas')
     expect(layerAt(withLayers(project, { frame: undefined }), { row: 10, column: 20 })).toBe('canvas')
@@ -37,8 +38,8 @@ describe('layerAt', () => {
 
   it('counts a position in the Frame from its first bead, and back', () => {
     const project = layered()
-    expect(positionInLayer(project, 'frame', { row: 11, column: 22 })).toEqual({ row: 1, column: 2 })
-    expect(positionOnCanvas(project, 'frame', { row: 1, column: 2 })).toEqual({ row: 11, column: 22 })
+    expect(positionInLayer(project, FRAME_ID, { row: 11, column: 22 })).toEqual({ row: 1, column: 2 })
+    expect(positionOnCanvas(project, FRAME_ID, { row: 1, column: 2 })).toEqual({ row: 11, column: 22 })
     expect(positionInLayer(project, 'canvas', { row: 11, column: 22 })).toEqual({ row: 11, column: 22 })
   })
 })
@@ -46,7 +47,7 @@ describe('layerAt', () => {
 describe('onLayer', () => {
   it('paints the Frame\'s own beads in its own coordinates and leaves the Canvas as it was', () => {
     const project = layered()
-    const painted = onLayer(project, 'frame', (view, local) => paintCells(view, [local({ row: 11, column: 22 })], RED))
+    const painted = onLayer(project, FRAME_ID, (view, local) => paintCells(view, [local({ row: 11, column: 22 })], RED))
     expect(frameOf(painted)!.beads[1]).toEqual({ 2: RED })
     expect(beadsOfLayer(painted, 'canvas')).toBe(beadsOfLayer(project, 'canvas'))
     expect(beadColorAt(painted, 11, 22)).toBe(RED)
@@ -75,13 +76,13 @@ describe('onLayer', () => {
 
   it('hands back the Project itself when the command changed nothing, or only what is under the Frame', () => {
     const project = layered()
-    expect(onLayer(project, 'frame', (sheet) => sheet.beads)).toBe(project)
+    expect(onLayer(project, FRAME_ID, (sheet) => sheet.beads)).toBe(project)
     expect(onLayer(project, 'canvas', (view) => paintCells(view, [{ row: 11, column: 21 }], RED))).toBe(project)
   })
 
   it('hands a command the Frame counted from its own first bead, with its own edge, for Fill to stop at', () => {
     const project = layered()
-    const filled = onLayer(project, 'frame', (view) => fillArea(view, 2, 3, RED))
+    const filled = onLayer(project, FRAME_ID, (view) => fillArea(view, 2, 3, RED))
     // Fill stops at the Frame's edge: its twelve beads but the blue one.
     expect(Object.values(frameOf(filled)!.beads).reduce((sum, row) => sum + Object.keys(row).length, 0)).toBe(12)
     expect(frameOf(filled)!.beads[0]![0]).toBe(BLUE)
@@ -89,8 +90,8 @@ describe('onLayer', () => {
   })
 
   it('does nothing on the Frame\'s layer when there is no Frame', () => {
-    const bare = withFrameSheet(layered(), undefined)
-    expect(onLayer(bare, 'frame', (view) => paintCells(view, [{ row: 0, column: 0 }], RED))).toBe(bare)
+    const bare = withFrameSheet(layered(), undefined, { frame: frameIdIn(layered()) })
+    expect(onLayer(bare, FRAME_ID, (view) => paintCells(view, [{ row: 0, column: 0 }], RED))).toBe(bare)
   })
 })
 
@@ -100,7 +101,7 @@ describe('shownBeads', () => {
   })
 
   it('is the Canvas\'s own map when there is no Frame', () => {
-    const bare = withFrameSheet(layered(), undefined)
+    const bare = withFrameSheet(layered(), undefined, { frame: frameIdIn(layered()) })
     expect(shownBeads(bare)).toBe(beadsOfLayer(bare, 'canvas'))
   })
 })
@@ -110,7 +111,7 @@ describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
     const base = layered()
     const project: Project = withLayers(base, { technique: 'brick', techniqueSettings: { brickDrop: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
     const seen: LayerSheet[] = []
-    onLayer(project, 'frame', (sheet) => {
+    onLayer(project, FRAME_ID, (sheet) => {
       seen.push(sheet)
       return sheet.beads
     })
@@ -135,15 +136,15 @@ describe('a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   // 48 rows of a Bead three quarters the Canvas's size: the Frame covers the first 36 Canvas rows, the other 12 it names are Canvas.
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
   const sheet = { technique: 'loom' as const, row: 0, column: 0, rows: 48, columns: 11, beads: withColors({}, [{ row: 40, column: 2, color: BLUE }]) }
-  const project: Project = withLayer(withLayers(base, { frame: sheet }), 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+  const project: Project = withLayer(withLayers(base, { frame: sheet }), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
 
   it('says a position under the drawing is the Frame\'s, and one in the strip the Canvas\'s', () => {
-    expect(layerAt(project, { row: 20, column: 3 })).toBe('frame')
+    expect(layerAt(project, { row: 20, column: 3 })).toBe(FRAME_ID)
     expect(layerAt(project, { row: 40, column: 3 })).toBe('canvas')
   })
 
   it('takes the layer a pointer hit named over what the position says', () => {
-    expect(layerAt(project, { row: 40, column: 2, layer: 'frame' })).toBe('frame')
+    expect(layerAt(project, { row: 40, column: 2, layer: FRAME_ID })).toBe(FRAME_ID)
     expect(layerAt(project, { row: 20, column: 3, layer: 'canvas' })).toBe('canvas')
   })
 
@@ -154,7 +155,7 @@ describe('a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   })
 
   it('draws on the Frame\'s own last rows, which share a position with the strip', () => {
-    const painted = onLayer(project, 'frame', (view, local) => paintCells(view, [local({ row: 41, column: 2 })], RED))
+    const painted = onLayer(project, FRAME_ID, (view, local) => paintCells(view, [local({ row: 41, column: 2 })], RED))
     expect(frameOf(painted)!.beads[41]?.[2]).toBe(RED)
     expect(beadsOfLayer(painted, 'canvas')).toBe(beadsOfLayer(project, 'canvas'))
   })

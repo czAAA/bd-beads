@@ -1,3 +1,4 @@
+import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
@@ -41,7 +42,7 @@ function setup(project: Project) {
 function beadsOnScreen(project: Project, zoom: number, scroll: { x: number; y: number }) {
   const { technique, cell } = canvasOf(project)
   const surface = surfaceView({ space: OPEN_SPACE, technique, cell, rotation: 0, zoom, scroll, viewport: { width: 1000, height: 600 } })
-  return surface.beadBox(footprintOf(project)!, 'canvas')
+  return surface.beadBox(footprintOf(project, frameIdIn(project))!, 'canvas')
 }
 
 /** The loom bead's longer step on screen at a zoom, the pitch the numbers follow. */

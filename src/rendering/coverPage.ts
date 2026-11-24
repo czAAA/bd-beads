@@ -1,3 +1,4 @@
+import type { FrameRef } from '../domain/grid'
 import { drawFlatBead, parseColor, PRINT_THEME, type BeadDrawer, type ProjectTheme } from './beadLook'
 import { coverPageLayout, type CoverPageLayout } from './coverPageLayout'
 import { drawFooter } from './pageOnePage'
@@ -64,7 +65,7 @@ function shadowColor(): string {
 }
 
 /** The board and the piece on it, drawn at the page's own resolution, then laid in with its shadow. */
-function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: CoverPageLayout): void {
+function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: CoverPageLayout, ref: FrameRef): void {
   const { board, piece, zoom, start } = layout
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
@@ -78,7 +79,7 @@ function drawPiece(context: CanvasRenderingContext2D, project: Project, layout: 
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
   const region = { x: start.x * zoom * scale, y: start.y * zoom * scale, width: tile.width, height: tile.height }
-  renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom: zoom * scale, theme: COVER_THEME, rowMarks: false, positionMarks: false, drawBead: paintedOnly })
+  renderProject(tileContext, { project, space: spaceOf(project, false, ref), region, zoom: zoom * scale, theme: COVER_THEME, rowMarks: false, positionMarks: false, drawBead: paintedOnly })
   // A shadow's offset and blur are in device px, whatever the transform.
   context.save()
   context.shadowColor = shadowColor()
@@ -160,8 +161,8 @@ export function drawCoverPage(project: Project, words: PrintText, page: PageSize
   context.stroke()
   const techBottom = ruleY + TECH_LINE_GAP + pt(SIZE.meta)
   text(context, words.metaLine, PRINT_MARGIN, techBottom - pt(SIZE.meta) * DESCENT, META_FONT, PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
-  const layout = coverPageLayout(project, page, techBottom + BOARD_GAP)
-  drawPiece(context, project, layout)
+  const layout = coverPageLayout(project, words.frame, page, techBottom + BOARD_GAP)
+  drawPiece(context, project, layout, words.frame)
   const captionBottom = layout.board.y + layout.board.height + CAPTION_GAP + pt(SIZE.technique)
   text(context, words.techniqueWord, PRINT_MARGIN, captionBottom - pt(SIZE.technique) * DESCENT, TECHNIQUE_FONT, PRINT_COLORS.accentStrong, 'left', page.width - PRINT_MARGIN * 2)
 
