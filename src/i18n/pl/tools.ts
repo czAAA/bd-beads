@@ -149,7 +149,7 @@ export const tools: ToolsTranslations = {
     frameEdgeOut: 'Powiększ ramkę o jeden koralik z tej strony.',
     frameEdgeIn: 'Zmniejsz ramkę o jeden koralik z tej strony.',
     frameEdgeInDisabled: 'Z tej strony ramki nie można już zmniejszyć.',
-    removeFrame: 'Usuwa ramkę. Koraliki zostają na miejscu.',
+    removeFrame: 'Usuwa ramkę i jej koraliki albo najpierw je kopiuje.',
     noFrameToRemove: 'Nie ma ramki do usunięcia.',
     frameFromStarter: 'Tworzy ramkę ze startera pośrodku widoku.',
     replaceFrame: 'Zamienia ramkę na inną, ze startera.',

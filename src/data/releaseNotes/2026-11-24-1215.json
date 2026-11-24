@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-24",
+  "kind": "changed",
+  "line": {
+    "en": "A Frame keeps its own beads: making it copies them, and Remove Frame offers to copy them first",
+    "ru": "Рамка хранит свои бисеринки: при создании они копируются, а «Убрать рамку» предлагает сначала скопировать их",
+    "uk": "Рамка зберігає свої бісерини: під час створення вони копіюються, а «Прибрати рамку» пропонує спершу скопіювати їх",
+    "be": "Рамка захоўвае свае бісерыны: пры стварэнні яны капіююцца, а «Прыбраць рамку» прапануе спачатку скапіяваць іх",
+    "zh": "边框保留自己的珠子：创建时会复制珠子，移除边框时可先复制",
+    "es": "El marco guarda sus propias cuentas: al crearlo se copian, y Quitar marco ofrece copiarlas antes",
+    "pl": "Ramka zachowuje własne koraliki: przy tworzeniu są kopiowane, a Usuń ramkę proponuje najpierw je skopiować"
+  }
+}

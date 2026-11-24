@@ -141,7 +141,7 @@ export const tools: ToolsTranslations = {
     frameEdgeOut: '在这一侧把边框扩大一颗珠子。',
     frameEdgeIn: '在这一侧把边框缩小一颗珠子。',
     frameEdgeInDisabled: '这一侧的边框已无法再缩小。',
-    removeFrame: '移除边框。珠子保持原位。',
+    removeFrame: '移除边框和其中的珠子，或先复制它们。',
     noFrameToRemove: '没有可移除的边框。',
     frameFromStarter: '在当前视野中央用起始方案新建边框。',
     replaceFrame: '用起始方案中的边框替换当前边框。',

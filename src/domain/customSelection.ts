@@ -160,52 +160,16 @@ function landingsOf(sheet: LayerSheet, points: readonly LayoutPoint[]): (GridPos
   })
 }
 
-/** A grid's beads lifted into a Custom frame (Frame from Selection, ticket 0669): each, from the Frame's cell it is on,
- * lands as a Paste lands it; one that lands on a Seam or Off-shape stays where it was. `cells` are in the Frame's own
- * rows and columns: what landed, by layout position, and the cells it was lifted from. */
-export function liftedOntoLayout(sheet: LayerSheet, cells: readonly (GridPosition & { color: string })[]): { landed: BeadChange[]; lifted: GridPosition[] } {
+/** A grid's beads copied onto a Custom frame (Frame from Selection, tickets 0669, 1215): each, from the Frame's cell it
+ * is on, lands as a Paste lands it; one that lands on a Seam or Off-shape is left out. `cells` are in the Frame's own
+ * rows and columns: what landed, by layout position. */
+export function copiedOntoLayout(sheet: LayerSheet, cells: readonly (GridPosition & { color: string })[]): BeadChange[] {
   const landings = landingsOf(sheet, cells.map((cell) => cellCentre(sheet.weave, cell)))
   const landed: BeadChange[] = []
-  const lifted: GridPosition[] = []
   landings.forEach((free, index) => {
-    if (!free) return
-    const { row, column, color } = cells[index]!
-    landed.push({ ...free, color })
-    lifted.push({ row, column })
+    if (free) landed.push({ ...free, color: cells[index]!.color })
   })
-  return { landed, lifted }
-}
-
-/** A Custom frame's beads laid on a grid (Remove Frame, ticket 0669, ADR 0077): each on the Frame's cell nearest its
- * centre, as a Paste of them lays them, in the Frame's own rows and columns. */
-export function droppedFromLayout(sheet: LayerSheet): BeadChange[] {
-  const placement = placementOf(sheet)
-  return droppedOnCells(
-    sheet.weave,
-    placement.layout.positions.flatMap((position) => {
-      const color = colorAt(sheet.beads, position.row, position.column)
-      return color ? [{ centre: centreOf(placement, position), color }] : []
-    }),
-  )
-}
-
-/** Beads at points on screen laid on a Weave's cells, read in order on screen: each on the cell holding its centre, or
- * the nearest free cell next to it where an earlier bead took that one. */
-function droppedOnCells(weave: Weave, beads: readonly { centre: LayoutPoint; color: string }[]): BeadChange[] {
-  const taken = new Set<string>()
-  const dropped: BeadChange[] = []
-  for (const { centre, color } of [...beads].sort((a, b) => a.centre.y - b.centre.y || a.centre.x - b.centre.x)) {
-    const holding = cellAt(weave, centre)
-    const away = (cell: GridPosition) => {
-      const { x, y } = cellCentre(weave, cell)
-      return Math.hypot(x - centre.x, y - centre.y)
-    }
-    const free = [holding, ...cellsAround(holding).sort((a, b) => away(a) - away(b))].find((cell) => !taken.has(keyOf(cell)))
-    if (!free) continue
-    taken.add(keyOf(free))
-    dropped.push({ ...free, color })
-  }
-  return dropped
+  return landed
 }
 
 /** Where a Paste aimed at a Custom frame's cell puts the anchor bead, on screen in cell widths: on the centre of the bead

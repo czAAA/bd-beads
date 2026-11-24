@@ -229,7 +229,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, carryBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, lineUpFrame, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
+  const { bindCanvasArea, canvasViewport, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, carryBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, areaZoom, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, twistMoved, frameTwist, releaseFrameTwist, easeFrameBack, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned, moved) => rotateCanvasFlow.onTwistCanvas(turned, moved),
@@ -320,6 +320,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     pasteAt: pasteAtGesture,
     deleteSelection: onEmptySelection,
     cut: cutSelected,
+    copyBlock,
     armPaste,
     dismissPaste: leavePasteMode,
     fill: fillSelection,
@@ -798,7 +799,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
     centreOn,
     visibleCentre,
     dialogs,
-    lineUp: lineUpFrame,
+    copyToClipboard: (block) => {
+      copyBlock(block)
+      selectTool('select')
+    },
   })
 
   /** The Frame kept clear of the Frame panel while it is open (ticket 0971). */
@@ -1252,8 +1256,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       rowPress: rowOps.rowPress,
       /** How many times Rotate Frame has been pressed, which the Frame is seen turning by (ticket 1016). */
       frameTurns: rotateFrameFlow.frameTurns,
-      /** How many times a confirmed Remove frame has dropped the Frame's beads, which it is seen dropping by (ticket 1189). */
-      frameDrops: frameFlow.frameDrops,
       panBy,
       carryBy,
       /** The bead in the middle of the view: what the Homepage's demo opens the editor on (ticket 0879). */
@@ -1518,7 +1520,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onCancelDeleteAll: deleteAll.onCancelDeleteAll,
       onConfirmResetProgress: rowOps.onConfirmResetProgress,
       onCancelResetProgress: rowOps.onCancelResetProgress,
+      removeFramePrompt: frameFlow.removeFramePrompt,
       onConfirmRemoveFrame: frameFlow.confirmRemove,
+      onRemoveFrameAndCopy: frameFlow.confirmRemoveAndCopy,
       onCancelRemoveFrame: frameFlow.cancelRemove,
       removeLinePrompt: removeLine.removeLinePrompt,
       onConfirmRemoveLine: removeLine.confirmRemoveLine,

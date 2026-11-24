@@ -25,8 +25,10 @@ const {
   onConfirmDeleteAll,
   onCancelResetProgress,
   onConfirmResetProgress,
+  removeFramePrompt,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
+  onRemoveFrameAndCopy,
   removeLinePrompt,
   onCancelRemoveLine,
   onConfirmRemoveLine,
@@ -167,10 +169,12 @@ const importMessage = computed(() => {
     v-if="open === 'remove-frame'"
     data-testid="remove-frame-modal"
     :title="t.frame.removeConfirmTitle"
-    :message="t.frame.removeConfirmMessage"
+    :message="removeFramePrompt.message"
     :confirm-label="t.frame.removeConfirmButton"
+    :extra-label="t.frame.removeAndCopyButton"
     :cancel-label="t.frame.removeConfirmCancel"
     @confirm="onConfirmRemoveFrame"
+    @extra="onRemoveFrameAndCopy"
     @cancel="onCancelRemoveFrame"
   />
 

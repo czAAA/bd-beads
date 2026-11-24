@@ -13,14 +13,11 @@ import {
 import type { GridPosition, Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal, framedAround } from '../../domain/changeFrame'
-import { grownFrame } from '../../domain/frameGrowth'
 import { changedSetting, frameAllows, settingValuesOf, settingsOf, sizeSettingOf, turnedGrid, type FrameSettings } from '../../domain/frameShape'
-import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice, type StarterLayerSettings } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
 import { frameOf, heldWeave, layerOf } from '../../domain/layerRecord'
-import { linedUpAngle } from '../../domain/framePlacement'
-import { lieAlike } from '../../domain/table'
+import { copyLayerSelection, type CopiedBlock } from '../../domain/selection'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { laidFrame, ownEdge, ownSize, seenSize, turnedWithEdges } from '../../domain/frameOrientation'
 import { rowProgressStarted } from '../../domain/rowProgress'
@@ -60,9 +57,9 @@ export interface FrameFlowDeps {
   openPanel?: Ref<OpenPanel | null>
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
-  /** Plays Remove frame's line-up (ticket 1189): the Frame eased onto `to`, then `then`; without it the drop comes at
-   * once. */
-  lineUp?: (to: number, then: () => void) => void
+  /** Puts a block of beads on the clipboard and starts Paste mode, as Cut does (ticket 1215): what Remove and copy ends
+   * with. */
+  copyToClipboard?: (block: CopiedBlock) => void
 }
 
 /** How far a press on a resize handle is from the beads its edges stand on (ticket 0977): the drag keeps this distance,
@@ -108,7 +105,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const draftProject = computed(() => {
     const project = deps.currentProject()
     if (!project || !draft.value) return project
-    // Shown as the release will leave it: a resize that shrinks the Frame already lays its given-up beads on the Canvas.
+    // Shown as the release will leave it: a resize that shrinks the Frame already folds what it gives up.
     const outcome = changeFrame(project, draft.value.move ? { move: draft.value.move } : { set: draft.value?.frame })
     return outcome.kind === 'changed' ? outcome.project : project
   })
@@ -197,22 +194,13 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return fillBlanks(t.frame.announceSet, { width: columns, height: rows })
   }
 
-  /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step.
-   * A resize stopped at a named Schema's edge says which (ticket 0639). */
+  /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step. */
   function commit(frame: Rect | undefined, how: 'set' | 'make' | 'around' = 'set'): boolean {
     const before = deps.currentProject()
-    const stoppedAt = frame && how === 'set' && before ? grownFrame(before, frame).stoppedAt : undefined
     const outcome = deps.edit('frame', (project) =>
       frame && how === 'around' ? framedAround(project, frame) : changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }),
     )
-    if (stoppedAt !== undefined && outcome.kind !== 'refused') deps.showToast('frame-cuts-schema', fillBlanks(deps.messages().frame.refusedCutsSchema, { name: stoppedAt }), 'info')
-    if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
-      // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
-      const project = deps.currentProject()
-      const name = project && namedPieceCutBy(project, frame)
-      if (name !== undefined) deps.showToast('frame-cuts-schema', fillBlanks(deps.messages().frame.refusedCutsSchema, { name }), 'info')
-      return false
-    }
+    if (outcome.kind === 'refused') return false
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
     const left = frameOf(deps.currentProject())
     deps.announce(frame && left ? describe(left, frameOf(before)) : deps.messages().frame.announceRemoved)
@@ -436,22 +424,30 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     removeConfirmOpen.value = false
   }
 
-  /** How many times a confirmed Remove frame has dropped the Frame's beads: what the drop is seen by, never an Undo. */
-  const frameDrops = ref(0)
+  /** What the Remove frame question says (ticket 1215): the beads go with the Frame, and Row progress too once a pass is
+   * done. */
+  const removeFramePrompt = computed(() => {
+    const project = deps.currentProject()
+    const words = deps.messages().frame
+    return { message: project && rowProgressStarted(project) ? words.removeConfirmMessageDone : words.removeConfirmMessage }
+  })
 
-  /** Remove Frame after the question (ticket 1189): a Frame not lying alike with the Canvas is first seen lining up with
-   * it, then its beads drop; one Undo step restores the Frame at its old angle and the passes together. */
+  /** Remove frame after the question: the Frame goes with all its beads, Folded ones too, and its passes; one Undo step
+   * brings it all back. Nothing lands on the Canvas (ticket 1215). */
   function confirmRemove(): void {
     removeConfirmOpen.value = false
+    commit(undefined)
+  }
+
+  /** Remove and copy (ticket 1215): the same, and the Frame's beads are put on the clipboard with Paste mode started, as
+   * after Cut. */
+  function confirmRemoveAndCopy(): void {
+    removeConfirmOpen.value = false
     const project = deps.currentProject()
-    // A Project opened or changed by Undo during the line-up drops nothing.
-    const drop = () => {
-      if (deps.currentProject() !== project || !frameOf(project)) return
-      // Counted once the edit is made: the surface draws it on the next frame, so the drop still copies the Frame.
-      if (commit(undefined)) frameDrops.value += 1
-    }
-    if (!project || lieAlike(project) || !deps.lineUp) return drop()
-    deps.lineUp(linedUpAngle(project), drop)
+    const frame = frameOf(project)
+    if (!project || !frame) return
+    const block = copyLayerSelection(project, { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer: 'frame' })
+    if (commit(undefined) && block) deps.copyToClipboard?.(block)
   }
 
   /** Whether the Replace Frame question is open; the pending Starter waits behind it (tickets 495, 0596). */
@@ -580,7 +576,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     removeConfirmOpen,
     cancelRemove,
     confirmRemove,
-    frameDrops,
+    confirmRemoveAndCopy,
+    removeFramePrompt,
     placeFromStarter,
     setSettings,
     replaceConfirmOpen,

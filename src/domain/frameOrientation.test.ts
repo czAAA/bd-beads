@@ -73,11 +73,10 @@ describe('what a turned Frame offers', () => {
     expect(removeLineRefusal(turned, { top: 19, left: 21, rows: 1, columns: 6, layer: 'frame' })).toBe('no-line')
   })
 
-  it('drops its beads onto the Canvas on Remove Frame where they lie turned, its Folded beads too (ticket 0669)', () => {
-    // Its first bead lies in the top-right corner of what it covers; a Folded bead past its last column, below that.
+  it('takes its beads with it on Remove Frame wherever they lie turned, its Folded beads too, dropping none onto the Canvas (tickets 0669, 1215)', () => {
     const folded = withLayers(turned, { frame: { ...frameOf(turned)!, folded: withColors({}, [{ row: 0, column: 6, color: GREEN }]) } })
     const removed = changeFrame(folded, { remove: true })
-    expect(removed.kind === 'changed' && beadsOfLayer(removed.project, 'canvas')).toEqual({ 19: { 24: RED }, 25: { 24: GREEN } })
+    expect(removed.kind === 'changed' && beadsOfLayer(removed.project, 'canvas')).toEqual({})
   })
 })
 

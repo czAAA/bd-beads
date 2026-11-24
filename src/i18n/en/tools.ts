@@ -145,7 +145,7 @@ export const tools: ToolsTranslations = {
     frameEdgeOut: 'Grow the Frame by one bead on this side.',
     frameEdgeIn: 'Shrink the Frame by one bead on this side.',
     frameEdgeInDisabled: 'The Frame can’t get any smaller on this side.',
-    removeFrame: 'Remove the Frame. Beads stay where they are.',
+    removeFrame: 'Remove the Frame and its beads, or copy them first.',
     noFrameToRemove: 'There is no Frame to remove.',
     frameFromStarter: 'Make a Frame from a Starter in the middle of the view.',
     replaceFrame: 'Swap the Frame for one from a Starter.',
