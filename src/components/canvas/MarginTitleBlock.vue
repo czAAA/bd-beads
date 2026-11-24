@@ -158,7 +158,8 @@ async function measureLegend(): Promise<void> {
   const bead = cell?.querySelector<HTMLElement>('.margin-bead')
   const name = bead?.querySelector<HTMLElement>('.margin-bead__name')
   const colors = cell?.querySelector<HTMLElement>('.margin-title__legend-colors')
-  if (!cell || !bead || !name?.firstChild || !colors) return
+  // Nothing laid out (jsdom, which also has no Range box): no least width, the columns as they were.
+  if (!cell?.offsetWidth || !bead || !name?.firstChild || !colors) return
   const word = name.textContent?.split(' ')[0] ?? ''
   const range = document.createRange()
   range.setStart(name.firstChild, 0)
