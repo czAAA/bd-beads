@@ -2,14 +2,14 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn
 import { ownLength, ownPoint } from '../../../composables/ui/cssZoom'
 import { pressBecomes, type CanvasPress, type CanvasPressStep } from '../../../domain/canvasPress'
 import { layerAt } from '../../../domain/layers'
-import { footprintOf } from '../../../domain/footprint'
+import { footprintsOf } from '../../../domain/footprint'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
 import { isFrameLayer, type GridPosition, type Layer, type PreviewCell, type Rotation } from '../../../domain/grid'
 import { CANVAS_HOLD_MS } from '../../../domain/hold'
 import { pointerDraws, type Handedness, type InputMode } from '../../../domain/inputMode'
 import { beadColorAt } from '../../../domain/layerBeads'
-import { isInFinishedRow } from '../../../domain/rowProgress'
+import { finishedRowsOfFrames } from '../../../domain/rowProgress'
 import type { Project } from '../../../domain/project'
 import { selectionFrame, selectionHasHandles, selectionLayer, selectionMask, stampCells, type PasteStamp, type Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
@@ -310,7 +310,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   let hoverPoint: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
 
   function hoversFinishedRow(bead: GridPosition | undefined): boolean {
-    return bead !== undefined && isInFinishedRow(props.project, bead, firstFrameId(props.project))
+    return bead !== undefined && finishedRowsOfFrames(props.project)(bead)
   }
 
   // Where the bead-shaped marker stands for the pointer (ticket 353), in px from the surface's top-left: over beads,
@@ -405,7 +405,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     if (!props.tools.selects) return false
     // A Frame whose kind offers no Selection refuses one as the margin does (a Custom frame, ticket 0592), and so does
     // any Frame in Mirror mode: it mirrors whole (ADR 0082).
-    return inMargin(footprintOf(props.project, firstFrameId(props.project)), bead) || (isFrameLayer(layerAt(props.project, bead)) && (props.tools.marksArea || !frameAllows(props.project, 'select', firstFrameId(props.project))))
+    const layer = layerAt(props.project, bead)
+    return inMargin(footprintsOf(props.project), bead) || (isFrameLayer(layer) && (props.tools.marksArea || !frameAllows(props.project, 'select', layer)))
   }
 
   function refusesMargin(bead: GridPosition | undefined): boolean {
@@ -933,7 +934,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
       selectLayer = bead.layer ?? 'canvas'
       // A press on a finished row never draws (the lock), and, while its dimming shows, toggles the finished rows
       // between dimmed and normal.
-      if (marksShown.value && isInFinishedRow(props.project, bead, firstFrameId(props.project)) && !(event.pointerType === 'touch' && !event.isPrimary)) {
+      if (marksShown.value && finishedRowsOfFrames(props.project)(bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
         finishedRestored.value = !finishedRestored.value
       }
       emit('cell-primary-down', ...cellArguments(bead))

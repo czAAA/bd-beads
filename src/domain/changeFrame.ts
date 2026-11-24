@@ -43,6 +43,7 @@ import { withWeave, type WeaveChange } from './weaveSwitch'
 import { linesKeptIn, type WovenChoice } from './wovenLines'
 import { frameIdentity, heldWeave, pieceNamesOf, startingRowProgressOf, withFrameFields, withLayer, withStartingRowProgress, frameById } from './layerRecord'
 import { touchFrameSheet, withFrameSheet } from './frameSheet'
+import { frameMet, stoppedShort } from './frameSpacing'
 import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -161,9 +162,43 @@ function asksForTechnique(frame: FrameSheet | undefined, change: FrameChange): b
   return !!frame && !frameShapeOf(frame) && 'technique' in change && change.technique !== frame.technique
 }
 
-/** The Project with a Frame changed (the one named, ticket 1216), or why not. The Palette is the Project's own, so a
- * Frame made, removed or put in another Bead changes no color (ADR 0103). */
+/** The Project with a Frame changed (the one named, ticket 1216), or why not; no color changes (ADR 0103). A move or
+ * resize that would bring it into another Frame's margin stops at the last place allowed, any other change that would
+ * is not taken (spec 1214, ticket 1218). */
 export function changeFrame(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
+  const result = frameChanged(project, change, ref)
+  if (result.kind !== 'changed' || !frameMet(result.project, ref) || frameMet(project, ref)) return result
+  const stopped = stoppedChange(project, change, ref)
+  return stopped === undefined || stopped === project ? { kind: 'unchanged', project } : { kind: 'changed', project: stopped }
+}
+
+/** A move or resize (`set`) of the Frame stopped at the last place allowed, one whole bead at a time; none for any other
+ * change, which is taken whole or not at all. */
+function stoppedChange(project: Project, change: FrameChange, ref: FrameRef): Project | undefined {
+  const along = (k: number, steps: number) => (value: number) => Math.round((value * k) / steps)
+  const changedTo = (asked: FrameChange) => {
+    const result = frameChanged(project, asked, ref)
+    return result.kind === 'changed' ? result.project : project
+  }
+  if ('move' in change) {
+    const { rows, columns } = change.move
+    const steps = Math.max(Math.abs(rows), Math.abs(columns))
+    return stoppedShort(project, ref, steps, (k) => changedTo({ move: { rows: along(k, steps)(rows), columns: along(k, steps)(columns) } }))
+  }
+  const current = frameById(project, ref)
+  if (!('set' in change) || !current) return undefined
+  const [top, left] = [change.set.row - current.row, change.set.column - current.column]
+  const [bottom, right] = [change.set.row + change.set.rows - current.row - current.rows, change.set.column + change.set.columns - current.column - current.columns]
+  const steps = Math.max(...[top, left, bottom, right].map(Math.abs))
+  return stoppedShort(project, ref, steps, (k) => {
+    const by = along(k, steps)
+    const [row, column] = [current.row + by(top), current.column + by(left)]
+    return changedTo({ set: { row, column, rows: current.row + current.rows + by(bottom) - row, columns: current.column + current.columns + by(right) - column } })
+  })
+}
+
+/** `changeFrame` with no regard to the other Frames. */
+function frameChanged(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
   const reason = frameChangeRefusal(project, change, ref)
   if (reason) {
     return { kind: 'refused', reason }

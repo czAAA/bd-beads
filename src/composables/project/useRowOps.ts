@@ -2,6 +2,7 @@ import { shallowRef, watch, type ShallowRef } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, firstFrameId } from '../../domain/layerRecord'
 import { columnsAsSeen, moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, seenWayOf, toggleRowDirection, turnRowDirectionTo, type SeenWay } from '../../domain/rowProgress'
+import type { FrameRef } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { rowProgressAnnouncement, seenWayWords } from '../../i18n/rowProgressWords'
 import type { Translations } from '../../i18n/translations'
@@ -51,8 +52,12 @@ export function useRowOps(deps: RowOpsDeps) {
   // Remove Frame and leaving the Project stop it too, however they come about.
   watch([() => deps.currentProject()?.id, () => frameOf(deps.currentProject()) !== undefined], stopRowMotion)
 
-  /** Writes the Project with its rows turned another way, and says so: not an undo step (ticket 32). */
-  function turnTo(turn: (project: Project) => Project) {
+  /** The Frame a Row progress control names (ticket 1218): the one given, else the first until each Frame has its own
+   * strip (ticket 1220). */
+  const named = (given: FrameRef | undefined): FrameRef => given ?? firstFrameId(deps.currentProject())
+
+  /** Writes the Project with a Frame's rows turned another way, and says so: not an undo step (ticket 32). */
+  function turnTo(frame: FrameRef, turn: (project: Project) => Project) {
     const project = deps.currentProject()
     if (project) {
       const turned = turn(project)
@@ -63,59 +68,67 @@ export function useRowOps(deps: RowOpsDeps) {
       // Said once per change, whether the list or the key turned it (ticket 411).
       const t = deps.messages().rowProgress
       // The way as seen names its noun too (spec 1182): top to bottom and bottom to top are rows, the others columns.
-      const { toast } = seenWayWords(t, seenWayOf(turned, firstFrameId(turned)))
+      const { toast } = seenWayWords(t, seenWayOf(turned, frame))
       // The way left keeps its own pointer: said, so its rows marked done don't look lost (ticket 0849, F-04-04).
-      const kept = rowProgressPosition(project, firstFrameId(project)).current > 0 ? (columnsAsSeen(project, firstFrameId(project)) ? t.columnsKeptToast : t.rowsKeptToast) : undefined
+      const kept = rowProgressPosition(project, frame).current > 0 ? (columnsAsSeen(project, frame) ? t.columnsKeptToast : t.rowsKeptToast) : undefined
       deps.showToast('row-direction', kept ? fillBlanks(t.directionKeptToast, { toast, kept }) : toast, 'success')
     }
   }
 
   /** The `D` key: the rows on to the next of the four ways (ticket 0589). */
-  function onToggleRowDirection() {
-    turnTo((project) => toggleRowDirection(project, firstFrameId(project)))
+  function onToggleRowDirection(given?: FrameRef) {
+    const frame = named(given)
+    turnTo(frame, (project) => toggleRowDirection(project, frame))
   }
 
   /** A way chosen from Turn row direction's list (ticket 0973, UX-060): the rows run that way, its own count back. */
-  function onSetRowDirection(way: SeenWay) {
-    turnTo((project) => turnRowDirectionTo(project, way, firstFrameId(project)))
+  function onSetRowDirection(way: SeenWay, given?: FrameRef) {
+    const frame = named(given)
+    turnTo(frame, (project) => turnRowDirectionTo(project, way, frame))
   }
 
   /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or the Homepage cuff's jump. The row it
    * reaches is brought into view and said aloud (ticket 0934). */
-  function moveTo(pass: (from: number) => number, pressed: boolean) {
+  function moveTo(pass: (from: number) => number, pressed: boolean, frame: FrameRef) {
     const project = deps.currentProject()
     if (!project) return
-    const { current: from, total } = rowProgressPosition(project, firstFrameId(project))
-    const moved = moveToRow(project, pass(from), firstFrameId(project))
-    const to = rowProgressPosition(moved, firstFrameId(moved)).current
+    const { current: from, total } = rowProgressPosition(project, frame)
+    const moved = moveToRow(project, pass(from), frame)
+    const to = rowProgressPosition(moved, frame).current
     if (to === from) return
     // Said before the write, so the surface that redraws for it already knows the press. A jump plays nothing.
     if (pressed) rowPress.value = { id: ++presses, done: to > from, from, to, patternDone: to === total }
     else stopRowMotion()
     deps.replaceProject(moved)
     deps.showRow?.()
-    deps.announce?.(rowProgressAnnouncement(deps.messages().rowProgress, moved))
+    deps.announce?.(rowProgressAnnouncement(deps.messages().rowProgress, moved, frame))
   }
 
   /** Steps the row pointer forward as a row is finished, or back to revisit an earlier one. */
-  function onMoveRow(delta: number) {
-    moveTo((from) => from + delta, true)
+  function onMoveRow(delta: number, frame?: FrameRef) {
+    moveTo((from) => from + delta, true, named(frame))
   }
 
   /** The pointer straight to a pass, zero-based, playing nothing: the Homepage cuff's loop going back to the start. Not
    * an undo step, as Row done isn't. */
-  function jumpToRow(pass: number) {
-    moveTo(() => pass, false)
+  function jumpToRow(pass: number, frame?: FrameRef) {
+    moveTo(() => pass, false, named(frame))
   }
 
   /** Whether the Reset progress question is open (ticket 455): clearing every finished row is not an undo step, so
    * it asks first. */
   const resetProgressConfirmOpen = (deps.dialogs ?? useDialogs()).flag('reset-progress')
 
-  /** Asks whether to reset; nothing to ask about until a row is done. */
-  function onResetProgress() {
+  /** The Frame the Reset progress question waiting is about. */
+  let resetting: FrameRef | undefined
+
+  /** Asks whether to reset a Frame's progress; nothing to ask about until a row is done. */
+  function onResetProgress(given?: FrameRef) {
     const project = deps.currentProject()
-    if (project && rowProgressStarted(project, firstFrameId(project))) resetProgressConfirmOpen.value = true
+    const frame = named(given)
+    if (!project || !rowProgressStarted(project, frame)) return
+    resetting = frame
+    resetProgressConfirmOpen.value = true
   }
 
   /** The Reset progress question answered No: nothing changes. */
@@ -128,7 +141,9 @@ export function useRowOps(deps: RowOpsDeps) {
     resetProgressConfirmOpen.value = false
     const project = deps.currentProject()
     stopRowMotion()
-    if (project) deps.replaceProject(resetRowProgress(project, firstFrameId(project)))
+    const frame = resetting ?? named(undefined)
+    resetting = undefined
+    if (project) deps.replaceProject(resetRowProgress(project, frame))
   }
 
   /** Says why a drawing did not land: rows marked done took it back (ticket 0848). One toast, replaced, not stacked. */

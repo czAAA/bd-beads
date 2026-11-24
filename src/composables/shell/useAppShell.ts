@@ -45,6 +45,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { canvasOf, frameOf, lettersOn, projectNameOf, withStartBackground, firstFrameId, frameIdOf } from '../../domain/layerRecord'
 import { frameShapeOf } from '../../domain/frameShape'
 import { withFrameTurnedTo } from '../../domain/framePlacement'
+import { twistStop } from '../../domain/frameSpacing'
 import { canvasWeave } from '../../domain/layerWeave'
 import { useExportFlow } from '../export/useExportFlow'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
@@ -1364,10 +1365,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
       framePanelOpen: frameFlow.barOpen,
       // What the canvas shows in place of the open Project: a Piece held by its move grip where the release will leave
       // it (ticket 1013), else the Frame's draft.
-      // A Frame under a two-finger twist is shown at the twist's angle until the Project keeps it (ticket 1190).
+      // A Frame under a two-finger twist is shown at the twist's angle, short of another's margin (tickets 1190, 1218).
       frameDraftProject: computed(() => {
         const shown = carriedProject.value ?? frameFlow.draftProject.value
-        return shown && frameTwist.value !== undefined ? withFrameTurnedTo(shown, frameTwist.value, firstFrameId(shown)) : shown
+        const frame = shown && firstFrameId(shown)
+        return shown && frame && frameTwist.value !== undefined ? withFrameTurnedTo(shown, twistStop(shown, frameTwist.value, frame), frame) : shown
       }),
       // The Piece held by its move grip, moved as a bitmap over that Project with it lifted out (ticket 1151).
       carriedPiece,

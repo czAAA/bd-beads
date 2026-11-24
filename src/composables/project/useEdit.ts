@@ -150,7 +150,7 @@ export function useEdit(deps: EditDeps) {
     const was = held
     held = undefined
     const project = deps.currentProject()
-    if (was && project?.id === was.id && !sameLayers(project, was.baseline, firstFrameId(project))) {
+    if (was && project?.id === was.id && !sameLayers(project, was.baseline)) {
       step(was.baseline, project)
     }
   }

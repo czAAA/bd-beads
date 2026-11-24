@@ -1,4 +1,6 @@
 import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
+import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
+import { frameById } from '../../domain/layerRecord'
 import { describe, expect, it, vi } from 'vitest'
 import { withColors, type Rect } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
@@ -959,5 +961,36 @@ describe('useFrameFlow opening on its settings (ticket 0935)', () => {
     toggleBar()
     expect(barOpen.value).toBe(true)
     expect(opensOnSettings.value).toBe(false)
+  })
+})
+
+describe('every Frame change names its Frame (ticket 1218)', () => {
+  /** That `change` left the first Frame as it was, changed the second, and that one Undo puts the second back. */
+  function changesOnlySecond(project: Project, change: (flow: ReturnType<typeof setup>) => void) {
+    const flow = setup(project)
+    change(flow)
+    const { harness } = flow.deps
+    expect(frameById(harness.project, firstOf(project))).toEqual(frameById(project, firstOf(project)))
+    expect(frameById(harness.project, SECOND)).not.toEqual(frameById(project, SECOND))
+    harness.history.onUndo()
+    expect(frameById(harness.project, SECOND)).toEqual(frameById(project, SECOND))
+    expect(harness.history.canUndo.value).toBe(false)
+  }
+
+  it('steps an edge, sizes, renames and reweaves only the Frame named', () => {
+    const project = twoFrames()
+    changesOnlySecond(project, (flow) => flow.stepEdge('right', 1, SECOND))
+    changesOnlySecond(project, (flow) => flow.resizeTo(6, 8, SECOND))
+    changesOnlySecond(project, (flow) => flow.rename('Earring', SECOND))
+    changesOnlySecond(project, (flow) => flow.setTechnique('peyote', SECOND))
+  })
+
+  it('sets a Custom frame\'s shape settings on the Frame named', () => {
+    const made = changeFrame(twoFrames(), { custom: { shape: 'triangle', size: 9, centre: { row: 40, column: 40 } } }, SECOND)
+    if (made.kind !== 'changed') throw new Error(made.kind)
+    changesOnlySecond(made.project, (flow) => {
+      flow.setSettings({ rounds: 8 }, SECOND)
+      flow.deps.harness.editing.settle()
+    })
   })
 })

@@ -37,9 +37,10 @@ export const MAX_GRID_FOLD = 4
  * smaller part of it (ADR 0082), named by its id (ticket 1216): none names the first Frame, as every file saved it. */
 export type MirrorPlace = { layer: 'canvas'; area: Rect } | { layer: 'frame'; frame?: FrameId }
 
-/** The Frame a whole-Frame Mirror place is on (ticket 1216). */
-function placeFrame(project: Layered, place: { frame?: FrameId }): FrameRef {
-  return place.frame ?? firstFrameId(project)
+/** The Frame a whole-Frame Mirror place is on (tickets 1216, 1218): the one it names while the Project has it, else the
+ * first, as a file saved before Frames had ids named none. */
+export function placeFrame(project: Layered, place: { frame?: FrameId }): FrameRef {
+  return place.frame && frameById(project, place.frame) ? place.frame : firstFrameId(project)
 }
 
 /** The Mirror, one per Project (ADR 0082): the Mode, the Axes, Radial's Fold, the Axis counts (N axes cut the Area into
@@ -129,7 +130,7 @@ export function withMirrorPlace(project: Project, place: MirrorPlace | undefined
   if (!place) return touch(project, { mirror: { ...before, place: null } })
   const shape = place.layer === 'frame' ? shapeAxesOf(project, placeFrame(project, place)) : undefined
   // Leaving a Custom frame, straight off it or after Close mirror there, its fixed Axes stay behind (Left–right).
-  const left = !shape ? shapeAxesOf(project, firstFrameId(project)) : undefined
+  const left = !shape ? shapeAxesOf(project, before.place?.layer === 'frame' ? placeFrame(project, before.place) : firstFrameId(project)) : undefined
   const offShape = !!left && (before.place?.layer === 'frame' || (!before.place && MIRROR_AXES.every((axis) => before.axes[axis] === left.axes[axis]) && before.fold === (left.sides ?? before.fold)))
   const anyAxis = MIRROR_AXES.some((axis) => before.axes[axis])
   const { beforeRadial, ...rest } = before
@@ -167,10 +168,11 @@ export function readMirrorSetting(stored: unknown, firstForm: { canvasArea?: Rec
   }
 }
 
-/** A stored place read back: the whole Frame, or a Canvas Area of whole beads; anything else is closed. */
+/** A stored place read back: a whole Frame, by its id where the file names one (ticket 1218), or a Canvas Area of
+ * whole beads; anything else is closed. */
 function readMirrorPlace(stored: unknown): MirrorPlace | null {
-  const value = stored as { layer?: unknown; area?: unknown } | null
-  if (value?.layer === 'frame') return { layer: 'frame' }
+  const value = stored as { layer?: unknown; area?: unknown; frame?: unknown } | null
+  if (value?.layer === 'frame') return typeof value.frame === 'string' && value.frame ? { layer: 'frame', frame: value.frame as FrameId } : { layer: 'frame' }
   const area = value?.layer === 'canvas' ? readMirrorArea(value.area) : undefined
   return area ? { layer: 'canvas', area } : null
 }

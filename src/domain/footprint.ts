@@ -2,7 +2,7 @@ import type { FrameSheet, Rect } from './canvas'
 import { laidRect } from './frameOrientation'
 import { canvasWeave, placedFrame, sameWeave } from './layerWeave'
 import { describeWeave, positionStep, type Weave } from './weave'
-import { type Layered } from './layerRecord'
+import { frameIdOf, framesOf, type Layered } from './layerRecord'
 import type { FrameRef } from './grid'
 import { liesOnGrid } from './table'
 
@@ -33,4 +33,10 @@ export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick
 export function footprintOf(project: Layered, ref: FrameRef): Rect | undefined {
   const frame = placedFrame(project, ref)
   return frame && liesOnGrid(project, ref) ? frameFootprint(canvasWeave(project), frame) : undefined
+}
+
+/** The Canvas positions every Frame of the Project hides (ADR 0066, ticket 1218), in the Project's order: each Frame's
+ * footprint, none for one off the Canvas's grid. What the keep-out margins and the Canvas beads that show are read from. */
+export function footprintsOf(project: Layered): Rect[] {
+  return framesOf(project).flatMap((frame) => footprintOf(project, frameIdOf(frame)) ?? [])
 }

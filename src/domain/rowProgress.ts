@@ -257,7 +257,8 @@ export function isInFinishedRow(project: Layered, position: GridPosition, ref: F
 }
 
 /** `isInFinishedRow` for many positions at once (ticket 0675): the Frame's Row order worked out once, not for each, for
- * a paste preview that asks of every bead it shows. */
+ * a paste preview that asks of every bead it shows.
+ * @internal Tests check one Frame's on its own; the app asks `finishedRowsOfFrames`. */
 export function finishedRowsOf(project: Layered, ref: FrameRef): (position: GridPosition) => boolean {
   const current = currentPass(rowProgressOf(project, ref))
   if (!frameById(project, ref) || current === 0) return () => false
@@ -266,6 +267,13 @@ export function finishedRowsOf(project: Layered, ref: FrameRef): (position: Grid
     const pass = framePassAt(project, position, () => (order ??= frameRowOrder(project, ref)), ref)
     return pass !== undefined && pass < current
   }
+}
+
+/** `finishedRowsOf` for every Frame at once (ticket 1218): whether a position sits in a row the weaver has finished on
+ * whichever Frame holds it, for what a press or a preview asks of a position before it knows the Frame. */
+export function finishedRowsOfFrames(project: Layered): (position: GridPosition) => boolean {
+  const each = framesOf(project).map((frame) => finishedRowsOf(project, frameIdOf(frame)))
+  return (position) => each.some((finished) => finished(position))
 }
 
 /** Whether each Frame bead of a draw, at its Canvas row and column, sits in a finished pass or the current one (ticket
