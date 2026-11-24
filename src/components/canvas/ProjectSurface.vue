@@ -310,7 +310,7 @@ const frameLeaning = computed(() => frameDrawn.value.leaning)
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
  * until it ends (ticket 0674). */
 const pieces = computed<RuledPieces>((previous) =>
-  ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false, idleWalk: (beads, weave, anchors) => piecesWhenIdle('rulers', beads, weave, anchors) }, firstFrameId(props.project)),
+  ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false, idleWalk: (beads, weave, anchors) => piecesWhenIdle('rulers', beads, weave, anchors) }),
 )
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */

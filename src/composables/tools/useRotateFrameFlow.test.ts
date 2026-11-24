@@ -1,4 +1,7 @@
 import { frameIdIn } from '../../testUtils/frameId'
+import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
+import { frameById } from '../../domain/layerRecord'
+import { frameAngleOf } from '../../domain/table'
 import { describe, expect, it, vi } from 'vitest'
 import { colorAt, withColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
@@ -199,5 +202,29 @@ describe('a two-finger twist of the Frame (ticket 1190)', () => {
     const { harness, onTwistFrame } = twistSetup(woven)
     expect(onTwistFrame(20)).toBe('kept')
     expect(rowProgressOf(harness.project, frameIdIn(harness.project))).toEqual(rowProgressOf(woven, frameIdIn(woven)))
+  })
+})
+
+describe('Rotate Frame and the twist name their Frame (ticket 1218)', () => {
+  it('turn only the Frame named, and Undo puts back only that turn', () => {
+    const project = twoFrames()
+    const { harness, onRotateFrame, onTwistFrame } = setup(project)
+    onRotateFrame(SECOND)
+    expect(frameById(harness.project, SECOND)!.quarterTurns).toBe(1)
+    expect(frameById(harness.project, firstOf(project))).toEqual(frameById(project, firstOf(project)))
+    onTwistFrame(30, SECOND)
+    expect(frameAngleOf(harness.project!, SECOND)).toBe(30)
+    harness.history.onUndo()
+    harness.history.onUndo()
+    expect(frameById(harness.project, SECOND)).toEqual(frameById(project, SECOND))
+    expect(harness.history.canUndo.value).toBe(false)
+  })
+
+  it('leaves a Frame unturned, and says nothing, where the turn would meet the other Frame', () => {
+    const { deps, harness, onRotateFrame, frameTurns } = setup(twoFrames({ row: 0, column: 14 }, { rows: 20, columns: 2 }))
+    onRotateFrame(SECOND)
+    expect(harness.history.canUndo.value).toBe(false)
+    expect(frameTurns.value).toBe(0)
+    expect(deps.announce).not.toHaveBeenCalled()
   })
 })

@@ -1,4 +1,5 @@
 import { firstFrameId } from '../../domain/layerRecord'
+import { isFrameLayer, type FrameRef } from '../../domain/grid'
 import { computed } from 'vue'
 import type { Project } from '../../domain/project'
 import { removeLineQuestion, removeLineRefusal, removeSelectedLine, type RemoveLineQuestion } from '../../domain/removeLine'
@@ -33,13 +34,19 @@ function promptFor(asked: RemoveLineQuestion, t: Translations, locale: Locale): 
   return { title: rows ? words.rowTitle : words.columnTitle, message: asked.shifts ? `${finished} ${shift}` : finished }
 }
 
-// "Remove line" (tickets 123, 199, 0647; ADRs 0020, 0026, 0055): takes the selected row or column out of the Frame as
-// one Edit, resetting Selection. Where it touches finished rows the domain has a question, asked first. Deps are lazy.
+/** The Frame a Remove line acts on (ticket 1218): the one the Selection is on, else the first. */
+function lineFrame(project: Project | undefined, selection: Selection | undefined): FrameRef {
+  return selection && isFrameLayer(selection.layer) ? selection.layer : firstFrameId(project)
+}
+
+// "Remove line" (tickets 123, 199, 0647; ADRs 0020, 0026, 0055): takes the selected row or column out of the Frame the
+// Selection is on as one Edit, resetting Selection. Where it touches finished rows the domain has a question, asked
+// first. Deps are lazy.
 export function useRemoveLineFlow(deps: RemoveLineFlowDeps) {
   /** Whether Remove line applies right now: the Tools group's own enabled state. */
   const canRemoveSelectedLine = computed(() => {
     const project = deps.currentProject()
-    return !!project && !removeLineRefusal(project, deps.selection(), firstFrameId(project))
+    return !!project && !removeLineRefusal(project, deps.selection(), lineFrame(project, deps.selection()))
   })
 
   /** The question the Remove line dialog shows; the line it asks about waits in `pending`. */
@@ -47,14 +54,14 @@ export function useRemoveLineFlow(deps: RemoveLineFlowDeps) {
   let pending: Selection | undefined
 
   function remove(selection: Selection | undefined) {
-    deps.edit('frame', (project) => removeSelectedLine(project, selection, firstFrameId(project)))
+    deps.edit('frame', (project) => removeSelectedLine(project, selection, lineFrame(project, selection)))
   }
 
   /** Remove line: at once, or after the question where the line touches finished rows (ticket 0647). */
   function onRemoveSelectedLine() {
     const selection = deps.selection()
     const project = deps.currentProject()
-    const asked = project && removeLineQuestion(project, selection, firstFrameId(project))
+    const asked = project && removeLineQuestion(project, selection, lineFrame(project, selection))
     if (asked) {
       pending = selection
       question.value = asked

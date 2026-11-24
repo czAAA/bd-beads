@@ -1,6 +1,7 @@
 import { firstFrameId } from '../domain/layerRecord'
 import { fillBlanks } from '../domain/fillBlanks'
 import type { Layered } from '../domain/layerRecord'
+import type { FrameRef } from '../domain/grid'
 import { columnsAsSeen, frameRowOrder, passLine, rowProgressPosition, type SeenWay } from '../domain/rowProgress'
 import { orderStepLabel } from './orderStep'
 import type { Translations } from './translations'
@@ -19,9 +20,9 @@ export function seenWayWords(words: Translations['rowProgress'], way: SeenWay): 
 
 /** A Custom frame's pass in words in place of "Row 3 of 20" (ticket 0594): "Round 3" and "of 9", or where its passes
  * are of several sorts, parts, joins or a Fringe earring's strands, "Part 2, round 3" and "· 8 of 20". `shown` is the
- * pass from 1. None for a Frame without a Frame shape. */
-export function customPassWords(words: Translations['rowProgress'], project: Layered, shown: number): { label: string; of: string } | undefined {
-  const order = frameRowOrder(project, firstFrameId(project))
+ * pass from 1, on the Frame given (ticket 1218), else the first. None for a Frame without a Frame shape. */
+export function customPassWords(words: Translations['rowProgress'], project: Layered, shown: number, frame: FrameRef = firstFrameId(project)): { label: string; of: string } | undefined {
+  const order = frameRowOrder(project, frame)
   const step = order.stepOf?.(shown - 1)
   if (!step) return undefined
   // The last pass is a join or a strand wherever the passes are not all rounds or rows of one part.
@@ -43,19 +44,19 @@ export interface RowProgressCount {
 }
 
 /** The one place the counter's words are put together, for the bar's counter and for every move the announcer says
- * (tickets 0934, 0972; ScreenReaders card). */
-export function rowProgressCount(words: Translations['rowProgress'], project: Layered): RowProgressCount {
-  const { current, total } = rowProgressPosition(project, firstFrameId(project))
+ * (tickets 0934, 0972; ScreenReaders card): of the Frame given (ticket 1218), else the first. */
+export function rowProgressCount(words: Translations['rowProgress'], project: Layered, frame: FrameRef = firstFrameId(project)): RowProgressCount {
+  const { current, total } = rowProgressPosition(project, frame)
   if (current >= total) return { step: words.patternDone, short: words.patternDone, spoken: words.patternDone }
   const shown = current + 1
   const short = `${shown}/${total}`
-  const custom = customPassWords(words, project, shown)
+  const custom = customPassWords(words, project, shown, frame)
   if (custom) {
     const step = `${custom.label} ${custom.of}`
     return { step, short, spoken: step }
   }
-  const columns = columnsAsSeen(project, firstFrameId(project))
-  const line = passLine(project, firstFrameId(project))
+  const columns = columnsAsSeen(project, frame)
+  const line = passLine(project, frame)
   const unit = line ? words.passLabel : columns ? words.columnLabel : words.positionLabel
   const step = fillBlanks(words.announcePosition, { unit, current: shown, total })
   if (!line) return { step, short, spoken: step }
@@ -67,7 +68,8 @@ export function rowProgressCount(words: Translations['rowProgress'], project: La
   }
 }
 
-/** What the announcer says after a move of the row pointer (ticket 0934; ScreenReaders card): the counter's words. */
-export function rowProgressAnnouncement(words: Translations['rowProgress'], project: Layered): string {
-  return rowProgressCount(words, project).spoken
+/** What the announcer says after a move of the row pointer (ticket 0934; ScreenReaders card): the counter's words, of
+ * the Frame given, else the first. */
+export function rowProgressAnnouncement(words: Translations['rowProgress'], project: Layered, frame: FrameRef = firstFrameId(project)): string {
+  return rowProgressCount(words, project, frame).spoken
 }

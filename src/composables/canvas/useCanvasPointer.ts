@@ -3,7 +3,7 @@ import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Layer } from '../../domain/layers'
 import { beadColorAt } from '../../domain/layerBeads'
-import { finishedRowsOf } from '../../domain/rowProgress'
+import { finishedRowsOfFrames } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { pasteAimAtBead, type PasteStamp } from '../../domain/selection'
 import { mirroredOnCanvas, type MirrorSetting } from '../../domain/mirror'
@@ -88,7 +88,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (deps.activeTool() === 'fill' && color) {
       return deps.fillPreviewCells(project, hoveredCell.value, color)
     }
-    const finished = finishedRowsOf(project, firstFrameId(project))
+    const finished = finishedRowsOfFrames(project)
     return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !finished(cell))
   })
 
@@ -103,7 +103,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (!stamp) {
       return undefined
     }
-    const finished = finishedRowsOf(project, firstFrameId(project))
+    const finished = finishedRowsOfFrames(project)
     return { ...stamp, lands: (row, column) => stamp.lands(row, column) && !finished({ row, column }) }
   })
 

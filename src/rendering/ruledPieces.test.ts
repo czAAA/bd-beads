@@ -1,4 +1,3 @@
-import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
@@ -26,7 +25,7 @@ describe('the Pieces the rulers hang from', () => {
 
   it('are counted from the beads while no stroke is going on', () => {
     const { project } = start()
-    const edited = ruledPieces(ruledPieces(undefined, project, { numbers: true, stroking: false }, frameIdIn(project)), paint(project, [{ row: 0, column: 5, color: R }]), { numbers: true, stroking: false }, frameIdIn(project))
+    const edited = ruledPieces(ruledPieces(undefined, project, { numbers: true, stroking: false }), paint(project, [{ row: 0, column: 5, color: R }]), { numbers: true, stroking: false })
 
     expect(edited.areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 6 }, { row: 0, column: 20, rows: 5, columns: 5 }])
     expect(edited.named).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 0, rows: 5, columns: 6, beads: 26 })])
@@ -35,33 +34,33 @@ describe('the Pieces the rulers hang from', () => {
   it('are not recounted between a stroke\'s start and its end: the box each step touches grows, and the end counts again', () => {
     const counting = start()
     let project = counting.project
-    let pieces = ruledPieces(undefined, project, { numbers: true, stroking: false }, frameIdIn(project))
+    let pieces = ruledPieces(undefined, project, { numbers: true, stroking: false })
     counting.reset()
 
     for (const column of [5, 6, 7]) {
       project = paint(project, [{ row: 2, column, color: R }])
-      pieces = ruledPieces(pieces, project, { numbers: true, stroking: true }, frameIdIn(project))
+      pieces = ruledPieces(pieces, project, { numbers: true, stroking: true })
     }
     // A bead far from every Piece starts a box of its own.
     project = paint(project, [{ row: 40, column: 40, color: R }])
-    pieces = ruledPieces(pieces, project, { numbers: true, stroking: true }, frameIdIn(project))
+    pieces = ruledPieces(pieces, project, { numbers: true, stroking: true })
 
     expect([...counting.reads.rows]).toEqual([2])
     expect(pieces.areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 8 }, { row: 0, column: 20, rows: 5, columns: 5 }, { row: 40, column: 40, rows: 1, columns: 1 }])
     expect(pieces.named).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 0, rows: 5, columns: 8, beads: 25 })])
 
-    const ended = ruledPieces(pieces, project, { numbers: true, stroking: false }, frameIdIn(project))
+    const ended = ruledPieces(pieces, project, { numbers: true, stroking: false })
     expect(counting.reads.rows.size).toBe(5)
     expect(ended.areas).toEqual(pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas')))
   })
 
   it('are not counted at all while the rulers are hidden; the names still are', () => {
     const { project, reads } = start()
-    const hidden = ruledPieces(undefined, withLayers(project, { pieceNames: undefined }), { numbers: false, stroking: false }, frameIdIn(project))
+    const hidden = ruledPieces(undefined, withLayers(project, { pieceNames: undefined }), { numbers: false, stroking: false })
 
     expect(reads.beads).toBe(0)
     expect(hidden.areas).toBeUndefined()
-    expect(ruledPieces(undefined, project, { numbers: false, stroking: false }, frameIdIn(project)).named).toHaveLength(1)
+    expect(ruledPieces(undefined, project, { numbers: false, stroking: false }).named).toHaveLength(1)
   })
 })
 
@@ -73,8 +72,8 @@ describe('the Pieces the rulers hang from with a Frame set', () => {
   it('are the Canvas\'s Piece areas, counted as with no Frame', () => {
     const project = around(...square(0, 0, 5), ...square(0, 30, 5))
 
-    expect(ruledPieces(undefined, project, { numbers: true, stroking: false }, frameIdIn(project)).areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 5 }, { row: 0, column: 30, rows: 5, columns: 5 }])
-    expect(ruledPieces(undefined, project, { numbers: false, stroking: false }, frameIdIn(project)).areas).toBeUndefined()
+    expect(ruledPieces(undefined, project, { numbers: true, stroking: false }).areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 5 }, { row: 0, column: 30, rows: 5, columns: 5 }])
+    expect(ruledPieces(undefined, project, { numbers: false, stroking: false }).areas).toBeUndefined()
   })
 
   it('leave out the beads the Frame and its margin cover, which join no area and grow none', () => {
@@ -82,14 +81,14 @@ describe('the Pieces the rulers hang from with a Frame set', () => {
     const project = around(...square(16, 6, 3), ...square(0, 6, 5), { row: 15, column: 6, color: R })
 
     // The bead on row 15 stands alone: the covered square below it neither joins it nor makes an area of its own.
-    expect(ruledPieces(undefined, project, { numbers: true, stroking: false }, frameIdIn(project)).areas).toEqual([{ row: 0, column: 6, rows: 5, columns: 5 }, { row: 15, column: 6, rows: 1, columns: 1 }])
+    expect(ruledPieces(undefined, project, { numbers: true, stroking: false }).areas).toEqual([{ row: 0, column: 6, rows: 5, columns: 5 }, { row: 15, column: 6, rows: 1, columns: 1 }])
   })
 
   it('grow with a stroke beside the Frame and ignore a bead the margin covers', () => {
     const project = around(...square(0, 0, 5))
-    const before = ruledPieces(undefined, project, { numbers: true, stroking: false }, frameIdIn(project))
+    const before = ruledPieces(undefined, project, { numbers: true, stroking: false })
 
-    const step = ruledPieces(before, paint(project, [{ row: 2, column: 5, color: R }, { row: 18, column: 8, color: R }]), { numbers: true, stroking: true }, frameIdIn(project))
+    const step = ruledPieces(before, paint(project, [{ row: 2, column: 5, color: R }, { row: 18, column: 8, color: R }]), { numbers: true, stroking: true })
 
     expect(step.areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 6 }])
   })
@@ -98,7 +97,7 @@ describe('the Pieces the rulers hang from with a Frame set', () => {
     const huge = Array.from({ length: 260_000 }, (_, i) => ({ row: Math.floor(i / 1000), column: 100 + (i % 1000), color: R }))
     const project = withLayers(open, { frame: { ...frame, row: 0, column: 0 }, beads: withColors({}, [...huge, { row: 1, column: 1, color: R }]) })
 
-    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false }, frameIdIn(project))
+    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false })
 
     expect(pieces).toMatchObject({ areas: [{ row: 0, column: 100, rows: 260, columns: 1000 }], uncounted: true })
   })
@@ -118,7 +117,7 @@ describe('the Pieces the rulers hang from on a layer too big to walk', () => {
     const { project, reads } = huge()
     const asked: unknown[] = []
 
-    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false, idleWalk: (beads) => void asked.push(beads) }, frameIdIn(project))
+    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false, idleWalk: (beads) => void asked.push(beads) })
 
     expect(pieces).toMatchObject({ areas: [{ row: 0, column: 0, rows: 260, columns: 1000 }], named: [], uncounted: true })
     expect(asked).toEqual([beadsOfLayer(project, 'canvas')])
@@ -129,9 +128,9 @@ describe('the Pieces the rulers hang from on a layer too big to walk', () => {
 
   it('stay uncounted through a stroke, the box growing with what it paints', () => {
     const { project } = huge()
-    const before = ruledPieces(undefined, project, { numbers: true, stroking: false }, frameIdIn(project))
+    const before = ruledPieces(undefined, project, { numbers: true, stroking: false })
 
-    const step = ruledPieces(before, paint(project, [{ row: 261, column: 0, color: R }]), { numbers: true, stroking: true }, frameIdIn(project))
+    const step = ruledPieces(before, paint(project, [{ row: 261, column: 0, color: R }]), { numbers: true, stroking: true })
 
     expect(step).toMatchObject({ areas: [{ row: 0, column: 0, rows: 262, columns: 1000 }], uncounted: true })
   })
@@ -143,7 +142,7 @@ describe('the Pieces the rulers hang from on a layer too big to walk', () => {
     const piece = { row: 0, column: 0, rows: 260, columns: 1000, beads: SIZE }
     pieceAreasOf(beads, weave)
 
-    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false, idleWalk: () => ({ pieces: [piece], anchored: new Map([[numericKey({ row: 3, column: 3 }), piece]]) }) }, frameIdIn(project))
+    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false, idleWalk: () => ({ pieces: [piece], anchored: new Map([[numericKey({ row: 3, column: 3 }), piece]]) }) })
 
     expect(pieces.uncounted).toBeUndefined()
     expect(pieces.areas).toEqual([{ row: 0, column: 0, rows: 260, columns: 1000 }])

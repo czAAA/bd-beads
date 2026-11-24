@@ -14,6 +14,7 @@ import { rowProgressStarted } from './rowProgress'
 import { turnedWithFrame } from './rowWays'
 import type { WovenChoice } from './wovenLines'
 import { withCanvasTurned, withFrameTurnedTo } from './framePlacement'
+import { frameMet, twistStop } from './frameSpacing'
 import { frameQuarterTurnOf, type TablePoint } from './table'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
@@ -180,11 +181,11 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
 }
 
 /** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame a quarter clockwise about its centre, its beads in
- * their own rows and columns, the Canvas untouched, its Row direction as seen (spec 1182). With a pass done `woven`
- * answers rotateFrameQuestion (ticket 1184): keep the rows, or start over. No Frame: undefined. */
+ * their own rows, the Canvas untouched, its Row direction as seen (spec 1182). With a pass done `woven` answers
+ * rotateFrameQuestion (1184). No Frame, or a turn into another Frame's margin (ticket 1218): undefined. */
 export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: FrameRef): Project | undefined {
   const custom = turnedCustomFrame(project, ref)
-  if (custom) return custom
+  if (custom) return metOnTurn(project, custom, ref) ? undefined : custom
   const frame = frameById(project, ref)
   if (!frame) {
     return undefined
@@ -203,7 +204,14 @@ export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: 
   // Upright again it starts where a Frame may (ticket 1016): a resize while turned can leave it between.
   const canvas = canvasWeave(project)
   const at = turns ? { row, column } : { row: snapRow(canvas, row), column: snapColumn(canvas, column) }
-  return touchFrameSheet(project, { ...turned, ...at, rowProgress: turnedRowProgress(project, 1, woven, ref) }, { frame: ref })
+  const made = touchFrameSheet(project, { ...turned, ...at, rowProgress: turnedRowProgress(project, 1, woven, ref) }, { frame: ref })
+  return metOnTurn(project, made, ref) ? undefined : made
+}
+
+/** Whether a turn brought the Frame into another Frame's margin (spec 1214, ticket 1218): Rotate Frame then does not
+ * turn it. Frames that met already are let be. */
+function metOnTurn(before: Project, after: Project, ref: FrameRef): boolean {
+  return !!frameMet(after, ref) && !frameMet(before, ref)
 }
 
 /** The Frame's Row progress once it has turned `turns` quarters clockwise as seen (spec 1182): with no pass done left as
@@ -215,11 +223,13 @@ function turnedRowProgress(project: Project, turns: number, woven: WovenChoice, 
   return woven === 'keep' ? turnedWithFrame(rowProgress, turns) : { way: rowProgress.way }
 }
 
-/** A two-finger twist of the Frame come to rest at `angle` (ticket 1190, spec 1182): the Frame turned about its own
- * centre (`withFrameTurnedTo`), one Undo step. Settled on another quarter turn with a pass done, `woven` answers
+/** A two-finger twist of the Frame come to rest at `asked` (ticket 1190, spec 1182): the Frame turned about its own
+ * centre (`withFrameTurnedTo`), one Undo step, stopped short of another Frame's margin (ticket 1218). Settled on another quarter turn with a pass done, `woven` answers
  * `twistFrameQuestion` as it answers Rotate Frame's. No Frame: undefined. */
-export function twistFrameTo(project: Project, angle: number, woven: WovenChoice = 'keep', ref: FrameRef): Project | undefined {
+export function twistFrameTo(project: Project, asked: number, woven: WovenChoice = 'keep', ref: FrameRef): Project | undefined {
   if (!frameById(project, ref)) return undefined
+  // It stops short of another Frame's margin (spec 1214).
+  const angle = twistStop(project, asked, ref)
   const turns = ((nearestQuarterTurn(angle) - frameQuarterTurnOf(project, ref) + 360) / 90) % 4
   return touch(withFrameFields(withFrameTurnedTo(project, angle, ref), { rowProgress: turnedRowProgress(project, turns, woven, ref) }, ref), {})
 }

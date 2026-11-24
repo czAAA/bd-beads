@@ -122,6 +122,16 @@ export function wovenLayerOf(project: Layered): Layer {
   return first ? frameIdOf(first) : 'canvas'
 }
 
+/** A view of the Project with the Canvas and the one Frame named (ticket 1218, spec 1214): what Export, Beads needed and
+ * the thumbnail are given, so each works on one Frame as it always has. The Project itself where that is all it holds;
+ * the Canvas alone for a Frame it lacks. */
+export function soloFrame<T extends Layered>(project: T, frame: Layer): T {
+  const frames = framesOf(project)
+  if (frames.length === 0 || (frames.length === 1 && frameIdOf(frames[0]!) === frame)) return project
+  const kept = frames.filter((each) => frameIdOf(each) === frame)
+  return { ...project, layers: [canvasOf(project), ...kept] }
+}
+
 /** A Frame's reference (ticket 1216): its id. */
 export function frameIdOf(frame: Pick<FrameLayer, 'id'>): FrameId {
   return frame.id as FrameId

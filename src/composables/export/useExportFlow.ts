@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { withMakerName } from '../../domain/makerName'
 import type { Layer } from '../../domain/grid'
-import { lettersOn, withLetters, firstFrameId } from '../../domain/layerRecord'
+import { lettersOn, withLetters, firstFrameId, soloFrame } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf } from '../../domain/projectFile'
 import type { SealedProject } from '../../domain/sealedProject'
@@ -117,11 +117,13 @@ export function useExportFlow(deps: ExportFlowDeps) {
   }
 
   async function runExport(nameOf: (project: Project) => string | Promise<string>, make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, part?: Project) {
-    const project = part ?? deps.currentProject()
+    const given = part ?? deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
-    if (!project || !frameOf(project) || exporting.value) {
+    if (!given || !frameOf(given) || exporting.value) {
       return
     }
+    // Always of one Frame (spec 1214): the first until Export picks one (ticket 1222).
+    const project = soloFrame(given, firstFrameId(given))
     exporting.value = extension
     try {
       await makeAndHandOver(await nameOf(project), () => make(project), type)

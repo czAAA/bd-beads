@@ -2,8 +2,8 @@ import { firstFrameId } from '../../domain/layerRecord'
 import { computed, ref } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
-import type { GridPosition } from '../../domain/grid'
-import { fittedCanvasArea, isMirrorOn, MIRROR_OFF, mirrorFitOf, mirrorGrowthOf, mirrorSettingOf, placeRect, shapeAxesOf, withMirror, withMirrorPlace, type FitAnchor, type MirrorPlace, type MirrorSetting } from '../../domain/mirror'
+import type { FrameId, GridPosition } from '../../domain/grid'
+import { fittedCanvasArea, isMirrorOn, MIRROR_OFF, mirrorFitOf, mirrorGrowthOf, mirrorSettingOf, placeFrame, placeRect, shapeAxesOf, withMirror, withMirrorPlace, type FitAnchor, type MirrorPlace, type MirrorSetting } from '../../domain/mirror'
 import type { Project } from '../../domain/project'
 import type { Locale, Translations } from '../../i18n/translations'
 import { movedSelection, selectionFrame, selectionWithEdges, type Selection } from '../../domain/selection'
@@ -62,7 +62,8 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
   /** A Custom frame's own Axes while the whole Frame is the Mirror (ADR 0082): fixed, the bar notes them. */
   const shape = computed(() => {
     const project = deps.currentProject()
-    return project && onFrame.value ? shapeAxesOf(project, firstFrameId(project)) : undefined
+    const place = setting.value.place
+    return project && place?.layer === 'frame' ? shapeAxesOf(project, placeFrame(project, place)) : undefined
   })
   /** The Canvas Area as a Selection, for the Select tool's handles in Mirror mode; none for the whole Frame. */
   const areaSelection = computed<Selection | undefined>(() => {
@@ -101,9 +102,12 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     if (outcome.kind === 'applied' && Object.keys(growth.grewFor).length > 0) deps.showToast('mirror-grown', mirrorGrownMessage(deps.messages(), deps.locale(), saved.value, growth), 'info')
   }
 
-  /** Mirror the whole Frame (MarginSheet card). */
-  function placeWholeFrame() {
-    place({ layer: 'frame' })
+  /** Mirror the whole Frame (MarginSheet card): the one whose sheet holds the button (ticket 1218), the first until each
+   * Frame has its own sheet (ticket 1220). */
+  function placeWholeFrame(frame?: FrameId) {
+    const project = deps.currentProject()
+    if (!project) return
+    place({ layer: 'frame', frame: frame ?? firstFrameId(project) })
   }
 
   /** Close mirror: the Mirror off and its Area dropped, its Mode, Axes and counts kept for the next one; one Undo step. */

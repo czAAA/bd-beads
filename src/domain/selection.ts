@@ -4,9 +4,9 @@ import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadMap
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
 import { layerAt, layerSheet, onLayer, shownBeads, positionInLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
-import { footprintOf } from './footprint'
-import { beadsOfLayer, firstFrameId, frameIdOf, framesOf, heldWeave, type Layered } from './layerRecord'
-import { inMargin, trimToAllowed, withMargin } from './margin'
+import { footprintsOf } from './footprint'
+import { beadsOfLayer, framesOf, heldWeave, type Layered } from './layerRecord'
+import { footprintList, inMargin, trimToAllowed, withMargin, type Footprints } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells } from './drawing'
 import type { Project } from './project'
@@ -103,22 +103,23 @@ function selectionOfBox(box: Rect): Selection {
 }
 
 /** The Selection a Piece tool tap makes (ticket 414): the tapped bead's Piece, its rectangle carrying its exact cells
- * (ticket 547), or none. With a Frame (ticket 433), only its part on the bead's side, trimmed; nothing in the margin.
+ * (ticket 547), or none. With Frames (433, 1218), only its part on the bead's side of each, trimmed; none in a margin.
  * @internal Tests check the Piece tool's Selection on its own. */
-export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Rect): Selection | undefined {
+export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frames?: Footprints): Selection | undefined {
+  const list = footprintList(frames)
+  const inside = list.find((frame) => frameContains(frame, at))
   const members = pieceBeadsAt(beads, weave, at).filter((member) => {
-    if (!frame) return true
-    if (frameContains(frame, at)) return frameContains(frame, member)
-    return !frameContains(withMargin(frame), member)
+    if (inside) return frameContains(inside, member)
+    return !list.some((frame) => frameContains(withMargin(frame), member))
   })
-  if (members.length === 0 || inMargin(frame, at)) {
+  if (members.length === 0 || inMargin(list, at)) {
     return undefined
   }
   const rows = members.map((member) => member.row)
   const columns = members.map((member) => member.column)
   const top = Math.min(...rows)
   const left = Math.min(...columns)
-  const box = trimToAllowed(frame, { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }, at)
+  const box = trimToAllowed(list, { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }, at)
   const cells = box && members.filter((member) => frameContains(selectionFrame(box), member))
   return box && cells && { ...box, cells }
 }
@@ -172,7 +173,7 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
 export function selectableOn(project: Layered, sheet: LayerSheet): (row: number, column: number) => boolean {
   const { edge } = sheet
   if (edge) return (row, column) => frameContains(edge, { row, column })
-  const covered = framesOf(project).flatMap((frame) => footprintOf(project, frameIdOf(frame)) ?? []).map((footprint) => withMargin(footprint))
+  const covered = footprintsOf(project).map((footprint) => withMargin(footprint))
   return covered.length > 0 ? (row, column) => !covered.some((footprint) => frameContains(footprint, { row, column })) : () => true
 }
 
@@ -358,7 +359,7 @@ export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosit
 export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selection | undefined {
   const layer = layerAt(project, at)
   if (layer === 'canvas') {
-    const picked = pieceSelectionAt(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'), at, footprintOf(project, firstFrameId(project)))
+    const picked = pieceSelectionAt(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'), at, footprintsOf(project))
     return picked && { ...picked, layer }
   }
   const sheet = layerSheet(project, layer)
