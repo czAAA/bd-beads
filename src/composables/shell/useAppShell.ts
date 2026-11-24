@@ -34,6 +34,7 @@ import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
 import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
+import { useFitFlow } from '../canvas/useFitFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
 import { scopeRoom, useShellScope } from '../ui/shellScope'
 import { useDocumentTitle } from './useDocumentTitle'
@@ -882,6 +883,15 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0052). */
   const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages, turnView: (to) => turnCanvas(to) })
 
+  /** Fit: the Canvas back to 0°, leaning Frames onto a quarter turn, then the zoom to fit (ticket 1227). */
+  const fitFlow = useFitFlow({
+    currentProject,
+    turnCanvasBack: () => rotateCanvasFlow.onTwistCanvas(0, turnCanvas(0)),
+    settleFrame: (angle) => rotateFrameFlow.onTwistFrame(angle),
+    fitView: resetZoom,
+    frameExpanded: () => frameExpanded.value,
+  })
+
   /** Remove line: the selected whole row or column of the Frame, as one undo step, asking first where it touches
    * finished rows (tickets 123, 199, 233, 0647). */
   const removeLine = useRemoveLineFlow({
@@ -1133,7 +1143,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onResetProgress: rowOps.onResetProgress,
     onZoomIn: () => zoomIn(),
     onZoomOut: () => zoomOut(),
-    onFit: resetZoom,
+    onFit: fitFlow.onFit,
     shortcutsHelpOpen,
     toggleShortcutsHelp: overlays.toggleMenuOnShortcuts,
     onSaveProjectFile: exportFlow.onSave,
@@ -1262,7 +1272,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       setZoom,
       zoomIn,
       zoomOut,
-      resetZoom,
+      resetZoom: fitFlow.onFit,
       stripZoomPercent,
       spaceHeld,
       spacePanning,
