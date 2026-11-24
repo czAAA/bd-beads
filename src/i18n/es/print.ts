@@ -46,7 +46,6 @@ export const print: PrintTranslations = {
     byMaker: 'por {maker}',
     madeWith: 'Hecho con',
     coverTag: 'Creador gratuito de patrones de cuentas. Sin cuenta.',
-    scanToOpen: 'escanea para abrir',
     partArea: 'Parte {part} · columnas {columns} · filas {rows}',
     continuesBoth: 'Continúa a la derecha en la página {right}, abajo en la página {below} →',
     continuesRight: 'Continúa a la derecha en la página {right} →',

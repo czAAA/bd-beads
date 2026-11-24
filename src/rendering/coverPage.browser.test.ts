@@ -125,11 +125,11 @@ describe("the Cover page's footer (ticket 1233; PrintCover card, The address)", 
   beforeAll(loadPrintFonts)
   const project = fixtureProject({ technique: 'loom', columns: 20, rows: 10 })
 
-  it('says where it was made, with the tag, the date, "scan to open" and the page number', async () => {
+  it('says where it was made, with the tag, the date and the page number', async () => {
     const words = wordsOf(project)
     const values = await written(() => drawCoverPage(project, words, A4_PORTRAIT, 1, 2))
 
-    expect(values).toEqual(expect.arrayContaining(['Made with ', 'openbeads.com', words.labels.coverTag, words.exportedAt, 'scan to open', '1 / 2']))
+    expect(values).toEqual(expect.arrayContaining(['Made with ', 'openbeads.com', words.labels.coverTag, words.exportedAt, '1 / 2']))
   })
 
   it('has a QR code that reads https://openbeads.com, in the picture, also in Black and white', () => {
@@ -144,11 +144,11 @@ describe("the Cover page's footer (ticket 1233; PrintCover card, The address)", 
     const page = drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2, 1, true)
 
     expect(page.links.map((link) => link.uri)).toEqual([COVER_URL, COVER_URL])
-    expect(page.drawing).toContain(' re f')
+    expect(page.drawing).toContain(' c h f')
     expect(drawCoverPage(project, wordsOf(project), A4_PORTRAIT, 1, 2).drawing).toBeUndefined()
   })
 
-  it('puts "12 / 12" at the right margin and the long date drawn, and closes inside its margins at its worst', () => {
+  it('puts "12 / 12" beside the code and the long date drawn, and closes inside its margins at its worst', () => {
     const words = { ...wordsOf(project), exportedAt: '24 Nov 2026, 14:35', name: 'A very long name for a cuff that a maker typed to say every last thing about it' }
     const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
     drawCoverPage(project, words, A4_PORTRAIT, 12, 12)
@@ -156,14 +156,15 @@ describe("the Cover page's footer (ticket 1233; PrintCover card, The address)", 
     fillText.mockRestore()
     const box = coverFooterBox(A4_PORTRAIT)
 
-    expect(calls.find(([value]) => value === '12 / 12')?.[1]).toBe(A4_PORTRAIT.width - mm(10))
-    // The date's line ends before the "scan to open" label starts.
+    // The code's top is level with the "Made with" row, and the number sits left of it.
+    expect(box.qr.y).toBe(box.markTop)
+    // The date's line ends before the page number starts.
     const date = calls.find(([value]) => value === words.exportedAt)!
-    const label = calls.find(([value]) => value === 'scan to open')!
     const probe = document.createElement('canvas').getContext('2d')!
     probe.font = '7px "DM Mono", monospace'
-    expect((date[1] as number) + probe.measureText(words.exportedAt).width * (150 / 72)).toBeLessThan((label[1] as number) - mm(20))
-    // The technique word's baseline plus its descent stays above the footer's highest point, the code's quiet zone.
+    expect((date[1] as number) + probe.measureText(words.exportedAt).width * (150 / 72)).toBeLessThan((calls.find(([value]) => value === '12 / 12')![1] as number) - mm(20))
+    expect(calls.find(([value]) => value === '12 / 12')?.[1]).toBeLessThan(box.qr.x)
+    // The technique word's baseline plus its descent stays above the footer's highest point.
     expect((calls.find(([value]) => value === words.techniqueWord)?.[2] as number) + mm(1.5)).toBeLessThan(box.top)
   })
 
@@ -173,7 +174,6 @@ describe("the Cover page's footer (ticket 1233; PrintCover card, The address)", 
     const values = await written(async () => (pdf = await (await exportProjectPdf(project, words, 150)).text()))
 
     expect(values.filter((value) => value === 'openbeads.com')).toHaveLength(1)
-    expect(values.filter((value) => value === 'scan to open')).toHaveLength(1)
     expect(pdf.match(/\/URI \(https:\/\/openbeads\.com\)/g)).toHaveLength(2)
     expect((await written(() => exportProjectPdf(project, wordsOf(project, false), 150))).filter((value) => value === 'openbeads.com')).toHaveLength(0)
   }, 60_000)
@@ -181,7 +181,7 @@ describe("the Cover page's footer (ticket 1233; PrintCover card, The address)", 
   it("is on Picture's file, which has no links", async () => {
     const values = await written(() => exportProjectPng(project, wordsOf(project), 150))
 
-    expect(values).toEqual(expect.arrayContaining(['openbeads.com', 'scan to open', '1 / 1']))
+    expect(values).toEqual(expect.arrayContaining(['openbeads.com', '1 / 1']))
   })
 })
 

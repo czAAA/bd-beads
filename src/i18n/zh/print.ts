@@ -46,7 +46,6 @@ export const print: PrintTranslations = {
     byMaker: '作者：{maker}',
     madeWith: '制作于',
     coverTag: '免费串珠图案制作工具。无需账号。',
-    scanToOpen: '扫码打开',
     partArea: '第 {part} 部分 · 第 {columns} 列 · 第 {rows} 行',
     continuesBoth: '向右接第 {right} 页，向下接第 {below} 页 →',
     continuesRight: '向右接第 {right} 页 →',

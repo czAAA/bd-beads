@@ -40,19 +40,19 @@ Signed off by the owner on 2026-11-24 (ticket 1232, canvas "PDF cover page: wher
   1. the X1 mark (5 mm) and "Made with **openbeads.com**": "Made with" Inter 400 9 pt `muted`, the address Inter 600 9 pt `ink`, 2.5 mm after the mark;
   2. the tag: "Free bead pattern maker. No account." (Inter 400 7.5 pt `muted`);
   3. the date and time, as before (DM Mono 7 pt `muted`).
-- **Right, a column** aligned to the page's right margin: the QR code with "scan to open" to its left (DM Mono 6.5 pt `muted`, right-aligned, 2 mm from the code), the page number under it (DM Mono 7 pt `muted`, as before), 1 mm apart.
-- **The QR code** is 13 mm square, `ink` modules on the paper, with a quiet zone of four modules (the board's pale ground is not used). It encodes exactly `https://openbeads.com`: no path, no language, no tracking parameter. Drawn as vector squares in the PDF, as a picture in the PNG; always black on white, in Black and white too.
+- **Right**, at the page's right margin: the QR code, its top level with the top of the mark (so it lines up with "Made with"), drawn in the app's own shapes (data modules as small rounded beads in `ink`, the three corner squares as rounded frames around a bead in `accent-strong`, no "scan to open"); the page number (DM Mono 7 pt `muted`, as before) on the date's line, 4 mm left of the code. The board grows to fill the room the footer leaves, 6 mm clear of the footer, never under `print-cover-board`.
+- **The QR code** is 13 mm square, modules on the paper (small rounded beads in `ink`; the three corner squares rounded frames around a bead in `accent-strong`), with a quiet zone of four modules (the board's pale ground is not used). It encodes exactly `https://openbeads.com`: no path, no language, no tracking parameter. Drawn as vector shapes in the PDF, as a picture in the PNG; on white; the Cover page is in color in Black and white too.
 - **The address is a link in the PDF**: a link annotation over "openbeads.com" and over the QR code, both to `https://openbeads.com`. The PNG has no links.
-- **Strings** (copy/print.md): "Made with" / "Сделано в"; the tag / "Бесплатный редактор схем для бисера. Без аккаунта."; "scan to open" / "наведите камеру". The address is never translated. The language is the app's, as the date's is.
+- **Strings** (copy/print.md): "Made with" / "Сделано в"; the tag / "Бесплатный редактор схем для бисера. Без аккаунта.". The address is never translated. The language is the app's, as the date's is.
 - **Picture** (PNG) saves the same footer (PngExport card); its page number reads "1 / 1".
 - Long cases: the date and time at its longest ("24 Nov 2026, 14:35") and a page number of "12 / 12" fit on one line each; the three lines never wrap (the left block is far narrower than the page minus the QR column).
 - No watermark: the address is never on the board, the piece or the title block.
 
 ### Acceptance (address)
 
-- [ ] The Cover page's footer reads "Made with openbeads.com", the tag, the date and time, a 13 mm QR code with "scan to open" and the page number.
+- [ ] The Cover page's footer reads "Made with openbeads.com", the tag, the date and time, a 13 mm QR code in the app's own shapes, level with "Made with", and the page number beside it.
 - [ ] Scanning the QR code from a printout opens `https://openbeads.com`; in the PDF both the address and the code are links.
-- [ ] Page 1, chart pages and list pages are unchanged; the Cover page still closes inside its margins with the shorter board.
+- [ ] Page 1, chart pages and list pages are unchanged; the Cover page still closes inside its margins with the board's height as the footer leaves it.
 - [ ] Picture saves the same footer; Black and white leaves it as it is.
 
 ## Acceptance

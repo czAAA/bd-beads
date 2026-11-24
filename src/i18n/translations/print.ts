@@ -59,10 +59,9 @@ export interface PrintTranslations {
     noColors: string
     /** On the PNG: "by Maria". */
     byMaker: string
-    /** The Cover page's footer (ticket 1233): "Made with" before the untranslated address, the tag under it, and the words beside the QR code. */
+    /** The Cover page's footer (ticket 1233): "Made with" before the untranslated address and the tag under it. */
     madeWith: string
     coverTag: string
-    scanToOpen: string
     /** A part's label above its board (ticket 578): "Part B · columns 101–130 · rows 1–100". */
     partArea: string
     continuesBoth: string

@@ -2,7 +2,7 @@ import type { FrameRef } from '../domain/grid'
 import { forEachBead, type BeadMap, type Rect } from '../domain/canvas'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX } from './cellSize'
-import { coverPageLayout } from './coverPageLayout'
+import { COVER_BOARD, coverPageLayout } from './coverPageLayout'
 import { pageOneLayout, underLargeBeads } from './pageOneLayout'
 import { chartOnPageOne, mm, PRINT_DPI, wholeArea, type TrimmedArea } from './printPlan'
 import type { PrintedWordRow, PrintText } from './printText'
@@ -102,7 +102,7 @@ export function exportFacts(shown: Project, words: PrintText, ref: FrameRef): Ex
     pageOneColors: pageOne.needed.count,
     ...(pageOne.overview ? { overviewZoom: pageOne.overview.zoom } : {}),
     lists: pageOne.lists.map((list) => list.count),
-    coverZoom: coverPageLayout(project, ref).zoom,
+    coverZoom: coverPageLayout(project, ref, undefined, undefined, COVER_BOARD + COVER_BOARD_GROWTH).zoom,
     pdfCover: !!words.cover,
     sheets: chartOnPageOne(plan) ? 0 : new Set(plan.parts.map((part) => part.page)).size,
     partArea: plan.parts.reduce((sum, part) => sum + (part.lastAcross - part.firstAcross + 1) * (part.lastDown - part.firstDown + 1), 0),
@@ -121,6 +121,9 @@ function atDpi(figures: Readonly<Record<150 | 300 | 450, readonly number[]>>, dp
   return figures[low].map((value, index) => value + (figures[high][index]! - value) * t)
 }
 
+/** How much taller the Cover's board usually is than `print-cover-board`: it takes the room a short title block leaves (ticket 1233 follow-up). */
+const COVER_BOARD_GROWTH = mm(10)
+
 /** The overview's bytes at a dpi (page 1 of a piece cut into parts; measured on the Cover page it began as, 2026-10-30): a
  * constant, the colors it lists, the board's cells, the beads and their edges, and the crosses on empty positions (ticket
  * 0719), the last four each by the bead's size on the page. */
@@ -130,13 +133,13 @@ const OVERVIEW_BYTES = {
   450: [155_841, 23_447, 45.09, 140.36, 143.94, 540],
 } as const
 
-/** The Cover page's bytes, PDF and picture (tickets 1096, 1141; constants raised in 1233 for the footer's QR code and text; 15 pieces measured 2026-11-20 at each dpi, 5 × 5 to 250 × 250,
+/** The Cover page's bytes, PDF and picture (tickets 1096, 1141; constants raised in 1233 for the footer's QR code and text, and again for its rounded QR and the taller board; 15 pieces measured 2026-11-20 at each dpi, 5 × 5 to 250 × 250,
  * 1 to 90 colors): a constant, then by the bead's size in device px: the beads, their area, the color edges, the edges again
  * by the bead's size up to `COVER_SHORT_EDGE_MM`, and the area by the colors (up to 100). */
 const COVER_PAGE_BYTES = {
-  150: [124_000, 0, 0.0794, 0, 0.292, 2.02],
-  300: [284_000, 0.63, 0, 0.898, 0.225, 0.462],
-  450: [535_000, 0.146, 0, 1.36, 0.129, 0.373],
+  150: [155_000, 0, 0.0794, 0, 0.292, 2.02],
+  300: [350_000, 0.63, 0, 0.898, 0.225, 0.462],
+  450: [620_000, 0.146, 0, 1.36, 0.129, 0.373],
 } as const
 const COVER_COLORS = 100
 const COVER_SHORT_EDGE_MM = 2.5
