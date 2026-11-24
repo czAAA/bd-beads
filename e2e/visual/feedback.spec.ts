@@ -23,7 +23,7 @@ const KINDS: readonly { kind: string; open: (page: Page) => Promise<void> }[] = 
     kind: 'bead-color',
     open: async (page) => {
       await openColorPopover(page)
-      await page.getByTestId('bead-colors-toggle').click()
+      await page.getByTestId('add-color-button').click()
       await page.getByTestId('bead-colors-report').click()
     },
   },

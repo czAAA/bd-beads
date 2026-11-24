@@ -154,9 +154,17 @@ export function codesOfColors(colors: readonly PaletteColor[]): PaletteCodes {
   return Object.fromEntries(colors.flatMap((color) => (color.code && color.catalog ? [[color.hex, { catalog: color.catalog, code: color.code }]] : [])))
 }
 
-/** The section a Custom color is in (ADR 0103): every swatch without a catalog code.
- * @internal Tests name the section by it; the Palette's look shows it from ticket 1226. */
+/** The section a Custom color is in (ADR 0103): every swatch without a catalog code. */
 export const CUSTOM_COLORS = 'custom'
+
+/** The names of the Color catalogs, which are the makers' own and so the same in every language (copy/colors.md). */
+const CATALOG_NAMES: Readonly<Record<string, string>> = { toho: 'TOHO', 'miyuki-delica': 'Miyuki Delica', 'miyuki-round': 'Miyuki Round' }
+
+/** A Color catalog's name as a section's label and a code's words show it ("TOHO code 341", ticket 1226); a catalog this
+ * build has no name for shows its id. */
+export function catalogName(catalog: string): string {
+  return CATALOG_NAMES[catalog] ?? catalog
+}
 
 /** The section a swatch is in (ADR 0103): its code's Color catalog, or Custom colors. */
 function sectionOf(color: Pick<PaletteColor, 'catalog'>): string {
@@ -289,25 +297,26 @@ export type AddUsedColorOutcome = 'added' | 'known'
 
 /** A color chosen or painted, or a code from any Bead's catalog (ADR 0103): the Palette with it last in its section, and
  * the code it joins with; 'known', `ids` unchanged, when the Palette holds the hex (for a code, that code) or it's no
- * color. A code whose hex another swatch holds is nudged one step, as a hex names one swatch. There is no cap. */
-export function addUsedColor(ids: PaletteIds, hex: string, codes: PaletteCodes = {}, code?: PaletteCode): { ids: PaletteIds; outcome: AddUsedColorOutcome; colorId?: string; codes: PaletteCodes } {
+ * color. A code whose hex another swatch holds is nudged one step and `nudgedFrom` names that swatch (ticket 1226). */
+export function addUsedColor(ids: PaletteIds, hex: string, codes: PaletteCodes = {}, code?: PaletteCode): { ids: PaletteIds; outcome: AddUsedColorOutcome; colorId?: string; codes: PaletteCodes; nudgedFrom?: PaletteColor } {
   const normalized = normalizeHex(hex)
   if (!normalized) return { ids, outcome: 'known', codes: {} }
   const colors = paletteColors(ids, codes)
   const known = colors.find((color) => (code ? color.code === code.code && color.catalog === code.catalog : color.hex === normalized))
   if (known) return { ids, outcome: 'known', colorId: known.id, codes: {} }
   const held = new Set(colors.map((color) => color.hex))
-  const swatchHex = held.has(normalized) ? nudgedHex(normalized, held) : normalized
+  const nudgedFrom = colors.find((color) => color.hex === normalized)
+  const swatchHex = nudgedFrom ? nudgedHex(normalized, held) : normalized
   const colorId = addedColorId(swatchHex)
   const joined = code ? { [swatchHex]: code } : {}
-  return { ids: paletteColors([...colors.map((color) => color.id), colorId], { ...codes, ...joined }).map((color) => color.id), outcome: 'added', colorId, codes: joined }
+  return { ids: paletteColors([...colors.map((color) => color.id), colorId], { ...codes, ...joined }).map((color) => color.id), outcome: 'added', colorId, codes: joined, ...(nudgedFrom ? { nudgedFrom } : {}) }
 }
 
-/** An added color taken out of the Palette (ticket 228): the ids without it, and the slot it stood in, so Undo can put
- * it back. Undefined for a built-in color or one that isn't there. */
-export function removeAddedColor(ids: PaletteIds, colorId: string): { ids: PaletteIds; slot: number } | undefined {
+/** A color taken out of the Palette (ticket 228), a default one too (ticket 1226): the ids without it, and the slot it
+ * stood in, so Undo can put it back. Undefined for one that isn't there. */
+export function removeColor(ids: PaletteIds, colorId: string): { ids: PaletteIds; slot: number } | undefined {
   const slot = ids.indexOf(colorId)
-  return slot < 0 || !isAddedColorId(colorId) ? undefined : { ids: ids.filter((id) => id !== colorId), slot }
+  return slot < 0 ? undefined : { ids: ids.filter((id) => id !== colorId), slot }
 }
 
 /** The colors `leaves` picks taken out of the Palette at once: the ids left, and each removed color with the slot it
@@ -317,16 +326,24 @@ function removeColorsWhere(ids: PaletteIds, leaves: (colorId: string) => boolean
   return { ids: ids.filter((id) => !leaves(id)), removed }
 }
 
-/** Every added color taken out of the Palette at once (ticket 0532). No removals when none is added. */
-export function removeAllAddedColors(ids: PaletteIds): { ids: PaletteIds; removed: { colorId: string; slot: number }[] } {
-  return removeColorsWhere(ids, isAddedColorId)
-}
-
-/** A whole section taken out of the Palette (ADR 0103): its default colors and added ones alike. No removals for a
- * section the Palette doesn't show. */
+/** A whole section taken out of the Palette (ADR 0103, ticket 0532 for Custom colors): its default colors and added ones
+ * alike. No removals for a section the Palette doesn't show. */
 export function removeSection(ids: PaletteIds, codes: PaletteCodes, section: string): { ids: PaletteIds; removed: { colorId: string; slot: number }[] } {
   const leaving = new Set(paletteColors(ids, codes).filter((color) => sectionOf(color) === section).map((color) => color.id))
   return removeColorsWhere(ids, (colorId) => leaving.has(colorId))
+}
+
+/** A section moved `by` places among the Palette's sections (ticket 1226): the ids with each section's swatches together
+ * in the new order. The same ids when the section isn't shown or has nowhere to go. */
+export function moveSection(ids: PaletteIds, codes: PaletteCodes, section: string, by: number): PaletteIds {
+  const sections = createPalette(ids, codes).sections
+  const from = sections.findIndex((held) => held.id === section)
+  const to = from + by
+  if (from < 0 || to < 0 || to >= sections.length || by === 0) return ids
+  const order = [...sections]
+  const [moved] = order.splice(from, 1)
+  order.splice(to, 0, moved!)
+  return order.flatMap((held) => held.colors.map((color) => color.id))
 }
 
 /** Undo of a removal: the color back in the slot it stood in (or last, when the Palette has since got shorter). */

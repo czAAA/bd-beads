@@ -90,7 +90,7 @@ describe('PalettePicker', () => {
     expect(tooltip.get('.app-tooltip__body').text()).toBe(BUILT_IN_COLORS[0]!.hex)
   })
 
-  it('names a swatch picked from the Color catalog by its code and name, the hex in its Tooltip (ticket 0760)', async () => {
+  it('names a swatch picked from the Color catalog by its code and name, its Tooltip by its family and code with its catalog, the hex as body (tickets 0760, 1226)', async () => {
     const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
     const beadColors = { catalog: ref(catalog), swatches: ref([]), load: vi.fn() } as unknown as BeadColors
     const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { codes: { '#123456': '49' }, beadColors })
@@ -101,13 +101,13 @@ describe('PalettePicker', () => {
     expect(beadColors.load).toHaveBeenCalled()
     const tooltip = wrapper.findAll('.app-tooltip')[defaultPaletteIds().length]!
     await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
-    expect(tooltip.get('.app-tooltip__name').text()).toBe(name)
+    expect(tooltip.get('.app-tooltip__name').text()).toBe(`${ru.colorNames.black} · TOHO, код 49`)
     expect(tooltip.get('.app-tooltip__body').text()).toBe('#123456')
   })
 
   it('marks a catalog swatch made from its family and Finish, and names it so; a plain color has no mark (ticket 0905)', () => {
     const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
-    const swatches = ref([{ code: '49', family: 'Black', finish: 'opaque', hex: '#123456', approximate: true, discontinued: false, taken: false }])
+    const swatches = ref([{ code: '49', family: 'Black', finish: 'opaque', hex: '#123456', approximate: true, discontinued: false }])
     const beadColors = { catalog: ref(catalog), swatches, load: vi.fn() } as unknown as BeadColors
     const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { codes: { '#123456': '49' }, beadColors })
     expect(wrapper.get(`[data-color-id="${added}"]`).classes()).toContain('swatch__chip--approximate')
@@ -115,55 +115,41 @@ describe('PalettePicker', () => {
     expect(wrapper.findAll('.swatch__chip--approximate')).toHaveLength(1)
   })
 
-  describe('Edit palette (ticket 531)', () => {
-    it('locks every built-in swatch: faded, aria-disabled, no select, still focusable', async () => {
-      const wrapper = mount(PalettePicker, { props: { editing: true }, attachTo: document.body })
+  describe('Edit palette (tickets 531, 1226)', () => {
+    it('lets every swatch be removed, the default ones too: a × on each, a press asks, nothing is picked', async () => {
+      const { wrapper, requestRemove } = mountWithPalette(PalettePicker, defaultPaletteIds(), { editing: true })
       const first = wrapper.get('[data-testid="palette-swatch"]')
 
-      expect(first.attributes('aria-disabled')).toBe('true')
-      expect(first.attributes('tabindex')).toBeDefined()
+      expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(BUILT_IN_COLORS.length)
+      expect(first.attributes('aria-disabled')).toBeUndefined()
       await first.trigger('click')
-      expect(wrapper.emitted('select')).toBeUndefined()
-      expect(wrapper.findAll('.swatch--locked')).toHaveLength(BUILT_IN_COLORS.length)
-      expect(wrapper.find('[data-testid="palette-swatch-remove"]').exists()).toBe(false)
-      wrapper.unmount()
+      expect(requestRemove).toHaveBeenCalledWith(BUILT_IN_COLORS[0]!.id)
+      expect(wrapper.findComponent(PalettePicker).emitted('select')).toBeUndefined()
     })
 
-    it('says why a built-in swatch is locked, as its description', async () => {
-      const wrapper = mount(PalettePicker, { props: { editing: true } })
-      await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
-
-      expect(wrapper.get('.app-tooltip__body').text()).toBe(ru.palette.defaultColorLocked)
-    })
-
-    it('leaves the swatches alone outside the mode', () => {
+    it('leaves the swatches without a × outside the mode', () => {
       const wrapper = mount(PalettePicker)
 
-      expect(wrapper.find('[aria-disabled="true"]').exists()).toBe(false)
-      expect(wrapper.find('.swatch--locked').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="palette-swatch-remove"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="palette-section-handle"]').exists()).toBe(false)
     })
 
-    it('shows a × on an added swatch only in the mode, named for its hex, and a press asks to remove it (tickets 228, 304)', async () => {
-      const outside = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added])
-      expect(outside.wrapper.find('[data-testid="palette-swatch-remove"]').exists()).toBe(false)
-
+    it('names a swatch for the removal a press would ask, by its hex (tickets 228, 304)', async () => {
       const { wrapper, requestRemove } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], { editing: true })
-      expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1)
       const swatch = wrapper.get(`[data-color-id="${added}"]`)
       expect(swatch.attributes('aria-label')).toBe(fillBlanks(ru.palette.removeSwatch, { hex: '#123456' }))
       await swatch.trigger('click')
       expect(requestRemove).toHaveBeenCalledWith(added)
-      expect(wrapper.findComponent(PalettePicker).emitted('select')).toBeUndefined()
     })
   })
 
-  it('asks to remove a focused added swatch on Delete or Backspace, and not a built-in one (ticket 228)', async () => {
+  it('asks to remove a focused swatch on Delete or Backspace (ticket 228)', async () => {
     const { wrapper, requestRemove } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added])
 
     await wrapper.get(`[data-color-id="${BUILT_IN_COLORS[0]!.id}"]`).trigger('keydown', { key: 'Delete' })
-    expect(requestRemove).not.toHaveBeenCalled()
+    expect(requestRemove).toHaveBeenLastCalledWith(BUILT_IN_COLORS[0]!.id)
     await wrapper.get(`[data-color-id="${added}"]`).trigger('keydown', { key: 'Backspace' })
-    expect(requestRemove).toHaveBeenCalledWith(added)
+    expect(requestRemove).toHaveBeenLastCalledWith(added)
   })
 
   it('moves a swatch one slot with Alt+Right (ticket 398)', async () => {
@@ -172,6 +158,48 @@ describe('PalettePicker', () => {
 
     await wrapper.get(`[data-color-id="${first}"]`).trigger('keydown', { key: 'ArrowRight', altKey: true })
     expect(harness.project.palette).toEqual([second, first, ...rest])
+    wrapper.unmount()
+  })
+})
+
+describe('PalettePicker, sections (ticket 1226)', () => {
+  // A code of the Bead's own catalog, TOHO's, puts a swatch in that section (ADR 0103).
+  const coded = addedColorId('#111111')
+  const ids = [...defaultPaletteIds(), coded]
+  const names = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('[data-testid="palette-section"]').map((section) => section.get('.palette-picker__label').text())
+
+  it('shows each section under its label, in order: Custom colors, and a catalog by its own name', () => {
+    const { wrapper } = mountWithPalette(PalettePicker, ids, {}, { codes: { '#111111': '1' } })
+
+    expect(names(wrapper)).toEqual([ru.palette.customColors, 'TOHO'])
+  })
+
+  it('keeps a swatch in its section when it moves', async () => {
+    const { wrapper, harness } = mountWithPalette(PalettePicker, ids, {}, { codes: { '#111111': '1' }, attachTo: document.body })
+    const last = defaultPaletteIds().at(-1)!
+
+    await wrapper.get(`[data-color-id="${last}"]`).trigger('keydown', { key: 'ArrowRight', altKey: true })
+    expect(harness.project.palette).toEqual(ids)
+    wrapper.unmount()
+  })
+
+  it('in Edit palette makes a section\'s label line its handle and offers Remove section, which asks', async () => {
+    const { wrapper, requestRemoveSection } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], { editing: true })
+    const handle = wrapper.get('[data-testid="palette-section-handle"]')
+
+    expect(handle.attributes('aria-label')).toBe(fillBlanks(ru.palette.moveSection, { section: ru.palette.customColors }))
+    await wrapper.get('[data-testid="palette-section-remove"]').trigger('click')
+    expect(requestRemoveSection).toHaveBeenCalledWith('custom')
+  })
+
+  it('moves a section with Alt+Up and Alt+Down on its label line, keeping focus there', async () => {
+    const { wrapper, harness } = mountWithPalette(PalettePicker, ids, { editing: true }, { codes: { '#111111': '1' }, attachTo: document.body })
+
+    await wrapper.get('[data-testid="palette-section-handle"]').trigger('keydown', { key: 'ArrowDown', altKey: true })
+    expect(harness.project.palette).toEqual([coded, ...defaultPaletteIds()])
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('palette-section-handle')
+    await wrapper.findAll('[data-testid="palette-section-handle"]')[1]!.trigger('keydown', { key: 'ArrowDown', altKey: true })
+    expect(harness.project.palette).toEqual([coded, ...defaultPaletteIds()])
     wrapper.unmount()
   })
 })
@@ -192,11 +220,11 @@ describe('PalettePicker, Swatch letters (ticket 1092)', () => {
     expect(lettersOf(mount(PalettePicker))).toEqual([])
   })
 
-  it('in Edit palette puts a letter button under every swatch, the default ones too, and the × only on the added one', () => {
+  it('in Edit palette puts a letter button under every swatch, and a × on each', () => {
     const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], { editing: true }, { letters: ref(true) })
 
     expect(wrapper.findAll('[data-testid="swatch-letter"]')).toHaveLength(BUILT_IN_COLORS.length + 1)
-    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1)
+    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(BUILT_IN_COLORS.length + 1)
     // The letter is on its button, not on the swatch, whose × is the picture of what a press there does.
     expect(lettersOf(wrapper)).toEqual([])
     expect(wrapper.get('[data-testid="swatch-letter"]').attributes('aria-label')).toBe(fillBlanks(ru.palette.changeLetter, { letter: 'A', name: ru.colorNames.black }))

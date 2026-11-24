@@ -7,7 +7,7 @@ import { createProject } from './createProject'
 import { DEFAULT_COLOR_FILES } from './defaultColors'
 import { canvasTheme } from '../rendering/canvasBackgrounds'
 import type { ResolvedTheme } from '../theme/theme'
-import { BUILT_IN_COLORS, CUSTOM_COLORS, addUsedColor, brandColors, codesOfColors, familyOf, defaultPalette, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, paletteColors, readStoredPalette, removeAddedColor, removeAllAddedColors, removeSection, restoreColor, startColorId, storedPalette, PALETTE_SHORTCUTS } from './palette'
+import { BUILT_IN_COLORS, CUSTOM_COLORS, addUsedColor, brandColors, codesOfColors, familyOf, defaultPalette, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, paletteColors, readStoredPalette, removeColor, moveSection, catalogName, removeSection, restoreColor, startColorId, storedPalette, PALETTE_SHORTCUTS } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
@@ -51,42 +51,48 @@ describe('addUsedColor (ticket 227, 0525)', () => {
   })
 })
 
-describe('removing an added color (ticket 228)', () => {
+describe('removing a color (tickets 228, 1226)', () => {
   const three = [...defaultPaletteIds(), addedColorId('#111111'), addedColorId('#222222'), addedColorId('#333333')]
 
   it('takes it out and says which slot it stood in', () => {
-    expect(removeAddedColor(three, addedColorId('#222222'))).toEqual({ ids: [...defaultPaletteIds(), addedColorId('#111111'), addedColorId('#333333')], slot: BUILT_IN_COLORS.length + 1 })
-    expect(removeAddedColor(three, addedColorId('#999999'))).toBeUndefined()
+    expect(removeColor(three, addedColorId('#222222'))).toEqual({ ids: [...defaultPaletteIds(), addedColorId('#111111'), addedColorId('#333333')], slot: BUILT_IN_COLORS.length + 1 })
+    expect(removeColor(three, addedColorId('#999999'))).toBeUndefined()
   })
 
-  it('never removes a built-in color', () => {
-    expect(removeAddedColor(three, 'red')).toBeUndefined()
+  it('removes a default color too, as the Palette is the Project\'s own (ticket 1226)', () => {
+    expect(removeColor(three, 'black')).toEqual({ ids: three.slice(1), slot: 0 })
   })
 
   it('restores it in its slot, or not at all when it is back', () => {
-    const without = removeAddedColor(three, addedColorId('#222222'))!
+    const without = removeColor(three, addedColorId('#222222'))!
     expect(restoreColor(without.ids, addedColorId('#222222'), without.slot)).toEqual(three)
     expect(restoreColor(three, addedColorId('#222222'), 0)).toEqual(three)
   })
 })
 
-describe('removing every added color (ticket 0532)', () => {
-  const a = addedColorId('#111111')
-  const b = addedColorId('#222222')
-  const [first, second, ...rest] = defaultPaletteIds()
-  const mixed = [a, first!, second!, b, ...rest]
+describe('moving a section (ticket 1226)', () => {
+  const toho = { catalog: 'toho', code: '1' }
+  const delica = { catalog: 'miyuki-delica', code: 'DB1' }
+  const ids = [addedColorId('#111111'), addedColorId('#222222'), addedColorId('#333333'), addedColorId('#444444')]
+  const codes = { '#111111': toho, '#222222': delica, '#333333': toho }
+  const order = (held: readonly string[]) => createPalette(held, codes).sections.map((section) => section.id)
 
-  it('leaves the built-ins in order and says which slot each added color stood in', () => {
-    expect(removeAllAddedColors(mixed)).toEqual({ ids: defaultPaletteIds(), removed: [{ colorId: a, slot: 0 }, { colorId: b, slot: 3 }] })
+  it('moves it among the others with its swatches, whichever order they were held in', () => {
+    expect(order(ids)).toEqual(['toho', 'miyuki-delica', CUSTOM_COLORS])
+    expect(order(moveSection(ids, codes, 'toho', 1))).toEqual(['miyuki-delica', 'toho', CUSTOM_COLORS])
+    expect(createPalette(moveSection(ids, codes, CUSTOM_COLORS, -2), codes).colors.map((color) => color.hex)).toEqual(['#444444', '#111111', '#333333', '#222222'])
   })
 
-  it('removes nothing when no color is added', () => {
-    expect(removeAllAddedColors(defaultPaletteIds())).toEqual({ ids: defaultPaletteIds(), removed: [] })
+  it('stays where it is at either end, or when the Palette has no such section', () => {
+    expect(moveSection(ids, codes, 'toho', -1)).toBe(ids)
+    expect(moveSection(ids, codes, CUSTOM_COLORS, 1)).toBe(ids)
+    expect(moveSection(ids, codes, 'miyuki-round', 1)).toBe(ids)
   })
+})
 
-  it('restoring each in slot order brings back the exact Palette', () => {
-    const { ids, removed } = removeAllAddedColors(mixed)
-    expect(removed.reduce((acc, { colorId, slot }) => restoreColor(acc, colorId, slot), ids)).toEqual(mixed)
+describe('a catalog\'s name (ticket 1226)', () => {
+  it('is the maker\'s own, and the id for a catalog this build does not know', () => {
+    expect([catalogName('toho'), catalogName('miyuki-delica'), catalogName('miyuki-round'), catalogName('other')]).toEqual(['TOHO', 'Miyuki Delica', 'Miyuki Round', 'other'])
   })
 })
 

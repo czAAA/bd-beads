@@ -1,4 +1,4 @@
-import { defineComponent, h, onMounted, ref, type Component } from 'vue'
+import { computed, defineComponent, h, onMounted, ref, type Component } from 'vue'
 import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
 import RadialToolbox from './tools/RadialToolbox.vue'
@@ -35,7 +35,9 @@ import ConvertColorsSection from './import/ConvertColorsSection.vue'
 import ConvertFinishFilter from './import/ConvertFinishFilter.vue'
 import ConvertSizeSection from './import/ConvertSizeSection.vue'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
-import { createPalette, defaultPaletteIds } from '../domain/palette'
+import { addedColorId, createPalette, defaultPaletteIds } from '../domain/palette'
+import { provideBeadColors, type BeadColors } from '../composables/palette/useBeadColors'
+import { provideMoveSection, providePalette, provideRemoveAddedColor, provideRemoveSection } from '../composables/tools/usePalette'
 import { starterById } from '../domain/starters'
 import type { ColorCatalog } from '../domain/colorCatalog'
 import { withLayers } from '../testUtils/layerFields'
@@ -57,6 +59,22 @@ const ColorPopoverHost = defineComponent({
         h('button', { ref: tile, type: 'button' }, 'Color'),
         h(ColorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', colorHex: '#e63746', colorName: 'Red', selectedColorId: 'red' }),
       ])
+  },
+})
+
+/** The colour popover over a Palette in three sections, a long catalog's name among them, with the chooser's list of a
+ * Bead's codes behind Add another color and Remove section on each (ticket 1226). */
+const ColorPopoverSectionsHost = defineComponent({
+  setup() {
+    const swatches = ref([addedColorId('#123456'), addedColorId('#654321')])
+    const codes = { '#123456': { catalog: 'miyuki-delica', code: 'DB723' }, '#654321': { catalog: 'miyuki-round', code: '3271' } }
+    providePalette(computed(() => createPalette([...swatches.value, ...defaultPaletteIds()], codes)))
+    const chooser = beadColors('ready')
+    provideBeadColors({ ...chooser, chooser, chooseBead: () => {}, resetChooser: () => {} } as unknown as BeadColors)
+    provideRemoveAddedColor(() => {})
+    provideRemoveSection(() => {})
+    provideMoveSection(() => {})
+    return () => h(ColorPopoverHost)
   },
 })
 
@@ -161,7 +179,7 @@ const sealedProject = { id: 'sealed', name: 'Black fill', createdAt: Date.UTC(20
 /** The Bead's Color catalog as its list reads it (a stand-in for `useBeadColors`). */
 function beadColors(state: 'ready' | 'failed') {
   const finishes = ['metallic', 'matte', 'opaque'] as const
-  const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: finishes[i]!, hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
+  const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: finishes[i]!, hex: '#123456', approximate: true, discontinued: i === 1 }))
   // With `report`, so the foot row that opens a color Report (ticket 0700) is measured too.
   return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), catalog: ref(undefined), load: () => {}, add: () => 'added' as const, report: () => {} }
 }
@@ -243,6 +261,18 @@ const CASES: FitCase[] = [
   // The ring with the name of the item under a held pointer over it, its longest: Pick color from Canvas and a hex.
   ['RadialToolbox', RadialToolbox, { open: true, center: { x: 160, y: 300 }, activeTool: 'paint', canUndo: true, canRedo: false, recents: ['#1f77b4'], held: 'pick-color' }],
   ['ColorPopover', ColorPopoverHost as Component, {}],
+  ['ColorPopover (sections, Edit palette)', ColorPopoverSectionsHost as Component, {}, (root: HTMLElement) => press(root, 'color-popover-edit')],
+  ['ColorPopover (Add another color, Bead colors)', ColorPopoverSectionsHost as Component, {}, (root: HTMLElement) => press(root, 'add-color-button')],
+  [
+    'ColorPopover (Add another color, Custom color)',
+    ColorPopoverSectionsHost as Component,
+    {},
+    async (root: HTMLElement) => {
+      press(root, 'add-color-button')
+      await new Promise((done) => setTimeout(done, 20))
+      root.querySelector<HTMLElement>('[data-testid="add-color-tabs"] [data-value="custom"]')?.click()
+    },
+  ],
   ['ToastRegion', Toasts, {}],
   ['ToastRegion (Update ready list open)', Toasts, {}, (root) => root.querySelector<HTMLElement>('[data-testid="update-counts"] [data-testid="toast-second-action"]')?.click()],
   ['Save failed notice', SaveFailedNotice, {}],

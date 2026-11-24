@@ -85,17 +85,6 @@ describe('AppSwatch', () => {
     expect(light.get('.swatch__remove').classes()).toContain('swatch__mark--dark')
   })
 
-  it('fades a locked swatch, marks it aria-disabled and says why in its Tooltip, which describes it', async () => {
-    const wrapper = mount(AppSwatch, { props: { ...props, lockedBody: "Default colors can't be removed." } })
-    const chip = wrapper.get('button')
-    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
-
-    expect(wrapper.classes()).toContain('swatch--locked')
-    expect(chip.attributes('aria-disabled')).toBe('true')
-    expect(wrapper.get('.app-tooltip__body').text()).toBe("Default colors can't be removed.")
-    expect(chip.attributes('aria-describedby')).toBeTruthy()
-  })
-
   it('fades in the ×, and not under reduced motion', () => {
     const css = readFileSync(resolve(__dirname, 'AppSwatch.vue'), 'utf8')
     expect(css).toMatch(/\.swatch__remove \{[^}]*animation: swatch-remove-in var\(--duration-fast\)/)

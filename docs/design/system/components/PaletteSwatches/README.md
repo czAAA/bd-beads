@@ -38,9 +38,9 @@ Hand-written from DESIGN.md §5.5 and the v16 Palette change; static rendition. 
 
 - **Approximate Bead colors** (DS-2, ticket 0905; ConvertImage card): in the Convert image Change picker's grid, a Bead color whose swatch is approximate carries the 1px dashed `field-line` outline 1px out; a measured one is plain. The selected `ring` draws outside it.
 
-## Sections and Add another color (ticket 1224, approved 2026-11-24, not yet in the app; built by ticket 1226)
+## Sections and Add another color (ticket 1224, approved 2026-11-24, in the app since ticket 1226)
 
-ADR 0103: the Palette is the Project's own, in sections per Color catalog. Option B "Beside the Palette" of the 1224 design canvas (local, owner's Mac). Where this part and the rules above disagree, this part wins once 1226 ships.
+ADR 0103: the Palette is the Project's own, in sections per Color catalog. Option B "Beside the Palette" of the 1224 design canvas (local, owner's Mac). Where this part and the rules above disagree, this part wins: ticket 1226 built it. Built as drawn, with these readings: the Convert image picker (a row, not the pill's popover) keeps today's Custom color and Add {bead} colors entries until it is designed; the Bead colors list's rows say "In the Palette" with a check where a code is held, the old "Same color" row being gone; and the nudge Note names the clash by its section, and by its code where it has one.
 
 - **Sections, stacked.** The Palette is one section per Color catalog (TOHO, Miyuki Delica, Miyuki Round) plus **Custom colors**, each shown only once it holds a color, top to bottom in the Project's order. A section is a label line (the catalog's name in `meta-small` `muted`; "Custom colors" «Свои цвета»; catalog names stay Latin in every language) over its swatches in the grid above (8 columns, 6px; the touch rule; it wraps, never scrolls sideways). The top stays as today: the "Palette" label row with Letters, then the first section, a new Project's first layer's Bead's default colors, recents ringed in their slots. Sections stand `space-12` apart. Shift+4…0 count the slots across sections in order.
 - **The popover** is `--palette-popover-width` (23rem) wide, so the head holds a named code beside its hex (below). The ToolPill card's wide popover (`--popover-width-wide`) is retired with the Bead colors entry: the Palette popover never widens.

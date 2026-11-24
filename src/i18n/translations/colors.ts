@@ -15,6 +15,27 @@ export interface ColorsTranslations {
     customColorLabel: string
     /** A catalog color's name from its Color catalog entry (ticket 0760): `{finish}` and `{family}` in the language's order. */
     catalogColorName: string
+    /** The section of wheel and canvas colors (ticket 1226). */
+    customColors: string
+    /** The one button under the Palette, and its popover's name. */
+    addAnotherColor: string
+    /** The popover's two tabs. */
+    addTabBead: string
+    addTabCustom: string
+    /** A code with its catalog, "TOHO code 1": a list row's first line; `{section}` is the catalog's own name. */
+    codeInCatalog: string
+    /** The head and a swatch's Tooltip, "Red · TOHO code 341". */
+    codeHead: string
+    /** The note that a color already in the Palette was added a shade apart. */
+    nudgeCoded: string
+    nudgeCustom: string
+    /** A section's label line in Edit palette, and its Remove. */
+    moveSection: string
+    removeSection: string
+    /** The confirmation of Remove section; Custom colors keeps removeAllConfirmTitle. */
+    removeSectionTitle: string
+    /** The toast after a section other than Custom colors is removed. */
+    removedSection: string
     /** The picker's wheel (ticket 449): its name, and its value as heard, `{hue}` in degrees and `{saturation}` in
      * percent. */
     wheelLabel: string
@@ -35,8 +56,6 @@ export interface ColorsTranslations {
     /** The colour popover's pencil (ticket 531): enters Edit palette, and ends it (its name while on). */
     editPalette: string
     doneEditingPalette: string
-    /** The Tooltip of a built-in swatch in Edit palette. */
-    defaultColorLocked: string
     /** The Palette's Letters switch's Tooltip (ticket 1092). */
     lettersLine: string
     /** A swatch's name while it shows its letter. */
@@ -55,9 +74,8 @@ export interface ColorsTranslations {
     removeAllConfirmBeads: PluralForms
     removeConfirmButton: string
     removeCancelButton: string
-    /** Remove all custom colors (ticket 0532): the bin's name and Tooltip, the toast, and the confirmation; `{count}` in
-     * the message is how many colors leave. */
-    removeAllColors: string
+    /** Remove all custom colors (ticket 0532), now Custom colors' Remove section: the toast and the confirmation; `{count}`
+     * in the message is how many colors leave, and every section's confirmation says it (ticket 1226). */
     removedAll: string
     removeAllConfirmTitle: string
     removeAllConfirmMessage: PluralForms
@@ -91,17 +109,12 @@ export interface ColorsTranslations {
       /** The same note for TOHO's catalog (ticket 1068): its colors were read from TOHO's sample cards. */
       cardColors: string
       inPalette: string
-      takenNote: string
       discontinued: string
       /** A row's name (ticket 0940): the words it shows first, `{name}` being rowName, with rowNote's Discontinued. */
       rowName: string
       rowNote: string
       add: string
-      takenLabel: string
       /** A row the Palette holds (ticket 1092): what it says at its end, its names, and the Info note on taking it out. */
-      sameColor: string
-      defaultColor: string
-      defaultLabel: string
       remove: string
       heldLabel: string
       removeNote: string

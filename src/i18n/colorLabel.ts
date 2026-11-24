@@ -1,6 +1,6 @@
 import { catalogEntry, type ColorCatalog, type Finish } from '../domain/colorCatalog'
 import { fillBlanks } from '../domain/fillBlanks'
-import { familyColorId, isAddedColorId } from '../domain/palette'
+import { catalogName, familyColorId, familyOf, isAddedColorId, type PaletteColor } from '../domain/palette'
 import { colorName } from './colorName'
 import type { Translations } from './translations'
 
@@ -44,4 +44,22 @@ export function colorLabel(t: Translations, color: LabelledColor, catalog?: Colo
 function catalogColorName(t: Translations, family: string, finish: Finish): string {
   const familyWords = colorName(t, { id: familyColorId(family), hex: '' }) || family
   return fillBlanks(t.palette.catalogColorName, { finish: t.palette.beadColors.finishes[finish], family: familyWords })
+}
+
+/** A catalog code with its catalog, "TOHO code 341" (ticket 1226): a list row's first line, and what follows the family in
+ * the head and a swatch's Tooltip. */
+export function codeInCatalog(t: Translations, catalog: string, code: string): string {
+  return fillBlanks(t.palette.codeInCatalog, { section: catalogName(catalog), code })
+}
+
+/** A swatch's code named with its catalog (ticket 1226): "Red · TOHO code 341" in the head and the Tooltip, the color
+ * family first where it is known (a default color's own, or the loaded `catalog`'s entry); a Custom color has no code and
+ * keeps its own name. */
+export function codeName(t: Translations, color: PaletteColor | undefined, catalog?: ColorCatalog): string {
+  if (!color?.code || !color.catalog) return colorName(t, color)
+  const entry = catalog?.id === color.catalog ? catalogEntry(catalog, color.code) : undefined
+  const family = isAddedColorId(color.id) ? entry?.family[0] : undefined
+  const familyWords = isAddedColorId(color.id) ? family && (colorName(t, { id: familyColorId(family), hex: '' }) || family) : (color.literalName ?? t.colorNames[familyOf(color)])
+  const named = codeInCatalog(t, color.catalog, color.code)
+  return familyWords ? fillBlanks(t.palette.codeHead, { family: familyWords, section: catalogName(color.catalog), code: color.code }) : named
 }

@@ -44,7 +44,7 @@ async function catalogSwatch(hand: Hand, { code, family }: CatalogPick): Promise
     await hand.press(filter)
     await present(hand, row)
   }
-  if (!row()?.hasAttribute('data-taken')) await hand.press(row)
+  if (!row()?.hasAttribute('data-held')) await hand.press(row)
   return () => {
     const hex = Object.entries(hand.canvas.activeProject.value?.paletteCodes ?? {}).find(([, each]) => each.code === code)?.[0]
     return hex ? (hand.root.querySelector(`[data-testid="palette-swatch"][data-color-id="${addedColorId(hex)}"]`) ?? undefined) : undefined
@@ -292,7 +292,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   async colors(hand) {
     await hand.press('pill-tool-paint')
     await hand.press('pill-color')
-    await hand.press('bead-colors-toggle')
+    await hand.press('add-color-button')
     await hand.press(await catalogSwatch(hand, PUPIL_COLOR))
     if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
     for (let strip = DEMO_CUFF_AXES; strip >= 0; strip--) await hand.stroke(beadsOn(DEMO_CUFF, pupilMiddle(strip)))

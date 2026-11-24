@@ -17,14 +17,13 @@ describe('BeadColorsEntry (ticket 0746)', () => {
     expect(entry(false).get('[data-testid="entry"]').text()).toBe('Add Miyuki Delica 11/0 colors')
   })
 
-  it('shows the Info button only while the list is open, holding the approximate and taken notes in its Tooltip', () => {
+  it('shows the Info button only while the list is open, holding the approximate note in its Tooltip', () => {
     expect(entry(false).find('[data-testid="bead-colors-info"]').exists()).toBe(false)
 
     const open = entry(true)
     const info = open.get('[data-testid="bead-colors-info"]')
     expect(info.attributes('aria-label')).toBe(en.palette.beadColors.info)
     expect(open.text()).toContain(en.palette.beadColors.approximate)
-    expect(open.text()).toContain(en.palette.beadColors.takenNote)
   })
 
   it('says where the colors were read from instead, in the catalog\'s own words, for a catalog with measured colors (tickets 0886, 1068)', () => {

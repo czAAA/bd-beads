@@ -21,7 +21,7 @@ const familyName = (family: string) => family
 const codesFound = (catalog: typeof delica, bead: typeof delica11, typed: string) => searchBeadColors(swatchesOf(catalog, bead), typed, bead, familyName).map((entry) => entry.code)
 
 const none: BeadColorFilter = { families: [], finishes: [] }
-const entry = (over: Partial<CatalogSwatch>): CatalogSwatch => ({ code: 'DB1', family: 'Blue', finish: 'opaque', hex: '#123456', approximate: true, discontinued: false, taken: false, ...over })
+const entry = (over: Partial<CatalogSwatch>): CatalogSwatch => ({ code: 'DB1', family: 'Blue', finish: 'opaque', hex: '#123456', approximate: true, discontinued: false, ...over })
 const sample = [
   entry({ code: 'DB1', family: 'Blue', finish: 'matte' }),
   entry({ code: 'DB2', family: 'Blue', finish: 'opaque' }),

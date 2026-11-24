@@ -10,7 +10,7 @@ type DialogId =
   | 'technique-change'
   | 'replace-frame'
   | 'remove-color'
-  | 'remove-all-colors'
+  | 'remove-section'
   | 'replace-bead'
   | 'import-switch'
   | 'switch-project'
