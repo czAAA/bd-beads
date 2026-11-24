@@ -19,12 +19,12 @@ function setup(ids: string[] = [...[...base.palette], A, B], selected?: string, 
   // Every swatch has its Swatch letter, as a Palette the app made does.
   const layers: typeof base.layers = [{ ...base.layers[0], beads }]
   const harness = editHarness({ ...base, layers, palette: ids, paletteLetters: lettersOfPalette(ids, base.paletteLetters) })
-  const { palette, removeAdded, removeAllAdded, paintedBeads } = useProjectPalette({ currentProject: harness.currentProject, edit: harness.edit })
+  const { palette, removeAdded, removeSection, paintedBeads } = useProjectPalette({ currentProject: harness.currentProject, edit: harness.edit })
   const selectedColorId = ref(selected)
   const deps = {
     palette,
     removeAdded,
-    removeAllAdded,
+    removeSection,
     paintedBeads,
     selectedColorId,
     onSelectColor: vi.fn((colorId: string) => (selectedColorId.value = colorId)),
@@ -108,26 +108,32 @@ describe('removing an added swatch (tickets 228, 304)', () => {
   })
 })
 
-describe('removing every added color (ticket 0532)', () => {
+describe('removing a section (tickets 0532, 1226)', () => {
   it('asks first, naming how many leave, and Cancel removes nothing', () => {
-    const { harness, removeAllColorsConfirmOpen, removeAllColorsMessage, onRequestRemoveAllAddedColors, onCancelRemoveAllAddedColors } = setup([A, ...[...base.palette], B, addedColorId('#fedcba')])
-    onRequestRemoveAllAddedColors()
-    expect(removeAllColorsConfirmOpen.value).toBe(true)
-    expect(removeAllColorsMessage.value).toBe('3 colors will leave the Palette.')
-    onCancelRemoveAllAddedColors()
-    expect(removeAllColorsConfirmOpen.value).toBe(false)
+    const { harness, pendingSectionRemoval, removeSectionTitle, removeSectionMessage, onRequestRemoveSection, onCancelRemoveSection } = setup([A, ...[...base.palette], B, addedColorId('#fedcba')])
+    onRequestRemoveSection('custom')
+    expect(pendingSectionRemoval.value).toBe('custom')
+    expect([removeSectionTitle.value, removeSectionMessage.value]).toEqual([en.palette.removeAllConfirmTitle, '3 colors will leave the Palette.'])
+    onCancelRemoveSection()
+    expect(pendingSectionRemoval.value).toBeUndefined()
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('confirming removes them all as one Edit, steps back to the default color, and one Undo in the toast puts each back in its slot, selected', () => {
-    const ids = [A, B, ...base.palette]
-    const { harness, palette, deps, selectedColorId, undoInToast, onRequestRemoveAllAddedColors, onConfirmRemoveAllAddedColors, removeAllColorsConfirmOpen } = setup(ids, B)
-    onRequestRemoveAllAddedColors()
-    onConfirmRemoveAllAddedColors()
-    expect(removeAllColorsConfirmOpen.value).toBe(false)
+  it('names a catalog\'s section by its own name', () => {
+    const { removeSectionTitle, onRequestRemoveSection } = setup()
+    onRequestRemoveSection('toho')
+    expect(removeSectionTitle.value).toBe('Remove the TOHO colors?')
+  })
+
+  it('confirming removes it as one Edit, steps back to the default color, and one Undo in the toast puts each color back in its slot, selected', () => {
+    const ids = [...base.palette, A, B]
+    const { harness, palette, deps, selectedColorId, undoInToast, onRequestRemoveSection, onConfirmRemoveSection, pendingSectionRemoval } = setup(ids, B)
+    onRequestRemoveSection('custom')
+    onConfirmRemoveSection()
+    expect(pendingSectionRemoval.value).toBeUndefined()
     expect(harness.project.palette).toEqual([...base.palette])
     expect(selectedColorId.value).toBe(palette.value.defaultColorId)
-    expect(deps.showToast).toHaveBeenCalledWith('palette-removed-all', en.palette.removedAll, 'info', expect.objectContaining({ label: en.palette.undoButton }))
+    expect(deps.showToast).toHaveBeenCalledWith('palette-removed-custom', en.palette.removedAll, 'info', expect.objectContaining({ label: en.palette.undoButton }))
     harness.history.onUndo()
     expect(harness.project.palette).toEqual(ids)
     harness.history.onRedo()
@@ -136,23 +142,35 @@ describe('removing every added color (ticket 0532)', () => {
     expect(selectedColorId.value).toBe(B)
   })
 
+  it('removes a catalog\'s section, its default colors too, and says which one went', () => {
+    const { harness, deps, onRequestRemoveSection, onConfirmRemoveSection } = setup([...base.palette, A])
+    onRequestRemoveSection('toho')
+    onConfirmRemoveSection()
+    expect(harness.project.palette).toEqual([A])
+    expect(deps.showToast).toHaveBeenCalledWith('palette-removed-toho', 'TOHO colors removed from the Palette.', 'info', expect.anything())
+  })
+
   it('Undo does not select the color again when another was chosen since', () => {
-    const { selectedColorId, deps, undoInToast, onConfirmRemoveAllAddedColors } = setup(undefined, A)
-    onConfirmRemoveAllAddedColors()
+    const { selectedColorId, deps, undoInToast, onRequestRemoveSection, onConfirmRemoveSection } = setup(undefined, A)
+    onRequestRemoveSection('custom')
+    onConfirmRemoveSection()
     deps.onSelectColor('red')
     undoInToast()
     expect(selectedColorId.value).toBe('red')
   })
 
-  it('keeps a built-in color chosen', () => {
-    const { selectedColorId, onConfirmRemoveAllAddedColors } = setup(undefined, 'red')
-    onConfirmRemoveAllAddedColors()
+  it('keeps a color of another section chosen', () => {
+    const { selectedColorId, onRequestRemoveSection, onConfirmRemoveSection } = setup(undefined, 'red')
+    onRequestRemoveSection('custom')
+    onConfirmRemoveSection()
     expect(selectedColorId.value).toBe('red')
   })
 
-  it('is no Edit and shows no toast with no added color', () => {
-    const { harness, deps, onConfirmRemoveAllAddedColors } = setup([...base.palette])
-    onConfirmRemoveAllAddedColors()
+  it('is no Edit and shows no toast for a section the Palette does not show, or with nothing pending', () => {
+    const { harness, deps, onRequestRemoveSection, onConfirmRemoveSection } = setup([...base.palette])
+    onConfirmRemoveSection()
+    onRequestRemoveSection('custom')
+    onConfirmRemoveSection()
     expect(harness.history.canUndo.value).toBe(false)
     expect(deps.showToast).not.toHaveBeenCalled()
   })
@@ -205,10 +223,11 @@ describe('removing a color beads are painted in (ticket 1124)', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('names the beads of every added color when all of them go, and takes them all off', () => {
-    const { harness, removeAllColorsMessage, onConfirmRemoveAllAddedColors } = setup(undefined, undefined, painted)
-    expect(removeAllColorsMessage.value).toBe('2 colors will leave the Palette. The 4 beads painted in them go too.')
-    onConfirmRemoveAllAddedColors()
+  it('names the beads of every color of a section when all of them go, and takes them all off', () => {
+    const { harness, removeSectionMessage, onRequestRemoveSection, onConfirmRemoveSection } = setup(undefined, undefined, painted)
+    onRequestRemoveSection('custom')
+    expect(removeSectionMessage.value).toBe('2 colors will leave the Palette. The 4 beads painted in them go too.')
+    onConfirmRemoveSection()
     expect(harness.project.layers[0].beads).toEqual({})
   })
 })

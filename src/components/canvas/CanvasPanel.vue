@@ -27,6 +27,8 @@ import SaveReminder from './SaveReminder.vue'
 import { useCanvasContext } from '../../composables/shell/useAppShell'
 import { useColorPick, usePalette } from '../../composables/tools/usePalette'
 import { colorName } from '../../i18n/colorName'
+import { codeName } from '../../i18n/colorLabel'
+import { useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
@@ -221,9 +223,10 @@ watch(
  * for a one-off). */
 const colorHex = computed(() => selectedColorHex() ?? undefined)
 const palette = usePalette()
+const beadColors = useBeadColorsList()
 const colorLabel = computed(() => {
   const id = selectedColorId.value
-  if (id) return colorName(t.value, palette.value.byId(id))
+  if (id) return codeName(t.value, palette.value.byId(id), beadColors?.catalog.value)
   return customColor.value ? colorName(t.value, undefined) : undefined
 })
 

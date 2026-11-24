@@ -20,6 +20,9 @@ const props = defineProps<{
   swatchSelector?: string
   /** The preview is a + button that adds the color at once (ticket 0690): the Palette's picker, not a one-color one. */
   addable?: boolean
+  /** The panel of the Add another color popover (ticket 1226): no layer of its own, so a press outside and Escape take
+   * nothing, and Enter in a field adds the color as the + does. */
+  inline?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -91,7 +94,7 @@ function take() {
 }
 
 useOverlayLayer({
-  isOpen: () => true,
+  isOpen: () => !props.inline,
   root: () => rootEl.value,
   close: () => (touched ? take() : emit('cancel')),
   onOutsidePress: take,
@@ -140,7 +143,10 @@ function step(event: KeyboardEvent) {
 function takeOnEnter(event: KeyboardEvent) {
   if (event.key !== 'Enter') return false
   event.preventDefault()
-  if (!invalid.value) take()
+  if (!invalid.value) {
+    if (props.inline) add()
+    else take()
+  }
   return true
 }
 
@@ -193,7 +199,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div ref="rootEl" class="custom-color-panel" data-testid="custom-color-panel">
+  <div ref="rootEl" class="custom-color-panel" :class="{ 'custom-color-panel--inline': inline }" data-testid="custom-color-panel">
     <div
       ref="wheelEl"
       class="custom-color-panel__wheel"
@@ -349,6 +355,16 @@ onMounted(async () => {
 .custom-color-panel__add:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+/* In the Add another color popover it stands centered, with nothing above it to space from. */
+.custom-color-panel--inline {
+  align-items: center;
+  margin-top: 0;
+}
+
+.custom-color-panel--inline .custom-color-panel__row {
+  width: min(100%, var(--color-wheel-size));
 }
 
 .custom-color-panel__hex {

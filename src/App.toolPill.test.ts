@@ -218,7 +218,7 @@ describe('the Tool pill', () => {
     await pickColor(wrapper, defaultColorOf('black').id)
     await createProjectViaForm(wrapper)
     // The light theme's first Background is Studio, near white: red shows on it.
-    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe(`Color, Red · ${defaultColorOf('red').code}`)
+    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe(`Color, Red · TOHO code ${defaultColorOf('red').code}`)
     wrapper.unmount()
   })
 
@@ -238,6 +238,6 @@ describe('the Tool pill', () => {
     await wrapper.get('[data-testid="pill-color"]').trigger('click')
     await wrapper.findAll('[data-testid="pill-recent"]')[0]!.trigger('click')
 
-    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe(`Color, Blue · ${defaultColorOf('blue').code}`)
+    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe(`Color, Blue · TOHO code ${defaultColorOf('blue').code}`)
   })
 })

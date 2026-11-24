@@ -3,7 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import type { BeadColors } from '../../composables/palette/useBeadColors'
 import { SHOWN, useBeadColorFinder } from '../../composables/palette/useBeadColorFinder'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { isAddedColorId } from '../../domain/palette'
+import { colorCatalogOf } from '../../domain/beads'
+import { codeInCatalog } from '../../i18n/colorLabel'
 import { groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -38,21 +39,21 @@ function rowName(entry: (typeof shown.value)[number]): string {
 }
 
 type Row = (typeof shown.value)[number]
-/** What a row is to the Palette (ticket 1092): `free` joins it on a press; `held` is in it under this very code and a
- * press takes it out; `default` and `kept` are in it too but stay (a default color, or a host with no removal); `same`
- * is a code whose color the Palette holds under another code, which cannot join twice. */
-type RowState = 'free' | 'held' | 'default' | 'kept' | 'same'
+/** What a row is to the Palette (ticket 1092): `free` joins it on a press (one whose color the Palette holds under another
+ * code too, added a shade apart, ticket 1226); `held` is in it under this very code and a press takes it out; `kept` is in
+ * it too but stays, in a host with no removal. */
+type RowState = 'free' | 'held' | 'kept'
 
 function stateOf(entry: Row): RowState {
-  if (!entry.taken) return 'free'
-  if (!entry.heldAs) return 'same'
-  if (!props.colors.remove) return 'kept'
-  return isAddedColorId(entry.heldAs) ? 'held' : 'default'
+  if (!entry.heldAs) return 'free'
+  return props.colors.remove ? 'held' : 'kept'
 }
 
 /** A row's name by its state, and what it says of its place in the Palette at its right end. */
-const ROW_LABEL = { free: 'add', held: 'remove', default: 'defaultLabel', kept: 'heldLabel', same: 'takenLabel' } as const
-const ROW_MARK = { held: 'inPalette', default: 'defaultColor', kept: 'inPalette', same: 'sameColor' } as const
+const ROW_LABEL = { free: 'add', held: 'remove', kept: 'heldLabel' } as const
+const ROW_MARK = { held: 'inPalette', kept: 'inPalette' } as const
+/** The catalog the codes are of, which every code is read with: "TOHO code 1" (ticket 1226). */
+const catalogId = computed(() => colorCatalogOf(props.colors.bead.value?.id) ?? '')
 
 /** The rows shown, each with its state, its name and its mark worked out once. */
 const rows = computed(() =>
@@ -101,19 +102,18 @@ function press(entry: Row, state: RowState) {
             <button
               type="button"
               class="bead-color-list__row"
-              :class="{ 'bead-color-list__row--taken': state === 'same', 'bead-color-list__row--held': !!entry.heldAs, 'bead-color-list__row--stays': state === 'default' || state === 'kept' }"
+              :class="{ 'bead-color-list__row--held': !!entry.heldAs, 'bead-color-list__row--stays': state === 'kept' }"
               :aria-disabled="pressable ? undefined : 'true'"
               :aria-label="label"
               data-testid="bead-color"
               :data-code="entry.code"
-              :data-taken="entry.taken || undefined"
               :data-held="entry.heldAs ? state : undefined"
               @click="press(entry, state)"
               @focus="highlighted = { code: entry.code, hex: entry.hex }"
             >
               <BeadSwatchChip class="bead-color-list__chip" :hex="entry.hex" :approximate="entry.approximate" :tip="false" />
               <span class="bead-color-list__text">
-                <span class="bead-color-list__code">{{ entry.code }}</span>
+                <span class="bead-color-list__code">{{ codeInCatalog(t, catalogId, entry.code) }}</span>
                 {{ ' ' }}
                 <span class="bead-color-list__meta">
                   {{ entry.approximate ? `${familyName(entry.family)} · ${words.finishes[entry.finish]}` : fillBlanks(words.measuredSub, { family: familyName(entry.family), finish: words.finishes[entry.finish] }) }}
@@ -267,11 +267,6 @@ function press(entry: Row, state: RowState) {
 .bead-color-list__row:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
-}
-
-.bead-color-list__row--taken {
-  color: var(--muted);
-  cursor: default;
 }
 
 /* A code the Palette holds (ticket 1092): a filled row in `ink` with a check, found at a glance; a press takes it out. */

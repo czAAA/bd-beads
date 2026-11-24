@@ -33,8 +33,6 @@ const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
 // Edit palette (ticket 531): the popover always opens in normal mode.
 const editing = ref(false)
-/** The Bead's palette is open (ticket 0746): the popover is as wide as the panel, no wider than the screen. */
-const wide = ref(false)
 
 /** Closes; focus that was inside goes back to the tile rather than dropping to the page with the popover. */
 function close() {
@@ -68,7 +66,7 @@ if (props.focusSwatch) {
 </script>
 
 <template>
-  <div ref="rootEl" class="color-popover" :class="{ 'color-popover--wide': wide }" :style="style" role="dialog" :aria-label="t.toolPill.popover" data-testid="color-popover">
+  <div ref="rootEl" class="color-popover" :style="style" role="dialog" :aria-label="t.toolPill.popover" data-beside-anchor data-testid="color-popover">
     <ColorPopoverBody
       v-model:editing="editing"
       :color-hex="colorHex"
@@ -78,7 +76,6 @@ if (props.focusSwatch) {
       @close="close"
       @select-color="(id) => emit('select-color', id)"
       @select-custom-color="(hex) => emit('select-custom-color', hex)"
-      @wide-change="wide = $event"
     />
   </div>
 </template>
@@ -94,7 +91,7 @@ if (props.focusSwatch) {
   flex-direction: column;
   gap: var(--space-12);
   box-sizing: border-box;
-  width: var(--popover-width);
+  width: min(var(--palette-popover-width), calc(100vw - 2 * var(--float-edge)));
   /* Never taller than the screen: what opens inside it (the Custom color picker) scrolls when there is no room. */
   max-height: calc(100dvh - 2 * var(--float-edge));
   padding: var(--space-12) var(--space-14) var(--space-14);
@@ -113,15 +110,5 @@ if (props.focusSwatch) {
     opacity: 0;
     transform: scale(0.94);
   }
-}
-
-.color-popover--wide {
-  width: min(var(--popover-width-wide), calc(100vw - 2 * var(--float-edge)));
-}
-
-/* Bead colors sits in the bottom-left corner while nothing opens under it, so that corner runs parallel to the
- * popover's (ticket 1080): `radius-xl` less the 14px padding and the line. */
-.color-popover > :deep(.color-popover-body__section:last-child > .bead-colors-entry:last-child > .bead-colors-entry__button) {
-  border-bottom-left-radius: calc(var(--radius-xl) - var(--space-14) - 1px);
 }
 </style>

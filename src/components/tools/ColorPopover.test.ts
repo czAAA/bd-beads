@@ -4,6 +4,8 @@ import { defineComponent, h, ref } from 'vue'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 import { findBead } from '../../domain/beads'
 import { addedColorId, defaultPaletteIds } from '../../domain/palette'
+import { fillBlanks } from '../../domain/fillBlanks'
+import { en } from '../../i18n/en'
 import { mountWithPalette } from '../../testUtils/paletteHost'
 import ColorPopover from './ColorPopover.vue'
 
@@ -12,26 +14,25 @@ const added = addedColorId('#123456')
 function open(ids: string[] = [...defaultPaletteIds(), added]) {
   const host = mountWithPalette(ColorPopover, ids, { tile: undefined, pill: undefined, position: 'bottom' }, { attachTo: document.body })
   const pencil = () => host.wrapper.find('[data-testid="color-popover-edit"]')
-  const bin = () => host.wrapper.find('[data-testid="color-popover-remove-all"]')
   const escape = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-  return { ...host, pencil, bin, escape, popover: host.wrapper.findComponent(ColorPopover) }
+  return { ...host, pencil, escape, popover: host.wrapper.findComponent(ColorPopover) }
 }
 
-describe('ColorPopover, Edit palette (tickets 531, 0532)', () => {
-  it('offers the pencil only while the Palette has an added color', () => {
-    const { wrapper, pencil } = open(defaultPaletteIds())
+describe('ColorPopover, Edit palette (tickets 531, 0532, 1226)', () => {
+  it('offers the pencil only while the Palette has a color', () => {
+    const { wrapper, pencil } = open([])
     expect(pencil().exists()).toBe(false)
     wrapper.unmount()
   })
 
-  it('opens in normal mode; the pencil enters the mode and shows the bin, which asks to remove every added color', async () => {
-    const { wrapper, pencil, bin, requestRemoveAll } = open()
+  it('opens in normal mode; the pencil enters the mode and puts Remove section on each section', async () => {
+    const { wrapper, pencil, requestRemoveSection } = open()
     expect(pencil().attributes('aria-pressed')).toBe('false')
-    expect(bin().exists()).toBe(false)
+    expect(wrapper.find('[data-testid="palette-section-remove"]').exists()).toBe(false)
     await pencil().trigger('click')
     expect(pencil().attributes('aria-pressed')).toBe('true')
-    await bin().trigger('click')
-    expect(requestRemoveAll).toHaveBeenCalledTimes(1)
+    await wrapper.get('[data-testid="palette-section-remove"]').trigger('click')
+    expect(requestRemoveSection).toHaveBeenCalledWith('custom')
     wrapper.unmount()
   })
 
@@ -57,12 +58,15 @@ describe('ColorPopover, Edit palette (tickets 531, 0532)', () => {
     bare.wrapper.unmount()
   })
 
-  it('disables Pick color and Custom color in the mode, so the picker does not open', async () => {
+  it('disables Add another color and Pick color in the mode, and shuts the popover it opened', async () => {
     const { wrapper, pencil } = open()
+    await wrapper.get('[data-testid="add-color-button"]').trigger('click')
+    expect(wrapper.find('[data-testid="add-color-popover"]').exists()).toBe(true)
     await pencil().trigger('click')
-    for (const id of ['pick-color-button', 'custom-color-button']) expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-disabled')).toBe('true')
-    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
-    expect(wrapper.find('[data-testid="custom-color-panel"]').exists()).toBe(false)
+    for (const id of ['pick-color-button', 'add-color-button']) expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-testid="add-color-popover"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="add-color-button"]').trigger('click')
+    expect(wrapper.find('[data-testid="add-color-popover"]').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -78,8 +82,8 @@ describe('ColorPopover, Edit palette (tickets 531, 0532)', () => {
     wrapper.unmount()
   })
 
-  it('ends the mode with the last added color, and the pencil goes', async () => {
-    const { wrapper, pencil, palette } = open()
+  it('ends the mode with the last color, and the pencil goes', async () => {
+    const { wrapper, pencil, palette } = open([added])
     await pencil().trigger('click')
     const restore = palette.removeAdded(added)!
     await wrapper.vm.$nextTick()
@@ -91,31 +95,41 @@ describe('ColorPopover, Edit palette (tickets 531, 0532)', () => {
   })
 })
 
-describe('ColorPopover, picking (tickets 397, 398, 444)', () => {
-  it('closes once a Palette color is picked, and once a Custom color is committed, after handing each on', async () => {
+describe('ColorPopover, picking (tickets 397, 398, 444, 1226)', () => {
+  it('closes once a Palette color is picked, after handing it on', async () => {
     const { wrapper, popover } = open(defaultPaletteIds())
     await wrapper.get('[data-color-id="blue"]').trigger('click')
     expect(popover.emitted('select-color')).toEqual([['blue']])
     expect(popover.emitted('close')).toHaveLength(1)
-
-    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
-    const field = wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
-    await field.setValue('#123456')
-    await field.trigger('keydown', { key: 'Enter' })
-    expect(popover.emitted('select-custom-color')).toEqual([['#123456']])
-    expect(popover.emitted('close')).toHaveLength(2)
     wrapper.unmount()
   })
-  it('stays open with the Custom color picker on Enter after a mistyped hex, and adds nothing (ticket 0959)', async () => {
+
+  it('hands a wheel color on at the + and stays open for the next, in the Add another color popover', async () => {
     const { wrapper, popover } = open(defaultPaletteIds())
-    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+    await wrapper.get('[data-testid="add-color-button"]').trigger('click')
+    await wrapper.get('[data-testid="add-color-tabs"] [data-value="custom"]').trigger('click')
+    await wrapper.get('[data-testid="custom-color-hex"]').setValue('#123456')
+    await wrapper.get('[data-testid="custom-color-add"]').trigger('click')
+
+    expect(popover.emitted('select-custom-color')).toEqual([['#123456']])
+    expect(popover.emitted('close')).toBeUndefined()
+    expect(wrapper.find('[data-testid="add-color-popover"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('adds the color on Enter in the hex field, and nothing after a mistyped one (ticket 0959)', async () => {
+    const { wrapper, popover } = open(defaultPaletteIds())
+    await wrapper.get('[data-testid="add-color-button"]').trigger('click')
+    await wrapper.get('[data-testid="add-color-tabs"] [data-value="custom"]').trigger('click')
     const field = wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
     await field.setValue('#GGGGGG')
     await field.trigger('keydown', { key: 'Enter' })
-
     expect(popover.emitted()).not.toHaveProperty('select-custom-color')
+
+    await field.setValue('#123456')
+    await field.trigger('keydown', { key: 'Enter' })
+    expect(popover.emitted('select-custom-color')).toEqual([['#123456']])
     expect(popover.emitted()).not.toHaveProperty('close')
-    expect(wrapper.find('[data-testid="custom-color-panel"]').exists()).toBe(true)
     wrapper.unmount()
   })
 })
@@ -174,40 +188,67 @@ describe('ColorPopover, by keyboard (ticket 0857)', () => {
   })
 })
 
-describe('ColorPopover, the Bead’s palette (ticket 0746)', () => {
+describe('ColorPopover, Add another color (ticket 1226)', () => {
   function withCatalog() {
-    const colors = { available: ref(true), state: ref('ready'), swatches: ref([]), bead: ref(findBead('miyuki/delica/11-0')), catalog: ref(), load: vi.fn(), add: vi.fn() } as unknown as BeadColors
+    const chooser = { available: ref(true), state: ref('ready'), swatches: ref([]), bead: ref(findBead('miyuki/delica/11-0')), catalog: ref(), load: vi.fn(), add: vi.fn() }
+    const colors = { ...chooser, chooser, chooseBead: vi.fn(), resetChooser: vi.fn() } as unknown as BeadColors
     const Wrapped = defineComponent(() => {
       provideBeadColors(colors)
       return () => h(ColorPopover, { tile: undefined, pill: undefined, position: 'bottom' })
     })
     const host = mountWithPalette(Wrapped, [...defaultPaletteIds(), added], {}, { attachTo: document.body })
-    const popover = () => host.wrapper.get('[data-testid="color-popover"]')
-    const grid = () => host.wrapper.get('[data-testid="palette-picker"]')
-    return { ...host, popover, grid, toggle: () => host.wrapper.get('[data-testid="bead-colors-toggle"]').trigger('click') }
+    return { ...host, colors, add: () => host.wrapper.get('[data-testid="add-color-button"]').trigger('click') }
   }
 
-  it('widens to the panel width while the list is open, and the Palette grid fills it; closing the list brings 288px back', async () => {
-    const { wrapper, popover, grid, toggle } = withCatalog()
-    expect(popover().classes()).not.toContain('color-popover--wide')
+  it('keeps the Palette popover its own width, and opens the other beside it on the Bead colors tab, starting on the Palette\'s Bead', async () => {
+    const { wrapper, add, colors } = withCatalog()
+    expect(wrapper.find('[data-testid="add-color-popover"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="add-color-button"]').attributes('aria-expanded')).toBe('false')
 
-    await toggle()
-    expect(popover().classes()).toContain('color-popover--wide')
-    expect(grid().classes()).toContain('palette-picker--wide')
+    await add()
 
-    await toggle()
-    expect(popover().classes()).not.toContain('color-popover--wide')
-    expect(grid().classes()).not.toContain('palette-picker--wide')
+    expect(wrapper.get('[data-testid="add-color-popover"]').attributes('role')).toBe('dialog')
+    expect(wrapper.get('[data-testid="add-color-tabs"] [aria-checked="true"]').attributes('data-value')).toBe('bead')
+    expect(wrapper.find('[data-testid="bead-colors"]').exists()).toBe(true)
+    expect(colors.resetChooser).toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="color-popover"]').classes()).not.toContain('color-popover--wide')
     wrapper.unmount()
   })
 
-  it('goes back to 288px in Edit palette, where the list is not offered', async () => {
-    const { wrapper, popover, toggle } = withCatalog()
-    await toggle()
+  it('asks the chooser for the Bead picked, and shuts alone on Escape or Close, leaving the Palette popover open', async () => {
+    const { wrapper, add, colors } = withCatalog()
+    await add()
+    await wrapper.get('[data-testid="bead-brand"]').trigger('click')
+    expect(colors.chooser!.load).toHaveBeenCalled()
 
-    await wrapper.get('[data-testid="color-popover-edit"]').trigger('click')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="add-color-popover"]').exists()).toBe(false)
+    expect(wrapper.findComponent(ColorPopover).emitted('close')).toBeUndefined()
 
-    expect(popover().classes()).not.toContain('color-popover--wide')
+    await add()
+    await wrapper.get('[data-testid="add-color-close"]').trigger('click')
+    expect(wrapper.find('[data-testid="add-color-popover"]').exists()).toBe(false)
+    expect(wrapper.findComponent(ColorPopover).emitted('close')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('tells a hex clash once, with the section and code it is a shade apart from, until the next add', async () => {
+    const { wrapper, add, palette } = withCatalog()
+    await add()
+    expect(wrapper.find('[data-testid="add-color-nudge"]').exists()).toBe(false)
+
+    palette.addUsed('#123456', { catalog: 'toho', code: '1' })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('[data-testid="add-color-nudge"]').text()).toBe(en.palette.nudgeCustom)
+
+    palette.addUsed('#123457', { catalog: 'toho', code: '2' })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('[data-testid="add-color-nudge"]').text()).toBe(fillBlanks(en.palette.nudgeCoded, { section: 'TOHO', code: '1' }))
+
+    palette.addUsed('#654321')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="add-color-nudge"]').exists()).toBe(false)
     wrapper.unmount()
   })
 })

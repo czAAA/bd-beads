@@ -10,7 +10,7 @@ import BeadColorsEntry from './BeadColorsEntry.vue'
 // The list lays itself out by its own width, not the screen's (BeadColors card, ticket 0746): wide from 480px.
 afterEach(unmountAll)
 
-const entry = (code: string, family: string, finish: CatalogSwatch['finish']): CatalogSwatch => ({ code, family, finish, hex: '#336699', approximate: true, discontinued: false, taken: false })
+const entry = (code: string, family: string, finish: CatalogSwatch['finish']): CatalogSwatch => ({ code, family, finish, hex: '#336699', approximate: true, discontinued: false })
 const colors = { available: ref(true), state: ref('ready'), swatches: ref([entry('DB1', 'Blue', 'matte'), entry('DB2', 'Red', 'opaque')]), bead: ref(findBead('miyuki/delica/11-0')), catalog: ref(undefined), load: () => {}, add: () => 'added' } as unknown as BeadColors
 
 /** The list in a host `width` px wide on a desktop-sized screen: only the list's own width differs between cases. */

@@ -36,7 +36,7 @@ describe('swatchHex', () => {
 describe('catalogSwatches', () => {
   it('lists the codes of the size, with a generated hex marked approximate', () => {
     const list = catalogSwatches(catalog([code({}), code({ code: 'DB2', sizes: ['15/0'] })]), '11/0', [], families)
-    expect(list).toEqual([{ code: 'DB1', family: 'Blue', finish: 'opaque', hex: swatchHex('Blue', 'opaque', families), approximate: true, discontinued: false, taken: false }])
+    expect(list).toEqual([{ code: 'DB1', family: 'Blue', finish: 'opaque', hex: swatchHex('Blue', 'opaque', families), approximate: true, discontinued: false }])
   })
 
   it('uses a measured hex as it is, not approximate', () => {
@@ -44,23 +44,22 @@ describe('catalogSwatches', () => {
     expect(entry).toMatchObject({ hex: '#123456', approximate: false })
   })
 
-  it('marks a code whose hex is already in the Palette as taken, and one that is discontinued', () => {
-    const blue = swatchHex('Blue', 'opaque', families)!
-    const list = catalogSwatches(catalog([code({}), code({ code: 'DB2', family: ['Red'], discontinued: true })]), '11/0', [{ id: 'added-1', hex: blue }], families)
-    expect(list.map((entry) => [entry.taken, entry.discontinued])).toEqual([[true, false], [false, true]])
+  it('marks a code that is discontinued', () => {
+    const list = catalogSwatches(catalog([code({}), code({ code: 'DB2', family: ['Red'], discontinued: true })]), '11/0', [], families)
+    expect(list.map((entry) => entry.discontinued)).toEqual([false, true])
   })
 
-  it('names the Palette\'s swatch only on the row of the very code it carries (ticket 1092)', () => {
+  it('names the Palette\'s swatch only on the row of the very code of this catalog it carries (tickets 1092, 1226)', () => {
     const twins = catalog([code({ hex: '#223a70' }), code({ code: 'DB2', family: ['Black'], hex: '#223a70' })])
-    const held = (palette: Parameters<typeof catalogSwatches>[2]) => catalogSwatches(twins, '11/0', palette, families).map((entry) => [entry.taken, entry.heldAs])
-    expect(held([{ id: 'added-223a70', hex: '#223a70', code: 'DB2' }])).toEqual([[true, undefined], [true, 'added-223a70']])
-    expect(held([{ id: 'added-223a70', hex: '#223a70' }])).toEqual([[true, undefined], [true, undefined]])
+    const held = (palette: Parameters<typeof catalogSwatches>[2]) => catalogSwatches(twins, '11/0', palette, families).map((entry) => entry.heldAs)
+    expect(held([{ id: 'added-223a70', code: 'DB2', catalog: 'x' }])).toEqual([undefined, 'added-223a70'])
+    expect(held([{ id: 'added-223a70' }])).toEqual([undefined, undefined])
+    expect(held([{ id: 'added-223a70', code: 'DB2', catalog: 'toho' }])).toEqual([undefined, undefined])
   })
 
-  it('marks two codes whose read colors are the same as taken once the Palette holds either, as two generated swatches are (ticket 0886)', () => {
-    const twins = catalog([code({ hex: '#223a70' }), code({ code: 'DB2', family: ['Black'], finish: 'silver-lined', hex: '#223a70' }), code({ code: 'DB3', hex: '#223a71' })])
-    expect(catalogSwatches(twins, '11/0', [], families).map((entry) => entry.taken)).toEqual([false, false, false])
-    expect(catalogSwatches(twins, '11/0', [{ id: 'added-223a70', hex: '#223a70' }], families).map((entry) => [entry.code, entry.taken])).toEqual([['DB1', true], ['DB2', true], ['DB3', false]])
+  it('leaves a code free when the Palette holds its color under another code: it is added a shade apart (ticket 1226)', () => {
+    const twins = catalog([code({ hex: '#223a70' }), code({ code: 'DB2', family: ['Black'], hex: '#223a70' })])
+    expect(catalogSwatches(twins, '11/0', [{ id: 'added-223a71', code: 'DB1', catalog: 'x' }], families).map((entry) => entry.heldAs)).toEqual(['added-223a71', undefined])
   })
 
   it('takes the first family that has a color, and leaves out a code with none', () => {

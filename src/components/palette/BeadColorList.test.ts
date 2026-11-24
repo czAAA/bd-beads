@@ -12,7 +12,7 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-const entry = (over: Partial<CatalogSwatch>): CatalogSwatch => ({ code: 'DB1', family: 'Blue', finish: 'metallic', hex: '#123456', approximate: true, discontinued: false, taken: false, ...over })
+const entry = (over: Partial<CatalogSwatch>): CatalogSwatch => ({ code: 'DB1', family: 'Blue', finish: 'metallic', hex: '#123456', approximate: true, discontinued: false, ...over })
 
 function setup(swatches: CatalogSwatch[], state: 'ready' | 'failed' | 'loading' = 'ready', options: { beadId?: string; catalog?: ColorCatalog; remove?: (colorId: string) => void } = {}) {
   const bead = ref(findBead(options.beadId ?? 'miyuki/delica/11-0'))
@@ -32,22 +32,22 @@ describe('BeadColorList', () => {
     const { wrapper, colors } = setup([entry({}), entry({ code: 'DB2', family: 'Gray', finish: 'matte', discontinued: true })])
 
     const rows = wrapper.findAll('[data-testid="bead-color"]')
-    expect(rows[0]!.text()).toContain(`DB1`)
+    expect(rows[0]!.text()).toContain('Miyuki Delica code DB1')
     expect(rows[0]!.text()).toContain(`${en.colorNames.blue} · ${en.palette.beadColors.finishes.metallic}`)
     expect(rows[1]!.text()).toContain(en.palette.beadColors.discontinued)
     expect(colors.load).toHaveBeenCalled()
   })
 
   it('names a row by the words it shows, then what a press does (ticket 0940)', () => {
-    const { wrapper } = setup([entry({}), entry({ code: 'DB2', family: 'Gray', finish: 'matte', discontinued: true }), entry({ code: 'DB3', taken: true })])
+    const { wrapper } = setup([entry({}), entry({ code: 'DB2', family: 'Gray', finish: 'matte', discontinued: true }), entry({ code: 'DB3', heldAs: 'added-123456' })])
 
     expect(names(wrapper, 'bead-color')).toEqual([
       'DB1, Blue, Metallic, approximate color, add to the Palette',
       'DB2, Gray, Matte, approximate color, Discontinued, add to the Palette',
-      'DB3, Blue, Metallic, approximate color, in the Palette as the same color',
+      'DB3, Blue, Metallic, approximate color, in the Palette',
     ])
     // The words shown, spaced as read: each name starts with them.
-    expect(wrapper.findAll('[data-testid="bead-color"]').map((row) => row.text().replace(/\s+/g, ' '))).toEqual(['DB1 Blue · Metallic', 'DB2 Gray · Matte · Discontinued', 'DB3 Blue · Metallic Same color'])
+    expect(wrapper.findAll('[data-testid="bead-color"]').map((row) => row.text().replace(/\s+/g, ' '))).toEqual(['Miyuki Delica code DB1 Blue · Metallic', 'Miyuki Delica code DB2 Gray · Matte · Discontinued', 'Miyuki Delica code DB3 Blue · Metallic In the Palette'])
   })
 
   it('adds a code’s color when pressed', async () => {
@@ -59,21 +59,19 @@ describe('BeadColorList', () => {
     expect(wrapper.emitted('added')).toEqual([['#123456']])
   })
 
-  it('shows a code whose color the Palette holds under another code as the same color, and does not add it', async () => {
-    const { wrapper, colors } = setup([entry({ taken: true })])
+  it('leaves a code whose color the Palette holds under another code free: it is added a shade apart (ticket 1226)', async () => {
+    const { wrapper, colors } = setup([entry({})])
     const row = wrapper.get('[data-testid="bead-color"]')
 
     await row.trigger('click')
 
-    expect(row.attributes('aria-disabled')).toBe('true')
-    expect(row.text()).toContain(en.palette.beadColors.sameColor)
-    expect(wrapper.text()).not.toContain(en.palette.beadColors.takenNote)
-    expect(colors.add).not.toHaveBeenCalled()
+    expect(row.attributes('aria-disabled')).toBeUndefined()
+    expect(colors.add).toHaveBeenCalledWith('#123456', 'DB1')
   })
 
   it('fills the row of a code the Palette holds, and a press takes it out again (ticket 1092)', async () => {
     const remove = vi.fn()
-    const { wrapper, colors } = setup([entry({ taken: true, heldAs: 'added-123456' })], 'ready', { remove })
+    const { wrapper, colors } = setup([entry({ heldAs: 'added-123456' })], 'ready', { remove })
     const row = wrapper.get('[data-testid="bead-color"]')
 
     expect(row.classes()).toContain('bead-color-list__row--held')
@@ -86,16 +84,13 @@ describe('BeadColorList', () => {
     expect(colors.add).not.toHaveBeenCalled()
   })
 
-  it('fills a default color\'s row and one in a host with no removal, and a press does nothing there (ticket 1092)', async () => {
+  it('takes a default color\'s row out like any other, and keeps one in a host with no removal (tickets 1092, 1226)', async () => {
     const remove = vi.fn()
-    const kept = setup([entry({ taken: true, heldAs: 'default-123456' })], 'ready', { remove })
-    const row = kept.wrapper.get('[data-testid="bead-color"]')
-    await row.trigger('click')
-    expect([row.attributes('aria-disabled'), row.attributes('data-held'), row.text().includes(en.palette.beadColors.defaultColor)]).toEqual(['true', 'default', true])
-    expect(row.attributes('aria-label')).toBe("DB1, Blue, Metallic, approximate color, in the Palette, a default color that can't be removed")
-    expect(remove).not.toHaveBeenCalled()
+    const { wrapper } = setup([entry({ heldAs: 'default-123456' })], 'ready', { remove })
+    await wrapper.get('[data-testid="bead-color"]').trigger('click')
+    expect(remove).toHaveBeenCalledWith('default-123456')
 
-    const hosted = setup([entry({ taken: true, heldAs: 'added-123456' })]).wrapper.get('[data-testid="bead-color"]')
+    const hosted = setup([entry({ heldAs: 'added-123456' })]).wrapper.get('[data-testid="bead-color"]')
     expect([hosted.attributes('aria-disabled'), hosted.attributes('data-held'), hosted.attributes('aria-label')]).toEqual(['true', 'kept', 'DB1, Blue, Metallic, approximate color, in the Palette'])
   })
 

@@ -67,14 +67,15 @@ describe('the Palette reaches its flows', () => {
     wrapper.unmount()
   })
 
-  it('the bin in Edit palette asks with the count, Cancel keeps the colors, Confirm removes them all (ticket 0532)', async () => {
+  it('Remove section on Custom colors asks with the count, Cancel keeps the colors, Confirm removes them all (tickets 0532, 1226)', async () => {
     const wrapper = await openApp()
     await editPalette(wrapper)
-    await wrapper.get('[data-testid="color-popover-remove-all"]').trigger('click')
-    expect(wrapper.get('[data-testid="remove-all-colors-modal"]').text()).toContain('2 colors will leave the Palette.')
+    const custom = () => wrapper.get('[data-section-id="custom"] [data-testid="palette-section-remove"]')
+    await custom().trigger('click')
+    expect(wrapper.get('[data-testid="remove-section-modal"]').text()).toContain('2 colors will leave the Palette.')
     await cancel(wrapper)
-    expect(wrapper.find('[data-testid="remove-all-colors-modal"]').exists()).toBe(false)
-    await wrapper.get('[data-testid="color-popover-remove-all"]').trigger('click')
+    expect(wrapper.find('[data-testid="remove-section-modal"]').exists()).toBe(false)
+    await custom().trigger('click')
     await confirm(wrapper)
     expect(storedPalette()).toEqual(defaultPaletteIds(defaultPalette(cubeBead.id)))
     wrapper.unmount()
@@ -117,7 +118,7 @@ describe('the Palette reaches its flows', () => {
 
   it('the Bead colors list’s foot row opens a color Report on the Project’s Bead (ticket 0700)', async () => {
     const wrapper = await openApp()
-    await wrapper.get('[data-testid="bead-colors-toggle"]').trigger('click')
+    await wrapper.get('[data-testid="add-color-button"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="bead-colors-report"]').trigger('click')
     expect(wrapper.get('[data-testid="feedback-sheet"]').attributes('data-kind')).toBe('bead-color')
@@ -129,11 +130,11 @@ describe('the Palette reaches its flows', () => {
     const wrapper = await openApp()
     /** The list, opened again where this environment re-creates the popover after an Edit (a browser keeps it open; the visual check holds that). */
     const openList = async () => {
-      if (!wrapper.find('[data-testid="bead-colors"]').exists()) await wrapper.get('[data-testid="bead-colors-toggle"]').trigger('click')
+      if (!wrapper.find('[data-testid="bead-colors"]').exists()) await wrapper.get('[data-testid="add-color-button"]').trigger('click')
       await vi.waitFor(() => wrapper.get('[data-testid="bead-color"]'))
     }
     await openList()
-    const row = wrapper.get('[data-testid="bead-color"]:not([data-taken])')
+    const row = wrapper.get('[data-testid="bead-color"]:not([data-held])')
     const code = row.attributes('data-code')!
     const before = storedPalette()
 

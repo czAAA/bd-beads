@@ -81,7 +81,7 @@ import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
 import { provideBetaFeedback } from '../ui/betaFeedback'
 import { useArmedToolToasts } from '../tools/useArmedToolToasts'
 import { usePillTileNames } from '../tools/usePillTileNames'
-import { provideColorPick, provideMoveColor, providePaletteLetters, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
+import { provideColorNudge, provideColorPick, provideMoveColor, provideMoveSection, providePaletteLetters, provideRemoveAddedColor, provideRemoveSection, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
@@ -365,7 +365,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
-  const { palette, addUsed, removeAdded, removeAllAdded, paintedBeads, moveColor, setLetter } = useProjectPalette({ currentProject, edit })
+  const { palette, addUsed, nudge, clearNudge, removeAdded, removeSection, paintedBeads, moveColor, moveSection, setLetter } = useProjectPalette({ currentProject, edit })
+  provideColorNudge(nudge, clearNudge)
   /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
   const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs, accountEmail: () => accountFlow.account.value?.email })
   const beadColors = useBeadColors({ currentProject, palette, addUsed, select: (colorId) => onSelectColor(colorId), remove: (colorId) => removeColor.onRemoveAddedColorOrAsk(colorId), selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback })
@@ -621,9 +622,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** Removing added colors from the Palette, one or all, each after a confirmation (tickets 228, 304, 0532). */
-  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeAllAdded, paintedBeads, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale, dialogs })
+  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeSection, paintedBeads, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale, dialogs })
   provideRemoveAddedColor(removeColor.onRequestRemoveAddedColor)
-  provideRemoveAllAddedColors(removeColor.onRequestRemoveAllAddedColors)
+  provideRemoveSection(removeColor.onRequestRemoveSection)
+  provideMoveSection(moveSection)
 
   provideMoveColor(moveColor)
 
@@ -1552,9 +1554,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       removeColorMessage: removeColor.removeColorMessage,
       onConfirmRemoveAddedColor: removeColor.onConfirmRemoveAddedColor,
       onCancelRemoveAddedColor: removeColor.onCancelRemoveAddedColor,
-      removeAllColorsMessage: removeColor.removeAllColorsMessage,
-      onConfirmRemoveAllAddedColors: removeColor.onConfirmRemoveAllAddedColors,
-      onCancelRemoveAllAddedColors: removeColor.onCancelRemoveAllAddedColors,
+      removeSectionTitle: removeColor.removeSectionTitle,
+      removeSectionMessage: removeColor.removeSectionMessage,
+      onConfirmRemoveSection: removeColor.onConfirmRemoveSection,
+      onCancelRemoveSection: removeColor.onCancelRemoveSection,
       replaceBeadPendingBead: replaceBead.replaceBeadPendingBead,
       replaceBeadConfirmMessage: replaceBead.replaceBeadConfirmMessage,
       onConfirmReplaceBead,

@@ -1,18 +1,18 @@
 import { computed, type Ref } from 'vue'
-import { isAddedColorId, type Palette } from '../../domain/palette'
+import { CUSTOM_COLORS, catalogName, type Palette } from '../../domain/palette'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { plural, type PluralForms } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
-/** What removing added colors needs from the app shell: the Palette and how its added swatches leave it (Edits, ADR
+/** What removing colors needs from the app shell: the Palette and how its swatches and sections leave it (Edits, ADR
  * 0036), the chosen color and how another is chosen, and the toast that offers Undo. */
 export interface RemoveColorFlowDeps {
   palette: Readonly<Ref<Palette>>
   /** Each hands back how to put what it removed back, or undefined when nothing was removed. */
   removeAdded: (colorId: string) => (() => void) | undefined
-  removeAllAdded: () => (() => void) | undefined
+  removeSection: (section: string) => (() => void) | undefined
   /** How many beads the layers show in the swatches `colorIds` stand for: what their removal takes (ticket 1124). */
   paintedBeads: (colorIds: readonly string[]) => number
   selectedColorId: Readonly<Ref<string | undefined>>
@@ -24,7 +24,7 @@ export interface RemoveColorFlowDeps {
   dialogs?: Dialogs
 }
 
-/** Removing an added swatch (tickets 228, 304) or every one at once (ticket 0532), each after a confirmation that names
+/** Removing a swatch (tickets 228, 304, 1226) or a whole section at once (tickets 0532, 1226), each after a confirmation that names
  * the beads painted in them, which leave with them (ticket 1124). Removing the active color steps back to the default one; the toast's Undo puts the colors
  * back and selects the active one again, unless another was chosen since. */
 export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
@@ -86,22 +86,33 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
     else onRemoveAddedColor(colorId)
   }
 
-  /** The bin in Edit palette asks first, and the dialog names how many leave. */
-  const removeAllColorsConfirmOpen = dialogs.flag('remove-all-colors')
-  const addedColorIds = computed(() => deps.palette.value.colors.filter((color) => isAddedColorId(color.id)).map((color) => color.id))
-  const removeAllColorsMessage = computed(() => {
+  /** Remove section in Edit palette asks first (ticket 1226), and the dialog names how many colors leave. */
+  const pendingSectionRemoval = dialogs.question<string>('remove-section')
+  const sectionColorIds = computed(() => deps.palette.value.sections.find((section) => section.id === pendingSectionRemoval.value)?.colors.map((color) => color.id) ?? [])
+  const sectionName = (section: string) => (section === CUSTOM_COLORS ? deps.messages().palette.customColors : catalogName(section))
+  const removeSectionTitle = computed(() => {
     const t = deps.messages().palette
-    return withBeads(plural(deps.locale(), addedColorIds.value.length, t.removeAllConfirmMessage), addedColorIds.value, t.removeAllConfirmBeads)
+    const section = pendingSectionRemoval.value
+    return !section || section === CUSTOM_COLORS ? t.removeAllConfirmTitle : fillBlanks(t.removeSectionTitle, { section: sectionName(section) })
   })
-  function onRequestRemoveAllAddedColors() {
-    removeAllColorsConfirmOpen.value = true
+  const removeSectionMessage = computed(() => {
+    const t = deps.messages().palette
+    return withBeads(plural(deps.locale(), sectionColorIds.value.length, t.removeAllConfirmMessage), sectionColorIds.value, t.removeAllConfirmBeads)
+  })
+  function onRequestRemoveSection(section: string) {
+    pendingSectionRemoval.value = section
   }
-  function onCancelRemoveAllAddedColors() {
-    removeAllColorsConfirmOpen.value = false
+  function onCancelRemoveSection() {
+    pendingSectionRemoval.value = undefined
   }
-  function onConfirmRemoveAllAddedColors() {
-    removeAllColorsConfirmOpen.value = false
-    removeWithUndo(isAddedColorId, deps.removeAllAdded, 'palette-removed-all', deps.messages().palette.removedAll)
+  function onConfirmRemoveSection() {
+    const section = pendingSectionRemoval.value
+    const leaving = new Set(sectionColorIds.value)
+    pendingSectionRemoval.value = undefined
+    if (!section) return
+    const t = deps.messages().palette
+    const text = section === CUSTOM_COLORS ? t.removedAll : fillBlanks(t.removedSection, { section: sectionName(section) })
+    removeWithUndo((chosen) => leaving.has(chosen), () => deps.removeSection(section), `palette-removed-${section}`, text)
   }
 
   return {
@@ -113,10 +124,11 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
     onConfirmRemoveAddedColor,
     onRemoveAddedColor,
     onRemoveAddedColorOrAsk,
-    removeAllColorsConfirmOpen,
-    removeAllColorsMessage,
-    onRequestRemoveAllAddedColors,
-    onCancelRemoveAllAddedColors,
-    onConfirmRemoveAllAddedColors,
+    pendingSectionRemoval,
+    removeSectionTitle,
+    removeSectionMessage,
+    onRequestRemoveSection,
+    onCancelRemoveSection,
+    onConfirmRemoveSection,
   }
 }

@@ -92,13 +92,14 @@ export function usePickColor(deps: PickColorDeps) {
   }
 
   /** The codes of the Palette's Bead in its size, discontinued ones left out, as Convert matches to; its default colors
-   * where it has no catalog or it can't be fetched. */
+   * where it has no catalog or it can't be fetched. One Bead throughout: the catalog's and the default colors' are the
+   * Bead the code is named in (ticket 1226). */
   async function targetsFor(project: Project): Promise<readonly TargetColor[]> {
     await deps.beadColors?.load()
     const catalog = deps.beadColors?.catalog.value
     const bead = deps.beadColors?.bead.value
     const codes = catalog && bead ? beadColorTargets(catalog, bead.size, brandColors(bead.brand.id)) : []
-    return codes.length > 0 ? codes : sourceTargets('default', defaultPalette(beadIdOfLayer(project, 'frame')), [])!
+    return codes.length > 0 ? codes : sourceTargets('default', defaultPalette(bead?.id ?? beadIdOfLayer(project, 'frame')), [])!
   }
 
   // The picture and the catalog are fetched once the pick is armed over a shown picture, so the press has them at hand.

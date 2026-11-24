@@ -45,24 +45,23 @@ export interface CatalogSwatch {
   /** True for a generated hex; a measured one is not approximate. */
   approximate: boolean
   discontinued: boolean
-  /** The Palette already holds a swatch of this hex, so the code cannot be added a second time. */
-  taken: boolean
-  /** The id of the Palette's swatch that carries this very code (ticket 1092): the row that is in the Palette, which a
-   * press takes out again. Absent where the Palette holds the hex under another code, or as a Custom color. */
+  /** The id of the Palette's swatch that carries this very code of this catalog (ticket 1092): the row that is in the
+   * Palette, which a press takes out again. Absent for a code not in it, also where the Palette holds its hex under
+   * another code or as a Custom color: it can be added then, one shade apart (ticket 1226, ADR 0103). */
   heldAs?: string
 }
 
 /** The codes of `catalog` that exist in Bead size `size`, in catalog order, each with its swatch from the catalog's own
  * Brand's `colors` (`brandColors`, ADR 0078). A code whose families have no single color there (a Mix) is left out.
- * `palette` are the swatches the Palette already holds (tickets 0537, 1092). */
-export function catalogSwatches(catalog: ColorCatalog, size: string, palette: readonly Pick<PaletteColor, 'id' | 'hex' | 'code'>[], colors: readonly PaletteColor[]): CatalogSwatch[] {
-  const held = new Map(palette.map((color) => [color.hex, color]))
+ * `palette` are the swatches the Palette already holds (tickets 0537, 1092, 1226). */
+export function catalogSwatches(catalog: ColorCatalog, size: string, palette: readonly Pick<PaletteColor, 'id' | 'code' | 'catalog'>[], colors: readonly PaletteColor[]): CatalogSwatch[] {
+  const held = new Map(palette.flatMap((color) => (color.code && color.catalog === catalog.id ? [[color.code, color] as const] : [])))
   return catalog.codes.flatMap((entry) => {
     if (!entry.sizes.includes(size)) return []
     const family = entry.family.find((name) => familyHex(name, colors))
     const hex = entry.hex ?? (family ? swatchHex(family, entry.finish, colors) : undefined)
     if (!family || !hex) return []
-    const own = held.get(hex)
-    return [{ code: entry.code, family, finish: entry.finish, hex, approximate: !entry.hex, discontinued: !!entry.discontinued, taken: !!own, ...(own?.code === entry.code ? { heldAs: own.id } : {}) }]
+    const own = held.get(entry.code)
+    return [{ code: entry.code, family, finish: entry.finish, hex, approximate: !entry.hex, discontinued: !!entry.discontinued, ...(own ? { heldAs: own.id } : {}) }]
   })
 }
