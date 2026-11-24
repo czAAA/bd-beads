@@ -1,11 +1,11 @@
 import { projectDimensions } from '../domain/projectExtent'
 import { frameWeave } from '../domain/layerWeave'
-import { rotationSwapsAxes, type Rotation } from '../domain/grid'
+import { rotationSwapsAxes, type Rotation, type FrameRef } from '../domain/grid'
 import type { Weave } from '../domain/weave'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
 import { laidTurnOf } from '../domain/framePlacement'
-import type { Layered } from '../domain/layerRecord'
+import { type Layered, FIRST_FRAME } from '../domain/layerRecord'
 
 // PDF page layout (tickets 162, 185, 578, 0584, 0913, 0914): the chart whole on page 1 when it fits there, else page 1 is the
 // overview and equal parts follow, at the largest bead the sheets allow and the same on every chart page; page px at 150 dpi.
@@ -126,9 +126,9 @@ type Shape = Layered
 
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.
-export function displayedGrid(project: Shape) {
-  const rotation = laidTurnOf(project)
-  const weave = frameWeave(project)
+export function displayedGrid(project: Shape, ref: FrameRef = FIRST_FRAME) {
+  const rotation = laidTurnOf(project, ref)
+  const weave = frameWeave(project, ref)
   const { columns, rows } = projectDimensions(project)
   const step = beadStepPx(weave)
   const cell = cellSizePx(weave.technique, weave.cell)
@@ -151,9 +151,9 @@ export function wholeArea(project: Shape): TrimmedArea {
 
 /** Where an area lies in the whole displayed chart at zoom 1, as the Project renderer lays its beads: what the overview,
  * the Cover page and the PNG draw of a trimmed Schema (ticket 1128). */
-export function areaRegion(project: Shape, area: TrimmedArea): Region {
-  const grid = displayedGrid(project)
-  const extent = blockExtent(frameWeave(project), laidTurnOf(project), area.lastAcross - area.firstAcross + 1, area.lastDown - area.firstDown + 1)
+export function areaRegion(project: Shape, area: TrimmedArea, ref: FrameRef = FIRST_FRAME): Region {
+  const grid = displayedGrid(project, ref)
+  const extent = blockExtent(frameWeave(project, ref), laidTurnOf(project, ref), area.lastAcross - area.firstAcross + 1, area.lastDown - area.firstDown + 1)
   return { x: area.firstAcross * grid.stepAcross, y: area.firstDown * grid.stepDown, ...extent }
 }
 
@@ -241,10 +241,10 @@ function snappedSide(sides: Span[]): Span[] | undefined {
 /** A part as cut, with where it sits in the whole chart at zoom 1, its overlap included. */
 type Block = Omit<PrintPart, 'page' | 'place'>
 
-function blocksOf(project: Shape, cut: Cut): Block[] {
-  const grid = displayedGrid(project)
+function blocksOf(project: Shape, cut: Cut, ref: FrameRef = FIRST_FRAME): Block[] {
+  const grid = displayedGrid(project, ref)
   // Measured in the Weave the chart is drawn in, with its Bead's cell, as the Project renderer lays the beads (ticket 1122).
-  const drawn = frameWeave(project)
+  const drawn = frameWeave(project, ref)
   const blocks: Block[] = []
   // No overlap on the first part's outer edges, where the printed chart starts.
   const start = { across: cut.across[0]!.first, down: cut.down[0]!.first }
@@ -252,7 +252,7 @@ function blocksOf(project: Shape, cut: Cut): Block[] {
     cut.across.forEach(({ first: firstAcross, last: lastAcross }, across) => {
       const overlapAcross = Math.min(PRINT_PART_OVERLAP, firstAcross - start.across)
       const overlapDown = Math.min(PRINT_PART_OVERLAP, firstDown - start.down)
-      const extent = blockExtent(drawn, laidTurnOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
+      const extent = blockExtent(drawn, laidTurnOf(project, ref), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
       const region = { x: (firstAcross - overlapAcross) * grid.stepAcross, y: (firstDown - overlapDown) * grid.stepDown, ...extent }
       blocks.push({ across, down, letter: partLetter(blocks.length), firstAcross, lastAcross, firstDown, lastDown, overlapAcross, overlapDown, region })
     })

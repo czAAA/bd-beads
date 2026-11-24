@@ -1,7 +1,7 @@
 import { beadBounds, changedPositions, frameContains, type BeadMap, type Rect } from '../domain/canvas'
-import type { GridPosition } from '../domain/grid'
+import type { GridPosition, FrameRef } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
-import { beadsOfLayer, pieceNamesOf } from '../domain/layerRecord'
+import { beadsOfLayer, pieceNamesOf, FIRST_FRAME } from '../domain/layerRecord'
 import { footprintOf } from '../domain/footprint'
 import { beadsShown, withMargin } from '../domain/margin'
 import { namedPieces, namedPiecesFrom, type NamedPiece } from '../domain/pieceNames'
@@ -35,10 +35,10 @@ const NAMED_REACH = 1
 /** The Pieces to rule for `project`, counted from the beads that show, none under the Frame or its margin (ticket 1012).
  * While a stroke goes on (ticket 0674) the last count is kept and the area or named Piece each changed bead touches
  * grows to hold it (a bead touching none starts an area), so a step costs its rows. Its end counts again (ticket 0731). */
-export function ruledPieces(previous: RuledPieces | undefined, project: RuledProject, { numbers, stroking, idleWalk }: { numbers: boolean; stroking: boolean; idleWalk?: IdleWalk }): RuledPieces {
+export function ruledPieces(previous: RuledPieces | undefined, project: RuledProject, { numbers, stroking, idleWalk }: { numbers: boolean; stroking: boolean; idleWalk?: IdleWalk }, ref: FrameRef = FIRST_FRAME): RuledPieces {
   const weave = canvasWeave(project)
   const beads = beadsOfLayer(project, 'canvas')
-  const footprint = footprintOf(project)
+  const footprint = footprintOf(project, ref)
   const shown = beadsShown(beads, footprint)
   const held = stroking && previous && previous.touch === touchKey(weave) && (previous.areas !== undefined) === numbers
   if (!held && (numbers || pieceNamesOf(project)?.length) && tooManyToWalk(beads)) {

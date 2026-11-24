@@ -1,13 +1,13 @@
 import { colorAt } from '../domain/canvas'
 import { fromHex } from '../domain/color'
-import { rotationSwapsAxes, type GridPosition } from '../domain/grid'
+import { rotationSwapsAxes, type GridPosition, type FrameRef } from '../domain/grid'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { projectFrame } from '../domain/projectExtent'
 import type { DrawnProject } from './projectRenderer'
 import { geometryDrawnAlone } from './space'
 import { gridToRegion } from './surfaceView'
 import { laidTurnOf } from '../domain/framePlacement'
-import { beadsOfLayer } from '../domain/layerRecord'
+import { beadsOfLayer, FIRST_FRAME } from '../domain/layerRecord'
 
 export interface ThumbnailImage {
   width: number
@@ -31,24 +31,24 @@ function rgb(hex: string): [number, number, number] | undefined {
 /** A Saved Project's thumbnail (tickets 147, 0631): the Project drawn on its own, fitted to `size` px, its beads where
  * its Layer geometry lays them (shifted rows, a Custom frame's shape), turned as the editor turns it. A grid is sampled
  * a pixel at a time, so cost is at most size × size (ADR 0019); a Custom frame, which is small, bead by bead. */
-export function thumbnailPixels(project: Thumbnailed, size: number): ThumbnailImage {
-  const geometry = geometryDrawnAlone(project)
+export function thumbnailPixels(project: Thumbnailed, size: number, ref: FrameRef = FIRST_FRAME): ThumbnailImage {
+  const geometry = geometryDrawnAlone(project, ref)
   const extent = geometry.extent()
   if (!extent || extent.width <= 0 || extent.height <= 0) {
     return { width: 1, height: 1, data: new Uint8ClampedArray(4) }
   }
-  const [across, down] = rotationSwapsAxes(laidTurnOf(project)) ? [extent.height, extent.width] : [extent.width, extent.height]
+  const [across, down] = rotationSwapsAxes(laidTurnOf(project, ref)) ? [extent.height, extent.width] : [extent.width, extent.height]
   const scale = size / Math.max(across, down)
   const width = Math.max(1, Math.round(across * scale))
   const height = Math.max(1, Math.round(down * scale))
   const data = new Uint8ClampedArray(width * height * 4)
   const colors = new Map<string, [number, number, number] | undefined>()
-  const drawnBox = projectFrame(project)
-  const [canvas, framed] = [beadsOfLayer(project, 'canvas'), beadsOfLayer(project, 'frame')]
+  const drawnBox = projectFrame(project, ref)
+  const [canvas, framed] = [beadsOfLayer(project, 'canvas'), beadsOfLayer(project, ref)]
   const colorOf = ({ row, column }: GridPosition) => (framed ? colorAt(framed, row, column) : colorAt(canvas, drawnBox.row + row, drawnBox.column + column))
 
   // The editor's own turn (gridToRegion), from the Layer to the picture's pixels, and its inverse.
-  const [a, b, c, d, e, f] = gridToRegion(extent, { x: 0, y: 0, width: 0, height: 0 }, scale, laidTurnOf(project))
+  const [a, b, c, d, e, f] = gridToRegion(extent, { x: 0, y: 0, width: 0, height: 0 }, scale, laidTurnOf(project, ref))
   const det = a * d - b * c
   const toPixel = ({ x, y }: LayoutPoint): [number, number] => [a * (x - extent.x) + c * (y - extent.y) + e, b * (x - extent.x) + d * (y - extent.y) + f]
   const pixelOnLayer = (px: number, py: number): LayoutPoint => {

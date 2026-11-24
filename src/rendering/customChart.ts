@@ -1,3 +1,4 @@
+import type { FrameRef } from '../domain/grid'
 import { colorAt } from '../domain/canvas'
 import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions } from '../domain/projectExtent'
@@ -6,7 +7,7 @@ import { CELL_SIZE_PX } from './cellSize'
 import { geometryDrawnAlone } from './space'
 import { gridToRegion, projectExtentPx, type Region } from './surfaceView'
 import { laidTurnOf } from '../domain/framePlacement'
-import { beadsOfLayer, frameOf, type Layered } from '../domain/layerRecord'
+import { beadsOfLayer, type Layered, FIRST_FRAME, frameById } from '../domain/layerRecord'
 
 // A Custom frame on a printed chart (ticket 0594): its beads lie at angles, not on rows and columns, so a chart page
 // places each one where its Layer geometry puts it, through the same transform as the rest of the page.
@@ -25,21 +26,21 @@ export interface ChartBead {
 /** A Custom frame's or a turned Frame's (ticket 0667) beads and Seams drawn into a region of the displayed chart at a
  * zoom; none for an upright Frame without a shape.
  * Every bead is given, wherever it lies: the caller keeps those of its own part. */
-export function customChart(project: Layered, region: Region, zoom: number): { beads: ChartBead[]; seams: [LayoutPoint, LayoutPoint][] } | undefined {
-  const frame = frameOf(project)
-  const geometry = geometryDrawnAlone(project)
+export function customChart(project: Layered, region: Region, zoom: number, ref: FrameRef = FIRST_FRAME): { beads: ChartBead[]; seams: [LayoutPoint, LayoutPoint][] } | undefined {
+  const frame = frameById(project, ref)
+  const geometry = geometryDrawnAlone(project, ref)
   if (!frame || geometry.grid) return undefined
-  const weave = frameWeave(project)
+  const weave = frameWeave(project, ref)
   // The Frame drawn on its own, as a chart is: its first position at 0, 0.
   const { rows, columns } = projectDimensions(project)
   const extent = projectExtentPx(weave.technique, columns, rows, weave.cell)
-  const [a, b, c, d, e, f] = gridToRegion(extent, region, zoom, laidTurnOf(project))
+  const [a, b, c, d, e, f] = gridToRegion(extent, region, zoom, laidTurnOf(project, ref))
   const at = ({ x, y }: LayoutPoint): LayoutPoint => ({ x: a * x + c * y + e, y: b * x + d * y + f })
   // A point of the Layer geometry, in bead widths, in grid px.
   const inGrid = ({ x, y }: LayoutPoint): LayoutPoint => ({ x: x * CELL_SIZE_PX, y: y * CELL_SIZE_PX })
   // The page's own quarter turn, read off the transform's first column.
   const turn = Math.atan2(b, a)
-  const beads = beadsOfLayer(project, 'frame')!
+  const beads = beadsOfLayer(project, ref)!
   return {
     beads: geometry.positions().map((position) => {
       const { box, angle } = geometry.place(position)!

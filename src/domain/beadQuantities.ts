@@ -1,10 +1,11 @@
+import type { FrameRef } from './grid'
 import { gramsPerBead, type Bead } from './beads'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 import type { Palette } from './palette'
 import type { Project } from './project'
 import { frameGeometryOf } from './layers'
-import { beadsOfLayer, frameOf } from './layerRecord'
+import { beadsOfLayer, FIRST_FRAME, frameById } from './layerRecord'
 import { backBeadsAt } from './pieceFaces'
 import { colorAt } from './canvas'
 import { inBox, paintedFrameBox } from './projectExtent'
@@ -20,17 +21,17 @@ export interface ColorQuantity {
 // How many beads of each color the Project needs, counted off its painted cells, most-needed first. Unpainted cells and
 // colors painted nowhere aren't listed. Only the Frame's beads count (ADR 0026): with no Frame there is nothing to
 // count.
-export function computeColorQuantities(project: Project, palette: Palette): ColorQuantity[] {
+export function computeColorQuantities(project: Project, palette: Palette, ref: FrameRef = FIRST_FRAME): ColorQuantity[] {
   const counts = new Map<string, number>()
-  const beads = beadsOfLayer(project, 'frame')
+  const beads = beadsOfLayer(project, ref)
   if (!beads) {
     return []
   }
 
   // Every real bead counts once: a Custom frame's are its layout's (ticket 0592), twice where its back mirrors it, but
   // its tips (a Star's, ticket 0875). In no order, as a count needs none and it is redone after every edit (0674).
-  const geometry = frameGeometryOf(project)
-  const back = backBeadsAt(frameOf(project)!)
+  const geometry = frameGeometryOf(project, ref)
+  const back = backBeadsAt(frameById(project, ref)!)
   for (const rowKey of Object.keys(beads)) {
     const row = Number(rowKey)
     const cells = beads[row]!
@@ -51,11 +52,11 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
 /** Whether the printed chart has a position no bead is painted in: what it draws under its small cross, and what its key
  * then names "empty" (ticket 0963). Only inside the box round the beads, which the chart is trimmed to (ticket 1128); a
  * Custom frame's whole shape. None without a Frame. */
-export function hasEmptyPositions(project: Project): boolean {
-  const beads = beadsOfLayer(project, 'frame')
+export function hasEmptyPositions(project: Project, ref: FrameRef = FIRST_FRAME): boolean {
+  const beads = beadsOfLayer(project, ref)
   if (!beads) return false
-  const box = paintedFrameBox(project)
-  return frameGeometryOf(project).positions().some((position) => inBox(box, position) && colorAt(beads, position.row, position.column) === null)
+  const box = paintedFrameBox(project, ref)
+  return frameGeometryOf(project, ref).positions().some((position) => inBox(box, position) && colorAt(beads, position.row, position.column) === null)
 }
 
 // A quantity's Estimated weight in grams (CONTEXT.md): bead count times the Bead's average weight. Derived, never

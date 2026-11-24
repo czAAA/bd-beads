@@ -1,7 +1,8 @@
+import type { Layer } from './grid'
 import type { BeadMap } from './canvas'
 import type { HistoryCap } from './history'
 import { framePlacement, withFrameAt } from './framePlacement'
-import { backgroundOf, beadIdOfLayer, canvasOf, lettersOn, withBackground, withCanvas, withLetters } from './layerRecord'
+import { backgroundOf, beadIdOfLayer, canvasOf, lettersOn, withBackground, withCanvas, withLetters, frameIdOf, framesOf, wovenLayerOf } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { MIRROR_OFF, mirrorBarOf, type MirrorBar, type MirrorPlace } from './mirror'
@@ -58,8 +59,9 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   // The Canvas's turn is a view: the Canvas put back lies as it does now, the Frame where it was on the table (ticket 1188).
   const unturned = orientation === was.orientation && (origin?.x ?? 0) === (was.origin?.x ?? 0) && (origin?.y ?? 0) === (was.origin?.y ?? 0)
   const viewed = name === was.name && unturned ? restored : unturned ? withCanvas(restored, { name }) : withCanvasAsNow(restored, { name, orientation, origin })
-  const lettered = (['canvas', 'frame'] as const).reduce((kept, layer) => withLetters(kept, layer, lettersOn(project, layer)), viewed)
-  const layered = (['canvas', 'frame'] as const).reduce((kept, layer) => {
+  const layers: Layer[] = ['canvas', ...framesOf(project).map(frameIdOf)]
+  const lettered = layers.reduce((kept, layer) => withLetters(kept, layer, lettersOn(project, layer)), viewed)
+  const layered = layers.reduce((kept, layer) => {
     const now = backgroundOf(project, layer)
     return now === undefined || now === backgroundOf(kept, layer) ? kept : withBackground(kept, layer, now)
   }, lettered)
@@ -71,18 +73,18 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
     palette: entry.palette,
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
     ...(entry.paletteCodes ? { paletteCodes: entry.paletteCodes } : {}),
-    paletteLetters: lettersOfPalette(entry.palette, beadIdOfLayer(entry, 'frame'), entry.paletteLetters),
+    paletteLetters: lettersOfPalette(entry.palette, beadIdOfLayer(entry, wovenLayerOf(entry)), entry.paletteLetters),
   })
 }
 
 /** The Project put back with its Canvas lying as it does now (its name, orientation and origin on the table), its Frame
  * where the entry had it on the table (ticket 1188). */
 function withCanvasAsNow(restored: Project, now: Pick<CanvasLayer, 'name' | 'orientation' | 'origin'>): Project {
-  const centre = framePlacement(restored)?.at
+  const centres = framesOf(restored).map((frame) => [frameIdOf(frame), framePlacement(restored, frameIdOf(frame))!.at] as const)
   const { origin: _was, ...canvas } = canvasOf(restored)
   const { origin, ...view } = now
   const laid = { ...restored, layers: [{ ...canvas, ...view, ...(origin ? { origin } : {}) }, ...restored.layers.slice(1)] as Project['layers'] }
-  return centre ? withFrameAt(laid, centre) : laid
+  return centres.reduce((placed, [id, centre]) => withFrameAt(placed, centre, id), laid)
 }
 
 // Estimates of what an Undo step holds (ticket 0677), rounded up from the research's 0.85 MB a whole-sheet 300 × 300

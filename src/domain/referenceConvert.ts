@@ -3,10 +3,10 @@ import { clamp } from './clamp'
 import { LEAST_COLOR_BEADS, matchFoundColors, reduceRequested, type ReductionRequest, type TargetColor } from './convertColors'
 import type { ReducedColors } from './imageColors'
 import { footprintOf } from './footprint'
-import type { GridPosition } from './grid'
+import type { GridPosition, FrameRef } from './grid'
 import { MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, NO_COLOR, packedToHex, pixelPackedAt, type PixelData } from './imageConversion'
 import { frameGeometryOf, positionInLayer } from './layers'
-import { beadsOfLayer, frameOf, withLayer } from './layerRecord'
+import { beadsOfLayer, withLayer, FIRST_FRAME, frameById } from './layerRecord'
 import { layersAlike } from './layerWeave'
 import { touch, type Grid, type Project } from './project'
 
@@ -106,36 +106,36 @@ export function convertSampled(sampled: readonly SampledPosition[], maxColors: n
 
 /** The changes split by the layer they land on: the Canvas, and in its own positions a Frame laid out as the Canvas is
  * (a grid woven alike); under any other Frame nothing, as it hides the Canvas there and has no positions to match. */
-function byLayer(project: Project, changes: readonly BeadChange[]): { canvas: BeadChange[]; frame: BeadChange[] } {
-  const covered = footprintOf(project)
-  const frame = frameOf(project)
-  const geometry = frame && layersAlike(project) ? frameGeometryOf(project) : undefined
+function byLayer(project: Project, changes: readonly BeadChange[], ref: FrameRef): { canvas: BeadChange[]; frame: BeadChange[] } {
+  const covered = footprintOf(project, ref)
+  const frame = frameById(project, ref)
+  const geometry = frame && layersAlike(project, ref) ? frameGeometryOf(project, ref) : undefined
   const split = { canvas: [] as BeadChange[], frame: [] as BeadChange[] }
   for (const change of changes) {
     if (!covered || !frameContains(covered, change)) {
       split.canvas.push(change)
       continue
     }
-    const own = positionInLayer(project, 'frame', change)
+    const own = positionInLayer(project, ref, change)
     if (geometry?.grid && geometry.hasPosition(own)) split.frame.push({ ...own, color: change.color })
   }
   return split
 }
 
 /** The Project with the conversion's beads laid where the picture lies, replacing what was on those positions. */
-export function withConvertedBeads(project: Project, changes: readonly BeadChange[]): Project {
-  const { canvas, frame } = byLayer(project, changes)
+export function withConvertedBeads(project: Project, changes: readonly BeadChange[], ref: FrameRef = FIRST_FRAME): Project {
+  const { canvas, frame } = byLayer(project, changes, ref)
   let next = project
   if (canvas.length > 0) next = withLayer(next, 'canvas', { beads: withColors(beadsOfLayer(next, 'canvas'), canvas) })
-  if (frame.length > 0) next = withLayer(next, 'frame', { beads: withColors(beadsOfLayer(next, 'frame')!, frame) })
+  if (frame.length > 0) next = withLayer(next, ref, { beads: withColors(beadsOfLayer(next, ref)!, frame) })
   return next === project ? project : touch(next, {})
 }
 
 /** How many beads already on the positions the conversion paints it replaces: "Replaces {n} beads already there." */
-export function beadsReplaced(project: Project, changes: readonly BeadChange[]): number {
-  const { canvas, frame } = byLayer(project, changes)
+export function beadsReplaced(project: Project, changes: readonly BeadChange[], ref: FrameRef = FIRST_FRAME): number {
+  const { canvas, frame } = byLayer(project, changes, ref)
   const held = (beads: BeadMap | undefined, list: BeadChange[]) => (beads ? list.filter(({ row, column }) => colorAt(beads, row, column) !== null).length : 0)
-  return held(beadsOfLayer(project, 'canvas'), canvas) + held(beadsOfLayer(project, 'frame'), frame)
+  return held(beadsOfLayer(project, 'canvas'), canvas) + held(beadsOfLayer(project, ref), frame)
 }
 
 /** Convert image's beads from the reference image's All settings, its grid's first row and column at `corner` (the box the

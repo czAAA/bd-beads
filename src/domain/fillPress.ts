@@ -1,7 +1,7 @@
 import { colorAt, forEachChangedPosition, type BeadMap, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
 import { fillArea, isFillRefusal, type FillRefusal } from './fill'
-import type { GridPosition, Layer, PreviewCell } from './grid'
+import { isFrameLayer, type GridPosition, type Layer, type PreviewCell } from './grid'
 import { beadsOfLayer, withLayer } from './layerRecord'
 import { onLayer, positionInLayer, positionOnCanvas } from './layers'
 import type { MirrorSetting } from './mirror'
@@ -54,7 +54,7 @@ export function fillPreview(project: Project, press: FillPress, reach: FillPress
   const cells: PreviewCell[] = []
   forEachChangedPosition(before, after, (row, column) => {
     const onCanvas = positionOnCanvas(project, press.layer, { row, column })
-    cells.push(press.layer === 'frame' ? { ...onCanvas, layer: 'frame' } : onCanvas)
+    cells.push(isFrameLayer(press.layer) ? { ...onCanvas, layer: press.layer } : onCanvas)
   })
   return { cells, region: kept }
 }

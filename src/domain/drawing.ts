@@ -1,14 +1,14 @@
 import { withColors, type BeadMap, type FrameSheet } from './canvas'
-import type { GridPosition } from './grid'
+import type { FrameId, GridPosition } from './grid'
 import { hasProjectBeads } from './layerBeads'
 import type { LayerSheet } from './layers'
-import { canvasOf, frameOf, startingRowProgressOf, withCanvas, withLayer } from './layerRecord'
+import { canvasOf, frameById, frameIdOf, framesOf, startingRowProgressOf, withCanvas, withFrameById, withLayer } from './layerRecord'
 import { withFrameSheet } from './frameSheet'
 import { frameCornerAt, framePlacement } from './framePlacement'
 import { lieAlike } from './table'
 import { startOrientation } from './weave'
 import { touch, type Project } from './project'
-import { INITIAL_ROW_PROGRESS, isInitialRowProgress, rowProgressOf } from './rowProgress'
+import { isInitialRowProgress, rowProgressOf } from './rowProgress'
 
 // The drawing commands' changes to beads: painting a stroke on a layer, and Delete all.
 
@@ -20,35 +20,38 @@ export function paintCells({ beads, geometry, edge }: LayerSheet, positions: Gri
   return withColors(beads, targets.map((position) => ({ ...position, color })))
 }
 
-/** Resets the open Project to as first created (CONTEXT.md's Delete all): cells emptied, Row progress at the first row,
- * both turns as a new Project starts them (ticket 1188, `withFrameAlike`); name, size, Technique and Bead stay. Ignores
- * the Row progress lock (clearing progress is the point). Returns the same instance if already so. */
+/** Resets the open Project to as first created (CONTEXT.md's Delete all): every layer emptied, each Frame's Row progress
+ * at the first row, the turns as a new Project starts them (ticket 1188); name, size, Technique, Bead and Frames stay.
+ * Ignores the Row progress lock (clearing progress is the point). The same instance if already so. */
 export function deleteAll(project: Project): Project {
+  const frames = framesOf(project).map(frameIdOf)
   // Row progress starts afresh: the first pass, the Frame Technique's way as the Frame lies (spec 1182).
-  const frame = frameOf(project)
-  const start = frame ? startingRowProgressOf(frame) : INITIAL_ROW_PROGRESS
+  const startOf = (id: FrameId) => startingRowProgressOf(frameById(project, id)!)
   const turn = startOrientation(canvasOf(project).technique)
-  const laidAlike = !frame || (lieAlike(project) && !frame.quarterTurns)
-  if (!hasProjectBeads(project) && !frame?.folded && isInitialRowProgress(rowProgressOf(project), start) && canvasOf(project).orientation === turn && laidAlike) {
+  const settled = frames.every((id) => {
+    const frame = frameById(project, id)!
+    return !frame.folded && isInitialRowProgress(rowProgressOf(project, id), startOf(id)) && lieAlike(project, id) && !frame.quarterTurns
+  })
+  if (!hasProjectBeads(project) && settled && canvasOf(project).orientation === turn) {
     return project
   }
 
   // No bead is left, so no Piece is: a name would only wait for a bead painted at its anchor (ticket 406).
   const { pieceNames: _names, ...canvas } = canvasOf(project)
   const unnamed = { ...project, layers: [canvas, ...project.layers.slice(1)] as Project['layers'] }
-  const unfolded = frame ? withFrameSheet(unnamed, { ...withoutFolded(frame), rowProgress: start }) : unnamed
-  const emptied = withLayer(withLayer(unfolded, 'canvas', { beads: {} }), 'frame', { beads: {} })
-  return touch(frame ? withFrameAlike(emptied, turn) : withCanvas(emptied, { orientation: turn }), {})
+  const unfolded = frames.reduce((next, id) => withFrameSheet(next, { ...withoutFolded(frameById(next, id)!), rowProgress: startOf(id) }, { frame: id }), unnamed)
+  const emptied = frames.reduce((next, id) => withLayer(next, id, { beads: {} }), withLayer(unfolded, 'canvas', { beads: {} }))
+  return touch(withFrameAlike(emptied, turn, frames), {})
 }
 
-/** The Project with its Canvas at `orientation`, its origin where it is, and its Frame lying alike on it (ticket 1188):
+/** The Project with its Canvas at `orientation`, its origin where it is, and each Frame lying alike on it (ticket 1188):
  * upright on it, at the Canvas position whose corner puts its centre nearest where it was on the table. */
-function withFrameAlike(project: Project, orientation: number): Project {
-  const centre = framePlacement(project)!.at
-  const [canvas, held, ...rest] = project.layers
-  const { centre: _centre, ...frame } = held!
-  const alike: Project = { ...project, layers: [{ ...canvas, orientation }, { ...frame, angle: orientation }, ...rest] }
-  return { ...alike, layers: [alike.layers[0], { ...alike.layers[1]!, ...frameCornerAt(alike, centre) }, ...rest] }
+function withFrameAlike(project: Project, orientation: number, frames: readonly FrameId[]): Project {
+  const centres = frames.map((id) => framePlacement(project, id)!.at)
+  return frames.reduce((laid, id, index) => {
+    const alike = withFrameById(laid, id, ({ centre: _centre, ...frame }) => ({ ...frame, angle: orientation }))
+    return withFrameById(alike, id, (frame) => ({ ...frame, ...frameCornerAt(alike, centres[index]!, false, id) }))
+  }, withCanvas(project, { orientation }))
 }
 
 /** A Frame with its Folded beads gone (ticket 0638). */

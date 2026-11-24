@@ -1,9 +1,9 @@
 import { colorAt, type Rect } from './canvas'
-import { rotationSwapsAxes, type GridPosition, type Rotation } from './grid'
+import { rotationSwapsAxes, type GridPosition, type Rotation, type FrameRef } from './grid'
 import { frameRowOrder, ownRowWayOf } from './rowProgress'
 import { frameQuarterTurnOf } from './table'
 import { frameWeave } from './layerWeave'
-import { beadsOfLayer, frameOf } from './layerRecord'
+import { beadsOfLayer, FIRST_FRAME, frameById } from './layerRecord'
 import { inBox, paintedFrameBox } from './projectExtent'
 import type { Project } from './project'
 import { describeWeave } from './weave'
@@ -89,25 +89,25 @@ const ASCENDS: Record<PassDirection, Record<Rotation, boolean>> = {
 }
 
 /** The Word chart of a Project's Frame, or undefined with no Frame. Row by row asks for it, whatever Letters says (ticket 0916). */
-export function wordChartOf(project: Project): WordChart | undefined {
-  const frame = frameOf(project)
-  const weave = frameWeave(project)
+export function wordChartOf(project: Project, ref: FrameRef = FIRST_FRAME): WordChart | undefined {
+  const frame = frameById(project, ref)
+  const weave = frameWeave(project, ref)
   const { wordChart, twoPasses } = describeWeave(weave)
   if (!frame) {
     return undefined
   }
-  const order = frameRowOrder(project)
+  const order = frameRowOrder(project, ref)
   if (order.stepOf) {
-    return customWordChart(project, order)
+    return customWordChart(project, order, ref)
   }
-  const { direction, reversed } = ownRowWayOf(project)
+  const { direction, reversed } = ownRowWayOf(project, undefined, ref)
   // Trimmed as the chart is (ticket 1128): the rows from the first bead to the last, each across the beads' columns only.
-  const box = paintedFrameBox(project)
+  const box = paintedFrameBox(project, ref)
   const along = direction === 'rows' ? (box?.columns ?? frame.columns) : (box?.rows ?? frame.rows)
   // The Frame's own rows, as the picture shows them: at the Frame's nearest quarter turn on the table (ticket 1185).
-  const shown = frameQuarterTurnOf(project)
+  const shown = frameQuarterTurnOf(project, ref)
   const ascends = ASCENDS[direction][shown]
-  const beads = beadsOfLayer(project, 'frame')!
+  const beads = beadsOfLayer(project, ref)!
   let hasEmpty = false
 
   // The passes with beads in the trimmed chart; peyote's first is the one that weaves its whole first line (Rows 1&2), so
@@ -201,8 +201,8 @@ function roundThePair(letters: readonly (string | undefined)[], { pair }: SpineR
 /** A Custom frame's Word chart (ticket 0594): one line per pass of its Row order, numbered from 1, each round read round
  * the shape and each Kite row back and forth from the wing it starts at (ticket 0874); a join is a line of its own with
  * no runs. */
-function customWordChart(project: Project, order: RowOrder): WordChart {
-  const beads = beadsOfLayer(project, 'frame')!
+function customWordChart(project: Project, order: RowOrder, ref: FrameRef): WordChart {
+  const beads = beadsOfLayer(project, ref)!
   let hasEmpty = false
   let parts = false
   let strands = false

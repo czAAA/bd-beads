@@ -1,11 +1,11 @@
-import { type GridPosition } from './grid'
+import { isFrameLayer, type GridPosition } from './grid'
 import { canvasMirrors, counterparts, MIRROR_OFF, type MirrorSetting } from './mirror'
 import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
 import { layerAt, layerSheet, onLayer, shownBeads, positionInLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
 import { footprintOf } from './footprint'
-import { beadsOfLayer, heldWeave, type Layered } from './layerRecord'
+import { beadsOfLayer, FIRST_FRAME, frameIdOf, framesOf, heldWeave, type Layered } from './layerRecord'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells } from './drawing'
@@ -125,8 +125,8 @@ export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition,
 
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle
  * round every placed bead, or none on an empty canvas. */
-export function selectAllSelection(beads: BeadMap, frame: Rect | undefined): Selection | undefined {
-  if (frame) return { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer: 'frame' }
+export function selectAllSelection(beads: BeadMap, frame: Rect | undefined, layer: Layer = FIRST_FRAME): Selection | undefined {
+  if (frame) return { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer }
   const all = allBeadsSelection(beads)
   return all && { ...all, layer: 'canvas' }
 }
@@ -141,7 +141,7 @@ export function allBeadsSelection(beads: BeadMap): Selection | undefined {
 /** Whether the Selection holds every bead you see (ticket 415): the Select all case, where Clear selection means Delete
  * all. Only what its layer shows counts (ticket 0659), so a rectangle round a bead of the other layer does not. */
 export function selectionHoldsAllBeads(project: Project, selection: Selection): boolean {
-  const beadsLeft = (target: Project) => beadCount(shownBeads(target)) + beadCount(beadsOfLayer(target, 'frame') ?? {})
+  const beadsLeft = (target: Project) => beadCount(shownBeads(target)) + framesOf(target).reduce((count, frame) => count + beadCount(frame.beads), 0)
   return beadsLeft(project) > 0 && beadsLeft(paintLayerSelection(project, selection, null)) === 0
 }
 
@@ -172,8 +172,8 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
 export function selectableOn(project: Layered, sheet: LayerSheet): (row: number, column: number) => boolean {
   const { edge } = sheet
   if (edge) return (row, column) => frameContains(edge, { row, column })
-  const covered = footprintOf(project)
-  return covered ? (row, column) => !frameContains(withMargin(covered), { row, column }) : () => true
+  const covered = framesOf(project).flatMap((frame) => footprintOf(project, frameIdOf(frame)) ?? []).map((footprint) => withMargin(footprint))
+  return covered.length > 0 ? (row, column) => !covered.some((footprint) => frameContains(footprint, { row, column })) : () => true
 }
 
 /** Snapshots a Selection's drawn beads on a layer laid on a grid into a block (ticket 437, ADR 0016): trimmed to the
@@ -320,10 +320,11 @@ export function selectionCells(sheet: LayerSheet, selection: Selection, selectab
  * turn would leave those locked beads in place and draw their turned copies too. Never on the Canvas, which Row
  * progress does not cover. */
 export function selectionInFinishedRows(project: Project, selection: Selection): boolean {
-  if (selectionLayer(project, selection) !== 'frame') return false
-  const sheet = layerSheet(project, 'frame')
-  const cells = selectionCells(sheet, selectionInLayer(project, 'frame', selection), selectableOn(project, sheet))
-  return cells.some((cell) => isInFinishedRow(project, { ...positionOnCanvas(project, 'frame', cell), layer: 'frame' }))
+  const layer = selectionLayer(project, selection)
+  if (!isFrameLayer(layer)) return false
+  const sheet = layerSheet(project, layer)
+  const cells = selectionCells(sheet, selectionInLayer(project, layer, selection), selectableOn(project, sheet))
+  return cells.some((cell) => isInFinishedRow(project, { ...positionOnCanvas(project, layer, cell), layer }, layer))
 }
 
 /** Every position of a Selection takes `color` (empty ones too; null clears them), on the
@@ -360,10 +361,10 @@ export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selec
     const picked = pieceSelectionAt(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'), at, footprintOf(project))
     return picked && { ...picked, layer }
   }
-  const sheet = layerSheet(project, 'frame')
-  const picked = pieceSelectionAt(sheet.beads, sheet.weave, positionInLayer(project, 'frame', at), sheet.edge)
-  const origin = positionOnCanvas(project, 'frame', { row: picked?.top ?? 0, column: picked?.left ?? 0 })
-  const cells = picked?.cells?.map((cell) => positionOnCanvas(project, 'frame', cell))
+  const sheet = layerSheet(project, layer)
+  const picked = pieceSelectionAt(sheet.beads, sheet.weave, positionInLayer(project, layer, at), sheet.edge)
+  const origin = positionOnCanvas(project, layer, { row: picked?.top ?? 0, column: picked?.left ?? 0 })
+  const cells = picked?.cells?.map((cell) => positionOnCanvas(project, layer, cell))
   return picked && { ...picked, top: origin.row, left: origin.column, layer, ...(cells ? { cells } : {}) }
 }
 
@@ -424,9 +425,10 @@ export type PasteLoss = 'edge' | 'shape'
 /** How many beads a Paste at `at` loses, and where: those of a block landing in the Frame that fall outside it, or on
  * a Custom frame those that land on a Seam or Off-shape. None on the Canvas, which has no edge. */
 export function pasteLostCount(project: Project, block: CopiedBlock, at: GridPosition): { count: number; loss: PasteLoss } {
-  if (layerAt(project, at) !== 'frame') return { count: 0, loss: 'edge' }
-  const sheet = layerSheet(project, 'frame')
-  const local = positionInLayer(project, 'frame', at)
+  const layer = layerAt(project, at)
+  if (!isFrameLayer(layer)) return { count: 0, loss: 'edge' }
+  const sheet = layerSheet(project, layer)
+  const local = positionInLayer(project, layer, at)
   if (!sheet.geometry.grid) return { count: landedOnCustom(sheet, block, local).dropped, loss: 'shape' }
   const cells = stampedCells(block, local)
   return { count: cells.filter((cell) => !frameContains(sheet.edge!, cell)).length, loss: 'edge' }
@@ -435,8 +437,9 @@ export function pasteLostCount(project: Project, block: CopiedBlock, at: GridPos
 /** Where Ctrl+V aims when the pointer is over a bead rather than a cell (a tool other than Select): on a Custom frame the
  * cell over that bead, its position being named by round and place (ticket 0594); elsewhere the position itself. */
 export function pasteAimAtBead(project: Project, position: GridPosition): GridPosition {
-  if (layerAt(project, position) !== 'frame') return position
-  const sheet = layerSheet(project, 'frame')
+  const layer = layerAt(project, position)
+  if (!isFrameLayer(layer)) return position
+  const sheet = layerSheet(project, layer)
   if (sheet.geometry.grid) return position
-  return { ...positionOnCanvas(project, 'frame', cellOfBead(sheet, positionInLayer(project, 'frame', position))), layer: 'frame' }
+  return { ...positionOnCanvas(project, layer, cellOfBead(sheet, positionInLayer(project, layer, position))), layer }
 }

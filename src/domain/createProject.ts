@@ -1,7 +1,7 @@
 import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, frameOf, newLayerId, startingRowProgressOf, withCanvas, withFrameFields, withLayer, withStartingRowProgress } from './layerRecord'
+import { beadIdOfLayer, newLayerId, startingRowProgressOf, withCanvas, withFrameFields, withLayer, withStartingRowProgress, FIRST_FRAME, frameById, wovenLayerOf } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -89,18 +89,19 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   // The Canvas upright and the new Frame lying as it does (ticket 1188), its progress started as it lies then (spec 1182).
   const project = withStartingRowProgress(withFrameFields(withCanvas(createProject(input), { orientation: 0 }), { angle: 0 }))
-  const frame = frameOf(project)!
+  // A new Project's one Frame.
+  const frame = frameById(project, FIRST_FRAME)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>
     Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),
   )
 
   return {
-    ...withLayer(project, 'frame', { beads: beadsFromColors(cells) }),
+    ...withLayer(project, FIRST_FRAME, { beads: beadsFromColors(cells) }),
     ...(palette
       ? {
           palette: [...palette.ids],
-          paletteLetters: lettersOfPalette(palette.ids, beadIdOfLayer(project, 'frame'), undefined),
+          paletteLetters: lettersOfPalette(palette.ids, beadIdOfLayer(project, wovenLayerOf(project)), undefined),
           ...(Object.keys(palette.codes).length > 0 ? { paletteCodes: { ...palette.codes } } : {}),
         }
       : {}),

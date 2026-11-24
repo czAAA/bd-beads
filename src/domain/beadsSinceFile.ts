@@ -1,6 +1,6 @@
 import { changedRows, sameFrame, type BeadMap } from './canvas'
 import type { Layer } from './grid'
-import { beadIdOfLayer, frameOf, heldWeave, layerOf, type Layered } from './layerRecord'
+import { beadIdOfLayer, frameById, frameIdOf, framesOf, heldWeave, layerOf, type Layered } from './layerRecord'
 import { sameWeave } from './layerWeave'
 
 // Beads since last file (SaveReminder card, ticket 0796): how much drawing a Project's last Project file on this device
@@ -45,14 +45,15 @@ function comparable(before: Layered, after: Layered, layer: Layer): boolean {
   if (!was || !now || beadIdOfLayer(before, layer) !== beadIdOfLayer(after, layer)) return false
   if (!sameWeave(heldWeave(before, layer)!, heldWeave(after, layer)!)) return false
   if (layer === 'canvas') return true
-  const [x, y] = [frameOf(before)!, frameOf(after)!]
+  const [x, y] = [frameById(before, layer)!, frameById(after, layer)!]
   return sameFrame(x, y) && x.quarterTurns === y.quarterTurns
 }
 
 /** An Edit's count (ticket 0796): the bead positions whose value differs between its before and after layers, skipping
  * a layer whose Technique or Bead changed. Symmetric, so Undo takes off and Redo puts back the same number. */
 export function changedBeadCount(before: Layered, after: Layered): number {
-  return (['canvas', 'frame'] as const).reduce(
+  const frames = new Set([...framesOf(before), ...framesOf(after)].map(frameIdOf))
+  return (['canvas', ...frames] as const).reduce(
     (count, layer) => count + (comparable(before, after, layer) ? changedPositions(layerOf(before, layer)!.beads, layerOf(after, layer)!.beads) : 0),
     0,
   )

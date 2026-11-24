@@ -1,7 +1,7 @@
 import { frameContains, shiftedBeads, withColors, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import { snappedFrame } from './frame'
-import type { GridPosition } from './grid'
-import { beadsOfLayer, frameOf, heldWeave, lettersOn, withLetters, withLayer } from './layerRecord'
+import { isFrameLayer, type GridPosition } from './grid'
+import { beadsOfLayer, frameById, frameIdOf, framesOf, heldWeave, lettersOn, newLayerId, withLetters, withLayer } from './layerRecord'
 import { withFrameSheet } from './frameSheet'
 import { pieceNameAt } from './pieceNames'
 import type { Project } from './project'
@@ -29,8 +29,9 @@ function beadsInside(beads: BeadMap, area: Rect, cells: readonly GridPosition[] 
 /** Whether a Selection can be exported: not on a Custom frame (its chart is its Frame shape's whole) nor one off the
  * Canvas's grid, which have no rectangle of beads to cut. */
 export function selectionExportable(project: Project, selection: Selection): boolean {
-  const frame = frameOf(project)
-  return selectionLayer(project, selection) !== 'frame' || (!!frame && !frame.shape && !frame.centre)
+  const layer = selectionLayer(project, selection)
+  const frame = frameById(project, layer)
+  return layer === 'canvas' || (!!frame && !frame.shape && !frame.centre)
 }
 
 /** The Project to export for a Selection (ticket 1210), or none where it can't be. Only the Selection's layer is cut, a
@@ -40,24 +41,27 @@ export function selectionExportProject(project: Project, selection: Selection, p
   if (!selectionExportable(project, selection)) return undefined
   const layer = selectionLayer(project, selection)
   const asked = selectionFrame(selection)
-  if (layer === 'frame') {
-    const frame = frameOf(project)!
+  if (isFrameLayer(layer)) {
+    const frame = frameById(project, layer)!
     const own = { row: asked.row - frame.row, column: asked.column - frame.column, rows: asked.rows, columns: asked.columns }
     const inside = clipped(own, { row: 0, column: 0, rows: frame.rows, columns: frame.columns })
     if (!inside) return undefined
-    const area = snappedFrame(heldWeave(project, 'frame')!, inside)
-    const beads = beadsInside(beadsOfLayer(project, 'frame')!, area, selection.cells?.map((cell) => ({ row: cell.row - frame.row, column: cell.column - frame.column })))
+    const area = snappedFrame(heldWeave(project, layer)!, inside)
+    const beads = beadsInside(beadsOfLayer(project, layer)!, area, selection.cells?.map((cell) => ({ row: cell.row - frame.row, column: cell.column - frame.column })))
     const { shape: _shape, settings: _settings, folded: _folded, quarterTurns: _turns, ...kept } = frame
     const cut: FrameSheet & Partial<typeof frame> = { ...kept, row: frame.row + area.row, column: frame.column + area.column, rows: area.rows, columns: area.columns, beads }
-    return withLayer(withFrameSheet(withLayer(project, 'canvas', { beads: {} }), cut), 'frame', { name: partName })
+    return withLayer(withFrameSheet(withLayer(project, 'canvas', { beads: {} }), cut, { frame: layer }), layer, { name: partName })
   }
   const area = snappedFrame(heldWeave(project, 'canvas'), asked)
   const beads = beadsInside(beadsOfLayer(project, 'canvas'), asked, selection.cells)
   const piece = selection.cells?.[0] && pieceNameAt(project, selection.cells[0])
-  const base = withLayer(frameOf(project) ? withFrameSheet(project, undefined) : project, 'canvas', { beads: {} })
+  const unframed = framesOf(project).reduce((next, frame) => withFrameSheet(next, undefined, { frame: frameIdOf(frame) }), project)
+  const base = withLayer(unframed, 'canvas', { beads: {} })
   const sheet: FrameSheet = { row: area.row, column: area.column, rows: area.rows, columns: area.columns, beads: shiftedBeads(beads, asked.row - area.row, asked.column - area.column), ...heldWeave(project, 'canvas') }
-  const laid = withFrameSheet(base, sheet, { anew: true })
-  return withLayer(withLetters(laid, 'frame', lettersOn(project, 'canvas')), 'frame', { name: piece || partName })
+  // The one Frame of the Project made, named by the id it is made with.
+  const made = frameIdOf({ id: newLayerId() })
+  const laid = withFrameSheet(base, { ...sheet, id: made }, { anew: true, frame: made })
+  return withLayer(withLetters(laid, made, lettersOn(project, 'canvas')), made, { name: piece || partName })
 }
 
 /** The overlap of two rectangles, or none. */

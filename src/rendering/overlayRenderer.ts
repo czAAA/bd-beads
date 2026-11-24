@@ -1,4 +1,4 @@
-import { type GridPosition, type PreviewCell } from '../domain/grid'
+import { isFrameLayer, type FrameRef, type GridPosition, type PreviewCell } from '../domain/grid'
 import { describeWeave, type Technique, type Weave } from '../domain/weave'
 import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
@@ -25,7 +25,7 @@ import { joinedTouching } from './touchingCells'
 import { lookSideOf } from './pieceGround'
 import { drawDraftBeads, drawsDraft } from './draftRenderer'
 import { markLookAt } from './tonalTiles'
-import { beadsOfLayer, frameOf, quarterTurnOf } from '../domain/layerRecord'
+import { beadsOfLayer, quarterTurnOf, FIRST_FRAME, frameById } from '../domain/layerRecord'
 import { isMirrorOn, mirrorLines, shapeOwnAxes, type MirrorSetting } from '../domain/mirror'
 import type { LayoutPoint, LayoutSymmetry } from '../domain/frameLayout'
 
@@ -88,14 +88,14 @@ interface BeadPointer {
   x: number
   y: number
   /** The layer the pointer is over (ticket 492): the marker is shaped like that layer's beads. The Canvas's when none. */
-  layer?: 'canvas' | 'frame'
+  layer?: Layer
   /** The chosen color, shown at 60%; none for the dark outline. */
   color: string | null
 }
 
 export interface OverlayInput {
   /** Whether Row progress is drawn (the current pass lifted, its row number bold). Defaults to
-   * `rowProgressOn(project)` (ticket 434). */
+   * `rowProgressOn(project, ref)` (ticket 434). */
   rowMarks?: boolean
   /** The Project whose overlay this is: its Row progress decides the marker. */
   project: DrawnProject
@@ -234,19 +234,20 @@ function raisedBy(bead: PassBead, by: number): PassBead {
 
 /** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none
  * when the Frame has no such pass. */
-function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometry, pass = currentPass(rowProgressOf(project))): PassBead[] {
+function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometry, at?: number, ref: FrameRef = FIRST_FRAME): PassBead[] {
+  const pass = at ?? currentPass(rowProgressOf(project, ref))
   if (!space.hasFrame) {
     return []
   }
-  const weave = frameWeave(project)
-  const frame = frameOf(project)
+  const weave = frameWeave(project, ref)
+  const frame = frameById(project, ref)
   // The Frame's Row order in its own rows (turned, it lies in others: ticket 0667), or one over the Project drawn alone,
   // measured as its space is.
   const { rows, columns } = frame ?? space
-  const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows, columns }, ownRowWayOf(project))
+  const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows, columns }, ownRowWayOf(project, undefined, ref))
   if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
-    const beads = beadsOfLayer(project, 'frame')!
+    const beads = beadsOfLayer(project, ref)!
     return order.positionsOf(pass).flatMap((position) => {
       const color = colorAt(beads, position.row, position.column)
       const place = geometry.place(position)
@@ -260,7 +261,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
     const row = space.origin.row + position.row
     const column = space.origin.column + position.column
     // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
-    const color = beadInSpace(project, space, row, column)
+    const color = beadInSpace(project, space, row, column, ref)
     return color === null ? [] : [{ ...positionBoxPx(weave, row, column), color }]
   })
 }
@@ -462,7 +463,7 @@ function previewColorOf(cell: PreviewCell, preview: HoverPreview, emptied: strin
  * them, the draft look) the Canvas itself and, in the Frame, the empty bead. */
 function emptiedColorOf(theme: ProjectTheme, layer: Layer, deviceScale: number): string {
   const mark = markLookAt(theme, deviceScale)
-  return mark.tiles ? mark.color : layer === 'frame' ? theme.emptyBead : theme.canvas
+  return mark.tiles ? mark.color : isFrameLayer(layer) ? theme.emptyBead : theme.canvas
 }
 
 /** How small a bead is on the screen, in device px, below which a pasted block's preview is drawn in the draft look
@@ -488,7 +489,7 @@ function drawPreviewInView(context: DrawingContext, weave: Weave, space: Space, 
 
 /** Each layer's share of a preview's beads, kept for the list and the Project it was worked out for: a Fill's region
  * comes unchanged while the pointer moves inside it (ticket 1153), so it is not split again at every redraw. */
-const splitPreviews = new WeakMap<readonly PreviewCell[], { project: DrawnProject; open: boolean; canvas?: PreviewCell[]; frame?: PreviewCell[] }>()
+const splitPreviews = new WeakMap<readonly PreviewCell[], { project: DrawnProject; open: boolean; canvas?: PreviewCell[]; sheet?: PreviewCell[] }>()
 
 function splitOnce(cells: readonly PreviewCell[], project: DrawnProject, space: Space, layer: Layer, split: (cells: readonly PreviewCell[]) => PreviewCell[]): PreviewCell[] {
   if (cells.length <= 1) return split(cells)
@@ -497,7 +498,7 @@ function splitOnce(cells: readonly PreviewCell[], project: DrawnProject, space: 
     known = { project, open: space.open }
     splitPreviews.set(cells, known)
   }
-  return (known[layer] ??= split(cells))
+  return isFrameLayer(layer) ? (known.sheet ??= split(cells)) : (known.canvas ??= split(cells))
 }
 
 /** What a preview's list shows in a view, kept for the list (a Fill's region, unchanged while the pointer moves inside
@@ -1016,7 +1017,7 @@ function drawLayoutAxes(context: DrawingContext, symmetry: LayoutSymmetry & { ce
 function onFrame(frame: FrameSheet | undefined, geometry: LayerGeometry | undefined, covered: Rect | undefined, position: GridPosition): boolean {
   if (frame === undefined) return false
   // A Custom frame's positions are named by round and place, which its rectangle does not bound (ticket 0592).
-  return position.layer ? position.layer === 'frame' && (!geometry?.grid || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)
+  return position.layer ? isFrameLayer(position.layer) && (!geometry?.grid || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)
 }
 
 /** The Frame's positions counted from its own first (ticket 492): a position of the Canvas that lies on it, or the cell
@@ -1029,13 +1030,15 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, frameTheme = theme, space = spaceOf(project, false), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, areaSheet, rowMotion, layer } = input
+  // The Frame drawn: the one this surface is, else the first (ticket 1216).
+  const ref: FrameRef = isFrameLayer(input.layer) ? input.layer : FIRST_FRAME
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, frameTheme = theme, space = spaceOf(input.project, false, ref), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, areaSheet, rowMotion, layer } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
-  const showRows = rowMarks ?? rowProgressOn(project)
-  const ruled = space.open && rulers !== undefined && (frameOf(project) !== undefined || Object.keys(beadsOfLayer(project, 'canvas')).length > 0)
+  const showRows = rowMarks ?? rowProgressOn(project, ref)
+  const ruled = space.open && rulers !== undefined && (frameById(project, ref) !== undefined || Object.keys(beadsOfLayer(project, 'canvas')).length > 0)
   if (!showRows && !preview && !selection && !ruled && !frameEditing && !pointer && !(marginOutline > 0) && !mirror) {
     return
   }
@@ -1044,25 +1047,25 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // Bitmaps of beads are made at the size they are on the screen, so they are blitted as they are, not resampled.
   context.imageSmoothingEnabled = false
 
-  const frame = space.open ? frameOf(project) : undefined
+  const frame = space.open ? frameById(project, ref) : undefined
   // Which layers' items this draws: on the Canvas, one of them where asked (ticket 1187).
-  const ofCanvas = space.open && layer !== 'frame'
+  const ofCanvas = space.open && !isFrameLayer(layer)
   const ofFrame = !space.open || layer !== 'canvas'
-  const covered = footprintOf(project)
+  const covered = footprintOf(project, ref)
   const canvasWeaveOf = canvasWeave(project)
-  const frameSpace = frame ? spaceOf(project, false) : undefined
-  const geometry = frame || !space.open ? geometryDrawnAlone(project) : undefined
+  const frameSpace = frame ? spaceOf(project, false, ref) : undefined
+  const geometry = frame || !space.open ? geometryDrawnAlone(project, ref) : undefined
 
   // The Canvas's items: all of them when it is the only layer, else those not on the Frame.
   const offFrame = <T extends GridPosition>(cells: readonly T[]): T[] => cells.filter((cell) => !onFrame(frame, geometry, covered, cell))
-  const ownLayer: 'canvas' | 'frame' = space.open ? (selection ? selectionLayerOf(project, selection) : 'canvas') : 'frame'
+  const ownLayer: Layer = space.open ? (selection ? selectionLayerOf(project, selection) : 'canvas') : ref
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
   const canvasView = () => visibleBeadsInSpace(canvasWeaveOf, space, region, zoom, quarterTurnOf(project))
   const offFrameStamp = (stamp: PasteStamp) => stampInView(stamp, canvasView(), { row: 0, column: 0 }, frame && ((cell) => !onFrame(frame, geometry, covered, cell)))
   const canvasCells = preview && space.open ? splitOnce(preview.cells, project, space, 'canvas', offFrame) : []
   const canvasStamp = preview?.stamp && space.open ? offFrameStamp(preview.stamp) : []
 
-  if (space.open && ofFrame && marginOutline > 0 && frameOf(project)) {
+  if (space.open && ofFrame && marginOutline > 0 && frameById(project, ref)) {
     drawMarginOutline(context, canvasWeaveOf, covered!, zoom, marginOutline, theme, margin)
   }
   // The Mirror's Area (ADR 0082), drawn while it is on: a Canvas rectangle with its Axes and its handles after, or the
@@ -1073,7 +1076,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const inCanvasArea: InArea = canvasArea ? (cell) => frameContains(canvasArea, cell) : NOWHERE
   const selectionColor = marksArea ? theme.mirror : theme.marker
   /** Whether an item on `on` is this drawing's to draw. */
-  const ownsLayer = (on: ViewLayer) => (on === 'frame' ? ofFrame : ofCanvas || !space.open)
+  const ownsLayer = (on: ViewLayer) => (isFrameLayer(on) ? ofFrame : ofCanvas || !space.open)
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, and the marker lifted above its row.
@@ -1090,15 +1093,15 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // The Frame's layer, or the Project drawn alone.
   const sheetSpace = space.open ? frameSpace : space
   if (ofFrame && sheetSpace && (frame || !space.open)) {
-    const sheetWeave = frameWeave(project)
+    const sheetWeave = frameWeave(project, ref)
     const origin = frame ? frameOriginPx(canvasWeaveOf, frame) : { x: 0, y: 0 }
     // The Frame's own px are its Bead's size over the Canvas's (ticket 0665); drawn alone, they are the space's.
-    const scale = frame ? frameScale(project) : 1
+    const scale = frame ? frameScale(project, ref) : 1
     const local = <T extends GridPosition>(cell: T): T => (frame ? inFrameTerms(frame, cell) : cell)
     const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, geometry, covered, cell)).map(local) : [...cells])
     // A shape keeps its Canvas positions, counted from the layer's first, so its outline is worked out only once.
     const layerOrigin = frame ? { row: frame.row, column: frame.column } : { row: 0, column: 0 }
-    const sheetSelection = selection && ownLayer === 'frame' ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column } : selection) : undefined
+    const sheetSelection = selection && isFrameLayer(ownLayer) ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column } : selection) : undefined
     const sheetView = (): VisiblePositions => {
       if (geometry!.grid) return visibleBeadsInSpace(sheetWeave, space, region, zoom, quarterTurnOf(project), origin, scale)
       // A Custom frame's cells are named by round and place: only those its rectangle holds can be on it.
@@ -1108,10 +1111,10 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     context.save()
     context.translate(origin.x, origin.y)
     if (scale !== 1) context.scale(scale, scale)
-    const inPass = showRows ? beadsInPass(project, sheetSpace, geometry!) : []
+    const inPass = showRows ? beadsInPass(project, sheetSpace, geometry!, undefined, ref) : []
     // Under the current pass, so on peyote and brick stitch its lifted beads still lie over the one just finished.
     for (const { pass, elapsed } of showRows ? (rowMotion?.glints ?? []) : []) {
-      const finished = beadsInPass(project, sheetSpace, geometry!, pass)
+      const finished = beadsInPass(project, sheetSpace, geometry!, pass, ref)
       if (elapsed >= glintMs(finished.length)) continue
       if (elapsed < ROW_MOTION.dimDelay) drawLiftedBeads(context, finished, sheetWeave, zoom * scale, pixelRatio, theme, letters, 0)
       drawGlint(context, finished, sheetWeave, elapsed)
@@ -1124,15 +1127,15 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, selectionColor, sheetView, layerOrigin, theme)
     // The whole-Frame Mirror, in the Frame's own positions from its first, drawn alone too: the Axes across a Frame on a
     // grid; a Custom frame's through its layout's centre (ticket 0706).
-    const mirrored = wholeFrame && geometry!.grid ? frameOf(project) : undefined
+    const mirrored = wholeFrame && geometry!.grid ? frameById(project, ref) : undefined
     if (mirrored) drawMirrorAxes(context, sheetWeave, { row: 0, column: 0, rows: mirrored.rows, columns: mirrored.columns }, wholeFrame!, zoom * scale, theme)
     const symmetry = wholeFrame && !geometry!.grid ? geometry!.symmetry?.() : undefined
     if (symmetry) drawLayoutAxes(context, symmetry, gridBox(sheetWeave, { row: 0, column: 0, rows: sheetSpace.rows, columns: sheetSpace.columns }), wholeFrame!, zoom * scale, theme)
-    const sheetCells = preview ? splitOnce(preview.cells, project, space, 'frame', onSheet) : []
+    const sheetCells = preview ? splitOnce(preview.cells, project, space, ref, onSheet) : []
     const sheetStamp = preview?.stamp ? onSheetStamp(preview.stamp) : []
     const inFrameArea = wholeFrame ? ALL_IN_AREA : NOWHERE
     if (preview && sheetCells.length + sheetStamp.length > 0) {
-      const emptied = emptiedColorOf(frameTheme, 'frame', zoom * scale * pixelRatio)
+      const emptied = emptiedColorOf(frameTheme, ref, zoom * scale * pixelRatio)
       if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, theme, inFrameArea, emptied)
       else {
         if (sheetCells.length) drawPreviewInView(context, sheetWeave, sheetSpace, sheetCells, preview, theme, zoom * scale * pixelRatio, inFrameArea, sheetView, emptied)
@@ -1157,16 +1160,16 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     drawRulers(context, {
       project,
       surface: rulers.surface,
-      layout: layer && space.open ? rulersOf(rulers.layout, layer === 'frame' ? 'frame' : 'piece') : rulers.layout,
+      layout: layer && space.open ? rulersOf(rulers.layout, isFrameLayer(layer) ? 'frame' : 'piece') : rulers.layout,
       pixelRatio,
       theme,
       rowMarks: showRows,
       glide: rowMotion?.glide,
-    })
+    }, ref)
   }
-  if (space.open && ofFrame && rulers && frameEditing && frameOf(project)) {
+  if (space.open && ofFrame && rulers && frameEditing && frameById(project, ref)) {
     drawFrameEditing(context, {
-      frame: frameOf(project)!,
+      frame: frameById(project, ref)!,
       surface: rulers.surface,
       pixelRatio,
       theme,
@@ -1186,9 +1189,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     drawAreaCorners(context, { ...selectionHandles, box: selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), outset, pixelRatio, theme, color: selectionColor, tooltip: sized(selectionHandles) })
   }
   if (pointer && ownsLayer(pointer.layer ?? 'canvas')) {
-    const pointerWeave = pointer.layer === 'frame' ? frameWeave(project) : canvasWeaveOf
+    const pointerWeave = isFrameLayer(pointer.layer) ? frameWeave(project, ref) : canvasWeaveOf
     // On the Canvas, a Frame's bead is its Bead's size (ticket 0665).
-    const scaled = pointer.layer === 'frame' && space.open ? frameScale(project) : 1
+    const scaled = isFrameLayer(pointer.layer) && space.open ? frameScale(project, ref) : 1
     drawPointer(context, pointerWeave.technique, pointerWeave.cell, zoom * scaled, pixelRatio, pointer, theme)
   }
 }

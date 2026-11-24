@@ -2,7 +2,7 @@ import { beadLabel, formFactorName } from '../domain/beads'
 import { computeColorQuantities, hasEmptyPositions } from '../domain/beadQuantities'
 import { projectPalette } from '../domain/palette'
 import { listedColorName } from '../i18n/colorName'
-import { rotationSwapsAxes } from '../domain/grid'
+import { rotationSwapsAxes, type FrameRef } from '../domain/grid'
 import { paintedFrameBox, shownDimensions } from '../domain/projectExtent'
 import { frameWeave } from '../domain/layerWeave'
 import { resolveProjectBead } from '../domain/projectBead'
@@ -18,7 +18,7 @@ import { wordChartOf, type WordChart, type WordRun, type WordSide, type WordSpin
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
 import { laidTurnOf, withLaidTurn } from '../domain/framePlacement'
-import { frameOf, projectNameOf } from '../domain/layerRecord'
+import { projectNameOf, FIRST_FRAME, frameById } from '../domain/layerRecord'
 import { withFrameSheet } from '../domain/frameSheet'
 import { pieceFaceOf } from '../domain/pieceFaces'
 import { largeBeadsActs } from './pageOneLayout'
@@ -185,8 +185,8 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
 }
 
 /** A Kaleidocycle's Word chart says, after where it starts, that it is one face of the piece (ticket 0876). */
-function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations['print']['wordChart']): PrintedWordChart {
-  const face = pieceFaceOf(frameOf(project)?.shape)
+function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations['print']['wordChart'], ref: FrameRef): PrintedWordChart {
+  const face = pieceFaceOf(frameById(project, ref)?.shape)
   if (!face) return chart
   const note = fillBlanks(t.faceNote, { parts: face.parts, total: face.total })
   return { ...chart, notes: [...chart.notes.slice(0, 1), note, ...chart.notes.slice(1)] }
@@ -194,28 +194,28 @@ function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations
 
 /** The words an export prints; the maker's name is the Project's own, and empty prints none (ADR 0060). The Word chart
  * follows Row by row, never Letters (ticket 0916). */
-export function printText(shown: Project, t: Translations, locale: Locale, at: Date, choices: PrintChoices = {}): PrintText {
+export function printText(shown: Project, t: Translations, locale: Locale, at: Date, choices: PrintChoices = {}, ref: FrameRef = FIRST_FRAME): PrintText {
   // Named by the Frame's own turn alone, as the export draws it (ticket 1186).
-  const project = withLaidTurn(shown)
+  const project = withLaidTurn(shown, undefined, ref)
   const bead = resolveProjectBead(project)
   const maker = (project.makerName ?? '').trim()
   // The tech line gives the trimmed size (ticket 1128): the box round the Frame's beads, measured as a Frame of that size.
-  const box = paintedFrameBox(project)
-  const measured = box ? withFrameSheet(project, { ...frameOf(project)!, columns: box.columns, rows: box.rows }) : project
-  const { columns, rows } = shownDimensions(measured)
-  const [across, down] = rotationSwapsAxes(laidTurnOf(project)) ? [rows, columns] : [columns, rows]
+  const box = paintedFrameBox(project, ref)
+  const measured = box ? withFrameSheet(project, { ...frameById(project, ref)!, columns: box.columns, rows: box.rows }, { frame: ref }) : project
+  const { columns, rows } = shownDimensions(measured, ref)
+  const [across, down] = rotationSwapsAxes(laidTurnOf(project, ref)) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
-  const estimate = bead ? formatSizeMm(estimatedSizeMm(measured, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
+  const estimate = bead ? formatSizeMm(estimatedSizeMm(measured, bead, undefined, ref), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
   const beadName = bead ? beadLabel(bead) : t.projects.unknownBeadLabel
-  const technique = techniqueName(t, frameWeave(project).technique)
+  const technique = techniqueName(t, frameWeave(project, ref).technique)
   const grams = (count: number) => {
     const weight = printedGrams(count, bead)
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)
   }
 
-  const wordChart = choices.rowByRow ? wordChartOf(choices.rowByRowWay ? turnRowDirectionTo(project, choices.rowByRowWay) : project) : undefined
+  const wordChart = choices.rowByRow ? wordChartOf(choices.rowByRowWay ? turnRowDirectionTo(project, choices.rowByRowWay, ref) : project, ref) : undefined
   const palette = projectPalette(project)
-  const quantities = computeColorQuantities(project, palette)
+  const quantities = computeColorQuantities(project, palette, ref)
   const total = quantities.reduce((sum, quantity) => sum + quantity.count, 0)
   const perGram = bead && beadsPerGram(bead)
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(at)
@@ -223,7 +223,7 @@ export function printText(shown: Project, t: Translations, locale: Locale, at: D
 
   const text: PrintText = {
     locale,
-    name: frameOf(project)?.name?.trim() || projectNameOf(project),
+    name: frameById(project, ref)?.name?.trim() || projectNameOf(project),
     techniqueWord: technique,
     maker,
     exportedAt: `${date} · ${time}`,
@@ -247,8 +247,8 @@ export function printText(shown: Project, t: Translations, locale: Locale, at: D
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor)} ${bead.size}` })} ${t.print.spares}`
         : undefined,
     // The key names the cross only while the chart draws it: Empty grid on (ticket 1140).
-    ...(choices.emptyGrid && hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
-    wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
+    ...(choices.emptyGrid && hasEmptyPositions(project, ref) ? { empty: t.print.wordChart.empty } : {}),
+    wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart, ref),
     ...(choices.cover ? { cover: true } : {}),
     ...(choices.blackAndWhite ? { tones: printTones(quantities) } : {}),
     ...(choices.emptyGrid ? { emptyGrid: true } : {}),

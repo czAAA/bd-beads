@@ -1,6 +1,6 @@
 import type { Rect } from '../domain/canvas'
-import type { GridPosition, Layer } from '../domain/grid'
-import { frameOf, type Layered } from '../domain/layerRecord'
+import { isFrameLayer, type GridPosition, type Layer } from '../domain/grid'
+import { type Layered, frameById } from '../domain/layerRecord'
 import { frameGeometryOf, layerAt, positionInLayer } from '../domain/layers'
 import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
 import { pointOnPicture, turnedExtent, type ReferencePlace } from '../domain/referenceImage'
@@ -65,14 +65,15 @@ export function pictureCover(weave: Weave, place: ReferencePlace, height: number
  * Frame's bead where the Frame draws it, through its Bead's size and shape): what Pick color reads (ticket 1119). None
  * off the picture. */
 export function pressOnPicture(project: Layered, position: GridPosition, layer: Layer | undefined, place: ReferencePlace, height: number): { u: number; v: number } | undefined {
-  const frame = (layer ?? layerAt(project, position)) === 'frame' ? frameOf(project) : undefined
+  const on = layer ?? layerAt(project, position)
+  const frame = frameById(project, on)
   const canvas = canvasWeave(project)
-  if (!frame) return pointOnPicture(place, height, centreOf(positionBoxPx(canvas, position.row, position.column)))
-  const local = positionInLayer(project, 'frame', position)
-  const placed = frameGeometryOf(project).place(local)
-  const box = placed ? inGridPx(placed.box) : positionBoxPx(frameWeave(project), local.row, local.column)
+  if (!frame || !isFrameLayer(on)) return pointOnPicture(place, height, centreOf(positionBoxPx(canvas, position.row, position.column)))
+  const local = positionInLayer(project, on, position)
+  const placed = frameGeometryOf(project, on).place(local)
+  const box = placed ? inGridPx(placed.box) : positionBoxPx(frameWeave(project, on), local.row, local.column)
   const origin = frameOriginPx(canvas, frame)
-  const scale = frameScale(project)
+  const scale = frameScale(project, on)
   const centre = centreOf(box)
   return pointOnPicture(place, height, { x: origin.x + centre.x * scale, y: origin.y + centre.y * scale })
 }
