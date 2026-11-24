@@ -39,9 +39,9 @@ const CUT_OFF_BY_DESIGN = '[data-testid="app-canvas"]'
  * so only sideways overflow counts. */
 const ROLLING = '[data-testid="slogan-column"], [data-testid="homepage-plans"]'
 
-/** Not checked: user-typed text (a long Project name may ellipsize) and the drawing's furniture (backdrop word,
- * ruler numbers). */
-const USER_TEXT = '[data-user-text], [data-testid="project-info"], [data-testid="project-name"], [data-testid="frame-name"], [data-testid="canvas-strip-title"], [data-testid="ruler-label"], .project-canvas__clip, .project-list__name'
+/** Not checked: user-typed text (a long Project name may ellipsize), the drawing's furniture (backdrop word, ruler
+ * numbers) and the margin legend's Bead label, cut to what fits by design (ticket 1213). */
+const USER_TEXT = '[data-user-text], [data-testid="margin-bead-name"], [data-testid="project-info"], [data-testid="project-name"], [data-testid="frame-name"], [data-testid="canvas-strip-title"], [data-testid="ruler-label"], .project-canvas__clip, .project-list__name'
 
 /** What the measurement is told: the selectors above, so a page runs it without importing anything. */
 export interface MeasureArgs {

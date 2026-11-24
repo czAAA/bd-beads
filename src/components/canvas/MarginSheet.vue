@@ -266,6 +266,7 @@ const progressDrop = computed(() => Number(progressFit.value?.split(':')[1] ?? 0
 const shortCount = computed(() => progressFit.value?.endsWith(':short') ?? false)
 
 const titleEl = ref<HTMLElement>()
+const titleBlock = ref<InstanceType<typeof MarginTitleBlock>>()
 
 /** The title block's room: the foot's, less Row progress beside it on one line. */
 const titleRoom = computed(() => {
@@ -275,7 +276,8 @@ const titleRoom = computed(() => {
 const title = useFittingForm({
   forms: () => (titleOn.value ? (fold.folded.value ? titleForms.value.filter((shown) => shown === 'tab') : titleForms.value) : []),
   room: () => titleRoom.value,
-  measure: () => ownLength(titleEl.value, titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
+  // The block by its least width: the Bead's label in the legend gives way before it steps down (ticket 1213).
+  measure: () => titleBlock.value?.leastWidth() || ownLength(titleEl.value, titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
   observed: () => [titleEl.value?.firstElementChild],
   // Its words: a shorter name, maker or language brings back the block it stepped down from (ticket 0851).
   labels: () => {
@@ -582,6 +584,7 @@ const menuItems = computed(() => (shownFit.value ? shownFit.value.overflow.map((
       <div v-if="title" ref="titleEl" class="margin-sheet__title" :data-form="title" data-testid="margin-title">
         <MarginTitleBlock
           v-if="title !== 'tab'"
+          ref="titleBlock"
           :project="project"
           :form="title"
           @rename="emit('rename', $event)"

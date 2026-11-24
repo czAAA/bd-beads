@@ -31,6 +31,8 @@ const technique = ref<'loom' | 'brick'>('loom')
 const movePresses = ref(0)
 /** The Frame's name: empty, its tab invites one (ticket 0803). */
 const frameName = ref('Sun band')
+/** How many of the Palette's colors the Frame's first row is painted in, at most. */
+const colorCount = ref(99)
 /** How many times Turn row direction has been pressed: once, the rows run left to right and Row done reads "Column
  * done"; twice, bottom to top (ticket 0851). */
 const turns = ref(0)
@@ -54,7 +56,7 @@ function projectOf(across: number): Project {
 makerName: 'Ada',
     frame: { row: 0, column: 0, rows: rows.value, columns: across, technique: technique.value, techniqueSettings: { brickDrop: 2 }, beads: {}, name: frameName.value },
 })
-  const painted = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).slice(0, across).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
+  const painted = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).slice(0, Math.min(across, colorCount.value)).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
   const turned = Array.from({ length: turns.value }).reduce<Project>((project) => toggleRowDirection(project), painted)
   return moveToRow(turned, 0)
 }
@@ -180,6 +182,31 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
         expect(root.querySelector('.margin-sheet__progress')?.getAttribute('data-form'), `${at}`).toBe('margin:0')
         expect(problems(root), `${at}`).toEqual([])
       }
+    })
+
+    it(`cuts the Bead's label in the legend to what fits before the one row steps down, every cell else whole, in ${locale} (ticket 1213)`, async () => {
+      zoom.value = 1
+      colorCount.value = 1
+      onTestFinished(() => {
+        colorCount.value = 99
+        columns.value = 40
+      })
+      const { root } = await mountAt(Host, {}, { locale, width: 1280 })
+      let cut = 0
+      for (let across = 36; across >= 18; across -= 1) {
+        columns.value = across
+        await settled(root)
+        expect(problems(root), `${across}`).toEqual([])
+        if (root.querySelector('[data-testid="margin-title"]')?.getAttribute('data-form') !== 'line') continue
+        const block = root.querySelector<HTMLElement>('[data-testid="margin-title-block"]')!
+        const foot = root.querySelector<HTMLElement>('[data-testid="margin-foot"]')!
+        expect(block.offsetWidth, `${across}`).toBeLessThanOrEqual(foot.offsetWidth + 0.5)
+        const name = root.querySelector<HTMLElement>('[data-testid="margin-bead-name"]')!
+        if (name.scrollWidth > name.clientWidth + 0.5) cut += 1
+        for (const other of block.querySelectorAll<HTMLElement>('.margin-title__cell:not(.margin-title__legend) span'))
+          expect(other.scrollWidth, `${across} ${other.textContent}`).toBeLessThanOrEqual(other.clientWidth + 0.5)
+      }
+      expect(cut, 'a sheet where the label is cut and the row kept').toBeGreaterThan(0)
     })
 
     it(`fits at every zoom from 25% to 150%, and on a narrow Frame, stepping down a form where the sheet is too narrow, in ${locale}`, async () => {

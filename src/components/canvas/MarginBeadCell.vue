@@ -103,11 +103,24 @@ useOverlayLayer({
   font: var(--type-small);
 }
 
-/* The legend's top line: the label whole and its pencil 4px apart, as the Technique's (ticket 1213); a sheet too narrow
- * for it steps the title block down. */
+/* The legend's top line: the label and its pencil 4px apart, as the Technique's (ticket 1213). Where the row is short
+ * the label shows what fits, then an ellipsis ("TOHO…"); the pencil's name and the popover keep it whole. */
 .margin-bead--pencil {
+  display: flex;
   gap: var(--space-4);
+  min-width: 0;
   white-space: nowrap;
+}
+
+.margin-bead--pencil .margin-bead__name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.margin-bead--pencil :deep(.icon-btn-wrap) {
+  flex: none;
 }
 
 .margin-bead__label {
