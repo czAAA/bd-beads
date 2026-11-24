@@ -316,9 +316,9 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   /** Row done for the traced cuff's first rows, the first five slower, then a rest: too many to show them all. */
   async rowProgress(hand) {
     for (let step = 0; step < ROW_DONE_PASSES; step++) {
-      const next = hand.root.querySelector('[data-testid="progress-bar-next"]')
+      const next = hand.root.querySelector('[data-testid="margin-progress-next"]')
       if (!next || next.getAttribute('aria-disabled') === 'true' || (next as HTMLButtonElement).disabled) break
-      await hand.press('progress-bar-next')
+      await hand.press('margin-progress-next')
       await hand.wait(step < ROW_DONE_SLOW ? HOLD.rowDoneSlow : HOLD.rowDoneQuick)
     }
     await hand.wait(HOLD.rowProgressRest)

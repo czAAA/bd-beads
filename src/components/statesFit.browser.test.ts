@@ -19,7 +19,7 @@ import CanvasHint from './canvas/CanvasHint.vue'
 import FirstRunHints from './canvas/FirstRunHints.vue'
 import MarginBeadCell from './canvas/MarginBeadCell.vue'
 import MarginColorPopover from './canvas/MarginColorPopover.vue'
-import ProgressBar from './canvas/ProgressBar.vue'
+import RowListHost from '../testUtils/RowListHost.vue'
 import ContextBar from './tools/ContextBar.vue'
 import SchemaTags from './canvas/SchemaTags.vue'
 import { withPieceName } from '../domain/pieceNames'
@@ -292,8 +292,9 @@ const CASES: FitCase[] = [
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],
   ['MarginSheet (bare)', marginSheetHost(0.25), {}],
   ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
-  // Turn row direction's list, with Show row marks (ticket 0973).
-  ['Turn row direction\'s list', ProgressBar, { project: framed }, (root: HTMLElement) => press(root, 'progress-bar-direction')],
+  // The counter's list: the four ways, Show row marks and Reset progress (tickets 0973, 1223).
+  ['The counter\'s list', RowListHost, {}],
+  ['The counter\'s list of a Custom frame', RowListHost, { turns: false }],
   [
     'ContextBar',
     ContextBar,

@@ -4,14 +4,14 @@ import { useKeyboardShortcuts, type KeyboardShortcut } from './useKeyboardShortc
 /** What the shortcut table needs from the app shell: the control registry's deps. */
 export type AppShortcutTableDeps = ControlDeps
 
-/** Ticket 94: Enter/Shift+Enter move the Row progress pointer, except on a focused Progress bar button, or Tab+Enter
- * would do both. */
-function isFocusedOnProgressBarButton(event: KeyboardEvent): boolean {
+/** Ticket 94: Enter/Shift+Enter move the Row progress pointer, except on a focused button of a Frame's Row progress
+ * strip, or Tab+Enter would do both. */
+function isFocusedOnRowProgressButton(event: KeyboardEvent): boolean {
   const target = event.target
   return (
     target instanceof HTMLElement &&
     target.tagName === 'BUTTON' &&
-    target.closest('[data-testid="progress-bar"]') !== null
+    target.closest('.row-progress') !== null
   )
 }
 
@@ -26,7 +26,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
 
   function toShortcut(control: ControlAction): KeyboardShortcut {
     const modals = control.modals ?? 'block'
-    const givesWay = (event: KeyboardEvent) => !!control.givesWayToFocusedButton && isFocusedOnProgressBarButton(event)
+    const givesWay = (event: KeyboardEvent) => !!control.givesWayToFocusedButton && isFocusedOnRowProgressButton(event)
     const isRepeatOfHeldKey = (event: KeyboardEvent) => !!control.actsOnce && event.repeat
     return {
       // A focused button gives way to its native press, except for a held key's repeats, which that press must not

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-24",
+  "kind": "changed",
+  "line": {
+    "en": "The Progress bar along the bottom is gone: each Frame's Row progress strip on its margin holds Back a row, the counter with its list (directions, Show row marks, Reset progress), the track and Row done, and hangs under the Frame when you zoom far out; the Welcome cuff and What's inside show the same strip",
+    "ru": "Нижней панели прогресса больше нет: у каждой рамки на полях своя полоса прогресса по рядам с кнопкой «Назад на ряд», счётчиком и его списком (направление, «Показывать отметки рядов», «Сбросить прогресс»), дорожкой и «Ряд готов»; при сильном отдалении она висит под рамкой; та же полоса на приветственной манжете и в «Что внутри»",
+    "uk": "Нижньої панелі прогресу більше немає: у кожної рамки на полях своя смуга прогресу за рядами з кнопкою «Назад на ряд», лічильником і його списком (напрямок, «Показувати позначки рядів», «Скинути прогрес»), доріжкою і «Ряд готовий»; за сильного віддалення вона висить під рамкою; та сама смуга на вітальній манжеті й у «Що всередині»",
+    "be": "Ніжняй панэлі прагрэсу больш няма: у кожнай рамкі на палях свая паласа прагрэсу па радках з кнопкай «Назад на рад», лічыльнікам і яго спісам (кірунак, «Паказваць адзнакі радоў», «Скінуць прагрэс»), дарожкай і «Рад гатовы»; пры моцным аддаленні яна вісіць пад рамкай; тая ж паласа на прывітальнай манжэце і ў «Што ўнутры»",
+    "zh": "底部的进度栏不见了：每个边框的边距上都有自己的行进度条，包含“退回一行”、带列表（方向、显示行标记、重置进度）的计数、进度轨道和“行已完成”；缩得很小时它悬在边框下方；欢迎手镯和“里面有什么”也显示同一条",
+    "es": "La barra de progreso inferior ya no está: cada marco tiene en su margen su propia franja de progreso por filas, con Atrás una fila, el contador y su lista (direcciones, Mostrar marcas de fila, Reiniciar progreso), la pista y Fila terminada; con mucho alejamiento cuelga bajo el marco; el brazalete de Bienvenida y Qué hay dentro muestran la misma franja",
+    "pl": "Dolnego paska postępu już nie ma: każda ramka ma na marginesie własny pasek postępu rzędów z przyciskiem Rząd wstecz, licznikiem i jego listą (kierunek, Pokazuj oznaczenia rzędów, Zresetuj postęp), torem i Rząd gotowy; przy dużym oddaleniu wisi pod ramką; ten sam pasek jest na powitalnej bransoletce i w „Co w środku”"
+  }
+}

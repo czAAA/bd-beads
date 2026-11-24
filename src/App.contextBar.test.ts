@@ -76,7 +76,7 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
 
   it('asks before Remove line takes a finished row, and takes it on confirm (ticket 0647)', async () => {
     const wrapper = await mountWithProject(3, 30)
-    await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.get('[data-testid="margin-progress-next"]').trigger('click')
     await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1])
 

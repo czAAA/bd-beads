@@ -44,10 +44,3 @@ export function useFittingForm<F extends string>({ forms, room, measure, observe
   onBeforeUnmount(() => observer?.disconnect())
   return shown
 }
-
-/** How wide a row of flex items needs to be: each shown one's width, a Progress track at its least, and the gaps between
- * (the Progress bar and the Welcome cuff's, ticket 1183). */
-export function rowItemsWidth(items: readonly HTMLElement[], gap: number): number {
-  const widths = items.map((item) => (item.classList.contains('progress-track') ? Number.parseFloat(getComputedStyle(item).minWidth) || 0 : item.offsetWidth))
-  return widths.reduce((sum, width) => sum + width, 0) + gap * Math.max(0, items.length - 1)
-}

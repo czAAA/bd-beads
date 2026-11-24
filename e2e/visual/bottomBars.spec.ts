@@ -2,9 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { convertPicture, openApp, openNewProjectForm, setConvertWidth, settle } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
-/** Nothing sits under the Tool pill and the Progress bar (ticket 0850): after Create Project, and on every Fit, the
- * converted Frame's Margin sheet lies whole above both bars; the Project panel ends above the Progress bar, and one press on
- * Row done marks the row while it is open. On the UX audit's devices: an iPad 13″ in landscape and a MacBook Air. */
+/** Nothing sits under the Tool pill (tickets 0850, 1223): after Create Project, and on every Fit, the converted Frame's
+ * Margin sheet, its Row progress strip with it, lies whole above it; and one press on the strip's Row done marks the row
+ * while the Project panel is open (the press goes through; like a press on any control it closes the panel). On the UX audit's devices: an iPad 13″ in landscape and a MacBook Air. */
 const DEVICES = [
   ['iPad', { width: 1366, height: 1024 }, true],
   ['laptop', { width: 1470, height: 956 }, false],
@@ -16,19 +16,17 @@ async function box(page: Page, testid: string) {
   return found!
 }
 
-/** The sheet lies whole between the strip and the Tool pill, and so above the Progress bar. */
+/** The sheet lies whole between the strip and the Tool pill. */
 async function expectSheetClear(page: Page, when: string) {
   const sheet = await box(page, 'margin-sheet')
   const strip = await box(page, 'canvas-strip')
   const pill = await box(page, 'tool-pill')
-  const bar = await box(page, 'progress-bar')
   expect(sheet.y, when).toBeGreaterThanOrEqual(strip.y + strip.height)
   expect(sheet.y + sheet.height, when).toBeLessThanOrEqual(pill.y)
-  expect(sheet.y + sheet.height, when).toBeLessThanOrEqual(bar.y)
 }
 
 for (const [name, viewport, hasTouch] of DEVICES) {
-  test(`a converted Frame is fitted clear of the bars, and the Project panel ends above Row done, on the ${name}`, async ({ browser }) => {
+  test(`a converted Frame is fitted clear of the Tool pill, and Row done takes its press with the Project panel open, on the ${name}`, async ({ browser }) => {
     const context = await browser.newContext({ viewport, hasTouch, colorScheme: 'dark', reducedMotion: 'reduce' })
     const page = await context.newPage()
     await openApp(page, [])
@@ -48,15 +46,10 @@ for (const [name, viewport, hasTouch] of DEVICES) {
 
     await page.getByTestId('strip-project').click()
     await settle(page)
-    const panel = await box(page, 'panel-dropdown')
-    const bar = await box(page, 'progress-bar')
-    expect(panel.y + panel.height).toBeLessThanOrEqual(bar.y)
-
-    const position = page.getByTestId('progress-bar-position')
+    const position = page.getByTestId('margin-progress-compact-position')
     const before = await position.textContent()
-    await page.getByTestId('progress-bar-next').click()
+    await page.getByTestId('margin-progress-next').click()
     await expect(position).not.toHaveText(before!)
-    await expect(page.getByTestId('panel-dropdown')).toBeVisible()
     await context.close()
   })
 }

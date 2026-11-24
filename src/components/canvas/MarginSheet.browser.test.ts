@@ -62,12 +62,15 @@ makerName: 'Ada',
   return moveToRow(turned, 0, frameIdIn(turned))
 }
 
+/** The Project and the id of its one Frame, as the sheet takes them. */
+const ownProject = (project: Project) => ({ project, frame: frameIdIn(project) })
+
 const Host = defineComponent({
   setup() {
     // Bare, the Move bar stands above the sheet's top edge (ticket 0682): the host leaves it room.
     return () =>
       h('div', { style: { position: 'relative', margin: '48px 16px 16px', height: `${anchorAt(zoom.value, columns.value).sheet.height}px` }, 'data-testid': 'under-sheet' }, [
-        h(MarginSheet, { project: projectOf(columns.value), anchor: anchorAt(zoom.value, columns.value), editing: false, pressing: false, onMovePress: () => movePresses.value++ }),
+        h(MarginSheet, { ...ownProject(projectOf(columns.value)), anchor: anchorAt(zoom.value, columns.value), editing: false, pressing: false, onMovePress: () => movePresses.value++ }),
       ])
   },
 })
@@ -180,7 +183,7 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
         const name = root.querySelector('[data-testid="margin-bead-name"]')!.getBoundingClientRect()
         const colors = root.querySelector('[data-testid="margin-legend"]')!.getBoundingClientRect()
         expect(name.bottom, `${at}`).toBeLessThanOrEqual(colors.top + 0.5)
-        expect(root.querySelector('.margin-sheet__progress')?.getAttribute('data-form'), `${at}`).toBe('margin:0')
+        expect(root.querySelector('.margin-sheet__progress')?.getAttribute('data-form'), `${at}`).toBe('whole')
         expect(problems(root), `${at}`).toEqual([])
       }
     })
@@ -263,7 +266,7 @@ describe('the title block and Row progress giving way at the bottom-left (ticket
   it('give way to a Selection\'s handles that reach under them at the bottom-left, and not to one at the top-right', async () => {
     const sheetAt = (selection?: { left: number; top: number; width: number; height: number }) =>
       defineComponent({
-        setup: () => () => h('div', { style: { position: 'relative', height: '400px' } }, [h(MarginSheet, { project: projectOf(40), anchor: anchorAt(1, 40), editing: false, pressing: false, selection })]),
+        setup: () => () => h('div', { style: { position: 'relative', height: '400px' } }, [h(MarginSheet, { ...ownProject(projectOf(40)), anchor: anchorAt(1, 40), editing: false, pressing: false, selection })]),
       })
     const yielding = async (selection: { left: number; top: number; width: number; height: number }) => {
       const { root } = await mountAt(sheetAt(selection), {}, { locale: 'en', width: 1280 })

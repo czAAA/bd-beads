@@ -238,7 +238,7 @@ test('the Tool pill and its color popover are drawn over the margin sheet, whose
   await context.close()
 })
 
-// An iPad held sideways with the pill on the right: the color popover reaches down past the Progress bar, and the picker
+// An iPad held sideways with the pill on the right: the color popover reaches down past the bottom, and the picker
 // opened in it was drawn under the bar (ticket 0726). It is now the Add another color popover beside it (ticket 1226),
 // over the bars too, and on a screen too short for it, it scrolls to its last field.
 test('the Add another color popover beside a right-hand pill stands beside the Palette popover, takes its presses, and scrolls on a short screen', async ({ browser }) => {

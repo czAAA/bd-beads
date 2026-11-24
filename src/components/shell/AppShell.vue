@@ -121,7 +121,7 @@ const {
 
 /* Body (tickets 383, 439, 513, ADR 0046): the canvas box is the screen, flush with every edge except where the device's
  * safe-area inset (notch, rounded corners, home indicator) takes room. Not at the bottom (ticket 0788): the box runs to
- * the screen's edge there and the Progress bar along its foot takes the inset inside itself (`--bar-bottom-inset`), so
+ * the screen's edge there and the footer along its foot takes the inset inside itself (`--bar-bottom-inset`), so
  * no dead band shows under it on an iPad. */
 .app-shell__body {
   display: grid;

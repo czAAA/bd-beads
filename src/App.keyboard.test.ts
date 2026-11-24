@@ -34,9 +34,9 @@ describe('the Project for a screen reader (ticket 159, ADR 0099)', () => {
 
     expect(wrapper.find('[data-testid="tool-pill"]').attributes('aria-label')).toBe(en.a11y.toolsLandmark)
     expect(wrapper.find('main').find('[data-testid="project-surface"]').exists()).toBe(true)
-    // One main and one banner (ticket 0856): the Canvas strip is a header outside main, the Progress bar inside it.
+    // One main and one banner (ticket 0856): the Canvas strip is a header outside main, the footer inside it.
     expect(wrapper.findAll('main')).toHaveLength(1)
-    expect(wrapper.find('main').find('[data-testid="progress-bar"]').exists()).toBe(true)
+    expect(wrapper.find('main').find('[data-testid="canvas-footer"]').exists()).toBe(true)
     expect(wrapper.findAll('header').map((header) => header.attributes('data-testid'))).toEqual(['canvas-strip'])
     expect(wrapper.get('[data-testid="canvas-strip"]').element.closest('main')).toBeNull()
     expect(wrapper.find('[data-testid="skip-to-project"]').exists()).toBe(false)
@@ -54,13 +54,13 @@ describe('one Tab stop per group (ticket 159)', () => {
   })
 })
 
-describe('Tab visits the strip, the Tool pill, then the Progress bar (ticket 563, ADR 0075)', () => {
-  it('reaches one stop per strip section, one in the Tool pill, then the Progress bar', async () => {
+describe('Tab visits the strip, the Tool pill, then the Frame\'s sheet (tickets 563, 1223, ADR 0075)', () => {
+  it('reaches one stop per strip section, one in the Tool pill, then the Frame\'s sheet', async () => {
     const wrapper = await openProject()
     const stops = [...document.querySelectorAll<HTMLElement>('button, a[href]')].filter((el) => el.tabIndex === 0 && !el.closest('[aria-hidden="true"]'))
-    const regions = stops.map((el) => el.closest('[data-testid="canvas-strip"], [data-testid="tool-pill"], [data-testid="progress-bar"], [data-testid="context-bar"]')?.getAttribute('data-testid'))
+    const regions = stops.map((el) => el.closest('[data-testid="canvas-strip"], [data-testid="tool-pill"], [data-testid="margin-sheet"], [data-testid="context-bar"]')?.getAttribute('data-testid'))
 
-    expect(regions.slice(0, 5)).toEqual(['canvas-strip', 'canvas-strip', 'canvas-strip', 'tool-pill', 'progress-bar'])
+    expect(regions.slice(0, 5)).toEqual(['canvas-strip', 'canvas-strip', 'canvas-strip', 'tool-pill', 'margin-sheet'])
     expect(stops[3]!.getAttribute('data-testid')).toBe('pill-tool-paint')
     wrapper.unmount()
   })

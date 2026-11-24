@@ -1,6 +1,6 @@
 import { fillBlanks } from '../domain/fillBlanks'
 import { groupThousands } from '../domain/formatNumber'
-import type { Layered } from '../domain/layerRecord'
+import { firstFrameId, type Layered } from '../domain/layerRecord'
 import { TECHNIQUES } from '../domain/weave'
 import { formatList } from '../i18n/listFormat'
 import { pluralForm } from '../i18n/plural'
@@ -40,7 +40,7 @@ function shareLastWord(names: readonly string[]): string[] {
 
 /** The cuff as an image: named with the counter's own words, as the announcer says them. */
 export function cuffName(t: Translations, cuff: Layered): string {
-  return fillBlanks(t.homepage.welcome.cuff, { counter: rowProgressAnnouncement(t.rowProgress, cuff) })
+  return fillBlanks(t.homepage.welcome.cuff, { counter: rowProgressAnnouncement(t.rowProgress, cuff, firstFrameId(cuff)) })
 }
 
 /** One Welcome promise as shown: its icon, its name, and its line. */

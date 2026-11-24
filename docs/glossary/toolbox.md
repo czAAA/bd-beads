@@ -72,7 +72,7 @@ The logo and the "openbeads" wordmark (in the display serif) as one unit, centre
 _Avoid_: header logo, title, app name
 
 **Canvas footer**:
-The slot along the bottom edge of the canvas box, the same height at every width (ADR 0073). In the editor it holds the Progress bar while a Project is open and is there, empty, with none open (ticket 0748), where the drawing area shows the empty positions of New Project's default Technique and Bead; on the Homepage it holds its section bar, so the box looks the same on every page and nothing jumps.
+The slot along the bottom edge of the canvas box, the same height at every width (ADR 0073). In the editor it holds nothing but the home indicator's safe-area inset since ticket 1223 retired the Progress bar (each Frame's Row progress strip stands on its sheet); on the Homepage it holds its section bar, and in Convert image its steps.
 _Height (ticket 0544):_ as tall as its tallest item plus 1px above and below (a 34px box icon button + 2px, the phone's two rows + 2px; plus the bottom safe-area inset, ticket 0788), one derived rule (`--progress-height`) so the Homepage's empty footer matches the editor's. Its bottom corners follow the canvas box's rounded corners; its left, right and top edges are drawn.
 _Avoid_: footer bar, bottom bar
 

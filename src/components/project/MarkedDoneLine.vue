@@ -4,7 +4,7 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 
 // The lock's one line (ticket 0848; Frame and LayerSettings cards): under a Frame's size, off while a row is marked
-// done, it says so and offers Reset progress, the same action as the Progress bar's button, which asks first.
+// done, it says so and offers Reset progress, the same action as the strip's counter list, which asks first.
 defineProps<{
   /** Its test id; its button's is this with `-reset`. */
   testid: string

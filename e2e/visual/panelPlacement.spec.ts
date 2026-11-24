@@ -45,7 +45,7 @@ for (const [name, width, height] of WIDTHS) {
   })
 }
 
-test('on the iPad the open Project panel, with its Frames, ends above the Progress bar and scrolls inside (tickets 0971, 1222)', async ({ browser }) => {
+test('on the iPad the open Project panel, with its Frames, ends inside the screen and scrolls inside (tickets 0971, 1222, 1223)', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'dark', viewport: { width: 1366, height: 1024 }, reducedMotion: 'reduce', hasTouch: true })
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom' })])
@@ -53,7 +53,6 @@ test('on the iPad the open Project panel, with its Frames, ends above the Progre
   await page.getByTestId('strip-project').click()
   await settle(page)
   const panel = (await page.getByTestId('panel-dropdown').boundingBox())!
-  const bar = (await page.getByTestId('progress-bar').boundingBox())!
-  expect(panel.y + panel.height).toBeLessThanOrEqual(bar.y)
+  expect(panel.y + panel.height).toBeLessThanOrEqual(1024)
   await context.close()
 })

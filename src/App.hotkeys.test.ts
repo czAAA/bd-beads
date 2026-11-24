@@ -55,12 +55,12 @@ async function selectPaintedBead(wrapper: ReturnType<typeof mount>) {
 
 const firstCellColor = () => frameGrid(loadProjects()[0]!)[0]![0]!.color
 
-describe('App Progress bar', () => {
+describe('App footer', () => {
   it('is the last control in the page order bar the Selection bar\'s layer (ADR 0075)', async () => {
     const wrapper = await mountApp(15, 30)
     const layer = wrapper.find('[data-testid="selection-layer"]')
     expect(wrapper.get('main').element.lastElementChild).toBe(layer.element)
-    expect(layer.element.previousElementSibling).toBe(wrapper.find('[data-testid="progress-bar"]').element)
+    expect(layer.element.previousElementSibling).toBe(wrapper.find('[data-testid="canvas-footer"]').element)
   })
 })
 
@@ -142,7 +142,7 @@ describe('App keyboard shortcuts', () => {
 
   it('Space held over a Frame with Row progress pans and leaves the counter where it was (ticket 0835)', async () => {
     const wrapper = await mountApp(15, 30)
-    const counter = () => wrapper.find('[data-testid="progress-bar-compact-position"]').text()
+    const counter = () => wrapper.find('[data-testid="margin-progress-compact-position"]').text()
     const before = counter()
 
     await pressKey({ key: ' ', code: 'Space', cancelable: true })
