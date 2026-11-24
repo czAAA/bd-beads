@@ -175,7 +175,7 @@ describe("the Cover page's footer (ticket 1233; PrintCover card, The address)", 
     expect(values.filter((value) => value === 'openbeads.com')).toHaveLength(1)
     expect(values.filter((value) => value === 'scan to open')).toHaveLength(1)
     expect(pdf.match(/\/URI \(https:\/\/openbeads\.com\)/g)).toHaveLength(2)
-    expect((await written(() => exportProjectPdf(project, wordsOf(project, false), 150))).includes('openbeads.com')).toBe(false)
+    expect((await written(() => exportProjectPdf(project, wordsOf(project, false), 150))).filter((value) => value === 'openbeads.com')).toHaveLength(0)
   }, 60_000)
 
   it("is on Picture's file, which has no links", async () => {
