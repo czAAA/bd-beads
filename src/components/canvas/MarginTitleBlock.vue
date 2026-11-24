@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { computeColorQuantities } from '../../domain/beadQuantities'
 import { frameWeave } from '../../domain/layerWeave'
@@ -7,6 +7,7 @@ import { rowProgressStarted } from '../../domain/rowProgress'
 import { MAX_MAKER_NAME } from '../../domain/makerName'
 import { projectPalette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
+import { beadLabel } from '../../domain/beads'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave, TECHNIQUES, weaveSettings, type Technique } from '../../domain/weave'
@@ -92,6 +93,7 @@ const settings = computed(() => {
     disabledBody: settingsLocked.value ? weaveSettingWords(t.value, setting).locked : undefined,
   }))
 })
+
 /** The full form's grid: the setting cells sit after the Technique in row 1, the legend widens under them in row 2. */
 const grid = computed(() => {
   const count = settings.value.length
@@ -144,10 +146,56 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
 const keyLabel = computed(() =>
   legend.value.map((color) => `${color.letter} ${color.name}`.trim() + ` ${plural(locale.value, color.count, t.value.print.beadsCount)}`).join(', '),
 )
+
+const blockEl = ref<HTMLElement>()
+const legendEl = ref<HTMLElement>()
+/** The legend cell's least width in its own px (ticket 1213): its colors' line, or the Bead label's first word with an
+ * ellipsis and the pencil, whichever is wider, and its padding. 0 until laid out (jsdom). */
+const legendLeast = ref(0)
+async function measureLegend(): Promise<void> {
+  await nextTick()
+  const cell = legendEl.value
+  const bead = cell?.querySelector<HTMLElement>('.margin-bead')
+  const name = bead?.querySelector<HTMLElement>('.margin-bead__name')
+  const colors = cell?.querySelector<HTMLElement>('.margin-title__legend-colors')
+  // Nothing laid out (jsdom, which also has no Range box): no least width, the columns as they were.
+  if (!cell?.offsetWidth || !bead || !name?.firstChild || !colors) return
+  const word = name.textContent?.split(' ')[0] ?? ''
+  const range = document.createRange()
+  range.setStart(name.firstChild, 0)
+  range.setEnd(name.firstChild, word.length)
+  const ellipsis = parseFloat(getComputedStyle(name).fontSize) || 0
+  const cut = range.getBoundingClientRect().width / (cell.getBoundingClientRect().width / cell.offsetWidth || 1) + ellipsis
+  const style = getComputedStyle(cell)
+  const padding = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0) + (parseFloat(style.borderRightWidth) || 0)
+  legendLeast.value = Math.ceil(Math.max(colors.offsetWidth, cut + bead.offsetWidth - name.offsetWidth) + padding)
+}
+onMounted(measureLegend)
+watch(() => [frameBead.value && beadLabel(frameBead.value), shownLegend.value.length, moreColors.value, props.form], measureLegend)
+
+/** The one-row forms' columns: each its own width, but the legend's, which gives way down to `legendLeast`, so the Bead's
+ * label is cut before the row steps down (ticket 1213). */
+const rowColumns = computed(() => {
+  const before = { line: 3, compact: 4, key: 1 }[props.form as 'line' | 'compact' | 'key']
+  if (!before || !legendLeast.value) return undefined
+  const count = props.form === 'key' ? 0 : settings.value.length
+  return { gridTemplateColumns: `repeat(${before + count}, max-content) minmax(${legendLeast.value}px, max-content) max-content max-content` }
+})
+/** The block's least width in its own px, the legend at `legendLeast`: the sheet fits the block by it. */
+function leastWidth(): number {
+  const block = blockEl.value
+  if (!block) return 0
+  const width = block.style.width
+  block.style.width = 'min-content'
+  const least = block.offsetWidth
+  block.style.width = width
+  return least
+}
+defineExpose({ leastWidth })
 </script>
 
 <template>
-  <div class="margin-title" :class="`margin-title--${form === 'brief' || form === 'key' || form === 'line' ? 'compact' : form}`" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
+  <div ref="blockEl" class="margin-title" :class="[`margin-title--${form === 'brief' || form === 'key' || form === 'line' ? 'compact' : form}`, { 'margin-title--keyed': form !== 'brief' && form !== 'roomy' }]" :data-form="form" :style="form === 'full' ? grid.block : rowColumns" data-testid="margin-title-block">
     <!-- Roomy (ticket 1015): what the Frame is on the left, what it is made of on the right. -->
     <template v-if="form === 'roomy'">
       <div class="margin-title__identity">
@@ -232,13 +280,14 @@ const keyLabel = computed(() =>
         <div class="margin-title__cell margin-title__meta" data-testid="margin-size">{{ size }}</div>
         <div v-if="form !== 'line'" class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
       </template>
-      <div v-if="form !== 'brief'" class="margin-title__cell margin-title__legend" :style="form === 'full' ? grid.legend : undefined">
+      <div v-if="form !== 'brief'" ref="legendEl" class="margin-title__cell margin-title__legend" :style="form === 'full' ? grid.legend : undefined">
+        <!-- The legend's Change (ticket 1197) on its top line, the Bead's label before it (ticket 1213): the Bead's pickers
+             in a popover, then the Frame panel's Replace bead. The colors under them. -->
+        <MarginBeadCell v-if="frameBead" :bead="frameBead" pencil @pick="emit('replace-bead', $event)" />
         <span class="margin-title__legend-colors" role="img" :aria-label="legendLabel" data-testid="margin-legend">
           <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
           <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
         </span>
-        <!-- The legend's Change (ticket 1197): the Bead's pickers in a popover, then the Frame panel's Replace bead. -->
-        <MarginBeadCell v-if="frameBead" :bead="frameBead" pencil :named="form === 'full'" @pick="emit('replace-bead', $event)" />
       </div>
       <div class="margin-title__cell margin-title__letters" :style="form === 'full' ? grid.letters : undefined">
         <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
@@ -252,12 +301,12 @@ const keyLabel = computed(() =>
 </template>
 
 <style scoped>
-/* Two rows of 23px with 1px rules between the cells, on `margin-title`, its bottom-left corner rounded with the inner
- * border (MarginSheet card). Row 1: the name, the Technique, "by" the maker over two cells; row 2: the sizes, the
- * legend, Letters; the fold button over both. Compact: one 22px row (ticket 0658). */
+/* Two rows (23px, the legend's 36px; ticket 1213), 1px rules between cells, its bottom-left corner rounded (MarginSheet
+ * card). Row 1: name, Technique, "by" the maker; row 2: sizes, legend, Letters; the fold over both. Compact: one row,
+ * 24px, or the legend's 36px where it holds the legend. */
 .margin-title {
   display: grid;
-  grid-template-rows: repeat(2, var(--margin-title-row));
+  grid-template-rows: var(--margin-title-row) var(--margin-legend-row);
   box-sizing: border-box;
   color: var(--ink);
   background: var(--margin-title);
@@ -269,6 +318,10 @@ const keyLabel = computed(() =>
   grid-auto-columns: max-content;
   grid-auto-flow: column;
   grid-template-rows: var(--margin-done-compact);
+}
+
+.margin-title--compact.margin-title--keyed {
+  grid-template-rows: var(--margin-legend-row);
 }
 
 .margin-title__cell {
@@ -348,12 +401,19 @@ const keyLabel = computed(() =>
   padding: 0;
 }
 
-.margin-title__legend {
-  gap: var(--space-4);
+/* Two lines (ticket 1213): the Bead's label with its pencil, the colors under them, 2px apart; its column may be
+ * narrower than the label, which is then cut. */
+.margin-title__legend.margin-title__cell {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .margin-title__legend-colors {
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: var(--space-4);
 }

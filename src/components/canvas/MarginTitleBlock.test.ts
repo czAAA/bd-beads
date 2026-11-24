@@ -191,14 +191,14 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
       wrapper.unmount()
     })
 
-    it('shows the Bead\'s name beside the pencil in the full form, as the Technique does', () => {
-      const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form: 'full' } })
-      expect(text(wrapper, 'margin-bead-name')).toBe(beadLabel(findBead('toho/cube/1.5mm')!))
-    })
-
-    it.each(['compact', 'line'] as const)('keeps the pencil alone in the %s form, where the row is tight', (form) => {
+    // Owner decision 2026-11-23: two lines, the Bead's label with its pencil over the colors, in every form with a legend.
+    it.each(['full', 'line', 'compact', 'key'] as const)('stacks the Bead\'s label with its pencil over the colors in the %s form (ticket 1213)', (form) => {
       const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form } })
-      expect(wrapper.find('[data-testid="margin-bead-name"]').exists()).toBe(false)
+      const legend = wrapper.get('.margin-title__legend')
+      const [top, colors] = legend.element.children
+      expect(top!.textContent?.trim()).toBe(beadLabel(findBead('toho/cube/1.5mm')!))
+      expect(top!.querySelector('[data-testid="margin-bead-change"]')).not.toBeNull()
+      expect(colors!.getAttribute('data-testid')).toBe('margin-legend')
     })
 
     it('is not in the brief block, which has no legend', () => {

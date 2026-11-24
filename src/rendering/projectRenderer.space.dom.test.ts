@@ -255,20 +255,20 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
     /** Whether a drawn rectangle is at these grid px, within a rounding. */
     const near = (rects: unknown[][], wanted: number[]) => rects.some((rect) => wanted.every((value, index) => Math.abs(Number(rect[index]) - value) < 1e-6))
 
-    // At 100% the band is 4 beads of 20px: 80px, the drafting sheet's 72px at a scale of 80 / 72 (ticket 0698).
+    // At 100% the band is 4 beads of 20px: 80px, the drafting sheet's own, at a scale of 1 (tickets 0698, 1213).
     it('fills the band in the margin color, its corners rounded 12px at the sheet\'s scale, leaving the Frame\'s footprint out', () => {
       const { calls } = drawn(true)
       const fill = calls.find((call) => call.name === 'fill' && call.fillStyle === '#123456')
       expect(fill?.args).toEqual(['evenodd'])
-      expect(near(roundRects(calls), [120, 120, 220, 240, 12 * (80 / 72)])).toBe(true)
+      expect(near(roundRects(calls), [120, 120, 220, 240, 12])).toBe(true)
     })
 
     it('draws its edge and its inner border 10px in, radius 6, at the sheet\'s scale, in the margin line', () => {
       const { calls } = drawn(true)
-      const inset = 10 * (80 / 72)
+      const inset = 10
       expect(strokedIn(calls, '#fedcba')).toHaveLength(1)
       expect(strokedIn(calls, '#abcdef')).toHaveLength(1)
-      expect(near(roundRects(calls), [120 + inset, 120 + inset, 220 - 2 * inset, 240 - 2 * inset, 6 * (80 / 72)])).toBe(true)
+      expect(near(roundRects(calls), [120 + inset, 120 + inset, 220 - 2 * inset, 240 - 2 * inset, 6])).toBe(true)
     })
 
     it('scales its inset and corners with the band up to 1.5 (ticket 0698)', () => {

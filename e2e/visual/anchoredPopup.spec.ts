@@ -32,7 +32,7 @@ async function expectUnderButton(page: Page, scope: string, room?: string, { but
 
 test('the Frame tools menu opens under its button in the full editor', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 })
-  await openApp(page, [fixtureProject({ technique: 'loom', columns: 8 })])
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 6 })])
   await setZoom(page, 100)
   await expectUnderButton(page, 'body', 'body')
 })

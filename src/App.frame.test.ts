@@ -394,9 +394,12 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
 
   it('sets the Frame\'s Drop from its title block\'s stepper (ticket 0698)', async () => {
     const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'brick' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
-    // Zoomed in, the sheet is full: its title block's one row holds the setting's pencil (ticket 1176).
-    await wrapper.get('[data-testid="zoom-in"]').trigger('click')
-    await flushPromises()
+    // Zoomed in twice, the sheet is full (from 100% since ticket 1213): its title block's one row holds the setting's
+    // pencil (ticket 1176).
+    for (const _ of [1, 2]) {
+      await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+      await flushPromises()
+    }
     await wrapper.get('[data-testid="margin-brick-drop-edit"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="margin-brick-drop-stepper-more"]').trigger('click')
