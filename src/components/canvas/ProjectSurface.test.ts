@@ -104,19 +104,17 @@ const TOUCH = { pointerType: 'touch', isPrimary: true }
 const PEN = { pointerType: 'pen', isPrimary: true }
 const MOUSE = { pointerType: 'mouse', isPrimary: true }
 
-/** The surfaces stacked in the drawing area (ticket 1187): the Canvas's and the Frame's, each with beads and overlay. */
-const SURFACES = 2
-/** Times the surface has been drawn: each draws both surfaces' beads and overlays, and each starts by clearing. */
-const draws = () => context.named('clearRect').filter(({ args }) => (args[2] as number) > 100).length / (2 * SURFACES)
-/** What `draws()` counts when only the Frame's own surface draws all again after an edit of its beads (spec 1234): its beads
- * and both overlays, the Canvas's beads staying as drawn. */
-const FRAME_ONLY = 3 / (2 * SURFACES)
-/** Calls both surfaces made alike, the Canvas's first (ticket 1187): the bands they redraw. Those of one. */
-function onOneSurface<T>(calls: T[]): T[] {
-  const half = calls.length / 2
-  expect(calls.slice(half)).toEqual(calls.slice(0, half))
-  return calls.slice(0, half)
-}
+/** The surfaces in the drawing area (ticket 1239): one shared bitmap for the Canvas and every Frame, and one overlay. */
+const SURFACES = 1
+/** The clears a whole draw of the bitmap makes with the one Frame a Project has: the Canvas's and, round its sheet, the Frame's. */
+const BITMAP_CLEARS = 2
+/** Times the surface has been drawn: each clears the bitmap and the overlay whole (a Frame clears only round its sheet). */
+const draws = () => context.named('clearRect').filter(({ args }) => args[0] === 0 && args[1] === 0 && (args[2] as number) > 100).length / (2 * SURFACES)
+/** What `draws()` counts when only a Frame is drawn again after an edit of its beads (ticket 1239): the overlay alone clears
+ * whole, a rectangle of the shared bitmap being cleared instead. */
+const FRAME_ONLY = 1 / (2 * SURFACES)
+/** The cuts a whole draw of the one Frame a Project has makes: none, as a Frame is cleared round its sheet and drawn within it. */
+const FRAME_CUTS = 0
 
 describe('ProjectSurface', () => {
   it('redraws each layer once per animation frame, with the last zoom and scroll, however many changes come first', async () => {
@@ -208,13 +206,13 @@ describe('ProjectSurface', () => {
       expect(cells.element.style.transform).toBe(moved)
       expect(standInCanvas.style.visibility).toBe(standIn)
       // Only the overlay was drawn, and the stand-in where it shows.
-      const whileMoving = (standIn === 'visible' ? 2 : 1) * SURFACES
+      const whileMoving = SURFACES + (standIn === 'visible' ? BITMAP_CLEARS : 0)
       expect(context.named('clearRect')).toHaveLength(whileMoving)
 
       vi.advanceTimersByTime(200)
       expect(cells.element.style.transform).toBe('')
       expect(standInCanvas.style.visibility).toBe('hidden')
-      expect(context.named('clearRect')).toHaveLength(whileMoving + SURFACES)
+      expect(context.named('clearRect')).toHaveLength(whileMoving + BITMAP_CLEARS)
       wrapper.unmount()
     } finally {
       vi.useRealTimers()
@@ -235,8 +233,8 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ zoom: 0.05, scroll: { x: 10, y: 20 } })
       vi.advanceTimersByTime(10)
       expect(cells.element.style.transform).toBe('')
-      // The overlays and the beads.
-      expect(context.named('clearRect')).toHaveLength(2 * SURFACES)
+      // The overlay and the beads.
+      expect(context.named('clearRect')).toHaveLength(SURFACES + BITMAP_CLEARS)
       wrapper.unmount()
     } finally {
       vi.useRealTimers()
@@ -461,7 +459,7 @@ describe('ProjectSurface', () => {
     it.each([
       ['a bead of its top', 4, 1],
       ['a bead of a strand', 1002, 3],
-    ])('draws everything again when %s of a shaped Frame is painted', async (_name, row, column) => {
+    ])('draws a rectangle of the shared bitmap again when %s of a shaped Frame is painted', async (_name, row, column) => {
       viewport = { width: 400, height: 600 }
       // Woven alike, as a Project from a Starter is: brick stitch in both layers, so the surface draws bands at all.
       const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined, { frame: frameIdIn(projectOf(60, 60, {}, 'brick')) })
@@ -474,13 +472,14 @@ describe('ProjectSurface', () => {
       const beads = frameOf(flat)!.beads
       await wrapper.setProps({ project: withLayer(flat, FRAME_ID, { beads: { ...beads, [row]: { ...beads[row], [column]: '#e63746' } } }) })
 
-      expect(context.named('rect')).toHaveLength(0)
+      // One cut, round the changed rows of the Frame's sheet: a Frame woven or turned unlike the Canvas redraws a rectangle too.
+      expect(context.named('rect')).toHaveLength(1)
       expect(draws()).toBe(FRAME_ONLY)
     })
 
     // A turned Frame's own rows lie across the Canvas's rows (Rotate Frame): a band of Canvas rows at its own row would
     // clear and draw a strip across the bead, leaving one painted away from where that strip crosses it unshown.
-    it.each([1, 2, 3])('draws everything again when a bead of a Frame turned %i quarters is painted', async (turns) => {
+    it.each([1, 2, 3])('draws a rectangle again when a bead of a Frame turned %i quarters is painted', async (turns) => {
       viewport = { width: 400, height: 600 }
       let turned = projectOf(20, 30)
       for (let turn = 0; turn < turns; turn += 1) turned = rotateFrame(turned, undefined, frameIdIn(turned))!
@@ -490,7 +489,8 @@ describe('ProjectSurface', () => {
       const beads = frameOf(turned)!.beads
       await wrapper.setProps({ project: withLayer(turned, FRAME_ID, { beads: { ...beads, 0: { 19: '#e63746' } } }) })
 
-      expect(context.named('rect')).toHaveLength(0)
+      // One cut, round the changed rows of the Frame's sheet: a Frame woven or turned unlike the Canvas redraws a rectangle too.
+      expect(context.named('rect')).toHaveLength(1)
       expect(draws()).toBe(FRAME_ONLY)
     })
 
@@ -502,11 +502,11 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: withLayer(project, SECOND, { beads: { 0: { 0: '#e63746' } } }) })
 
-      // One cut and one clear, round that sheet and a pixel past it; the Canvas and the first Frame stay as drawn.
-      expect(context.named('rect').map((call) => call.args)).toEqual([[199, 119, 242, 282]])
-      expect(context.named('clearRect').filter(({ args }) => args[2] === 242)).toHaveLength(1)
-      // Only the overlays of the three surfaces (the Canvas's and each Frame's) are cleared whole.
-      expect(context.named('clearRect').filter(({ args }) => args[2] === VIEWPORT.width)).toHaveLength(SURFACES + 1)
+      // One cut and one clear, round the changed row of that sheet; the Canvas and the first Frame stay as drawn.
+      expect(context.named('rect').map((call) => call.args)).toEqual([[240, 160, 160, 100]])
+      expect(context.named('clearRect').filter(({ args }) => args[2] === 160)).toHaveLength(1)
+      // Only the one overlay is cleared whole.
+      expect(context.named('clearRect').filter(({ args }) => args[2] === VIEWPORT.width)).toHaveLength(SURFACES)
     })
 
     it('draws no beads at all when nothing in view changed, and only redraws the overlay', async () => {
@@ -533,6 +533,7 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: everyOtherRow(project) })
 
+      // So many rows changed that the Frame they paint is drawn whole again, not by a rectangle.
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(FRAME_ONLY)
     })
@@ -649,7 +650,7 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: withLayers(project, { frame: { ...frameOf(project)!, rows: 10 } }) })
 
-      expect(context.named('rect')).toHaveLength(0)
+      expect(context.named('rect')).toHaveLength(FRAME_CUTS)
       expect(draws()).toBe(1)
     })
 
@@ -660,7 +661,7 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ scroll: { x: 40, y: 0 } })
 
-      expect(context.named('rect')).toHaveLength(0)
+      expect(context.named('rect')).toHaveLength(FRAME_CUTS)
       expect(draws()).toBe(1)
     })
   })
@@ -669,7 +670,7 @@ describe('ProjectSurface', () => {
   // again, the one finished and the new current row.
   describe('when a Progress bar step moves Row progress', () => {
     /** The view's cut, `[x, y, width, height]`, of each band drawn again since the step. */
-    const bands = () => onOneSurface(context.named('rect').map((call) => call.args))
+    const bands = () => context.named('rect').map((call) => call.args)
     /** A tall Frame, 20 × 30 at the origin and upright (peyote comes turned), the weaver on `pass`: one Project, as Row
      * progress steps it. */
     const upright = (technique: Technique) => withLayers(projectOf(20, 30, {}, technique), { orientation: 0, ownProgress: {} })
@@ -686,7 +687,7 @@ describe('ProjectSurface', () => {
     it('draws everything again, in no bands, as the Frame\'s passes are no lines of the Canvas (spec 1234)', async () => {
       await step(weaving(12), weaving(13))
 
-      expect(bands()).toHaveLength(0)
+      expect(bands()).toHaveLength(FRAME_CUTS)
       expect(draws()).toBe(1)
     })
 
@@ -695,13 +696,13 @@ describe('ProjectSurface', () => {
       const turned = rotateFrame(tall.loom, undefined, frameIdIn(tall.loom))!
       await step(moveToRow(turned, 12, frameIdIn(turned)), moveToRow(turned, 13, frameIdIn(turned)))
 
-      expect(context.named('rect')).toHaveLength(0)
+      expect(context.named('rect')).toHaveLength(FRAME_CUTS)
       expect(draws()).toBe(1)
     })
 
     describe('draws everything again where the passes are not a few lines of the Canvas', () => {
       const whole = () => {
-        expect(bands()).toHaveLength(0)
+        expect(bands()).toHaveLength(FRAME_CUTS)
         expect(draws()).toBe(1)
       }
 
@@ -2591,14 +2592,15 @@ describe('ProjectSurface with a Frame', () => {
       await wrapper.setProps({ project: moveToRow(weaving, 10, frameIdIn(weaving)), rowPress: lastPass })
       await at(1000)
       // A Frame's passes are no lines of the Canvas, so nothing is cut to a band.
-      expect(cells.named('rect')).toHaveLength(0)
+      expect(cells.named('rect')).toHaveLength(FRAME_CUTS)
       expect(cells.named('clearRect').map((call) => call.args)).toContainEqual([0, 0, 1000, 800])
 
       cells.calls.length = 0
       await at(1000 + ROW_MOTION.patternDoneDelay + ROW_MOTION.restoreDelay)
       await at(1000 + ROW_MOTION.patternDoneDelay + ROW_MOTION.restoreDelay + 1)
-      expect(cells.named('clearRect').map((call) => call.args)).toEqual([[0, 0, 1000, 800]])
-      expect(cells.named('rect')).toHaveLength(0)
+      // The Canvas's whole clear, then the Frame's round its sheet.
+      expect(cells.named('clearRect').map((call) => call.args)).toEqual([[0, 0, 1000, 800], [-81, -81, 562, 362]])
+      expect(cells.named('rect')).toHaveLength(FRAME_CUTS)
     })
 
     it('plays nothing when the Project comes finished without a press (opened, Undo, Redo), and shows it at full color', async () => {

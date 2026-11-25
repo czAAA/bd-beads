@@ -44,3 +44,6 @@ Layers (`e2e/perf/layerBaseline.spec.ts`, ticket 1235, spec 1234) run in the sam
 | 4 Frames | zoom | 32 | 42.2 ms | 57 ms | 30 | 157 / 157 MB |
 
 Before the turn copy was released (same run, same Project) a Rotate Frame left 106 MB (1 Frame) and 121 MB (4 Frames) at rest, 21 and 20 MB more, one canvas more, and the press's longest gap was about 700 ms in both runs (the copy's allocation; 24 and 26 ms after). The memory grows over the run as the draft look's base follows a twist (85 to 131 MB). Run to run the gaps move by a few ms; what stands out is the pan and zoom of four Frames, which draw at about 22 frames a second.
+
+Ticket 1239 (one shared surface for the Canvas and every Frame), same engine, `main` at 7f957067 against the branch, run back to back on one machine (WebKit at 2×, iPad size; the 2026-11-25 table above came from another session, and this machine's `main` is slower than it). Canvas backing size: 5 canvases, 43 MB at rest with 1 Frame and 45 MB with 4 (`main`: 8 canvases, 85 and 90 MB); peaks 88 to 95 MB in the twist, pan and zoom (`main`: 176 to 190 MB). Frame gaps, mean in ms (branch / `main`), 1 Frame: twist 42 / 121, pan 71 / 74, zoom 190 / 182; 4 Frames: twist 42 / 123, pan 79 / 84, zoom 61 / 61. Every gesture's longest gap is the same one-off 700 ms stall on both.
+
