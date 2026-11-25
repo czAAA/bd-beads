@@ -557,15 +557,17 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, origin: { x: 
   context.translate(origin.x, origin.y)
   // The beads are turned, so their bitmaps are smoothed as they are laid down.
   context.imageSmoothingEnabled = true
-  for (const { position, place } of beads) {
+  // Beads at one angle (all of a turned grid's) are drawn under one rotation about the origin, each moved to where that
+  // rotation puts it on its place: a save, a translate and a rotate for every bead cost most of a redraw (ticket 1239).
+  // A layout of many angles keeps its bead by bead turn, its order as it was.
+  const angles = new Set(beads.map(({ place }) => place.angle))
+  const together = angles.size <= 4
+  const drawOne = ({ position, place }: PlacedBead, at: { x: number; y: number }): void => {
     const box = inGridPx(place.box)
-    const centred = { x: -box.width / 2, y: -box.height / 2, width: box.width, height: box.height }
+    const centred = { x: at.x - box.width / 2, y: at.y - box.height / 2, width: box.width, height: box.height }
     const cornerRadius = beadRoundness(weave.technique, weave.cell) * box.width
     const painted = colorOf(position)
     const { shown, dimmed } = progressLook(draw, position, painted)
-    context.save()
-    context.translate(box.x + box.width / 2, box.y + box.height / 2)
-    context.rotate(place.angle)
     const bead = { ...centred, size: box.width, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look }
     if (painted === null && mark.tiles) drawTile(context, { ...centred, cornerRadius }, mark.color, edge, bead.deviceScale)
     else if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
@@ -574,7 +576,33 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, origin: { x: 
     if (painted !== null && letter) {
       drawBeadLetter(context, { ...centred, size: box.width, color: painted, letter, dimmed, theme: look })
     }
-    context.restore()
+  }
+  const centreOf = ({ place }: PlacedBead) => {
+    const box = inGridPx(place.box)
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  }
+  if (together) {
+    for (const angle of angles) {
+      context.save()
+      context.rotate(angle)
+      const [cos, sin] = [Math.cos(angle), Math.sin(angle)]
+      for (const bead of beads) {
+        if (bead.place.angle !== angle) continue
+        const { x, y } = centreOf(bead)
+        // The rotation's inverse takes the bead's place to where the turned drawing puts it there.
+        drawOne(bead, { x: x * cos + y * sin, y: -x * sin + y * cos })
+      }
+      context.restore()
+    }
+  } else {
+    for (const bead of beads) {
+      const { x, y } = centreOf(bead)
+      context.save()
+      context.translate(x, y)
+      context.rotate(bead.place.angle)
+      drawOne(bead, { x: 0, y: 0 })
+      context.restore()
+    }
   }
   context.imageSmoothingEnabled = false
   context.beginPath()

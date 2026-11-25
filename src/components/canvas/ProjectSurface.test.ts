@@ -459,7 +459,7 @@ describe('ProjectSurface', () => {
     it.each([
       ['a bead of its top', 4, 1],
       ['a bead of a strand', 1002, 3],
-    ])('draws a rectangle of the shared bitmap again when %s of a shaped Frame is painted', async (_name, row, column) => {
+    ])('draws the whole Frame again when %s of a shaped Frame is painted', async (_name, row, column) => {
       viewport = { width: 400, height: 600 }
       // Woven alike, as a Project from a Starter is: brick stitch in both layers, so the surface draws bands at all.
       const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined, { frame: frameIdIn(projectOf(60, 60, {}, 'brick')) })
@@ -472,14 +472,14 @@ describe('ProjectSurface', () => {
       const beads = frameOf(flat)!.beads
       await wrapper.setProps({ project: withLayer(flat, FRAME_ID, { beads: { ...beads, [row]: { ...beads[row], [column]: '#e63746' } } }) })
 
-      // One cut, round the changed rows of the Frame's sheet: a Frame woven or turned unlike the Canvas redraws a rectangle too.
-      expect(context.named('rect')).toHaveLength(1)
+      // The Frame is drawn whole again, uncut: a rectangle of its changed rows missed the beads of a Frame turned apart from the Canvas.
+      expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(FRAME_ONLY)
     })
 
     // A turned Frame's own rows lie across the Canvas's rows (Rotate Frame): a band of Canvas rows at its own row would
     // clear and draw a strip across the bead, leaving one painted away from where that strip crosses it unshown.
-    it.each([1, 2, 3])('draws a rectangle again when a bead of a Frame turned %i quarters is painted', async (turns) => {
+    it.each([1, 2, 3])('draws the whole Frame again when a bead of a Frame turned %i quarters is painted', async (turns) => {
       viewport = { width: 400, height: 600 }
       let turned = projectOf(20, 30)
       for (let turn = 0; turn < turns; turn += 1) turned = rotateFrame(turned, undefined, frameIdIn(turned))!
@@ -489,8 +489,8 @@ describe('ProjectSurface', () => {
       const beads = frameOf(turned)!.beads
       await wrapper.setProps({ project: withLayer(turned, FRAME_ID, { beads: { ...beads, 0: { 19: '#e63746' } } }) })
 
-      // One cut, round the changed rows of the Frame's sheet: a Frame woven or turned unlike the Canvas redraws a rectangle too.
-      expect(context.named('rect')).toHaveLength(1)
+      // The Frame is drawn whole again, uncut: a rectangle of its changed rows missed the beads of a Frame turned apart from the Canvas.
+      expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(FRAME_ONLY)
     })
 
@@ -502,9 +502,9 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ project: withLayer(project, SECOND, { beads: { 0: { 0: '#e63746' } } }) })
 
-      // One cut and one clear, round the changed row of that sheet; the Canvas and the first Frame stay as drawn.
-      expect(context.named('rect').map((call) => call.args)).toEqual([[240, 160, 160, 100]])
-      expect(context.named('clearRect').filter(({ args }) => args[2] === 160)).toHaveLength(1)
+      // One clear, round that Frame's whole sheet and no cut; the Canvas and the first Frame stay as drawn.
+      expect(context.named('rect')).toHaveLength(0)
+      expect(context.named('clearRect').filter(({ args }) => args[2] === 242)).toHaveLength(1)
       // Only the one overlay is cleared whole.
       expect(context.named('clearRect').filter(({ args }) => args[2] === VIEWPORT.width)).toHaveLength(SURFACES)
     })

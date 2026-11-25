@@ -2,7 +2,7 @@ import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import { changedRows } from '../../../domain/canvas'
 import { beadTotal } from '../../../domain/openingLimits'
-import { beadsOfLayer, frameById, frameIdOf, framesOf, layerOf } from '../../../domain/layerRecord'
+import { beadsOfLayer, frameIdOf, framesOf, layerOf } from '../../../domain/layerRecord'
 import type { FrameRef } from '../../../domain/grid'
 import { draftCost } from '../../../domain/weave'
 import { shownLetters } from '../../../domain/paletteEdits'
@@ -17,7 +17,7 @@ import type { Region, Scroll, SurfaceView } from '../../../rendering/surfaceView
 import type { RulerLayout } from '../../../rendering/rulers'
 import { drawPlaced, placementOf } from '../../../rendering/placedDrawing'
 import { spaceOf } from '../../../rendering/space'
-import { CELL_SIZE_PX, type Size } from '../../../rendering/cellSize'
+import type { Size } from '../../../rendering/cellSize'
 
 /** How long a draw waits for its animation frame before it draws without one, in ms (ticket 1152): far longer than a
  * frame takes to come, short enough that the wait is hardly seen.
@@ -255,7 +255,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       const own = bitmapBox(frame.size, draft, drawing.pixelRatio!)
       const region = { x: frame.scroll.x + own.x, y: frame.scroll.y + own.y, width: own.width, height: own.height }
       const placement = placementOf(drawing.pixelRatio!, own, box)
-      // A rectangle of the surface, in the Frame's own device px: layers differ by quarter turns, so the placement is a shift.
+      // A rectangle of the surface, in the Frame's own device px: every layer shares the Table turn, so the placement is a shift.
       const within = part === 'all' ? undefined : { ...part, x: part.x - placement.e, y: part.y - placement.f }
       const laid = { ...drawing, project: frame.project, space: spaceOf(frame.project, true, frame.ref), region, frameTheme: frame.theme, rowMarks: frame.marks, letters: shownLetters(frame.project, frame.ref), canvasLetters: undefined, slimSheet: frame.slim, layer: frame.ref, alone: true, rows: undefined, columns: undefined, covered: undefined, within }
       drawPlaced(context, placement, () => renderProject(context, laid))
@@ -328,21 +328,11 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     drawFrames(context, drawing, box, draft, (frame) => {
       const sheet = canvasBoxOnSurface(drawing, frame.covered)
       const parts = bandRects.filter((rect) => overlap(rect, sheet))
-      const changed = changedRows(beadsOfLayer(was.get(frame.ref)!.project, frame.ref) ?? {}, beadsOfLayer(frame.project, frame.ref) ?? {}).sort((x, y) => x - y)
-      if (changed.length > MOST_ROWS_WORTH_A_BAND) return 'all'
-      if (changed.length > 0) parts.push(framesRowsOnSurface(frame, changed, box, pixelRatio, props.zoom))
+      // A Frame's own beads changed: that Frame is drawn again whole. Its changed rows' rectangle is not worked out, as it
+      // missed the beads of a Frame turned or leaning apart from the Canvas.
+      if (beadsOfLayer(frame.project, frame.ref) !== beadsOfLayer(was.get(frame.ref)!.project, frame.ref)) return 'all'
       return parts.length > 0 ? unionOf(parts) : undefined
     })
-  }
-
-  /** The rectangle of the surface, in its device px, that a Frame's changed rows take, two beads more all round. */
-  function framesRowsOnSurface(frame: LaidFrame, changed: readonly number[], box: Region, pixelRatio: number, zoom: number): Region {
-    const held = frameById(frame.project, frame.ref)!
-    const [first, last] = [changed[0]!, changed.at(-1)!]
-    const area = frame.surface.beadBox({ row: first, column: 0, rows: last - first + 1, columns: held.columns }, frame.ref)
-    // Two beads more all round: the neighbours' edges and the shading a bead's redraw touches.
-    const pad = CELL_SIZE_PX * zoom * 2
-    return { x: (area.x - pad - box.x) * pixelRatio, y: (area.y - pad - box.y) * pixelRatio, width: (area.width + 2 * pad) * pixelRatio, height: (area.height + 2 * pad) * pixelRatio }
   }
 
   /** The smallest box holding all of `boxes`. */
