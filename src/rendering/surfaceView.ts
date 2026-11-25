@@ -271,11 +271,11 @@ export interface SurfaceView {
   /** How far one step along a row (`column`) and one step down (`row`) go on screen, in a layer's Weave. */
   beadStep(layer?: ViewLayer): { column: Scroll; row: Scroll }
   /** A point in grid space, in the viewport. For the layouts that hang things off a bead's edge (the rulers). */
-  gridToPoint(x: number, y: number): Scroll
+  gridToPoint(x: number, y: number, layer?: ViewLayer): Scroll
   /** A point of the viewport, in grid space: where it stays while the view is moved or zoomed. */
   pointToGrid(point: Scroll): Scroll
   /** A direction in grid space as it points on screen: turned, not zoomed. */
-  gridDirection(x: number, y: number): Scroll
+  gridDirection(x: number, y: number, layer?: ViewLayer): Scroll
 }
 
 /** A box's rectangle in a layer's grid space: its beads, and on rows the half bead a shifted row adds on the right. */
@@ -522,15 +522,30 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       const row = own ? placed(layer, 0, down, zoom) : displayed(0, down * scale, zoom)
       return { column: { x: column.x - origin.x, y: column.y - origin.y }, row: { x: row.x - origin.x, y: row.y - origin.y } }
     },
-    gridToPoint: gridPoint,
+    gridToPoint: (x, y, named) => {
+      // A Frame's own px (its scale in grid px) lie where its own surface puts them (spec 1234).
+      const on = named ? layerNamed(named) : canvas
+      if (!sheetNamed(on)?.own) return gridPoint(x, y)
+      const at = placed(on, x / on.scale, y / on.scale, zoom)
+      return { x: at.x - scroll.x, y: at.y - scroll.y }
+    },
     pointToGrid: (point) => {
       const [x, y] = toGrid(point)
       return { x, y }
     },
-    gridDirection: (x, y) => {
-      const origin = displayed(0, 0, 1)
-      const at = displayed(x, y, 1)
-      return { x: at.x - origin.x, y: at.y - origin.y }
+    gridDirection: (x, y, named) => {
+      // A Frame's own steps are as its surface turns them, not as the Canvas does (spec 1234): a unit step either way.
+      const on = named ? layerNamed(named) : canvas
+      const own = sheetNamed(on)?.own
+      if (!own) {
+        const origin = displayed(0, 0, 1)
+        const at = displayed(x, y, 1)
+        return { x: at.x - origin.x, y: at.y - origin.y }
+      }
+      const origin = applied(own(1), 0, 0)
+      const at = applied(own(1), x, y)
+      const length = Math.hypot(at.x - origin.x, at.y - origin.y) || 1
+      return { x: (at.x - origin.x) / length, y: (at.y - origin.y) / length }
     },
   }
 }

@@ -1,4 +1,5 @@
 import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
+import { frameShapeOf } from './frameShape'
 import type { FrameRef, Rotation } from './grid'
 import { canvasOf, frameById, framesOf, heldFrameById, quarterTurnOf, withCanvas, withFrameById, type Layered } from './layerRecord'
 import { cellWidthMm, frameWeave } from './layerWeave'
@@ -9,21 +10,29 @@ import { positionStep } from './weave'
 // A layer's place on the Table (spec 1234, ticket 1237): a Frame by its centre in mm and a quarter turn, the Canvas by its
 // origin and a quarter turn, the whole Table turned on screen. This turns and moves them, one at a time.
 
-/** The quarter turn the Frame's rectangle is seen at when it is exported or previewed: none while it has a Frame, its turn
- * being laid in its grid (ticket 1186); the Canvas's own with no Frame, the only layer there is to show. */
+/** The quarter turn the Frame's rectangle is seen at when it is exported or previewed: a plain Frame's grid is drawn
+ * upright and shown at the Canvas's turn (`withLaidTurn`); a shaped Frame's layout is built turned, so none (ticket 1186);
+ * the Canvas's own with no Frame, the only layer there is to show. */
 export function laidTurnOf(project: Layered, ref: FrameRef): Rotation {
-  return frameById(project, ref) ? 0 : quarterTurnOf(project)
+  const frame = frameById(project, ref)
+  return frame && frameShapeOf(frame) ? 0 : quarterTurnOf(project)
 }
 
-/** The Project as every export and preview draws it (ticket 1186): the picture at `turn`, 0 unless given, the Table upright,
- * every Frame by its own quarter turn laid in its grid. As it is when it already lies so, or has no Frame. */
+/** The Project as every export and preview draws it (ticket 1186): a plain Frame a regular grid shown at `turn` (its own
+ * turn unless given), the Canvas turned with it; a shaped Frame by its own quarter turn laid in its layout, the Canvas at
+ * `turn`, 0 unless given. The Table upright. As it is when it already lies so, or has no Frame. */
 export function withLaidTurn(project: Project, turn: Rotation | undefined, ref: FrameRef): Project {
-  if (!frameById(project, ref)) return project
-  const to = turn ?? 0
+  const frame = frameById(project, ref)
+  if (!frame) return project
+  const held = heldFrameById(project, ref)!
+  const plain = !frameShapeOf(frame)
+  const to = turn ?? (plain ? nearestQuarterTurn(held.angle) : 0)
+  const angle = plain ? to : held.angle
   const canvas = canvasOf(project)
-  if (canvas.orientation === to && !canvas.tableTurn) return project
+  if (canvas.orientation === to && !canvas.tableTurn && held.angle === angle) return project
   const { tableTurn: _turn, ...rest } = canvas
-  return withCanvas({ ...project, layers: [rest, ...framesOf(project)] }, { orientation: to })
+  const laid = withCanvas({ ...project, layers: [rest, ...framesOf(project)] }, { orientation: to })
+  return held.angle === angle ? laid : withFrameById(laid, ref, (each) => ({ ...each, angle }))
 }
 
 /** The Frame's centre as the Canvas lays it out: from the Canvas's origin along its own axes, in its bead widths. Where a

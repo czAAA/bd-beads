@@ -244,14 +244,14 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   // turned.
   const size = place.size ?? 1
   const outward = (gridX: number, gridY: number, normal: [number, number]) => {
-    const { x, y } = surface.gridToPoint(place.origin.x + gridX * size, place.origin.y + gridY * size)
-    const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1])
+    const { x, y } = surface.gridToPoint(place.origin.x + gridX * size, place.origin.y + gridY * size, place.layer)
+    const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1], place.layer)
     return { x, y, nx, ny }
   }
   // A ruler counts left to right or top to bottom as seen (ticket 1165): from its far end where a turned Canvas shows
   // the box's own columns or rows running the other way, a step along them pointing left or up (a quarter turn's unit).
   const backwards = ({ x, y }: { x: number; y: number }) => x + y < 0
-  const fromEnd = { column: backwards(surface.gridDirection(1, 0)), row: backwards(surface.gridDirection(0, 1)) }
+  const fromEnd = { column: backwards(surface.gridDirection(1, 0, place.layer)), row: backwards(surface.gridDirection(0, 1, place.layer)) }
   const seen = (label: { x: number; y: number; width: number; height: number }) =>
     label.x + label.width / 2 > -margin && label.x - label.width / 2 < viewport.width + margin && label.y + label.height / 2 > -margin && label.y - label.height / 2 < viewport.height + margin
   const dotSeen = (spot: { x: number; y: number }) => spot.x > -margin && spot.x < viewport.width + margin && spot.y > -margin && spot.y < viewport.height + margin
@@ -315,7 +315,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   // Every box's rulers stand along its left and its top as seen, whichever way the Canvas or the Frame is turned
   // (ticket 1170): the sides whose outward step points more left than up or down, or more up than across.
   const side = (normal: [number, number], lay: () => void) => {
-    const { x, y } = surface.gridDirection(normal[0], normal[1])
+    const { x, y } = surface.gridDirection(normal[0], normal[1], place.layer)
     if (-x > Math.abs(y) || -y > Math.abs(x)) lay()
   }
   side([0, -1], () => columnsAt(start.row, area.y, [0, -1]))

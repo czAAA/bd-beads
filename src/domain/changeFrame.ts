@@ -175,10 +175,18 @@ function asksForTechnique(frame: FrameSheet | undefined, change: FrameChange): b
  * is refused, naming that Frame (spec 1214, tickets 1218, 1222). */
 export function changeFrame(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
   const result = frameChanged(project, change, ref)
-  if (result.kind !== 'changed' || !frameMet(result.project, ref) || frameMet(project, ref)) return result
+  // A move is always held at the first sheet on its way, so a long one cannot jump clean over another Frame.
+  const through = 'move' in change && result.kind === 'changed' && !frameMet(project, ref) && stoppedShorterThan(project, ref, change.move)
+  if (result.kind !== 'changed' || (!through && (!frameMet(result.project, ref) || frameMet(project, ref)))) return result
   const stopped = stoppedChange(project, change, ref)
   if (stopped === undefined) return { kind: 'refused', reason: 'meets-frame', met: frameMet(result.project, ref) }
   return stopped === project ? { kind: 'unchanged', project } : { kind: 'changed', project: stopped }
+}
+
+/** Whether a move is held short of what was asked. */
+function stoppedShorterThan(project: Project, ref: FrameRef, move: TablePoint): boolean {
+  const stopped = stoppedMoveAt(project, ref, move)
+  return stopped.x !== move.x || stopped.y !== move.y
 }
 
 /** A move or resize (`set`) of the Frame stopped at the last place allowed: a move at the first place along its way that
