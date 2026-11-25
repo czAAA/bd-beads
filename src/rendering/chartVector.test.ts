@@ -99,7 +99,9 @@ function pdfOf(project: Project, plan: ReturnType<typeof planPrint>, parts: Retu
   return { content, pads: drawChartParts(content, project, plan, parts, letters, undefined, look) }
 }
 
-function chartOf(project: Project, part = 0, look?: { rim: boolean; emptyGrid: boolean }) {
+function chartOf(shown: Project, part = 0, look?: { rim: boolean; emptyGrid: boolean }) {
+  // As the export lays the Project before it plans a chart: a new peyote Project lies at 90 on the Table (ticket 1237).
+  const project = laidAsExported(shown)
   const plan = planPrint(project, { frame: frameIdIn(project), keyRows: 2 })
   const parts = [plan.parts[part]!]
   return { plan, part: parts[0]!, ...pdfOf(project, plan, parts, LETTERS, plan.page.height, look) }
@@ -919,9 +921,10 @@ describe('a Canvas turn never changes the chart: it follows the Frame alone (spe
     for (const turn of [90, 270]) {
       const project = withLayers(make(), { orientation: turn })
       // Before 1186 the chart was drawn straight from the Project, at the Canvas's quarter turn.
-      const before = planWithKey(project, { frame: frameIdIn(project) })
+      const laid = laidAsExported(project)
+      const before = planWithKey(laid, { frame: frameIdIn(laid) })
       const printed = chartPages(project)
-      expect(printed).toEqual({ plan: before, pages: before.parts.map((part) => pdfOf(project, before, [part], LETTERS, before.page.height, EMPTY_GRID_ON).content.toString()) })
+      expect(printed).toEqual({ plan: before, pages: before.parts.map((part) => pdfOf(laid, before, [part], LETTERS, before.page.height, EMPTY_GRID_ON).content.toString()) })
       expect(chartPages(withLayers(make(), { orientation: turn + 3 }))).toEqual(chartPages(project))
     }
   })

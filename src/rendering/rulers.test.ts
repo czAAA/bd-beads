@@ -513,8 +513,9 @@ describe('a Frame lying turned (ticket 0667)', () => {
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: turned, frameLayer: ref, frameDrawing: ownDrawing(300), rotation: 0, zoom: 1, viewport: { width: 800, height: 600 } })
     const laid = rulerLayout(subject, surface, { fontPx: 11, numbers: true }, ref)
     expect(laid.boxes).toEqual([expect.objectContaining({ row: 0, column: 0, rows: 6, columns: 4, kind: 'frame' })])
-    expect(Math.max(...laid.labels.filter((label) => label.axis === 'column').map((label) => Number(label.text)))).toBe(4)
-    expect(Math.max(...laid.labels.filter((label) => label.axis === 'row').map((label) => Number(label.text)))).toBe(6)
+    // Numbered by its own columns and rows, where its beads lie.
+    expect(Math.max(...laid.labels.filter((label) => label.axis === 'column').map((label) => Number(label.text)))).toBe(6)
+    expect(Math.max(...laid.labels.filter((label) => label.axis === 'row').map((label) => Number(label.text)))).toBe(4)
   })
 })
 
@@ -589,11 +590,16 @@ describe('every ruler counts left to right and top to bottom as seen (ticket 116
         const columns = way.direction === 'columns'
         const first = surface.beadToPoint(columns ? { row: 0, column: line } : { row: line, column: 0 }, ref)
         const axis = columns ? 'column' : 'row'
-        const stands = (label: RulerLabel) => Math.hypot(label.x - first.x, label.y - first.y)
         const own = labels.filter((label) => label.kind === 'frame' && label.axis === axis)
-        console.log(JSON.stringify({rotation, columns, line, want: passLine(subject, ref), first, own: own.map((l) => [l.text, l.position, l.x, l.y])}))
-        const shown = own.reduce((best, label) => (stands(label) < stands(best) ? label : best)).text
-        expect(shown, `${rotation}° ${way.direction}`).toBe(String(passLine(subject, ref)!.line))
+        // The ruler runs along x on top and along y at the side: how far a number is off the bead is measured along it.
+        const spread = (of: (label: RulerLabel) => number) => Math.max(...own.map(of)) - Math.min(...own.map(of))
+        const alongX = spread((label) => label.x) > spread((label) => label.y)
+        const stands = (label: RulerLabel) => Math.abs(alongX ? label.x - first.x : label.y - first.y)
+        // The label of the pass's line (what `numbersPass` takes) shows the counter's number and stands at the bead's line, at most
+        // the half bead a staggered edge lies off it.
+        const shown = own.find((label) => label.position === line)!
+        expect(shown.text, `${rotation}° ${way.direction}`).toBe(String(passLine(subject, ref)!.line))
+        expect(stands(shown), `${rotation}° ${way.direction} stands`).toBeLessThanOrEqual(10)
       }
     }
   })

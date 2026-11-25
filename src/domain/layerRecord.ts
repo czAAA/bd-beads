@@ -76,7 +76,8 @@ export function frameById(project: Layered | undefined, frame: Layer): FrameLaye
   }
   const found = known.get(held)
   if (found) return found
-  const turns = (nearestQuarterTurn(held.angle) / 90) as 0 | 1 | 2 | 3
+  // An explicit 0 is a Frame laid upright for an export (`withLaidTurn`): its angle is kept for what reads the turn, its grid regular.
+  const turns = (held.quarterTurns === 0 ? 0 : nearestQuarterTurn(held.angle) / 90) as 0 | 1 | 2 | 3
   const { quarterTurns: _stale, ...rest } = held
   const read = turns === (held.quarterTurns ?? 0) ? held : turns ? { ...rest, quarterTurns: turns } : rest
   known.set(held, read)
@@ -267,7 +268,9 @@ export function laidFrameSheet(project: Project, sheet: (FrameSheet & Partial<Fr
   // A Frame laid anew lies as the sheet says, else as the Canvas does; a changed one turns by the quarters its sheet adds.
   const turned = 90 * ((quarterTurns ?? 0) - (placed ? (frameById(project, frame)!.quarterTurns ?? 0) : 0))
   const angle = normalizedOrientation(placed ? placed.angle + turned : (given ?? canvas.orientation))
-  const made = { ...kept, ...laid, angle, centre: centre ?? placed?.centre ?? { x: 0, y: 0 } }
+  // A Frame laid upright for an export keeps being (see frameById).
+  const upright = placed?.quarterTurns === 0 && !quarterTurns ? { quarterTurns: 0 as const } : {}
+  const made = { ...kept, ...laid, ...upright, angle, centre: centre ?? placed?.centre ?? { x: 0, y: 0 } }
   return index > 0 ? withFrameById(project, frame, () => made) : { ...project, layers: [...project.layers, made] }
 }
 
