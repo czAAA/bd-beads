@@ -681,8 +681,8 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   // A Canvas position under a Frame is that Frame's cell there, which the Frame's drawing names by its own row and column.
   const own = isFrameLayer(layer) && !position.layer ? cellUnder(props.project, layer, position) : position
   if (!own) return undefined
-  const bead = view.beadBox({ row: own.row, column: own.column, rows: 1, columns: 1 }, layer)
-  const shown = lean.toScreen({ x: bead.x + bead.width / 2, y: bead.y + bead.height / 2 })
+  // Where the bead is by its layer's geometry, which a Frame turned a quarter lays across (spec 1234); a block's box would not.
+  const shown = lean.toScreen(view.beadToPoint({ row: own.row, column: own.column }, layer))
   const zoom = cssZoomOf(rootEl.value)
   return { x: box.left + shown.x * zoom, y: box.top + shown.y * zoom }
 }

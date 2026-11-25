@@ -690,8 +690,9 @@ export function marginSheetPx(project: DrawnProject, ref: FrameRef, margin = MAR
   const sheet = frameFootprintPx(project, margin, ref)
   const footprint = frameFootprintPx(project, 0, ref)
   if (!sheet || !footprint) return undefined
-  const band = Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height)
-  return { sheet, footprint, band }
+  const narrowest = Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height)
+  // Float noise of a turned Frame's extent (80 as 79.99999999999994) must not tip the sheet into a smaller form.
+  return { sheet, footprint, band: Math.round(narrowest * 1e6) / 1e6 }
 }
 
 /** The expanded Frame's slim sheet as drawn (ticket 1169): its box in grid px and its outer corners in screen px. */

@@ -1,4 +1,4 @@
-import { laidTurnOf } from '../domain/framePlacement'
+import { laidTurnOf, withLaidTurn } from '../domain/framePlacement'
 import { frameOf, layerOf, firstFrameId } from '../domain/layerRecord'
 import { placedFrame } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
@@ -54,7 +54,9 @@ function drawnBox(project: Project, surface: SurfaceView, rulers: RulerLayout): 
 /** The view of the cuff's Frame and its rulers at `zoom`, numbers `fontPx` at 100%, as big as they cover; its scroll is
  * found against that size in a few passes, as the view lays its numbers by its edges.
  * @internal Its test draws the editor's Canvas through it too. */
-export function cuffView(project: Project, zoom: number, fontPx = RULER_FONT_PX): CuffView {
+export function cuffView(placed: Project, zoom: number, fontPx = RULER_FONT_PX): CuffView {
+  // As every preview draws it (ticket 1186), whichever way the Frame lies: the editor's Canvas round it lies the same.
+  const project = withLaidTurn(placed, undefined, firstFrameId(placed))
   let size = FIRST_GUESS
   let scroll = { x: 0, y: 0 }
   for (let pass = 0; pass < SETTLE_PASSES; pass++) {
