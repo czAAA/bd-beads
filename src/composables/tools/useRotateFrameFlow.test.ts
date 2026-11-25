@@ -169,7 +169,7 @@ describe('Rotate Frame names its Frame (ticket 1218)', () => {
     expect(harness.history.canUndo.value).toBe(false)
     expect(frameTurns.value).toBe(0)
     expect(deps.announce).not.toHaveBeenCalled()
-    expect(deps.showToast).toHaveBeenCalledWith('frame-meets', expect.stringContaining('Frame 1'), 'warning')
+    expect(deps.showToast).toHaveBeenCalledWith('frame-meets', 'Too close to Frame 1. Frames and their margins can’t meet.', 'warning')
   })
 
   it('turns a peyote Frame on a loom Canvas, with a Table turn on, about its own centre and nothing else', () => {

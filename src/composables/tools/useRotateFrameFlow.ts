@@ -23,7 +23,7 @@ export interface RotateFrameFlowDeps {
   locale: () => Locale
   dialogs?: Dialogs
   /** Tells the person a turn was refused (spec 1234). */
-  showToast?: (id: string, text: string, tone?: MessageTone) => void
+  showToast: (id: string, text: string, tone?: MessageTone) => void
 }
 
 /** Rotate Frame (tickets 471, 0647, 0667, 1016, 1184, ADR 0052, 0079): the Frame a quarter turn on, one Edit; once a
@@ -49,7 +49,7 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   /** A refused turn says which Frame it would meet (spec 1234): the same Message a move or resize into a margin gets. */
   function tellMet(project: Project, frame: FrameRef): void {
     const met = frameMetOnTurn(project, frame)
-    if (!met || !deps.showToast) return
+    if (!met) return
     const t = deps.messages()
     const frames = framesOf(project)
     const at = frames.findIndex((each) => each.id === met)
