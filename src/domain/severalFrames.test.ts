@@ -1,6 +1,7 @@
 import { frameIdIn } from '../testUtils/frameId'
 import { firstOf, SECOND, twoFrames } from '../testUtils/twoFrames'
 import { withLayers } from '../testUtils/layerFields'
+import { onCanvas } from '../testUtils/onCanvas'
 import { describe, expect, it } from 'vitest'
 import { keepAllowedEdits } from './allowedEdits'
 import { colorAt, withColors } from './canvas'
@@ -134,7 +135,7 @@ describe('a view of one Frame (ticket 1218)', () => {
 describe('a Starter on an open Project (ticket 1218)', () => {
   it('adds a Frame, the one there left as it was', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-    const project = withFrameSheet(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdIn(base) })
+    const project = withFrameSheet(base, onCanvas(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }), { frame: frameIdIn(base) })
     const starter = starterById('triangle')
     const added = newLayerId() as FrameId
     const placed = changed(placedStarter(project, starter, { sizes: designSizes(starter), useDesign: true }, { row: 60, column: 60 }, added))
@@ -156,7 +157,7 @@ describe('a new Frame among the others (spec 1214, ticket 1222)', () => {
 
   it('lands a Starter put over another Frame at the nearest place clear of it, the Frame there as it was', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-    const project = withFrameSheet(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdIn(base) })
+    const project = withFrameSheet(base, onCanvas(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }), { frame: frameIdIn(base) })
     const starter = starterById('triangle')
     const added = newFrameId(project)
     const placed = changed(placedStarter(project, starter, { sizes: designSizes(starter), useDesign: false }, { row: 3, column: 2 }, added))

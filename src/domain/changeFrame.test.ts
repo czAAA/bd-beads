@@ -24,6 +24,8 @@ import { placeOf } from '../testUtils/placeOf'
 const frame: Rect = { row: 10, column: 10, rows: 6, columns: 4 }
 /** The same Frame in its own rows and columns, whose first are 0, 0 (spec 1234): what a resize is asked in. */
 const ownFrame: Rect = { row: 0, column: 0, rows: 6, columns: 4 }
+/** The Project's Frame as a rectangle in its own rows and columns. */
+const ownRectOf = (project: Project): Rect => ({ row: 0, column: 0, rows: frameOf(project)!.rows, columns: frameOf(project)!.columns })
 /** One loom cube bead's width on the Table, in mm: what a move by whole beads is asked in. */
 const BEAD = 1.5
 
@@ -712,11 +714,11 @@ describe('a Frame and the Canvas trade no bead on a resize (tickets 0639, 1215, 
   ] as const)('folds its top rows and takes them back, leaving the Canvas as it was, on %s', (_name, technique, weave) => {
     const canvas = withColors({}, [{ row: 30, column: 30, color: GREY }])
     const start = framed({ technique, ...weave, beads: canvas, frame: { ...sheet({ ...frame, row: 8, rows: 8 }, own), technique, ...weave } })
-    const shrunk = changed(start, { set: frameWithEdgeStep(frameWeave(start, frameIdIn(start)), frameOf(start)!, 'top', -1) })
+    const shrunk = changed(start, { set: frameWithEdgeStep(frameWeave(start, frameIdIn(start)), ownRectOf(start), 'top', -1) })
     expect(frameOf(shrunk)!.rows).toBeLessThan(8)
     expect(frameOf(shrunk)!.folded).toBeDefined()
     expect(beadsOfLayer(shrunk, 'canvas')).toBe(canvas)
-    const back = changed(shrunk, { set: frameWithEdgeStep(frameWeave(shrunk, frameIdIn(shrunk)), frameOf(shrunk)!, 'top', 1) })
+    const back = changed(shrunk, { set: frameWithEdgeStep(frameWeave(shrunk, frameIdIn(shrunk)), ownRectOf(shrunk), 'top', 1) })
     expect(frameSheetOf(back)).toEqual(frameSheetOf(start))
     expect(beadsOfLayer(back, 'canvas')).toBe(canvas)
   })

@@ -24,7 +24,6 @@ import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { canvasOf, frameOf, heldWeave, quarterTurnOf, withLayer } from '../../domain/layerRecord'
-import { placedFrame } from '../../domain/layerWeave'
 import { withFrameSheet } from '../../domain/frameSheet'
 import { canvasRectCentre, coversOf } from '../../domain/sheets'
 import { findBead } from '../../domain/beads'
@@ -2370,7 +2369,6 @@ describe('ProjectSurface with a Frame', () => {
   describe('with two Frames (ticket 1220)', () => {
     // The second Frame, 4 × 6 at row 10, column 14: its beads 280 to 360 across and 200 to 320 down, in 20 px beads.
     const pair = () => twoFrames({ row: 10, column: 14 })
-    const surfaceOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.vm as unknown as { frameSheetAt(point: { clientX: number; clientY: number }): FrameId | undefined }
 
     it('reports each Frame\'s place and margin sheet, round its own beads', async () => {
       const { wrapper } = await mountSurface(pair())

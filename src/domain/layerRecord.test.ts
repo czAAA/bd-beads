@@ -9,6 +9,7 @@ import { withFrameSheet } from './frameSheet'
 import type { Project } from './project'
 import { beadCell } from './weave'
 import { withLayers } from '../testUtils/layerFields'
+import { onCanvas } from '../testUtils/onCanvas'
 
 const RED = '#ff0000'
 const BLUE = '#0000ff'
@@ -147,16 +148,16 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
 describe('the layer list (ADR 0079, ticket 0664)', () => {
   it('lays a Frame anew as a copy of the Canvas\'s Bead and Letters, at the first row, under an id of its own', () => {
     const canvas = withLetters(withLayer(open(), 'canvas', { bead: cube }), 'canvas', true)
-    const laid = withFrameSheet(canvas, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} }, { frame: frameIdIn(canvas) })
+    const laid = withFrameSheet(canvas, onCanvas(canvas, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} }), { frame: frameIdIn(canvas) })
     expect(frameOf(laid)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), letters: true, rowProgress: { way: 'down' } })
     expect(frameOf(laid)!.id).not.toBe(canvasOf(laid).id)
   })
 
   it('keeps a Frame\'s id, Bead, Letters and Row progress when its sheet is laid again, and removes it with none', () => {
     const before = withLayers(framed(), { ownProgress: { direction: 'columns', currentRow: 0, currentColumn: 2 } })
-    const moved = withFrameSheet(before, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }, { frame: frameIdIn(before) })
+    const moved = withFrameSheet(before, onCanvas(before, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }), { frame: frameIdIn(before) })
     const { id, beadId, rowProgress } = frameOf(before)!
-    expect(frameOf(moved)).toMatchObject({ id, beadId, rowProgress, row: 5 })
+    expect(frameOf(moved)).toMatchObject({ id, beadId, rowProgress, centre: onCanvas(before, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }).centre })
     expect(frameOf(moved)).not.toHaveProperty('name')
     expect(withFrameSheet(before, undefined, { frame: frameIdIn(before) }).layers).toEqual([canvasOf(before)])
   })
@@ -192,10 +193,11 @@ describe('a layer\'s Background (ADR 0079, ticket 0666)', () => {
   })
 
   it('lays a Frame anew on the Canvas\'s Background, and keeps a Frame\'s own when its sheet is laid again', () => {
-    const laid = withFrameSheet(withBackground(open(), 'canvas', 3), { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} }, { frame: frameIdIn(withBackground(open(), 'canvas', 3)) })
+    const backed = withBackground(open(), 'canvas', 3)
+    const laid = withFrameSheet(backed, onCanvas(backed, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} }), { frame: frameIdIn(backed) })
     expect(backgroundOf(laid, FRAME_ID)).toBe(3)
     const own = withBackground(laid, FRAME_ID, '#112233')
-    expect(backgroundOf(withFrameSheet(own, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }, { frame: frameIdIn(own) }), FRAME_ID)).toBe('#112233')
+    expect(backgroundOf(withFrameSheet(own, onCanvas(own, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }), { frame: frameIdIn(own) }), FRAME_ID)).toBe('#112233')
   })
 
   it('starts every layer without one on the device\'s last pick, keeping a layer\'s own', () => {

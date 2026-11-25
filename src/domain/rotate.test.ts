@@ -277,7 +277,7 @@ describe('rotateFrame with Row progress (tickets 0647, 0667, ADR 0052)', () => {
         const turned = rotateFrame(project, undefined, frameIdIn(project))!
         // Its rows turn with it, until Rotate Frame asks (ticket 1184): the way and each pointer's slot a quarter on.
         expect(rowProgressOf(turned, frameIdIn(turned)), `${technique} ${JSON.stringify(way)}`).toEqual(turnedWithFrame(rowProgressOf(project, frameIdIn(project)), 1))
-        expect(isInFinishedRow(turned, { row: frameOf(turned)!.row + 1, column: frameOf(turned)!.column, layer: FRAME_ID }, frameIdIn(turned))).toBe(isInFinishedRow(project, { row: 21, column: 20, layer: FRAME_ID }, frameIdIn(project)))
+        expect(isInFinishedRow(turned, { row: 1, column: 0, layer: FRAME_ID }, frameIdIn(turned))).toBe(isInFinishedRow(project, { row: 1, column: 0, layer: FRAME_ID }, frameIdIn(project)))
       }
     }
   })

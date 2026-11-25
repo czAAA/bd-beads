@@ -3,7 +3,7 @@ import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColorsInPalette } from './paletteEdits'
 import { computeColorQuantities } from './beadQuantities'
-import { beadCount, colorAt, forEachBead, type FrameSheet } from './canvas'
+import { beadCount, colorAt, forEachBead } from './canvas'
 import { changeFrame, relaidInBead, type FrameChange } from './changeFrame'
 import { findBead } from './beads'
 import { customFrameSize, frameLayoutOf, settingValuesOf, type FrameSettings } from './frameShape'
@@ -206,12 +206,14 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   })
 
   it('becomes its shape round a Selection on Frame from Selection, the smallest that covers it, copying the Canvas beads in', () => {
-    // On a Canvas woven like it, the rectangle a 4-round Triangle round row 20, column 30 has, and Canvas beads over four
-    // of its beads.
+    // A rectangle of a Canvas woven like it, with Canvas beads over four of its beads. The Triangle takes the Canvas's turn,
+    // so the fewest Rounds that reach as far on the Table as the rectangle is 5 (a 4-round one is half a bead short).
     const selection = { row: 16, column: 26, rows: 8, columns: 9 }
     const drawn = withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 31: BLUE }, 22: { 29: BLUE } } })
     const made = changed(drawn, { make: selection })
-    expect(frameOf(made)).toMatchObject({ ...selection, shape: 'triangle', settings: { rounds: 4 } })
+    expect(frameOf(made)).toMatchObject({ shape: 'triangle', settings: { rounds: 5 } })
+    const place = placeOf(made)
+    expect([place.row <= selection.row, place.column <= selection.column, place.row + place.rows >= selection.row + selection.rows, place.column + place.columns >= selection.column + selection.columns]).toEqual([true, true, true, true])
     expect(beadsOfLayer(made, 'canvas')).toEqual(beadsOfLayer(drawn, 'canvas'))
     expect(computeColorQuantities(made, projectPalette(made), frameIdIn(made))).toEqual(expect.arrayContaining([expect.objectContaining({ hex: RED, count: 2 }), expect.objectContaining({ hex: BLUE, count: 2 })]))
   })

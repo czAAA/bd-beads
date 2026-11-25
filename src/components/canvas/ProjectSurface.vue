@@ -629,7 +629,8 @@ const frameTurn = useFrameTurn({
     return frame && frameLayer.surface.value.frameBox(frame)
   },
   paper: () => theme.value.margin.fill,
-  view: () => [props.zoom, props.scroll, frameLayer.size.value, props.twist],
+  // By value: the Frame's drawing is made anew with the Project (a turn), its size the same.
+  view: () => [props.zoom, props.scroll.x, props.scroll.y, frameLayer.size.value.width, frameLayer.size.value.height, props.twist].join(),
 })
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)

@@ -42,7 +42,7 @@ const paintFrame = (project: Project, positions: { row: number; column: number }
 const allPositions = (project: Project) => frameLayoutOf(frameOf(project)!)!.positions.map(({ row, column }) => ({ row, column }))
 
 /** The Selection Select all makes over the Frame. */
-const everything = (project: Project): Selection => selectAllSelection(beadsOfLayer(project, 'canvas'), frameOf(project), frameIdIn(project))!
+const everything = (project: Project): Selection => selectAllSelection(beadsOfLayer(project, 'canvas'), { row: 0, column: 0, rows: frameOf(project)!.rows, columns: frameOf(project)!.columns }, frameIdIn(project))!
 
 /** A Selection of the Frame's cells, by their own rows and columns. */
 const ofFrame = (_project: Project, top: number, left: number, rows: number, columns: number): Selection => ({ top, left, rows, columns, layer: FRAME_ID })

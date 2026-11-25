@@ -8,15 +8,15 @@ import type { Project } from '../domain/project'
 import { canvasBlits, recordingContext } from '../testUtils/recordingContext'
 import { withLayers } from '../testUtils/layerFields'
 import { PROJECT_THEMES, type BeadShape } from './beadLook'
-import { renderProject } from './projectRenderer'
+import { renderProject, type RenderInput } from './projectRenderer'
 import { referenceBoxPx, referenceWidthLimits, type DrawnReference } from './referenceImage'
 import { spaceOf } from './space'
 
-/** A 3 × 2 Frame at row 2, column 2, its first row painted and its second left empty, and a bead on the Canvas. */
+/** A 3 × 2 Frame, its first row painted and its second left empty, and a bead on the Canvas. */
 function framedProject(): Project {
   const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
   const cells = [0, 1, 2].map((column) => ({ row: 0, column, color: '#e63746' }))
-  const frame = { ...weaveOf(canvasOf(project)), row: 2, column: 2, rows: 2, columns: 3, beads: withColors({}, cells) }
+  const frame = { ...weaveOf(canvasOf(project)), rows: 2, columns: 3, beads: withColors({}, cells) }
   return withLayers(project, { beads: withColors({}, [{ row: 0, column: 0, color: '#1a1a1a' }]), frame })
 }
 
@@ -30,7 +30,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function render(project: Project, extra: { open?: boolean; reference?: DrawnReference; theme?: typeof PROJECT_THEMES.light; frameTheme?: typeof PROJECT_THEMES.light } = {}) {
+function render(project: Project, extra: { open?: boolean; layer?: RenderInput['layer']; reference?: DrawnReference; theme?: typeof PROJECT_THEMES.light; frameTheme?: typeof PROJECT_THEMES.light } = {}) {
   const { context, calls } = recordingContext()
   const beads: BeadShape[] = []
   renderProject(context, {
@@ -42,6 +42,7 @@ function render(project: Project, extra: { open?: boolean; reference?: DrawnRefe
     theme: extra.theme,
     frameTheme: extra.frameTheme,
     reference: extra.reference,
+    layer: extra.layer,
     drawBead: (_context, bead) => {
       beads.push(bead)
       calls.push({ name: 'bead', args: [bead.color], fillStyle: undefined, strokeStyle: undefined, globalAlpha: 1 })
@@ -79,7 +80,7 @@ describe('the reference image on the Canvas (ReferenceImage card, ticket 0790)',
   })
 
   it('leaves the Frame\'s empty beads to show it through, and draws the painted ones as they are', () => {
-    const { beads } = render(framedProject(), { reference })
+    const { beads } = render(framedProject(), { reference, layer: frameIdIn(framedProject()) })
     expect(beads).toHaveLength(3)
     expect(beads.every((bead) => bead.color !== null)).toBe(true)
   })
