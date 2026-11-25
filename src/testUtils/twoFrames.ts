@@ -2,6 +2,7 @@ import { createProject } from '../domain/createProject'
 import { withFrameSheet } from '../domain/frameSheet'
 import type { FrameId, GridPosition } from '../domain/grid'
 import { frameIdOf, framesOf } from '../domain/layerRecord'
+import { onCanvas } from './onCanvas'
 import type { Project } from '../domain/project'
 import { frameIdIn } from './frameId'
 
@@ -13,8 +14,8 @@ export const SECOND = frameIdOf({ id: 'second' })
  * 29, columns 16 to 27), 6 by 4 unless sized. */
 export function twoFrames(at: GridPosition = { row: 20, column: 20 }, second = { rows: 6, columns: 4 }): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-  const first = withFrameSheet(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdIn(base) })
-  return withFrameSheet(first, { ...at, ...second, beads: {}, technique: 'loom' }, { frame: SECOND })
+  const first = withFrameSheet(base, onCanvas(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }), { frame: frameIdIn(base) })
+  return withFrameSheet(first, onCanvas(first, { ...at, ...second, beads: {}, technique: 'loom' }), { frame: SECOND })
 }
 
 /** The first Frame's id in a Project. */

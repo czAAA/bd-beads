@@ -10,8 +10,13 @@ import { seamOf } from './layerDrawings'
 import { tiltedView } from './tiltedView'
 import { customFrameSize, frameGeometry } from '../domain/frameShape'
 
-/** The view, its Frame (when it has one) named `FRAME_ID`. */
-const surfaceView = (input: Parameters<typeof viewOf>[0]) => viewOf({ ...(input.frame ? { frameLayer: FRAME_ID } : {}), ...input })
+/** The view, its Frame (when it has one) named `FRAME_ID` and drawn on its own surface, as every Frame is (spec 1234): the
+ * way the Canvas is, its first position's corner at `at` (the Canvas place it is laid over, in grid px) unless a drawing is given. */
+const surfaceView = (input: Parameters<typeof viewOf>[0] & { at?: { x: number; y: number } }) => {
+  const { at = { x: 0, y: 0 }, ...view } = input
+  const drawing = { rotation: view.rotation, scroll: view.scroll ?? { x: 0, y: 0 }, seam: { a: 1, b: 0, c: 0, d: 1, e: at.x, f: at.y } }
+  return viewOf({ ...(view.frame ? { frameLayer: FRAME_ID, frameDrawing: drawing } : {}), ...view })
+}
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
 /** After how many columns a Technique's stagger repeats: a move by that many keeps a bead's row on the screen. */
@@ -221,13 +226,13 @@ describe('the Surface view lays out a block of beads', () => {
 })
 
 describe('the Surface view with a Frame woven in its own Technique (ticket 492)', () => {
-  // A 4 × 4 brick stitch Frame at row 2, column 3 of a loom Canvas: its corner is the Canvas position (2, 3), at (60, 40).
-  const frame = { technique: 'brick' as const, row: 2, column: 3, rows: 4, columns: 4 }
-  const view = (extra = {}) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1, ...extra })
+  // A 4 × 4 brick stitch Frame laid over a loom Canvas, its first position's corner at (60, 40): its beads are counted from its own first.
+  const frame = { technique: 'brick' as const, rows: 4, columns: 4 }
+  const view = (extra = {}) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, at: { x: 60, y: 40 }, rotation: 0, zoom: 1, ...extra })
 
   it('lays the Frame\'s beads out in its own Weave from its corner: row 1 shifted half a bead', () => {
-    expect(view().beadToPoint({ row: 2, column: 3 })).toEqual({ x: 70, y: 50 })
-    expect(view().beadToPoint({ row: 3, column: 3 })).toEqual({ x: 80, y: 70 })
+    expect(view().beadToPoint({ row: 0, column: 0 }, FRAME_ID)).toEqual({ x: 70, y: 50 })
+    expect(view().beadToPoint({ row: 1, column: 0 }, FRAME_ID)).toEqual({ x: 80, y: 70 })
   })
 
   it('lays the Canvas out in the Canvas\'s', () => {
@@ -257,7 +262,6 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
 
   it('finds the cell nearest a point in the geometry asked for', () => {
     expect(view().pointToCell({ x: 80, y: 70 }, FRAME_ID)).toEqual({ row: 1, column: 0 })
-    expect(view().pointToCell({ x: 80, y: 70 }, FRAME_ID, true)).toEqual({ row: 3, column: 3 })
     expect(view().pointToCell({ x: 80, y: 65 }, 'canvas')).toEqual({ row: 3, column: 4 })
   })
 
@@ -268,12 +272,12 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
 })
 
 describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s (ticket 0665)', () => {
-  // A 4 × 4 loom Frame at row 2, column 3 of a loom Canvas: its corner at (60, 40), each of its beads 10 px across.
-  const frame = { technique: 'loom' as const, row: 2, column: 3, rows: 4, columns: 4, scale: 0.5 }
-  const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
+  // A 4 × 4 loom Frame laid over a loom Canvas: its corner at (60, 40), each of its beads 10 px across.
+  const frame = { technique: 'loom' as const, rows: 4, columns: 4, scale: 0.5 }
+  const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, at: { x: 60, y: 40 }, rotation: 0, zoom: 1 })
 
   it('draws the Frame\'s beads at half the size from its corner, and finds each under its centre', () => {
-    expect(view.beadToPoint({ row: 2, column: 3 })).toEqual({ x: 65, y: 45 })
+    expect(view.beadToPoint({ row: 0, column: 0 }, FRAME_ID)).toEqual({ x: 65, y: 45 })
     expect(view.beadToPoint({ row: 3, column: 3 }, FRAME_ID)).toEqual({ x: 95, y: 75 })
     expect(view.pointToHit({ x: 95, y: 75 })).toEqual({ row: 3, column: 3, layer: FRAME_ID })
   })
@@ -281,7 +285,7 @@ describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s 
   it('leaves the Canvas positions it does not reach to the Canvas, and covers only those it draws over', () => {
     expect(view.pointToHit({ x: 110, y: 50 })).toEqual({ row: 2, column: 5, layer: 'canvas' })
     expect(view.beadBox({ row: 0, column: 0, rows: 4, columns: 4 }, FRAME_ID)).toMatchObject({ x: 60, y: 40, width: 40, height: 40 })
-    const line = view.frameBox(frame)
+    const line = view.frameBox({ row: 0, column: 0, ...frame })
     expect([line.x + line.width / 2, line.y + line.height / 2]).toEqual([80, 60])
   })
 
@@ -316,7 +320,7 @@ describe("A Bead's real cell finds beads where they are drawn (ADR 0068)", () =>
 })
 
 describe('a Custom frame on the Canvas (ticket 0592)', () => {
-  const frame = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
+  const frame = { ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
   const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame, rotation: 0, zoom: 1 })
   const { box } = frameGeometry(frame).place({ row: 3, column: 5 })!
   const bead = { x: box.x * CELL_SIZE_PX + (box.width * CELL_SIZE_PX) / 2, y: box.y * CELL_SIZE_PX + (box.height * CELL_SIZE_PX) / 2 }
@@ -342,7 +346,7 @@ describe('a Custom frame on the Canvas (ticket 0592)', () => {
 
 describe('a Frame lying turned on the Canvas (ticket 0667)', () => {
   // A loom Frame of 4 rows and 6 columns, turned once: it lies 6 rows by 4 columns from its corner at (0, 0).
-  const frame = { row: 0, column: 0, rows: 4, columns: 6, technique: 'loom' as const, quarterTurns: 1 as const }
+  const frame = { rows: 4, columns: 6, technique: 'loom' as const, quarterTurns: 1 as const }
   const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
   const at = (x: number, y: number) => ({ x: x * CELL_SIZE_PX, y: y * CELL_SIZE_PX })
 
@@ -359,30 +363,32 @@ describe('a Frame lying turned on the Canvas (ticket 0667)', () => {
   })
 
   it('draws its line round what it covers, and gives the Select tool the cells under a point', () => {
-    const line = view.frameBox(frame)
+    const line = view.frameBox({ row: 0, column: 0, ...frame })
     expect(line.width).toBeLessThan(line.height)
     expect(view.frameCellAt(at(3.5, 5.5))).toEqual({ row: 5, column: 3, layer: FRAME_ID })
   })
 })
 
 describe('the Frame layer by its own transform (ticket 1187)', () => {
-  // A 4 × 4 loom Frame at row 2, column 3 of a loom Canvas, its sheet drawn on a surface of its own.
-  const frame = { technique: 'loom' as const, row: 2, column: 3, rows: 4, columns: 4 }
+  // A 4 × 4 loom Frame over a loom Canvas, its sheet drawn on a surface of its own.
+  const frame = { technique: 'loom' as const, rows: 4, columns: 4 }
   const screen = { width: 400, height: 300 }
   const base = { space: OPEN_SPACE, technique: 'loom' as const, frame, zoom: 1.5, scroll: { x: -40, y: 25 } }
   const identity = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
 
-  it('lies exactly where it did when its surface is drawn as the Canvas is', () => {
+  it('lies exactly where the Canvas lays the same positions when its surface is drawn as the Canvas is', () => {
+    // Its first position's corner on the Canvas position (2, 3), at (60, 40) in grid px.
     for (const rotation of ROTATIONS) {
-      const carried = surfaceView({ ...base, rotation })
-      const own = surfaceView({ ...base, rotation, frameDrawing: { rotation, scroll: base.scroll, seam: identity } })
-      for (const bead of [{ row: 2, column: 3 }, { row: 5, column: 6 }, { row: 4, column: 4 }]) {
-        const [a, b] = [carried.beadToPoint(bead), own.beadToPoint(bead)]
+      const canvas = surfaceView({ ...base, frame: undefined, rotation })
+      // The seam's translation is in displayed space, which is the viewport's plus the scroll.
+      const seam = canvas.gridToPoint(3 * CELL_SIZE_PX, 2 * CELL_SIZE_PX)
+      const own = surfaceView({ ...base, rotation, frameDrawing: { rotation, scroll: base.scroll, seam: { ...identity, e: seam.x + base.scroll.x, f: seam.y + base.scroll.y } } })
+      for (const bead of [{ row: 0, column: 0 }, { row: 3, column: 3 }, { row: 2, column: 1 }]) {
+        const [a, b] = [canvas.beadToPoint({ row: bead.row + 2, column: bead.column + 3 }), own.beadToPoint(bead, FRAME_ID)]
         expect(b.x).toBeCloseTo(a.x, 9)
         expect(b.y).toBeCloseTo(a.y, 9)
-        expect(own.pointToHit(a)).toEqual({ row: bead.row - 2, column: bead.column - 3, layer: FRAME_ID })
+        expect(own.pointToHit(a)).toEqual({ ...bead, layer: FRAME_ID })
       }
-      expect(own.frameBox(frame)).toEqual(carried.frameBox(frame))
     }
   })
 
@@ -420,7 +426,7 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
     })
 
     it('boxes the Frame round its turned corners and steps it along its own rows', () => {
-      const box = view.frameBox(frame)
+      const box = view.frameBox({ row: 0, column: 0, ...frame })
       for (const corner of [{ row: 0, column: 0 }, { row: 3, column: 3 }]) {
         const at = view.beadToPoint(corner, FRAME_ID)
         expect(at.x).toBeGreaterThan(box.x)
@@ -441,16 +447,16 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
       expect(view.carriedCell(from, view.pointToGrid(pressed), point, FRAME_ID)).toEqual({ row: 1, column: 2 })
     })
 
-    describe('off the Canvas\'s grid (ticket 1188)', () => {
-      // Its margin sheet two beads round it, in its own drawing's grid px; it lies off the Canvas's grid, so it covers no
-      // Canvas position: the positions its row and column address are the Canvas's wherever it does not lie on screen.
-      const sheet = { x: 1 * CELL_SIZE_PX, y: 0, width: 8 * CELL_SIZE_PX, height: 8 * CELL_SIZE_PX }
+    describe('its margin sheet (tickets 1188, 1237)', () => {
+      // Its margin sheet two beads round it, in its own drawing's grid px; what it covers is what is drawn under it, so a
+      // Canvas position is the Canvas's wherever the Frame does not lie on screen.
+      const sheet = { x: -2 * CELL_SIZE_PX, y: -2 * CELL_SIZE_PX, width: 8 * CELL_SIZE_PX, height: 8 * CELL_SIZE_PX }
       const drawing = { rotation: 0 as const, scroll: { x: 10, y: -30 }, seam: seamOf(frameLean, canvasLean), sheet }
-      const away = surfaceView({ ...base, frame: { ...frame, centre: { x: 40, y: 40 } }, rotation: 0, frameDrawing: { ...drawing, scroll: { x: 900, y: 900 } } })
-      const off = surfaceView({ ...base, frame: { ...frame, centre: { x: 40, y: 40 } }, rotation: 0, frameDrawing: drawing })
+      const away = surfaceView({ ...base, rotation: 0, frameDrawing: { ...drawing, scroll: { x: 900, y: 900 } } })
+      const off = surfaceView({ ...base, rotation: 0, frameDrawing: drawing })
       const plain = surfaceView({ ...base, rotation: 0 })
 
-      it('leaves the Canvas positions it addresses to the Canvas where it does not lie on screen', () => {
+      it('leaves the Canvas positions to the Canvas where the Frame does not lie on screen', () => {
         const under = plain.beadToPoint({ row: 3, column: 4 })
         expect(away.pointToHit(under)).toEqual({ row: 3, column: 4, layer: 'canvas' })
         expect(away.onMarginSheet(under)).toBe(false)
@@ -470,9 +476,9 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
 })
 
 describe('several Frames in one view (ticket 1219)', () => {
-  // The first 4 × 4 loom Frame at row 2, column 3; a second, peyote, at row 20, column 20, drawn leaning on its own.
-  const first = { technique: 'loom' as const, row: 2, column: 3, rows: 4, columns: 4 }
-  const second = { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 4 }
+  // The first 4 × 4 loom Frame; a second, peyote, drawn leaning on its own.
+  const first = { technique: 'loom' as const, rows: 4, columns: 4 }
+  const second = { technique: 'peyote' as const, rows: 4, columns: 4 }
   const SECOND = 'second' as FrameRef
   const screen = { width: 400, height: 300 }
   const base = { space: OPEN_SPACE, technique: 'loom' as const, frame: first, zoom: 1.5, scroll: { x: -40, y: 25 }, rotation: 0 as const }
@@ -482,7 +488,7 @@ describe('several Frames in one view (ticket 1219)', () => {
   const alone = surfaceView({ ...base, frame: second, frameLayer: SECOND, frameDrawing: drawing })
 
   it('hits each Frame\'s beads as that Frame, the second where its own drawing lays it', () => {
-    expect(view.pointToHit(view.beadToPoint({ row: 3, column: 4 }))).toEqual({ row: 1, column: 1, layer: FRAME_ID })
+    expect(view.pointToHit(view.beadToPoint({ row: 1, column: 1 }, FRAME_ID))).toEqual({ row: 1, column: 1, layer: FRAME_ID })
     for (const bead of [{ row: 0, column: 0 }, { row: 2, column: 1 }]) {
       const point = view.beadToPoint(bead, SECOND)
       expect(point).toEqual(alone.beadToPoint(bead, SECOND))
@@ -497,7 +503,7 @@ describe('several Frames in one view (ticket 1219)', () => {
 })
 
 describe('a peyote Frame\'s empty half beads (ticket 1196)', () => {
-  const frame = { row: 0, column: 0, rows: 4, columns: 4, technique: 'peyote' as const }
+  const frame = { rows: 4, columns: 4, technique: 'peyote' as const }
   const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame, rotation: 0, zoom: 1 })
   const cell = (column: number, y: number) => ({ x: (column + 0.5) * CELL_SIZE_PX, y: y * CELL_SIZE_PX })
 

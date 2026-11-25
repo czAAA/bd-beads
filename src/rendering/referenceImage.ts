@@ -1,6 +1,6 @@
 import type { FrameRef } from '../domain/grid'
 import { beadBounds, type Rect } from '../domain/canvas'
-import { footprintOf } from '../domain/footprint'
+import { coversOf } from '../domain/sheets'
 import { beadsOfLayer, type Layered } from '../domain/layerRecord'
 import { canvasWeave } from '../domain/layerWeave'
 import { radians, type OpacityStep, type ReferenceBox, type ReferencePlace, type WidthLimits } from '../domain/referenceImage'
@@ -45,7 +45,7 @@ const EMPTY_BOX_POSITIONS = 30
  * fitted inside; for an empty Canvas without a Frame, the positions `inView`, or a 30-bead square at its first. */
 export function referenceBoxPx(project: Layered, inView: Rect | undefined, ref: FrameRef): ReferenceBox {
   const weave = canvasWeave(project)
-  const boxes = [beadBounds(beadsOfLayer(project, 'canvas')), footprintOf(project, ref)].flatMap((rect) => (rect ? [gridBox(weave, rect)] : []))
+  const boxes = [beadBounds(beadsOfLayer(project, 'canvas')), coversOf(project).find((cover) => cover.ref === ref)?.frame].flatMap((rect) => (rect ? [gridBox(weave, rect)] : []))
   if (boxes.length === 0) return gridBox(weave, inView ?? { row: 0, column: 0, rows: EMPTY_BOX_POSITIONS, columns: EMPTY_BOX_POSITIONS })
   const left = Math.min(...boxes.map((box) => box.x))
   const top = Math.min(...boxes.map((box) => box.y))

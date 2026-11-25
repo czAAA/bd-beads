@@ -56,7 +56,7 @@ export interface SizeEstimate {
 
 /** How many beads there are, and where a bead's color differs from its right-hand or lower neighbor (an empty position
  * counts as a color). The cost of a page of beads follows these, not the Frame's size. */
-function beadsOf(frame: Rect, beads: BeadMap): { filled: number; edges: number } {
+function beadsOf(frame: Pick<Rect, 'rows' | 'columns'>, beads: BeadMap): { filled: number; edges: number } {
   const at = new Map<number, string>()
   forEachBead(beads, (row, column, hex) => at.set(row * frame.columns + column, hex))
   let edges = 0

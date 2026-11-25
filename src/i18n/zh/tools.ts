@@ -154,7 +154,6 @@ export const tools: ToolsTranslations = {
     rotateInFinishedRows: '选中的区域包含已标记完成的行。',
     removeLine: '删除所选的行或列并合拢空隙。',
     removeLineDisabled: '请先选择完整的一行或一列。',
-    removeLineNotAlike: '请先转动边框或画布，使两者朝向一致。',
     namePiece: '给所选小块起个名字，它就成为图样。',
     namePieceDisabled: '请先选择一个小块。',
     clear: '清除画布上的所有内容。',

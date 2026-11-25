@@ -1,11 +1,10 @@
-import { frameIdIn, FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
-import { frameOf, orientationOf } from '../../domain/layerRecord'
-import { rotateCanvas, turnCanvasTo, twistFrameTo } from '../../domain/rotate'
+import { orientationOf } from '../../domain/layerRecord'
+import { rotateCanvas, turnCanvasTo, turnTableTo } from '../../domain/rotate'
 import { INTO_VIEW_MS, SNAP_MS } from '../../rendering/gestureView'
 import { FIT_MARGIN_PX, fitBox, LARGEST_FIT_BEAD_PX, useCanvasView, type CanvasViewOptions } from './useCanvasView'
 import { MAX_ZOOM } from '../../domain/grid'
@@ -23,16 +22,14 @@ function setup(project: Project | undefined, size = { width: 1000, height: 800 }
   const current = ref(project)
   const viewport = ref(size)
   const covered = ref(pill)
-  // The Project keeps the angle a twist settles on, as the Rotate canvas flow does.
+  // The Project keeps the angle a twist settles on, the whole Table turned, as the Rotate canvas flow does (spec 1234).
   const kept: number[] = []
-  const moves: { x: number; y: number }[] = []
-  const keepTwist = (orientation: number, moved: { x: number; y: number }) => {
+  const keepTwist = (orientation: number) => {
     kept.push(orientation)
-    moves.push(moved)
-    current.value = turnCanvasTo(current.value!, orientation, moved)
+    current.value = turnTableTo(current.value!, orientation)
   }
   const view = effectScope().run(() => useCanvasView(() => current.value, viewport, { keepTwist, covered: () => covered.value, opening }))!
-  return { current, viewport, covered, view, kept, moves }
+  return { current, viewport, covered, view, kept }
 }
 
 describe('useCanvasView', () => {
@@ -660,29 +657,6 @@ describe('useCanvasView', () => {
       }
     })
 
-    it('hands the Project how far the Canvas\'s origin moved on the table, live while it twists (ticket 1188)', () => {
-      const { moves, view } = setup(projectOf(20, 10))
-      view.fit()
-      expect(view.twistMoved.value).toEqual({ x: 0, y: 0 })
-      view.pinchStep({ turn: 30, anchor: { x: 700, y: 300 } })
-      view.pinchStep({ turn: 15, anchor: { x: 650, y: 350 } })
-      const live = view.twistMoved.value
-      expect(Math.hypot(live.x, live.y)).toBeGreaterThan(1)
-      view.endTwist({ x: 650, y: 350 })
-      expect(moves).toEqual([live])
-      expect(view.twistMoved.value).toEqual({ x: 0, y: 0 })
-    })
-
-    it('keeps a twist that came back to its angle about other fingers: the Canvas moved (ticket 1188)', () => {
-      const { kept, moves, view } = setup(projectOf(20, 10))
-      view.fit()
-      view.pinchStep({ turn: 40, anchor: { x: 700, y: 300 } })
-      view.pinchStep({ turn: -40, anchor: { x: 200, y: 600 } })
-      view.endTwist({ x: 200, y: 600 })
-      expect(kept).toEqual([0])
-      expect(Math.hypot(moves[0]!.x, moves[0]!.y)).toBeGreaterThan(1)
-    })
-
     it('comes to rest at once at an angle further than 10° off a quarter turn', () => {
       const { kept, view } = setup(projectOf(20, 10))
       view.pinchStep({ turn: -30, anchor: { x: 500, y: 400 } })
@@ -719,104 +693,6 @@ describe('useCanvasView', () => {
       await nextTick()
       expect(orientationOf(current.value)).toBe(120)
       expect(view.isAtFit.value).toBe(true)
-    })
-  })
-
-  describe('a two-finger twist that started on the Frame (ticket 1190)', () => {
-    /** The view, its Frame twists kept as the Rotate Frame flow keeps them, or `asking` the question first. */
-    function frameSetup(asking = false) {
-      const set = setup(projectOf(20, 10))
-      const keptFrame: number[] = []
-      const view = effectScope().run(() =>
-        useCanvasView(() => set.current.value, set.viewport, {
-          keepTwist: () => set.kept.push(-1),
-          keepFrameTwist: (angle) => {
-            keptFrame.push(angle)
-            if (asking) return 'asked'
-            set.current.value = twistFrameTo(set.current.value!, angle, undefined, frameIdIn(set.current.value!))
-            return 'kept'
-          },
-        }),
-      )!
-      view.fit()
-      return { ...set, view, keptFrame }
-    }
-
-    it('turns the Frame live, the Canvas and the view\'s scroll over the table staying, while pan and pinch still move both', () => {
-      const { current, view } = frameSetup()
-      const table = view.tableScroll.value
-      view.pinchStep({ turn: 0, anchor: { x: 500, y: 400 }, target: FRAME_ID })
-      view.pinchStep({ turn: 25, anchor: { x: 500, y: 400 }, target: FRAME_ID })
-      // It is that Frame alone that turns (ticket 1220).
-      expect(view.frameTwist.value).toEqual({ frame: FRAME_ID, angle: 25 })
-      expect(view.orientation.value).toBe(0)
-      expect(view.twistPhase.value).toBe('turning')
-      expect(view.tableScroll.value).toEqual(table)
-      view.pinchStep({ zoom: 2, pan: { x: 30, y: 0 }, turn: 5, anchor: { x: 530, y: 400 }, target: FRAME_ID })
-      expect(view.frameTwist.value?.angle).toBe(30)
-      expect(view.zoom.value).toBe(2)
-      expect(frameOf(current.value!)!.angle).toBe(0)
-    })
-
-    it('eases onto the Canvas\'s angle within 10° and the Project keeps it after the ease, one Undo step', () => {
-      vi.useFakeTimers()
-      try {
-        const { keptFrame, kept, view } = frameSetup()
-        view.pinchStep({ turn: 97, anchor: { x: 500, y: 400 }, target: FRAME_ID })
-        view.endTwist({ x: 500, y: 400 })
-        expect(view.frameTwist.value?.angle).toBe(90)
-        expect(view.twistPhase.value).toBe('settling')
-        expect(keptFrame).toEqual([])
-        vi.advanceTimersByTime(SNAP_MS)
-        expect(keptFrame).toEqual([90])
-        expect(kept).toEqual([])
-        expect(view.frameTwist.value).toBeUndefined()
-        expect(view.twistPhase.value).toBeUndefined()
-      } finally {
-        vi.useRealTimers()
-      }
-    })
-
-    it('rests leaning at once further off, and keeps nothing where it came back to its angle', () => {
-      const { current, keptFrame, view } = frameSetup()
-      view.pinchStep({ turn: 30, anchor: { x: 500, y: 400 }, target: FRAME_ID })
-      view.endTwist({ x: 500, y: 400 })
-      expect(keptFrame).toEqual([30])
-      expect(frameOf(current.value!)!.angle).toBe(30)
-      view.pinchStep({ turn: 4, anchor: { x: 500, y: 400 }, target: FRAME_ID })
-      view.pinchStep({ turn: -4, anchor: { x: 500, y: 400 }, target: FRAME_ID })
-      view.endTwist({ x: 500, y: 400 })
-      expect(keptFrame).toEqual([30])
-    })
-
-    it('shows the Frame where it settled while the question is asked, then as the Project holds it once answered', () => {
-      const { keptFrame, view } = frameSetup(true)
-      view.pinchStep({ turn: 60, anchor: { x: 500, y: 400 }, target: FRAME_ID })
-      view.endTwist({ x: 500, y: 400 })
-      expect(keptFrame).toEqual([60])
-      expect(view.frameTwist.value?.angle).toBe(60)
-      expect(view.twistPhase.value).toBeUndefined()
-      view.releaseFrameTwist()
-      expect(view.frameTwist.value).toBeUndefined()
-    })
-
-    it('eases back to the Project\'s angle on Cancel', () => {
-      vi.useFakeTimers()
-      try {
-        const { view } = frameSetup(true)
-        view.pinchStep({ turn: 60, anchor: { x: 500, y: 400 }, target: FRAME_ID })
-        view.endTwist({ x: 500, y: 400 })
-        view.easeFrameBack()
-        // The surface holds what it shows (on the next frame where there are frames), then the Frame eases back.
-        vi.advanceTimersByTime(20)
-        expect(view.frameTwist.value?.angle).toBe(0)
-        expect(view.twistPhase.value).toBe('settling')
-        vi.advanceTimersByTime(SNAP_MS)
-        expect(view.frameTwist.value).toBeUndefined()
-        expect(view.twistPhase.value).toBeUndefined()
-      } finally {
-        vi.useRealTimers()
-      }
     })
   })
 })

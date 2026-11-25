@@ -101,6 +101,12 @@ export function isMirrorOn(setting: MirrorSetting): boolean {
   return !!setting.place
 }
 
+/** Whether the Mirror maps a layer's own rows and columns straight: a grid, or a Frame without a shape lying turned, whose
+ * cells are still its own rows and columns (spec 1234: a peyote Frame lies a quarter turn on its Table by default). */
+function isGridSheet(sheet: LayerSheet): boolean {
+  return sheet.geometry.grid || (sheet.frame !== undefined && !sheet.frame.shape)
+}
+
 /** What the Mirror's place offers the bar (tickets 0775, 1027): a Canvas Area's `mirrorReach`, as it grows to fit, the
  * whole Frame's `mirrorFit`, as it is never resized; none while it is off, or on a Frame that is no grid (a Custom
  * frame takes its shape's own Axes). */
@@ -109,7 +115,7 @@ export function mirrorFitOf(project: Project, setting: MirrorSetting): MirrorFit
   const rect = place ? placeRect(project, place) : undefined
   if (!place || !rect) return undefined
   const sheet = layerSheet(project, place.layer === 'canvas' ? 'canvas' : placeFrame(project, place))
-  if (!sheet.geometry.grid) return undefined
+  if (!isGridSheet(sheet)) return undefined
   const fit = mirrorFit(sheet.weave, rect, setting.mode)
   return place.layer === 'canvas' ? { ...mirrorReach(sheet.weave, rect, setting.mode), now: fit } : fit
 }
@@ -767,7 +773,7 @@ function layoutImages(layout: FrameLayout, setting: MirrorSetting): PositionImag
  * (`mirrorFit`). */
 function imagesOf(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSetting): PositionImages | undefined {
   if (region.kind === 'layout') return layoutImages(region.layout, setting)
-  if (!sheet.geometry.grid) return undefined
+  if (!isGridSheet(sheet)) return undefined
   const fit = mirrorFit(sheet.weave, region.rect, setting.mode)
   const stagger = staggerOf(sheet.weave)
   if (!setting.axes.radial) return straightImages(region.rect, setting, fit, stagger)

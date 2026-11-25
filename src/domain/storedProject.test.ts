@@ -6,8 +6,10 @@ import { createProject } from './createProject'
 import { moveToRow, rowProgressOf, toggleRowDirection } from './rowProgress'
 import { decodeProject, encodeProject } from './projectEncoding'
 import { normalizeProject } from './storedProject'
-import { rotateCanvas, turnCanvasTo } from './rotate'
-import { withFrame } from './frame'
+import { rotateCanvas, turnTableTo } from './rotate'
+import { coversOf } from './sheets'
+import { tableTurnOf } from './table'
+import { withFrame } from '../testUtils/withFrame'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, canvasOf, frameOf, orientationOf } from './layerRecord'
 import { replaceBead } from './projectBead'
@@ -65,7 +67,8 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject(legacy)
 
-    expect(frameSheetOf(normalized)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#f00' }, 1: { 2: '#0f0' } } })
+    expect(frameSheetOf(normalized)).toMatchObject({ technique: 'loom', columns: 3, rows: 2, beads: { 0: { 0: '#f00' }, 1: { 2: '#0f0' } } })
+    expect(coversOf(normalized)[0]!.frame).toEqual({ row: 0, column: 0, columns: 3, rows: 2 })
     expect(beadsOfLayer(normalized, 'canvas')).toEqual({})
     expect(normalized).not.toHaveProperty('grid')
     expect(normalized).not.toHaveProperty('columns')
@@ -94,14 +97,25 @@ describe('normalizeProject', () => {
     expect(opened.updatedAt).toBe(project.updatedAt)
   })
 
-  it('keeps a canvas twisted to any angle through a save and load, and reads a broken one as upright (ticket 0672)', () => {
-    const twisted = turnCanvasTo(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), 37.5)
-    expect(orientationOf(normalizeProject(JSON.parse(JSON.stringify(twisted))))).toBe(37.5)
+  it('keeps the Table turned to any angle through a save and load, and reads a broken one as upright (tickets 0672, 1237)', () => {
+    const twisted = turnTableTo(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), 37.5)
+    const loaded = normalizeProject(JSON.parse(JSON.stringify(twisted)))
+    expect(tableTurnOf(loaded)).toBe(37.5)
+    expect(canvasOf(loaded).orientation).toBe(0)
     const broken = JSON.parse(JSON.stringify(twisted))
-    broken.layers[0].orientation = 'sideways'
-    expect(orientationOf(normalizeProject(broken))).toBe(0)
-    broken.layers[0].orientation = 400
-    expect(orientationOf(normalizeProject(broken))).toBe(40)
+    broken.layers[0].tableTurn = 'sideways'
+    expect(tableTurnOf(normalizeProject(broken))).toBe(0)
+    broken.layers[0].tableTurn = 400
+    expect(tableTurnOf(normalizeProject(broken))).toBe(40)
+  })
+
+  it('opens an older Canvas twisted to any angle as its nearest quarter turn and the Table turn of the rest (ticket 1237)', () => {
+    const upright = JSON.parse(JSON.stringify(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })))
+    for (const [stored, orientation, tableTurn] of [[37.5, 0, 37.5], [50, 90, 320], [90, 90, 0], ['sideways', 0, 0], [400, 0, 40]] as const) {
+      upright.layers[0].orientation = stored
+      const opened = normalizeProject(upright)
+      expect([canvasOf(opened).orientation, tableTurnOf(opened)]).toEqual([orientation, tableTurn])
+    }
   })
 
   it('backfills row progress and the rotation on a Project saved before they existed', () => {

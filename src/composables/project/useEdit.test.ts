@@ -13,12 +13,17 @@ import { addedColorId } from '../../domain/palette'
 import { editHarness } from '../../testUtils/editHarness'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer, canvasOf, frameOf } from '../../domain/layerRecord'
+import { coversOf } from '../../domain/sheets'
 import { frameSheetOf, withLayers, pointersOf } from '../../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 const frame = frameOf(base)!
-const inside = (row: number, column: number) => ({ row: frame.row + row, column: frame.column + column })
-const marginCell = { row: frame.row - 1, column: frame.column }
+// The Frame's own rectangle, which `set` is given in (its first row and column 0).
+const own = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
+// Where the Frame lies on the Canvas's positions (spec 1234).
+const placed = coversOf(base)[0]!.frame
+const inside = (row: number, column: number) => ({ row: placed.row + row, column: placed.column + column })
+const marginCell = { row: placed.row - 1, column: placed.column }
 
 function paint(project: Project, at: { row: number; column: number }, color: string | null = '#ff0000') {
   return paintAt(project, [at], color)
@@ -104,7 +109,7 @@ describe('useEdit', () => {
   describe('a frame change', () => {
     it('applies it once, resets the session once, and Undo restores the Frame', () => {
       const ctx = editHarness(base)
-      const outcome = ctx.edit('frame', (project) => changeFrame(project, { set: { ...frame, rows: frame.rows + 1 } }, frameIdIn(project)))
+      const outcome = ctx.edit('frame', (project) => changeFrame(project, { set: { ...own, rows: frame.rows + 1 } }, frameIdIn(project)))
 
       expect(outcome).toEqual({ kind: 'applied' })
       expect(frameOf(ctx.project)).toMatchObject({ rows: frame.rows + 1, columns: frame.columns })
@@ -137,13 +142,13 @@ describe('useEdit', () => {
 
     it('says unchanged when the Frame already is what was asked', () => {
       const ctx = editHarness(base)
-      expect(ctx.edit('frame', (project) => changeFrame(project, { set: frame }, frameIdIn(project)))).toEqual({ kind: 'unchanged' })
+      expect(ctx.edit('frame', (project) => changeFrame(project, { set: own }, frameIdIn(project)))).toEqual({ kind: 'unchanged' })
       expect(ctx.resetAfterFrameChange).not.toHaveBeenCalled()
     })
   })
 
   describe('a held frame change (ticket 0640)', () => {
-    const grow = (by: number) => (project: Project) => changeFrame(project, { set: { ...frame, rows: frame.rows + by } }, frameIdIn(project))
+    const grow = (by: number) => (project: Project) => changeFrame(project, { set: { ...own, rows: frame.rows + by } }, frameIdIn(project))
 
     it('lands at once each time, and is one Undo step once settled', () => {
       const ctx = editHarness(base)

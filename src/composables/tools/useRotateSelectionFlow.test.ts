@@ -45,7 +45,7 @@ describe('useRotateSelectionFlow', () => {
     onRotate()
 
     expect(deps.selection.value).toMatchObject({ top: 9, left: 11, rows: 3, columns: 1, layer: FRAME_ID })
-    expect(frameOf(harness.project)).toMatchObject({ row: 0, column: 0, rows: 40, columns: 40 })
+    expect(frameOf(harness.project)).toMatchObject({ rows: 40, columns: 40, centre: frameOf(framed)!.centre, angle: frameOf(framed)!.angle })
     expect(harness.resetAfterFrameChange).not.toHaveBeenCalled()
     expect(colorAt(frameOf(harness.project)!.beads, 10, 10)).toBeNull()
     expect(colorAt(frameOf(harness.project)!.beads, 9, 11)).toBe(RED)

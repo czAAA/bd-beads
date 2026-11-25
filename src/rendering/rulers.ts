@@ -1,15 +1,15 @@
 import type { Rect } from '../domain/canvas'
-import { frameShapeOf } from '../domain/frameShape'
+import { frameShapeOf, turnedGrid } from '../domain/frameShape'
 import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, type Weave } from '../domain/weave'
-import type { FrameRef } from '../domain/grid'
+import type { FrameRef, GridPosition } from '../domain/grid'
 import { canvasWeave, frameScale as frameBeadScale, frameWeave } from '../domain/layerWeave'
 import { hasGuides, type Selection } from '../domain/selection'
 import type { MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
-import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
+import { gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
 import { type Layered, frameById } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers along the left and the top of the Frame
@@ -200,26 +200,39 @@ interface BoxLayout {
   step: number
 }
 
+/** A Frame's own grid lying turned (ticket 0667): numbered by its own rows and columns where each bead lies, not by the
+ * rectangle it is laid in, whose rows and columns are not its own. */
+interface TurnedOwn {
+  rows: number
+  columns: number
+  turns: number
+}
+
+// Where a turned grid's own steps lie in the rectangle it is laid in, as `turnPoint` turns them: its own column step and its own row
+// step, in laid px.
+const TURNED_STEPS: Record<number, [[number, number], [number, number]]> = { 1: [[0, 1], [-1, 0]], 2: [[-1, 0], [0, -1]], 3: [[0, -1], [1, 0]] }
+
 // Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
 // number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
 // from 100 up turn. The Ruler step is worked out once per axis.
-function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; layer: ViewLayer; size?: number; stepped?: boolean }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
+function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; layer: ViewLayer; size?: number; stepped?: boolean; turned?: TurnedOwn }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   // The box counted from the layer's first position, and where that sits in grid px (ticket 492).
-  const start = { row: box.row, column: box.column }
+  const turned = place.turned
+  const start = turned ? { row: 0, column: 0 } : { row: box.row, column: box.column }
   const margin = fontPx * 4
   const labels: RulerLabel[] = []
   const beads: RulerDot[] = []
 
   const description = describeWeave(weave)
-  const count = { columns: box.columns, rows: box.rows }
+  const count = turned ? { columns: turned.columns, rows: turned.rows } : { columns: box.columns, rows: box.rows }
   const cell = cellSizePx(weave.technique, weave.cell)
   // A bead's step across and a row's down in grid px, and where a bead's middle sits.
   const { across: beadAcross, down: rowDown } = beadStepPx(weave)
   const middle = { x: cell.width / 2, y: cell.height / 2 }
-  const area = gridBox(weave, { ...box, ...start })
-  const lastRow = start.row + box.rows - 1
-  const lastColumn = start.column + box.columns - 1
+  const area = gridBox(weave, turned ? { ...start, ...count } : { ...box, ...start })
+  const lastRow = start.row + count.rows - 1
+  const lastColumn = start.column + count.columns - 1
   const bottom = area.y + area.height
   const right = area.x + area.width
   const left = area.x
@@ -233,7 +246,16 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   // Every number is centred on the line the dots stand on, so a 1-digit row number is as far from the beads as a
   // 2-digit one.
   const columnBand = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
-  const { column: columnStepOnScreen, row: rowStepOnScreen } = surface.beadStep(place.layer)
+  // A turned grid's own steps on screen: along its own axes, the way its surface lies them, by what a bead step is there.
+  const ownSteps = turned && (() => {
+    const [column, row] = TURNED_STEPS[turned.turns % 4]!.map(([x, y]) => surface.gridDirection(x, y, place.layer))
+    const [a, b] = [surface.beadToPoint({ row: 0, column: 0 }, place.layer), surface.beadToPoint({ row: 0, column: 2 }, place.layer)]
+    const perGridPx = Math.hypot(b.x - a.x, b.y - a.y) / (2 * beadAcross)
+    return { column: column!, row: row!, perGridPx }
+  })()
+  const { column: columnStepOnScreen, row: rowStepOnScreen } = ownSteps
+    ? { column: { x: ownSteps.column.x * ownSteps.perGridPx * beadAcross, y: ownSteps.column.y * ownSteps.perGridPx * beadAcross }, row: { x: ownSteps.row.x * ownSteps.perGridPx * rowDown, y: ownSteps.row.y * ownSteps.perGridPx * rowDown } }
+    : surface.beadStep(place.layer)
   const lastOnly = !place.stepped && surface.zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
   const columnStep = lastOnly ? count.columns : rulerStep(columnStepOnScreen, columnSizes)
   const rowStep = lastOnly ? count.rows : rulerStep(rowStepOnScreen, [rowSize])
@@ -243,15 +265,26 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   // A step outward from a side, from the layer's own px (`size` grid px each, its Bead's, ticket 0665) and then once
   // turned.
   const size = place.size ?? 1
-  const outward = (gridX: number, gridY: number, normal: [number, number]) => {
-    const { x, y } = surface.gridToPoint(place.origin.x + gridX * size, place.origin.y + gridY * size)
-    const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1])
+  /** Where a side of the box points on screen. A turned grid's own sides are its own axes' steps. */
+  const directionOf = (normal: [number, number]) => {
+    if (!ownSteps) return surface.gridDirection(normal[0], normal[1], place.layer)
+    return { x: normal[0] * ownSteps.column.x + normal[1] * ownSteps.row.x, y: normal[0] * ownSteps.column.y + normal[1] * ownSteps.row.y }
+  }
+  const outward = (gridX: number, gridY: number, normal: [number, number], bead: GridPosition) => {
+    const { x: nx, y: ny } = directionOf(normal)
+    if (ownSteps) {
+      // On the edge of the bead nearest the side, half its depth along the normal from its middle.
+      const middleOf = surface.beadToPoint(bead, place.layer)
+      const half = (ownSteps.perGridPx * (normal[0] !== 0 ? beadAcross : rowDown)) / 2
+      return { x: middleOf.x + nx * half, y: middleOf.y + ny * half, nx, ny }
+    }
+    const { x, y } = surface.gridToPoint(place.origin.x + gridX * size, place.origin.y + gridY * size, place.layer)
     return { x, y, nx, ny }
   }
   // A ruler counts left to right or top to bottom as seen (ticket 1165): from its far end where a turned Canvas shows
   // the box's own columns or rows running the other way, a step along them pointing left or up (a quarter turn's unit).
   const backwards = ({ x, y }: { x: number; y: number }) => x + y < 0
-  const fromEnd = { column: backwards(surface.gridDirection(1, 0)), row: backwards(surface.gridDirection(0, 1)) }
+  const fromEnd = { column: backwards(directionOf([1, 0])), row: backwards(directionOf([0, 1])) }
   const seen = (label: { x: number; y: number; width: number; height: number }) =>
     label.x + label.width / 2 > -margin && label.x - label.width / 2 < viewport.width + margin && label.y + label.height / 2 > -margin && label.y - label.height / 2 < viewport.height + margin
   const dotSeen = (spot: { x: number; y: number }) => spot.x > -margin && spot.x < viewport.width + margin && spot.y > -margin && spot.y < viewport.height + margin
@@ -265,6 +298,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     normal: [number, number],
     selection: Selection,
     position: number,
+    bead: GridPosition,
   ) => {
     const column = axis === 'column'
     const number = fromEnd[axis] ? (column ? count.columns : count.rows) - index : index + 1
@@ -277,7 +311,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     // 3-digit number or a wide row number does not push them off the line (ticket 377).
     const dotHalf = lastOnly ? scale.dotRadius : Math.min(half, fontPx * DOT_BAND_HALF_MAX)
     const step = column ? columnStep : rowStep
-    const { x, y, nx, ny } = outward(gridX, gridY, normal)
+    const { x, y, nx, ny } = outward(gridX, gridY, normal, bead)
 
     const dotAway = box.outset + gap + dotHalf
     const dot = { x: x + nx * dotAway, y: y + ny * dotAway }
@@ -298,24 +332,24 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   const columnsAt = (alongRow: number, gridY: number, normal: [number, number]) => {
     for (let index = 0; index < count.columns; index += 1) {
       const gridX = area.x + description.rowOffset(alongRow, cell.width) + index * beadAcross + middle.x
-      const marked = { top: box.row, left: box.column + index, rows: box.rows, columns: 1, layer: box.layer }
-      along('column', index, gridX, gridY, normal, marked, box.column + index)
+      const marked = { top: start.row, left: start.column + index, rows: count.rows, columns: 1, layer: box.layer }
+      along('column', index, gridX, gridY, normal, marked, start.column + index, { row: alongRow, column: index })
     }
   }
   // A column of numbers stands beside the beads of the column it runs along, shifted with them (ticket 0734).
   const rowsAt = (alongColumn: number, gridX: number, normal: [number, number]) => {
     for (let index = 0; index < count.rows; index += 1) {
       const gridY = area.y + description.columnOffset(alongColumn, cell.height) + index * rowDown + middle.y
-      const first = box.row + index
-      const marked = { top: first, left: box.column, rows: 1, columns: box.columns, layer: box.layer }
-      along('row', index, gridX, gridY, normal, marked, first)
+      const first = start.row + index
+      const marked = { top: first, left: start.column, rows: 1, columns: count.columns, layer: box.layer }
+      along('row', index, gridX, gridY, normal, marked, first, { row: index, column: alongColumn })
     }
   }
 
   // Every box's rulers stand along its left and its top as seen, whichever way the Canvas or the Frame is turned
   // (ticket 1170): the sides whose outward step points more left than up or down, or more up than across.
   const side = (normal: [number, number], lay: () => void) => {
-    const { x, y } = surface.gridDirection(normal[0], normal[1])
+    const { x, y } = directionOf(normal)
     if (-x > Math.abs(y) || -y > Math.abs(x)) lay()
   }
   side([0, -1], () => columnsAt(start.row, area.y, [0, -1]))
@@ -343,10 +377,12 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     const reach = reachOf(box.kind)
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
+  const turnedFrame = frameById(project, ref)
+  const turnedOwn = turnedFrame && turnedGrid(turnedFrame) ? { rows: turnedFrame.rows, columns: turnedFrame.columns, turns: turnedFrame.quarterTurns! } : undefined
   const laid = boxes.map((box) => ({
     kind: box.kind,
     ...(box.kind === 'frame'
-      ? layBox(box, frameWeave(project, ref), { origin: frameOriginPx(canvasWeave(project), frameById(project, ref)!), layer: ref, size: frameBeadScale(project, ref), stepped: expanded }, surface, viewport, frameScale)
+      ? layBox(box, frameWeave(project, ref), { origin: { x: 0, y: 0 }, layer: ref, size: frameBeadScale(project, ref), stepped: expanded, ...(turnedOwn ? { turned: turnedOwn } : {}) }, surface, viewport, frameScale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
   // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.

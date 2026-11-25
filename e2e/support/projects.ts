@@ -1,15 +1,18 @@
 import { frameIdIn } from '../../src/testUtils/frameId'
 import type { Rotation } from '../../src/domain/grid'
 import type { Technique } from '../../src/domain/weave'
+import { beadCopy, findBead } from '../../src/domain/beads'
 import { BUILT_IN_COLORS, addedColorId } from '../../src/domain/palette'
 import { framedGrid } from '../../src/domain/layerBeads'
 import type { Cell, Project } from '../../src/domain/project'
 import { seenProgressOf, type OwnRowProgress } from '../../src/domain/rowProgress'
 import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
-import { surfaceView } from '../../src/rendering/surfaceView'
+import { frameMiddlePx, surfaceView } from '../../src/rendering/surfaceView'
+import { nearestQuarterTurn } from '../../src/domain/canvasOrientation'
+import { canvasAngleOf } from '../../src/domain/table'
 import { canvasOf, frameOf, type Layered, quarterTurnOf } from '../../src/domain/layerRecord'
-import { frameCentreOnCanvas, framePlacement, laidTurnOf, withFrameAt, withLaidTurn } from '../../src/domain/framePlacement'
+import { frameCentreOnCanvas } from '../../src/domain/framePlacement'
 import { CELL_SIZE_PX } from '../../src/rendering/cellSize'
 import { placedFrame } from '../../src/domain/layerWeave'
 
@@ -39,6 +42,12 @@ export interface FixtureOptions {
  * the Palette was the Project's own, so the references stay. */
 const TWELVE_AS_ADDED = BUILT_IN_COLORS.map((color) => addedColorId(color.hex))
 
+/** The Bead by id with its copy, as a Project holds it: the Frame's centre on the Table is worked out in the Bead's mm, so a
+ * layer without the copy (as the app reads it with) would put the Frame elsewhere (spec 1234). */
+function beadFields(beadId: string): { beadId: string; bead: ReturnType<typeof beadCopy> } {
+  return { beadId, bead: beadCopy(findBead(beadId)!) }
+}
+
 /** A deterministic busy Project: most of the Palette in diagonal bands, some beads empty, fixed ids and dates (a
  * stable library). */
 export function fixtureProject({
@@ -61,7 +70,7 @@ export function fixtureProject({
     grid[row]![column] = { color }
   }
 
-  const [canvas, frame] = framedGrid(grid, { technique, beadId: 'toho-cube-1.5mm' }).layers
+  const [canvas, frame] = framedGrid(grid, { technique, ...beadFields('toho-cube-1.5mm') }).layers
   const project: Project = {
     id: `fixture-${technique}`,
     layers: [
@@ -72,11 +81,8 @@ export function fixtureProject({
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
   }
-  // The Canvas turned under an upright Frame, as Rotate canvas leaves them (ticket 1188): off the Canvas's grid, a little
-  // off its positions (its row and column, which address its cells, still the first), so it lies only by its own rows.
-  if (rotation === frameTurn || rotation === 0) return project
-  const { x, y } = framePlacement(project, frameIdIn(project))!.at
-  return withFrameAt(project, { x: x + 0.3, y: y + 0.2 }, frameIdIn(project))
+  // The Canvas turned under an upright Frame, as Rotate canvas leaves them (ticket 1188): the Frame stays where it is.
+  return project
 }
 
 /** The stored library for these Projects, exactly as the app would have written it, ready for localStorage. */
@@ -100,29 +106,27 @@ export function beadCentre(
   const shift = 'layers' in project ? frameShift(project, zoom) : undefined
   if (shift) {
     // The Frame's own bead, on its own surface: named by its own row and column.
-    const laid = withLaidTurn(project as Project, undefined, frameIdIn(project as Project))
-    const view = surfaceView({ space: OPEN_SPACE, technique, rotation: shift.rotation, zoom, scroll, frame: placedFrame(laid, frameIdIn(laid)) })
-    const at = view.beadToPoint({ row, column }, frameIdIn(laid))
+    const ref = frameIdIn(project as Project)
+    const view = surfaceView({ space: OPEN_SPACE, technique, rotation: shift.rotation, zoom, scroll, frame: placedFrame(project as Layered, ref) })
+    const at = view.beadToPoint({ row, column }, ref)
     return { x: box.x + at.x + shift.x, y: box.y + at.y + shift.y }
   }
   const at = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll }).beadToPoint({ row, column })
   return { x: box.x + at.x, y: box.y + at.y }
 }
 
-/** Where a Frame drawn otherwise than its Canvas shows (ticket 1188; ProjectSurface's `frameDrawn` pin, worked out again): its own surface is pinned at its centre where the
- * Canvas lays it, so a bead of it lies where an upright Frame at its own quarter turn would, moved by `x` and `y`
- * displayed px. None where the Frame lies as the Canvas is drawn. The Frame starts at the Canvas's first position. */
+/** Where a Frame shows (ProjectSurface's `frameDrawn` pin, worked out again): its own surface is pinned at its centre where
+ * the Canvas lays it, so a bead of it lies where an upright Frame at its own quarter turn would, moved by `x` and `y`
+ * displayed px. None without a Frame. */
 export function frameShift(project: Layered, zoom: number): { rotation: Rotation; x: number; y: number } | undefined {
   if (!frameOf(project)) return undefined
-  const laid = withLaidTurn(project as Project, undefined, frameIdIn(project as Project))
-  const rotation = laidTurnOf(laid, frameIdIn(laid))
-  if (rotation === quarterTurnOf(project)) return undefined
-  const { technique } = canvasOf(project)
-  const at = (shown: Layered, turn: Rotation) => {
-    const centre = frameCentreOnCanvas(shown, frameIdIn(shown))!
-    return surfaceView({ space: OPEN_SPACE, technique, rotation: turn, zoom }).gridToPoint(centre.x * CELL_SIZE_PX, centre.y * CELL_SIZE_PX)
-  }
-  const [pinned, own] = [at(project, quarterTurnOf(project)), at(laid, rotation)]
+  const ref = frameIdIn(project as Project)
+  const { technique, cell } = { technique: canvasOf(project).technique, cell: undefined }
+  const rotation = nearestQuarterTurn(canvasAngleOf(project) - canvasOf(project).orientation) as Rotation
+  const centre = frameCentreOnCanvas(project, ref)!
+  const pinned = surfaceView({ space: OPEN_SPACE, technique, rotation: nearestQuarterTurn(canvasAngleOf(project)), zoom }).gridToPoint(centre.x * CELL_SIZE_PX, centre.y * CELL_SIZE_PX)
+  const middle = frameMiddlePx(placedFrame(project, ref)!, cell)
+  const own = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom }).gridToPoint(middle.x, middle.y)
   return { rotation, x: pinned.x - own.x, y: pinned.y - own.y }
 }
 
@@ -131,7 +135,7 @@ export function frameShift(project: Layered, zoom: number): { rotation: Rotation
 export function pieceProject({ technique, beadId, picture, inFrame = false }: { technique: Technique; beadId: string; picture: readonly string[]; inFrame?: boolean }): Project {
   const colors: Record<string, string> = { '#': '#e63746', o: '#ffffff', y: '#f2c94c' }
   const grid: Cell[][] = picture.map((line) => [...line].map((mark) => ({ color: colors[mark] ?? null })))
-  const [canvas, frame] = framedGrid(grid, { technique, beadId }).layers
+  const [canvas, frame] = framedGrid(grid, { technique, ...beadFields(beadId) }).layers
   return {
     id: `piece-${technique}`,
     layers: inFrame ? [{ ...canvas!, id: 'piece-canvas', name: 'Piece' }, { ...frame!, id: 'piece-frame' }] : [{ ...canvas!, id: 'piece-canvas', name: 'Piece', beads: frame!.beads }],

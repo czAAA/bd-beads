@@ -1,15 +1,14 @@
-import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
-import { frameOf, orientationOf, withCanvas, withFrameFields } from '../../domain/layerRecord'
-import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
+import { frameOf, orientationOf, quarterTurnOf, withCanvas, withFrameFields } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
+import { turnTableTo } from '../../domain/rotate'
+import { tableTurnOf } from '../../domain/table'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
+import { frameIdIn } from '../../testUtils/frameId'
 import { withLayers } from '../../testUtils/layerFields'
-import { useDialogs } from '../shell/useDialogs'
 import { useRotateCanvasFlow } from './useRotateCanvasFlow'
-import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useFitFlow } from './useFitFlow'
 import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
 import { frameById } from '../../domain/layerRecord'
@@ -19,39 +18,39 @@ const framed: Project = withLayers(base, { frame: { technique: 'loom' as const, 
 
 function setup(project: Project, expanded = false) {
   const harness = editHarness(project)
-  const dialogs = useDialogs()
-  const rotateFrame = useRotateFrameFlow({ edit: harness.edit, currentProject: harness.currentProject, announce: vi.fn(), messages: () => en, locale: () => 'en', dialogs })
   const rotateCanvas = useRotateCanvasFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, announce: vi.fn(), messages: () => en })
   const fitView = vi.fn()
   const flow = useFitFlow({
     currentProject: harness.currentProject,
-    turnCanvasBack: () => rotateCanvas.onTwistCanvas(0),
-    settleFrame: (angle, frame) => rotateFrame.onTwistFrame(angle, frame),
+    // As the shell does: the Table back to 0°, the Canvas's own quarter turn as it is.
+    turnTableBack: () => rotateCanvas.onTwistTable(quarterTurnOf(harness.currentProject()!)),
     fitView,
     frameExpanded: () => expanded,
   })
-  return { harness, dialogs, fitView, ...flow }
+  return { harness, fitView, ...flow }
 }
 
-describe('useFitFlow (ticket 1227)', () => {
-  it('puts a turned Canvas back to 0° and zooms to fit, with no Undo step', () => {
-    const { harness, onFit, fitView } = setup(withCanvas(framed, { orientation: 90 }))
+describe('useFitFlow (ticket 1227, spec 1234)', () => {
+  it('puts the Table turn back to 0° and zooms to fit, with no Undo step', () => {
+    const { harness, onFit, fitView } = setup(turnTableTo(framed, 40))
+    expect(tableTurnOf(harness.project!)).toBe(40)
     onFit()
+    expect(tableTurnOf(harness.project!)).toBe(0)
     expect(orientationOf(harness.project)).toBe(0)
     expect(fitView).toHaveBeenCalledOnce()
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('settles a leaning Frame onto its nearest quarter turn as one Undo step, which brings the lean back', () => {
-    const { harness, onFit } = setup(withFrameFields(framed, { angle: 40 }, frameIdIn(framed)))
+  it('keeps the Canvas\'s own quarter turn, and every Frame\'s centre and quarter turn as they were', () => {
+    const turned = turnTableTo(withFrameFields(withCanvas(framed, { orientation: 90 }), { angle: 180 }, frameIdIn(framed)), 130)
+    const { harness, onFit } = setup(turned)
     onFit()
-    expect(frameOf(harness.project)!.angle).toBe(0)
-    harness.history.onUndo()
-    expect(frameOf(harness.project)!.angle).toBe(40)
-    expect(harness.history.canUndo.value).toBe(false)
+    expect(tableTurnOf(harness.project!)).toBe(0)
+    expect(orientationOf(harness.project)).toBe(90)
+    expect(frameOf(harness.project)).toMatchObject({ angle: 180, centre: frameOf(turned)!.centre })
   })
 
-  it('leaves a Frame on a quarter turn as it is, and a Canvas at 0°', () => {
+  it('leaves a Table at 0° as it is, and only fits the view', () => {
     const turned = withFrameFields(framed, { angle: 90 }, frameIdIn(framed))
     const { harness, onFit, fitView } = setup(turned)
     onFit()
@@ -60,45 +59,18 @@ describe('useFitFlow (ticket 1227)', () => {
     expect(fitView).toHaveBeenCalledOnce()
   })
 
-  it('does both in one Fit, only the Frame an Undo step', () => {
-    const { harness, onFit } = setup(withFrameFields(withCanvas(framed, { orientation: 180 }), { angle: 140 }, frameIdIn(framed)))
-    onFit()
-    expect(orientationOf(harness.project)).toBe(0)
-    expect(frameOf(harness.project)!.angle).toBe(180)
-    harness.history.onUndo()
-    expect(frameOf(harness.project)!.angle).toBe(140)
-    expect(orientationOf(harness.project)).toBe(0)
-  })
-
-  it('settles through Rotate Frame\'s own rule: a lean about the quarter turn its rows are read by asks nothing and keeps them', () => {
-    const woven = moveToRow(withFrameFields(framed, { angle: 40 }, frameIdIn(framed)), 1, frameIdIn(framed))
-    const { harness, dialogs, onFit, fitView } = setup(woven)
-    onFit()
-    expect(dialogs.open.value).toBeUndefined()
-    expect(frameOf(harness.project)!.angle).toBe(0)
-    expect(rowProgressOf(harness.project, frameIdIn(harness.project))).toEqual(rowProgressOf(woven, frameIdIn(woven)))
-    expect(fitView).toHaveBeenCalledOnce()
-  })
-
-  it('hands the settle to the flow that asks, as Rotate Frame does', () => {
-    const settleFrame = vi.fn()
-    const flow = useFitFlow({ currentProject: () => withFrameFields(framed, { angle: 140 }, frameIdIn(framed)), turnCanvasBack: vi.fn(), settleFrame, fitView: vi.fn(), frameExpanded: () => false })
-    flow.onFit()
-    expect(settleFrame).toHaveBeenCalledExactlyOnceWith(180, frameIdIn(framed))
-  })
-
   it('only fits the expanded Frame, whose turns are its own', () => {
-    const leaning = withFrameFields(withCanvas(framed, { orientation: 90 }), { angle: 40 }, frameIdIn(framed))
+    const leaning = turnTableTo(framed, 40)
     const { harness, onFit, fitView } = setup(leaning, true)
     onFit()
     expect(harness.project).toBe(leaning)
     expect(fitView).toHaveBeenCalledOnce()
   })
 
-  it('settles every leaning Frame, not only the first (ticket 1220)', () => {
-    const pair = twoFrames()
-    const { harness, onFit } = setup(withFrameFields(withFrameFields(pair, { angle: 140 }, firstOf(pair)), { angle: 20 }, SECOND))
+  it('leaves every Frame where it lies (ticket 1220)', () => {
+    const pair = turnTableTo(withFrameFields(twoFrames(), { angle: 90 }, SECOND), 25)
+    const { harness, onFit } = setup(pair)
     onFit()
-    expect([frameById(harness.project, firstOf(pair))!.angle, frameById(harness.project, SECOND)!.angle]).toEqual([180, 0])
+    for (const ref of [firstOf(pair), SECOND]) expect(frameById(harness.project, ref)).toEqual(frameById(pair, ref))
   })
 })

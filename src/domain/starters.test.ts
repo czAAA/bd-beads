@@ -33,6 +33,7 @@ import { frameGeometryOf } from './layers'
 import { laidFrame } from './frameOrientation'
 import { rotateCanvas } from './rotate'
 import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
+import { placeOf } from '../testUtils/placeOf'
 
 const beadId = 'miyuki/delica/11-0'
 const delica = findBead(beadId)!
@@ -184,7 +185,8 @@ describe('a new Project from a Starter', () => {
     expect(canvasOf(starterProject(starterById('vFringe'), { name: 'Drop', beadId, ...asDesigned('vFringe') })).orientation).toBe(0)
     const peyote = starterProject(starterById('vFringe'), { name: 'Drop', beadId, ...asDesigned('vFringe'), weave: { technique: 'peyote' } })
     expect(canvasOf(peyote).orientation).toBe(90)
-    expect(frameOf(peyote)!.quarterTurns).toBeUndefined()
+    // Its quarter turn is the one it is seen at on the Table, whatever the Canvas's (spec 1234).
+    expect(frameOf(peyote)!.quarterTurns).toBe(1)
   })
 
   it('records nothing of the Starter', () => {
@@ -286,10 +288,10 @@ describe('a Ring or Band Starter (ticket 0597)', () => {
     expect(starterBeadCount(starterById('ringStripes'), ringAt(54), delica)).toBe(252)
   })
 
-  it('lies across on a new Project: the Canvas turned the quarter a peyote Project starts with, the Frame unturned', () => {
+  it('lies across on a new Project: the Canvas turned the quarter a peyote Project starts with, the Frame turned a quarter on the Table', () => {
     const project = starterProject(starterById('ringStripes'), { name: 'Ring', beadId, ...asDesigned('ringStripes') })
     expect(layersView(project)).toMatchObject({ technique: 'peyote', orientation: 90, frame: { rows: 36, columns: 7, technique: 'peyote' } })
-    expect(frameOf(project)!.quarterTurns).toBeUndefined()
+    expect(frameOf(project)!.quarterTurns).toBe(1)
   })
 
   it('lies the way each Technique works a strip: loom as peyote on a Canvas turned a quarter, brick stitch along its rows unturned', () => {
@@ -365,8 +367,8 @@ describe('a Starter put on an open Project', () => {
     const ring = starterById('ringDiamonds')
     const frameOf = (result: FrameChangeResult) => (result.kind === 'changed' ? frameSheetOf(result.project) : undefined)
     const turned = rotateCanvas(open)
-    const frame = { row: 32, column: 47, rows: 36, columns: 7 }
-    const placed = frameOf(changeFrame(turned, { place: { frame, weave: weaveOf({ technique: 'peyote' }), beads: starterDesign(ring) } }, frameIdIn(turned)))
+    const frame = { rows: 36, columns: 7 }
+    const placed = frameOf(changeFrame(turned, { place: { frame, centre: { row: 50, column: 50 }, weave: weaveOf({ technique: 'peyote' }), beads: starterDesign(ring), quarterTurns: 1 } }, frameIdIn(turned)))
     expect(placed?.beads).toEqual(starterDesign(ring))
     expect(frameOf(placedStarter(turned, ring, asDesigned('ringDiamonds'), { row: 50, column: 50 }, frameIdIn(turned)))).toEqual(placed)
   })
@@ -377,34 +379,36 @@ describe('a Starter put on an open Project', () => {
     const frame = frameOf(result.project)!
     expect(frame).toMatchObject({ rows: 36, columns: 7, technique: 'peyote', quarterTurns: 1 })
     // As it lies it covers 6 rows of 45 columns of its own cells, round row 50, column 50.
-    expect(laidFrame(result.project, frameIdIn(result.project))).toMatchObject({ row: 47, column: 28, rows: 6, columns: 45 })
+    expect(laidFrame(result.project, frameIdIn(result.project))).toEqual({ row: 0, column: 0, rows: 6, columns: 45 })
+    // Its 7 peyote columns are 6.5 beads tall, the half bead a shifted one hangs lower: they cover 7 Canvas rows.
+    expect(placeOf(result.project)).toMatchObject({ row: 47, column: 28, rows: 7, columns: 45 })
     expect(settingsOf(frame)).toBeUndefined()
     expect(frame.beads).toEqual(starterDesign(starterById('ringDiamonds')))
     expect(canvasOf(result.project).technique).toBe('loom')
   })
 
-  it('turns the Frame by what the Canvas lacks, so the strip reads as its Starter shows it at any quarter', () => {
+  it('turns the Frame as its Starter shows it, whatever turn the Canvas has (spec 1234)', () => {
     const turnsOn = (project: typeof open, technique: 'peyote' | 'brick') => {
       const result = placedStarter(project, starterById('ringDiamonds'), { ...asDesigned('ringDiamonds'), weave: { technique } }, { row: 50, column: 50 }, frameIdIn(project))
       return result.kind === 'changed' ? (frameOf(result.project)!.quarterTurns ?? 0) : undefined
     }
     const [quarter, half] = [rotateCanvas(open), rotateCanvas(rotateCanvas(open))]
-    expect([open, quarter, half].map((project) => turnsOn(project, 'peyote'))).toEqual([1, 0, 3])
-    expect([open, quarter, half].map((project) => turnsOn(project, 'brick'))).toEqual([0, 3, 2])
+    expect([open, quarter, half].map((project) => turnsOn(project, 'peyote'))).toEqual([1, 1, 1])
+    expect([open, quarter, half].map((project) => turnsOn(project, 'brick'))).toEqual([0, 0, 0])
   })
 
-  it('turns a shape by what the Canvas lacks, so it stands as charted at any quarter, and Rotate Frame turns it on from there (ticket 0872)', () => {
+  it('stands a shape as charted at any Canvas turn, and Rotate Frame turns it on from there (ticket 0872, spec 1234)', () => {
     const turnsOf = (project: typeof open, id: 'triangle' | 'vFringe') => {
       const result = placedStarter(project, starterById(id), asDesigned(id), { row: 50, column: 50 }, frameIdIn(project))
       return result.kind === 'changed' ? result.project : undefined
     }
     const peyote = createProject({ technique: 'peyote', beadId, name: 'Open' })
     const canvases = [open, rotateCanvas(open), rotateCanvas(rotateCanvas(open)), peyote]
-    expect(canvases.map((project) => frameOf(turnsOf(project, 'triangle')!)!.quarterTurns ?? 0)).toEqual([0, 3, 2, 3])
+    expect(canvases.map((project) => frameOf(turnsOf(project, 'triangle')!)!.quarterTurns ?? 0)).toEqual([0, 0, 0, 0])
     // A Fringe earring is laid in its Technique's lines, so it lies as the Canvas shows them.
-    expect(canvases.map((project) => frameOf(turnsOf(project, 'vFringe')!)!.quarterTurns ?? 0)).toEqual([0, 0, 0, 0])
+    expect(canvases.map((project) => frameOf(turnsOf(project, 'vFringe')!)!.quarterTurns ?? 0)).toEqual([0, 1, 2, 1])
     const placed = turnsOf(peyote, 'triangle')!
     expect(frameOf(placed)!.beads).toEqual(starterDesign(starterById('triangle')))
-    expect(frameOf(turnedCustomFrame(placed, frameIdIn(placed))!)!.quarterTurns).toBeUndefined()
+    expect(frameOf(turnedCustomFrame(placed, frameIdIn(placed))!)!.quarterTurns).toBe(1)
   })
 })

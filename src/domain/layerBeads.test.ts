@@ -2,18 +2,20 @@
 import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { withFrame } from './frame'
 import { beadColorAt, hasProjectBeads, projectColors, sameBeads } from './layerBeads'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, frameOf } from './layerRecord'
 import { withLayers } from '../testUtils/layerFields'
+import { sheetAt } from '../testUtils/sheetAt'
+import { withFrame } from '../testUtils/withFrame'
+import { withFrameResized } from './frame'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 describe('the Frame as its own sheet (ADR 0066)', () => {
   const sheet = () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    return withLayers(base, { frame: { ...frameOf(base)!, row: 10, column: 10, beads: { 0: { 0: '#111111' }, 2: { 3: '#222222' } } }, beads: { 10: { 10: '#999999' }, 50: { 50: '#333333' } } })
+    return withLayers(base, { frame: sheetAt(base, 10, 10, { beads: { 0: { 0: '#111111' }, 2: { 3: '#222222' } } }), beads: { 10: { 10: '#999999' }, 50: { 50: '#333333' } } })
   }
 
   it('shows the Frame\'s bead where it lies over the Canvas, and the Canvas\'s elsewhere', () => {
@@ -25,7 +27,7 @@ describe('the Frame as its own sheet (ADR 0066)', () => {
 
   it('resizes with the beads staying where they are on the Canvas, dropping those outside, and leaves the Canvas alone', () => {
     const project = sheet()
-    const moved = withFrame(project, { row: 9, column: 9, rows: 3, columns: 4 }, frameIdIn(project))
+    const moved = withFrameResized(project, { row: -1, column: -1, rows: 3, columns: 4 }, frameIdIn(project))
     expect(frameOf(moved)!.beads).toEqual({ 1: { 1: '#111111' } })
     expect(beadsOfLayer(moved, 'canvas')).toBe(beadsOfLayer(project, 'canvas'))
   })

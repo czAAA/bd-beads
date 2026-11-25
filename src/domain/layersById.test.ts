@@ -1,4 +1,6 @@
 import { frameIdIn } from '../testUtils/frameId'
+import { placeOf } from '../testUtils/placeOf'
+import { firstOf, SECOND, twoFrames } from '../testUtils/twoFrames'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -6,12 +8,9 @@ import { computeColorQuantities } from './beadQuantities'
 import { findBead } from './beads'
 import { colorAt } from './canvas'
 import { changeFrame, type FrameChangeResult } from './changeFrame'
-import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { footprintOf } from './footprint'
-import { framePlacement, withFrameAt } from './framePlacement'
+import { withFrameCentre } from './framePlacement'
 import { withFrameSheet } from './frameSheet'
-import type { FrameId } from './grid'
 import { backgroundOf, beadsOfLayer, frameById, frameIdOf, frameOf, framesOf, layerOf, lettersOn, withBackground, withLayer, withLetters, wovenLayerOf } from './layerRecord'
 import { layerAt, onLayer } from './layers'
 import { withColors } from './canvas'
@@ -29,18 +28,9 @@ import { withWeave } from './weaveSwitch'
 // Ticket 1216: a Frame is named by its id, so every domain function given one touches that Frame and no other. The
 // app makes one Frame; these Projects have two, the second named, the first left as it was.
 
-const SECOND = frameIdOf({ id: 'second' })
 const RED = '#ff0000'
-
-/** A Project with two Frames: the first at the Canvas's top-left, the second, `SECOND`, further down and right. */
-function twoFrames(): Project {
-  const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-  const first = withFrameSheet(base, { row: 0, column: 0, rows: 6, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdIn(base) })
-  return withFrameSheet(first, { row: 20, column: 20, rows: 6, columns: 4, beads: {}, technique: 'loom' }, { frame: SECOND })
-}
-
-/** The first Frame's id in a Project. */
-const firstOf = (project: Project): FrameId => frameIdOf(framesOf(project)[0]!)
+/** One loom cube bead's width on the Table, in mm: what a move by whole beads is asked in. */
+const BEAD = 1.5
 
 /** The Project a Frame change made; fails on a refused one. */
 function changed(result: FrameChangeResult): Project {
@@ -57,7 +47,7 @@ describe('a Frame named by its id (ticket 1216)', () => {
   it('reads and writes only the Frame named', () => {
     const project = twoFrames()
     expect(framesOf(project).map((frame) => frame.id)[1]).toBe('second')
-    expect(frameById(project, SECOND)).toMatchObject({ row: 20, column: 20 })
+    expect(placeOf(project, SECOND)).toEqual({ row: 20, column: 20, rows: 6, columns: 4 })
     expect(frameById(project, 'canvas')).toBeUndefined()
     expect(frameById(project, frameIdIn(project))).toBe(frameOf(project))
     expect(frameIdOf(frameById(project, SECOND)!)).toBe(SECOND)
@@ -83,7 +73,7 @@ describe('a Frame named by its id (ticket 1216)', () => {
     const project = twoFrames()
     expect(layerAt(project, { row: 21, column: 21 })).toBe(SECOND)
     expect(layerAt(project, { row: 1, column: 1 })).toBe(frameIdIn(project))
-    expect(footprintOf(project, SECOND)).toEqual({ row: 20, column: 20, rows: 6, columns: 4 })
+    expect(placeOf(project, SECOND)).toEqual({ row: 20, column: 20, rows: 6, columns: 4 })
 
     const painted = onLayer(project, SECOND, (sheet) => withColors(sheet.beads, [{ row: 0, column: 0, color: RED }]))
     firstUntouched(project, painted)
@@ -96,18 +86,18 @@ describe('a Frame named by its id (ticket 1216)', () => {
 
   it('moves, turns and removes only the Frame named', () => {
     const project = twoFrames()
-    const moved = changed(changeFrame(project, { move: { rows: 2, columns: 3 } }, SECOND))
+    const moved = changed(changeFrame(project, { move: { x: 3 * BEAD, y: 2 * BEAD } }, SECOND))
     firstUntouched(project, moved)
-    expect(frameById(moved, SECOND)).toMatchObject({ row: 22, column: 23 })
+    expect(placeOf(moved, SECOND)).toMatchObject({ row: 22, column: 23 })
 
     const turned = rotateFrame(project, 'keep', SECOND)!
     firstUntouched(project, turned)
     expect(frameById(turned, SECOND)!.quarterTurns).toBe(1)
 
-    const at = framePlacement(project, SECOND)!.at
-    const carried = withFrameAt(project, { x: at.x + 2, y: at.y }, SECOND)
+    const { centre } = frameById(project, SECOND)!
+    const carried = withFrameCentre(project, { x: centre.x + 3, y: centre.y }, SECOND)
     firstUntouched(project, carried)
-    expect(frameById(carried, SECOND)!.column).toBe(22)
+    expect(placeOf(carried, SECOND).column).toBe(22)
 
     const removed = changed(changeFrame(project, { remove: true }, SECOND))
     expect(framesOf(removed).map((frame) => frame.id)).toEqual([firstOf(project)])

@@ -5,14 +5,17 @@ import { createProject } from './createProject'
 import { isInCurrentRow, isInFinishedRow, rowProgressPosition } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
-import { withFrame } from './frame'
 import { canvasWeave, frameWeave } from './layerWeave'
 import { withWeave } from './weaveSwitch'
 import { beadCell, columnCycle, rowCycle } from './weave'
 import { findBead } from './beads'
 import { canvasOf, frameOf } from './layerRecord'
+import { coversOf } from './sheets'
 import { withFrameSheet } from './frameSheet'
 import { withLayers } from '../testUtils/layerFields'
+import { sheetAt } from '../testUtils/sheetAt'
+import { withFrameResized } from './frame'
+import { withFrame } from '../testUtils/withFrame'
 
 describe('a Frame woven in its own Technique (ticket 492)', () => {
   /** The cube's real cell, which every layer of these Projects draws (ticket 0724). */
@@ -21,7 +24,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   /** A loom Canvas with a peyote Frame of 4 × 6 at (10, 10). */
   const peyoteOnLoom = (): Project => {
     const base = canvasLoom()
-    return withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 10, column: 10 } })
+    return withLayers(base, { frame: sheetAt(base, 10, 10, { technique: 'peyote' }) })
   }
 
   it('is made in the Technique the Project was made in, and its Weave is the Frame\'s own', () => {
@@ -33,7 +36,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
 
   it('reads each layer\'s settings map, and keeps brick stitch\'s Drop off it for a switch back (tickets 0624, 0625)', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-    const brickFrame = withLayers(brick, { technique: 'peyote' as const, techniqueSettings: {}, frame: { ...frameOf(brick)!, techniqueSettings: { brickDrop: 5 } } })
+    const brickFrame = withLayers(brick, { technique: 'peyote' as const, techniqueSettings: {}, frame: sheetAt(brick, 0, 0, { techniqueSettings: { brickDrop: 5 } }) })
     expect(canvasWeave(brickFrame)).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell })
     expect(frameWeave(brickFrame, frameIdIn(brickFrame))).toEqual({ technique: 'brick', techniqueSettings: { brickDrop: 5 }, cell })
     // Brick stitch's Drop kept off it, for a switch back, lays nothing out in loom.
@@ -82,13 +85,10 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
     expect(frameOf(withFrame(open, { row: 0, column: 0, rows: 4, columns: 4 }, frameIdIn(open)))?.technique).toBe('brick')
   })
 
-  it('moves its corner on the Canvas by as far as its own rows went, to the nearest position', () => {
-    // Peyote's rows are a full bead each, as loom's: dragging the top edge up by 4 moves the corner up 4 (ticket 0734).
-    const grown = withFrame(peyoteOnLoom(), { row: 6, column: 10, rows: 10, columns: 4 }, frameIdIn(peyoteOnLoom()))
-    expect(frameOf(grown)).toMatchObject({ row: 6, rows: 10 })
-    // Alike, it is exactly the rectangle asked for.
-    const alike = withFrame(withWeave(peyoteOnLoom(), 'canvas', { technique: 'peyote' }), { row: 6, column: 10, rows: 10, columns: 4 }, frameIdIn(withWeave(peyoteOnLoom(), 'canvas', { technique: 'peyote' })))
-    expect(frameOf(alike)).toMatchObject({ row: 6, rows: 10 })
+  it('moves its edge on the Canvas by as far as its own rows went, in its own Weave (spec 1234)', () => {
+    // Peyote's rows are a full bead each, as loom's: dragging the top edge up by 4 moves it up 4 Canvas positions (ticket 0734).
+    const grown = withFrameResized(peyoteOnLoom(), { row: -4, column: 0, rows: 10, columns: 4 }, frameIdIn(peyoteOnLoom()))
+    expect(coversOf(grown)[0]!.frame).toMatchObject({ row: 6, rows: 10 })
   })
 
   it('reads a Frame stored without a Weave of its own as woven like the Project, and an unreadable one the same', () => {

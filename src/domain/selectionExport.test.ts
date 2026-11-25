@@ -4,11 +4,14 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { withColors } from './canvas'
 import { createProject } from './createProject'
-import { snapColumn, snapRow, withFrame } from './frame'
+import { snapColumn, snapRow } from './frame'
 import { beadsOfLayer, frameOf, heldWeave, withLayer } from './layerRecord'
 import type { Project } from './project'
 import { selectionExportProject, selectionExportable } from './selectionExport'
 import type { Selection } from './selection'
+import { canvasRectCentre } from './sheets'
+import { placeOf } from '../testUtils/placeOf'
+import { withFrame } from '../testUtils/withFrame'
 
 const cube = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const RED = '#e63746'
@@ -26,7 +29,7 @@ describe('selectionExportProject', () => {
     const selection: Selection = { top: 2, left: 3, rows: 3, columns: 3, layer: 'canvas' }
     const part = selectionExportProject(project, selection, 'part')!
     const frame = frameOf(part)!
-    expect([frame.row, frame.column, frame.rows, frame.columns]).toEqual([2, 3, 3, 3])
+    expect(placeOf(part)).toEqual({ row: 2, column: 3, rows: 3, columns: 3 })
     expect(beadsOfLayer(part, frameIdIn(part))).toEqual({ 0: { 0: RED }, 1: { 1: BLUE } })
     expect(frame.name).toBe('part')
   })
@@ -52,10 +55,11 @@ describe('selectionExportProject', () => {
     const part = selectionExportProject(project, { top: 5, left: 2, rows: 2, columns: 2, layer: 'canvas' }, 'part')!
     const frame = frameOf(part)!
     const weave = heldWeave(project, 'canvas')
-    expect([frame.row, frame.column]).toEqual([snapRow(weave, 5), snapColumn(weave, 2)])
-    expect(frame.row + frame.rows).toBe(7)
-    expect(frame.column + frame.columns).toBe(4)
-    expect(beadsOfLayer(part, frameIdIn(part))![5 - frame.row]?.[2 - frame.column]).toBe(RED)
+    const [row, column] = [snapRow(weave, 5), snapColumn(weave, 2)]
+    expect(frame.centre).toEqual(canvasRectCentre(project, { row, column, rows: frame.rows, columns: frame.columns }))
+    expect(row + frame.rows).toBe(7)
+    expect(column + frame.columns).toBe(4)
+    expect(beadsOfLayer(part, frameIdIn(part))![5 - row]?.[2 - column]).toBe(RED)
   })
 
   it('is not offered on a Custom frame, and a Frame Selection outside the Frame has nothing to export', () => {
@@ -70,7 +74,8 @@ describe('selectionExportProject', () => {
     const part = selectionExportProject(project, { top: 5, left: 5, rows: 3, columns: 3, layer: FRAME_ID }, 'part')!
     const frame = frameOf(part)!
     const weave = heldWeave(project, frameIdIn(project))!
-    expect([frame.row - 2, frame.column - 2]).toEqual([snapRow(weave, 5), snapColumn(weave, 5)])
+    // The Frame's own rows and columns the Selection reaches back to: those from where its Weave starts.
+    expect([frame.rows - 3, frame.columns - 3]).toEqual([5 - snapRow(weave, 5), 5 - snapColumn(weave, 5)])
   })
 
   it('is offered on the Canvas', () => {

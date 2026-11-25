@@ -6,7 +6,6 @@ import {
   frameWithEdges,
   frameWithEdgeStep,
   frameWithSize,
-  movedFrame,
   snappedFrame,
   type FrameEdge,
 } from '../../domain/frame'
@@ -22,6 +21,9 @@ import { nextFrameName } from '../../domain/frameNames'
 import { frameLabel } from '../../i18n/frameLabel'
 import { copyLayerSelection, type CopiedBlock } from '../../domain/selection'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
+import { frameKeyStep } from '../../domain/framePlacement'
+import { coversOf, tablePointOf } from '../../domain/sheets'
+import type { TablePoint } from '../../domain/table'
 import { laidFrame, ownEdge, ownSize, seenSize, turnedWithEdges } from '../../domain/frameOrientation'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave } from '../../domain/weaveSwitch'
@@ -75,7 +77,7 @@ function gripOf(frame: Rect, edges: readonly FrameEdge[], press: GridPosition): 
 
 /** A Frame drag held open (ticket 1220): which Frame it moves or resizes, whatever other Frames are being set. */
 type Gesture =
-  | { kind: 'move'; frame: FrameId; origin: GridPosition; start: Rect }
+  | { kind: 'move'; frame: FrameId; origin: TablePoint }
   | { kind: 'resize'; frame: FrameId; edges: FrameEdge[]; start: FrameSheet; grip: GridPosition }
 
 /** The Frames a Project holds, none while no Project is open. */
@@ -91,12 +93,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const handlesFor = ref<readonly FrameId[]>([])
   /** The Frame as it looks mid-drag, before it is committed, and which Frame it is; `move` is how far a Move drag has
    * carried it with its beads. */
-  const draft = ref<{ ref: FrameId; frame: Rect; move?: { rows: number; columns: number } } | undefined>()
+  const draft = ref<{ ref: FrameId; frame?: Rect; move?: TablePoint } | undefined>()
   /** The Frame the Remove frame question is asked about (ticket 1220). */
   const removing = ref<FrameId>()
   let gesture: Gesture | undefined
-  /** How far the Move handle has been dragged, in whole beads. */
-  let moved = { rows: 0, columns: 0 }
+  /** How far the Move handle has been dragged on the Table, in mm: exactly as far as the pointer went. */
+  let moved: TablePoint = { x: 0, y: 0 }
   /** Whether the pointer has moved since the press: a click that drew nothing is not a Frame. */
   let dragged = false
 
@@ -104,7 +106,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!project || !draft.value) return project
     // Shown as the release will leave it: a resize that shrinks the Frame already folds what it gives up.
-    const outcome = changeFrame(project, draft.value.move ? { move: draft.value.move } : { set: draft.value?.frame }, draft.value.ref)
+    const outcome = changeFrame(project, draft.value.move ? { move: draft.value.move } : { set: draft.value.frame! }, draft.value.ref)
     return outcome.kind === 'changed' ? outcome.project : project
   })
 
@@ -319,19 +321,19 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** A press on a Frame's chrome (ticket 1220): its Move bar or a handle of its own, whichever other Frames are being
    * set. */
-  function press(target: FramePress, cell: GridPosition, ref: FrameId = firstFrameId(deps.currentProject())): void {
+  function press(target: FramePress, cell: GridPosition, ref: FrameId = firstFrameId(deps.currentProject()), at?: TablePoint): void {
     const project = deps.currentProject()
     const frame = frameById(project, ref)
     dragged = false
-    moved = { rows: 0, columns: 0 }
+    moved = { x: 0, y: 0 }
     if (!frame) return
     // The Move handle always works; a resize handle only while the edit toggle is on.
-    if (target.kind === 'move') gesture = { kind: 'move', frame: ref, origin: cell, start: frame }
+    if (target.kind === 'move') gesture = { kind: 'move', frame: ref, origin: at ?? tablePointOf(project!, cell) }
     // A turned Frame's handles stand on the rectangle it lies in (ticket 1016), so the grip is measured there.
     else if (target.kind === 'handle' && settingOn(ref)) gesture = { kind: 'resize', frame: ref, edges: target.edges, start: frame, grip: gripOf(laidFrame(project!, ref)!, target.edges, cell) }
   }
 
-  function drag(cell: GridPosition): void {
+  function drag(cell: GridPosition, at?: TablePoint): void {
     const project = deps.currentProject()
     if (!project || !gesture) return
     dragged = true
@@ -341,24 +343,24 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       const weave = frameWeave(project, gesture.frame)
       draft.value = { ref: gesture.frame, frame: turnedGrid(start) ? turnedWithEdges({ ...start, ...weave }, gesture.edges, at) : frameWithEdges(weave, start, gesture.edges, at) }
     } else {
-      const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
-      // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left
-      // alone.
-      if (draft.value && next.rows === moved.rows && next.columns === moved.columns) return
+      const to = at ?? tablePointOf(project, cell)
+      const next = { x: to.x - gesture.origin.x, y: to.y - gesture.origin.y }
+      // A pointer that has not moved changes nothing, so the draft (and the preview built from it) is left alone.
+      if (draft.value && next.x === moved.x && next.y === moved.y) return
       moved = next
-      draft.value = { ref: gesture.frame, frame: movedFrame(gesture.start, next.rows, next.columns), move: next }
+      draft.value = { ref: gesture.frame, move: next }
     }
   }
 
   function release(): void {
-    const result = draft.value?.frame
+    const result = draft.value
     const wasMove = gesture?.kind === 'move'
     const ref = gesture?.frame
     gesture = undefined
     draft.value = undefined
     if (!result || !dragged || !ref) return
-    if (wasMove) moveBy(moved.rows, moved.columns, ref)
-    else commit(result, 'set', ref)
+    if (wasMove) moveBy(moved, ref)
+    else commit(result.frame!, 'set', ref)
   }
 
   /** Lets go of a drag without committing it: a second finger arrived, so it was a pinch. */
@@ -367,10 +369,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     draft.value = undefined
   }
 
-  /** The Move handle's change (ticket 452): the Frame and its beads by whole rows and columns, one announced Undo
+  /** The Move handle's change (ticket 452): the Frame and its beads by a distance on the Table, in mm, one announced Undo
    * step. */
-  function moveBy(rows: number, columns: number, frame: FrameRef = firstFrameId(deps.currentProject())): void {
-    const outcome = deps.edit('frame', (project) => changeFrame(project, { move: { rows, columns } }, frame))
+  function moveBy(by: TablePoint, frame: FrameRef = firstFrameId(deps.currentProject())): void {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { move: by }, frame))
     if (outcome.kind === 'applied') deps.announce(deps.messages().frame.announceMoved)
   }
 
@@ -382,7 +384,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const held = frameById(project, ref)
     if (!project || !held || lockedOn(ref)) return
     const next = frameWithEdgeStep(frameWeave(project, ref), held, ownEdge(held, edge), step)
-    if (next !== held) commit(next, 'set', ref)
+    if ('row' in next) commit(next, 'set', ref)
   }
 
   /** The size typed into the Frame panel (ticket 473): both sides grow or shrink evenly about the Frame, one Undo step.
@@ -430,7 +432,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!project) return
     const ref = newFrameRef()
-    const frame = fitToDrawing(project, ref)
+    const frame = fitToDrawing(project)
     if (frame) commit(frame, 'make', ref)
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
@@ -530,16 +532,17 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       // A turned Frame grows from its bottom-right as seen: the own edges lying there (ticket 1016).
       if (settingOn(ref) && turnedGrid(frame)) {
         stepEdge(step[0] ? 'bottom' : 'right', (step[0] || step[1]) as 1 | -1, ref)
-      } else if (settingOn(ref)) commit(frameWithSize(frame, frame.columns + step[1], frame.rows + step[0]), 'set', ref)
+      } else if (settingOn(ref)) commit(frameWithSize(frame.columns + step[1], frame.rows + step[0]), 'set', ref)
     } else {
-      moveBy(step[0], step[1], ref)
+      moveBy(frameKeyStep(deps.currentProject()!, ref, step), ref)
     }
     return true
   }
 
   function bringIntoView(ref: FrameRef = firstFrameId(deps.currentProject())): void {
     const frame = frameById(deps.currentProject(), ref)
-    if (frame) deps.centreOn(frame)
+    const cover = deps.currentProject() && coversOf(deps.currentProject()!).find((each) => each.ref === ref)
+    if (frame && cover) deps.centreOn(cover.sheet)
   }
 
   return {

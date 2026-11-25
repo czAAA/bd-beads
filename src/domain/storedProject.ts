@@ -1,13 +1,15 @@
-import { frameIdOf, heldFrameById } from './layerRecord'
+import { frameIdOf } from './layerRecord'
+import { landedClear } from './frameLanding'
+import { frameMet } from './frameSpacing'
+import { extentMmOf } from './sheets'
 import { beadCopy, beadLabel, findBead, readBeadCopy, type Bead } from './beads'
 import { BACKGROUND_POSITIONS, readBackground } from './background'
 import { beadsFromColors, type FrameSheet } from './canvas'
-import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
+import { isFrameShape, settingsOf, type QuarterTurns, type ShapedSheet } from './frameShape'
 import type { Rotation } from './grid'
-import { nearestQuarterTurn, normalizedOrientation, quarterTurnsOff } from './canvasOrientation'
-import { frameCornerAt, withFrameAt } from './framePlacement'
+import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
 import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
-import { weaveOf } from './layerWeave'
+import { canvasWeave, cellWidthMm, weaveOf } from './layerWeave'
 import { readStoredPalette } from './palette'
 import { lettersOfPalette, withUsedColors } from './paletteEdits'
 import { readMirrorArea, readMirrorSetting, withFittedArea } from './mirror'
@@ -15,8 +17,8 @@ import { readPieceNames } from './pieceNames'
 import { readReferenceImage } from './referenceImage'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
 import { readRowProgress, seenProgressOf, type OwnRowProgress } from './rowProgress'
-import type { TablePoint } from './table'
-import { beadCell, isTechnique, withCell, type Technique, type Weave } from './weave'
+import { roundedMm, turnedPoint, type TablePoint } from './table'
+import { beadCell, describeWeave, isTechnique, withCell, type Technique, type Weave } from './weave'
 
 // Reading a Project from storage or a file (CONTEXT.md, docs/testing.md's Stored-data compatibility): every shape an
 // older app saved becomes today's Project, so nothing else has to know the old ones.
@@ -26,8 +28,8 @@ import { beadCell, isTechnique, withCell, type Technique, type Weave } from './w
 export type GridProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeave & { columns: number; rows: number; grid: Grid }
 
 /** A layer as a store or file holds it (file version 12, ticket 0664), before normalizeProject reads it, its id and name
- * possibly missing. A Frame of file version 15 holds its angle and centre on the table and its way as seen (ticket 1185);
- * an older one its quarter turns on the Canvas, its Canvas position and its Row progress in its own rows. */
+ * possibly missing. A Frame of file version 18 holds its quarter turn and centre in mm from the Canvas's origin (ticket
+ * 1237); 15 to 17 its angle and centre in bead widths (1185); an older one quarter turns and Canvas position. */
 export type StoredLayer = Omit<LayerFields, 'id'> &
   FlatWeave &
   Partial<Omit<FrameSheet, keyof LayerFields>> & {
@@ -38,11 +40,17 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
      * (ticket 0704) are dropped. */
     mirrorAxes?: unknown
     mirrorArea?: unknown
-    /** The Frame's own angle on the table and its centre there (file version 15, ticket 1185). */
+    /** The Frame's own angle on the table and its centre there (file version 15, ticket 1185), in the Canvas's bead widths
+     * from its origin. Read, never written. */
     angle?: number
     centre?: TablePoint
-    /** Whether the Frame lies off the Canvas's grid, its centre kept as saved (ticket 1188); absent, it lies on it. */
-    offGrid?: boolean
+    /** The Frame's centre in mm from the Canvas's origin (file version 18, ticket 1237). */
+    centreMm?: TablePoint
+    /** Its first row and column on the Canvas, before file version 15. */
+    row?: number
+    column?: number
+    /** The Table turn the Canvas holds (file version 18). */
+    tableTurn?: number
     /** Row progress as seen (file version 15), or in the Frame's own rows before it. */
     rowProgress?: Partial<RowProgress> | Partial<OwnRowProgress>
   }
@@ -112,21 +120,22 @@ export function normalizeProject(stored: StoredProject): Project {
   const earlierBackgrounds = backgroundPositions !== BACKGROUND_POSITIONS
   const canvas = readCanvas(lettersByLayer === true ? storedCanvas : { ...storedCanvas, letters: undefined }, layered.id, earlierBackgrounds)
   // Every Frame the list holds is kept, though the app makes and shows one (ADR 0079).
-  const frames = storedFrames.map((stored, index) => readFrame(stored, canvas, `${layered.id}:frame${index > 0 ? index + 1 : ''}`, earlierBackgrounds))
+  const read = storedFrames.map((stored, index) => readFrame(stored, canvas, `${layered.id}:frame${index > 0 ? index + 1 : ''}`, earlierBackgrounds))
+  const frames = read.map(({ frame }) => frame)
 
   // A Palette saved before its sections is sorted into them by the woven layer's Bead (ADR 0103), read with its id as
   // stored, before an alias names it anew (ticket 534). A color its beads show and the Palette lacks joins it, so it has
   // a Swatch letter (ticket 1124: exports printed "?").
-  const read = readStoredPalette(storedPalette, storedCodes, (storedFrames[0] ?? storedCanvas).beadId)
-  const palette = withUsedColors(read.ids, { layers: [canvas, ...frames] }, read.codes)
-  const paletteCodes = read.codes
+  const palettes = readStoredPalette(storedPalette, storedCodes, (storedFrames[0] ?? storedCanvas).beadId)
+  const palette = withUsedColors(palettes.ids, { layers: [canvas, ...frames] }, palettes.codes)
+  const paletteCodes = palettes.codes
 
   const mirror = readMirrorSetting(storedMirror, { canvasArea: readMirrorArea(storedCanvas.mirrorArea), framed: frames.length > 0 })
   const referenceImage = readReferenceImage(storedReference)
   const lastEditedFrame = frames.find((frame) => frame.id === rest.lastEditedFrame)?.id
   // An older file's Canvas Area its Mirror does not fit opens grown to a Fitting size (ticket 1029): no Message, no Undo.
   const { lastEditedFrame: _stored, ...kept } = rest
-  return withFittedArea({
+  const opened = withFittedArea({
     ...kept,
     ...(lastEditedFrame ? { lastEditedFrame } : {}),
     layers: [canvas, ...frames],
@@ -138,6 +147,8 @@ export function normalizeProject(stored: StoredProject): Project {
     // The reference image (ticket 0790): an unreadable record opens with none.
     ...(referenceImage ? { referenceImage } : {}),
   }).project
+  // A Frame that rounding its lean to a quarter turn brought into another's margin is nudged to the nearest free place.
+  return read.reduce((project, { frame, rounded }) => (rounded && frameMet(project, frameIdOf(frame)) ? landedClear(project, frameIdOf(frame)) : project), opened)
 }
 
 /** A Project saved before its layers (ticket 0664) as its layers: the Canvas from its own fields, its rotation its
@@ -188,50 +199,66 @@ function layeredOf(stored: SavedProject | GridProject): LayeredProject {
 }
 
 /** The Canvas a store or file holds, each field read as an older app may have left it. Its name falls back on its
- * Bead's label, for a Project saved before it had one. */
+ * Bead's label, for a Project saved before it had one. Its angle on screen splits into its nearest quarter turn and the
+ * Table turn of the rest, so an older Canvas at 23° shows exactly where it was (spec 1234, ticket 1237). */
 function readCanvas(stored: StoredLayer, projectId: string, earlierBackground: boolean): CanvasLayer {
   const layer = readLayer(stored, `${projectId}:canvas`, readWeave(stored.technique, stored), earlierBackground)
   const name = typeof stored.name === 'string' && stored.name ? stored.name : layer.bead ? beadLabel(layer.bead) : layer.beadId
-  return { ...layer, name, orientation: readOrientation(stored.orientation) }
+  const [own, table] = [readOrientation(stored.orientation), readOrientation(stored.tableTurn)]
+  const turn = normalizedOrientation(own + table - nearestQuarterTurn(own))
+  return { ...layer, name, orientation: nearestQuarterTurn(own), ...(turn ? { tableTurn: turn } : {}) }
 }
 
 /** The Frame a store or file holds, its Row progress read inside it; one without a Weave this build knows takes the
- * Canvas's (ticket 492). One stored before file version 15 opens as last saved (ticket 1185): at the Canvas's orientation
- * plus its quarter turns, at its Canvas position, its Row progress the way it showed. */
-function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string, earlierBackground: boolean): FrameLayer {
+ * Canvas's (ticket 492). Version 18 keeps a quarter turn and centre in mm; 15 to 17 an angle and centre in bead widths,
+ * older ones quarter turns and Canvas position (ticket 1185): each opens where it was, its angle rounded to a quarter turn. */
+function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string, earlierBackground: boolean): { frame: FrameLayer; rounded: boolean } {
   const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas), earlierBackground)
-  const { row = 0, column = 0, rows = 0, columns = 0, folded, name } = stored
+  const { rows = 0, columns = 0, folded, name } = stored
   const laid = readFrameShape(stored, weaveOf(layer))
+  const seenCanvas = normalizedOrientation(canvas.orientation + (canvas.tableTurn ?? 0))
   // Before file version 15 a Frame kept its quarter turns on the Canvas: one, two or three, anything else none.
   const earlierTurns = stored.quarterTurns === 1 || stored.quarterTurns === 2 || stored.quarterTurns === 3 ? stored.quarterTurns : 0
-  const angle = readOrientation(typeof stored.angle === 'number' ? stored.angle : canvas.orientation + 90 * earlierTurns)
+  const current = readCentre(stored.centreMm)
+  const seenAngle = readOrientation(typeof stored.angle === 'number' ? stored.angle : seenCanvas + 90 * earlierTurns)
+  const off = normalizedOrientation(seenAngle - seenCanvas)
+  const angle = current ? nearestQuarterTurn(seenAngle) : normalizedOrientation(canvas.orientation + nearestQuarterTurn(off))
+  const turns = (angle / 90) as QuarterTurns
+  const sheet = { rows, columns, ...laid, ...(turns ? { quarterTurns: turns } : {}) }
+  const probe: Project = { id: '', layers: [canvas, { ...layer, ...sheet, angle, centre: { x: 0, y: 0 }, rowProgress: { way: 'down' } }], palette: [], createdAt: 0, updatedAt: 0 }
+  // Kept to a millionth of a mm as a file stores it, so what is opened reads back the same once written.
+  const placed = current ? (stored.centreMm as TablePoint) : onTheTable(probe, stored, sheet)
+  const centre = { x: roundedMm(placed.x), y: roundedMm(placed.y) }
   const frame: FrameLayer = {
     ...layer,
-    row,
-    column,
     rows,
     columns,
     ...(folded ? { folded } : {}),
     ...(typeof name === 'string' && name ? { name } : {}),
     ...laid,
     angle,
+    centre,
     rowProgress: { way: 'down' },
   }
-  // A Frame saved off the Canvas's grid keeps its centre (ticket 1188); one on it lands on the nearest position, read
-  // before its Beads are, as file version 15 always read it.
-  const placed = !readCentre(stored.centre) ? frame : stored.offGrid === true ? frameAt(canvas, frame, stored.centre!) : { ...frame, ...frameCornerAt({ layers: [canvas, frame] }, stored.centre!, false, frameIdOf(frame)) }
-  const turns = placed.centre && !laid.shape ? 0 : quarterTurnsOff(angle, canvas.orientation)
   const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, ...(turns ? { quarterTurns: turns } : {}), rows, columns }
   // One stored since file version 15 keeps its way as seen; one before, in its own rows, turned as it showed.
   const held = stored.rowProgress
   const seen = (held && 'way' in held) || typeof stored.angle === 'number' ? (held as Partial<RowProgress> | undefined) : seenProgressOf(readOwnProgress(held as Partial<OwnRowProgress> | undefined), laid.shape ? 0 : nearestQuarterTurn(canvas.orientation) / 90 + earlierTurns)
-  return { ...placed, rowProgress: readRowProgress(seen, shaped, nearestQuarterTurn(angle)) }
+  return { frame: { ...frame, rowProgress: readRowProgress(seen, shaped, nearestQuarterTurn(angle)) }, rounded: !current && off % 90 !== 0 }
 }
 
-/** The Frame read at its saved centre on the table, its Canvas's origin the table's (ticket 1188, `withFrameAt`). */
-function frameAt(canvas: CanvasLayer, frame: FrameLayer, centre: TablePoint): FrameLayer {
-  const read = { id: '', layers: [canvas, frame], palette: [], createdAt: 0, updatedAt: 0 } as Project
-  return heldFrameById(withFrameAt(read, centre, frameIdOf(frame)), frameIdOf(frame))!
+/** Where an older Frame lies on the Table, in mm from the Canvas's origin: its saved centre in the Canvas's bead widths,
+ * which the Canvas shows turned by its whole angle, turned back by the Table turn; else the middle of the rectangle it
+ * covers from its saved Canvas position, turned by the Canvas's quarter turn. */
+function onTheTable(probe: Project, stored: StoredLayer, sheet: Pick<FrameSheet, 'rows' | 'columns' | 'shape' | 'settings' | 'quarterTurns'>): TablePoint {
+  const [canvas, frame] = probe.layers as [CanvasLayer, FrameLayer]
+  const mm = cellWidthMm(probe, 'canvas')
+  if (readCentre(stored.centre)) return turnedPoint({ x: stored.centre.x * mm, y: stored.centre.y * mm }, -(canvas.tableTurn ?? 0))
+  const weave = describeWeave(canvasWeave(probe))
+  const corner = weave.origin({ row: stored.row ?? 0, column: stored.column ?? 0 }, 1, weave.cellAspect)
+  const extent = extentMmOf(probe, frameIdOf(frame), sheet)
+  const [across, down] = (canvas.orientation / 90) % 2 === 1 ? [extent.y, extent.x] : [extent.x, extent.y]
+  return turnedPoint({ x: corner.x * mm + across / 2, y: corner.y * mm + down / 2 }, canvas.orientation)
 }
 
 /** Whether a stored centre is a point: two finite numbers. */

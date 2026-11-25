@@ -5,7 +5,7 @@ import { editHarness } from '../../testUtils/editHarness'
 import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
-import { withFrame } from '../../domain/frame'
+import { withFrame } from '../../testUtils/withFrame'
 import { paintAt } from '../../testUtils/layers'
 import { beadCount } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
@@ -1164,9 +1164,8 @@ describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
     const { gesture, harness, clipped, losses } = setup(star())
     gesture.selectAll()
     expect(gesture.copy()).toBe(true)
-    const { row, column } = frameOf(harness.project)!
     // Aimed at the Frame's top left corner, Off-shape: some of the arm lands past the shape.
-    expect(gesture.pasteAt({ row, column, layer: FRAME_ID })).toBe(true)
+    expect(gesture.pasteAt({ row: 0, column: 0, layer: FRAME_ID })).toBe(true)
     expect(losses).toEqual(['shape'])
     expect(clipped[0]).toBeGreaterThan(0)
     harness.history.onUndo()
@@ -1174,9 +1173,8 @@ describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
   })
 
   it('refuses the Piece tool on it: its beads make no Pieces of a Grid', () => {
-    const { gesture, harness } = setup(star())
-    const { row, column } = frameOf(harness.project)!
-    gesture.tapPiece(row + 5, column + 5, FRAME_ID)
+    const { gesture } = setup(star())
+    gesture.tapPiece(5, 5, FRAME_ID)
     expect(gesture.selection.value).toBeUndefined()
     expect(gesture.refusals.value).toBe(1)
   })

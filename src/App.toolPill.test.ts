@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { beadColor, beadColors, drawnProject, hoverBead, pressBead } from './testUtils/beads'
 import { beadsOfLayer, frameIdOf, frameOf } from './domain/layerRecord'
+import { coversOf } from './domain/sheets'
 import { withFrameSheet } from './domain/frameSheet'
 import { colorAt } from './domain/canvas'
 import { changeFrame } from './domain/changeFrame'
@@ -86,7 +87,7 @@ describe('the Tool pill', () => {
 
   /** A Canvas position well clear of the Frame and its keep-out margin, above it. */
   const aboveFrame = (wrapper: Awaited<ReturnType<typeof mountWithProject>>) => {
-    const frame = frameOf(drawnProject(wrapper))!
+    const { frame } = coversOf(drawnProject(wrapper))[0]!
     return { row: frame.row - 12, column: frame.column }
   }
 

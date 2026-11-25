@@ -4,7 +4,7 @@ import { isFrameLayer, type FrameRef, type GridPosition, type Rotation } from '.
 import { sameBeads } from './layerBeads'
 import { beadsOfLayer, frameById, framesOf, frameIdOf, type Layered, withLayer } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
-import { frameGeometryOf } from './layers'
+import { frameGeometryOf } from './frameGeometryOf'
 import type { LayerGeometry } from './layerGeometry'
 import { frameWeave } from './layerWeave'
 import type { Project, RowProgress } from './project'
@@ -19,7 +19,7 @@ import type { PassDirection } from './weaveGeometry'
 
 /** Row progress exactly as a freshly created Project starts out — also what Delete all (ticket 42) resets it back
  * to. */
-export const INITIAL_ROW_PROGRESS: RowProgress = { way: 'down' }
+const INITIAL_ROW_PROGRESS: RowProgress = { way: 'down' }
 
 /** The Frame's Row progress (ADR 0079): where its weaver is; a Canvas without a Frame is at the first row. */
 export function rowProgressOf(project: Layered, ref: FrameRef): RowProgress {
@@ -295,9 +295,9 @@ export function rowPassesOf(project: Layered, ref: FrameRef): (row: number, colu
   }
 }
 
-/** The Frame lines (rows or columns, from its first, the way the rows run) whose Row progress look differs from what
- * `before` showed of the same Frame (ticket 1038): the passes a step crossed, the one it left and the one it reached.
- * Undefined where that is no set of lines: the way turned (every pass changes), a pass off one line (a Custom frame). */
+/** The Frame lines whose Row progress look differs from what `before` showed (ticket 1038): the passes a step crossed.
+ * Undefined where that is no set of lines: the way turned, or a pass off one line (a Custom frame).
+ * @internal Only tests and the visual check ask which lines a step changed. */
 export function stepLines(project: Layered, before: RowProgress, ref: FrameRef): { direction: PassDirection; lines: number[] } | undefined {
   const after = rowProgressOf(project, ref)
   if (!frameById(project, ref) || before.way !== after.way) return undefined

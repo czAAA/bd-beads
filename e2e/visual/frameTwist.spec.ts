@@ -1,10 +1,11 @@
 import { frameIdIn } from '../../src/testUtils/frameId'
 import { expect, test, type Page } from '@playwright/test'
 import { frameById, frameIdOf, frameOf, orientationOf } from '../../src/domain/layerRecord'
-import { frameAngleOf, lieAlike } from '../../src/domain/table'
+import { canvasAngleOf, frameAngleOf, tableTurnOf } from '../../src/domain/table'
 import { currentZoomPercent, openApp, savedProject, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { withFrameSheet } from '../../src/domain/frameSheet'
+import { onCanvas } from '../../src/testUtils/onCanvas'
 
 // A two-finger twist on touch (ticket 1190): one that starts on the Frame's sheet turns the Frame about its centre, one
 // anywhere else the Canvas, and pan and pinch move both, in Safari's engine at an iPad's density, as the owner's iPad.
@@ -79,7 +80,7 @@ const twist = (at: Point, degrees: number, spread = 60, scale = 1) => (step: num
   ]
 }
 
-test('pan, pinch and a twist on the Frame and off it each turn and move what they should', async ({ page }) => {
+test('pan, pinch and a twist anywhere each turn and move the whole Table (spec 1234)', async ({ page }) => {
   await openApp(page, [fixtureProject({ technique: 'loom', columns: 16, rows: 10 })])
   await settle(page)
   const box = (await page.getByTestId('project-surface').boundingBox())!
@@ -101,54 +102,49 @@ test('pan, pinch and a twist on the Frame and off it each turn and move what the
   expect(orientationOf(saved)).toBe(0)
   expect(frameOf(saved)!.angle).toBe(0)
 
-  // A twist with both fingers on the Frame turns the Frame alone and leaves it leaning: from where it engaged, about 10°
-  // into the fingers' turn.
+  // A twist with both fingers on the Frame turns the Table, every layer together, from where it engaged, about 10° into
+  // the fingers' turn: the layers keep their own quarter turns and the Table turn is what is left.
   await twoFingers(page, twist(sheetMiddle, 35, 30))
   saved = await savedProject(page)
-  const leaning = frameOf(saved)!.angle
+  const leaning = tableTurnOf(saved)
   expect(leaning).toBeGreaterThan(15)
   expect(leaning).toBeLessThan(35)
-  expect(orientationOf(saved)).toBe(0)
-  expect(lieAlike(saved, frameIdIn(saved))).toBe(false)
+  expect(canvasAngleOf(saved)).toBe(leaning)
+  expect(frameOf(saved)!.angle).toBe(0)
+  expect(frameAngleOf(saved, frameIdIn(saved))).toBe(leaning)
 
-  // A twist that starts off the Frame turns the Canvas alone, easing onto the quarter turn.
-  await twoFingers(page, twist({ x: box.x + 120, y: box.y + 120 }, 100, 50))
-  await expect.poll(async () => orientationOf(await savedProject(page))).toBe(90)
-  expect(frameOf(await savedProject(page))!.angle).toBe(leaning)
-
-  // Twisted on the Frame to within 10° of the Canvas's angle, it eases onto it and lies alike again.
-  await twoFingers(page, twist(sheetMiddle, 75, 30))
-  await expect.poll(async () => frameOf(await savedProject(page))!.angle).toBe(90)
+  // A twist that starts off the Frame turns the Table as well, easing onto a quarter turn of the screen within 10°.
+  await twoFingers(page, twist({ x: box.x + 120, y: box.y + 120 }, 75, 50))
+  await expect.poll(async () => tableTurnOf(await savedProject(page))).toBe(90)
   const resaved = await savedProject(page)
-  expect(lieAlike(resaved, frameIdIn(resaved))).toBe(true)
+  expect(frameOf(resaved)!.angle).toBe(0)
+  expect(frameAngleOf(resaved, frameIdIn(resaved))).toBe(canvasAngleOf(resaved))
 })
 
-test('a twist paced like an iPad\'s catches up with the fingers once they stop, and Fit puts the turns back (ticket 1227)', async ({ page }) => {
+test('a twist paced like an iPad\'s catches up with the fingers once they stop, and Fit puts the Table turn back (ticket 1227)', async ({ page }) => {
   await openApp(page, [fixtureProject({ technique: 'loom', columns: 16, rows: 10 })])
   await settle(page)
   const box = (await page.getByTestId('project-surface').boundingBox())!
   const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 
-  // The Frame twisted 35° by fingers on its sheet: the fingers turn the 10° that engages it, the rest is the Frame's.
+  // The Table twisted 35° by fingers on the sheet: the fingers turn the 10° that engages it, the rest is the Table's.
   await pacedTwoFingers(page, twist(middle, 35, 30))
-  const leaning = frameOf(await savedProject(page))!.angle
+  const leaning = tableTurnOf(await savedProject(page))
   expect(leaning).toBeGreaterThan(24)
   expect(leaning).toBeLessThan(26)
 
-  // The Canvas twisted off the Frame, eased onto its quarter turn.
-  await pacedTwoFingers(page, twist({ x: box.x + 120, y: box.y + 120 }, 100, 50))
-  await expect.poll(async () => orientationOf(await savedProject(page))).toBe(90)
-
-  // Fit: the Canvas back to 0°, the leaning Frame onto its nearest quarter turn.
+  // Fit: the Table turn back to 0°, every layer as it was.
   await page.getByTestId('zoom-reset').click()
-  await expect.poll(async () => orientationOf(await savedProject(page))).toBe(0)
-  expect(frameOf(await savedProject(page))!.angle).toBe(0)
+  await expect.poll(async () => tableTurnOf(await savedProject(page))).toBe(0)
+  const fitted = await savedProject(page)
+  expect(orientationOf(fitted)).toBe(0)
+  expect(frameOf(fitted)!.angle).toBe(0)
 })
 
-test('a twist on one of two Frames turns that Frame alone (ticket 1220)', async ({ page }) => {
+test('a twist with two Frames turns the Table, both Frames with it and neither alone (ticket 1220, spec 1234)', async ({ page }) => {
   const second = frameIdOf({ id: 'second' })
   const base = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
-  const pair = withFrameSheet(base, { row: 1, column: 22, rows: 8, columns: 6, beads: {}, technique: 'loom' }, { frame: second })
+  const pair = withFrameSheet(base, onCanvas(base, { row: 1, column: 22, rows: 8, columns: 6, beads: {}, technique: 'loom' }), { frame: second })
   await openApp(page, [pair])
   await settle(page)
   await expect(page.getByTestId('margin-sheet')).toHaveCount(2)
@@ -157,7 +153,7 @@ test('a twist on one of two Frames turns that Frame alone (ticket 1220)', async 
   const saved = await savedProject(page)
   expect(frameAngleOf(saved, second)).toBeGreaterThan(15)
   expect(frameAngleOf(saved, second)).toBeLessThan(35)
-  expect(frameAngleOf(saved, frameIdIn(saved))).toBe(0)
-  expect(frameById(saved, second)).toBeDefined()
-  expect(orientationOf(saved)).toBe(0)
+  expect(frameAngleOf(saved, frameIdIn(saved))).toBe(frameAngleOf(saved, second))
+  expect(frameById(saved, second)!.angle).toBe(0)
+  expect(canvasAngleOf(saved)).toBe(frameAngleOf(saved, second))
 })

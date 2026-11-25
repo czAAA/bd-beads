@@ -4,6 +4,7 @@ import { createProject } from './createProject'
 import { layerSheet } from './layers'
 import { changeCanvasWeave, changeFrame } from './changeFrame'
 import { withLayers } from '../testUtils/layerFields'
+import { sheetAt } from '../testUtils/sheetAt'
 import { frameOf } from './layerRecord'
 import { withFrameSheet } from './frameSheet'
 import { frameLayoutOf, type FrameShapeId, type QuarterTurns } from './frameShape'
@@ -198,7 +199,7 @@ describe('counterparts inside a Canvas Area (tickets 0710, 0750, spec 0702)', ()
 
 describe('mirroredOnCanvas', () => {
   it('expands the Canvas\'s own positions inside a Canvas Area, leaving out a counterpart in the keep-out margin', () => {
-    const framedAt = withLayers(framed('loom', 4, 2), { frame: { ...frameOf(framed('loom', 4, 2))!, row: 10, column: 10 } })
+    const framedAt = withLayers(framed('loom', 4, 2), { frame: sheetAt(framed('loom', 4, 2), 10, 10) })
     const setting = on({ leftRight: true }, {}, 'mirror', onCanvas(area(0, 15, 12, 11)))
     expect(mirroredOnCanvas(framedAt, setting, [{ row: 0, column: 25, layer: 'canvas' }], frameIdIn(framedAt))).toEqual([
       { row: 0, column: 25, layer: 'canvas' },
@@ -210,7 +211,8 @@ describe('mirroredOnCanvas', () => {
 
   it('expands Canvas positions that lie on the Frame through the Frame\'s own positions for the whole-Frame Mirror, and leaves the Canvas\'s alone', () => {
     const project = framed('loom', 4, 2)
-    const { row, column } = project.layers[1]!
+    // A Frame's cells are named by its own row and column, which start at 0, 0.
+    const [row, column] = [0, 0]
     const setting = on({ leftRight: true })
     expect(mirroredOnCanvas(project, setting, [{ row, column, layer: FRAME_ID }], frameIdIn(project))).toEqual([
       { row, column, layer: FRAME_ID },

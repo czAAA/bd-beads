@@ -16,6 +16,7 @@ import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Reg
 import { withFrameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, heldWeave, quarterTurnOf, withLayer } from '../domain/layerRecord'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
+import { withLaidTurn } from '../domain/framePlacement'
 import { firstOf, SECOND, twoFrames } from '../testUtils/twoFrames'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
@@ -43,6 +44,9 @@ function projectOf(technique: Technique, columns: number, rows: number, extra: L
   const project = frameOf(made) && !rest.frame ? withLayer(made, FRAME_ID, { weave: heldWeave(made, 'canvas') }) : made
   return grid ? withFrameGrid(project, grid) : project
 }
+
+/** The Project as a picture of it turned: the Frame lying at the quarter turn, drawn on its own as an export lays it (ticket 1186). */
+const turnedAlone = (project: Project) => withLaidTurn(project, undefined, frameIdIn(project))
 
 const whole = (project: Project, zoom = 1): Region => {
   const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, quarterTurnOf(project))
@@ -255,21 +259,20 @@ describe('renderProject', () => {
 
   describe('rotated a quarter clockwise (90°)', () => {
     // 3 columns × 2 rows loom, turned on its side: displayed 40 wide × 60 tall.
-    const project = projectOf('loom', 3, 2, {
+    const project = turnedAlone(projectOf('loom', 3, 2, {
       orientation: 90,
       grid: [
         [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
         [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
       ],
-    })
+    }))
 
     it('turns the Project a quarter clockwise', () => {
-      const { context, named } = recordingContext()
+      // The grid's top-left bead ends up at the displayed top-right, its first row down the right side.
+      const colorIn = (region: Region) => beadsDrawn(project, region).map(({ color }) => color)
 
-      renderProject(context, { project, region: whole(project), zoom: 1 })
-
-      // Grid (x, y) → (height − y, x): the grid's top-left bead ends up at the displayed top-right.
-      expect(named('setTransform').at(-1)!.args).toEqual([0, 1, -1, 0, 40, -0])
+      expect(colorIn({ x: 22, y: 0, width: 18, height: 18 })).toEqual(['#111111'])
+      expect(colorIn({ x: 25, y: 25, width: 10, height: 10 })).toEqual(['#222222'])
     })
 
     it('shows the grid\'s bottom-left corner at the displayed top-left', () => {
@@ -294,21 +297,17 @@ describe('renderProject', () => {
 
   describe('upside down (180°, ticket 171)', () => {
     // 3 columns × 2 rows loom, turned upside down: displayed 60 wide × 40 tall, same as unrotated.
-    const project = projectOf('loom', 3, 2, {
+    const project = turnedAlone(projectOf('loom', 3, 2, {
       orientation: 180,
       grid: [
         [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
         [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
       ],
-    })
+    }))
 
     it('reverses both axes without swapping them', () => {
-      const { context, named } = recordingContext()
-
-      renderProject(context, { project, region: whole(project), zoom: 1 })
-
-      // Grid (x, y) → (width − x, height − y): the grid's top-left bead ends up at the displayed bottom-right.
-      expect(named('setTransform').at(-1)!.args).toEqual([-1, 0, 0, -1, 60, 40])
+      // The grid's last bead ends up at the displayed top-left.
+      expect(beadsDrawn(project, { x: 3, y: 3, width: 14, height: 14 }).map(({ color }) => color)).toEqual(['#666666'])
     })
 
     it('shows the grid\'s top-left corner at the displayed bottom-right', () => {
@@ -326,21 +325,17 @@ describe('renderProject', () => {
 
   describe('rotated a quarter counterclockwise (270°, ticket 171)', () => {
     // 3 columns × 2 rows loom, turned the other way on its side: displayed 40 wide × 60 tall.
-    const project = projectOf('loom', 3, 2, {
+    const project = turnedAlone(projectOf('loom', 3, 2, {
       orientation: 270,
       grid: [
         [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
         [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
       ],
-    })
+    }))
 
     it('turns the Project a quarter counterclockwise', () => {
-      const { context, named } = recordingContext()
-
-      renderProject(context, { project, region: whole(project), zoom: 1 })
-
-      // Grid (x, y) → (y, width − x): the grid's top-left bead ends up at the displayed bottom-left.
-      expect(named('setTransform').at(-1)!.args).toEqual([0, -1, 1, 0, -0, 60])
+      // The grid's top-left bead ends up at the displayed bottom-left, its first row up the left side.
+      expect(beadsDrawn(project, { x: 0, y: 23, width: 14, height: 14 }).map(({ color }) => color)).toEqual(['#222222'])
     })
 
     it('shows the grid\'s top-left corner at the displayed bottom-left', () => {
@@ -527,14 +522,15 @@ describe('drawing only some rows again', () => {
     expect(named('rect')[0]!.args).toEqual([0, 40, 80, 30])
   })
 
-  it('turns the band with the Project: rows are columns of the surface when it is rotated', () => {
+  it('turns the band with the Canvas: its rows are columns of the surface when it is rotated', () => {
     const project = projectOf('loom', 4, 10, { orientation: 90 })
     const { context, named } = recordingContext()
 
-    renderProject(context, { project, region: whole(project), zoom: 1, rows: { first: 3, last: 4 } })
+    renderProject(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: -200, y: 0, width: 200, height: 200 }, zoom: 1, rows: { first: 3, last: 4 }, layer: 'canvas' })
 
-    // Displayed 200 wide and 80 tall; rows count from the right, so rows 3 and 4 are x 100 to 140 (200 − 100, 200 − 60).
-    expect(named('rect')[0]!.args).toEqual([100, 0, 40, 80])
+    // Rows 3 and 4 are grid y 60 to 100: turned a quarter, a column of the surface 40 wide, the rows counted from the right
+    // (x -100 to -60 on the surface, 100 to 140 in a region starting at -200).
+    expect(named('rect')[0]!.args).toEqual([100, 0, 40, 200])
   })
 
   it('scales the band with the zoom and the pixel ratio, out to whole device pixels', () => {
@@ -844,63 +840,39 @@ describe('the flat bead (exports and high contrast)', () => {
   })
 })
 
-describe('the keep-out margin on the Canvas', () => {
-  /** The clip in force at each drawn bead: whether it is an even-odd one with a rectangle at `box` cut out. */
-  function drawnWithMarginCutOut(project: Project, box: [number, number, number, number]): Map<string, boolean> {
-    const { context, calls } = recordingContext()
-    const cutOut = new Map<string, boolean>()
-    const drawBead: BeadDrawer = (_context, bead) => {
-      const clipAt = calls.map(({ name }) => name).lastIndexOf('clip')
-      const clip = calls[clipAt]
-      const corners = clip ? calls.slice(0, clipAt).filter(({ name }) => name === 'moveTo').map(({ args }) => args) : []
-      cutOut.set(`${bead.x},${bead.y}`, clip?.args[0] === 'evenodd' && corners.some(([x, y]) => x === box[0] && y === box[1]))
-    }
-    renderProject(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead })
-    return cutOut
-  }
-
-  it('hides the overhang of the beads just outside it, which a shifted peyote column hangs into its edge rows (ticket 0734)', () => {
-    const frame = { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 4 }
-    // A bead of a shifted column in the row just above the margin (row 15, the margin being rows 16 to 27): its bottom 10px lies inside the margin's outline.
-    const project = withLayers(projectOf('peyote', 4, 4), { frame: { ...frame, beads: {} }, beads: { 15: { 23: '#ff0000' } } })
-
-    const cutOut = drawnWithMarginCutOut(project, [16 * 20, 16 * 20, 12 * 20, 12 * 20 + 10])
-
-    expect(cutOut.get(`${23 * 20},${15 * 20 + 10}`)).toBe(true)
-  })
-})
-
 describe('the Frame over the Canvas (ADR 0066)', () => {
-  /** A 3 x 2 Frame at row 20, column 20 holding red in its first bead, over a Canvas with blue under the Frame and green beyond it. */
+  /** A 3 x 2 Frame at row 20, column 20 of the Canvas holding red in its first bead, over a Canvas with blue under the Frame and green beyond it. */
   function layered(): Project {
     const base = projectOf('loom', 3, 2)
     return withLayers(base, {
-frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
+      frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
       beads: { 20: { 21: '#0000ff' }, 40: { 40: '#00ff00' } },
-})
+    })
   }
-  const drawnOnCanvas = (project: Project): BeadShape[] => {
+  const drawnOnCanvas = (project: Project, layer?: RenderInput['layer']): BeadShape[] => {
     const beads: BeadShape[] = []
     const drawBead: BeadDrawer = (_context, bead) => beads.push(bead)
     // In the outlined look, where an empty Frame position is a bead: light and dark draw it a tonal tile (ticket 1001).
-    renderProject(recordingContext().context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead, theme: PROJECT_THEMES.contrast })
+    renderProject(recordingContext().context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead, theme: PROJECT_THEMES.contrast, layer })
     return beads
   }
   const colorsAt = (beads: BeadShape[], row: number, column: number) => beads.filter((bead) => bead.x === column * 20 && bead.y === row * 20).map((bead) => bead.color)
 
-  it('draws the Frame\'s own cells at their place on the Canvas, beads and empty beads alike', () => {
-    const beads = drawnOnCanvas(layered())
+  it('draws the Frame\'s own cells on its own surface, from its first position, beads and empty beads alike', () => {
+    const beads = drawnOnCanvas(layered(), frameIdIn(layered()))
 
-    expect(colorsAt(beads, 20, 20)).toEqual(['#ff0000'])
-    expect(colorsAt(beads, 21, 22)).toEqual([null])
+    expect(colorsAt(beads, 0, 0)).toEqual(['#ff0000'])
+    expect(colorsAt(beads, 1, 2)).toEqual([null])
+    // Nothing of the Canvas's.
+    expect(beads).toHaveLength(6)
   })
 
-  it('does not draw the Canvas beads under the Frame, and still draws those beyond it', () => {
-    const beads = drawnOnCanvas(layered())
+  it('draws every Canvas bead on its own surface, those under the Frame too: its opaque sheet covers them where it lies (spec 1234)', () => {
+    const beads = drawnOnCanvas(layered(), 'canvas')
 
-    expect(colorsAt(beads, 20, 21)).toEqual([null])
-    expect(beads.some((bead) => bead.color === '#0000ff')).toBe(false)
+    expect(colorsAt(beads, 20, 21)).toEqual(['#0000ff'])
     expect(colorsAt(beads, 40, 40)).toEqual(['#00ff00'])
+    expect(beads.some((bead) => bead.color === '#ff0000')).toBe(false)
   })
 
   it('draws only the Frame\'s beads when the Project is drawn on its own, from the origin', () => {
@@ -991,10 +963,10 @@ describe('the draft look zoomed out (ticket 0676)', () => {
       const canvasImage = images[0]!
       expect([canvasImage.width, canvasImage.height]).toEqual([300 * wide + (wide - 1), 300 * tall + (tall - 1)])
       expect(draws[0]!.args.slice(1)).toEqual([0, 0, canvasImage.width, canvasImage.height, 0, 0, (canvasImage.width * 20) / wide, (canvasImage.height * 20) / tall])
-      // The Frame: from its own first bead, red, at its place on the Canvas.
+      // The Frame: from its own first bead, red, at the origin of its own surface.
       const frameImage = images[1]!
       expect([frameImage.width, frameImage.height]).toEqual([100 * wide + (wide - 1), 100 * tall + (tall - 1)])
-      expect(draws[1]!.args.slice(5)).toEqual([100 * 20, 100 * 20, (frameImage.width * 20) / wide, (frameImage.height * 20) / tall])
+      expect(draws[1]!.args.slice(5)).toEqual([0, 0, (frameImage.width * 20) / wide, (frameImage.height * 20) / tall])
       expect([...frameImage.data.slice(0, 4)]).toEqual([255, 0, 0, 255])
       // Brick's row 1 starts a pixel in, half a bead; peyote's first bead is two pixels tall.
       if (wide === 2) expect(frameImage.data[frameImage.width * 4 + 3]).toBe(0)
@@ -1034,7 +1006,7 @@ describe('the draft look zoomed out (ticket 0676)', () => {
     expect(images()).toHaveLength(3)
   })
 
-  it('leaves the Canvas clear under the Frame and its margin, and draws the Frame\'s empty beads and finished rows as their look does', () => {
+  it('keeps the Canvas whole under the Frame and its margin, which its opaque sheet covers, and draws the Frame\'s empty beads and finished rows as their look does', () => {
     const images = withDraftCanvas()
     const project = withLayers(framedPiece('loom'), { ownProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
     const { context } = recordingContext()
@@ -1044,9 +1016,8 @@ describe('the draft look zoomed out (ticket 0676)', () => {
     const [canvasImage, frameImage] = images()
     const at = (image: typeof canvasImage, row: number, column: number) => [...image!.data.slice((row * image!.width + column) * 4, (row * image!.width + column) * 4 + 4)]
     expect(at(canvasImage, 0, 0)).toEqual([0, 255, 0, 255])
-    expect(at(canvasImage, 150, 150)[3]).toBe(0)
-    expect(at(canvasImage, 100 - MARGIN, 150)[3]).toBe(0)
-    expect(at(canvasImage, 100 - MARGIN - 1, 150)).toEqual([0, 255, 0, 255])
+    expect(at(canvasImage, 150, 150)).toEqual([0, 255, 0, 255])
+    expect(at(canvasImage, 100 - MARGIN, 150)).toEqual([0, 255, 0, 255])
     // Row 0 is finished: its red faded toward the drawing area. Row 1 is the current one: its empty beads as empty beads.
     const look = { ...DEFAULT_THEME, background: DEFAULT_THEME.canvas }
     const hex = (color: string) => [1, 3, 5].map((at) => parseInt(color.slice(at, at + 2), 16))

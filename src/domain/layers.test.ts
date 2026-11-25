@@ -13,6 +13,8 @@ import { withFrameSheet } from './frameSheet'
 import { changeFrame } from './changeFrame'
 import { copyLayerSelection, paintLayerSelection } from './selection'
 import { withLayers } from '../testUtils/layerFields'
+import { placeOf } from '../testUtils/placeOf'
+import { withFrameCentre } from './framePlacement'
 import { scaledBead } from '../testUtils/squareBead'
 import { findBead } from './beads'
 
@@ -54,8 +56,8 @@ describe('layerAt', () => {
 describe('a Frame cell is named by its Frame and its own row and column', () => {
   it('keeps every address whatever the Frame\'s place: moving it changes no cell\'s address', () => {
     const project = layered()
-    const moved = changed(changeFrame(project, { move: { rows: 7, columns: -5 } }, frameIdIn(project)))
-    expect(frameOf(moved)).toMatchObject({ row: 17, column: 15 })
+    const moved = changed(changeFrame(project, { move: { x: -5 * 1.5, y: 7 * 1.5 } }, frameIdIn(project)))
+    expect(placeOf(moved)).toMatchObject({ row: 17, column: 15 })
     const cell = { row: 0, column: 0, layer: FRAME_ID }
     expect(beadColorAt(moved, cell.row, cell.column, FRAME_ID)).toBe(BLUE)
     expect(layerAt(moved, cell)).toBe(FRAME_ID)
@@ -118,8 +120,8 @@ describe('onLayer', () => {
 })
 
 describe('shownBeads', () => {
-  it('lays the Frame\'s beads over the Canvas, hiding what lies under the Frame', () => {
-    expect(shownBeads(layered())).toEqual(withColors({}, [{ row: 10, column: 20, color: BLUE }, { row: 50, column: 50, color: BLUE }]))
+  it('is the Canvas\'s beads no Frame\'s sheet covers: those under the Frame and its margin are hidden (spec 1234)', () => {
+    expect(shownBeads(layered())).toEqual(withColors({}, [{ row: 50, column: 50, color: BLUE }]))
   })
 
   it('is the Canvas\'s own map when there is no Frame', () => {
@@ -158,7 +160,9 @@ describe('a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   // 48 rows of a Bead three quarters the Canvas's size: the Frame covers the first 36 Canvas rows, the other 12 it names are Canvas.
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
   const sheet = { technique: 'loom' as const, row: 0, column: 0, rows: 48, columns: 11, beads: withColors({}, [{ row: 40, column: 2, color: BLUE }]) }
-  const project: Project = withLayer(withLayers(base, { frame: sheet }), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+  const scaled = withLayer(withLayers(base, { frame: sheet }), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+  // Laid with its corner at the Canvas's first position: 11 of its beads across, 36 Canvas rows of 1.5 mm down.
+  const project: Project = withFrameCentre(scaled, { x: (11 * 0.75 * 1.5) / 2, y: 27 }, FRAME_ID)
 
   it('says a position under the drawing is the Frame\'s, and one in the strip the Canvas\'s', () => {
     expect(layerAt(project, { row: 20, column: 3 })).toBe(FRAME_ID)

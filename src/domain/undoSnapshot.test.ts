@@ -5,12 +5,11 @@ import { createProject } from './createProject'
 import { deleteAll } from './drawing'
 import { moveToRow, ownRowWayOf, rowProgressOf } from './rowProgress'
 import { rotateFrame, turnCanvasTo } from './rotate'
-import { framePlacement } from './framePlacement'
 import { replaceBead } from './projectBead'
 import { restoreSnapshot, snapshotOf, UNDO_CAP } from './undoSnapshot'
 import { mirrorSettingOf, withMirror, withMirrorMode, withMirrorPlace } from './mirror'
 import { withColors, type BeadMap } from './canvas'
-import { withFrame } from './frame'
+import { withFrame } from '../testUtils/withFrame'
 import { BEAD_CATALOG } from './beads'
 import { backgroundOf, beadsOfLayer, canvasOf, frameOf, withBackground, withLetters } from './layerRecord'
 import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
@@ -49,8 +48,10 @@ describe('snapshotOf and restoreSnapshot', () => {
     const before = rotateFrame(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined, frameIdIn(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 3, unit: 'beads' } })))!
     const turned = turnCanvasTo(withLayers(before, { beads: { 9: { 9: '#e63746' } } }), 90, { x: 3, y: -1.5 })
     const restored = restoreSnapshot(turned, snapshotOf(before))
-    expect(canvasOf(restored)).toMatchObject({ orientation: 90, origin: { x: 3, y: -1.5 }, beads: {} })
-    expect(framePlacement(restored, frameIdIn(restored))).toEqual(framePlacement(before, frameIdIn(before)))
+    // Its origin moved 3 and -1.5 bead widths on screen, in mm on the Table (spec 1234).
+    expect(canvasOf(restored)).toMatchObject({ orientation: 90, origin: canvasOf(turned).origin, beads: {} })
+    expect(canvasOf(restored).origin).toEqual({ x: expect.closeTo(3 * 1.65), y: expect.closeTo(-1.5 * 1.65) })
+    expect(frameOf(restored)).toMatchObject({ angle: frameOf(before)!.angle, centre: frameOf(before)!.centre })
     expect(rowProgressOf(restored, frameIdIn(restored))).toEqual(rowProgressOf(before, frameIdIn(before)))
     expect(ownRowWayOf(restored, undefined, frameIdIn(restored))).toEqual(ownRowWayOf(before, undefined, frameIdIn(before)))
   })
@@ -79,7 +80,7 @@ describe('snapshotOf and restoreSnapshot', () => {
   })
 
   it('restore a Project that had no Frame', () => {
-    const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined, frameIdIn(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })))
+    const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined, FRAME_ID)
     const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 }, frameIdIn(before))
 
     expect(frameOf(restoreSnapshot(framed, snapshotOf(before)))).toBeUndefined()

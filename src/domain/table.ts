@@ -1,61 +1,54 @@
-import { nearestQuarterTurn, normalizedOrientation, settledOrientation } from './canvasOrientation'
+import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
 import type { FrameRef, Rotation } from './grid'
 import { canvasOf, frameById, type Layered } from './layerRecord'
 
-// The table (spec 1182, ticket 1185): the one plane pan and zoom move. Each layer has a placement on it, an angle in
-// degrees and a position: the Canvas's orientation and origin, the Frame's own angle and centre (framePlacement.ts).
-// A file keeps the Canvas's origin as the table's own; in a session a turn about a pivot moves it (ticket 1188).
+// The Table (spec 1234, ticket 1237): the one plane every layer lies on, measured in mm, which pan and zoom move. Each
+// layer lies on it by a place and a quarter turn: the Canvas by its origin and orientation, a Frame by its centre and
+// angle (framePlacement.ts). The Table turn shows the whole Table turned on screen, every layer together; it is a view.
 
-/** A point on the table, from the Canvas's origin along the table's own axes, in the Canvas's bead widths. */
+/** A point on the Table, in mm along its own axes (the Table before the Table turn); the view's own points
+ * (framePlacement.ts) are in the Canvas's bead widths, as laid on screen. */
 export interface TablePoint {
   x: number
   y: number
 }
 
-/** A layer's placement on the table: its angle in degrees clockwise and where it sits. */
-export interface Placement {
-  angle: number
-  at: TablePoint
+/** A point turned `degrees` clockwise about the origin, with y running down, exact at a quarter turn. */
+export function turnedPoint({ x, y }: TablePoint, degrees: number): TablePoint {
+  const radians = (degrees * Math.PI) / 180
+  const quarter = degrees % 90 === 0
+  const cos = quarter ? Math.round(Math.cos(radians)) : Math.cos(radians)
+  const sin = quarter ? Math.round(Math.sin(radians)) : Math.sin(radians)
+  return { x: x * cos - y * sin || 0, y: x * sin + y * cos || 0 }
 }
 
-/** The Canvas's placement: its orientation, its origin the table's. */
-export function canvasPlacement(project: Layered): Placement {
-  const { orientation, origin } = canvasOf(project)
-  return { angle: orientation, at: origin ? { ...origin } : { x: 0, y: 0 } }
+/** A length in mm kept to a millionth of a mm, as a file stores a centre: what a read centre is rounded to, so the Project
+ * reads back the same as it is written (ticket 1237). */
+export function roundedMm(value: number): number {
+  return Math.round(value * 1e6) / 1e6 || 0
 }
 
-/** The Frame's own angle on the table (spec 1182); with no Frame, the Canvas's, as a new Frame would lie. */
-export function frameAngleOf(project: Layered, frame: FrameRef): number {
-  return frameById(project, frame)?.angle ?? canvasOf(project).orientation
+/** The Table turn (spec 1234): how far the whole Table is shown turned, in degrees clockwise, 0 when upright. */
+export function tableTurnOf(project: Layered): number {
+  return canvasOf(project).tableTurn ?? 0
 }
 
-/** The quarter turn the Frame's angle is nearest: what it is read by (its Row direction as seen, and the Frame's own
- * axis and end worked from it, ticket 1185). Its lean is only the view's. */
+/** The Canvas's angle on screen: its own quarter turn on the Table and the Table turn.
+ * @internal Tests ask the Canvas angle on screen directly.
+ */
+export function canvasAngleOf(project: Layered): number {
+  return normalizedOrientation(canvasOf(project).orientation + tableTurnOf(project))
+}
+
+/** The Frame's own quarter turn on the Table (spec 1234), 0 for a Frame the Project lacks: what its Row direction as seen,
+ * its rulers, its sizes as seen and its exports go by. The Table turn changes none of them. */
 export function frameQuarterTurnOf(project: Layered, frame: FrameRef): Rotation {
-  return nearestQuarterTurn(frameAngleOf(project, frame))
+  return nearestQuarterTurn(frameById(project, frame)?.angle ?? 0)
 }
 
-/** Where a Frame twisted to `angle` comes to rest as the fingers lift (spec 1182, ticket 1190): on the Canvas's angle,
- * or a quarter off it, within about 10°, else on the screen's nearest quarter turn within about 10°, else leaning. */
-export function settledFrameAngle(project: Layered, angle: number): number {
-  return settledOrientation(angle, [canvasOf(project).orientation, 0])
-}
-
-/** Whether the Frame lies alike with the Canvas (spec 1182): at its angle and on whole positions, its cells on the
- * Canvas's (a Custom frame's turned layout is built on its grid, so whole quarters off still do). What every rule that
- * trades beads, steps by whole positions or needs plain rows asks; true with no Frame. */
-export function lieAlike(project: Layered, ref: FrameRef): boolean {
-  const frame = frameById(project, ref)
-  if (!frame) return true
-  const off = normalizedOrientation(frame.angle - canvasOf(project).orientation)
-  const onGrid = frame.shape ? off % 90 === 0 : off === 0
-  return onGrid && !frame.centre && Number.isInteger(frame.row) && Number.isInteger(frame.column)
-}
-
-/** Whether the Frame lies on the Canvas's grid (ticket 1188): whole quarter turns off its angle, on whole positions, so
- * it covers Canvas positions (its footprint) and its margin is theirs. Off it, it is only a sheet laid over the
- * Canvas, hiding what is under it on screen and covering no position. False with no Frame. */
-export function liesOnGrid(project: Layered, ref: FrameRef): boolean {
-  const frame = frameById(project, ref)
-  return !!frame && !frame.centre && normalizedOrientation(frame.angle - canvasOf(project).orientation) % 90 === 0
+/** The Frame's angle on screen: its own quarter turn on the Table and the Table turn; with no Frame, the Canvas's, as a
+ * new Frame would lie. */
+export function frameAngleOf(project: Layered, frame: FrameRef): number {
+  const held = frameById(project, frame)
+  return held ? normalizedOrientation(held.angle + tableTurnOf(project)) : canvasAngleOf(project)
 }

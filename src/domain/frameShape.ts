@@ -8,7 +8,6 @@ import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import type { SettingSpec } from './settingSpec'
 import { beadCell, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, withCell, type Technique, type Weave } from './weave'
 import { type Layered, frameById } from './layerRecord'
-import { lieAlike } from './table'
 
 /** The Frame shapes (spec 0590, ADR 0077, ADR 0079): what specialises a Frame into a Custom frame. A Triangle and a
  * Warped Square in Rounds (ticket 0592), a Star and a Kaleidocycle of such parts, a Kite in Rows from its point (ticket
@@ -35,7 +34,7 @@ type FrameSetting = SettingSpec<FrameSettingName>
 
 /** How many quarter turns clockwise a Frame lies at on the Canvas (Rotate Frame, tickets 0594, 0667, ADR 0079): a Custom
  * frame's layout, or a Frame's own grid, turned. One setting for both. */
-export type QuarterTurns = 1 | 2 | 3
+export type QuarterTurns = 0 | 1 | 2 | 3
 
 /** What a Custom frame's layout is built from: its Frame shape, its settings, how far it is turned, and the cell of its
  * layer's Bead, whose depth a round shape packs its beads by (ticket 0723). */
@@ -242,11 +241,6 @@ function rulesOf(frame: Pick<FrameSheet, 'shape'>): FrameRules {
   return frameShapeOf(frame) ?? FRAME
 }
 
-/** What a Frame that does not lie alike with the Canvas does not offer (tickets 0667, 1016, 1185): what takes the
- * Canvas's positions as its own rows and columns, which they no longer are. Lying alike again, it offers them again. A
- * resize it offers, as seen (`changeFrame`). */
-const ALIKE_ONLY: ReadonlySet<FrameAction> = new Set(['remove-line', 'from-selection'])
-
 /** Whether a Frame without a shape lies turned on the Canvas's grid (ticket 0667): its own grid, not a layout, drawn a
  * quarter turn or more round, so it is laid, sized and handled by the rectangle it lies in. */
 export function turnedGrid(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>): boolean {
@@ -256,7 +250,7 @@ export function turnedGrid(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>): b
 /** Whether the Project's Frame lets the weaver do this to it; with no Frame, what a Frame without a shape would. */
 export function frameAllows(project: Layered | undefined, action: FrameAction, ref: FrameRef): boolean {
   const frame = frameById(project, ref)
-  return rulesOf(frame ?? {}).allows.has(action) && !(frame && !lieAlike(project!, ref) && ALIKE_ONLY.has(action))
+  return rulesOf(frame ?? {}).allows.has(action)
 }
 
 /** The Techniques a Frame may be woven in (ADR 0079): its Frame shape's, or any; with no Frame, any. */

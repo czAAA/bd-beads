@@ -11,7 +11,7 @@ import { framesFullReason } from '../../i18n/framesFullReason'
 import { seenSize } from '../../domain/frameOrientation'
 import { settingValuesOf } from '../../domain/frameShape'
 import type { FrameId } from '../../domain/grid'
-import { frameIdOf, framesOf, NO_FRAME } from '../../domain/layerRecord'
+import { frameIdOf, framesOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { frameLabel } from '../../i18n/frameLabel'
 import { plural } from '../../i18n/plural'
@@ -38,7 +38,7 @@ const frames = computed(() => framesOf(props.project))
 const full = computed(() => framesFull(props.project))
 const fullReason = computed(() => framesFullReason(t.value, locale.value))
 /** Fit a Frame to the drawing needs something drawn that no Frame covers. */
-const nothingToFit = computed(() => fitToDrawing(props.project, NO_FRAME) === undefined)
+const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 
 /** A Frame's folded summary: its Technique and size, "Peyote · 11 × 100", or a Custom frame's "Kite · 9 rows". */
 function summaryOf(frame: ReturnType<typeof framesOf>[number]): string {

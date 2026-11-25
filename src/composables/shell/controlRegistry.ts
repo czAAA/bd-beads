@@ -14,7 +14,6 @@ import { framesFull } from '../../domain/frameLimit'
 import { framesFullReason } from '../../i18n/framesFullReason'
 import { ownEdge } from '../../domain/frameOrientation'
 import type { FrameRef } from '../../domain/grid'
-import { lieAlike } from '../../domain/table'
 import { frameWeave } from '../../domain/layerWeave'
 import { pillTileKey, type PillTile } from '../../domain/toolPill'
 
@@ -465,8 +464,7 @@ export const CONTROLS: readonly ControlAction[] = [
     name: (t) => t.tools.removeLineButton,
     body: (t) => t.tooltips.removeLine,
     enabled: (deps) => deps.canRemoveSelectedLine(),
-    // A Frame that does not lie alike with the Canvas waits, saying why (ticket 1188).
-    disabledBody: (t, deps) => (frameOf(deps.activeProject()) && !lieAlike(deps.activeProject()!, frameOfDeps(deps, deps.activeProject()!)) ? t.tooltips.removeLineNotAlike : t.tooltips.removeLineDisabled),
+    disabledBody: (t) => t.tooltips.removeLineDisabled,
     group: 'edit',
     chords: [{ key: ['Delete', 'Backspace'], shift: true, label: 'Del' }],
     run: (deps) => {

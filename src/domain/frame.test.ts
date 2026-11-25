@@ -1,7 +1,6 @@
-import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors, sameFrame } from './canvas'
-import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, snapColumn, snapRow } from './frame'
+import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, snapColumn, snapRow } from './frame'
 import { bareProject } from '../testUtils/layerFields'
 
 describe('snapRow', () => {
@@ -26,43 +25,38 @@ describe('snapColumn (ticket 0734)', () => {
   })
 })
 
+// A Frame's rectangles are in its own rows and columns, whose first are 0 (spec 1234, ticket 1237): `cell` is the bead under
+// the pointer in them too, and the rectangle gives how far the Frame's own first moved.
 describe('frameWithEdges', () => {
-  const frame = { row: 4, column: 4, rows: 6, columns: 6 }
+  const frame = { rows: 6, columns: 6 }
 
   it('drags one edge, or two for a corner, to the bead under the pointer', () => {
-    expect(frameWithEdges({ technique: 'loom' }, frame, ['left'], { row: 0, column: 1 })).toEqual({ row: 4, column: 1, rows: 6, columns: 9 })
-    expect(frameWithEdges({ technique: 'loom' }, frame, ['bottom', 'right'], { row: 12, column: 12 })).toEqual({ row: 4, column: 4, rows: 9, columns: 9 })
-    expect(frameWithEdges({ technique: 'loom' }, frame, ['top', 'left'], { row: 2, column: 2 })).toEqual({ row: 2, column: 2, rows: 8, columns: 8 })
+    expect(frameWithEdges({ technique: 'loom' }, frame, ['left'], { row: -4, column: -3 })).toEqual({ row: 0, column: -3, rows: 6, columns: 9 })
+    expect(frameWithEdges({ technique: 'loom' }, frame, ['bottom', 'right'], { row: 8, column: 8 })).toEqual({ row: 0, column: 0, rows: 9, columns: 9 })
+    expect(frameWithEdges({ technique: 'loom' }, frame, ['top', 'left'], { row: -2, column: -2 })).toEqual({ row: -2, column: -2, rows: 8, columns: 8 })
   })
 
   it('never lets an edge pass the one opposite it: one bead is the least', () => {
-    expect(frameWithEdges({ technique: 'loom' }, frame, ['left'], { row: 0, column: 99 })).toEqual({ row: 4, column: 9, rows: 6, columns: 1 })
-    expect(frameWithEdges({ technique: 'loom' }, frame, ['bottom'], { row: -50, column: 0 })).toEqual({ row: 4, column: 4, rows: 1, columns: 6 })
+    expect(frameWithEdges({ technique: 'loom' }, frame, ['left'], { row: -4, column: 95 })).toEqual({ row: 0, column: 5, rows: 6, columns: 1 })
+    expect(frameWithEdges({ technique: 'loom' }, frame, ['bottom'], { row: -54, column: -4 })).toEqual({ row: 0, column: 0, rows: 1, columns: 6 })
   })
 
   it('keeps the top on an even row for brick stitch, with the bottom where it was', () => {
-    const brick = { row: 4, column: 0, rows: 6, columns: 3 }
-    expect(frameWithEdges({ technique: 'brick' }, brick, ['top'], { row: 1, column: 0 })).toEqual({ row: 0, column: 0, rows: 10, columns: 3 })
+    const brick = { rows: 6, columns: 3 }
+    expect(frameWithEdges({ technique: 'brick' }, brick, ['top'], { row: -3, column: 0 })).toEqual({ row: -4, column: 0, rows: 10, columns: 3 })
   })
 
   it('keeps the left on an even column for peyote, with the right where it was (ticket 0734)', () => {
-    const peyote = { row: 0, column: 4, rows: 3, columns: 6 }
-    expect(frameWithEdges({ technique: 'peyote' }, peyote, ['left'], { row: 0, column: 1 })).toEqual({ row: 0, column: 0, rows: 3, columns: 10 })
-    expect(frameWithEdges({ technique: 'peyote' }, peyote, ['top'], { row: -1, column: 4 })).toEqual({ row: -1, column: 4, rows: 4, columns: 6 })
-  })
-})
-
-describe('movedFrame', () => {
-  it('moves by whole Canvas positions, negative included, with no stagger kept (ticket 492)', () => {
-    expect(movedFrame({ row: 0, column: 0, rows: 3, columns: 4 }, -2, 5)).toEqual({ row: -2, column: 5, rows: 3, columns: 4 })
-    expect(movedFrame({ row: 2, column: 0, rows: 3, columns: 4 }, 1, 1)).toEqual({ row: 3, column: 1, rows: 3, columns: 4 })
+    const peyote = { rows: 3, columns: 6 }
+    expect(frameWithEdges({ technique: 'peyote' }, peyote, ['left'], { row: 0, column: -3 })).toEqual({ row: 0, column: -4, rows: 3, columns: 10 })
+    expect(frameWithEdges({ technique: 'peyote' }, peyote, ['top'], { row: -1, column: 0 })).toEqual({ row: -1, column: 0, rows: 4, columns: 6 })
   })
 })
 
 describe('frameWithSize', () => {
   it('changes the size from the top-left corner and never below one bead', () => {
-    expect(frameWithSize({ row: 3, column: 4, rows: 5, columns: 6 }, 10, 2)).toEqual({ row: 3, column: 4, rows: 2, columns: 10 })
-    expect(frameWithSize({ row: 3, column: 4, rows: 5, columns: 6 }, 0, -3)).toEqual({ row: 3, column: 4, rows: 1, columns: 1 })
+    expect(frameWithSize(10, 2)).toEqual({ row: 0, column: 0, rows: 2, columns: 10 })
+    expect(frameWithSize(0, -3)).toEqual({ row: 0, column: 0, rows: 1, columns: 1 })
   })
 })
 
@@ -73,31 +67,31 @@ describe('fitToDrawing', () => {
   ])
 
   it('wraps every bead drawn', () => {
-    expect(fitToDrawing(bareProject({ technique: 'loom', beads }), frameIdIn(bareProject({ technique: 'loom', beads })))).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
+    expect(fitToDrawing(bareProject({ technique: 'loom', beads }))).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
   it('leaves out beads the current Frame covers', () => {
     const current = { technique: 'loom' as const, row: 20, column: 20, rows: 3, columns: 3, beads: {} }
     const withHidden = withColors(beads, [{ row: 21, column: 21, color: '#f00' }])
-    expect(fitToDrawing(bareProject({ technique: 'loom', beads: withHidden, frame: current }), frameIdIn(bareProject({ technique: 'loom', beads: withHidden, frame: current })))).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
+    expect(fitToDrawing(bareProject({ technique: 'loom', beads: withHidden, frame: current }))).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
-  it('wraps the Frame\'s own beads with the Canvas beads that show, and leaves out those the Frame covers', () => {
+  it('wraps the Canvas beads that show only, leaving out those a Frame covers and the Frame\'s own beads (spec 1234)', () => {
     const frame = { technique: 'loom' as const, row: 20, column: 20, rows: 5, columns: 5, beads: withColors({}, [{ row: 4, column: 2, color: '#0f0' }]) }
     const covered = withColors(beads, [{ row: 21, column: 21, color: '#f00' }])
-    expect(fitToDrawing(bareProject({ technique: 'loom', beads: covered, frame }), frameIdIn(bareProject({ technique: 'loom', beads: covered, frame })))).toEqual({ row: 1, column: -3, rows: 24, columns: 26 })
+    expect(fitToDrawing(bareProject({ technique: 'loom', beads: covered, frame }))).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
   it('starts on an even row where rows alternate, keeping the last row where it is', () => {
-    expect(fitToDrawing(bareProject({ technique: 'brick', beads }), frameIdIn(bareProject({ technique: 'brick', beads })))).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
+    expect(fitToDrawing(bareProject({ technique: 'brick', beads }))).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
   })
 
   it('starts on an even column where columns alternate, keeping the last column where it is (ticket 0734)', () => {
-    expect(fitToDrawing(bareProject({ technique: 'peyote', beads }), frameIdIn(bareProject({ technique: 'peyote', beads })))).toEqual({ row: 1, column: -4, rows: 6, columns: 13 })
+    expect(fitToDrawing(bareProject({ technique: 'peyote', beads }))).toEqual({ row: 1, column: -4, rows: 6, columns: 13 })
   })
 
   it('is nothing for an empty canvas', () => {
-    expect(fitToDrawing(bareProject({ technique: 'loom', beads: {} }), frameIdIn(bareProject({ technique: 'loom', beads: {} })))).toBeUndefined()
+    expect(fitToDrawing(bareProject({ technique: 'loom', beads: {} }))).toBeUndefined()
   })
 })
 
@@ -109,62 +103,65 @@ it('compares frames by their position and size', () => {
 })
 
 describe('frameWithEdgeStep', () => {
-  const frame = { row: 4, column: 4, rows: 6, columns: 6 }
+  const frame = { rows: 6, columns: 6 }
 
   it('moves one edge a bead out or in and leaves the other three', () => {
-    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'left', 1)).toEqual({ row: 4, column: 3, rows: 6, columns: 7 })
-    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'left', -1)).toEqual({ row: 4, column: 5, rows: 6, columns: 5 })
-    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'right', 1)).toEqual({ row: 4, column: 4, rows: 6, columns: 7 })
-    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'right', -1)).toEqual({ row: 4, column: 4, rows: 6, columns: 5 })
-    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'top', 1)).toEqual({ row: 3, column: 4, rows: 7, columns: 6 })
-    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'top', -1)).toEqual({ row: 5, column: 4, rows: 5, columns: 6 })
-    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'bottom', 1)).toEqual({ row: 4, column: 4, rows: 7, columns: 6 })
-    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'bottom', -1)).toEqual({ row: 4, column: 4, rows: 5, columns: 6 })
+    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'left', 1)).toEqual({ row: 0, column: -1, rows: 6, columns: 7 })
+    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'left', -1)).toEqual({ row: 0, column: 1, rows: 6, columns: 5 })
+    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'right', 1)).toEqual({ row: 0, column: 0, rows: 6, columns: 7 })
+    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'right', -1)).toEqual({ row: 0, column: 0, rows: 6, columns: 5 })
+    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'top', 1)).toEqual({ row: -1, column: 0, rows: 7, columns: 6 })
+    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'top', -1)).toEqual({ row: 1, column: 0, rows: 5, columns: 6 })
+    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'bottom', 1)).toEqual({ row: 0, column: 0, rows: 7, columns: 6 })
+    expect(frameWithEdgeStep({ technique: 'loom' }, frame, 'bottom', -1)).toEqual({ row: 0, column: 0, rows: 5, columns: 6 })
   })
 
   it('stops an edge at four beads (ticket 473), but still lets a smaller Frame grow', () => {
-    const four = { row: 2, column: 2, rows: 4, columns: 4 }
+    const four = { rows: 4, columns: 4 }
     for (const edge of ['top', 'bottom', 'left', 'right'] as const) expect(frameWithEdgeStep({ technique: 'loom' }, four, edge, -1)).toBe(four)
-    const one = { row: 2, column: 2, rows: 1, columns: 1 }
-    expect(frameWithEdgeStep({ technique: 'loom' }, one, 'right', 1)).toEqual({ ...one, columns: 2 })
+    const one = { rows: 1, columns: 1 }
+    expect(frameWithEdgeStep({ technique: 'loom' }, one, 'right', 1)).toEqual({ row: 0, column: 0, rows: 1, columns: 2 })
   })
 
   it('moves the top edge by a pair of rows where rows alternate, so the first row stays even', () => {
-    const brick = { row: 4, column: 0, rows: 6, columns: 3 }
-    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'top', 1)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
-    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'top', -1)).toEqual({ row: 6, column: 0, rows: 4, columns: 3 })
-    expect(frameWithEdgeStep({ technique: 'brick' }, { ...brick, rows: 5 }, 'top', -1)).toEqual({ ...brick, rows: 5 })
-    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'bottom', 1)).toEqual({ row: 4, column: 0, rows: 7, columns: 3 })
+    const brick = { rows: 6, columns: 3 }
+    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'top', 1)).toEqual({ row: -2, column: 0, rows: 8, columns: 3 })
+    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'top', -1)).toEqual({ row: 2, column: 0, rows: 4, columns: 3 })
+    const five = { ...brick, rows: 5 }
+    expect(frameWithEdgeStep({ technique: 'brick' }, five, 'top', -1)).toBe(five)
+    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'bottom', 1)).toEqual({ row: 0, column: 0, rows: 7, columns: 3 })
   })
 
   it('moves the left edge by a pair of columns where columns alternate, so the first column stays even (ticket 0734)', () => {
-    const peyote = { row: 0, column: 4, rows: 3, columns: 6 }
-    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'left', 1)).toEqual({ row: 0, column: 2, rows: 3, columns: 8 })
-    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'left', -1)).toEqual({ row: 0, column: 6, rows: 3, columns: 4 })
-    expect(frameWithEdgeStep({ technique: 'peyote' }, { ...peyote, columns: 5 }, 'left', -1)).toEqual({ ...peyote, columns: 5 })
-    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'right', 1)).toEqual({ row: 0, column: 4, rows: 3, columns: 7 })
-    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'top', 1)).toEqual({ row: -1, column: 4, rows: 4, columns: 6 })
+    const peyote = { rows: 3, columns: 6 }
+    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'left', 1)).toEqual({ row: 0, column: -2, rows: 3, columns: 8 })
+    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'left', -1)).toEqual({ row: 0, column: 2, rows: 3, columns: 4 })
+    const five = { ...peyote, columns: 5 }
+    expect(frameWithEdgeStep({ technique: 'peyote' }, five, 'left', -1)).toBe(five)
+    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'right', 1)).toEqual({ row: 0, column: 0, rows: 3, columns: 7 })
+    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'top', 1)).toEqual({ row: -1, column: 0, rows: 4, columns: 6 })
   })
 })
 
 describe('frameResizedAround (ticket 473)', () => {
-  const frame = { row: 10, column: 10, rows: 10, columns: 10 }
+  const frame = { rows: 10, columns: 10 }
+  const same = { row: 0, column: 0, rows: 10, columns: 10 }
 
   it('grows and shrinks both edges of a side evenly, the odd bead going right or down', () => {
-    expect(frameResizedAround({ technique: 'loom' }, frame, 20, 14)).toEqual({ row: 8, column: 5, rows: 14, columns: 20 })
-    expect(frameResizedAround({ technique: 'loom' }, frame, 13, 7)).toEqual({ row: 11, column: 9, rows: 7, columns: 13 })
-    expect(frameResizedAround({ technique: 'loom' }, frame, 10, 10)).toEqual(frame)
+    expect(frameResizedAround({ technique: 'loom' }, frame, 20, 14)).toEqual({ row: -2, column: -5, rows: 14, columns: 20 })
+    expect(frameResizedAround({ technique: 'loom' }, frame, 13, 7)).toEqual({ row: 1, column: -1, rows: 7, columns: 13 })
+    expect(frameResizedAround({ technique: 'loom' }, frame, 10, 10)).toEqual(same)
   })
 
   it('moves the top edge by whole pairs of rows where rows alternate', () => {
-    expect(frameResizedAround({ technique: 'brick' }, frame, 10, 20)).toEqual({ row: 6, column: 10, rows: 20, columns: 10 })
-    expect(frameResizedAround({ technique: 'brick' }, frame, 10, 12)).toEqual({ row: 10, column: 10, rows: 12, columns: 10 })
+    expect(frameResizedAround({ technique: 'brick' }, frame, 10, 20)).toEqual({ row: -4, column: 0, rows: 20, columns: 10 })
+    expect(frameResizedAround({ technique: 'brick' }, frame, 10, 12)).toEqual({ ...same, rows: 12 })
   })
 
   it('moves the left edge by whole pairs of columns where columns alternate (ticket 0734)', () => {
-    expect(frameResizedAround({ technique: 'peyote' }, frame, 20, 10)).toEqual({ row: 10, column: 6, rows: 10, columns: 20 })
-    expect(frameResizedAround({ technique: 'peyote' }, frame, 12, 10)).toEqual({ row: 10, column: 10, rows: 10, columns: 12 })
-    expect(frameResizedAround({ technique: 'peyote' }, frame, 10, 20)).toEqual({ row: 5, column: 10, rows: 20, columns: 10 })
+    expect(frameResizedAround({ technique: 'peyote' }, frame, 20, 10)).toEqual({ row: 0, column: -4, rows: 10, columns: 20 })
+    expect(frameResizedAround({ technique: 'peyote' }, frame, 12, 10)).toEqual({ ...same, columns: 12 })
+    expect(frameResizedAround({ technique: 'peyote' }, frame, 10, 20)).toEqual({ row: -5, column: 0, rows: 20, columns: 10 })
   })
 
   it('keeps each side between four and 999 beads', () => {
@@ -195,33 +192,32 @@ describe('a Drop (tickets 477, 0691)', () => {
     const peyote2 = { technique: 'peyote' as const, techniqueSettings: { peyoteDrop: 2 } }
     expect(snapColumn(peyote2, 7)).toBe(4)
     expect(snapColumn(peyote2, -1)).toBe(-4)
-    expect(frameWithEdges(peyote2, { row: 0, column: 8, rows: 4, columns: 12 }, ['left'], { row: 0, column: 3 })).toEqual({ row: 0, column: 0, rows: 4, columns: 20 })
-    const frame = { row: 0, column: 8, rows: 12, columns: 12 }
-    expect(frameWithEdgeStep({ technique: 'peyote', techniqueSettings: { peyoteDrop: 3 } }, frame, 'left', 1)).toEqual({ row: 0, column: 2, rows: 12, columns: 18 })
+    expect(frameWithEdges(peyote2, { rows: 4, columns: 12 }, ['left'], { row: 0, column: -5 })).toEqual({ row: 0, column: -8, rows: 4, columns: 20 })
+    const frame = { rows: 12, columns: 12 }
+    expect(frameWithEdgeStep({ technique: 'peyote', techniqueSettings: { peyoteDrop: 3 } }, frame, 'left', 1)).toEqual({ row: 0, column: -6, rows: 12, columns: 18 })
   })
 
   it('drags the top edge by a whole cycle of the Frame\'s own rows', () => {
-    const frame = { row: 8, column: 0, rows: 12, columns: 4 }
-    expect(frameWithEdges(block3, frame, ['top'], { row: 3, column: 0 })).toEqual({ row: 2, column: 0, rows: 18, columns: 4 })
+    const frame = { rows: 12, columns: 4 }
+    expect(frameWithEdges(block3, frame, ['top'], { row: -5, column: 0 })).toEqual({ row: -6, column: 0, rows: 18, columns: 4 })
   })
 
   it('steps the top edge by a whole cycle and the bottom by a row', () => {
-    const frame = { row: 8, column: 0, rows: 12, columns: 12 }
-    expect(frameWithEdgeStep(block3, frame, 'top', 1)).toEqual({ row: 2, column: 0, rows: 18, columns: 12 })
-    expect(frameWithEdgeStep(block3, frame, 'top', -1)).toEqual({ row: 14, column: 0, rows: 6, columns: 12 })
-    expect(frameWithEdgeStep(block3, frame, 'bottom', 1)).toEqual({ row: 8, column: 0, rows: 13, columns: 12 })
+    const frame = { rows: 12, columns: 12 }
+    expect(frameWithEdgeStep(block3, frame, 'top', 1)).toEqual({ row: -6, column: 0, rows: 18, columns: 12 })
+    expect(frameWithEdgeStep(block3, frame, 'top', -1)).toEqual({ row: 6, column: 0, rows: 6, columns: 12 })
+    expect(frameWithEdgeStep(block3, frame, 'bottom', 1)).toEqual({ row: 0, column: 0, rows: 13, columns: 12 })
   })
 
   it('resizes round the middle with the top edge moving by whole cycles', () => {
-    const frame = { row: 12, column: 10, rows: 12, columns: 12 }
-    const resized = frameResizedAround(block3, frame, 12, 30)
+    const resized = frameResizedAround(block3, { rows: 12, columns: 12 }, 12, 30)
     expect(resized.rows).toBe(30)
-    expect(resized.row % 6).toBe(0)
+    expect(resized.row).toBe(-6)
   })
 
   it('fits to the drawing from a legal row', () => {
     const beads = withColors({}, [{ row: 9, column: 1, color: '#111111' }, { row: 13, column: 4, color: '#111111' }])
-    expect(fitToDrawing(bareProject({ ...block2, beads }), frameIdIn(bareProject({ ...block2, beads })))).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
+    expect(fitToDrawing(bareProject({ ...block2, beads }))).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
   })
 })
 

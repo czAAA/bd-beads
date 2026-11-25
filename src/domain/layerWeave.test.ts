@@ -16,7 +16,8 @@ const BLUE = '#2f6fed'
 /** A loom Canvas in 8/0 with a 4 by 4 loom Frame at row 2, column 3, in 8/0 or in a Bead of its own. */
 function framed(frameBead = round8) {
   const made = withLayers(createProject({ name: 'Two Beads', technique: 'loom', beadId: round8.id, size: { width: 4, height: 4, unit: 'beads' } }), { bead: squareBead(round8) })
-  return withLayer(withLayers(made, { frame: { ...frameOf(made)!, row: 2, column: 3 } }), FRAME_ID, { bead: squareBead(frameBead) })
+  const { centre: _centre, ...sheet } = frameOf(made)!
+  return withLayer(withLayers(made, { frame: { ...sheet, row: 2, column: 3 } }), FRAME_ID, { bead: squareBead(frameBead) })
 }
 
 describe('a distance in the Frame read on the Canvas through millimetres (ADR 0079, ticket 0665)', () => {
@@ -24,7 +25,7 @@ describe('a distance in the Frame read on the Canvas through millimetres (ADR 00
     expect(frameScale(framed(round15), frameIdIn(framed(round15)))).toBe(0.5)
     expect(frameScale(framed(), frameIdIn(framed()))).toBe(1)
     expect(frameScale(withLayers(framed(round15), { frame: undefined }), frameIdIn(withLayers(framed(round15), { frame: undefined })))).toBe(1)
-    expect(placedFrame(framed(round15), frameIdIn(framed(round15)))).toMatchObject({ row: 2, column: 3, technique: 'loom', scale: 0.5 })
+    expect(placedFrame(framed(round15), frameIdIn(framed(round15)))).toMatchObject({ technique: 'loom', scale: 0.5 })
   })
 
   it('takes the layers as alike only woven alike in a Bead of the same size', () => {

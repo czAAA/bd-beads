@@ -1,5 +1,4 @@
 import type { FrameRef } from './grid'
-import { nearestQuarterTurn } from './canvasOrientation'
 import { frameShapeOf, rowOrderOf } from './frameShape'
 import { type Layered, frameById } from './layerRecord'
 import { frameWeave } from './layerWeave'
@@ -7,7 +6,6 @@ import type { RowProgress } from './project'
 import type { RowOrder } from './rowOrder'
 import { currentPass, frameRowOrder, ownRowWayOf, ROW_WAYS, rowProgressOf, rowProgressStarted } from './rowProgress'
 import type { SeenWay } from './rowWays'
-import { frameQuarterTurnOf } from './table'
 import type { Technique } from './weave'
 
 // The rows already woven when a Frame change would alter what they are (spec 1182, ticket 1184): Rotate Frame and a
@@ -75,12 +73,6 @@ function wovenLinesOf(project: Layered, ref: FrameRef): WovenLines | undefined {
  * one place the rule lives. */
 export function rotateFrameQuestion(project: Layered, ref: FrameRef): RotateFrameQuestion | undefined {
   return wovenLinesOf(project, ref)
-}
-
-/** What a Frame twist come to rest at `angle` asks first (ticket 1190): Rotate Frame's question where it settles on
- * another quarter turn as seen, nothing where it leans about the one it was read by. */
-export function twistFrameQuestion(project: Layered, angle: number, ref: FrameRef): RotateFrameQuestion | undefined {
-  return nearestQuarterTurn(angle) === frameQuarterTurnOf(project, ref) ? undefined : rotateFrameQuestion(project, ref)
 }
 
 /** What a change of the Frame's Technique to `technique` asks first (ticket 1184), or nothing where it goes at once:

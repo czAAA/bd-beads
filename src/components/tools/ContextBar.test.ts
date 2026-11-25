@@ -7,7 +7,7 @@ import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import { paintAt } from '../../testUtils/layers'
-import { withFrame } from '../../domain/frame'
+import { withFrame } from '../../testUtils/withFrame'
 import { fillBlanks } from '../../domain/fillBlanks'
 import type { Selection } from '../../domain/selection'
 import { en } from '../../i18n/en'
@@ -240,7 +240,7 @@ describe('ContextBar', () => {
     await wrapper.get('[data-testid="context-bar-export"]').trigger('click')
     expect(wrapper.emitted('export-selection')).toHaveLength(1)
 
-    const custom = withFrameSheet(drawn, { row: 0, column: 0, rows: 6, columns: 6, technique: 'loom', shape: 'triangle', beads: {} }, { frame: frameIdIn(drawn) })
+    const custom = withFrameSheet(drawn, { rows: 6, columns: 6, technique: 'loom', shape: 'triangle', beads: {} }, { frame: frameIdIn(drawn) })
     const onCustom = mount(ContextBar, { props: { ...props, project: custom, selection: { ...selection, layer: frameIdIn(custom) } } })
     await arm()
     expect(onCustom.get('[data-testid="context-bar-export"]').attributes('aria-disabled')).toBe('true')

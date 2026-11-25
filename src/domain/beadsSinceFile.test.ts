@@ -8,7 +8,7 @@ import type { FrameSheet } from './canvas'
 
 const RED = '#e63746'
 const BLUE = '#3366cc'
-const sheet = (beads: BeadMap, place: Partial<FrameSheet> = {}): FrameSheet => ({ row: 0, column: 0, rows: 10, columns: 10, technique: 'loom', beads, ...place })
+const sheet = (beads: BeadMap, place: Partial<FrameSheet> = {}): FrameSheet => ({ rows: 10, columns: 10, technique: 'loom', beads, ...place })
 const painted = (cells: [number, number][], color = RED): BeadMap => withColors({}, cells.map(([row, column]) => ({ row, column, color })))
 
 describe('changedBeadCount', () => {
@@ -52,7 +52,7 @@ describe('changedBeadCount', () => {
   it('skips a Frame that moved, changed size or turned: no drawing', () => {
     const before = bareProject({ frame: sheet(painted([[1, 1]])) })
 
-    expect(changedBeadCount(before, withLayers(before, { frame: sheet(painted([[1, 1]]), { row: 4 }) }))).toBe(0)
+    expect(changedBeadCount(before, withLayers(before, { frame: sheet(painted([[1, 1]])) }))).toBe(0)
     expect(changedBeadCount(before, withLayers(before, { frame: sheet(painted([[2, 2]]), { rows: 12 }) }))).toBe(0)
     expect(changedBeadCount(before, withLayers(before, { frame: sheet(painted([[2, 2]]), { quarterTurns: 1 }) }))).toBe(0)
   })

@@ -160,7 +160,6 @@ export const tools: ToolsTranslations = {
     rotateInFinishedRows: 'La zona seleccionada llega a filas marcadas como terminadas.',
     removeLine: 'Quita la fila o columna seleccionada y cierra el hueco.',
     removeLineDisabled: 'Selecciona primero una fila o columna entera.',
-    removeLineNotAlike: 'Primero gira el marco o el lienzo hasta que queden igual.',
     namePiece: 'Pon un nombre al trozo seleccionado y pasará a ser un esquema.',
     namePieceDisabled: 'Selecciona primero un trozo.',
     clear: 'Vacía todo el lienzo.',

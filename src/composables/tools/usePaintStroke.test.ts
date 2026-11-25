@@ -15,6 +15,9 @@ import { withFrameSheet } from '../../domain/frameSheet'
 import { withLayers } from '../../testUtils/layerFields'
 import { withColors, type BeadChange, type Rect } from '../../domain/canvas'
 import { en } from '../../i18n/en'
+import { coversOf } from '../../domain/sheets'
+import { onLayer } from '../../domain/layers'
+import { paintCells } from '../../domain/drawing'
 
 function setup(tool: Tool = 'paint', initial?: Project, mirror: MirrorSetting = MIRROR_OFF, onScreen?: Rect) {
   const harness = editHarness(
@@ -36,8 +39,10 @@ function setup(tool: Tool = 'paint', initial?: Project, mirror: MirrorSetting = 
     showToast,
     messages: () => en,
   })
-  const at = (row: number, column: number) => beadColorAt(harness.project, frameOf(harness.project)!.row + row, frameOf(harness.project)!.column + column)
-  return { stroke, harness, endSelectPress, cancelSelectPress, showToast, colorUsed, at, frame: frameOf(harness.project)! }
+  // Where the Frame lies on the Canvas's positions (spec 1234): its own beads are read and aimed at from there.
+  const frame = coversOf(harness.project)[0]!.frame
+  const at = (row: number, column: number) => beadColorAt(harness.project, frame.row + row, frame.column + column)
+  return { stroke, harness, endSelectPress, cancelSelectPress, showToast, colorUsed, at, frame }
 }
 
 describe('usePaintStroke', () => {
@@ -180,8 +185,7 @@ describe('usePaintStroke', () => {
       const placed = changeFrame(withFrameSheet(base, undefined, { frame: frameIdIn(base) }), { custom: { shape: 'triangle', size: 5, centre: { row: 20, column: 30 } } }, frameIdIn(base))
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
       const turns: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, radial: true }, fold: 3, place: { layer: 'frame' } }
-      const { row, column } = frameOf(placed.project)!
-      const painted = paintAt(placed.project, [{ row: row + 4, column }], '#0000ff')
+      const painted = onLayer(placed.project, FRAME_ID, (view) => paintCells(view, [{ row: 4, column: 0 }], '#0000ff'))
       const { stroke, harness } = setup('fill', painted, turns)
 
       stroke.beginOrCommitPress('paint', '#00ff00', 4, 0, FRAME_ID)
@@ -201,7 +205,7 @@ describe('usePaintStroke', () => {
     it('lands a Canvas stroke inside a Canvas Area, a counterpart under the Frame painted there hidden, and a Fill there alone (ADR 0082)', () => {
       // A 4 x 3 Frame at (10, 10), its margin out to (6, 6); the Area's Axis through column 6 maps column 2 to 10, under
       // the Frame on row 11 and clear of it on row 20.
-      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 10, column: 10 } })
+      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, centre: undefined, row: 10, column: 10 } })
       const inArea: MirrorSetting = { ...leftRight, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 25, columns: 13 } } }
       const { stroke, harness } = setup('paint', framed, inArea)
       stroke.beginOrCommitPress('paint', '#ff0000', 11, 2)
@@ -221,7 +225,7 @@ describe('usePaintStroke', () => {
     })
 
     it('stops a Fill at the edge of the Mirror\'s Canvas Area, as a border', () => {
-      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 10, column: 10 } })
+      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, centre: undefined, row: 10, column: 10 } })
       const area: MirrorSetting = { ...leftRight, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 25, columns: 13 } } }
       const { stroke, harness } = setup('fill', framed, area)
       harness.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 12 }, { row: 20, column: 13 }], '#0000ff'))
@@ -237,7 +241,7 @@ describe('usePaintStroke', () => {
     const fourWide = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 
     it('previews exactly the beads the press then fills, under the Mirror\'s Canvas Area', () => {
-      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 10, column: 10 } })
+      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, centre: undefined, row: 10, column: 10 } })
       const area: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 25, columns: 13 } } }
       const { stroke, harness } = setup('fill', framed, area)
       harness.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 10 }, { row: 20, column: 11 }, { row: 20, column: 12 }, { row: 20, column: 13 }], '#0000ff'))
@@ -319,7 +323,7 @@ describe('usePaintStroke', () => {
 
     it('says a refused Fill at the lift, not at the press', () => {
       const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
-      const far = withLayers(base, { frame: { ...frameOf(base)!, row: 2000, column: 2000 } })
+      const far = withLayers(base, { frame: { ...frameOf(base)!, centre: undefined, row: 2000, column: 2000 } })
       const { stroke, showToast } = setup('fill', far, MIRROR_OFF, { row: -10, column: -10, rows: 30, columns: 30 })
 
       stroke.beginOrCommitPress('paint', '#00ff00', 10, 10)
@@ -364,7 +368,7 @@ describe('usePaintStroke', () => {
     /** A 3 x 3 Frame at (20, 20), far from the margin of a Canvas sketch at the origin. */
     const over = () => {
       const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
-      return withLayers(base, { frame: { ...frameOf(base)!, row: 20, column: 20 } })
+      return withLayers(base, { frame: { ...frameOf(base)!, centre: undefined, row: 20, column: 20 } })
     }
 
     it('paints the Frame for a press inside it, and a stroke that began there leaves nothing where it goes outside', () => {
@@ -436,7 +440,7 @@ describe('usePaintStroke', () => {
     /** The 3 × 3 Frame moved far off, so the presses below are on the open Canvas. */
     const open = (beads: BeadChange[] = []) => {
       const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
-      return withLayers(base, { frame: { ...frameOf(base)!, row: 2000, column: 2000 }, beads: withColors({}, beads) })
+      return withLayers(base, { frame: { ...frameOf(base)!, centre: undefined, row: 2000, column: 2000 }, beads: withColors({}, beads) })
     }
     const ring = (side: number): BeadChange[] =>
       Array.from({ length: side }, (_cell, at) => [

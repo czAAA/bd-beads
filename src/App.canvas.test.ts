@@ -8,6 +8,7 @@ import { loadProjects, saveProjects } from './services/libraryStore'
 import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
 import { deleteAll, pickColor, pickTool } from './testUtils/pill'
 import { beadsOfLayer, frameOf, orientationOf } from './domain/layerRecord'
+import { coversOf } from './domain/sheets'
 import { type LayersChange, withLayers } from './testUtils/layerFields'
 import { defaultColorOf } from './testUtils/defaultColors'
 
@@ -221,7 +222,8 @@ describe('an unframed Schema\'s tag (tickets 0721, 0733)', () => {
 
     await wrapper.get('[data-testid="schema-card-frame"]').trigger('click')
     await flushPromises()
-    expect(frameOf(loadProjects()[0]!)).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2, name: 'Owl' })
+    expect(frameOf(loadProjects()[0]!)).toMatchObject({ rows: 2, columns: 2, name: 'Owl' })
+    expect(coversOf(loadProjects()[0]!)[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
     expect(wrapper.find('[data-testid="schema-tag"]').exists()).toBe(false)
     await wrapper.get('[data-testid="strip-undo"]').trigger('click')
     await flushPromises()

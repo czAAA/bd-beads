@@ -9,6 +9,7 @@ import { removeLineQuestion, removeLineRefusal, removeSelectedLine as removeLine
 import type { Selection } from './selection'
 import { beadsOfLayer, frameOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
+import { placeOf } from '../testUtils/placeOf'
 import { layersView, withLayers, pointersOf } from '../testUtils/layerFields'
 import { type RowProgress } from './project'
 
@@ -49,7 +50,8 @@ describe('removeSelectedLine', () => {
     const before = numbered(3, 4)
     const removed = removeSelectedLine(before, rowOf(before, 1))
 
-    expect(frameOf(removed)).toMatchObject({ row: 10, column: 20, rows: 3, columns: 3 })
+    expect(frameOf(removed)).toMatchObject({ rows: 3, columns: 3 })
+    expect(placeOf(removed)).toMatchObject({ row: 10, column: 20, rows: 3, columns: 3 })
     expect(colorAt(frameOf(removed)!.beads, 0, 0)).toBe('#000000')
     expect(colorAt(frameOf(removed)!.beads, 1, 0)).toBe('#020000')
     expect(colorAt(frameOf(removed)!.beads, 2, 2)).toBe('#030200')
@@ -60,7 +62,8 @@ describe('removeSelectedLine', () => {
     const before = numbered(4, 3)
     const removed = removeSelectedLine(before, columnOf(before, 2))
 
-    expect(frameOf(removed)).toMatchObject({ row: 10, column: 20, rows: 3, columns: 3 })
+    expect(frameOf(removed)).toMatchObject({ rows: 3, columns: 3 })
+    expect(placeOf(removed)).toMatchObject({ row: 10, column: 20, rows: 3, columns: 3 })
     expect(colorAt(frameOf(removed)!.beads, 0, 1)).toBe('#000100')
     expect(colorAt(frameOf(removed)!.beads, 0, 2)).toBe('#000300')
     expect(colorAt(frameOf(removed)!.beads, 0, 3)).toBeNull()

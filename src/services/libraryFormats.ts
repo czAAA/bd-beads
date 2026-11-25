@@ -20,14 +20,14 @@ import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../do
 /** The localStorage key of the old library, one value holding every Project (ADR 0001). */
 export const STORAGE_KEY = 'openbeads:patterns'
 
-// The stored format (ADR 0009): v1 hex cells, v2 compact grids, v3 beads by position, v4 (ADR 0066) the Frame's beads, v5
-// (0664) the layer list, v6 (0691) brick's Drop id, v7 (1185) the Frame's placement and way as seen, v8 (1225) the Palette
-// in sections, v9 (1220) the Last edited Frame. An IndexedDB record holds one Project as version 9 writes it (ADR 0094).
-export const STORED_VERSION = 9
+// The stored format (ADR 0009): v1 hex cells, v2 compact grids, v3 beads by position, v4 the Frame's beads (ADR 0066), v5
+// the layer list (0664), v6 brick's Drop id (0691), v7 the Frame's placement (1185), v8 the Palette in sections (1225), v9
+// the Last edited Frame (1220), v10 the Frame's centre in mm (1237). An IndexedDB record holds a Project as v10 (ADR 0094).
+export const STORED_VERSION = 10
 /** The first version that stores the layer list, which a Project is kept sealed from (ticket 0716). */
 const LAYERED_VERSION = 5
 
-/** Whether a stored version keeps its Projects encoded as the current one does, so they can stay sealed: versions 5 to 9
+/** Whether a stored version keeps its Projects encoded as the current one does, so they can stay sealed: versions 5 to 10
  * differ only in fields the one decoder reads either way (a Frame's place, ticket 1185; the Palette's sections, 1225; the Last edited Frame, 1220), but for
  * version 5's Brick block, renamed by `currentEncoded`. */
 export function keepsEncoded(version: number | undefined): version is number {
@@ -70,6 +70,7 @@ export const READERS: Record<number, (parsed: unknown) => StoredProject[]> = {
   7: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
   8: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
   9: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
+  10: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
 }
 
 /** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned

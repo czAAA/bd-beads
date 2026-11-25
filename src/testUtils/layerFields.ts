@@ -1,11 +1,12 @@
 import { frameIdIn } from './frameId'
+import { onCanvas, type CanvasSheet } from './onCanvas'
 import type { FrameSheet } from '../domain/canvas'
 import { canvasOf, frameOf, withCanvas, withFrameFields, withLetters } from '../domain/layerRecord'
 import { withFrameSheet } from '../domain/frameSheet'
 import { nearestQuarterTurn, normalizedOrientation } from '../domain/canvasOrientation'
 import { turnedWithFrame } from '../domain/rowWays'
 import { rowProgressOf, seenProgressOf, type OwnRowProgress } from '../domain/rowProgress'
-import { frameQuarterTurnOf } from '../domain/table'
+import { frameQuarterTurnOf, turnedPoint } from '../domain/table'
 import type { CanvasLayer, FrameLayer, LayerFields, Project, RowProgress } from '../domain/project'
 import { DEFAULT_BEAD } from '../domain/beads'
 import { DEFAULT_TECHNIQUE } from '../domain/weave'
@@ -14,7 +15,7 @@ import { DEFAULT_TECHNIQUE } from '../domain/weave'
  * every layer, the Frame layer as a sheet (none removes it) and its Row progress, and the Project's own. */
 export type LayersChange = Partial<Pick<CanvasLayer, 'name' | 'technique' | 'techniqueSettings' | 'beads' | 'pieceNames' | 'orientation'>> &
   Partial<Pick<LayerFields, 'beadId' | 'bead' | 'letters'>> &
-  Partial<Pick<FrameLayer, 'rowProgress'>> & { frame?: (FrameSheet & Partial<FrameLayer>) | undefined; ownProgress?: Partial<OwnRowProgress> } & Partial<Omit<Project, 'layers'>>
+  Partial<Pick<FrameLayer, 'rowProgress'>> & { frame?: CanvasSheet | undefined; ownProgress?: Partial<OwnRowProgress> } & Partial<Omit<Project, 'layers'>>
 
 /** The Project with its layers' fields set where given (ticket 0664): the Canvas's own fields (`orientation` carrying
  * the Frame), the Bead and Letters to every layer, `frame` laid as the Frame's sheet (none removes it), `rowProgress` or
@@ -31,7 +32,7 @@ export function withLayers(project: Project, change: LayersChange): Project {
   }
   next = withCanvas(next, canvas)
   if ('frame' in change) {
-    next = withFrameSheet(next, frame, { frame: frameIdIn(next) })
+    next = withFrameSheet(next, frame && onCanvas(next, frame), { frame: frameIdIn(next) })
   }
   // The Canvas's turn carries the Frame laid, its rows and all (`withPictureTurned`).
   if (orientation !== undefined) next = withPictureTurned(next, orientation)
@@ -51,18 +52,19 @@ export function withLayers(project: Project, change: LayersChange): Project {
   return letters !== undefined ? withLetters(withLetters(next, 'canvas', letters), frameIdIn(next), letters) : next
 }
 
-/** The whole picture turned to `orientation`: the Canvas, and the Frame laid on it carried with it, its angle turned as
- * far and its Row progress kept on its own rows (a Custom frame's runs one way and stays). Rotate canvas no longer
- * carries the Frame (ticket 1188); a test that wants a turned picture, as an older file opens, builds it so. */
+/** The whole picture turned to `orientation` about the Canvas's origin: the Canvas, and the Frame carried with it, its
+ * quarter turn and centre turned as far, its Row progress kept on its own rows. Rotate canvas does not carry the Frame
+ * (ticket 1188); a test wanting a turned picture builds it so. What is left of a non-quarter angle is the Table turn. */
 export function withPictureTurned(project: Project, orientation: number): Project {
-  const [from, to] = [canvasOf(project).orientation, normalizedOrientation(orientation)]
-  if (from === to) return project
-  const turned = withCanvas(project, { orientation: to })
+  const [from, to] = [canvasOf(project).orientation, nearestQuarterTurn(orientation)]
+  const tableTurn = normalizedOrientation(orientation - to)
+  const turned = withCanvas(project, { orientation: to, ...(tableTurn ? { tableTurn } : {}) })
   const frame = project.layers[1]
-  if (!frame) return turned
+  if (!frame || from === to) return turned
   const angle = normalizedOrientation(frame.angle + to - from)
   const turns = (nearestQuarterTurn(angle) - nearestQuarterTurn(frame.angle)) / 90
-  return withFrameFields(turned, { angle, ...(frame.shape ? {} : { rowProgress: turnedWithFrame(frame.rowProgress, turns) }) }, frameIdIn(turned))
+  const centre = turnedPoint(frame.centre, to - from)
+  return withFrameFields(turned, { angle, centre, ...(frame.shape ? {} : { rowProgress: turnedWithFrame(frame.rowProgress, turns) }) }, frameIdIn(turned))
 }
 
 /** Row progress given in the Frame's own rows (along them, top to bottom, unless given), as the Project's Frame lies:

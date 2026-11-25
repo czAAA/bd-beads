@@ -53,7 +53,7 @@ export function geometryDrawnAlone(project: DrawnProject, ref: FrameRef): LayerG
  * nothing is painted. */
 export function beadInSpace(project: DrawnProject, space: Space, row: number, column: number, ref: FrameRef): string | null {
   const frame = frameById(project, ref)
-  const inside = row >= space.origin.row && row < space.origin.row + space.rows && column >= space.origin.column && column < space.origin.column + space.columns
+  const inside = !space.open && row >= space.origin.row && row < space.origin.row + space.rows && column >= space.origin.column && column < space.origin.column + space.columns
   return frame && inside
     ? colorAt(beadsOfLayer(project, ref)!, row - space.origin.row, column - space.origin.column)
     : colorAt(beadsOfLayer(project, 'canvas'), space.toAbsolute.row + row, space.toAbsolute.column + column)

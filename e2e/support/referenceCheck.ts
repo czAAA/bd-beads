@@ -5,9 +5,8 @@ import type { Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Project } from '../../src/domain/project'
 import { isInFinishedRow } from '../../src/domain/rowProgress'
-import { projectFrame } from '../../src/domain/projectExtent'
 import { OPEN_SPACE } from '../../src/rendering/space'
-import { surfaceView } from '../../src/rendering/surfaceView'
+import { frameMiddlePx, surfaceView } from '../../src/rendering/surfaceView'
 import { LIGHT_THEME, satinCentre } from '../../src/rendering/beadLook'
 import { tileColorOf } from '../../src/rendering/tonalTiles'
 import { differingBlocks } from './imageDiff'
@@ -15,7 +14,7 @@ import { beadCentre, frameShift } from './projects'
 import { withLaidTurn } from '../../src/domain/framePlacement'
 import { placedFrame } from '../../src/domain/layerWeave'
 import { type Region } from '../../src/rendering/surfaceView'
-import { canvasOf, frameOf, quarterTurnOf } from '../../src/domain/layerRecord'
+import { canvasOf, frameOf } from '../../src/domain/layerRecord'
 
 // Holds the drawing to the reference screenshots in e2e/visual/__screenshots__ (one element per bead; ticket 103,
 // ADR 0018). A canvas never matches DOM pixels exactly, so two comparisons: the look (block-averaged colors, a share
@@ -47,9 +46,7 @@ const FINISHED_SHARE = 0.5
 function expectedCentre(shown: Project, ownRow: number, ownColumn: number, satin: boolean): [number, number, number] {
   // The Frame as it is drawn, at its own quarter turn on a Canvas laid under it (ticket 1188): its beads by position.
   const project = withLaidTurn(shown, undefined, frameIdIn(shown))
-  const frame = frameOf(project)
-  const [row, column] = [ownRow + (frame?.row ?? 0), ownColumn + (frame?.column ?? 0)]
-  const color = beadColorAt(project, row, column)
+  const color = beadColorAt(project, ownRow, ownColumn, frameIdIn(project))
   if (color === null && satin) return rgb(tileColorOf(LIGHT_THEME.canvas))
   const flat = flatCentre(project, ownRow, ownColumn, rgb(color ?? LIGHT_THEME.emptyBead))
   if (color === null || !satin) return flat
@@ -129,15 +126,17 @@ export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 
 /** The pixels the Project's Frame covers on screen, from the Project's corner: turned and zoomed, to whole pixels. */
 export function shownRegion(corner: { x: number; y: number }, project: Project, zoom: number): Region {
-  // A Frame drawn otherwise than its Canvas (ticket 1188) shows as at its own quarter turn, where its surface is pinned.
-  const shift = frameShift(project, zoom)
-  const laid = shift ? withLaidTurn(project, undefined, frameIdIn(project)) : project
-  const view = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: shift?.rotation ?? quarterTurnOf(project), zoom, ...(shift ? { frame: placedFrame(laid, frameIdIn(laid)) } : {}) })
-  const whole = projectFrame(laid, frameIdIn(laid))
-  // On its own surface the Frame's cells are named by its own row and column, from 0, 0.
-  const shown = shift ? view.beadBox({ ...whole, row: 0, column: 0 }, frameIdIn(laid)) : view.beadBox(whole)
-  const [x, y] = [corner.x + shown.x + (shift?.x ?? 0), corner.y + shown.y + (shift?.y ?? 0)]
-  return { x: Math.floor(x), y: Math.floor(y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
+  // Every Frame shows on its own surface (spec 1234), pinned by its middle where it lies. Its picture is the upright Frame's
+  // extent, its sides swapped by a quarter turn, round that middle.
+  const shift = frameShift(project, zoom)!
+  const placed = placedFrame(project, frameIdIn(project))!
+  const view = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: shift.rotation, zoom })
+  const middle = frameMiddlePx(placed, undefined)
+  const upright = frameMiddlePx({ ...placed, quarterTurns: 0 }, undefined)
+  const sideways = (placed.quarterTurns ?? 0) % 2 === 1
+  const [width, height] = (sideways ? [upright.y, upright.x] : [upright.x, upright.y]).map((half) => half * 2 * zoom) as [number, number]
+  const centre = view.gridToPoint(middle.x, middle.y)
+  return { x: Math.floor(corner.x + centre.x + shift.x - width / 2), y: Math.floor(corner.y + centre.y + shift.y - height / 2), width: Math.ceil(width), height: Math.ceil(height) }
 }
 
 /** Writes a new reference: the pixels the Project's Frame covers. */

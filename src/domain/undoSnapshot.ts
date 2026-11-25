@@ -1,7 +1,6 @@
 import type { Layer } from './grid'
 import type { BeadMap } from './canvas'
 import type { HistoryCap } from './history'
-import { framePlacement, withFrameAt } from './framePlacement'
 import { backgroundOf, canvasOf, lettersOn, withBackground, withCanvas, withLetters, frameIdOf, framesOf } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -49,13 +48,13 @@ export function snapshotOf(project: Project, options: { mirrorBar?: boolean } = 
  * orientation, each layer's Letters switch and its Background (ticket 0666) as they are now. */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   const { paletteCodes: _codes, paletteLetters: _letters, ...rest } = project
-  const { name, orientation, origin } = canvasOf(project)
+  const { name, orientation, origin, tableTurn } = canvasOf(project)
   const restored = { ...rest, layers: entry.layers }
   const was = canvasOf(entry)
   // Each layer put back is the one recorded, the very object, unless a view changed since (ticket 0616).
-  // The Canvas's turn is a view: the Canvas put back lies as it does now, the Frame where it was on the table (ticket 1188).
-  const unturned = orientation === was.orientation && (origin?.x ?? 0) === (was.origin?.x ?? 0) && (origin?.y ?? 0) === (was.origin?.y ?? 0)
-  const viewed = name === was.name && unturned ? restored : unturned ? withCanvas(restored, { name }) : withCanvasAsNow(restored, { name, orientation, origin })
+  // The Canvas's turn and the Table turn are views: the Canvas put back lies as it does now, the Frames where they were.
+  const unturned = orientation === was.orientation && tableTurn === was.tableTurn && (origin?.x ?? 0) === (was.origin?.x ?? 0) && (origin?.y ?? 0) === (was.origin?.y ?? 0)
+  const viewed = name === was.name && unturned ? restored : unturned ? withCanvas(restored, { name }) : withCanvasAsNow(restored, { name, orientation, origin, tableTurn })
   const layers: Layer[] = ['canvas', ...framesOf(project).map(frameIdOf)]
   const lettered = layers.reduce((kept, layer) => withLetters(kept, layer, lettersOn(project, layer)), viewed)
   const layered = layers.reduce((kept, layer) => {
@@ -73,14 +72,12 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   })
 }
 
-/** The Project put back with its Canvas lying as it does now (its name, orientation and origin on the table), its Frame
- * where the entry had it on the table (ticket 1188). */
-function withCanvasAsNow(restored: Project, now: Pick<CanvasLayer, 'name' | 'orientation' | 'origin'>): Project {
-  const centres = framesOf(restored).map((frame) => [frameIdOf(frame), framePlacement(restored, frameIdOf(frame))!.at] as const)
-  const { origin: _was, ...canvas } = canvasOf(restored)
-  const { origin, ...view } = now
-  const laid = { ...restored, layers: [{ ...canvas, ...view, ...(origin ? { origin } : {}) }, ...restored.layers.slice(1)] as Project['layers'] }
-  return centres.reduce((placed, [id, centre]) => withFrameAt(placed, centre, id), laid)
+/** The Project put back with its Canvas lying as it does now (its name, orientation, origin and the Table turn), its Frames
+ * where the entry had them on the Table. */
+function withCanvasAsNow(restored: Project, now: Pick<CanvasLayer, 'name' | 'orientation' | 'origin' | 'tableTurn'>): Project {
+  const { origin: _origin, tableTurn: _turn, ...canvas } = canvasOf(restored)
+  const { origin, tableTurn, ...view } = now
+  return { ...restored, layers: [{ ...canvas, ...view, ...(origin ? { origin } : {}), ...(tableTurn ? { tableTurn } : {}) }, ...restored.layers.slice(1)] as Project['layers'] }
 }
 
 // Estimates of what an Undo step holds (ticket 0677), rounded up from the research's 0.85 MB a whole-sheet 300 × 300

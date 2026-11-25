@@ -384,8 +384,10 @@ describe('useProjectLibrary', () => {
   describe('last-saved order (ticket 145)', () => {
     const ids = (library: ReturnType<typeof useProjectLibrary>) => library.projects.value.map((project) => project.id)
 
+    /** Each Project stored bare, its Frame's centre as a file keeps it: in mm, as `centreMm` (ticket 1237). */
     function storedLibrary(...projects: Project[]) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
+      const stored = projects.map((project) => ({ ...project, layers: project.layers.map(({ centre, ...layer }: Project['layers'][number] & { centre?: unknown }) => (centre ? { ...layer, centreMm: centre } : layer)) }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
     }
 
     it('gives a library saved before the order existed a stable order, newest edit first, loading every Project unchanged', () => {

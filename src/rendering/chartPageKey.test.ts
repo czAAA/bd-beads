@@ -6,7 +6,6 @@ import { customChart } from './customChart'
 import { displayedGrid, planPrint } from './printPlan'
 import { changeFrame } from '../domain/changeFrame'
 import { createProject } from '../domain/createProject'
-import { frameOf } from '../domain/layerRecord'
 import { withFrameSheet } from '../domain/frameSheet'
 import { frameGeometryOf } from '../domain/layers'
 import { projectDimensions } from '../domain/projectExtent'
@@ -148,9 +147,8 @@ describe('trimmedArea and the plan: the chart is trimmed to the beads (ticket 11
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
     const placed = changeFrame(open, { custom: { shape: 'warpedSquare', size: 4, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Warped Square')
-    const frame = frameOf(placed.project)!
     const [first] = frameGeometryOf(placed.project, frameIdIn(placed.project)).positions()
-    const painted = paintAt(placed.project, [{ row: frame.row + first!.row, column: frame.column + first!.column, layer: FRAME_ID }], RED)
+    const painted = paintAt(placed.project, [{ row: first!.row, column: first!.column, layer: FRAME_ID }], RED)
     const whole = trimmedArea(placed.project, frameIdIn(placed.project))
     const trimmed = trimmedArea(painted, frameIdIn(painted))
 

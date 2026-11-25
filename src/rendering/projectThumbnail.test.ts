@@ -151,7 +151,7 @@ describe('thumbnailPixels', () => {
     expect(pixel(image, image.width - 1, 0)).toEqual(NONE)
   })
 
-  it('turns a Custom frame with the Project', () => {
+  it('turns a Custom frame with the Project: its geometry is the Frame laid turned (spec 1234)', () => {
     const { geometry, triangle } = redTriangle(180)
     const size = 72
     const image = thumbnailPixels(triangle, size, frameIdIn(triangle))
@@ -160,7 +160,7 @@ describe('thumbnailPixels', () => {
 
     for (const position of geometry.positions()) {
       const { box } = geometry.place(position)!
-      const [x, y] = [extent.width - (box.x + box.width / 2), extent.height - (box.y + box.height / 2)]
+      const [x, y] = [box.x + box.width / 2, box.y + box.height / 2]
       expect(pixel(image, Math.floor(x * scale), Math.floor(y * scale))).toEqual(RED)
     }
     // Upside down, it stands on its tip: its bottom corners are Off-shape.

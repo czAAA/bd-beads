@@ -4,9 +4,9 @@ import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadMap
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
 import { layerAt, layerSheet, onLayer, shownBeads, type Layer, type LayerSheet } from './layers'
-import { footprintsOf } from './footprint'
+import { coversOf } from './sheets'
 import { beadsOfLayer, framesOf, heldWeave, type Layered } from './layerRecord'
-import { footprintList, inMargin, trimToAllowed, withMargin, type Footprints } from './margin'
+import { coverList, coverOf, inMargin, trimToAllowed, type Covers } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells } from './drawing'
 import type { Project } from './project'
@@ -105,12 +105,12 @@ function selectionOfBox(box: Rect): Selection {
 /** The Selection a Piece tool tap makes (ticket 414): the tapped bead's Piece, its rectangle carrying its exact cells
  * (ticket 547), or none. With Frames (433, 1218), only its part on the bead's side of each, trimmed; none in a margin.
  * @internal Tests check the Piece tool's Selection on its own. */
-export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frames?: Footprints): Selection | undefined {
-  const list = footprintList(frames)
-  const inside = list.find((frame) => frameContains(frame, at))
+export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frames?: Covers): Selection | undefined {
+  const list = coverList(frames)
+  const inside = list.find((cover) => frameContains(cover.frame, at))
   const members = pieceBeadsAt(beads, weave, at).filter((member) => {
-    if (inside) return frameContains(inside, member)
-    return !list.some((frame) => frameContains(withMargin(frame), member))
+    if (inside) return frameContains(inside.frame, member)
+    return !list.some((cover) => frameContains(cover.sheet, member))
   })
   if (members.length === 0 || inMargin(list, at)) {
     return undefined
@@ -173,8 +173,8 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
 export function selectableOn(project: Layered, sheet: LayerSheet): (row: number, column: number) => boolean {
   const { edge } = sheet
   if (edge) return (row, column) => frameContains(edge, { row, column })
-  const covered = footprintsOf(project).map((footprint) => withMargin(footprint))
-  return covered.length > 0 ? (row, column) => !covered.some((footprint) => frameContains(footprint, { row, column })) : () => true
+  const covered = coversOf(project)
+  return covered.length > 0 ? (row, column) => !covered.some(({ sheet }) => frameContains(sheet, { row, column })) : () => true
 }
 
 /** Snapshots a Selection's drawn beads on a layer laid on a grid into a block (ticket 437, ADR 0016): trimmed to the
@@ -350,11 +350,11 @@ export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosit
 export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selection | undefined {
   const layer = layerAt(project, at)
   if (layer === 'canvas') {
-    const picked = pieceSelectionAt(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'), at, footprintsOf(project))
+    const picked = pieceSelectionAt(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'), at, coversOf(project))
     return picked && { ...picked, layer }
   }
   const sheet = layerSheet(project, layer)
-  const picked = pieceSelectionAt(sheet.beads, sheet.weave, { row: at.row, column: at.column }, sheet.edge)
+  const picked = pieceSelectionAt(sheet.beads, sheet.weave, { row: at.row, column: at.column }, sheet.edge && coverOf(sheet.edge))
   return picked && { ...picked, layer }
 }
 

@@ -5,7 +5,7 @@ import { weaveSettings } from './domain/weave'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import ProjectSurface from './components/canvas/ProjectSurface.vue'
-import { withColors, type Rect } from './domain/canvas'
+import { withColors, type FrameSheet, type Rect } from './domain/canvas'
 import { changeFrame } from './domain/changeFrame'
 import { createProject } from './domain/createProject'
 import type { Project } from './domain/project'
@@ -14,6 +14,7 @@ import { loadProjects, saveProjects } from './services/libraryStore'
 import { hoverBead, pressBead } from './testUtils/beads'
 import { pickColor, pressBar, selectAll } from './testUtils/pill'
 import { frameIdOf, frameOf } from './domain/layerRecord'
+import { coversOf } from './domain/sheets'
 import { rowProgressOf } from './domain/rowProgress'
 import { frameSheetOf, pointersOf, withLayers } from './testUtils/layerFields'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
@@ -76,13 +77,15 @@ async function toggleProject(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
 }
 
 const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="project-surface"]')
-/** The rectangle of the saved Frame, its beads aside. */
+/** The rectangle of the saved Frame, its beads aside: its own rows and columns, and the Canvas position it starts on (the
+ * place its centre lies at, spec 1234). */
 const savedFrame = () => {
   const [project] = loadProjects()
-  const frame = project && frameSheetOf(project)
-  if (!frame) return undefined
-  const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
-  return rectangle
+  const frame = project && (frameSheetOf(project) as (FrameSheet & { centre?: unknown }) | undefined)
+  if (!frame || !project) return undefined
+  const { beads: _beads, name: _name, technique: _technique, centre: _centre, ...rectangle } = frame
+  const { row, column } = coversOf(project)[0].frame
+  return { row, column, ...rectangle }
 }
 
 /** The sketch with a Frame made round the beads in `rectangle`: they are the Frame's own (Frame from Selection). */
@@ -323,11 +326,11 @@ describe('Painting a Custom frame', () => {
     const triangle = starterById('triangle')
     const wrapper = await mountOpen(starterProject(triangle, { name: 'Triangle', beadId: STARTER_BEAD_ID, sizes: designSizes(triangle), useDesign: false }))
     await pickColor(wrapper, defaultColorOf('red', STARTER_BEAD_ID).id)
-    const { row, column, columns } = frameOf(loadProjects()[0])!
+    const { columns } = frameOf(loadProjects()[0])!
     // Round 7 of a 10-round Triangle runs one place past the Frame's last column.
     const own = { row: 7, column: columns }
 
-    await pressBead(wrapper, { row: row + own.row, column: column + own.column, layer: frameIdOf(frameOf(loadProjects()[0])!) })
+    await pressBead(wrapper, { row: own.row, column: own.column, layer: frameIdOf(frameOf(loadProjects()[0])!) })
     await wrapper.find('.app-shell').trigger('mouseup')
     await flushPromises()
 

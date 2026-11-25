@@ -1,62 +1,18 @@
-import { normalizedOrientation } from './canvasOrientation'
-import { framePlacement, laidExtent, withFrameTurnedTo } from './framePlacement'
 import type { FrameRef } from './grid'
-import { frameById, frameIdOf, framesOf, type Layered } from './layerRecord'
-import { canvasWeave } from './layerWeave'
-import { MARGIN } from './margin'
+import { frameIdOf, framesOf, type Layered } from './layerRecord'
+import { boxesMeet, frameBoxesOf } from './sheets'
 import type { Project } from './project'
-import { frameAngleOf, type TablePoint } from './table'
-import { positionStep } from './weave'
+import type { TablePoint } from './table'
 
-// Frames never meet (spec 1214, ticket 1218): a Frame plus its Keep-out margin never touches another Frame plus its
-// margin. Each is a rectangle on the table, turned at its own angle, so the rule holds on the Canvas's grid and off it.
-
-/** A Frame with its margin as it lies on the table: its centre, the angle its laid rectangle lies at and its half reach
- * along that rectangle's own axes, in the Canvas's bead widths. */
-interface SheetBox {
-  at: TablePoint
-  angle: number
-  half: TablePoint
-}
-
-/** How far two boxes must overlap to meet, in bead widths: boxes that only share an edge are clear. */
-const TOUCH = 1e-6
-
-/** The box a Frame and its margin take on the table. The Project must have that Frame. */
-function boxOf(project: Layered, ref: FrameRef): SheetBox {
-  const { at } = framePlacement(project, ref)!
-  // Its laid rectangle already stands its quarter turns; only the lean left over turns the box.
-  const angle = frameAngleOf(project, ref) - 90 * (frameById(project, ref)!.quarterTurns ?? 0)
-  const extent = laidExtent(project, ref)
-  const step = positionStep(canvasWeave(project))
-  return { at, angle, half: { x: extent.x / 2 + MARGIN * step.across, y: extent.y / 2 + MARGIN * step.down } }
-}
-
-/** A box's two axes on the table, its angle clockwise with y running down. */
-function axesOf({ angle }: SheetBox): [TablePoint, TablePoint] {
-  const radians = (angle * Math.PI) / 180
-  const [cos, sin] = [Math.cos(radians), Math.sin(radians)]
-  return [
-    { x: cos, y: sin },
-    { x: -sin, y: cos },
-  ]
-}
-
-/** Whether two boxes overlap: no axis of either separates them. */
-function boxesMeet(a: SheetBox, b: SheetBox): boolean {
-  const [axesA, axesB] = [axesOf(a), axesOf(b)]
-  const reach = (box: SheetBox, axes: [TablePoint, TablePoint], on: TablePoint) =>
-    Math.abs(box.half.x * (axes[0].x * on.x + axes[0].y * on.y)) + Math.abs(box.half.y * (axes[1].x * on.x + axes[1].y * on.y))
-  const apart = { x: b.at.x - a.at.x, y: b.at.y - a.at.y }
-  return [...axesA, ...axesB].every((on) => Math.abs(apart.x * on.x + apart.y * on.y) < reach(a, axesA, on) + reach(b, axesB, on) - TOUCH)
-}
+// Frames never meet (spec 1214, ticket 1218; spec 1234): a Frame plus its keep-out margin never touches another Frame plus
+// its margin. Each sheet is a rectangle on the Table in mm, so the rule holds wherever the Frames lie.
 
 /** The first other Frame that the Frame named meets, each with its margin; none while it is clear of all, or for a Frame
  * the Project lacks. What a refusal names (ticket 1222). */
 export function frameMet(project: Layered, ref: FrameRef): FrameRef | undefined {
-  if (framesOf(project).length < 2 || !frameById(project, ref)) return undefined
-  const own = boxOf(project, ref)
-  const met = framesOf(project).find((frame) => frameIdOf(frame) !== ref && boxesMeet(own, boxOf(project, frameIdOf(frame))))
+  const own = frameBoxesOf(project, ref)
+  if (!own || framesOf(project).length < 2) return undefined
+  const met = framesOf(project).find((frame) => frameIdOf(frame) !== ref && boxesMeet(own.sheet, frameBoxesOf(project, frameIdOf(frame))!.sheet))
   return met && frameIdOf(met)
 }
 
@@ -75,15 +31,24 @@ export function stoppedShort(before: Project, ref: FrameRef, steps: number, step
   return last
 }
 
-/** The angle a twist of the Frame named to `angle` stops at (spec 1214): the angle itself where the Frame turned to it
- * meets no other Frame, else the last whole degree from where it lies toward it, the short way round, before one it
- * meets. */
-export function twistStop(project: Project, angle: number, ref: FrameRef): number {
-  if (framesOf(project).length < 2 || !frameById(project, ref)) return angle
-  const from = frameAngleOf(project, ref)
-  const delta = ((normalizedOrientation(angle - from) + 180) % 360) - 180
-  const steps = Math.ceil(Math.abs(delta))
-  const at = (k: number) => (k === steps ? angle : normalizedOrientation(from + (delta * k) / steps))
-  const stopped = stoppedShort(project, ref, steps, (k) => withFrameTurnedTo(project, at(k), ref))
-  return stopped === project ? from : frameAngleOf(stopped, ref)
+/** How far of a move of the Frame named by `delta` on the Table, in mm, it may go: the whole of it where its sheet meets
+ * no other along the way, else as far as it touches the first sheet in its path. Frames that met already are let be. */
+export function stoppedMoveAt(project: Project, ref: FrameRef, delta: TablePoint): TablePoint {
+  const own = frameBoxesOf(project, ref)
+  if (!own || framesOf(project).length < 2 || frameMet(project, ref)) return delta
+  let first = 1
+  for (const frame of framesOf(project)) {
+    if (frameIdOf(frame) === ref) continue
+    const other = frameBoxesOf(project, frameIdOf(frame))!.sheet
+    // The times, as shares of the move, at which the sheets overlap along each axis: where both do, they meet.
+    const along = (low: number, high: number, from: number, to: number, by: number): [number, number] => {
+      if (by === 0) return from < high && low < to ? [-Infinity, Infinity] : [Infinity, -Infinity]
+      const [a, b] = [(low - to) / by, (high - from) / by]
+      return a < b ? [a, b] : [b, a]
+    }
+    const [x, y] = [along(other.left, other.right, own.sheet.left, own.sheet.right, delta.x), along(other.top, other.bottom, own.sheet.top, own.sheet.bottom, delta.y)]
+    const [enter, leave] = [Math.max(x[0], y[0]), Math.min(x[1], y[1])]
+    if (enter < leave && enter >= 0 && enter < first) first = enter
+  }
+  return { x: delta.x * first, y: delta.y * first }
 }

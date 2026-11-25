@@ -10,11 +10,12 @@ import {
   type FrameSheet,
   sameFrame,
 } from './canvas'
-import { movedFrame, snapColumn, snapRow, withFrame, type FrameEdge } from './frame'
+import { withFrameMadeOn, withFrameResized, withoutFrame, type FrameEdge } from './frame'
 import { layerSheet, shownBeads } from './layers'
 import { copiedOntoLayout } from './customSelection'
 import type { GridPosition, FrameRef } from './grid'
-import { footprintOf } from './footprint'
+import { canvasRectCentre, canvasRectExtent, coversOf, extentMmOf, tablePointOf } from './sheets'
+import type { TablePoint } from './table'
 import { refoldSheet, withEachBead } from './folding'
 import {
   changedSettings,
@@ -35,15 +36,15 @@ import {
 import type { LayerGeometry } from './layerGeometry'
 import type { BeadCell, Weave } from './weave'
 import { carryNames } from './pieceNames'
-import { canvasDistance, canvasWeave, frameWeave, sameBeadSize, weaveOf } from './layerWeave'
+import { frameWeave, sameBeadSize, weaveOf } from './layerWeave'
 import { clampPointer, progressWithoutLine, rowProgressStarted } from './rowProgress'
 import { frameQuarterTurnOf } from './table'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
 import { linesKeptIn, type WovenChoice } from './wovenLines'
-import { frameIdentity, heldWeave, pieceNamesOf, startingRowProgressOf, withFrameFields, withLayer, withStartingRowProgress, frameById } from './layerRecord'
+import { frameIdentity, heldWeave, pieceNamesOf, quarterTurnOf, startingRowProgressOf, withFrameFields, withLayer, withStartingRowProgress, frameById } from './layerRecord'
 import { touchFrameSheet, withFrameSheet } from './frameSheet'
-import { frameMet, stoppedShort } from './frameSpacing'
+import { frameMet, stoppedMoveAt, stoppedShort } from './frameSpacing'
 import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -51,22 +52,23 @@ import type { AreaLine } from './removeLine'
 // Frame and Remove row/column. It owns the rules: Row progress's lock (Remove Frame passes it, clearing the passes;
 // moving, naming and Remove row/column keep them), Row progress following the Frame.
 export type FrameChange =
-  /** Resize the Frame (handles, steppers, typed size), its beads keeping their place: what it gives up folds, and growing
-   * it back shows them again, whatever the Weaves are; it takes nothing from the Canvas (tickets 0638, 1215). A Custom
-   * frame steps its size setting to the step nearest the rectangle instead (ticket 0669). */
+  /** Resize the Frame (handles, steppers, typed size), its beads keeping their place: what it gives up folds and shows again
+   * on growing back, whatever the Weaves; nothing is taken from the Canvas (tickets 0638, 1215). The rectangle is in the
+   * Frame's own rows and columns, its first row and column how far its own first moved; a Custom frame steps its size instead (0669). */
   | { set: Rect }
   /** Frame from Selection, Fit to drawing and Set Frame around the picture (ADR 0066, ticket 1215): the Frame becomes this
-   * rectangle holding a copy of the beads you see in it, the Canvas keeping every bead, any Frame there replaced. A
-   * Custom frame becomes its shape round the rectangle instead (ticket 0669). */
+   * rectangle of Canvas positions holding a copy of the beads you see in it, lying where they lie (spec 1234), the Canvas
+   * keeping every bead, any Frame there replaced. A Custom frame becomes its shape round the rectangle instead (ticket 0669). */
   | { make: Rect }
   /** Remove the Frame with all its beads, Folded ones too, and its Row progress; nothing lands on the Canvas (ticket 1215). */
   | { remove: true }
   /** One whole row or column of the Frame, counted from its first; allowed after Row progress has started, a finished
    * row taking its passes with it (ticket 0647). */
   | { removeLine: AreaLine }
-  /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0054): the Canvas's, or off its grid the
-   * Frame's own (ticket 1188); allowed after Row progress has started, which then travels with the Frame. */
-  | { move: { rows: number; columns: number } }
+  /** Move the Frame with its beads by a distance on the Table, in mm, exactly as far as asked, stopping short of another
+   * Frame's margin (ticket 452, ADR 0054, spec 1234); allowed after Row progress has started, which then travels with the
+   * Frame. */
+  | { move: TablePoint }
   /** Change the Frame's Technique or its settings (tickets 351, 477, 492, 507, 0625): the geometry changes and every
    * bead keeps its row and column, a Technique taking its settings (a Drop) with it. With a pass done another Technique
    * starts over, or keeps the whole lines with `woven: 'keep'` (ticket 1184, techniqueChangeQuestion). */
@@ -86,12 +88,14 @@ export type FrameChange =
    * whose position is still in it stays; growing adds empty rounds or rows outside. */
   | { settings: FrameSettings }
 
-/** A new Frame without a shape to put in place: its first row and column and its own rows and columns, its Weave, the
- * beads it holds, and the quarters it lies turned at (as Rotate Frame turns one). */
+/** A new Frame without a shape to put in place: its own rows and columns and the Canvas position it lies round, its
+ * Weave, the beads it holds, and the quarters it lies turned at (as Rotate Frame turns one). */
 interface FramePlacement {
-  frame: Rect
+  frame: Pick<Rect, 'rows' | 'columns'>
+  centre: GridPosition
   weave: Weave
   beads?: BeadMap
+  /** Its quarter turn on the Table; left out, it lies as the Canvas does. */
   quarterTurns?: QuarterTurns
 }
 
@@ -170,14 +174,22 @@ function asksForTechnique(frame: FrameSheet | undefined, change: FrameChange): b
  * is refused, naming that Frame (spec 1214, tickets 1218, 1222). */
 export function changeFrame(project: Project, change: FrameChange, ref: FrameRef): FrameChangeResult {
   const result = frameChanged(project, change, ref)
-  if (result.kind !== 'changed' || !frameMet(result.project, ref) || frameMet(project, ref)) return result
+  // A move is always held at the first sheet on its way, so a long one cannot jump clean over another Frame.
+  const through = 'move' in change && result.kind === 'changed' && !frameMet(project, ref) && stoppedShorterThan(project, ref, change.move)
+  if (result.kind !== 'changed' || (!through && (!frameMet(result.project, ref) || frameMet(project, ref)))) return result
   const stopped = stoppedChange(project, change, ref)
   if (stopped === undefined) return { kind: 'refused', reason: 'meets-frame', met: frameMet(result.project, ref) }
   return stopped === project ? { kind: 'unchanged', project } : { kind: 'changed', project: stopped }
 }
 
-/** A move or resize (`set`) of the Frame stopped at the last place allowed, one whole bead at a time; none for any other
- * change, which is taken whole or not at all. */
+/** Whether a move is held short of what was asked. */
+function stoppedShorterThan(project: Project, ref: FrameRef, move: TablePoint): boolean {
+  const stopped = stoppedMoveAt(project, ref, move)
+  return stopped.x !== move.x || stopped.y !== move.y
+}
+
+/** A move or resize (`set`) of the Frame stopped at the last place allowed: a move at the first place along its way that
+ * meets no Frame, a resize one whole bead at a time; none for any other change, which is taken whole or not at all. */
 function stoppedChange(project: Project, change: FrameChange, ref: FrameRef): Project | undefined {
   const along = (k: number, steps: number) => (value: number) => Math.round((value * k) / steps)
   const changedTo = (asked: FrameChange) => {
@@ -185,19 +197,17 @@ function stoppedChange(project: Project, change: FrameChange, ref: FrameRef): Pr
     return result.kind === 'changed' ? result.project : project
   }
   if ('move' in change) {
-    const { rows, columns } = change.move
-    const steps = Math.max(Math.abs(rows), Math.abs(columns))
-    return stoppedShort(project, ref, steps, (k) => changedTo({ move: { rows: along(k, steps)(rows), columns: along(k, steps)(columns) } }))
+    return changedTo({ move: stoppedMoveAt(project, ref, change.move) })
   }
   const current = frameById(project, ref)
   if (!('set' in change) || !current) return undefined
-  const [top, left] = [change.set.row - current.row, change.set.column - current.column]
-  const [bottom, right] = [change.set.row + change.set.rows - current.row - current.rows, change.set.column + change.set.columns - current.column - current.columns]
+  const [top, left] = [change.set.row, change.set.column]
+  const [bottom, right] = [change.set.row + change.set.rows - current.rows, change.set.column + change.set.columns - current.columns]
   const steps = Math.max(...[top, left, bottom, right].map(Math.abs))
   return stoppedShort(project, ref, steps, (k) => {
     const by = along(k, steps)
-    const [row, column] = [current.row + by(top), current.column + by(left)]
-    return changedTo({ set: { row, column, rows: current.row + current.rows + by(bottom) - row, columns: current.column + current.columns + by(right) - column } })
+    const [row, column] = [by(top), by(left)]
+    return changedTo({ set: { row, column, rows: current.rows + by(bottom) - row, columns: current.columns + by(right) - column } })
   })
 }
 
@@ -216,19 +226,17 @@ export function frameChanged(project: Project, change: FrameChange, ref: FrameRe
     const { folded: _folded, ...kept } = frame
     const carried = withEachBead(frame, (position) => shiftedAcrossLine(change.removeLine, position))
     const rowProgress = progressWithoutLine(project, change.removeLine, ref)
-    return { kind: 'changed', project: withFrame(withFrameSheet(project, { ...kept, ...carried, rowProgress }, { frame: ref }), smaller, ref) }
+    return { kind: 'changed', project: withFrameResized(withFrameSheet(project, { ...kept, ...carried, rowProgress }, { frame: ref }), { row: 0, column: 0, rows: smaller.rows, columns: smaller.columns }, ref) }
   }
 
   if ('move' in change) {
     const frame = frameById(project, ref)!
-    // Off the Canvas's grid it moves by its own rows and columns, along it on screen (ticket 1188), not the Canvas's.
-    const by = frame.centre ? canvasDistance(project, frameWeave(project, ref), change.move.rows, change.move.columns, ref) : { row: change.move.rows, column: change.move.columns }
-    const moved = movedFrame(frame, by.row, by.column)
-    if (sameFrame(frame, moved)) {
+    if (change.move.x === 0 && change.move.y === 0) {
       return { kind: 'unchanged', project }
     }
     // The Frame carries its beads and the passes; the Canvas under the destination stays as it is, hidden (ADR 0066).
-    return { kind: 'changed', project: touchFrameSheet(project, { ...frame, row: moved.row, column: moved.column }, { frame: ref }) }
+    const centre = { x: frame.centre.x + change.move.x, y: frame.centre.y + change.move.y }
+    return { kind: 'changed', project: touchFrameSheet(project, { ...frame, centre }, { frame: ref }) }
   }
 
   if ('name' in change) {
@@ -269,7 +277,7 @@ export function frameChanged(project: Project, change: FrameChange, ref: FrameRe
   }
 
   if ('remove' in change) {
-    return frameById(project, ref) ? { kind: 'changed', project: withFrame(project, undefined, ref) } : { kind: 'unchanged', project }
+    return frameById(project, ref) ? { kind: 'changed', project: withoutFrame(project, ref) } : { kind: 'unchanged', project }
   }
 
   if ('technique' in change || 'techniqueSettings' in change) {
@@ -288,10 +296,12 @@ export function frameChanged(project: Project, change: FrameChange, ref: FrameRe
     return sameFrame(current, frameById(made, ref)) && sameBeads(project, made) && current?.name === frameById(made, ref)?.name ? { kind: 'unchanged', project } : { kind: 'changed', project: made }
   }
 
-  if (sameFrame(frameById(project, ref), change.set)) {
+  // With no Frame the rectangle is of Canvas positions, and a Frame is made empty there.
+  if (!current) return { kind: 'changed', project: withFrameMadeOn(project, change.set, ref) }
+  if (sameFrame({ rows: current.rows, columns: current.columns }, change.set)) {
     return { kind: 'unchanged', project }
   }
-  return { kind: 'changed', project: withFrame(project, change.set, ref) }
+  return { kind: 'changed', project: withFrameResized(project, change.set, ref) }
 }
 
 /** A Frame rewoven in another Technique starts its progress afresh, in the new Technique's way as it lies (spec 1182),
@@ -313,16 +323,13 @@ function frameRefuses(project: Project, frame: FrameSheet, change: FrameChange, 
   )
 }
 
-/** A Custom frame built from its Frame shape and settings round a Canvas position: its bounding rectangle in its own
- * Technique and its layer's Bead (by default the Bead a Frame of the Project is made in, ticket 0723), its first row
- * and column the Canvas positions half that rectangle up and left, snapped as a Frame starts. */
-function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: GridPosition, quarterTurns: QuarterTurns | undefined, woven: Weave | undefined, ref: FrameRef, cell: BeadCell | undefined = frameWeave(project, ref).cell): FrameSheet {
+/** A Custom frame built from its Frame shape and settings round a point of the Table: its bounding rectangle in its own
+ * Technique and its layer's Bead (by default the Bead a Frame of the Project is made in, ticket 0723), centred there. */
+function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: TablePoint, quarterTurns: QuarterTurns | undefined, woven: Weave | undefined, ref: FrameRef, cell: BeadCell | undefined = frameWeave(project, ref).cell): FrameSheet & { centre: TablePoint } {
   const weave = weaveOf(woven ?? { technique: frameShapeOf({ shape })!.techniques[0] })
   const read = settingsOf({ shape, settings, ...weave })!
   const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave, cell)
-  const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2), ref)
-  const canvas = canvasWeave(project)
-  return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
+  return { centre: { ...centre }, rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
 }
 
 /** A new Custom frame: its Frame shape, its size or all its settings, the Canvas position it goes round, any beads, its
@@ -333,42 +340,42 @@ type CustomPlacement = { shape: FrameShapeId; centre: GridPosition; beads?: Bead
 /** The Project with a new Custom frame in place of any Frame there (ticket 0592), holding the beads given that its
  * layout has a position for: Row progress starts at the first pass, along its rows, and the Canvas keeps every bead. */
 function placedCustomFrame(project: Project, placement: CustomPlacement, ref: FrameRef): Project {
-  const { shape, centre, beads = {}, weave, quarterTurns } = placement
+  const { shape, centre, beads = {}, weave } = placement
+  const turns = (placement.quarterTurns ?? quarterTurnOf(project) / 90) as QuarterTurns
   const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ shape })!.id]: placement.size }
-  const sheet = customSheet(project, shape, settings, centre, quarterTurns, weave, ref)
-  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingRowProgressOf(sheet) }, { anew: true, frame: ref })
+  const sheet = customSheet(project, shape, settings, tablePointOf(project, centre), turns || undefined, weave, ref)
+  return touchFrameSheet(project, { ...sheet, angle: 90 * turns, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: startingRowProgressOf(sheet) }, { anew: true, frame: ref })
 }
 
 /** A Custom frame laid out again from new settings round its own centre, as it lay in `before` (the Project itself, or
  * the one before its Bead changed): each bead whose position is still in the layout shows, the rest fold, kept by their
  * position's name, until a layout has it again (ticket 0640). */
-function resettled<T extends FrameSheet>(project: Project, frame: T, settings: FrameSettings, quarterTurns: QuarterTurns | undefined, before: Project, ref: FrameRef): Omit<T, 'quarterTurns' | 'folded'> & FrameSheet {
-  const centre = canvasDistance(before, heldWeave(before, ref)!, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2), ref)
-  const sheet = customSheet(project, frame.shape!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns, heldWeave(project, ref), ref)
+function resettled<T extends FrameSheet & { centre: TablePoint }>(project: Project, frame: T, settings: FrameSettings, quarterTurns: QuarterTurns | undefined, _before: Project, ref: FrameRef): Omit<T, 'quarterTurns' | 'folded'> & FrameSheet {
+  const sheet = customSheet(project, frame.shape!, settings, frame.centre, quarterTurns, heldWeave(project, ref), ref)
   const { quarterTurns: _turned, folded: _folded, ...rest } = frame
   const geometry = frameGeometry(sheet)
   return { ...rest, ...sheet, ...refoldSheet(frame, (position) => geometry.hasPosition(position)) }
 }
 
-/** The edges of a Frame's rectangle a resize handle moved to make `asked`: the top or left where its first row or column
- * moved, else the bottom or right where its rows or columns changed. */
-function movedEdges(frame: Rect, asked: Rect): FrameEdge[] {
+/** The edges of a Frame's rectangle a resize handle moved to make `asked`, in its own rows and columns: the top or left
+ * where its first row or column moved, else the bottom or right where its rows or columns changed. */
+function movedEdges(frame: Pick<Rect, 'rows' | 'columns'>, asked: Rect): FrameEdge[] {
   return [
-    ...(asked.row !== frame.row ? (['top'] as const) : asked.rows !== frame.rows ? (['bottom'] as const) : []),
-    ...(asked.column !== frame.column ? (['left'] as const) : asked.columns !== frame.columns ? (['right'] as const) : []),
+    ...(asked.row !== 0 ? (['top'] as const) : asked.rows !== frame.rows ? (['bottom'] as const) : []),
+    ...(asked.column !== 0 ? (['left'] as const) : asked.columns !== frame.columns ? (['right'] as const) : []),
   ]
 }
 
 /** A Custom frame laid out again by its resize handles (ticket 0814): on each side of its rectangle a handle moved, only
- * the moved edge goes, the one across from it staying where it was on the Canvas; along the other its centre stays. */
-function keptEdges<T extends FrameSheet>(project: Project, before: FrameSheet, sheet: T, edges: readonly FrameEdge[], ref: FrameRef): T {
-  const weave = heldWeave(project, ref)!
-  const was = canvasDistance(project, weave, before.rows, before.columns, ref)
-  const now = canvasDistance(project, weave, sheet.rows, sheet.columns, ref)
-  const canvas = canvasWeave(project)
-  const row = edges.includes('top') ? before.row + was.row - now.row : edges.includes('bottom') ? before.row : sheet.row
-  const column = edges.includes('left') ? before.column + was.column - now.column : edges.includes('right') ? before.column : sheet.column
-  return { ...sheet, row: snapRow(canvas, row), column: snapColumn(canvas, column) }
+ * the moved edge goes, the one across from it staying where it was on the Table; along the other its centre stays. */
+function keptEdges<T extends FrameSheet & { centre: TablePoint }>(project: Project, before: FrameSheet & { centre: TablePoint }, sheet: T, edges: readonly FrameEdge[], ref: FrameRef): T {
+  const [was, now] = [extentMmOf(project, ref, before), extentMmOf(project, ref, sheet)]
+  const kept = (centre: number, from: number, to: number, first: boolean, last: boolean) => (first ? centre + from / 2 - to / 2 : last ? centre - from / 2 + to / 2 : centre)
+  const [x, y] = [
+    kept(before.centre.x, was.x, now.x, edges.includes('left'), edges.includes('right')),
+    kept(before.centre.y, was.y, now.y, edges.includes('top'), edges.includes('bottom')),
+  ]
+  return { ...sheet, centre: { x, y } }
 }
 
 /** A Custom frame laid out again in the Bead its layer now has in `after`, `before` with a Bead replaced (ticket 0723):
@@ -407,7 +414,7 @@ function madeFrame(project: Project, rectangle: Rect, inCanvasBead = false, ref:
   const copied = beadsInFrame(shownBeads(project), rectangle)
   const taken = pieceNamesOf(project)?.find((entry) => frameContains(rectangle, entry))?.name
   const named = taken ?? previous?.name
-  const framed = keptLayer(withFrame(withFrameSheet(project, undefined, { frame: ref }), rectangle, ref), previous, inCanvasBead, ref)
+  const framed = keptLayer(withFrameMadeOn(withFrameSheet(project, undefined, { frame: ref }), rectangle, ref), previous, inCanvasBead, ref)
   return withLayer(framed, ref, { beads: shiftedBeads(copied, -rectangle.row, -rectangle.column), ...(named ? { name: named } : {}) })
 }
 
@@ -424,8 +431,9 @@ function keptLayer(project: Project, previous: FrameLayer | undefined, inCanvasB
 /** The Project with a new empty Frame at `place.frame`, woven as `place.weave`, instead of the one it had (ticket 495):
  * Row progress starts at the first pass, and the Canvas keeps every bead. */
 function placedFrame(project: Project, place: FramePlacement, ref: FrameRef): Project {
-  const { row, column, rows, columns } = place.frame
-  const sheet = { row, column, rows, columns, ...weaveOf(place.weave), ...(place.quarterTurns ? { quarterTurns: place.quarterTurns } : {}) }
+  const { rows, columns } = place.frame
+  const turns = place.quarterTurns ?? quarterTurnOf(project) / 90
+  const sheet = { centre: tablePointOf(project, place.centre), rows, columns, angle: 90 * turns, ...weaveOf(place.weave), ...(turns ? { quarterTurns: turns as QuarterTurns } : {}) }
   const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {} }
   // Its progress starts afresh, in its Technique's way as it lies, whatever way the Frame it replaces ran.
   return touchFrameSheet(project, { ...frame, rowProgress: startingRowProgressOf(sheet) }, { anew: true, frame: ref })
@@ -438,21 +446,23 @@ function madeCustomFrame(project: Project, rectangle: Rect, ref: FrameRef): Proj
   const frame = frameById(project, ref)!
   const { cell } = frameWeave(project, ref)
   const settings = sizedSettings({ ...frame, cell }, coveringSize(project, frame, rectangle, ref), 'cover')!
-  const centre = { row: rectangle.row + Math.floor(rectangle.rows / 2), column: rectangle.column + Math.floor(rectangle.columns / 2) }
-  const sheet = customSheet(project, frame.shape!, settings, centre, frame.quarterTurns, heldWeave(project, ref), ref, cell)
+  const sheet = customSheet(project, frame.shape!, settings, canvasRectCentre(project, rectangle), frame.quarterTurns, heldWeave(project, ref), ref, cell)
   const framed = withFrameSheet(project, { ...sheet, ...frameIdentity(frame) }, { frame: ref })
+  const under = coversOf(framed).find((cover) => cover.ref === ref)!.frame
   const copied: (GridPosition & { color: string })[] = []
-  forEachBead(beadsInFrame(shownBeads(project), footprintOf(framed, ref)!), (row, column, color) => copied.push({ row: row - sheet.row, column: column - sheet.column, color }))
+  forEachBead(beadsInFrame(shownBeads(project), under), (row, column, color) => copied.push({ row: row - under.row, column: column - under.column, color }))
   const made = withLayer(framed, ref, { beads: withColors({}, copiedOntoLayout(layerSheet(framed, ref), copied)) })
   return frame.name === undefined ? made : withFrameSheet(made, { ...frameById(made, ref)!, name: frame.name }, { frame: ref })
 }
 
-/** The fewest rows and columns of a Weave that reach as far on the Canvas as a rectangle of its positions. */
+/** The fewest rows and columns of a Weave that reach as far on the Table as a rectangle of the Canvas's positions. */
 function coveringSize(project: Project, weave: Weave, rectangle: Rect, ref: FrameRef): { rows: number; columns: number } {
+  const wanted = canvasRectExtent(project, rectangle)
+  const reach = (rows: number, columns: number) => extentMmOf(project, ref, { ...weave, rows, columns })
   let rows = 1
-  while (canvasDistance(project, weave, rows, 0, ref).row < rectangle.rows) rows += 1
+  while (reach(rows, 1).y < wanted.y - 1e-6) rows += 1
   let columns = 1
-  while (canvasDistance(project, weave, 0, columns, ref).column < rectangle.columns) columns += 1
+  while (reach(1, columns).x < wanted.x - 1e-6) columns += 1
   return { rows, columns }
 }
 

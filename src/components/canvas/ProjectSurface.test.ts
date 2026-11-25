@@ -25,6 +25,7 @@ import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { canvasOf, frameOf, heldWeave, quarterTurnOf, withLayer } from '../../domain/layerRecord'
 import { withFrameSheet } from '../../domain/frameSheet'
+import { canvasRectCentre, coversOf } from '../../domain/sheets'
 import { findBead } from '../../domain/beads'
 import { scaledBead } from '../../testUtils/squareBead'
 import { moveToRow, resetRowProgress, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
@@ -37,6 +38,9 @@ import { addedColorId, projectPalette } from '../../domain/palette'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 
+/** The Canvas positions the first Frame covers (spec 1234): where it lies on the Canvas, as a rectangle of them. */
+const placedOf = (project: Project) => coversOf(project)[0]!.frame
+
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
 function projectOf(columns: number, rows: number, extra: LayersChange = {}, technique: Technique = 'loom'): Project {
@@ -47,7 +51,9 @@ function projectOf(columns: number, rows: number, extra: LayersChange = {}, tech
     const open = withFrameSheet(project, undefined, { frame: frameIdIn(project) })
     return withLayers(open, { ...rest, beads: beads ?? {} })
   }
-  return withLayers(project, { ...rest, frame: { ...frameOf(project)!, ...rest.frame, beads: beads ?? {} } })
+  // A Frame placed by a Canvas row and column lies by the centre they give (spec 1234), not the one it had.
+  const placed = rest.frame && ('row' in rest.frame || 'column' in rest.frame) ? { centre: undefined } : {}
+  return withLayers(project, { ...rest, frame: { ...frameOf(project)!, ...placed, ...rest.frame, beads: beads ?? {} } })
 }
 
 /** How big the drawing area is on the screen. jsdom does no layout, so it is said here. */
@@ -102,6 +108,9 @@ const MOUSE = { pointerType: 'mouse', isPrimary: true }
 const SURFACES = 2
 /** Times the surface has been drawn: each draws both surfaces' beads and overlays, and each starts by clearing. */
 const draws = () => context.named('clearRect').filter(({ args }) => (args[2] as number) > 100).length / (2 * SURFACES)
+/** What `draws()` counts when only the Frame's own surface draws all again after an edit of its beads (spec 1234): its beads
+ * and both overlays, the Canvas's beads staying as drawn. */
+const FRAME_ONLY = 3 / (2 * SURFACES)
 /** Calls both surfaces made alike, the Canvas's first (ticket 1187): the bands they redraw. Those of one. */
 function onOneSurface<T>(calls: T[]): T[] {
   const half = calls.length / 2
@@ -424,25 +433,26 @@ describe('ProjectSurface', () => {
 
     it('draws only the rows it changed, and their neighbours', async () => {
       viewport = { width: 400, height: 600 }
-      const project = projectOf(20, 30)
+      // Bands are the Canvas's alone: a Frame's own surface draws all again (spec 1234), so the Canvas has no Frame here.
+      const project = projectOf(20, 30, { frame: undefined })
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
       await wrapper.setProps({ project: painted(project, 12, 4) })
 
       // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it.
-      expect(onOneSurface(context.named('rect').map((call) => call.args))).toEqual([[0, 240, 400, 20]])
+      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
     })
 
     it('draws a band for each cluster of changed rows, as a change to rows far apart', async () => {
       viewport = { width: 400, height: 600 }
-      const project = projectOf(20, 30)
+      const project = projectOf(20, 30, { frame: undefined })
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
       await wrapper.setProps({ project: painted(painted(project, 3, 4), 26, 4) })
 
-      expect(onOneSurface(context.named('rect').map((call) => call.args[1]))).toEqual([60, 520])
+      expect(context.named('rect').map((call) => call.args[1])).toEqual([60, 520])
     })
 
     // A shaped Frame's rows are its layout's, not rows on the screen: a Fringe earring's top is counted up from its base
@@ -465,7 +475,7 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ project: withLayer(flat, FRAME_ID, { beads: { ...beads, [row]: { ...beads[row], [column]: '#e63746' } } }) })
 
       expect(context.named('rect')).toHaveLength(0)
-      expect(draws()).toBe(1)
+      expect(draws()).toBe(FRAME_ONLY)
     })
 
     // A turned Frame's own rows lie across the Canvas's rows (Rotate Frame): a band of Canvas rows at its own row would
@@ -481,7 +491,7 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ project: withLayer(turned, FRAME_ID, { beads: { ...beads, 0: { 19: '#e63746' } } }) })
 
       expect(context.named('rect')).toHaveLength(0)
-      expect(draws()).toBe(1)
+      expect(draws()).toBe(FRAME_ONLY)
     })
 
     it('draws again only the Frame an edit painted, round its own sheet, when the Project has two (ticket 1219)', async () => {
@@ -495,7 +505,8 @@ describe('ProjectSurface', () => {
       // One cut and one clear, round that sheet and a pixel past it; the Canvas and the first Frame stay as drawn.
       expect(context.named('rect').map((call) => call.args)).toEqual([[199, 119, 242, 282]])
       expect(context.named('clearRect').filter(({ args }) => args[2] === 242)).toHaveLength(1)
-      expect(context.named('clearRect').filter(({ args }) => args[2] === VIEWPORT.width)).toHaveLength(SURFACES)
+      // Only the overlays of the three surfaces (the Canvas's and each Frame's) are cleared whole.
+      expect(context.named('clearRect').filter(({ args }) => args[2] === VIEWPORT.width)).toHaveLength(SURFACES + 1)
     })
 
     it('draws no beads at all when nothing in view changed, and only redraws the overlay', async () => {
@@ -523,7 +534,7 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ project: everyOtherRow(project) })
 
       expect(context.named('rect')).toHaveLength(0)
-      expect(draws()).toBe(1)
+      expect(draws()).toBe(FRAME_ONLY)
     })
 
     it.each([
@@ -555,7 +566,8 @@ describe('ProjectSurface', () => {
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
         return (this.dataset.testid === 'project-surface-cells' ? cells : context).context as unknown as CanvasRenderingContext2D
       } as never)
-      const project = shallowRef(projectOf(20, 30))
+      // Bands are the Canvas's alone (spec 1234): the stroke is on a Canvas with no Frame.
+      const project = shallowRef(projectOf(20, 30, { frame: undefined }))
       let saved = 0
       // Each step lands in the library as it does in the app, stamped saved (ticket 0674): that draws no bead.
       const paint = (row: number, column: number) => {
@@ -671,32 +683,11 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ project: to })
     }
 
-    it('draws again after Row done only the row finished and the new current one, of a Frame much taller', async () => {
+    it('draws everything again, in no bands, as the Frame\'s passes are no lines of the Canvas (spec 1234)', async () => {
       await step(weaving(12), weaving(13))
 
-      // Rows 12 and 13, y 240 to 280, and the half row the weave's shift hangs below them.
-      expect(bands()).toEqual([[0, 240, 400, 40]])
-    })
-
-    it.each([
-      ['Row not done', 13, 12, [[0, 240, 400, 40]]],
-      ['a press a few passes along', 12, 16, [[0, 240, 400, 100]]],
-      ['a press a few passes back', 16, 12, [[0, 240, 400, 100]]],
-    ])('draws again after %s only the passes between', async (_name, from, to, drawn) => {
-      await step(weaving(from), weaving(to))
-
-      expect(bands()).toEqual(drawn)
-    })
-
-    it.each([
-      // On peyote a pass is every other bead of a line (its first line one pass): passes 23 and 24 are both of row 12,
-      // drawn whole, down to the half bead its staggered columns hang below it.
-      ['peyote', 23, 24, [[0, 240, 400, 30]]],
-      ['brick', 12, 13, [[0, 240, 400, 40]]],
-    ] as const)('draws again on %s only the lines of the passes between', async (technique, from, to, drawn) => {
-      await step(weaving(from, technique), weaving(to, technique))
-
-      expect(bands()).toEqual(drawn)
+      expect(bands()).toHaveLength(0)
+      expect(draws()).toBe(1)
     })
 
     // Turned by Rotate Frame, its own rows lie across the Canvas's: a band of Canvas rows would miss the passes.
@@ -706,15 +697,6 @@ describe('ProjectSurface', () => {
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
-    })
-
-    it('draws again a strip down the view where the rows run down the Frame\'s columns', async () => {
-      const turned = toggleRowDirection(tall.loom, frameIdIn(tall.loom))
-      const across = (pass: number) => moveToRow(turned, pass, frameIdIn(turned))
-      await step(across(4), across(5))
-
-      // Columns 4 and 5, x 80 to 120, the view's whole height.
-      expect(bands()).toEqual([[80, 0, 40, 600]])
     })
 
     describe('draws everything again where the passes are not a few lines of the Canvas', () => {
@@ -746,10 +728,6 @@ describe('ProjectSurface', () => {
       })
 
       it('a press far along the Progress bar, past the rows bands pay for', async () => {
-        await step(weaving(0), weaving(29))
-        // Under the rows bands pay for, a press along it is a band.
-        expect(bands()).toHaveLength(1)
-
         viewport = { width: 400, height: 1000 }
         const taller = projectOf(20, 60)
         const { wrapper } = await mountSurface(taller)
@@ -1323,7 +1301,7 @@ describe('ProjectSurface', () => {
       }
       inHighContrast()
       const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
-      const finishedCentre = (project: Project) => centreOf(project, frameOf(project)!.row, frameOf(project)!.column)
+      const finishedCentre = (project: Project) => centreOf(project, placedOf(project).row, placedOf(project).column)
 
       it('draws them at normal color, and the current row unbrightened, while Row highlight is off, and dims again when it is on (ticket 474)', async () => {
         const { wrapper } = await mountSurface(weaving(), 1, { x: 0, y: 0 }, { rowMarks: false })
@@ -1374,10 +1352,10 @@ describe('ProjectSurface', () => {
         const project = weaving()
         const { wrapper } = await mountSurface(project)
         const surface = wrapper.find('[data-testid="project-surface"]')
-        const todo = centreOf(project, frameOf(project)!.row + 5, frameOf(project)!.column)
+        const todo = centreOf(project, placedOf(project).row + 5, placedOf(project).column)
 
         context.calls.length = 0
-        await moveTo(surface, centreOf(project, frameOf(project)!.row, frameOf(project)!.column + PAST_THE_FRAME))
+        await moveTo(surface, centreOf(project, placedOf(project).row, placedOf(project).column + PAST_THE_FRAME))
         await nextTick()
         expect(redShown()).toBe(false)
 
@@ -1438,7 +1416,7 @@ describe('ProjectSurface', () => {
 
         context.calls.length = 0
         await surface.trigger('pointerdown', { clientX: 900, clientY: 700, pointerType: 'mouse', pointerId: 1, isPrimary: true, button: 1, buttons: 4 })
-        await moveTo(surface, centreOf(project, frameOf(project)!.row + 5, frameOf(project)!.column))
+        await moveTo(surface, centreOf(project, placedOf(project).row + 5, placedOf(project).column))
         await nextTick()
         expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', PROJECT_THEMES.contrast.canvas, 0.5))).toBe(false)
       })
@@ -1483,7 +1461,7 @@ describe('ProjectSurface', () => {
         const surface = wrapper.find('[data-testid="project-surface"]')
 
         context.calls.length = 0
-        await surface.trigger('pointerdown', { ...centreOf(project, frameOf(project)!.row + 5, frameOf(project)!.column), pointerType: 'touch', pointerId: 1, isPrimary: true, button: 0, buttons: 1 })
+        await surface.trigger('pointerdown', { ...centreOf(project, placedOf(project).row + 5, placedOf(project).column), pointerType: 'touch', pointerId: 1, isPrimary: true, button: 0, buttons: 1 })
         await nextTick()
 
         expect(redShown()).toBe(false)
@@ -1642,17 +1620,22 @@ describe('ProjectSurface', () => {
     })
 
     it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0066)', async () => {
-      // 48 rows of a Bead three quarters the Canvas's size cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share a position.
-      const project = withLayer(projectOf(11, 48, { frame: { technique: 'loom', row: 0, column: 0, rows: 48, columns: 11, beads: {} } }), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+      // 48 rows of a Bead three quarters the Canvas's size cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share no position
+      // but the number. The Frame lies with its first bead on the Canvas's first position.
+      const bare = projectOf(11, 48, { frame: undefined })
+      const centre = canvasRectCentre(bare, { row: 0, column: 0, rows: 36, columns: 8.25 })
+      const project = withLayer(withLayers(bare, { frame: { technique: 'loom', centre, rows: 48, columns: 11, beads: {} } }), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
       const { wrapper } = await mountSurface(project)
-      const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: { ...frameOf(project)!, scale: 0.75 }, rotation: 0, zoom: 1 })
+      const onScreen = (position: GridPosition) => (wrapper.vm as unknown as { beadOnScreen: (at: GridPosition) => { x: number; y: number } }).beadOnScreen(position)
       const surface = wrapper.find('[data-testid="project-surface"]')
+      const press = (at: { x: number; y: number }) => surface.trigger('pointerdown', { clientX: at.x, clientY: at.y, button: 0, buttons: 1 })
 
-      await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, FRAME_ID).x, clientY: view.beadToPoint({ row: 38, column: 3 }, FRAME_ID).y }, button: 0, buttons: 1 })
+      await press(onScreen({ row: 38, column: 3, layer: FRAME_ID }))
       await surface.trigger('pointerup', { button: 0 })
-      await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, 'canvas').x, clientY: view.beadToPoint({ row: 38, column: 3 }, 'canvas').y }, button: 0, buttons: 1 })
+      // Past the Frame's margin (it reaches Canvas row 40), the Canvas's own position.
+      await press(onScreen({ row: 44, column: 3, layer: 'canvas' }))
 
-      expect(events(wrapper)['cell-primary-down']).toEqual([[38, 3, FRAME_ID], [38, 3]])
+      expect(events(wrapper)['cell-primary-down']).toEqual([[38, 3, FRAME_ID], [44, 3]])
     })
 
     it('does not hover again for a press on the bead the pointer was already over', async () => {
@@ -1933,6 +1916,14 @@ describe('ProjectSurface', () => {
       await surfaceOf(wrapper).trigger('pointermove', { clientX: at.x, clientY: at.y, buttons: 0, pointerType: 'pen' })
       expect(drawn(wrapper).exists()).toBe(true)
 
+      // Row 15 is in the margin, 2 beads below the Frame's last row.
+      const inMargin = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 15, column: 12 })
+      await surfaceOf(wrapper).trigger('pointermove', { clientX: inMargin.x, clientY: inMargin.y, buttons: 0, pointerType: 'pen' })
+      expect(drawn(wrapper).exists()).toBe(false)
+      await surfaceOf(wrapper).trigger('pointermove', { clientX: at.x, clientY: at.y, buttons: 0, pointerType: 'pen' })
+      expect(drawn(wrapper).exists()).toBe(true)
+
+      // Also where the canvas moves the margin under a still pencil.
       await wrapper.setProps({ scroll: { x: 0, y: 40 } })
       expect(drawn(wrapper).exists()).toBe(false)
       await wrapper.setProps({ scroll: { x: 0, y: 0 } })
@@ -2378,7 +2369,6 @@ describe('ProjectSurface with a Frame', () => {
   describe('with two Frames (ticket 1220)', () => {
     // The second Frame, 4 × 6 at row 10, column 14: its beads 280 to 360 across and 200 to 320 down, in 20 px beads.
     const pair = () => twoFrames({ row: 10, column: 14 })
-    const surfaceOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.vm as unknown as { frameSheetAt(point: { clientX: number; clientY: number }): FrameId | undefined }
 
     it('reports each Frame\'s place and margin sheet, round its own beads', async () => {
       const { wrapper } = await mountSurface(pair())
@@ -2386,13 +2376,6 @@ describe('ProjectSurface with a Frame', () => {
       expect(Object.keys(anchors)).toEqual([frameIdIn(pair()), SECOND])
       expect(anchors[SECOND]!.sheet.left).toBeCloseTo(280 - 80)
       expect(anchors[frameIdIn(pair())]!.sheet.left).toBeCloseTo(-80)
-    })
-
-    it('tells which Frame a point is on, by its beads or its margin sheet, none off both', async () => {
-      const { wrapper } = await mountSurface(pair())
-      expect(surfaceOf(wrapper).frameSheetAt({ clientX: 300, clientY: 250 })).toBe(SECOND)
-      expect(surfaceOf(wrapper).frameSheetAt({ clientX: 20, clientY: 20 })).toBe(frameIdIn(pair()))
-      expect(surfaceOf(wrapper).frameSheetAt({ clientX: 195, clientY: 20 })).toBeUndefined()
     })
 
     it('grabs the handle of the Frame being set, and tells which Frame it is', async () => {
@@ -2482,7 +2465,16 @@ describe('ProjectSurface with a Frame', () => {
     const surface = wrapper.find('[data-testid="project-surface"]')
     for (let beads = 1; beads <= 4; beads += 1) await surface.trigger('pointermove', { buttons: 1, ...after(beads), pointerId: 1 })
 
-    expect(wrapper.emitted('frame-drag')!.map(([cell]) => cell)).toEqual([3, 4, 5, 6].map((column) => ({ row: 2, column })))
+    // The Frame follows the pointer continuously (spec 1234): the points of the Table it is carried to lie on one straight line,
+    // one bead's step apart, whatever the stagger.
+    const at = wrapper.emitted('frame-drag')!.map(([, point]) => point as { x: number; y: number })
+    expect(at).toHaveLength(4)
+    const steps = at.slice(1).map((point, index) => ({ x: point.x - at[index]!.x, y: point.y - at[index]!.y }))
+    for (const step of steps) {
+      expect(Math.hypot(step.x, step.y)).toBeGreaterThan(0)
+      expect(step.x).toBeCloseTo(steps[0]!.x, 6)
+      expect(step.y).toBeCloseTo(steps[0]!.y, 6)
+    }
   })
 
   it('scrolls the view toward the edge a dragged Frame touches, and moves the Frame with it', async () => {
@@ -2585,7 +2577,7 @@ describe('ProjectSurface with a Frame', () => {
       expect(redShown()).toBe(true)
     })
 
-    it('draws the last pass alone again after its press, and every bead once Pattern done brings the finished passes back to full color (ticket 1038)', async () => {
+    it('draws every bead again after its press, in no band (spec 1234), and again once Pattern done brings the finished passes back to full color (ticket 1038)', async () => {
       const cells = recordingContext()
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
         return (this.dataset.testid === 'project-surface-cells' ? cells : context).context as unknown as CanvasRenderingContext2D
@@ -2598,8 +2590,9 @@ describe('ProjectSurface with a Frame', () => {
 
       await wrapper.setProps({ project: moveToRow(weaving, 10, frameIdIn(weaving)), rowPress: lastPass })
       await at(1000)
-      // Row 9, y 180 to 200, across the view.
-      expect(cells.named('rect').map((call) => call.args)).toEqual([[0, 180, 1000, 20]])
+      // A Frame's passes are no lines of the Canvas, so nothing is cut to a band.
+      expect(cells.named('rect')).toHaveLength(0)
+      expect(cells.named('clearRect').map((call) => call.args)).toContainEqual([0, 0, 1000, 800])
 
       cells.calls.length = 0
       await at(1000 + ROW_MOTION.patternDoneDelay + ROW_MOTION.restoreDelay)

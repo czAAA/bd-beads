@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { gridBox, openApp, openColorPopover, savedProject, settle, setZoom } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
-import { frameOf } from '../../src/domain/layerRecord'
 import { frameGrid } from '../../src/testUtils/frameGrid'
+import { placeOf } from '../../src/testUtils/placeOf'
 
 /** The margin sheet's Move bar and Edit Frame are drawn at the sheet's scale, its band over 72px held between 0.6 and 1.5 (tickets 0657, 0698); the Frame's settings popover hangs from its sheet's ··· button (ticket 1222). Measured by their boxes, not compared with a picture. */
 
@@ -109,7 +109,7 @@ for (const touch of [false, true]) {
       await expect(page.getByTestId('margin-band')).toHaveCount(0)
 
       // A press on the first row's middle bead, just under the bar, paints it.
-      const before = frameOf(await savedProject(page))!
+      const before = placeOf(await savedProject(page))
       const bead = beadCentre({ technique: 'loom', rotation: 0 }, await gridBox(page), zoom / 100, { row: before.row, column: before.column + 20 })
       if (touch) await tap(page, bead)
       else await page.mouse.click(bead.x, bead.y)
@@ -142,7 +142,7 @@ for (const touch of [false, true]) {
       await page.mouse.down()
       await page.mouse.move(from.x + 200 * (zoom / 100), from.y, { steps: 10 })
       await page.mouse.up()
-      await expect.poll(async () => frameOf(await savedProject(page))!.column).toBe(before.column + 10)
+      await expect.poll(async () => placeOf(await savedProject(page)).column).toBe(before.column + 10)
       await context.close()
     })
   }

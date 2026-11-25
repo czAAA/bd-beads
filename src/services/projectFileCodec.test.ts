@@ -1,16 +1,15 @@
 // @vitest-environment node
-import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
+import { FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColorsInPalette } from '../domain/paletteEdits'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject, createProjectFromImage } from '../domain/createProject'
 import { moveToRow } from '../domain/rowProgress'
-import { withFrame } from '../domain/frame'
 import type { Project } from '../domain/project'
 import { paintAt } from '../testUtils/layers'
 import { serializeLibrary } from '../domain/projectFile'
 import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
-import { canvasOf, frameOf } from '../domain/layerRecord'
+import { canvasOf } from '../domain/layerRecord'
 import { newReferenceImage, withReferenceImage } from '../domain/referenceImage'
 import { withLayers } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
@@ -79,7 +78,7 @@ describe('a .openbeads file', () => {
       ),
       futureField: { a: 1 },
     } as Project
-    const restored = await roundTrip(withFrame(project, frameOf(project), frameIdIn(project)))
+    const restored = await roundTrip(project)
     expect(restored).toEqual(withColorsInPalette(project))
     expect(canvasOf(restored).name).toBe('Лиса')
   })

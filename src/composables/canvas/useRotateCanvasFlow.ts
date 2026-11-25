@@ -1,4 +1,4 @@
-import { turnCanvasTo } from '../../domain/rotate'
+import { turnCanvasTo, turnTableTo } from '../../domain/rotate'
 import { turnedOrientation } from '../../domain/canvasOrientation'
 import { orientationOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
@@ -31,15 +31,14 @@ export function useRotateCanvasFlow(deps: RotateCanvasFlowDeps) {
     deps.announce(deps.messages().canvas.announceCanvasRotated)
   }
 
-  /** Keeps the angle a two-finger twist settled on (ticket 0672), saved with the Project like the button's turn, the
-   * Canvas moved as far as it turned about the fingers (ticket 1188). A gesture the person watched as it went, so
-   * nothing is announced. */
-  function onTwistCanvas(orientation: number, moved?: TablePoint): void {
+  /** Keeps the angle a two-finger twist settled on (ticket 0672), saved with the Project like the button's turn: the whole
+   * Table turned, every layer with it (spec 1234). A gesture the person watched as it went, so nothing is announced. */
+  function onTwistTable(angle: number): void {
     const project = deps.currentProject()
     if (project) {
-      deps.replaceProject(turnCanvasTo(project, orientation, moved))
+      deps.replaceProject(turnTableTo(project, angle))
     }
   }
 
-  return { onRotateCanvas, onTwistCanvas }
+  return { onRotateCanvas, onTwistTable }
 }

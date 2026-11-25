@@ -56,24 +56,28 @@ export interface LayerFields extends Weave {
 export interface CanvasLayer extends LayerFields {
   /** The Project's name, and the file's: one value. */
   name: string
-  /** View-only turn (tickets 28, 171, ADR 0079): the Canvas, and every layer on it, shown turned this many degrees
-   * clockwise, from 0 up to a whole turn; any angle by a twist on touch (ticket 0672). Never a data transform. */
+  /** The Canvas's own quarter turn on the Table (spec 1234, ticket 1237): 0, 90, 180 or 270 degrees clockwise. Rotate
+   * canvas steps it; nothing else turns it, and no other layer follows it. A view, never a data transform. */
   orientation: number
-  /** Where its origin lies on the table (spec 1182, ticket 1188), in its bead widths: a turn about a pivot moves it. A
-   * view of this session, never saved: a file's table has its origin at the Canvas's. Absent, at the table's origin. */
+  /** Where its origin lies on the Table (spec 1234), in mm: Rotate canvas moves it with the middle of the view it turns
+   * about. A view of this session, never saved: a file's Frames are placed from the Canvas's origin. Absent, at the
+   * Table's origin. */
   origin?: { x: number; y: number }
+  /** The Table turn (spec 1234, ticket 1237): how far the whole Table, every layer together, is shown turned on screen,
+   * in degrees clockwise, from 0 up to a whole turn, any angle. A view saved with the Project, never an Undo step and in
+   * no export. Absent: upright. */
+  tableTurn?: number
 }
 
 /** A Frame as a layer (ADR 0066, 0079): its sheet (place, Weave, beads, Folded beads, name, Frame shape and settings)
  * with the rest of a layer, its own angle on the table and its Row progress. */
 export interface FrameLayer extends LayerFields, FrameSheet {
-  /** Its own angle on the table (spec 1182), degrees clockwise from 0 up to a whole turn: no longer quarter turns on the
-   * Canvas. `quarterTurns`, how it lies on the Canvas's grid, is read from it and the Canvas's (layerRecord's frameOf). */
+  /** Its own quarter turn on the Table (spec 1234, ticket 1237): 0, 90, 180 or 270 degrees clockwise, whatever the Canvas's
+   * or any other layer's. `quarterTurns`, how its grid lies turned, is read from it (layerRecord's frameById). */
   angle: number
-  /** Its centre on the table, in the Canvas's bead widths, where it lies off the Canvas's grid (ticket 1188): turned
-   * other than by whole quarters from the Canvas, or off its whole positions. Its row and column then only address its
-   * cells, and it has no quarter turns. Absent, it lies on the grid where its row and column put it. */
-  centre?: { x: number; y: number }
+  /** Where it lies on the Table (spec 1234): its centre in mm. Never a Canvas row and column, and nothing snaps it to the
+   * Canvas's lattice; its own rows and columns address its own cells only. */
+  centre: { x: number; y: number }
   rowProgress: RowProgress
 }
 

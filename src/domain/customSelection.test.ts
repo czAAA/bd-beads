@@ -7,7 +7,7 @@ import { cellOfBead } from './customSelection'
 import { customFrameSize, frameLayoutOf, type FrameShapeId } from './frameShape'
 import { layerSheet, onLayer } from './layers'
 import { parseProjectsFile, serializeProject } from './projectFile'
-import { canvasDistance, frameWeave } from './layerWeave'
+import { frameWeave } from './layerWeave'
 import { createProject } from './createProject'
 import { isInFinishedRow, keepFinishedRows, moveToRow, rowProgressStarted } from './rowProgress'
 import { paintCells } from './drawing'
@@ -42,7 +42,7 @@ const paintFrame = (project: Project, positions: { row: number; column: number }
 const allPositions = (project: Project) => frameLayoutOf(frameOf(project)!)!.positions.map(({ row, column }) => ({ row, column }))
 
 /** The Selection Select all makes over the Frame. */
-const everything = (project: Project): Selection => selectAllSelection(beadsOfLayer(project, 'canvas'), frameOf(project), frameIdIn(project))!
+const everything = (project: Project): Selection => selectAllSelection(beadsOfLayer(project, 'canvas'), { row: 0, column: 0, rows: frameOf(project)!.rows, columns: frameOf(project)!.columns }, frameIdIn(project))!
 
 /** A Selection of the Frame's cells, by their own rows and columns. */
 const ofFrame = (_project: Project, top: number, left: number, rows: number, columns: number): Selection => ({ top, left, rows, columns, layer: FRAME_ID })
@@ -178,8 +178,8 @@ describe('Rotate Frame on a Custom frame (ticket 0594)', () => {
     const layout = frameLayoutOf(before)!
     expect(turnedLayout.width).toBeCloseTo(layout.height)
     expect(turnedLayout.positions[0]!.angle).toBeCloseTo(layout.positions[0]!.angle + Math.PI / 2)
-    const centre = (frame: typeof before) => frame.row + canvasDistance(project, frame, frame.rows / 2, frame.columns / 2, frameIdIn(project)).row
-    expect(Math.abs(centre(after) - centre(before))).toBeLessThanOrEqual(1)
+    // It turns about its own centre, which stays where it is on the Table (spec 1234).
+    expect(after.centre).toEqual(before.centre)
   })
 
   it('comes back as it was after four turns, and keeps its turn through the Project file', () => {

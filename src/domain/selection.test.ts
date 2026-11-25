@@ -28,7 +28,10 @@ import {
 } from './selection'
 import { type BeadMap, withColors } from './canvas'
 import { createProject } from './createProject'
-import { withFrame } from './frame'
+import { withFrame } from '../testUtils/withFrame'
+import { sheetAt } from '../testUtils/sheetAt'
+import { withFrameCentre } from './framePlacement'
+import { coverOf } from './margin'
 import type { Project } from './project'
 import { BEAD_CATALOG, findBead } from './beads'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
@@ -236,7 +239,7 @@ describe('stampedCells and pasteOnLayer', () => {
 
   it('lands a Canvas Paste inside a Canvas Area, a counterpart under the Frame painted there hidden (ADR 0082)', () => {
     const motif: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]], anchor: { row: 0, column: 0 } }
-    const target = withLayers(painted(['....']), { frame: { ...frameOf(painted(['....']))!, row: 10, column: 10 } })
+    const target = withLayers(painted(['....']), { frame: sheetAt(painted(['....']), 10, 10) })
     // An Area of columns 0 to 16 has its Axis through column 8; one of 0 to 12 through column 6.
     const inArea = (columns: number): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'canvas', area: { row: 10, column: 0, rows: 1, columns } } })
     const mirror = inArea(17)
@@ -370,8 +373,10 @@ beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3
 
   it('copies, for a Canvas Selection across a Frame that draws shorter than the rows it names, only what lies clear of what it draws and its margin (ticket 0659)', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-    // A 48-row Frame in a Bead three quarters the Canvas's size covers 36 Canvas rows: rows 36 to 39 are its margin, row 40 is free Canvas.
-    const placed = withLayer(withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 }, frameIdIn(base)), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+    // A 48-row Frame in a Bead three quarters the Canvas's size, its corner on the Canvas's first position, covers 36 Canvas
+    // rows: rows 36 to 38 are its margin (4 of its own beads), row 39 and on free Canvas.
+    const scaled = withLayer(withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 }, frameIdIn(base)), FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+    const placed = withFrameCentre(scaled, { x: (11 * 0.75 * 1.5) / 2, y: 27 }, FRAME_ID)
     const woven: Project = withLayers(placed, { beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) })
     expect(copyLayerSelection(woven, { top: 0, left: 3, rows: 50, columns: 1, layer: 'canvas' })?.colors).toEqual([[BLUE]])
     expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 40, columns: 1, layer: 'canvas' })).toBe(false)
@@ -441,14 +446,14 @@ describe('pieceSelectionAt with a Frame (ticket 433)', () => {
   )
 
   it('takes the part on the tapped bead\'s side: the inside, or clear of the margin', () => {
-    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 10 }, frame)).toEqual({
+    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 10 }, coverOf(frame))).toEqual({
       top: 12,
       left: 10,
       rows: 1,
       columns: 2,
       cells: [{ row: 12, column: 10 }, { row: 12, column: 11 }],
     })
-    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 9 }, frame)).toBeUndefined()
+    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 9 }, coverOf(frame))).toBeUndefined()
   })
 })
 
