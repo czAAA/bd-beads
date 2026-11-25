@@ -15,8 +15,8 @@ const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
 /** Version 3 is the first gzipped one (ADR 0009); 4 (0066) Frame's beads, 5 (0525) Palette, 6 (0528) removed defaults, 7
  * (534) Bead's copy, 8 (0538) codes, 9 (0592) Custom frame, 10 (0638) Folded, 11 (0636) settings maps, 12 (0664) layers, 13
- * (0691) Drop id, 14 (0790) pictures, 15 (1185) Frame's place, 16 (1225) Palette sections, 17 (1220) the Last edited Frame; older builds refuse. */
-const FILE_VERSION = 17
+ * (0691) Drop id, 14 (0790) pictures, 15 (1185) Frame's place, 16 (1225) Palette sections, 17 (1220) the Last edited Frame, 18 (1237) Frame's centre and quarter turn on the Table; older builds refuse. */
+const FILE_VERSION = 18
 /** The first version that holds reference images' pictures (ADR 0089). */
 const PICTURED_VERSION = 14
 
@@ -44,6 +44,7 @@ const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   14: (projects) => (projects as EncodedProject[]).map(decodeProject),
   15: (projects) => (projects as EncodedProject[]).map(decodeProject),
   16: (projects) => (projects as EncodedProject[]).map(decodeProject),
+  17: (projects) => (projects as EncodedProject[]).map(decodeProject),
   [FILE_VERSION]: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 

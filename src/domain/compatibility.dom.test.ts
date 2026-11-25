@@ -129,7 +129,7 @@ function writtenBack(stored: string): unknown {
 }
 
 /** The current file version, which every Project file is written back as. */
-const FILE_VERSION = 17
+const FILE_VERSION = 18
 
 /** A stored layer list's Frames as file version 15 writes them back (ticket 1185): the Frame's own angle on the table
  * (the Canvas's orientation plus its turn on it) and its centre there in place of its Canvas position and turn, and its
