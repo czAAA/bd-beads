@@ -46,7 +46,6 @@ export const print: PrintTranslations = {
     byMaker: 'аўтар: {maker}',
     madeWith: 'Зроблена ў',
     coverTag: 'Бясплатны рэдактар схем для бісеру. Без акаўнта.',
-    scanToOpen: 'навядзіце камеру',
     partArea: 'Частка {part} · слупкі {columns} · рады {rows}',
     continuesBoth: 'Працяг справа на старонцы {right}, ніжэй на старонцы {below} →',
     continuesRight: 'Працяг справа на старонцы {right} →',

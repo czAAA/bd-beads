@@ -3,7 +3,7 @@ import { drawFlatBead, parseColor, PRINT_THEME, type BeadDrawer, type ProjectThe
 import { coverPageLayout, type CoverPageLayout } from './coverPageLayout'
 import { PdfContent } from '../domain/pdfContent'
 import { K } from './chartVector'
-import { drawCoverFooter, type PageLink } from './coverFooter'
+import { coverFooterBox, drawCoverFooter, type PageLink } from './coverFooter'
 import { blankPage, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { mm, PRINT_MARGIN, type PageSize } from './printPlan'
@@ -33,6 +33,8 @@ const BOARD_GAP = mm(9.5)
 const TECH_GAP = mm(5.8)
 /** Between the board's bottom edge and the technique word under it. */
 const CAPTION_GAP = mm(5)
+/** The clear space between the technique word's line and the footer's top. */
+const FOOTER_GAP = mm(6)
 /** Between the rows of the title block, and between the title and the colors beside it. */
 const ROW_GAP = mm(1.6)
 const COLUMN_GAP = mm(6)
@@ -171,7 +173,10 @@ export function drawCoverPage(project: Project, words: PrintText, page: PageSize
   context.stroke()
   const techBottom = ruleY + TECH_LINE_GAP + pt(SIZE.meta)
   text(context, words.metaLine, PRINT_MARGIN, techBottom - pt(SIZE.meta) * DESCENT, META_FONT, PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
-  const layout = coverPageLayout(project, words.frame, page, techBottom + BOARD_GAP)
+  // The board takes the room the footer leaves, so no spare space sits between the technique word and the footer.
+  const boardTop = techBottom + BOARD_GAP
+  const boardHeight = coverFooterBox(page).top - FOOTER_GAP - CAPTION_GAP - pt(SIZE.technique) - boardTop
+  const layout = coverPageLayout(project, words.frame, page, boardTop, boardHeight)
   drawPiece(context, project, layout, words.frame)
   const captionBottom = layout.board.y + layout.board.height + CAPTION_GAP + pt(SIZE.technique)
   text(context, words.techniqueWord, PRINT_MARGIN, captionBottom - pt(SIZE.technique) * DESCENT, TECHNIQUE_FONT, PRINT_COLORS.accentStrong, 'left', page.width - PRINT_MARGIN * 2)

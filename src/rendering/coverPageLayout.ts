@@ -31,10 +31,10 @@ export interface CoverPageLayout {
   start: { x: number; y: number }
 }
 
-/** The Cover page's board from `top` down (under the title block and the tech line, ticket 1141) and the piece on it:
- * trimmed to its beads, turned as its Canvas is, as large as the board allows inside its pad, centred. */
-export function coverPageLayout(project: Layered, ref: FrameRef, page: PageSize = A4_PORTRAIT, top = PRINT_MARGIN): CoverPageLayout {
-  const board = { x: PRINT_MARGIN, y: top, width: page.width - PRINT_MARGIN * 2, height: COVER_BOARD }
+/** The Cover page's board from `top` down (under the title block and the tech line, ticket 1141), at least `print-cover-board`
+ * tall and `boardHeight` when the footer leaves more room, and the piece on it: trimmed to its beads, turned as its Canvas is, as large as the board allows inside its pad, centred. */
+export function coverPageLayout(project: Layered, ref: FrameRef, page: PageSize = A4_PORTRAIT, top = PRINT_MARGIN, boardHeight = COVER_BOARD): CoverPageLayout {
+  const board = { x: PRINT_MARGIN, y: top, width: page.width - PRINT_MARGIN * 2, height: Math.max(COVER_BOARD, boardHeight) }
   const trimmed = areaRegion(project, trimmedArea(project, ref), ref)
   const zoom = Math.min((board.width - COVER_PAD * 2) / trimmed.width, (board.height - COVER_PAD * 2) / trimmed.height)
   const width = trimmed.width * zoom

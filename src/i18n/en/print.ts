@@ -46,7 +46,6 @@ export const print: PrintTranslations = {
     byMaker: 'by {maker}',
     madeWith: 'Made with',
     coverTag: 'Free bead pattern maker. No account.',
-    scanToOpen: 'scan to open',
     partArea: 'Part {part} · columns {columns} · rows {rows}',
     continuesBoth: 'Continues right on page {right}, below on page {below} →',
     continuesRight: 'Continues right on page {right} →',

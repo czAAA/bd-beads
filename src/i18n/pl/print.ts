@@ -46,7 +46,6 @@ export const print: PrintTranslations = {
     byMaker: 'autor: {maker}',
     madeWith: 'Stworzono w',
     coverTag: 'Darmowy kreator wzorów z koralików. Bez konta.',
-    scanToOpen: 'zeskanuj, by otworzyć',
     partArea: 'Część {part} · kolumny {columns} · rzędy {rows}',
     continuesBoth: 'Ciąg dalszy z prawej na stronie {right}, poniżej na stronie {below} →',
     continuesRight: 'Ciąg dalszy z prawej na stronie {right} →',
