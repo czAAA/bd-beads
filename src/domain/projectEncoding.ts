@@ -32,10 +32,8 @@ type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded' | 'shape'> & FlatWeave &
 export type EncodedFlatProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeave & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
 
 /** A layer as a file (version 13) and the library (version 6) store it (ADR 0079, ticket 0664): all it holds, its beads
- * compact, a Frame's shape, settings and Row progress beside them. Since file version 15 (library 7, ticket 1185) a Frame
- * keeps its own angle and centre on the table, not its Canvas position and turn (`orientation`), and its way as seen. Since
- * file version 18 (library 10, ticket 1237) its angle is a quarter turn on the Table and its centre `centreMm`, in mm from
- * the Canvas's origin; the Canvas's `orientation` is a quarter turn and its `tableTurn` the whole Table's. */
+ * compact. A Frame keeps its own angle and centre on the table (file 15, library 7); since file 18 (library 10, ticket
+ * 1237) a quarter turn and `centreMm`, in mm from the Canvas's origin. The Canvas's `orientation` is a quarter turn. */
 export type EncodedLayer = Omit<StoredLayer, 'beads' | 'folded' | 'quarterTurns'> & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
 /** A Project as a file (version 13) and the library (version 6) store it (ticket 0664): what is one per file, and its

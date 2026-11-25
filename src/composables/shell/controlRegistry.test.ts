@@ -125,7 +125,7 @@ describe('the control registry', () => {
 
   it('disables every way of making a Frame at the most Frames, each with the reason in every language (spec 1214, ticket 1222)', () => {
     let full: Project = bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })
-    for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { row: made * 30, column: 0, rows: 4, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdOf({ id: `more-${made}` }) })
+    for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { rows: 4, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdOf({ id: `more-${made}` }) })
     const deps = (activeProject: unknown) => ({ activeProject: () => activeProject, hasBeads: () => true }) as never
     for (const id of ['add-frame-from-starter', 'frame-from-selection', 'frame-schema', 'fit-to-drawing']) {
       const control = CONTROLS.find((each) => each.id === id)!

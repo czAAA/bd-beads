@@ -25,12 +25,6 @@ export function nearestQuarterTurn(orientation: number): Rotation {
   return ((Math.round(normalizedOrientation(orientation) / 90) * 90) % 360) as Rotation
 }
 
-/** The whole quarter turns clockwise `angle` lies off `base`, the nearest (spec 1182): how a Frame at its own angle on
- * the table lies on the Canvas's grid, at the Canvas's angle `base`. */
-export function quarterTurnsOff(angle: number, base: number): 0 | 1 | 2 | 3 {
-  return (nearestQuarterTurn(angle - base) / 90) as 0 | 1 | 2 | 3
-}
-
 /** How far an orientation leans off its nearest quarter turn, in degrees: under 45 either way, clockwise positive. */
 export function tiltOf(orientation: number): number {
   const lean = normalizedOrientation(orientation) - nearestQuarterTurn(orientation)

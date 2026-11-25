@@ -52,10 +52,9 @@ import type { AreaLine } from './removeLine'
 // Frame and Remove row/column. It owns the rules: Row progress's lock (Remove Frame passes it, clearing the passes;
 // moving, naming and Remove row/column keep them), Row progress following the Frame.
 export type FrameChange =
-  /** Resize the Frame (handles, steppers, typed size), its beads keeping their place: what it gives up folds, and growing
-   * it back shows them again, whatever the Weaves are; it takes nothing from the Canvas (tickets 0638, 1215). The
-   * rectangle is in the Frame's own rows and columns: its first row and column how far its own first moved. A Custom
-   * frame steps its size setting to the step nearest the rectangle instead (ticket 0669). */
+  /** Resize the Frame (handles, steppers, typed size), its beads keeping their place: what it gives up folds and shows again
+   * on growing back, whatever the Weaves; nothing is taken from the Canvas (tickets 0638, 1215). The rectangle is in the
+   * Frame's own rows and columns, its first row and column how far its own first moved; a Custom frame steps its size instead (0669). */
   | { set: Rect }
   /** Frame from Selection, Fit to drawing and Set Frame around the picture (ADR 0066, ticket 1215): the Frame becomes this
    * rectangle of Canvas positions holding a copy of the beads you see in it, lying where they lie (spec 1234), the Canvas

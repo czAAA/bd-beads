@@ -96,8 +96,8 @@ describe.each(['toho-cube-1.5mm', 'toho-round-11-0'])('drawing again the passes 
       const turned = direction === 'columns' ? toggleRowDirection(painted, frameIdIn(painted)) : painted
       const [before, after] = [moveToRow(turned, from, frameIdIn(turned)), moveToRow(turned, to, frameIdIn(turned))]
       const step = stepLines(after, rowProgressOf(before, frameIdIn(before)), frameIdIn(after))!
-      const offset = step.direction === 'rows' ? frameOf(after)!.row : frameOf(after)!.column
-      const lines = { first: step.lines[0]! + offset, last: step.lines.at(-1)! + offset }
+      // A Frame is drawn at its own origin (spec 1234), so its lines are the Frame's own.
+      const lines = { first: step.lines[0]!, last: step.lines.at(-1)! }
       const whole = surface()
       draw(after, whole, undefined, { rowMarks: true })
       const banded = surface()

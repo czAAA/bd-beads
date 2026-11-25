@@ -52,10 +52,9 @@ export function withLayers(project: Project, change: LayersChange): Project {
   return letters !== undefined ? withLetters(withLetters(next, 'canvas', letters), frameIdIn(next), letters) : next
 }
 
-/** The whole picture turned to `orientation` about the Canvas's origin: the Canvas, and the Frame laid on it carried with
- * it, its quarter turn and its centre turned as far, its Row progress kept on its own rows (a Custom frame's runs one way
- * and stays). Rotate canvas does not carry the Frame (ticket 1188); a test that wants a turned picture builds it so. What
- * is left of an angle that is no quarter turn is the Table turn. */
+/** The whole picture turned to `orientation` about the Canvas's origin: the Canvas, and the Frame carried with it, its
+ * quarter turn and centre turned as far, its Row progress kept on its own rows. Rotate canvas does not carry the Frame
+ * (ticket 1188); a test wanting a turned picture builds it so. What is left of a non-quarter angle is the Table turn. */
 export function withPictureTurned(project: Project, orientation: number): Project {
   const [from, to] = [canvasOf(project).orientation, nearestQuarterTurn(orientation)]
   const tableTurn = normalizedOrientation(orientation - to)

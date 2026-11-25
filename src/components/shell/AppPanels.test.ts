@@ -394,7 +394,7 @@ describe('The Project panel\'s Frames (ticket 1222)', () => {
 
   it('disables every way of making a Frame at the most Frames, saying why', async () => {
     let full = moth()
-    for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { row: made * 20, column: 0, rows: 5, columns: 5, technique: 'loom', beads: {} }, { frame: frameIdOf({ id: `frame-${made}` }) })
+    for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { rows: 5, columns: 5, technique: 'loom', beads: {} }, { frame: frameIdOf({ id: `frame-${made}` }) })
     saveProjects([full])
     const mounted = mountPanels()
     await mounted.openPanel('project')

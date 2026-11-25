@@ -306,24 +306,6 @@ export function shiftedBeads(beads: BeadMap, rows: number, columns: number, with
   return shifted
 }
 
-/** `beads` with every bead of `over` laid on top, at the same positions. */
-export function beadsOver(beads: BeadMap, over: BeadMap): BeadMap {
-  const changes: BeadChange[] = []
-  forEachBead(over, (row, column, color) => changes.push({ row, column, color }))
-  return withColors(beads, changes)
-}
-
-/** `beads` without the beads that lie inside `area`. */
-export function beadsWithout(beads: BeadMap, area: Rect): BeadMap {
-  const changes: BeadChange[] = []
-  forEachBead(beads, (row, column) => {
-    if (frameContains(area, { row, column })) {
-      changes.push({ row, column, color: null })
-    }
-  })
-  return withColors(beads, changes)
-}
-
 /** The rows one bead map holds in another object than the other, or alone: an edit copies the rows it touches and
  * shares the rest (ADR 0019), so these are the rows it may have changed, found without reading a bead. In no order. */
 export function changedRows(before: BeadMap, after: BeadMap): number[] {

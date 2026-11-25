@@ -87,7 +87,7 @@ describe('the starting way: progress starting afresh runs the Frame Technique\'s
   it('starts a first Frame by Fit to drawing in its Technique\'s way, on a turned Canvas too', () => {
     for (const technique of TECHNIQUES) {
       for (const open of [painted(technique), rotateCanvas(painted(technique))]) {
-        const project = changed(changeFrame(open, { make: fitToDrawing(open, frameIdIn(open))! }, frameIdIn(open)))
+        const project = changed(changeFrame(open, { make: fitToDrawing(open)! }, frameIdIn(open)))
         expect(seenWayOf(project, frameIdIn(project)), technique).toBe(WAYS[technique])
       }
     }

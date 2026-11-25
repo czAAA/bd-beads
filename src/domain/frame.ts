@@ -42,9 +42,8 @@ export function snappedFrame(weave: Weave, frame: Rect): Rect {
 }
 
 // The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell`
-// the bead under the pointer, in the Frame's own geometry. An edge never passes the opposite one, so a Frame stays at
-// least one bead each way. Worked out in the Frame's own rows and columns, whose first are always unshifted (ticket 492);
-// the rectangle it gives is in them too, its first row and column how far the Frame's own first moved.
+// the bead under the pointer. An edge never passes the opposite one: a Frame stays at least one bead each way. Worked out
+// in the Frame's own rows and columns (ticket 492); the rectangle's first row and column are how far its own first moved.
 export function frameWithEdges(weave: Weave, frame: Pick<Rect, 'rows' | 'columns'>, edges: readonly FrameEdge[], cell: GridPosition): Rect {
   let top = 0
   let bottom = frame.rows - 1
@@ -140,10 +139,9 @@ export function withoutFrame(project: Project, ref: FrameRef): Project {
   return touchFrameSheet(project, undefined, { frame: ref })
 }
 
-/** The Project with its Frame resized to `rectangle`, in its own rows and columns: its first row and column are how far
- * its own first moved, its rows and columns its new size (ADR 0026, 0066). Its beads keep their place, those outside a
- * smaller Frame fold and show again when it grows back (ticket 1215), Row progress stays inside it; an unchanged Frame is
- * the same Project. Where it lies on the Table follows its edges (`resizedCentre`). */
+/** The Project with its Frame resized to `rectangle`, in its own rows and columns (ADR 0026, 0066). Its beads keep their
+ * place: those outside a smaller Frame fold and show again on growing back (ticket 1215); Row progress stays inside it;
+ * an unchanged Frame is the same Project. Where it lies on the Table follows its edges (`resizedCentre`). */
 export function withFrameResized(project: Project, rectangle: Rect, ref: FrameRef): Project {
   const current = frameById(project, ref)
   if (!current || sameFrame({ rows: current.rows, columns: current.columns }, rectangle)) {

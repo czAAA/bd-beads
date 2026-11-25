@@ -55,8 +55,9 @@ export function sameBeadSize(project: Layered, frame: FrameRef): boolean {
   return frameScale(project, frame) === 1 && frameWeave(project, frame).cell?.aspect === canvasWeave(project).cell?.aspect
 }
 
-/** Whether the Frame's positions are the Canvas's one to one (ADR 0066, 0079): woven alike, in a Bead of the same
- * size. Otherwise a Frame's position is read on the Canvas through millimetres. False without a Frame. */
+/** Whether the Frame's positions are the Canvas's one to one (ADR 0066, 0079): woven alike, in a Bead of the same size.
+ * False without a Frame.
+ * @internal Views ask the placed Frame; tests ask it directly. */
 export function layersAlike(project: Layered, ref: FrameRef): boolean {
   const frame = heldWeave(project, ref)
   return !!frame && sameWeave(canvasWeave(project), frame) && sameBeadSize(project, ref)
@@ -72,9 +73,9 @@ export function placedFrame(project: Layered, ref: FrameRef): PlacedFrame | unde
   return frame && { ...frame, ...frameWeave(project, ref), scale: frameScale(project, ref) }
 }
 
-/** A distance in the Frame's own rows and columns (in `frame`, a Weave of its, drawn in its Bead), as the nearest whole
- * Canvas positions through millimetres (tickets 492, 0665), the same where the layers are alike. A half rounds away
- * from zero both ways, so an edge moved out and back puts the Frame where it was (ticket 0638). */
+/** A distance in the Frame's own rows and columns as the nearest whole Canvas positions through millimetres (tickets
+ * 492, 0665); a half rounds away from zero both ways (ticket 0638).
+ * @internal Views ask the placed Frame; tests ask it directly. */
 export function canvasDistance(project: Layered, frame: Weave, rows: number, columns: number, ref: FrameRef): GridPosition {
   const canvas = canvasWeave(project)
   if (sameWeave(canvas, frame) && sameBeadSize(project, ref)) {
@@ -88,8 +89,8 @@ export function canvasDistance(project: Layered, frame: Weave, rows: number, col
 }
 
 /** Beads in the Frame's own rows and columns laid on the Canvas, its first row and column at `corner` (ADR 0079, ticket
- * 0665): in a Bead of the same size each keeps its row and column; in another, each Canvas position takes the bead
- * whose cell holds its middle, read through millimetres, so what lands looks as the Frame drew it. */
+ * 0665): each Canvas position takes the bead whose cell holds its middle, read through millimetres.
+ * @internal Views ask the placed Frame; tests ask it directly. */
 export function laidOnCanvas(project: Layered, beads: BeadMap, corner: GridPosition, ref: FrameRef): BeadMap {
   const bounds = beadBounds(beads)
   if (sameBeadSize(project, ref) || !bounds) {

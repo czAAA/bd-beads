@@ -771,7 +771,7 @@ describe('useFrameFlow', () => {
 
     it('adds nothing at the most Frames', () => {
       let full: Project = sized
-      for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { row: made * 30, column: 0, rows: 3, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdOf({ id: `more-${made}` }) })
+      for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { rows: 3, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdOf({ id: `more-${made}` }) })
       const { deps, placeFromStarter } = setup(full)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(deps.replaceProject).not.toHaveBeenCalled()

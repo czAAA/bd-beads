@@ -63,7 +63,7 @@ describe('useUndoHistory', () => {
   it('clears the Selection when the Frame differs', () => {
     const ctx = editHarness(newProject())
     ctx.history.record({
-      ...snapshotOf(withFrameSheet(ctx.project, { technique: 'loom', row: 0, column: 0, columns: 5, rows: 5, beads: {} }, { frame: frameIdIn(ctx.project) })),
+      ...snapshotOf(withFrameSheet(ctx.project, { technique: 'loom', columns: 5, rows: 5, beads: {} }, { frame: frameIdIn(ctx.project) })),
     })
     ctx.history.onUndo()
     expect(ctx.resetAfterFrameChange).toHaveBeenCalled()

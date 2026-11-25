@@ -61,7 +61,7 @@ describe('ProjectFrames (ProjectPanel card, ticket 1222)', () => {
 
   it('disables every way to add a Frame at the most Frames, saying so, and Fit while nothing is drawn', async () => {
     let full: Project = one()
-    for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { row: made * 30, column: 0, rows: 4, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdOf({ id: `more-${made}` }) })
+    for (let made = 1; made < MAX_FRAMES; made += 1) full = withFrameSheet(full, { rows: 4, columns: 4, beads: {}, technique: 'loom' }, { frame: frameIdOf({ id: `more-${made}` }) })
     const wrapper = mountFrames(full)
     await wrapper.get('[data-testid="project-frames-add"] .panel-section__header').trigger('click')
     for (const id of ['frame-from-starter', 'frame-fit', 'frame-select']) expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-disabled'), id).toBe('true')

@@ -13,12 +13,6 @@ export interface TablePoint {
   y: number
 }
 
-/** A layer's placement as the view lays it: its angle on screen in degrees clockwise and where it sits. */
-export interface Placement {
-  angle: number
-  at: TablePoint
-}
-
 /** A point turned `degrees` clockwise about the origin, with y running down, exact at a quarter turn. */
 export function turnedPoint({ x, y }: TablePoint, degrees: number): TablePoint {
   const radians = (degrees * Math.PI) / 180
@@ -39,7 +33,9 @@ export function tableTurnOf(project: Layered): number {
   return canvasOf(project).tableTurn ?? 0
 }
 
-/** The Canvas's angle on screen: its own quarter turn on the Table and the Table turn. */
+/** The Canvas's angle on screen: its own quarter turn on the Table and the Table turn.
+ * @internal Tests ask the Canvas angle on screen directly.
+ */
 export function canvasAngleOf(project: Layered): number {
   return normalizedOrientation(canvasOf(project).orientation + tableTurnOf(project))
 }

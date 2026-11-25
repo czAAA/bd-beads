@@ -28,9 +28,8 @@ import { beadCell, describeWeave, isTechnique, withCell, type Technique, type We
 export type GridProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeave & { columns: number; rows: number; grid: Grid }
 
 /** A layer as a store or file holds it (file version 12, ticket 0664), before normalizeProject reads it, its id and name
- * possibly missing. A Frame of file version 18 holds its quarter turn and its centre in mm from the Canvas's origin
- * (ticket 1237); one of 15 to 17 its angle and centre in the Canvas's bead widths on the table, and its way as seen (ticket
- * 1185); an older one its quarter turns on the Canvas, its Canvas position and its Row progress in its own rows. */
+ * possibly missing. A Frame of file version 18 holds its quarter turn and centre in mm from the Canvas's origin (ticket
+ * 1237); 15 to 17 its angle and centre in bead widths (1185); an older one quarter turns and Canvas position. */
 export type StoredLayer = Omit<LayerFields, 'id'> &
   FlatWeave &
   Partial<Omit<FrameSheet, keyof LayerFields>> & {
@@ -212,10 +211,8 @@ function readCanvas(stored: StoredLayer, projectId: string, earlierBackground: b
 }
 
 /** The Frame a store or file holds, its Row progress read inside it; one without a Weave this build knows takes the
- * Canvas's (ticket 492). From file version 18 it keeps its quarter turn and its centre in mm. One from version 15 to 17
- * keeps its angle and centre in the Canvas's bead widths, one before 15 its quarter turns and Canvas position (ticket
- * 1185): each opens where it was, its angle relative to the Canvas rounded to the nearest quarter turn about its own
- * centre (`rounded` where that turned it), a Frame saved on the Canvas's grid at the centre that grid gave it. */
+ * Canvas's (ticket 492). Version 18 keeps a quarter turn and centre in mm; 15 to 17 an angle and centre in bead widths,
+ * older ones quarter turns and Canvas position (ticket 1185): each opens where it was, its angle rounded to a quarter turn. */
 function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string, earlierBackground: boolean): { frame: FrameLayer; rounded: boolean } {
   const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas), earlierBackground)
   const { rows = 0, columns = 0, folded, name } = stored

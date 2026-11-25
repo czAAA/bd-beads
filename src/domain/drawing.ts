@@ -18,10 +18,9 @@ export function paintCells({ beads, geometry, edge }: LayerSheet, positions: Gri
   return withColors(beads, targets.map((position) => ({ ...position, color })))
 }
 
-/** Resets the open Project to as first created (CONTEXT.md's Delete all): every layer emptied, each Frame's Row progress
- * at the first row, the Canvas turned as a new Project starts it and the Table upright; name, size, Technique, Bead and
- * Frames stay, every Frame's centre and turn exactly as they were (spec 1234).
- * Ignores the Row progress lock (clearing progress is the point). The same instance if already so. */
+/** Resets the open Project to as first created (CONTEXT.md's Delete all): layers emptied, Row progress at the first row,
+ * the Canvas turned as a new Project starts it, the Table upright; name, size, Technique, Bead and Frames stay, each
+ * Frame's centre and turn as they were (spec 1234). Ignores the Row progress lock. The same instance if already so. */
 export function deleteAll(project: Project): Project {
   const frames = framesOf(project).map(frameIdOf)
   // Row progress starts afresh: the first pass, the Frame Technique's way as the Frame lies (spec 1182).

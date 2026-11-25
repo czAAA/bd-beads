@@ -5,10 +5,9 @@ import type { Affine } from './gestureView'
 import type { Scroll } from './surfaceView'
 import { tiltedView, type TiltedView } from './tiltedView'
 
-// The editor's two stacked surfaces (spec 1182, ticket 1187): the Canvas and the Frame are each drawn at their own
-// nearest quarter turn and leaned on their own about the screen's middle (`tiltedView`). Each layer lies on the Table
-// on its own (spec 1234), so every Frame is drawn on its own surface; a turn of the Canvas alone leaves the Frame's
-// drawing where it is (ticket 1188).
+// The editor's two stacked surfaces (spec 1182, ticket 1187): the Canvas and each Frame (spec 1234) are drawn at their
+// own nearest quarter turn and leaned on their own about the screen's middle (`tiltedView`); a turn of the Canvas alone
+// leaves the Frame's drawing where it is (ticket 1188).
 
 /** One layer's drawing: the quarter turn its surface is drawn at, how it leans on the screen, and the scroll it is shown
  * from. */

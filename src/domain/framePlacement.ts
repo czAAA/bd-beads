@@ -18,10 +18,9 @@ export function laidTurnOf(project: Layered, ref: FrameRef): Rotation {
   return frame && (frameShapeOf(frame) || frame.quarterTurns) ? 0 : quarterTurnOf(project)
 }
 
-/** The Project as every export and preview draws it (ticket 1186): a plain Frame a regular grid, upright, shown at `turn`
- * (its own turn unless given) by the Canvas turned with it, the Frame's angle the same (`quarterTurns: 0` keeps its grid
- * regular, see `frameById`); a shaped Frame by its own quarter turn laid in its layout, the Canvas at `turn`, 0 unless
- * given. The Table upright. As it is when it already lies so, or has no Frame. */
+/** The Project as every export and preview draws it (ticket 1186): a plain Frame a regular grid, upright, at `turn` (its
+ * own unless given), its angle `quarterTurns: 0` (see `frameById`); a shaped Frame by its own quarter turn, the Canvas at
+ * `turn`, 0 unless given. The Table upright. As it is when it already lies so, or has no Frame. */
 export function withLaidTurn(project: Project, turn: Rotation | undefined, ref: FrameRef): Project {
   const frame = frameById(project, ref)
   if (!frame) return project
@@ -51,8 +50,9 @@ export function withFrameCentre(project: Project, centre: TablePoint, ref: Frame
   return withFrameById(project, ref, (held) => ({ ...held, centre: { ...centre } }))
 }
 
-/** The Project with the Frame turned a quarter turn clockwise about its own centre, which stays where it is on the Table
- * (Rotate Frame, spec 1234). Its beads, rows and Row progress are not looked at. As it is without that Frame. */
+/** The Project with the Frame turned a quarter turn clockwise about its own centre (Rotate Frame, spec 1234). As it is
+ * without that Frame.
+ * @internal Tests and the visual check turn a Frame by it. */
 export function withFrameQuarterTurned(project: Project, by: 1 | 3, ref: FrameRef): Project {
   const held = heldFrameById(project, ref)
   return held ? withFrameById(project, ref, () => ({ ...held, angle: normalizedOrientation(held.angle + 90 * by) })) : project

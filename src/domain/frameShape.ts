@@ -34,7 +34,7 @@ type FrameSetting = SettingSpec<FrameSettingName>
 
 /** How many quarter turns clockwise a Frame lies at on the Canvas (Rotate Frame, tickets 0594, 0667, ADR 0079): a Custom
  * frame's layout, or a Frame's own grid, turned. One setting for both. */
-export type QuarterTurns = 1 | 2 | 3
+export type QuarterTurns = 0 | 1 | 2 | 3
 
 /** What a Custom frame's layout is built from: its Frame shape, its settings, how far it is turned, and the cell of its
  * layer's Bead, whose depth a round shape packs its beads by (ticket 0723). */
